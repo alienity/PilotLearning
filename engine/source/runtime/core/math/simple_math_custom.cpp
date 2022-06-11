@@ -8,8 +8,7 @@
 // http://go.microsoft.com/fwlink/?LinkID=615561
 //-------------------------------------------------------------------------------------
 
-#include "pch.h"
-#include "SimpleMath.h"
+#include "simple_math_custom.h"
 
 /****************************************************************************
  *
@@ -17,53 +16,47 @@
  *
  ****************************************************************************/
 
-namespace DirectX
+namespace Pilot
 {
-    namespace SimpleMath
-    {
-        const Vector2 Vector2::Zero = { 0.f, 0.f };
-        const Vector2 Vector2::One = { 1.f, 1.f };
-        const Vector2 Vector2::UnitX = { 1.f, 0.f };
-        const Vector2 Vector2::UnitY = { 0.f, 1.f };
+    const Float2 Float2::Zero  = {0.f, 0.f};
+    const Float2 Float2::One   = {1.f, 1.f};
+    const Float2 Float2::UnitX = {1.f, 0.f};
+    const Float2 Float2::UnitY = {0.f, 1.f};
 
-        const Vector3 Vector3::Zero = { 0.f, 0.f, 0.f };
-        const Vector3 Vector3::One = { 1.f, 1.f, 1.f };
-        const Vector3 Vector3::UnitX = { 1.f, 0.f, 0.f };
-        const Vector3 Vector3::UnitY = { 0.f, 1.f, 0.f };
-        const Vector3 Vector3::UnitZ = { 0.f, 0.f, 1.f };
-        const Vector3 Vector3::Up = { 0.f, 1.f, 0.f };
-        const Vector3 Vector3::Down = { 0.f, -1.f, 0.f };
-        const Vector3 Vector3::Right = { 1.f, 0.f, 0.f };
-        const Vector3 Vector3::Left = { -1.f, 0.f, 0.f };
-        const Vector3 Vector3::Forward = { 0.f, 0.f, -1.f };
-        const Vector3 Vector3::Backward = { 0.f, 0.f, 1.f };
+    const Float3 Float3::Zero     = {0.f, 0.f, 0.f};
+    const Float3 Float3::One      = {1.f, 1.f, 1.f};
+    const Float3 Float3::UnitX    = {1.f, 0.f, 0.f};
+    const Float3 Float3::UnitY    = {0.f, 1.f, 0.f};
+    const Float3 Float3::UnitZ    = {0.f, 0.f, 1.f};
+    const Float3 Float3::Up       = {0.f, 1.f, 0.f};
+    const Float3 Float3::Down     = {0.f, -1.f, 0.f};
+    const Float3 Float3::Right    = {1.f, 0.f, 0.f};
+    const Float3 Float3::Left     = {-1.f, 0.f, 0.f};
+    const Float3 Float3::Forward  = {0.f, 0.f, -1.f};
+    const Float3 Float3::Backward = {0.f, 0.f, 1.f};
 
-        const Vector4 Vector4::Zero = { 0.f, 0.f, 0.f, 0.f };
-        const Vector4 Vector4::One = { 1.f, 1.f, 1.f, 1.f };
-        const Vector4 Vector4::UnitX = { 1.f, 0.f, 0.f, 0.f };
-        const Vector4 Vector4::UnitY = { 0.f, 1.f, 0.f, 0.f };
-        const Vector4 Vector4::UnitZ = { 0.f, 0.f, 1.f, 0.f };
-        const Vector4 Vector4::UnitW = { 0.f, 0.f, 0.f, 1.f };
+    const Float4 Float4::Zero  = {0.f, 0.f, 0.f, 0.f};
+    const Float4 Float4::One   = {1.f, 1.f, 1.f, 1.f};
+    const Float4 Float4::UnitX = {1.f, 0.f, 0.f, 0.f};
+    const Float4 Float4::UnitY = {0.f, 1.f, 0.f, 0.f};
+    const Float4 Float4::UnitZ = {0.f, 0.f, 1.f, 0.f};
+    const Float4 Float4::UnitW = {0.f, 0.f, 0.f, 1.f};
 
-        const Matrix Matrix::Identity = { 1.f, 0.f, 0.f, 0.f,
-                                          0.f, 1.f, 0.f, 0.f,
-                                          0.f, 0.f, 1.f, 0.f,
-                                          0.f, 0.f, 0.f, 1.f };
+    const Float4x4 Float4x4::Identity = {1.f, 0.f, 0.f, 0.f, 0.f, 1.f, 0.f, 0.f, 0.f, 0.f, 1.f, 0.f, 0.f, 0.f, 0.f, 1.f};
 
-        const Quaternion Quaternion::Identity = { 0.f, 0.f, 0.f, 1.f };
-    }
+    const QuaternionN QuaternionN::Identity = {0.f, 0.f, 0.f, 1.f};
 }
 
 using namespace DirectX;
-using namespace DirectX::SimpleMath;
+using namespace Pilot;
 
 /****************************************************************************
  *
- * Quaternion
+ * QuaternionN
  *
  ****************************************************************************/
 
-void Quaternion::RotateTowards(const Quaternion& target, float maxAngle, Quaternion& result) const noexcept
+void QuaternionN::RotateTowards(const QuaternionN& target, float maxAngle, QuaternionN& result) const noexcept
 {
     const XMVECTOR T = XMLoadFloat4(this);
 
@@ -86,9 +79,9 @@ void Quaternion::RotateTowards(const Quaternion& target, float maxAngle, Quatern
     }
 }
 
-void Quaternion::FromToRotation(const Vector3& fromDir, const Vector3& toDir, Quaternion& result) noexcept
+void QuaternionN::FromToRotation(const Float3& fromDir, const Float3& toDir, QuaternionN& result) noexcept
 {
-    // Melax, "The Shortest Arc Quaternion", Game Programming Gems, Charles River Media (2000).
+    // Melax, "The Shortest Arc QuaternionN", Game Programming Gems, Charles River Media (2000).
 
     const XMVECTOR F = XMVector3Normalize(fromDir);
     const XMVECTOR T = XMVector3Normalize(toDir);
@@ -100,10 +93,10 @@ void Quaternion::FromToRotation(const Vector3& fromDir, const Vector3& toDir, Qu
     }
     else if (dot <= -1.f)
     {
-        XMVECTOR axis = XMVector3Cross(F, Vector3::Right);
+        XMVECTOR axis = XMVector3Cross(F, Float3::Right);
         if (XMVector3NearEqual(XMVector3LengthSq(axis), g_XMZero, g_XMEpsilon))
         {
-            axis = XMVector3Cross(F, Vector3::Up);
+            axis = XMVector3Cross(F, Float3::Up);
         }
 
         const XMVECTOR Q = XMQuaternionRotationAxis(axis, XM_PI);
@@ -122,10 +115,10 @@ void Quaternion::FromToRotation(const Vector3& fromDir, const Vector3& toDir, Qu
     }
 }
 
-void Quaternion::LookRotation(const Vector3& forward, const Vector3& up, Quaternion& result) noexcept
+void QuaternionN::LookRotation(const Float3& forward, const Float3& up, QuaternionN& result) noexcept
 {
-    Quaternion q1;
-    FromToRotation(Vector3::Forward, forward, q1);
+    QuaternionN q1;
+    FromToRotation(Float3::Forward, forward, q1);
 
     const XMVECTOR C = XMVector3Cross(forward, up);
     if (XMVector3NearEqual(XMVector3LengthSq(C), g_XMZero, g_XMEpsilon))
@@ -135,9 +128,9 @@ void Quaternion::LookRotation(const Vector3& forward, const Vector3& up, Quatern
         return;
     }
 
-    const XMVECTOR U = XMQuaternionMultiply(q1, Vector3::Up);
+    const XMVECTOR U = XMQuaternionMultiply(q1, Float3::Up);
 
-    Quaternion q2;
+    QuaternionN q2;
     FromToRotation(U, up, q2);
 
     XMStoreFloat4(&result, XMQuaternionMultiply(q2, q1));
@@ -146,32 +139,32 @@ void Quaternion::LookRotation(const Vector3& forward, const Vector3& up, Quatern
 
  /****************************************************************************
  *
- * Viewport
+ * ViewportN
  *
  ****************************************************************************/
 
 #if defined(__d3d11_h__) || defined(__d3d11_x_h__)
-static_assert(sizeof(DirectX::SimpleMath::Viewport) == sizeof(D3D11_VIEWPORT), "Size mismatch");
-static_assert(offsetof(DirectX::SimpleMath::Viewport, x) == offsetof(D3D11_VIEWPORT, TopLeftX), "Layout mismatch");
-static_assert(offsetof(DirectX::SimpleMath::Viewport, y) == offsetof(D3D11_VIEWPORT, TopLeftY), "Layout mismatch");
-static_assert(offsetof(DirectX::SimpleMath::Viewport, width) == offsetof(D3D11_VIEWPORT, Width), "Layout mismatch");
-static_assert(offsetof(DirectX::SimpleMath::Viewport, height) == offsetof(D3D11_VIEWPORT, Height), "Layout mismatch");
-static_assert(offsetof(DirectX::SimpleMath::Viewport, minDepth) == offsetof(D3D11_VIEWPORT, MinDepth), "Layout mismatch");
-static_assert(offsetof(DirectX::SimpleMath::Viewport, maxDepth) == offsetof(D3D11_VIEWPORT, MaxDepth), "Layout mismatch");
+static_assert(sizeof(DirectX::SimpleMath::ViewportN) == sizeof(D3D11_VIEWPORT), "Size mismatch");
+static_assert(offsetof(DirectX::SimpleMath::ViewportN, x) == offsetof(D3D11_VIEWPORT, TopLeftX), "Layout mismatch");
+static_assert(offsetof(DirectX::SimpleMath::ViewportN, y) == offsetof(D3D11_VIEWPORT, TopLeftY), "Layout mismatch");
+static_assert(offsetof(DirectX::SimpleMath::ViewportN, width) == offsetof(D3D11_VIEWPORT, Width), "Layout mismatch");
+static_assert(offsetof(DirectX::SimpleMath::ViewportN, height) == offsetof(D3D11_VIEWPORT, Height), "Layout mismatch");
+static_assert(offsetof(DirectX::SimpleMath::ViewportN, minDepth) == offsetof(D3D11_VIEWPORT, MinDepth), "Layout mismatch");
+static_assert(offsetof(DirectX::SimpleMath::ViewportN, maxDepth) == offsetof(D3D11_VIEWPORT, MaxDepth), "Layout mismatch");
 #endif
 
 #if defined(__d3d12_h__) || defined(__d3d12_x_h__) || defined(__XBOX_D3D12_X__)
-static_assert(sizeof(DirectX::SimpleMath::Viewport) == sizeof(D3D12_VIEWPORT), "Size mismatch");
-static_assert(offsetof(DirectX::SimpleMath::Viewport, x) == offsetof(D3D12_VIEWPORT, TopLeftX), "Layout mismatch");
-static_assert(offsetof(DirectX::SimpleMath::Viewport, y) == offsetof(D3D12_VIEWPORT, TopLeftY), "Layout mismatch");
-static_assert(offsetof(DirectX::SimpleMath::Viewport, width) == offsetof(D3D12_VIEWPORT, Width), "Layout mismatch");
-static_assert(offsetof(DirectX::SimpleMath::Viewport, height) == offsetof(D3D12_VIEWPORT, Height), "Layout mismatch");
-static_assert(offsetof(DirectX::SimpleMath::Viewport, minDepth) == offsetof(D3D12_VIEWPORT, MinDepth), "Layout mismatch");
-static_assert(offsetof(DirectX::SimpleMath::Viewport, maxDepth) == offsetof(D3D12_VIEWPORT, MaxDepth), "Layout mismatch");
+static_assert(sizeof(DirectX::SimpleMath::ViewportN) == sizeof(D3D12_VIEWPORT), "Size mismatch");
+static_assert(offsetof(DirectX::SimpleMath::ViewportN, x) == offsetof(D3D12_VIEWPORT, TopLeftX), "Layout mismatch");
+static_assert(offsetof(DirectX::SimpleMath::ViewportN, y) == offsetof(D3D12_VIEWPORT, TopLeftY), "Layout mismatch");
+static_assert(offsetof(DirectX::SimpleMath::ViewportN, width) == offsetof(D3D12_VIEWPORT, Width), "Layout mismatch");
+static_assert(offsetof(DirectX::SimpleMath::ViewportN, height) == offsetof(D3D12_VIEWPORT, Height), "Layout mismatch");
+static_assert(offsetof(DirectX::SimpleMath::ViewportN, minDepth) == offsetof(D3D12_VIEWPORT, MinDepth), "Layout mismatch");
+static_assert(offsetof(DirectX::SimpleMath::ViewportN, maxDepth) == offsetof(D3D12_VIEWPORT, MaxDepth), "Layout mismatch");
 #endif
 
 #if defined(__dxgi1_2_h__) || defined(__d3d11_x_h__) || defined(__d3d12_x_h__) || defined(__XBOX_D3D12_X__)
-RECT Viewport::ComputeDisplayArea(DXGI_SCALING scaling, UINT backBufferWidth, UINT backBufferHeight, int outputWidth, int outputHeight) noexcept
+RECT ViewportN::ComputeDisplayArea(DXGI_SCALING scaling, UINT backBufferWidth, UINT backBufferHeight, int outputWidth, int outputHeight) noexcept
 {
     RECT rct = {};
 
@@ -231,17 +224,3 @@ RECT Viewport::ComputeDisplayArea(DXGI_SCALING scaling, UINT backBufferWidth, UI
     return rct;
 }
 #endif
-
-RECT Viewport::ComputeTitleSafeArea(UINT backBufferWidth, UINT backBufferHeight) noexcept
-{
-    const float safew = (float(backBufferWidth) + 19.f) / 20.f;
-    const float safeh = (float(backBufferHeight) + 19.f) / 20.f;
-
-    RECT rct;
-    rct.left = static_cast<LONG>(safew);
-    rct.top = static_cast<LONG>(safeh);
-    rct.right = static_cast<LONG>(float(backBufferWidth) - safew + 0.5f);
-    rct.bottom = static_cast<LONG>(float(backBufferHeight) - safeh + 0.5f);
-
-    return rct;
-}
