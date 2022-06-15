@@ -1,12 +1,12 @@
 #pragma once
 #include "runtime/core/meta/reflection/reflection.h"
 
-#include "runtime/core/math/vector3.h"
+#include "runtime/core/math/moyu_math.h"
 
 namespace Pilot
 {
     REFLECTION_TYPE(Color)
-    CLASS(Color, Fields)
+    STRUCT(Color, Fields)
     {
         REFLECTION_BODY(Color);
 
