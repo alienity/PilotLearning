@@ -8,7 +8,7 @@ source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}" FILES ${EDITOR_HEADERS} ${EDITOR
 
 add_executable(${TARGET_NAME} ${EDITOR_HEADERS} ${EDITOR_SOURCES} ${EDITOR_RESOURCE})
 
-add_compile_definitions("PILOT_ROOT_DIR=${BINARY_ROOT_DIR}")
+add_compile_definitions("MOYU_ROOT_DIR=${BINARY_ROOT_DIR}")
 
 target_include_directories(
   ${TARGET_NAME} 

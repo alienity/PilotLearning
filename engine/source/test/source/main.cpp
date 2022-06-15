@@ -7,6 +7,8 @@
 
 #include "runtime/core/base/macro.h"
 
+#include "engine.h"
+
 using namespace Pilot;
 
 void metaExample()
@@ -82,11 +84,9 @@ void metaExample()
 
 int main()
 {
-    g_runtime_global_context.startSystems(EngineInitParams {});
 
-    metaExample();
 
-    g_runtime_global_context.shutdownSystems();
+    //metaExample();
 
 	std::cout << "Hello" << std::endl;
 	return 1;
