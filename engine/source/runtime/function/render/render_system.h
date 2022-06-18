@@ -1,5 +1,7 @@
 #pragma once
 
+#include "runtime/function/render/render_swap_context.h"
+
 #include <array>
 #include <memory>
 #include <optional>
@@ -30,9 +32,13 @@ namespace Pilot
         void initialize(RenderSystemInitInfo init_info);
         void tick();
 
-
+        void                          swapLogicRenderData();
+        RenderSwapContext&            getSwapContext();
+        std::shared_ptr<RenderCamera> getRenderCamera() const;
 
     private:
+        //RENDER_PIPELINE_TYPE m_render_pipeline_type {RENDER_PIPELINE_TYPE::DEFERRED_PIPELINE};
 
+        RenderSwapContext m_swap_context;
     };
 } // namespace Pilot

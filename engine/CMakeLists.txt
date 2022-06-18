@@ -14,15 +14,15 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     set_property(DIRECTORY ${CMAKE_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT PilotEditor)
 endif()
 
-set(vulkan_include ${THIRD_PARTY_DIR}/VulkanSDK/include)
+# set(vulkan_include ${THIRD_PARTY_DIR}/VulkanSDK/include)
 
-if(WIN32)
-  set(vulkan_lib ${THIRD_PARTY_DIR}/VulkanSDK/lib/Win32/vulkan-1.lib)
-  set(glslangValidator_executable ${THIRD_PARTY_DIR}/VulkanSDK/bin/Win32/glslangValidator.exe)
-  add_compile_definitions("PILOT_VK_LAYER_PATH=${THIRD_PARTY_DIR}/VulkanSDK/bin/Win32")
-else()
-  message(FATAL_ERROR "Unknown Platform")
-endif()
+# if(WIN32)
+#   set(vulkan_lib ${THIRD_PARTY_DIR}/VulkanSDK/lib/Win32/vulkan-1.lib)
+#   set(glslangValidator_executable ${THIRD_PARTY_DIR}/VulkanSDK/bin/Win32/glslangValidator.exe)
+#   add_compile_definitions("PILOT_VK_LAYER_PATH=${THIRD_PARTY_DIR}/VulkanSDK/bin/Win32")
+# else()
+#   message(FATAL_ERROR "Unknown Platform")
+# endif()
 
 
 set(SHADER_COMPILE_TARGET PilotShaderCompile)

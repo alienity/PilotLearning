@@ -7,6 +7,8 @@
 #include "runtime/resource/asset_manager/asset_manager.h"
 #include "runtime/resource/config_manager/config_manager.h"
 
+#include "runtime/engine.h"
+#include "runtime/function/framework/world/world_manager.h"
 #include "runtime/function/input/input_system.h"
 #include "runtime/function/render/render_system.h"
 #include "runtime/function/render/window_system.h"
@@ -26,6 +28,9 @@ namespace Pilot
 
         m_asset_manager = std::make_shared<AssetManager>();
 
+        m_world_manager = std::make_shared<WorldManager>();
+        m_world_manager->initialize();
+
         m_window_system = std::make_shared<WindowSystem>();
         WindowCreateInfo window_create_info;
         m_window_system->initialize(window_create_info);
@@ -44,6 +49,9 @@ namespace Pilot
         m_render_system.reset();
 
         m_window_system.reset();
+
+        m_world_manager->clear();
+        m_world_manager.reset();
 
         m_input_system->clear();
         m_input_system.reset();

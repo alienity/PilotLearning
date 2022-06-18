@@ -7,12 +7,10 @@ namespace Pilot
 {
     class LogSystem;
     class InputSystem;
-    //class PhysicsSystem;
-    //class PhysicsManager;
     class FileSystem;
     class AssetManager;
     class ConfigManager;
-    //class WorldManager;
+    class WorldManager;
     class RenderSystem;
     class WindowSystem;
 
@@ -31,9 +29,7 @@ namespace Pilot
         std::shared_ptr<FileSystem>     m_file_system;
         std::shared_ptr<AssetManager>   m_asset_manager;
         std::shared_ptr<ConfigManager>  m_config_manager;
-        //std::shared_ptr<WorldManager>   m_world_manager;
-        //std::shared_ptr<PhysicsSystem>  m_legacy_physics_system;
-        //std::shared_ptr<PhysicsManager> m_physics_manager;
+        std::shared_ptr<WorldManager>   m_world_manager;
         std::shared_ptr<WindowSystem>   m_window_system;
         std::shared_ptr<RenderSystem>   m_render_system;
     };

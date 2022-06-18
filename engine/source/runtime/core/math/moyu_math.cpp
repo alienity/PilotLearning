@@ -1532,6 +1532,13 @@ namespace Pilot
         return conjugate(q) * invLenSqr;
     }
 
+    Quaternion Quaternion::fromAxes(const Vector3& x_axis, const Vector3& y_axis, const Vector3& z_axis)
+    {
+        Matrix3x3 rotMat;
+        rotMat.fromAxes(x_axis, y_axis, z_axis);
+        return Quaternion::fromRotationMatrix(rotMat);
+    }
+
     Quaternion Quaternion::fromAxisAngle(const Vector3& axis, float angle)
     {
         float   c     = std::cos(angle * 0.5f);

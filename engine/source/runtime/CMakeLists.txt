@@ -49,16 +49,16 @@ target_link_libraries(${TARGET_NAME} PUBLIC glfw)
 target_link_libraries(${TARGET_NAME} PUBLIC imgui)
 target_link_libraries(${TARGET_NAME} PUBLIC Jolt)
 target_link_libraries(${TARGET_NAME} PRIVATE $<BUILD_INTERFACE:json11>)
-# target_link_libraries(${TARGET_NAME} PUBLIC DirectXTK12)
+target_link_libraries(${TARGET_NAME} PUBLIC pix)
 
 if(ENABLE_PHYSICS_DEBUG_RENDERER)
   add_compile_definitions(ENABLE_PHYSICS_DEBUG_RENDERER)
   target_link_libraries(${TARGET_NAME} PUBLIC TestFramework d3d12.lib shcore.lib)
 endif()
 
-target_include_directories(
-  ${TARGET_NAME}
-  PUBLIC $<BUILD_INTERFACE:${vulkan_include}>)
+# target_include_directories(
+#   ${TARGET_NAME}
+#   PUBLIC $<BUILD_INTERFACE:${vulkan_include}>)
 
 add_dependencies(${TARGET_NAME} ${SHADER_COMPILE_TARGET})
 target_include_directories(
@@ -79,10 +79,10 @@ target_include_directories(
   PUBLIC $<BUILD_INTERFACE:${json_inlcude}>
 )
 
-target_include_directories(
-  ${TARGET_NAME} 
-  PUBLIC $<BUILD_INTERFACE:${THIRD_PARTY_DIR}/vulkanmemoryallocator/include>
-)
+# target_include_directories(
+#   ${TARGET_NAME} 
+#   PUBLIC $<BUILD_INTERFACE:${THIRD_PARTY_DIR}/vulkanmemoryallocator/include>
+# )
 
 target_include_directories(
   ${TARGET_NAME} 

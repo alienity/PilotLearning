@@ -15,16 +15,6 @@ if(NOT TARGET glm)
     set_target_properties(glm_static PROPERTIES FOLDER ${third_party_folder}/glm)
 endif()
 
-# if(NOT TARGET DirectXTK12)
-#     add_subdirectory(DirectXTK12-may2022)
-#     set_target_properties(DirectXTK12 PROPERTIES FOLDER ${third_party_folder}/DirectXTK12-may2022)
-# endif()
-
-# if(NOT TARGET DirectXMath)
-#     add_subdirectory(DirectXMath-may2022)
-#     set_target_properties(DirectXMath PROPERTIES FOLDER ${third_party_folder}/DirectXMath-may2022)
-# endif()
-
 if(NOT TARGET glfw)
     option(GLFW_BUILD_EXAMPLES "" OFF)
     option(GLFW_BUILD_TESTS "" OFF)
@@ -80,4 +70,14 @@ if(NOT TARGET Jolt)
             MSVC_RUNTIME_LIBRARY "MultiThreadedDLL")
     endif()
 
+endif()
+
+if(NOT TARGET dxc)
+    include(dxc.cmake)
+    set_target_properties(dxc PROPERTIES FOLDER ${third_party_folder}/dxc)
+endif()
+
+if(NOT TARGET pix)
+    include(pix.cmake)
+    set_target_properties(pix PROPERTIES FOLDER ${third_party_folder}/pix)
 endif()

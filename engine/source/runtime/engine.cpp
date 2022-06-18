@@ -3,10 +3,9 @@
 #include "runtime/core/base/macro.h"
 #include "runtime/core/meta/reflection/reflection_register.h"
 
-//#include "runtime/function/framework/world/world_manager.h"
+#include "runtime/function/framework/world/world_manager.h"
 #include "runtime/function/global/global_context.h"
 #include "runtime/function/input/input_system.h"
-//#include "runtime/function/physics/physics_manager.h"
 #include "runtime/function/render/render_system.h"
 #include "runtime/function/render/window_system.h"
 
@@ -74,15 +73,11 @@ namespace Pilot
 
         rendererTick();
 
-#ifdef ENABLE_PHYSICS_DEBUG_RENDERER
-        g_runtime_global_context.m_physics_manager->renderPhysicsWorld(delta_time);
-#endif
-
         g_runtime_global_context.m_window_system->pollEvents();
 
 
         g_runtime_global_context.m_window_system->setTile(
-            std::string("Pilot - " + std::to_string(getFPS()) + " FPS").c_str());
+            std::string("MoYu - " + std::to_string(getFPS()) + " FPS").c_str());
 
         const bool should_window_close = g_runtime_global_context.m_window_system->shouldClose();
         return !should_window_close;

@@ -1231,6 +1231,7 @@ namespace Pilot
         static Quaternion conjugate(const Quaternion& q);
         static Quaternion inverse(const Quaternion& q);
 
+        static Quaternion fromAxes(const Vector3& x_axis, const Vector3& y_axis, const Vector3& z_axis);
         static Quaternion fromAxisAngle(const Vector3& axis, float angle);
 
         // Rotates about y-axis (yaw), then x-axis (pitch), then z-axis (roll)
