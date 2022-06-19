@@ -79,3 +79,8 @@ if(NOT TARGET DirectX-Headers)
     set_target_properties(DirectX-Headers PROPERTIES FOLDER ${third_party_folder}/DirectX-Headers-1.602.0)
     set_target_properties(DirectX-Guids PROPERTIES FOLDER ${third_party_folder}/DirectX-Guids)
 endif()
+
+if(NOT TARGET DirectStorage)
+    include(DirectStorage.cmake)
+    set_target_properties(DirectStorage PROPERTIES FOLDER ${third_party_folder}/Microsoft.Direct3D.DirectStorage.1.0.2)
+endif()

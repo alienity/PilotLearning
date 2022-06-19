@@ -61,7 +61,7 @@
 #pragma comment(lib, "d3d12.lib")
 #include <pix3.h>
 
-#include <wil/com.h>
+#include "dstorage.h"
 
 #include <cstddef>
 #include <cassert>

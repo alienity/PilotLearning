@@ -52,6 +52,7 @@ target_link_libraries(${TARGET_NAME} PRIVATE $<BUILD_INTERFACE:json11>)
 target_link_libraries(${TARGET_NAME} PUBLIC pix)
 target_link_libraries(${TARGET_NAME} PUBLIC dxc)
 target_link_libraries(${TARGET_NAME} PUBLIC DirectX-Headers)
+target_link_libraries(${TARGET_NAME} PUBLIC DirectStorage)
 target_link_libraries(${TARGET_NAME} PUBLIC d3d12.lib)
 
 if(ENABLE_PHYSICS_DEBUG_RENDERER)
