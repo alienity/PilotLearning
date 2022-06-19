@@ -54,12 +54,14 @@
 #pragma comment(lib, "dxguid.lib")
 
 // D3D12
-#include "d3d12.h"
-#include "d3dx12.h"
-#include "d3d12sdklayers.h"
-#include "d3d12shader.h"
+#include "directx/d3d12.h"
+#include "directx/d3dx12.h"
+#include "directx/d3d12sdklayers.h"
+#include "directx/d3d12shader.h"
 #pragma comment(lib, "d3d12.lib")
 #include <pix3.h>
+
+#include <wil/com.h>
 
 #include <cstddef>
 #include <cassert>

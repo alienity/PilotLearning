@@ -1,3 +1,5 @@
 #pragma once
 
-#include "runtime/core/base/system_core.h"
+#include "runtime/platform/system/system_core.h"
+
+

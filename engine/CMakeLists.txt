@@ -14,6 +14,7 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     set_property(DIRECTORY ${CMAKE_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT PilotEditor)
 endif()
 
+set(wil_include ${THIRD_PARTY_DIR}/wil/include)
 # set(vulkan_include ${THIRD_PARTY_DIR}/VulkanSDK/include)
 
 # if(WIN32)

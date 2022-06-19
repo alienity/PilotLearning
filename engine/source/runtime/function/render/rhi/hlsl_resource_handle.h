@@ -8,7 +8,7 @@ struct HlslByteAddressBuffer
         Handle(ShaderResourceView->GetIndex())
     {}
 
-    u32 Handle;
+    std::uint32_t Handle;
 };
 
 struct HlslTexture2D
@@ -16,7 +16,7 @@ struct HlslTexture2D
     HlslTexture2D() noexcept = default;
     HlslTexture2D(const RHI::D3D12ShaderResourceView* ShaderResourceView) : Handle(ShaderResourceView->GetIndex()) {}
 
-    u32 Handle;
+    std::uint32_t Handle;
 };
 
 struct HlslTexture2DArray
@@ -25,7 +25,7 @@ struct HlslTexture2DArray
     HlslTexture2DArray(const RHI::D3D12ShaderResourceView* ShaderResourceView) : Handle(ShaderResourceView->GetIndex())
     {}
 
-    u32 Handle;
+    std::uint32_t Handle;
 };
 
 struct HlslTextureCube
@@ -33,7 +33,7 @@ struct HlslTextureCube
     HlslTextureCube() noexcept = default;
     HlslTextureCube(const RHI::D3D12ShaderResourceView* ShaderResourceView) : Handle(ShaderResourceView->GetIndex()) {}
 
-    u32 Handle;
+    std::uint32_t Handle;
 };
 
 struct HlslRWTexture2D
@@ -42,10 +42,10 @@ struct HlslRWTexture2D
     HlslRWTexture2D(const RHI::D3D12UnorderedAccessView* UnorderedAccessView) : Handle(UnorderedAccessView->GetIndex())
     {}
 
-    u32 Handle;
+    std::uint32_t Handle;
 };
 
 struct HlslSamplerState
 {
-    u32 Handle;
+    std::uint32_t Handle;
 };
