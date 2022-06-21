@@ -103,4 +103,89 @@ namespace RHI
         UINT                                   NumSubresources = 0;
         CResourceState                         ResourceState;
     };
+
+    class D3D12ASBuffer : public D3D12Resource
+    {
+    public:
+        D3D12ASBuffer() noexcept = default;
+        D3D12ASBuffer(D3D12LinkedDevice* Parent, UINT64 SizeInBytes);
+
+        [[nodiscard]] D3D12_GPU_VIRTUAL_ADDRESS GetGpuVirtualAddress() const;
+    };
+
+    class D3D12Buffer : public D3D12Resource
+    {
+    public:
+        D3D12Buffer() noexcept = default;
+        D3D12Buffer(D3D12LinkedDevice*   Parent,
+                    UINT64               SizeInBytes,
+                    UINT                 Stride,
+                    D3D12_HEAP_TYPE      HeapType,
+                    D3D12_RESOURCE_FLAGS ResourceFlags);
+
+        [[nodiscard]] D3D12_GPU_VIRTUAL_ADDRESS GetGpuVirtualAddress() const;
+        [[nodiscard]] D3D12_GPU_VIRTUAL_ADDRESS GetGpuVirtualAddress(UINT Index) const;
+        [[nodiscard]] UINT                      GetStride() const { return Stride; }
+        template<typename T>
+        [[nodiscard]] T* GetCpuVirtualAddress() const
+        {
+            assert(CpuVirtualAddress && "Invalid CpuVirtualAddress");
+            return reinterpret_cast<T*>(CpuVirtualAddress);
+        }
+
+        [[nodiscard]] D3D12_VERTEX_BUFFER_VIEW GetVertexBufferView() const noexcept
+        {
+            D3D12_VERTEX_BUFFER_VIEW VertexBufferView = {};
+            VertexBufferView.BufferLocation           = Resource->GetGPUVirtualAddress();
+            VertexBufferView.SizeInBytes              = static_cast<UINT>(Desc.Width);
+            VertexBufferView.StrideInBytes            = Stride;
+            return VertexBufferView;
+        }
+
+        [[nodiscard]] D3D12_INDEX_BUFFER_VIEW
+        GetIndexBufferView(DXGI_FORMAT Format = DXGI_FORMAT_R32_UINT) const noexcept
+        {
+            D3D12_INDEX_BUFFER_VIEW IndexBufferView = {};
+            IndexBufferView.BufferLocation          = Resource->GetGPUVirtualAddress();
+            IndexBufferView.SizeInBytes             = static_cast<UINT>(Desc.Width);
+            IndexBufferView.Format                  = Format;
+            return IndexBufferView;
+        }
+
+        template<typename T>
+        void CopyData(UINT Index, const T& Data)
+        {
+            assert(CpuVirtualAddress && "Invalid CpuVirtualAddress");
+            memcpy(&CpuVirtualAddress[Index * Stride], &Data, sizeof(T));
+        }
+
+    private:
+        D3D12_HEAP_TYPE    HeapType = {};
+        UINT               Stride   = 0;
+        D3D12ScopedPointer ScopedPointer; // Upload heap
+        BYTE*              CpuVirtualAddress = nullptr;
+    };
+
+    class D3D12Texture : public D3D12Resource
+    {
+    public:
+        D3D12Texture() noexcept = default;
+        D3D12Texture(D3D12LinkedDevice*                       Parent,
+                     Microsoft::WRL::ComPtr<ID3D12Resource>&& Resource,
+                     D3D12_CLEAR_VALUE                        ClearValue,
+                     D3D12_RESOURCE_STATES                    InitialResourceState);
+        D3D12Texture(D3D12LinkedDevice*               Parent,
+                     const D3D12_RESOURCE_DESC&       Desc,
+                     std::optional<D3D12_CLEAR_VALUE> ClearValue = std::nullopt,
+                     bool                             Cubemap    = false);
+
+        [[nodiscard]] UINT GetSubresourceIndex(std::optional<UINT> OptArraySlice = std::nullopt,
+                                               std::optional<UINT> OptMipSlice   = std::nullopt,
+                                               std::optional<UINT> OptPlaneSlice = std::nullopt) const noexcept;
+
+        [[nodiscard]] bool IsCubemap() const noexcept { return Cubemap; }
+
+    private:
+        bool Cubemap = false;
+    };
 }
