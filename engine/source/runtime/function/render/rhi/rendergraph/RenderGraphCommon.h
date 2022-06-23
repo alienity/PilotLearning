@@ -1,12 +1,14 @@
 #pragma once
 #include <compare>
-#include <robin_hood.h>
-#include "System/System.h"
-#include "RHI/RHI.h"
+#include "runtime/platform/system/system_core.h"
+#include "runtime/function/render/rhi/rhi.h"
+#include "runtime/function/render/rhi/d3d12/d3d12_resource.h"
+#include "runtime/function/render/rhi/d3d12/d3d12_descriptor.h"
+#include "runtime/platform/system/hash.h"
 
 namespace RHI
 {
-	enum class RgResourceType : u64
+	enum class RgResourceType : std::uint64_t
 	{
 		Unknown,
 		Buffer,
@@ -20,53 +22,52 @@ namespace RHI
 		RaytracingPipelineState,
 	};
 
-	enum RgResourceFlags : u64
+	enum RgResourceFlags : std::uint64_t
 	{
 		RG_RESOURCE_FLAG_NONE,
 		RG_RESOURCE_FLAG_IMPORTED
 	};
 
 	// A virtual resource handle, the underlying realization of the resource type is done in RenderGraphRegistry
-	struct RgResourceHandle
-	{
-		auto operator<=>(const RgResourceHandle&) const noexcept = default;
+    struct RgResourceHandle
+    {
+        [[nodiscard]] bool IsValid() const noexcept { return Type != RgResourceType::Unknown && Id != UINT_MAX; }
+        [[nodiscard]] bool IsImported() const noexcept { return Flags & RG_RESOURCE_FLAG_IMPORTED; }
 
-		[[nodiscard]] bool IsValid() const noexcept { return Type != RgResourceType::Unknown && Id != UINT_MAX; }
-		[[nodiscard]] bool IsImported() const noexcept { return Flags & RG_RESOURCE_FLAG_IMPORTED; }
+        void Invalidate()
+        {
+            Type    = RgResourceType::Unknown;
+            Flags   = RG_RESOURCE_FLAG_NONE;
+            Version = 0;
+            Id      = UINT_MAX;
+        }
 
-		void Invalidate()
-		{
-			Type	= RgResourceType::Unknown;
-			Flags	= RG_RESOURCE_FLAG_NONE;
-			Version = 0;
-			Id		= UINT_MAX;
-		}
+        RgResourceType  Type : 15; // 14 bit to represent type, might remove some bits from this and give it to version
+        RgResourceFlags Flags : 1;
+        std::uint64_t   Version : 16; // 16 bits to represent version should be more than enough, we can always just
+                                      // increase bit used if is not enough
+        std::uint64_t   Id : 32;      // 32 bit unsigned int
+    };
 
-		RgResourceType	Type	: 15; // 14 bit to represent type, might remove some bits from this and give it to version
-		RgResourceFlags Flags	: 1;
-		u64				Version : 16; // 16 bits to represent version should be more than enough, we can always just increase bit used if is not enough
-		u64				Id		: 32; // 32 bit unsigned int
-	};
-
-	static_assert(sizeof(RgResourceHandle) == sizeof(u64));
+	static_assert(sizeof(RgResourceHandle) == sizeof(std::uint64_t));
 
 	struct RgBufferDesc
-	{
-		RgBufferDesc& SetSize(u64 SizeInBytes)
-		{
-			this->SizeInBytes = SizeInBytes;
-			return *this;
-		}
+    {
+        RgBufferDesc& SetSize(std::uint64_t SizeInBytes)
+        {
+            this->SizeInBytes = SizeInBytes;
+            return *this;
+        }
 
-		RgBufferDesc& AllowUnorderedAccess()
-		{
-			UnorderedAccess = true;
-			return *this;
-		}
+        RgBufferDesc& AllowUnorderedAccess()
+        {
+            UnorderedAccess = true;
+            return *this;
+        }
 
-		u64	 SizeInBytes	 = 0;
-		bool UnorderedAccess = false;
-	};
+        std::uint64_t SizeInBytes     = 0;
+        bool          UnorderedAccess = false;
+    };
 
 	enum class RgTextureType
 	{
@@ -78,30 +79,27 @@ namespace RHI
 
 	struct RgDepthStencilValue
 	{
-		f32 Depth;
-		u8	Stencil;
+        std::float_t Depth;
+        std::uint8_t Stencil;
 	};
 
 	struct RgClearValue
 	{
-		RgClearValue() noexcept = default;
-		constexpr RgClearValue(const f32 Color[4])
-		{
-			this->Color[0] = Color[0];
-			this->Color[1] = Color[1];
-			this->Color[2] = Color[2];
-			this->Color[3] = Color[3];
-		}
-		constexpr RgClearValue(f32 Depth, u8 Stencil)
-			: DepthStencil{ Depth, Stencil }
-		{
-		}
+        RgClearValue() noexcept = default;
+        const RgClearValue(const std::float_t Color[4])
+        {
+            this->Color[0] = Color[0];
+            this->Color[1] = Color[1];
+            this->Color[2] = Color[2];
+            this->Color[3] = Color[3];
+        }
+        const RgClearValue(std::float_t Depth, std::uint8_t Stencil) : DepthStencil {Depth, Stencil} {}
 
-		union
-		{
-			f32					Color[4];
-			RgDepthStencilValue DepthStencil;
-		};
+        union
+        {
+            std::float_t        Color[4];
+            RgDepthStencilValue DepthStencil;
+        };
 	};
 
 	struct RgTextureDesc
@@ -133,7 +131,7 @@ namespace RHI
 			return *this;
 		}
 
-		RgTextureDesc& SetExtent(u32 Width, u32 Height, u32 DepthOrArraySize = 1)
+		RgTextureDesc& SetExtent(std::uint32_t Width, std::uint32_t Height, std::uint32_t DepthOrArraySize = 1)
 		{
 			this->Width			   = Width;
 			this->Height		   = Height;
@@ -141,7 +139,7 @@ namespace RHI
 			return *this;
 		}
 
-		RgTextureDesc& SetMipLevels(u16 MipLevels)
+		RgTextureDesc& SetMipLevels(std::uint16_t MipLevels)
 		{
 			this->MipLevels = MipLevels;
 			return *this;
@@ -174,10 +172,10 @@ namespace RHI
 		std::string_view Name;
 		DXGI_FORMAT		 Format				  = DXGI_FORMAT_UNKNOWN;
 		RgTextureType	 Type				  = RgTextureType::Texture2D;
-		u32				 Width				  = 1;
-		u32				 Height				  = 1;
-		u32				 DepthOrArraySize	  = 1;
-		u16				 MipLevels			  = 1;
+        std::uint32_t    Width                = 1;
+        std::uint32_t    Height               = 1;
+        std::uint32_t    DepthOrArraySize     = 1;
+        std::uint16_t    MipLevels            = 1;
 		bool			 AllowRenderTarget	  = false;
 		bool			 AllowDepthStencil	  = false;
 		bool			 AllowUnorderedAccess = false;
@@ -196,43 +194,43 @@ namespace RHI
 
 	struct RgRtv
 	{
-		bool sRGB;
-		u32	 ArraySlice;
-		u32	 MipSlice;
-		u32	 ArraySize;
+        bool          sRGB;
+        std::uint32_t ArraySlice;
+        std::uint32_t MipSlice;
+        std::uint32_t ArraySize;
 	};
 
 	struct RgDsv
 	{
-		u32 ArraySlice;
-		u32 MipSlice;
-		u32 ArraySize;
+        std::uint32_t ArraySlice;
+        std::uint32_t MipSlice;
+        std::uint32_t ArraySize;
 	};
 
 	struct RgBufferSrv
 	{
-		bool Raw;
-		u32	 FirstElement;
-		u32	 NumElements;
+        bool          Raw;
+        std::uint32_t FirstElement;
+        std::uint32_t NumElements;
 	};
 
 	struct RgBufferUav
 	{
-		u32 NumElements;
-		u64 CounterOffsetInBytes;
+        std::uint32_t NumElements;
+        std::uint64_t CounterOffsetInBytes;
 	};
 
 	struct RgTextureSrv
 	{
-		bool sRGB;
-		u32	 MostDetailedMip;
-		u32	 MipLevels;
+        bool          sRGB;
+        std::uint32_t MostDetailedMip;
+        std::uint32_t MipLevels;
 	};
 
 	struct RgTextureUav
 	{
-		u32 ArraySlice;
-		u32 MipSlice;
+        std::uint32_t ArraySlice;
+        std::uint32_t MipSlice;
 	};
 
 	struct RgViewDesc
@@ -271,7 +269,7 @@ namespace RHI
 			return *this;
 		}
 
-		RgViewDesc& AsBufferSrv(bool Raw, u32 FirstElement, u32 NumElements)
+		RgViewDesc& AsBufferSrv(bool Raw, std::uint32_t FirstElement, std::uint32_t NumElements)
 		{
 			Type				   = RgViewType::BufferSrv;
 			BufferSrv.Raw		   = Raw;
@@ -280,7 +278,7 @@ namespace RHI
 			return *this;
 		}
 
-		RgViewDesc& AsBufferUav(u32 NumElements, u64 CounterOffsetInBytes)
+		RgViewDesc& AsBufferUav(std::uint32_t NumElements, std::uint64_t CounterOffsetInBytes)
 		{
 			Type						   = RgViewType::BufferUav;
 			BufferUav.NumElements		   = NumElements;
@@ -288,7 +286,9 @@ namespace RHI
 			return *this;
 		}
 
-		RgViewDesc& AsTextureSrv(bool sRGB = false, std::optional<u32> MostDetailedMip = std::nullopt, std::optional<u32> MipLevels = std::nullopt)
+		RgViewDesc& AsTextureSrv(bool                         sRGB            = false,
+                                 std::optional<std::uint32_t> MostDetailedMip = std::nullopt,
+                                 std::optional<std::uint32_t> MipLevels       = std::nullopt)
 		{
 			Type					   = RgViewType::TextureSrv;
 			TextureSrv.sRGB			   = sRGB;
@@ -297,7 +297,8 @@ namespace RHI
 			return *this;
 		}
 
-		RgViewDesc& AsTextureUav(std::optional<u32> ArraySlice = std::nullopt, std::optional<u32> MipSlice = std::nullopt)
+		RgViewDesc& AsTextureUav(std::optional<std::uint32_t> ArraySlice = std::nullopt,
+                                 std::optional<std::uint32_t> MipSlice   = std::nullopt)
 		{
 			Type				  = RgViewType::TextureUav;
 			TextureUav.ArraySlice = ArraySlice.value_or(-1);

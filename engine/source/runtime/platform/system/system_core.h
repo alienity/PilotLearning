@@ -10,6 +10,8 @@
 #include <cmath>
 #include <cassert>
 
+#include "robin_hood.h"
+
 // clang-format off
 // Decimal SI units
 constexpr size_t operator""_KB(size_t x) { return x * 1000; }

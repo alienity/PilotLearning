@@ -4,8 +4,11 @@
 
 #include "DgmlBuilder.h"
 #include "RenderGraphRegistry.h"
-#include "runtime/function/render/rhi/rhi.h"
 #include "runtime/platform/system/system_core.h"
+#include "runtime/platform/system/delegate.h"
+#include "runtime/function/render/rhi/rhi.h"
+#include "runtime/function/render/rhi/d3d12/d3d12_core.h"
+
 
 namespace RHI
 {
@@ -111,12 +114,7 @@ namespace RHI
         // Currently only support textures (mainly swapchain textures)
         auto Import(D3D12Texture* Texture) -> RgResourceHandle
         {
-            RgResourceHandle Handle = {.Type    = RgResourceType::Texture,
-                                       .Flags   = RG_RESOURCE_FLAG_IMPORTED,
-                                       .Version = 0,
-                                       .Id      = ImportedTextures.size()
-
-            };
+            RgResourceHandle Handle = {RgResourceType::Texture, RG_RESOURCE_FLAG_IMPORTED, 0, ImportedTextures.size()};
 
             ImportedTextures.emplace_back(Texture);
             return Handle;
@@ -127,10 +125,7 @@ namespace RHI
         {
             auto& Container = GetContainer<T>();
 
-            RgResourceHandle Handle = {.Type    = RgResourceTraits<T>::Enum,
-                                       .Flags   = RG_RESOURCE_FLAG_NONE,
-                                       .Version = 0,
-                                       .Id      = Container.size()};
+            RgResourceHandle Handle = {RgResourceTraits<T>::Enum, RG_RESOURCE_FLAG_NONE, 0, Container.size()};
 
             auto& Resource  = Container.emplace_back();
             Resource.Handle = Handle;
@@ -216,8 +211,8 @@ namespace RHI
         RenderPass*              ProloguePass;
         RenderPass*              EpiloguePass;
 
-        std::vector<std::vector<u64>> AdjacencyLists;
-        std::vector<RenderPass*>      TopologicalSortedPasses;
+        std::vector<std::vector<std::uint64_t>> AdjacencyLists;
+        std::vector<RenderPass*>                TopologicalSortedPasses;
 
         std::vector<RenderGraphDependencyLevel> DependencyLevels;
     };

@@ -84,3 +84,13 @@ if(NOT TARGET DirectStorage)
     include(DirectStorage.cmake)
     set_target_properties(DirectStorage PROPERTIES FOLDER ${third_party_folder}/Microsoft.Direct3D.DirectStorage.1.0.2)
 endif()
+
+if(NOT TARGET robin_hood_hashing)
+    include(robin_hood_hashing.cmake)
+    set_target_properties(robin_hood_hashing PROPERTIES FOLDER ${third_party_folder}/robin_hood_hashing)
+endif()
+
+if(NOT TARGET cityhash)
+    include(cityhash.cmake)
+    set_target_properties(cityhash PROPERTIES FOLDER ${third_party_folder}/cityhash)
+endif()

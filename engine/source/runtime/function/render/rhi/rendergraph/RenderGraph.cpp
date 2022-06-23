@@ -1,4 +1,5 @@
 #include "RenderGraph.h"
+#include <assert.h>
 
 namespace RHI
 {
