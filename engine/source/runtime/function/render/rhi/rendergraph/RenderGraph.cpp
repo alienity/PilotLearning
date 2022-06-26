@@ -1,5 +1,6 @@
 #include "RenderGraph.h"
 #include <assert.h>
+#include <algorithm>
 
 namespace RHI
 {
@@ -197,7 +198,7 @@ namespace RHI
 				continue;
 			}
 
-			std::vector<u64>& Indices = AdjacencyLists[i];
+			std::vector<std::uint64_t>& Indices = AdjacencyLists[i];
 
 			// Reverse iterate the render passes here, because often or not, the adjacency list should be built upon
 			// the latest changes to the render passes since those pass are more likely to change the resource we are writing to from other passes
@@ -260,7 +261,8 @@ namespace RHI
 			}
 		}
 
-		DependencyLevels.resize(*std::ranges::max_element(Distances) + 1);
+		//DependencyLevels.resize(*std::ranges::max_element(Distances) + 1);
+        DependencyLevels.resize(*std::max_element(Distances.begin(), Distances.end()) + 1);
 		for (size_t i = 0; i < TopologicalSortedPasses.size(); ++i)
 		{
 			int level = Distances[i];

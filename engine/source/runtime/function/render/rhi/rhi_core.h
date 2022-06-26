@@ -20,6 +20,8 @@
 
 #include "directx/dxgiformat.h"
 
+#include "runtime/platform/system/system_core.h"
+
 enum class RHI_VENDOR
 {
     NVIDIA = 0x10DE,

@@ -13,11 +13,12 @@ namespace Pilot
     public:
         enum class LogLevel : uint8_t
         {
-            debug,
-            info,
-            warn,
-            error,
-            fatal
+            Trace,
+            Debug,
+            Info,
+            Warn,
+            Error,
+            Fatal
         };
 
     public:
@@ -29,19 +30,22 @@ namespace Pilot
         {
             switch (level)
             {
-                case LogLevel::debug:
+                case LogLevel::Trace:
+                    m_logger->trace(std::forward<TARGS>(args)...);
+                    break;
+                case LogLevel::Debug:
                     m_logger->debug(std::forward<TARGS>(args)...);
                     break;
-                case LogLevel::info:
+                case LogLevel::Info:
                     m_logger->info(std::forward<TARGS>(args)...);
                     break;
-                case LogLevel::warn:
+                case LogLevel::Warn:
                     m_logger->warn(std::forward<TARGS>(args)...);
                     break;
-                case LogLevel::error:
+                case LogLevel::Error:
                     m_logger->error(std::forward<TARGS>(args)...);
                     break;
-                case LogLevel::fatal:
+                case LogLevel::Fatal:
                     m_logger->critical(std::forward<TARGS>(args)...);
                     fatalCallback(std::forward<TARGS>(args)...);
                     break;

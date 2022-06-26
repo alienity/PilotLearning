@@ -5,6 +5,7 @@
 #include <memory>
 #include <string>
 #include <unordered_map>
+#include <robin_hood.h>
 
 namespace Pilot
 {
@@ -13,7 +14,7 @@ namespace Pilot
     class ObjectInstanceRes;
     class PhysicsScene;
 
-    using LevelObjectsMap = std::unordered_map<GObjectID, std::shared_ptr<GObject>>;
+    using LevelObjectsMap = robin_hood::unordered_map<GObjectID, std::shared_ptr<GObject>>;
 
     /// The main class to manage all game objects
     class Level

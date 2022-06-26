@@ -10,6 +10,9 @@
 #include <cmath>
 #include <cassert>
 
+#include <mutex>
+#include <shared_mutex>
+
 #include "robin_hood.h"
 
 // clang-format off
@@ -120,7 +123,7 @@ inline void ErrorExit(LPTSTR lpszFunction)
                     lpszFunction,
                     dw,
                     lpMsgBuf);
-    MessageBox(NULL, (LPCTSTR)lpDisplayBuf, TEXT("Error"), MB_OK);
+    //MessageBox(NULL, (LPCTSTR)lpDisplayBuf, TEXT("Error"), MB_OK);
 
     LocalFree(lpMsgBuf);
     LocalFree(lpDisplayBuf);

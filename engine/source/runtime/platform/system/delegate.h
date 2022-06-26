@@ -178,8 +178,11 @@ public:
 
     Delegate(std::nullptr_t) noexcept { Reset(); }
 
+
+    //template<typename T>
+    //requires std::invocable<T, TArgs...> Delegate(T&& Lambda)
     template<typename T>
-    requires std::invocable<T, TArgs...> Delegate(T&& Lambda)
+    Delegate(T&& Lambda)
     {
         using DecayedType = std::decay_t<T>;
 
@@ -194,8 +197,10 @@ public:
         new (Object) DecayedType(std::forward<DecayedType>(Lambda));
     }
 
+    //template<typename T>
+    //requires std::invocable<T, TArgs...> Delegate& operator=(T&& Lambda)
     template<typename T>
-    requires std::invocable<T, TArgs...> Delegate& operator=(T&& Lambda)
+    Delegate& operator=(T&& Lambda)
     {
         using DecayedType = std::decay_t<T>;
 

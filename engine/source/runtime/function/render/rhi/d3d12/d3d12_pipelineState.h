@@ -94,7 +94,7 @@ namespace RHI
 
     private:
         mutable Microsoft::WRL::ComPtr<ID3D12PipelineState> PipelineState;
-        mutable Microsoft::WRL::ComPtr<ID3D12PipelineState> CompilationWork;
+        //mutable AsyncTask<Microsoft::WRL::ComPtr<ID3D12PipelineState>> CompilationWork;
     };
 
     struct DxilLibrary

@@ -193,5 +193,15 @@ namespace RHI
         } Cache = {};
     };
 
+    class D3D12ScopedEventObject
+    {
+    public:
+        D3D12ScopedEventObject(D3D12CommandContext& CommandContext, std::string_view Name);
 
+    private:
+        D3D12ProfileBlock ProfileBlock;
+#ifdef _DEBUG
+        PIXScopedEventObject<ID3D12GraphicsCommandList> PixEvent;
+#endif
+    };
 }

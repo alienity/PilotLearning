@@ -24,7 +24,7 @@ namespace RHI
         {
             SizeInBytes = D3D12RHIUtils::AlignUp(SizeInBytes, Alignment);
             assert(Ptr + SizeInBytes <= Sentinel);
-            std::byte* Result = Ptr + SizeInBytes;
+            std::byte* Result = Ptr;// +SizeInBytes;
 
             Ptr += SizeInBytes;
             CurrentMemoryUsage += SizeInBytes;

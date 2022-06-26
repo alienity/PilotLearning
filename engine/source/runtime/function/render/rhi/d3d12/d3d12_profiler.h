@@ -71,13 +71,13 @@ namespace RHI
         void StartTiming(D3D12CommandQueue* CommandQueue, ID3D12GraphicsCommandList* CommandList);
         void EndTiming(ID3D12GraphicsCommandList* CommandList);
 
-        D3D12Profiler*                                        Profiler;
-        INT                                                   Depth;
-        std::string_view                                      Name;
-        UINT                                                  Index = UINT_MAX;
-        D3D12EventNode*                                       Parent;
-        std::vector<D3D12EventNode*>                          Children;
-        std::unordered_map<std::string_view, D3D12EventNode*> Lut;
+        D3D12Profiler*                                               Profiler;
+        INT                                                          Depth;
+        std::string_view                                             Name;
+        UINT                                                         Index = UINT_MAX;
+        D3D12EventNode*                                              Parent;
+        std::vector<D3D12EventNode*>                                 Children;
+        robin_hood::unordered_map<std::string_view, D3D12EventNode*> Lut;
     };
 
     class D3D12Profiler : public D3D12LinkedDeviceChild

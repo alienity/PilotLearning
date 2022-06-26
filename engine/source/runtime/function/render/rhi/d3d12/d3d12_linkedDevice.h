@@ -74,8 +74,8 @@ namespace RHI
 
         struct ResourceAllocationInfoTable
         {
-            std::shared_mutex                                                 Mutex;
-            std::unordered_map<std::uint64_t, D3D12_RESOURCE_ALLOCATION_INFO> Table;
+            std::shared_mutex                                                        Mutex;
+            robin_hood::unordered_map<std::uint64_t, D3D12_RESOURCE_ALLOCATION_INFO> Table;
         } mutable ResourceAllocationInfoTable;
 
         D3D12SyncHandle                                     UploadSyncHandle;

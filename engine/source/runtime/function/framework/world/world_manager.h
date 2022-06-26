@@ -34,7 +34,7 @@ namespace Pilot
         std::shared_ptr<WorldRes> m_current_world_resource;
 
         // all loaded levels, key: level url, vaule: level instance
-        std::unordered_map<std::string, std::shared_ptr<Level>> m_loaded_levels;
+        robin_hood::unordered_map<std::string, std::shared_ptr<Level>> m_loaded_levels;
         // active level, currently we just support one active level
         std::weak_ptr<Level> m_current_active_level;
     };
