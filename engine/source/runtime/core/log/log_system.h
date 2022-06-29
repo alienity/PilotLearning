@@ -57,8 +57,9 @@ namespace Pilot
         template<typename... TARGS>
         void fatalCallback(TARGS&&... args)
         {
-            const std::string format_str = fmt::format(std::forward<TARGS>(args)...);
-            throw std::runtime_error(format_str);
+            //std::wstring format_str = fmt::format(std::forward<TARGS>(args)...);
+            //string out_str(format_str.begin(), format_str.end());
+            //throw std::runtime_error(out_str);
         }
 
     private:

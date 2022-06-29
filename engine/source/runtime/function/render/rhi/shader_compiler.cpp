@@ -59,7 +59,7 @@ Shader ShaderCompiler::CompileShader(RHI_SHADER_TYPE              ShaderType,
     Defines.reserve(Options.Defines.size());
     for (const auto& Define : Options.Defines)
     {
-        Defines.emplace_back(Define.first.data(), Define.second.data());
+        Defines.emplace_back(DxcDefine {Define.first.data(), Define.second.data()});
     }
 
     ShaderCompilationResult Result = Compile(Path, Options.EntryPoint, ProfileString.data(), Defines);

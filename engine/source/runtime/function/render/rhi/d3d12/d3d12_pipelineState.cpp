@@ -245,6 +245,8 @@ namespace RHI
 
             return Compile<D3D12_COMPUTE_PIPELINE_STATE_DESC>(Device, Name, Desc);
         }
+
+        return nullptr;
     }
 
     template<typename TDesc>
@@ -252,7 +254,8 @@ namespace RHI
     D3D12PipelineState::Compile(D3D12Device* Device, const std::wstring& Name, TDesc& Desc)
     {
         ScopedTimer Timer([&](std::int64_t Milliseconds) {
-            LOG_INFO("Thread: {} has finished compiling PSO: {} in {}ms", GetCurrentThreadId(), Name, Milliseconds);
+            //LOG_INFO(
+            //    L"Thread: {} has finished compiling PSO: {} in {}ms", GetCurrentThreadId(), Name.c_str(), Milliseconds);
         });
 
         ID3D12Device2* Device2 = Device->GetD3D12Device5();

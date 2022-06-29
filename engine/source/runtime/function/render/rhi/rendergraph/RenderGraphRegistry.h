@@ -90,7 +90,7 @@ namespace RHI
 		}
 
 	private:
-		bool IsViewDirty(const RgView& View);
+		bool IsViewDirty(RgView& View);
 
 	private:
 		RenderGraph*					Graph = nullptr;

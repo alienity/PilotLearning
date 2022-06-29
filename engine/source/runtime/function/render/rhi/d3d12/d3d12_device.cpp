@@ -196,8 +196,8 @@ namespace RHI
                             Node->pCommandListDebugNameW ? Node->pCommandListDebugNameW : L"<unknown>";
                         auto CommandQueueName =
                             Node->pCommandQueueDebugNameW ? Node->pCommandQueueDebugNameW : L"<unknown>";
-                        LOG_ERROR("({0} Commandlist {1} on CommandQueue {2}, {3} completed of {4})",
-                                  "[DRED]",
+                        LOG_ERROR(L"({0} Commandlist {1} on CommandQueue {2}, {3} completed of {4})",
+                                  L"[DRED]",
                                   CommandListName,
                                   CommandQueueName,
                                   LastCompletedOp,
@@ -209,7 +209,7 @@ namespace RHI
                         for (INT32 Op = FirstOp; Op <= LastOp; ++Op)
                         {
                             D3D12_AUTO_BREADCRUMB_OP BreadcrumbOp = Node->pCommandHistory[Op];
-                            LOG_ERROR("(    Op: {0:d}, {1} {2})",
+                            LOG_ERROR(L"(    Op: {0:d}, {1} {2})",
                                       Op,
                                       GetAutoBreadcrumbOpString(BreadcrumbOp),
                                       Op + 1 == LastCompletedOp ? TEXT("- Last completed") : TEXT(""));
@@ -219,24 +219,24 @@ namespace RHI
 
                 if (SUCCEEDED(Dred->GetPageFaultAllocationOutput(&PageFaultOutput)))
                 {
-                    LOG_ERROR("[DRED] PageFault at VA GPUAddress: {0:x};", PageFaultOutput.PageFaultVA);
+                    LOG_ERROR(L"[DRED] PageFault at VA GPUAddress: {0:x};", PageFaultOutput.PageFaultVA);
 
-                    LOG_ERROR("[DRED] Active objects with VA ranges that match the faulting VA:");
+                    LOG_ERROR(L"[DRED] Active objects with VA ranges that match the faulting VA:");
                     for (const D3D12_DRED_ALLOCATION_NODE* Node = PageFaultOutput.pHeadExistingAllocationNode; Node;
                          Node                                   = Node->pNext)
                     {
                         auto ObjectName = Node->ObjectNameW ? Node->ObjectNameW : L"<unknown>";
                         LOG_ERROR(
-                            "    Name: {} (Type: {})", ObjectName, GetDredAllocationTypeString(Node->AllocationType));
+                            L"    Name: {} (Type: {})", ObjectName, GetDredAllocationTypeString(Node->AllocationType));
                     }
 
-                    LOG_ERROR("[DRED] Recent freed objects with VA ranges that match the faulting VA:");
+                    LOG_ERROR(L"[DRED] Recent freed objects with VA ranges that match the faulting VA:");
                     for (const D3D12_DRED_ALLOCATION_NODE* Node = PageFaultOutput.pHeadRecentFreedAllocationNode; Node;
                          Node                                   = Node->pNext)
                     {
                         auto ObjectName = Node->ObjectNameW ? Node->ObjectNameW : L"<unknown>";
                         LOG_ERROR(
-                            "    Name: {} (Type: {})", ObjectName, GetDredAllocationTypeString(Node->AllocationType));
+                            L"    Name: {} (Type: {})", ObjectName, GetDredAllocationTypeString(Node->AllocationType));
                     }
                 }
             }

@@ -49,7 +49,7 @@ namespace RHI
 
 		for (size_t i = 0; i < Graph->Textures.size(); ++i)
 		{
-			const auto&		 RgTexture = Graph->Textures[i];
+			auto&		 RgTexture = Graph->Textures[i];
 			RgResourceHandle Handle	   = RgTexture.Handle;
 			assert(!Handle.IsImported());
 
@@ -71,7 +71,7 @@ namespace RHI
 			}
 
 			TextureDirtyHandles.insert(Handle);
-			const RgTextureDesc& Desc = RgTexture.Desc;
+			RgTextureDesc& Desc = RgTexture.Desc;
 
 			D3D12_RESOURCE_DESC				 ResourceDesc  = {};
 			D3D12_RESOURCE_FLAGS			 ResourceFlags = D3D12_RESOURCE_FLAG_NONE;
@@ -117,7 +117,7 @@ namespace RHI
 
 		for (size_t i = 0; i < Graph->RenderTargetViews.size(); ++i)
 		{
-			const auto& RgView = Graph->RenderTargetViews[i];
+			auto& RgView = Graph->RenderTargetViews[i];
 			if (!IsViewDirty(RgView) && !TextureDirtyHandles.contains(RgView.Desc.AssociatedResource))
 			{
 				continue;
@@ -138,7 +138,7 @@ namespace RHI
 
 		for (size_t i = 0; i < Graph->DepthStencilViews.size(); ++i)
 		{
-			const auto& RgView = Graph->DepthStencilViews[i];
+			auto& RgView = Graph->DepthStencilViews[i];
 			if (!IsViewDirty(RgView) && !TextureDirtyHandles.contains(RgView.Desc.AssociatedResource))
 			{
 				continue;
@@ -159,7 +159,7 @@ namespace RHI
 
 		for (size_t i = 0; i < Graph->ShaderResourceViews.size(); ++i)
 		{
-			const auto& RgView = Graph->ShaderResourceViews[i];
+			auto& RgView = Graph->ShaderResourceViews[i];
 			if (!IsViewDirty(RgView) && !TextureDirtyHandles.contains(RgView.Desc.AssociatedResource))
 			{
 				continue;
@@ -190,7 +190,7 @@ namespace RHI
 
 		for (size_t i = 0; i < Graph->UnorderedAccessViews.size(); ++i)
 		{
-			const auto& RgView = Graph->UnorderedAccessViews[i];
+			auto& RgView = Graph->UnorderedAccessViews[i];
 			if (!IsViewDirty(RgView) && !TextureDirtyHandles.contains(RgView.Desc.AssociatedResource))
 			{
 				continue;
@@ -225,7 +225,7 @@ namespace RHI
 		return Graph->ImportedTextures[Handle.Id];
 	}
 
-	bool RenderGraphRegistry::IsViewDirty(const RgView& View)
+	bool RenderGraphRegistry::IsViewDirty(RgView& View)
 	{
 		RgResourceHandle Handle = View.Handle; // View andle
 

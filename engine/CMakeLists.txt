@@ -26,7 +26,7 @@ set(wil_include ${THIRD_PARTY_DIR}/wil/include)
 # endif()
 
 
-set(SHADER_COMPILE_TARGET PilotShaderCompile)
+# set(SHADER_COMPILE_TARGET PilotShaderCompile)
 add_subdirectory(shader)
 
 add_subdirectory(3rdparty)

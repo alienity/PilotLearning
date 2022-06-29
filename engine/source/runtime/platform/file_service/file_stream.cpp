@@ -68,7 +68,7 @@ namespace Pilot
             DWORD NumberOfBytesToWrite = static_cast<DWORD>(SizeInBytes);
             if (!WriteFile(Handle.get(), Buffer, NumberOfBytesToWrite, &NumberOfBytesWritten, nullptr))
             {
-                char actionStr[] = "WriteFile";
+                wchar_t actionStr[] = L"WriteFile";
                 ErrorExit(actionStr);
             }
 

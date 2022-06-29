@@ -33,6 +33,15 @@ namespace RHI
         [[nodiscard]] bool IsValid() const noexcept { return Type != RgResourceType::Unknown && Id != UINT_MAX; }
         [[nodiscard]] bool IsImported() const noexcept { return Flags & RG_RESOURCE_FLAG_IMPORTED; }
 
+		[[nodiscard]] bool operator==(const RgResourceHandle& rhs) const noexcept
+        {
+            return Hash::Hash64(this, sizeof(RgResourceHandle)) == Hash::Hash64(&rhs, sizeof(RgResourceHandle));
+        }
+        [[nodiscard]] bool operator!=(const RgResourceHandle& rhs) const noexcept
+        {
+            return Hash::Hash64(this, sizeof(RgResourceHandle)) != Hash::Hash64(&rhs, sizeof(RgResourceHandle));
+        }
+
         void Invalidate()
         {
             Type    = RgResourceType::Unknown;

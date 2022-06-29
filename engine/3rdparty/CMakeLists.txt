@@ -26,6 +26,7 @@ if(NOT TARGET glfw)
 endif()
 
 if(NOT TARGET spdlog)
+	option(SPDLOG_WCHAR_SUPPORT "" ON)
     option(SPDLOG_BUILD_EXAMPLE "" OFF)
     option(SPDLOG_INSTALL "" OFF)
     add_subdirectory(spdlog)
