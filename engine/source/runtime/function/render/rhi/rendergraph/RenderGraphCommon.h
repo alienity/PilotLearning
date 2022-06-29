@@ -1,5 +1,4 @@
 #pragma once
-#include <compare>
 #include "runtime/platform/system/system_core.h"
 #include "runtime/function/render/rhi/rhi.h"
 #include "runtime/function/render/rhi/d3d12/d3d12_resource.h"

@@ -2,7 +2,7 @@
 
 #include "runtime/function/render/render_camera.h"
 #include "runtime/function/render/render_object.h"
-#include "runtime/resource/res_type/global/global_rendering.h"
+//#include "runtime/resource/res_type/global/global_rendering.h"
 
 #include <cstdint>
 #include <deque>
@@ -13,8 +13,8 @@ namespace Pilot
 {
     struct LevelIBLResourceDesc
     {
-        SkyBoxIrradianceMap m_skybox_irradiance_map;
-        SkyBoxSpecularMap   m_skybox_specular_map;
+        //SkyBoxIrradianceMap m_skybox_irradiance_map;
+        //SkyBoxSpecularMap   m_skybox_specular_map;
         std::string         m_brdf_map;
     };
 

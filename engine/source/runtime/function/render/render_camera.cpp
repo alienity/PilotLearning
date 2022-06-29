@@ -53,27 +53,27 @@ namespace Pilot
 
         // model rotation
         // maps vectors to camera space (x, y, z)
-        Vector3 forward = (target - position).normalisedCopy();
-        m_rotation      = forward.getRotationTo(Y);
+        Vector3 forward = Vector3::normalize(position - target);
+        m_rotation      = Quaternion::fromToRotation(forward, Z);
 
         // correct the up vector
         // the cross product of non-orthogonal vectors is not normalized
-        Vector3 right  = forward.crossProduct(up.normalisedCopy()).normalisedCopy();
-        Vector3 orthUp = right.crossProduct(forward);
+        Vector3 right  = Vector3::normalize(Vector3::cross(Vector3::normalize(up), forward));
+        Vector3 orthUp = Vector3::cross(forward, right);
 
-        Quaternion upRotation = (m_rotation * orthUp).getRotationTo(Z);
+        Quaternion upRotation = Quaternion::fromToRotation(m_rotation * orthUp, Y);
 
-        m_rotation = Quaternion(upRotation) * m_rotation;
+        m_rotation = upRotation * m_rotation;
 
         // inverse of the model rotation
         // maps camera space vectors to model vectors
-        m_invRotation = m_rotation.conjugate();
+        m_invRotation = Quaternion::conjugate(m_rotation);
     }
 
     Matrix4x4 RenderCamera::getViewMatrix()
     {
         std::lock_guard<std::mutex> lock_guard(m_view_matrix_mutex);
-        auto                        view_matrix = Matrix4x4::IDENTITY;
+        auto                        view_matrix = Matrix4x4::Identity;
         switch (m_current_camera_type)
         {
             case RenderCameraType::Editor:
@@ -90,8 +90,7 @@ namespace Pilot
 
     Matrix4x4 RenderCamera::getPersProjMatrix() const
     {
-        Matrix4x4 fix_mat(1, 0, 0, 0, 0, -1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1);
-        Matrix4x4 proj_mat = fix_mat * Math::makePerspectiveMatrix(Radian(Degree(m_fovy)), m_aspect, m_znear, m_zfar);
+        Matrix4x4 proj_mat = Math::makePerspectiveMatrix(Radian(Degree(m_fovy)), m_aspect, m_znear, m_zfar);
 
         return proj_mat;
     }
@@ -104,6 +103,6 @@ namespace Pilot
         // 1 / tan(fovy * 0.5) = aspect / tan(fovx * 0.5)
         // tan(fovy * 0.5) = tan(fovx * 0.5) / aspect
 
-        m_fovy = Radian(Math::atan(Math::tan(Radian(Degree(m_fovx) * 0.5f)) / m_aspect) * 2.0f).valueDegrees();
+        m_fovy = Radian(Math::atan(Math::tan(Radian(Degree(m_fovx) * 0.5f).valueRadians()) / m_aspect) * 2.0f).valueDegrees();
     }
 } // namespace Pilot

@@ -166,8 +166,8 @@ namespace RHI
         }
     }
 
-    void D3D12CommandContext::ClearRenderTarget(std::vector<D3D12RenderTargetView* const> RenderTargetViews,
-                                                D3D12DepthStencilView*                    DepthStencilView)
+    void D3D12CommandContext::ClearRenderTarget(std::vector<D3D12RenderTargetView*> RenderTargetViews,
+                                                D3D12DepthStencilView*              DepthStencilView)
     {
         // Transition
         for (const auto& RenderTargetView : RenderTargetViews)
@@ -218,8 +218,8 @@ namespace RHI
         }
     }
 
-    void D3D12CommandContext::SetRenderTarget(std::vector<D3D12RenderTargetView* const> RenderTargetViews,
-                                              D3D12DepthStencilView*                    DepthStencilView)
+    void D3D12CommandContext::SetRenderTarget(std::vector<D3D12RenderTargetView*> RenderTargetViews,
+                                              D3D12DepthStencilView*              DepthStencilView)
     {
         UINT                        NumRenderTargetDescriptors = static_cast<UINT>(RenderTargetViews.size());
         D3D12_CPU_DESCRIPTOR_HANDLE pRenderTargetDescriptors[D3D12_SIMULTANEOUS_RENDER_TARGET_COUNT] = {};
@@ -250,7 +250,7 @@ namespace RHI
         CommandListHandle->RSSetViewports(Cache.Graphics.NumViewports, Cache.Graphics.Viewports);
     }
 
-    void D3D12CommandContext::SetViewports(std::vector<const RHIViewport> Viewports)
+    void D3D12CommandContext::SetViewports(std::vector<RHIViewport> Viewports)
     {
         Cache.Graphics.NumViewports = static_cast<UINT>(Viewports.size());
         UINT ViewportIndex          = 0;
@@ -274,7 +274,7 @@ namespace RHI
         CommandListHandle->RSSetScissorRects(Cache.Graphics.NumScissorRects, Cache.Graphics.ScissorRects);
     }
 
-	void D3D12CommandContext::SetScissorRects(std::vector<const RHIRect> ScissorRects)
+	void D3D12CommandContext::SetScissorRects(std::vector<RHIRect> ScissorRects)
     {
         Cache.Graphics.NumScissorRects = static_cast<UINT>(ScissorRects.size());
         UINT ScissorRectIndex          = 0;

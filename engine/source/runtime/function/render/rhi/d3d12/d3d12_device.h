@@ -103,7 +103,7 @@ namespace RHI
         template<typename T>
         Microsoft::WRL::ComPtr<T> DeviceQueryInterface()
         {
-            Arc<T> Interface;
+            Microsoft::WRL::ComPtr<T> Interface;
             VERIFY_D3D12_API(Device->QueryInterface(IID_PPV_ARGS(&Interface)));
             return Interface;
         }

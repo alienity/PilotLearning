@@ -14,20 +14,21 @@
 
 #include <algorithm>
 #include <cassert>
-#include <cmath>
 #include <limits>
 #include <random>
 
 #define CMP(x, y) (fabsf(x - y) < FLT_EPSILON * fmaxf(1.0f, fmaxf(fabsf(x), fabsf(y))))
 
-#define PILOT_MIN(x, y) (((x) < (y)) ? (x) : (y))
-#define PILOT_MAX(x, y) (((x) > (y)) ? (x) : (y))
-#define PILOT_PIN(a, min_value, max_value) PILOT_MIN(max_value, PILOT_MAX(a, min_value))
+#define MOYU_MIN(x, y) (((x) < (y)) ? (x) : (y))
+#define MOYU_MIN3(x, y, z) MOYU_MIN(MOYU_MIN(x, y), z)
+#define MOYU_MAX(x, y) (((x) > (y)) ? (x) : (y))
+#define MOYU_MAX3(x, y, z) MOYU_MAX(MOYU_MAX(x, y), z)
+#define MOYU_PIN(a, min_value, max_value) MOYU_MIN(max_value, PILOT_MAX(a, min_value))
 
-#define PILOT_VALID_INDEX(idx, range) (((idx) >= 0) && ((idx) < (range)))
-#define PILOT_PIN_INDEX(idx, range) PILOT_PIN(idx, 0, (range)-1)
+#define MOYU_VALID_INDEX(idx, range) (((idx) >= 0) && ((idx) < (range)))
+#define MOYU_PIN_INDEX(idx, range) PILOT_PIN(idx, 0, (range)-1)
 
-#define PILOT_SIGN(x) ((((x) > 0.0f) ? 1.0f : 0.0f) + (((x) < 0.0f) ? -1.0f : 0.0f))
+#define MOYU_SIGN(x) ((((x) > 0.0f) ? 1.0f : 0.0f) + (((x) < 0.0f) ? -1.0f : 0.0f))
 
 namespace Pilot
 {
@@ -255,8 +256,7 @@ namespace Pilot
         static float invSqrt(float value) { return 1.f / sqrt(value); }
         static bool  realEqual(float a, float b, float tolerance = std::numeric_limits<float>::epsilon());
         static float clamp(float v, float min, float max) { return std::clamp(v, min, max); }
-        static float getMaxElement(float x, float y, float z) { return std::max({x, y, z}); }
-
+        
         static float degreesToRadians(float degrees);
         static float radiansToDegrees(float radians);
         static float angleUnitsToRadians(float units);
@@ -271,30 +271,6 @@ namespace Pilot
         static float asin(float value);
         static float atan(float value) { return std::atan(value); }
         static float atan2(float y_v, float x_v) { return std::atan2(y_v, x_v); }
-
-        template<class T>
-        static constexpr T max(const T A, const T B)
-        {
-            return std::max(A, B);
-        }
-
-        template<class T>
-        static constexpr T min(const T A, const T B)
-        {
-            return std::min(A, B);
-        }
-
-        template<class T>
-        static constexpr T max3(const T A, const T B, const T C)
-        {
-            return std::max({A, B, C});
-        }
-
-        template<class T>
-        static constexpr T min3(const T A, const T B, const T C)
-        {
-            return std::min({A, B, C});
-        }
 
         static Matrix4x4 makeViewMatrix(const Vector3&    position,
                                         const Quaternion& orientation);
