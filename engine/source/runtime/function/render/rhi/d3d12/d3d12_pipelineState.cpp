@@ -251,8 +251,8 @@ namespace RHI
     Microsoft::WRL::ComPtr<ID3D12PipelineState>
     D3D12PipelineState::Compile(D3D12Device* Device, const std::wstring& Name, TDesc& Desc)
     {
-        ScopedTimer Timer([&](i64 Milliseconds) {
-            LOG_INFO(L"Thread: {} has finished compiling PSO: {} in {}ms", GetCurrentThreadId(), Name, Milliseconds);
+        ScopedTimer Timer([&](std::int64_t Milliseconds) {
+            LOG_INFO("Thread: {} has finished compiling PSO: {} in {}ms", GetCurrentThreadId(), Name, Milliseconds);
         });
 
         ID3D12Device2* Device2 = Device->GetD3D12Device5();

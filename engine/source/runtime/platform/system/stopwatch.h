@@ -40,9 +40,9 @@ public:
     ScopedTimer(TCallback&& Callback) : Callback(std::move(Callback)), Start(Stopwatch::GetTimestamp()) {}
     ~ScopedTimer()
     {
-        i64 End                 = Stopwatch::GetTimestamp();
-        i64 Elapsed             = End - Start;
-        i64 ElapsedMilliseconds = Elapsed * 1000 / Stopwatch::Frequency;
+        std::int64_t End                 = Stopwatch::GetTimestamp();
+        std::int64_t Elapsed             = End - Start;
+        std::int64_t ElapsedMilliseconds = Elapsed * 1000 / Stopwatch::Frequency;
         Callback(ElapsedMilliseconds);
     }
 

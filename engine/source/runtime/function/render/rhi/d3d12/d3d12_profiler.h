@@ -103,7 +103,7 @@ namespace RHI
 
     public:
         // Read only
-        std::vector<ProfileData*> Data;
+        std::vector<ProfileData> Data;
 
     private:
         UINT StartProfile(ID3D12GraphicsCommandList* CommandList, std::string_view Name, INT Depth, UINT64 Frequency);

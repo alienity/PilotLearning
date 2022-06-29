@@ -227,7 +227,7 @@ namespace RHI
                     {
                         auto ObjectName = Node->ObjectNameW ? Node->ObjectNameW : L"<unknown>";
                         LOG_ERROR(
-                            L"    Name: {} (Type: {})", ObjectName, GetDredAllocationTypeString(Node->AllocationType));
+                            "    Name: {} (Type: {})", ObjectName, GetDredAllocationTypeString(Node->AllocationType));
                     }
 
                     LOG_ERROR("[DRED] Recent freed objects with VA ranges that match the faulting VA:");
@@ -236,7 +236,7 @@ namespace RHI
                     {
                         auto ObjectName = Node->ObjectNameW ? Node->ObjectNameW : L"<unknown>";
                         LOG_ERROR(
-                            L"    Name: {} (Type: {})", ObjectName, GetDredAllocationTypeString(Node->AllocationType));
+                            "    Name: {} (Type: {})", ObjectName, GetDredAllocationTypeString(Node->AllocationType));
                     }
                 }
             }
