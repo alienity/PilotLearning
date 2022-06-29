@@ -170,9 +170,9 @@ namespace RHI
                                                 D3D12DepthStencilView*              DepthStencilView)
     {
         // Transition
-        for (const auto& RenderTargetView : RenderTargetViews)
+        for (auto& RenderTargetView : RenderTargetViews)
         {
-            const auto& ViewSubresourceSubset = RenderTargetView->GetViewSubresourceSubset();
+            auto& ViewSubresourceSubset = RenderTargetView->GetViewSubresourceSubset();
             for (auto Iter = ViewSubresourceSubset.begin(); Iter != ViewSubresourceSubset.end(); ++Iter)
             {
                 for (UINT SubresourceIndex = Iter.StartSubresource(); SubresourceIndex < Iter.EndSubresource();
@@ -185,7 +185,7 @@ namespace RHI
         }
         if (DepthStencilView)
         {
-            const auto& ViewSubresourceSubset = DepthStencilView->GetViewSubresourceSubset();
+            auto& ViewSubresourceSubset = DepthStencilView->GetViewSubresourceSubset();
             for (auto Iter = ViewSubresourceSubset.begin(); Iter != ViewSubresourceSubset.end(); ++Iter)
             {
                 for (UINT SubresourceIndex = Iter.StartSubresource(); SubresourceIndex < Iter.EndSubresource();
@@ -198,7 +198,7 @@ namespace RHI
         }
 
         // Clear
-        for (const auto& RenderTargetView : RenderTargetViews)
+        for (auto& RenderTargetView : RenderTargetViews)
         {
             D3D12_CLEAR_VALUE ClearValue = RenderTargetView->GetResource()->GetClearValue();
             CommandListHandle->ClearRenderTargetView(RenderTargetView->GetCpuHandle(), ClearValue.Color, 0, nullptr);
@@ -254,7 +254,7 @@ namespace RHI
     {
         Cache.Graphics.NumViewports = static_cast<UINT>(Viewports.size());
         UINT ViewportIndex          = 0;
-        for (const auto& Viewport : Viewports)
+        for (auto& Viewport : Viewports)
         {
             Cache.Graphics.Viewports[ViewportIndex++] = CD3DX12_VIEWPORT(Viewport.TopLeftX,
                                                                          Viewport.TopLeftY,
@@ -278,7 +278,7 @@ namespace RHI
     {
         Cache.Graphics.NumScissorRects = static_cast<UINT>(ScissorRects.size());
         UINT ScissorRectIndex          = 0;
-        for (const auto& ScissorRect : ScissorRects)
+        for (auto& ScissorRect : ScissorRects)
         {
             Cache.Graphics.ScissorRects[ScissorRectIndex++] =
                 CD3DX12_RECT(ScissorRect.Left, ScissorRect.Top, ScissorRect.Right, ScissorRect.Bottom);

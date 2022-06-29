@@ -33,8 +33,8 @@ namespace RHI
 
         void WaitIdle() { HostWaitForValue(Signal()); }
 
-        D3D12SyncHandle ExecuteCommandLists(std::vector<D3D12CommandListHandle* const> CommandListHandles,
-                                            bool                                       WaitForCompletion);
+        D3D12SyncHandle ExecuteCommandLists(std::vector<D3D12CommandListHandle*> CommandListHandles,
+                                            bool                                 WaitForCompletion);
 
     private:
         [[nodiscard]] bool ResolveResourceBarrierCommandList(D3D12CommandListHandle* CommandListHandle);
