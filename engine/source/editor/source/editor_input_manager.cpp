@@ -54,7 +54,7 @@ namespace Pilot
     {
         float           camera_speed  = m_camera_speed;
         std::shared_ptr editor_camera = g_editor_global_context.m_scene_manager->getEditorCamera();
-        Quaternion      camera_rotate = editor_camera->rotation().inverse();
+        Quaternion      camera_rotate = Quaternion::inverse(editor_camera->rotation());
         Vector3         camera_relative_pos(0, 0, 0);
 
         if ((unsigned int)EditorCommand::camera_foward & m_editor_command)
@@ -191,7 +191,7 @@ namespace Pilot
             return;
 
         float angularVelocity =
-            180.0f / Math::max(m_engine_window_size.x, m_engine_window_size.y); // 180 degrees while moving full screen
+            180.0f / MOYU_MAX(m_engine_window_size.x, m_engine_window_size.y); // 180 degrees while moving full screen
         if (m_mouse_x >= 0.0f && m_mouse_y >= 0.0f)
         {
             if (g_editor_global_context.m_window_system->isMouseButtonDown(GLFW_MOUSE_BUTTON_RIGHT))

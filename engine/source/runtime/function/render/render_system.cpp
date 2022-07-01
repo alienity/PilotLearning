@@ -24,4 +24,20 @@ namespace Pilot
 
     }
 
+    void RenderSystem::swapLogicRenderData()
+    {
+
+    }
+
+    RenderSwapContext& RenderSystem::getSwapContext() 
+    { 
+        return m_swap_context;
+    }
+
+    std::shared_ptr<RenderCamera> RenderSystem::getRenderCamera() const
+    {
+        return nullptr;
+    }
+
+
 } // namespace Pilot

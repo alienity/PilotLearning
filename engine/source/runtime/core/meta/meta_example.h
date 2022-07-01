@@ -1,6 +1,7 @@
 #pragma once
 
 #include "runtime/core/meta/reflection/reflection.h"
+#include "runtime/core/math/moyu_math.h"
 
 namespace Pilot
 {
@@ -12,6 +13,7 @@ namespace Pilot
     public:
         int               m_int;
         std::vector<int*> m_int_vector;
+        Matrix4x4_        m_float_mat;
     };
 
     REFLECTION_TYPE(Test1)

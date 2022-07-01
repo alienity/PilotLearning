@@ -7,17 +7,21 @@
 
 #include "runtime/core/base/macro.h"
 
-#include "engine.h"
+#include "runtime/engine.h"
 
 using namespace Pilot;
 
 void metaExample()
 {
+    g_runtime_global_context.startSystems("");
+
     Test1 test1_in;
     test1_in.m_int  = 12;
     test1_in.m_char = 'g';
     int i           = 1;
     test1_in.m_int_vector.emplace_back(&i);
+
+    test1_in.m_float_mat = (Matrix4x4::Identity * 5).toMatrix4x4_();
 
     Test1 test1_out;
     // test on array
@@ -80,14 +84,28 @@ void metaExample()
             }
         }
     }
+
+    g_runtime_global_context.shutdownSystems();
 }
 
-int main()
+int main(int argc, char** argv)
 {
+    /*
+    std::filesystem::path executable_path(argv[0]);
+    std::filesystem::path config_file_path = executable_path.parent_path() / "PilotEditor.ini";
 
+    Pilot::PilotEngine* engine = new Pilot::PilotEngine();
 
-    //metaExample();
+    engine->startEngine(config_file_path.generic_string());
+    engine->initialize();
 
-	std::cout << "Hello" << std::endl;
-	return 1;
+    engine->run();
+
+    engine->clear();
+    engine->shutdownEngine();
+    */
+
+    metaExample();
+
+	return 0;
 }

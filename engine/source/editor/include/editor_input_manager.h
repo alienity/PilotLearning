@@ -1,6 +1,6 @@
 #pragma once
 
-#include "runtime/core/math/vector2.h"
+#include "runtime/core/math/moyu_math.h"
 
 #include "runtime/function/render/render_camera.h"
 

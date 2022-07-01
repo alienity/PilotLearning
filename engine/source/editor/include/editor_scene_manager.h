@@ -65,7 +65,7 @@ namespace Pilot
         EditorScaleAxis       m_scale_aixs;
 
         GObjectID m_selected_gobject_id{ k_invalid_gobject_id };
-        Matrix4x4 m_selected_object_matrix{ Matrix4x4::IDENTITY };
+        Matrix4x4 m_selected_object_matrix{ Matrix4x4::Identity };
 
         EditorAxisMode m_axis_mode{ EditorAxisMode::TranslateMode };
         std::shared_ptr<RenderCamera> m_camera;

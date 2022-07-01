@@ -67,9 +67,9 @@ namespace Pilot
         logicalTick(delta_time);
         calculateFPS(delta_time);
 
-        //// single thread
-        //// exchange data between logic and render contexts
-        //g_runtime_global_context.m_render_system->swapLogicRenderData();
+        // single thread
+        // exchange data between logic and render contexts
+        g_runtime_global_context.m_render_system->swapLogicRenderData();
 
         rendererTick();
 
@@ -85,7 +85,7 @@ namespace Pilot
 
     void PilotEngine::logicalTick(float delta_time)
     {
-        //g_runtime_global_context.m_world_manager->tick(delta_time);
+        g_runtime_global_context.m_world_manager->tick(delta_time);
         g_runtime_global_context.m_input_system->tick();
     }
 
