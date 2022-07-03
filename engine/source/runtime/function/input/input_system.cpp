@@ -2,8 +2,9 @@
 
 #include "core/base/macro.h"
 
+#include "engine.h"
 #include "runtime/function/global/global_context.h"
-//#include "runtime/function/render/render_camera.h"
+#include "runtime/function/render/render_camera.h"
 #include "runtime/function/render/render_system.h"
 #include "runtime/function/render/window_system.h"
 
@@ -15,10 +16,10 @@ namespace Pilot
 
     void InputSystem::onKey(int key, int scancode, int action, int mods)
     {
-        //if (!g_is_editor_mode)
-        //{
-        //    onKeyInGameMode(key, scancode, action, mods);
-        //}
+        if (!g_is_editor_mode)
+        {
+            onKeyInGameMode(key, scancode, action, mods);
+        }
     }
 
     void InputSystem::onKeyInGameMode(int key, int scancode, int action, int mods)
@@ -118,14 +119,14 @@ namespace Pilot
             return;
         }
 
-        //std::shared_ptr<RenderCamera> render_camera = g_runtime_global_context.m_render_system->getRenderCamera();
-        //const Vector2&                fov           = render_camera->getFOV();
+        std::shared_ptr<RenderCamera> render_camera = g_runtime_global_context.m_render_system->getRenderCamera();
+        const Vector2&                fov           = render_camera->getFOV();
 
-        //Radian cursor_delta_x(Math::degreesToRadians(m_cursor_delta_x));
-        //Radian cursor_delta_y(Math::degreesToRadians(m_cursor_delta_y));
+        Radian cursor_delta_x(Math::degreesToRadians(m_cursor_delta_x));
+        Radian cursor_delta_y(Math::degreesToRadians(m_cursor_delta_y));
 
-        //m_cursor_delta_yaw   = (cursor_delta_x / (float)window_size[0]) * fov.x;
-        //m_cursor_delta_pitch = -(cursor_delta_y / (float)window_size[1]) * fov.y;
+        m_cursor_delta_yaw   = (cursor_delta_x / (float)window_size[0]) * fov.x;
+        m_cursor_delta_pitch = -(cursor_delta_y / (float)window_size[1]) * fov.y;
     }
 
     void InputSystem::initialize()

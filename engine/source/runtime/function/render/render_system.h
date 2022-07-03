@@ -9,6 +9,7 @@
 namespace Pilot
 {
     class WindowSystem;
+    class Renderer;
 
     struct RenderSystemInitInfo
     {
@@ -37,8 +38,11 @@ namespace Pilot
         std::shared_ptr<RenderCamera> getRenderCamera() const;
 
     private:
-        //RENDER_PIPELINE_TYPE m_render_pipeline_type {RENDER_PIPELINE_TYPE::DEFERRED_PIPELINE};
-
+        
         RenderSwapContext m_swap_context;
+
+        std::shared_ptr<RenderCamera> m_render_camera;
+
+        std::shared_ptr<Renderer> m_moyu_renderer;
     };
 } // namespace Pilot

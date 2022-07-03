@@ -261,7 +261,7 @@ namespace RHI
             AdapterId, DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE, IID_PPV_ARGS(AdapterIterator.ReleaseAndGetAddressOf()))))
         {
             if (SUCCEEDED(
-                    D3D12CreateDevice(AdapterIterator.Get(), D3D_FEATURE_LEVEL_12_0, __uuidof(ID3D12Device), nullptr)))
+                    D3D12CreateDevice(AdapterIterator.Get(), D3D_FEATURE_LEVEL_11_0, __uuidof(ID3D12Device), nullptr)))
             {
                 Adapter3 = std::move(AdapterIterator);
                 if (SUCCEEDED(Adapter3->GetDesc2(&AdapterDesc)))

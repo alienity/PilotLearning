@@ -7,6 +7,11 @@ if(NOT TARGET imgui)
     set_target_properties(imgui PROPERTIES FOLDER ${third_party_folder}/imgui)
 endif()
 
+if(NOT TARGET DirectXTK12)
+    add_subdirectory(DirectXTK12-jun2022)
+    set_target_properties(DirectXTK12 PROPERTIES FOLDER ${third_party_folder}/DirectXTK12)
+endif()
+
 if(NOT TARGET glm)
     option(BUILD_STATIC_LIBS "" ON)
     option(BUILD_TESTING "" OFF)
