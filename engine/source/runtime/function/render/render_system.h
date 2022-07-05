@@ -9,7 +9,7 @@
 namespace Pilot
 {
     class WindowSystem;
-    class Renderer;
+    class RendererManager;
 
     struct RenderSystemInitInfo
     {
@@ -43,6 +43,6 @@ namespace Pilot
 
         std::shared_ptr<RenderCamera> m_render_camera;
 
-        std::shared_ptr<Renderer> m_moyu_renderer;
+        std::shared_ptr<RendererManager> m_renderer_manager;
     };
 } // namespace Pilot

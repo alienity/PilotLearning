@@ -44,4 +44,15 @@ else()
     COMMAND ${CMAKE_COMMAND} -E remove_directory "${BINARY_ROOT_DIR}/${JOLT_ASSET_DIR}"
     COMMAND ${CMAKE_COMMAND} -E copy_directory "${ENGINE_ROOT_DIR}/${JOLT_ASSET_DIR}" "${BINARY_ROOT_DIR}/${JOLT_ASSET_DIR}"
 )
+
+add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
+COMMAND ${CMAKE_COMMAND} -E copy 
+	${THIRD_PARTY_DIR}/dxc_2021_12_08/bin/x64/dxcompiler.dll
+	${THIRD_PARTY_DIR}/dxc_2021_12_08/bin/x64/dxil.dll
+	${THIRD_PARTY_DIR}/WinPixEventRuntime.1.0.220124001/bin/x64/WinPixEventRuntime.dll
+	${THIRD_PARTY_DIR}/Microsoft.Direct3D.DirectStorage.1.0.2/native/bin/x64/dstorage.dll
+	${THIRD_PARTY_DIR}/Microsoft.Direct3D.DirectStorage.1.0.2/native/bin/x64/dstoragecore.dll
+	$<TARGET_FILE_DIR:${TARGET_NAME}>
+	DEPENDS ${TARGET_NAME}
+)
 endif()

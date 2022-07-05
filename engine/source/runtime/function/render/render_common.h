@@ -16,6 +16,7 @@
 
 namespace Pilot
 {
+    /*
     static const uint32_t m_point_light_shadow_map_dimension       = 2048;
     static const uint32_t m_directional_light_shadow_map_dimension = 4096;
 
@@ -25,39 +26,39 @@ namespace Pilot
     static uint32_t const m_max_point_light_count                = 15;
     // should sync the macros in "shader_include/constants.h"
 
-    struct VulkanSceneDirectionalLight
+    struct SceneDirectionalLight
     {
-        Vector3 direction;
-        float   _padding_direction;
-        Vector3 color;
-        float   _padding_color;
+        glm::vec3 direction;
+        float     _padding_direction;
+        glm::vec3 color;
+        float     _padding_color;
     };
 
-    struct VulkanScenePointLight
+    struct ScenePointLight
     {
-        Vector3 position;
-        float   radius;
-        Vector3 intensity;
-        float   _padding_intensity;
+        glm::vec3 position;
+        float     radius;
+        glm::vec3 intensity;
+        float     _padding_intensity;
     };
 
     struct MeshPerframeStorageBufferObject
     {
-        glm::mat4                   proj_view_matrix;
-        glm::vec3                   camera_position;
-        float                       _padding_camera_position;
-        Vector3                     ambient_light;
-        float                       _padding_ambient_light;
-        uint32_t                    point_light_num;
-        uint32_t                    _padding_point_light_num_1;
-        uint32_t                    _padding_point_light_num_2;
-        uint32_t                    _padding_point_light_num_3;
-        VulkanScenePointLight       scene_point_lights[m_max_point_light_count];
-        VulkanSceneDirectionalLight scene_directional_light;
-        glm::mat4                   directional_light_proj_view;
+        glm::mat4             proj_view_matrix;
+        glm::vec3             camera_position;
+        float                 _padding_camera_position;
+        glm::vec3             ambient_light;
+        float                 _padding_ambient_light;
+        uint32_t              point_light_num;
+        uint32_t              _padding_point_light_num_1;
+        uint32_t              _padding_point_light_num_2;
+        uint32_t              _padding_point_light_num_3;
+        ScenePointLight       scene_point_lights[m_max_point_light_count];
+        SceneDirectionalLight scene_directional_light;
+        glm::mat4             directional_light_proj_view;
     };
 
-    struct VulkanMeshInstance
+    struct MeshInstance
     {
         float     enable_vertex_blending;
         float     _padding_enable_vertex_blending_1;
@@ -68,7 +69,7 @@ namespace Pilot
 
     struct MeshPerdrawcallStorageBufferObject
     {
-        VulkanMeshInstance mesh_instances[m_mesh_per_drawcall_max_instance_count];
+        MeshInstance mesh_instances[m_mesh_per_drawcall_max_instance_count];
     };
 
     struct MeshPerdrawcallVertexBlendingStorageBufferObject
@@ -101,7 +102,7 @@ namespace Pilot
 
     struct MeshPointLightShadowPerdrawcallStorageBufferObject
     {
-        VulkanMeshInstance mesh_instances[m_mesh_per_drawcall_max_instance_count];
+        MeshInstance mesh_instances[m_mesh_per_drawcall_max_instance_count];
     };
 
     struct MeshPointLightShadowPerdrawcallVertexBlendingStorageBufferObject
@@ -116,7 +117,7 @@ namespace Pilot
 
     struct MeshDirectionalLightShadowPerdrawcallStorageBufferObject
     {
-        VulkanMeshInstance mesh_instances[m_mesh_per_drawcall_max_instance_count];
+        MeshInstance mesh_instances[m_mesh_per_drawcall_max_instance_count];
     };
 
     struct MeshDirectionalLightShadowPerdrawcallVertexBlendingStorageBufferObject
@@ -268,4 +269,5 @@ namespace Pilot
         PILOT_PIXEL_FORMAT emissive_image_format;
         VulkanPBRMaterial* now_material;
     };
+    */
 } // namespace Pilot

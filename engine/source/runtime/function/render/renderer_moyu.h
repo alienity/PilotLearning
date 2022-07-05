@@ -10,11 +10,30 @@
 namespace Pilot
 {
     class WindowSystem;
+    class RendererPresent;
+    class Renderer;
 
     struct RendererInitInfo
     {
         RHI::DeviceOptions            Options;
         std::shared_ptr<WindowSystem> Window_system;
+    };
+
+    class RendererManager
+    {
+    public:
+        RendererManager();
+        ~RendererManager();
+
+        void  Initialize(RendererInitInfo initialize_info);
+        void  Tick();
+        
+    protected:
+        std::unique_ptr<RHI::D3D12Device>    Device;
+        std::unique_ptr<ShaderCompiler>      Compiler;
+        std::unique_ptr<RHI::D3D12SwapChain> SwapChain;
+        std::shared_ptr<WindowSystem>        WinSystem;
+        std::unique_ptr<Renderer>            MoYuRenderer;
     };
 
     class RendererPresent : public RHI::IPresent
@@ -33,19 +52,17 @@ namespace Pilot
     class Renderer
     {
     public:
-        Renderer();
-        ~Renderer();
+        Renderer(RHI::D3D12Device* Device, ShaderCompiler* Compiler);
 
-        void  Initialize(RendererInitInfo initialize_info);
-        void  Tick();
-        void  Shutdown();
-        void* GetViewportPtr() const { return Viewport; }
+        virtual ~Renderer();
+
+        virtual void OnRender(RHI::D3D12CommandContext& Context);
+
+        [[nodiscard]] void* GetViewportPtr() const { return Viewport; }
 
     protected:
-        std::unique_ptr<RHI::D3D12Device>    Device;
-        std::unique_ptr<ShaderCompiler>      Compiler;
-        std::unique_ptr<RHI::D3D12SwapChain> SwapChain;
-        std::shared_ptr<WindowSystem>        WinSystem;
+        RHI::D3D12Device* Device   = nullptr;
+        ShaderCompiler*   Compiler = nullptr;
 
         RHI::RenderGraphAllocator Allocator;
         RHI::RenderGraphRegistry  Registry;

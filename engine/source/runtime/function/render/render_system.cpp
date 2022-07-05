@@ -41,15 +41,13 @@ namespace Pilot
         renderInitInfo.Options          = depthOptions;
         renderInitInfo.Window_system    = init_info.window_system;
 
-        m_moyu_renderer = std::make_shared<Renderer>();
-        m_moyu_renderer->Initialize(renderInitInfo);
+        m_renderer_manager = std::make_shared<RendererManager>();
+        m_renderer_manager->Initialize(renderInitInfo);
     }
 
     void RenderSystem::tick()
     {
-
-        m_moyu_renderer->Tick();
-
+        m_renderer_manager->Tick();
     }
 
     void RenderSystem::swapLogicRenderData()
