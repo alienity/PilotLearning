@@ -28,6 +28,10 @@ namespace Pilot
                 {
                     m_asset_folder = m_root_folder / value;
                 }
+                else if (name == "ShaderFolder")
+                {
+                    m_shader_folder = config_file_path.parent_path() / value;
+                }
                 else if (name == "SchemaFolder")
                 {
                     m_schema_folder = m_root_folder / value;
@@ -65,6 +69,8 @@ namespace Pilot
     const std::filesystem::path& ConfigManager::getRootFolder() const { return m_root_folder; }
 
     const std::filesystem::path& ConfigManager::getAssetFolder() const { return m_asset_folder; }
+
+    const std::filesystem::path& ConfigManager::getShaderFolder() const { return m_shader_folder; }
 
     const std::filesystem::path& ConfigManager::getSchemaFolder() const { return m_schema_folder; }
 

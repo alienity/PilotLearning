@@ -13,6 +13,7 @@ namespace Pilot
 
         const std::filesystem::path& getRootFolder() const;
         const std::filesystem::path& getAssetFolder() const;
+        const std::filesystem::path& getShaderFolder() const;
         const std::filesystem::path& getSchemaFolder() const;
         const std::filesystem::path& getEditorBigIconPath() const;
         const std::filesystem::path& getEditorSmallIconPath() const;
@@ -28,6 +29,7 @@ namespace Pilot
     private:
         std::filesystem::path m_root_folder;
         std::filesystem::path m_asset_folder;
+        std::filesystem::path m_shader_folder;
         std::filesystem::path m_schema_folder;
         std::filesystem::path m_editor_big_icon_path;
         std::filesystem::path m_editor_small_icon_path;
