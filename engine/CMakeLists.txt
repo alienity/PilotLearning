@@ -2,6 +2,15 @@
 set(ENGINE_ROOT_DIR "${MOYU_ROOT_DIR}/engine")
 set(THIRD_PARTY_DIR "${ENGINE_ROOT_DIR}/3rdparty")
 set(ENGINE_ASSET_DIR "/asset")
+set(ENGINE_SHADER_DIR "/shader")
+set(ENGINE_INIT_CONFIG "${ENGINE_ROOT_DIR}/MoYuEditor.ini")
+
+set(THIRD_PARTY_DLL 
+${THIRD_PARTY_DIR}/dxc_2021_12_08/bin/x64/dxcompiler.dll
+${THIRD_PARTY_DIR}/dxc_2021_12_08/bin/x64/dxil.dll
+${THIRD_PARTY_DIR}/WinPixEventRuntime.1.0.220124001/bin/x64/WinPixEventRuntime.dll
+${THIRD_PARTY_DIR}/Microsoft.Direct3D.DirectStorage.1.0.2/native/bin/x64/dstorage.dll
+${THIRD_PARTY_DIR}/Microsoft.Direct3D.DirectStorage.1.0.2/native/bin/x64/dstoragecore.dll)
 
 option(ENABLE_PHYSICS_DEBUG_RENDERER "Enable Physics Debug Renderer" OFF)
 
