@@ -15,7 +15,7 @@ struct Shaders
 	// Vertex Shaders
     struct VS
     {
-        inline static Shader FullScreenTriangle;
+        inline static Shader ScreenQuadPresentVS;
         inline static Shader GBuffer;
     };
 
@@ -28,8 +28,9 @@ struct Shaders
     // Pixel Shaders
     struct PS
     {
+        inline static Shader PresentSDRPS;
         inline static Shader GBuffer;
-
+        
         inline static Shader Meshlet;
     };
 
@@ -52,9 +53,21 @@ struct Shaders
         inline static Shader PathTrace;
     };
 
-    static void Compile(ShaderCompiler* Compiler)
+    static void Compile(ShaderCompiler* Compiler, const std::filesystem::path& ShaderPath)
     {
+        // VS
+        {
+            ShaderCompileOptions Options(g_VSEntryPoint);
+            VS::ScreenQuadPresentVS =
+                Compiler->CompileShader(RHI_SHADER_TYPE::Vertex, ShaderPath / "hlsl/ScreenQuadPresentVS.hlsl", Options);
+        }
 
+		// PS
+        {
+            ShaderCompileOptions Options(g_PSEntryPoint);
+            PS::PresentSDRPS =
+                Compiler->CompileShader(RHI_SHADER_TYPE::Pixel, ShaderPath / "hlsl/PresentSDRPS.hlsl", Options);
+        }
 
     }
 
@@ -64,11 +77,13 @@ struct Libraries
 {
     inline static Library PathTrace;
 
-    static void Compile(ShaderCompiler* Compiler) { PathTrace = Compiler->CompileLibrary(L"Shaders/PathTrace.hlsl"); }
+    static void Compile(ShaderCompiler* Compiler) { /*PathTrace = Compiler->CompileLibrary(L"shaders/PathTrace.hlsl");*/ }
 };
 
 struct RootSignatures
 {
+    inline static RHI::RgResourceHandle FullScreenPresent;
+
     inline static RHI::RgResourceHandle GBuffer;
     inline static RHI::RgResourceHandle IndirectCull;
 
@@ -89,6 +104,12 @@ struct RootSignatures
 
     static void Compile(RHI::D3D12Device* Device, RHI::RenderGraphRegistry& Registry)
     {
+        FullScreenPresent =
+            Registry.CreateRootSignature(Device->CreateRootSignature(RHI::RootSignatureDesc()
+                                                                         .AllowResourceDescriptorHeapIndexing()
+                                                                         .AllowSampleDescriptorHeapIndexing()));
+
+        /*
         RTX::PathTrace = Registry.CreateRootSignature(Device->CreateRootSignature(
             RHI::RootSignatureDesc()
                 .AddConstantBufferView<0, 0>()              // g_SystemConstants	register(b0, space0)
@@ -151,11 +172,14 @@ struct RootSignatures
 
         Sobol = Registry.CreateRootSignature(
             Device->CreateRootSignature(RHI::RootSignatureDesc().Add32BitConstants<0, 0>(2)));
+    */
     }
 };
 
 struct PipelineStates
 {
+    inline static RHI::RgResourceHandle FullScreenPresent;
+
     inline static RHI::RgResourceHandle GBuffer;
     inline static RHI::RgResourceHandle IndirectCull;
     inline static RHI::RgResourceHandle IndirectCullMeshShader;
@@ -177,6 +201,41 @@ struct PipelineStates
 
     static void Compile(RHI::D3D12Device* Device, RHI::RenderGraphRegistry& Registry)
     {
+        {
+            RHI::D3D12InputLayout InputLayout;
+
+            RHIDepthStencilState DepthStencilState;
+            DepthStencilState.DepthEnable = true;
+
+            RHIRenderTargetState RenderTargetState;
+            RenderTargetState.RTFormats[0]     = DXGI_FORMAT_R32G32B32A32_FLOAT;
+            RenderTargetState.NumRenderTargets = 1;
+            RenderTargetState.DSFormat         = DXGI_FORMAT_D32_FLOAT;
+
+            struct PsoStream
+            {
+                PipelineStateStreamRootSignature     RootSignature;
+                PipelineStateStreamInputLayout       InputLayout;
+                PipelineStateStreamPrimitiveTopology PrimitiveTopologyType;
+                PipelineStateStreamVS                VS;
+                PipelineStateStreamPS                PS;
+                PipelineStateStreamDepthStencilState DepthStencilState;
+                PipelineStateStreamRenderTargetState RenderTargetState;
+            } Stream;
+            Stream.RootSignature         = Registry.GetRootSignature(RootSignatures::FullScreenPresent);
+            Stream.InputLayout           = &InputLayout;
+            Stream.PrimitiveTopologyType = RHI_PRIMITIVE_TOPOLOGY::Triangle;
+            Stream.VS                    = &Shaders::VS::ScreenQuadPresentVS;
+            Stream.PS                    = &Shaders::PS::PresentSDRPS;
+            Stream.DepthStencilState     = DepthStencilState;
+            Stream.RenderTargetState     = RenderTargetState;
+
+            FullScreenPresent = Registry.CreatePipelineState(Device->CreatePipelineState(L"FullScreenPresent", Stream));
+        }
+
+
+
+        /*
         {
             struct PsoStream
             {
@@ -355,6 +414,7 @@ struct PipelineStates
 
             Sobol = Registry.CreatePipelineState(Device->CreatePipelineState(L"Sobol", Stream));
         }
+        */
     }
 };
 
