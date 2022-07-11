@@ -18,6 +18,7 @@
 #include <set>
 
 #include "directx/dxgiformat.h"
+#include "directx/d3d12.h"
 
 #include "runtime/platform/system/system_core.h"
 
@@ -254,15 +255,15 @@ struct RHIRasterizerState
 {
     RHI_FILL_MODE FillMode              = RHI_FILL_MODE::Solid;
     RHI_CULL_MODE CullMode              = RHI_CULL_MODE::Back;
-    bool          FrontCounterClockwise = false;
-    int           DepthBias             = 0;
-    float         DepthBiasClamp        = 0.0f;
-    float         SlopeScaledDepthBias  = 0.0f;
-    bool          DepthClipEnable       = true;
-    bool          MultisampleEnable     = false;
-    bool          AntialiasedLineEnable = false;
+    bool          FrontCounterClockwise = TRUE;
+    int           DepthBias             = D3D12_DEFAULT_DEPTH_BIAS;
+    float         DepthBiasClamp        = D3D12_DEFAULT_DEPTH_BIAS_CLAMP;
+    float         SlopeScaledDepthBias  = D3D12_DEFAULT_SLOPE_SCALED_DEPTH_BIAS;
+    bool          DepthClipEnable       = TRUE;
+    bool          MultisampleEnable     = FALSE;
+    bool          AntialiasedLineEnable = FALSE;
     unsigned int  ForcedSampleCount     = 0;
-    bool          ConservativeRaster    = false;
+    bool          ConservativeRaster    = D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF;
 };
 
 struct RHIDepthStencilState
