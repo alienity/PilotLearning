@@ -52,7 +52,7 @@ namespace Pilot
     class Renderer
     {
     public:
-        Renderer(RHI::D3D12Device* Device, ShaderCompiler* Compiler);
+        Renderer(RHI::D3D12Device* Device, ShaderCompiler* Compiler, RHI::D3D12SwapChain* SwapChain);
 
         virtual ~Renderer();
 
@@ -61,8 +61,9 @@ namespace Pilot
         [[nodiscard]] void* GetViewportPtr() const { return Viewport; }
 
     protected:
-        RHI::D3D12Device* Device   = nullptr;
-        ShaderCompiler*   Compiler = nullptr;
+        RHI::D3D12Device*    Device    = nullptr;
+        ShaderCompiler*      Compiler  = nullptr;
+        RHI::D3D12SwapChain* SwapChain = nullptr;
 
         RHI::RenderGraphAllocator Allocator;
         RHI::RenderGraphRegistry  Registry;

@@ -166,6 +166,13 @@ namespace RHI
         }
     }
 
+    void D3D12CommandContext::ClearRenderTarget(D3D12RenderTargetView* RenderTargetView,
+                                                D3D12DepthStencilView* DepthStencilView)
+    {
+        std::vector<D3D12RenderTargetView*> rtvs = {RenderTargetView};
+        this->ClearRenderTarget(rtvs, DepthStencilView);
+    }
+
     void D3D12CommandContext::ClearRenderTarget(std::vector<D3D12RenderTargetView*> RenderTargetViews,
                                                 D3D12DepthStencilView*              DepthStencilView)
     {
@@ -216,6 +223,13 @@ namespace RHI
                                                      0,
                                                      nullptr);
         }
+    }
+
+    void D3D12CommandContext::SetRenderTarget(D3D12RenderTargetView* RenderTargetView,
+                                              D3D12DepthStencilView* DepthStencilView)
+    {
+        std::vector<D3D12RenderTargetView*> rtvs = {RenderTargetView};
+        this->SetRenderTarget(rtvs, DepthStencilView);
     }
 
     void D3D12CommandContext::SetRenderTarget(std::vector<D3D12RenderTargetView*> RenderTargetViews,

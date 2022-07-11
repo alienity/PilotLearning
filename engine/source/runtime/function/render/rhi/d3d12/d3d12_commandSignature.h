@@ -3,10 +3,12 @@
 
 namespace RHI
 {
+    class D3D12CommandSignature;
+
     class CommandSignatureDesc
     {
     public:
-        explicit CommandSignatureDesc(size_t NumParameters, UINT Stride) : Stride(Stride)
+        explicit CommandSignatureDesc(size_t NumParameters)
         {
             Parameters.reserve(NumParameters);
         }
@@ -51,6 +53,7 @@ namespace RHI
             Desc.Constant.RootParameterIndex      = RootParameterIndex;
             Desc.Constant.DestOffsetIn32BitValues = DestOffsetIn32BitValues;
             Desc.Constant.Num32BitValuesToSet     = Num32BitValuesToSet;
+            RequiresRootSignature                 = true;
         }
 
         void AddConstantBufferView(UINT RootParameterIndex)
@@ -58,6 +61,7 @@ namespace RHI
             D3D12_INDIRECT_ARGUMENT_DESC& Desc         = Parameters.emplace_back();
             Desc.Type                                  = D3D12_INDIRECT_ARGUMENT_TYPE_CONSTANT_BUFFER_VIEW;
             Desc.ConstantBufferView.RootParameterIndex = RootParameterIndex;
+            RequiresRootSignature                      = true;
         }
 
         void AddShaderResourceView(UINT RootParameterIndex)
@@ -65,6 +69,7 @@ namespace RHI
             D3D12_INDIRECT_ARGUMENT_DESC& Desc         = Parameters.emplace_back();
             Desc.Type                                  = D3D12_INDIRECT_ARGUMENT_TYPE_SHADER_RESOURCE_VIEW;
             Desc.ShaderResourceView.RootParameterIndex = RootParameterIndex;
+            RequiresRootSignature                      = true;
         }
 
         void AddUnorderedAccessView(UINT RootParameterIndex)
@@ -72,6 +77,7 @@ namespace RHI
             D3D12_INDIRECT_ARGUMENT_DESC& Desc          = Parameters.emplace_back();
             Desc.Type                                   = D3D12_INDIRECT_ARGUMENT_TYPE_UNORDERED_ACCESS_VIEW;
             Desc.UnorderedAccessView.RootParameterIndex = RootParameterIndex;
+            RequiresRootSignature                       = true;
         }
 
         void AddDispatchRays()
@@ -88,7 +94,9 @@ namespace RHI
 
     private:
         std::vector<D3D12_INDIRECT_ARGUMENT_DESC> Parameters;
-        UINT                                      Stride = 0;
+        bool                                      RequiresRootSignature = false;
+
+        friend class D3D12CommandSignature;
     };
 
     class D3D12CommandSignature final : public D3D12DeviceChild

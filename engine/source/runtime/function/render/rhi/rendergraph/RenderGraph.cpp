@@ -69,7 +69,15 @@ namespace RHI
 				ReadState |= D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
 			}
 
-			D3D12Texture* Texture = RenderGraph->GetRegistry().Get<D3D12Texture>(Read);
+			D3D12Texture* Texture = nullptr;
+			if (Read.IsImported())
+			{
+                Texture = RenderGraph->GetRegistry().GetImportedResource(Read);
+			}
+			else
+			{
+                Texture = RenderGraph->GetRegistry().Get<D3D12Texture>(Read);
+			}
 			Context.TransitionBarrier(Texture, ReadState);
 		}
 		for (auto Write : Writes)
@@ -87,8 +95,15 @@ namespace RHI
 			{
 				WriteState |= D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
 			}
-
-			D3D12Texture* Texture = RenderGraph->GetRegistry().Get<D3D12Texture>(Write);
+            D3D12Texture* Texture = nullptr;
+			if (Write.IsImported())
+			{
+                Texture = RenderGraph->GetRegistry().GetImportedResource(Write);
+			}
+			else
+			{
+                Texture = RenderGraph->GetRegistry().Get<D3D12Texture>(Write);
+			}
 			Context.TransitionBarrier(Texture, WriteState);
 		}
 
@@ -163,22 +178,50 @@ namespace RHI
 	bool RenderGraph::AllowRenderTarget(RgResourceHandle Resource) const noexcept
 	{
 		assert(Resource.Type == RgResourceType::Texture);
-		assert(Resource.Id < Textures.size());
-		return Textures[Resource.Id].Desc.AllowRenderTarget;
+		if (Resource.IsImported())
+		{
+            assert(Resource.Id < ImportedTextures.size());
+            auto TexDesc = ImportedTextures[Resource.Id]->GetDesc();
+            return TexDesc.Flags & D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
+		}
+		else
+		{
+            assert(Resource.Id < Textures.size());
+            return Textures[Resource.Id].Desc.AllowRenderTarget;
+		}
 	}
 
 	bool RenderGraph::AllowDepthStencil(RgResourceHandle Resource) const noexcept
 	{
 		assert(Resource.Type == RgResourceType::Texture);
-		assert(Resource.Id < Textures.size());
-		return Textures[Resource.Id].Desc.AllowDepthStencil;
+        if (Resource.IsImported())
+		{
+            assert(Resource.Id < ImportedTextures.size());
+            auto TexDesc = ImportedTextures[Resource.Id]->GetDesc();
+            return TexDesc.Flags & D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
+		}
+		else
+		{
+            assert(Resource.Id < Textures.size());
+            return Textures[Resource.Id].Desc.AllowDepthStencil;
+		}
 	}
 
 	bool RenderGraph::AllowUnorderedAccess(RgResourceHandle Resource) const noexcept
 	{
 		assert(Resource.Type == RgResourceType::Buffer || Resource.Type == RgResourceType::Texture);
-		// TODO: Buffer
-		return Textures[Resource.Id].Desc.AllowUnorderedAccess;
+        if (Resource.IsImported())
+        {
+            assert(Resource.Id < ImportedTextures.size());
+            auto TexDesc = ImportedTextures[Resource.Id]->GetDesc();
+            return TexDesc.Flags & D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
+        }
+        else
+        {
+            assert(Resource.Id < Textures.size());
+            // TODO: Buffer
+            return Textures[Resource.Id].Desc.AllowUnorderedAccess;
+        }
 	}
 
 	void RenderGraph::Setup()

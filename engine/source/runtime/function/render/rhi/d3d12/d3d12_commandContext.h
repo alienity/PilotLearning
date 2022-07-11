@@ -75,8 +75,12 @@ namespace RHI
 
         void SetComputeRootSignature(D3D12RootSignature* RootSignature);
 
+        void ClearRenderTarget(D3D12RenderTargetView* RenderTargetView, D3D12DepthStencilView* DepthStencilView);
+
         void ClearRenderTarget(std::vector<D3D12RenderTargetView*> RenderTargetViews,
                                D3D12DepthStencilView*              DepthStencilView);
+
+        void SetRenderTarget(D3D12RenderTargetView* RenderTargetView, D3D12DepthStencilView* DepthStencilView);
 
         void SetRenderTarget(std::vector<D3D12RenderTargetView*> RenderTargetViews,
                              D3D12DepthStencilView*              DepthStencilView);

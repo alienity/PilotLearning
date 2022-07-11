@@ -6,5 +6,6 @@ struct VertexAttributes
 
 float3 PSMain(VertexAttributes input) : SV_Target0
 {
-    return float3(input.Tex.x, input.Tex.y, 0);
+	return float3(1,0,0);
+    // return float3(input.Tex.x, input.Tex.y, 0);
 }

@@ -10,7 +10,7 @@ namespace Pilot
 	class DeferredRenderer final : public Renderer
 	{
     public:
-        DeferredRenderer(RHI::D3D12Device* Device, ShaderCompiler* Compiler);
+        DeferredRenderer(RHI::D3D12Device* Device, ShaderCompiler* Compiler, RHI::D3D12SwapChain* SwapChain);
 
 		virtual ~DeferredRenderer();
 
@@ -29,8 +29,6 @@ namespace Pilot
                 RenderScene::MeshLimit * sizeof(CommandSignatureParams);
         static constexpr std::uint64_t CommandBufferCounterOffset =
             AlignUp(TotalCommandBufferSizeInBytes, D3D12_UAV_COUNTER_PLACEMENT_ALIGNMENT);
-
-        RHI::D3D12CommandSignature CommandSignature;
 
         RHI::D3D12Buffer              IndirectCommandBuffer;
         RHI::D3D12UnorderedAccessView IndirectCommandBufferUav;

@@ -32,7 +32,7 @@ namespace Pilot
         SwapChain        = std::make_unique<RHI::D3D12SwapChain>(Device.get(), win32handle);
 
         // 目前测试先使用默认的
-        MoYuRenderer = std::make_unique<DeferredRenderer>(Device.get(), Compiler.get());
+        MoYuRenderer = std::make_unique<DeferredRenderer>(Device.get(), Compiler.get(), SwapChain.get());
     }
 
     void RendererManager::Tick()
@@ -52,8 +52,8 @@ namespace Pilot
         Device->OnEndFrame();
     }
 
-    Renderer::Renderer(RHI::D3D12Device* Device, ShaderCompiler* Compiler) :
-        Device(Device), Compiler(Compiler), Allocator(65536)
+    Renderer::Renderer(RHI::D3D12Device* Device, ShaderCompiler* Compiler, RHI::D3D12SwapChain* SwapChain) :
+        Device(Device), Compiler(Compiler), SwapChain(SwapChain), Allocator(65536)
     {}
 
     Renderer::~Renderer() {}
