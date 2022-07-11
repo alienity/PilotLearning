@@ -45,12 +45,12 @@ namespace Pilot
         {
             RHI::RgResourceHandle backBufColor;
 
-            RHI::RgResourceHandle RtvBufColor;
+            //RHI::RgResourceHandle RtvBufColor;
         } GBufferArgs;
         
         GBufferArgs.backBufColor = Graph.Import(backBufferResource.BackBuffer);
-        GBufferArgs.RtvBufColor = Graph.Create<RHI::D3D12RenderTargetView>(
-            RHI::RgViewDesc().SetResource(GBufferArgs.backBufColor).AsRtv(true));
+        //GBufferArgs.RtvBufColor = Graph.Create<RHI::D3D12RenderTargetView>(
+        //    RHI::RgViewDesc().SetResource(GBufferArgs.backBufColor).AsRtv(true));
 
         Graph.AddRenderPass("DisplayTest")
             .Write(&GBufferArgs.backBufColor)
@@ -61,11 +61,13 @@ namespace Pilot
                     Context->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
                     Context.SetViewport(RHIViewport {0, 0, (float)backBufWidth, (float)backBufHeight, 0, 1});
                     Context.SetScissorRect(RHIRect {0, 0, (long)backBufWidth, (long)backBufHeight});
-                    RHI::D3D12RenderTargetView* RenderTargetView =
-                        Registry.Get<RHI::D3D12RenderTargetView>(GBufferArgs.RtvBufColor);
-                    Context.ClearRenderTarget(RenderTargetView, nullptr);
-                    Context.SetRenderTarget(RenderTargetView, nullptr);
+                    //RHI::D3D12RenderTargetView* RenderTargetView =
+                    //    Registry.Get<RHI::D3D12RenderTargetView>(GBufferArgs.RtvBufColor);
+                    //Context.ClearRenderTarget(RenderTargetView, nullptr);
+                    //Context.SetRenderTarget(RenderTargetView, nullptr);
 
+                    Context.ClearRenderTarget(backBufferResource.RtView, nullptr);
+                    Context.SetRenderTarget(backBufferResource.RtView, nullptr);
                     Context->DrawInstanced(3, 1, 0, 0);
                 });
 

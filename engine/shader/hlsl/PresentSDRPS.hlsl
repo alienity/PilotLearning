@@ -4,8 +4,7 @@ struct VertexAttributes
 	float2 Tex : TEXCOORD0;
 };
 
-float3 PSMain(VertexAttributes input) : SV_Target0
+float4 PSMain(VertexAttributes input) : SV_Target0
 {
-	return float3(1,0,0);
-    // return float3(input.Tex.x, input.Tex.y, 0);
+    return float4(input.Tex.x, input.Tex.y, 0, 0);
 }

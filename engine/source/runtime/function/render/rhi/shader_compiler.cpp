@@ -40,7 +40,7 @@ std::string DxcException::GetError() const
     return Error;
 }
 
-ShaderCompiler::ShaderCompiler() : ShaderModel(RHI_SHADER_MODEL::ShaderModel_6_5)
+ShaderCompiler::ShaderCompiler() : ShaderModel(RHI_SHADER_MODEL::ShaderModel_6_6)
 {
     VERIFY_DXC_API(DxcCreateInstance(CLSID_DxcCompiler, IID_PPV_ARGS(&Compiler3)));
     VERIFY_DXC_API(DxcCreateInstance(CLSID_DxcUtils, IID_PPV_ARGS(&Utils)));

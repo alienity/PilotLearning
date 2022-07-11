@@ -20,7 +20,7 @@ namespace RHI
     struct D3D12SwapChainResource
     {
         D3D12Texture*          BackBuffer;
-        D3D12RenderTargetView* View;
+        D3D12RenderTargetView* RtView;
     };
 
     // HDR is not fully supported yet, still WIP
