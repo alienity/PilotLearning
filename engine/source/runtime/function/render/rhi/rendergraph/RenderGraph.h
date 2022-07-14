@@ -110,6 +110,7 @@ namespace RHI
         explicit RenderGraph(RenderGraphAllocator& Allocator, RenderGraphRegistry& Registry);
         ~RenderGraph();
 
+        // 每个对象也需要做区分，不然创建的view就会冲突
         // TODO: Add support for other rg resource types
         // Currently only support textures (mainly swapchain textures)
         auto Import(D3D12Texture* Texture) -> RgResourceHandle
