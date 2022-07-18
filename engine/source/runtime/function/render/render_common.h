@@ -16,7 +16,6 @@
 
 namespace Pilot
 {
-    /*
     static const uint32_t m_point_light_shadow_map_dimension       = 2048;
     static const uint32_t m_directional_light_shadow_map_dimension = 4096;
 
@@ -166,59 +165,48 @@ namespace Pilot
     };
 
     // mesh
-    struct VulkanMesh
+    struct D3D12Mesh
     {
         bool enable_vertex_blending;
 
         uint32_t mesh_vertex_count;
 
-        VkBuffer      mesh_vertex_position_buffer;
-        VmaAllocation mesh_vertex_position_buffer_allocation;
+        RHI::D3D12Buffer mesh_vertex_position_buffer;
 
-        VkBuffer      mesh_vertex_varying_enable_blending_buffer;
-        VmaAllocation mesh_vertex_varying_enable_blending_buffer_allocation;
+        RHI::D3D12Buffer mesh_vertex_varying_enable_blending_buffer;
 
-        VkBuffer      mesh_vertex_joint_binding_buffer;
-        VmaAllocation mesh_vertex_joint_binding_buffer_allocation;
+        RHI::D3D12Buffer mesh_vertex_joint_binding_buffer;
 
-        VkDescriptorSet mesh_vertex_blending_descriptor_set;
+        // VkDescriptorSet mesh_vertex_blending_descriptor_set;
 
-        VkBuffer      mesh_vertex_varying_buffer;
-        VmaAllocation mesh_vertex_varying_buffer_allocation;
+        RHI::D3D12Buffer mesh_vertex_varying_buffer;
 
         uint32_t mesh_index_count;
 
-        VkBuffer      mesh_index_buffer;
-        VmaAllocation mesh_index_buffer_allocation;
+        RHI::D3D12Buffer mesh_index_buffer;
     };
 
     // material
-    struct VulkanPBRMaterial
+    struct D3D12PBRMaterial
     {
-        VkImage       base_color_texture_image = VK_NULL_HANDLE;
-        VkImageView   base_color_image_view    = VK_NULL_HANDLE;
-        VmaAllocation base_color_image_allocation;
+        RHI::D3D12Texture            base_color_texture_image;
+        RHI::D3D12ShaderResourceView base_color_image_view;
 
-        VkImage       metallic_roughness_texture_image = VK_NULL_HANDLE;
-        VkImageView   metallic_roughness_image_view    = VK_NULL_HANDLE;
-        VmaAllocation metallic_roughness_image_allocation;
+        RHI::D3D12Texture            metallic_roughness_texture_image;
+        RHI::D3D12ShaderResourceView metallic_roughness_image_view;
 
-        VkImage       normal_texture_image = VK_NULL_HANDLE;
-        VkImageView   normal_image_view    = VK_NULL_HANDLE;
-        VmaAllocation normal_image_allocation;
+        RHI::D3D12Texture            normal_texture_image;
+        RHI::D3D12ShaderResourceView normal_image_view;
 
-        VkImage       occlusion_texture_image = VK_NULL_HANDLE;
-        VkImageView   occlusion_image_view    = VK_NULL_HANDLE;
-        VmaAllocation occlusion_image_allocation;
+        RHI::D3D12Texture            occlusion_texture_image;
+        RHI::D3D12ShaderResourceView occlusion_image_view;
 
-        VkImage       emissive_texture_image = VK_NULL_HANDLE;
-        VkImageView   emissive_image_view    = VK_NULL_HANDLE;
-        VmaAllocation emissive_image_allocation;
+        RHI::D3D12Texture            emissive_texture_image;
+        RHI::D3D12ShaderResourceView emissive_image_view;
 
-        VkBuffer      material_uniform_buffer;
-        VmaAllocation material_uniform_buffer_allocation;
-
-        VkDescriptorSet material_descriptor_set;
+        RHI::D3D12Buffer material_uniform_buffer;
+        
+        //VkDescriptorSet material_descriptor_set;
     };
 
     // nodes
@@ -226,18 +214,18 @@ namespace Pilot
     {
         glm::mat4          model_matrix;
         glm::mat4          joint_matrices[m_mesh_vertex_blending_max_joint_count];
-        VulkanMesh*        ref_mesh     = nullptr;
-        VulkanPBRMaterial* ref_material = nullptr;
+        D3D12Mesh*         ref_mesh     = nullptr;
+        D3D12PBRMaterial*  ref_material = nullptr;
         uint32_t           node_id;
         bool               enable_vertex_blending = false;
     };
 
     struct RenderAxisNode
     {
-        glm::mat4   model_matrix {glm::mat4(1.0f)};
-        VulkanMesh* ref_mesh {nullptr};
-        uint32_t    node_id;
-        bool        enable_vertex_blending {false};
+        glm::mat4  model_matrix {glm::mat4(1.0f)};
+        D3D12Mesh* ref_mesh {nullptr};
+        uint32_t   node_id;
+        bool       enable_vertex_blending {false};
     };
 
     struct RenderParticleBillboardNode
@@ -250,24 +238,23 @@ namespace Pilot
         void*              base_color_image_pixels;
         uint32_t           base_color_image_width;
         uint32_t           base_color_image_height;
-        PILOT_PIXEL_FORMAT base_color_image_format;
+        DXGI_FORMAT        base_color_image_format;
         void*              metallic_roughness_image_pixels;
         uint32_t           metallic_roughness_image_width;
         uint32_t           metallic_roughness_image_height;
-        PILOT_PIXEL_FORMAT metallic_roughness_image_format;
+        DXGI_FORMAT        metallic_roughness_image_format;
         void*              normal_roughness_image_pixels;
         uint32_t           normal_roughness_image_width;
         uint32_t           normal_roughness_image_height;
-        PILOT_PIXEL_FORMAT normal_roughness_image_format;
+        DXGI_FORMAT        normal_roughness_image_format;
         void*              occlusion_image_pixels;
         uint32_t           occlusion_image_width;
         uint32_t           occlusion_image_height;
-        PILOT_PIXEL_FORMAT occlusion_image_format;
+        DXGI_FORMAT        occlusion_image_format;
         void*              emissive_image_pixels;
         uint32_t           emissive_image_width;
         uint32_t           emissive_image_height;
-        PILOT_PIXEL_FORMAT emissive_image_format;
-        VulkanPBRMaterial* now_material;
+        DXGI_FORMAT        emissive_image_format;
+        D3D12PBRMaterial* now_material;
     };
-    */
 } // namespace Pilot

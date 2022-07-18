@@ -46,7 +46,7 @@ namespace Pilot
         Vector3    position() const { return m_position; }
         Quaternion rotation() const { return m_rotation; }
 
-        Vector3   forward() const { return (m_invRotation * Z); }
+        Vector3   forward() const { return (m_invRotation * (-Z)); }
         Vector3   up() const { return (m_invRotation * Y); }
         Vector3   right() const { return (m_invRotation * X); }
         Vector2   getFOV() const { return {m_fovx, m_fovy}; }

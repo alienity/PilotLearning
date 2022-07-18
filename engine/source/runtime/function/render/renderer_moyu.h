@@ -6,11 +6,13 @@
 #include "runtime/function/render/rhi/d3d12/d3d12_swapChain.h"
 #include "runtime/function/render/rhi/shader_compiler.h"
 #include "runtime/function/render/rhi/rendergraph/RenderGraph.h"
+#include "runtime/function/render/render_resource_base.h"
 
 namespace Pilot
 {
     class WindowSystem;
     class RendererPresent;
+    class RenderResourceBase;
     class Renderer;
 
     struct RendererInitInfo
@@ -25,8 +27,11 @@ namespace Pilot
         RendererManager();
         ~RendererManager();
 
-        void  Initialize(RendererInitInfo initialize_info);
-        void  Tick();
+        void Initialize(RendererInitInfo initialize_info);
+
+        void PreparePassData(std::shared_ptr<RenderResourceBase> render_resource);
+
+        void Tick();
         
     protected:
         std::unique_ptr<RHI::D3D12Device>    Device;

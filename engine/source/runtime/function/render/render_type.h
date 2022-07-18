@@ -56,10 +56,10 @@ namespace Pilot
 
     struct MeshVertexDataDefinition
     {
-        float x, y, z;    // position
-        float nx, ny, nz; // normal
-        float tx, ty, tz; // tangent
-        float u, v;       // UV coordinates
+        float x, y, z;        // position
+        float nx, ny, nz;     // normal
+        float tx, ty, tz, tw; // tangent
+        float u, v;           // UV coordinates
     };
 
     struct MeshVertexBindingDataDefinition

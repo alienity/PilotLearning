@@ -1,10 +1,15 @@
 #pragma once
 
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+
 #include "runtime/core/math/moyu_math.h"
 #include "runtime/function/framework/object/object_id_allocator.h"
 
 #include <string>
 #include <vector>
+#include <limits>
 
 namespace Pilot
 {

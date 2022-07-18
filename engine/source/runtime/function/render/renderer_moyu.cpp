@@ -35,6 +35,11 @@ namespace Pilot
         MoYuRenderer = std::make_unique<DeferredRenderer>(Device.get(), Compiler.get(), SwapChain.get());
     }
 
+    void RendererManager::PreparePassData(std::shared_ptr<RenderResourceBase> render_resource)
+    {
+
+    }
+
     void RendererManager::Tick()
     {
         RHI::D3D12CommandContext& Context = Device->GetLinkedDevice()->GetCommandContext();
