@@ -16,20 +16,14 @@ namespace Pilot
 
     struct IBLResource
     {
-        VkImage       _brdfLUT_texture_image {VK_NULL_HANDLE};
-        VkImageView   _brdfLUT_texture_image_view {VK_NULL_HANDLE};
-        VkSampler     _brdfLUT_texture_sampler {VK_NULL_HANDLE};
-        VmaAllocation _brdfLUT_texture_image_allocation;
+        RHI::D3D12Texture            _brdfLUT_texture_image;
+        RHI::D3D12ShaderResourceView _brdfLUT_texture_image_view;
 
-        VkImage       _irradiance_texture_image {VK_NULL_HANDLE};
-        VkImageView   _irradiance_texture_image_view {VK_NULL_HANDLE};
-        VkSampler     _irradiance_texture_sampler {VK_NULL_HANDLE};
-        VmaAllocation _irradiance_texture_image_allocation;
+        RHI::D3D12Texture            _irradiance_texture_image;
+        RHI::D3D12ShaderResourceView _irradiance_texture_image_view;
 
-        VkImage       _specular_texture_image {VK_NULL_HANDLE};
-        VkImageView   _specular_texture_image_view {VK_NULL_HANDLE};
-        VkSampler     _specular_texture_sampler {VK_NULL_HANDLE};
-        VmaAllocation _specular_texture_image_allocation;
+        RHI::D3D12Texture            _specular_texture_image;
+        RHI::D3D12ShaderResourceView _specular_texture_image_view;
     };
 
     struct IBLResourceData
@@ -50,9 +44,8 @@ namespace Pilot
 
     struct ColorGradingResource
     {
-        VkImage       _color_grading_LUT_texture_image {VK_NULL_HANDLE};
-        VkImageView   _color_grading_LUT_texture_image_view {VK_NULL_HANDLE};
-        VmaAllocation _color_grading_LUT_texture_image_allocation;
+        RHI::D3D12Texture            _color_grading_LUT_texture_image;
+        RHI::D3D12ShaderResourceView _color_grading_LUT_texture_image_view;
     };
 
     struct ColorGradingResourceData
@@ -63,6 +56,7 @@ namespace Pilot
         DXGI_FORMAT        _color_grading_LUT_texture_image_format;
     };
 
+    /*
     struct StorageBuffer
     {
         // limits
@@ -71,27 +65,19 @@ namespace Pilot
         uint32_t _max_storage_buffer_range {1 << 27};
         uint32_t _non_coherent_atom_size {256};
 
-        VkBuffer              _global_upload_ringbuffer;
-        VkDeviceMemory        _global_upload_ringbuffer_memory;
-        void*                 _global_upload_ringbuffer_memory_pointer;
-        std::vector<uint32_t> _global_upload_ringbuffers_begin;
-        std::vector<uint32_t> _global_upload_ringbuffers_end;
-        std::vector<uint32_t> _global_upload_ringbuffers_size;
-
-        VkBuffer       _global_null_descriptor_storage_buffer;
-        VkDeviceMemory _global_null_descriptor_storage_buffer_memory;
+        RHI::D3D12Buffer _global_null_descriptor_storage_buffer;
 
         // axis
-        VkBuffer       _axis_inefficient_storage_buffer;
-        VkDeviceMemory _axis_inefficient_storage_buffer_memory;
-        void*          _axis_inefficient_storage_buffer_memory_pointer;
+        RHI::D3D12Buffer _axis_inefficient_storage_buffer;
+        void*            _axis_inefficient_storage_buffer_memory_pointer;
     };
+    */
 
     struct GlobalRenderResource
     {
         IBLResource          _ibl_resource;
         ColorGradingResource _color_grading_resource;
-        StorageBuffer        _storage_buffer;
+        //StorageBuffer        _storage_buffer;
     };
 
     class RenderResource : public RenderResourceBase
@@ -116,8 +102,6 @@ namespace Pilot
 
         D3D12PBRMaterial& getEntityMaterial(RenderEntity entity);
 
-        void resetRingBufferOffset(uint8_t current_frame_index);
-
         // global rendering resource, include IBL data, global storage buffer
         GlobalRenderResource m_global_render_resource;
 
@@ -131,46 +115,49 @@ namespace Pilot
         ParticleBillboardPerframeStorageBufferObject   m_particlebillboard_perframe_storage_buffer_object;
 
         // cached mesh and material
-        std::map<size_t, D3D12Mesh>        m_vulkan_meshes;
-        std::map<size_t, D3D12PBRMaterial> m_vulkan_pbr_materials;
+        std::map<size_t, D3D12Mesh>        m_d3d12_meshes;
+        std::map<size_t, D3D12PBRMaterial> m_d3d12_pbr_materials;
 
-        // descriptor set layout in main camera pass will be used when uploading resource
-        const VkDescriptorSetLayout* m_mesh_descriptor_set_layout {nullptr};
-        const VkDescriptorSetLayout* m_material_descriptor_set_layout {nullptr};
+    protected:
+        void createTex2D(uint32_t                      width,
+                         uint32_t                      height,
+                         void*                         pixel,
+                         DXGI_FORMAT                   format,
+                         RHI::D3D12Texture&            tex2d,
+                         RHI::D3D12ShaderResourceView& tex2d_view,
+                         bool                          batch = false);
+        void createTex2D(std::shared_ptr<TextureData>& tex2d_data,
+                         RHI::D3D12Texture&            tex2d,
+                         RHI::D3D12ShaderResourceView& tex2d_view,
+                         bool                          batch = false);
+
+        void createCubeMap(std::array<std::shared_ptr<TextureData>, 6>& cube_maps,
+                           RHI::D3D12Texture&                           cube_tex,
+                           RHI::D3D12ShaderResourceView&                cube_tex_view,
+                           bool                                         batch = false);
 
     private:
-        void createAndMapStorageBuffer(std::shared_ptr<RHI> rhi);
-        void createIBLSamplers(std::shared_ptr<RHI> rhi);
-        void createIBLTextures(std::shared_ptr<RHI>                        rhi,
-                               std::array<std::shared_ptr<TextureData>, 6> irradiance_maps,
-                               std::array<std::shared_ptr<TextureData>, 6> specular_maps);
 
-        VulkanMesh& getOrCreateVulkanMesh(std::shared_ptr<RHI> rhi, RenderEntity entity, RenderMeshData mesh_data);
-        VulkanPBRMaterial&
-        getOrCreateVulkanMaterial(std::shared_ptr<RHI> rhi, RenderEntity entity, RenderMaterialData material_data);
+        D3D12Mesh&        getOrCreateD3D12Mesh(RenderEntity entity, RenderMeshData mesh_data);
+        D3D12PBRMaterial& getOrCreateD3D12Material(RenderEntity entity, RenderMaterialData material_data);
 
-        void updateMeshData(std::shared_ptr<RHI>                          rhi,
-                            bool                                          enable_vertex_blending,
+        void updateMeshData(bool                                          enable_vertex_blending,
                             uint32_t                                      index_buffer_size,
                             void*                                         index_buffer_data,
                             uint32_t                                      vertex_buffer_size,
                             struct MeshVertexDataDefinition const*        vertex_buffer_data,
                             uint32_t                                      joint_binding_buffer_size,
                             struct MeshVertexBindingDataDefinition const* joint_binding_buffer_data,
-                            VulkanMesh&                                   now_mesh);
-        void updateVertexBuffer(std::shared_ptr<RHI>                          rhi,
-                                bool                                          enable_vertex_blending,
+                            D3D12Mesh&                                    now_mesh);
+        void updateVertexBuffer(bool                                          enable_vertex_blending,
                                 uint32_t                                      vertex_buffer_size,
                                 struct MeshVertexDataDefinition const*        vertex_buffer_data,
                                 uint32_t                                      joint_binding_buffer_size,
                                 struct MeshVertexBindingDataDefinition const* joint_binding_buffer_data,
                                 uint32_t                                      index_buffer_size,
                                 uint16_t*                                     index_buffer_data,
-                                VulkanMesh&                                   now_mesh);
-        void updateIndexBuffer(std::shared_ptr<RHI> rhi,
-                               uint32_t             index_buffer_size,
-                               void*                index_buffer_data,
-                               VulkanMesh&          now_mesh);
-        void updateTextureImageData(std::shared_ptr<RHI> rhi, const TextureDataToUpdate& texture_data);
+                                D3D12Mesh&                                    now_mesh);
+        void updateIndexBuffer(uint32_t index_buffer_size, void* index_buffer_data, D3D12Mesh& now_mesh);
+        void updateTextureImageData(const TextureDataToUpdate& texture_data);
     };
-} // namespace Piccolo
+} // namespace Pilot

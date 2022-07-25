@@ -8,6 +8,8 @@
 
 #include "runtime/function/global/global_context.h"
 
+#include "runtime/function/render/render_mesh_loader.h"
+
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
@@ -194,14 +196,7 @@ namespace Pilot
 
     StaticMeshData RenderResourceBase::loadStaticMesh(std::string filename, AxisAlignedBox& bounding_box)
     {
-        StaticMeshData mesh_data;
-
-        // 添加对象，因为mesh很多都是混在一起的，所以必须在外面就加载好，
-        // 同时把对象的层级结构也准备好，而输出给渲染器的只有mesh数据
-
-
-
-        return mesh_data;
+        return LoadModel(filename, bounding_box);
     }
 
     /*
@@ -373,4 +368,4 @@ namespace Pilot
         return mesh_data;
     }
     */
-} // namespace Piccolo
+} // namespace Pilot

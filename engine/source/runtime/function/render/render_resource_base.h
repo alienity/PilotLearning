@@ -46,12 +46,13 @@ namespace Pilot
         RenderMaterialData           loadMaterialData(const MaterialSourceDesc& source);
         AxisAlignedBox               getCachedBoudingBox(const MeshSourceDesc& source) const;
 
+    protected:
+        RHI::D3D12Device* m_device;
+        DirectX::ResourceUploadBatch m_resourceUpload;
+
     private:
         StaticMeshData loadStaticMesh(std::string mesh_file, AxisAlignedBox& bounding_box);
 
         std::unordered_map<MeshSourceDesc, AxisAlignedBox> m_bounding_box_cache_map;
-
-        RHI::D3D12Device* m_device;
-        DirectX::ResourceUploadBatch m_resourceUpload;
     };
-} // namespace Piccolo
+} // namespace Pilot

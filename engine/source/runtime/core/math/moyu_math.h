@@ -1262,6 +1262,7 @@ namespace Pilot
         AxisAlignedBox() {}
         AxisAlignedBox(const Vector3& center, const Vector3& half_extent);
 
+        void merge(const AxisAlignedBox& axis_aligned_box);
         void merge(const Vector3& new_point);
         void update(const Vector3& center, const Vector3& half_extent);
 

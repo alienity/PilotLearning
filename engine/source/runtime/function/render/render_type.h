@@ -39,6 +39,7 @@ namespace Pilot
         uint32_t m_depth {0};
         uint32_t m_mip_levels {0};
         uint32_t m_array_layers {0};
+        bool     m_is_srgb {false};
         void*    m_pixels {nullptr};
 
         DXGI_FORMAT m_format {DXGI_FORMAT::DXGI_FORMAT_R8G8B8A8_UNORM};

@@ -3,7 +3,12 @@
 
 #include "runtime/function/render/render_resource.h"
 
+#include "runtime/function/render/rhi/d3d12/d3d12_resource.h"
+#include "runtime/function/render/rhi/d3d12/d3d12_descriptor.h"
+
 #include "runtime/core/base/macro.h"
+
+#include "../Src/LoaderHelpers.h"
 
 #include <stdexcept>
 
@@ -11,8 +16,8 @@ namespace Pilot
 {
     void RenderResource::uploadGlobalRenderResource(LevelResourceDesc level_resource_desc)
     {
-        // create and map global storage buffer
-        createAndMapStorageBuffer(rhi);
+        //// create and map global storage buffer
+        //createAndMapStorageBuffer();
 
         // sky box irradiance
         SkyBoxIrradianceMap skybox_irradiance_map        = level_resource_desc.m_ibl_resource_desc.m_skybox_irradiance_map;
@@ -32,12 +37,6 @@ namespace Pilot
         std::shared_ptr<TextureData> specular_pos_z_map  = loadTextureHDR(skybox_specular_map.m_positive_z_map);
         std::shared_ptr<TextureData> specular_neg_z_map  = loadTextureHDR(skybox_specular_map.m_negative_z_map);
 
-        // brdf
-        std::shared_ptr<TextureData> brdf_map = loadTextureHDR(level_resource_desc.m_ibl_resource_desc.m_brdf_map);
-
-        // create IBL samplers
-        createIBLSamplers(rhi);
-
         // create IBL textures, take care of the texture order
         std::array<std::shared_ptr<TextureData>, 6> irradiance_maps = {irradiace_pos_x_map,
                                                                        irradiace_neg_x_map,
@@ -51,56 +50,57 @@ namespace Pilot
                                                                      specular_neg_z_map,
                                                                      specular_pos_y_map,
                                                                      specular_neg_y_map};
-        createIBLTextures(rhi, irradiance_maps, specular_maps);
 
-        // create brdf lut texture
-        VulkanUtil::createGlobalImage(rhi.get(),
-                                      m_global_render_resource._ibl_resource._brdfLUT_texture_image,
-                                      m_global_render_resource._ibl_resource._brdfLUT_texture_image_view,
-                                      m_global_render_resource._ibl_resource._brdfLUT_texture_image_allocation,
-                                      brdf_map->m_width,
-                                      brdf_map->m_height,
-                                      brdf_map->m_pixels,
-                                      brdf_map->m_format);
+        // brdf
+        std::shared_ptr<TextureData> brdf_map = loadTextureHDR(level_resource_desc.m_ibl_resource_desc.m_brdf_map);
 
         // color grading
         std::shared_ptr<TextureData> color_grading_map =
             loadTexture(level_resource_desc.m_color_grading_resource_desc.m_color_grading_map);
 
-        // create color grading texture
-        VulkanUtil::createGlobalImage(
-            rhi.get(),
-            m_global_render_resource._color_grading_resource._color_grading_LUT_texture_image,
-            m_global_render_resource._color_grading_resource._color_grading_LUT_texture_image_view,
-            m_global_render_resource._color_grading_resource._color_grading_LUT_texture_image_allocation,
-            color_grading_map->m_width,
-            color_grading_map->m_height,
-            color_grading_map->m_pixels,
-            color_grading_map->m_format,
-            1);
+        startUploadBatch();
+        {
+            // create irradiance cubemap
+            createCubeMap(irradiance_maps,
+                                m_global_render_resource._ibl_resource._irradiance_texture_image,
+                                m_global_render_resource._ibl_resource._irradiance_texture_image_view);
+
+            // create specular cubemap
+            createCubeMap(specular_maps,
+                                m_global_render_resource._ibl_resource._specular_texture_image,
+                                m_global_render_resource._ibl_resource._specular_texture_image_view);
+
+            // create brdf lut texture
+            createTex2D(brdf_map,
+                        m_global_render_resource._ibl_resource._brdfLUT_texture_image,
+                        m_global_render_resource._ibl_resource._brdfLUT_texture_image_view);
+
+            // create color grading texture
+            createTex2D(color_grading_map,
+                        m_global_render_resource._color_grading_resource._color_grading_LUT_texture_image,
+                        m_global_render_resource._color_grading_resource._color_grading_LUT_texture_image_view);
+        }
+        endUploadBatch();
     }
 
-    void RenderResource::uploadGameObjectRenderResource(std::shared_ptr<RHI> rhi,
-                                                        RenderEntity         render_entity,
-                                                        RenderMeshData       mesh_data,
-                                                        RenderMaterialData   material_data)
+    void RenderResource::uploadGameObjectRenderResource(RenderEntity       render_entity,
+                                                        RenderMeshData     mesh_data,
+                                                        RenderMaterialData material_data)
     {
-        getOrCreateVulkanMesh(rhi, render_entity, mesh_data);
-        getOrCreateVulkanMaterial(rhi, render_entity, material_data);
+        getOrCreateD3D12Mesh(render_entity, mesh_data);
+        getOrCreateD3D12Material(render_entity, material_data);
     }
 
-    void RenderResource::uploadGameObjectRenderResource(std::shared_ptr<RHI> rhi,
-                                                        RenderEntity         render_entity,
+    void RenderResource::uploadGameObjectRenderResource(RenderEntity         render_entity,
                                                         RenderMeshData       mesh_data)
     {
-        getOrCreateVulkanMesh(rhi, render_entity, mesh_data);
+        getOrCreateD3D12Mesh(render_entity, mesh_data);
     }
 
-    void RenderResource::uploadGameObjectRenderResource(std::shared_ptr<RHI> rhi,
-                                                        RenderEntity         render_entity,
+    void RenderResource::uploadGameObjectRenderResource(RenderEntity         render_entity,
                                                         RenderMaterialData   material_data)
     {
-        getOrCreateVulkanMaterial(rhi, render_entity, material_data);
+        getOrCreateD3D12Material(render_entity, material_data);
     }
 
     void RenderResource::updatePerFrameBuffer(std::shared_ptr<RenderScene>  render_scene,
@@ -118,7 +118,7 @@ namespace Pilot
         // set ubo data
         m_mesh_perframe_storage_buffer_object.proj_view_matrix = proj_view_matrix;
         m_mesh_perframe_storage_buffer_object.camera_position  = GLMUtil::fromVec3(camera_position);
-        m_mesh_perframe_storage_buffer_object.ambient_light    = ambient_light;
+        m_mesh_perframe_storage_buffer_object.ambient_light    = GLMUtil::fromVec3(ambient_light);
         m_mesh_perframe_storage_buffer_object.point_light_num  = point_light_num;
 
         m_mesh_point_light_shadow_perframe_storage_buffer_object.point_light_num = point_light_num;
@@ -132,9 +132,11 @@ namespace Pilot
 
             float radius = render_scene->m_point_light_list.m_lights[i].calculateRadius();
 
-            m_mesh_perframe_storage_buffer_object.scene_point_lights[i].position  = point_light_position;
+            m_mesh_perframe_storage_buffer_object.scene_point_lights[i].position =
+                GLMUtil::fromVec3(point_light_position);
             m_mesh_perframe_storage_buffer_object.scene_point_lights[i].radius    = radius;
-            m_mesh_perframe_storage_buffer_object.scene_point_lights[i].intensity = point_light_intensity;
+            m_mesh_perframe_storage_buffer_object.scene_point_lights[i].intensity =
+                GLMUtil::fromVec3(point_light_intensity);
 
             m_mesh_point_light_shadow_perframe_storage_buffer_object.point_lights_position_and_radius[i] =
                 Vector4(point_light_position, radius);
@@ -142,8 +144,9 @@ namespace Pilot
 
         // directional light
         m_mesh_perframe_storage_buffer_object.scene_directional_light.direction =
-            render_scene->m_directional_light.m_direction.normalisedCopy();
-        m_mesh_perframe_storage_buffer_object.scene_directional_light.color = render_scene->m_directional_light.m_color;
+            GLMUtil::fromVec3(Vector3::normalize(render_scene->m_directional_light.m_direction));
+        m_mesh_perframe_storage_buffer_object.scene_directional_light.color =
+            GLMUtil::fromVec3(render_scene->m_directional_light.m_color);
 
         // pick pass view projection matrix
         m_mesh_inefficient_pick_perframe_storage_buffer_object.proj_view_matrix = proj_view_matrix;
@@ -153,134 +156,19 @@ namespace Pilot
         m_particlebillboard_perframe_storage_buffer_object.up_direction     = GLMUtil::fromVec3(camera->up());
     }
 
-    void RenderResource::createIBLSamplers(std::shared_ptr<RHI> rhi)
-    {
-        VulkanRHI* raw_rhi = static_cast<VulkanRHI*>(rhi.get());
-
-        VkPhysicalDeviceProperties physical_device_properties {};
-        vkGetPhysicalDeviceProperties(raw_rhi->m_physical_device, &physical_device_properties);
-
-        VkSamplerCreateInfo samplerInfo {};
-        samplerInfo.sType                   = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-        samplerInfo.magFilter               = VK_FILTER_LINEAR;
-        samplerInfo.minFilter               = VK_FILTER_LINEAR;
-        samplerInfo.addressModeU            = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-        samplerInfo.addressModeV            = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-        samplerInfo.addressModeW            = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-        samplerInfo.anisotropyEnable        = VK_TRUE;                                                // close:false
-        samplerInfo.maxAnisotropy           = physical_device_properties.limits.maxSamplerAnisotropy; // close :1.0f
-        samplerInfo.borderColor             = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
-        samplerInfo.unnormalizedCoordinates = VK_FALSE;
-        samplerInfo.compareEnable           = VK_FALSE;
-        samplerInfo.compareOp               = VK_COMPARE_OP_ALWAYS;
-        samplerInfo.mipmapMode              = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-        samplerInfo.maxLod                  = 0.0f;
-
-        if (m_global_render_resource._ibl_resource._brdfLUT_texture_sampler != VK_NULL_HANDLE)
-        {
-            vkDestroySampler(
-                raw_rhi->m_device, m_global_render_resource._ibl_resource._brdfLUT_texture_sampler, nullptr);
-        }
-
-        if (vkCreateSampler(raw_rhi->m_device,
-                            &samplerInfo,
-                            nullptr,
-                            &m_global_render_resource._ibl_resource._brdfLUT_texture_sampler) != VK_SUCCESS)
-        {
-            throw std::runtime_error("vk create sampler");
-        }
-
-        samplerInfo.minLod     = 0.0f;
-        samplerInfo.maxLod     = 8.0f; // TODO: irradiance_texture_miplevels
-        samplerInfo.mipLodBias = 0.0f;
-
-        if (m_global_render_resource._ibl_resource._irradiance_texture_sampler != VK_NULL_HANDLE)
-        {
-            vkDestroySampler(
-                raw_rhi->m_device, m_global_render_resource._ibl_resource._irradiance_texture_sampler, nullptr);
-        }
-
-        if (vkCreateSampler(raw_rhi->m_device,
-                            &samplerInfo,
-                            nullptr,
-                            &m_global_render_resource._ibl_resource._irradiance_texture_sampler) != VK_SUCCESS)
-        {
-            throw std::runtime_error("vk create sampler");
-        }
-
-        if (m_global_render_resource._ibl_resource._specular_texture_sampler != VK_NULL_HANDLE)
-        {
-            vkDestroySampler(
-                raw_rhi->m_device, m_global_render_resource._ibl_resource._specular_texture_sampler, nullptr);
-        }
-
-        if (vkCreateSampler(raw_rhi->m_device,
-                            &samplerInfo,
-                            nullptr,
-                            &m_global_render_resource._ibl_resource._specular_texture_sampler) != VK_SUCCESS)
-        {
-            throw std::runtime_error("vk create sampler");
-        }
-    }
-
-    void RenderResource::createIBLTextures(std::shared_ptr<RHI>                        rhi,
-                                           std::array<std::shared_ptr<TextureData>, 6> irradiance_maps,
-                                           std::array<std::shared_ptr<TextureData>, 6> specular_maps)
-    {
-        // assume all textures have same width, height and format
-        uint32_t irradiance_cubemap_miplevels =
-            static_cast<uint32_t>(
-                std::floor(std::log2(std::max(irradiance_maps[0]->m_width, irradiance_maps[0]->m_height)))) +
-            1;
-        VulkanUtil::createCubeMap(rhi.get(),
-                                  m_global_render_resource._ibl_resource._irradiance_texture_image,
-                                  m_global_render_resource._ibl_resource._irradiance_texture_image_view,
-                                  m_global_render_resource._ibl_resource._irradiance_texture_image_allocation,
-                                  irradiance_maps[0]->m_width,
-                                  irradiance_maps[0]->m_height,
-                                  {irradiance_maps[0]->m_pixels,
-                                   irradiance_maps[1]->m_pixels,
-                                   irradiance_maps[2]->m_pixels,
-                                   irradiance_maps[3]->m_pixels,
-                                   irradiance_maps[4]->m_pixels,
-                                   irradiance_maps[5]->m_pixels},
-                                  irradiance_maps[0]->m_format,
-                                  irradiance_cubemap_miplevels);
-
-        uint32_t specular_cubemap_miplevels =
-            static_cast<uint32_t>(
-                std::floor(std::log2(std::max(specular_maps[0]->m_width, specular_maps[0]->m_height)))) +
-            1;
-        VulkanUtil::createCubeMap(rhi.get(),
-                                  m_global_render_resource._ibl_resource._specular_texture_image,
-                                  m_global_render_resource._ibl_resource._specular_texture_image_view,
-                                  m_global_render_resource._ibl_resource._specular_texture_image_allocation,
-                                  specular_maps[0]->m_width,
-                                  specular_maps[0]->m_height,
-                                  {specular_maps[0]->m_pixels,
-                                   specular_maps[1]->m_pixels,
-                                   specular_maps[2]->m_pixels,
-                                   specular_maps[3]->m_pixels,
-                                   specular_maps[4]->m_pixels,
-                                   specular_maps[5]->m_pixels},
-                                  specular_maps[0]->m_format,
-                                  specular_cubemap_miplevels);
-    }
-
-    VulkanMesh&
-    RenderResource::getOrCreateVulkanMesh(std::shared_ptr<RHI> rhi, RenderEntity entity, RenderMeshData mesh_data)
+    D3D12Mesh& RenderResource::getOrCreateD3D12Mesh(RenderEntity entity, RenderMeshData mesh_data)
     {
         size_t assetid = entity.m_mesh_asset_id;
 
-        auto it = m_vulkan_meshes.find(assetid);
-        if (it != m_vulkan_meshes.end())
+        auto it = m_d3d12_meshes.find(assetid);
+        if (it != m_d3d12_meshes.end())
         {
             return it->second;
         }
         else
         {
-            VulkanMesh temp;
-            auto       res = m_vulkan_meshes.insert(std::make_pair(assetid, std::move(temp)));
+            D3D12Mesh temp;
+            auto      res = m_d3d12_meshes.insert(std::make_pair(assetid, std::move(temp)));
             assert(res.second);
 
             uint32_t index_buffer_size = static_cast<uint32_t>(mesh_data.m_static_mesh_data.m_index_buffer->m_size);
@@ -290,15 +178,14 @@ namespace Pilot
             MeshVertexDataDefinition* vertex_buffer_data =
                 reinterpret_cast<MeshVertexDataDefinition*>(mesh_data.m_static_mesh_data.m_vertex_buffer->m_data);
 
-            VulkanMesh& now_mesh = res.first->second;
+            D3D12Mesh& now_mesh = res.first->second;
 
             if (mesh_data.m_skeleton_binding_buffer)
             {
                 uint32_t joint_binding_buffer_size = (uint32_t)mesh_data.m_skeleton_binding_buffer->m_size;
                 MeshVertexBindingDataDefinition* joint_binding_buffer_data =
                     reinterpret_cast<MeshVertexBindingDataDefinition*>(mesh_data.m_skeleton_binding_buffer->m_data);
-                updateMeshData(rhi,
-                               true,
+                updateMeshData(true,
                                index_buffer_size,
                                index_buffer_data,
                                vertex_buffer_size,
@@ -309,14 +196,13 @@ namespace Pilot
             }
             else
             {
-                updateMeshData(rhi,
-                               false,
+                updateMeshData(false,
                                index_buffer_size,
                                index_buffer_data,
                                vertex_buffer_size,
                                vertex_buffer_data,
                                0,
-                               NULL,
+                               nullptr,
                                now_mesh);
             }
 
@@ -324,23 +210,19 @@ namespace Pilot
         }
     }
 
-    VulkanPBRMaterial& RenderResource::getOrCreateVulkanMaterial(std::shared_ptr<RHI> rhi,
-                                                                 RenderEntity         entity,
-                                                                 RenderMaterialData   material_data)
+    D3D12PBRMaterial& RenderResource::getOrCreateD3D12Material(RenderEntity entity, RenderMaterialData material_data)
     {
-        VulkanRHI* vulkan_context = static_cast<VulkanRHI*>(rhi.get());
-
         size_t assetid = entity.m_material_asset_id;
 
-        auto it = m_vulkan_pbr_materials.find(assetid);
-        if (it != m_vulkan_pbr_materials.end())
+        auto it = m_d3d12_pbr_materials.find(assetid);
+        if (it != m_d3d12_pbr_materials.end())
         {
             return it->second;
         }
         else
         {
-            VulkanPBRMaterial temp;
-            auto              res = m_vulkan_pbr_materials.insert(std::make_pair(assetid, std::move(temp)));
+            D3D12PBRMaterial temp;
+            auto              res = m_d3d12_pbr_materials.insert(std::make_pair(assetid, std::move(temp)));
             assert(res.second);
 
             float empty_image[] = {0.5f, 0.5f, 0.5f, 0.5f};
@@ -348,7 +230,7 @@ namespace Pilot
             void*              base_color_image_pixels = empty_image;
             uint32_t           base_color_image_width  = 1;
             uint32_t           base_color_image_height = 1;
-            PICCOLO_PIXEL_FORMAT base_color_image_format = PICCOLO_PIXEL_FORMAT::PICCOLO_PIXEL_FORMAT_R8G8B8A8_SRGB;
+            DXGI_FORMAT        base_color_image_format = DXGI_FORMAT::DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
             if (material_data.m_base_color_texture)
             {
                 base_color_image_pixels = material_data.m_base_color_texture->m_pixels;
@@ -360,7 +242,7 @@ namespace Pilot
             void*              metallic_roughness_image_pixels = empty_image;
             uint32_t           metallic_roughness_width        = 1;
             uint32_t           metallic_roughness_height       = 1;
-            PICCOLO_PIXEL_FORMAT metallic_roughness_format       = PICCOLO_PIXEL_FORMAT::PICCOLO_PIXEL_FORMAT_R8G8B8A8_UNORM;
+            DXGI_FORMAT        metallic_roughness_format       = DXGI_FORMAT::DXGI_FORMAT_R8G8B8A8_UNORM;
             if (material_data.m_metallic_roughness_texture)
             {
                 metallic_roughness_image_pixels = material_data.m_metallic_roughness_texture->m_pixels;
@@ -372,7 +254,7 @@ namespace Pilot
             void*              normal_roughness_image_pixels = empty_image;
             uint32_t           normal_roughness_width        = 1;
             uint32_t           normal_roughness_height       = 1;
-            PICCOLO_PIXEL_FORMAT normal_roughness_format       = PICCOLO_PIXEL_FORMAT::PICCOLO_PIXEL_FORMAT_R8G8B8A8_UNORM;
+            DXGI_FORMAT        normal_roughness_format       = DXGI_FORMAT::DXGI_FORMAT_R8G8B8A8_UNORM;
             if (material_data.m_normal_texture)
             {
                 normal_roughness_image_pixels = material_data.m_normal_texture->m_pixels;
@@ -384,7 +266,7 @@ namespace Pilot
             void*              occlusion_image_pixels = empty_image;
             uint32_t           occlusion_image_width  = 1;
             uint32_t           occlusion_image_height = 1;
-            PICCOLO_PIXEL_FORMAT occlusion_image_format = PICCOLO_PIXEL_FORMAT::PICCOLO_PIXEL_FORMAT_R8G8B8A8_UNORM;
+            DXGI_FORMAT        occlusion_image_format = DXGI_FORMAT::DXGI_FORMAT_R8G8B8A8_UNORM;
             if (material_data.m_occlusion_texture)
             {
                 occlusion_image_pixels = material_data.m_occlusion_texture->m_pixels;
@@ -396,7 +278,7 @@ namespace Pilot
             void*              emissive_image_pixels = empty_image;
             uint32_t           emissive_image_width  = 1;
             uint32_t           emissive_image_height = 1;
-            PICCOLO_PIXEL_FORMAT emissive_image_format = PICCOLO_PIXEL_FORMAT::PICCOLO_PIXEL_FORMAT_R8G8B8A8_UNORM;
+            DXGI_FORMAT        emissive_image_format = DXGI_FORMAT::DXGI_FORMAT_R8G8B8A8_UNORM;
             if (material_data.m_emissive_texture)
             {
                 emissive_image_pixels = material_data.m_emissive_texture->m_pixels;
@@ -405,7 +287,7 @@ namespace Pilot
                 emissive_image_format = material_data.m_emissive_texture->m_format;
             }
 
-            VulkanPBRMaterial& now_material = res.first->second;
+            D3D12PBRMaterial& now_material = res.first->second;
 
             // similiarly to the vertex/index buffer, we should allocate the uniform
             // buffer in DEVICE_LOCAL memory and use the temp stage buffer to copy the
@@ -496,7 +378,7 @@ namespace Pilot
             update_texture_data.emissive_image_format           = emissive_image_format;
             update_texture_data.now_material                    = &now_material;
 
-            updateTextureImageData(rhi, update_texture_data);
+            updateTextureImageData(update_texture_data);
 
             VkDescriptorSetAllocateInfo material_descriptor_set_alloc_info;
             material_descriptor_set_alloc_info.sType              = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
@@ -598,15 +480,14 @@ namespace Pilot
         }
     }
 
-    void RenderResource::updateMeshData(std::shared_ptr<RHI>                   rhi,
-                                        bool                                   enable_vertex_blending,
+    void RenderResource::updateMeshData(bool                                   enable_vertex_blending,
                                         uint32_t                               index_buffer_size,
                                         void*                                  index_buffer_data,
                                         uint32_t                               vertex_buffer_size,
                                         MeshVertexDataDefinition const*        vertex_buffer_data,
                                         uint32_t                               joint_binding_buffer_size,
                                         MeshVertexBindingDataDefinition const* joint_binding_buffer_data,
-                                        VulkanMesh&                            now_mesh)
+                                        D3D12Mesh&                             now_mesh)
     {
         now_mesh.enable_vertex_blending = enable_vertex_blending;
         assert(0 == (vertex_buffer_size % sizeof(MeshVertexDataDefinition)));
@@ -625,18 +506,15 @@ namespace Pilot
         updateIndexBuffer(rhi, index_buffer_size, index_buffer_data, now_mesh);
     }
 
-    void RenderResource::updateVertexBuffer(std::shared_ptr<RHI>                   rhi,
-                                            bool                                   enable_vertex_blending,
+    void RenderResource::updateVertexBuffer(bool                                   enable_vertex_blending,
                                             uint32_t                               vertex_buffer_size,
                                             MeshVertexDataDefinition const*        vertex_buffer_data,
                                             uint32_t                               joint_binding_buffer_size,
                                             MeshVertexBindingDataDefinition const* joint_binding_buffer_data,
                                             uint32_t                               index_buffer_size,
                                             uint16_t*                              index_buffer_data,
-                                            VulkanMesh&                            now_mesh)
+                                            D3D12Mesh&                             now_mesh)
     {
-        VulkanRHI* vulkan_context = static_cast<VulkanRHI*>(rhi.get());
-
         if (enable_vertex_blending)
         {
             assert(0 == (vertex_buffer_size % sizeof(MeshVertexDataDefinition)));
@@ -1030,10 +908,7 @@ namespace Pilot
         }
     }
 
-    void RenderResource::updateIndexBuffer(std::shared_ptr<RHI> rhi,
-                                           uint32_t             index_buffer_size,
-                                           void*                index_buffer_data,
-                                           VulkanMesh&          now_mesh)
+    void RenderResource::updateIndexBuffer(uint32_t index_buffer_size, void* index_buffer_data, D3D12Mesh& now_mesh)
     {
         VulkanRHI* vulkan_context = static_cast<VulkanRHI*>(rhi.get());
 
@@ -1079,60 +954,54 @@ namespace Pilot
         vkFreeMemory(vulkan_context->m_device, inefficient_staging_buffer_memory, nullptr);
     }
 
-    void RenderResource::updateTextureImageData(std::shared_ptr<RHI> rhi, const TextureDataToUpdate& texture_data)
+    void RenderResource::updateTextureImageData(const TextureDataToUpdate& texture_data)
     {
-        VulkanUtil::createGlobalImage(rhi.get(),
-                                      texture_data.now_material->base_color_texture_image,
-                                      texture_data.now_material->base_color_image_view,
-                                      texture_data.now_material->base_color_image_allocation,
-                                      texture_data.base_color_image_width,
-                                      texture_data.base_color_image_height,
-                                      texture_data.base_color_image_pixels,
-                                      texture_data.base_color_image_format);
+        startUploadBatch();
 
-        VulkanUtil::createGlobalImage(rhi.get(),
-                                      texture_data.now_material->metallic_roughness_texture_image,
-                                      texture_data.now_material->metallic_roughness_image_view,
-                                      texture_data.now_material->metallic_roughness_image_allocation,
-                                      texture_data.metallic_roughness_image_width,
-                                      texture_data.metallic_roughness_image_height,
-                                      texture_data.metallic_roughness_image_pixels,
-                                      texture_data.metallic_roughness_image_format);
+        createTex2D(texture_data.base_color_image_width,
+                    texture_data.base_color_image_height,
+                    texture_data.base_color_image_pixels,
+                    texture_data.base_color_image_format,
+                    texture_data.now_material->base_color_texture_image,
+                    texture_data.now_material->base_color_image_view);
 
-        VulkanUtil::createGlobalImage(rhi.get(),
-                                      texture_data.now_material->normal_texture_image,
-                                      texture_data.now_material->normal_image_view,
-                                      texture_data.now_material->normal_image_allocation,
-                                      texture_data.normal_roughness_image_width,
-                                      texture_data.normal_roughness_image_height,
-                                      texture_data.normal_roughness_image_pixels,
-                                      texture_data.normal_roughness_image_format);
+        createTex2D(texture_data.metallic_roughness_image_width,
+                    texture_data.metallic_roughness_image_height,
+                    texture_data.metallic_roughness_image_pixels,
+                    texture_data.metallic_roughness_image_format,
+                    texture_data.now_material->metallic_roughness_texture_image,
+                    texture_data.now_material->metallic_roughness_image_view);
 
-        VulkanUtil::createGlobalImage(rhi.get(),
-                                      texture_data.now_material->occlusion_texture_image,
-                                      texture_data.now_material->occlusion_image_view,
-                                      texture_data.now_material->occlusion_image_allocation,
-                                      texture_data.occlusion_image_width,
-                                      texture_data.occlusion_image_height,
-                                      texture_data.occlusion_image_pixels,
-                                      texture_data.occlusion_image_format);
+        createTex2D(texture_data.normal_roughness_image_width,
+                    texture_data.normal_roughness_image_height,
+                    texture_data.normal_roughness_image_pixels,
+                    texture_data.normal_roughness_image_format,
+                    texture_data.now_material->normal_texture_image,
+                    texture_data.now_material->normal_image_view);
 
-        VulkanUtil::createGlobalImage(rhi.get(),
-                                      texture_data.now_material->emissive_texture_image,
-                                      texture_data.now_material->emissive_image_view,
-                                      texture_data.now_material->emissive_image_allocation,
-                                      texture_data.emissive_image_width,
-                                      texture_data.emissive_image_height,
-                                      texture_data.emissive_image_pixels,
-                                      texture_data.emissive_image_format);
+        createTex2D(texture_data.occlusion_image_width,
+                    texture_data.occlusion_image_height,
+                    texture_data.occlusion_image_pixels,
+                    texture_data.occlusion_image_format,
+                    texture_data.now_material->occlusion_texture_image,
+                    texture_data.now_material->occlusion_image_view);
+
+        createTex2D(texture_data.emissive_image_width,
+                    texture_data.emissive_image_height,
+                    texture_data.emissive_image_pixels,
+                    texture_data.emissive_image_format,
+                    texture_data.now_material->emissive_texture_image,
+                    texture_data.now_material->emissive_image_view);
+
+        endUploadBatch();
     }
 
-    VulkanMesh& RenderResource::getEntityMesh(RenderEntity entity)
+    D3D12Mesh& RenderResource::getEntityMesh(RenderEntity entity)
     {
         size_t assetid = entity.m_mesh_asset_id;
 
-        auto it = m_vulkan_meshes.find(assetid);
-        if (it != m_vulkan_meshes.end())
+        auto it = m_d3d12_meshes.find(assetid);
+        if (it != m_d3d12_meshes.end())
         {
             return it->second;
         }
@@ -1142,12 +1011,12 @@ namespace Pilot
         }
     }
 
-    VulkanPBRMaterial& RenderResource::getEntityMaterial(RenderEntity entity)
+    D3D12PBRMaterial& RenderResource::getEntityMaterial(RenderEntity entity)
     {
         size_t assetid = entity.m_material_asset_id;
 
-        auto it = m_vulkan_pbr_materials.find(assetid);
-        if (it != m_vulkan_pbr_materials.end())
+        auto it = m_d3d12_pbr_materials.find(assetid);
+        if (it != m_d3d12_pbr_materials.end())
         {
             return it->second;
         }
@@ -1157,84 +1026,121 @@ namespace Pilot
         }
     }
 
-    void RenderResource::resetRingBufferOffset(uint8_t current_frame_index)
+    //-------------------------------------------------------------------------------------------
+    void RenderResource::createTex2D(uint32_t                      width,
+                                     uint32_t                      height,
+                                     void*                         pixel,
+                                     DXGI_FORMAT                   format,
+                                     RHI::D3D12Texture&            tex2d,
+                                     RHI::D3D12ShaderResourceView& tex2d_view,
+                                     bool                          batch = false)
     {
-        m_global_render_resource._storage_buffer._global_upload_ringbuffers_end[current_frame_index] =
-            m_global_render_resource._storage_buffer._global_upload_ringbuffers_begin[current_frame_index];
+        std::shared_ptr<TextureData> tex2d_data = std::make_shared<TextureData>();
+        tex2d_data->m_width                     = width;
+        tex2d_data->m_height                    = height;
+        tex2d_data->m_pixels                    = pixel;
+        tex2d_data->m_format                    = format;
+        createTex2D(tex2d_data, tex2d, tex2d_view, batch);
     }
 
-    void RenderResource::createAndMapStorageBuffer(std::shared_ptr<RHI> rhi)
+    void RenderResource::createTex2D(std::shared_ptr<TextureData>& tex2d_data,
+                                     RHI::D3D12Texture&            tex2d,
+                                     RHI::D3D12ShaderResourceView& tex2d_view,
+                                     bool                          batch)
     {
-        VulkanRHI*     raw_rhi          = static_cast<VulkanRHI*>(rhi.get());
-        StorageBuffer& _storage_buffer  = m_global_render_resource._storage_buffer;
-        uint32_t       frames_in_flight = raw_rhi->m_max_frames_in_flight;
+        if (batch)
+            this->startUploadBatch();
 
-        VkPhysicalDeviceProperties properties;
-        vkGetPhysicalDeviceProperties(raw_rhi->m_physical_device, &properties);
+        uint32_t tex2d_miplevels =
+            static_cast<uint32_t>(std::floor(std::log2(std::max(tex2d_data->m_width, tex2d_data->m_height)))) + 1;
 
-        _storage_buffer._min_uniform_buffer_offset_alignment =
-            static_cast<uint32_t>(properties.limits.minUniformBufferOffsetAlignment);
-        _storage_buffer._min_storage_buffer_offset_alignment =
-            static_cast<uint32_t>(properties.limits.minStorageBufferOffsetAlignment);
-        _storage_buffer._max_storage_buffer_range = properties.limits.maxStorageBufferRange;
-        _storage_buffer._non_coherent_atom_size   = properties.limits.nonCoherentAtomSize;
+        D3D12_RESOURCE_FLAGS resourceFlags = D3D12_RESOURCE_FLAG_NONE | D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
+        D3D12_RESOURCE_DESC  resourceDesc  = CD3DX12_RESOURCE_DESC::Tex2D(
+            tex2d_data->m_format, tex2d_data->m_width, tex2d_data->m_height, 1, tex2d_miplevels, 1, 0, resourceFlags);
 
-        // In Vulkan, the storage buffer should be pre-allocated.
-        // The size is 128MB in NVIDIA D3D11
-        // driver(https://developer.nvidia.com/content/constant-buffers-without-constant-pain-0).
-        uint32_t global_storage_buffer_size = 1024 * 1024 * 128;
-        VulkanUtil::createBuffer(raw_rhi->m_physical_device,
-                                 raw_rhi->m_device,
-                                 global_storage_buffer_size,
-                                 VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
-                                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                                 _storage_buffer._global_upload_ringbuffer,
-                                 _storage_buffer._global_upload_ringbuffer_memory);
+        tex2d = RHI::D3D12Texture(m_device->GetLinkedDevice(), resourceDesc, std::nullopt, false);
 
-        _storage_buffer._global_upload_ringbuffers_begin.resize(frames_in_flight);
-        _storage_buffer._global_upload_ringbuffers_end.resize(frames_in_flight);
-        _storage_buffer._global_upload_ringbuffers_size.resize(frames_in_flight);
-        for (uint32_t i = 0; i < frames_in_flight; ++i)
+        D3D12_SHADER_RESOURCE_VIEW_DESC resourceViewDesc;
+        resourceViewDesc.Format =
+            tex2d_data->m_is_srgb ? DirectX::LoaderHelpers::MakeSRGB(resourceDesc.Format) : resourceDesc.Format;
+        resourceViewDesc.ViewDimension                   = D3D12_SRV_DIMENSION_TEXTURE2D;
+        resourceViewDesc.Shader4ComponentMapping         = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+        resourceViewDesc.TextureCube.MostDetailedMip     = 0;
+        resourceViewDesc.TextureCube.MipLevels           = resourceDesc.MipLevels;
+        resourceViewDesc.TextureCube.ResourceMinLODClamp = 0;
+
+        tex2d_view = RHI::D3D12ShaderResourceView(m_device->GetLinkedDevice(), resourceViewDesc, &tex2d);
+
+        D3D12_SUBRESOURCE_DATA resourceInitData = {
+            tex2d_data->m_pixels, tex2d_data->m_width * DirectX::LoaderHelpers::BitsPerPixel(tex2d_data->m_format), 0};
+
+        m_resourceUpload.Transition(
+            tex2d.GetResource(), tex2d.GetResourceState().GetSubresourceState(0), D3D12_RESOURCE_STATE_COPY_DEST);
+
+        m_resourceUpload.Upload(tex2d.GetResource(), 0, &resourceInitData, 1);
+
+        m_resourceUpload.GenerateMips(tex2d.GetResource());
+
+        m_resourceUpload.Transition(
+            tex2d.GetResource(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+
+        if (batch)
+            this->endUploadBatch();
+    }
+
+
+    void RenderResource::createCubeMap(std::array<std::shared_ptr<TextureData>, 6>& cube_maps,
+                                       RHI::D3D12Texture&                           cube_tex,
+                                       RHI::D3D12ShaderResourceView&                cube_tex_view,
+                                       bool                                         batch)
+    {
+        if (batch)
+            this->startUploadBatch();
+
+        // assume all textures have same width, height and format
+        uint32_t cubemap_miplevels =
+            static_cast<uint32_t>(std::floor(std::log2(std::max(cube_maps[0]->m_width, cube_maps[0]->m_height)))) + 1;
+
+        D3D12_RESOURCE_FLAGS resourceFlags = D3D12_RESOURCE_FLAG_NONE | D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
+        D3D12_RESOURCE_DESC  resourceDesc  = CD3DX12_RESOURCE_DESC::Tex2D(cube_maps[0]->m_format,
+                                                                        cube_maps[0]->m_width,
+                                                                        cube_maps[0]->m_height,
+                                                                        6,
+                                                                        cubemap_miplevels,
+                                                                        1,
+                                                                        0,
+                                                                        resourceFlags);
+
+        cube_tex = RHI::D3D12Texture(m_device->GetLinkedDevice(), resourceDesc, std::nullopt, true);
+
+        D3D12_SHADER_RESOURCE_VIEW_DESC resourceViewDesc;
+        resourceViewDesc.Format                          = resourceDesc.Format;
+        resourceViewDesc.ViewDimension                   = D3D12_SRV_DIMENSION_TEXTURECUBE;
+        resourceViewDesc.Shader4ComponentMapping         = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+        resourceViewDesc.TextureCube.MostDetailedMip     = 0;
+        resourceViewDesc.TextureCube.MipLevels           = resourceDesc.MipLevels;
+        resourceViewDesc.TextureCube.ResourceMinLODClamp = 0;
+
+        cube_tex_view = RHI::D3D12ShaderResourceView(m_device->GetLinkedDevice(), resourceViewDesc, &cube_tex);
+
+        D3D12_SUBRESOURCE_DATA resourceInitData = {cube_maps[0]->m_pixels, cube_maps[0]->m_width * 4, 0};
+
+        m_resourceUpload.Transition(
+            cube_tex.GetResource(), cube_tex.GetResourceState().GetSubresourceState(0), D3D12_RESOURCE_STATE_COPY_DEST);
+
+        for (size_t i = 0; i < 6; i++)
         {
-            _storage_buffer._global_upload_ringbuffers_begin[i] = (global_storage_buffer_size * i) / frames_in_flight;
-            _storage_buffer._global_upload_ringbuffers_size[i] =
-                (global_storage_buffer_size * (i + 1)) / frames_in_flight -
-                (global_storage_buffer_size * i) / frames_in_flight;
+            m_resourceUpload.Upload(cube_tex.GetResource(), cubemap_miplevels * i, &resourceInitData, 1);
+
+            m_resourceUpload.GenerateMips(cube_tex.GetResource());
         }
 
-        // axis
-        VulkanUtil::createBuffer(raw_rhi->m_physical_device,
-                                 raw_rhi->m_device,
-                                 sizeof(AxisStorageBufferObject),
-                                 VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
-                                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                                 _storage_buffer._axis_inefficient_storage_buffer,
-                                 _storage_buffer._axis_inefficient_storage_buffer_memory);
+        m_resourceUpload.Transition(
+            cube_tex.GetResource(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 
-        // null descriptor
-        VulkanUtil::createBuffer(raw_rhi->m_physical_device,
-                                 raw_rhi->m_device,
-                                 64,
-                                 VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
-                                 0,
-                                 _storage_buffer._global_null_descriptor_storage_buffer,
-                                 _storage_buffer._global_null_descriptor_storage_buffer_memory);
-
-        // TODO: Unmap when program terminates
-        vkMapMemory(raw_rhi->m_device,
-                    _storage_buffer._global_upload_ringbuffer_memory,
-                    0,
-                    VK_WHOLE_SIZE,
-                    0,
-                    &_storage_buffer._global_upload_ringbuffer_memory_pointer);
-
-        vkMapMemory(raw_rhi->m_device,
-                    _storage_buffer._axis_inefficient_storage_buffer_memory,
-                    0,
-                    VK_WHOLE_SIZE,
-                    0,
-                    &_storage_buffer._axis_inefficient_storage_buffer_memory_pointer);
-
-        static_assert(64 >= sizeof(MeshVertex::VulkanMeshVertexJointBinding), "");
+        if (batch)
+            this->endUploadBatch();
     }
-} // namespace Piccolo
+
+
+} // namespace Pilot

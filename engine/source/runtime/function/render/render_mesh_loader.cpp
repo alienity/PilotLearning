@@ -8,6 +8,21 @@
 #include <assimp/scene.h>           // Output data structure
 #include <assimp/postprocess.h>     // Post processing flags
 
+
+struct ModelLoaderMesh
+{
+    Pilot::AxisAlignedBox                        bounding_box_;
+    std::vector<Pilot::MeshVertexDataDefinition> vertexs_;
+    std::vector<std::uint16_t>                   indices_;
+};
+
+struct MeshLoaderNode
+{
+    Pilot::AxisAlignedBox        bounding_box_;
+    std::vector<ModelLoaderMesh> meshes_;
+    std::vector<MeshLoaderNode>  children_;
+};
+
 class MittTangentsHelper
 {
 public:
@@ -33,9 +48,41 @@ void            ProcessNode(aiNode* node, const aiScene* scene, MeshLoaderNode& 
 ModelLoaderMesh ProcessMesh(aiMesh* mesh);
 void            LoadModelNormal(std::string filename, MeshLoaderNode& meshes_);
 
-void LoadModel(std::string filename, MeshLoaderNode& mesh_)
+void RecursiveLoad(MeshLoaderNode&                               meshes_,
+                   std::vector<Pilot::MeshVertexDataDefinition>& vertexs_,
+                   std::vector<std::uint16_t>&                   indices_)
 {
-    LoadModelNormal(filename, mesh_);
+    for (size_t i = 0; i < meshes_.meshes_.size(); i++)
+    {
+        ModelLoaderMesh& curmesh_ = meshes_.meshes_[i];
+        vertexs_.insert(vertexs_.end(), curmesh_.vertexs_.begin(), curmesh_.vertexs_.end());
+        indices_.insert(indices_.end(), curmesh_.indices_.begin(), curmesh_.indices_.end());
+    }
+    for (size_t i = 0; i < meshes_.children_.size(); i++)
+    {
+        RecursiveLoad(meshes_.children_[i], vertexs_, indices_);
+
+        Pilot::AxisAlignedBox sub_bounding_box;
+
+    }
+}
+
+Pilot::StaticMeshData LoadModel(std::string filename, Pilot::AxisAlignedBox& bounding_box)
+{
+    MeshLoaderNode meshes_ = {};
+    LoadModelNormal(filename, meshes_);
+    
+    std::vector<Pilot::MeshVertexDataDefinition> vertexs_;
+    std::vector<std::uint16_t>                   indices_;
+    RecursiveLoad(meshes_, vertexs_, indices_);
+
+    Pilot::StaticMeshData mesh_data;
+    std::uint16_t         stride = sizeof(Pilot::MeshVertexDataDefinition);
+    mesh_data.m_vertex_buffer    = std::make_shared<Pilot::BufferData>(vertexs_.size() * stride);
+    mesh_data.m_index_buffer     = std::make_shared<Pilot::BufferData>(indices_.size() * sizeof(std::uint16_t));
+    bounding_box                 = meshes_.bounding_box_;
+
+    return mesh_data;
 }
 
 void ProcessNode(aiNode* node, const aiScene* scene, MeshLoaderNode& meshes_)
@@ -48,20 +95,23 @@ void ProcessNode(aiNode* node, const aiScene* scene, MeshLoaderNode& meshes_)
         MittTangentsHelper::calc(&mesh_);
 
         meshes_.meshes_.push_back(mesh_);
+        meshes_.bounding_box_.merge(mesh_.bounding_box_);
     }
 
     meshes_.children_.resize(node->mNumChildren);
     for (UINT i = 0; i < node->mNumChildren; i++)
     {
         ProcessNode(node->mChildren[i], scene, meshes_.children_[i]);
+        meshes_.bounding_box_.merge(meshes_.children_[i].bounding_box_);
     }
 }
 
 ModelLoaderMesh ProcessMesh(aiMesh* mesh)
 {
     // Data to fill
+    Pilot::AxisAlignedBox                        bounding_box;
     std::vector<Pilot::MeshVertexDataDefinition> vertices;
-    std::vector<std::uint32_t>                   indices;
+    std::vector<std::uint16_t>                   indices;
 
     // Walk through each of the mesh's vertices
     for (UINT i = 0; i < mesh->mNumVertices; i++)
@@ -86,6 +136,7 @@ ModelLoaderMesh ProcessMesh(aiMesh* mesh)
         }
 
         vertices.push_back(vertex);
+        bounding_box.merge(Pilot::Vector3(vertex.x, vertex.y, vertex.z));
     }
 
     for (UINT i = 0; i < mesh->mNumFaces; i++)
@@ -96,14 +147,14 @@ ModelLoaderMesh ProcessMesh(aiMesh* mesh)
             indices.push_back(face.mIndices[j]);
     }
 
-    return ModelLoaderMesh {vertices, indices};
+    return ModelLoaderMesh {bounding_box, vertices, indices};
 }
 
 void LoadModelNormal(std::string filename, MeshLoaderNode& meshes_)
 {
     Assimp::Importer importer;
-    const aiScene*   scene =
-        importer.ReadFile(filename, aiProcess_Triangulate | aiProcess_GenNormals | aiProcess_FlipUVs);
+    const aiScene*   scene = importer.ReadFile(
+        filename, aiProcess_Triangulate | aiProcess_GenNormals | aiProcess_OptimizeMeshes | aiProcess_FlipUVs);
 
     if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
     {
@@ -219,7 +270,6 @@ int MittTangentsHelper::get_vertex_index(const SMikkTSpaceContext* context, int 
     int index = working_mesh->indices_[indices_index];
     return index;
 }
-
 
 
 

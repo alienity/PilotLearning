@@ -1683,6 +1683,12 @@ namespace Pilot
 
     AxisAlignedBox::AxisAlignedBox(const Vector3& center, const Vector3& half_extent) { update(center, half_extent); }
 
+    void AxisAlignedBox::merge(const AxisAlignedBox& axis_aligned_box)
+    { 
+        merge(axis_aligned_box.getMinCorner());
+        merge(axis_aligned_box.getMaxCorner());
+    }
+
     void AxisAlignedBox::merge(const Vector3& new_point)
     {
         m_min_corner = Vector3::min(m_min_corner, new_point);
