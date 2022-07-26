@@ -56,28 +56,10 @@ namespace Pilot
         DXGI_FORMAT        _color_grading_LUT_texture_image_format;
     };
 
-    /*
-    struct StorageBuffer
-    {
-        // limits
-        uint32_t _min_uniform_buffer_offset_alignment {256};
-        uint32_t _min_storage_buffer_offset_alignment {256};
-        uint32_t _max_storage_buffer_range {1 << 27};
-        uint32_t _non_coherent_atom_size {256};
-
-        RHI::D3D12Buffer _global_null_descriptor_storage_buffer;
-
-        // axis
-        RHI::D3D12Buffer _axis_inefficient_storage_buffer;
-        void*            _axis_inefficient_storage_buffer_memory_pointer;
-    };
-    */
-
     struct GlobalRenderResource
     {
         IBLResource          _ibl_resource;
         ColorGradingResource _color_grading_resource;
-        //StorageBuffer        _storage_buffer;
     };
 
     class RenderResource : public RenderResourceBase
@@ -119,10 +101,27 @@ namespace Pilot
         std::map<size_t, D3D12PBRMaterial> m_d3d12_pbr_materials;
 
     protected:
+        void createDynamicBuffer(void*             buffer_data,
+                                 uint32_t          buffer_size,
+                                 uint32_t          buffer_stride,
+                                 RHI::D3D12Buffer& dynamicBuffer);
+        void createDynamicBuffer(std::shared_ptr<BufferData>& buffer_data,
+                                 RHI::D3D12Buffer&            dynamicBuffer);
+        
+        void createStaticBuffer(void*             buffer_data,
+                                uint32_t          buffer_size,
+                                uint32_t          buffer_stride,
+                                RHI::D3D12Buffer& staticBuffer,
+                                bool              batch = false);
+        void createStaticBuffer(std::shared_ptr<BufferData>& buffer_data,
+                                RHI::D3D12Buffer&            staticBuffer,
+                                bool                         batch = false);
+
         void createTex2D(uint32_t                      width,
                          uint32_t                      height,
-                         void*                         pixel,
+                         void*                         pixels,
                          DXGI_FORMAT                   format,
+                         bool                          is_srgb,
                          RHI::D3D12Texture&            tex2d,
                          RHI::D3D12ShaderResourceView& tex2d_view,
                          bool                          batch = false);
@@ -158,6 +157,5 @@ namespace Pilot
                                 uint16_t*                                     index_buffer_data,
                                 D3D12Mesh&                                    now_mesh);
         void updateIndexBuffer(uint32_t index_buffer_size, void* index_buffer_data, D3D12Mesh& now_mesh);
-        void updateTextureImageData(const TextureDataToUpdate& texture_data);
     };
 } // namespace Pilot

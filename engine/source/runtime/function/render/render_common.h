@@ -177,8 +177,6 @@ namespace Pilot
 
         RHI::D3D12Buffer mesh_vertex_joint_binding_buffer;
 
-        // VkDescriptorSet mesh_vertex_blending_descriptor_set;
-
         RHI::D3D12Buffer mesh_vertex_varying_buffer;
 
         uint32_t mesh_index_count;

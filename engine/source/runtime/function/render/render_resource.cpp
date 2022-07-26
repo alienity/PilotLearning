@@ -289,71 +289,15 @@ namespace Pilot
 
             D3D12PBRMaterial& now_material = res.first->second;
 
-            // similiarly to the vertex/index buffer, we should allocate the uniform
-            // buffer in DEVICE_LOCAL memory and use the temp stage buffer to copy the
-            // data
-            {
-                // temporary staging buffer
-                VkDeviceSize buffer_size = sizeof(MeshPerMaterialUniformBufferObject);
-
-                VkBuffer       inefficient_staging_buffer        = VK_NULL_HANDLE;
-                VkDeviceMemory inefficient_staging_buffer_memory = VK_NULL_HANDLE;
-                VulkanUtil::createBuffer(vulkan_context->m_physical_device,
-                                         vulkan_context->m_device,
-                                         buffer_size,
-                                         VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                                         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                                         inefficient_staging_buffer,
-                                         inefficient_staging_buffer_memory);
-                // VK_BUFFER_USAGE_TRANSFER_SRC_BIT: buffer can be used as source in a
-                // memory transfer operation
-
-                void* staging_buffer_data = nullptr;
-                vkMapMemory(vulkan_context->m_device,
-                            inefficient_staging_buffer_memory,
-                            0,
-                            buffer_size,
-                            0,
-                            &staging_buffer_data);
-
-                MeshPerMaterialUniformBufferObject& material_uniform_buffer_info =
-                    (*static_cast<MeshPerMaterialUniformBufferObject*>(staging_buffer_data));
-                material_uniform_buffer_info.is_blend          = entity.m_blend;
-                material_uniform_buffer_info.is_double_sided   = entity.m_double_sided;
-                material_uniform_buffer_info.baseColorFactor   = entity.m_base_color_factor;
-                material_uniform_buffer_info.metallicFactor    = entity.m_metallic_factor;
-                material_uniform_buffer_info.roughnessFactor   = entity.m_roughness_factor;
-                material_uniform_buffer_info.normalScale       = entity.m_normal_scale;
-                material_uniform_buffer_info.occlusionStrength = entity.m_occlusion_strength;
-                material_uniform_buffer_info.emissiveFactor    = entity.m_emissive_factor;
-
-                vkUnmapMemory(vulkan_context->m_device, inefficient_staging_buffer_memory);
-
-                // use the vmaAllocator to allocate asset uniform buffer
-                VkBufferCreateInfo bufferInfo = {VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
-                bufferInfo.size               = buffer_size;
-                bufferInfo.usage              = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-
-                VmaAllocationCreateInfo allocInfo = {};
-                allocInfo.usage                   = VMA_MEMORY_USAGE_GPU_ONLY;
-
-                vmaCreateBufferWithAlignment(
-                    vulkan_context->m_assets_allocator,
-                    &bufferInfo,
-                    &allocInfo,
-                    m_global_render_resource._storage_buffer._min_uniform_buffer_offset_alignment,
-                    &now_material.material_uniform_buffer,
-                    &now_material.material_uniform_buffer_allocation,
-                    NULL);
-
-                // use the data from staging buffer
-                VulkanUtil::copyBuffer(
-                    rhi.get(), inefficient_staging_buffer, now_material.material_uniform_buffer, 0, 0, buffer_size);
-
-                // release staging buffer
-                vkDestroyBuffer(vulkan_context->m_device, inefficient_staging_buffer, nullptr);
-                vkFreeMemory(vulkan_context->m_device, inefficient_staging_buffer_memory, nullptr);
-            }
+            MeshPerMaterialUniformBufferObject material_uniform_buffer_info = {};
+            material_uniform_buffer_info.is_blend                           = entity.m_blend;
+            material_uniform_buffer_info.is_double_sided                    = entity.m_double_sided;
+            material_uniform_buffer_info.baseColorFactor                    = entity.m_base_color_factor;
+            material_uniform_buffer_info.metallicFactor                     = entity.m_metallic_factor;
+            material_uniform_buffer_info.roughnessFactor                    = entity.m_roughness_factor;
+            material_uniform_buffer_info.normalScale                        = entity.m_normal_scale;
+            material_uniform_buffer_info.occlusionStrength                  = entity.m_occlusion_strength;
+            material_uniform_buffer_info.emissiveFactor                     = entity.m_emissive_factor;
 
             TextureDataToUpdate update_texture_data;
             update_texture_data.base_color_image_pixels         = base_color_image_pixels;
@@ -378,103 +322,57 @@ namespace Pilot
             update_texture_data.emissive_image_format           = emissive_image_format;
             update_texture_data.now_material                    = &now_material;
 
-            updateTextureImageData(update_texture_data);
-
-            VkDescriptorSetAllocateInfo material_descriptor_set_alloc_info;
-            material_descriptor_set_alloc_info.sType              = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-            material_descriptor_set_alloc_info.pNext              = NULL;
-            material_descriptor_set_alloc_info.descriptorPool     = vulkan_context->m_descriptor_pool;
-            material_descriptor_set_alloc_info.descriptorSetCount = 1;
-            material_descriptor_set_alloc_info.pSetLayouts        = m_material_descriptor_set_layout;
-
-            if (VK_SUCCESS != vkAllocateDescriptorSets(vulkan_context->m_device,
-                                                       &material_descriptor_set_alloc_info,
-                                                       &now_material.material_descriptor_set))
             {
-                throw std::runtime_error("allocate material descriptor set");
+                startUploadBatch();
+
+                uint32_t buffer_size = sizeof(MeshPerMaterialUniformBufferObject);
+                createStaticBuffer(&material_uniform_buffer_info,
+                                   buffer_size,
+                                   buffer_size,
+                                   now_material.material_uniform_buffer);
+
+                createTex2D(update_texture_data.base_color_image_width,
+                            update_texture_data.base_color_image_height,
+                            update_texture_data.base_color_image_pixels,
+                            update_texture_data.base_color_image_format,
+                            true,
+                            update_texture_data.now_material->base_color_texture_image,
+                            update_texture_data.now_material->base_color_image_view);
+
+                createTex2D(update_texture_data.metallic_roughness_image_width,
+                            update_texture_data.metallic_roughness_image_height,
+                            update_texture_data.metallic_roughness_image_pixels,
+                            update_texture_data.metallic_roughness_image_format,
+                            false,
+                            update_texture_data.now_material->metallic_roughness_texture_image,
+                            update_texture_data.now_material->metallic_roughness_image_view);
+
+                createTex2D(update_texture_data.normal_roughness_image_width,
+                            update_texture_data.normal_roughness_image_height,
+                            update_texture_data.normal_roughness_image_pixels,
+                            update_texture_data.normal_roughness_image_format,
+                            false,
+                            update_texture_data.now_material->normal_texture_image,
+                            update_texture_data.now_material->normal_image_view);
+
+                createTex2D(update_texture_data.occlusion_image_width,
+                            update_texture_data.occlusion_image_height,
+                            update_texture_data.occlusion_image_pixels,
+                            update_texture_data.occlusion_image_format,
+                            false,
+                            update_texture_data.now_material->occlusion_texture_image,
+                            update_texture_data.now_material->occlusion_image_view);
+
+                createTex2D(update_texture_data.emissive_image_width,
+                            update_texture_data.emissive_image_height,
+                            update_texture_data.emissive_image_pixels,
+                            update_texture_data.emissive_image_format,
+                            false,
+                            update_texture_data.now_material->emissive_texture_image,
+                            update_texture_data.now_material->emissive_image_view);
+
+                endUploadBatch();
             }
-
-            VkDescriptorBufferInfo material_uniform_buffer_info = {};
-            material_uniform_buffer_info.offset                 = 0;
-            material_uniform_buffer_info.range                  = sizeof(MeshPerMaterialUniformBufferObject);
-            material_uniform_buffer_info.buffer                 = now_material.material_uniform_buffer;
-
-            VkDescriptorImageInfo base_color_image_info = {};
-            base_color_image_info.imageLayout           = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            base_color_image_info.imageView             = now_material.base_color_image_view;
-            base_color_image_info.sampler = VulkanUtil::getOrCreateMipmapSampler(vulkan_context->m_physical_device,
-                                                                                 vulkan_context->m_device,
-                                                                                 base_color_image_width,
-                                                                                 base_color_image_height);
-
-            VkDescriptorImageInfo metallic_roughness_image_info = {};
-            metallic_roughness_image_info.imageLayout           = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            metallic_roughness_image_info.imageView             = now_material.metallic_roughness_image_view;
-            metallic_roughness_image_info.sampler =
-                VulkanUtil::getOrCreateMipmapSampler(vulkan_context->m_physical_device,
-                                                     vulkan_context->m_device,
-                                                     metallic_roughness_width,
-                                                     metallic_roughness_height);
-
-            VkDescriptorImageInfo normal_roughness_image_info = {};
-            normal_roughness_image_info.imageLayout           = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            normal_roughness_image_info.imageView             = now_material.normal_image_view;
-            normal_roughness_image_info.sampler = VulkanUtil::getOrCreateMipmapSampler(vulkan_context->m_physical_device,
-                                                                                       vulkan_context->m_device,
-                                                                                       normal_roughness_width,
-                                                                                       normal_roughness_height);
-
-            VkDescriptorImageInfo occlusion_image_info = {};
-            occlusion_image_info.imageLayout           = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            occlusion_image_info.imageView             = now_material.occlusion_image_view;
-            occlusion_image_info.sampler = VulkanUtil::getOrCreateMipmapSampler(vulkan_context->m_physical_device,
-                                                                                vulkan_context->m_device,
-                                                                                occlusion_image_width,
-                                                                                occlusion_image_height);
-
-            VkDescriptorImageInfo emissive_image_info = {};
-            emissive_image_info.imageLayout           = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            emissive_image_info.imageView             = now_material.emissive_image_view;
-            emissive_image_info.sampler               = VulkanUtil::getOrCreateMipmapSampler(
-                vulkan_context->m_physical_device, vulkan_context->m_device, emissive_image_width, emissive_image_height);
-
-            VkWriteDescriptorSet mesh_descriptor_writes_info[6];
-
-            mesh_descriptor_writes_info[0].sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            mesh_descriptor_writes_info[0].pNext           = NULL;
-            mesh_descriptor_writes_info[0].dstSet          = now_material.material_descriptor_set;
-            mesh_descriptor_writes_info[0].dstBinding      = 0;
-            mesh_descriptor_writes_info[0].dstArrayElement = 0;
-            mesh_descriptor_writes_info[0].descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-            mesh_descriptor_writes_info[0].descriptorCount = 1;
-            mesh_descriptor_writes_info[0].pBufferInfo     = &material_uniform_buffer_info;
-
-            mesh_descriptor_writes_info[1].sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            mesh_descriptor_writes_info[1].pNext           = NULL;
-            mesh_descriptor_writes_info[1].dstSet          = now_material.material_descriptor_set;
-            mesh_descriptor_writes_info[1].dstBinding      = 1;
-            mesh_descriptor_writes_info[1].dstArrayElement = 0;
-            mesh_descriptor_writes_info[1].descriptorType  = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            mesh_descriptor_writes_info[1].descriptorCount = 1;
-            mesh_descriptor_writes_info[1].pImageInfo      = &base_color_image_info;
-
-            mesh_descriptor_writes_info[2]            = mesh_descriptor_writes_info[1];
-            mesh_descriptor_writes_info[2].dstBinding = 2;
-            mesh_descriptor_writes_info[2].pImageInfo = &metallic_roughness_image_info;
-
-            mesh_descriptor_writes_info[3]            = mesh_descriptor_writes_info[1];
-            mesh_descriptor_writes_info[3].dstBinding = 3;
-            mesh_descriptor_writes_info[3].pImageInfo = &normal_roughness_image_info;
-
-            mesh_descriptor_writes_info[4]            = mesh_descriptor_writes_info[1];
-            mesh_descriptor_writes_info[4].dstBinding = 4;
-            mesh_descriptor_writes_info[4].pImageInfo = &occlusion_image_info;
-
-            mesh_descriptor_writes_info[5]            = mesh_descriptor_writes_info[1];
-            mesh_descriptor_writes_info[5].dstBinding = 5;
-            mesh_descriptor_writes_info[5].pImageInfo = &emissive_image_info;
-
-            vkUpdateDescriptorSets(vulkan_context->m_device, 6, mesh_descriptor_writes_info, 0, nullptr);
 
             return now_material;
         }
@@ -492,8 +390,7 @@ namespace Pilot
         now_mesh.enable_vertex_blending = enable_vertex_blending;
         assert(0 == (vertex_buffer_size % sizeof(MeshVertexDataDefinition)));
         now_mesh.mesh_vertex_count = vertex_buffer_size / sizeof(MeshVertexDataDefinition);
-        updateVertexBuffer(rhi,
-                           enable_vertex_blending,
+        updateVertexBuffer(enable_vertex_blending,
                            vertex_buffer_size,
                            vertex_buffer_data,
                            joint_binding_buffer_size,
@@ -503,7 +400,7 @@ namespace Pilot
                            now_mesh);
         assert(0 == (index_buffer_size % sizeof(uint16_t)));
         now_mesh.mesh_index_count = index_buffer_size / sizeof(uint16_t);
-        updateIndexBuffer(rhi, index_buffer_size, index_buffer_data, now_mesh);
+        updateIndexBuffer(index_buffer_size, index_buffer_data, now_mesh);
     }
 
     void RenderResource::updateVertexBuffer(bool                                   enable_vertex_blending,
@@ -954,48 +851,6 @@ namespace Pilot
         vkFreeMemory(vulkan_context->m_device, inefficient_staging_buffer_memory, nullptr);
     }
 
-    void RenderResource::updateTextureImageData(const TextureDataToUpdate& texture_data)
-    {
-        startUploadBatch();
-
-        createTex2D(texture_data.base_color_image_width,
-                    texture_data.base_color_image_height,
-                    texture_data.base_color_image_pixels,
-                    texture_data.base_color_image_format,
-                    texture_data.now_material->base_color_texture_image,
-                    texture_data.now_material->base_color_image_view);
-
-        createTex2D(texture_data.metallic_roughness_image_width,
-                    texture_data.metallic_roughness_image_height,
-                    texture_data.metallic_roughness_image_pixels,
-                    texture_data.metallic_roughness_image_format,
-                    texture_data.now_material->metallic_roughness_texture_image,
-                    texture_data.now_material->metallic_roughness_image_view);
-
-        createTex2D(texture_data.normal_roughness_image_width,
-                    texture_data.normal_roughness_image_height,
-                    texture_data.normal_roughness_image_pixels,
-                    texture_data.normal_roughness_image_format,
-                    texture_data.now_material->normal_texture_image,
-                    texture_data.now_material->normal_image_view);
-
-        createTex2D(texture_data.occlusion_image_width,
-                    texture_data.occlusion_image_height,
-                    texture_data.occlusion_image_pixels,
-                    texture_data.occlusion_image_format,
-                    texture_data.now_material->occlusion_texture_image,
-                    texture_data.now_material->occlusion_image_view);
-
-        createTex2D(texture_data.emissive_image_width,
-                    texture_data.emissive_image_height,
-                    texture_data.emissive_image_pixels,
-                    texture_data.emissive_image_format,
-                    texture_data.now_material->emissive_texture_image,
-                    texture_data.now_material->emissive_image_view);
-
-        endUploadBatch();
-    }
-
     D3D12Mesh& RenderResource::getEntityMesh(RenderEntity entity)
     {
         size_t assetid = entity.m_mesh_asset_id;
@@ -1027,23 +882,70 @@ namespace Pilot
     }
 
     //-------------------------------------------------------------------------------------------
-    void RenderResource::createTex2D(uint32_t                      width,
-                                     uint32_t                      height,
-                                     void*                         pixel,
-                                     DXGI_FORMAT                   format,
-                                     RHI::D3D12Texture&            tex2d,
-                                     RHI::D3D12ShaderResourceView& tex2d_view,
-                                     bool                          batch = false)
+    void RenderResource::createDynamicBuffer(void*             buffer_data,
+                                             uint32_t          buffer_size,
+                                             uint32_t          buffer_stride,
+                                             RHI::D3D12Buffer& dynamicBuffer)
     {
-        std::shared_ptr<TextureData> tex2d_data = std::make_shared<TextureData>();
-        tex2d_data->m_width                     = width;
-        tex2d_data->m_height                    = height;
-        tex2d_data->m_pixels                    = pixel;
-        tex2d_data->m_format                    = format;
-        createTex2D(tex2d_data, tex2d, tex2d_view, batch);
+        ASSERT(buffer_size % buffer_stride == 0, "buffer data is wrong");
+        dynamicBuffer = RHI::D3D12Buffer(m_device->GetLinkedDevice(),
+                                         buffer_size,
+                                         buffer_stride,
+                                         D3D12_HEAP_TYPE::D3D12_HEAP_TYPE_UPLOAD,
+                                         D3D12_RESOURCE_FLAGS::D3D12_RESOURCE_FLAG_NONE);
+        void* bufferPtr = dynamicBuffer.GetCpuVirtualAddress<void>();
+        memcpy(bufferPtr, buffer_data, buffer_size);
     }
 
-    void RenderResource::createTex2D(std::shared_ptr<TextureData>& tex2d_data,
+    void RenderResource::createDynamicBuffer(std::shared_ptr<BufferData>& buffer_data,
+                                             RHI::D3D12Buffer&            dynamicBuffer)
+    {
+        createDynamicBuffer(buffer_data->m_data, buffer_data->m_size, buffer_data->m_size, dynamicBuffer);
+    }
+    
+    void RenderResource::createStaticBuffer(void*             buffer_data,
+                                            uint32_t          buffer_size,
+                                            uint32_t          buffer_stride,
+                                            RHI::D3D12Buffer& staticBuffer,
+                                            bool              batch)
+    {
+        ASSERT(buffer_size % buffer_stride == 0, "buffer data is wrong");
+
+        if (batch)
+            this->startUploadBatch();
+
+        staticBuffer = RHI::D3D12Buffer(m_device->GetLinkedDevice(),
+                                        buffer_size,
+                                        buffer_stride,
+                                        D3D12_HEAP_TYPE::D3D12_HEAP_TYPE_DEFAULT,
+                                        D3D12_RESOURCE_FLAGS::D3D12_RESOURCE_FLAG_NONE);
+
+        m_resourceUpload.Transition(staticBuffer.GetResource(),
+                                    staticBuffer.GetResourceState().GetSubresourceState(0),
+                                    D3D12_RESOURCE_STATE_COPY_DEST);
+
+        D3D12_SUBRESOURCE_DATA resourceInitData = {buffer_data, buffer_size, 0};
+        m_resourceUpload.Upload(staticBuffer.GetResource(), 0, &resourceInitData, 1);
+
+        m_resourceUpload.Transition(
+            staticBuffer.GetResource(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+
+        if (batch)
+            this->endUploadBatch();
+    }
+
+    void RenderResource::createStaticBuffer(std::shared_ptr<BufferData>& buffer_data,
+                                            RHI::D3D12Buffer&            staticBuffer,
+                                            bool                         batch)
+    {
+        createStaticBuffer(buffer_data->m_data, buffer_data->m_size, buffer_data->m_size, staticBuffer, batch);
+    }
+
+    void RenderResource::createTex2D(uint32_t                      width,
+                                     uint32_t                      height,
+                                     void*                         pixels,
+                                     DXGI_FORMAT                   format,
+                                     bool                          is_srgb,
                                      RHI::D3D12Texture&            tex2d,
                                      RHI::D3D12ShaderResourceView& tex2d_view,
                                      bool                          batch)
@@ -1051,18 +953,16 @@ namespace Pilot
         if (batch)
             this->startUploadBatch();
 
-        uint32_t tex2d_miplevels =
-            static_cast<uint32_t>(std::floor(std::log2(std::max(tex2d_data->m_width, tex2d_data->m_height)))) + 1;
+        uint32_t tex2d_miplevels = static_cast<uint32_t>(std::floor(std::log2(std::max(width, height)))) + 1;
 
         D3D12_RESOURCE_FLAGS resourceFlags = D3D12_RESOURCE_FLAG_NONE | D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
-        D3D12_RESOURCE_DESC  resourceDesc  = CD3DX12_RESOURCE_DESC::Tex2D(
-            tex2d_data->m_format, tex2d_data->m_width, tex2d_data->m_height, 1, tex2d_miplevels, 1, 0, resourceFlags);
+        D3D12_RESOURCE_DESC  resourceDesc =
+            CD3DX12_RESOURCE_DESC::Tex2D(format, width, height, 1, tex2d_miplevels, 1, 0, resourceFlags);
 
         tex2d = RHI::D3D12Texture(m_device->GetLinkedDevice(), resourceDesc, std::nullopt, false);
 
         D3D12_SHADER_RESOURCE_VIEW_DESC resourceViewDesc;
-        resourceViewDesc.Format =
-            tex2d_data->m_is_srgb ? DirectX::LoaderHelpers::MakeSRGB(resourceDesc.Format) : resourceDesc.Format;
+        resourceViewDesc.Format = is_srgb ? DirectX::LoaderHelpers::MakeSRGB(resourceDesc.Format) : resourceDesc.Format;
         resourceViewDesc.ViewDimension                   = D3D12_SRV_DIMENSION_TEXTURE2D;
         resourceViewDesc.Shader4ComponentMapping         = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
         resourceViewDesc.TextureCube.MostDetailedMip     = 0;
@@ -1071,8 +971,7 @@ namespace Pilot
 
         tex2d_view = RHI::D3D12ShaderResourceView(m_device->GetLinkedDevice(), resourceViewDesc, &tex2d);
 
-        D3D12_SUBRESOURCE_DATA resourceInitData = {
-            tex2d_data->m_pixels, tex2d_data->m_width * DirectX::LoaderHelpers::BitsPerPixel(tex2d_data->m_format), 0};
+        D3D12_SUBRESOURCE_DATA resourceInitData = {pixels, width * DirectX::LoaderHelpers::BitsPerPixel(format), 0};
 
         m_resourceUpload.Transition(
             tex2d.GetResource(), tex2d.GetResourceState().GetSubresourceState(0), D3D12_RESOURCE_STATE_COPY_DEST);
@@ -1086,6 +985,21 @@ namespace Pilot
 
         if (batch)
             this->endUploadBatch();
+    }
+
+    void RenderResource::createTex2D(std::shared_ptr<TextureData>& tex2d_data,
+                                     RHI::D3D12Texture&            tex2d,
+                                     RHI::D3D12ShaderResourceView& tex2d_view,
+                                     bool                          batch)
+    {
+        createTex2D(tex2d_data->m_width,
+                    tex2d_data->m_height,
+                    tex2d_data->m_pixels,
+                    tex2d_data->m_format,
+                    tex2d_data->m_is_srgb,
+                    tex2d,
+                    tex2d_view,
+                    batch);
     }
 
 
