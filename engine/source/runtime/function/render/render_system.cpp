@@ -14,7 +14,13 @@
 
 namespace Pilot
 {
-    RenderSystem::~RenderSystem() {}
+    RenderSystem::~RenderSystem() 
+    {
+        m_render_resource  = nullptr;
+        m_render_scene     = nullptr;
+        m_render_camera    = nullptr;
+        m_renderer_manager = nullptr;
+    }
 
     void RenderSystem::initialize(RenderSystemInitInfo init_info)
     {
@@ -86,6 +92,8 @@ namespace Pilot
 
         // prepare pipeline's render passes data
         m_renderer_manager->PreparePassData(m_render_resource);
+
+        m_render_resource->commitUploadBatch();
 
         // render one frame
         m_renderer_manager->Tick();

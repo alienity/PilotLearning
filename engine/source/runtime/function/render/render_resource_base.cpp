@@ -46,6 +46,12 @@ namespace Pilot
         uploadResourcesFinished.wait();
     }
 
+    void RenderResourceBase::commitUploadBatch()
+    {
+        m_GraphicsMemory->Commit(
+            m_Device->GetLinkedDevice()->GetCommandQueue(RHI::RHID3D12CommandQueueType::Direct)->GetCommandQueue());
+    }
+
     std::shared_ptr<TextureData> RenderResourceBase::loadTextureHDR(std::string file, int desired_channels)
     {
         std::shared_ptr<AssetManager> asset_manager = g_runtime_global_context.m_asset_manager;

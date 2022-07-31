@@ -27,6 +27,7 @@ namespace Pilot
 
         void startUploadBatch();
         void endUploadBatch();
+        void commitUploadBatch();
 
         virtual void uploadGlobalRenderResource(LevelResourceDesc level_resource_desc) = 0;
 
