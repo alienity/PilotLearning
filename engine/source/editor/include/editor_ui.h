@@ -2,7 +2,7 @@
 
 #include "editor/include/axis.h"
 
-#include "runtime/core/math/vector2.h"
+#include "runtime/core/math/moyu_math.h"
 
 #include "runtime/function/framework/object/object.h"
 #include "runtime/function/ui/window_ui.h"

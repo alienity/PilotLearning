@@ -81,9 +81,15 @@ namespace Pilot
 
                 Vector3 degrees_val;
 
-                degrees_val.x = trans_ptr->m_rotation.getRoll(false).valueDegrees();
-                degrees_val.y = trans_ptr->m_rotation.getPitch(false).valueDegrees();
-                degrees_val.z = trans_ptr->m_rotation.getYaw(false).valueDegrees();
+                Pilot::Vector3 euler = trans_ptr->m_rotation.toEuler();
+
+                degrees_val.x = Pilot::Radian(euler.x).valueDegrees();
+                degrees_val.y = Pilot::Radian(euler.y).valueDegrees();
+                degrees_val.z = Pilot::Radian(euler.z).valueDegrees();
+
+                //degrees_val.x = trans_ptr->m_rotation.getRoll(false).valueDegrees();
+                //degrees_val.y = trans_ptr->m_rotation.getPitch(false).valueDegrees();
+                //degrees_val.z = trans_ptr->m_rotation.getYaw(false).valueDegrees();
 
                 DrawVecControl("Position", trans_ptr->m_position);
                 DrawVecControl("Rotation", degrees_val);
@@ -113,7 +119,7 @@ namespace Pilot
                                           Math::sin(Math::degreesToRadians(degrees_val.y / 2)) *
                                               Math::sin(Math::degreesToRadians(degrees_val.z / 2)) *
                                               Math::cos(Math::degreesToRadians(degrees_val.x / 2));
-                trans_ptr->m_rotation.normalise();
+                trans_ptr->m_rotation = Quaternion::normalize(trans_ptr->m_rotation);
 
                 g_editor_global_context.m_scene_manager->drawSelectedEntityAxis();
             }

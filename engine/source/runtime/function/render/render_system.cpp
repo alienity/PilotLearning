@@ -93,6 +93,7 @@ namespace Pilot
         // prepare pipeline's render passes data
         m_renderer_manager->PreparePassData(m_render_resource);
 
+        // finish static resource uploading
         m_render_resource->commitUploadBatch();
 
         // render one frame

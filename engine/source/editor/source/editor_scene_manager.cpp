@@ -221,8 +221,8 @@ namespace Pilot
             Quaternion rotation;
             Vector3    translation;
             transform_component->getMatrix().decompose(scale, rotation, translation);
-            Matrix4x4     translation_matrix = Matrix4x4::getTrans(translation);
-            Matrix4x4     scale_matrix       = Matrix4x4::buildScaleMatrix(1.0f, 1.0f, 1.0f);
+            Matrix4x4     translation_matrix = Matrix4x4::translation(translation); // Matrix4x4::getTrans(translation);
+            Matrix4x4     scale_matrix       = Matrix4x4::scale(1.0f); // Matrix4x4::buildScaleMatrix(1.0f, 1.0f, 1.0f);
             Matrix4x4     axis_model_matrix  = translation_matrix * scale_matrix;
             RenderEntity* selected_aixs      = getAxisMeshByType(m_axis_mode);
             if (m_axis_mode == EditorAxisMode::TranslateMode || m_axis_mode == EditorAxisMode::RotateMode)
@@ -315,16 +315,16 @@ namespace Pilot
             return;
 
         float angularVelocity =
-            18.0f / Math::max(engine_window_size.x, engine_window_size.y); // 18 degrees while moving full screen
+            18.0f / MOYU_MAX(engine_window_size.x, engine_window_size.y); // 18 degrees while moving full screen
         Vector2 delta_mouse_move_uv = {(new_mouse_pos_x - last_mouse_pos_x), (new_mouse_pos_y - last_mouse_pos_y)};
 
         Vector3    model_scale;
         Quaternion model_rotation;
         Vector3    model_translation;
-        model_matrix.decomposition(model_translation, model_scale, model_rotation);
+        model_matrix.decompose(model_scale, model_rotation, model_translation);
 
-        Matrix4x4 axis_model_matrix = Matrix4x4::IDENTITY;
-        axis_model_matrix.setTrans(model_translation);
+        Matrix4x4 axis_model_matrix = Matrix4x4::Identity;
+        axis_model_matrix.translation(model_translation);
 
         Matrix4x4 view_matrix = m_camera->getLookAtMatrix();
         Matrix4x4 proj_matrix = m_camera->getPersProjMatrix();
@@ -346,8 +346,7 @@ namespace Pilot
         Vector4 axis_x_clip_position    = proj_matrix * view_matrix * axis_x_world_position_4;
         axis_x_clip_position /= axis_x_clip_position.w;
         Vector2 axis_x_clip_uv((axis_x_clip_position.x + 1) / 2.0f, (axis_x_clip_position.y + 1) / 2.0f);
-        Vector2 axis_x_direction_uv = axis_x_clip_uv - model_origin_clip_uv;
-        axis_x_direction_uv.normalise();
+        Vector2 axis_x_direction_uv = Vector2::normalize(axis_x_clip_uv - model_origin_clip_uv);
 
         Vector4 axis_y_local_position_4(0, 1, 0, 1);
         if (m_axis_mode == EditorAxisMode::ScaleMode)
@@ -359,8 +358,7 @@ namespace Pilot
         Vector4 axis_y_clip_position    = proj_matrix * view_matrix * axis_y_world_position_4;
         axis_y_clip_position /= axis_y_clip_position.w;
         Vector2 axis_y_clip_uv((axis_y_clip_position.x + 1) / 2.0f, (axis_y_clip_position.y + 1) / 2.0f);
-        Vector2 axis_y_direction_uv = axis_y_clip_uv - model_origin_clip_uv;
-        axis_y_direction_uv.normalise();
+        Vector2 axis_y_direction_uv = Vector2::normalize(axis_y_clip_uv - model_origin_clip_uv);
 
         Vector4 axis_z_local_position_4(0, 0, 1, 1);
         if (m_axis_mode == EditorAxisMode::ScaleMode)
@@ -372,26 +370,25 @@ namespace Pilot
         Vector4 axis_z_clip_position    = proj_matrix * view_matrix * axis_z_world_position_4;
         axis_z_clip_position /= axis_z_clip_position.w;
         Vector2 axis_z_clip_uv((axis_z_clip_position.x + 1) / 2.0f, (axis_z_clip_position.y + 1) / 2.0f);
-        Vector2 axis_z_direction_uv = axis_z_clip_uv - model_origin_clip_uv;
-        axis_z_direction_uv.normalise();
+        Vector2 axis_z_direction_uv = Vector2::normalize(axis_z_clip_uv - model_origin_clip_uv);
 
         TransformComponent* transform_component = selected_object->tryGetComponent(TransformComponent);
 
-        Matrix4x4 new_model_matrix(Matrix4x4::IDENTITY);
+        Matrix4x4 new_model_matrix(Matrix4x4::Identity);
         if (m_axis_mode == EditorAxisMode::TranslateMode) // translate
         {
             Vector3 move_vector = {0, 0, 0};
             if (cursor_on_axis == 0)
             {
-                move_vector.x = delta_mouse_move_uv.dotProduct(axis_x_direction_uv) * angularVelocity;
+                move_vector.x = delta_mouse_move_uv.dot(axis_x_direction_uv) * angularVelocity;
             }
             else if (cursor_on_axis == 1)
             {
-                move_vector.y = delta_mouse_move_uv.dotProduct(axis_y_direction_uv) * angularVelocity;
+                move_vector.y = delta_mouse_move_uv.dot(axis_y_direction_uv) * angularVelocity;
             }
             else if (cursor_on_axis == 2)
             {
-                move_vector.z = delta_mouse_move_uv.dotProduct(axis_z_direction_uv) * angularVelocity;
+                move_vector.z = delta_mouse_move_uv.dot(axis_z_direction_uv) * angularVelocity;
             }
             else
             {
@@ -399,20 +396,20 @@ namespace Pilot
             }
 
             Matrix4x4 translate_mat;
-            translate_mat.makeTransform(move_vector, Vector3::UNIT_SCALE, Quaternion::IDENTITY);
+            translate_mat.makeTransform(move_vector, Vector3::One, Quaternion::Identity);
             new_model_matrix = axis_model_matrix * translate_mat;
 
             new_model_matrix = new_model_matrix * Matrix4x4(model_rotation);
             new_model_matrix =
-                new_model_matrix * Matrix4x4::buildScaleMatrix(model_scale.x, model_scale.y, model_scale.z);
+                new_model_matrix * Matrix4x4::scale(model_scale.x, model_scale.y, model_scale.z);
 
             Vector3    new_scale;
             Quaternion new_rotation;
             Vector3    new_translation;
-            new_model_matrix.decomposition(new_translation, new_scale, new_rotation);
+            new_model_matrix.decompose(new_scale, new_rotation, new_translation);
 
-            Matrix4x4 translation_matrix = Matrix4x4::getTrans(new_translation);
-            Matrix4x4 scale_matrix       = Matrix4x4::buildScaleMatrix(1.f, 1.f, 1.f);
+            Matrix4x4 translation_matrix = Matrix4x4::translation(new_translation);
+            Matrix4x4 scale_matrix       = Matrix4x4::scale(1.f, 1.f, 1.f);
             Matrix4x4 axis_model_matrix  = translation_matrix * scale_matrix;
 
             m_translation_axis.m_model_matrix = axis_model_matrix;
@@ -439,7 +436,7 @@ namespace Pilot
             if (cursor_on_axis == 0)
             {
                 move_radian = (delta_mouse_move_uv * angularVelocity).length();
-                if (m_camera->forward().dotProduct(Vector3::UNIT_X) < 0)
+                if (m_camera->forward().dot(Vector3::UnitX) < 0)
                 {
                     move_radian = -move_radian;
                 }
@@ -448,7 +445,7 @@ namespace Pilot
             else if (cursor_on_axis == 1)
             {
                 move_radian = (delta_mouse_move_uv * angularVelocity).length();
-                if (m_camera->forward().dotProduct(Vector3::UNIT_Y) < 0)
+                if (m_camera->forward().dot(Vector3::UnitY) < 0)
                 {
                     move_radian = -move_radian;
                 }
@@ -457,7 +454,7 @@ namespace Pilot
             else if (cursor_on_axis == 2)
             {
                 move_radian = (delta_mouse_move_uv * angularVelocity).length();
-                if (m_camera->forward().dotProduct(Vector3::UNIT_Z) < 0)
+                if (m_camera->forward().dot(Vector3::UnitZ) < 0)
                 {
                     move_radian = -move_radian;
                 }
@@ -474,16 +471,16 @@ namespace Pilot
             }
 
             Quaternion move_rot;
-            move_rot.fromAngleAxis(Radian(move_radian), axis_of_rotation);
+            move_rot.fromAxisAngle(axis_of_rotation, move_radian);
             new_model_matrix = axis_model_matrix * move_rot;
             new_model_matrix = new_model_matrix * Matrix4x4(model_rotation);
             new_model_matrix =
-                new_model_matrix * Matrix4x4::buildScaleMatrix(model_scale.x, model_scale.y, model_scale.z);
+                new_model_matrix * Matrix4x4::scale(model_scale.x, model_scale.y, model_scale.z);
             Vector3    new_scale;
             Quaternion new_rotation;
             Vector3    new_translation;
 
-            new_model_matrix.decomposition(new_translation, new_scale, new_rotation);
+            new_model_matrix.decompose(new_scale, new_rotation, new_translation);
 
             transform_component->setPosition(new_translation);
             transform_component->setRotation(new_rotation);
@@ -497,7 +494,7 @@ namespace Pilot
             if (cursor_on_axis == 0)
             {
                 delta_scale_vector.x = 0.01f;
-                if (delta_mouse_move_uv.dotProduct(axis_x_direction_uv) < 0)
+                if (delta_mouse_move_uv.dot(axis_x_direction_uv) < 0)
                 {
                     delta_scale_vector = -delta_scale_vector;
                 }
@@ -505,7 +502,7 @@ namespace Pilot
             else if (cursor_on_axis == 1)
             {
                 delta_scale_vector.y = 0.01f;
-                if (delta_mouse_move_uv.dotProduct(axis_y_direction_uv) < 0)
+                if (delta_mouse_move_uv.dot(axis_y_direction_uv) < 0)
                 {
                     delta_scale_vector = -delta_scale_vector;
                 }
@@ -513,7 +510,7 @@ namespace Pilot
             else if (cursor_on_axis == 2)
             {
                 delta_scale_vector.z = 0.01f;
-                if (delta_mouse_move_uv.dotProduct(axis_z_direction_uv) < 0)
+                if (delta_mouse_move_uv.dot(axis_z_direction_uv) < 0)
                 {
                     delta_scale_vector = -delta_scale_vector;
                 }
@@ -525,12 +522,12 @@ namespace Pilot
             new_model_scale   = model_scale + delta_scale_vector;
             axis_model_matrix = axis_model_matrix * Matrix4x4(model_rotation);
             Matrix4x4 scale_mat;
-            scale_mat.makeTransform(Vector3::ZERO, new_model_scale, Quaternion::IDENTITY);
+            scale_mat.makeTransform(Vector3::Zero, new_model_scale, Quaternion::Identity);
             new_model_matrix = axis_model_matrix * scale_mat;
             Vector3    new_scale;
             Quaternion new_rotation;
             Vector3    new_translation;
-            new_model_matrix.decomposition(new_translation, new_scale, new_rotation);
+            new_model_matrix.decompose(new_scale, new_rotation, new_translation);
 
             transform_component->setPosition(new_translation);
             transform_component->setRotation(new_rotation);

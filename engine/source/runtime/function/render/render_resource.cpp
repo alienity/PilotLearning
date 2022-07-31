@@ -59,13 +59,13 @@ namespace Pilot
         {
             // create irradiance cubemap
             createCubeMap(irradiance_maps,
-                                m_global_render_resource._ibl_resource._irradiance_texture_image,
-                                m_global_render_resource._ibl_resource._irradiance_texture_image_view);
+                          m_global_render_resource._ibl_resource._irradiance_texture_image,
+                          m_global_render_resource._ibl_resource._irradiance_texture_image_view);
 
             // create specular cubemap
             createCubeMap(specular_maps,
-                                m_global_render_resource._ibl_resource._specular_texture_image,
-                                m_global_render_resource._ibl_resource._specular_texture_image_view);
+                          m_global_render_resource._ibl_resource._specular_texture_image,
+                          m_global_render_resource._ibl_resource._specular_texture_image_view);
 
             // create brdf lut texture
             createTex2D(brdf_map,
