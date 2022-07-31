@@ -22,16 +22,25 @@
 
 namespace Pilot
 {
+    void RenderResourceBase::iniUploadBatch(RHI::D3D12Device* device)
+    {
+        m_Device         = device;
+        m_ResourceUpload = std::make_unique<DirectX::ResourceUploadBatch>(device->GetD3D12Device());
+        m_GraphicsMemory = std::make_unique<DirectX::GraphicsMemory>(device->GetD3D12Device());
+    }
+
     void RenderResourceBase::startUploadBatch() 
     {
-        m_resourceUpload.Begin();
+        m_ResourceUpload->Begin();
     }
 
     void RenderResourceBase::endUploadBatch()
     {
         // Upload the resources to the GPU.
-        auto uploadResourcesFinished = m_resourceUpload.End(
-            m_device->GetLinkedDevice()->GetCommandQueue(RHI::RHID3D12CommandQueueType::Copy1)->GetCommandQueue());
+        auto uploadResourcesFinished = m_ResourceUpload->End(
+            m_Device->GetLinkedDevice()->GetCommandQueue(RHI::RHID3D12CommandQueueType::Direct)->GetCommandQueue());
+        //auto uploadResourcesFinished = m_ResourceUpload->End(
+        //    m_Device->GetLinkedDevice()->GetCommandQueue(RHI::RHID3D12CommandQueueType::Copy1)->GetCommandQueue());
 
         // Wait for the upload thread to terminate
         uploadResourcesFinished.wait();

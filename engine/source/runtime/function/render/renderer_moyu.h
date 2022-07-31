@@ -28,12 +28,12 @@ namespace Pilot
         ~RendererManager();
 
         void Initialize(RendererInitInfo initialize_info);
-
+        void InitRenderer();
         void PreparePassData(std::shared_ptr<RenderResourceBase> render_resource);
-
         void Tick();
+
+        RHI::D3D12Device* GetDevice();
         
-    protected:
         std::unique_ptr<RHI::D3D12Device>    Device;
         std::unique_ptr<ShaderCompiler>      Compiler;
         std::unique_ptr<RHI::D3D12SwapChain> SwapChain;

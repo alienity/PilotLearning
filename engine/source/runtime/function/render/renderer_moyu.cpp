@@ -30,8 +30,10 @@ namespace Pilot
 
         HWND win32handle = glfwGetWin32Window(WinSystem->getWindow());
         SwapChain        = std::make_unique<RHI::D3D12SwapChain>(Device.get(), win32handle);
+    }
 
-        // 目前测试先使用默认的
+    void RendererManager::InitRenderer()
+    {
         MoYuRenderer = std::make_unique<DeferredRenderer>(Device.get(), Compiler.get(), SwapChain.get());
     }
 
@@ -55,6 +57,11 @@ namespace Pilot
         RendererPresent Present(Context);
         SwapChain->Present(true, Present);
         Device->OnEndFrame();
+    }
+
+    RHI::D3D12Device* RendererManager::GetDevice() 
+    {
+        return Device.get();
     }
 
     Renderer::Renderer(RHI::D3D12Device* Device, ShaderCompiler* Compiler, RHI::D3D12SwapChain* SwapChain) :

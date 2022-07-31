@@ -220,7 +220,7 @@ namespace Pilot
             Vector3    scale;
             Quaternion rotation;
             Vector3    translation;
-            transform_component->getMatrix().decomposition(translation, scale, rotation);
+            transform_component->getMatrix().decompose(scale, rotation, translation);
             Matrix4x4     translation_matrix = Matrix4x4::getTrans(translation);
             Matrix4x4     scale_matrix       = Matrix4x4::buildScaleMatrix(1.0f, 1.0f, 1.0f);
             Matrix4x4     axis_model_matrix  = translation_matrix * scale_matrix;

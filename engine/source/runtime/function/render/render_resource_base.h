@@ -8,8 +8,8 @@
 #include <string>
 #include <unordered_map>
 
-#include "BufferHelpers.h"
 #include "ResourceUploadBatch.h"
+#include "GraphicsMemory.h"
 
 namespace Pilot
 {
@@ -19,9 +19,11 @@ namespace Pilot
     class RenderResourceBase
     {
     public:
-        RenderResourceBase(RHI::D3D12Device* device) : m_device(device), m_resourceUpload(device->GetD3D12Device()) {}
+        RenderResourceBase() = default;
 
         virtual ~RenderResourceBase() {}
+
+        void iniUploadBatch(RHI::D3D12Device* device);
 
         void startUploadBatch();
         void endUploadBatch();
@@ -47,8 +49,9 @@ namespace Pilot
         AxisAlignedBox               getCachedBoudingBox(const MeshSourceDesc& source) const;
 
     protected:
-        RHI::D3D12Device* m_device;
-        DirectX::ResourceUploadBatch m_resourceUpload;
+        RHI::D3D12Device* m_Device;
+        std::unique_ptr<DirectX::ResourceUploadBatch> m_ResourceUpload;
+        std::unique_ptr<DirectX::GraphicsMemory>      m_GraphicsMemory;
 
     private:
         StaticMeshData loadStaticMesh(std::string mesh_file, AxisAlignedBox& bounding_box);

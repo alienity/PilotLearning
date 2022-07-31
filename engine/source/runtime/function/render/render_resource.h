@@ -65,6 +65,8 @@ namespace Pilot
     class RenderResource : public RenderResourceBase
     {
     public:
+        RenderResource() = default;
+
         virtual void uploadGlobalRenderResource(LevelResourceDesc level_resource_desc) override final;
 
         virtual void uploadGameObjectRenderResource(RenderEntity       render_entity,
@@ -124,15 +126,18 @@ namespace Pilot
                          bool                          is_srgb,
                          RHI::D3D12Texture&            tex2d,
                          RHI::D3D12ShaderResourceView& tex2d_view,
+                         bool                          genMips = false,
                          bool                          batch = false);
         void createTex2D(std::shared_ptr<TextureData>& tex2d_data,
                          RHI::D3D12Texture&            tex2d,
                          RHI::D3D12ShaderResourceView& tex2d_view,
+                         bool                          genMips = false,
                          bool                          batch = false);
 
         void createCubeMap(std::array<std::shared_ptr<TextureData>, 6>& cube_maps,
                            RHI::D3D12Texture&                           cube_tex,
                            RHI::D3D12ShaderResourceView&                cube_tex_view,
+                           bool                                         genMips = false,
                            bool                                         batch = false);
 
     private:
@@ -154,7 +159,7 @@ namespace Pilot
                                 uint32_t                                      joint_binding_buffer_size,
                                 struct MeshVertexBindingDataDefinition const* joint_binding_buffer_data,
                                 uint32_t                                      index_buffer_size,
-                                uint16_t*                                     index_buffer_data,
+                                uint32_t*                                     index_buffer_data,
                                 D3D12Mesh&                                    now_mesh);
         void updateIndexBuffer(uint32_t index_buffer_size, void* index_buffer_data, D3D12Mesh& now_mesh);
     };

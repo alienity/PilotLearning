@@ -276,6 +276,24 @@ namespace RHI
         CpuVirtualAddress(ScopedPointer.Address)
     {}
 
+    D3D12Buffer::D3D12Buffer(D3D12LinkedDevice*    Parent,
+                             UINT64                SizeInBytes,
+                             UINT                  Stride,
+                             D3D12_HEAP_TYPE       HeapType,
+                             D3D12_RESOURCE_FLAGS  ResourceFlags,
+                             D3D12_RESOURCE_STATES InitialResourceState) :
+        D3D12Resource(Parent,
+                      CD3DX12_HEAP_PROPERTIES(HeapType, Parent->GetNodeMask(), Parent->GetNodeMask()),
+                      CD3DX12_RESOURCE_DESC::Buffer(SizeInBytes, ResourceFlags),
+                      InitialResourceState,
+                      std::nullopt),
+        HeapType(HeapType), Stride(Stride), ScopedPointer(HeapType == D3D12_HEAP_TYPE_UPLOAD ? Resource.Get() : nullptr)
+        // We do not need to unmap until we are done with the resource.  However, we must not write to
+        // the resource while it is in use by the GPU (so we must use synchronization techniques).
+        ,
+        CpuVirtualAddress(ScopedPointer.Address)
+    {}
+
     D3D12_GPU_VIRTUAL_ADDRESS D3D12Buffer::GetGpuVirtualAddress() const { return Resource->GetGPUVirtualAddress(); }
 
     D3D12_GPU_VIRTUAL_ADDRESS D3D12Buffer::GetGpuVirtualAddress(UINT Index) const

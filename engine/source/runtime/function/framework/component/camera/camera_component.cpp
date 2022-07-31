@@ -94,11 +94,11 @@ namespace Pilot
 
         Matrix4x4 desired_mat = Math::makeLookAtMatrix(eye_pos, m_foward, m_up);
 
-        //RenderSwapContext& swap_context = g_runtime_global_context.m_render_system->getSwapContext();
-        //CameraSwapData     camera_swap_data;
-        //camera_swap_data.m_camera_type                     = RenderCameraType::Motor;
-        //camera_swap_data.m_view_matrix                     = desired_mat; // 需要转置
-        //swap_context.getLogicSwapData().m_camera_swap_data = camera_swap_data;
+        RenderSwapContext& swap_context = g_runtime_global_context.m_render_system->getSwapContext();
+        CameraSwapData     camera_swap_data;
+        camera_swap_data.m_camera_type                     = RenderCameraType::Motor;
+        camera_swap_data.m_view_matrix                     = desired_mat; // 需要转置
+        swap_context.getLogicSwapData().m_camera_swap_data = camera_swap_data;
 
         Vector3    object_facing = m_foward - m_foward.dot(Vector3::Up) * Vector3::Up;
         Vector3    object_left   = Vector3::Up.cross(object_facing);
@@ -136,10 +136,10 @@ namespace Pilot
 
         Matrix4x4 desired_mat = Math::makeLookAtMatrix(camera_pos, camera_pos + camera_forward, camera_up);
 
-        //RenderSwapContext& swap_context = g_runtime_global_context.m_render_system->getSwapContext();
-        //CameraSwapData     camera_swap_data;
-        //camera_swap_data.m_camera_type                     = RenderCameraType::Motor;
-        //camera_swap_data.m_view_matrix                     = desired_mat;
-        //swap_context.getLogicSwapData().m_camera_swap_data = camera_swap_data;
+        RenderSwapContext& swap_context = g_runtime_global_context.m_render_system->getSwapContext();
+        CameraSwapData     camera_swap_data;
+        camera_swap_data.m_camera_type                     = RenderCameraType::Motor;
+        camera_swap_data.m_view_matrix                     = desired_mat;
+        swap_context.getLogicSwapData().m_camera_swap_data = camera_swap_data;
     }
 } // namespace Pilot

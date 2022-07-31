@@ -122,6 +122,12 @@ namespace RHI
                     UINT                 Stride,
                     D3D12_HEAP_TYPE      HeapType,
                     D3D12_RESOURCE_FLAGS ResourceFlags);
+        D3D12Buffer(D3D12LinkedDevice*    Parent,
+                    UINT64                SizeInBytes,
+                    UINT                  Stride,
+                    D3D12_HEAP_TYPE       HeapType,
+                    D3D12_RESOURCE_FLAGS  ResourceFlags,
+                    D3D12_RESOURCE_STATES InitialResourceState);
 
         [[nodiscard]] D3D12_GPU_VIRTUAL_ADDRESS GetGpuVirtualAddress() const;
         [[nodiscard]] D3D12_GPU_VIRTUAL_ADDRESS GetGpuVirtualAddress(UINT Index) const;

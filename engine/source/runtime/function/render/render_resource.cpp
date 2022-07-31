@@ -1,14 +1,14 @@
 #include "runtime/function/render/glm_wrapper.h"
 #include "runtime/function/render/render_camera.h"
 
+#include "runtime/function/render/render_mesh.h"
 #include "runtime/function/render/render_resource.h"
 
+#include "runtime/function/render/rhi/d3d12/d3d12_core.h"
 #include "runtime/function/render/rhi/d3d12/d3d12_resource.h"
 #include "runtime/function/render/rhi/d3d12/d3d12_descriptor.h"
 
 #include "runtime/core/base/macro.h"
-
-#include "../Src/LoaderHelpers.h"
 
 #include <stdexcept>
 
@@ -16,9 +16,6 @@ namespace Pilot
 {
     void RenderResource::uploadGlobalRenderResource(LevelResourceDesc level_resource_desc)
     {
-        //// create and map global storage buffer
-        //createAndMapStorageBuffer();
-
         // sky box irradiance
         SkyBoxIrradianceMap skybox_irradiance_map        = level_resource_desc.m_ibl_resource_desc.m_skybox_irradiance_map;
         std::shared_ptr<TextureData> irradiace_pos_x_map = loadTextureHDR(skybox_irradiance_map.m_positive_x_map);
@@ -337,7 +334,8 @@ namespace Pilot
                             update_texture_data.base_color_image_format,
                             true,
                             update_texture_data.now_material->base_color_texture_image,
-                            update_texture_data.now_material->base_color_image_view);
+                            update_texture_data.now_material->base_color_image_view,
+                            true);
 
                 createTex2D(update_texture_data.metallic_roughness_image_width,
                             update_texture_data.metallic_roughness_image_height,
@@ -345,7 +343,8 @@ namespace Pilot
                             update_texture_data.metallic_roughness_image_format,
                             false,
                             update_texture_data.now_material->metallic_roughness_texture_image,
-                            update_texture_data.now_material->metallic_roughness_image_view);
+                            update_texture_data.now_material->metallic_roughness_image_view,
+                            true);
 
                 createTex2D(update_texture_data.normal_roughness_image_width,
                             update_texture_data.normal_roughness_image_height,
@@ -353,7 +352,8 @@ namespace Pilot
                             update_texture_data.normal_roughness_image_format,
                             false,
                             update_texture_data.now_material->normal_texture_image,
-                            update_texture_data.now_material->normal_image_view);
+                            update_texture_data.now_material->normal_image_view,
+                            true);
 
                 createTex2D(update_texture_data.occlusion_image_width,
                             update_texture_data.occlusion_image_height,
@@ -361,7 +361,8 @@ namespace Pilot
                             update_texture_data.occlusion_image_format,
                             false,
                             update_texture_data.now_material->occlusion_texture_image,
-                            update_texture_data.now_material->occlusion_image_view);
+                            update_texture_data.now_material->occlusion_image_view,
+                            true);
 
                 createTex2D(update_texture_data.emissive_image_width,
                             update_texture_data.emissive_image_height,
@@ -369,7 +370,8 @@ namespace Pilot
                             update_texture_data.emissive_image_format,
                             false,
                             update_texture_data.now_material->emissive_texture_image,
-                            update_texture_data.now_material->emissive_image_view);
+                            update_texture_data.now_material->emissive_image_view,
+                            true);
 
                 endUploadBatch();
             }
@@ -396,10 +398,10 @@ namespace Pilot
                            joint_binding_buffer_size,
                            joint_binding_buffer_data,
                            index_buffer_size,
-                           reinterpret_cast<uint16_t*>(index_buffer_data),
+                           reinterpret_cast<uint32_t*>(index_buffer_data),
                            now_mesh);
-        assert(0 == (index_buffer_size % sizeof(uint16_t)));
-        now_mesh.mesh_index_count = index_buffer_size / sizeof(uint16_t);
+        assert(0 == (index_buffer_size % sizeof(uint32_t)));
+        now_mesh.mesh_index_count = index_buffer_size / sizeof(uint32_t);
         updateIndexBuffer(index_buffer_size, index_buffer_data, now_mesh);
     }
 
@@ -409,32 +411,39 @@ namespace Pilot
                                             uint32_t                               joint_binding_buffer_size,
                                             MeshVertexBindingDataDefinition const* joint_binding_buffer_data,
                                             uint32_t                               index_buffer_size,
-                                            uint16_t*                              index_buffer_data,
+                                            uint32_t*                              index_buffer_data,
                                             D3D12Mesh&                             now_mesh)
     {
         if (enable_vertex_blending)
         {
             assert(0 == (vertex_buffer_size % sizeof(MeshVertexDataDefinition)));
             uint32_t vertex_count = vertex_buffer_size / sizeof(MeshVertexDataDefinition);
-            assert(0 == (index_buffer_size % sizeof(uint16_t)));
-            uint32_t index_count = index_buffer_size / sizeof(uint16_t);
+            assert(0 == (index_buffer_size % sizeof(uint32_t)));
+            uint32_t index_count = index_buffer_size / sizeof(uint32_t);
 
-            VkDeviceSize vertex_position_buffer_size = sizeof(MeshVertex::VulkanMeshVertexPostition) * vertex_count;
-            VkDeviceSize vertex_varying_enable_blending_buffer_size =
-                sizeof(MeshVertex::VulkanMeshVertexVaryingEnableBlending) * vertex_count;
-            VkDeviceSize vertex_varying_buffer_size = sizeof(MeshVertex::VulkanMeshVertexVarying) * vertex_count;
-            VkDeviceSize vertex_joint_binding_buffer_size =
-                sizeof(MeshVertex::VulkanMeshVertexJointBinding) * index_count;
+            uint32_t vertex_buffer_size =
+                sizeof(MeshVertex::D3D12MeshVertexPositionNormalTangentTexture) * vertex_count;
 
-            VkDeviceSize vertex_position_buffer_offset = 0;
-            VkDeviceSize vertex_varying_enable_blending_buffer_offset =
+            uint32_t vertex_buffer_offset = 0;
+
+            // TODO:还不太理解这个indices和weight的实际作用，先放着，后面再来弄
+
+            /*
+            uint32_t vertex_position_buffer_size = sizeof(MeshVertex::D3D12MeshVertexPostition) * vertex_count;
+            uint32_t vertex_varying_enable_blending_buffer_size =
+                sizeof(MeshVertex::D3D12MeshVertexVaryingEnableBlending) * vertex_count;
+            uint32_t vertex_varying_buffer_size       = sizeof(MeshVertex::D3D12MeshVertexVarying) * vertex_count;
+            uint32_t vertex_joint_binding_buffer_size = sizeof(MeshVertex::D3D12MeshVertexJointBinding) * index_count;
+
+            uint32_t vertex_position_buffer_offset = 0;
+            uint32_t vertex_varying_enable_blending_buffer_offset =
                 vertex_position_buffer_offset + vertex_position_buffer_size;
-            VkDeviceSize vertex_varying_buffer_offset =
+            uint32_t vertex_varying_buffer_offset =
                 vertex_varying_enable_blending_buffer_offset + vertex_varying_enable_blending_buffer_size;
-            VkDeviceSize vertex_joint_binding_buffer_offset = vertex_varying_buffer_offset + vertex_varying_buffer_size;
+            uint32_t vertex_joint_binding_buffer_offset = vertex_varying_buffer_offset + vertex_varying_buffer_size;
 
             // temporary staging buffer
-            VkDeviceSize inefficient_staging_buffer_size =
+            uint32_t inefficient_staging_buffer_size =
                 vertex_position_buffer_size + vertex_varying_enable_blending_buffer_size + vertex_varying_buffer_size +
                 vertex_joint_binding_buffer_size;
             VkBuffer       inefficient_staging_buffer        = VK_NULL_HANDLE;
@@ -455,18 +464,18 @@ namespace Pilot
                         0,
                         &inefficient_staging_buffer_data);
 
-            MeshVertex::VulkanMeshVertexPostition* mesh_vertex_positions =
-                reinterpret_cast<MeshVertex::VulkanMeshVertexPostition*>(
+            MeshVertex::D3D12MeshVertexPostition* mesh_vertex_positions =
+                reinterpret_cast<MeshVertex::D3D12MeshVertexPostition*>(
                     reinterpret_cast<uintptr_t>(inefficient_staging_buffer_data) + vertex_position_buffer_offset);
-            MeshVertex::VulkanMeshVertexVaryingEnableBlending* mesh_vertex_blending_varyings =
-                reinterpret_cast<MeshVertex::VulkanMeshVertexVaryingEnableBlending*>(
+            MeshVertex::D3D12MeshVertexVaryingEnableBlending* mesh_vertex_blending_varyings =
+                reinterpret_cast<MeshVertex::D3D12MeshVertexVaryingEnableBlending*>(
                     reinterpret_cast<uintptr_t>(inefficient_staging_buffer_data) +
                     vertex_varying_enable_blending_buffer_offset);
-            MeshVertex::VulkanMeshVertexVarying* mesh_vertex_varyings =
-                reinterpret_cast<MeshVertex::VulkanMeshVertexVarying*>(
+            MeshVertex::D3D12MeshVertexVarying* mesh_vertex_varyings =
+                reinterpret_cast<MeshVertex::D3D12MeshVertexVarying*>(
                     reinterpret_cast<uintptr_t>(inefficient_staging_buffer_data) + vertex_varying_buffer_offset);
-            MeshVertex::VulkanMeshVertexJointBinding* mesh_vertex_joint_binding =
-                reinterpret_cast<MeshVertex::VulkanMeshVertexJointBinding*>(
+            MeshVertex::D3D12MeshVertexJointBinding* mesh_vertex_joint_binding =
+                reinterpret_cast<MeshVertex::D3D12MeshVertexJointBinding*>(
                     reinterpret_cast<uintptr_t>(inefficient_staging_buffer_data) + vertex_joint_binding_buffer_offset);
 
             for (uint32_t vertex_index = 0; vertex_index < vertex_count; ++vertex_index)
@@ -631,224 +640,119 @@ namespace Pilot
                                    descriptor_writes,
                                    0,
                                    NULL);
+            */
         }
         else
         {
             assert(0 == (vertex_buffer_size % sizeof(MeshVertexDataDefinition)));
             uint32_t vertex_count = vertex_buffer_size / sizeof(MeshVertexDataDefinition);
 
-            VkDeviceSize vertex_position_buffer_size = sizeof(MeshVertex::VulkanMeshVertexPostition) * vertex_count;
-            VkDeviceSize vertex_varying_enable_blending_buffer_size =
-                sizeof(MeshVertex::VulkanMeshVertexVaryingEnableBlending) * vertex_count;
-            VkDeviceSize vertex_varying_buffer_size = sizeof(MeshVertex::VulkanMeshVertexVarying) * vertex_count;
+            uint32_t vertex_buffer_size =
+                sizeof(MeshVertex::D3D12MeshVertexPositionNormalTangentTexture) * vertex_count;
 
-            VkDeviceSize vertex_position_buffer_offset = 0;
-            VkDeviceSize vertex_varying_enable_blending_buffer_offset =
-                vertex_position_buffer_offset + vertex_position_buffer_size;
-            VkDeviceSize vertex_varying_buffer_offset =
-                vertex_varying_enable_blending_buffer_offset + vertex_varying_enable_blending_buffer_size;
-
+            uint32_t vertex_buffer_offset = 0;
+            
             // temporary staging buffer
-            VkDeviceSize inefficient_staging_buffer_size =
-                vertex_position_buffer_size + vertex_varying_enable_blending_buffer_size + vertex_varying_buffer_size;
-            VkBuffer       inefficient_staging_buffer        = VK_NULL_HANDLE;
-            VkDeviceMemory inefficient_staging_buffer_memory = VK_NULL_HANDLE;
-            VulkanUtil::createBuffer(vulkan_context->m_physical_device,
-                                     vulkan_context->m_device,
-                                     inefficient_staging_buffer_size,
-                                     VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                                     inefficient_staging_buffer,
-                                     inefficient_staging_buffer_memory);
+            uint32_t inefficient_staging_buffer_size = vertex_buffer_size;
 
-            void* inefficient_staging_buffer_data;
-            vkMapMemory(vulkan_context->m_device,
-                        inefficient_staging_buffer_memory,
-                        0,
-                        VK_WHOLE_SIZE,
-                        0,
-                        &inefficient_staging_buffer_data);
+            DirectX::SharedGraphicsResource inefficient_staging_buffer =
+                m_GraphicsMemory->Allocate(inefficient_staging_buffer_size);
+            void* inefficient_staging_buffer_data = inefficient_staging_buffer.Memory();
 
-            MeshVertex::VulkanMeshVertexPostition* mesh_vertex_positions =
-                reinterpret_cast<MeshVertex::VulkanMeshVertexPostition*>(
-                    reinterpret_cast<uintptr_t>(inefficient_staging_buffer_data) + vertex_position_buffer_offset);
-            MeshVertex::VulkanMeshVertexVaryingEnableBlending* mesh_vertex_blending_varyings =
-                reinterpret_cast<MeshVertex::VulkanMeshVertexVaryingEnableBlending*>(
-                    reinterpret_cast<uintptr_t>(inefficient_staging_buffer_data) +
-                    vertex_varying_enable_blending_buffer_offset);
-            MeshVertex::VulkanMeshVertexVarying* mesh_vertex_varyings =
-                reinterpret_cast<MeshVertex::VulkanMeshVertexVarying*>(
-                    reinterpret_cast<uintptr_t>(inefficient_staging_buffer_data) + vertex_varying_buffer_offset);
-
+            MeshVertex::D3D12MeshVertexPositionNormalTangentTexture* mesh_vertexs =
+                reinterpret_cast<MeshVertex::D3D12MeshVertexPositionNormalTangentTexture*>(
+                    reinterpret_cast<uint8_t*>(inefficient_staging_buffer_data) + vertex_buffer_offset);
+            
             for (uint32_t vertex_index = 0; vertex_index < vertex_count; ++vertex_index)
             {
                 glm::vec3 normal  = glm::vec3(vertex_buffer_data[vertex_index].nx,
                                              vertex_buffer_data[vertex_index].ny,
                                              vertex_buffer_data[vertex_index].nz);
-                glm::vec3 tangent = glm::vec3(vertex_buffer_data[vertex_index].tx,
+                glm::vec4 tangent = glm::vec4(vertex_buffer_data[vertex_index].tx,
                                               vertex_buffer_data[vertex_index].ty,
-                                              vertex_buffer_data[vertex_index].tz);
+                                              vertex_buffer_data[vertex_index].tz,
+                                              vertex_buffer_data[vertex_index].tw);
 
-                mesh_vertex_positions[vertex_index].position = glm::vec3(vertex_buffer_data[vertex_index].x,
-                                                                         vertex_buffer_data[vertex_index].y,
-                                                                         vertex_buffer_data[vertex_index].z);
+                mesh_vertexs[vertex_index].position = glm::vec3(vertex_buffer_data[vertex_index].x,
+                                                                vertex_buffer_data[vertex_index].y,
+                                                                vertex_buffer_data[vertex_index].z);
 
-                mesh_vertex_blending_varyings[vertex_index].normal  = normal;
-                mesh_vertex_blending_varyings[vertex_index].tangent = tangent;
+                mesh_vertexs[vertex_index].normal  = normal;
+                mesh_vertexs[vertex_index].tangent = tangent;
 
-                mesh_vertex_varyings[vertex_index].texcoord =
+                mesh_vertexs[vertex_index].texcoord =
                     glm::vec2(vertex_buffer_data[vertex_index].u, vertex_buffer_data[vertex_index].v);
             }
 
-            vkUnmapMemory(vulkan_context->m_device, inefficient_staging_buffer_memory);
-
-            // use the vmaAllocator to allocate asset vertex buffer
-            VkBufferCreateInfo bufferInfo = {VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
-            bufferInfo.usage              = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-
-            VmaAllocationCreateInfo allocInfo = {};
-            allocInfo.usage                   = VMA_MEMORY_USAGE_GPU_ONLY;
-
-            bufferInfo.size = vertex_position_buffer_size;
-            vmaCreateBuffer(vulkan_context->m_assets_allocator,
-                            &bufferInfo,
-                            &allocInfo,
-                            &now_mesh.mesh_vertex_position_buffer,
-                            &now_mesh.mesh_vertex_position_buffer_allocation,
-                            NULL);
-            bufferInfo.size = vertex_varying_enable_blending_buffer_size;
-            vmaCreateBuffer(vulkan_context->m_assets_allocator,
-                            &bufferInfo,
-                            &allocInfo,
-                            &now_mesh.mesh_vertex_varying_enable_blending_buffer,
-                            &now_mesh.mesh_vertex_varying_enable_blending_buffer_allocation,
-                            NULL);
-            bufferInfo.size = vertex_varying_buffer_size;
-            vmaCreateBuffer(vulkan_context->m_assets_allocator,
-                            &bufferInfo,
-                            &allocInfo,
-                            &now_mesh.mesh_vertex_varying_buffer,
-                            &now_mesh.mesh_vertex_varying_buffer_allocation,
-                            NULL);
-
-            // use the data from staging buffer
-            VulkanUtil::copyBuffer(rhi.get(),
-                                   inefficient_staging_buffer,
-                                   now_mesh.mesh_vertex_position_buffer,
-                                   vertex_position_buffer_offset,
-                                   0,
-                                   vertex_position_buffer_size);
-            VulkanUtil::copyBuffer(rhi.get(),
-                                   inefficient_staging_buffer,
-                                   now_mesh.mesh_vertex_varying_enable_blending_buffer,
-                                   vertex_varying_enable_blending_buffer_offset,
-                                   0,
-                                   vertex_varying_enable_blending_buffer_size);
-            VulkanUtil::copyBuffer(rhi.get(),
-                                   inefficient_staging_buffer,
-                                   now_mesh.mesh_vertex_varying_buffer,
-                                   vertex_varying_buffer_offset,
-                                   0,
-                                   vertex_varying_buffer_size);
-
-            // release staging buffer
-            vkDestroyBuffer(vulkan_context->m_device, inefficient_staging_buffer, nullptr);
-            vkFreeMemory(vulkan_context->m_device, inefficient_staging_buffer_memory, nullptr);
-
-            // update descriptor set
-            VkDescriptorSetAllocateInfo mesh_vertex_blending_per_mesh_descriptor_set_alloc_info;
-            mesh_vertex_blending_per_mesh_descriptor_set_alloc_info.sType =
-                VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-            mesh_vertex_blending_per_mesh_descriptor_set_alloc_info.pNext          = NULL;
-            mesh_vertex_blending_per_mesh_descriptor_set_alloc_info.descriptorPool = vulkan_context->m_descriptor_pool;
-            mesh_vertex_blending_per_mesh_descriptor_set_alloc_info.descriptorSetCount = 1;
-            mesh_vertex_blending_per_mesh_descriptor_set_alloc_info.pSetLayouts        = m_mesh_descriptor_set_layout;
-
-            if (VK_SUCCESS != vkAllocateDescriptorSets(vulkan_context->m_device,
-                                                       &mesh_vertex_blending_per_mesh_descriptor_set_alloc_info,
-                                                       &now_mesh.mesh_vertex_blending_descriptor_set))
+            now_mesh.mesh_vertex_buffer =
+                RHI::D3D12Buffer(m_Device->GetLinkedDevice(),
+                                 vertex_buffer_size,
+                                 vertex_buffer_size,
+                                 D3D12_HEAP_TYPE::D3D12_HEAP_TYPE_DEFAULT,
+                                 D3D12_RESOURCE_FLAGS::D3D12_RESOURCE_FLAG_NONE,
+                                 D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
             {
-                throw std::runtime_error("allocate mesh vertex blending per mesh descriptor set");
+                startUploadBatch();
+
+                {
+                    D3D12_RESOURCE_STATES buf_ori_state =
+                        now_mesh.mesh_vertex_buffer.GetResourceState().GetSubresourceState(0);
+
+                    m_ResourceUpload->Transition(now_mesh.mesh_vertex_buffer.GetResource(),
+                                                 buf_ori_state,
+                                                 D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_DEST);
+
+                    m_ResourceUpload->Upload(now_mesh.mesh_vertex_buffer.GetResource(), inefficient_staging_buffer);
+
+                    m_ResourceUpload->Transition(now_mesh.mesh_vertex_buffer.GetResource(),
+                                                 D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_DEST,
+                                                 buf_ori_state);
+                }
+
+                endUploadBatch();
             }
 
-            VkDescriptorBufferInfo mesh_vertex_Joint_binding_storage_buffer_info = {};
-            mesh_vertex_Joint_binding_storage_buffer_info.offset                 = 0;
-            mesh_vertex_Joint_binding_storage_buffer_info.range                  = 1;
-            mesh_vertex_Joint_binding_storage_buffer_info.buffer =
-                m_global_render_resource._storage_buffer._global_null_descriptor_storage_buffer;
-            assert(mesh_vertex_Joint_binding_storage_buffer_info.range <
-                   m_global_render_resource._storage_buffer._max_storage_buffer_range);
-
-            VkDescriptorSet descriptor_set_to_write = now_mesh.mesh_vertex_blending_descriptor_set;
-
-            VkWriteDescriptorSet descriptor_writes[1];
-
-            VkWriteDescriptorSet& mesh_vertex_blending_vertex_Joint_binding_storage_buffer_write_info =
-                descriptor_writes[0];
-            mesh_vertex_blending_vertex_Joint_binding_storage_buffer_write_info.sType =
-                VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            mesh_vertex_blending_vertex_Joint_binding_storage_buffer_write_info.pNext      = NULL;
-            mesh_vertex_blending_vertex_Joint_binding_storage_buffer_write_info.dstSet     = descriptor_set_to_write;
-            mesh_vertex_blending_vertex_Joint_binding_storage_buffer_write_info.dstBinding = 0;
-            mesh_vertex_blending_vertex_Joint_binding_storage_buffer_write_info.dstArrayElement = 0;
-            mesh_vertex_blending_vertex_Joint_binding_storage_buffer_write_info.descriptorType =
-                VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-            mesh_vertex_blending_vertex_Joint_binding_storage_buffer_write_info.descriptorCount = 1;
-            mesh_vertex_blending_vertex_Joint_binding_storage_buffer_write_info.pBufferInfo =
-                &mesh_vertex_Joint_binding_storage_buffer_info;
-
-            vkUpdateDescriptorSets(vulkan_context->m_device,
-                                   (sizeof(descriptor_writes) / sizeof(descriptor_writes[0])),
-                                   descriptor_writes,
-                                   0,
-                                   NULL);
         }
     }
 
     void RenderResource::updateIndexBuffer(uint32_t index_buffer_size, void* index_buffer_data, D3D12Mesh& now_mesh)
     {
-        VulkanRHI* vulkan_context = static_cast<VulkanRHI*>(rhi.get());
+        uint32_t buffer_size = index_buffer_size;
 
-        // temp staging buffer
-        VkDeviceSize buffer_size = index_buffer_size;
+        DirectX::SharedGraphicsResource inefficient_staging_buffer = m_GraphicsMemory->Allocate(buffer_size);
 
-        VkBuffer       inefficient_staging_buffer;
-        VkDeviceMemory inefficient_staging_buffer_memory;
-        VulkanUtil::createBuffer(vulkan_context->m_physical_device,
-                                 vulkan_context->m_device,
-                                 buffer_size,
-                                 VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                                 inefficient_staging_buffer,
-                                 inefficient_staging_buffer_memory);
+        void* staging_buffer_data = inefficient_staging_buffer.Memory();
 
-        void* staging_buffer_data;
-        vkMapMemory(
-            vulkan_context->m_device, inefficient_staging_buffer_memory, 0, buffer_size, 0, &staging_buffer_data);
         memcpy(staging_buffer_data, index_buffer_data, (size_t)buffer_size);
-        vkUnmapMemory(vulkan_context->m_device, inefficient_staging_buffer_memory);
 
-        // use the vmaAllocator to allocate asset index buffer
-        VkBufferCreateInfo bufferInfo = {VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
-        bufferInfo.size               = buffer_size;
-        bufferInfo.usage              = VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+        now_mesh.mesh_index_buffer =
+            RHI::D3D12Buffer(m_Device->GetLinkedDevice(),
+                             buffer_size,
+                             buffer_size,
+                             D3D12_HEAP_TYPE::D3D12_HEAP_TYPE_DEFAULT,
+                             D3D12_RESOURCE_FLAGS::D3D12_RESOURCE_FLAG_NONE,
+                             D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
+        {
+            startUploadBatch();
 
-        VmaAllocationCreateInfo allocInfo = {};
-        allocInfo.usage                   = VMA_MEMORY_USAGE_GPU_ONLY;
+            {
+                D3D12_RESOURCE_STATES buf_ori_state =
+                    now_mesh.mesh_vertex_buffer.GetResourceState().GetSubresourceState(0);
 
-        vmaCreateBuffer(vulkan_context->m_assets_allocator,
-                        &bufferInfo,
-                        &allocInfo,
-                        &now_mesh.mesh_index_buffer,
-                        &now_mesh.mesh_index_buffer_allocation,
-                        NULL);
+                m_ResourceUpload->Transition(now_mesh.mesh_vertex_buffer.GetResource(),
+                                             buf_ori_state,
+                                             D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_DEST);
 
-        // use the data from staging buffer
-        VulkanUtil::copyBuffer(rhi.get(), inefficient_staging_buffer, now_mesh.mesh_index_buffer, 0, 0, buffer_size);
+                m_ResourceUpload->Upload(now_mesh.mesh_index_buffer.GetResource(), inefficient_staging_buffer);
 
-        // release temp staging buffer
-        vkDestroyBuffer(vulkan_context->m_device, inefficient_staging_buffer, nullptr);
-        vkFreeMemory(vulkan_context->m_device, inefficient_staging_buffer_memory, nullptr);
+                m_ResourceUpload->Transition(now_mesh.mesh_index_buffer.GetResource(),
+                                             D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_DEST,
+                                             buf_ori_state);
+            }
+
+            endUploadBatch();
+        }
+
     }
 
     D3D12Mesh& RenderResource::getEntityMesh(RenderEntity entity)
@@ -887,8 +791,8 @@ namespace Pilot
                                              uint32_t          buffer_stride,
                                              RHI::D3D12Buffer& dynamicBuffer)
     {
-        ASSERT(buffer_size % buffer_stride == 0, "buffer data is wrong");
-        dynamicBuffer = RHI::D3D12Buffer(m_device->GetLinkedDevice(),
+        assert(buffer_size % buffer_stride == 0);
+        dynamicBuffer = RHI::D3D12Buffer(m_Device->GetLinkedDevice(),
                                          buffer_size,
                                          buffer_stride,
                                          D3D12_HEAP_TYPE::D3D12_HEAP_TYPE_UPLOAD,
@@ -909,25 +813,26 @@ namespace Pilot
                                             RHI::D3D12Buffer& staticBuffer,
                                             bool              batch)
     {
-        ASSERT(buffer_size % buffer_stride == 0, "buffer data is wrong");
+        assert(buffer_size % buffer_stride == 0);
 
         if (batch)
             this->startUploadBatch();
 
-        staticBuffer = RHI::D3D12Buffer(m_device->GetLinkedDevice(),
+        staticBuffer = RHI::D3D12Buffer(m_Device->GetLinkedDevice(),
                                         buffer_size,
                                         buffer_stride,
                                         D3D12_HEAP_TYPE::D3D12_HEAP_TYPE_DEFAULT,
-                                        D3D12_RESOURCE_FLAGS::D3D12_RESOURCE_FLAG_NONE);
+                                        D3D12_RESOURCE_FLAGS::D3D12_RESOURCE_FLAG_NONE,
+                                        D3D12_RESOURCE_STATE_COPY_DEST);
 
-        m_resourceUpload.Transition(staticBuffer.GetResource(),
-                                    staticBuffer.GetResourceState().GetSubresourceState(0),
-                                    D3D12_RESOURCE_STATE_COPY_DEST);
+        m_ResourceUpload->Transition(staticBuffer.GetResource(),
+                                     staticBuffer.GetResourceState().GetSubresourceState(0),
+                                     D3D12_RESOURCE_STATE_COPY_DEST);
 
-        D3D12_SUBRESOURCE_DATA resourceInitData = {buffer_data, buffer_size, 0};
-        m_resourceUpload.Upload(staticBuffer.GetResource(), 0, &resourceInitData, 1);
+        D3D12_SUBRESOURCE_DATA resourceInitData = {buffer_data, buffer_size, buffer_size};
+        m_ResourceUpload->Upload(staticBuffer.GetResource(), 0, &resourceInitData, 1);
 
-        m_resourceUpload.Transition(
+        m_ResourceUpload->Transition(
             staticBuffer.GetResource(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 
         if (batch)
@@ -948,40 +853,49 @@ namespace Pilot
                                      bool                          is_srgb,
                                      RHI::D3D12Texture&            tex2d,
                                      RHI::D3D12ShaderResourceView& tex2d_view,
+                                     bool                          genMips,
                                      bool                          batch)
     {
         if (batch)
             this->startUploadBatch();
 
-        uint32_t tex2d_miplevels = static_cast<uint32_t>(std::floor(std::log2(std::max(width, height)))) + 1;
+        uint32_t tex2d_miplevels = 1;
+        if (genMips)
+            tex2d_miplevels = static_cast<uint32_t>(std::floor(std::log2(std::max(width, height)))) + 1;
 
         D3D12_RESOURCE_FLAGS resourceFlags = D3D12_RESOURCE_FLAG_NONE | D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
         D3D12_RESOURCE_DESC  resourceDesc =
             CD3DX12_RESOURCE_DESC::Tex2D(format, width, height, 1, tex2d_miplevels, 1, 0, resourceFlags);
 
-        tex2d = RHI::D3D12Texture(m_device->GetLinkedDevice(), resourceDesc, std::nullopt, false);
+        tex2d = RHI::D3D12Texture(m_Device->GetLinkedDevice(), resourceDesc, std::nullopt, false);
 
         D3D12_SHADER_RESOURCE_VIEW_DESC resourceViewDesc;
-        resourceViewDesc.Format = is_srgb ? DirectX::LoaderHelpers::MakeSRGB(resourceDesc.Format) : resourceDesc.Format;
-        resourceViewDesc.ViewDimension                   = D3D12_SRV_DIMENSION_TEXTURE2D;
+        resourceViewDesc.Format        = is_srgb ? D3D12RHIUtils::MakeSRGB(resourceDesc.Format) : resourceDesc.Format;
+        resourceViewDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
         resourceViewDesc.Shader4ComponentMapping         = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
         resourceViewDesc.TextureCube.MostDetailedMip     = 0;
         resourceViewDesc.TextureCube.MipLevels           = resourceDesc.MipLevels;
         resourceViewDesc.TextureCube.ResourceMinLODClamp = 0;
 
-        tex2d_view = RHI::D3D12ShaderResourceView(m_device->GetLinkedDevice(), resourceViewDesc, &tex2d);
+        tex2d_view = RHI::D3D12ShaderResourceView(m_Device->GetLinkedDevice(), resourceViewDesc, &tex2d);
 
-        D3D12_SUBRESOURCE_DATA resourceInitData = {pixels, width * DirectX::LoaderHelpers::BitsPerPixel(format), 0};
+        size_t RowPitchBytes = width * D3D12RHIUtils::BytesPerPixel(format);
 
-        m_resourceUpload.Transition(
-            tex2d.GetResource(), tex2d.GetResourceState().GetSubresourceState(0), D3D12_RESOURCE_STATE_COPY_DEST);
+        D3D12_SUBRESOURCE_DATA resourceInitData;
+        resourceInitData.pData      = pixels;
+        resourceInitData.RowPitch   = resourceDesc.Width * D3D12RHIUtils::BytesPerPixel(format);
+        resourceInitData.SlicePitch = resourceInitData.RowPitch * resourceDesc.Height;
 
-        m_resourceUpload.Upload(tex2d.GetResource(), 0, &resourceInitData, 1);
+        D3D12_RESOURCE_STATES tex2d_ori_state = tex2d.GetResourceState().GetSubresourceState(0);
 
-        m_resourceUpload.GenerateMips(tex2d.GetResource());
+        m_ResourceUpload->Transition(tex2d.GetResource(), tex2d_ori_state, D3D12_RESOURCE_STATE_COPY_DEST);
 
-        m_resourceUpload.Transition(
-            tex2d.GetResource(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+        m_ResourceUpload->Upload(tex2d.GetResource(), 0, &resourceInitData, 1);
+
+        if (genMips)
+            m_ResourceUpload->GenerateMips(tex2d.GetResource());
+
+        m_ResourceUpload->Transition(tex2d.GetResource(), D3D12_RESOURCE_STATE_COPY_DEST, tex2d_ori_state);
 
         if (batch)
             this->endUploadBatch();
@@ -990,6 +904,7 @@ namespace Pilot
     void RenderResource::createTex2D(std::shared_ptr<TextureData>& tex2d_data,
                                      RHI::D3D12Texture&            tex2d,
                                      RHI::D3D12ShaderResourceView& tex2d_view,
+                                     bool                          genMips,
                                      bool                          batch)
     {
         createTex2D(tex2d_data->m_width,
@@ -999,6 +914,7 @@ namespace Pilot
                     tex2d_data->m_is_srgb,
                     tex2d,
                     tex2d_view,
+                    genMips,
                     batch);
     }
 
@@ -1006,14 +922,18 @@ namespace Pilot
     void RenderResource::createCubeMap(std::array<std::shared_ptr<TextureData>, 6>& cube_maps,
                                        RHI::D3D12Texture&                           cube_tex,
                                        RHI::D3D12ShaderResourceView&                cube_tex_view,
+                                       bool                                         genMips,
                                        bool                                         batch)
     {
         if (batch)
             this->startUploadBatch();
 
         // assume all textures have same width, height and format
-        uint32_t cubemap_miplevels =
-            static_cast<uint32_t>(std::floor(std::log2(std::max(cube_maps[0]->m_width, cube_maps[0]->m_height)))) + 1;
+        uint32_t cubemap_miplevels = 1;
+        if (genMips)
+            cubemap_miplevels =
+                static_cast<uint32_t>(std::floor(std::log2(std::max(cube_maps[0]->m_width, cube_maps[0]->m_height)))) +
+                1;
 
         D3D12_RESOURCE_FLAGS resourceFlags = D3D12_RESOURCE_FLAG_NONE | D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
         D3D12_RESOURCE_DESC  resourceDesc  = CD3DX12_RESOURCE_DESC::Tex2D(cube_maps[0]->m_format,
@@ -1025,7 +945,7 @@ namespace Pilot
                                                                         0,
                                                                         resourceFlags);
 
-        cube_tex = RHI::D3D12Texture(m_device->GetLinkedDevice(), resourceDesc, std::nullopt, true);
+        cube_tex = RHI::D3D12Texture(m_Device->GetLinkedDevice(), resourceDesc, std::nullopt, true);
 
         D3D12_SHADER_RESOURCE_VIEW_DESC resourceViewDesc;
         resourceViewDesc.Format                          = resourceDesc.Format;
@@ -1035,22 +955,28 @@ namespace Pilot
         resourceViewDesc.TextureCube.MipLevels           = resourceDesc.MipLevels;
         resourceViewDesc.TextureCube.ResourceMinLODClamp = 0;
 
-        cube_tex_view = RHI::D3D12ShaderResourceView(m_device->GetLinkedDevice(), resourceViewDesc, &cube_tex);
+        cube_tex_view = RHI::D3D12ShaderResourceView(m_Device->GetLinkedDevice(), resourceViewDesc, &cube_tex);
 
-        D3D12_SUBRESOURCE_DATA resourceInitData = {cube_maps[0]->m_pixels, cube_maps[0]->m_width * 4, 0};
+        D3D12_RESOURCE_STATES tex2d_ori_state = cube_tex.GetResourceState().GetSubresourceState(0);
 
-        m_resourceUpload.Transition(
-            cube_tex.GetResource(), cube_tex.GetResourceState().GetSubresourceState(0), D3D12_RESOURCE_STATE_COPY_DEST);
+        m_ResourceUpload->Transition(cube_tex.GetResource(), tex2d_ori_state, D3D12_RESOURCE_STATE_COPY_DEST);
+
+        UINT bytesPerPixel = D3D12RHIUtils::BytesPerPixel(resourceViewDesc.Format);
 
         for (size_t i = 0; i < 6; i++)
         {
-            m_resourceUpload.Upload(cube_tex.GetResource(), cubemap_miplevels * i, &resourceInitData, 1);
+            D3D12_SUBRESOURCE_DATA resourceInitData;
+            resourceInitData.pData      = cube_maps[i]->m_pixels;
+            resourceInitData.RowPitch   = cube_maps[i]->m_width * bytesPerPixel;
+            resourceInitData.SlicePitch = resourceInitData.RowPitch * resourceDesc.Height;
 
-            m_resourceUpload.GenerateMips(cube_tex.GetResource());
+            m_ResourceUpload->Upload(cube_tex.GetResource(), cubemap_miplevels * i, &resourceInitData, 1);
+
+            if (genMips)
+                m_ResourceUpload->GenerateMips(cube_tex.GetResource());
         }
 
-        m_resourceUpload.Transition(
-            cube_tex.GetResource(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+        m_ResourceUpload->Transition(cube_tex.GetResource(), D3D12_RESOURCE_STATE_COPY_DEST, tex2d_ori_state);
 
         if (batch)
             this->endUploadBatch();

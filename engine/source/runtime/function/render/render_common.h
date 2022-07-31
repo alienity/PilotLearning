@@ -171,13 +171,7 @@ namespace Pilot
 
         uint32_t mesh_vertex_count;
 
-        RHI::D3D12Buffer mesh_vertex_position_buffer;
-
-        RHI::D3D12Buffer mesh_vertex_varying_enable_blending_buffer;
-
-        RHI::D3D12Buffer mesh_vertex_joint_binding_buffer;
-
-        RHI::D3D12Buffer mesh_vertex_varying_buffer;
+        RHI::D3D12Buffer mesh_vertex_buffer;
 
         uint32_t mesh_index_count;
 
