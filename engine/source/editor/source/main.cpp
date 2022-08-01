@@ -15,7 +15,7 @@
 int main(int argc, char** argv)
 {
     std::filesystem::path executable_path(argv[0]);
-    std::filesystem::path config_file_path = executable_path.parent_path() / "PilotEditor.ini";
+    std::filesystem::path config_file_path = executable_path.parent_path() / "MoYuEditor.ini";
 
     Pilot::PilotEngine* engine = new Pilot::PilotEngine();
 
