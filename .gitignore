@@ -50,7 +50,6 @@ _deps
 # Compiled Dynamic libraries
 *.so
 *.dylib
-*.dll
 
 # Fortran module files
 *.mod
@@ -60,10 +59,8 @@ _deps
 *.lai
 *.la
 *.a
-*.lib
 
 # Executables
-*.exe
 *.out
 *.app
 # finish C++.gitignore
@@ -85,21 +82,6 @@ _deps
 
 # Mono auto generated files
 mono_crash.*
-
-# Build results
-[Dd]ebug/
-[Dd]ebugPublic/
-[Rr]elease/
-[Rr]eleases/
-x64/
-x86/
-[Ww][Ii][Nn]32/
-[Aa][Rr][Mm]/
-[Aa][Rr][Mm]64/
-bld/
-[Bb]in/
-[Oo]bj/
-[Oo]ut/
 
 # Visual Studio 2015/2017 cache/options directory
 .vs/
