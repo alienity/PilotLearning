@@ -95,7 +95,7 @@ namespace Pilot
 
             glm::vec3 intersect_pt[3] = {
                 local_ray_origin_xyz + plane_view_depth[0] * local_ray_dir, // yoz
-                local_ray_origin_xyz + plane_view_depth[1] * local_ray_dir, // xoz
+                local_ray_origin_xyz + plane_view_depth[1] * local_ray_dir, // zox
                 local_ray_origin_xyz + plane_view_depth[2] * local_ray_dir  // xoy
             };
 
@@ -323,8 +323,7 @@ namespace Pilot
         Vector3    model_translation;
         model_matrix.decompose(model_scale, model_rotation, model_translation);
 
-        Matrix4x4 axis_model_matrix = Matrix4x4::Identity;
-        axis_model_matrix.translation(model_translation);
+        Matrix4x4 axis_model_matrix = Matrix4x4::translation(model_translation);
 
         Matrix4x4 view_matrix = m_camera->getLookAtMatrix();
         Matrix4x4 proj_matrix = m_camera->getPersProjMatrix();
@@ -395,13 +394,11 @@ namespace Pilot
                 return;
             }
 
-            Matrix4x4 translate_mat;
-            translate_mat.makeTransform(move_vector, Vector3::One, Quaternion::Identity);
-            new_model_matrix = axis_model_matrix * translate_mat;
+            Matrix4x4 translate_mat = Matrix4x4::makeTransform(move_vector, Vector3::One, Quaternion::Identity);
+            new_model_matrix        = axis_model_matrix * translate_mat;
 
             new_model_matrix = new_model_matrix * Matrix4x4(model_rotation);
-            new_model_matrix =
-                new_model_matrix * Matrix4x4::scale(model_scale.x, model_scale.y, model_scale.z);
+            new_model_matrix = new_model_matrix * Matrix4x4::scale(model_scale.x, model_scale.y, model_scale.z);
 
             Vector3    new_scale;
             Quaternion new_rotation;
@@ -474,8 +471,7 @@ namespace Pilot
             move_rot.fromAxisAngle(axis_of_rotation, move_radian);
             new_model_matrix = axis_model_matrix * move_rot;
             new_model_matrix = new_model_matrix * Matrix4x4(model_rotation);
-            new_model_matrix =
-                new_model_matrix * Matrix4x4::scale(model_scale.x, model_scale.y, model_scale.z);
+            new_model_matrix = new_model_matrix * Matrix4x4::scale(model_scale.x, model_scale.y, model_scale.z);
             Vector3    new_scale;
             Quaternion new_rotation;
             Vector3    new_translation;

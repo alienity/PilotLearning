@@ -9,7 +9,7 @@ namespace Pilot
     class EditorUI;
     class PilotEngine;
 
-    class PilotEditor 
+    class PilotEditor
     {
         friend class EditorUI;
 
@@ -24,6 +24,6 @@ namespace Pilot
 
     protected:
         std::shared_ptr<EditorUI> m_editor_ui;
-        PilotEngine* m_engine_runtime{ nullptr };
+        PilotEngine*              m_engine_runtime {nullptr};
     };
 } // namespace Pilot

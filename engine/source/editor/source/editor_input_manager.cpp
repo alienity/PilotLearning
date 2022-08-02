@@ -59,11 +59,11 @@ namespace Pilot
 
         if ((unsigned int)EditorCommand::camera_foward & m_editor_command)
         {
-            camera_relative_pos += camera_rotate * Vector3 {0, camera_speed, 0};
+            camera_relative_pos += camera_rotate * Vector3 {0, 0, -camera_speed};
         }
         if ((unsigned int)EditorCommand::camera_back & m_editor_command)
         {
-            camera_relative_pos += camera_rotate * Vector3 {0, -camera_speed, 0};
+            camera_relative_pos += camera_rotate * Vector3 {0, 0, camera_speed};
         }
         if ((unsigned int)EditorCommand::camera_left & m_editor_command)
         {
@@ -75,11 +75,11 @@ namespace Pilot
         }
         if ((unsigned int)EditorCommand::camera_up & m_editor_command)
         {
-            camera_relative_pos += Vector3 {0, 0, camera_speed};
+            camera_relative_pos += Vector3 {0, camera_speed, 0};
         }
         if ((unsigned int)EditorCommand::camera_down & m_editor_command)
         {
-            camera_relative_pos += Vector3 {0, 0, -camera_speed};
+            camera_relative_pos += Vector3 {0, -camera_speed, 0};
         }
         if ((unsigned int)EditorCommand::delete_object & m_editor_command)
         {
@@ -273,7 +273,8 @@ namespace Pilot
         if (m_cursor_on_axis != 3)
             return;
 
-        std::shared_ptr<Level> current_active_level = g_runtime_global_context.m_world_manager->getCurrentActiveLevel().lock();
+        std::shared_ptr<Level> current_active_level =
+            g_runtime_global_context.m_world_manager->getCurrentActiveLevel().lock();
         if (current_active_level == nullptr)
             return;
 
