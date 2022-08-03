@@ -12,4 +12,4 @@ namespace Pilot
     }
     void RenderPassBase::preparePassData(std::shared_ptr<RenderResourceBase> render_resource) {}
     void RenderPassBase::initializeUIRenderBackend(WindowUI* window_ui) {}
-} // namespace Piccolo
+} // namespace Pilot

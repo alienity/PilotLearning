@@ -11,6 +11,7 @@ namespace Pilot
 
     struct RenderPassCommonInfo
     {
+        std::shared_ptr<RHI>                rhi;
         std::shared_ptr<RenderResourceBase> render_resource;
     };
 
