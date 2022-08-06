@@ -16,7 +16,7 @@ namespace Pilot
         Device->WaitIdle();
     }
 
-    void RendererManager::Initialize(RendererInitInfo initialize_info)
+    void RendererManager::Initialize(RendererManagerInitInfo initialize_info)
     {
         Compiler = std::make_unique<ShaderCompiler>();
         Device   = std::make_unique<RHI::D3D12Device>(initialize_info.Options);
@@ -34,12 +34,20 @@ namespace Pilot
 
     void RendererManager::InitRenderer()
     {
-        MoYuRenderer = std::make_unique<DeferredRenderer>(Device.get(), Compiler.get(), SwapChain.get());
+        RendererInitParams rendererInitParams = {Device.get(), Compiler.get(), SwapChain.get(), WinSystem.get()};
+
+        MoYuRenderer = std::make_unique<DeferredRenderer>(rendererInitParams);
+        MoYuRenderer->Initialize();
+    }
+
+    void RendererManager::InitUIRenderer(WindowUI* window_ui)
+    {
+        MoYuRenderer->InitializeUIRenderBackend(window_ui);
     }
 
     void RendererManager::PreparePassData(std::shared_ptr<RenderResourceBase> render_resource)
     {
-
+        MoYuRenderer->PreparePassData(render_resource);
     }
 
     void RendererManager::Tick()
@@ -64,9 +72,15 @@ namespace Pilot
         return Device.get();
     }
 
-    Renderer::Renderer(RHI::D3D12Device* Device, ShaderCompiler* Compiler, RHI::D3D12SwapChain* SwapChain) :
-        Device(Device), Compiler(Compiler), SwapChain(SwapChain), Allocator(65536)
+    Renderer::Renderer(RendererInitParams renderer_init_info) :
+        device(renderer_init_info.device), compiler(renderer_init_info.compiler),
+        swapChain(renderer_init_info.swapChain), renderGraphAllocator(65536),
+        windowsSystem(renderer_init_info.windowSystem)
     {}
+
+    void Renderer::Initialize() {}
+    void Renderer::InitializeUIRenderBackend(WindowUI* window_ui) {}
+    void Renderer::PreparePassData(std::shared_ptr<RenderResourceBase> render_resource) {}
 
     Renderer::~Renderer() {}
 

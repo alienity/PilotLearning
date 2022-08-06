@@ -43,13 +43,13 @@ namespace Pilot
             global_rendering_res.m_color_grading_map;
 
         // initialize render manager
-        RHI::DeviceOptions deviceOptions = {};
-        deviceOptions.FeatureLevel       = D3D_FEATURE_LEVEL::D3D_FEATURE_LEVEL_11_0;
-        RendererInitInfo renderInitInfo  = {};
-        renderInitInfo.Options           = deviceOptions;
-        renderInitInfo.Window_system     = init_info.window_system;
-        m_renderer_manager               = std::make_shared<RendererManager>();
-        m_renderer_manager->Initialize(renderInitInfo);
+        RHI::DeviceOptions deviceOptions              = {};
+        deviceOptions.FeatureLevel                    = D3D_FEATURE_LEVEL::D3D_FEATURE_LEVEL_11_0;
+        RendererManagerInitInfo renderManagerInitInfo = {};
+        renderManagerInitInfo.Options                 = deviceOptions;
+        renderManagerInitInfo.Window_system           = init_info.window_system;
+        m_renderer_manager                            = std::make_shared<RendererManager>();
+        m_renderer_manager->Initialize(renderManagerInitInfo);
 
         // initial global resources
         m_render_resource = std::make_shared<RenderResource>();
@@ -108,7 +108,8 @@ namespace Pilot
 
     void RenderSystem::initializeUIRenderBackend(WindowUI* window_ui)
     {
-        
+        // TODO:初始化UI相关的绘制
+        m_renderer_manager->InitUIRenderer(window_ui);
     }
 
     void RenderSystem::updateEngineContentViewport(float offset_x, float offset_y, float width, float height)

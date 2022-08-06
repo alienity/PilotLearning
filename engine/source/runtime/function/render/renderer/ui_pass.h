@@ -12,30 +12,35 @@ namespace Pilot
     class UIPass : public RenderPass
 	{
     public:
+        struct UIPassInitInfo : public RenderPassInitInfo
+        {
+            WindowUI* window_ui;
+        };
+
         struct UIInputParameters : public PassInput
         {
-
+            RHI::RgResourceHandle backBufColor;
         };
 
         struct UIOutputParameters : public PassOutput
         {
             RHI::RgResourceHandle backBufColor;
+            RHI::D3D12RenderTargetView* backBufRtv;
         };
 
     public:
-        void initialize(const RenderPassInitInfo* init_info) override final;
-        void initializeUIRenderBackend(WindowUI* window_ui) override final;
+        void initialize(const RenderPassInitInfo& init_info) override final;
+        void initializeUIRenderBackend(WindowUI* window_ui);
         void update(RHI::D3D12CommandContext& context,
                     RHI::RenderGraph&         graph,
                     PassInput&                passInput,
                     PassOutput&               passOutput) override final;
+        void draw(ID3D12GraphicsCommandList* pCommandList);
         void destroy() override final;
 
     private:
-        void uploadFonts();
-
-    private:
         WindowUI* m_window_ui;
+        std::shared_ptr<RHI::D3D12DynamicDescriptor<D3D12_SHADER_RESOURCE_VIEW_DESC>> pD3D12SRVDescriptor;
 	};
 }
 

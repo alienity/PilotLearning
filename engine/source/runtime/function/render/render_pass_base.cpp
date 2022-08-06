@@ -3,13 +3,16 @@
 #include "runtime/core/base/macro.h"
 #include "runtime/function/render/render_system.h"
 
+#include "runtime/function/render/rhi/rendergraph/RenderGraph.h"
+#include "runtime/function/render/rhi/rendergraph/RenderGraphRegistry.h"
+
 namespace Pilot
 {
-    void RenderPassBase::postInitialize() {}
     void RenderPassBase::setCommonInfo(RenderPassCommonInfo common_info)
     {
-        m_render_resource = common_info.render_resource;
+        m_RenderGraphAllocator = common_info.renderGraphAllocator;
+        m_RenderGraphRegistry  = common_info.renderGraphRegistry;
+        m_Device               = common_info.device;
+        m_WindowSystem         = common_info.windowsSystem;
     }
-    void RenderPassBase::preparePassData(std::shared_ptr<RenderResourceBase> render_resource) {}
-    void RenderPassBase::initializeUIRenderBackend(WindowUI* window_ui) {}
 } // namespace Pilot

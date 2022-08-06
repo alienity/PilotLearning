@@ -7,6 +7,7 @@
 #include "runtime/function/render/rhi/shader_compiler.h"
 #include "runtime/function/render/rhi/rendergraph/RenderGraph.h"
 #include "runtime/function/render/render_resource_base.h"
+#include "runtime/function/ui/window_ui.h"
 
 namespace Pilot
 {
@@ -15,7 +16,7 @@ namespace Pilot
     class RenderResourceBase;
     class Renderer;
 
-    struct RendererInitInfo
+    struct RendererManagerInitInfo
     {
         RHI::DeviceOptions            Options;
         std::shared_ptr<WindowSystem> Window_system;
@@ -27,8 +28,9 @@ namespace Pilot
         RendererManager();
         ~RendererManager();
 
-        void Initialize(RendererInitInfo initialize_info);
+        void Initialize(RendererManagerInitInfo initialize_info);
         void InitRenderer();
+        void InitUIRenderer(WindowUI* window_ui);
         void PreparePassData(std::shared_ptr<RenderResourceBase> render_resource);
         void Tick();
 
@@ -54,10 +56,22 @@ namespace Pilot
         RHI::D3D12SyncHandle      SyncHandle;
     };
 
+    struct RendererInitParams
+    {
+        RHI::D3D12Device*    device;
+        ShaderCompiler*      compiler;
+        RHI::D3D12SwapChain* swapChain;
+        WindowSystem*        windowSystem;
+    };
+
     class Renderer
     {
     public:
-        Renderer(RHI::D3D12Device* Device, ShaderCompiler* Compiler, RHI::D3D12SwapChain* SwapChain);
+        Renderer(RendererInitParams renderer_init_info);
+
+        virtual void Initialize();
+        virtual void InitializeUIRenderBackend(WindowUI* window_ui);
+        virtual void PreparePassData(std::shared_ptr<RenderResourceBase> render_resource);
 
         virtual ~Renderer();
 
@@ -66,12 +80,13 @@ namespace Pilot
         [[nodiscard]] void* GetViewportPtr() const { return Viewport; }
 
     protected:
-        RHI::D3D12Device*    Device    = nullptr;
-        ShaderCompiler*      Compiler  = nullptr;
-        RHI::D3D12SwapChain* SwapChain = nullptr;
+        RHI::D3D12Device*    device        = nullptr;
+        ShaderCompiler*      compiler      = nullptr;
+        RHI::D3D12SwapChain* swapChain     = nullptr;
+        WindowSystem*        windowsSystem = nullptr;
 
-        RHI::RenderGraphAllocator Allocator;
-        RHI::RenderGraphRegistry  Registry;
+        RHI::RenderGraphAllocator renderGraphAllocator;
+        RHI::RenderGraphRegistry  renderGraphRegistry;
 
         size_t FrameIndex = 0;
 

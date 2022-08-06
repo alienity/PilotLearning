@@ -277,7 +277,7 @@ namespace Pilot
         ImGui::SetNextWindowViewport(main_viewport->ID);
 
         ImGui::Begin("Editor menu", p_open, window_flags);
-
+        
         ImGuiID main_docking_id = ImGui::GetID("Main Docking");
         if (ImGui::DockBuilderGetNode(main_docking_id) == nullptr)
         {
@@ -309,7 +309,7 @@ namespace Pilot
         }
 
         ImGui::DockSpace(main_docking_id);
-
+        
         if (ImGui::BeginMenuBar())
         {
             if (ImGui::BeginMenu("Menu"))

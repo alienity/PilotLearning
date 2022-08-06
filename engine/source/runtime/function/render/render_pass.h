@@ -20,26 +20,19 @@ namespace Pilot
         std::vector<RenderParticleBillboardNode>* p_main_camera_visible_particlebillboard_nodes {nullptr};
     };
 
-    struct PassInput
-    {};
-
-    struct PassOutput
-    {};
-
     class RenderPass : public RenderPassBase
     {
     public:
-        GlobalRenderResource*      m_global_render_resource {nullptr};
-
-        void initialize(const RenderPassInitInfo* init_info) override;
-        void postInitialize() override;
+        void initialize(const RenderPassInitInfo& init_info) override;
 
         virtual void update(RHI::D3D12CommandContext& context,
                             RHI::RenderGraph&         graph,
                             PassInput&                passInput,
-                            PassOutput&               passOutput);
+                            PassOutput&               passOutput) override;
 
-        virtual void destroy();
+        virtual void destroy() override;
+
+        GlobalRenderResource* m_global_render_resource {nullptr};
 
         static VisiableNodes m_visiable_nodes;
 
