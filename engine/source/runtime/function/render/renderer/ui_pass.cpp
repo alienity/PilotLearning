@@ -48,11 +48,12 @@ namespace Pilot
         UIInputParameters*  uiPassInput = (UIInputParameters*)(&passInput);
         UIOutputParameters* uiPassOutput = (UIOutputParameters*)(&passOutput);
 
-        RHI::RgResourceHandle       backBufColor = uiPassOutput->backBufColor;
-        RHI::D3D12RenderTargetView* backBufRTV   = uiPassOutput->backBufRtv;
+        RHI::RgResourceHandle       inputBufColor = uiPassInput->backBufColor;
+        RHI::RgResourceHandle       backBufColor  = uiPassOutput->backBufColor;
+        RHI::D3D12RenderTargetView* backBufRTV    = uiPassOutput->backBufRtv;
 
         graph.AddRenderPass("UIPass")
-            .Read(uiPassInput->backBufColor)
+            .Read(inputBufColor)
             .Write(&backBufColor)
             .Execute([=](RHI::RenderGraphRegistry& registry, RHI::D3D12CommandContext& context) {
                 RHI::D3D12Texture*  backBufTex    = registry.GetImportedResource(backBufColor);
@@ -60,17 +61,21 @@ namespace Pilot
                 int                 backBufWidth  = backBufDesc.Width;
                 int                 backBufHeight = backBufDesc.Height;
 
-                context.SetViewport(RHIViewport {0.0f, 0.0f, (float)backBufHeight, (float)backBufHeight, 0.0f, 1.0f});
-                context.SetScissorRect(RHIRect {0, 0, backBufWidth, backBufHeight});
-                context.SetRenderTarget(backBufRTV, nullptr);
-                draw(context.GetGraphicsCommandList());
+                draw(context, backBufRTV, backBufWidth, backBufHeight);
             });
     }
 
-    void UIPass::draw(ID3D12GraphicsCommandList* pCommandList)
+    void UIPass::draw(RHI::D3D12CommandContext&   context,
+                      RHI::D3D12RenderTargetView* pRTV,
+                      int                         backBufWidth,
+                      int                         backBufHeight)
     {
         if (m_window_ui)
         {
+            context.SetViewport(RHIViewport {0.0f, 0.0f, (float)backBufWidth, (float)backBufHeight, 0.0f, 1.0f});
+            context.SetScissorRect(RHIRect {0, 0, backBufWidth, backBufHeight});
+            context.SetRenderTarget(pRTV, nullptr);
+
             // Start the Dear ImGui frame
             ImGui_ImplDX12_NewFrame();
             ImGui_ImplGlfw_NewFrame();
@@ -82,7 +87,7 @@ namespace Pilot
             ImGui::EndFrame();
             ImGui::Render();
 
-            ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), pCommandList);
+            ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), context.GetGraphicsCommandList());
         }
     }
 

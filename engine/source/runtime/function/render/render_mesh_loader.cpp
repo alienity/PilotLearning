@@ -188,7 +188,7 @@ int MittTangentsHelper::get_num_faces(const SMikkTSpaceContext* context)
 {
     ModelLoaderMesh* working_mesh = static_cast<ModelLoaderMesh*>(context->m_pUserData);
 
-    float f_size = (float)working_mesh->vertexs_.size() / 3.f;
+    float f_size = (float)working_mesh->indices_.size() / 3.f;
     int   i_size = (int)working_mesh->indices_.size() / 3;
 
     assert((f_size - (float)i_size) == 0.f);

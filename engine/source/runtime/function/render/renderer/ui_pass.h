@@ -35,7 +35,8 @@ namespace Pilot
                     RHI::RenderGraph&         graph,
                     PassInput&                passInput,
                     PassOutput&               passOutput) override final;
-        void draw(ID3D12GraphicsCommandList* pCommandList);
+        void
+        draw(RHI::D3D12CommandContext& context, RHI::D3D12RenderTargetView* pRTV, int backBufWidth, int backBufHeight);
         void destroy() override final;
 
     private:

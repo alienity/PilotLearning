@@ -69,15 +69,15 @@ namespace Pilot
         {
             graph.AddRenderPass("DisplayTest")
                 .Write(&backBufColor)
-                .Execute([=](RHI::RenderGraphRegistry& Registry, RHI::D3D12CommandContext& Context) {
-                    Context.SetGraphicsRootSignature(Registry.GetRootSignature(RootSignatures::FullScreenPresent));
-                    Context.SetPipelineState(Registry.GetPipelineState(PipelineStates::FullScreenPresent));
-                    Context->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-                    Context.SetViewport(RHIViewport {0, 0, (float)backBufWidth, (float)backBufHeight, 0, 1});
-                    Context.SetScissorRect(RHIRect {0, 0, (long)backBufWidth, (long)backBufHeight});
-                    Context.ClearRenderTarget(backBufferResource.RtView, nullptr);
-                    Context.SetRenderTarget(backBufferResource.RtView, nullptr);
-                    Context->DrawInstanced(3, 1, 0, 0);
+                .Execute([=](RHI::RenderGraphRegistry& registry, RHI::D3D12CommandContext& context) {
+                    context.SetGraphicsRootSignature(registry.GetRootSignature(RootSignatures::FullScreenPresent));
+                    context.SetPipelineState(registry.GetPipelineState(PipelineStates::FullScreenPresent));
+                    context->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+                    context.SetViewport(RHIViewport {0, 0, (float)backBufWidth, (float)backBufHeight, 0, 1});
+                    context.SetScissorRect(RHIRect {0, 0, (long)backBufWidth, (long)backBufHeight});
+                    context.ClearRenderTarget(backBufferResource.RtView, nullptr);
+                    context.SetRenderTarget(backBufferResource.RtView, nullptr);
+                    context->DrawInstanced(3, 1, 0, 0);
                 });
         }
 

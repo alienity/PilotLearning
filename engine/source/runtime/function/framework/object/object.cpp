@@ -88,6 +88,9 @@ namespace Pilot
 
         for (auto loaded_component : definition_res.m_components)
         {
+            if (loaded_component.getPtr() == NULL)
+                continue;
+
             const std::string type_name = loaded_component.getTypeName();
             // don't create component if it has been instanced
             if (hasComponent(type_name))
