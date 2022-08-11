@@ -309,9 +309,9 @@ namespace Pilot
         // process camera swap data
         if (swap_data.m_camera_swap_data.has_value())
         {
-            if (swap_data.m_camera_swap_data->m_fov_x.has_value())
+            if (swap_data.m_camera_swap_data->m_fov_y.has_value())
             {
-                m_render_camera->setFOVx(*swap_data.m_camera_swap_data->m_fov_x);
+                m_render_camera->setFOVy(*swap_data.m_camera_swap_data->m_fov_y);
             }
 
             if (swap_data.m_camera_swap_data->m_view_matrix.has_value())

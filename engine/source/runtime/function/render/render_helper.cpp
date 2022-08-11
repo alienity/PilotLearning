@@ -332,7 +332,7 @@ namespace Pilot
             glm::vec3 eye =
                 box_center + GLMUtil::fromVec3(scene.m_directional_light.m_direction) * glm::length(box_extents);
             glm::vec3 center = box_center;
-            light_view       = glm::lookAtRH(eye, center, glm::vec3(0.0, 0.0, 1.0));
+            light_view       = glm::lookAtRH(eye, center, glm::vec3(0.0, 1.0, 0.0));
 
             BoundingBox frustum_bounding_box_light_view = BoundingBoxTransform(frustum_bounding_box, light_view);
             BoundingBox scene_bounding_box_light_view   = BoundingBoxTransform(scene_bounding_box, light_view);
@@ -342,8 +342,7 @@ namespace Pilot
                 std::min(frustum_bounding_box_light_view.max_bound.x, scene_bounding_box_light_view.max_bound.x),
                 std::max(frustum_bounding_box_light_view.min_bound.y, scene_bounding_box_light_view.min_bound.y),
                 std::min(frustum_bounding_box_light_view.max_bound.y, scene_bounding_box_light_view.max_bound.y),
-                -scene_bounding_box_light_view.max_bound
-                     .z, // the objects which are nearer than the frustum bounding box may caster shadow as well
+                -scene_bounding_box_light_view.max_bound.z, // the objects which are nearer than the frustum bounding box may caster shadow as well
                 -std::max(frustum_bounding_box_light_view.min_bound.z, scene_bounding_box_light_view.min_bound.z));
         }
 

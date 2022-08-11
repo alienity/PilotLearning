@@ -41,7 +41,7 @@ namespace Pilot
 
         RenderSwapContext& swap_context = g_runtime_global_context.m_render_system->getSwapContext();
         CameraSwapData     camera_swap_data;
-        camera_swap_data.m_fov_x                           = m_camera_res.m_parameter->m_fov;
+        camera_swap_data.m_fov_y                           = m_camera_res.m_parameter->m_fov;
         swap_context.getLogicSwapData().m_camera_swap_data = camera_swap_data;
     }
 

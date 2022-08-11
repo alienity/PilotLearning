@@ -44,7 +44,7 @@ namespace Pilot
     void RenderCamera::zoom(float offset)
     {
         // > 0 = zoom in (decrease FOV by <offset> angles)
-        m_fovx = Math::clamp(m_fovx - offset, MIN_FOV, MAX_FOV);
+        m_fovy = Math::clamp(m_fovy - offset, MIN_FOV, MAX_FOV);
     }
 
     void RenderCamera::lookAt(const Vector3& position, const Vector3& target, const Vector3& up)
@@ -53,13 +53,13 @@ namespace Pilot
 
         // model rotation
         // maps vectors to camera space (x, y, z)
-        Vector3 forward = Vector3::normalize(position - target);
-        m_rotation      = Quaternion::fromToRotation(forward, Z);
+        Vector3 forward = Vector3::normalize(target - position);
+        m_rotation      = Quaternion::fromToRotation(forward, Vector3::Backward);
 
         // correct the up vector
         // the cross product of non-orthogonal vectors is not normalized
-        Vector3 right  = Vector3::normalize(Vector3::cross(Vector3::normalize(up), forward));
-        Vector3 orthUp = Vector3::cross(forward, right);
+        Vector3 right  = Vector3::normalize(Vector3::cross(Vector3::normalize(up), -forward));
+        Vector3 orthUp = Vector3::cross(-forward, right);
 
         Quaternion upRotation = Quaternion::fromToRotation(m_rotation * orthUp, Y);
 
@@ -102,7 +102,5 @@ namespace Pilot
         // 1 / tan(fovy * 0.5) / aspect = 1 / tan(fovx * 0.5)
         // 1 / tan(fovy * 0.5) = aspect / tan(fovx * 0.5)
         // tan(fovy * 0.5) = tan(fovx * 0.5) / aspect
-
-        m_fovy = Radian(Math::atan(Math::tan(Radian(Degree(m_fovx) * 0.5f).valueRadians()) / m_aspect) * 2.0f).valueDegrees();
     }
 } // namespace Pilot

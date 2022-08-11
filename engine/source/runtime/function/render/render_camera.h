@@ -41,7 +41,10 @@ namespace Pilot
         void lookAt(const Vector3& position, const Vector3& target, const Vector3& up);
 
         void setAspect(float aspect);
-        void setFOVx(float fovx) { m_fovx = fovx; }
+        void setFOVy(float fovy) { m_fovy = fovy; }
+
+        float getAspect() const { return m_aspect; }
+        float getFOVy() const { return m_fovy; }
 
         Vector3    position() const { return m_position; }
         Quaternion rotation() const { return m_rotation; }
@@ -49,7 +52,7 @@ namespace Pilot
         Vector3   forward() const { return (m_invRotation * (-Z)); }
         Vector3   up() const { return (m_invRotation * Y); }
         Vector3   right() const { return (m_invRotation * X); }
-        Vector2   getFOV() const { return {m_fovx, m_fovy}; }
+
         Matrix4x4 getViewMatrix();
         Matrix4x4 getPersProjMatrix() const;
         Matrix4x4 getLookAtMatrix() const { return Math::makeLookAtMatrix(position(), position() + forward(), up()); }
@@ -57,7 +60,6 @@ namespace Pilot
 
     protected:
         float m_aspect {0.f};
-        float m_fovx {Degree(89.f).valueDegrees()};
         float m_fovy {0.f};
 
         std::mutex m_view_matrix_mutex;

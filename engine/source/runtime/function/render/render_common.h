@@ -250,3 +250,108 @@ namespace Pilot
         D3D12PBRMaterial* now_material;
     };
 } // namespace Pilot
+
+namespace Hlsl
+{
+    static const uint32_t m_point_light_shadow_map_dimension       = 2048;
+    static const uint32_t m_directional_light_shadow_map_dimension = 4096;
+
+    static uint32_t const m_mesh_per_drawcall_max_instance_count = 64;
+    static uint32_t const m_mesh_vertex_blending_max_joint_count = 1024;
+    static uint32_t const m_max_point_light_count                = 15;
+
+    struct Material
+    {
+        unsigned int BSDFType;
+        glm::vec3    BaseColor;
+        float        Metallic;
+        float        Subsurface;
+        float        Specular;
+        float        Roughness;
+        float        SpecularTint;
+        float        Anisotropic;
+        float        Sheen;
+        float        SheenTint;
+        float        Clearcoat;
+        float        ClearcoatGloss;
+
+        // Used by Glass BxDF
+        glm::vec3 T;
+        float     EtaA, EtaB;
+
+        int Albedo;
+    };
+
+    struct DirectionalLight
+    {
+        glm::vec3 direction;
+        float     _padding_direction;
+        glm::vec3 color;
+        float     _padding_color;
+    };
+
+    struct PointLight
+    {
+        glm::vec3 position;
+        float     radius;
+        glm::vec3 intensity;
+        float     _padding_intensity;
+    };
+
+    struct BoundingBox
+    {
+        glm::vec3 Center;
+        glm::vec3 Extents;
+    };
+
+    struct Mesh
+    {
+        // 64
+        glm::mat4x4 Transform;
+        // 64
+        glm::mat4x4 PreviousTransform;
+
+		// 64
+        D3D12_VERTEX_BUFFER_VIEW  VertexBuffer;
+        D3D12_INDEX_BUFFER_VIEW   IndexBuffer;
+        D3D12_GPU_VIRTUAL_ADDRESS Meshlets;
+        D3D12_GPU_VIRTUAL_ADDRESS UniqueVertexIndices;
+        D3D12_GPU_VIRTUAL_ADDRESS PrimitiveIndices;
+        D3D12_GPU_VIRTUAL_ADDRESS AccelerationStructure;
+
+		// 24
+        BoundingBox BoundingBox;
+        // 20
+        D3D12_DRAW_INDEXED_ARGUMENTS DrawIndexedArguments;
+
+		// 20
+        unsigned int MaterialIndex;
+        unsigned int NumMeshlets;
+        unsigned int VertexView;
+        unsigned int IndexView;
+        unsigned int DEADBEEF2 = 0xDEADBEEF;
+    };
+    static_assert(sizeof(Mesh) == 256);
+
+	struct Camera
+    {
+        float FoVY; // Degrees
+        float AspectRatio;
+        float NearZ;
+        float FarZ;
+
+        glm::vec4 Position;
+
+        glm::mat4x4 View;
+        glm::mat4x4 Projection;
+        glm::mat4x4 ViewProjection;
+
+        glm::mat4x4 InvView;
+        glm::mat4x4 InvProjection;
+        glm::mat4x4 InvViewProjection;
+
+        glm::mat4x4 PrevViewProjection;
+    };
+
+
+}

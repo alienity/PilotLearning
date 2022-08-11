@@ -31,7 +31,7 @@ namespace Pilot
 
     struct CameraSwapData
     {
-        std::optional<float>            m_fov_x;
+        std::optional<float>            m_fov_y;
         std::optional<RenderCameraType> m_camera_type;
         std::optional<Matrix4x4>        m_view_matrix;
     };
