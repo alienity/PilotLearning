@@ -27,35 +27,42 @@ namespace Pilot
         RenderPassCommonInfo renderPassCommonInfo = {
             &renderGraphAllocator, &renderGraphRegistry, device, windowsSystem};
 
+        mIndirectCullPass = std::make_shared<IndirectCullPass>();
+        mIndirectCullPass->setCommonInfo(renderPassCommonInfo);
+        mIndirectCullPass->initialize({});
+
     }
 
     void DeferredRenderer::InitializeUIRenderBackend(WindowUI* window_ui)
     {
-        mUIPass = std::make_shared<UIPass>();
-
-        // 设置通用变量，那我是不是应该直接用静态变量设置一下算了
         RenderPassCommonInfo renderPassCommonInfo = {
             &renderGraphAllocator, &renderGraphRegistry, device, windowsSystem};
-        mUIPass->setCommonInfo(renderPassCommonInfo);
 
-        // 真正初始化
+        mUIPass = std::make_shared<UIPass>();
+        mUIPass->setCommonInfo(renderPassCommonInfo);
         UIPass::UIPassInitInfo uiPassInitInfo;
         uiPassInitInfo.window_ui = window_ui;
         mUIPass->initialize(uiPassInitInfo);
     }
 
-    void DeferredRenderer::PreparePassData(std::shared_ptr<RenderResourceBase> render_resource)
+    void DeferredRenderer::PreparePassData(std::shared_ptr<RenderResourceBase>& render_resource)
     {
+        mIndirectCullPass->prepareMeshData(render_resource);
 
     }
 
     DeferredRenderer::~DeferredRenderer() 
     {
         mUIPass = nullptr;
+        mIndirectCullPass = nullptr;
     }
 
     void DeferredRenderer::OnRender(RHI::D3D12CommandContext& context)
     {
+        IndirectCullPass::IndirectCullResultBuffer indirectCullResult;
+        mIndirectCullPass->cullMeshs(indirectCullResult);
+
+
         RHI::D3D12SwapChainResource backBufferResource = swapChain->GetCurrentBackBufferResource();
 
         auto backBufDesc   = backBufferResource.BackBuffer->GetDesc();

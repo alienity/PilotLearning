@@ -6,24 +6,61 @@
 
 namespace Pilot
 {
-    void RenderScene::updateVisibleObjects(std::shared_ptr<RenderResource> render_resource,
-                                           std::shared_ptr<RenderCamera>   camera)
+    void RenderScene::updateAllObjects(std::shared_ptr<RenderResource> render_resource,
+                                       std::shared_ptr<RenderCamera>   camera)
     {
-        updateVisibleObjectsDirectionalLight(render_resource, camera);
-        updateVisibleObjectsPointLight(render_resource);
-        updateVisibleObjectsMainCamera(render_resource, camera);
-        updateVisibleObjectsAxis(render_resource);
-        updateVisibleObjectsParticle(render_resource);
+        m_all_mesh_nodes.clear();
+
+        for (const RenderEntity& entity : m_render_entities)
+        {
+            BoundingBox mesh_asset_bounding_box {entity.m_bounding_box.getMinCorner(),
+                                                 entity.m_bounding_box.getMaxCorner()};
+
+            m_all_mesh_nodes.emplace_back();
+            RenderMeshNode& temp_node = m_all_mesh_nodes.back();
+
+            temp_node.model_matrix = GLMUtil::fromMat4x4(entity.m_model_matrix);
+
+            assert(entity.m_joint_matrices.size() <= m_mesh_vertex_blending_max_joint_count);
+            for (size_t joint_index = 0; joint_index < entity.m_joint_matrices.size(); joint_index++)
+            {
+                temp_node.joint_matrices[joint_index] = GLMUtil::fromMat4x4(entity.m_joint_matrices[joint_index]);
+            }
+            temp_node.node_id = entity.m_instance_id;
+
+            D3D12Mesh& mesh_asset            = render_resource->getEntityMesh(entity);
+            temp_node.ref_mesh               = &mesh_asset;
+            temp_node.enable_vertex_blending = entity.m_enable_vertex_blending;
+
+            D3D12PBRMaterial& material_asset = render_resource->getEntityMaterial(entity);
+            temp_node.ref_material           = &material_asset;
+
+            temp_node.bounding_box_min = GLMUtil::fromVec3(mesh_asset_bounding_box.min_bound);
+            temp_node.bounding_box_max = GLMUtil::fromVec3(mesh_asset_bounding_box.max_bound);
+        }
+
     }
+
+
+    //void RenderScene::updateVisibleObjects(std::shared_ptr<RenderResource> render_resource,
+    //                                       std::shared_ptr<RenderCamera>   camera)
+    //{
+    //    updateVisibleObjectsDirectionalLight(render_resource, camera);
+    //    updateVisibleObjectsPointLight(render_resource);
+    //    updateVisibleObjectsMainCamera(render_resource, camera);
+    //    updateVisibleObjectsAxis(render_resource);
+    //    updateVisibleObjectsParticle(render_resource);
+    //}
 
     void RenderScene::setVisibleNodesReference()
     {
-        RenderPass::m_visiable_nodes.p_directional_light_visible_mesh_nodes = &m_directional_light_visible_mesh_nodes;
-        RenderPass::m_visiable_nodes.p_point_lights_visible_mesh_nodes      = &m_point_lights_visible_mesh_nodes;
-        RenderPass::m_visiable_nodes.p_main_camera_visible_mesh_nodes       = &m_main_camera_visible_mesh_nodes;
+        RenderPass::m_visiable_nodes.p_all_mesh_nodes = &m_all_mesh_nodes;
+        //RenderPass::m_visiable_nodes.p_directional_light_visible_mesh_nodes = &m_directional_light_visible_mesh_nodes;
+        //RenderPass::m_visiable_nodes.p_point_lights_visible_mesh_nodes      = &m_point_lights_visible_mesh_nodes;
+        //RenderPass::m_visiable_nodes.p_main_camera_visible_mesh_nodes       = &m_main_camera_visible_mesh_nodes;
         RenderPass::m_visiable_nodes.p_axis_node                            = &m_axis_node;
-        RenderPass::m_visiable_nodes.p_main_camera_visible_particlebillboard_nodes =
-            &m_main_camera_visible_particlebillboard_nodes;
+        //RenderPass::m_visiable_nodes.p_main_camera_visible_particlebillboard_nodes =
+        //    &m_main_camera_visible_particlebillboard_nodes;
     }
 
     GuidAllocator<GameObjectPartId>& RenderScene::getInstanceIdAllocator() { return m_instance_id_allocator; }

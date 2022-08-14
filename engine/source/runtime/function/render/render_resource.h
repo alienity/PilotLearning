@@ -90,6 +90,7 @@ namespace Pilot
         GlobalRenderResource m_global_render_resource;
 
         // storage buffer objects
+        /*
         MeshPerframeStorageBufferObject                 m_mesh_perframe_storage_buffer_object;
         MeshPointLightShadowPerframeStorageBufferObject m_mesh_point_light_shadow_perframe_storage_buffer_object;
         MeshDirectionalLightShadowPerframeStorageBufferObject
@@ -97,6 +98,16 @@ namespace Pilot
         AxisStorageBufferObject                        m_axis_storage_buffer_object;
         MeshInefficientPickPerframeStorageBufferObject m_mesh_inefficient_pick_perframe_storage_buffer_object;
         ParticleBillboardPerframeStorageBufferObject   m_particlebillboard_perframe_storage_buffer_object;
+        */
+        // 我们用于bindless的对象
+        HLSL::MeshPerframeStorageBufferObject                 m_mesh_perframe_storage_buffer_object;
+        HLSL::MeshPointLightShadowPerframeStorageBufferObject m_mesh_point_light_shadow_perframe_storage_buffer_object;
+        HLSL::MeshDirectionalLightShadowPerframeStorageBufferObject
+                                m_mesh_directional_light_shadow_perframe_storage_buffer_object;
+        HLSL::MeshInstance      m_all_mesh_buffer_object;
+        AxisStorageBufferObject m_axis_storage_buffer_object;
+
+
 
         // cached mesh and material
         std::map<size_t, D3D12Mesh>        m_d3d12_meshes;
@@ -110,14 +121,18 @@ namespace Pilot
         void createDynamicBuffer(std::shared_ptr<BufferData>& buffer_data,
                                  RHI::D3D12Buffer&            dynamicBuffer);
         
-        void createStaticBuffer(void*             buffer_data,
-                                uint32_t          buffer_size,
-                                uint32_t          buffer_stride,
-                                RHI::D3D12Buffer& staticBuffer,
-                                bool              batch = false);
-        void createStaticBuffer(std::shared_ptr<BufferData>& buffer_data,
-                                RHI::D3D12Buffer&            staticBuffer,
-                                bool                         batch = false);
+        void createStaticBuffer(void*                         buffer_data,
+                                uint32_t                      buffer_size,
+                                uint32_t                      buffer_stride,
+                                RHI::D3D12Buffer&             staticBuffer,
+                                bool                          raw,
+                                RHI::D3D12ShaderResourceView& staticBuffer_view,
+                                bool                          batch = false);
+        void createStaticBuffer(std::shared_ptr<BufferData>&  buffer_data,
+                                RHI::D3D12Buffer&             staticBuffer,
+                                bool                          raw,
+                                RHI::D3D12ShaderResourceView& staticBuffer_view,
+                                bool                          batch = false);
 
         void createTex2D(uint32_t                      width,
                          uint32_t                      height,

@@ -19,10 +19,6 @@ namespace Pilot
     class RenderScene
     {
     public:
-        static constexpr size_t MaterialLimit = 8192;
-        static constexpr size_t LightLimit    = 32;
-        static constexpr size_t MeshLimit     = 8192;
-
         // light
         AmbientLight      m_ambient_light;
         PDirectionalLight m_directional_light;
@@ -34,6 +30,9 @@ namespace Pilot
         // axis, for editor
         std::optional<RenderEntity> m_render_axis;
 
+        // all objects (updated per frame)
+        std::vector<RenderMeshNode> m_all_mesh_nodes;
+
         // visible objects (updated per frame)
         std::vector<RenderMeshNode>              m_directional_light_visible_mesh_nodes;
         std::vector<RenderMeshNode>              m_point_lights_visible_mesh_nodes;
@@ -41,9 +40,12 @@ namespace Pilot
         std::vector<RenderParticleBillboardNode> m_main_camera_visible_particlebillboard_nodes;
         RenderAxisNode                           m_axis_node;
 
-        // update visible objects in each frame
-        void updateVisibleObjects(std::shared_ptr<RenderResource> render_resource,
-                                  std::shared_ptr<RenderCamera>   camera);
+        // update all objects for indirect cull in each frame
+        void updateAllObjects(std::shared_ptr<RenderResource> render_resource, std::shared_ptr<RenderCamera> camera);
+
+        //// update visible objects in each frame
+        //void updateVisibleObjects(std::shared_ptr<RenderResource> render_resource,
+        //                          std::shared_ptr<RenderCamera>   camera);
 
         // set visible nodes ptr in render pass
         void setVisibleNodesReference();

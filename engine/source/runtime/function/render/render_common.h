@@ -176,6 +176,8 @@ namespace Pilot
         uint32_t mesh_index_count;
 
         RHI::D3D12Buffer mesh_index_buffer;
+
+
     };
 
     // material
@@ -196,7 +198,8 @@ namespace Pilot
         RHI::D3D12Texture            emissive_texture_image;
         RHI::D3D12ShaderResourceView emissive_image_view;
 
-        RHI::D3D12Buffer material_uniform_buffer;
+        RHI::D3D12Buffer             material_uniform_buffer;
+        RHI::D3D12ShaderResourceView material_uniform_buffer_view;
         
         //VkDescriptorSet material_descriptor_set;
     };
@@ -209,6 +212,8 @@ namespace Pilot
         D3D12Mesh*         ref_mesh     = nullptr;
         D3D12PBRMaterial*  ref_material = nullptr;
         uint32_t           node_id;
+        glm::vec3          bounding_box_min;
+        glm::vec3          bounding_box_max;
         bool               enable_vertex_blending = false;
     };
 
@@ -251,8 +256,13 @@ namespace Pilot
     };
 } // namespace Pilot
 
-namespace Hlsl
+namespace HLSL
 {
+
+    static constexpr size_t MaterialLimit = 8192;
+    static constexpr size_t LightLimit    = 32;
+    static constexpr size_t MeshLimit     = 8192;
+
     static const uint32_t m_point_light_shadow_map_dimension       = 2048;
     static const uint32_t m_directional_light_shadow_map_dimension = 4096;
 
@@ -260,29 +270,7 @@ namespace Hlsl
     static uint32_t const m_mesh_vertex_blending_max_joint_count = 1024;
     static uint32_t const m_max_point_light_count                = 15;
 
-    struct Material
-    {
-        unsigned int BSDFType;
-        glm::vec3    BaseColor;
-        float        Metallic;
-        float        Subsurface;
-        float        Specular;
-        float        Roughness;
-        float        SpecularTint;
-        float        Anisotropic;
-        float        Sheen;
-        float        SheenTint;
-        float        Clearcoat;
-        float        ClearcoatGloss;
-
-        // Used by Glass BxDF
-        glm::vec3 T;
-        float     EtaA, EtaB;
-
-        int Albedo;
-    };
-
-    struct DirectionalLight
+    struct SceneDirectionalLight
     {
         glm::vec3 direction;
         float     _padding_direction;
@@ -290,7 +278,7 @@ namespace Hlsl
         float     _padding_color;
     };
 
-    struct PointLight
+    struct ScenePointLight
     {
         glm::vec3 position;
         float     radius;
@@ -298,60 +286,93 @@ namespace Hlsl
         float     _padding_intensity;
     };
 
-    struct BoundingBox
+    struct CameraInstance
     {
-        glm::vec3 Center;
-        glm::vec3 Extents;
+        glm::mat4 view_matrix;
+        glm::mat4 proj_matrix;
+        glm::mat4 proj_view_matrix;
+        glm::vec3 camera_position;
+        float     _padding_camera_position;
+
     };
 
-    struct Mesh
+    struct MeshPerframeStorageBufferObject
     {
-        // 64
-        glm::mat4x4 Transform;
-        // 64
-        glm::mat4x4 PreviousTransform;
+        CameraInstance        cameraInstance;
+        glm::vec3             ambient_light;
+        float                 _padding_ambient_light;
+        uint32_t              point_light_num;
+        uint32_t              _padding_point_light_num_1;
+        uint32_t              _padding_point_light_num_2;
+        uint32_t              _padding_point_light_num_3;
+        ScenePointLight       scene_point_lights[m_max_point_light_count];
+        SceneDirectionalLight scene_directional_light;
+        glm::mat4             directional_light_proj_view;
+    };
 
-		// 64
-        D3D12_VERTEX_BUFFER_VIEW  VertexBuffer;
-        D3D12_INDEX_BUFFER_VIEW   IndexBuffer;
-        D3D12_GPU_VIRTUAL_ADDRESS Meshlets;
-        D3D12_GPU_VIRTUAL_ADDRESS UniqueVertexIndices;
-        D3D12_GPU_VIRTUAL_ADDRESS PrimitiveIndices;
-        D3D12_GPU_VIRTUAL_ADDRESS AccelerationStructure;
+    struct MeshInstance
+    {
+        float     enable_vertex_blending;
+        float     _padding_enable_vertex_blending_1;
+        float     _padding_enable_vertex_blending_2;
+        float     _padding_enable_vertex_blending_3;
+        glm::mat4 model_matrix;
 
-		// 24
-        BoundingBox BoundingBox;
-        // 20
+        D3D12_VERTEX_BUFFER_VIEW vertexBuffer;
+        D3D12_INDEX_BUFFER_VIEW  indexBuffer;
+
+        D3D12_DRAW_INDEXED_ARGUMENTS drawIndexedArguments;
+
+        glm::vec3 bounding_box_min;
+        float     _bounding_box_min_padding;
+        glm::vec3 bounding_box_max;
+        float     _bounding_box_max_padding;
+
+        uint32_t materialIndex;
+        uint32_t _padding_View0;
+        uint32_t _padding_View1;
+        uint32_t _padding_View2;
+    };
+
+    struct MaterialInstance
+    {
+        uint32_t uniformBufferViewIndex; 
+        uint32_t baseColorViewIndex; 
+        uint32_t metallicRoughnessViewIndex;
+        uint32_t normalViewIndex;
+        uint32_t occlusionViewIndex;
+        uint32_t emissionViewIndex;
+    };
+
+    struct MeshPointLightShadowPerframeStorageBufferObject
+    {
+        uint32_t  point_light_num;
+        uint32_t  _padding_point_light_num_1;
+        uint32_t  _padding_point_light_num_2;
+        uint32_t  _padding_point_light_num_3;
+        glm::vec4 point_lights_position_and_radius[m_max_point_light_count];
+    };
+
+    struct MeshDirectionalLightShadowPerframeStorageBufferObject
+    {
+        glm::mat4 light_proj_view;
+        uint32_t  shadow_width;
+        uint32_t  shadow_height;
+        uint32_t  shadow_depth;
+        uint32_t  _padding_shadow;
+    };
+
+    struct CommandSignatureParams
+    {
+        uint32_t                     MeshIndex;
+        D3D12_VERTEX_BUFFER_VIEW     VertexBuffer;
+        D3D12_INDEX_BUFFER_VIEW      IndexBuffer;
         D3D12_DRAW_INDEXED_ARGUMENTS DrawIndexedArguments;
-
-		// 20
-        unsigned int MaterialIndex;
-        unsigned int NumMeshlets;
-        unsigned int VertexView;
-        unsigned int IndexView;
-        unsigned int DEADBEEF2 = 0xDEADBEEF;
     };
-    static_assert(sizeof(Mesh) == 256);
 
-	struct Camera
-    {
-        float FoVY; // Degrees
-        float AspectRatio;
-        float NearZ;
-        float FarZ;
 
-        glm::vec4 Position;
 
-        glm::mat4x4 View;
-        glm::mat4x4 Projection;
-        glm::mat4x4 ViewProjection;
 
-        glm::mat4x4 InvView;
-        glm::mat4x4 InvProjection;
-        glm::mat4x4 InvViewProjection;
-
-        glm::mat4x4 PrevViewProjection;
-    };
 
 
 }

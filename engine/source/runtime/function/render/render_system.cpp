@@ -45,6 +45,10 @@ namespace Pilot
         // initialize render manager
         RHI::DeviceOptions deviceOptions              = {};
         deviceOptions.FeatureLevel                    = D3D_FEATURE_LEVEL::D3D_FEATURE_LEVEL_11_0;
+#ifdef _DEBUG
+        deviceOptions.EnableDebugLayer                = true;
+        deviceOptions.EnableAutoDebugName             = true;
+#endif
         RendererManagerInitInfo renderManagerInitInfo = {};
         renderManagerInitInfo.Options                 = deviceOptions;
         renderManagerInitInfo.Window_system           = init_info.window_system;
@@ -87,8 +91,11 @@ namespace Pilot
         m_render_resource->updatePerFrameBuffer(m_render_scene, m_render_camera);
 
         // update per-frame visible objects
-        m_render_scene->updateVisibleObjects(std::static_pointer_cast<RenderResource>(m_render_resource),
-                                             m_render_camera);
+        m_render_scene->updateAllObjects(std::static_pointer_cast<RenderResource>(m_render_resource), m_render_camera);
+
+        //// update per-frame visible objects
+        //m_render_scene->updateVisibleObjects(std::static_pointer_cast<RenderResource>(m_render_resource),
+        //                                     m_render_camera);
 
         // prepare pipeline's render passes data
         m_renderer_manager->PreparePassData(m_render_resource);
@@ -136,10 +143,12 @@ namespace Pilot
 
     void RenderSystem::createAxis(std::array<RenderEntity, 3> axis_entities, std::array<RenderMeshData, 3> mesh_datas)
     {
+        /*
         for (int i = 0; i < axis_entities.size(); i++)
         {
             m_render_resource->uploadGameObjectRenderResource(axis_entities[i], mesh_datas[i]);
         }
+        */
     }
 
     void RenderSystem::setVisibleAxis(std::optional<RenderEntity> axis)

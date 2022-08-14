@@ -69,6 +69,7 @@ struct Libraries
 struct RootSignatures
 {
     inline static RHI::RgResourceHandle FullScreenPresent;
+    inline static RHI::RgResourceHandle IndirectCull;
 
     static void Compile(RHI::D3D12Device* Device, RHI::RenderGraphRegistry& Registry)
     {
@@ -76,30 +77,36 @@ struct RootSignatures
             Registry.CreateRootSignature(Device->CreateRootSignature(RHI::RootSignatureDesc()
                                                                          .AllowResourceDescriptorHeapIndexing()
                                                                          .AllowSampleDescriptorHeapIndexing()));
+
+		IndirectCull =
+            Registry.CreateRootSignature(Device->CreateRootSignature(RHI::RootSignatureDesc()
+                                                                         .AddConstantBufferView<0, 0>()
+                                                                         .AddShaderResourceView<0, 0>()
+                                                                         .AddUnorderedAccessViewWithCounter<0, 0>()
+                                                                         .AllowResourceDescriptorHeapIndexing()
+                                                                         .AllowSampleDescriptorHeapIndexing()));
     }
 };
 
 struct CommandSignatures
 {
-    inline static RHI::D3D12CommandSignature DispatchIndirectCommandSignature;
     inline static RHI::D3D12CommandSignature DrawIndirectCommandSignature;
 
     static void Compile(RHI::D3D12Device* Device, RHI::RenderGraphRegistry& Registry)
     {
+        /*
         {
-            RHI::CommandSignatureDesc Builder(1);
-            Builder.AddDispatch();
+            RHI::CommandSignatureDesc Builder(4, sizeof(HLSL::CommandSignatureParams));
+            Builder.AddConstant(0, 0, 1);
+            Builder.AddVertexBufferView(0);
+            Builder.AddIndexBufferView();
+            Builder.AddDrawIndexed();
 
-        	DispatchIndirectCommandSignature = RHI::D3D12CommandSignature(Device, Builder, nullptr);
+            ID3D12RootSignature* indirectCullRootSignature =
+                Registry.GetRootSignature(RootSignatures::IndirectCull)->GetApiHandle();
+            DrawIndirectCommandSignature = RHI::D3D12CommandSignature(Device, Builder, indirectCullRootSignature);
         }
-
-        {
-            RHI::CommandSignatureDesc Builder(1);
-            Builder.AddDraw();
-
-            DrawIndirectCommandSignature = RHI::D3D12CommandSignature(Device, Builder, nullptr);
-        }
-
+        */
     }
 
 

@@ -108,6 +108,68 @@ namespace Pilot
         Vector3   camera_position  = camera->position();
         glm::mat4 proj_view_matrix = GLMUtil::fromMat4x4(proj_matrix * view_matrix);
 
+        // camera instance
+        HLSL::CameraInstance cameraInstance;
+        cameraInstance.view_matrix      = GLMUtil::fromMat4x4(view_matrix);
+        cameraInstance.proj_matrix      = GLMUtil::fromMat4x4(proj_matrix);
+        cameraInstance.proj_view_matrix = proj_view_matrix;
+        cameraInstance.camera_position  = GLMUtil::fromVec3(camera_position);
+
+        // ambient light
+        Vector3  ambient_light   = render_scene->m_ambient_light.m_irradiance;
+        uint32_t point_light_num = static_cast<uint32_t>(render_scene->m_point_light_list.m_lights.size());
+
+        // set ubo data
+        m_mesh_perframe_storage_buffer_object.cameraInstance   = cameraInstance;
+        m_mesh_perframe_storage_buffer_object.ambient_light    = GLMUtil::fromVec3(ambient_light);
+        m_mesh_perframe_storage_buffer_object.point_light_num  = point_light_num;
+
+        m_mesh_point_light_shadow_perframe_storage_buffer_object.point_light_num = point_light_num;
+
+        // point lights
+        for (uint32_t i = 0; i < point_light_num; i++)
+        {
+            Vector3 point_light_position = render_scene->m_point_light_list.m_lights[i].m_position;
+            Vector3 point_light_intensity =
+                render_scene->m_point_light_list.m_lights[i].m_flux / (4.0f * glm::pi<float>());
+
+            float radius = render_scene->m_point_light_list.m_lights[i].calculateRadius();
+
+            m_mesh_perframe_storage_buffer_object.scene_point_lights[i].position =
+                GLMUtil::fromVec3(point_light_position);
+            m_mesh_perframe_storage_buffer_object.scene_point_lights[i].radius = radius;
+            m_mesh_perframe_storage_buffer_object.scene_point_lights[i].intensity =
+                GLMUtil::fromVec3(point_light_intensity);
+
+            m_mesh_point_light_shadow_perframe_storage_buffer_object.point_lights_position_and_radius[i] =
+                glm::vec4(point_light_position.x, point_light_position.y, point_light_position.z, radius);
+        }
+
+        // directional light
+        m_mesh_perframe_storage_buffer_object.scene_directional_light.direction =
+            GLMUtil::fromVec3(Vector3::normalize(render_scene->m_directional_light.m_direction));
+        m_mesh_perframe_storage_buffer_object.scene_directional_light.color =
+            GLMUtil::fromVec3(render_scene->m_directional_light.m_color);
+
+        /*
+        // pick pass view projection matrix
+        m_mesh_inefficient_pick_perframe_storage_buffer_object.proj_view_matrix = proj_view_matrix;
+
+        m_particlebillboard_perframe_storage_buffer_object.proj_view_matrix = proj_view_matrix;
+        m_particlebillboard_perframe_storage_buffer_object.eye_position     = GLMUtil::fromVec3(camera_position);
+        m_particlebillboard_perframe_storage_buffer_object.up_direction     = GLMUtil::fromVec3(camera->up());
+        */
+    }
+
+    /*
+    void RenderResource::updatePerFrameBuffer(std::shared_ptr<RenderScene>  render_scene,
+                                              std::shared_ptr<RenderCamera> camera)
+    {
+        Matrix4x4 view_matrix      = camera->getViewMatrix();
+        Matrix4x4 proj_matrix      = camera->getPersProjMatrix();
+        Vector3   camera_position  = camera->position();
+        glm::mat4 proj_view_matrix = GLMUtil::fromMat4x4(proj_matrix * view_matrix);
+
         // ambient light
         Vector3  ambient_light   = render_scene->m_ambient_light.m_irradiance;
         uint32_t point_light_num = static_cast<uint32_t>(render_scene->m_point_light_list.m_lights.size());
@@ -152,6 +214,7 @@ namespace Pilot
         m_particlebillboard_perframe_storage_buffer_object.eye_position     = GLMUtil::fromVec3(camera_position);
         m_particlebillboard_perframe_storage_buffer_object.up_direction     = GLMUtil::fromVec3(camera->up());
     }
+    */
 
     D3D12Mesh& RenderResource::getOrCreateD3D12Mesh(RenderEntity entity, RenderMeshData mesh_data)
     {
@@ -326,52 +389,74 @@ namespace Pilot
                 createStaticBuffer(&material_uniform_buffer_info,
                                    buffer_size,
                                    buffer_size,
-                                   now_material.material_uniform_buffer);
+                                   now_material.material_uniform_buffer,
+                                   false,
+                                   now_material.material_uniform_buffer_view,
+                                   false);
 
                 createTex2D(update_texture_data.base_color_image_width,
                             update_texture_data.base_color_image_height,
                             update_texture_data.base_color_image_pixels,
                             update_texture_data.base_color_image_format,
                             true,
-                            update_texture_data.now_material->base_color_texture_image,
-                            update_texture_data.now_material->base_color_image_view,
-                            true);
+                            now_material.base_color_texture_image,
+                            now_material.base_color_image_view,
+                            true,
+                            false);
 
                 createTex2D(update_texture_data.metallic_roughness_image_width,
                             update_texture_data.metallic_roughness_image_height,
                             update_texture_data.metallic_roughness_image_pixels,
                             update_texture_data.metallic_roughness_image_format,
                             false,
-                            update_texture_data.now_material->metallic_roughness_texture_image,
-                            update_texture_data.now_material->metallic_roughness_image_view,
-                            true);
+                            now_material.metallic_roughness_texture_image,
+                            now_material.metallic_roughness_image_view,
+                            true,
+                            false);
 
                 createTex2D(update_texture_data.normal_roughness_image_width,
                             update_texture_data.normal_roughness_image_height,
                             update_texture_data.normal_roughness_image_pixels,
                             update_texture_data.normal_roughness_image_format,
                             false,
-                            update_texture_data.now_material->normal_texture_image,
-                            update_texture_data.now_material->normal_image_view,
-                            true);
+                            now_material.normal_texture_image,
+                            now_material.normal_image_view,
+                            true,
+                            false);
 
-                createTex2D(update_texture_data.occlusion_image_width,
-                            update_texture_data.occlusion_image_height,
-                            update_texture_data.occlusion_image_pixels,
-                            update_texture_data.occlusion_image_format,
-                            false,
-                            update_texture_data.now_material->occlusion_texture_image,
-                            update_texture_data.now_material->occlusion_image_view,
-                            true);
+                if (material_data.m_occlusion_texture)
+                {
+                    createTex2D(update_texture_data.occlusion_image_width,
+                                update_texture_data.occlusion_image_height,
+                                update_texture_data.occlusion_image_pixels,
+                                update_texture_data.occlusion_image_format,
+                                false,
+                                now_material.occlusion_texture_image,
+                                now_material.occlusion_image_view,
+                                true,
+                                false);
+                }
+                else
+                {
+                    // TODO: 设置一个空白的纹理
+                }
 
-                createTex2D(update_texture_data.emissive_image_width,
-                            update_texture_data.emissive_image_height,
-                            update_texture_data.emissive_image_pixels,
-                            update_texture_data.emissive_image_format,
-                            false,
-                            update_texture_data.now_material->emissive_texture_image,
-                            update_texture_data.now_material->emissive_image_view,
-                            true);
+                if (material_data.m_emissive_texture)
+                {
+                    createTex2D(update_texture_data.emissive_image_width,
+                                update_texture_data.emissive_image_height,
+                                update_texture_data.emissive_image_pixels,
+                                update_texture_data.emissive_image_format,
+                                false,
+                                now_material.emissive_texture_image,
+                                now_material.emissive_image_view,
+                                true,
+                                false);
+                }
+                else
+                {
+                    // TODO: 设置一个空白的纹理
+                }
 
                 endUploadBatch();
             }
@@ -725,21 +810,20 @@ namespace Pilot
 
         memcpy(staging_buffer_data, index_buffer_data, (size_t)buffer_size);
 
-        now_mesh.mesh_index_buffer =
-            RHI::D3D12Buffer(m_Device->GetLinkedDevice(),
-                             buffer_size,
-                             buffer_size,
-                             D3D12_HEAP_TYPE::D3D12_HEAP_TYPE_DEFAULT,
-                             D3D12_RESOURCE_FLAGS::D3D12_RESOURCE_FLAG_NONE,
-                             D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
+        now_mesh.mesh_index_buffer = RHI::D3D12Buffer(m_Device->GetLinkedDevice(),
+                                                      buffer_size,
+                                                      buffer_size,
+                                                      D3D12_HEAP_TYPE::D3D12_HEAP_TYPE_DEFAULT,
+                                                      D3D12_RESOURCE_FLAGS::D3D12_RESOURCE_FLAG_NONE,
+                                                      D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_INDEX_BUFFER);
         {
             startUploadBatch();
 
             {
                 D3D12_RESOURCE_STATES buf_ori_state =
-                    now_mesh.mesh_vertex_buffer.GetResourceState().GetSubresourceState(0);
+                    now_mesh.mesh_index_buffer.GetResourceState().GetSubresourceState(0);
 
-                m_ResourceUpload->Transition(now_mesh.mesh_vertex_buffer.GetResource(),
+                m_ResourceUpload->Transition(now_mesh.mesh_index_buffer.GetResource(),
                                              buf_ori_state,
                                              D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_DEST);
 
@@ -807,11 +891,13 @@ namespace Pilot
         createDynamicBuffer(buffer_data->m_data, buffer_data->m_size, buffer_data->m_size, dynamicBuffer);
     }
     
-    void RenderResource::createStaticBuffer(void*             buffer_data,
-                                            uint32_t          buffer_size,
-                                            uint32_t          buffer_stride,
-                                            RHI::D3D12Buffer& staticBuffer,
-                                            bool              batch)
+    void RenderResource::createStaticBuffer(void*                         buffer_data,
+                                            uint32_t                      buffer_size,
+                                            uint32_t                      buffer_stride,
+                                            RHI::D3D12Buffer&             staticBuffer,
+                                            bool                          raw,
+                                            RHI::D3D12ShaderResourceView& staticBuffer_view,
+                                            bool                          batch)
     {
         assert(buffer_size % buffer_stride == 0);
 
@@ -824,6 +910,27 @@ namespace Pilot
                                         D3D12_HEAP_TYPE::D3D12_HEAP_TYPE_DEFAULT,
                                         D3D12_RESOURCE_FLAGS::D3D12_RESOURCE_FLAG_NONE,
                                         D3D12_RESOURCE_STATE_COPY_DEST);
+
+        uint32_t number_elements = buffer_size / buffer_stride;
+
+        D3D12_SHADER_RESOURCE_VIEW_DESC resourceViewDesc;
+        resourceViewDesc.Format                          = DXGI_FORMAT::DXGI_FORMAT_UNKNOWN;
+        resourceViewDesc.ViewDimension                   = D3D12_SRV_DIMENSION_BUFFER;
+        resourceViewDesc.Shader4ComponentMapping         = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+        resourceViewDesc.Buffer.FirstElement             = 0;
+        resourceViewDesc.Buffer.NumElements              = number_elements;
+        resourceViewDesc.Buffer.StructureByteStride      = buffer_stride;
+        resourceViewDesc.Buffer.Flags                    = D3D12_BUFFER_SRV_FLAGS::D3D12_BUFFER_SRV_FLAG_NONE;
+        if (raw)
+        {
+            resourceViewDesc.Format                     = DXGI_FORMAT::DXGI_FORMAT_R32_TYPELESS;
+            resourceViewDesc.Buffer.FirstElement        = 0;
+            resourceViewDesc.Buffer.NumElements         = number_elements / 4;
+            resourceViewDesc.Buffer.StructureByteStride = 0;
+            resourceViewDesc.Buffer.Flags               = D3D12_BUFFER_SRV_FLAGS::D3D12_BUFFER_SRV_FLAG_RAW;
+        }
+
+        staticBuffer_view = RHI::D3D12ShaderResourceView(m_Device->GetLinkedDevice(), resourceViewDesc, &staticBuffer);
 
         m_ResourceUpload->Transition(staticBuffer.GetResource(),
                                      staticBuffer.GetResourceState().GetSubresourceState(0),
@@ -839,11 +946,14 @@ namespace Pilot
             this->endUploadBatch();
     }
 
-    void RenderResource::createStaticBuffer(std::shared_ptr<BufferData>& buffer_data,
-                                            RHI::D3D12Buffer&            staticBuffer,
-                                            bool                         batch)
+    void RenderResource::createStaticBuffer(std::shared_ptr<BufferData>&  buffer_data,
+                                            RHI::D3D12Buffer&             staticBuffer,
+                                            bool                          raw,
+                                            RHI::D3D12ShaderResourceView& staticBuffer_view,
+                                            bool                          batch)
     {
-        createStaticBuffer(buffer_data->m_data, buffer_data->m_size, buffer_data->m_size, staticBuffer, batch);
+        createStaticBuffer(
+            buffer_data->m_data, buffer_data->m_size, buffer_data->m_size, staticBuffer, raw, staticBuffer_view, batch);
     }
 
     void RenderResource::createTex2D(uint32_t                      width,
@@ -863,7 +973,7 @@ namespace Pilot
         if (genMips)
             tex2d_miplevels = static_cast<uint32_t>(std::floor(std::log2(std::max(width, height)))) + 1;
 
-        D3D12_RESOURCE_FLAGS resourceFlags = D3D12_RESOURCE_FLAG_NONE | D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
+        D3D12_RESOURCE_FLAGS resourceFlags = D3D12_RESOURCE_FLAG_NONE/* | D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS*/;
         D3D12_RESOURCE_DESC  resourceDesc =
             CD3DX12_RESOURCE_DESC::Tex2D(format, width, height, 1, tex2d_miplevels, 1, 0, resourceFlags);
 
@@ -872,10 +982,11 @@ namespace Pilot
         D3D12_SHADER_RESOURCE_VIEW_DESC resourceViewDesc;
         resourceViewDesc.Format        = is_srgb ? D3D12RHIUtils::MakeSRGB(resourceDesc.Format) : resourceDesc.Format;
         resourceViewDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
-        resourceViewDesc.Shader4ComponentMapping         = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-        resourceViewDesc.TextureCube.MostDetailedMip     = 0;
-        resourceViewDesc.TextureCube.MipLevels           = resourceDesc.MipLevels;
-        resourceViewDesc.TextureCube.ResourceMinLODClamp = 0;
+        resourceViewDesc.Shader4ComponentMapping       = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+        resourceViewDesc.Texture2D.MostDetailedMip     = 0;
+        resourceViewDesc.Texture2D.MipLevels           = resourceDesc.MipLevels;
+        resourceViewDesc.Texture2D.PlaneSlice          = 0;
+        resourceViewDesc.Texture2D.ResourceMinLODClamp = 0;
 
         tex2d_view = RHI::D3D12ShaderResourceView(m_Device->GetLinkedDevice(), resourceViewDesc, &tex2d);
 
@@ -892,10 +1003,13 @@ namespace Pilot
 
         m_ResourceUpload->Upload(tex2d.GetResource(), 0, &resourceInitData, 1);
 
+        m_ResourceUpload->Transition(
+            tex2d.GetResource(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+
         if (genMips)
             m_ResourceUpload->GenerateMips(tex2d.GetResource());
 
-        m_ResourceUpload->Transition(tex2d.GetResource(), D3D12_RESOURCE_STATE_COPY_DEST, tex2d_ori_state);
+        m_ResourceUpload->Transition(tex2d.GetResource(), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, tex2d_ori_state);
 
         if (batch)
             this->endUploadBatch();
