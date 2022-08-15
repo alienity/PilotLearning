@@ -48,12 +48,10 @@ namespace Pilot
         UIInputParameters*  uiPassInput = (UIInputParameters*)(&passInput);
         UIOutputParameters* uiPassOutput = (UIOutputParameters*)(&passOutput);
 
-        RHI::RgResourceHandle       inputBufColor = uiPassInput->backBufColor;
         RHI::RgResourceHandle       backBufColor  = uiPassOutput->backBufColor;
         RHI::D3D12RenderTargetView* backBufRTV    = uiPassOutput->backBufRtv;
 
         graph.AddRenderPass("UIPass")
-            .Read(inputBufColor)
             .Write(&backBufColor)
             .Execute([=](RHI::RenderGraphRegistry& registry, RHI::D3D12CommandContext& context) {
                 RHI::D3D12Texture*  backBufTex    = registry.GetImportedResource(backBufColor);

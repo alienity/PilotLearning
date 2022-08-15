@@ -91,7 +91,6 @@ namespace Pilot
         if (mUIPass != nullptr)
         {
             UIPass::UIInputParameters mUIIntputParams;
-            mUIIntputParams.backBufColor = backBufColor;
             UIPass::UIOutputParameters mUIOutputParams;
             mUIOutputParams.backBufColor = backBufColor;
             mUIOutputParams.backBufRtv   = backBufferResource.RtView;
@@ -99,6 +98,14 @@ namespace Pilot
         }
 
         graph.Execute(context);
+
+        {
+            // Transfer the state of the backbuffer to Present
+            context.TransitionBarrier(backBufferResource.BackBuffer,
+                                      D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_PRESENT);
+        }
+
+
     }
 
 }

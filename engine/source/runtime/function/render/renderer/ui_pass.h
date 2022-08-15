@@ -18,9 +18,7 @@ namespace Pilot
         };
 
         struct UIInputParameters : public PassInput
-        {
-            RHI::RgResourceHandle backBufColor;
-        };
+        {};
 
         struct UIOutputParameters : public PassOutput
         {
