@@ -27,6 +27,8 @@ namespace Pilot
         };
 
     public:
+        ~UIPass() { destroy(); }
+
         void initialize(const RenderPassInitInfo& init_info) override final;
         void initializeUIRenderBackend(WindowUI* window_ui);
         void update(RHI::D3D12CommandContext& context,

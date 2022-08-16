@@ -119,17 +119,17 @@ namespace RHI
 		}
 	}
 
-	RenderGraph::RenderGraph(RenderGraphAllocator& Allocator, RenderGraphRegistry& Registry)
-		: Allocator(Allocator)
-		, Registry(Registry)
-	{
-		Allocator.Reset();
+	RenderGraph::RenderGraph(RenderGraphAllocator& Allocator, RenderGraphRegistry& Registry) :
+        Allocator(Allocator), Registry(Registry), PassIndex(0)
+    {
+        Allocator.Reset();
 
-		// Allocate epilogue pass after allocator reset
-		ProloguePass = Allocator.Construct<RenderPass>("Prologue");
-		EpiloguePass = Allocator.Construct<RenderPass>("Epilogue");
-		RenderPasses.push_back(ProloguePass);
-	}
+        // Allocate epilogue pass after allocator reset
+        ProloguePass = Allocator.Construct<RenderPass>("Prologue");
+        ProloguePass->PassIndex = PassIndex++;
+        EpiloguePass = Allocator.Construct<RenderPass>("Epilogue");
+        RenderPasses.push_back(ProloguePass);
+    }
 
 	RenderGraph::~RenderGraph()
 	{
@@ -143,6 +143,7 @@ namespace RHI
 	RenderPass& RenderGraph::AddRenderPass(std::string_view Name)
 	{
 		RenderPass* NewRenderPass = Allocator.Construct<RenderPass>(Name);
+        NewRenderPass->PassIndex  = PassIndex++;
 		RenderPasses.emplace_back(NewRenderPass);
 		return *NewRenderPass;
 	}
@@ -164,6 +165,7 @@ namespace RHI
 
 	void RenderGraph::Execute(D3D12CommandContext& Context)
 	{
+        EpiloguePass->PassIndex = PassIndex++;
 		RenderPasses.push_back(EpiloguePass);
 		Setup();
 		Registry.RealizeResources(this, Context.GetParentLinkedDevice()->GetParentDevice());
@@ -304,12 +306,36 @@ namespace RHI
 			}
 		}
 
-		//DependencyLevels.resize(*std::ranges::max_element(Distances) + 1);
+		// DependencyLevels.resize(*std::ranges::max_element(Distances) + 1);
         DependencyLevels.resize(*std::max_element(Distances.begin(), Distances.end()) + 1);
-		for (size_t i = 0; i < TopologicalSortedPasses.size(); ++i)
+
+		// sort renderpass according to PassIndex
+        std::vector<std::vector<RHI::RenderPass*>> sorttedRenderPassList(DependencyLevels.size());
+        for (size_t i = 0; i < TopologicalSortedPasses.size(); ++i)
+        {
+            int level = Distances[i];
+            std::vector<RHI::RenderPass*>& curLevelRenderPass = sorttedRenderPassList[level];
+            curLevelRenderPass.push_back(TopologicalSortedPasses[i]);
+            for (size_t j = curLevelRenderPass.size() - 1; j > 0; j--)
+            {
+                size_t curPassIndex = curLevelRenderPass[j]->PassIndex;
+                size_t prePassIndex = curLevelRenderPass[j - 1]->PassIndex;
+				if (curPassIndex < prePassIndex)
+				{
+                    RHI::RenderPass* tmpPass = curLevelRenderPass[j];
+                    curLevelRenderPass[j]    = curLevelRenderPass[j - 1];
+                    curLevelRenderPass[j - 1] = tmpPass;
+				}
+			}
+        }
+
+		for (size_t l = 0; l < sorttedRenderPassList.size(); ++l)
 		{
-			int level = Distances[i];
-			DependencyLevels[level].AddRenderPass(TopologicalSortedPasses[i]);
+            std::vector<RHI::RenderPass*>& curLevelRenderPass = sorttedRenderPassList[l];
+            for (size_t j = 0; j < curLevelRenderPass.size(); j++)
+            {
+                DependencyLevels[l].AddRenderPass(curLevelRenderPass[j]);
+			}
 		}
 	}
 

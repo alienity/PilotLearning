@@ -81,6 +81,7 @@ namespace RHI
 
         std::string_view Name;
         size_t           TopologicalIndex = 0;
+        size_t           PassIndex        = 0;
 
         robin_hood::unordered_set<RgResourceHandle> Reads;
         robin_hood::unordered_set<RgResourceHandle> Writes;
@@ -211,6 +212,8 @@ namespace RHI
         std::vector<RenderPass*> RenderPasses;
         RenderPass*              ProloguePass;
         RenderPass*              EpiloguePass;
+
+        size_t PassIndex;
 
         std::vector<std::vector<std::uint64_t>> AdjacencyLists;
         std::vector<RenderPass*>                TopologicalSortedPasses;

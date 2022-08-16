@@ -91,8 +91,8 @@ namespace Pilot
 
     void UIPass::destroy()
     {
-        ImGui_ImplGlfw_Shutdown();
         ImGui_ImplDX12_Shutdown();
+        ImGui_ImplGlfw_Shutdown();
         ImGui::DestroyContext();
     }
 
