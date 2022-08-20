@@ -33,7 +33,7 @@ struct Shaders
 	// Compute Shaders
     struct CS
     {
-        //inline static Shader IndirectCull;
+        inline static Shader IndirectCull;
     };
 
     static void Compile(ShaderCompiler* Compiler, const std::filesystem::path& ShaderPath)
@@ -52,6 +52,12 @@ struct Shaders
                 Compiler->CompileShader(RHI_SHADER_TYPE::Pixel, ShaderPath / "hlsl/PresentSDRPS.hlsl", Options);
         }
 
+		// CS
+        {
+            ShaderCompileOptions Options(g_CSEntryPoint);
+            CS::IndirectCull =
+                Compiler->CompileShader(RHI_SHADER_TYPE::Compute, ShaderPath / "hlsl/IndirectCull.hlsl", Options);
+        }
     }
 
 };
@@ -115,6 +121,7 @@ struct CommandSignatures
 struct PipelineStates
 {
     inline static RHI::RgResourceHandle FullScreenPresent;
+    inline static RHI::RgResourceHandle IndirectCull;
 
     static void
     Compile(DXGI_FORMAT RtFormat, DXGI_FORMAT DsFormat, RHI::D3D12Device* Device, RHI::RenderGraphRegistry& Registry)
@@ -150,6 +157,16 @@ struct PipelineStates
 
             FullScreenPresent = Registry.CreatePipelineState(Device->CreatePipelineState(L"FullScreenPresent", Stream));
         }
+        {
+            struct PsoStream
+            {
+                PipelineStateStreamRootSignature RootSignature;
+                PipelineStateStreamCS            CS;
+            } Stream;
+            Stream.RootSignature = Registry.GetRootSignature(RootSignatures::IndirectCull);
+            Stream.CS            = &Shaders::CS::IndirectCull;
 
+            IndirectCull = Registry.CreatePipelineState(Device->CreatePipelineState(L"IndirectCull", Stream));
+        }
     }
 };

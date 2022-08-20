@@ -77,6 +77,34 @@ namespace Pilot
                         m_global_render_resource._color_grading_resource._color_grading_LUT_texture_image,
                         m_global_render_resource._color_grading_resource._color_grading_LUT_texture_image_view);
         }
+        {
+            auto genDefaultData = ([](bool isWhite) {
+                std::shared_ptr<TextureData> default_map = std::make_shared<TextureData>();
+
+                char val = isWhite ? 1 : 0;
+
+                default_map->m_width              = 1;
+                default_map->m_height             = 1;
+                default_map->m_pixels             = new char[4] {val, val, val, val};
+                default_map->m_format             = DXGI_FORMAT::DXGI_FORMAT_R8G8B8A8_UNORM;
+                default_map->m_depth              = 1;
+                default_map->m_array_layers       = 1;
+                default_map->m_mip_levels         = 1;
+
+                return default_map;
+                });
+
+            std::shared_ptr<TextureData> default_white_data = genDefaultData(true);
+            createTex2D(default_white_data,
+                        m_default_resource._white_texture2d_image,
+                        m_default_resource._white_texture2d_image_view);
+
+            std::shared_ptr<TextureData> default_black_data = genDefaultData(false);
+            createTex2D(default_black_data,
+                        m_default_resource._black_texture2d_image,
+                        m_default_resource._black_texture2d_image_view);
+
+        }
         endUploadBatch();
     }
 

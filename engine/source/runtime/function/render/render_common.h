@@ -302,7 +302,7 @@ namespace HLSL
         glm::vec3             ambient_light;
         float                 _padding_ambient_light;
         uint32_t              point_light_num;
-        uint32_t              _padding_point_light_num_1;
+        uint32_t              total_mesh_num;
         uint32_t              _padding_point_light_num_2;
         uint32_t              _padding_point_light_num_3;
         ScenePointLight       scene_point_lights[m_max_point_light_count];

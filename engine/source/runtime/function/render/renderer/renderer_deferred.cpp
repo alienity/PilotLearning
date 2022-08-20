@@ -45,7 +45,7 @@ namespace Pilot
         mUIPass->initialize(uiPassInitInfo);
     }
 
-    void DeferredRenderer::PreparePassData(std::shared_ptr<RenderResourceBase>& render_resource)
+    void DeferredRenderer::PreparePassData(std::shared_ptr<RenderResourceBase> render_resource)
     {
         mIndirectCullPass->prepareMeshData(render_resource);
 
@@ -60,7 +60,7 @@ namespace Pilot
     void DeferredRenderer::OnRender(RHI::D3D12CommandContext& context)
     {
         IndirectCullPass::IndirectCullResultBuffer indirectCullResult;
-        mIndirectCullPass->cullMeshs(indirectCullResult);
+        mIndirectCullPass->cullMeshs(context, indirectCullResult);
 
 
         RHI::D3D12SwapChainResource backBufferResource = swapChain->GetCurrentBackBufferResource();

@@ -3,14 +3,6 @@
 #include "Math.hlsli"
 #include "SharedTypes.hlsli"
 
-struct ConstantBufferParams
-{
-	Camera Camera;
-
-	uint NumMeshes;
-	uint NumLights;
-};
-
 struct CommandSignatureParams
 {
 	uint						 MeshIndex;
@@ -19,9 +11,9 @@ struct CommandSignatureParams
 	D3D12_DRAW_INDEXED_ARGUMENTS DrawIndexedArguments;
 };
 
-ConstantBuffer<ConstantBufferParams>		   g_ConstantBufferParams : register(b0, space0);
-StructuredBuffer<Mesh>						   g_Meshes : register(t0, space0);
-AppendStructuredBuffer<CommandSignatureParams> g_CommandBuffer : register(u0, space0);
+ConstantBuffer<MeshPerframeStorageBufferObject> g_ConstantBufferParams : register(b0, space0);
+StructuredBuffer<Mesh>                          g_Meshes : register(t0, space0);
+AppendStructuredBuffer<CommandSignatureParams>  g_CommandBuffer : register(u0, space0);
 
 [numthreads(128, 1, 1)] void CSMain(CSParams Params)
 {

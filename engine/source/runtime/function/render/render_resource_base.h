@@ -19,6 +19,12 @@ namespace Pilot
     class RenderResourceBase
     {
     public:
+        std::shared_ptr<RHI::D3D12Texture>            _Texture_White;
+        std::shared_ptr<RHI::D3D12ShaderResourceView> _Texture_White_View;
+        std::shared_ptr<RHI::D3D12Texture>            _Texture_Black;
+        std::shared_ptr<RHI::D3D12ShaderResourceView> _Texture_Black_View;
+
+    public:
         RenderResourceBase() = default;
 
         virtual ~RenderResourceBase() {}
@@ -55,6 +61,7 @@ namespace Pilot
         std::unique_ptr<DirectX::GraphicsMemory>      m_GraphicsMemory;
 
     private:
+        void           initDefaultTexture();
         StaticMeshData loadStaticMesh(std::string mesh_file, AxisAlignedBox& bounding_box);
 
         std::unordered_map<MeshSourceDesc, AxisAlignedBox> m_bounding_box_cache_map;

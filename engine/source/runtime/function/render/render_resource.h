@@ -62,6 +62,14 @@ namespace Pilot
         ColorGradingResource _color_grading_resource;
     };
 
+    struct DefaultResource
+    {
+        RHI::D3D12Texture            _white_texture2d_image;
+        RHI::D3D12ShaderResourceView _white_texture2d_image_view;
+        RHI::D3D12Texture            _black_texture2d_image;
+        RHI::D3D12ShaderResourceView _black_texture2d_image_view;
+    };
+
     class RenderResource : public RenderResourceBase
     {
     public:
@@ -88,6 +96,9 @@ namespace Pilot
 
         // global rendering resource, include IBL data, global storage buffer
         GlobalRenderResource m_global_render_resource;
+
+        // default texture resource
+        DefaultResource m_default_resource;
 
         // storage buffer objects
         /*

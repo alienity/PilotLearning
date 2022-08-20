@@ -209,6 +209,11 @@ namespace Pilot
         return AxisAlignedBox();
     }
 
+    void RenderResourceBase::initDefaultTexture()
+    {
+
+    }
+
     StaticMeshData RenderResourceBase::loadStaticMesh(std::string filename, AxisAlignedBox& bounding_box)
     {
         return LoadModel(filename, bounding_box);

@@ -2,6 +2,8 @@
 #include "Math.hlsli"
 #include "d3d12.hlsli"
 
+#define m_max_point_light_count 16
+
 // ==================== Material ====================
 struct Material
 {
@@ -27,20 +29,20 @@ struct Material
 };
 
 // ==================== Light ====================
-#define LightType_Point (0)
-#define LightType_Quad	(1)
-
-struct Light
+struct ScenePointLight
 {
-	uint   Type;
-	float3 Position;
-	float4 Orientation;
-	float  Width;
-	float  Height;
-	float3 Points[4]; // World-space points that are pre-computed on the Cpu so we don't have to compute them in shader
-					  // for every ray
+    float3 position;
+    float  radius;
+    float3 intensity;
+    float  _padding_intensity;
+};
 
-	float3 I;
+struct SceneDirectionalLight
+{
+    float3 direction;
+    float  _padding_direction;
+    float3 color;
+    float  _padding_color;
 };
 
 // ==================== Mesh ====================
@@ -76,49 +78,25 @@ struct Mesh
 };
 
 // ==================== Camera ====================
-struct Camera
+struct CameraInstance
 {
-	float FoVY; // Degrees
-	float AspectRatio;
-	float NearZ;
-	float FarZ;
+    float4x4 viewMatrix;
+    float4x4 projMatrix;
+    float4x4 projViewMatrix;
+    float3   cameraPosition;
+    float    _padding_cameraPosition;
+};
 
-	float FocalLength;
-	float RelativeAperture;
-	float DEADBEEF0;
-	float DEADBEEF1;
-
-	float4 Position;
-
-	matrix View;
-	matrix Projection;
-	matrix ViewProjection;
-
-	matrix InvView;
-	matrix InvProjection;
-	matrix InvViewProjection;
-
-	matrix PrevViewProjection;
-
-	Frustum Frustum;
-
-	RayDesc GenerateCameraRay(float2 ndc)
-	{
-		// Setup the ray
-		RayDesc ray;
-		ray.Origin = InvView[3].xyz;
-		ray.TMin   = NearZ;
-		ray.TMax   = FarZ;
-
-		// Extract the aspect ratio and field of view from the projection matrix
-		float tanHalfFoVY = tan(radians(FoVY) * 0.5f);
-
-		// Compute the ray direction for this pixel
-		float3 right   = ndc.x * InvView[0].xyz * tanHalfFoVY * AspectRatio;
-		float3 up	   = ndc.y * InvView[1].xyz * tanHalfFoVY;
-		float3 forward = InvView[2].xyz;
-		ray.Direction  = normalize(right + up + forward);
-
-		return ray;
-	}
+struct MeshPerframeStorageBufferObject
+{
+    CameraInstance        cameraInstance;
+    float3                ambient_light;
+    float                 _padding_ambient_light;
+    unsigned int          point_light_num;
+    unsigned int          total_mesh_num;
+    unsigned int          _padding_point_light_num_2;
+    unsigned int          _padding_point_light_num_3;
+    ScenePointLight       scene_point_lights[m_max_point_light_count];
+    SceneDirectionalLight scene_directional_light;
+    float4x4              directional_light_proj_view;
 };

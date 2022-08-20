@@ -38,7 +38,7 @@ namespace Pilot
             temp_node.bounding_box_min = GLMUtil::fromVec3(mesh_asset_bounding_box.min_bound);
             temp_node.bounding_box_max = GLMUtil::fromVec3(mesh_asset_bounding_box.max_bound);
         }
-
+        render_resource->m_mesh_perframe_storage_buffer_object.total_mesh_num = m_render_entities.size();
     }
 
 
