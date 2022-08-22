@@ -31,6 +31,10 @@ namespace Pilot
         mIndirectCullPass->setCommonInfo(renderPassCommonInfo);
         mIndirectCullPass->initialize({});
 
+        mIndirectDrawPass = std::make_shared<IndirectDrawPass>();
+        mIndirectDrawPass->setCommonInfo(renderPassCommonInfo);
+        mIndirectDrawPass->initialize({});
+
     }
 
     void DeferredRenderer::InitializeUIRenderBackend(WindowUI* window_ui)
@@ -48,13 +52,13 @@ namespace Pilot
     void DeferredRenderer::PreparePassData(std::shared_ptr<RenderResourceBase> render_resource)
     {
         mIndirectCullPass->prepareMeshData(render_resource);
-
     }
 
     DeferredRenderer::~DeferredRenderer() 
     {
         mUIPass = nullptr;
         mIndirectCullPass = nullptr;
+        mIndirectDrawPass = nullptr;
     }
 
     void DeferredRenderer::OnRender(RHI::D3D12CommandContext& context)
@@ -75,6 +79,21 @@ namespace Pilot
 
         {
             graph.AddRenderPass("DisplayTest")
+                .Write(&backBufColor)
+                .Execute([=](RHI::RenderGraphRegistry& registry, RHI::D3D12CommandContext& context) {
+                    context.SetGraphicsRootSignature(registry.GetRootSignature(RootSignatures::FullScreenPresent));
+                    context.SetPipelineState(registry.GetPipelineState(PipelineStates::FullScreenPresent));
+                    context->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+                    context.SetViewport(RHIViewport {0, 0, (float)backBufWidth, (float)backBufHeight, 0, 1});
+                    context.SetScissorRect(RHIRect {0, 0, (long)backBufWidth, (long)backBufHeight});
+                    context.ClearRenderTarget(backBufferResource.RtView, nullptr);
+                    context.SetRenderTarget(backBufferResource.RtView, nullptr);
+                    context->DrawInstanced(3, 1, 0, 0);
+                });
+        }
+
+        {
+            graph.AddRenderPass("IndirectDraw")
                 .Write(&backBufColor)
                 .Execute([=](RHI::RenderGraphRegistry& registry, RHI::D3D12CommandContext& context) {
                     context.SetGraphicsRootSignature(registry.GetRootSignature(RootSignatures::FullScreenPresent));

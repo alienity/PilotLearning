@@ -144,7 +144,9 @@ ShaderCompilationResult ShaderCompiler::Compile(const std::filesystem::path&  Pa
         L"-all_resources_bound",
         L"-WX", // Warnings as errors
         L"-Zi", // Debug info
+        L"-Qembed_debug",
         L"-Fd",
+        L"-Fh",
         PdbPath.c_str(), // Shader Pdb
 #ifdef _DEBUG
         L"-Od", // Disable optimization

@@ -18,34 +18,32 @@ AppendStructuredBuffer<CommandSignatureParams>  g_CommandBuffer : register(u0, s
 [numthreads(128, 1, 1)]
 void CSMain(CSParams Params)
 {
-    return;
+	// Each thread processes one mesh instance
+	// Compute index and ensure is within bounds
+	uint index = (Params.GroupID.x * 128) + Params.GroupIndex;
+    if (index < g_ConstantBufferParams.total_mesh_num)
+	{
+        MeshInstance mesh = g_MeshesInstance[index];
 
-	//// Each thread processes one mesh instance
-	//// Compute index and ensure is within bounds
-	//uint index = (Params.GroupID.x * 128) + Params.GroupIndex;
- //   if (index < g_ConstantBufferParams.total_mesh_num)
-	//{
- //       MeshInstance mesh = g_MeshesInstance[index];
+		BoundingBox aabb;
+        mesh.boundingBox.Transform(mesh.localToWorldMatrix, aabb);
 
-	//	BoundingBox aabb;
- //       mesh.BoundingBox.Transform(mesh.localToWorldMatrix, aabb);
+		//bool visible = FrustumContainsBoundingBox(g_ConstantBufferParams.Camera.Frustum, aabb) != CONTAINMENT_DISJOINT;
+		//if (visible)
+		//{
+		//	CommandSignatureParams command;
+		//	command.MeshIndex			 = index;
+		//	command.VertexBuffer		 = mesh.VertexBuffer;
+		//	command.IndexBuffer			 = mesh.IndexBuffer;
+		//	command.DrawIndexedArguments = mesh.DrawIndexedArguments;
+		//	g_CommandBuffer.Append(command);
+		//}
 
-	//	//bool visible = FrustumContainsBoundingBox(g_ConstantBufferParams.Camera.Frustum, aabb) != CONTAINMENT_DISJOINT;
-	//	//if (visible)
-	//	//{
-	//	//	CommandSignatureParams command;
-	//	//	command.MeshIndex			 = index;
-	//	//	command.VertexBuffer		 = mesh.VertexBuffer;
-	//	//	command.IndexBuffer			 = mesh.IndexBuffer;
-	//	//	command.DrawIndexedArguments = mesh.DrawIndexedArguments;
-	//	//	g_CommandBuffer.Append(command);
-	//	//}
-
-	//	CommandSignatureParams command;
- //       command.MeshIndex            = index;
- //       command.VertexBuffer         = mesh.vertexBuffer;
- //       command.IndexBuffer          = mesh.indexBuffer;
- //       command.DrawIndexedArguments = mesh.drawIndexedArguments;
- //       g_CommandBuffer.Append(command);
-	//}
+		CommandSignatureParams command;
+        command.MeshIndex            = index;
+        command.VertexBuffer         = mesh.vertexBuffer;
+        command.IndexBuffer          = mesh.indexBuffer;
+        command.DrawIndexedArguments = mesh.drawIndexedArguments;
+        g_CommandBuffer.Append(command);
+	}
 }

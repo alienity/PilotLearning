@@ -16,6 +16,7 @@ struct Shaders
     struct VS
     {
         inline static Shader ScreenQuadPresentVS;
+        inline static Shader IndirectDrawVS;
     };
 
     // Mesh Shaders
@@ -28,6 +29,7 @@ struct Shaders
     struct PS
     {
         inline static Shader PresentSDRPS;
+        inline static Shader IndirectDrawPS;
     };
 
 	// Compute Shaders
@@ -43,6 +45,8 @@ struct Shaders
             ShaderCompileOptions Options(g_VSEntryPoint);
             VS::ScreenQuadPresentVS =
                 Compiler->CompileShader(RHI_SHADER_TYPE::Vertex, ShaderPath / "hlsl/ScreenQuadPresentVS.hlsl", Options);
+            VS::IndirectDrawVS =
+                Compiler->CompileShader(RHI_SHADER_TYPE::Vertex, ShaderPath / "hlsl/IndirectDrawVS.hlsl", Options);
         }
 
 		// PS
@@ -50,6 +54,8 @@ struct Shaders
             ShaderCompileOptions Options(g_PSEntryPoint);
             PS::PresentSDRPS =
                 Compiler->CompileShader(RHI_SHADER_TYPE::Pixel, ShaderPath / "hlsl/PresentSDRPS.hlsl", Options);
+            PS::IndirectDrawPS =
+                Compiler->CompileShader(RHI_SHADER_TYPE::Pixel, ShaderPath / "hlsl/IndirectDrawPS.hlsl", Options);
         }
 
 		// CS
@@ -76,6 +82,7 @@ struct RootSignatures
 {
     inline static RHI::RgResourceHandle FullScreenPresent;
     inline static RHI::RgResourceHandle IndirectCull;
+    inline static RHI::RgResourceHandle IndirectDraw;
 
     static void Compile(RHI::D3D12Device* Device, RHI::RenderGraphRegistry& Registry)
     {
@@ -91,16 +98,24 @@ struct RootSignatures
                                                                          .AddUnorderedAccessViewWithCounter<0, 0>()
                                                                          .AllowResourceDescriptorHeapIndexing()
                                                                          .AllowSampleDescriptorHeapIndexing()));
+
+		IndirectDraw =
+            Registry.CreateRootSignature(Device->CreateRootSignature(RHI::RootSignatureDesc()
+                                                                         .Add32BitConstants<0, 0>(1)
+                                                                         .AddShaderResourceView<0, 0>()
+                                                                         .AddUnorderedAccessViewWithCounter<0, 0>()
+                                                                         .AllowResourceDescriptorHeapIndexing()
+                                                                         .AllowSampleDescriptorHeapIndexing()));
+
     }
 };
 
 struct CommandSignatures
 {
-    inline static RHI::D3D12CommandSignature DrawIndirectCommandSignature;
+    inline static RHI::D3D12CommandSignature IndirectDraw;
 
     static void Compile(RHI::D3D12Device* Device, RHI::RenderGraphRegistry& Registry)
     {
-        /*
         {
             RHI::CommandSignatureDesc Builder(4, sizeof(HLSL::CommandSignatureParams));
             Builder.AddConstant(0, 0, 1);
@@ -108,11 +123,10 @@ struct CommandSignatures
             Builder.AddIndexBufferView();
             Builder.AddDrawIndexed();
 
-            ID3D12RootSignature* indirectCullRootSignature =
-                Registry.GetRootSignature(RootSignatures::IndirectCull)->GetApiHandle();
-            DrawIndirectCommandSignature = RHI::D3D12CommandSignature(Device, Builder, indirectCullRootSignature);
+            ID3D12RootSignature* indirectDrawRootSignature =
+                Registry.GetRootSignature(RootSignatures::IndirectDraw)->GetApiHandle();
+            IndirectDraw = RHI::D3D12CommandSignature(Device, Builder, indirectDrawRootSignature);
         }
-        */
     }
 
 
@@ -122,6 +136,7 @@ struct PipelineStates
 {
     inline static RHI::RgResourceHandle FullScreenPresent;
     inline static RHI::RgResourceHandle IndirectCull;
+    inline static RHI::RgResourceHandle IndirectDraw;
 
     static void
     Compile(DXGI_FORMAT RtFormat, DXGI_FORMAT DsFormat, RHI::D3D12Device* Device, RHI::RenderGraphRegistry& Registry)
@@ -167,6 +182,37 @@ struct PipelineStates
             Stream.CS            = &Shaders::CS::IndirectCull;
 
             IndirectCull = Registry.CreatePipelineState(Device->CreatePipelineState(L"IndirectCull", Stream));
+        }
+        {
+            RHI::D3D12InputLayout InputLayout;
+
+            RHIDepthStencilState DepthStencilState;
+            DepthStencilState.DepthEnable = true;
+
+            RHIRenderTargetState RenderTargetState;
+            RenderTargetState.RTFormats[0]     = RtFormat; // DXGI_FORMAT_R32G32B32A32_FLOAT;
+            RenderTargetState.NumRenderTargets = 1;
+            RenderTargetState.DSFormat         = DsFormat; // DXGI_FORMAT_D32_FLOAT;
+
+            struct PsoStream
+            {
+                PipelineStateStreamRootSignature     RootSignature;
+                PipelineStateStreamInputLayout       InputLayout;
+                PipelineStateStreamPrimitiveTopology PrimitiveTopologyType;
+                PipelineStateStreamVS                VS;
+                PipelineStateStreamPS                PS;
+                PipelineStateStreamDepthStencilState DepthStencilState;
+                PipelineStateStreamRenderTargetState RenderTargetState;
+            } Stream;
+            Stream.RootSignature         = Registry.GetRootSignature(RootSignatures::IndirectDraw);
+            Stream.InputLayout           = &InputLayout;
+            Stream.PrimitiveTopologyType = RHI_PRIMITIVE_TOPOLOGY::Triangle;
+            Stream.VS                    = &Shaders::VS::ScreenQuadPresentVS;
+            Stream.PS                    = &Shaders::PS::PresentSDRPS;
+            Stream.DepthStencilState     = DepthStencilState;
+            Stream.RenderTargetState     = RenderTargetState;
+
+            IndirectDraw = Registry.CreatePipelineState(Device->CreatePipelineState(L"IndirectDraw", Stream));
         }
     }
 };
