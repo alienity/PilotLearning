@@ -160,7 +160,9 @@ struct BoundingSphere
 struct BoundingBox
 {
 	float3 Center;
+    float  _Padding_Center;
 	float3 Extents;
+    float  _Padding_Extents;
 
 	bool Intersects(BoundingBox Other)
 	{

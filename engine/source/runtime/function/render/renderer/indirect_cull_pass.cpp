@@ -54,8 +54,6 @@ namespace Pilot
                                                          sizeof(HLSL::MeshInstance),
                                                          D3D12_HEAP_TYPE_DEFAULT,
                                                          D3D12_RESOURCE_FLAG_NONE);
-
-
     }
 
     void IndirectCullPass::prepareMeshData(std::shared_ptr<RenderResourceBase> render_resource)
@@ -76,7 +74,7 @@ namespace Pilot
             RHI::D3D12ShaderResourceView& defaultWhiteView =
                 real_resource->m_default_resource._white_texture2d_image_view;
             RHI::D3D12ShaderResourceView& defaultBlackView =
-                real_resource->m_default_resource._white_texture2d_image_view;
+                real_resource->m_default_resource._black_texture2d_image_view;
 
             RHI::D3D12ShaderResourceView& uniformBufferView  = temp_node.ref_material->material_uniform_buffer_view;
             RHI::D3D12ShaderResourceView& baseColorView = temp_node.ref_material->base_color_image_view;
@@ -98,13 +96,16 @@ namespace Pilot
 
             pMaterialObj[i] = curMatInstance;
 
-            HLSL::MeshInstance curMeshInstance;
+            HLSL::BoundingBox boundingBox = {};
+            boundingBox.center            = temp_node.bounding_box.center;
+            boundingBox.extent            = temp_node.bounding_box.extent;
+
+            HLSL::MeshInstance curMeshInstance     = {};
             curMeshInstance.enable_vertex_blending = temp_node.enable_vertex_blending;
             curMeshInstance.model_matrix           = temp_node.model_matrix;
             curMeshInstance.vertexBuffer           = temp_node.ref_mesh->mesh_vertex_buffer.GetVertexBufferView();
             curMeshInstance.indexBuffer            = temp_node.ref_mesh->mesh_index_buffer.GetIndexBufferView();
-            curMeshInstance.bounding_box_min       = temp_node.bounding_box_min;
-            curMeshInstance.bounding_box_max       = temp_node.bounding_box_max;
+            curMeshInstance.boundingBox            = boundingBox;
             curMeshInstance.materialIndex          = i;
 
             pMeshesObj[i] = curMeshInstance;
@@ -125,7 +126,7 @@ namespace Pilot
                 copyContext.ResetCounter(p_IndirectCommandBuffer.get(), commandBufferCounterOffset);
                 copyContext->CopyResource(pPerframeBuffer->GetResource(), pUploadPerframeBuffer->GetResource());
                 copyContext->CopyResource(pMaterialBuffer->GetResource(), pUploadMaterialBuffer->GetResource());
-                copyContext->CopyResource(pMeshBuffer->GetResource(), pMeshBuffer->GetResource());
+                copyContext->CopyResource(pMeshBuffer->GetResource(), pUploadMeshBuffer->GetResource());
             }
             copyContext.Close();
             RHI::D3D12SyncHandle copySyncHandle = copyContext.Execute(false);
@@ -140,8 +141,8 @@ namespace Pilot
                 asyncCompute.SetComputeRootSignature(registry.GetRootSignature(RootSignatures::IndirectCull));
 
                 asyncCompute->SetComputeRootConstantBufferView(0, pPerframeBuffer->GetGpuVirtualAddress());
-                asyncCompute->SetComputeRootShaderResourceView(1, WorldRenderView->Meshes.GetGpuVirtualAddress());
-                asyncCompute->SetComputeRootDescriptorTable(2, IndirectCommandBufferUav.GetGpuHandle());
+                asyncCompute->SetComputeRootShaderResourceView(1, pMeshBuffer->GetGpuVirtualAddress());
+                asyncCompute->SetComputeRootDescriptorTable(2, p_IndirectCommandBufferUav->GetGpuHandle());
 
                 asyncCompute.Dispatch1D<128>(numMeshes);
             }

@@ -60,7 +60,7 @@ namespace Pilot
     void DeferredRenderer::OnRender(RHI::D3D12CommandContext& context)
     {
         IndirectCullPass::IndirectCullResultBuffer indirectCullResult;
-        mIndirectCullPass->cullMeshs(context, indirectCullResult);
+        mIndirectCullPass->cullMeshs(context, renderGraphRegistry, indirectCullResult);
 
 
         RHI::D3D12SwapChainResource backBufferResource = swapChain->GetCurrentBackBufferResource();

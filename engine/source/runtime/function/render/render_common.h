@@ -204,6 +204,13 @@ namespace Pilot
         //VkDescriptorSet material_descriptor_set;
     };
 
+    // boundingbox
+    struct MeshBoundingBox
+    {
+        glm::vec3 center;
+        glm::vec3 extent;
+    };
+
     // nodes
     struct RenderMeshNode
     {
@@ -212,8 +219,7 @@ namespace Pilot
         D3D12Mesh*         ref_mesh     = nullptr;
         D3D12PBRMaterial*  ref_material = nullptr;
         uint32_t           node_id;
-        glm::vec3          bounding_box_min;
-        glm::vec3          bounding_box_max;
+        MeshBoundingBox    bounding_box;
         bool               enable_vertex_blending = false;
     };
 
@@ -268,7 +274,7 @@ namespace HLSL
 
     static uint32_t const m_mesh_per_drawcall_max_instance_count = 64;
     static uint32_t const m_mesh_vertex_blending_max_joint_count = 1024;
-    static uint32_t const m_max_point_light_count                = 15;
+    static uint32_t const m_max_point_light_count                = 16;
 
     struct SceneDirectionalLight
     {
@@ -293,7 +299,6 @@ namespace HLSL
         glm::mat4 proj_view_matrix;
         glm::vec3 camera_position;
         float     _padding_camera_position;
-
     };
 
     struct MeshPerframeStorageBufferObject
@@ -310,6 +315,14 @@ namespace HLSL
         glm::mat4             directional_light_proj_view;
     };
 
+    struct BoundingBox
+    {
+        glm::vec3 center;
+        float     _padding_center;
+        glm::vec3 extent;
+        float     _padding_extent;
+    };
+
     struct MeshInstance
     {
         float     enable_vertex_blending;
@@ -323,10 +336,7 @@ namespace HLSL
 
         D3D12_DRAW_INDEXED_ARGUMENTS drawIndexedArguments;
 
-        glm::vec3 bounding_box_min;
-        float     _bounding_box_min_padding;
-        glm::vec3 bounding_box_max;
-        float     _bounding_box_max_padding;
+        BoundingBox boundingBox;
 
         uint32_t materialIndex;
         uint32_t _padding_View0;

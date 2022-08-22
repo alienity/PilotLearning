@@ -55,7 +55,7 @@ target_link_libraries(${TARGET_NAME} PUBLIC pix)
 target_link_libraries(${TARGET_NAME} PUBLIC dxc)
 target_link_libraries(${TARGET_NAME} PUBLIC robin_hood_hashing)
 target_link_libraries(${TARGET_NAME} PUBLIC cityhash)
-target_link_libraries(${TARGET_NAME} PUBLIC DirectX-Headers)
+# target_link_libraries(${TARGET_NAME} PUBLIC DirectX-Headers)
 target_link_libraries(${TARGET_NAME} PUBLIC DirectStorage)
 target_link_libraries(${TARGET_NAME} PUBLIC DirectXTK12)
 target_link_libraries(${TARGET_NAME} PUBLIC d3d12.lib)
@@ -70,6 +70,14 @@ endif()
 # target_include_directories(
 #   ${TARGET_NAME}
 #   PUBLIC $<BUILD_INTERFACE:${vulkan_include}>)
+
+target_include_directories(
+  ${TARGET_NAME}
+  PUBLIC $<BUILD_INTERFACE:${directx_headers_include}>)
+
+target_include_directories(
+  ${TARGET_NAME}
+  PUBLIC $<BUILD_INTERFACE:${dxc_headers_include}>)
 
 target_include_directories(
   ${TARGET_NAME}

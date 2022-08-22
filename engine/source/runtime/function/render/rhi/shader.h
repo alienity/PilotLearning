@@ -3,9 +3,8 @@
 #include <map>
 
 #include "dxcapi.h"
-#include "d3d12shader.h"
+#include "directx/d3d12shader.h"
 #include "rhi_core.h"
-
 
 struct ShaderCompileOptions
 {

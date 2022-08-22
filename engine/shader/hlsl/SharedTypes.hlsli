@@ -46,35 +46,33 @@ struct SceneDirectionalLight
 };
 
 // ==================== Mesh ====================
-struct Mesh
+struct MeshInstance
 {
-	// 64
-	float4x4 Transform;
-	// 64
-	float4x4 PreviousTransform;
+	// 16
+    float enableVertexBlending;
+    float _padding_enable_vertex_blending_1;
+    float _padding_enable_vertex_blending_2;
+    float _padding_enable_vertex_blending_3;
 
+	// 64
+	float4x4 localToWorldMatrix;
+	
 	// 16
-	D3D12_VERTEX_BUFFER_VIEW VertexBuffer;
+	D3D12_VERTEX_BUFFER_VIEW vertexBuffer;
 	// 16
-	D3D12_INDEX_BUFFER_VIEW IndexBuffer;
-	// 16
-	D3D12_GPU_VIRTUAL_ADDRESS Meshlets;
-	D3D12_GPU_VIRTUAL_ADDRESS UniqueVertexIndices;
-	// 16
-	D3D12_GPU_VIRTUAL_ADDRESS PrimitiveIndices;
-	D3D12_GPU_VIRTUAL_ADDRESS AccelerationStructure;
-
-	// 24
-	BoundingBox BoundingBox;
-	// 20
-	D3D12_DRAW_INDEXED_ARGUMENTS DrawIndexedArguments;
+	D3D12_INDEX_BUFFER_VIEW indexBuffer;
 
 	// 20
-	unsigned int MaterialIndex;
-	unsigned int NumMeshlets;
-	unsigned int VertexView;
-	unsigned int IndexView;
-	unsigned int DEADBEEF2;
+	D3D12_DRAW_INDEXED_ARGUMENTS drawIndexedArguments;
+
+    // 32
+    BoundingBox boundingBox;
+
+	// 16
+    uint materialIndex;
+    uint _padding_materialIndex0;
+    uint _padding_materialIndex1;
+    uint _padding_materialIndex2;
 };
 
 // ==================== Camera ====================
@@ -92,10 +90,10 @@ struct MeshPerframeStorageBufferObject
     CameraInstance        cameraInstance;
     float3                ambient_light;
     float                 _padding_ambient_light;
-    unsigned int          point_light_num;
-    unsigned int          total_mesh_num;
-    unsigned int          _padding_point_light_num_2;
-    unsigned int          _padding_point_light_num_3;
+    uint                  point_light_num;
+    uint                  total_mesh_num;
+    uint                  _padding_point_light_num_2;
+    uint                  _padding_point_light_num_3;
     ScenePointLight       scene_point_lights[m_max_point_light_count];
     SceneDirectionalLight scene_directional_light;
     float4x4              directional_light_proj_view;
