@@ -23,6 +23,8 @@ namespace Pilot
         CommandSignatures::Compile(device, renderGraphRegistry);
         PipelineStates::Compile(backBufferFormat, depthBufferFormat, device, renderGraphRegistry);
 
+        InitGlobalBuffer();
+
         // ≥ı ºªØ
         RenderPassCommonInfo renderPassCommonInfo = {
             &renderGraphAllocator, &renderGraphRegistry, device, windowsSystem};
@@ -34,6 +36,34 @@ namespace Pilot
         mIndirectDrawPass = std::make_shared<IndirectDrawPass>();
         mIndirectDrawPass->setCommonInfo(renderPassCommonInfo);
         mIndirectDrawPass->initialize({});
+
+    }
+
+    void DeferredRenderer::InitGlobalBuffer()
+    {
+        p_IndirectCommandBuffer    = std::make_shared<RHI::D3D12Buffer>(device->GetLinkedDevice(),
+                                                                     commandBufferCounterOffset + sizeof(uint64_t),
+                                                                     sizeof(HLSL::CommandSignatureParams),
+                                                                     D3D12_HEAP_TYPE_DEFAULT,
+                                                                     D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
+        p_IndirectCommandBufferUav = std::make_shared<RHI::D3D12UnorderedAccessView>(
+            device->GetLinkedDevice(), p_IndirectCommandBuffer.get(), HLSL::MeshLimit, commandBufferCounterOffset);
+
+        pPerframeBuffer = std::make_shared<RHI::D3D12Buffer>(device->GetLinkedDevice(),
+                                                             sizeof(HLSL::MeshPerframeStorageBufferObject),
+                                                             sizeof(HLSL::MeshPerframeStorageBufferObject),
+                                                             D3D12_HEAP_TYPE_DEFAULT,
+                                                             D3D12_RESOURCE_FLAG_NONE);
+        pMaterialBuffer = std::make_shared<RHI::D3D12Buffer>(device->GetLinkedDevice(),
+                                                             sizeof(HLSL::MaterialInstance) * HLSL::MaterialLimit,
+                                                             sizeof(HLSL::MaterialInstance),
+                                                             D3D12_HEAP_TYPE_DEFAULT,
+                                                             D3D12_RESOURCE_FLAG_NONE);
+        pMeshBuffer     = std::make_shared<RHI::D3D12Buffer>(device->GetLinkedDevice(),
+                                                         sizeof(HLSL::MeshInstance) * HLSL::MeshLimit,
+                                                         sizeof(HLSL::MeshInstance),
+                                                         D3D12_HEAP_TYPE_DEFAULT,
+                                                         D3D12_RESOURCE_FLAG_NONE);
 
     }
 
@@ -51,7 +81,7 @@ namespace Pilot
 
     void DeferredRenderer::PreparePassData(std::shared_ptr<RenderResourceBase> render_resource)
     {
-        mIndirectCullPass->prepareMeshData(render_resource);
+        mIndirectCullPass->prepareMeshData(render_resource, numMeshes);
     }
 
     DeferredRenderer::~DeferredRenderer() 
@@ -63,9 +93,15 @@ namespace Pilot
 
     void DeferredRenderer::OnRender(RHI::D3D12CommandContext& context)
     {
-        IndirectCullPass::IndirectCullResultBuffer indirectCullResult;
-        mIndirectCullPass->cullMeshs(context, renderGraphRegistry, indirectCullResult);
-
+        IndirectCullPass::IndirectCullParams indirectCullParams;
+        indirectCullParams.numMeshes                  = numMeshes;
+        indirectCullParams.commandBufferCounterOffset = commandBufferCounterOffset;
+        indirectCullParams.pPerframeBuffer            = pPerframeBuffer;
+        indirectCullParams.pMaterialBuffer            = pMaterialBuffer;
+        indirectCullParams.pMeshBuffer                = pMeshBuffer;
+        indirectCullParams.p_IndirectCommandBuffer    = p_IndirectCommandBuffer;
+        indirectCullParams.p_IndirectCommandBufferUav = p_IndirectCommandBufferUav;
+        mIndirectCullPass->cullMeshs(context, renderGraphRegistry, indirectCullParams);
 
         RHI::D3D12SwapChainResource backBufferResource = swapChain->GetCurrentBackBufferResource();
 
@@ -96,14 +132,23 @@ namespace Pilot
             graph.AddRenderPass("IndirectDraw")
                 .Write(&backBufColor)
                 .Execute([=](RHI::RenderGraphRegistry& registry, RHI::D3D12CommandContext& context) {
-                    context.SetGraphicsRootSignature(registry.GetRootSignature(RootSignatures::FullScreenPresent));
-                    context.SetPipelineState(registry.GetPipelineState(PipelineStates::FullScreenPresent));
+                    context.SetGraphicsRootSignature(registry.GetRootSignature(RootSignatures::IndirectDraw));
+                    context.SetPipelineState(registry.GetPipelineState(PipelineStates::IndirectDraw));
+                    context->SetGraphicsRootConstantBufferView(1, pPerframeBuffer->GetGpuVirtualAddress());
+                    context->SetGraphicsRootShaderResourceView(2, pMaterialBuffer->GetGpuVirtualAddress());
+
                     context->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
                     context.SetViewport(RHIViewport {0, 0, (float)backBufWidth, (float)backBufHeight, 0, 1});
                     context.SetScissorRect(RHIRect {0, 0, (long)backBufWidth, (long)backBufHeight});
-                    context.ClearRenderTarget(backBufferResource.RtView, nullptr);
+                    //context.ClearRenderTarget(backBufferResource.RtView, nullptr);
                     context.SetRenderTarget(backBufferResource.RtView, nullptr);
-                    context->DrawInstanced(3, 1, 0, 0);
+
+					 context->ExecuteIndirect(CommandSignatures::IndirectDraw,
+                                             HLSL::MeshLimit,
+                                             p_IndirectCommandBuffer->GetResource(),
+                                             0,
+                                             p_IndirectCommandBuffer->GetResource(),
+                                             commandBufferCounterOffset);
                 });
         }
 

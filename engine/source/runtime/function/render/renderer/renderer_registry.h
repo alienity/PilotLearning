@@ -184,7 +184,10 @@ struct PipelineStates
             IndirectCull = Registry.CreatePipelineState(Device->CreatePipelineState(L"IndirectCull", Stream));
         }
         {
-            RHI::D3D12InputLayout InputLayout;
+            RHI::D3D12InputLayout InputLayout(3);
+            InputLayout.AddVertexLayoutElement("POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0);
+            InputLayout.AddVertexLayoutElement("TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0);
+            InputLayout.AddVertexLayoutElement("NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0);
 
             RHIDepthStencilState DepthStencilState;
             DepthStencilState.DepthEnable = true;
@@ -207,8 +210,8 @@ struct PipelineStates
             Stream.RootSignature         = Registry.GetRootSignature(RootSignatures::IndirectDraw);
             Stream.InputLayout           = &InputLayout;
             Stream.PrimitiveTopologyType = RHI_PRIMITIVE_TOPOLOGY::Triangle;
-            Stream.VS                    = &Shaders::VS::ScreenQuadPresentVS;
-            Stream.PS                    = &Shaders::PS::PresentSDRPS;
+            Stream.VS                    = &Shaders::VS::IndirectDrawVS;
+            Stream.PS                    = &Shaders::PS::IndirectDrawPS;
             Stream.DepthStencilState     = DepthStencilState;
             Stream.RenderTargetState     = RenderTargetState;
 

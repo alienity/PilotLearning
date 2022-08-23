@@ -15,6 +15,7 @@ namespace Pilot
         DeferredRenderer(RendererInitParams& renderInitParams);
 
         virtual void Initialize();
+        void         InitGlobalBuffer();
         virtual void InitializeUIRenderBackend(WindowUI* window_ui);
         virtual void PreparePassData(std::shared_ptr<RenderResourceBase> render_resource);
 
@@ -25,6 +26,25 @@ namespace Pilot
         std::shared_ptr<UIPass> mUIPass;
         std::shared_ptr<IndirectCullPass> mIndirectCullPass;
         std::shared_ptr<IndirectDrawPass> mIndirectDrawPass;
+
+        std::shared_ptr<RHI::D3D12Buffer>              p_IndirectCommandBuffer;
+        std::shared_ptr<RHI::D3D12UnorderedAccessView> p_IndirectCommandBufferUav;
+
+        std::shared_ptr<RHI::D3D12Buffer> pPerframeBuffer;
+        std::shared_ptr<RHI::D3D12Buffer> pMaterialBuffer;
+        std::shared_ptr<RHI::D3D12Buffer> pMeshBuffer;
+
+        std::shared_ptr<RHI::D3D12ShaderResourceView> pPerframeBufferView;
+        std::shared_ptr<RHI::D3D12ShaderResourceView> pMaterialBufferView;
+        std::shared_ptr<RHI::D3D12ShaderResourceView> pMeshBufferView;
+
+        uint32_t numPointLights = 0;
+        uint32_t numMaterials   = 0;
+        uint32_t numMeshes      = 0;
+
+        std::uint64_t totalCommandBufferSizeInBytes = HLSL::MeshLimit * sizeof(HLSL::CommandSignatureParams);
+        std::uint64_t commandBufferCounterOffset =
+            D3D12RHIUtils::AlignUp(totalCommandBufferSizeInBytes, D3D12_UAV_COUNTER_PLACEMENT_ALIGNMENT);
 
 	private:
         WindowSystem* windowSystem;

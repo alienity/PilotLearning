@@ -12,14 +12,6 @@ namespace Pilot
 {
     void IndirectCullPass::initialize(const RenderPassInitInfo& init_info)
     {
-        p_IndirectCommandBuffer = std::make_shared<RHI::D3D12Buffer>(m_Device->GetLinkedDevice(),
-                                                                     commandBufferCounterOffset + sizeof(uint64_t),
-                                                                     sizeof(HLSL::CommandSignatureParams),
-                                                                     D3D12_HEAP_TYPE_DEFAULT,
-                                                                     D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
-        p_IndirectCommandBufferUav = std::make_shared<RHI::D3D12UnorderedAccessView>(
-            m_Device->GetLinkedDevice(), p_IndirectCommandBuffer.get(), HLSL::MeshLimit, commandBufferCounterOffset);
-
         pUploadPerframeBuffer = std::make_shared<RHI::D3D12Buffer>(m_Device->GetLinkedDevice(),
                                                                    sizeof(HLSL::MeshPerframeStorageBufferObject),
                                                                    sizeof(HLSL::MeshPerframeStorageBufferObject),
@@ -38,25 +30,9 @@ namespace Pilot
         pPerframeObj          = pUploadPerframeBuffer->GetCpuVirtualAddress<HLSL::MeshPerframeStorageBufferObject>();
         pMaterialObj          = pUploadMaterialBuffer->GetCpuVirtualAddress<HLSL::MaterialInstance>();
         pMeshesObj            = pUploadMeshBuffer->GetCpuVirtualAddress<HLSL::MeshInstance>();
-
-        pPerframeBuffer = std::make_shared<RHI::D3D12Buffer>(m_Device->GetLinkedDevice(),
-                                                             sizeof(HLSL::MeshPerframeStorageBufferObject),
-                                                             sizeof(HLSL::MeshPerframeStorageBufferObject),
-                                                             D3D12_HEAP_TYPE_DEFAULT,
-                                                             D3D12_RESOURCE_FLAG_NONE);
-        pMaterialBuffer = std::make_shared<RHI::D3D12Buffer>(m_Device->GetLinkedDevice(),
-                                                             sizeof(HLSL::MaterialInstance) * HLSL::MaterialLimit,
-                                                             sizeof(HLSL::MaterialInstance),
-                                                             D3D12_HEAP_TYPE_DEFAULT,
-                                                             D3D12_RESOURCE_FLAG_NONE);
-        pMeshBuffer     = std::make_shared<RHI::D3D12Buffer>(m_Device->GetLinkedDevice(),
-                                                         sizeof(HLSL::MeshInstance) * HLSL::MeshLimit,
-                                                         sizeof(HLSL::MeshInstance),
-                                                         D3D12_HEAP_TYPE_DEFAULT,
-                                                         D3D12_RESOURCE_FLAG_NONE);
     }
 
-    void IndirectCullPass::prepareMeshData(std::shared_ptr<RenderResourceBase> render_resource)
+    void IndirectCullPass::prepareMeshData(std::shared_ptr<RenderResourceBase> render_resource, uint32_t& numMeshes)
     {
         RenderResource* real_resource = (RenderResource*)render_resource.get();
         memcpy(pPerframeObj,
@@ -115,18 +91,22 @@ namespace Pilot
 
     void IndirectCullPass::cullMeshs(RHI::D3D12CommandContext& context,
                                      RHI::RenderGraphRegistry& registry,
-                                     IndirectCullResultBuffer& indirectCullResult)
+                                     IndirectCullParams&       indirectCullParams)
     {
         RHI::D3D12SyncHandle ComputeSyncHandle;
-        if (numMeshes > 0)
+        if (indirectCullParams.numMeshes > 0)
         {
             RHI::D3D12CommandContext& copyContext = m_Device->GetLinkedDevice()->GetCopyContext1();
             copyContext.Open();
             {
-                copyContext.ResetCounter(p_IndirectCommandBuffer.get(), commandBufferCounterOffset);
-                copyContext->CopyResource(pPerframeBuffer->GetResource(), pUploadPerframeBuffer->GetResource());
-                copyContext->CopyResource(pMaterialBuffer->GetResource(), pUploadMaterialBuffer->GetResource());
-                copyContext->CopyResource(pMeshBuffer->GetResource(), pUploadMeshBuffer->GetResource());
+                copyContext.ResetCounter(indirectCullParams.p_IndirectCommandBuffer.get(),
+                                         indirectCullParams.commandBufferCounterOffset);
+                copyContext->CopyResource(indirectCullParams.pPerframeBuffer->GetResource(),
+                                          pUploadPerframeBuffer->GetResource());
+                copyContext->CopyResource(indirectCullParams.pMaterialBuffer->GetResource(),
+                                          pUploadMaterialBuffer->GetResource());
+                copyContext->CopyResource(indirectCullParams.pMeshBuffer->GetResource(),
+                                          pUploadMeshBuffer->GetResource());
             }
             copyContext.Close();
             RHI::D3D12SyncHandle copySyncHandle = copyContext.Execute(false);
@@ -140,11 +120,14 @@ namespace Pilot
                 asyncCompute.SetPipelineState(registry.GetPipelineState(PipelineStates::IndirectCull));
                 asyncCompute.SetComputeRootSignature(registry.GetRootSignature(RootSignatures::IndirectCull));
 
-                asyncCompute->SetComputeRootConstantBufferView(0, pPerframeBuffer->GetGpuVirtualAddress());
-                asyncCompute->SetComputeRootShaderResourceView(1, pMeshBuffer->GetGpuVirtualAddress());
-                asyncCompute->SetComputeRootDescriptorTable(2, p_IndirectCommandBufferUav->GetGpuHandle());
+                asyncCompute->SetComputeRootConstantBufferView(
+                    0, indirectCullParams.pPerframeBuffer->GetGpuVirtualAddress());
+                asyncCompute->SetComputeRootShaderResourceView(1,
+                                                               indirectCullParams.pMeshBuffer->GetGpuVirtualAddress());
+                asyncCompute->SetComputeRootDescriptorTable(
+                    2, indirectCullParams.p_IndirectCommandBufferUav->GetGpuHandle());
 
-                asyncCompute.Dispatch1D<128>(numMeshes);
+                asyncCompute.Dispatch1D<128>(indirectCullParams.numMeshes);
             }
             asyncCompute.Close();
             ComputeSyncHandle = asyncCompute.Execute(false);
@@ -156,7 +139,9 @@ namespace Pilot
 
     void IndirectCullPass::destroy()
     {
-
+        pUploadPerframeBuffer = nullptr;
+        pUploadMaterialBuffer = nullptr;
+        pUploadMeshBuffer     = nullptr;
     }
 
 }
