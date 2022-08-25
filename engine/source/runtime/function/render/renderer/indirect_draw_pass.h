@@ -16,12 +16,22 @@ namespace Pilot
         };
 
         struct DrawInputParameters : public PassInput
-        {};
+        {
+            uint32_t numMeshes;
+            uint32_t commandBufferCounterOffset;
+
+            std::shared_ptr<RHI::D3D12Buffer> pPerframeBuffer;
+            std::shared_ptr<RHI::D3D12Buffer> pMeshBuffer;
+
+            std::shared_ptr<RHI::D3D12Buffer> p_IndirectCommandBuffer;
+        };
 
         struct DrawOutputParameters : public PassOutput
         {
             RHI::RgResourceHandle       backBufColor;
             RHI::D3D12RenderTargetView* backBufRtv;
+            RHI::RgResourceHandle       backBufDepth;
+            RHI::D3D12DepthStencilView* backBufDsv;
         };
 
     public:
@@ -32,8 +42,6 @@ namespace Pilot
                     RHI::RenderGraph&         graph,
                     PassInput&                passInput,
                     PassOutput&               passOutput) override final;
-        void
-        draw(RHI::D3D12CommandContext& context, RHI::D3D12RenderTargetView* pRTV, int backBufWidth, int backBufHeight);
         void destroy() override final;
 
     private:

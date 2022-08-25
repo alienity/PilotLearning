@@ -128,28 +128,20 @@ namespace Pilot
                 });
         }
 
+        if (mIndirectDrawPass != nullptr)
         {
-            graph.AddRenderPass("IndirectDraw")
-                .Write(&backBufColor)
-                .Execute([=](RHI::RenderGraphRegistry& registry, RHI::D3D12CommandContext& context) {
-                    context.SetGraphicsRootSignature(registry.GetRootSignature(RootSignatures::IndirectDraw));
-                    context.SetPipelineState(registry.GetPipelineState(PipelineStates::IndirectDraw));
-                    context->SetGraphicsRootConstantBufferView(1, pPerframeBuffer->GetGpuVirtualAddress());
-                    context->SetGraphicsRootShaderResourceView(2, pMaterialBuffer->GetGpuVirtualAddress());
+            IndirectDrawPass::DrawInputParameters  mDrawIntputParams;
+            IndirectDrawPass::DrawOutputParameters mDrawOutputParams;
+            mDrawIntputParams.numMeshes = numMeshes;
+            mDrawIntputParams.commandBufferCounterOffset = commandBufferCounterOffset;
+            mDrawIntputParams.pPerframeBuffer            = pPerframeBuffer;
+            mDrawIntputParams.pMeshBuffer                = pMeshBuffer;
+            mDrawIntputParams.p_IndirectCommandBuffer    = p_IndirectCommandBuffer;
 
-                    context->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-                    context.SetViewport(RHIViewport {0, 0, (float)backBufWidth, (float)backBufHeight, 0, 1});
-                    context.SetScissorRect(RHIRect {0, 0, (long)backBufWidth, (long)backBufHeight});
-                    //context.ClearRenderTarget(backBufferResource.RtView, nullptr);
-                    context.SetRenderTarget(backBufferResource.RtView, nullptr);
+            mDrawOutputParams.backBufColor = backBufColor;
+            mDrawOutputParams.backBufRtv   = backBufferResource.RtView;
 
-					 context->ExecuteIndirect(CommandSignatures::IndirectDraw,
-                                             HLSL::MeshLimit,
-                                             p_IndirectCommandBuffer->GetResource(),
-                                             0,
-                                             p_IndirectCommandBuffer->GetResource(),
-                                             commandBufferCounterOffset);
-                });
+            mIndirectDrawPass->update(context, graph, mDrawIntputParams, mDrawOutputParams);
         }
 
         if (mUIPass != nullptr)
