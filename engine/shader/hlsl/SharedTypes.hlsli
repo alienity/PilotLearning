@@ -70,8 +70,8 @@ struct MeshInstance
 
 	// 16
     uint materialIndex;
-    uint _padding_materialIndex0;
-    uint _padding_materialIndex1;
+    uint vertexView;
+    uint indexView;
     uint _padding_materialIndex2;
 };
 

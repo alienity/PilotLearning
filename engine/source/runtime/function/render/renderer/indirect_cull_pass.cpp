@@ -52,16 +52,15 @@ namespace Pilot
             RHI::D3D12ShaderResourceView& defaultBlackView =
                 real_resource->m_default_resource._black_texture2d_image_view;
 
-            RHI::D3D12ShaderResourceView& uniformBufferView  = temp_node.ref_material->material_uniform_buffer_view;
-            RHI::D3D12ShaderResourceView& baseColorView = temp_node.ref_material->base_color_image_view;
+            RHI::D3D12ShaderResourceView& uniformBufferView     = temp_node.ref_material->material_uniform_buffer_view;
+            RHI::D3D12ShaderResourceView& baseColorView         = temp_node.ref_material->base_color_image_view;
             RHI::D3D12ShaderResourceView& metallicRoughnessView = temp_node.ref_material->metallic_roughness_image_view;
             RHI::D3D12ShaderResourceView& normalView            = temp_node.ref_material->normal_image_view;
             RHI::D3D12ShaderResourceView& emissionView          = temp_node.ref_material->emissive_image_view;
 
 
             HLSL::MaterialInstance curMatInstance = {};
-            curMatInstance.uniformBufferViewIndex =
-                uniformBufferView.IsValid() ? uniformBufferView.GetIndex() : defaultWhiteView.GetIndex();
+            curMatInstance.uniformBufferViewIndex = uniformBufferView.GetIndex();
             curMatInstance.baseColorViewIndex =
                 baseColorView.IsValid() ? baseColorView.GetIndex() : defaultWhiteView.GetIndex();
             curMatInstance.metallicRoughnessViewIndex =

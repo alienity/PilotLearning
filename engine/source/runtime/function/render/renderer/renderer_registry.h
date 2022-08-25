@@ -4,6 +4,7 @@
 #include "runtime/function/render/rhi/rendergraph/RenderGraphCommon.h"
 #include "runtime/function/render/rhi/rendergraph/RenderGraphRegistry.h"
 #include "runtime/function/render/rhi/rendergraph/RenderGraph.h"
+#include "runtime/function/render/render_mesh.h"
 
 struct Shaders
 {
@@ -46,7 +47,7 @@ struct Shaders
             VS::ScreenQuadPresentVS =
                 Compiler->CompileShader(RHI_SHADER_TYPE::Vertex, ShaderPath / "hlsl/ScreenQuadPresentVS.hlsl", Options);
             VS::IndirectDrawVS =
-                Compiler->CompileShader(RHI_SHADER_TYPE::Vertex, ShaderPath / "hlsl/IndirectDrawVS.hlsl", Options);
+                Compiler->CompileShader(RHI_SHADER_TYPE::Vertex, ShaderPath / "hlsl/IndirectDraw.hlsl", Options);
         }
 
 		// PS
@@ -55,7 +56,7 @@ struct Shaders
             PS::PresentSDRPS =
                 Compiler->CompileShader(RHI_SHADER_TYPE::Pixel, ShaderPath / "hlsl/PresentSDRPS.hlsl", Options);
             PS::IndirectDrawPS =
-                Compiler->CompileShader(RHI_SHADER_TYPE::Pixel, ShaderPath / "hlsl/IndirectDrawPS.hlsl", Options);
+                Compiler->CompileShader(RHI_SHADER_TYPE::Pixel, ShaderPath / "hlsl/IndirectDraw.hlsl", Options);
         }
 
 		// CS
@@ -102,8 +103,8 @@ struct RootSignatures
 		IndirectDraw =
             Registry.CreateRootSignature(Device->CreateRootSignature(RHI::RootSignatureDesc()
                                                                          .Add32BitConstants<0, 0>(1)
+                                                                         .AddConstantBufferView<0, 0>()
                                                                          .AddShaderResourceView<0, 0>()
-                                                                         .AddUnorderedAccessViewWithCounter<0, 0>()
                                                                          .AllowResourceDescriptorHeapIndexing()
                                                                          .AllowSampleDescriptorHeapIndexing()));
 
@@ -184,10 +185,12 @@ struct PipelineStates
             IndirectCull = Registry.CreatePipelineState(Device->CreatePipelineState(L"IndirectCull", Stream));
         }
         {
-            RHI::D3D12InputLayout InputLayout(3);
-            InputLayout.AddVertexLayoutElement("POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0);
-            InputLayout.AddVertexLayoutElement("TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0);
-            InputLayout.AddVertexLayoutElement("NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0);
+            RHI::D3D12InputLayout InputLayout =
+                Pilot::MeshVertex::D3D12MeshVertexPositionNormalTangentTexture::InputLayout;
+            //RHI::D3D12InputLayout InputLayout(3);
+            //InputLayout.AddVertexLayoutElement("POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0);
+            //InputLayout.AddVertexLayoutElement("TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0);
+            //InputLayout.AddVertexLayoutElement("NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0);
 
             RHIDepthStencilState DepthStencilState;
             DepthStencilState.DepthEnable = true;
