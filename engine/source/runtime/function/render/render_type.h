@@ -21,6 +21,12 @@ namespace Pilot
             m_size = size;
             m_data = malloc(size);
         }
+        BufferData(void* data, size_t size)
+        {
+            m_size = size;
+            m_data = malloc(size);
+            memcpy(m_data, data, size);
+        }
         ~BufferData()
         {
             if (m_data)

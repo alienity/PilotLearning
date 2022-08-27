@@ -13,7 +13,7 @@ struct ModelLoaderMesh
 {
     Pilot::AxisAlignedBox                        bounding_box_;
     std::vector<Pilot::MeshVertexDataDefinition> vertexs_;
-    std::vector<std::uint16_t>                   indices_;
+    std::vector<std::uint32_t>                   indices_;
 };
 
 struct MeshLoaderNode
@@ -50,7 +50,7 @@ void            LoadModelNormal(std::string filename, MeshLoaderNode& meshes_);
 
 void RecursiveLoad(MeshLoaderNode&                               meshes_,
                    std::vector<Pilot::MeshVertexDataDefinition>& vertexs_,
-                   std::vector<std::uint16_t>&                   indices_)
+                   std::vector<std::uint32_t>&                   indices_)
 {
     for (size_t i = 0; i < meshes_.meshes_.size(); i++)
     {
@@ -73,14 +73,18 @@ Pilot::StaticMeshData LoadModel(std::string filename, Pilot::AxisAlignedBox& bou
     LoadModelNormal(filename, meshes_);
     
     std::vector<Pilot::MeshVertexDataDefinition> vertexs_;
-    std::vector<std::uint16_t>                   indices_;
+    std::vector<std::uint32_t>                   indices_;
     RecursiveLoad(meshes_, vertexs_, indices_);
 
     Pilot::StaticMeshData mesh_data;
-    std::uint16_t         stride = sizeof(Pilot::MeshVertexDataDefinition);
-    mesh_data.m_vertex_buffer    = std::make_shared<Pilot::BufferData>(vertexs_.size() * stride);
-    mesh_data.m_index_buffer     = std::make_shared<Pilot::BufferData>(indices_.size() * sizeof(std::uint16_t));
-    bounding_box                 = meshes_.bounding_box_;
+    
+    std::uint32_t vertex_buffer_size = vertexs_.size() * sizeof(Pilot::MeshVertexDataDefinition);
+    std::uint32_t index_buffer_size  = indices_.size() * sizeof(std::uint32_t);
+
+    mesh_data.m_vertex_buffer = std::make_shared<Pilot::BufferData>(vertexs_.data(), vertex_buffer_size);
+    mesh_data.m_index_buffer  = std::make_shared<Pilot::BufferData>(indices_.data(), index_buffer_size);
+
+    bounding_box = meshes_.bounding_box_;
 
     return mesh_data;
 }
@@ -111,7 +115,7 @@ ModelLoaderMesh ProcessMesh(aiMesh* mesh)
     // Data to fill
     Pilot::AxisAlignedBox                        bounding_box;
     std::vector<Pilot::MeshVertexDataDefinition> vertices;
-    std::vector<std::uint16_t>                   indices;
+    std::vector<std::uint32_t>                   indices;
 
     // Walk through each of the mesh's vertices
     for (UINT i = 0; i < mesh->mNumVertices; i++)
