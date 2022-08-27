@@ -184,8 +184,6 @@ namespace Pilot
                                 struct MeshVertexDataDefinition const*        vertex_buffer_data,
                                 uint32_t                                      joint_binding_buffer_size,
                                 struct MeshVertexBindingDataDefinition const* joint_binding_buffer_data,
-                                uint32_t                                      index_buffer_size,
-                                uint32_t*                                     index_buffer_data,
                                 D3D12Mesh&                                    now_mesh);
         void updateIndexBuffer(uint32_t index_buffer_size, void* index_buffer_data, D3D12Mesh& now_mesh);
     };

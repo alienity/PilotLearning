@@ -503,8 +503,6 @@ namespace Pilot
                            vertex_buffer_data,
                            joint_binding_buffer_size,
                            joint_binding_buffer_data,
-                           index_buffer_size,
-                           reinterpret_cast<uint32_t*>(index_buffer_data),
                            now_mesh);
         assert(0 == (index_buffer_size % sizeof(uint32_t)));
         now_mesh.mesh_index_count = index_buffer_size / sizeof(uint32_t);
@@ -516,17 +514,13 @@ namespace Pilot
                                             MeshVertexDataDefinition const*        vertex_buffer_data,
                                             uint32_t                               joint_binding_buffer_size,
                                             MeshVertexBindingDataDefinition const* joint_binding_buffer_data,
-                                            uint32_t                               index_buffer_size,
-                                            uint32_t*                              index_buffer_data,
                                             D3D12Mesh&                             now_mesh)
     {
         if (enable_vertex_blending)
         {
             assert(0 == (vertex_buffer_size % sizeof(MeshVertexDataDefinition)));
             uint32_t vertex_count = vertex_buffer_size / sizeof(MeshVertexDataDefinition);
-            assert(0 == (index_buffer_size % sizeof(uint32_t)));
-            uint32_t index_count = index_buffer_size / sizeof(uint32_t);
-
+            
             uint32_t vertex_buffer_size =
                 sizeof(MeshVertex::D3D12MeshVertexPositionNormalTangentTexture) * vertex_count;
 
@@ -753,8 +747,8 @@ namespace Pilot
             assert(0 == (vertex_buffer_size % sizeof(MeshVertexDataDefinition)));
             uint32_t vertex_count = vertex_buffer_size / sizeof(MeshVertexDataDefinition);
 
-            uint32_t vertex_buffer_size =
-                sizeof(MeshVertex::D3D12MeshVertexPositionNormalTangentTexture) * vertex_count;
+            uint32_t inputLayoutStride = sizeof(MeshVertex::D3D12MeshVertexPositionNormalTangentTexture);
+            uint32_t vertex_buffer_size = inputLayoutStride * vertex_count;
 
             uint32_t vertex_buffer_offset = 0;
             
@@ -793,7 +787,7 @@ namespace Pilot
             now_mesh.mesh_vertex_buffer =
                 RHI::D3D12Buffer(m_Device->GetLinkedDevice(),
                                  vertex_buffer_size,
-                                 vertex_buffer_size,
+                                 inputLayoutStride,
                                  D3D12_HEAP_TYPE::D3D12_HEAP_TYPE_DEFAULT,
                                  D3D12_RESOURCE_FLAGS::D3D12_RESOURCE_FLAG_NONE,
                                  D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
@@ -833,7 +827,7 @@ namespace Pilot
 
         now_mesh.mesh_index_buffer = RHI::D3D12Buffer(m_Device->GetLinkedDevice(),
                                                       buffer_size,
-                                                      buffer_size,
+                                                      sizeof(std::uint32_t),
                                                       D3D12_HEAP_TYPE::D3D12_HEAP_TYPE_DEFAULT,
                                                       D3D12_RESOURCE_FLAGS::D3D12_RESOURCE_FLAG_NONE,
                                                       D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_INDEX_BUFFER);

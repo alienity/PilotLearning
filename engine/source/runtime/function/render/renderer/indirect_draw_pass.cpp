@@ -52,8 +52,8 @@ namespace Pilot
                 context.SetViewport(RHIViewport {0.0f, 0.0f, (float)backBufWidth, (float)backBufHeight, 0.0f, 1.0f});
                 context.SetScissorRect(RHIRect {0, 0, backBufWidth, backBufHeight});
                 
-                context.SetPipelineState(registry.GetPipelineState(PipelineStates::IndirectDraw));
                 context.SetGraphicsRootSignature(registry.GetRootSignature(RootSignatures::IndirectDraw));
+                context.SetPipelineState(registry.GetPipelineState(PipelineStates::IndirectDraw));
                 context->SetGraphicsRootConstantBufferView(1, pPerframeBuffer->GetGpuVirtualAddress());
                 context->SetGraphicsRootShaderResourceView(2, pMeshBuffer->GetGpuVirtualAddress());
 
