@@ -109,6 +109,8 @@ namespace RHI
                                        CommandSignatureDesc& Builder,
                                        ID3D12RootSignature*  RootSignature);
 
+        [[nodiscard]] ID3D12CommandSignature* GetApiHandle() const noexcept { return CommandSignature.Get(); }
+
         operator ID3D12CommandSignature*() const noexcept { return CommandSignature.Get(); }
 
     private:

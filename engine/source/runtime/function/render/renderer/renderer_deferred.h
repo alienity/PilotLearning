@@ -16,12 +16,19 @@ namespace Pilot
 
         virtual void Initialize();
         void         InitGlobalBuffer();
+        void         InitPass();
         virtual void InitializeUIRenderBackend(WindowUI* window_ui);
         virtual void PreparePassData(std::shared_ptr<RenderResourceBase> render_resource);
 
 		virtual ~DeferredRenderer();
 
 		virtual void OnRender(RHI::D3D12CommandContext& Context);
+
+    public:
+        uint32_t    backBufferWidth;
+        uint32_t    backBufferHeight;
+        DXGI_FORMAT backBufferFormat;
+        DXGI_FORMAT depthBufferFormat;
 
         std::shared_ptr<UIPass> mUIPass;
         std::shared_ptr<IndirectCullPass> mIndirectCullPass;

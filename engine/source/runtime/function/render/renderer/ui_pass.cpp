@@ -15,7 +15,7 @@
 
 namespace Pilot
 {
-    void UIPass::initialize(const RenderPassInitInfo& init_info)
+    void UIPass::initialize(const UIPassInitInfo& init_info)
     {
         UIPassInitInfo* m_UIPassInitInfo = (UIPassInitInfo*)(&init_info);
         initializeUIRenderBackend(m_UIPassInitInfo->window_ui);
@@ -42,8 +42,8 @@ namespace Pilot
 
     void UIPass::update(RHI::D3D12CommandContext& context,
                         RHI::RenderGraph&         graph,
-                        PassInput&                passInput,
-                        PassOutput&               passOutput)
+                        UIInputParameters&        passInput,
+                        UIOutputParameters&       passOutput)
     {
         UIInputParameters*  uiPassInput = (UIInputParameters*)(&passInput);
         UIOutputParameters* uiPassOutput = (UIOutputParameters*)(&passOutput);

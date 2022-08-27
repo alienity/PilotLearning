@@ -265,9 +265,9 @@ namespace Pilot
 namespace HLSL
 {
 
-    static constexpr size_t MaterialLimit = 8192;
+    static constexpr size_t MaterialLimit = 2048;
     static constexpr size_t LightLimit    = 32;
-    static constexpr size_t MeshLimit     = 8192;
+    static constexpr size_t MeshLimit     = 2048;
 
     static const uint32_t m_point_light_shadow_map_dimension       = 2048;
     static const uint32_t m_directional_light_shadow_map_dimension = 4096;
@@ -319,8 +319,8 @@ namespace HLSL
     {
         glm::vec3 center;
         float     _padding_center;
-        glm::vec3 extent;
-        float     _padding_extent;
+        glm::vec3 extents;
+        float     _padding_extents;
     };
 
     struct MeshInstance
@@ -335,6 +335,10 @@ namespace HLSL
         D3D12_INDEX_BUFFER_VIEW  indexBuffer;
 
         D3D12_DRAW_INDEXED_ARGUMENTS drawIndexedArguments;
+
+        float _padding_drawArguments0;
+        float _padding_drawArguments1;
+        float _padding_drawArguments2;
 
         BoundingBox boundingBox;
 

@@ -24,15 +24,6 @@ namespace Pilot
     class RenderPass : public RenderPassBase
     {
     public:
-        void initialize(const RenderPassInitInfo& init_info) override;
-
-        virtual void update(RHI::D3D12CommandContext& context,
-                            RHI::RenderGraph&         graph,
-                            PassInput&                passInput,
-                            PassOutput&               passOutput) override;
-
-        virtual void destroy() override;
-
         GlobalRenderResource* m_global_render_resource {nullptr};
 
         static VisiableNodes m_visiable_nodes;

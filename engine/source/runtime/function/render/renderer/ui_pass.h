@@ -29,12 +29,12 @@ namespace Pilot
     public:
         ~UIPass() { destroy(); }
 
-        void initialize(const RenderPassInitInfo& init_info) override final;
+        void initialize(const UIPassInitInfo& init_info);
         void initializeUIRenderBackend(WindowUI* window_ui);
         void update(RHI::D3D12CommandContext& context,
                     RHI::RenderGraph&         graph,
-                    PassInput&                passInput,
-                    PassOutput&               passOutput) override final;
+                    UIInputParameters&        passInput,
+                    UIOutputParameters&       passOutput);
         void
         draw(RHI::D3D12CommandContext& context, RHI::D3D12RenderTargetView* pRTV, int backBufWidth, int backBufHeight);
         void destroy() override final;

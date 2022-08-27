@@ -103,8 +103,9 @@ struct RootSignatures
 		IndirectDraw =
             Registry.CreateRootSignature(Device->CreateRootSignature(RHI::RootSignatureDesc()
                                                                          .Add32BitConstants<0, 0>(1)
-                                                                         .AddConstantBufferView<0, 0>()
+                                                                         .AddConstantBufferView<1, 0>()
                                                                          .AddShaderResourceView<0, 0>()
+                                                                         .AllowInputLayout()
                                                                          .AllowResourceDescriptorHeapIndexing()
                                                                          .AllowSampleDescriptorHeapIndexing()));
 
@@ -113,7 +114,7 @@ struct RootSignatures
 
 struct CommandSignatures
 {
-    inline static RHI::D3D12CommandSignature IndirectDraw;
+    inline static RHI::RgResourceHandle IndirectDraw;
 
     static void Compile(RHI::D3D12Device* Device, RHI::RenderGraphRegistry& Registry)
     {
@@ -126,7 +127,8 @@ struct CommandSignatures
 
             ID3D12RootSignature* indirectDrawRootSignature =
                 Registry.GetRootSignature(RootSignatures::IndirectDraw)->GetApiHandle();
-            IndirectDraw = RHI::D3D12CommandSignature(Device, Builder, indirectDrawRootSignature);
+            IndirectDraw =
+                Registry.CreateCommandSignature(RHI::D3D12CommandSignature(Device, Builder, indirectDrawRootSignature));
         }
     }
 
@@ -187,11 +189,7 @@ struct PipelineStates
         {
             RHI::D3D12InputLayout InputLayout =
                 Pilot::MeshVertex::D3D12MeshVertexPositionNormalTangentTexture::InputLayout;
-            //RHI::D3D12InputLayout InputLayout(3);
-            //InputLayout.AddVertexLayoutElement("POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0);
-            //InputLayout.AddVertexLayoutElement("TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0);
-            //InputLayout.AddVertexLayoutElement("NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0);
-
+            
             RHIDepthStencilState DepthStencilState;
             DepthStencilState.DepthEnable = true;
 

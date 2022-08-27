@@ -26,7 +26,7 @@ struct VertexOutput
     float3 normal   : NORMAL;
 };
 
-VertexAttributes VSMain(VertexInput input)
+VertexOutput VSMain(VertexInput input)
 {
     VertexOutput output;
 
@@ -41,7 +41,7 @@ VertexAttributes VSMain(VertexInput input)
     return output;
 }
 
-float4 PSMain(VertexOutput input) : SV_Target0
+float4 PSMain(VertexOutput input) : SV_Target0 
 {
-    return float4(input.texCoord.x, input.texCoord.y, 0, 1);
+    return float4(input.texcoord.x, input.texcoord.y, 0, 1);
 }

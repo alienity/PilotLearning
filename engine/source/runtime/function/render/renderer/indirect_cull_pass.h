@@ -26,7 +26,7 @@ namespace Pilot
     public:
         ~IndirectCullPass() { destroy(); }
 
-        void initialize(const RenderPassInitInfo& init_info) override final;
+        void initialize(const RenderPassInitInfo& init_info);
         void prepareMeshData(std::shared_ptr<RenderResourceBase> render_resource, uint32_t& numMeshes);
         void cullMeshs(RHI::D3D12CommandContext& context,
                        RHI::RenderGraphRegistry& registry,

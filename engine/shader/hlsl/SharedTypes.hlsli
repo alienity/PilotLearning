@@ -65,6 +65,11 @@ struct MeshInstance
 	// 20
 	D3D12_DRAW_INDEXED_ARGUMENTS drawIndexedArguments;
 
+    // 12
+    float _padding_drawArguments0;
+    float _padding_drawArguments1;
+    float _padding_drawArguments2;
+
     // 32
     BoundingBox boundingBox;
 

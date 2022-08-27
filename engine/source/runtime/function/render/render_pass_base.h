@@ -30,12 +30,15 @@ namespace Pilot
     public:
         virtual void setCommonInfo(RenderPassCommonInfo common_info);
 
-        virtual void initialize(const RenderPassInitInfo& init_info) = 0;
-        virtual void update(RHI::D3D12CommandContext& context,
-                            RHI::RenderGraph&         graph,
-                            PassInput&                passInput,
-                            PassOutput&               passOutput)    = 0;
-        virtual void destroy()                                       = 0;
+        template<typename PInit = RenderPassInitInfo>
+        void initialize(const PInit& init_info)
+        {}
+
+        template<typename PI = PassInput, typename PO = PassOutput>
+        void update(RHI::D3D12CommandContext& context, RHI::RenderGraph& graph, PI& passInput, PO& passOutput)
+        {}
+
+        virtual void destroy() {};
 
     protected:
         RHI::RenderGraphAllocator* m_RenderGraphAllocator;

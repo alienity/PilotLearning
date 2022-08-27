@@ -11,8 +11,13 @@ namespace Pilot
     void DeferredRenderer::Initialize()
     {
         RHI::D3D12SwapChainResource backBufferResource = swapChain->GetCurrentBackBufferResource();
-        DXGI_FORMAT                 backBufferFormat   = backBufferResource.BackBuffer->GetDesc().Format;
-        DXGI_FORMAT                 depthBufferFormat  = DXGI_FORMAT_D32_FLOAT;
+        
+        D3D12_RESOURCE_DESC backDesc = backBufferResource.BackBuffer->GetDesc();
+
+        backBufferWidth   = backDesc.Width;
+        backBufferHeight  = backDesc.Height;
+        backBufferFormat  = backDesc.Format;
+        depthBufferFormat = DXGI_FORMAT_D32_FLOAT;
 
         std::shared_ptr<ConfigManager> config_manager = g_runtime_global_context.m_config_manager;
         const std::filesystem::path&   shaderRootPath = config_manager->getShaderFolder();
@@ -24,19 +29,7 @@ namespace Pilot
         PipelineStates::Compile(backBufferFormat, depthBufferFormat, device, renderGraphRegistry);
 
         InitGlobalBuffer();
-
-        // ≥ı ºªØ
-        RenderPassCommonInfo renderPassCommonInfo = {
-            &renderGraphAllocator, &renderGraphRegistry, device, windowsSystem};
-
-        mIndirectCullPass = std::make_shared<IndirectCullPass>();
-        mIndirectCullPass->setCommonInfo(renderPassCommonInfo);
-        mIndirectCullPass->initialize({});
-
-        mIndirectDrawPass = std::make_shared<IndirectDrawPass>();
-        mIndirectDrawPass->setCommonInfo(renderPassCommonInfo);
-        mIndirectDrawPass->initialize({});
-
+        InitPass();
     }
 
     void DeferredRenderer::InitGlobalBuffer()
@@ -65,6 +58,31 @@ namespace Pilot
                                                          D3D12_HEAP_TYPE_DEFAULT,
                                                          D3D12_RESOURCE_FLAG_NONE);
 
+    }
+
+    void DeferredRenderer::InitPass()
+    {
+        RenderPassCommonInfo renderPassCommonInfo = {
+            &renderGraphAllocator, &renderGraphRegistry, device, windowsSystem};
+
+        {
+            mIndirectCullPass = std::make_shared<IndirectCullPass>();
+            mIndirectCullPass->setCommonInfo(renderPassCommonInfo);
+            mIndirectCullPass->initialize({});
+        }
+
+        {
+            IndirectDrawPass::DrawPassInitInfo drawPassInit;
+            drawPassInit.depthBufferTexDesc = RHI::RgTextureDesc("DepthBuffer")
+                                                  .SetFormat(depthBufferFormat)
+                                                  .SetExtent(backBufferWidth, backBufferHeight, 1)
+                                                  .SetAllowDepthStencil()
+                                                  .SetClearValue(RHI::RgClearValue(1.0f, 0xff));
+
+            mIndirectDrawPass = std::make_shared<IndirectDrawPass>();
+            mIndirectDrawPass->setCommonInfo(renderPassCommonInfo);
+            mIndirectDrawPass->initialize(drawPassInit);
+        }
     }
 
     void DeferredRenderer::InitializeUIRenderBackend(WindowUI* window_ui)
@@ -143,7 +161,7 @@ namespace Pilot
 
             mIndirectDrawPass->update(context, graph, mDrawIntputParams, mDrawOutputParams);
         }
-
+        
         if (mUIPass != nullptr)
         {
             UIPass::UIInputParameters mUIIntputParams;

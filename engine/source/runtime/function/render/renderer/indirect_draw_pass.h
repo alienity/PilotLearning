@@ -12,7 +12,7 @@ namespace Pilot
     public:
         struct DrawPassInitInfo : public RenderPassInitInfo
         {
-
+            RHI::RgTextureDesc depthBufferTexDesc;
         };
 
         struct DrawInputParameters : public PassInput
@@ -30,23 +30,25 @@ namespace Pilot
         {
             RHI::RgResourceHandle       backBufColor;
             RHI::D3D12RenderTargetView* backBufRtv;
-            RHI::RgResourceHandle       backBufDepth;
-            RHI::D3D12DepthStencilView* backBufDsv;
+
+            RHI::RgResourceHandle backBufDepth;
+            RHI::RgResourceHandle backBufDsv;
         };
 
     public:
         ~IndirectDrawPass() { destroy(); }
 
-        void initialize(const RenderPassInitInfo& init_info) override final;
+        void initialize(const DrawPassInitInfo& init_info);
         void update(RHI::D3D12CommandContext& context,
                     RHI::RenderGraph&         graph,
-                    PassInput&                passInput,
-                    PassOutput&               passOutput) override final;
+                    DrawInputParameters&      passInput,
+                    DrawOutputParameters&     passOutput);
         void destroy() override final;
 
     private:
         std::shared_ptr<RHI::D3D12DynamicDescriptor<D3D12_SHADER_RESOURCE_VIEW_DESC>> pD3D12SRVDescriptor;
 
+        RHI::RgTextureDesc depthBufferTexDesc;
 	};
 }
 

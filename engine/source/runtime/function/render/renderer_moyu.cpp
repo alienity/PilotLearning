@@ -14,6 +14,12 @@ namespace Pilot
     RendererManager::~RendererManager()
     {
         Device->WaitIdle();
+
+        MoYuRenderer = nullptr;
+
+        Compiler     = nullptr;
+        SwapChain    = nullptr;
+        Device       = nullptr;
     }
 
     void RendererManager::Initialize(RendererManagerInitInfo initialize_info)

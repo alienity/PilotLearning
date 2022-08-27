@@ -185,7 +185,7 @@ namespace RHI
         {
             Microsoft::WRL::ComPtr<ID3D12Resource> Resource;
             VERIFY_D3D12_API(SwapChain4->GetBuffer(i, IID_PPV_ARGS(&Resource)));
-            FLOAT             Color[4]   = {1.0f, 1.0f, 1.0f, 1.0f};
+            FLOAT             Color[4]   = {0.0f, 0.0f, 0.0f, 0.0f};
             D3D12_CLEAR_VALUE ClearValue = CD3DX12_CLEAR_VALUE(Desc.Format, Color);
             BackBuffers[i]               = D3D12Texture(
                 GetParentDevice()->GetLinkedDevice(), std::move(Resource), ClearValue, D3D12_RESOURCE_STATE_PRESENT);

@@ -68,6 +68,7 @@ namespace Pilot
         m_render_camera->m_znear = global_rendering_res.m_camera_config.m_z_near;
         m_render_camera->setAspect(global_rendering_res.m_camera_config.m_aspect.x /
                                    global_rendering_res.m_camera_config.m_aspect.y);
+        m_render_camera->setFOVy(90);
 
         // setup render scene
         m_render_scene                  = std::make_shared<RenderScene>();

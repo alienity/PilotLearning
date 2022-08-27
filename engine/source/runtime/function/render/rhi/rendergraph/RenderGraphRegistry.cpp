@@ -8,6 +8,11 @@ namespace RHI
 		return RootSignatureRegistry.Add(std::forward<D3D12RootSignature>(RootSignature));
 	}
 
+	auto RenderGraphRegistry::CreateCommandSignature(D3D12CommandSignature&& RootSignature) -> RgResourceHandle
+	{
+        return CommandSignatureRegistry.Add(std::forward<D3D12CommandSignature>(RootSignature));
+	}
+
 	auto RenderGraphRegistry::CreatePipelineState(D3D12PipelineState&& PipelineState) -> RgResourceHandle
 	{
 		return PipelineStateRegistry.Add(std::forward<D3D12PipelineState>(PipelineState));
@@ -21,6 +26,11 @@ namespace RHI
 	D3D12RootSignature* RenderGraphRegistry::GetRootSignature(RgResourceHandle Handle)
 	{
 		return RootSignatureRegistry.GetResource(Handle);
+	}
+
+	D3D12CommandSignature* RenderGraphRegistry::GetCommandSignature(RgResourceHandle Handle)
+	{
+        return CommandSignatureRegistry.GetResource(Handle);
 	}
 
 	D3D12PipelineState* RenderGraphRegistry::GetPipelineState(RgResourceHandle Handle)

@@ -71,15 +71,23 @@ namespace Pilot
 
             pMaterialObj[i] = curMatInstance;
 
+            D3D12_DRAW_INDEXED_ARGUMENTS drawIndexedArguments = {};
+            drawIndexedArguments.IndexCountPerInstance        = temp_node.ref_mesh->mesh_index_count;
+            drawIndexedArguments.InstanceCount                = 1;
+            drawIndexedArguments.StartIndexLocation           = 0;
+            drawIndexedArguments.BaseVertexLocation           = 0;
+            drawIndexedArguments.StartInstanceLocation        = 0;
+
             HLSL::BoundingBox boundingBox = {};
             boundingBox.center            = temp_node.bounding_box.center;
-            boundingBox.extent            = temp_node.bounding_box.extent;
+            boundingBox.extents           = temp_node.bounding_box.extent;
 
             HLSL::MeshInstance curMeshInstance     = {};
             curMeshInstance.enable_vertex_blending = temp_node.enable_vertex_blending;
             curMeshInstance.model_matrix           = temp_node.model_matrix;
             curMeshInstance.vertexBuffer           = temp_node.ref_mesh->mesh_vertex_buffer.GetVertexBufferView();
             curMeshInstance.indexBuffer            = temp_node.ref_mesh->mesh_index_buffer.GetIndexBufferView();
+            curMeshInstance.drawIndexedArguments   = drawIndexedArguments;
             curMeshInstance.boundingBox            = boundingBox;
             curMeshInstance.materialIndex          = i;
 
