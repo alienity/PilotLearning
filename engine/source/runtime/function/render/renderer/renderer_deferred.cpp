@@ -77,7 +77,7 @@ namespace Pilot
                                                   .SetFormat(depthBufferFormat)
                                                   .SetExtent(backBufferWidth, backBufferHeight, 1)
                                                   .SetAllowDepthStencil()
-                                                  .SetClearValue(RHI::RgClearValue(1.0f, 0xff));
+                                                  .SetClearValue(RHI::RgClearValue(0.0f, 0xff));
 
             mIndirectDrawPass = std::make_shared<IndirectDrawPass>();
             mIndirectDrawPass->setCommonInfo(renderPassCommonInfo);

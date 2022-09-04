@@ -81,7 +81,7 @@ namespace Pilot
 
                 Vector3 degrees_val;
 
-                Pilot::Vector3 euler = trans_ptr->m_rotation.toEuler();
+                Pilot::Vector3 euler = trans_ptr->m_rotation.toTaitBryanAngles();
 
                 degrees_val.x = Pilot::Radian(euler.x).valueDegrees();
                 degrees_val.y = Pilot::Radian(euler.y).valueDegrees();
@@ -95,31 +95,36 @@ namespace Pilot
                 DrawVecControl("Rotation", degrees_val);
                 DrawVecControl("Scale", trans_ptr->m_scale);
 
-                trans_ptr->m_rotation.w = Math::cos(Math::degreesToRadians(degrees_val.y / 2)) *
-                                              Math::cos(Math::degreesToRadians(degrees_val.z / 2)) *
-                                              Math::cos(Math::degreesToRadians(degrees_val.x / 2)) +
-                                          Math::sin(Math::degreesToRadians(degrees_val.y / 2)) *
-                                              Math::sin(Math::degreesToRadians(degrees_val.z / 2)) *
-                                              Math::sin(Math::degreesToRadians(degrees_val.x / 2));
-                trans_ptr->m_rotation.x = Math::sin(Math::degreesToRadians(degrees_val.y / 2)) *
-                                              Math::cos(Math::degreesToRadians(degrees_val.z / 2)) *
-                                              Math::cos(Math::degreesToRadians(degrees_val.x / 2)) -
-                                          Math::cos(Math::degreesToRadians(degrees_val.y / 2)) *
-                                              Math::sin(Math::degreesToRadians(degrees_val.z / 2)) *
-                                              Math::sin(Math::degreesToRadians(degrees_val.x / 2));
-                trans_ptr->m_rotation.y = Math::cos(Math::degreesToRadians(degrees_val.y / 2)) *
-                                              Math::sin(Math::degreesToRadians(degrees_val.z / 2)) *
-                                              Math::cos(Math::degreesToRadians(degrees_val.x / 2)) +
-                                          Math::sin(Math::degreesToRadians(degrees_val.y / 2)) *
-                                              Math::cos(Math::degreesToRadians(degrees_val.z / 2)) *
-                                              Math::sin(Math::degreesToRadians(degrees_val.x / 2));
-                trans_ptr->m_rotation.z = Math::cos(Math::degreesToRadians(degrees_val.y / 2)) *
-                                              Math::cos(Math::degreesToRadians(degrees_val.z / 2)) *
-                                              Math::sin(Math::degreesToRadians(degrees_val.x / 2)) -
-                                          Math::sin(Math::degreesToRadians(degrees_val.y / 2)) *
-                                              Math::sin(Math::degreesToRadians(degrees_val.z / 2)) *
-                                              Math::cos(Math::degreesToRadians(degrees_val.x / 2));
-                trans_ptr->m_rotation = Quaternion::normalize(trans_ptr->m_rotation);
+                Pilot::Vector3 newEuler = Vector3(Math::degreesToRadians(degrees_val.x),
+                                                  Math::degreesToRadians(degrees_val.y),
+                                                  Math::degreesToRadians(degrees_val.z));
+                trans_ptr->m_rotation   = Pilot::Quaternion::fromTaitBryanAngles(newEuler);
+
+                //trans_ptr->m_rotation.w = Math::cos(Math::degreesToRadians(degrees_val.y / 2)) *
+                //                              Math::cos(Math::degreesToRadians(degrees_val.z / 2)) *
+                //                              Math::cos(Math::degreesToRadians(degrees_val.x / 2)) +
+                //                          Math::sin(Math::degreesToRadians(degrees_val.y / 2)) *
+                //                              Math::sin(Math::degreesToRadians(degrees_val.z / 2)) *
+                //                              Math::sin(Math::degreesToRadians(degrees_val.x / 2));
+                //trans_ptr->m_rotation.x = Math::sin(Math::degreesToRadians(degrees_val.y / 2)) *
+                //                              Math::cos(Math::degreesToRadians(degrees_val.z / 2)) *
+                //                              Math::cos(Math::degreesToRadians(degrees_val.x / 2)) -
+                //                          Math::cos(Math::degreesToRadians(degrees_val.y / 2)) *
+                //                              Math::sin(Math::degreesToRadians(degrees_val.z / 2)) *
+                //                              Math::sin(Math::degreesToRadians(degrees_val.x / 2));
+                //trans_ptr->m_rotation.y = Math::cos(Math::degreesToRadians(degrees_val.y / 2)) *
+                //                              Math::sin(Math::degreesToRadians(degrees_val.z / 2)) *
+                //                              Math::cos(Math::degreesToRadians(degrees_val.x / 2)) +
+                //                          Math::sin(Math::degreesToRadians(degrees_val.y / 2)) *
+                //                              Math::cos(Math::degreesToRadians(degrees_val.z / 2)) *
+                //                              Math::sin(Math::degreesToRadians(degrees_val.x / 2));
+                //trans_ptr->m_rotation.z = Math::cos(Math::degreesToRadians(degrees_val.y / 2)) *
+                //                              Math::cos(Math::degreesToRadians(degrees_val.z / 2)) *
+                //                              Math::sin(Math::degreesToRadians(degrees_val.x / 2)) -
+                //                          Math::sin(Math::degreesToRadians(degrees_val.y / 2)) *
+                //                              Math::sin(Math::degreesToRadians(degrees_val.z / 2)) *
+                //                              Math::cos(Math::degreesToRadians(degrees_val.x / 2));
+                //trans_ptr->m_rotation = Quaternion::normalize(trans_ptr->m_rotation);
 
                 g_editor_global_context.m_scene_manager->drawSelectedEntityAxis();
             }

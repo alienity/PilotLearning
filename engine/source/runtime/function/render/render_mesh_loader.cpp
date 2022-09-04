@@ -61,9 +61,6 @@ void RecursiveLoad(MeshLoaderNode&                               meshes_,
     for (size_t i = 0; i < meshes_.children_.size(); i++)
     {
         RecursiveLoad(meshes_.children_[i], vertexs_, indices_);
-
-        Pilot::AxisAlignedBox sub_bounding_box;
-
     }
 }
 

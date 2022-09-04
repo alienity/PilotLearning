@@ -192,6 +192,7 @@ struct PipelineStates
             
             RHIDepthStencilState DepthStencilState;
             DepthStencilState.DepthEnable = true;
+            DepthStencilState.DepthFunc   = RHI_COMPARISON_FUNC::GreaterEqual;
 
             RHIRenderTargetState RenderTargetState;
             RenderTargetState.RTFormats[0]     = RtFormat; // DXGI_FORMAT_R32G32B32A32_FLOAT;

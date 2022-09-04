@@ -3,7 +3,7 @@
 //
 // Right-hand coordinates
 //
-// Matrix: row-major storage, row-major notation, pre-multiplication
+// Matrix: row-major storage, row-major notation, post-multiplocation
 // Vector: column-major notation
 //
 //-------------------------------------------------------------------------------------
@@ -756,6 +756,7 @@ namespace Pilot
     //         sin(t)  cos(t)    0
     //           0       0       1
     // where t > 0 indicates a counterclockwise rotation in the xy-plane.
+    /// <strong>this is a rotation matrix which is used to represent a composition of extrinsic rotations about axes z, y, x, (in that order)</strong>
     struct Matrix3x3
     {
     public:
@@ -821,19 +822,21 @@ namespace Pilot
         float     minor(size_t r0, size_t r1, size_t c0, size_t c1) const;
         float     determinant() const;
 
-        // Computes rotation about y-axis (y), then x-axis (x), then z-axis (z)
-        Vector3 toEuler() const;
+        // https://en.wikipedia.org/wiki/Euler_angles
+        // https://www.geometrictools.com/Documentation/EulerAngles.pdf
+        // Tait¨CBryan angles, extrinsic angles, ZYX in order
+        Vector3 toTaitBryanAngles() const;
+        void    fromTaitBryanAngles(const Vector3& taitBryanAngles);
 
         // matrix must be orthonormal
         void toAngleAxis(Vector3& axis, float& radian) const;
         void fromAngleAxis(const Vector3& axis, const float& radian);
 
-        static Matrix3x3 fromQuaternion(const Quaternion& quat);
+        static Matrix3x3 fromRotationX(const float& radians);
+        static Matrix3x3 fromRotationY(const float& radians);
+        static Matrix3x3 fromRotationZ(const float& radians);
 
-        // Rotates about y-axis (yaw), then x-axis (pitch), then z-axis (roll)
-        static Matrix3x3 fromYawPitchRoll(float yaw, float pitch, float roll);
-        // Rotates about y-axis (angles.y), then x-axis (angles.x), then z-axis (angles.z)
-        static Matrix3x3 fromYawPitchRoll(const Vector3& angles);
+        static Matrix3x3 fromQuaternion(const Quaternion& quat);
 
         static Matrix3x3 scale(const Vector3& scale);
 
@@ -1005,61 +1008,27 @@ namespace Pilot
 
         // Properties
         Vector3 Up() const { return Vector3(m[0][1], m[1][1], m[2][1]); }
-        void    Up(const Vector3& v)
-        {
-            m[0][1] = v.x;
-            m[1][1] = v.y;
-            m[2][1] = v.z;
-        }
+        void    Up(const Vector3& v);
 
         Vector3 Down() const { return Vector3(-m[0][1], -m[1][1], -m[2][1]); }
-        void    Down(const Vector3& v)
-        {
-            m[0][1] = -v.x;
-            m[1][1] = -v.y;
-            m[2][1] = -v.z;
-        }
+        void    Down(const Vector3& v);
 
         Vector3 Right() const { return Vector3(m[0][0], m[1][0], m[2][0]); }
-        void    Right(const Vector3& v)
-        {
-            m[0][0] = v.x;
-            m[1][0] = v.y;
-            m[2][0] = v.z;
-        }
+        void    Right(const Vector3& v);
 
         Vector3 Left() const { return Vector3(-m[0][0], -m[1][0], -m[2][0]); }
-        void    Left(const Vector3& v)
-        {
-            m[0][0] = -v.x;
-            m[1][0] = -v.y;
-            m[2][0] = -v.z;
-        }
+        void    Left(const Vector3& v);
 
         Vector3 Forward() const { return Vector3(-m[0][2], -m[1][2], -m[2][2]); }
-        void    Forward(const Vector3& v)
-        {
-            m[0][2] = -v.x;
-            m[1][2] = -v.y;
-            m[2][2] = -v.z;
-        }
+        void    Forward(const Vector3& v);
 
         Vector3 Backward() const { return Vector3(m[0][2], m[1][2], m[2][2]); }
-        void    Backward(const Vector3& v)
-        {
-            m[0][2] = v.x;
-            m[1][2] = v.y;
-            m[2][2] = v.z;
-        }
+        void    Backward(const Vector3& v);
 
         Vector3 Translation() const { return Vector3(m[0][3], m[1][3], m[2][3]); }
-        void    Translation(const Vector3& v)
-        {
-            m[0][3] = v.x;
-            m[1][3] = v.y;
-            m[2][3] = v.z;
-        }
+        void    Translation(const Vector3& v);
 
+        // https://opensource.apple.com/source/WebCore/WebCore-514/platform/graphics/transforms/TransformationMatrix.cpp
         // Matrix operations
         bool decompose(Vector3& scale, Quaternion& rotation, Vector3& translation);
 
@@ -1072,8 +1041,7 @@ namespace Pilot
         float     minor(size_t r0, size_t r1, size_t r2, size_t c0, size_t c1, size_t c2) const;
         float     determinant() const;
 
-        // Computes rotation about y-axis (y), then x-axis (x), then z-axis (z)
-        Vector3 toEuler() const;
+        Vector3 toTaitBryanAngles() const;
 
         // Static functions
         static Matrix4x4 translation(const Vector3& position);
@@ -1101,17 +1069,11 @@ namespace Pilot
                                                      float zNearPlane,
                                                      float zFarPlane);
 
-        static Matrix4x4 lookAt(const Vector3& position, const Vector3& target, const Vector3& up);
+        static Matrix4x4 lookAt(const Vector3& eye, const Vector3& center, const Vector3& up);
         static Matrix4x4 createView(const Vector3& position, const Quaternion& orientation);
         static Matrix4x4 createWorld(const Vector3& position, const Vector3& forward, const Vector3& up);
 
         static Matrix4x4 fromQuaternion(const Quaternion& quat);
-
-        // Rotates about y-axis (yaw), then x-axis (pitch), then z-axis (roll)
-        static Matrix4x4 fromYawPitchRoll(float yaw, float pitch, float roll);
-
-        // Rotates about y-axis (angles.y), then x-axis (angles.x), then z-axis (angles.z)
-        static Matrix4x4 fromYawPitchRoll(const Vector3& angles);
 
         static Matrix4x4 lerp(const Matrix4x4& lhs, const Matrix4x4& rhs, float t);
 
@@ -1132,6 +1094,7 @@ namespace Pilot
         makeInverseTransform(const Vector3& position, const Vector3& scale, const Quaternion& orientation);
 
         // Constants
+        static const Matrix4x4 Zero;
         static const Matrix4x4 Identity;
     };
 
@@ -1199,22 +1162,17 @@ namespace Pilot
         float length() const;
         float squaredLength() const;
 
-        // Computes rotation about y-axis (y), then x-axis (x), then z-axis (z)
-        Vector3 toEuler() const;
+        Vector3 toTaitBryanAngles() const;
 
         // Static functions
+        static Quaternion fromTaitBryanAngles(const Vector3& angles);
+
         static Quaternion normalize(const Quaternion& q);
         static Quaternion conjugate(const Quaternion& q);
         static Quaternion inverse(const Quaternion& q);
 
         static Quaternion fromAxes(const Vector3& x_axis, const Vector3& y_axis, const Vector3& z_axis);
         static Quaternion fromAxisAngle(const Vector3& axis, float angle);
-
-        // Rotates about y-axis (yaw), then x-axis (pitch), then z-axis (roll)
-        static Quaternion fromYawPitchRoll(float yaw, float pitch, float roll);
-
-        // Rotates about y-axis (angles.y), then x-axis (angles.x), then z-axis (angles.z)
-        static Quaternion fromYawPitchRoll(const Vector3& angles);
 
         static Quaternion fromRotationMatrix(const Matrix4x4& rotation);
         static Quaternion fromRotationMatrix(const Matrix3x3& rotation);

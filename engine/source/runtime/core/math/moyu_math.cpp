@@ -1,4 +1,4 @@
-#include "moyu_math.h"
+﻿#include "moyu_math.h"
 
 namespace Pilot
 {
@@ -124,6 +124,7 @@ namespace Pilot
     const Matrix3x3 Matrix3x3::Zero(0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f);
     const Matrix3x3 Matrix3x3::Identity(1.f, 0.f, 0.f, 0.f, 1.f, 0.f, 0.f, 0.f, 1.f);
 
+    const Matrix4x4 Matrix4x4::Zero(0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f);
     const Matrix4x4 Matrix4x4::Identity(1.f, 0.f, 0.f, 0.f, 0.f, 1.f, 0.f, 0.f, 0.f, 0.f, 1.f, 0.f, 0.f, 0.f, 0.f, 1.f);
 
     const Quaternion Quaternion::Identity(0.f, 0.f, 0.f, 1.f);
@@ -428,18 +429,66 @@ namespace Pilot
         return det;
     }
 
-    Vector3 Matrix3x3::toEuler() const
+    // https://en.wikipedia.org/wiki/Euler_angles
+    // https://www.geometrictools.com/Documentation/EulerAngles.pdf
+    // extrinsic angles, ZYX in order
+    Vector3 Matrix3x3::toTaitBryanAngles() const
     {
-        const float cy = sqrtf(m[2][2] * m[2][2] + m[2][0] * m[2][0]);
-        const float cx = atan2f(m[2][1], cy);
-        if (cy > 16.f * FLT_EPSILON)
+        float thetaX = 0; // phi
+        float thetaY = 0; // theta
+        float thetaZ = 0; // psi
+
+        if (m[2][0] < 1)
         {
-            return Vector3(cx, atan2f(-m[2][0], m[2][2]), atan2f(-m[0][1], m[1][1]));
+            if (m[2][0] > -1)
+            {
+                thetaY = asinf(-m[2][0]);
+                thetaZ = atan2f(m[1][0], m[0][0]);
+                thetaX = atan2f(m[2][1], m[2][2]);
+            }
+            else  // m[2][0] = -1
+            {
+                // Not a unique solution : thetaX − thetaZ = atan2(−r12 , r11)
+                thetaY = +Math_PI / 2;
+                thetaZ = -atan2f(-m[1][2], m[1][1]);
+                thetaX = 0;
+            }
         }
-        else
+        else // m[2][0] = +1
         {
-            return Vector3(cx, 0.f, atan2f(m[0][2], m[0][0]));
+            // Not a unique solution : thetaX + thetaZ = atan2(−r12 , r11)
+            thetaY = -Math_PI / 2;
+            thetaZ = atan2f(-m[1][2], m[1][1]);
+            thetaX = 0;
         }
+
+        return Vector3(thetaX, thetaY, thetaZ);
+    }
+
+    // https://en.wikipedia.org/wiki/Euler_angles
+    // https://www.geometrictools.com/Documentation/EulerAngles.pdf
+    void Matrix3x3::fromTaitBryanAngles(const Vector3& taitBryanAngles)
+    {
+        float phi   = taitBryanAngles.x;
+        float theta = taitBryanAngles.y;
+        float psi   = taitBryanAngles.z;
+
+        float cx = cosf(phi);
+        float cy = cosf(theta);
+        float cz = cosf(psi);
+        float sx = sinf(phi);
+        float sy = sinf(theta);
+        float sz = sinf(psi);
+
+        m[0][0] = cy * cz;
+        m[0][1] = cz * sx * sy - cx * sz;
+        m[0][2] = cx * cz * sy + sx * sz;
+        m[1][0] = cy * sz;
+        m[1][1] = cx * cz + sx * sy * sz;
+        m[1][2] = -cz * sx + cx * sy * sz;
+        m[2][0] = -sy;
+        m[2][1] = cy * sx;
+        m[2][2] = cx * cy;
     }
 
     void Matrix3x3::toAngleAxis(Vector3& axis, float& radian) const
@@ -530,6 +579,7 @@ namespace Pilot
         axis.z = (m[1][0] - m[0][1]) / s;
     }
 
+    // https://www.geometrictools.com/Documentation/EulerAngles.pdf
     void Matrix3x3::fromAngleAxis(const Vector3& axis, const float& radian)
     {
         Vector3 axisNorm = Vector3::normalize(axis);
@@ -556,6 +606,27 @@ namespace Pilot
         m[2][0] = xzm - y_sin_v;
         m[2][1] = yzm + x_sin_v;
         m[2][2] = z2 * one_minus_cos + cos_v;
+    }
+
+    Matrix3x3 Matrix3x3::fromRotationX(const float& radians)
+    {
+        float c = std::cos(radians);
+        float s = std::sin(radians);
+        return Matrix3x3(1, 0, 0, 0, c, -s, 0, s, c);
+    }
+
+    Matrix3x3 Matrix3x3::fromRotationY(const float& radians)
+    {
+        float c = std::cos(radians);
+        float s = std::sin(radians);
+        return Matrix3x3(c, 0, s, 0, 1, 0, -s, 0, c);
+    }
+
+    Matrix3x3 Matrix3x3::fromRotationZ(const float& radians)
+    {
+        float c = std::cos(radians);
+        float s = std::sin(radians);
+        return Matrix3x3(c, -s, 0, s, c, 0, 0, 0, 1);
     }
 
     Matrix3x3 Matrix3x3::fromQuaternion(const Quaternion& quat)
@@ -585,33 +656,6 @@ namespace Pilot
         kRot[2][2]     = 1.0f - (fTxx + fTyy); // 1 - 2x^2 - 2y^2
 
         return kRot;
-    }
-
-    Matrix3x3 Matrix3x3::fromYawPitchRoll(float yaw, float pitch, float roll)
-    {
-        // https://en.wikipedia.org/wiki/Euler_angles
-        // https://www.geometrictools.com/Documentation/EulerAngles.pdf
-        // Rotates about y-axis (yaw), then x-axis (pitch), then z-axis (roll)
-        float cx = std::cos(pitch);
-        float cy = std::cos(yaw);
-        float cz = std::cos(roll);
-        float sx = std::sin(pitch);
-        float sy = std::sin(yaw);
-        float sz = std::sin(roll);
-        return Matrix3x3(cy * cz - sx * sy * sz,
-                         -cx * sz,
-                         cz * sy + cy * sx * sz,
-                         cz * sx * sy + cy * sz,
-                         cx * cz,
-                         -cy * cz * sx + sy * sz,
-                         -cx * sy,
-                         sx,
-                         cx * cy);
-    }
-
-    Matrix3x3 Matrix3x3::fromYawPitchRoll(const Vector3& angles)
-    {
-        return fromYawPitchRoll(angles.y, angles.x, angles.z);
     }
 
     Matrix3x3 Matrix3x3::scale(const Vector3& scale)
@@ -1017,6 +1061,56 @@ namespace Pilot
         return Vector4(ox, oy, oz, ow);
     }
 
+    void Matrix4x4::Up(const Vector3& v)
+    {
+        m[0][1] = v.x;
+        m[1][1] = v.y;
+        m[2][1] = v.z;
+    }
+
+    void Matrix4x4::Down(const Vector3& v)
+    {
+        m[0][1] = -v.x;
+        m[1][1] = -v.y;
+        m[2][1] = -v.z;
+    }
+
+    void Matrix4x4::Right(const Vector3& v)
+    {
+        m[0][0] = v.x;
+        m[1][0] = v.y;
+        m[2][0] = v.z;
+    }
+
+    void Matrix4x4::Left(const Vector3& v)
+    {
+        m[0][0] = -v.x;
+        m[1][0] = -v.y;
+        m[2][0] = -v.z;
+    }
+
+    void Matrix4x4::Forward(const Vector3& v)
+    {
+        m[0][2] = -v.x;
+        m[1][2] = -v.y;
+        m[2][2] = -v.z;
+    }
+
+    void Matrix4x4::Backward(const Vector3& v)
+    {
+        m[0][2] = v.x;
+        m[1][2] = v.y;
+        m[2][2] = v.z;
+    }
+
+    void Matrix4x4::Translation(const Vector3& v)
+    {
+        m[0][3] = v.x;
+        m[1][3] = v.y;
+        m[2][3] = v.z;
+    }
+
+    // https://opensource.apple.com/source/WebCore/WebCore-514/platform/graphics/transforms/TransformationMatrix.cpp
     bool Matrix4x4::decompose(Vector3& scale, Quaternion& rotation, Vector3& translation)
     {
         translation = Vector3(m[0][3], m[1][3], m[2][3]);
@@ -1026,7 +1120,7 @@ namespace Pilot
         Vector3 col2 = Vector3(m[0][2], m[1][2], m[2][2]);
         scale        = Vector3(col0.length(), col1.length(), col2.length());
 
-        Matrix4x4 rotMat = Matrix3x3(Vector3(m[0][0] / scale.x, m[0][1] / scale.y, m[0][1] / scale.z),
+        Matrix3x3 rotMat = Matrix3x3(Vector3(m[0][0] / scale.x, m[0][1] / scale.y, m[0][1] / scale.z),
                                      Vector3(m[1][0] / scale.x, m[1][1] / scale.y, m[1][1] / scale.z),
                                      Vector3(m[2][0] / scale.x, m[2][1] / scale.y, m[2][1] / scale.z));
 
@@ -1105,21 +1199,18 @@ namespace Pilot
                m[0][2] * minor(1, 2, 3, 0, 1, 3) - m[0][3] * minor(1, 2, 3, 0, 1, 2);
     }
 
-    Vector3 Matrix4x4::toEuler() const
+    Vector3 Matrix4x4::toTaitBryanAngles() const
     {
-        // https://en.wikipedia.org/wiki/Euler_angles
-        // https://www.geometrictools.com/Documentation/EulerAngles.pdf
+        Vector3 col0 = Vector3(m[0][0], m[1][0], m[2][0]);
+        Vector3 col1 = Vector3(m[0][1], m[1][1], m[2][1]);
+        Vector3 col2 = Vector3(m[0][2], m[1][2], m[2][2]);
+        Vector3 scale = Vector3(col0.length(), col1.length(), col2.length());
 
-        const float cy = sqrtf(m[2][2] * m[2][2] + m[2][0] * m[2][0]);
-        const float cx = atan2f(m[2][1], cy);
-        if (cy > 16.f * FLT_EPSILON)
-        {
-            return Vector3(cx, atan2f(-m[2][0], m[2][2]), atan2f(-m[0][1], m[1][1]));
-        }
-        else
-        {
-            return Vector3(cx, 0.f, atan2f(m[0][2], m[0][0]));
-        }
+        Matrix3x3 rotMat = Matrix3x3(Vector3(m[0][0] / scale.x, m[0][1] / scale.y, m[0][1] / scale.z),
+                                     Vector3(m[1][0] / scale.x, m[1][1] / scale.y, m[1][1] / scale.z),
+                                     Vector3(m[2][0] / scale.x, m[2][1] / scale.y, m[2][1] / scale.z));
+
+        return rotMat.toTaitBryanAngles();
     }
 
     Matrix4x4 Matrix4x4::translation(const Vector3& position)
@@ -1151,10 +1242,7 @@ namespace Pilot
 
     Matrix4x4 Matrix4x4::rotationX(float radians)
     {
-        float c = std::cos(radians);
-        float s = std::sin(radians);
-
-        return Matrix3x3(1, 0, 0, 0, c, -s, 0, s, c);
+        return Matrix3x3::fromRotationX(radians);
     }
 
     Matrix4x4 Matrix4x4::rotationY(float radians)
@@ -1182,22 +1270,15 @@ namespace Pilot
 
     Matrix4x4 Matrix4x4::createPerspectiveFieldOfView(float fov, float aspectRatio, float nearPlane, float farPlane)
     {
-        return Matrix4x4(1 / (aspectRatio * std::tan(fov * 0.5f)),
-                         0,
-                         0,
-                         0,
-                         0,
-                         1 / std::tan(fov * 0.5f),
-                         0,
-                         0,
-                         0,
-                         0,
-                         nearPlane / (farPlane - nearPlane),
-                         farPlane * nearPlane / (farPlane - nearPlane),
-                         0,
-                         0,
-                         -1,
-                         0);
+        Matrix4x4 m = Zero;
+
+        m[0][0] = 1.0f / (aspectRatio * std::tan(fov * 0.5f));
+        m[1][1] = 1.0f / std::tan(fov * 0.5f);
+        m[2][2] = nearPlane / (farPlane - nearPlane);
+        m[2][3] = farPlane * nearPlane / (farPlane - nearPlane);
+        m[3][2] = -1;
+
+        return m;
     }
 
     Matrix4x4 Matrix4x4::createPerspective(float width, float height, float nearPlane, float farPlane)
@@ -1213,22 +1294,17 @@ namespace Pilot
                                                     float nearPlane,
                                                     float farPlane)
     {
-        return Matrix4x4(2 * nearPlane / (right - left),
-                         0,
-                         (right + left) / (right - left),
-                         0,
-                         0,
-                         2 * nearPlane / (top - bottom),
-                         (top + bottom) / (top - bottom),
-                         0,
-                         0,
-                         0,
-                         nearPlane / (farPlane - nearPlane),
-                         farPlane * nearPlane / (farPlane - nearPlane),
-                         0,
-                         0,
-                         -1,
-                         0);
+        Matrix4x4 m = Zero;
+
+        m[0][0] = 2 * nearPlane / (right - left);
+        m[0][2] = (right + left) / (right - left);
+        m[1][1] = 2 * nearPlane / (top - bottom);
+        m[1][2] = (top + bottom) / (top - bottom);
+        m[2][2] = nearPlane / (farPlane - nearPlane);
+        m[2][3] = farPlane * nearPlane / (farPlane - nearPlane);
+        m[3][2] = -1;
+
+        return m;
     }
 
     Matrix4x4 Matrix4x4::createOrthographic(float width, float height, float zNearPlane, float zFarPlane)
@@ -1244,45 +1320,41 @@ namespace Pilot
                                                      float zNearPlane,
                                                      float zFarPlane)
     {
-        return Matrix4x4(2 / (right - left),
-                         0,
-                         0,
-                         (right + left) / (right - left),
-                         0,
-                         2 / (top - bottom),
-                         0,
-                         (top + bottom) / (top - bottom),
-                         0,
-                         0,
-                         1 / (zFarPlane - zNearPlane),
-                         zFarPlane / (zFarPlane - zNearPlane),
-                         0,
-                         0,
-                         0,
-                         1);
+        Matrix4x4 m = Zero;
+
+        m[0][0] = 2 / (right - left);
+        m[0][3] = (right + left) / (right - left);
+        m[1][1] = 2 / (top - bottom);
+        m[1][3] = (top + bottom) / (top - bottom);
+        m[2][2] = 1 / (zFarPlane - zNearPlane);
+        m[2][3] = zFarPlane / (zFarPlane - zNearPlane);
+        m[3][3] = 1;
+
+        return m;
     }
 
-    Matrix4x4 Matrix4x4::lookAt(const Vector3& position, const Vector3& target, const Vector3& up)
+    Matrix4x4 Matrix4x4::lookAt(const Vector3& eye, const Vector3& center, const Vector3& up)
     {
-        Vector3 zaxis = Vector3::normalize(position - target);
-        Vector3 xaxis = Vector3::normalize(Vector3::cross(up, zaxis));
-        Vector3 yaxis = Vector3::cross(zaxis, xaxis);
-        return Matrix4x4(xaxis.x,
-                         xaxis.y,
-                         xaxis.z,
-                         -xaxis.dot(position),
-                         yaxis.x,
-                         yaxis.y,
-                         yaxis.z,
-                         -yaxis.dot(position),
-                         zaxis.x,
-                         zaxis.y,
-                         zaxis.z,
-                         -zaxis.dot(position),
-                         0,
-                         0,
-                         0,
-                         1);
+        Vector3 f = Vector3::normalize(center - eye);
+        Vector3 s = Vector3::normalize(Vector3::cross(f, up));
+        Vector3 u = Vector3::cross(s, f);
+
+        Matrix4x4 m = Identity;
+
+        m[0][0] = s.x;
+        m[0][1] = s.y;
+        m[0][2] = s.z;
+        m[1][0] = u.x;
+        m[1][1] = u.y;
+        m[1][2] = u.z;
+        m[2][0] = -f.x;
+        m[2][1] = -f.y;
+        m[2][2] = -f.z;
+        m[0][3] = -s.dot(eye);
+        m[1][3] = -u.dot(eye);
+        m[2][3] = f.dot(eye);
+
+        return m;
     }
 
     Matrix4x4 Matrix4x4::createView(const Vector3& position, const Quaternion& orientation) 
@@ -1338,16 +1410,6 @@ namespace Pilot
     }
 
     Matrix4x4 Matrix4x4::fromQuaternion(const Quaternion& quat) { return Matrix3x3::fromQuaternion(quat); }
-
-    Matrix4x4 Matrix4x4::fromYawPitchRoll(float yaw, float pitch, float roll)
-    {
-        return Matrix3x3::fromYawPitchRoll(yaw, pitch, roll);
-    }
-
-    Matrix4x4 Matrix4x4::fromYawPitchRoll(const Vector3& angles)
-    {
-        return fromYawPitchRoll(angles.y, angles.x, angles.z);
-    }
 
     Matrix4x4 Matrix4x4::lerp(const Matrix4x4& lhs, const Matrix4x4& rhs, float t)
     {
@@ -1490,32 +1552,58 @@ namespace Pilot
 
     float Quaternion::squaredLength() const { return x * x + y * y + z * z + w * w; }
 
-    Vector3 Quaternion::toEuler() const
+    Vector3 Quaternion::toTaitBryanAngles() const
     {
         const float xx = x * x;
         const float yy = y * y;
         const float zz = z * z;
 
+        const float m00 = 1.f - 2.f * yy - 2.f * zz;
+
+        const float m10 = 2 * x * y + 2 * w * z;
+        const float m11 = 1 - 2 * xx - 2 * zz;
+        const float m12 = 2 * y * z - 2 * w * x;
+
         const float m20 = 2.f * x * z - 2.f * y * w;
         const float m21 = 2.f * y * z + 2.f * x * w;
         const float m22 = 1.f - 2.f * xx - 2.f * yy;
 
-        const float cy = sqrtf(m22 * m22 + m20 * m20);
-        const float cx = atan2f(m21, cy);
-        if (cy > 16.f * FLT_EPSILON)
-        {
-            const float m01 = 2.f * x * y - 2.f * w * z;
-            const float m11 = 1.f - 2.f * xx - 2.f * zz;
+        float thetaX = 0; // phi
+        float thetaY = 0; // theta
+        float thetaZ = 0; // psi
 
-            return Vector3(cx, atan2f(-m20, m22), atan2f(-m01, m11));
-        }
-        else
+        if (m20 < 1)
         {
-            const float m00 = 1.f - 2.f * yy - 2.f * zz;
-            const float m02 = 2.f * x * z + 2.f * w * y;
-
-            return Vector3(cx, 0.f, atan2f(m02, m00));
+            if (m20 > -1)
+            {
+                thetaY = asinf(-m20);
+                thetaZ = atan2f(m10, m00);
+                thetaX = atan2f(m21, m22);
+            }
+            else // m[2][0] = -1
+            {
+                // Not a unique solution : thetaX − thetaZ = atan2(−r12 , r11)
+                thetaY = +Math_PI / 2;
+                thetaZ = -atan2f(-m12, m11);
+                thetaX = 0;
+            }
         }
+        else // m[2][0] = +1
+        {
+            // Not a unique solution : thetaX + thetaZ = atan2(−r12 , r11)
+            thetaY = -Math_PI / 2;
+            thetaZ = atan2f(-m12, m11);
+            thetaX = 0;
+        }
+
+        return Vector3(thetaX, thetaY, thetaZ);
+    }
+
+    Quaternion Quaternion::fromTaitBryanAngles(const Vector3& angles)
+    {
+        Matrix3x3 rotationMat = Matrix3x3::Identity;
+        rotationMat.fromTaitBryanAngles(angles);
+        return Quaternion::fromRotationMatrix(rotationMat);
     }
 
     Quaternion Quaternion::normalize(const Quaternion& q)
@@ -1545,20 +1633,6 @@ namespace Pilot
         float   s     = std::sin(angle * 0.5f);
         Vector3 uaxis = Vector3::normalize(axis);
         return Quaternion(uaxis.x * s, uaxis.y * s, uaxis.z * s, c);
-    }
-
-    Quaternion Quaternion::fromYawPitchRoll(float yaw, float pitch, float roll)
-    {
-        // https://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles
-        Quaternion qx = Quaternion(std::sin(pitch * 0.5f), 0, 0, std::cos(pitch * 0.5f));
-        Quaternion qy = Quaternion(0, std::sin(yaw * 0.5f), 0, std::cos(yaw * 0.5f));
-        Quaternion qz = Quaternion(0, 0, std::sin(roll * 0.5f), std::cos(roll * 0.5f));
-        return qz * qx * qy;
-    }
-
-    Quaternion Quaternion::fromYawPitchRoll(const Vector3& angles)
-    {
-        return fromYawPitchRoll(angles.y, angles.x, angles.z);
     }
 
     Quaternion Quaternion::fromRotationMatrix(const Matrix4x4& rotation)

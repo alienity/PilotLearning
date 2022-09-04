@@ -43,6 +43,7 @@ VertexOutput VSMain(VertexInput input)
 
 float4 PSMain(VertexOutput input) : SV_Target0
 {
-    return float4(1,0,0,1);
-    //return float4(input.texcoord.x, input.texcoord.y, 0, 1);
+    // return float4(1,0,0,1);
+    float2 testuv = sin(input.texcoord) * 0.5 + 0.5;
+    return float4(testuv.x, testuv.y, 0, 1);
 }
