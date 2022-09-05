@@ -87,10 +87,6 @@ namespace Pilot
                 degrees_val.y = Pilot::Radian(euler.y).valueDegrees();
                 degrees_val.z = Pilot::Radian(euler.z).valueDegrees();
 
-                //degrees_val.x = trans_ptr->m_rotation.getRoll(false).valueDegrees();
-                //degrees_val.y = trans_ptr->m_rotation.getPitch(false).valueDegrees();
-                //degrees_val.z = trans_ptr->m_rotation.getYaw(false).valueDegrees();
-
                 DrawVecControl("Position", trans_ptr->m_position);
                 DrawVecControl("Rotation", degrees_val);
                 DrawVecControl("Scale", trans_ptr->m_scale);
@@ -99,32 +95,6 @@ namespace Pilot
                                                   Math::degreesToRadians(degrees_val.y),
                                                   Math::degreesToRadians(degrees_val.z));
                 trans_ptr->m_rotation   = Pilot::Quaternion::fromTaitBryanAngles(newEuler);
-
-                //trans_ptr->m_rotation.w = Math::cos(Math::degreesToRadians(degrees_val.y / 2)) *
-                //                              Math::cos(Math::degreesToRadians(degrees_val.z / 2)) *
-                //                              Math::cos(Math::degreesToRadians(degrees_val.x / 2)) +
-                //                          Math::sin(Math::degreesToRadians(degrees_val.y / 2)) *
-                //                              Math::sin(Math::degreesToRadians(degrees_val.z / 2)) *
-                //                              Math::sin(Math::degreesToRadians(degrees_val.x / 2));
-                //trans_ptr->m_rotation.x = Math::sin(Math::degreesToRadians(degrees_val.y / 2)) *
-                //                              Math::cos(Math::degreesToRadians(degrees_val.z / 2)) *
-                //                              Math::cos(Math::degreesToRadians(degrees_val.x / 2)) -
-                //                          Math::cos(Math::degreesToRadians(degrees_val.y / 2)) *
-                //                              Math::sin(Math::degreesToRadians(degrees_val.z / 2)) *
-                //                              Math::sin(Math::degreesToRadians(degrees_val.x / 2));
-                //trans_ptr->m_rotation.y = Math::cos(Math::degreesToRadians(degrees_val.y / 2)) *
-                //                              Math::sin(Math::degreesToRadians(degrees_val.z / 2)) *
-                //                              Math::cos(Math::degreesToRadians(degrees_val.x / 2)) +
-                //                          Math::sin(Math::degreesToRadians(degrees_val.y / 2)) *
-                //                              Math::cos(Math::degreesToRadians(degrees_val.z / 2)) *
-                //                              Math::sin(Math::degreesToRadians(degrees_val.x / 2));
-                //trans_ptr->m_rotation.z = Math::cos(Math::degreesToRadians(degrees_val.y / 2)) *
-                //                              Math::cos(Math::degreesToRadians(degrees_val.z / 2)) *
-                //                              Math::sin(Math::degreesToRadians(degrees_val.x / 2)) -
-                //                          Math::sin(Math::degreesToRadians(degrees_val.y / 2)) *
-                //                              Math::sin(Math::degreesToRadians(degrees_val.z / 2)) *
-                //                              Math::cos(Math::degreesToRadians(degrees_val.x / 2));
-                //trans_ptr->m_rotation = Quaternion::normalize(trans_ptr->m_rotation);
 
                 g_editor_global_context.m_scene_manager->drawSelectedEntityAxis();
             }
@@ -282,7 +252,7 @@ namespace Pilot
         ImGui::SetNextWindowViewport(main_viewport->ID);
 
         ImGui::Begin("Editor menu", p_open, window_flags);
-        
+
         ImGuiID main_docking_id = ImGui::GetID("Main Docking");
         if (ImGui::DockBuilderGetNode(main_docking_id) == nullptr)
         {
@@ -314,7 +284,7 @@ namespace Pilot
         }
 
         ImGui::DockSpace(main_docking_id);
-        
+
         if (ImGui::BeginMenuBar())
         {
             if (ImGui::BeginMenu("Menu"))

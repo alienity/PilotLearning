@@ -36,7 +36,7 @@ namespace Pilot
         Quaternion pitch = Quaternion::fromAxisAngle(X, Radian(delta.x).valueRadians());
         Quaternion yaw   = Quaternion::fromAxisAngle(Y, Radian(delta.y).valueRadians());
 
-        m_rotation = pitch * yaw * m_rotation;
+        m_rotation = pitch * m_rotation * yaw;
 
         m_invRotation = Quaternion::conjugate(m_rotation);
     }
@@ -54,7 +54,7 @@ namespace Pilot
         // model rotation
         // maps vectors to camera space (x, y, z)
         Vector3 forward = Vector3::normalize(target - position);
-        m_rotation      = Quaternion::fromToRotation(forward, Vector3::Backward);
+        m_rotation      = Quaternion::fromToRotation(forward, Vector3::Forward);
 
         // correct the up vector
         // the cross product of non-orthogonal vectors is not normalized
