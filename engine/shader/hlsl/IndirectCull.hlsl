@@ -28,22 +28,17 @@ void CSMain(CSParams Params)
 		BoundingBox aabb;
         mesh.boundingBox.Transform(mesh.localToWorldMatrix, aabb);
 
-		//bool visible = FrustumContainsBoundingBox(g_ConstantBufferParams.Camera.Frustum, aabb) != CONTAINMENT_DISJOINT;
-		//if (visible)
-		//{
-		//	CommandSignatureParams command;
-		//	command.MeshIndex			 = index;
-		//	command.VertexBuffer		 = mesh.VertexBuffer;
-		//	command.IndexBuffer			 = mesh.IndexBuffer;
-		//	command.DrawIndexedArguments = mesh.DrawIndexedArguments;
-		//	g_CommandBuffer.Append(command);
-		//}
+		Frustum frustum = ExtractPlanesDX(g_ConstantBufferParams.cameraInstance.projViewMatrix);
 
-		CommandSignatureParams command;
-        command.MeshIndex            = index;
-        command.VertexBuffer         = mesh.vertexBuffer;
-        command.IndexBuffer          = mesh.indexBuffer;
-        command.DrawIndexedArguments = mesh.drawIndexedArguments;
-        g_CommandBuffer.Append(command);
+		bool visible = FrustumContainsBoundingBox(frustum, aabb) != CONTAINMENT_DISJOINT;
+		if (visible)
+		{
+			CommandSignatureParams command;
+			command.MeshIndex			 = index;
+            command.VertexBuffer         = mesh.vertexBuffer;
+            command.IndexBuffer          = mesh.indexBuffer;
+            command.DrawIndexedArguments = mesh.drawIndexedArguments;
+			g_CommandBuffer.Append(command);
+		}
 	}
 }

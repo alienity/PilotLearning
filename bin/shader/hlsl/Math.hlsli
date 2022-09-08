@@ -178,9 +178,11 @@ struct BoundingBox
 			   maxA.z >= minB.z && minA.z <= maxB.z;   // Overlap on z-axis?
 	}
 
+	// https://stackoverflow.com/questions/6053522/how-to-recalculate-axis-aligned-bounding-box-after-translate-rotate
 	void Transform(float4x4 m, inout BoundingBox b)
 	{
-		float3 t = m[3].xyz;
+		//float3 t = m[3].xyz;
+        float3 t = float3(m[0][3], m[1][3], m[2][3]);
 
 		b.Center  = t;
 		b.Extents = float3(0.0f, 0.0f, 0.0f);
@@ -329,4 +331,42 @@ int FrustumContainsBoundingBox(Frustum f, BoundingBox b)
 	}
 
 	return CONTAINMENT_INTERSECTS;
+}
+
+Frustum ExtractPlanesDX(const float4x4 mvp)
+{
+    Frustum frustum;
+
+	// Left clipping plane
+    frustum.Left.Normal.x = mvp[3][0] + mvp[0][0];
+    frustum.Left.Normal.y = mvp[3][1] + mvp[0][1];
+    frustum.Left.Normal.z = mvp[3][2] + mvp[0][2];
+    frustum.Left.Offset   = -(mvp[3][3] + mvp[0][3]);
+    // Right clipping plane
+    frustum.Right.Normal.x = mvp[3][0] - mvp[0][0];
+    frustum.Right.Normal.y = mvp[3][1] - mvp[0][1];
+    frustum.Right.Normal.z = mvp[3][2] - mvp[0][2];
+    frustum.Right.Offset   = -(mvp[3][3] - mvp[0][3]);
+    // Bottom clipping plane
+    frustum.Bottom.Normal.x = mvp[3][0] + mvp[1][0];
+    frustum.Bottom.Normal.y = mvp[3][1] + mvp[1][1];
+    frustum.Bottom.Normal.z = mvp[3][2] + mvp[1][2];
+    frustum.Bottom.Offset   = -(mvp[3][3] + mvp[1][3]);
+    // Top clipping plane
+    frustum.Top.Normal.x = mvp[3][0] - mvp[1][0];
+    frustum.Top.Normal.y = mvp[3][1] - mvp[1][1];
+    frustum.Top.Normal.z = mvp[3][2] - mvp[1][2];
+    frustum.Top.Offset   = -(mvp[3][3] - mvp[1][3]);
+    // Far clipping plane
+    frustum.Far.Normal.x = mvp[2][0];
+    frustum.Far.Normal.y = mvp[2][1];
+    frustum.Far.Normal.z = mvp[2][2];
+    frustum.Far.Offset   = -(mvp[2][3]);
+    // Near clipping plane
+    frustum.Near.Normal.x = mvp[3][0] - mvp[2][0];
+    frustum.Near.Normal.y = mvp[3][1] - mvp[2][1];
+    frustum.Near.Normal.z = mvp[3][2] - mvp[2][2];
+    frustum.Near.Offset   = -(mvp[3][3] - mvp[2][3]);
+
+	return frustum;
 }
