@@ -81,7 +81,7 @@ namespace Pilot
             auto genDefaultData = ([](bool isWhite) {
                 std::shared_ptr<TextureData> default_map = std::make_shared<TextureData>();
 
-                char val = isWhite ? 1 : 0;
+                char val = isWhite ? 255 : 0;
 
                 default_map->m_width              = 1;
                 default_map->m_height             = 1;
@@ -370,15 +370,15 @@ namespace Pilot
 
             D3D12PBRMaterial& now_material = res.first->second;
 
-            MeshPerMaterialUniformBufferObject material_uniform_buffer_info = {};
-            material_uniform_buffer_info.is_blend                           = entity.m_blend;
-            material_uniform_buffer_info.is_double_sided                    = entity.m_double_sided;
-            material_uniform_buffer_info.baseColorFactor                    = entity.m_base_color_factor;
-            material_uniform_buffer_info.metallicFactor                     = entity.m_metallic_factor;
-            material_uniform_buffer_info.roughnessFactor                    = entity.m_roughness_factor;
-            material_uniform_buffer_info.normalScale                        = entity.m_normal_scale;
-            material_uniform_buffer_info.occlusionStrength                  = entity.m_occlusion_strength;
-            material_uniform_buffer_info.emissiveFactor                     = entity.m_emissive_factor;
+            MeshPerMaterialUniformBufferObject material_uniform_buffer_info;
+            material_uniform_buffer_info.is_blend          = entity.m_blend;
+            material_uniform_buffer_info.is_double_sided   = entity.m_double_sided;
+            material_uniform_buffer_info.baseColorFactor   = GLMUtil::fromVec4(entity.m_base_color_factor);
+            material_uniform_buffer_info.metallicFactor    = entity.m_metallic_factor;
+            material_uniform_buffer_info.roughnessFactor   = entity.m_roughness_factor;
+            material_uniform_buffer_info.normalScale       = entity.m_normal_scale;
+            material_uniform_buffer_info.occlusionStrength = entity.m_occlusion_strength;
+            material_uniform_buffer_info.emissiveFactor    = GLMUtil::fromVec3(entity.m_emissive_factor);
 
             TextureDataToUpdate update_texture_data;
             update_texture_data.base_color_image_pixels         = base_color_image_pixels;
@@ -411,7 +411,7 @@ namespace Pilot
                                    buffer_size,
                                    buffer_size,
                                    now_material.material_uniform_buffer,
-                                   false,
+                                   true,
                                    now_material.material_uniform_buffer_view,
                                    false);
 
@@ -924,7 +924,7 @@ namespace Pilot
                                         buffer_stride,
                                         D3D12_HEAP_TYPE::D3D12_HEAP_TYPE_DEFAULT,
                                         D3D12_RESOURCE_FLAGS::D3D12_RESOURCE_FLAG_NONE,
-                                        D3D12_RESOURCE_STATE_COPY_DEST);
+                                        D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 
         uint32_t number_elements = buffer_size / buffer_stride;
 
@@ -940,22 +940,21 @@ namespace Pilot
         {
             resourceViewDesc.Format                     = DXGI_FORMAT::DXGI_FORMAT_R32_TYPELESS;
             resourceViewDesc.Buffer.FirstElement        = 0;
-            resourceViewDesc.Buffer.NumElements         = number_elements / 4;
+            resourceViewDesc.Buffer.NumElements         = buffer_size / 4;
             resourceViewDesc.Buffer.StructureByteStride = 0;
             resourceViewDesc.Buffer.Flags               = D3D12_BUFFER_SRV_FLAGS::D3D12_BUFFER_SRV_FLAG_RAW;
         }
 
         staticBuffer_view = RHI::D3D12ShaderResourceView(m_Device->GetLinkedDevice(), resourceViewDesc, &staticBuffer);
 
-        m_ResourceUpload->Transition(staticBuffer.GetResource(),
-                                     staticBuffer.GetResourceState().GetSubresourceState(0),
-                                     D3D12_RESOURCE_STATE_COPY_DEST);
+        D3D12_RESOURCE_STATES tex2d_ori_state = staticBuffer.GetResourceState().GetSubresourceState(0);
+
+        m_ResourceUpload->Transition(staticBuffer.GetResource(), tex2d_ori_state, D3D12_RESOURCE_STATE_COPY_DEST);
 
         D3D12_SUBRESOURCE_DATA resourceInitData = {buffer_data, buffer_size, buffer_size};
         m_ResourceUpload->Upload(staticBuffer.GetResource(), 0, &resourceInitData, 1);
 
-        m_ResourceUpload->Transition(
-            staticBuffer.GetResource(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+        m_ResourceUpload->Transition(staticBuffer.GetResource(), D3D12_RESOURCE_STATE_COPY_DEST, tex2d_ori_state);
 
         if (batch)
             this->endUploadBatch();
@@ -1005,8 +1004,6 @@ namespace Pilot
 
         tex2d_view = RHI::D3D12ShaderResourceView(m_Device->GetLinkedDevice(), resourceViewDesc, &tex2d);
 
-        size_t RowPitchBytes = width * D3D12RHIUtils::BytesPerPixel(format);
-
         D3D12_SUBRESOURCE_DATA resourceInitData;
         resourceInitData.pData      = pixels;
         resourceInitData.RowPitch   = resourceDesc.Width * D3D12RHIUtils::BytesPerPixel(format);
@@ -1014,17 +1011,27 @@ namespace Pilot
 
         D3D12_RESOURCE_STATES tex2d_ori_state = tex2d.GetResourceState().GetSubresourceState(0);
 
-        m_ResourceUpload->Transition(tex2d.GetResource(), tex2d_ori_state, D3D12_RESOURCE_STATE_COPY_DEST);
+        if (tex2d_ori_state != D3D12_RESOURCE_STATE_COPY_DEST)
+        {
+            m_ResourceUpload->Transition(tex2d.GetResource(), tex2d_ori_state, D3D12_RESOURCE_STATE_COPY_DEST);
+        }
 
         m_ResourceUpload->Upload(tex2d.GetResource(), 0, &resourceInitData, 1);
 
-        m_ResourceUpload->Transition(
-            tex2d.GetResource(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+        D3D12_RESOURCE_STATES currentState = D3D12_RESOURCE_STATE_COPY_DEST;
 
         if (genMips)
+        {
+            currentState = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+            m_ResourceUpload->Transition(
+                tex2d.GetResource(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
             m_ResourceUpload->GenerateMips(tex2d.GetResource());
+        }
 
-        m_ResourceUpload->Transition(tex2d.GetResource(), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, tex2d_ori_state);
+        if (currentState != tex2d_ori_state)
+        {
+            m_ResourceUpload->Transition(tex2d.GetResource(), currentState, tex2d_ori_state);
+        }
 
         if (batch)
             this->endUploadBatch();

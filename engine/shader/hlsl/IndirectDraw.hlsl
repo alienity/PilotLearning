@@ -45,18 +45,23 @@ VertexOutput VSMain(VertexInput input)
 
 // https://devblogs.microsoft.com/directx/hlsl-shader-model-6-6/
 // https://microsoft.github.io/DirectX-Specs/d3d/HLSL_ShaderModel6_6.html
+// https://devblogs.microsoft.com/directx/in-the-works-hlsl-shader-model-6-6/
 float4 PSMain(VertexOutput input) : SV_Target0
 {
     MeshInstance     mesh     = g_MeshesInstance[meshIndex];
     MaterialInstance material = g_MaterialsInstance[mesh.materialIndex];
 
+    // https://github.com/microsoft/DirectXShaderCompiler/issues/2193
+    ByteAddressBuffer matFactorsBuffer = ResourceDescriptorHeap[material.uniformBufferIndex];
+    float4 baseColorFactor = matFactorsBuffer.Load<float4>(0);
+
+    //ConstantBuffer<PerMaterialUniformBufferObject> matFactors = ResourceDescriptorHeap[material.uniformBufferIndex];
+
     Texture2D<float4> baseColorTex = ResourceDescriptorHeap[material.baseColorIndex];
 
     float4 baseColor = baseColorTex.Sample(defaultSampler, input.texcoord);
 
-    return baseColor;
+    baseColor = baseColor * baseColorFactor;
 
-    //// return float4(1,0,0,1);
-    //float2 testuv = sin(input.texcoord) * 0.5 + 0.5;
-    //return float4(testuv.x, testuv.y, 0, 1);
+    return float4(baseColor.rgb, 1);
 }

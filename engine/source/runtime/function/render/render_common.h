@@ -78,16 +78,16 @@ namespace Pilot
 
     struct MeshPerMaterialUniformBufferObject
     {
-        Vector4 baseColorFactor {0.0f, 0.0f, 0.0f, 0.0f};
+        glm::vec4 baseColorFactor {1.0f, 1.0f, 1.0f, 1.0f};
 
         float metallicFactor    = 0.0f;
-        float roughnessFactor   = 0.0f;
-        float normalScale       = 0.0f;
-        float occlusionStrength = 0.0f;
+        float roughnessFactor   = 1.0f;
+        float normalScale       = 1.0f;
+        float occlusionStrength = 1.0f;
 
-        Vector3  emissiveFactor  = {0.0f, 0.0f, 0.0f};
-        uint32_t is_blend        = 0;
-        uint32_t is_double_sided = 0;
+        glm::vec3 emissiveFactor  = {1.0f, 1.0f, 1.0f};
+        uint32_t  is_blend        = 0;
+        uint32_t  is_double_sided = 0;
 
         uint32_t _padding_uniform_1;
         uint32_t _padding_uniform_2;
