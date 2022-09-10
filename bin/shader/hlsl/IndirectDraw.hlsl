@@ -51,10 +51,13 @@ float4 PSMain(VertexOutput input) : SV_Target0
     MeshInstance     mesh     = g_MeshesInstance[meshIndex];
     MaterialInstance material = g_MaterialsInstance[mesh.materialIndex];
 
-    ByteAddressBuffer matFactorsBuffer = ResourceDescriptorHeap[material.uniformBufferIndex];
-    float4 baseColorFactor = matFactorsBuffer.Load<float4>(0);
+    //// https://github.com/microsoft/DirectXShaderCompiler/issues/2193
+    //ByteAddressBuffer matFactorsBuffer = ResourceDescriptorHeap[material.uniformBufferIndex];
+    //float4 baseColorFactor = matFactorsBuffer.Load<float4>(0);
 
-    //ConstantBuffer<PerMaterialUniformBufferObject> matFactors = ResourceDescriptorHeap[material.uniformBufferIndex];
+    // https://docs.microsoft.com/en-us/windows/win32/direct3d11/direct3d-11-advanced-stages-cs-resources
+    StructuredBuffer<PerMaterialUniformBufferObject> matFactors = ResourceDescriptorHeap[material.uniformBufferIndex];
+    float4 baseColorFactor = matFactors[0].baseColorFactor;
 
     Texture2D<float4> baseColorTex = ResourceDescriptorHeap[material.baseColorIndex];
 
