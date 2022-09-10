@@ -100,14 +100,18 @@ struct RootSignatures
                                                                          .AllowResourceDescriptorHeapIndexing()
                                                                          .AllowSampleDescriptorHeapIndexing()));
 
-		IndirectDraw =
-            Registry.CreateRootSignature(Device->CreateRootSignature(RHI::RootSignatureDesc()
-                                                                         .Add32BitConstants<0, 0>(1)
-                                                                         .AddConstantBufferView<1, 0>()
-                                                                         .AddShaderResourceView<0, 0>()
-                                                                         .AllowInputLayout()
-                                                                         .AllowResourceDescriptorHeapIndexing()
-                                                                         .AllowSampleDescriptorHeapIndexing()));
+		IndirectDraw = Registry.CreateRootSignature(Device->CreateRootSignature(
+            RHI::RootSignatureDesc()
+                .Add32BitConstants<0, 0>(1)
+                .AddConstantBufferView<1, 0>()
+                .AddShaderResourceView<0, 0>()
+                .AddShaderResourceView<1, 0>()
+                .AddSampler<10, 0>(D3D12_FILTER::D3D12_FILTER_ANISOTROPIC,
+                                  D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_WRAP,
+                                  8)
+                .AllowInputLayout()
+                .AllowResourceDescriptorHeapIndexing()
+                .AllowSampleDescriptorHeapIndexing()));
 
     }
 };

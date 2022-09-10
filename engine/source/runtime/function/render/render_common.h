@@ -88,6 +88,10 @@ namespace Pilot
         Vector3  emissiveFactor  = {0.0f, 0.0f, 0.0f};
         uint32_t is_blend        = 0;
         uint32_t is_double_sided = 0;
+
+        uint32_t _padding_uniform_1;
+        uint32_t _padding_uniform_2;
+        uint32_t _padding_uniform_3;
     };
 
     struct MeshPointLightShadowPerframeStorageBufferObject
@@ -343,6 +347,7 @@ namespace HLSL
         BoundingBox boundingBox;
 
         uint32_t materialIndex;
+
         uint32_t _padding_View0;
         uint32_t _padding_View1;
         uint32_t _padding_View2;
@@ -356,6 +361,9 @@ namespace HLSL
         uint32_t normalViewIndex;
         uint32_t occlusionViewIndex;
         uint32_t emissionViewIndex;
+
+        uint32_t _padding_material_1;
+        uint32_t _padding_material_2;
     };
 
     struct MeshPointLightShadowPerframeStorageBufferObject

@@ -9,7 +9,9 @@ ConstantBuffer<MeshPerframeStorageBufferObject> g_ConstantBufferParams : registe
 
 StructuredBuffer<MeshInstance> g_MeshesInstance : register(t0, space0);
 
-//StructuredBuffer<Material> g_Materials : register(t0, space0);
+StructuredBuffer<MaterialInstance> g_MaterialsInstance : register(t1, space0);
+
+SamplerState defaultSampler : register(s10);
 
 struct VertexInput
 {
@@ -41,9 +43,20 @@ VertexOutput VSMain(VertexInput input)
     return output;
 }
 
+// https://devblogs.microsoft.com/directx/hlsl-shader-model-6-6/
+// https://microsoft.github.io/DirectX-Specs/d3d/HLSL_ShaderModel6_6.html
 float4 PSMain(VertexOutput input) : SV_Target0
 {
-    // return float4(1,0,0,1);
-    float2 testuv = sin(input.texcoord) * 0.5 + 0.5;
-    return float4(testuv.x, testuv.y, 0, 1);
+    MeshInstance     mesh     = g_MeshesInstance[meshIndex];
+    MaterialInstance material = g_MaterialsInstance[mesh.materialIndex];
+
+    Texture2D<float4> baseColorTex = ResourceDescriptorHeap[material.baseColorIndex];
+
+    float4 baseColor = baseColorTex.Sample(defaultSampler, input.texcoord);
+
+    return baseColor;
+
+    //// return float4(1,0,0,1);
+    //float2 testuv = sin(input.texcoord) * 0.5 + 0.5;
+    //return float4(testuv.x, testuv.y, 0, 1);
 }

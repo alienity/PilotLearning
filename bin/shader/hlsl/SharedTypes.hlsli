@@ -5,6 +5,7 @@
 #define m_max_point_light_count 16
 
 // ==================== Material ====================
+/*
 struct Material
 {
 	uint   BSDFType;
@@ -26,6 +27,38 @@ struct Material
 
 	// Texture indices
 	int Albedo;
+};
+*/
+
+struct PerMaterialUniformBufferObject
+{
+    float4 baseColorFactor;
+
+    float metallicFactor;
+    float roughnessFactor;
+    float normalScale;
+    float occlusionStrength;
+
+    float3 emissiveFactor;
+    uint   is_blend;
+    uint   is_double_sided;
+
+    uint _padding_uniform_1;
+    uint _padding_uniform_2;
+    uint _padding_uniform_3;
+};
+
+struct MaterialInstance
+{
+    uint uniformBufferIndex;
+    uint baseColorIndex;
+    uint metallicRoughnessIndex;
+    uint normalIndex;
+    uint occlusionIndex;
+    uint emissionIndex;
+
+    uint _padding_material_1;
+    uint _padding_material_2;
 };
 
 // ==================== Light ====================

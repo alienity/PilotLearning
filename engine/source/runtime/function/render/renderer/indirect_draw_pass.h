@@ -22,6 +22,7 @@ namespace Pilot
 
             std::shared_ptr<RHI::D3D12Buffer> pPerframeBuffer;
             std::shared_ptr<RHI::D3D12Buffer> pMeshBuffer;
+            std::shared_ptr<RHI::D3D12Buffer> pMaterialBuffer;
 
             std::shared_ptr<RHI::D3D12Buffer> p_IndirectCommandBuffer;
         };

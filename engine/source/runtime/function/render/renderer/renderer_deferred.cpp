@@ -154,6 +154,7 @@ namespace Pilot
             mDrawIntputParams.commandBufferCounterOffset = commandBufferCounterOffset;
             mDrawIntputParams.pPerframeBuffer            = pPerframeBuffer;
             mDrawIntputParams.pMeshBuffer                = pMeshBuffer;
+            mDrawIntputParams.pMaterialBuffer            = pMaterialBuffer;
             mDrawIntputParams.p_IndirectCommandBuffer    = p_IndirectCommandBuffer;
 
             mDrawOutputParams.backBufColor = backBufColor;

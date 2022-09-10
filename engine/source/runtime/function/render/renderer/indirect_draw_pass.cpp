@@ -27,6 +27,7 @@ namespace Pilot
 
         std::shared_ptr<RHI::D3D12Buffer> pPerframeBuffer = drawPassInput->pPerframeBuffer;
         std::shared_ptr<RHI::D3D12Buffer> pMeshBuffer     = drawPassInput->pMeshBuffer;
+        std::shared_ptr<RHI::D3D12Buffer> pMaterialBuffer = drawPassInput->pMaterialBuffer;
 
         std::shared_ptr<RHI::D3D12Buffer> p_IndirectCommandBuffer = drawPassInput->p_IndirectCommandBuffer;
 
@@ -56,6 +57,7 @@ namespace Pilot
                 context.SetPipelineState(registry.GetPipelineState(PipelineStates::IndirectDraw));
                 context->SetGraphicsRootConstantBufferView(1, pPerframeBuffer->GetGpuVirtualAddress());
                 context->SetGraphicsRootShaderResourceView(2, pMeshBuffer->GetGpuVirtualAddress());
+                context->SetGraphicsRootShaderResourceView(3, pMaterialBuffer->GetGpuVirtualAddress());
 
                 RHI::D3D12DepthStencilView* depthStencilView =
                     registry.Get<RHI::D3D12DepthStencilView>(drawPassOutput->backBufDsv);
