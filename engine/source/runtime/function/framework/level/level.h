@@ -5,7 +5,8 @@
 #include <memory>
 #include <string>
 #include <unordered_map>
-#include <robin_hood.h>
+
+#include "runtime/core/base/robin_hood.h"
 
 namespace Pilot
 {

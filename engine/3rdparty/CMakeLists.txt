@@ -112,11 +112,6 @@ if(NOT TARGET DirectStorage)
     set_target_properties(DirectStorage PROPERTIES FOLDER ${third_party_folder}/DirectStorage)
 endif()
 
-if(NOT TARGET robin_hood_hashing)
-    include(robin_hood_hashing.cmake)
-    set_target_properties(robin_hood_hashing PROPERTIES FOLDER ${third_party_folder}/robin_hood_hashing)
-endif()
-
 if(NOT TARGET cityhash)
     include(cityhash.cmake)
     set_target_properties(cityhash PROPERTIES FOLDER ${third_party_folder}/cityhash)
