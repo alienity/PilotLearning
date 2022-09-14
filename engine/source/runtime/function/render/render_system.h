@@ -18,17 +18,11 @@ namespace Pilot
     class RenderCamera;
     class WindowUI;
 
+    struct EngineContentViewport;
+
     struct RenderSystemInitInfo
     {
         std::shared_ptr<WindowSystem> window_system;
-    };
-
-    struct EngineContentViewport
-    {
-        float x { 0.f};
-        float y { 0.f};
-        float width { 0.f};
-        float height { 0.f};
     };
 
     class RenderSystem
@@ -60,7 +54,6 @@ namespace Pilot
         void clearForLevelReloading();
 
     private:
-        
         RenderSwapContext m_swap_context;
 
         std::shared_ptr<RenderCamera>       m_render_camera;

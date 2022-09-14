@@ -16,6 +16,14 @@ namespace Pilot
     class RenderResourceBase;
     class Renderer;
 
+    struct EngineContentViewport
+    {
+        float x {0.f};
+        float y {0.f};
+        float width {0.f};
+        float height {0.f};
+    };
+
     struct RendererManagerInitInfo
     {
         RHI::DeviceOptions            Options;
@@ -77,7 +85,14 @@ namespace Pilot
 
         virtual void OnRender(RHI::D3D12CommandContext& Context);
 
-        [[nodiscard]] void* GetViewportPtr() const { return Viewport; }
+        virtual void OnResize() {}
+
+        EngineContentViewport GetViewPort() { return viewport; }
+
+        void SetViewPort(float offset_x, float offset_y, float width, float height)
+        {
+            viewport = {offset_x, offset_y, width, height};
+        }
 
     protected:
         RHI::D3D12Device*    device        = nullptr;
@@ -88,9 +103,8 @@ namespace Pilot
         RHI::RenderGraphAllocator renderGraphAllocator;
         RHI::RenderGraphRegistry  renderGraphRegistry;
 
-        size_t FrameIndex = 0;
-
-        void* Viewport = nullptr;
+        size_t frameIndex = 0;
+        EngineContentViewport viewport;
     };
 
 }

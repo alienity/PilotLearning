@@ -26,6 +26,8 @@
 
 #include <imgui.h>
 #include <imgui_internal.h>
+#include <backends/imgui_impl_dx12.h>
+#include <backends/imgui_impl_glfw.h>
 #include <stb_image.h>
 
 namespace Pilot
@@ -338,7 +340,10 @@ namespace Pilot
         std::shared_ptr<Level> current_active_level =
             g_runtime_global_context.m_world_manager->getCurrentActiveLevel().lock();
         if (current_active_level == nullptr)
+        {
+            ImGui::End();
             return;
+        }
 
         const LevelObjectsMap& all_gobjects = current_active_level->getAllGObjects();
         for (auto& id_object_pair : all_gobjects)
@@ -611,7 +616,8 @@ namespace Pilot
             glfwGetWindowContentScale(g_editor_global_context.m_window_system->getWindow(), &x_scale, &y_scale);
             float indent_scale = fmaxf(1.0f, fmaxf(x_scale, y_scale));
 #endif
-            indent_val = g_editor_global_context.m_input_manager->getEngineWindowSize().x - 100.0f * indent_scale;
+            //indent_val = g_editor_global_context.m_input_manager->getEngineWindowSize().x - 200.0f * indent_scale;
+            indent_val = ImGui::GetContentRegionMax().x - 150.0f * indent_scale;
 
             ImGui::Indent(indent_val);
             if (g_is_editor_mode)
@@ -674,11 +680,15 @@ namespace Pilot
                                                                                   new_window_size.x * dpi_scale,
                                                                                   new_window_size.y * dpi_scale);
 #else
+            //g_runtime_global_context.m_render_system->updateEngineContentViewport(
+            //    new_window_pos.x, new_window_pos.y, new_window_size.x, new_window_size.y);
             g_runtime_global_context.m_render_system->updateEngineContentViewport(
-                new_window_pos.x, new_window_pos.y, new_window_size.x, new_window_size.y);
+                0, 0, new_window_size.x, new_window_size.y);
 #endif
             g_editor_global_context.m_input_manager->setEngineWindowPos(new_window_pos);
             g_editor_global_context.m_input_manager->setEngineWindowSize(new_window_size);
+
+            //ImGui::Image();
         }
 
         ImGui::End();
@@ -813,7 +823,8 @@ namespace Pilot
         style.FrameBorderSize = 1.5f;
 
         // set imgui color style
-        setUIColorStyle();
+        //setUIColorStyle();
+        ImGui::StyleColorsDark();
 
         // setup window icon
         GLFWimage   window_icon[2];
@@ -893,7 +904,19 @@ namespace Pilot
         colors[ImGuiCol_ModalWindowDimBg]      = ImVec4(0.80f, 0.80f, 0.80f, 0.35f);
     }
 
-    void EditorUI::preRender() { showEditorUI(); }
+    void EditorUI::preRender()
+    {
+        // Start the Dear ImGui frame
+        ImGui_ImplDX12_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
+
+        showEditorUI();
+
+        // Rendering
+        ImGui::EndFrame();
+        ImGui::Render();
+    }
 
     void DrawVecControl(const std::string& label, Pilot::Vector3& values, float resetValue, float columnWidth)
     {

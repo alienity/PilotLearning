@@ -7,15 +7,15 @@
 
 namespace Pilot
 {
-    class IndirectDrawPass : public RenderPass
+    class IndirectShadowPass : public RenderPass
 	{
     public:
-        struct DrawPassInitInfo : public RenderPassInitInfo
+        struct ShadowPassInitInfo : public RenderPassInitInfo
         {
             RHI::RgTextureDesc depthBufferTexDesc;
         };
 
-        struct DrawInputParameters : public PassInput
+        struct ShadowInputParameters : public PassInput
         {
             uint32_t commandBufferCounterOffset;
 
@@ -26,23 +26,20 @@ namespace Pilot
             std::shared_ptr<RHI::D3D12Buffer> p_IndirectCommandBuffer;
         };
 
-        struct DrawOutputParameters : public PassOutput
+        struct ShadowOutputParameters : public PassOutput
         {
-            RHI::RgResourceHandle       backBufColor;
-            RHI::D3D12RenderTargetView* backBufRtv;
-
             RHI::RgResourceHandle backBufDepth;
             RHI::RgResourceHandle backBufDsv;
         };
 
     public:
-        ~IndirectDrawPass() { destroy(); }
+        ~IndirectShadowPass() { destroy(); }
 
-        void initialize(const DrawPassInitInfo& init_info);
+        void initialize(const ShadowPassInitInfo& init_info);
         void update(RHI::D3D12CommandContext& context,
                     RHI::RenderGraph&         graph,
-                    DrawInputParameters&      passInput,
-                    DrawOutputParameters&     passOutput);
+                    ShadowInputParameters&      passInput,
+                    ShadowOutputParameters&     passOutput);
         void destroy() override final;
 
     private:

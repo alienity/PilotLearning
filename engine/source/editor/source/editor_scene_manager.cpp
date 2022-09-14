@@ -49,7 +49,7 @@ namespace Pilot
     size_t EditorSceneManager::updateCursorOnAxis(Vector2 cursor_uv, Vector2 game_engine_window_size)
     {
 
-        float   camera_fov     = m_camera->getFovYDeprecated();
+        float   camera_fov     = m_camera->getFOVy();
         Vector3 camera_forward = m_camera->forward();
 
         Vector3 camera_up       = m_camera->up();

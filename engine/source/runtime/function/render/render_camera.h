@@ -56,7 +56,6 @@ namespace Pilot
         Matrix4x4 getViewMatrix();
         Matrix4x4 getPersProjMatrix() const;
         Matrix4x4 getLookAtMatrix() const { return Math::makeLookAtMatrix(position(), position() + forward(), up()); }
-        float     getFovYDeprecated() const { return m_fovy; }
 
     protected:
         float m_aspect {0.f};

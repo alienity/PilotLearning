@@ -17,14 +17,6 @@ namespace Pilot
 {
     void UIPass::initialize(const UIPassInitInfo& init_info)
     {
-        UIPassInitInfo* m_UIPassInitInfo = (UIPassInitInfo*)(&init_info);
-        initializeUIRenderBackend(m_UIPassInitInfo->window_ui);
-    }
-
-    void UIPass::initializeUIRenderBackend(WindowUI* window_ui)
-    {
-        m_window_ui = window_ui;
-
         pD3D12SRVDescriptor =
             std::make_shared<RHI::D3D12DynamicDescriptor<D3D12_SHADER_RESOURCE_VIEW_DESC>>(m_Device->GetLinkedDevice());
 
@@ -36,8 +28,6 @@ namespace Pilot
                             m_Device->GetLinkedDevice()->GetDescriptorHeap<D3D12_SHADER_RESOURCE_VIEW_DESC>(),
                             pD3D12SRVDescriptor->GetCpuHandle(),
                             pD3D12SRVDescriptor->GetGpuHandle());
-
-
     }
 
     void UIPass::update(RHI::D3D12CommandContext& context,
@@ -45,48 +35,29 @@ namespace Pilot
                         UIInputParameters&        passInput,
                         UIOutputParameters&       passOutput)
     {
-        UIInputParameters*  uiPassInput = (UIInputParameters*)(&passInput);
+        UIInputParameters*  uiPassInput  = (UIInputParameters*)(&passInput);
         UIOutputParameters* uiPassOutput = (UIOutputParameters*)(&passOutput);
 
-        RHI::RgResourceHandle       backBufColor  = uiPassOutput->backBufColor;
-        RHI::D3D12RenderTargetView* backBufRTV    = uiPassOutput->backBufRtv;
+        RHI::RgResourceHandle       backBufColor = uiPassOutput->backBufColor;
+        RHI::D3D12RenderTargetView* backBufRTV   = uiPassOutput->backBufRtv;
 
         graph.AddRenderPass("UIPass")
             .Write(&backBufColor)
             .Execute([=](RHI::RenderGraphRegistry& registry, RHI::D3D12CommandContext& context) {
-                RHI::D3D12Texture*  backBufTex    = registry.GetImportedResource(backBufColor);
-                D3D12_RESOURCE_DESC backBufDesc   = backBufTex->GetDesc();
-                int                 backBufWidth  = backBufDesc.Width;
-                int                 backBufHeight = backBufDesc.Height;
+                RHI::D3D12Texture*  backBufTex  = registry.GetImportedResource(backBufColor);
+                D3D12_RESOURCE_DESC backBufDesc = backBufTex->GetDesc();
 
-                draw(context, backBufRTV, backBufWidth, backBufHeight);
+                int backBufWidth  = backBufDesc.Width;
+                int backBufHeight = backBufDesc.Height;
+
+                RHIViewport viewport = {0.0f, 0.0f, (float)backBufWidth, (float)backBufHeight, 0.0f, 1.0f};
+
+                context.SetViewport(viewport);
+                context.SetScissorRect(RHIRect {0, 0, backBufWidth, backBufHeight});
+                context.SetRenderTarget(backBufRTV, nullptr);
+
+                ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), context.GetGraphicsCommandList());
             });
-    }
-
-    void UIPass::draw(RHI::D3D12CommandContext&   context,
-                      RHI::D3D12RenderTargetView* pRTV,
-                      int                         backBufWidth,
-                      int                         backBufHeight)
-    {
-        if (m_window_ui)
-        {
-            context.SetViewport(RHIViewport {0.0f, 0.0f, (float)backBufWidth, (float)backBufHeight, 0.0f, 1.0f});
-            context.SetScissorRect(RHIRect {0, 0, backBufWidth, backBufHeight});
-            context.SetRenderTarget(pRTV, nullptr);
-
-            // Start the Dear ImGui frame
-            ImGui_ImplDX12_NewFrame();
-            ImGui_ImplGlfw_NewFrame();
-            ImGui::NewFrame();
-
-            m_window_ui->preRender();
-
-            // Rendering
-            ImGui::EndFrame();
-            ImGui::Render();
-
-            ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), context.GetGraphicsCommandList());
-        }
     }
 
     void UIPass::destroy()

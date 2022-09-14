@@ -55,6 +55,7 @@ namespace Pilot
         float delta_time;
         while (true)
         {
+            m_editor_ui->preRender();
             delta_time = m_engine_runtime->calculateDeltaTime();
             g_editor_global_context.m_scene_manager->tick(delta_time);
             g_editor_global_context.m_input_manager->tick(delta_time);

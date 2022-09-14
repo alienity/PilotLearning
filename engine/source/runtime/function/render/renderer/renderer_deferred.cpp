@@ -93,7 +93,6 @@ namespace Pilot
         mUIPass = std::make_shared<UIPass>();
         mUIPass->setCommonInfo(renderPassCommonInfo);
         UIPass::UIPassInitInfo uiPassInitInfo;
-        uiPassInitInfo.window_ui = window_ui;
         mUIPass->initialize(uiPassInitInfo);
     }
 
@@ -150,7 +149,6 @@ namespace Pilot
         {
             IndirectDrawPass::DrawInputParameters  mDrawIntputParams;
             IndirectDrawPass::DrawOutputParameters mDrawOutputParams;
-            mDrawIntputParams.numMeshes = numMeshes;
             mDrawIntputParams.commandBufferCounterOffset = commandBufferCounterOffset;
             mDrawIntputParams.pPerframeBuffer            = pPerframeBuffer;
             mDrawIntputParams.pMeshBuffer                = pMeshBuffer;
