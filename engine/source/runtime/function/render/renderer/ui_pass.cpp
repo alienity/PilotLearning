@@ -17,6 +17,8 @@ namespace Pilot
 {
     void UIPass::initialize(const UIPassInitInfo& init_info)
     {
+        window_ui = init_info.window_ui;
+
         pD3D12SRVDescriptor =
             std::make_shared<RHI::D3D12DynamicDescriptor<D3D12_SHADER_RESOURCE_VIEW_DESC>>(m_Device->GetLinkedDevice());
 
@@ -38,14 +40,18 @@ namespace Pilot
         UIInputParameters*  uiPassInput  = (UIInputParameters*)(&passInput);
         UIOutputParameters* uiPassOutput = (UIOutputParameters*)(&passOutput);
 
-        RHI::RgResourceHandle       backBufColor = uiPassOutput->backBufColor;
-        RHI::D3D12RenderTargetView* backBufRTV   = uiPassOutput->backBufRtv;
+        RHI::RgResourceHandle backBufColorHandle    = uiPassOutput->backBufColorHandle;
+        RHI::RgResourceHandle backBufColorRTVHandle = uiPassOutput->backBufColorRTVHandle;
 
         graph.AddRenderPass("UIPass")
-            .Write(&backBufColor)
+            .Read(uiPassInput->renderTargetColorHandle)
+            .Write(&backBufColorHandle)
             .Execute([=](RHI::RenderGraphRegistry& registry, RHI::D3D12CommandContext& context) {
-                RHI::D3D12Texture*  backBufTex  = registry.GetImportedResource(backBufColor);
-                D3D12_RESOURCE_DESC backBufDesc = backBufTex->GetDesc();
+
+                RHI::D3D12Texture*          backBufColorTex = registry.GetD3D12Texture(backBufColorHandle);
+                RHI::D3D12RenderTargetView* backBufColorRTV = registry.GetD3D12RenderTargetView(backBufColorRTVHandle);
+
+                D3D12_RESOURCE_DESC backBufDesc = backBufColorTex->GetDesc();
 
                 int backBufWidth  = backBufDesc.Width;
                 int backBufHeight = backBufDesc.Height;
@@ -54,7 +60,9 @@ namespace Pilot
 
                 context.SetViewport(viewport);
                 context.SetScissorRect(RHIRect {0, 0, backBufWidth, backBufHeight});
-                context.SetRenderTarget(backBufRTV, nullptr);
+
+                context.ClearRenderTarget(backBufColorRTV, nullptr);
+                context.SetRenderTarget(backBufColorRTV, nullptr);
 
                 ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), context.GetGraphicsCommandList());
             });

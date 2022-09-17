@@ -43,9 +43,9 @@ namespace Pilot
         std::shared_ptr<RHI::D3D12Buffer> pMaterialBuffer;
         std::shared_ptr<RHI::D3D12Buffer> pMeshBuffer;
 
-        std::shared_ptr<RHI::D3D12ShaderResourceView> pPerframeBufferView;
-        std::shared_ptr<RHI::D3D12ShaderResourceView> pMaterialBufferView;
-        std::shared_ptr<RHI::D3D12ShaderResourceView> pMeshBufferView;
+        std::shared_ptr<RHI::D3D12Texture>            p_RenderTargetTex;
+        std::shared_ptr<RHI::D3D12ShaderResourceView> p_RenderTargetTexSRV;
+        std::shared_ptr<RHI::D3D12RenderTargetView>   p_RenderTargetTexRTV;
 
         uint32_t numPointLights = 0;
         uint32_t numMaterials   = 0;
@@ -56,8 +56,8 @@ namespace Pilot
             D3D12RHIUtils::AlignUp(totalCommandBufferSizeInBytes, D3D12_UAV_COUNTER_PLACEMENT_ALIGNMENT);
 
 	private:
-        WindowSystem* windowSystem;
-        int           ViewMode = 0;
+        WindowSystem*  windowSystem;
+        int            ViewMode = 0;
 	};
 
 

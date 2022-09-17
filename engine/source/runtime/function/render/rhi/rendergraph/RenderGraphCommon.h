@@ -410,6 +410,9 @@ namespace RHI
 	};
 } // namespace RHI
 
+#define GetRealVal(realType, renderGraphRegister, rgHandle)\
+    
+
 template<>
 struct std::hash<RHI::RgResourceHandle>
 {

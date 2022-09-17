@@ -19,6 +19,8 @@ namespace Pilot
         backBufferFormat  = backDesc.Format;
         depthBufferFormat = DXGI_FORMAT_D32_FLOAT;
 
+        SetViewPort(0, 0, backBufferWidth, backBufferHeight);
+
         std::shared_ptr<ConfigManager> config_manager = g_runtime_global_context.m_config_manager;
         const std::filesystem::path&   shaderRootPath = config_manager->getShaderFolder();
 
@@ -47,16 +49,27 @@ namespace Pilot
                                                              sizeof(HLSL::MeshPerframeStorageBufferObject),
                                                              D3D12_HEAP_TYPE_DEFAULT,
                                                              D3D12_RESOURCE_FLAG_NONE);
+        
         pMaterialBuffer = std::make_shared<RHI::D3D12Buffer>(device->GetLinkedDevice(),
                                                              sizeof(HLSL::MaterialInstance) * HLSL::MaterialLimit,
                                                              sizeof(HLSL::MaterialInstance),
                                                              D3D12_HEAP_TYPE_DEFAULT,
                                                              D3D12_RESOURCE_FLAG_NONE);
-        pMeshBuffer     = std::make_shared<RHI::D3D12Buffer>(device->GetLinkedDevice(),
+
+        pMeshBuffer = std::make_shared<RHI::D3D12Buffer>(device->GetLinkedDevice(),
                                                          sizeof(HLSL::MeshInstance) * HLSL::MeshLimit,
                                                          sizeof(HLSL::MeshInstance),
                                                          D3D12_HEAP_TYPE_DEFAULT,
                                                          D3D12_RESOURCE_FLAG_NONE);
+
+        CD3DX12_RESOURCE_DESC renderTargetBufferDesc = CD3DX12_RESOURCE_DESC::Tex2D(
+            backBufferFormat, viewport.width, viewport.height, 1, 1, 1, 0, D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET);
+        const FLOAT         renderTargetClearColor[4] = {0, 0, 0, 0};
+        CD3DX12_CLEAR_VALUE renderTargetClearValue    = CD3DX12_CLEAR_VALUE(backBufferFormat, renderTargetClearColor);
+
+        p_RenderTargetTex = std::make_shared<RHI::D3D12Texture>(device->GetLinkedDevice(), renderTargetBufferDesc, renderTargetClearValue);
+        p_RenderTargetTexSRV = std::make_shared<RHI::D3D12ShaderResourceView>(device->GetLinkedDevice(), p_RenderTargetTex.get(), false, std::nullopt, std::nullopt);
+        p_RenderTargetTexRTV = std::make_shared<RHI::D3D12RenderTargetView>(device->GetLinkedDevice(), p_RenderTargetTex.get());
 
     }
 
@@ -93,7 +106,10 @@ namespace Pilot
         mUIPass = std::make_shared<UIPass>();
         mUIPass->setCommonInfo(renderPassCommonInfo);
         UIPass::UIPassInitInfo uiPassInitInfo;
+        uiPassInitInfo.window_ui = window_ui;
         mUIPass->initialize(uiPassInitInfo);
+
+        window_ui->setGameView(p_RenderTargetTexSRV->GetGpuHandle());
     }
 
     void DeferredRenderer::PreparePassData(std::shared_ptr<RenderResourceBase> render_resource)
@@ -122,15 +138,21 @@ namespace Pilot
 
         RHI::D3D12SwapChainResource backBufferResource = swapChain->GetCurrentBackBufferResource();
 
-        auto backBufDesc   = backBufferResource.BackBuffer->GetDesc();
-        int  backBufWidth  = backBufDesc.Width;
-        int  backBufHeight = backBufDesc.Height;
-
         RHI::RenderGraph graph(renderGraphAllocator, renderGraphRegistry);
 
-        RHI::RgResourceHandle backBufColor = graph.Import(backBufferResource.BackBuffer);
+        RHI::RgResourceHandle backBufColorHandle    = graph.Import(backBufferResource.BackBuffer);
+        RHI::RgResourceHandle backBufColorRTVHandle = graph.Import(backBufferResource.RtView);
 
+        RHI::RgResourceHandle renderTargetColorHandle = graph.Import(p_RenderTargetTex.get());
+        RHI::RgResourceHandle renderTargetColorRTVHandle = graph.Import(p_RenderTargetTexRTV.get());
+
+
+        /*
         {
+            auto backBufDesc   = backBufferResource.BackBuffer->GetDesc();
+            int  backBufWidth  = backBufDesc.Width;
+            int  backBufHeight = backBufDesc.Height;
+
             graph.AddRenderPass("DisplayTest")
                 .Write(&backBufColor)
                 .Execute([=](RHI::RenderGraphRegistry& registry, RHI::D3D12CommandContext& context) {
@@ -144,19 +166,21 @@ namespace Pilot
                     context->DrawInstanced(3, 1, 0, 0);
                 });
         }
+        */
 
         if (mIndirectDrawPass != nullptr)
         {
             IndirectDrawPass::DrawInputParameters  mDrawIntputParams;
             IndirectDrawPass::DrawOutputParameters mDrawOutputParams;
+
             mDrawIntputParams.commandBufferCounterOffset = commandBufferCounterOffset;
             mDrawIntputParams.pPerframeBuffer            = pPerframeBuffer;
             mDrawIntputParams.pMeshBuffer                = pMeshBuffer;
             mDrawIntputParams.pMaterialBuffer            = pMaterialBuffer;
-            mDrawIntputParams.p_IndirectCommandBuffer    = p_IndirectCommandBuffer;
+            mDrawIntputParams.pIndirectCommandBuffer     = p_IndirectCommandBuffer;
 
-            mDrawOutputParams.backBufColor = backBufColor;
-            mDrawOutputParams.backBufRtv   = backBufferResource.RtView;
+            mDrawOutputParams.renderTargetColorHandle    = renderTargetColorHandle;
+            mDrawOutputParams.renderTargetColorRTVHandle = renderTargetColorRTVHandle;
 
             mIndirectDrawPass->update(context, graph, mDrawIntputParams, mDrawOutputParams);
         }
@@ -165,8 +189,12 @@ namespace Pilot
         {
             UIPass::UIInputParameters mUIIntputParams;
             UIPass::UIOutputParameters mUIOutputParams;
-            mUIOutputParams.backBufColor = backBufColor;
-            mUIOutputParams.backBufRtv   = backBufferResource.RtView;
+
+            mUIIntputParams.renderTargetColorHandle = renderTargetColorHandle;
+
+            mUIOutputParams.backBufColorHandle    = backBufColorHandle;
+            mUIOutputParams.backBufColorRTVHandle = backBufColorRTVHandle;
+
             mUIPass->update(context, graph, mUIIntputParams, mUIOutputParams);
         }
 

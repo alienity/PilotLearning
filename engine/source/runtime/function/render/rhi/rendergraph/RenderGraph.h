@@ -111,16 +111,17 @@ namespace RHI
         explicit RenderGraph(RenderGraphAllocator& Allocator, RenderGraphRegistry& Registry);
         ~RenderGraph();
 
-        // 每个对象也需要做区分，不然创建的view就会冲突
-        // TODO: Add support for other rg resource types
-        // Currently only support textures (mainly swapchain textures)
-        auto Import(D3D12Texture* Texture) -> RgResourceHandle
+        template<typename T>
+        auto Import(T* ToBeImported) -> RgResourceHandle
         {
-            RgResourceHandle Handle = {RgResourceType::Texture, RG_RESOURCE_FLAG_IMPORTED, 0, ImportedTextures.size()};
+            auto& ImportedContainer = GetImportedContainer<T>();
 
-            ImportedTextures.emplace_back(Texture);
+            RgResourceHandle Handle = {RgResourceTraits<T>::Enum, RG_RESOURCE_FLAG_IMPORTED, 0, ImportedContainer.size()};
+
+            ImportedContainer.emplace_back(ToBeImported);
             return Handle;
         }
+
 
         template<typename T>
         auto Create(const typename RgResourceTraits<T>::Desc& Desc) -> RgResourceHandle
@@ -194,13 +195,47 @@ namespace RHI
             }
         }
 
+        template<typename T>
+        [[nodiscard]] auto GetImportedContainer() -> std::vector<typename RgResourceTraits<T>::ApiType*>&
+        {
+            if constexpr (std::is_same_v<T, D3D12Buffer>)
+            {
+                return ImportedBuffers;
+            }
+            else if constexpr (std::is_same_v<T, D3D12Texture>)
+            {
+                return ImportedTextures;
+            }
+            else if constexpr (std::is_same_v<T, D3D12RenderTargetView>)
+            {
+                return ImportedRTVs;
+            }
+            else if constexpr (std::is_same_v<T, D3D12DepthStencilView>)
+            {
+                return ImportedDSVs;
+            }
+            else if constexpr (std::is_same_v<T, D3D12ShaderResourceView>)
+            {
+                return ImportedSRVs;
+            }
+            else if constexpr (std::is_same_v<T, D3D12UnorderedAccessView>)
+            {
+                return ImportedUAVs;
+            }
+        }
+
     private:
         friend class RenderGraphRegistry;
 
         RenderGraphAllocator& Allocator;
         RenderGraphRegistry&  Registry;
 
-        std::vector<D3D12Texture*> ImportedTextures;
+        std::vector<D3D12Buffer*>              ImportedBuffers;
+        std::vector<D3D12Texture*>             ImportedTextures;
+        std::vector<D3D12RenderTargetView*>    ImportedRTVs;
+        std::vector<D3D12DepthStencilView*>    ImportedDSVs;
+        std::vector<D3D12ShaderResourceView*>  ImportedSRVs;
+        std::vector<D3D12UnorderedAccessView*> ImportedUAVs;
 
         std::vector<RgBuffer>  Buffers;
         std::vector<RgTexture> Textures;

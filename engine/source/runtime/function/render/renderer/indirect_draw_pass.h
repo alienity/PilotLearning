@@ -23,16 +23,16 @@ namespace Pilot
             std::shared_ptr<RHI::D3D12Buffer> pMeshBuffer;
             std::shared_ptr<RHI::D3D12Buffer> pMaterialBuffer;
 
-            std::shared_ptr<RHI::D3D12Buffer> p_IndirectCommandBuffer;
+            std::shared_ptr<RHI::D3D12Buffer> pIndirectCommandBuffer;
         };
 
         struct DrawOutputParameters : public PassOutput
         {
-            RHI::RgResourceHandle       backBufColor;
-            RHI::D3D12RenderTargetView* backBufRtv;
+            RHI::RgResourceHandle renderTargetColorHandle;
+            RHI::RgResourceHandle renderTargetColorRTVHandle;
 
-            RHI::RgResourceHandle backBufDepth;
-            RHI::RgResourceHandle backBufDsv;
+            RHI::RgResourceHandle renderTargetDepthHandle;
+            RHI::RgResourceHandle renderTargetDepthDSVHandle;
         };
 
     public:

@@ -688,7 +688,7 @@ namespace Pilot
             g_editor_global_context.m_input_manager->setEngineWindowPos(new_window_pos);
             g_editor_global_context.m_input_manager->setEngineWindowSize(new_window_size);
 
-            //ImGui::Image();
+            ImGui::Image((ImTextureID)handleOfGameView.ptr, ImVec2(new_window_size.x, new_window_size.y));
         }
 
         ImGui::End();
@@ -916,6 +916,11 @@ namespace Pilot
         // Rendering
         ImGui::EndFrame();
         ImGui::Render();
+    }
+
+    void EditorUI::setGameView(D3D12_GPU_DESCRIPTOR_HANDLE handle)
+    {
+        handleOfGameView = handle;
     }
 
     void DrawVecControl(const std::string& label, Pilot::Vector3& values, float resetValue, float columnWidth)

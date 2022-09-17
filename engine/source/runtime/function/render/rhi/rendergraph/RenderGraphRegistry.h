@@ -3,7 +3,7 @@
 
 namespace RHI
 {
-	class RenderGraph;
+    class RenderGraph;
 
 	template<typename T, RgResourceType Type>
 	class RgRegistry
@@ -50,17 +50,25 @@ namespace RHI
 
 		void RealizeResources(RenderGraph* Graph, D3D12Device* Device);
 
-		D3D12Texture* GetImportedResource(RgResourceHandle Handle);
-
+		/*
 		template<typename T>
 		[[nodiscard]] auto Get(RgResourceHandle Handle) -> T*
 		{
-			auto& Container = GetContainer<T>();
-			assert(Handle.IsValid());
-			assert(Handle.Type == RgResourceTraits<T>::Enum);
-			assert(Handle.Id < Container.size());
-			return &Container[Handle.Id];
+            assert(Handle.IsValid());
+            assert(Handle.Type == RgResourceTraits<T>::Enum);
+            assert(!Handle.IsImported());
+            auto& Container = GetContainer<T>();
+            assert(Handle.Id < Container.size());
+            return &Container[Handle.Id];
 		}
+        */
+
+		D3D12Buffer*              GetD3D12Buffer(RgResourceHandle Handle);
+        D3D12Texture*             GetD3D12Texture(RgResourceHandle Handle);
+        D3D12RenderTargetView*    GetD3D12RenderTargetView(RgResourceHandle Handle);
+        D3D12DepthStencilView*    GetD3D12DepthStencilView(RgResourceHandle Handle);
+        D3D12ShaderResourceView*  GetD3D12ShaderResourceView(RgResourceHandle Handle);
+        D3D12UnorderedAccessView* GetD3D12UnorderedAccessView(RgResourceHandle Handle);
 
 	private:
 		template<typename T>

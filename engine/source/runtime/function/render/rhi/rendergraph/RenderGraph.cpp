@@ -69,15 +69,8 @@ namespace RHI
 				ReadState |= D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
 			}
 
-			D3D12Texture* Texture = nullptr;
-			if (Read.IsImported())
-			{
-                Texture = RenderGraph->GetRegistry().GetImportedResource(Read);
-			}
-			else
-			{
-                Texture = RenderGraph->GetRegistry().Get<D3D12Texture>(Read);
-			}
+			D3D12Texture* Texture = RenderGraph->GetRegistry().GetD3D12Texture(Read);
+
 			Context.TransitionBarrier(Texture, ReadState);
 		}
 		for (auto Write : Writes)
@@ -95,15 +88,8 @@ namespace RHI
 			{
 				WriteState |= D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
 			}
-            D3D12Texture* Texture = nullptr;
-			if (Write.IsImported())
-			{
-                Texture = RenderGraph->GetRegistry().GetImportedResource(Write);
-			}
-			else
-			{
-                Texture = RenderGraph->GetRegistry().Get<D3D12Texture>(Write);
-			}
+            D3D12Texture* Texture = RenderGraph->GetRegistry().GetD3D12Texture(Write);
+
 			Context.TransitionBarrier(Texture, WriteState);
 		}
 
@@ -212,18 +198,35 @@ namespace RHI
 	bool RenderGraph::AllowUnorderedAccess(RgResourceHandle Resource) const noexcept
 	{
 		assert(Resource.Type == RgResourceType::Buffer || Resource.Type == RgResourceType::Texture);
-        if (Resource.IsImported())
-        {
-            assert(Resource.Id < ImportedTextures.size());
-            auto TexDesc = ImportedTextures[Resource.Id]->GetDesc();
-            return TexDesc.Flags & D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
-        }
-        else
-        {
-            assert(Resource.Id < Textures.size());
-            // TODO: Buffer
-            return Textures[Resource.Id].Desc.AllowUnorderedAccess;
-        }
+        if (Resource.Type == RgResourceType::Texture)
+		{
+            if (Resource.IsImported())
+            {
+                assert(Resource.Id < ImportedTextures.size());
+                auto TexDesc = ImportedTextures[Resource.Id]->GetDesc();
+                return TexDesc.Flags & D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
+            }
+            else
+            {
+                assert(Resource.Id < Textures.size());
+                return Textures[Resource.Id].Desc.AllowUnorderedAccess;
+            }
+		}
+        else if (Resource.Type == RgResourceType::Buffer)
+		{
+            if (Resource.IsImported())
+            {
+                assert(Resource.Id < ImportedBuffers.size());
+                auto BufferDesc = ImportedBuffers[Resource.Id]->GetDesc();
+                return BufferDesc.Flags & D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
+            }
+            else
+            {
+                assert(Resource.Id < Buffers.size());
+                return Buffers[Resource.Id].Desc.UnorderedAccess;
+            }
+		}
+        return false;
 	}
 
 	void RenderGraph::Setup()
