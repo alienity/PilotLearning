@@ -120,11 +120,13 @@ namespace Pilot
         m_renderer_manager->InitUIRenderer(window_ui);
     }
 
+    /*
     void RenderSystem::updateEngineContentViewport(float offset_x, float offset_y, float width, float height)
     {
         m_renderer_manager->MoYuRenderer->SetViewPort(offset_x, offset_y, width, height);
         m_render_camera->setAspect(width / height);
     }
+    */
     
     EngineContentViewport RenderSystem::getEngineContentViewport() const
     {

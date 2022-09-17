@@ -109,7 +109,7 @@ namespace Pilot
         uiPassInitInfo.window_ui = window_ui;
         mUIPass->initialize(uiPassInitInfo);
 
-        window_ui->setGameView(p_RenderTargetTexSRV->GetGpuHandle());
+        window_ui->setGameView(p_RenderTargetTexSRV->GetGpuHandle(), backBufferWidth, backBufferHeight);
     }
 
     void DeferredRenderer::PreparePassData(std::shared_ptr<RenderResourceBase> render_resource)

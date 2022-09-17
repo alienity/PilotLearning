@@ -609,13 +609,10 @@ namespace Pilot
 
             float indent_val = 0.0f;
 
-#if defined(__GNUC__) && defined(__MACH__)
-            float indent_scale = 1.0f;
-#else // Not tested on Linux
             float x_scale, y_scale;
             glfwGetWindowContentScale(g_editor_global_context.m_window_system->getWindow(), &x_scale, &y_scale);
             float indent_scale = fmaxf(1.0f, fmaxf(x_scale, y_scale));
-#endif
+
             //indent_val = g_editor_global_context.m_input_manager->getEngineWindowSize().x - 200.0f * indent_scale;
             indent_val = ImGui::GetContentRegionMax().x - 150.0f * indent_scale;
 
@@ -648,17 +645,6 @@ namespace Pilot
             ImGui::EndMenuBar();
         }
 
-        if (!g_is_editor_mode)
-        {
-            ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Press Left Alt key to display the mouse cursor!");
-        }
-        else
-        {
-            ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f),
-                               "Current editor camera move speed: [%f]",
-                               g_editor_global_context.m_input_manager->getCameraSpeed());
-        }
-
         auto menu_bar_rect = ImGui::GetCurrentWindow()->MenuBarRect();
 
         Vector2 new_window_pos  = {0.0f, 0.0f};
@@ -670,25 +656,44 @@ namespace Pilot
 
         // if (new_window_pos != m_engine_window_pos || new_window_size != m_engine_window_size)
         {
-#if defined(__MACH__)
-            // The dpi_scale is not reactive to DPI changes or monitor switching, it might be a bug from ImGui.
-            // Return value from ImGui::GetMainViewport()->DpiScal is always the same as first frame.
-            // glfwGetMonitorContentScale and glfwSetWindowContentScaleCallback are more adaptive.
-            float dpi_scale = main_viewport->DpiScale;
-            g_runtime_global_context.m_render_system->updateEngineContentViewport(new_window_pos.x * dpi_scale,
-                                                                                  new_window_pos.y * dpi_scale,
-                                                                                  new_window_size.x * dpi_scale,
-                                                                                  new_window_size.y * dpi_scale);
-#else
+            // g_runtime_global_context.m_render_system->updateEngineContentViewport(
+            //     new_window_pos.x, new_window_pos.y, new_window_size.x, new_window_size.y);
             //g_runtime_global_context.m_render_system->updateEngineContentViewport(
-            //    new_window_pos.x, new_window_pos.y, new_window_size.x, new_window_size.y);
-            g_runtime_global_context.m_render_system->updateEngineContentViewport(
-                0, 0, new_window_size.x, new_window_size.y);
-#endif
+            //    0, 0, new_window_size.x, new_window_size.y);
+
             g_editor_global_context.m_input_manager->setEngineWindowPos(new_window_pos);
             g_editor_global_context.m_input_manager->setEngineWindowSize(new_window_size);
 
-            ImGui::Image((ImTextureID)handleOfGameView.ptr, ImVec2(new_window_size.x, new_window_size.y));
+            float displayWidth, displayHeight;
+
+            float windowAspect     = new_window_size.x / new_window_size.y;
+            float backbufferAspect = handleWidth / handleHeight;
+
+            if (backbufferAspect > windowAspect)
+            {
+                displayWidth = new_window_size.x;
+                displayHeight = new_window_size.x / backbufferAspect;
+            }
+            else
+            {
+                displayHeight = new_window_size.y;
+                displayWidth  = new_window_size.y * backbufferAspect;
+            }
+
+            ImGui::Image((ImTextureID)handleOfGameView.ptr, ImVec2(displayWidth, displayHeight));
+        }
+
+        ImGui::SameLine(0.5f);
+
+        if (!g_is_editor_mode)
+        {
+            ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 0.8f), "Press Left Alt key to display the mouse cursor!");
+        }
+        else
+        {
+            ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 0.8f),
+                               "Current editor camera move speed: [%f]",
+                               g_editor_global_context.m_input_manager->getCameraSpeed());
         }
 
         ImGui::End();
@@ -778,10 +783,7 @@ namespace Pilot
 
     inline void windowContentScaleUpdate(float scale)
     {
-#if defined(__GNUC__) && defined(__MACH__)
-        float font_scale               = fmaxf(1.0f, scale);
-        ImGui::GetIO().FontGlobalScale = 1.0f / font_scale;
-#endif
+
         // TOOD: Reload fonts if DPI scale is larger than previous font loading DPI scale
     }
 
@@ -918,8 +920,10 @@ namespace Pilot
         ImGui::Render();
     }
 
-    void EditorUI::setGameView(D3D12_GPU_DESCRIPTOR_HANDLE handle)
+    void EditorUI::setGameView(D3D12_GPU_DESCRIPTOR_HANDLE handle, uint32_t width, uint32_t height)
     {
+        handleWidth      = width;
+        handleHeight     = height;
         handleOfGameView = handle;
     }
 
