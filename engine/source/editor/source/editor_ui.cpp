@@ -345,6 +345,7 @@ namespace Pilot
             return;
         }
 
+        /*
         const LevelObjectsMap& all_gobjects = current_active_level->getAllGObjects();
         for (auto& id_object_pair : all_gobjects)
         {
@@ -368,6 +369,17 @@ namespace Pilot
                 }
             }
         }
+        */
+
+        const LevelObjectsMap& all_gobjects = current_active_level->getAllGObjects();
+        std::vector<GObjectID>& root_node_ids = current_active_level->m_current_root_nodes;
+        for (size_t i = 0; i < root_node_ids.size(); i++)
+        {
+            GObjectID cur_node_id = root_node_ids[i];
+            std::weak_ptr<GObject> cur_node_obj_weak = current_active_level->getGObjectByID(cur_node_id);
+            std::shared_ptr<GObject> cur_node_obj = cur_node_obj_weak.lock();
+            showEditorWorldObjectsRecursive(cur_node_obj);
+        }
 
         if (ImGui::BeginPopupContextWindow())
         {
@@ -385,12 +397,52 @@ namespace Pilot
                 location = 2;
             if (ImGui::MenuItem("Bottom-right", NULL, location == 3))
                 location = 3;
-            if (p_open && ImGui::MenuItem("Close"))
-                *p_open = false;
             ImGui::EndPopup();
         }
 
         ImGui::End();
+    }
+
+    void EditorUI::showEditorWorldObjectsRecursive(std::weak_ptr<GObject> object_weak_ptr)
+    {
+        ImGuiTreeNodeFlags node_flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_SpanAvailWidth;
+
+        std::shared_ptr<GObject> object    = object_weak_ptr.lock();
+        const GObjectID          object_id = object->getID();
+        const std::string        name      = object->getName();
+
+        if (g_editor_global_context.m_scene_manager->getSelectedObjectID() == object_id)
+            node_flags |= ImGuiTreeNodeFlags_Selected;
+
+        auto chilren_nodes = object->getChildren();
+
+        if (chilren_nodes.empty())
+            node_flags |= ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen;
+
+        bool node_open = ImGui::TreeNodeEx((void*)(intptr_t)object_id, node_flags, name.c_str());
+
+        if (ImGui::IsItemClicked() && !ImGui::IsItemToggledOpen())
+        {
+            if (g_editor_global_context.m_scene_manager->getSelectedObjectID() != object_id)
+            {
+                g_editor_global_context.m_scene_manager->onGObjectSelected(object_id);
+            }
+            else
+            {
+                g_editor_global_context.m_scene_manager->onGObjectSelected(k_invalid_gobject_id);
+            }
+        }
+
+        if (node_open)
+        {
+            for (size_t i = 0; i < chilren_nodes.size(); i++)
+            {
+                showEditorWorldObjectsRecursive(chilren_nodes[i]);
+            }
+            if (!chilren_nodes.empty())
+                ImGui::TreePop();
+        }
+
     }
 
     void EditorUI::createComponentUI(Reflection::ReflectionInstance& instance)

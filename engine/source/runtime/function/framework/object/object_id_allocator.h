@@ -5,9 +5,9 @@
 
 namespace Pilot
 {
-    using GObjectID = std::size_t;
+    using GObjectID = std::uint32_t;
 
-    constexpr GObjectID k_invalid_gobject_id = std::numeric_limits<std::size_t>::max();
+    constexpr GObjectID k_invalid_gobject_id = std::numeric_limits<std::uint32_t>::max();
 
     class ObjectIDAllocator
     {

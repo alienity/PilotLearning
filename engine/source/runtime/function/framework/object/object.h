@@ -22,6 +22,7 @@ namespace Pilot
 
     public:
         GObject() {}
+        GObject(std::shared_ptr<Level> level) : m_current_level(level) {}
         GObject(GObjectID id, std::shared_ptr<Level> level) : m_id(id), m_current_level(level) {}
         virtual ~GObject();
 
@@ -33,12 +34,12 @@ namespace Pilot
         void      setID(GObjectID id) { m_id = id; }
         GObjectID getID() const { return m_id; }
 
-        void setParent(std::weak_ptr<GObject> pParent, std::optional<std::uint32_t> sibling_index = std::nullopt);
+        void                   setParent(GObjectID parentID, std::optional<std::uint32_t> sibling_index = std::nullopt);
         std::weak_ptr<GObject> getParent() const;
         std::vector<std::weak_ptr<GObject>> getChildren() const;
 
-        void          setSiblingIndex(std::uint32_t sibling_index) { m_sibling_index = sibling_index; }
-        std::uint32_t getSiblingIndex() const { return m_sibling_index; }
+        void setSiblingIndex(int sibling_index) { m_sibling_index = sibling_index; }
+        int  getSiblingIndex() const { return m_sibling_index; }
 
         void               setName(std::string name) { m_name = name; }
         const std::string& getName() const { return m_name; }
@@ -78,9 +79,9 @@ namespace Pilot
 #define tryGetComponentConst(COMPONENT_TYPE) tryGetComponentConst<const COMPONENT_TYPE>(#COMPONENT_TYPE)
 
     protected:
-        GObjectID m_id {k_invalid_gobject_id};
-        GObjectID m_parent_id {k_invalid_gobject_id};
-        std::uint32_t m_sibling_index {0};
+        GObjectID              m_id {k_invalid_gobject_id};
+        GObjectID              m_parent_id {k_invalid_gobject_id};
+        std::uint32_t          m_sibling_index {0};
         std::vector<GObjectID> m_chilren_ids {};
 
         std::shared_ptr<Level> m_current_level;

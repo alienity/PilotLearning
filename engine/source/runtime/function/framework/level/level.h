@@ -37,9 +37,14 @@ namespace Pilot
         std::weak_ptr<GObject>   getGObjectByID(GObjectID go_id) const;
         std::weak_ptr<Character> getCurrentActiveCharacter() const { return m_current_active_character; }
 
-        std::weak_ptr<GObject> createObject(GObjectID parentID);
-        std::weak_ptr<GObject> instantiateObject(const ObjectInstanceRes& object_instance_res);
-        void      deleteGObjectByID(GObjectID go_id);
+        std::weak_ptr<GObject> createObject(GObjectID parentID = k_invalid_gobject_id);
+        std::weak_ptr<GObject> instantiateObject(ObjectInstanceRes& object_instance_res);
+
+        void moveGObjectByID(GObjectID from_id, GObjectID to_parent_id);
+        void deleteGObjectByID(GObjectID go_id);
+
+        // current root nodes
+        std::vector<GObjectID> m_current_root_nodes;
 
     protected:
         void clear();
@@ -51,8 +56,5 @@ namespace Pilot
         LevelObjectsMap m_gobjects;
 
         std::shared_ptr<Character> m_current_active_character;
-
-        // current root nodes
-        std::vector<GObjectID> m_current_root_nodes;
     };
 } // namespace Pilot

@@ -35,6 +35,8 @@ namespace Pilot
         try
         {
             gobject = std::make_shared<GObject>(object_id, shared_from_this());
+            gobject->setParent(parentID);
+
             m_gobjects.emplace(object_id, gobject);
             return std::weak_ptr<GObject>(gobject);
         }
@@ -45,15 +47,19 @@ namespace Pilot
         }
     }
 
-    std::weak_ptr<GObject> Level::instantiateObject(const ObjectInstanceRes& object_instance_res)
+    std::weak_ptr<GObject> Level::instantiateObject(ObjectInstanceRes& object_instance_res)
     {
         ASSERT(m_gobjects.find(object_instance_res.m_id) == m_gobjects.end());
 
-        std::shared_ptr<GObject> gobject = std::make_shared<GObject>();
+        std::shared_ptr<GObject> gobject = std::make_shared<GObject>(shared_from_this());
         
         bool is_loaded = gobject->load(object_instance_res);
         if (is_loaded)
         {
+            // add to the root nodes
+            if (object_instance_res.m_parent_id == k_invalid_gobject_id)
+                this->m_current_root_nodes.push_back(object_instance_res.m_id);
+
             m_gobjects.emplace(object_instance_res.m_id, gobject);
             return std::weak_ptr<GObject>(gobject);
         }
@@ -77,7 +83,7 @@ namespace Pilot
             return false;
         }
 
-        for (const ObjectInstanceRes& object_instance_res : level_res.m_objects)
+        for (ObjectInstanceRes& object_instance_res : level_res.m_objects)
         {
             instantiateObject(object_instance_res);
         }
@@ -174,6 +180,11 @@ namespace Pilot
         }
 
         return std::weak_ptr<GObject>();
+    }
+
+    void Level::moveGObjectByID(GObjectID from_id, GObjectID to_parent_id)
+    {
+
     }
 
     void Level::deleteGObjectByID(GObjectID go_id)

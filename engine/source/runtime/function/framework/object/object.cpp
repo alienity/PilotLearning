@@ -73,7 +73,6 @@ namespace Pilot
         m_chilren_ids.insert(
             m_chilren_ids.end(), object_instance_res.m_chilren_id.begin(), object_instance_res.m_chilren_id.end());
 
-
         // load object instanced components
         m_components = object_instance_res.m_instanced_components;
         for (auto component : m_components)
@@ -126,21 +125,29 @@ namespace Pilot
         out_object_instance_res.m_instanced_components = m_components;
     }
 
-    void GObject::setParent(std::weak_ptr<GObject> pParent, std::optional<std::uint32_t> sibling_index)
+    void GObject::setParent(GObjectID parentID, std::optional<std::uint32_t> sibling_index)
     {
-        if (!pParent.expired())
+        if (parentID == k_invalid_gobject_id)
         {
+            m_parent_id                     = k_invalid_gobject_id;
+            std::uint32_t root_nodes_count  = m_current_level->m_current_root_nodes.size();
+            std::uint32_t new_sibling_index = sibling_index.value_or(root_nodes_count);
+            assert(new_sibling_index >= 0 && new_sibling_index <= root_nodes_count + 1);
+            m_sibling_index = new_sibling_index;
+            m_current_level->m_current_root_nodes.insert(
+                m_current_level->m_current_root_nodes.begin() + new_sibling_index, m_id);
+        }
+        else
+        {
+            std::weak_ptr<GObject> pParent = m_current_level->getGObjectByID(m_parent_id);
+            ASSERT(!pParent.expired());
+
             std::shared_ptr<GObject> spParent = pParent.lock();
 
-            GObjectID parentID = spParent->m_id;
-            m_parent_id = parentID;
-
-            std::vector<GObjectID>& childrenIDs = spParent->m_chilren_ids;
-
-            size_t children_size = childrenIDs.size();
-            std::uint32_t new_sibling_index = sibling_index.value_or(children_size);
-            assert(new_sibling_index >= 0 && new_sibling_index <= children_size + 1);
-
+            std::vector<GObjectID>& childrenIDs          = spParent->m_chilren_ids;
+            size_t                  parent_chilren_count = childrenIDs.size();
+            std::uint32_t           new_sibling_index    = sibling_index.value_or(parent_chilren_count);
+            assert(new_sibling_index >= 0 && new_sibling_index <= parent_chilren_count + 1);
             m_sibling_index = new_sibling_index;
             childrenIDs.insert(childrenIDs.begin() + new_sibling_index, m_id);
         }
@@ -171,7 +178,6 @@ namespace Pilot
                 std::weak_ptr<GObject> m_child_obj = m_current_level->getGObjectByID(m_childID);
                 m_children.push_back(m_child_obj);
             }
-            return m_children;
         }
         return m_children;
     }

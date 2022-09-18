@@ -41,6 +41,8 @@ namespace Pilot
 
         void setUIColorStyle();
 
+        void showEditorWorldObjectsRecursive(std::weak_ptr<GObject> node_obj);
+
     public:
         virtual void initialize(WindowUIInitInfo init_info) override final;
         virtual void preRender() override final;
