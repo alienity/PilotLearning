@@ -9,16 +9,20 @@
 #include <string>
 #include <unordered_set>
 #include <vector>
+#include <optional>
 
 namespace Pilot
 {
+    class Level;
+
     /// GObject : Game Object base class
     class GObject : public std::enable_shared_from_this<GObject>
     {
         typedef std::unordered_set<std::string> TypeNameSet;
 
     public:
-        GObject(GObjectID id) : m_id {id} {}
+        GObject() {}
+        GObject(GObjectID id, std::shared_ptr<Level> level) : m_id(id), m_current_level(level) {}
         virtual ~GObject();
 
         virtual void tick(float delta_time);
@@ -26,7 +30,15 @@ namespace Pilot
         bool load(const ObjectInstanceRes& object_instance_res);
         void save(ObjectInstanceRes& out_object_instance_res);
 
+        void      setID(GObjectID id) { m_id = id; }
         GObjectID getID() const { return m_id; }
+
+        void setParent(std::weak_ptr<GObject> pParent, std::optional<std::uint32_t> sibling_index = std::nullopt);
+        std::weak_ptr<GObject> getParent() const;
+        std::vector<std::weak_ptr<GObject>> getChildren() const;
+
+        void          setSiblingIndex(std::uint32_t sibling_index) { m_sibling_index = sibling_index; }
+        std::uint32_t getSiblingIndex() const { return m_sibling_index; }
 
         void               setName(std::string name) { m_name = name; }
         const std::string& getName() const { return m_name; }
@@ -66,7 +78,13 @@ namespace Pilot
 #define tryGetComponentConst(COMPONENT_TYPE) tryGetComponentConst<const COMPONENT_TYPE>(#COMPONENT_TYPE)
 
     protected:
-        GObjectID   m_id {k_invalid_gobject_id};
+        GObjectID m_id {k_invalid_gobject_id};
+        GObjectID m_parent_id {k_invalid_gobject_id};
+        std::uint32_t m_sibling_index {0};
+        std::vector<GObjectID> m_chilren_ids {};
+
+        std::shared_ptr<Level> m_current_level;
+
         std::string m_name;
         std::string m_definition_url;
 

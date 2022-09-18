@@ -4,7 +4,7 @@
 
 namespace Pilot
 {
-    std::atomic<GObjectID> ObjectIDAllocator::m_next_id {0};
+    std::atomic<GObjectID> ObjectIDAllocator::m_next_id {1};
 
     GObjectID ObjectIDAllocator::alloc()
     {

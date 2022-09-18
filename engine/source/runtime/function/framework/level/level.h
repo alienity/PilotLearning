@@ -18,7 +18,7 @@ namespace Pilot
     using LevelObjectsMap = robin_hood::unordered_map<GObjectID, std::shared_ptr<GObject>>;
 
     /// The main class to manage all game objects
-    class Level
+    class Level : public std::enable_shared_from_this<Level>
     {
     public:
         virtual ~Level();
@@ -37,7 +37,8 @@ namespace Pilot
         std::weak_ptr<GObject>   getGObjectByID(GObjectID go_id) const;
         std::weak_ptr<Character> getCurrentActiveCharacter() const { return m_current_active_character; }
 
-        GObjectID createObject(const ObjectInstanceRes& object_instance_res);
+        std::weak_ptr<GObject> createObject(GObjectID parentID);
+        std::weak_ptr<GObject> instantiateObject(const ObjectInstanceRes& object_instance_res);
         void      deleteGObjectByID(GObjectID go_id);
 
     protected:
@@ -50,5 +51,8 @@ namespace Pilot
         LevelObjectsMap m_gobjects;
 
         std::shared_ptr<Character> m_current_active_character;
+
+        // current root nodes
+        std::vector<GObjectID> m_current_root_nodes;
     };
 } // namespace Pilot

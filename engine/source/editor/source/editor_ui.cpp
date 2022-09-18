@@ -368,6 +368,28 @@ namespace Pilot
                 }
             }
         }
+
+        if (ImGui::BeginPopupContextWindow())
+        {
+            int location = -1;
+
+            if (ImGui::MenuItem("Custom", NULL, location == -1))
+                location = -1;
+            if (ImGui::MenuItem("Center", NULL, location == -2))
+                location = -2;
+            if (ImGui::MenuItem("Top-left", NULL, location == 0))
+                location = 0;
+            if (ImGui::MenuItem("Top-right", NULL, location == 1))
+                location = 1;
+            if (ImGui::MenuItem("Bottom-left", NULL, location == 2))
+                location = 2;
+            if (ImGui::MenuItem("Bottom-right", NULL, location == 3))
+                location = 3;
+            if (p_open && ImGui::MenuItem("Close"))
+                *p_open = false;
+            ImGui::EndPopup();
+        }
+
         ImGui::End();
     }
 
@@ -749,7 +771,7 @@ namespace Pilot
                                   ImGuiTreeNodeFlags_SpanFullWidth);
             if (ImGui::IsItemClicked() && !ImGui::IsItemToggledOpen())
             {
-                onFileContentItemClicked(node);
+                //onFileContentItemClicked(node);
             }
             ImGui::TableNextColumn();
             ImGui::SetNextItemWidth(100.0f);
@@ -757,6 +779,7 @@ namespace Pilot
         }
     }
 
+    /*
     void EditorUI::onFileContentItemClicked(EditorFileNode* node)
     {
         if (node->m_file_type != "object")
@@ -774,12 +797,16 @@ namespace Pilot
         new_object_instance_res.m_definition =
             g_runtime_global_context.m_asset_manager->getFullPath(node->m_file_path).generic_string();
 
-        size_t new_gobject_id = level->createObject(new_object_instance_res);
+        std::weak_ptr<GObject>   new_gobject_weak   = level->instantiateObject(new_object_instance_res);
+        std::shared_ptr<GObject> new_gobject_shared = new_gobject_weak.lock();
+        size_t                   new_gobject_id     = new_gobject_shared->getID();
+
         if (new_gobject_id != k_invalid_gobject_id)
         {
             g_editor_global_context.m_scene_manager->onGObjectSelected(new_gobject_id);
         }
     }
+    */
 
     inline void windowContentScaleUpdate(float scale)
     {

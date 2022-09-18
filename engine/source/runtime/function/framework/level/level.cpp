@@ -18,35 +18,50 @@ namespace Pilot
     void Level::clear()
     {
         m_current_active_character.reset();
+        m_current_root_nodes.clear();
         m_gobjects.clear();
     }
 
-    GObjectID Level::createObject(const ObjectInstanceRes& object_instance_res)
+    std::weak_ptr<GObject> Level::createObject(GObjectID parentID)
     {
         GObjectID object_id = ObjectIDAllocator::alloc();
+        while (m_gobjects.find(object_id) != m_gobjects.end())
+        {
+            object_id = ObjectIDAllocator::alloc();
+        }
         ASSERT(object_id != k_invalid_gobject_id);
 
         std::shared_ptr<GObject> gobject;
         try
         {
-            gobject = std::make_shared<GObject>(object_id);
+            gobject = std::make_shared<GObject>(object_id, shared_from_this());
+            m_gobjects.emplace(object_id, gobject);
+            return std::weak_ptr<GObject>(gobject);
         }
         catch (const std::bad_alloc&)
         {
             LOG_FATAL("cannot allocate memory for new gobject");
+            return std::weak_ptr<GObject>();
         }
+    }
 
+    std::weak_ptr<GObject> Level::instantiateObject(const ObjectInstanceRes& object_instance_res)
+    {
+        ASSERT(m_gobjects.find(object_instance_res.m_id) == m_gobjects.end());
+
+        std::shared_ptr<GObject> gobject = std::make_shared<GObject>();
+        
         bool is_loaded = gobject->load(object_instance_res);
         if (is_loaded)
         {
-            m_gobjects.emplace(object_id, gobject);
+            m_gobjects.emplace(object_instance_res.m_id, gobject);
+            return std::weak_ptr<GObject>(gobject);
         }
         else
         {
             LOG_ERROR("loading object " + object_instance_res.m_name + " failed");
-            return k_invalid_gobject_id;
+            return std::weak_ptr<GObject>();
         }
-        return object_id;
     }
 
     bool Level::load(const std::string& level_res_url)
@@ -64,7 +79,7 @@ namespace Pilot
 
         for (const ObjectInstanceRes& object_instance_res : level_res.m_objects)
         {
-            createObject(object_instance_res);
+            instantiateObject(object_instance_res);
         }
 
         // create active character

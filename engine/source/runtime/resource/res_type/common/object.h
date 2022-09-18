@@ -34,8 +34,14 @@ namespace Pilot
         REFLECTION_BODY(ObjectInstanceRes);
 
     public:
-        std::string              m_name;
-        std::string              m_definition;
+        std::string  m_name;
+        std::string  m_definition;
+        
+        std::uint32_t              m_id;
+        std::uint32_t              m_parent_id;
+        std::uint32_t              m_sibling_index;
+        std::vector<std::uint32_t> m_chilren_id;
+
 
         std::vector<Reflection::ReflectionPtr<Component>> m_instanced_components;
     };
