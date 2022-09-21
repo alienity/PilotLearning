@@ -371,20 +371,33 @@ namespace Pilot
         }
         */
 
-        const LevelObjectsMap& all_gobjects = current_active_level->getAllGObjects();
-        std::vector<GObjectID>& root_node_ids = current_active_level->m_current_root_nodes;
-        for (size_t i = 0; i < root_node_ids.size(); i++)
+        std::weak_ptr<GObject> root_node_weak_ptr = current_active_level->getRootNode();
+        if (!root_node_weak_ptr.expired())
         {
-            GObjectID cur_node_id = root_node_ids[i];
-            std::weak_ptr<GObject> cur_node_obj_weak = current_active_level->getGObjectByID(cur_node_id);
-            std::shared_ptr<GObject> cur_node_obj = cur_node_obj_weak.lock();
-            showEditorWorldObjectsRecursive(cur_node_obj);
+            std::shared_ptr<GObject> root_node_shared_ptr = root_node_weak_ptr.lock();
+            std::vector<std::weak_ptr<GObject>> root_children = root_node_shared_ptr->getChildren();
+            for (size_t i = 0; i < root_children.size(); i++)
+            {
+                std::weak_ptr<GObject> root_child = root_children[i];
+                showEditorWorldObjectsRecursive(root_child);
+            }
         }
 
         if (ImGui::BeginPopupContextWindow())
         {
-            int location = -1;
+            GObjectID selectedId = g_editor_global_context.m_scene_manager->getSelectedObjectID();
+            if (ImGui::MenuItem(" Create Node "))
+            {
+                GObjectID newParentID = selectedId == k_invalid_gobject_id ? k_root_gobject_id : selectedId;
+                current_active_level->createGObject("New Node", newParentID);
+            }
+            if (ImGui::MenuItem(" Delete Node "))
+            {
+                current_active_level->deleteGObject(g_editor_global_context.m_scene_manager->getSelectedObjectID());
+            }
 
+            /*
+            int location = -1;
             if (ImGui::MenuItem("Custom", NULL, location == -1))
                 location = -1;
             if (ImGui::MenuItem("Center", NULL, location == -2))
@@ -397,6 +410,7 @@ namespace Pilot
                 location = 2;
             if (ImGui::MenuItem("Bottom-right", NULL, location == 3))
                 location = 3;
+            */
             ImGui::EndPopup();
         }
 

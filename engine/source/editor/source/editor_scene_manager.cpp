@@ -293,7 +293,7 @@ namespace Pilot
             if (current_active_level == nullptr)
                 return;
 
-            current_active_level->deleteGObjectByID(m_selected_gobject_id);
+            current_active_level->deleteGObject(m_selected_gobject_id);
 
             RenderSwapContext& swap_context = g_editor_global_context.m_render_system->getSwapContext();
             swap_context.getLogicSwapData().addDeleteGameObject(GameObjectDesc {selected_object->getID(), {}});

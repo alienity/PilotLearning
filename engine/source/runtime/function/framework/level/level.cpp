@@ -9,65 +9,93 @@
 #include "runtime/function/character/character.h"
 #include "runtime/function/framework/object/object.h"
 
+#include "runtime/function/framework/component/transform/transform_component.h"
+
 #include <limits>
+#include <algorithm>
 
 namespace Pilot
 {
+    Level::Level() { init(); }
+
     Level::~Level() { clear(); }
+
+    void Level::init() {}
 
     void Level::clear()
     {
         m_current_active_character.reset();
-        m_current_root_nodes.clear();
+        m_root_object.reset();
         m_gobjects.clear();
     }
 
-    std::weak_ptr<GObject> Level::createObject(GObjectID parentID)
+    void Level::resortChildrenSiblingIndex(GObjectID objectID)
     {
-        GObjectID object_id = ObjectIDAllocator::alloc();
-        while (m_gobjects.find(object_id) != m_gobjects.end())
-        {
-            object_id = ObjectIDAllocator::alloc();
-        }
-        ASSERT(object_id != k_invalid_gobject_id);
-
-        std::shared_ptr<GObject> gobject;
-        try
-        {
-            gobject = std::make_shared<GObject>(object_id, shared_from_this());
-            gobject->setParent(parentID);
-
-            m_gobjects.emplace(object_id, gobject);
-            return std::weak_ptr<GObject>(gobject);
-        }
-        catch (const std::bad_alloc&)
-        {
-            LOG_FATAL("cannot allocate memory for new gobject");
-            return std::weak_ptr<GObject>();
-        }
+        std::shared_ptr<GObject> gObjectPtr = m_gobjects[objectID];
+        std::vector<GObjectID> mChildrenId = gObjectPtr->m_chilren_id;
+        for (size_t i = 0; i < mChildrenId.size(); i++)
+            m_gobjects[mChildrenId[i]]->m_sibling_index = i;
     }
 
-    std::weak_ptr<GObject> Level::instantiateObject(ObjectInstanceRes& object_instance_res)
+    std::weak_ptr<GObject> Level::createGObject(std::string nodeName, GObjectID parentID)
+    {
+        GObjectID objectID = ObjectIDAllocator::alloc();
+        while (m_gobjects.find(objectID) != m_gobjects.end())
+        {
+            objectID = ObjectIDAllocator::alloc();
+        }
+        return createGObject(nodeName, objectID, parentID);
+    }
+
+    std::weak_ptr<GObject> Level::createGObject(std::string nodeName, GObjectID objectID, GObjectID parentID)
+    {
+        auto objectInterator = m_gobjects.find(objectID);
+        if (objectInterator != m_gobjects.end())
+        {
+            LOG_INFO("{} has been created!!!", nodeName);
+            std::shared_ptr<GObject> objectPtr = objectInterator->second;
+            return std::weak_ptr<GObject>(objectPtr);
+        }
+
+        ASSERT(((objectID == k_root_gobject_id) && (parentID == k_invalid_gobject_id)) ||
+               (parentID != k_invalid_gobject_id));
+
+        std::shared_ptr<GObject> gobject = std::make_shared<GObject>(objectID, shared_from_this());
+
+        gobject->m_name      = nodeName;
+        gobject->m_id        = objectID;
+        gobject->m_parent_id = parentID;
+
+        if (parentID != k_invalid_gobject_id)
+        {
+            auto parentIter = m_gobjects.find(parentID);
+            ASSERT(parentIter != m_gobjects.end());
+            std::shared_ptr<GObject> parentObject = parentIter->second;
+            parentObject->m_chilren_id.push_back(objectID);
+            gobject->m_sibling_index = parentObject->m_chilren_id.size() - 1;
+        }
+
+        auto new_transform_component = PILOT_REFLECTION_NEW(TransformComponent);
+        gobject->tryAddComponent(new_transform_component);
+
+        m_gobjects.emplace(objectID, gobject);
+
+        if (gobject->m_id == k_root_gobject_id)
+            m_root_object = gobject;
+
+        return std::weak_ptr<GObject>(gobject);
+    }
+
+    std::weak_ptr<GObject> Level::instantiateGObject(ObjectInstanceRes& object_instance_res)
     {
         ASSERT(m_gobjects.find(object_instance_res.m_id) == m_gobjects.end());
 
         std::shared_ptr<GObject> gobject = std::make_shared<GObject>(shared_from_this());
+        gobject->load(object_instance_res);
         
-        bool is_loaded = gobject->load(object_instance_res);
-        if (is_loaded)
-        {
-            // add to the root nodes
-            if (object_instance_res.m_parent_id == k_invalid_gobject_id)
-                this->m_current_root_nodes.push_back(object_instance_res.m_id);
+        m_gobjects.emplace(object_instance_res.m_id, gobject);
 
-            m_gobjects.emplace(object_instance_res.m_id, gobject);
-            return std::weak_ptr<GObject>(gobject);
-        }
-        else
-        {
-            LOG_ERROR("loading object " + object_instance_res.m_name + " failed");
-            return std::weak_ptr<GObject>();
-        }
+        return std::weak_ptr<GObject>(gobject);
     }
 
     bool Level::load(const std::string& level_res_url)
@@ -85,7 +113,14 @@ namespace Pilot
 
         for (ObjectInstanceRes& object_instance_res : level_res.m_objects)
         {
-            instantiateObject(object_instance_res);
+            std::weak_ptr<GObject> object_weak_ptr = instantiateGObject(object_instance_res);
+            if (object_weak_ptr.lock()->isRootNode())
+                m_root_object = object_weak_ptr;
+        }
+
+        if (m_root_object.expired())
+        {
+            m_root_object = createGObject("Root Node", k_root_gobject_id, k_invalid_gobject_id);
         }
 
         // create active character
@@ -182,27 +217,68 @@ namespace Pilot
         return std::weak_ptr<GObject>();
     }
 
-    void Level::moveGObjectByID(GObjectID from_id, GObjectID to_parent_id)
+    void Level::deleteGObject(GObjectID go_id)
     {
+        if (go_id == k_root_gobject_id || go_id == k_invalid_gobject_id)
+            return;
 
+        //auto iter = m_gobjects.find(go_id);
+        //ASSERT(iter != m_gobjects.end());
+        //std::shared_ptr<GObject> current_object = iter->second;
+        std::shared_ptr<GObject> current_object = m_gobjects[go_id];
+
+        // resursive delete child
+        std::vector<GObjectID> cur_obj_children_id = current_object->m_chilren_id;
+        for (size_t i = 0; i < cur_obj_children_id.size(); i++)
+            deleteGObject(cur_obj_children_id[i]);
+
+        //auto parentIter = m_gobjects.find(current_object->m_parent_id);
+        //ASSERT(parentIter != m_gobjects.end());
+        //std::shared_ptr<GObject> parentObject = parentIter->second;
+        std::shared_ptr<GObject> parentObject = m_gobjects[current_object->m_parent_id];
+
+        std::vector<std::uint32_t>& parent_children_id = parentObject->m_chilren_id;
+        
+        auto cur_obj_in_parent_iner = std::find(parent_children_id.begin(), parent_children_id.end(), go_id);
+        ASSERT(cur_obj_in_parent_iner != parent_children_id.end());
+        parent_children_id.erase(cur_obj_in_parent_iner);
+
+        resortChildrenSiblingIndex(parentObject->m_id);
     }
 
-    void Level::deleteGObjectByID(GObjectID go_id)
+    void Level::changeParent(GObjectID from_id, GObjectID to_parent_id, std::optional<std::uint32_t> sibling_index)
     {
-        auto iter = m_gobjects.find(go_id);
-        if (iter != m_gobjects.end())
-        {
-            std::shared_ptr<GObject> object = iter->second;
-            if (object)
-            {
-                if (m_current_active_character && m_current_active_character->getObjectID() == object->getID())
-                {
-                    m_current_active_character->setObject(nullptr);
-                }
-            }
-        }
+        ASSERT((from_id != k_root_gobject_id) && (from_id != k_invalid_gobject_id) &&
+               (to_parent_id != k_invalid_gobject_id));
 
-        m_gobjects.erase(go_id);
+        std::shared_ptr<GObject> mObjectPtr  = m_gobjects[from_id];
+        std::shared_ptr<GObject> mParentPtr  = m_gobjects[mObjectPtr->m_parent_id];
+        std::shared_ptr<GObject> toParentPtr = m_gobjects[to_parent_id];
+
+        if (mObjectPtr->m_parent_id != to_parent_id)
+        {
+            std::vector<GObjectID>& mParentChildrenID = mParentPtr->m_chilren_id;
+            auto from_obj_in_parent_iter = std::find(mParentChildrenID.begin(), mParentChildrenID.end(), from_id);
+            mParentChildrenID.erase(from_obj_in_parent_iter);
+            resortChildrenSiblingIndex(mParentPtr->m_id);
+
+            std::uint32_t new_sibling_index = sibling_index.value_or(toParentPtr->m_chilren_id.size());
+            toParentPtr->m_chilren_id.insert(toParentPtr->m_chilren_id.begin() + new_sibling_index, from_id);
+            resortChildrenSiblingIndex(toParentPtr->m_id);
+        }
+        else
+        {
+            std::vector<GObjectID>& mParentChildrenID = mParentPtr->m_chilren_id;
+
+            std::uint32_t from_sibling_index = mObjectPtr->m_sibling_index;
+            std::uint32_t to_sibling_index   = sibling_index.value_or(toParentPtr->m_chilren_id.size() - 1);
+
+            GObjectID _tmp                        = mParentChildrenID[from_sibling_index];
+            mParentChildrenID[from_sibling_index] = mParentChildrenID[to_sibling_index];
+            mParentChildrenID[to_sibling_index]   = _tmp;
+
+            resortChildrenSiblingIndex(toParentPtr->m_id);
+        }
     }
 
 } // namespace Pilot
