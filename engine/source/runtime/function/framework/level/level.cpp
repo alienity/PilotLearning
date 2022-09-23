@@ -243,6 +243,8 @@ namespace Pilot
         ASSERT(cur_obj_in_parent_iner != parent_children_id.end());
         parent_children_id.erase(cur_obj_in_parent_iner);
 
+        m_gobjects.erase(go_id);
+
         resortChildrenSiblingIndex(parentObject->m_id);
     }
 

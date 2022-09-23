@@ -393,24 +393,9 @@ namespace Pilot
             }
             if (ImGui::MenuItem(" Delete Node "))
             {
-                current_active_level->deleteGObject(g_editor_global_context.m_scene_manager->getSelectedObjectID());
+                //current_active_level->deleteGObject(g_editor_global_context.m_scene_manager->getSelectedObjectID());
+                g_editor_global_context.m_scene_manager->onDeleteSelectedGObject();
             }
-
-            /*
-            int location = -1;
-            if (ImGui::MenuItem("Custom", NULL, location == -1))
-                location = -1;
-            if (ImGui::MenuItem("Center", NULL, location == -2))
-                location = -2;
-            if (ImGui::MenuItem("Top-left", NULL, location == 0))
-                location = 0;
-            if (ImGui::MenuItem("Top-right", NULL, location == 1))
-                location = 1;
-            if (ImGui::MenuItem("Bottom-left", NULL, location == 2))
-                location = 2;
-            if (ImGui::MenuItem("Bottom-right", NULL, location == 3))
-                location = 3;
-            */
             ImGui::EndPopup();
         }
 
