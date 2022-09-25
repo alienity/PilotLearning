@@ -4,6 +4,7 @@
 #include "runtime/function/framework/object/object_id_allocator.h"
 
 #include "runtime/resource/res_type/common/object.h"
+#include "runtime/core/base/macro.h"
 
 #include <memory>
 #include <string>

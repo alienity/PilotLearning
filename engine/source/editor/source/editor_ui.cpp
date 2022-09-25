@@ -16,6 +16,7 @@
 
 #include "runtime/function/framework/component/mesh/mesh_component.h"
 #include "runtime/function/framework/component/transform/transform_component.h"
+#include "runtime/function/framework/component/camera/camera_component.h"
 #include "runtime/function/framework/level/level.h"
 #include "runtime/function/framework/world/world_manager.h"
 #include "runtime/function/global/global_context.h"
@@ -214,6 +215,61 @@ namespace Pilot
                     }
                     ImGui::Text("%s", value_str.c_str());
                 }
+            }
+        };
+        m_editor_ui_creator["CameraComponentRes"] = [this, &asset_folder](const std::string& name, void* value_ptr) -> void {
+            if (g_editor_node_state_array[g_node_depth].second)
+            {
+                CameraComponentRes* ccres_ptr = static_cast<CameraComponentRes*>(value_ptr);
+
+                int item_current_idx = -1;
+
+                const char* parameter_items[] = {
+                    "FirstPersonCameraParameter", "ThirdPersonCameraParameter", "FreeCameraParameter"};
+
+                std::string type_name = ccres_ptr->m_parameter.getTypeName();
+                for (size_t i = 0; i < IM_ARRAYSIZE(parameter_items); i++)
+                {
+                    if (strcmp(parameter_items[i], type_name.c_str()) == 0)
+                    {
+                        item_current_idx = i;
+                        break;
+                    }
+                }
+
+                int item_prev_idx = item_current_idx;
+
+                const char* combo_preview_value = parameter_items[item_current_idx];
+                if (ImGui::BeginCombo("CameraType", combo_preview_value))
+                {
+                    for (int n = 0; n < IM_ARRAYSIZE(parameter_items); n++)
+                    {
+                        const bool is_selected = (item_current_idx == n);
+                        if (ImGui::Selectable(parameter_items[n], is_selected))
+                            item_current_idx = n;
+
+                        // Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
+                        if (is_selected)
+                            ImGui::SetItemDefaultFocus();
+                    }
+                    ImGui::EndCombo();
+                }
+
+                if (item_current_idx != item_prev_idx)
+                {
+                    PILOT_REFLECTION_DELETE(ccres_ptr->m_parameter);
+                    if (item_current_idx == 0)
+                        ccres_ptr->m_parameter = PILOT_REFLECTION_NEW(FirstPersonCameraParameter)
+                    else if (item_current_idx == 1)
+                        ccres_ptr->m_parameter = PILOT_REFLECTION_NEW(ThirdPersonCameraParameter)
+                    else if (item_current_idx == 2)
+                        ccres_ptr->m_parameter = PILOT_REFLECTION_NEW(FreeCameraParameter)
+                }
+
+                auto object_instance = Reflection::ReflectionInstance(
+                    Pilot::Reflection::TypeMeta::newMetaFromName(ccres_ptr->m_parameter.getTypeName().c_str()),
+                    ccres_ptr->m_parameter.operator->());
+                createComponentUI(object_instance);
             }
         };
     }
@@ -461,9 +517,9 @@ namespace Pilot
     void EditorUI::createLeafNodeUI(Reflection::ReflectionInstance& instance)
     {
         Reflection::FieldAccessor* fields;
-        int                        fields_count = instance.m_meta.getFieldsList(fields);
+        int                        fields_number = instance.m_meta.getFieldsList(fields);
 
-        for (size_t index = 0; index < fields_count; index++)
+        for (size_t index = 0; index < fields_number; index++)
         {
             auto fields_count = fields[index];
             if (fields_count.isArrayType())
@@ -564,10 +620,11 @@ namespace Pilot
 
         ImGui::Text("Name");
         ImGui::SameLine();
-        ImGui::InputText("##Name", cname, IM_ARRAYSIZE(cname), ImGuiInputTextFlags_ReadOnly);
+        if (ImGui::InputText("##Name", cname, IM_ARRAYSIZE(cname), ImGuiInputTextFlags_EnterReturnsTrue))
+            selected_object->setName(std::string(cname));
 
-        static ImGuiTableFlags flags                      = ImGuiTableFlags_Resizable | ImGuiTableFlags_NoSavedSettings;
-        auto&&                 selected_object_components = selected_object->getComponents();
+        static ImGuiTableFlags flags = ImGuiTableFlags_Resizable | ImGuiTableFlags_NoSavedSettings;
+        auto&& selected_object_components = selected_object->getComponents();
         for (auto component_ptr : selected_object_components)
         {
             m_editor_ui_creator["TreeNodePush"](("<" + component_ptr.getTypeName() + ">").c_str(), nullptr);
@@ -577,6 +634,35 @@ namespace Pilot
             createComponentUI(object_instance);
             m_editor_ui_creator["TreeNodePop"](("<" + component_ptr.getTypeName() + ">").c_str(), nullptr);
         }
+
+        ImGui::NewLine();
+
+        if (ImGui::Button("Add Component"))
+            ImGui::OpenPopup("AddComponentPopup");
+
+        if (ImGui::BeginPopup("AddComponentPopup"))
+        {
+            if (ImGui::MenuItem("Transform Component"))
+            {
+                LOG_INFO("Add New Transform Component");
+            }
+
+            if (!selected_object->tryGetComponentConst<const CameraComponent>("CameraComponent"))
+            {
+                if (ImGui::MenuItem("Camera Component"))
+                {
+                    auto camera_component = PILOT_REFLECTION_NEW(CameraComponent);
+                    camera_component->reset();
+                    camera_component->postLoadResource(selected_object);
+                    selected_object->tryAddComponent(camera_component);
+
+                    LOG_INFO("Add New Camera Component");
+                }
+            }
+
+            ImGui::EndPopup();
+        }
+
         ImGui::End();
     }
 

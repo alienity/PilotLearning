@@ -17,6 +17,15 @@
 
 namespace Pilot
 {
+    void CameraComponent::reset()
+    {
+        if (!m_camera_res.m_parameter)
+        {
+            PILOT_REFLECTION_DELETE(m_camera_res.m_parameter)
+        }
+        m_camera_res.m_parameter = PILOT_REFLECTION_NEW(FreeCameraParameter)
+    }
+
     void CameraComponent::postLoadResource(std::weak_ptr<GObject> parent_object)
     {
         m_parent_object = parent_object;

@@ -91,6 +91,9 @@ namespace Pilot
 
     void EditorInputManager::onKeyInEditorMode(int key, int scancode, int action, int mods)
     {
+        if (!isCursorInRect(m_engine_window_pos, m_engine_window_size))
+            return;
+
         if (action == GLFW_PRESS)
         {
             switch (key)
