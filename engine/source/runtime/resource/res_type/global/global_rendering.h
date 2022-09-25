@@ -36,16 +36,6 @@ namespace Pilot
         std::string m_positive_z_map;
     };
 
-    REFLECTION_TYPE(DirectionalLight)
-    CLASS(DirectionalLight, Fields)
-    {
-        REFLECTION_BODY(DirectionalLight);
-
-    public:
-        Vector3 m_direction;
-        Color   m_color;
-    };
-
     REFLECTION_TYPE(GlobalRenderingRes)
     CLASS(GlobalRenderingRes, Fields)
     {
@@ -61,6 +51,5 @@ namespace Pilot
         Color            m_sky_color;
         Color            m_ambient_light;
         CameraConfig     m_camera_config;
-        DirectionalLight m_directional_light;
     };
 } // namespace Piccolo

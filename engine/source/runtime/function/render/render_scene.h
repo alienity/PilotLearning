@@ -2,7 +2,7 @@
 
 #include "runtime/function/framework/object/object_id_allocator.h"
 
-#include "runtime/function/render/light.h"
+#include "runtime/function/render/render_light.h"
 #include "runtime/function/render/render_common.h"
 #include "runtime/function/render/render_entity.h"
 #include "runtime/function/render/render_guid_allocator.h"
@@ -19,10 +19,11 @@ namespace Pilot
     class RenderScene
     {
     public:
-        // light
+        // all light
         AmbientLight      m_ambient_light;
-        PDirectionalLight m_directional_light;
+        DirectionalLight  m_directional_light;
         PointLightList    m_point_light_list;
+        SpotLightList     m_spot_light_list;
 
         // render entities
         std::vector<RenderEntity> m_render_entities;
@@ -34,18 +35,11 @@ namespace Pilot
         std::vector<RenderMeshNode> m_all_mesh_nodes;
 
         // visible objects (updated per frame)
-        std::vector<RenderMeshNode>              m_directional_light_visible_mesh_nodes;
-        std::vector<RenderMeshNode>              m_point_lights_visible_mesh_nodes;
-        std::vector<RenderMeshNode>              m_main_camera_visible_mesh_nodes;
         std::vector<RenderParticleBillboardNode> m_main_camera_visible_particlebillboard_nodes;
         RenderAxisNode                           m_axis_node;
 
         // update all objects for indirect cull in each frame
         void updateAllObjects(std::shared_ptr<RenderResource> render_resource, std::shared_ptr<RenderCamera> camera);
-
-        //// update visible objects in each frame
-        //void updateVisibleObjects(std::shared_ptr<RenderResource> render_resource,
-        //                          std::shared_ptr<RenderCamera>   camera);
 
         // set visible nodes ptr in render pass
         void setVisibleNodesReference();
@@ -67,11 +61,6 @@ namespace Pilot
 
         std::unordered_map<uint32_t, GObjectID> m_mesh_object_id_map;
 
-        void updateVisibleObjectsDirectionalLight(std::shared_ptr<RenderResource> render_resource,
-                                                  std::shared_ptr<RenderCamera>   camera);
-        void updateVisibleObjectsPointLight(std::shared_ptr<RenderResource> render_resource);
-        void updateVisibleObjectsMainCamera(std::shared_ptr<RenderResource> render_resource,
-                                            std::shared_ptr<RenderCamera>   camera);
         void updateVisibleObjectsAxis(std::shared_ptr<RenderResource> render_resource);
         void updateVisibleObjectsParticle(std::shared_ptr<RenderResource> render_resource);
         

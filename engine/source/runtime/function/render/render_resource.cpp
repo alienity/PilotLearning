@@ -144,8 +144,8 @@ namespace Pilot
         cameraInstance.camera_position  = GLMUtil::fromVec3(camera_position);
 
         // ambient light
-        Vector3  ambient_light   = render_scene->m_ambient_light.m_irradiance;
-        uint32_t point_light_num = static_cast<uint32_t>(render_scene->m_point_light_list.m_lights.size());
+        Vector3  ambient_light   = render_scene->m_ambient_light.m_color.toVector3();
+        uint32_t point_light_num = static_cast<uint32_t>(render_scene->m_point_light_list.m_point_light_list.size());
 
         // set ubo data
         m_mesh_perframe_storage_buffer_object.cameraInstance   = cameraInstance;
@@ -157,11 +157,10 @@ namespace Pilot
         // point lights
         for (uint32_t i = 0; i < point_light_num; i++)
         {
-            Vector3 point_light_position = render_scene->m_point_light_list.m_lights[i].m_position;
-            Vector3 point_light_intensity =
-                render_scene->m_point_light_list.m_lights[i].m_flux / (4.0f * glm::pi<float>());
+            Vector3 point_light_position = render_scene->m_point_light_list.m_point_light_list[i].m_position;
+            Vector3 point_light_intensity = render_scene->m_point_light_list.m_point_light_list[i].m_intensity;
 
-            float radius = render_scene->m_point_light_list.m_lights[i].calculateRadius();
+            float radius = render_scene->m_point_light_list.m_point_light_list[i].m_radius;
 
             m_mesh_perframe_storage_buffer_object.scene_point_lights[i].position =
                 GLMUtil::fromVec3(point_light_position);
@@ -177,7 +176,7 @@ namespace Pilot
         m_mesh_perframe_storage_buffer_object.scene_directional_light.direction =
             GLMUtil::fromVec3(Vector3::normalize(render_scene->m_directional_light.m_direction));
         m_mesh_perframe_storage_buffer_object.scene_directional_light.color =
-            GLMUtil::fromVec3(render_scene->m_directional_light.m_color);
+            GLMUtil::fromVec3(render_scene->m_directional_light.m_color.toVector3());
 
         //m_mesh_perframe_storage_buffer_object.directional_light_proj_view
     }

@@ -73,9 +73,9 @@ namespace Pilot
         // setup render scene
         m_render_scene                  = std::make_shared<RenderScene>();
         m_render_scene->m_ambient_light = {global_rendering_res.m_ambient_light.toVector3()};
-        m_render_scene->m_directional_light.m_direction =
-            Vector3::normalize(global_rendering_res.m_directional_light.m_direction);
-        m_render_scene->m_directional_light.m_color = global_rendering_res.m_directional_light.m_color.toVector3();
+        //m_render_scene->m_directional_light.m_direction =
+        //    Vector3::normalize(global_rendering_res.m_directional_light.m_direction);
+        //m_render_scene->m_directional_light.m_color = global_rendering_res.m_directional_light.m_color.toVector3();
         m_render_scene->setVisibleNodesReference();
 
         // initialize renderer

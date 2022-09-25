@@ -17,6 +17,8 @@
 #include "runtime/function/framework/component/mesh/mesh_component.h"
 #include "runtime/function/framework/component/transform/transform_component.h"
 #include "runtime/function/framework/component/camera/camera_component.h"
+#include "runtime/function/framework/component/light/light_component.h"
+
 #include "runtime/function/framework/level/level.h"
 #include "runtime/function/framework/world/world_manager.h"
 #include "runtime/function/global/global_context.h"
@@ -185,6 +187,17 @@ namespace Pilot
             qua_ptr->z = val[2];
             qua_ptr->w = val[3];
         };
+        m_editor_ui_creator["Color"] = [this](const std::string& name, void* value_ptr) -> void {
+            Color* color_ptr = static_cast<Color*>(value_ptr);
+            float  col[4]   = {color_ptr->r, color_ptr->g, color_ptr->g, color_ptr->a};
+
+            ImGui::ColorEdit4("Color", col);
+
+            color_ptr->r = col[0];
+            color_ptr->g = col[1];
+            color_ptr->b = col[2];
+            color_ptr->a = col[3];
+        };
         m_editor_ui_creator["std::string"] = [this, &asset_folder](const std::string& name, void* value_ptr) -> void {
             if (g_node_depth == -1)
             {
@@ -259,16 +272,83 @@ namespace Pilot
                 {
                     PILOT_REFLECTION_DELETE(ccres_ptr->m_parameter);
                     if (item_current_idx == 0)
-                        ccres_ptr->m_parameter = PILOT_REFLECTION_NEW(FirstPersonCameraParameter)
+                    {
+                        ccres_ptr->m_parameter = PILOT_REFLECTION_NEW(FirstPersonCameraParameter);
+                    }
                     else if (item_current_idx == 1)
-                        ccres_ptr->m_parameter = PILOT_REFLECTION_NEW(ThirdPersonCameraParameter)
+                    {
+                        ccres_ptr->m_parameter = PILOT_REFLECTION_NEW(ThirdPersonCameraParameter);
+                    }
                     else if (item_current_idx == 2)
-                        ccres_ptr->m_parameter = PILOT_REFLECTION_NEW(FreeCameraParameter)
+                    {
+                        ccres_ptr->m_parameter = PILOT_REFLECTION_NEW(FreeCameraParameter);
+                    }
                 }
 
                 auto object_instance = Reflection::ReflectionInstance(
                     Pilot::Reflection::TypeMeta::newMetaFromName(ccres_ptr->m_parameter.getTypeName().c_str()),
                     ccres_ptr->m_parameter.operator->());
+                createComponentUI(object_instance);
+            }
+        };
+        m_editor_ui_creator["LightComponentRes"] = [this, &asset_folder](const std::string& name, void* value_ptr) -> void {
+            if (g_editor_node_state_array[g_node_depth].second)
+            {
+                LightComponentRes* l_res_ptr = static_cast<LightComponentRes*>(value_ptr);
+
+                int item_current_idx = -1;
+
+                const char* parameter_items[] = {
+                    "DirectionalLightParameter", "PointLightParameter", "SpotLightParameter"};
+
+                std::string type_name = l_res_ptr->m_parameter.getTypeName();
+                for (size_t i = 0; i < IM_ARRAYSIZE(parameter_items); i++)
+                {
+                    if (strcmp(parameter_items[i], type_name.c_str()) == 0)
+                    {
+                        item_current_idx = i;
+                        break;
+                    }
+                }
+
+                int item_prev_idx = item_current_idx;
+
+                const char* combo_preview_value = parameter_items[item_current_idx];
+                if (ImGui::BeginCombo("LightType", combo_preview_value))
+                {
+                    for (int n = 0; n < IM_ARRAYSIZE(parameter_items); n++)
+                    {
+                        const bool is_selected = (item_current_idx == n);
+                        if (ImGui::Selectable(parameter_items[n], is_selected))
+                            item_current_idx = n;
+
+                        // Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
+                        if (is_selected)
+                            ImGui::SetItemDefaultFocus();
+                    }
+                    ImGui::EndCombo();
+                }
+
+                if (item_current_idx != item_prev_idx)
+                {
+                    PILOT_REFLECTION_DELETE(l_res_ptr->m_parameter);
+                    if (item_current_idx == 0)
+                    {
+                        l_res_ptr->m_parameter = PILOT_REFLECTION_NEW(DirectionalLightParameter);
+                    }
+                    else if (item_current_idx == 1)
+                    {
+                        l_res_ptr->m_parameter = PILOT_REFLECTION_NEW(PointLightParameter);
+                    }
+                    else if (item_current_idx == 2)
+                    {
+                        l_res_ptr->m_parameter = PILOT_REFLECTION_NEW(SpotLightParameter)
+                    }
+                }
+
+                auto object_instance = Reflection::ReflectionInstance(
+                    Pilot::Reflection::TypeMeta::newMetaFromName(l_res_ptr->m_parameter.getTypeName().c_str()),
+                    l_res_ptr->m_parameter.operator->());
                 createComponentUI(object_instance);
             }
         };
@@ -647,9 +727,13 @@ namespace Pilot
                 LOG_INFO("Add New Transform Component");
             }
 
-            if (!selected_object->tryGetComponentConst<const CameraComponent>("CameraComponent"))
+            if (ImGui::MenuItem("Camera Component"))
             {
-                if (ImGui::MenuItem("Camera Component"))
+                if (selected_object->tryGetComponentConst<const CameraComponent>("CameraComponent"))
+                {
+                    LOG_INFO("object {} already has Camera Component", selected_object->getName());
+                }
+                else
                 {
                     auto camera_component = PILOT_REFLECTION_NEW(CameraComponent);
                     camera_component->reset();
@@ -659,6 +743,24 @@ namespace Pilot
                     LOG_INFO("Add New Camera Component");
                 }
             }
+
+            if (ImGui::MenuItem("Light Component"))
+            {
+                if (selected_object->tryGetComponentConst<const LightComponent>("LightComponent"))
+                {
+                    LOG_INFO("object {} already has Light Component", selected_object->getName());
+                }
+                else
+                {
+                    auto light_component = PILOT_REFLECTION_NEW(LightComponent);
+                    light_component->reset();
+                    light_component->postLoadResource(selected_object);
+                    selected_object->tryAddComponent(light_component);
+
+                    LOG_INFO("Add New Light Component");
+                }
+            }
+
 
             ImGui::EndPopup();
         }
