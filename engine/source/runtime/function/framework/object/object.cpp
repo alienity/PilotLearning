@@ -8,6 +8,7 @@
 #include "runtime/resource/asset_manager/asset_manager.h"
 
 #include "runtime/function/framework/component/component.h"
+#include "runtime/function/framework/component/transform/transform_component.h"
 #include "runtime/function/global/global_context.h"
 
 #include <cassert>
@@ -47,6 +48,9 @@ namespace Pilot
                 component->tick(delta_time);
             }
         }
+
+        // mark not dirty
+        m_is_transform_dirty = false;
     }
 
     void GObject::setParent(GObjectID parentID, std::optional<std::uint32_t> sibling_index)
@@ -63,6 +67,57 @@ namespace Pilot
         {
             m_current_level->deleteGObject(childID);
         }
+    }
+
+    bool GObject::isDirty()
+    {
+        return isDirtyRecursive(this);
+    }
+
+    void GObject::setDirty()
+    {
+        m_is_transform_dirty = true;
+    }
+
+    Matrix4x4 GObject::getWorldMatrix()
+    {
+        return getWorldMatrixRecursive(this);
+    }
+
+    bool GObject::isDirtyRecursive(GObject* g_object)
+    {
+        if (g_object == nullptr)
+            return false;
+
+        bool isParentDirty = g_object->m_is_transform_dirty;
+
+        std::weak_ptr<GObject> m_parent_object = g_object->getParent();
+        if (!m_parent_object.expired() && m_parent_object.lock())
+        {
+            std::shared_ptr<GObject> parent_object_ptr = m_parent_object.lock();
+            isParentDirty |= isDirtyRecursive(parent_object_ptr.get());
+        }
+
+        return isParentDirty; 
+    }
+
+    Matrix4x4 GObject::getWorldMatrixRecursive(GObject* g_object)
+    {
+        if (g_object == nullptr)
+            return Matrix4x4::Identity;
+
+        TransformComponent* transform_component = g_object->tryGetComponent(TransformComponent);
+        Matrix4x4 cur_matrix = transform_component->getMatrix();
+
+        std::weak_ptr<GObject> m_parent_object = g_object->getParent();
+        if (!m_parent_object.expired() && m_parent_object.lock())
+        {
+            std::shared_ptr<GObject> parent_object_ptr = m_parent_object.lock();
+            Matrix4x4 parent_matrix = getWorldMatrixRecursive(parent_object_ptr.get());
+            cur_matrix = parent_matrix * cur_matrix;
+        }
+
+        return cur_matrix;
     }
 
     bool GObject::hasComponent(const std::string& compenent_type_name) const
@@ -149,7 +204,6 @@ namespace Pilot
         {
             if (isRootNode())
             {
-                LOG_WARN("{} is root node and do not have parent.", m_name);
                 return std::weak_ptr<GObject>();
             }
 

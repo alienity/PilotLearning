@@ -5,6 +5,7 @@
 
 #include "runtime/resource/res_type/common/object.h"
 #include "runtime/core/base/macro.h"
+#include "runtime/core/math/moyu_math.h"
 
 #include <memory>
 #include <string>
@@ -15,6 +16,7 @@
 namespace Pilot
 {
     class Level;
+    class TransformComponent;
 
     /// GObject : Game Object base class
     class GObject : public std::enable_shared_from_this<GObject>
@@ -47,6 +49,11 @@ namespace Pilot
         void               setName(std::string name) { m_name = name; }
         const std::string& getName() const { return m_name; }
 
+        bool isDirty();
+        void setDirty();
+
+        Matrix4x4 getWorldMatrix();
+
         bool hasComponent(const std::string& compenent_type_name) const;
 
         std::vector<Reflection::ReflectionPtr<Component>> getComponents() { return m_components; }
@@ -63,6 +70,11 @@ namespace Pilot
                 }
             }
             m_components.push_back(newComponent);
+
+            if (newComponent.getTypeName() == "TransformComponent")
+            {
+                m_transform_component_ptr = (TransformComponent*)newComponent.getPtr();
+            }
 
             return newComponent.getPtr();
         }
@@ -115,10 +127,15 @@ namespace Pilot
     protected:
         friend class Level;
 
+        static bool isDirtyRecursive(GObject* g_object);
+        static Matrix4x4 getWorldMatrixRecursive(GObject* g_object);
+
         GObjectID              m_id {k_invalid_gobject_id};
         GObjectID              m_parent_id {k_root_gobject_id};
         std::uint32_t          m_sibling_index {0};
         std::vector<GObjectID> m_chilren_id {};
+
+        bool m_is_transform_dirty {true};
 
         std::shared_ptr<Level> m_current_level;
 
@@ -128,5 +145,8 @@ namespace Pilot
         // we have to use the ReflectionPtr due to that the components need to be reflected 
         // in editor, and it's polymorphism
         std::vector<Reflection::ReflectionPtr<Component>> m_components;
+
+        // transform component
+        TransformComponent* m_transform_component_ptr;
     };
 } // namespace Pilot

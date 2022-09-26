@@ -1202,6 +1202,10 @@ namespace Pilot
         Vector3    m_scale {Vector3::One};
         Quaternion m_rotation {Quaternion::Identity};
 
+        // Comparison operators
+        bool operator==(const Transform& t) const { return (m_position == t.m_position && m_scale == t.m_scale && m_rotation == t.m_rotation); }
+        bool operator!=(const Transform& t) const { return (m_position != t.m_position || m_scale != t.m_scale || m_rotation != t.m_rotation); }
+
         Transform() = default;
         Transform(const Vector3& position, const Quaternion& rotation, const Vector3& scale) :
             m_position {position}, m_scale {scale}, m_rotation {rotation}

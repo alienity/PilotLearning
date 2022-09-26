@@ -722,11 +722,6 @@ namespace Pilot
 
         if (ImGui::BeginPopup("AddComponentPopup"))
         {
-            if (ImGui::MenuItem("Transform Component"))
-            {
-                LOG_INFO("Add New Transform Component");
-            }
-
             if (ImGui::MenuItem("Camera Component"))
             {
                 if (selected_object->tryGetComponentConst<const CameraComponent>("CameraComponent"))

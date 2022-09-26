@@ -60,7 +60,32 @@ namespace Pilot
         if (!m_parent_object.lock())
             return;
 
-        TransformComponent*       transform_component = m_parent_object.lock()->tryGetComponent(TransformComponent);
+        if (m_parent_object.lock()->isDirty())
+        {
+            Matrix4x4 transform_matrix = m_parent_object.lock()->getWorldMatrix();
+
+            std::vector<GameObjectPartDesc> dirty_mesh_parts;
+            SkeletonAnimationResult         animation_result;
+            animation_result.m_transforms.push_back({Matrix4x4::Identity});
+
+            for (GameObjectPartDesc& mesh_part : m_raw_meshes)
+            {
+                Matrix4x4 object_transform_matrix = mesh_part.m_transform_desc.m_transform_matrix;
+
+                mesh_part.m_transform_desc.m_transform_matrix = transform_matrix * object_transform_matrix;
+                dirty_mesh_parts.push_back(mesh_part);
+
+                mesh_part.m_transform_desc.m_transform_matrix = object_transform_matrix;
+            }
+
+            RenderSwapContext& render_swap_context = g_runtime_global_context.m_render_system->getSwapContext();
+            RenderSwapData&    logic_swap_data     = render_swap_context.getLogicSwapData();
+
+            logic_swap_data.addDirtyGameObject(GameObjectDesc {m_parent_object.lock()->getID(), dirty_mesh_parts});
+        }
+
+        /*
+        TransformComponent* transform_component = m_parent_object.lock()->tryGetComponent(TransformComponent);
         
         if (transform_component->isDirty())
         {
@@ -86,5 +111,6 @@ namespace Pilot
 
             transform_component->setDirtyFlag(false);
         }
+        */
     }
 } // namespace Piccolo

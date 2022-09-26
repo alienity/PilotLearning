@@ -4,6 +4,10 @@
 #include "runtime/core/math/moyu_math.h"
 #include "runtime/core/color/color.h"
 
+#include "runtime/function/framework/component/transform/transform_component.h"
+#include "runtime/function/framework/object/object.h"
+#include "runtime/function/global/global_context.h"
+
 #include "runtime/function/render/render_system.h"
 
 namespace Pilot
@@ -39,6 +43,22 @@ namespace Pilot
             LOG_ERROR("invalid light type");
         }
 
+    }
+
+    void LightComponent::tick(float delta_time)
+    {
+        if (!m_parent_object.lock())
+            return;
+
+        if (m_parent_object.lock()->isDirty())
+        {
+            
+
+            //RenderSwapContext& render_swap_context = g_runtime_global_context.m_render_system->getSwapContext();
+            //RenderSwapData&    logic_swap_data     = render_swap_context.getLogicSwapData();
+
+            //logic_swap_data.addDirtyGameObject(GameObjectDesc {m_parent_object.lock()->getID(), dirty_mesh_parts});
+        }
     }
 
 } // namespace Pilot

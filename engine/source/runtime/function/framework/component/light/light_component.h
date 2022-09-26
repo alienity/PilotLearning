@@ -30,6 +30,8 @@ namespace Pilot
 
         void postLoadResource(std::weak_ptr<GObject> parent_object) override;
 
+        void tick(float delta_time) override;
+
     private:
         META(Enable)
         LightComponentRes m_light_res;
