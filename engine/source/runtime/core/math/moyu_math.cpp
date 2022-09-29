@@ -127,7 +127,7 @@ namespace Pilot
     const Matrix4x4 Matrix4x4::Zero(0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f);
     const Matrix4x4 Matrix4x4::Identity(1.f, 0.f, 0.f, 0.f, 0.f, 1.f, 0.f, 0.f, 0.f, 0.f, 1.f, 0.f, 0.f, 0.f, 0.f, 1.f);
 
-    const Quaternion Quaternion::Identity(0.f, 0.f, 0.f, 1.f);
+    const Quaternion Quaternion::Identity(1.f, 0.f, 0.f, 0.f);
 
     //------------------------------------------------------------------------------------------
 
@@ -1518,17 +1518,17 @@ namespace Pilot
 
     Quaternion operator+(const Quaternion& q1, const Quaternion& q2)
     {
-        return Quaternion(q1.x + q2.x, q1.y + q2.y, q1.z + q2.z, q1.w + q2.w);
+        return Quaternion(q1.w + q2.w, q1.x + q2.x, q1.y + q2.y, q1.z + q2.z);
     }
 
     Quaternion operator-(const Quaternion& q1, const Quaternion& q2)
     {
-        return Quaternion(q1.x - q2.x, q1.y - q2.y, q1.z - q2.z, q1.w - q2.w);
+        return Quaternion(q1.w - q2.w, q1.x - q2.x, q1.y - q2.y, q1.z - q2.z);
     }
 
     Quaternion operator*(const Quaternion& q1, const Quaternion& q2) { return Quaternion::concatenate(q1, q2); }
 
-    Quaternion operator*(const Quaternion& q, float s) { return Quaternion(q.x * s, q.y * s, q.z * s, q.w * s); }
+    Quaternion operator*(const Quaternion& q, float s) { return Quaternion(q.w * s, q.x * s, q.y * s, q.z * s); }
 
     Quaternion operator/(const Quaternion& q1, const Quaternion& q2)
     {
@@ -1537,11 +1537,11 @@ namespace Pilot
         return mResult;
     }
 
-    Quaternion operator*(float s, const Quaternion& q) { return Quaternion(q.x * s, q.y * s, q.z * s, q.w * s); }
+    Quaternion operator*(float s, const Quaternion& q) { return Quaternion(q.w * s, q.x * s, q.y * s, q.z * s); }
 
     Vector3 operator*(const Quaternion& lhs, Vector3 rhs)
     {
-        Quaternion p(rhs.x, rhs.y, rhs.z, 1);
+        Quaternion p(1, rhs.x, rhs.y, rhs.z);
         Quaternion q    = lhs;
         Quaternion qInv = Quaternion::inverse(q);
         Quaternion pt   = q * p * qInv;
@@ -1609,10 +1609,10 @@ namespace Pilot
     Quaternion Quaternion::normalize(const Quaternion& q)
     {
         float invLen = 1.0f / std::sqrtf(q.x * q.x + q.y * q.y + q.z * q.z + q.w * q.w);
-        return Quaternion(q.x * invLen, q.y * invLen, q.z * invLen, q.w * invLen);
+        return Quaternion(q.w * invLen, q.x * invLen, q.y * invLen, q.z * invLen);
     }
 
-    Quaternion Quaternion::conjugate(const Quaternion& q) { return Quaternion(-q.x, -q.y, -q.z, q.w); }
+    Quaternion Quaternion::conjugate(const Quaternion& q) { return Quaternion(q.w , - q.x, -q.y, -q.z); }
 
     Quaternion Quaternion::inverse(const Quaternion& q)
     {
@@ -1632,7 +1632,7 @@ namespace Pilot
         float   c     = std::cos(angle * 0.5f);
         float   s     = std::sin(angle * 0.5f);
         Vector3 uaxis = Vector3::normalize(axis);
-        return Quaternion(uaxis.x * s, uaxis.y * s, uaxis.z * s, c);
+        return Quaternion(c, uaxis.x * s, uaxis.y * s, uaxis.z * s);
     }
 
     Quaternion Quaternion::fromRotationMatrix(const Matrix4x4& rotation)
@@ -1651,7 +1651,7 @@ namespace Pilot
         float y    = (rotation[0][2] - rotation[2][0]) * root;
         float z    = (rotation[1][0] - rotation[0][1]) * root;
 
-        return Quaternion(x, y, z, w);
+        return Quaternion(w, x, y, z);
     }
 
     Quaternion Quaternion::fromRotationMatrix(const Matrix3x3& rotation)
@@ -1670,7 +1670,7 @@ namespace Pilot
         float y    = (rotation[0][2] - rotation[2][0]) * root;
         float z    = (rotation[1][0] - rotation[0][1]) * root;
 
-        return Quaternion(x, y, z, w);
+        return Quaternion(w, x, y, z);
     }
 
     Quaternion Quaternion::lerp(const Quaternion& q1, const Quaternion& q2, float t) { return (1 - t) * q1 + t * q2; }

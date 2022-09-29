@@ -10,8 +10,6 @@ namespace Pilot
         m_transform_buffer[0] = m_transform;
         m_transform_buffer[1] = m_transform;
         m_is_dirty            = true;
-        
-        m_parent_object.lock()->setDirty();
     }
 
     void TransformComponent::setPosition(const Vector3& new_translation)
@@ -19,8 +17,6 @@ namespace Pilot
         m_transform_buffer[m_next_index].m_position = new_translation;
         m_transform.m_position                      = new_translation;
         m_is_dirty                                  = true;
-
-        m_parent_object.lock()->setDirty();
     }
 
     void TransformComponent::setScale(const Vector3& new_scale)
@@ -28,8 +24,6 @@ namespace Pilot
         m_transform_buffer[m_next_index].m_scale = new_scale;
         m_transform.m_scale                      = new_scale;
         m_is_dirty                               = true;
-
-        m_parent_object.lock()->setDirty();
     }
 
     void TransformComponent::setRotation(const Quaternion& new_rotation)
@@ -37,8 +31,15 @@ namespace Pilot
         m_transform_buffer[m_next_index].m_rotation = new_rotation;
         m_transform.m_rotation                      = new_rotation;
         m_is_dirty                                  = true;
+    }
 
-        m_parent_object.lock()->setDirty();
+    Matrix4x4 TransformComponent::getMatrixWorld()
+    {
+        if (TransformComponent::isDirtyRecursively(this))
+        {
+            m_matrix_world = getMatrixWorldRecursively(this);
+        }
+        return m_matrix_world;
     }
 
     void TransformComponent::tick(float delta_time)
@@ -53,12 +54,53 @@ namespace Pilot
 
         if (g_is_editor_mode)
         {
-            if (m_transform_buffer[m_next_index] != m_transform_buffer[m_current_index])
-            {
-                m_parent_object.lock()->setDirty();
-            }
             m_transform_buffer[m_next_index] = m_transform;
         }
     }
+
+    // check all parent object to see if they are some object dirty
+    bool TransformComponent::isDirty() const
+    {
+        return TransformComponent::isDirtyRecursively(this);
+    }
+
+    Matrix4x4 TransformComponent::getMatrixWorldRecursively(const TransformComponent* trans)
+    {
+        if (trans == nullptr)
+            return Matrix4x4::Identity;
+
+        Matrix4x4 matrix_world = trans->getMatrix();
+        if (!trans->m_parent_object.expired())
+        {
+            auto m_object_ptr    = trans->m_parent_object.lock();
+            auto m_object_parent = m_object_ptr->getParent();
+            if (!m_object_parent.expired())
+            {
+                TransformComponent* m_parent_trans = m_object_parent.lock()->getTransformComponent();
+                matrix_world = getMatrixWorldRecursively(m_parent_trans) * matrix_world;
+            }
+        }
+        return matrix_world;
+    }
+
+    bool TransformComponent::isDirtyRecursively(const TransformComponent* trans)
+    {
+        if (trans == nullptr)
+            return false;
+
+        bool is_dirty = trans->m_is_dirty;
+        if (!trans->m_parent_object.expired())
+        {
+            auto m_object_ptr = trans->m_parent_object.lock();
+            auto m_object_parent = m_object_ptr->getParent();
+            if (!m_object_parent.expired())
+            {
+                TransformComponent* m_parent_trans = m_object_parent.lock()->getTransformComponent();
+                is_dirty |= isDirtyRecursively(m_parent_trans);
+            }
+        }
+        return is_dirty;
+    }
+
 
 } // namespace Pilot

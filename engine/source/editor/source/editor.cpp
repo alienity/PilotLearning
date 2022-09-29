@@ -21,6 +21,7 @@ namespace Pilot
     {
         registerEdtorTickComponent("TransformComponent");
         registerEdtorTickComponent("MeshComponent");
+        registerEdtorTickComponent("LightComponent");
     }
 
     PilotEditor::~PilotEditor() {}

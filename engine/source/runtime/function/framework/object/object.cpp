@@ -49,8 +49,9 @@ namespace Pilot
             }
         }
 
-        // mark not dirty
-        m_is_transform_dirty = false;
+        // mark transform component clean
+        TransformComponent* trans_ptr = getTransformComponent();
+        trans_ptr->setDirtyFlag(false);
     }
 
     void GObject::setParent(GObjectID parentID, std::optional<std::uint32_t> sibling_index)
@@ -69,55 +70,13 @@ namespace Pilot
         }
     }
 
-    bool GObject::isDirty()
+    TransformComponent* GObject::getTransformComponent()
     {
-        return isDirtyRecursive(this);
-    }
-
-    void GObject::setDirty()
-    {
-        m_is_transform_dirty = true;
-    }
-
-    Matrix4x4 GObject::getWorldMatrix()
-    {
-        return getWorldMatrixRecursive(this);
-    }
-
-    bool GObject::isDirtyRecursive(GObject* g_object)
-    {
-        if (g_object == nullptr)
-            return false;
-
-        bool isParentDirty = g_object->m_is_transform_dirty;
-
-        std::weak_ptr<GObject> m_parent_object = g_object->getParent();
-        if (!m_parent_object.expired() && m_parent_object.lock())
+        if (m_transform_component_ptr != nullptr)
         {
-            std::shared_ptr<GObject> parent_object_ptr = m_parent_object.lock();
-            isParentDirty |= isDirtyRecursive(parent_object_ptr.get());
+            m_transform_component_ptr = tryGetComponent(TransformComponent);
         }
-
-        return isParentDirty; 
-    }
-
-    Matrix4x4 GObject::getWorldMatrixRecursive(GObject* g_object)
-    {
-        if (g_object == nullptr)
-            return Matrix4x4::Identity;
-
-        TransformComponent* transform_component = g_object->tryGetComponent(TransformComponent);
-        Matrix4x4 cur_matrix = transform_component->getMatrix();
-
-        std::weak_ptr<GObject> m_parent_object = g_object->getParent();
-        if (!m_parent_object.expired() && m_parent_object.lock())
-        {
-            std::shared_ptr<GObject> parent_object_ptr = m_parent_object.lock();
-            Matrix4x4 parent_matrix = getWorldMatrixRecursive(parent_object_ptr.get());
-            cur_matrix = parent_matrix * cur_matrix;
-        }
-
-        return cur_matrix;
+        return m_transform_component_ptr;
     }
 
     bool GObject::hasComponent(const std::string& compenent_type_name) const

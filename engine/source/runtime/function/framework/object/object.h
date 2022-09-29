@@ -49,10 +49,7 @@ namespace Pilot
         void               setName(std::string name) { m_name = name; }
         const std::string& getName() const { return m_name; }
 
-        bool isDirty();
-        void setDirty();
-
-        Matrix4x4 getWorldMatrix();
+        TransformComponent* getTransformComponent();
 
         bool hasComponent(const std::string& compenent_type_name) const;
 
@@ -127,15 +124,10 @@ namespace Pilot
     protected:
         friend class Level;
 
-        static bool isDirtyRecursive(GObject* g_object);
-        static Matrix4x4 getWorldMatrixRecursive(GObject* g_object);
-
         GObjectID              m_id {k_invalid_gobject_id};
         GObjectID              m_parent_id {k_root_gobject_id};
         std::uint32_t          m_sibling_index {0};
         std::vector<GObjectID> m_chilren_id {};
-
-        bool m_is_transform_dirty {true};
 
         std::shared_ptr<Level> m_current_level;
 
@@ -146,7 +138,6 @@ namespace Pilot
         // in editor, and it's polymorphism
         std::vector<Reflection::ReflectionPtr<Component>> m_components;
 
-        // transform component
         TransformComponent* m_transform_component_ptr;
     };
 } // namespace Pilot

@@ -12,6 +12,9 @@
 
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
+#include <glm/gtx/matrix_decompose.hpp>
+
+#include <tuple>
 
 namespace Pilot
 {
@@ -29,6 +32,8 @@ namespace Pilot
 
         static Matrix4x4   toMat4x4(const glm::mat4x4& m);
         static glm::mat4x4 fromMat4x4(const Matrix4x4& m);
+
+        static std::tuple<Quaternion, Vector3, Vector3> decomposeMat4x4(const Matrix4x4& m);
     };
 
     // hlsl是col-major，所以传入shader的时候，必须转置
@@ -71,4 +76,23 @@ namespace Pilot
                             m[2][3],
                             m[3][3]};
     }
+
+    inline std::tuple<Quaternion, Vector3, Vector3> GLMUtil::decomposeMat4x4(const Matrix4x4& m)
+    {
+        glm::mat4 m_trans_glm = GLMUtil::fromMat4x4(m);
+
+        glm::vec3 model_scale;
+        glm::quat model_rotation;
+        glm::vec3 model_translation;
+        glm::vec3 model_skew;
+        glm::vec4 model_perspective;
+        glm::decompose(m_trans_glm, model_scale, model_rotation, model_translation, model_skew, model_perspective);
+
+        Vector3    t = GLMUtil::toVec3(model_translation);
+        Quaternion r = GLMUtil::toQuat(model_rotation);
+        Vector3    s = GLMUtil::toVec3(model_scale);
+
+        return std::tuple<Quaternion, Vector3, Vector3> {r, t, s};
+    }
+
 } // namespace Pilot

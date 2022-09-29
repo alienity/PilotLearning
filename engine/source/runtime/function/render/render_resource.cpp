@@ -145,7 +145,7 @@ namespace Pilot
 
         // ambient light
         Vector3  ambient_light   = render_scene->m_ambient_light.m_color.toVector3();
-        uint32_t point_light_num = static_cast<uint32_t>(render_scene->m_point_light_list.m_point_light_list.size());
+        uint32_t point_light_num = static_cast<uint32_t>(render_scene->m_point_light_list.size());
 
         // set ubo data
         m_mesh_perframe_storage_buffer_object.cameraInstance   = cameraInstance;
@@ -157,10 +157,10 @@ namespace Pilot
         // point lights
         for (uint32_t i = 0; i < point_light_num; i++)
         {
-            Vector3 point_light_position = render_scene->m_point_light_list.m_point_light_list[i].m_position;
-            Vector3 point_light_intensity = render_scene->m_point_light_list.m_point_light_list[i].m_intensity;
+            Vector3 point_light_position = render_scene->m_point_light_list[i].m_position;
+            Vector3 point_light_intensity = render_scene->m_point_light_list[i].m_intensity;
 
-            float radius = render_scene->m_point_light_list.m_point_light_list[i].m_radius;
+            float radius = render_scene->m_point_light_list[i].m_radius;
 
             m_mesh_perframe_storage_buffer_object.scene_point_lights[i].position =
                 GLMUtil::fromVec3(point_light_position);

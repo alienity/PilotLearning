@@ -22,9 +22,7 @@ namespace Pilot
         Quaternion getRotation() const { return m_transform_buffer[m_current_index].m_rotation; }
 
         void setPosition(const Vector3& new_translation);
-
         void setScale(const Vector3& new_scale);
-
         void setRotation(const Quaternion& new_rotation);
 
         const Transform& getTransformConst() const { return m_transform_buffer[m_current_index]; }
@@ -32,7 +30,17 @@ namespace Pilot
 
         Matrix4x4 getMatrix() const { return m_transform_buffer[m_current_index].getMatrix(); }
 
+        Matrix4x4 getMatrixWorld();
+
         void tick(float delta_time) override;
+
+        bool isDirty() const override;
+
+    protected:
+        static Matrix4x4 getMatrixWorldRecursively(const TransformComponent* trans);
+        static bool isDirtyRecursively(const TransformComponent* trans);
+
+        Matrix4x4 m_matrix_world;
 
     protected:
         META(Enable)

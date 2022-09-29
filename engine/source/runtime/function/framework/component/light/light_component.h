@@ -6,17 +6,11 @@
 
 #include "runtime/function/framework/component/component.h"
 
+#include "runtime/function/render/render_object.h"
+
 namespace Pilot
 {
     class RenderCamera;
-
-    enum class LightType : unsigned char
-    {
-        directional,
-        point,
-        spot,
-        invalid
-    };
 
     REFLECTION_TYPE(LightComponent)
     CLASS(LightComponent : public Component, WhiteListFields)
@@ -36,6 +30,6 @@ namespace Pilot
         META(Enable)
         LightComponentRes m_light_res;
 
-        LightType m_light_type {LightType::invalid};
+        GameObjectComponentDesc m_light_part_desc;
     };
 } // namespace Pilot

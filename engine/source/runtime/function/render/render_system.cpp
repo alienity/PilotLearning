@@ -71,8 +71,10 @@ namespace Pilot
         m_render_camera->setFOVy(90);
 
         // setup render scene
-        m_render_scene                  = std::make_shared<RenderScene>();
-        m_render_scene->m_ambient_light = {global_rendering_res.m_ambient_light.toVector3()};
+        m_render_scene = std::make_shared<RenderScene>();
+
+        m_render_scene->m_ambient_light.m_is_active = true;
+        m_render_scene->m_ambient_light.m_color     = global_rendering_res.m_ambient_light;
         //m_render_scene->m_directional_light.m_direction =
         //    Vector3::normalize(global_rendering_res.m_directional_light.m_direction);
         //m_render_scene->m_directional_light.m_color = global_rendering_res.m_directional_light.m_color.toVector3();
@@ -171,7 +173,7 @@ namespace Pilot
         //std::static_pointer_cast<RenderPipeline>(m_render_pipeline)->setSelectedAxis(selected_axis);
     }
 
-    GuidAllocator<GameObjectPartId>& RenderSystem::getGOInstanceIdAllocator()
+    GuidAllocator<GameObjectComponentId>& RenderSystem::getGOInstanceIdAllocator()
     {
         return m_render_scene->getInstanceIdAllocator();
     }
@@ -208,101 +210,183 @@ namespace Pilot
 
                 for (size_t part_index = 0; part_index < gobject.getObjectParts().size(); part_index++)
                 {
-                    const auto&      game_object_part = gobject.getObjectParts()[part_index];
-                    GameObjectPartId part_id          = {gobject.getId(), part_index};
+                    const auto& game_object_part = gobject.getObjectParts()[part_index];
 
-                    bool is_entity_in_scene = m_render_scene->getInstanceIdAllocator().hasElement(part_id);
+                    GameObjectComponentId part_id = {gobject.getId(), game_object_part.m_component_id};
 
-                    RenderEntity render_entity;
-                    render_entity.m_instance_id =
-                        static_cast<uint32_t>(m_render_scene->getInstanceIdAllocator().allocGuid(part_id));
-                    render_entity.m_model_matrix = game_object_part.m_transform_desc.m_transform_matrix;
-
-                    m_render_scene->addInstanceIdToMap(render_entity.m_instance_id, gobject.getId());
-
-                    // mesh properties
-                    MeshSourceDesc mesh_source    = {game_object_part.m_mesh_desc.m_mesh_file};
-                    bool           is_mesh_loaded = m_render_scene->getMeshAssetIdAllocator().hasElement(mesh_source);
-
-                    RenderMeshData mesh_data;
-                    if (!is_mesh_loaded)
+                    if (game_object_part.m_mesh_desc.m_is_active && game_object_part.m_material_desc.m_is_active)
                     {
-                        mesh_data = m_render_resource->loadMeshData(mesh_source, render_entity.m_bounding_box);
-                    }
-                    else
-                    {
-                        render_entity.m_bounding_box = m_render_resource->getCachedBoudingBox(mesh_source);
-                    }
+                        bool is_entity_in_scene = m_render_scene->getInstanceIdAllocator().hasElement(part_id);
 
-                    render_entity.m_mesh_asset_id = m_render_scene->getMeshAssetIdAllocator().allocGuid(mesh_source);
-                    render_entity.m_enable_vertex_blending =
-                        game_object_part.m_skeleton_animation_result.m_transforms.size() > 1; // take care
-                    render_entity.m_joint_matrices.resize(
-                        game_object_part.m_skeleton_animation_result.m_transforms.size());
-                    for (size_t i = 0; i < game_object_part.m_skeleton_animation_result.m_transforms.size(); ++i)
-                    {
-                        render_entity.m_joint_matrices[i] =
-                            game_object_part.m_skeleton_animation_result.m_transforms[i].m_matrix;
-                    }
+                        RenderEntity render_entity;
+                        render_entity.m_instance_id = static_cast<uint32_t>(m_render_scene->getInstanceIdAllocator().allocGuid(part_id));
+                        render_entity.m_model_matrix = game_object_part.m_transform_desc.m_transform_matrix;
 
-                    // material properties
-                    MaterialSourceDesc material_source;
-                    if (game_object_part.m_material_desc.m_with_texture)
-                    {
-                        material_source = {game_object_part.m_material_desc.m_base_color_texture_file,
-                                           game_object_part.m_material_desc.m_metallic_roughness_texture_file,
-                                           game_object_part.m_material_desc.m_normal_texture_file,
-                                           game_object_part.m_material_desc.m_occlusion_texture_file,
-                                           game_object_part.m_material_desc.m_emissive_texture_file};
-                    }
-                    else
-                    {
-                        // TODO: move to default material definition json file
-                        material_source = {
-                            asset_manager->getFullPath("asset/texture/default/albedo.jpg").generic_string(),
-                            asset_manager->getFullPath("asset/texture/default/mr.jpg").generic_string(),
-                            asset_manager->getFullPath("asset/texture/default/normal.jpg").generic_string(),
-                            "",
-                            ""};
-                    }
-                    bool is_material_loaded = m_render_scene->getMaterialAssetdAllocator().hasElement(material_source);
+                        m_render_scene->addInstanceIdToMap(render_entity.m_instance_id, gobject.getId());
 
-                    RenderMaterialData material_data;
-                    if (!is_material_loaded)
-                    {
-                        material_data = m_render_resource->loadMaterialData(material_source);
-                    }
-
-                    render_entity.m_material_asset_id =
-                        m_render_scene->getMaterialAssetdAllocator().allocGuid(material_source);
-
-                    // create game object on the graphics api side
-                    if (!is_mesh_loaded)
-                    {
-                        m_render_resource->uploadGameObjectRenderResource(render_entity, mesh_data);
-                    }
-
-                    if (!is_material_loaded)
-                    {
-                        m_render_resource->uploadGameObjectRenderResource(render_entity, material_data);
-                    }
-
-                    // add object to render scene if needed
-                    if (!is_entity_in_scene)
-                    {
-                        m_render_scene->m_render_entities.push_back(render_entity);
-                    }
-                    else
-                    {
-                        for (auto& entity : m_render_scene->m_render_entities)
+                        // mesh properties
+                        if (game_object_part.m_mesh_desc.m_is_active)
                         {
-                            if (entity.m_instance_id == render_entity.m_instance_id)
+                            MeshSourceDesc mesh_source = {game_object_part.m_mesh_desc.m_mesh_file};
+                            bool is_mesh_loaded = m_render_scene->getMeshAssetIdAllocator().hasElement(mesh_source);
+
+                            RenderMeshData mesh_data;
+                            if (!is_mesh_loaded)
                             {
-                                entity = render_entity;
-                                break;
+                                mesh_data = m_render_resource->loadMeshData(mesh_source, render_entity.m_bounding_box);
+                            }
+                            else
+                            {
+                                render_entity.m_bounding_box = m_render_resource->getCachedBoudingBox(mesh_source);
+                            }
+
+                            render_entity.m_mesh_asset_id =
+                                m_render_scene->getMeshAssetIdAllocator().allocGuid(mesh_source);
+
+                            if (game_object_part.m_skeleton_animation_result.m_is_active)
+                            {
+                                render_entity.m_enable_vertex_blending = game_object_part.m_skeleton_animation_result.m_transforms.size() > 1; // take care
+                                render_entity.m_joint_matrices.resize(game_object_part.m_skeleton_animation_result.m_transforms.size());
+                                for (size_t i = 0; i < game_object_part.m_skeleton_animation_result.m_transforms.size(); ++i)
+                                {
+                                    render_entity.m_joint_matrices[i] = game_object_part.m_skeleton_animation_result.m_transforms[i].m_matrix;
+                                }
+                            }
+
+                            // create game object on the graphics api side
+                            if (!is_mesh_loaded)
+                            {
+                                m_render_resource->uploadGameObjectRenderResource(render_entity, mesh_data);
+                            }
+                        }
+
+                        // material properties
+                        if (game_object_part.m_material_desc.m_is_active)
+                        {
+                            MaterialSourceDesc material_source;
+                            if (game_object_part.m_material_desc.m_with_texture)
+                            {
+                                material_source = {game_object_part.m_material_desc.m_base_color_texture_file,
+                                                   game_object_part.m_material_desc.m_metallic_roughness_texture_file,
+                                                   game_object_part.m_material_desc.m_normal_texture_file,
+                                                   game_object_part.m_material_desc.m_occlusion_texture_file,
+                                                   game_object_part.m_material_desc.m_emissive_texture_file};
+                            }
+                            else
+                            {
+                                // TODO: move to default material definition json file
+                                material_source = {
+                                    asset_manager->getFullPath("asset/texture/default/albedo.jpg").generic_string(),
+                                    asset_manager->getFullPath("asset/texture/default/mr.jpg").generic_string(),
+                                    asset_manager->getFullPath("asset/texture/default/normal.jpg").generic_string(),
+                                    "",
+                                    ""};
+                            }
+                            bool is_material_loaded = m_render_scene->getMaterialAssetdAllocator().hasElement(material_source);
+
+                            RenderMaterialData material_data;
+                            if (!is_material_loaded)
+                            {
+                                material_data = m_render_resource->loadMaterialData(material_source);
+                            }
+
+                            render_entity.m_material_asset_id = m_render_scene->getMaterialAssetdAllocator().allocGuid(material_source);
+
+                            if (!is_material_loaded)
+                            {
+                                m_render_resource->uploadGameObjectRenderResource(render_entity, material_data);
+                            }
+                        }
+
+                        // add object to render scene if needed
+                        if (!is_entity_in_scene)
+                        {
+                            m_render_scene->m_render_entities.push_back(render_entity);
+                        }
+                        else
+                        {
+                            for (auto& entity : m_render_scene->m_render_entities)
+                            {
+                                if (entity.m_instance_id == render_entity.m_instance_id)
+                                {
+                                    entity = render_entity;
+                                    break;
+                                }
                             }
                         }
                     }
+
+                    // process light
+                    if (game_object_part.m_ambeint_light_desc.m_is_active)
+                    {
+                        m_render_scene->m_ambient_light = game_object_part.m_ambeint_light_desc;
+                    }
+                    
+                    if (game_object_part.m_direction_light_desc.m_is_active)
+                    {
+                        m_render_scene->m_directional_light = game_object_part.m_direction_light_desc;
+                        m_render_scene->m_directional_light.m_gobject_id = gobject.getId();
+                        m_render_scene->m_directional_light.m_gcomponent_id = game_object_part.m_component_id;
+                    }
+
+                    if (game_object_part.m_point_light_desc.m_is_active)
+                    {
+                        uint32_t light_in_scene_index = -1;
+                        for (size_t i = 0; i < m_render_scene->m_point_light_list.size(); i++)
+                        {
+                            auto tmp_light = m_render_scene->m_point_light_list[i];
+
+                            if (tmp_light.m_gobject_id == gobject.getId() &&
+                                tmp_light.m_gcomponent_id == game_object_part.m_component_id)
+                            {
+                                light_in_scene_index = i;
+                                break;
+                            }
+                        }
+
+                        if (light_in_scene_index == -1)
+                        {
+                            m_render_scene->m_point_light_list.push_back(game_object_part.m_point_light_desc);
+                            m_render_scene->m_point_light_list.back().m_gobject_id    = gobject.getId();
+                            m_render_scene->m_point_light_list.back().m_gcomponent_id = game_object_part.m_component_id;
+                        }
+                        else
+                        {
+                            m_render_scene->m_point_light_list[light_in_scene_index] = game_object_part.m_point_light_desc;
+                            m_render_scene->m_point_light_list[light_in_scene_index].m_gobject_id = gobject.getId();
+                            m_render_scene->m_point_light_list[light_in_scene_index].m_gcomponent_id = game_object_part.m_component_id;
+                        }
+                    }
+
+                    if (game_object_part.m_spot_light_desc.m_is_active)
+                    {
+                        uint32_t light_in_scene_index = -1;
+                        for (size_t i = 0; i < m_render_scene->m_spot_light_list.size(); i++)
+                        {
+                            auto tmp_light = m_render_scene->m_spot_light_list[i];
+
+                            if (tmp_light.m_gobject_id == gobject.getId() &&
+                                tmp_light.m_gcomponent_id == game_object_part.m_component_id)
+                            {
+                                light_in_scene_index = i;
+                                break;
+                            }
+                        }
+
+                        if (light_in_scene_index == -1)
+                        {
+                            m_render_scene->m_spot_light_list.push_back(game_object_part.m_spot_light_desc);
+                            m_render_scene->m_spot_light_list.back().m_gobject_id     = gobject.getId();
+                            m_render_scene->m_spot_light_list.back().m_gcomponent_id = game_object_part.m_component_id;
+                        }
+                        else
+                        {
+                            m_render_scene->m_spot_light_list[light_in_scene_index] = game_object_part.m_spot_light_desc;
+                            m_render_scene->m_spot_light_list[light_in_scene_index].m_gobject_id = gobject.getId();
+                            m_render_scene->m_spot_light_list[light_in_scene_index].m_gcomponent_id = game_object_part.m_component_id;
+                        }
+                    }
+
                 }
                 // after finished processing, pop this game object
                 swap_data.m_game_object_resource_desc->popProcessObject();
@@ -318,7 +402,13 @@ namespace Pilot
             while (!swap_data.m_game_object_to_delete->isEmpty())
             {
                 GameObjectDesc gobject = swap_data.m_game_object_to_delete->getNextProcessObject();
+                
                 m_render_scene->deleteEntityByGObjectID(gobject.getId());
+
+                m_render_scene->deleteDirectionLightByGObjectID(gobject.getId());
+                m_render_scene->deletePointLightByGObjectID(gobject.getId());
+                m_render_scene->deleteSpotLightByGObjectID(gobject.getId());
+
                 swap_data.m_game_object_to_delete->popProcessObject();
             }
 

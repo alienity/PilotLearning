@@ -48,7 +48,7 @@ namespace Pilot
         void createAxis(std::array<RenderEntity, 3> axis_entities, std::array<RenderMeshData, 3> mesh_datas);
         void setVisibleAxis(std::optional<RenderEntity> axis);
         void setSelectedAxis(size_t selected_axis);
-        GuidAllocator<GameObjectPartId>& getGOInstanceIdAllocator();
+        GuidAllocator<GameObjectComponentId>& getGOInstanceIdAllocator();
         GuidAllocator<MeshSourceDesc>&   getMeshAssetIdAllocator();
 
         void clearForLevelReloading();

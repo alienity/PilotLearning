@@ -1,5 +1,6 @@
 #pragma once
 #include "runtime/core/meta/reflection/reflection.h"
+#include "runtime/function/framework/object/object_id_allocator.h"
 
 namespace Pilot
 {
@@ -14,7 +15,7 @@ namespace Pilot
         bool     m_is_dirty {false};
 
     public:
-        Component() = default;
+        inline Component() { m_id = ComponentIDAllocator::alloc(); };
         virtual ~Component() {}
 
         // Instantiating the component after definition loaded
@@ -22,11 +23,14 @@ namespace Pilot
 
         virtual void tick(float delta_time) {};
 
-        bool isDirty() const { return m_is_dirty; }
+        virtual bool isDirty() const { return m_is_dirty; }
 
-        void setDirtyFlag(bool is_dirty) { m_is_dirty = is_dirty; }
+        virtual void setDirtyFlag(bool is_dirty) { m_is_dirty = is_dirty; }
 
         bool m_tick_in_editor_mode {false};
+
+    protected:
+        GComponentID m_id {k_invalid_gcomponent_id};
     };
 
 } // namespace Pilot

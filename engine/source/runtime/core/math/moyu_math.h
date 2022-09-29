@@ -1109,7 +1109,7 @@ namespace Pilot
 
     public:
         Quaternion() = default;
-        Quaternion(float ix, float iy, float iz, float iw) : x(ix), y(iy), z(iz), w(iw) {}
+        Quaternion(float iw, float ix, float iy, float iz) : x(ix), y(iy), z(iz), w(iw) {}
         Quaternion(const Vector3& v, float scalar) : x(v.x), y(v.y), z(v.z), w(scalar) {}
         explicit Quaternion(const Vector4& v) : x(v.x), y(v.y), z(v.z), w(v.w) {}
         explicit Quaternion(const float* pArray) : x(pArray[0]), y(pArray[1]), z(pArray[2]), w(pArray[3]) {}

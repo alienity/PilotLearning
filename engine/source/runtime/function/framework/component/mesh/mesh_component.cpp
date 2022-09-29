@@ -9,6 +9,7 @@
 
 #include "runtime/function/render/render_swap_context.h"
 #include "runtime/function/render/render_system.h"
+#include "runtime/function/render/glm_wrapper.h"
 
 namespace Pilot
 {
@@ -24,10 +25,14 @@ namespace Pilot
         size_t raw_mesh_count = 0;
         for (const SubMeshRes& sub_mesh : m_mesh_res.m_sub_meshes)
         {
-            GameObjectPartDesc& meshComponent = m_raw_meshes[raw_mesh_count];
-            meshComponent.m_mesh_desc.m_mesh_file =
-                asset_manager->getFullPath(sub_mesh.m_obj_file_ref).generic_string();
+            GameObjectComponentDesc& meshComponent = m_raw_meshes[raw_mesh_count];
 
+            meshComponent.m_component_id = m_id;
+
+            meshComponent.m_mesh_desc.m_is_active = true;
+            meshComponent.m_mesh_desc.m_mesh_file = asset_manager->getFullPath(sub_mesh.m_obj_file_ref).generic_string();
+
+            meshComponent.m_material_desc.m_is_active    = true;
             meshComponent.m_material_desc.m_with_texture = sub_mesh.m_material.empty() == false;
 
             if (meshComponent.m_material_desc.m_with_texture)
@@ -47,10 +52,11 @@ namespace Pilot
                     asset_manager->getFullPath(material_res.m_emissive_texture_file).generic_string();
             }
 
-            auto object_space_transform = sub_mesh.m_transform.getMatrix();
-
-            meshComponent.m_transform_desc.m_transform_matrix = object_space_transform;
-
+            //auto object_space_transform = sub_mesh.m_transform.getMatrix();
+            
+            meshComponent.m_component_id               = m_id;
+            meshComponent.m_transform_desc.m_is_active = true;
+            
             ++raw_mesh_count;
         }
     }
@@ -60,57 +66,32 @@ namespace Pilot
         if (!m_parent_object.lock())
             return;
 
-        if (m_parent_object.lock()->isDirty())
+        TransformComponent* m_transform_component_ptr = m_parent_object.lock()->getTransformComponent();
+
+        if (m_transform_component_ptr->isDirty())
         {
-            Matrix4x4 transform_matrix = m_parent_object.lock()->getWorldMatrix();
+            Matrix4x4 transform_matrix = m_transform_component_ptr->getMatrixWorld();
 
-            std::vector<GameObjectPartDesc> dirty_mesh_parts;
-            SkeletonAnimationResult         animation_result;
-            animation_result.m_transforms.push_back({Matrix4x4::Identity});
-
-            for (GameObjectPartDesc& mesh_part : m_raw_meshes)
-            {
-                Matrix4x4 object_transform_matrix = mesh_part.m_transform_desc.m_transform_matrix;
-
-                mesh_part.m_transform_desc.m_transform_matrix = transform_matrix * object_transform_matrix;
-                dirty_mesh_parts.push_back(mesh_part);
-
-                mesh_part.m_transform_desc.m_transform_matrix = object_transform_matrix;
-            }
-
-            RenderSwapContext& render_swap_context = g_runtime_global_context.m_render_system->getSwapContext();
-            RenderSwapData&    logic_swap_data     = render_swap_context.getLogicSwapData();
-
-            logic_swap_data.addDirtyGameObject(GameObjectDesc {m_parent_object.lock()->getID(), dirty_mesh_parts});
-        }
-
-        /*
-        TransformComponent* transform_component = m_parent_object.lock()->tryGetComponent(TransformComponent);
-        
-        if (transform_component->isDirty())
-        {
-            std::vector<GameObjectPartDesc> dirty_mesh_parts;
-            SkeletonAnimationResult         animation_result;
-            animation_result.m_transforms.push_back({Matrix4x4::Identity});
+            std::vector<GameObjectComponentDesc> dirty_mesh_parts;
             
-            for (GameObjectPartDesc& mesh_part : m_raw_meshes)
+            for (GameObjectComponentDesc& mesh_part : m_raw_meshes)
             {
-                Matrix4x4 object_transform_matrix = mesh_part.m_transform_desc.m_transform_matrix;
+                std::tuple<Quaternion, Vector3, Vector3> rts = GLMUtil::decomposeMat4x4(transform_matrix);
 
-                mesh_part.m_transform_desc.m_transform_matrix =
-                    transform_component->getMatrix() * object_transform_matrix;
+                mesh_part.m_transform_desc.m_is_active        = true;
+                mesh_part.m_transform_desc.m_transform_matrix = transform_matrix;
+                mesh_part.m_transform_desc.m_rotation         = std::get<0>(rts);
+                mesh_part.m_transform_desc.m_position         = std::get<1>(rts);
+                mesh_part.m_transform_desc.m_scale            = std::get<2>(rts);
+
                 dirty_mesh_parts.push_back(mesh_part);
-
-                mesh_part.m_transform_desc.m_transform_matrix = object_transform_matrix;
             }
 
             RenderSwapContext& render_swap_context = g_runtime_global_context.m_render_system->getSwapContext();
             RenderSwapData&    logic_swap_data     = render_swap_context.getLogicSwapData();
 
             logic_swap_data.addDirtyGameObject(GameObjectDesc {m_parent_object.lock()->getID(), dirty_mesh_parts});
-
-            transform_component->setDirtyFlag(false);
         }
-        */
+
     }
 } // namespace Piccolo

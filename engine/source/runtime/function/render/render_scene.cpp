@@ -55,14 +55,11 @@ namespace Pilot
         //    &m_main_camera_visible_particlebillboard_nodes;
     }
 
-    GuidAllocator<GameObjectPartId>& RenderScene::getInstanceIdAllocator() { return m_instance_id_allocator; }
+    GuidAllocator<GameObjectComponentId>& RenderScene::getInstanceIdAllocator() { return m_instance_id_allocator; }
 
     GuidAllocator<MeshSourceDesc>& RenderScene::getMeshAssetIdAllocator() { return m_mesh_asset_id_allocator; }
 
-    GuidAllocator<MaterialSourceDesc>& RenderScene::getMaterialAssetdAllocator()
-    {
-        return m_material_asset_id_allocator;
-    }
+    GuidAllocator<MaterialSourceDesc>& RenderScene::getMaterialAssetdAllocator() { return m_material_asset_id_allocator; }
 
     void RenderScene::addInstanceIdToMap(uint32_t instance_id, GObjectID go_id)
     {
@@ -90,8 +87,8 @@ namespace Pilot
             }
         }
 
-        GameObjectPartId part_id = {go_id, 0};
-        size_t           find_guid;
+        GameObjectComponentId part_id = {go_id, 0};
+        size_t                find_guid;
         if (m_instance_id_allocator.getElementGuid(part_id, find_guid))
         {
             for (auto it = m_render_entities.begin(); it != m_render_entities.end(); it++)
@@ -102,6 +99,48 @@ namespace Pilot
                     break;
                 }
             }
+        }
+    }
+
+    void RenderScene::deleteDirectionLightByGObjectID(GObjectID go_id)
+    {
+        if (m_directional_light.m_gobject_id == go_id)
+        {
+            m_directional_light.m_is_active = false;
+        }
+    }
+
+    void RenderScene::deletePointLightByGObjectID(GObjectID go_id)
+    {
+        uint32_t point_light_index_to_del = -1;
+        for (size_t i = 0; i < m_point_light_list.size(); i++)
+        {
+            if (m_point_light_list[i].m_gobject_id == go_id)
+            {
+                point_light_index_to_del = i;
+                break;
+            }
+        }
+        if (point_light_index_to_del != -1)
+        {
+            m_point_light_list.erase(m_point_light_list.begin() + point_light_index_to_del);
+        }
+    }
+
+    void RenderScene::deleteSpotLightByGObjectID(GObjectID go_id)
+    {
+        uint32_t spot_light_index_to_del = -1;
+        for (size_t i = 0; i < m_spot_light_list.size(); i++)
+        {
+            if (m_spot_light_list[i].m_gobject_id == go_id)
+            {
+                spot_light_index_to_del = i;
+                break;
+            }
+        }
+        if (spot_light_index_to_del != -1)
+        {
+            m_spot_light_list.erase(m_spot_light_list.begin() + spot_light_index_to_del);
         }
     }
 

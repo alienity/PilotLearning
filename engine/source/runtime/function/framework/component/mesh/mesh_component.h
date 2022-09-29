@@ -21,7 +21,7 @@ namespace Pilot
 
         void postLoadResource(std::weak_ptr<GObject> parent_object) override;
 
-        const std::vector<GameObjectPartDesc>& getRawMeshes() const { return m_raw_meshes; }
+        const std::vector<GameObjectComponentDesc>& getRawMeshes() const { return m_raw_meshes; }
 
         void tick(float delta_time) override;
 
@@ -29,6 +29,6 @@ namespace Pilot
         META(Enable)
         MeshComponentRes m_mesh_res;
 
-        std::vector<GameObjectPartDesc> m_raw_meshes;
+        std::vector<GameObjectComponentDesc> m_raw_meshes;
     };
 } // namespace Pilot

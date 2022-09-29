@@ -18,4 +18,19 @@ namespace Pilot
         return new_object_ret;
     }
 
+
+    std::atomic<GComponentID> ComponentIDAllocator::m_next_id {1};
+
+    GComponentID ComponentIDAllocator::alloc()
+    {
+        std::atomic<GComponentID> new_component_ret = m_next_id.load();
+        m_next_id++;
+        if (m_next_id >= k_invalid_gcomponent_id)
+        {
+            LOG_FATAL("gcomponent id overflow");
+        }
+
+        return new_component_ret;
+    }
+
 } // namespace Pilot

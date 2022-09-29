@@ -539,7 +539,7 @@ namespace Pilot
 
         // assign some value that won't be used by other game objects
         {
-            GameObjectPartId axis_instance_id = {0xFFAA, 0xFFAA};
+            GameObjectComponentId axis_instance_id = {0xFFAA, 0xFFAA};
             MeshSourceDesc   mesh_source_desc = {"%%translation_axis%%"};
 
             m_translation_axis.m_instance_id   = instance_id_allocator.allocGuid(axis_instance_id);
@@ -547,7 +547,7 @@ namespace Pilot
         }
 
         {
-            GameObjectPartId axis_instance_id = {0xFFBB, 0xFFBB};
+            GameObjectComponentId axis_instance_id = {0xFFBB, 0xFFBB};
             MeshSourceDesc   mesh_source_desc = {"%%rotate_axis%%"};
 
             m_rotation_axis.m_instance_id   = instance_id_allocator.allocGuid(axis_instance_id);
@@ -555,7 +555,7 @@ namespace Pilot
         }
 
         {
-            GameObjectPartId axis_instance_id = {0xFFCC, 0xFFCC};
+            GameObjectComponentId axis_instance_id = {0xFFCC, 0xFFCC};
             MeshSourceDesc   mesh_source_desc = {"%%scale_axis%%"};
 
             m_scale_aixs.m_instance_id   = instance_id_allocator.allocGuid(axis_instance_id);
