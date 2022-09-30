@@ -35,9 +35,7 @@ namespace Pilot
     void IndirectCullPass::prepareMeshData(std::shared_ptr<RenderResourceBase> render_resource, uint32_t& numMeshes)
     {
         RenderResource* real_resource = (RenderResource*)render_resource.get();
-        memcpy(pPerframeObj,
-               &real_resource->m_mesh_perframe_storage_buffer_object,
-               sizeof(HLSL::MeshPerframeStorageBufferObject));
+        memcpy(pPerframeObj, &real_resource->m_mesh_perframe_storage_buffer_object, sizeof(HLSL::MeshPerframeStorageBufferObject));
 
         std::vector<RenderMeshNode>& renderMeshNodes = *m_visiable_nodes.p_all_mesh_nodes;
 
@@ -47,10 +45,8 @@ namespace Pilot
         {
             RenderMeshNode& temp_node = renderMeshNodes[i];
 
-            RHI::D3D12ShaderResourceView& defaultWhiteView =
-                real_resource->m_default_resource._white_texture2d_image_view;
-            RHI::D3D12ShaderResourceView& defaultBlackView =
-                real_resource->m_default_resource._black_texture2d_image_view;
+            RHI::D3D12ShaderResourceView& defaultWhiteView = real_resource->m_default_resource._white_texture2d_image_view;
+            RHI::D3D12ShaderResourceView& defaultBlackView = real_resource->m_default_resource._black_texture2d_image_view;
 
             RHI::D3D12ShaderResourceView& uniformBufferView     = temp_node.ref_material->material_uniform_buffer_view;
             RHI::D3D12ShaderResourceView& baseColorView         = temp_node.ref_material->base_color_image_view;
@@ -61,13 +57,10 @@ namespace Pilot
 
             HLSL::MaterialInstance curMatInstance = {};
             curMatInstance.uniformBufferViewIndex = uniformBufferView.GetIndex();
-            curMatInstance.baseColorViewIndex =
-                baseColorView.IsValid() ? baseColorView.GetIndex() : defaultWhiteView.GetIndex();
-            curMatInstance.metallicRoughnessViewIndex =
-                metallicRoughnessView.IsValid() ? metallicRoughnessView.GetIndex() : defaultBlackView.GetIndex();
+            curMatInstance.baseColorViewIndex = baseColorView.IsValid() ? baseColorView.GetIndex() : defaultWhiteView.GetIndex();
+            curMatInstance.metallicRoughnessViewIndex = metallicRoughnessView.IsValid() ? metallicRoughnessView.GetIndex() : defaultBlackView.GetIndex();
             curMatInstance.normalViewIndex = normalView.IsValid() ? normalView.GetIndex() : defaultWhiteView.GetIndex();
-            curMatInstance.emissionViewIndex =
-                emissionView.IsValid() ? emissionView.GetIndex() : defaultBlackView.GetIndex();
+            curMatInstance.emissionViewIndex = emissionView.IsValid() ? emissionView.GetIndex() : defaultBlackView.GetIndex();
 
             pMaterialObj[i] = curMatInstance;
 
@@ -106,14 +99,10 @@ namespace Pilot
             RHI::D3D12CommandContext& copyContext = m_Device->GetLinkedDevice()->GetCopyContext1();
             copyContext.Open();
             {
-                copyContext.ResetCounter(indirectCullParams.p_IndirectCommandBuffer.get(),
-                                         indirectCullParams.commandBufferCounterOffset);
-                copyContext->CopyResource(indirectCullParams.pPerframeBuffer->GetResource(),
-                                          pUploadPerframeBuffer->GetResource());
-                copyContext->CopyResource(indirectCullParams.pMaterialBuffer->GetResource(),
-                                          pUploadMaterialBuffer->GetResource());
-                copyContext->CopyResource(indirectCullParams.pMeshBuffer->GetResource(),
-                                          pUploadMeshBuffer->GetResource());
+                copyContext.ResetCounter(indirectCullParams.p_IndirectCommandBuffer.get(), indirectCullParams.commandBufferCounterOffset);
+                copyContext->CopyResource(indirectCullParams.pPerframeBuffer->GetResource(), pUploadPerframeBuffer->GetResource());
+                copyContext->CopyResource(indirectCullParams.pMaterialBuffer->GetResource(), pUploadMaterialBuffer->GetResource());
+                copyContext->CopyResource(indirectCullParams.pMeshBuffer->GetResource(), pUploadMeshBuffer->GetResource());
             }
             copyContext.Close();
             RHI::D3D12SyncHandle copySyncHandle = copyContext.Execute(false);
@@ -123,16 +112,13 @@ namespace Pilot
 
             asyncCompute.Open();
             {
-                D3D12ScopedEvent(AsyncCompute, "Gpu Frustum Culling");
+                D3D12ScopedEvent(asyncCompute, "Gpu Frustum Culling");
                 asyncCompute.SetPipelineState(registry.GetPipelineState(PipelineStates::IndirectCull));
                 asyncCompute.SetComputeRootSignature(registry.GetRootSignature(RootSignatures::IndirectCull));
 
-                asyncCompute->SetComputeRootConstantBufferView(
-                    0, indirectCullParams.pPerframeBuffer->GetGpuVirtualAddress());
-                asyncCompute->SetComputeRootShaderResourceView(1,
-                                                               indirectCullParams.pMeshBuffer->GetGpuVirtualAddress());
-                asyncCompute->SetComputeRootDescriptorTable(
-                    2, indirectCullParams.p_IndirectCommandBufferUav->GetGpuHandle());
+                asyncCompute->SetComputeRootConstantBufferView(0, indirectCullParams.pPerframeBuffer->GetGpuVirtualAddress());
+                asyncCompute->SetComputeRootShaderResourceView(1, indirectCullParams.pMeshBuffer->GetGpuVirtualAddress());
+                asyncCompute->SetComputeRootDescriptorTable(2, indirectCullParams.p_IndirectCommandBufferUav->GetGpuHandle());
 
                 asyncCompute.Dispatch1D<128>(indirectCullParams.numMeshes);
             }

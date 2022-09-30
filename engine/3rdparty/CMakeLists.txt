@@ -7,6 +7,11 @@ if(NOT TARGET imgui)
     set_target_properties(imgui PROPERTIES FOLDER ${third_party_folder}/imgui)
 endif()
 
+if(NOT TARGET ImGuizmo)
+    include(ImGuizmo.cmake)
+    set_target_properties(ImGuizmo PROPERTIES FOLDER ${third_party_folder}/ImGuizmo)
+endif()
+
 if(NOT TARGET DirectX-Headers)
     add_subdirectory(DirectX-Headers)
     set_target_properties(DirectX-Headers PROPERTIES FOLDER ${third_party_folder}/DirectX-Headers)

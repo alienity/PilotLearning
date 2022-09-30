@@ -279,21 +279,34 @@ namespace HLSL
     static uint32_t const m_mesh_per_drawcall_max_instance_count = 64;
     static uint32_t const m_mesh_vertex_blending_max_joint_count = 1024;
     static uint32_t const m_max_point_light_count                = 16;
+    static uint32_t const m_max_spot_light_count                = 16;
 
     struct SceneDirectionalLight
     {
         glm::vec3 direction;
         float     _padding_direction;
         glm::vec3 color;
-        float     _padding_color;
+        float     intensity;
+        glm::mat4 directional_light_proj_view;
     };
 
     struct ScenePointLight
     {
         glm::vec3 position;
         float     radius;
-        glm::vec3 intensity;
-        float     _padding_intensity;
+        glm::vec3 color;
+        float     intensity;
+    };
+
+    struct SceneSpotLight
+    {
+        glm::vec3 position;
+        float     radius;
+        glm::vec3 color;
+        float     intensity;
+        float     inner_radians;
+        float     outer_radians;
+        glm::vec2 _padding_spot;
     };
 
     struct CameraInstance
@@ -311,12 +324,12 @@ namespace HLSL
         glm::vec3             ambient_light;
         float                 _padding_ambient_light;
         uint32_t              point_light_num;
+        uint32_t              spot_light_num;
         uint32_t              total_mesh_num;
-        uint32_t              _padding_point_light_num_2;
         uint32_t              _padding_point_light_num_3;
         ScenePointLight       scene_point_lights[m_max_point_light_count];
+        SceneSpotLight        scene_spot_lights[m_max_spot_light_count];
         SceneDirectionalLight scene_directional_light;
-        glm::mat4             directional_light_proj_view;
     };
 
     struct BoundingBox
@@ -368,11 +381,16 @@ namespace HLSL
 
     struct MeshPointLightShadowPerframeStorageBufferObject
     {
-        uint32_t  point_light_num;
-        uint32_t  _padding_point_light_num_1;
-        uint32_t  _padding_point_light_num_2;
-        uint32_t  _padding_point_light_num_3;
-        glm::vec4 point_lights_position_and_radius[m_max_point_light_count];
+        uint32_t   point_light_num;
+        glm::uvec3 _padding_point_light_num;
+        glm::vec4  point_lights_position_and_radius[m_max_point_light_count];
+    };
+
+    struct MeshSpotLightShadowPerframeStorageBufferObject
+    {
+        uint32_t   spot_light_num;
+        glm::uvec3 _padding_spot_light_num;
+        glm::vec4  spot_lights_position_and_radius[m_max_spot_light_count];
     };
 
     struct MeshDirectionalLightShadowPerframeStorageBufferObject

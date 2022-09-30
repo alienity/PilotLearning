@@ -3,6 +3,7 @@
 #include "d3d12.hlsli"
 
 #define m_max_point_light_count 16
+#define m_max_spot_light_count 16
 
 // ==================== Material ====================
 /*
@@ -66,8 +67,19 @@ struct ScenePointLight
 {
     float3 position;
     float  radius;
-    float3 intensity;
-    float  _padding_intensity;
+    float3 color;
+    float intensity;
+};
+
+struct SceneSpotLight
+{
+    float3 position;
+    float  radius;
+    float3 color; 
+    float  intensity;
+    float  inner_radians;
+    float  outer_radians;
+    float2 _padding_spot;
 };
 
 struct SceneDirectionalLight
@@ -75,7 +87,8 @@ struct SceneDirectionalLight
     float3 direction;
     float  _padding_direction;
     float3 color;
-    float  _padding_color;
+    float  intensity;
+    float4x4 directional_light_proj_view;
 };
 
 // ==================== Mesh ====================
@@ -129,10 +142,10 @@ struct MeshPerframeStorageBufferObject
     float3                ambient_light;
     float                 _padding_ambient_light;
     uint                  point_light_num;
+    uint                  spot_light_num;
     uint                  total_mesh_num;
-    uint                  _padding_point_light_num_2;
     uint                  _padding_point_light_num_3;
     ScenePointLight       scene_point_lights[m_max_point_light_count];
+    SceneSpotLight        scene_spot_lights[m_max_spot_light_count];
     SceneDirectionalLight scene_directional_light;
-    float4x4              directional_light_proj_view;
 };

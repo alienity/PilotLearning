@@ -146,11 +146,13 @@ namespace Pilot
         // ambient light
         Vector3  ambient_light   = render_scene->m_ambient_light.m_color.toVector3();
         uint32_t point_light_num = static_cast<uint32_t>(render_scene->m_point_light_list.size());
+        uint32_t spot_light_num  = static_cast<uint32_t>(render_scene->m_spot_light_list.size());
 
         // set ubo data
         m_mesh_perframe_storage_buffer_object.cameraInstance   = cameraInstance;
         m_mesh_perframe_storage_buffer_object.ambient_light    = GLMUtil::fromVec3(ambient_light);
         m_mesh_perframe_storage_buffer_object.point_light_num  = point_light_num;
+        m_mesh_perframe_storage_buffer_object.spot_light_num   = spot_light_num;
 
         m_mesh_point_light_shadow_perframe_storage_buffer_object.point_light_num = point_light_num;
 
@@ -158,18 +160,40 @@ namespace Pilot
         for (uint32_t i = 0; i < point_light_num; i++)
         {
             Vector3 point_light_position = render_scene->m_point_light_list[i].m_position;
-            Vector3 point_light_intensity = render_scene->m_point_light_list[i].m_intensity;
+            float point_light_intensity = render_scene->m_point_light_list[i].m_intensity;
 
             float radius = render_scene->m_point_light_list[i].m_radius;
+            Color color  = render_scene->m_point_light_list[i].m_color;
 
-            m_mesh_perframe_storage_buffer_object.scene_point_lights[i].position =
-                GLMUtil::fromVec3(point_light_position);
+            m_mesh_perframe_storage_buffer_object.scene_point_lights[i].position = GLMUtil::fromVec3(point_light_position);
             m_mesh_perframe_storage_buffer_object.scene_point_lights[i].radius = radius;
-            m_mesh_perframe_storage_buffer_object.scene_point_lights[i].intensity =
-                GLMUtil::fromVec3(point_light_intensity);
+            m_mesh_perframe_storage_buffer_object.scene_point_lights[i].color = GLMUtil::fromVec3(Vector3(color.r, color.g, color.b));
+            m_mesh_perframe_storage_buffer_object.scene_point_lights[i].intensity = point_light_intensity;
 
-            m_mesh_point_light_shadow_perframe_storage_buffer_object.point_lights_position_and_radius[i] =
+            m_mesh_point_light_shadow_perframe_storage_buffer_object.point_lights_position_and_radius[i] = 
                 glm::vec4(point_light_position.x, point_light_position.y, point_light_position.z, radius);
+        }
+
+        m_mesh_spot_light_shadow_perframe_storage_buffer_object.spot_light_num = spot_light_num;
+
+        // spot lights
+        for (uint32_t i = 0; i < spot_light_num; i++)
+        {
+            Vector3 spot_light_position  = render_scene->m_spot_light_list[i].m_position;
+            float   spot_light_intensity = render_scene->m_spot_light_list[i].m_intensity;
+
+            float radius = render_scene->m_spot_light_list[i].m_radius;
+            Color color  = render_scene->m_spot_light_list[i].m_color;
+
+            float inner_radians = render_scene->m_spot_light_list[i].m_inner_radians;
+            float outer_radians = render_scene->m_spot_light_list[i].m_outer_radians;
+
+            m_mesh_perframe_storage_buffer_object.scene_spot_lights[i].position = GLMUtil::fromVec3(spot_light_position);
+            m_mesh_perframe_storage_buffer_object.scene_spot_lights[i].radius = radius;
+            m_mesh_perframe_storage_buffer_object.scene_spot_lights[i].color = GLMUtil::fromVec3(Vector3(color.r, color.g, color.b));
+            m_mesh_perframe_storage_buffer_object.scene_spot_lights[i].intensity = spot_light_intensity;
+            m_mesh_perframe_storage_buffer_object.scene_spot_lights[i].inner_radians = inner_radians;
+            m_mesh_perframe_storage_buffer_object.scene_spot_lights[i].outer_radians = outer_radians;
         }
 
         // directional light
@@ -177,8 +201,9 @@ namespace Pilot
             GLMUtil::fromVec3(Vector3::normalize(render_scene->m_directional_light.m_direction));
         m_mesh_perframe_storage_buffer_object.scene_directional_light.color =
             GLMUtil::fromVec3(render_scene->m_directional_light.m_color.toVector3());
+        m_mesh_perframe_storage_buffer_object.scene_directional_light.intensity =
+            render_scene->m_directional_light.m_intensity;
 
-        //m_mesh_perframe_storage_buffer_object.directional_light_proj_view
     }
 
     /*

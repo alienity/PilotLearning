@@ -91,9 +91,8 @@
 
 #define D3D12Concatenate(a, b) a##b
 #define D3D12GetScopedEventVariableName(a, b) D3D12Concatenate(a, b)
-//#define D3D12ScopedEvent(context, name) \
-//    RHI::D3D12ScopedEventObject D3D12GetScopedEventVariableName(D3D12Event, __LINE__)(context, name)
-#define D3D12ScopedEvent(context, name) 
+#define D3D12ScopedEvent(context, name) \
+    RHI::D3D12ScopedEventObject D3D12GetScopedEventVariableName(D3D12Event, __LINE__)(context, name)
 
 // Custom resource states
 constexpr D3D12_RESOURCE_STATES D3D12_RESOURCE_STATE_UNKNOWN       = static_cast<D3D12_RESOURCE_STATES>(-1);

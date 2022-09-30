@@ -26,12 +26,15 @@
 #include "runtime/function/render/render_camera.h"
 #include "runtime/function/render/render_system.h"
 #include "runtime/function/render/window_system.h"
+#include "runtime/function/render/glm_wrapper.h"
 
 #include <imgui.h>
 #include <imgui_internal.h>
 #include <backends/imgui_impl_dx12.h>
 #include <backends/imgui_impl_glfw.h>
 #include <stb_image.h>
+
+#include "ImGuizmo.h"
 
 namespace Pilot
 {
@@ -906,9 +909,18 @@ namespace Pilot
         Vector2 new_window_pos  = {0.0f, 0.0f};
         Vector2 new_window_size = {0.0f, 0.0f};
         new_window_pos.x        = ImGui::GetWindowPos().x;
-        new_window_pos.y        = ImGui::GetWindowPos().y + menu_bar_rect.Min.y;
+        new_window_pos.y        = ImGui::GetWindowPos().y + menu_bar_rect.Min.y + 20;
         new_window_size.x       = ImGui::GetWindowSize().x;
-        new_window_size.y       = ImGui::GetWindowSize().y - menu_bar_rect.Min.y;
+        new_window_size.y       = ImGui::GetWindowSize().y - menu_bar_rect.Min.y - 20;
+
+        if (!g_is_editor_mode)
+        {
+            ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 0.8f), "Press Left Alt key to display the mouse cursor!");
+        }
+        else
+        {
+            ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 0.8f), "Current editor camera move speed: [%f]", g_editor_global_context.m_input_manager->getCameraSpeed());
+        }
 
         // if (new_window_pos != m_engine_window_pos || new_window_size != m_engine_window_size)
         {
@@ -916,9 +928,6 @@ namespace Pilot
             //     new_window_pos.x, new_window_pos.y, new_window_size.x, new_window_size.y);
             //g_runtime_global_context.m_render_system->updateEngineContentViewport(
             //    0, 0, new_window_size.x, new_window_size.y);
-
-            g_editor_global_context.m_input_manager->setEngineWindowPos(new_window_pos);
-            g_editor_global_context.m_input_manager->setEngineWindowSize(new_window_size);
 
             float displayWidth, displayHeight;
 
@@ -936,20 +945,63 @@ namespace Pilot
                 displayWidth  = new_window_size.y * backbufferAspect;
             }
 
-            ImGui::Image((ImTextureID)handleOfGameView.ptr, ImVec2(displayWidth, displayHeight));
-        }
+            //g_editor_global_context.m_input_manager->setEngineWindowPos(new_window_pos);
+            //g_editor_global_context.m_input_manager->setEngineWindowSize(new_window_size);
 
-        ImGui::SameLine(0.5f);
+            Vector2 cursor_offset = Vector2((new_window_size.x - displayWidth) * 0.5f, (new_window_size.y - displayHeight) * 0.5f);
 
-        if (!g_is_editor_mode)
-        {
-            ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 0.8f), "Press Left Alt key to display the mouse cursor!");
-        }
-        else
-        {
-            ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 0.8f),
-                               "Current editor camera move speed: [%f]",
-                               g_editor_global_context.m_input_manager->getCameraSpeed());
+            ImVec2 cilld_cur_pos = ImVec2(cursor_offset.x + new_window_pos.x, cursor_offset.y + new_window_pos.y);
+
+            g_editor_global_context.m_input_manager->setEngineWindowPos(Vector2(cilld_cur_pos.x, cilld_cur_pos.y));
+            g_editor_global_context.m_input_manager->setEngineWindowSize(Vector2(displayWidth, displayHeight));
+
+            ImGui::SetCursorPosX(cursor_offset.x);
+            ImGui::BeginChild("GameView", ImVec2(displayWidth, displayHeight), true, ImGuiWindowFlags_NoDocking);
+            {
+                ImGuizmo::SetDrawlist();
+
+                ImVec2 window_pos = ImGui::GetWindowPos();
+
+                ImGuizmo::SetRect(window_pos.x, window_pos.y, displayWidth, displayHeight);
+
+                Matrix4x4 viewMatrix  = g_editor_global_context.m_scene_manager->getEditorCamera()->getViewMatrix();
+                glm::mat4 _cameraView = GLMUtil::fromMat4x4(viewMatrix);
+                Matrix4x4 projMatrix  = g_editor_global_context.m_scene_manager->getEditorCamera()->getPersProjMatrix();
+                glm::mat4 _projMatrix = GLMUtil::fromMat4x4(projMatrix);
+                glm::mat4 _identiyMatrix = GLMUtil::fromMat4x4(Matrix4x4::Identity);
+
+                ImGuizmo::DrawGrid((const float*)&_cameraView, (const float*)&_projMatrix, (const float*)&_identiyMatrix, 100.f);
+
+                // draw the real rendering image
+                {
+                    ImGui::Image((ImTextureID)handleOfGameView.ptr, ImVec2(displayWidth, displayHeight));
+                }
+
+                std::shared_ptr<GObject> selected_object =
+                    g_editor_global_context.m_scene_manager->getSelectedGObject().lock();
+                if (selected_object != nullptr)
+                {
+                    TransformComponent* trans_component_ptr = selected_object->getTransformComponent();
+                    Matrix4x4 worldMatrix = trans_component_ptr->getMatrixWorld();
+                    glm::mat4 _worldMatrix = GLMUtil::fromMat4x4(worldMatrix);
+
+                    ImGuizmo::OPERATION op_type = ImGuizmo::OPERATION::TRANSLATE;
+                    if (trans_button_ckecked)
+                    {
+                        op_type = ImGuizmo::OPERATION::TRANSLATE;
+                    }
+                    else if (rotate_button_ckecked)
+                    {
+                        op_type = ImGuizmo::OPERATION::ROTATE;
+                    }
+                    else if (scale_button_ckecked)
+                    {
+                        op_type = ImGuizmo::OPERATION::SCALE;
+                    }
+                    ImGuizmo::Manipulate((float*)&_cameraView, (const float*)&_projMatrix, op_type, ImGuizmo::MODE::LOCAL, (float*)&_worldMatrix);
+                }
+            }
+            ImGui::EndChild();
         }
 
         ImGui::End();
@@ -1174,8 +1226,11 @@ namespace Pilot
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
-        showEditorUI();
+        ImGuizmo::SetOrthographic(false);
+        ImGuizmo::BeginFrame();
 
+        showEditorUI();
+        
         // Rendering
         ImGui::EndFrame();
         ImGui::Render();

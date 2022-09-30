@@ -113,8 +113,8 @@ namespace Pilot
         // 我们用于bindless的对象
         HLSL::MeshPerframeStorageBufferObject                 m_mesh_perframe_storage_buffer_object;
         HLSL::MeshPointLightShadowPerframeStorageBufferObject m_mesh_point_light_shadow_perframe_storage_buffer_object;
-        HLSL::MeshDirectionalLightShadowPerframeStorageBufferObject
-                                m_mesh_directional_light_shadow_perframe_storage_buffer_object;
+        HLSL::MeshSpotLightShadowPerframeStorageBufferObject  m_mesh_spot_light_shadow_perframe_storage_buffer_object;
+        HLSL::MeshDirectionalLightShadowPerframeStorageBufferObject m_mesh_directional_light_shadow_perframe_storage_buffer_object;
         HLSL::MeshInstance      m_all_mesh_buffer_object;
         AxisStorageBufferObject m_axis_storage_buffer_object;
 
