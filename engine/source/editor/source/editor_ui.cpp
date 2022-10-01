@@ -143,6 +143,28 @@ namespace Pilot
                 }
             }
         };
+        m_editor_ui_creator["Vector2"] = [this](const std::string& name, void* value_ptr) -> void {
+            Vector2* vec_ptr = static_cast<Vector2*>(value_ptr);
+            float    val[2]  = {vec_ptr->x, vec_ptr->y};
+            if (g_node_depth == -1)
+            {
+                std::string label = "##" + name;
+                ImGui::Text("%s", name.c_str());
+                ImGui::SameLine();
+                ImGui::DragFloat2(label.c_str(), val);
+            }
+            else
+            {
+                if (g_editor_node_state_array[g_node_depth].second)
+                {
+                    std::string full_label = "##" + getLeafUINodeParentLabel() + name;
+                    ImGui::Text("%s", (name + ":").c_str());
+                    ImGui::DragFloat2(full_label.c_str(), val);
+                }
+            }
+            vec_ptr->x = val[0];
+            vec_ptr->y = val[1];
+        };
         m_editor_ui_creator["Vector3"] = [this](const std::string& name, void* value_ptr) -> void {
             Vector3* vec_ptr = static_cast<Vector3*>(value_ptr);
             float    val[3]  = {vec_ptr->x, vec_ptr->y, vec_ptr->z};
