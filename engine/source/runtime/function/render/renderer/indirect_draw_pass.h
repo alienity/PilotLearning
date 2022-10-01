@@ -12,7 +12,8 @@ namespace Pilot
     public:
         struct DrawPassInitInfo : public RenderPassInitInfo
         {
-            RHI::RgTextureDesc depthBufferTexDesc;
+            RHI::RgTextureDesc colorTexDesc;
+            RHI::RgTextureDesc depthTexDesc;
         };
 
         struct DrawInputParameters : public PassInput
@@ -24,11 +25,16 @@ namespace Pilot
             std::shared_ptr<RHI::D3D12Buffer> pMaterialBuffer;
 
             std::shared_ptr<RHI::D3D12Buffer> pIndirectCommandBuffer;
+
+            CD3DX12_RESOURCE_DESC outputRTDesc;
+            CD3DX12_CLEAR_VALUE   outputClearVal;
+
         };
 
         struct DrawOutputParameters : public PassOutput
         {
             RHI::RgResourceHandle renderTargetColorHandle;
+            RHI::RgResourceHandle renderTargetColorSRVHandle;
             RHI::RgResourceHandle renderTargetColorRTVHandle;
 
             RHI::RgResourceHandle renderTargetDepthHandle;
@@ -48,7 +54,8 @@ namespace Pilot
     private:
         std::shared_ptr<RHI::D3D12DynamicDescriptor<D3D12_SHADER_RESOURCE_VIEW_DESC>> pD3D12SRVDescriptor;
 
-        RHI::RgTextureDesc depthBufferTexDesc;
+        RHI::RgTextureDesc colorTexDesc;
+        RHI::RgTextureDesc depthTexDesc;
 	};
 }
 

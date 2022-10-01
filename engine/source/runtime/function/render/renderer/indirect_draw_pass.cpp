@@ -11,7 +11,8 @@ namespace Pilot
 
 	void IndirectDrawPass::initialize(const DrawPassInitInfo& init_info)
 	{
-        depthBufferTexDesc = init_info.depthBufferTexDesc;
+        colorTexDesc    = init_info.colorTexDesc;
+        depthTexDesc    = init_info.depthTexDesc;
 	}
 
     void IndirectDrawPass::update(RHI::D3D12CommandContext& context,
@@ -30,7 +31,13 @@ namespace Pilot
 
         std::shared_ptr<RHI::D3D12Buffer> pIndirectCommandBuffer = drawPassInput->pIndirectCommandBuffer;
 
-        drawPassOutput->renderTargetDepthHandle    = graph.Create<RHI::D3D12Texture>(depthBufferTexDesc);
+        drawPassOutput->renderTargetColorHandle    = graph.Create<RHI::D3D12Texture>(colorTexDesc);
+        drawPassOutput->renderTargetColorSRVHandle = graph.Create<RHI::D3D12ShaderResourceView>(
+            RHI::RgViewDesc().SetResource(drawPassOutput->renderTargetColorHandle).AsTextureSrv());
+        drawPassOutput->renderTargetColorRTVHandle = graph.Create<RHI::D3D12RenderTargetView>(
+            RHI::RgViewDesc().SetResource(drawPassOutput->renderTargetColorHandle).AsRtv(false));
+
+        drawPassOutput->renderTargetDepthHandle    = graph.Create<RHI::D3D12Texture>(depthTexDesc);
         drawPassOutput->renderTargetDepthDSVHandle = graph.Create<RHI::D3D12DepthStencilView>(
             RHI::RgViewDesc().SetResource(drawPassOutput->renderTargetDepthHandle).AsDsv());
 
@@ -38,25 +45,14 @@ namespace Pilot
             .Write(&drawPassOutput->renderTargetColorHandle)
             .Write(&drawPassOutput->renderTargetDepthHandle)
             .Execute([=](RHI::RenderGraphRegistry& registry, RHI::D3D12CommandContext& context) {
+                ID3D12CommandSignature* pCommandSignature = registry.GetCommandSignature(CommandSignatures::IndirectDraw)->GetApiHandle();
 
-                RHI::D3D12Texture* rtColorTexture =
-                    registry.GetD3D12Texture(drawPassOutput->renderTargetColorHandle);
-                D3D12_RESOURCE_DESC rtColorTextureDesc = rtColorTexture->GetDesc();
-
-                int rtColorWidth  = rtColorTextureDesc.Width;
-                int rtColorHeight = rtColorTextureDesc.Height;
-
-                ID3D12CommandSignature* pCommandSignature =
-                    registry.GetCommandSignature(CommandSignatures::IndirectDraw)->GetApiHandle();
-
-                RHI::D3D12RenderTargetView* renderTargetView =
-                    registry.GetD3D12RenderTargetView(drawPassOutput->renderTargetColorRTVHandle);
-                RHI::D3D12DepthStencilView* depthStencilView =
-                    registry.GetD3D12DepthStencilView(drawPassOutput->renderTargetDepthDSVHandle);
+                RHI::D3D12RenderTargetView* renderTargetView = registry.GetD3D12RenderTargetView(drawPassOutput->renderTargetColorRTVHandle);
+                RHI::D3D12DepthStencilView* depthStencilView = registry.GetD3D12DepthStencilView(drawPassOutput->renderTargetDepthDSVHandle);
 
                 context->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-                context.SetViewport(RHIViewport {0.0f, 0.0f, (float)rtColorWidth, (float)rtColorHeight, 0.0f, 1.0f});
-                context.SetScissorRect(RHIRect {0, 0, rtColorWidth, rtColorHeight});
+                context.SetViewport(RHIViewport {0.0f, 0.0f, (float)colorTexDesc.Width, (float)colorTexDesc.Height, 0.0f, 1.0f});
+                context.SetScissorRect(RHIRect {0, 0, (int)colorTexDesc.Width, (int)colorTexDesc.Height});
                 
                 context.ClearRenderTarget(renderTargetView, depthStencilView);
                 context.SetRenderTarget(renderTargetView, depthStencilView);

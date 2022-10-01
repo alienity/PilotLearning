@@ -1,10 +1,20 @@
 struct VertexAttributes
 {
-	float4 Pos : SV_Position;
-	float2 Tex : TEXCOORD0;
+    float4 position : SV_POSITION;
+    float2 texcoord : TEXCOORD0;
 };
+
+cbuffer RootConstants : register(b0, space0) { uint texIndex; };
+
+SamplerState defaultSampler : register(s10);
 
 float4 PSMain(VertexAttributes input) : SV_Target0
 {
-    return float4(input.Tex.x, input.Tex.y, 0, 0);
+    Texture2D<float4> baseColorTex = ResourceDescriptorHeap[texIndex];
+
+    float4 outColor = baseColorTex.Sample(defaultSampler, input.texcoord);
+
+    outColor = pow(outColor, 1 / 2.2f);
+
+    return float4(outColor.rgb, 1);
 }

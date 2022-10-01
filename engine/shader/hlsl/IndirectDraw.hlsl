@@ -79,7 +79,7 @@ float4 PSMain(VertexOutput input) : SV_Target0
     float3 positionWS = input.positionWS;
     float3 viewPos    = g_ConstantBufferParams.cameraInstance.cameraPosition;
 
-    float3 outColor = g_ConstantBufferParams.ambient_light;
+    float3 outColor = g_ConstantBufferParams.ambient_light * 0.0f;
 
     uint point_light_num = g_ConstantBufferParams.point_light_num;
     for (uint i = 0; i < point_light_num; i++)
