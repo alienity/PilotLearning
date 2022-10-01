@@ -214,7 +214,8 @@ namespace Pilot
 
                     GameObjectComponentId part_id = {gobject.getId(), game_object_part.m_component_id};
 
-                    if (game_object_part.m_mesh_desc.m_is_active && game_object_part.m_material_desc.m_is_active)
+                    // mesh properties
+                    if (game_object_part.m_mesh_desc.m_is_active)
                     {
                         bool is_entity_in_scene = m_render_scene->getInstanceIdAllocator().hasElement(part_id);
 
@@ -224,53 +225,53 @@ namespace Pilot
 
                         m_render_scene->addInstanceIdToMap(render_entity.m_instance_id, gobject.getId());
 
-                        // mesh properties
-                        if (game_object_part.m_mesh_desc.m_is_active)
+                        MeshSourceDesc mesh_source = {game_object_part.m_mesh_desc.m_mesh_file};
+                        bool is_mesh_loaded        = m_render_scene->getMeshAssetIdAllocator().hasElement(mesh_source);
+
+                        RenderMeshData mesh_data;
+                        if (!is_mesh_loaded)
                         {
-                            MeshSourceDesc mesh_source = {game_object_part.m_mesh_desc.m_mesh_file};
-                            bool is_mesh_loaded = m_render_scene->getMeshAssetIdAllocator().hasElement(mesh_source);
+                            mesh_data = m_render_resource->loadMeshData(mesh_source, render_entity.m_bounding_box);
+                        }
+                        else
+                        {
+                            render_entity.m_bounding_box = m_render_resource->getCachedBoudingBox(mesh_source);
+                        }
 
-                            RenderMeshData mesh_data;
-                            if (!is_mesh_loaded)
-                            {
-                                mesh_data = m_render_resource->loadMeshData(mesh_source, render_entity.m_bounding_box);
-                            }
-                            else
-                            {
-                                render_entity.m_bounding_box = m_render_resource->getCachedBoudingBox(mesh_source);
-                            }
+                        render_entity.m_mesh_asset_id = m_render_scene->getMeshAssetIdAllocator().allocGuid(mesh_source);
 
-                            render_entity.m_mesh_asset_id =
-                                m_render_scene->getMeshAssetIdAllocator().allocGuid(mesh_source);
+                        //if (game_object_part.m_skeleton_animation_result.m_is_active)
+                        //{
+                        //    render_entity.m_enable_vertex_blending =
+                        //        game_object_part.m_skeleton_animation_result.m_transforms.size() > 1; // take care
+                        //    render_entity.m_joint_matrices.resize(
+                        //        game_object_part.m_skeleton_animation_result.m_transforms.size());
+                        //    for (size_t i = 0; i < game_object_part.m_skeleton_animation_result.m_transforms.size();
+                        //         ++i)
+                        //    {
+                        //        render_entity.m_joint_matrices[i] =
+                        //            game_object_part.m_skeleton_animation_result.m_transforms[i].m_matrix;
+                        //    }
+                        //}
 
-                            if (game_object_part.m_skeleton_animation_result.m_is_active)
-                            {
-                                render_entity.m_enable_vertex_blending = game_object_part.m_skeleton_animation_result.m_transforms.size() > 1; // take care
-                                render_entity.m_joint_matrices.resize(game_object_part.m_skeleton_animation_result.m_transforms.size());
-                                for (size_t i = 0; i < game_object_part.m_skeleton_animation_result.m_transforms.size(); ++i)
-                                {
-                                    render_entity.m_joint_matrices[i] = game_object_part.m_skeleton_animation_result.m_transforms[i].m_matrix;
-                                }
-                            }
-
-                            // create game object on the graphics api side
-                            if (!is_mesh_loaded)
-                            {
-                                m_render_resource->uploadGameObjectRenderResource(render_entity, mesh_data);
-                            }
+                        // create game object on the graphics api side
+                        if (!is_mesh_loaded)
+                        {
+                            m_render_resource->uploadGameObjectRenderResource(render_entity, mesh_data);
                         }
 
                         // material properties
-                        if (game_object_part.m_material_desc.m_is_active)
+                        //if (game_object_part.m_material_desc.m_is_active)
                         {
                             MaterialSourceDesc material_source;
-                            if (game_object_part.m_material_desc.m_with_texture)
+                            if (game_object_part.m_mesh_desc.m_material_desc.m_with_texture)
                             {
-                                material_source = {game_object_part.m_material_desc.m_base_color_texture_file,
-                                                   game_object_part.m_material_desc.m_metallic_roughness_texture_file,
-                                                   game_object_part.m_material_desc.m_normal_texture_file,
-                                                   game_object_part.m_material_desc.m_occlusion_texture_file,
-                                                   game_object_part.m_material_desc.m_emissive_texture_file};
+                                material_source = {
+                                    game_object_part.m_mesh_desc.m_material_desc.m_base_color_texture_file,
+                                    game_object_part.m_mesh_desc.m_material_desc.m_metallic_roughness_texture_file,
+                                    game_object_part.m_mesh_desc.m_material_desc.m_normal_texture_file,
+                                    game_object_part.m_mesh_desc.m_material_desc.m_occlusion_texture_file,
+                                    game_object_part.m_mesh_desc.m_material_desc.m_emissive_texture_file};
                             }
                             else
                             {

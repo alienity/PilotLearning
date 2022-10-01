@@ -78,6 +78,7 @@ namespace Pilot
             HLSL::MeshInstance curMeshInstance     = {};
             curMeshInstance.enable_vertex_blending = temp_node.enable_vertex_blending;
             curMeshInstance.model_matrix           = temp_node.model_matrix;
+            curMeshInstance.model_matrix_inverse   = temp_node.model_matrix_inverse;
             curMeshInstance.vertexBuffer           = temp_node.ref_mesh->mesh_vertex_buffer.GetVertexBufferView();
             curMeshInstance.indexBuffer            = temp_node.ref_mesh->mesh_index_buffer.GetIndexBufferView();
             curMeshInstance.drawIndexedArguments   = drawIndexedArguments;
@@ -112,7 +113,7 @@ namespace Pilot
 
             asyncCompute.Open();
             {
-                D3D12ScopedEvent(asyncCompute, "Gpu Frustum Culling");
+                D3D12ScopedEvent(asyncCompute, "Gpu Frustum Culling for rendering");
                 asyncCompute.SetPipelineState(registry.GetPipelineState(PipelineStates::IndirectCull));
                 asyncCompute.SetComputeRootSignature(registry.GetRootSignature(RootSignatures::IndirectCull));
 
@@ -121,6 +122,11 @@ namespace Pilot
                 asyncCompute->SetComputeRootDescriptorTable(2, indirectCullParams.p_IndirectCommandBufferUav->GetGpuHandle());
 
                 asyncCompute.Dispatch1D<128>(indirectCullParams.numMeshes);
+            }
+            {
+                D3D12ScopedEvent(asyncCompute, "Gpu Frustum Culling for rendering");
+
+
             }
             asyncCompute.Close();
             ComputeSyncHandle = asyncCompute.Execute(false);

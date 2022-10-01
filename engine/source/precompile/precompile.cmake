@@ -10,28 +10,8 @@ configure_file(${PILOT_PRECOMPILE_PARAMS_IN_PATH} ${PILOT_PRECOMPILE_PARAMS_PATH
 # use wine for linux
 if (CMAKE_HOST_WIN32)
     set(PRECOMPILE_PRE_EXE)
-    set(PRECOMPILE_PARSER ${PRECOMPILE_TOOLS_PATH}/Windows/x64/meta_parser.exe)
+    set(PRECOMPILE_PARSER ${PRECOMPILE_TOOLS_PATH}/MoYuParser.exe)
     set(sys_include "*") 
-elseif(${CMAKE_HOST_SYSTEM_NAME} STREQUAL "Linux" )
-    set(PRECOMPILE_PRE_EXE)
-    set(PRECOMPILE_PARSER ${PRECOMPILE_TOOLS_PATH}/Linux/meta_parser)
-    set(sys_include "/usr/include/c++/9/") 
-    #execute_process(COMMAND chmod a+x ${PRECOMPILE_PARSER} WORKING_DIRECTORY ${PRECOMPILE_TOOLS_PATH})
-elseif(CMAKE_HOST_APPLE)
-    find_program(XCRUN_EXECUTABLE xcrun)
-    if(NOT XCRUN_EXECUTABLE)
-      message(FATAL_ERROR "xcrun not found!!!")
-    endif()
-
-    execute_process(
-      COMMAND ${XCRUN_EXECUTABLE} --sdk macosx --show-sdk-platform-path
-      OUTPUT_VARIABLE osx_sdk_platform_path_test
-      OUTPUT_STRIP_TRAILING_WHITESPACE
-    )
-
-    set(PRECOMPILE_PRE_EXE)
-    set(PRECOMPILE_PARSER ${PRECOMPILE_TOOLS_PATH}/macOS/meta_parser)
-    set(sys_include "${osx_sdk_platform_path_test}/../../Toolchains/XcodeDefault.xctoolchain/usr/include/c++/v1") 
 endif()
 
 set (PARSER_INPUT ${CMAKE_BINARY_DIR}/parser_header.h)
@@ -54,8 +34,8 @@ COMMAND
   ${CMAKE_COMMAND} -E echo "************************************************************* "
 
 COMMAND
-    ${PRECOMPILE_PARSER} "${PILOT_PRECOMPILE_PARAMS_PATH}"  "${PARSER_INPUT}"  "${ENGINE_ROOT_DIR}/source" ${sys_include} "Pilot" S 0 0 1
+  ${PRECOMPILE_PARSER} "${PILOT_PRECOMPILE_PARAMS_PATH}"  "${PARSER_INPUT}"  "${ENGINE_ROOT_DIR}/source" ${sys_include} "MoYu" 0
 ### BUILDING ====================================================================================
 COMMAND
-    ${CMAKE_COMMAND} -E echo "+++ Precompile finished +++"
+  ${CMAKE_COMMAND} -E echo "+++ Precompile finished +++"
 )

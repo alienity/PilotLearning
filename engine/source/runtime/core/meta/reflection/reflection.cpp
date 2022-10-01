@@ -1,7 +1,6 @@
 #include "reflection.h"
 #include <cstring>
 #include <map>
-#include <regex>
 
 namespace Pilot
 {
@@ -62,22 +61,12 @@ namespace Pilot
             m_array_map.clear();
         }
 
-        std::string RemoveNameSpace(std::string input)
-        {
-            size_t last_split = input.find_last_of(":");
-            if (last_split != std::string::npos)
-            {
-                return input.substr(last_split + 1);
-            }
-            return input;
-        }
-
-        TypeMeta::TypeMeta(std::string type_name) : m_type_name(RemoveNameSpace(type_name))
+        TypeMeta::TypeMeta(std::string type_name) : m_type_name(type_name)
         {
             m_is_valid = false;
             m_fields.clear();
 
-            auto fileds_iter = m_field_map.equal_range(m_type_name);
+            auto fileds_iter = m_field_map.equal_range(type_name);
             while (fileds_iter.first != fileds_iter.second)
             {
                 FieldAccessor f_field(fileds_iter.first->second);
@@ -98,7 +87,6 @@ namespace Pilot
 
         bool TypeMeta::newArrayAccessorFromName(std::string array_type_name, ArrayAccessor& accessor)
         {
-            array_type_name = RemoveNameSpace(array_type_name);
             auto iter = m_array_map.find(array_type_name);
 
             if (iter != m_array_map.end())
@@ -113,8 +101,6 @@ namespace Pilot
 
         ReflectionInstance TypeMeta::newFromNameAndPJson(std::string type_name, const PJson& json_context)
         {
-            type_name = RemoveNameSpace(type_name);
-
             auto iter = m_class_map.find(type_name);
 
             if (iter != m_class_map.end())
@@ -126,8 +112,6 @@ namespace Pilot
 
         PJson TypeMeta::writeByName(std::string type_name, void* instance)
         {
-            type_name = RemoveNameSpace(type_name);
-
             auto iter = m_class_map.find(type_name);
 
             if (iter != m_class_map.end())

@@ -72,14 +72,21 @@ namespace Pilot
     // Render Desc
     //========================================================================
 
+    struct GameObjectMaterialDesc
+    {
+        std::string m_base_color_texture_file;
+        std::string m_metallic_roughness_texture_file;
+        std::string m_normal_texture_file;
+        std::string m_occlusion_texture_file;
+        std::string m_emissive_texture_file;
+        bool        m_with_texture {false};
+    };
+
     struct GameObjectMeshDesc : public BasePartDesc
     {
         std::string m_mesh_file;
-    };
 
-    struct SkeletonBindingDesc : public BasePartDesc
-    {
-        std::string m_skeleton_binding_file;
+        GameObjectMaterialDesc m_material_desc;
     };
 
     struct SkeletonAnimationResultTransform
@@ -92,14 +99,11 @@ namespace Pilot
         std::vector<SkeletonAnimationResultTransform> m_transforms;
     };
 
-    struct GameObjectMaterialDesc : public BasePartDesc
+    struct SkeletonBindingDesc : public BasePartDesc
     {
-        std::string m_base_color_texture_file;
-        std::string m_metallic_roughness_texture_file;
-        std::string m_normal_texture_file;
-        std::string m_occlusion_texture_file;
-        std::string m_emissive_texture_file;
-        bool        m_with_texture {false};
+        std::string m_skeleton_binding_file;
+
+        SkeletonAnimationResult m_skeleton_animation_result;
     };
 
     struct GameObjectTransformDesc : public BasePartDesc
@@ -115,9 +119,7 @@ namespace Pilot
         GComponentID            m_component_id;
         GameObjectTransformDesc m_transform_desc;
         GameObjectMeshDesc      m_mesh_desc;
-        GameObjectMaterialDesc  m_material_desc;
         SkeletonBindingDesc     m_skeleton_binding_desc;
-        SkeletonAnimationResult m_skeleton_animation_result;
         AmbientLightDesc        m_ambeint_light_desc;
         DirectionLightDesc      m_direction_light_desc;
         PointLightDesc          m_point_light_desc;

@@ -102,6 +102,8 @@ struct MeshInstance
 
 	// 64
 	float4x4 localToWorldMatrix;
+    // 64
+    float4x4 localToWorldMatrixInverse;
 	
 	// 16
 	D3D12_VERTEX_BUFFER_VIEW vertexBuffer;

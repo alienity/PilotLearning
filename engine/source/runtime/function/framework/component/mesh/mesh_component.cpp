@@ -32,24 +32,18 @@ namespace Pilot
             meshComponent.m_mesh_desc.m_is_active = true;
             meshComponent.m_mesh_desc.m_mesh_file = asset_manager->getFullPath(sub_mesh.m_obj_file_ref).generic_string();
 
-            meshComponent.m_material_desc.m_is_active    = true;
-            meshComponent.m_material_desc.m_with_texture = sub_mesh.m_material.empty() == false;
+            meshComponent.m_mesh_desc.m_material_desc.m_with_texture = sub_mesh.m_material.empty() == false;
 
-            if (meshComponent.m_material_desc.m_with_texture)
+            if (meshComponent.m_mesh_desc.m_material_desc.m_with_texture)
             {
                 MaterialRes material_res;
                 asset_manager->loadAsset(sub_mesh.m_material, material_res);
 
-                meshComponent.m_material_desc.m_base_color_texture_file =
-                    asset_manager->getFullPath(material_res.m_base_colour_texture_file).generic_string();
-                meshComponent.m_material_desc.m_metallic_roughness_texture_file =
-                    asset_manager->getFullPath(material_res.m_metallic_roughness_texture_file).generic_string();
-                meshComponent.m_material_desc.m_normal_texture_file =
-                    asset_manager->getFullPath(material_res.m_normal_texture_file).generic_string();
-                meshComponent.m_material_desc.m_occlusion_texture_file =
-                    asset_manager->getFullPath(material_res.m_occlusion_texture_file).generic_string();
-                meshComponent.m_material_desc.m_emissive_texture_file =
-                    asset_manager->getFullPath(material_res.m_emissive_texture_file).generic_string();
+                meshComponent.m_mesh_desc.m_material_desc.m_base_color_texture_file = asset_manager->getFullPath(material_res.m_base_colour_texture_file).generic_string();
+                meshComponent.m_mesh_desc.m_material_desc.m_metallic_roughness_texture_file = asset_manager->getFullPath(material_res.m_metallic_roughness_texture_file).generic_string();
+                meshComponent.m_mesh_desc.m_material_desc.m_normal_texture_file = asset_manager->getFullPath(material_res.m_normal_texture_file).generic_string();
+                meshComponent.m_mesh_desc.m_material_desc.m_occlusion_texture_file = asset_manager->getFullPath(material_res.m_occlusion_texture_file).generic_string();
+                meshComponent.m_mesh_desc.m_material_desc.m_emissive_texture_file = asset_manager->getFullPath(material_res.m_emissive_texture_file).generic_string();
             }
 
             //auto object_space_transform = sub_mesh.m_transform.getMatrix();

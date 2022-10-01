@@ -20,6 +20,7 @@ namespace Pilot
             RenderMeshNode& temp_node = m_all_mesh_nodes.back();
 
             temp_node.model_matrix = GLMUtil::fromMat4x4(entity.m_model_matrix);
+            temp_node.model_matrix_inverse = glm::inverse(temp_node.model_matrix);
 
             assert(entity.m_joint_matrices.size() <= m_mesh_vertex_blending_max_joint_count);
             for (size_t joint_index = 0; joint_index < entity.m_joint_matrices.size(); joint_index++)

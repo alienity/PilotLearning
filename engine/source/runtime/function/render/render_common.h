@@ -219,6 +219,7 @@ namespace Pilot
     struct RenderMeshNode
     {
         glm::mat4          model_matrix;
+        glm::mat4          model_matrix_inverse;
         glm::mat4          joint_matrices[m_mesh_vertex_blending_max_joint_count];
         D3D12Mesh*         ref_mesh     = nullptr;
         D3D12PBRMaterial*  ref_material = nullptr;
@@ -347,6 +348,7 @@ namespace HLSL
         float     _padding_enable_vertex_blending_2;
         float     _padding_enable_vertex_blending_3;
         glm::mat4 model_matrix;
+        glm::mat4 model_matrix_inverse;
 
         D3D12_VERTEX_BUFFER_VIEW vertexBuffer;
         D3D12_INDEX_BUFFER_VIEW  indexBuffer;

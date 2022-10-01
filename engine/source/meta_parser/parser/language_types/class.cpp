@@ -2,7 +2,11 @@
 
 #include "class.h"
 
-BaseClass::BaseClass(const Cursor& cursor) : name(Utils::getTypeNameWithoutNamespace(cursor.getType())) {}
+BaseClass::BaseClass(const Cursor& cursor) : name(Utils::getTypeNameWithoutNamespace(cursor.getType()))
+{
+    Utils::replaceAll(name, " ", "");
+    Utils::replaceAll(name, "Pilot::", "");
+}
 
 Class::Class(const Cursor& cursor, const Namespace& current_namespace) :
     TypeInfo(cursor, current_namespace), m_name(cursor.getDisplayName()),
@@ -10,7 +14,7 @@ Class::Class(const Cursor& cursor, const Namespace& current_namespace) :
     m_display_name(Utils::getNameWithoutFirstM(m_qualified_name))
 {
     Utils::replaceAll(m_name, " ", "");
-    Utils::replaceAll(m_name, "Piccolo::", "");
+    Utils::replaceAll(m_name, "Pilot::", "");
 
     for (auto& child : cursor.getChildren())
     {
