@@ -100,23 +100,12 @@ namespace Pilot
         // default texture resource
         DefaultResource m_default_resource;
 
-        // storage buffer objects
-        /*
-        MeshPerframeStorageBufferObject                 m_mesh_perframe_storage_buffer_object;
-        MeshPointLightShadowPerframeStorageBufferObject m_mesh_point_light_shadow_perframe_storage_buffer_object;
-        MeshDirectionalLightShadowPerframeStorageBufferObject
-                                                       m_mesh_directional_light_shadow_perframe_storage_buffer_object;
-        AxisStorageBufferObject                        m_axis_storage_buffer_object;
-        MeshInefficientPickPerframeStorageBufferObject m_mesh_inefficient_pick_perframe_storage_buffer_object;
-        ParticleBillboardPerframeStorageBufferObject   m_particlebillboard_perframe_storage_buffer_object;
-        */
-        // 我们用于bindless的对象
+        // bindless objects
         HLSL::MeshPerframeStorageBufferObject                 m_mesh_perframe_storage_buffer_object;
         HLSL::MeshPointLightShadowPerframeStorageBufferObject m_mesh_point_light_shadow_perframe_storage_buffer_object;
         HLSL::MeshSpotLightShadowPerframeStorageBufferObject  m_mesh_spot_light_shadow_perframe_storage_buffer_object;
         HLSL::MeshDirectionalLightShadowPerframeStorageBufferObject m_mesh_directional_light_shadow_perframe_storage_buffer_object;
         HLSL::MeshInstance      m_all_mesh_buffer_object;
-        AxisStorageBufferObject m_axis_storage_buffer_object;
 
 
 

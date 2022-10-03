@@ -77,9 +77,11 @@ struct SceneSpotLight
     float  radius;
     float3 color; 
     float  intensity;
+    float3 direction;
+    float  _padding_direction;
     float  inner_radians;
     float  outer_radians;
-    float2 _padding_spot;
+    float2 _padding_radians;
 };
 
 struct SceneDirectionalLight

@@ -3,6 +3,7 @@
 #include "runtime/function/render/render_helper.h"
 #include "runtime/function/render/render_pass.h"
 #include "runtime/function/render/render_resource.h"
+#include "runtime/function/render/rhi/hlsl_data_types.h"
 
 namespace Pilot
 {
@@ -22,11 +23,11 @@ namespace Pilot
             temp_node.model_matrix = GLMUtil::fromMat4x4(entity.m_model_matrix);
             temp_node.model_matrix_inverse = glm::inverse(temp_node.model_matrix);
 
-            assert(entity.m_joint_matrices.size() <= m_mesh_vertex_blending_max_joint_count);
-            for (size_t joint_index = 0; joint_index < entity.m_joint_matrices.size(); joint_index++)
-            {
-                temp_node.joint_matrices[joint_index] = GLMUtil::fromMat4x4(entity.m_joint_matrices[joint_index]);
-            }
+            //assert(entity.m_joint_matrices.size() <= HLSL::m_mesh_vertex_blending_max_joint_count);
+            //for (size_t joint_index = 0; joint_index < entity.m_joint_matrices.size(); joint_index++)
+            //{
+            //    temp_node.joint_matrices[joint_index] = GLMUtil::fromMat4x4(entity.m_joint_matrices[joint_index]);
+            //}
             temp_node.node_id = entity.m_instance_id;
 
             D3D12Mesh& mesh_asset            = render_resource->getEntityMesh(entity);
@@ -50,10 +51,6 @@ namespace Pilot
     void RenderScene::setVisibleNodesReference()
     {
         RenderPass::m_visiable_nodes.p_all_mesh_nodes = &m_all_mesh_nodes;
-        RenderPass::m_visiable_nodes.p_axis_node      = &m_axis_node;
-
-        //RenderPass::m_visiable_nodes.p_main_camera_visible_particlebillboard_nodes =
-        //    &m_main_camera_visible_particlebillboard_nodes;
     }
 
     GuidAllocator<GameObjectComponentId>& RenderScene::getInstanceIdAllocator() { return m_instance_id_allocator; }
@@ -62,7 +59,7 @@ namespace Pilot
 
     GuidAllocator<MaterialSourceDesc>& RenderScene::getMaterialAssetdAllocator() { return m_material_asset_id_allocator; }
 
-    void RenderScene::addInstanceIdToMap(uint32_t instance_id, GObjectID go_id)
+    void RenderScene::addMeshInstanceIdToMap(uint32_t instance_id, GObjectID go_id)
     {
         m_mesh_object_id_map[instance_id] = go_id;
     }
@@ -149,47 +146,10 @@ namespace Pilot
     {
         m_instance_id_allocator.clear();
         m_mesh_object_id_map.clear();
+        m_light_object_id_map.clear();
+        m_point_light_list.clear();
+        m_spot_light_list.clear();
         m_render_entities.clear();
     }
-
-    void RenderScene::updateVisibleObjectsAxis(std::shared_ptr<RenderResource> render_resource)
-    {
-        if (m_render_axis.has_value())
-        {
-            RenderEntity& axis = *m_render_axis;
-
-            m_axis_node.model_matrix = GLMUtil::fromMat4x4(axis.m_model_matrix);
-            m_axis_node.node_id      = axis.m_instance_id;
-
-            D3D12Mesh& mesh_asset              = render_resource->getEntityMesh(axis);
-            m_axis_node.ref_mesh               = &mesh_asset;
-            m_axis_node.enable_vertex_blending = axis.m_enable_vertex_blending;
-        }
-    }
-
-    void RenderScene::updateVisibleObjectsParticle(std::shared_ptr<RenderResource> render_resource)
-    {
-        // TODO
-        m_main_camera_visible_particlebillboard_nodes.clear();
-    }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 }

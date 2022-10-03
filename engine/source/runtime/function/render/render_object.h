@@ -61,6 +61,7 @@ namespace Pilot
         GComponentID m_gcomponent_id {k_invalid_gcomponent_id};
 
         Vector3 m_position;
+        Vector3 m_direction;
         Color m_color;
         float m_intensity;
         float m_radius;

@@ -8,6 +8,8 @@
 #include "runtime/function/render/rhi/d3d12/d3d12_resource.h"
 #include "runtime/function/render/rhi/d3d12/d3d12_descriptor.h"
 
+#include "runtime/function/render/rhi/hlsl_data_types.h"
+
 #include "runtime/core/base/macro.h"
 
 #include <stdexcept>
@@ -180,6 +182,7 @@ namespace Pilot
         for (uint32_t i = 0; i < spot_light_num; i++)
         {
             Vector3 spot_light_position  = render_scene->m_spot_light_list[i].m_position;
+            Vector3 spot_light_direction = render_scene->m_spot_light_list[i].m_direction;
             float   spot_light_intensity = render_scene->m_spot_light_list[i].m_intensity;
 
             float radius = render_scene->m_spot_light_list[i].m_radius;
@@ -192,6 +195,7 @@ namespace Pilot
             m_mesh_perframe_storage_buffer_object.scene_spot_lights[i].radius = radius;
             m_mesh_perframe_storage_buffer_object.scene_spot_lights[i].color = GLMUtil::fromVec3(Vector3(color.r, color.g, color.b));
             m_mesh_perframe_storage_buffer_object.scene_spot_lights[i].intensity = spot_light_intensity;
+            m_mesh_perframe_storage_buffer_object.scene_spot_lights[i].direction = GLMUtil::fromVec3(spot_light_direction);
             m_mesh_perframe_storage_buffer_object.scene_spot_lights[i].inner_radians = inner_radians;
             m_mesh_perframe_storage_buffer_object.scene_spot_lights[i].outer_radians = outer_radians;
         }
@@ -205,61 +209,6 @@ namespace Pilot
             render_scene->m_directional_light.m_intensity;
 
     }
-
-    /*
-    void RenderResource::updatePerFrameBuffer(std::shared_ptr<RenderScene>  render_scene,
-                                              std::shared_ptr<RenderCamera> camera)
-    {
-        Matrix4x4 view_matrix      = camera->getViewMatrix();
-        Matrix4x4 proj_matrix      = camera->getPersProjMatrix();
-        Vector3   camera_position  = camera->position();
-        glm::mat4 proj_view_matrix = GLMUtil::fromMat4x4(proj_matrix * view_matrix);
-
-        // ambient light
-        Vector3  ambient_light   = render_scene->m_ambient_light.m_irradiance;
-        uint32_t point_light_num = static_cast<uint32_t>(render_scene->m_point_light_list.m_lights.size());
-
-        // set ubo data
-        m_mesh_perframe_storage_buffer_object.proj_view_matrix = proj_view_matrix;
-        m_mesh_perframe_storage_buffer_object.camera_position  = GLMUtil::fromVec3(camera_position);
-        m_mesh_perframe_storage_buffer_object.ambient_light    = GLMUtil::fromVec3(ambient_light);
-        m_mesh_perframe_storage_buffer_object.point_light_num  = point_light_num;
-
-        m_mesh_point_light_shadow_perframe_storage_buffer_object.point_light_num = point_light_num;
-
-        // point lights
-        for (uint32_t i = 0; i < point_light_num; i++)
-        {
-            Vector3 point_light_position = render_scene->m_point_light_list.m_lights[i].m_position;
-            Vector3 point_light_intensity =
-                render_scene->m_point_light_list.m_lights[i].m_flux / (4.0f * glm::pi<float>());
-
-            float radius = render_scene->m_point_light_list.m_lights[i].calculateRadius();
-
-            m_mesh_perframe_storage_buffer_object.scene_point_lights[i].position =
-                GLMUtil::fromVec3(point_light_position);
-            m_mesh_perframe_storage_buffer_object.scene_point_lights[i].radius    = radius;
-            m_mesh_perframe_storage_buffer_object.scene_point_lights[i].intensity =
-                GLMUtil::fromVec3(point_light_intensity);
-
-            m_mesh_point_light_shadow_perframe_storage_buffer_object.point_lights_position_and_radius[i] =
-                Vector4(point_light_position, radius);
-        }
-
-        // directional light
-        m_mesh_perframe_storage_buffer_object.scene_directional_light.direction =
-            GLMUtil::fromVec3(Vector3::normalize(render_scene->m_directional_light.m_direction));
-        m_mesh_perframe_storage_buffer_object.scene_directional_light.color =
-            GLMUtil::fromVec3(render_scene->m_directional_light.m_color);
-
-        // pick pass view projection matrix
-        m_mesh_inefficient_pick_perframe_storage_buffer_object.proj_view_matrix = proj_view_matrix;
-
-        m_particlebillboard_perframe_storage_buffer_object.proj_view_matrix = proj_view_matrix;
-        m_particlebillboard_perframe_storage_buffer_object.eye_position     = GLMUtil::fromVec3(camera_position);
-        m_particlebillboard_perframe_storage_buffer_object.up_direction     = GLMUtil::fromVec3(camera->up());
-    }
-    */
 
     D3D12Mesh& RenderResource::getOrCreateD3D12Mesh(RenderEntity entity, RenderMeshData mesh_data)
     {
@@ -394,7 +343,7 @@ namespace Pilot
 
             D3D12PBRMaterial& now_material = res.first->second;
 
-            MeshPerMaterialUniformBufferObject material_uniform_buffer_info;
+            HLSL::MeshPerMaterialUniformBufferObject material_uniform_buffer_info;
             material_uniform_buffer_info.is_blend          = entity.m_blend;
             material_uniform_buffer_info.is_double_sided   = entity.m_double_sided;
             material_uniform_buffer_info.baseColorFactor   = GLMUtil::fromVec4(entity.m_base_color_factor);
@@ -430,7 +379,7 @@ namespace Pilot
             {
                 startUploadBatch();
 
-                uint32_t buffer_size = sizeof(MeshPerMaterialUniformBufferObject);
+                uint32_t buffer_size = sizeof(HLSL::MeshPerMaterialUniformBufferObject);
                 createStaticBuffer(&material_uniform_buffer_info,
                                    buffer_size,
                                    buffer_size,

@@ -14,6 +14,7 @@ namespace Pilot
 {
     class RenderResource;
     class RenderCamera;
+    class RenderSystem;
 
     class RenderScene
     {
@@ -27,15 +28,8 @@ namespace Pilot
         // render entities
         std::vector<RenderEntity> m_render_entities;
 
-        // axis, for editor
-        std::optional<RenderEntity> m_render_axis;
-
         // all objects (updated per frame)
         std::vector<RenderMeshNode> m_all_mesh_nodes;
-
-        // visible objects (updated per frame)
-        std::vector<RenderParticleBillboardNode> m_main_camera_visible_particlebillboard_nodes;
-        RenderAxisNode                           m_axis_node;
 
         // update all objects for indirect cull in each frame
         void updateAllObjects(std::shared_ptr<RenderResource> render_resource, std::shared_ptr<RenderCamera> camera);
@@ -44,14 +38,16 @@ namespace Pilot
         void setVisibleNodesReference();
 
         GuidAllocator<GameObjectComponentId>& getInstanceIdAllocator();
+
         GuidAllocator<MeshSourceDesc>&        getMeshAssetIdAllocator();
         GuidAllocator<MaterialSourceDesc>&    getMaterialAssetdAllocator();
 
-        void      addInstanceIdToMap(uint32_t instance_id, GObjectID go_id);
+        void      addMeshInstanceIdToMap(uint32_t instance_id, GObjectID go_id);
         GObjectID getGObjectIDByMeshID(uint32_t mesh_id) const;
         void      deleteEntityByGObjectID(GObjectID go_id);
 
-
+        //void addLightInstanceToMap(uint32_t instance_id, GObjectID go_id);
+        //void deleteLightByGObjectID(GObjectID go_id);
 
         void deleteDirectionLightByGObjectID(GObjectID go_id);
         void deletePointLightByGObjectID(GObjectID go_id);
@@ -60,14 +56,15 @@ namespace Pilot
         void clearForLevelReloading();
 
     private:
+        friend class RenderSystem;
+
         GuidAllocator<GameObjectComponentId> m_instance_id_allocator;
+
         GuidAllocator<MeshSourceDesc>        m_mesh_asset_id_allocator;
         GuidAllocator<MaterialSourceDesc>    m_material_asset_id_allocator;
         
         std::unordered_map<uint32_t, GObjectID> m_mesh_object_id_map;
-
-        void updateVisibleObjectsAxis(std::shared_ptr<RenderResource> render_resource);
-        void updateVisibleObjectsParticle(std::shared_ptr<RenderResource> render_resource);
+        std::unordered_map<uint32_t, GObjectID> m_light_object_id_map;
         
     };
 } // namespace Piccolo

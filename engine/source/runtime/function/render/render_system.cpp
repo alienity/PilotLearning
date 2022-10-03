@@ -156,8 +156,6 @@ namespace Pilot
 
     void RenderSystem::setVisibleAxis(std::optional<RenderEntity> axis)
     {
-        m_render_scene->m_render_axis = axis;
-
         //if (axis.has_value())
         //{
         //    std::static_pointer_cast<RenderPipeline>(m_render_pipeline)->setAxisVisibleState(true);
@@ -212,18 +210,19 @@ namespace Pilot
                 {
                     const auto& game_object_part = gobject.getObjectParts()[part_index];
 
-                    GameObjectComponentId part_id = {gobject.getId(), game_object_part.m_component_id};
+                    GameObjectComponentId obj_part_id_pair = {gobject.getId(), game_object_part.m_component_id};
+
+                    bool is_entity_in_scene = m_render_scene->getInstanceIdAllocator().hasElement(obj_part_id_pair);
+                    uint32_t m_instance_id = static_cast<uint32_t>(m_render_scene->getInstanceIdAllocator().allocGuid(obj_part_id_pair));
 
                     // mesh properties
                     if (game_object_part.m_mesh_desc.m_is_active)
                     {
-                        bool is_entity_in_scene = m_render_scene->getInstanceIdAllocator().hasElement(part_id);
-
                         RenderEntity render_entity;
-                        render_entity.m_instance_id = static_cast<uint32_t>(m_render_scene->getInstanceIdAllocator().allocGuid(part_id));
+                        render_entity.m_instance_id  = m_instance_id;
                         render_entity.m_model_matrix = game_object_part.m_transform_desc.m_transform_matrix;
 
-                        m_render_scene->addInstanceIdToMap(render_entity.m_instance_id, gobject.getId());
+                        m_render_scene->addMeshInstanceIdToMap(render_entity.m_instance_id, gobject.getId());
 
                         MeshSourceDesc mesh_source = {game_object_part.m_mesh_desc.m_mesh_file};
                         bool is_mesh_loaded        = m_render_scene->getMeshAssetIdAllocator().hasElement(mesh_source);
@@ -239,20 +238,6 @@ namespace Pilot
                         }
 
                         render_entity.m_mesh_asset_id = m_render_scene->getMeshAssetIdAllocator().allocGuid(mesh_source);
-
-                        //if (game_object_part.m_skeleton_animation_result.m_is_active)
-                        //{
-                        //    render_entity.m_enable_vertex_blending =
-                        //        game_object_part.m_skeleton_animation_result.m_transforms.size() > 1; // take care
-                        //    render_entity.m_joint_matrices.resize(
-                        //        game_object_part.m_skeleton_animation_result.m_transforms.size());
-                        //    for (size_t i = 0; i < game_object_part.m_skeleton_animation_result.m_transforms.size();
-                        //         ++i)
-                        //    {
-                        //        render_entity.m_joint_matrices[i] =
-                        //            game_object_part.m_skeleton_animation_result.m_transforms[i].m_matrix;
-                        //    }
-                        //}
 
                         // create game object on the graphics api side
                         if (!is_mesh_loaded)
@@ -316,6 +301,14 @@ namespace Pilot
                             }
                         }
                     }
+
+                    // light properties
+                    {
+                        auto lightObj = m_render_scene->m_light_object_id_map.find(m_instance_id);
+
+                    }
+
+
 
                     // process light
                     if (game_object_part.m_ambeint_light_desc.m_is_active)

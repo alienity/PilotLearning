@@ -19,6 +19,9 @@ namespace Pilot
         backBufferFormat  = backDesc.Format;
         depthBufferFormat = DXGI_FORMAT_D32_FLOAT;
 
+        pipleineColorFormat = DXGI_FORMAT_R32G32B32A32_FLOAT;
+        pipleineDepthFormat = DXGI_FORMAT_D32_FLOAT;
+
         SetViewPort(0, 0, backBufferWidth, backBufferHeight);
 
         std::shared_ptr<ConfigManager> config_manager = g_runtime_global_context.m_config_manager;
@@ -28,7 +31,7 @@ namespace Pilot
         Shaders::Compile(compiler, shaderRootPath);
         RootSignatures::Compile(device, renderGraphRegistry);
         CommandSignatures::Compile(device, renderGraphRegistry);
-        PipelineStates::Compile(backBufferFormat, depthBufferFormat, device, renderGraphRegistry);
+        PipelineStates::Compile(pipleineColorFormat, pipleineDepthFormat, backBufferFormat, depthBufferFormat, device, renderGraphRegistry);
 
         InitGlobalBuffer();
         InitPass();
@@ -87,20 +90,19 @@ namespace Pilot
         {
             IndirectDrawPass::DrawPassInitInfo drawPassInit;
 
-            const D3D12_RESOURCE_DESC colorBufferDesc = p_RenderTargetTex->GetDesc();
-            const D3D12_CLEAR_VALUE   colorBufferClearVal = p_RenderTargetTex->GetClearValue();
+            const FLOAT renderTargetClearColor[4] = {0, 0, 0, 0};
 
             drawPassInit.colorTexDesc = RHI::RgTextureDesc("ColorBuffer")
-                                            .SetFormat(colorBufferDesc.Format)
-                                            .SetExtent(colorBufferDesc.Width, colorBufferDesc.Height)
+                                            .SetFormat(pipleineColorFormat)
+                                            .SetExtent(viewport.width, viewport.height)
                                             .SetAllowRenderTarget()
-                                            .SetClearValue(colorBufferClearVal.Color);
+                                            .SetClearValue(renderTargetClearColor);
 
             drawPassInit.depthTexDesc = RHI::RgTextureDesc("DepthBuffer")
-                                                  .SetFormat(depthBufferFormat)
-                                                  .SetExtent(backBufferWidth, backBufferHeight)
-                                                  .SetAllowDepthStencil()
-                                                  .SetClearValue(RHI::RgClearValue(0.0f, 0xff));
+                                            .SetFormat(pipleineDepthFormat)
+                                            .SetExtent(viewport.width, viewport.height)
+                                            .SetAllowDepthStencil()
+                                            .SetClearValue(RHI::RgClearValue(0.0f, 0xff));
 
             mIndirectDrawPass = std::make_shared<IndirectDrawPass>();
             mIndirectDrawPass->setCommonInfo(renderPassCommonInfo);

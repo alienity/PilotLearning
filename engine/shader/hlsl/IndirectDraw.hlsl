@@ -79,24 +79,80 @@ float4 PSMain(VertexOutput input) : SV_Target0
     float3 positionWS = input.positionWS;
     float3 viewPos    = g_ConstantBufferParams.cameraInstance.cameraPosition;
 
-    float3 outColor = g_ConstantBufferParams.ambient_light * 0.0f;
+    float3 ambientColor = g_ConstantBufferParams.ambient_light * 0.1f;
+
+    float3 outColor = ambientColor;
 
     uint point_light_num = g_ConstantBufferParams.point_light_num;
-    for (uint i = 0; i < point_light_num; i++)
+    uint i = 0;
+    for (i = 0; i < point_light_num; i++)
     {
         float3 lightPos   = g_ConstantBufferParams.scene_point_lights[i].position;
         float3 lightColor = g_ConstantBufferParams.scene_point_lights[i].color;
         float  lightStrength = g_ConstantBufferParams.scene_point_lights[i].intensity;
+        float  lightRadius   = g_ConstantBufferParams.scene_point_lights[i].radius;
+
+        lightColor = lightColor * lightStrength;
+
+        float lightDistance = length(lightPos - positionWS);
+        float attenuation   = saturate(1.0f - lightDistance / lightRadius);
+        attenuation         = attenuation * attenuation;
 
         float3 lightDir = normalize(lightPos - positionWS);
         float3 viewDir  = normalize(viewPos - positionWS);
         float3 halfwayDir = normalize(lightDir + viewDir);
 
-        float specColor = pow(max(dot(vNout, halfwayDir), 0.0f), 4);
-        float3 specularColor = lightColor * lightStrength * specColor;
+        float  diff    = max(dot(vNout, lightDir), 0.0f);
+        float3 diffuse = lightColor * diff * attenuation;
 
-        outColor += specularColor;
+        float  spec     = pow(max(dot(vNout, halfwayDir), 0.0f), 32);
+        float3 specular = lightColor * spec * attenuation;
+
+        outColor = outColor + diffuse + specular;
     }
+
+    uint spot_light_num = g_ConstantBufferParams.spot_light_num;
+    for (i = 0; i < spot_light_num; i++)
+    {
+        float3 lightPos          = g_ConstantBufferParams.scene_spot_lights[i].position;
+        float3 lightForward      = g_ConstantBufferParams.scene_spot_lights[i].direction;
+        float3 lightColor        = g_ConstantBufferParams.scene_spot_lights[i].color;
+        float  lightStrength     = g_ConstantBufferParams.scene_spot_lights[i].intensity;
+        float  lightRadius       = g_ConstantBufferParams.scene_spot_lights[i].radius;
+        float  lightInnerRadians = g_ConstantBufferParams.scene_spot_lights[i].inner_radians;
+        float  lightOuterRadians = g_ConstantBufferParams.scene_spot_lights[i].outer_radians;
+
+        float lightInnerCutoff = cos(lightInnerRadians);
+        float lightOuterCutoff = cos(lightOuterRadians);
+
+        lightColor = lightColor * lightStrength;
+
+        float3 lightDir = normalize(lightPos - positionWS);
+
+        float theta = dot(lightDir, normalize(-lightForward));
+
+        if (theta < lightOuterCutoff)
+            continue;
+
+        float lightDistance = length(lightPos - positionWS);
+        float attenuation   = saturate(1.0f - lightDistance / lightRadius);
+        attenuation         = attenuation * attenuation;
+
+        float epsilon = lightInnerCutoff - lightOuterCutoff;
+        float intensity = saturate((theta - lightOuterCutoff) / epsilon); 
+
+        float3 viewDir    = normalize(viewPos - positionWS);
+        float3 halfwayDir = normalize(lightDir + viewDir);
+
+        float  diff    = max(dot(vNout, lightDir), 0.0f);
+        float3 diffuse = lightColor * diff * attenuation * intensity;
+
+        float  spec     = pow(max(dot(vNout, halfwayDir), 0.0f), 32);
+        float3 specular = lightColor * spec * attenuation * intensity;
+
+        outColor = outColor + diffuse + specular;
+    }
+
     outColor = outColor * baseColor.rgb;
 
     return float4(outColor.rgb, 1);

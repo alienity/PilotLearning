@@ -145,8 +145,7 @@ struct PipelineStates
     inline static RHI::RgResourceHandle IndirectCull;
     inline static RHI::RgResourceHandle IndirectDraw;
 
-    static void
-    Compile(DXGI_FORMAT RtFormat, DXGI_FORMAT DsFormat, RHI::D3D12Device* Device, RHI::RenderGraphRegistry& Registry)
+    static void Compile(DXGI_FORMAT PiplineRtFormat, DXGI_FORMAT PipelineDsFormat, DXGI_FORMAT RtFormat, DXGI_FORMAT DsFormat, RHI::D3D12Device* Device, RHI::RenderGraphRegistry& Registry)
     {
         {
             RHI::D3D12InputLayout InputLayout;
@@ -199,9 +198,9 @@ struct PipelineStates
             DepthStencilState.DepthFunc   = RHI_COMPARISON_FUNC::GreaterEqual;
 
             RHIRenderTargetState RenderTargetState;
-            RenderTargetState.RTFormats[0]     = RtFormat; // DXGI_FORMAT_R32G32B32A32_FLOAT;
+            RenderTargetState.RTFormats[0]     = PiplineRtFormat; // DXGI_FORMAT_R32G32B32A32_FLOAT;
             RenderTargetState.NumRenderTargets = 1;
-            RenderTargetState.DSFormat         = DsFormat; // DXGI_FORMAT_D32_FLOAT;
+            RenderTargetState.DSFormat         = PipelineDsFormat; // DXGI_FORMAT_D32_FLOAT;
 
             struct PsoStream
             {

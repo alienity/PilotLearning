@@ -11,8 +11,8 @@ namespace Pilot
 
 	void IndirectDrawPass::initialize(const DrawPassInitInfo& init_info)
 	{
-        colorTexDesc    = init_info.colorTexDesc;
-        depthTexDesc    = init_info.depthTexDesc;
+        colorTexDesc = init_info.colorTexDesc;
+        depthTexDesc = init_info.depthTexDesc;
 	}
 
     void IndirectDrawPass::update(RHI::D3D12CommandContext& context,

@@ -32,6 +32,9 @@ namespace Pilot
         DXGI_FORMAT backBufferFormat;
         DXGI_FORMAT depthBufferFormat;
 
+        DXGI_FORMAT pipleineColorFormat;
+        DXGI_FORMAT pipleineDepthFormat;
+
         std::shared_ptr<UIPass>             mUIPass;
         std::shared_ptr<IndirectCullPass>   mIndirectCullPass;
         std::shared_ptr<IndirectShadowPass> mIndirectShadowPass;

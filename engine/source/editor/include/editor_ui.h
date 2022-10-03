@@ -54,6 +54,8 @@ namespace Pilot
         EditorFileService                                                        m_editor_file_service;
         std::chrono::time_point<std::chrono::steady_clock>                       m_last_file_tree_update;
 
+        std::vector<Component*> m_editor_component_stack;
+
         float handleWidth;
         float handleHeight;
         D3D12_GPU_DESCRIPTOR_HANDLE handleOfGameView;

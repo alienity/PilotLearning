@@ -39,15 +39,17 @@
 namespace Pilot
 {
     std::vector<std::pair<std::string, bool>> g_editor_node_state_array;
-    int                                       g_node_depth = -1;
-    void                                      DrawVecControl(const std::string& label,
-                                                             Pilot::Vector3&    values,
-                                                             float              resetValue  = 0.0f,
-                                                             float              columnWidth = 100.0f);
-    void                                      DrawVecControl(const std::string& label,
-                                                             Pilot::Quaternion& values,
-                                                             float              resetValue  = 0.0f,
-                                                             float              columnWidth = 100.0f);
+    int g_node_depth = -1;
+
+    bool DrawVecControl(const std::string& label,
+                        Pilot::Vector3&    values,
+                        float              resetValue  = 0.0f,
+                        float              columnWidth = 100.0f);
+
+    bool DrawVecControl(const std::string& label,
+                        Pilot::Quaternion& values,
+                        float              resetValue  = 0.0f,
+                        float              columnWidth = 100.0f);
 
     EditorUI::EditorUI()
     {
@@ -73,6 +75,12 @@ namespace Pilot
                 node_state = ImGui::TreeNodeEx(name.c_str(), ImGuiTreeNodeFlags_SpanFullWidth);
             }
             g_editor_node_state_array.emplace_back(std::pair(name.c_str(), node_state));
+
+            if (value_ptr != nullptr)
+            {
+                Component* p_component = static_cast<Component*>(value_ptr);
+                m_editor_component_stack.push_back(p_component);
+            }
         };
         m_editor_ui_creator["TreeNodePop"] = [this](const std::string& name, void* value_ptr) -> void {
             if (g_editor_node_state_array[g_node_depth].second)
@@ -81,6 +89,11 @@ namespace Pilot
             }
             g_editor_node_state_array.pop_back();
             g_node_depth--;
+
+            if (value_ptr != nullptr)
+            {
+                m_editor_component_stack.pop_back();
+            }
         };
         m_editor_ui_creator["Transform"] = [this](const std::string& name, void* value_ptr) -> void {
             if (g_editor_node_state_array[g_node_depth].second)
@@ -95,9 +108,11 @@ namespace Pilot
                 degrees_val.y = Pilot::Radian(euler.y).valueDegrees();
                 degrees_val.z = Pilot::Radian(euler.z).valueDegrees();
 
-                DrawVecControl("Position", trans_ptr->m_position);
-                DrawVecControl("Rotation", degrees_val);
-                DrawVecControl("Scale", trans_ptr->m_scale);
+                bool isDirty = false;
+
+                isDirty |= DrawVecControl("Position", trans_ptr->m_position);
+                isDirty |= DrawVecControl("Rotation", degrees_val);
+                isDirty |= DrawVecControl("Scale", trans_ptr->m_scale);
 
                 Pilot::Vector3 newEuler = Vector3(Math::degreesToRadians(degrees_val.x),
                                                   Math::degreesToRadians(degrees_val.y),
@@ -105,15 +120,26 @@ namespace Pilot
                 trans_ptr->m_rotation   = Pilot::Quaternion::fromTaitBryanAngles(newEuler);
 
                 g_editor_global_context.m_scene_manager->drawSelectedEntityAxis();
+
+            if (isDirty)
+                {
+                    if (!m_editor_component_stack.empty())
+                    {
+                        Component* m_component_ptr = m_editor_component_stack.back();
+                        m_component_ptr->setDirtyFlag(isDirty);
+                    }
+                }
             }
         };
         m_editor_ui_creator["int"] = [this](const std::string& name, void* value_ptr) -> void {
+            bool isDirty = false;
+
             if (g_node_depth == -1)
             {
                 std::string label = "##" + name;
                 ImGui::Text("%s", name.c_str());
                 ImGui::SameLine();
-                ImGui::InputInt(label.c_str(), static_cast<int*>(value_ptr));
+                isDirty = ImGui::InputInt(label.c_str(), static_cast<int*>(value_ptr));
             }
             else
             {
@@ -121,17 +147,28 @@ namespace Pilot
                 {
                     std::string full_label = "##" + getLeafUINodeParentLabel() + name;
                     ImGui::Text("%s", (name + ":").c_str());
-                    ImGui::InputInt(full_label.c_str(), static_cast<int*>(value_ptr));
+                    isDirty = ImGui::InputInt(full_label.c_str(), static_cast<int*>(value_ptr));
+                }
+            }
+
+            if (isDirty)
+            {
+                if (!m_editor_component_stack.empty())
+                {
+                    Component* m_component_ptr = m_editor_component_stack.back();
+                    m_component_ptr->setDirtyFlag(isDirty);
                 }
             }
         };
         m_editor_ui_creator["float"] = [this](const std::string& name, void* value_ptr) -> void {
+            bool isDirty = false;
+
             if (g_node_depth == -1)
             {
                 std::string label = "##" + name;
                 ImGui::Text("%s", name.c_str());
                 ImGui::SameLine();
-                ImGui::InputFloat(label.c_str(), static_cast<float*>(value_ptr));
+                isDirty = ImGui::InputFloat(label.c_str(), static_cast<float*>(value_ptr));
             }
             else
             {
@@ -139,11 +176,52 @@ namespace Pilot
                 {
                     std::string full_label = "##" + getLeafUINodeParentLabel() + name;
                     ImGui::Text("%s", (name + ":").c_str());
-                    ImGui::InputFloat(full_label.c_str(), static_cast<float*>(value_ptr));
+                    isDirty = ImGui::InputFloat(full_label.c_str(), static_cast<float*>(value_ptr));
+                }
+            }
+
+            if (isDirty)
+            {
+                if (!m_editor_component_stack.empty())
+                {
+                    Component* m_component_ptr = m_editor_component_stack.back();
+                    m_component_ptr->setDirtyFlag(isDirty);
+                }
+            }
+        };
+        m_editor_ui_creator["bool"] = [this](const std::string& name, void* value_ptr) -> void {
+            bool isDirty = false;
+
+            if (g_node_depth == -1)
+            {
+                std::string label = "##" + name;
+                ImGui::Text("%s", name.c_str());
+                ImGui::SameLine();
+                isDirty = ImGui::Checkbox(label.c_str(), static_cast<bool*>(value_ptr));
+            }
+            else
+            {
+                if (g_editor_node_state_array[g_node_depth].second)
+                {
+                    std::string full_label = "##" + getLeafUINodeParentLabel() + name;
+                    ImGui::Text("%s", (name + ":").c_str());
+                    ImGui::SameLine();
+                    isDirty = ImGui::Checkbox(full_label.c_str(), static_cast<bool*>(value_ptr));
+                }
+            }
+
+            if (isDirty)
+            {
+                if (!m_editor_component_stack.empty())
+                {
+                    Component* m_component_ptr = m_editor_component_stack.back();
+                    m_component_ptr->setDirtyFlag(isDirty);
                 }
             }
         };
         m_editor_ui_creator["Vector2"] = [this](const std::string& name, void* value_ptr) -> void {
+            bool isDirty = false;
+
             Vector2* vec_ptr = static_cast<Vector2*>(value_ptr);
             float    val[2]  = {vec_ptr->x, vec_ptr->y};
             if (g_node_depth == -1)
@@ -151,7 +229,7 @@ namespace Pilot
                 std::string label = "##" + name;
                 ImGui::Text("%s", name.c_str());
                 ImGui::SameLine();
-                ImGui::DragFloat2(label.c_str(), val);
+                isDirty = ImGui::DragFloat2(label.c_str(), val);
             }
             else
             {
@@ -159,13 +237,24 @@ namespace Pilot
                 {
                     std::string full_label = "##" + getLeafUINodeParentLabel() + name;
                     ImGui::Text("%s", (name + ":").c_str());
-                    ImGui::DragFloat2(full_label.c_str(), val);
+                    isDirty = ImGui::DragFloat2(full_label.c_str(), val);
                 }
             }
             vec_ptr->x = val[0];
             vec_ptr->y = val[1];
+
+            if (isDirty)
+            {
+                if (!m_editor_component_stack.empty())
+                {
+                    Component* m_component_ptr = m_editor_component_stack.back();
+                    m_component_ptr->setDirtyFlag(isDirty);
+                }
+            }
         };
         m_editor_ui_creator["Vector3"] = [this](const std::string& name, void* value_ptr) -> void {
+            bool isDirty = false;
+
             Vector3* vec_ptr = static_cast<Vector3*>(value_ptr);
             float    val[3]  = {vec_ptr->x, vec_ptr->y, vec_ptr->z};
             if (g_node_depth == -1)
@@ -173,7 +262,7 @@ namespace Pilot
                 std::string label = "##" + name;
                 ImGui::Text("%s", name.c_str());
                 ImGui::SameLine();
-                ImGui::DragFloat3(label.c_str(), val);
+                isDirty = ImGui::DragFloat3(label.c_str(), val);
             }
             else
             {
@@ -181,14 +270,25 @@ namespace Pilot
                 {
                     std::string full_label = "##" + getLeafUINodeParentLabel() + name;
                     ImGui::Text("%s", (name + ":").c_str());
-                    ImGui::DragFloat3(full_label.c_str(), val);
+                    isDirty = ImGui::DragFloat3(full_label.c_str(), val);
                 }
             }
             vec_ptr->x = val[0];
             vec_ptr->y = val[1];
             vec_ptr->z = val[2];
+
+            if (isDirty)
+            {
+                if (!m_editor_component_stack.empty())
+                {
+                    Component* m_component_ptr = m_editor_component_stack.back();
+                    m_component_ptr->setDirtyFlag(isDirty);
+                }
+            }
         };
         m_editor_ui_creator["Quaternion"] = [this](const std::string& name, void* value_ptr) -> void {
+            bool isDirty = false;
+
             Quaternion* qua_ptr = static_cast<Quaternion*>(value_ptr);
             float       val[4]  = {qua_ptr->x, qua_ptr->y, qua_ptr->z, qua_ptr->w};
             if (g_node_depth == -1)
@@ -196,7 +296,7 @@ namespace Pilot
                 std::string label = "##" + name;
                 ImGui::Text("%s", name.c_str());
                 ImGui::SameLine();
-                ImGui::DragFloat4(label.c_str(), val);
+                isDirty = ImGui::DragFloat4(label.c_str(), val);
             }
             else
             {
@@ -204,24 +304,44 @@ namespace Pilot
                 {
                     std::string full_label = "##" + getLeafUINodeParentLabel() + name;
                     ImGui::Text("%s", (name + ":").c_str());
-                    ImGui::DragFloat4(full_label.c_str(), val);
+                    isDirty = ImGui::DragFloat4(full_label.c_str(), val);
                 }
             }
             qua_ptr->x = val[0];
             qua_ptr->y = val[1];
             qua_ptr->z = val[2];
             qua_ptr->w = val[3];
+
+            if (isDirty)
+            {
+                if (!m_editor_component_stack.empty())
+                {
+                    Component* m_component_ptr = m_editor_component_stack.back();
+                    m_component_ptr->setDirtyFlag(isDirty);
+                }
+            }
         };
         m_editor_ui_creator["Color"] = [this](const std::string& name, void* value_ptr) -> void {
+            bool isDirty = false;
+
             Color* color_ptr = static_cast<Color*>(value_ptr);
             float  col[4]   = {color_ptr->r, color_ptr->g, color_ptr->g, color_ptr->a};
 
-            ImGui::ColorEdit4("Color", col);
+            isDirty = ImGui::ColorEdit4("Color", col);
 
             color_ptr->r = col[0];
             color_ptr->g = col[1];
             color_ptr->b = col[2];
             color_ptr->a = col[3];
+
+            if (isDirty)
+            {
+                if (!m_editor_component_stack.empty())
+                {
+                    Component* m_component_ptr = m_editor_component_stack.back();
+                    m_component_ptr->setDirtyFlag(isDirty);
+                }
+            }
         };
         m_editor_ui_creator["std::string"] = [this, &asset_folder](const std::string& name, void* value_ptr) -> void {
             if (g_node_depth == -1)
@@ -317,6 +437,8 @@ namespace Pilot
             }
         };
         m_editor_ui_creator["LightComponentRes"] = [this, &asset_folder](const std::string& name, void* value_ptr) -> void {
+            bool isDirty = false;
+
             if (g_editor_node_state_array[g_node_depth].second)
             {
                 LightComponentRes* l_res_ptr = static_cast<LightComponentRes*>(value_ptr);
@@ -356,6 +478,8 @@ namespace Pilot
 
                 if (item_current_idx != item_prev_idx)
                 {
+                    isDirty = true;
+
                     PILOT_REFLECTION_DELETE(l_res_ptr->m_parameter);
                     if (item_current_idx == 0)
                     {
@@ -368,6 +492,15 @@ namespace Pilot
                     else if (item_current_idx == 2)
                     {
                         l_res_ptr->m_parameter = PILOT_REFLECTION_NEW(SpotLightParameter)
+                    }
+
+                    if (isDirty)
+                    {
+                        if (!m_editor_component_stack.empty())
+                        {
+                            Component* m_component_ptr = m_editor_component_stack.back();
+                            m_component_ptr->setDirtyFlag(isDirty);
+                        }
                     }
                 }
 
@@ -732,12 +865,12 @@ namespace Pilot
         auto&& selected_object_components = selected_object->getComponents();
         for (auto component_ptr : selected_object_components)
         {
-            m_editor_ui_creator["TreeNodePush"](("<" + component_ptr.getTypeName() + ">").c_str(), nullptr);
+            m_editor_ui_creator["TreeNodePush"](("<" + component_ptr.getTypeName() + ">").c_str(), component_ptr.getPtr());
             auto object_instance = Reflection::ReflectionInstance(
                 Pilot::Reflection::TypeMeta::newMetaFromName(component_ptr.getTypeName().c_str()),
                 component_ptr.operator->());
             createComponentUI(object_instance);
-            m_editor_ui_creator["TreeNodePop"](("<" + component_ptr.getTypeName() + ">").c_str(), nullptr);
+            m_editor_ui_creator["TreeNodePop"](("<" + component_ptr.getTypeName() + ">").c_str(), component_ptr.getPtr());
         }
 
         ImGui::NewLine();
@@ -1265,8 +1398,10 @@ namespace Pilot
         handleOfGameView = handle;
     }
 
-    void DrawVecControl(const std::string& label, Pilot::Vector3& values, float resetValue, float columnWidth)
+    bool DrawVecControl(const std::string& label, Pilot::Vector3& values, float resetValue, float columnWidth)
     {
+        Vector3 prevVal = values;
+
         ImGui::PushID(label.c_str());
 
         ImGui::Columns(2);
@@ -1319,10 +1454,16 @@ namespace Pilot
 
         ImGui::Columns(1);
         ImGui::PopID();
+
+        if (prevVal != values)
+            return true;
+        return false;
     }
 
-    void DrawVecControl(const std::string& label, Pilot::Quaternion& values, float resetValue, float columnWidth)
+    bool DrawVecControl(const std::string& label, Pilot::Quaternion& values, float resetValue, float columnWidth)
     {
+        Quaternion prevVal = values;
+
         ImGui::PushID(label.c_str());
 
         ImGui::Columns(2);
@@ -1387,5 +1528,9 @@ namespace Pilot
 
         ImGui::Columns(1);
         ImGui::PopID();
+
+        if (prevVal != values)
+            return true;
+        return false;
     }
 } // namespace Pilot

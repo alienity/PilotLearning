@@ -38,8 +38,14 @@ namespace Pilot
 
         TransformComponent* m_transform_component_ptr = m_parent_object.lock()->getTransformComponent();
 
-        if (m_transform_component_ptr->isDirty())
+        if (m_transform_component_ptr->isDirty() || isDirty())
         {
+            RenderSwapContext& render_swap_context = g_runtime_global_context.m_render_system->getSwapContext();
+            RenderSwapData&    logic_swap_data     = render_swap_context.getLogicSwapData();
+
+            //std::vector<GameObjectComponentDesc> delte_light_part_descs = {m_light_part_desc};
+            //logic_swap_data.addDeleteGameObject(GameObjectDesc {m_parent_object.lock()->getID(), delte_light_part_descs});
+
             Matrix4x4 transform_matrix = m_transform_component_ptr->getMatrixWorld();
             std::tuple<Quaternion, Vector3, Vector3> rts = GLMUtil::decomposeMat4x4(transform_matrix);
 
@@ -79,17 +85,19 @@ namespace Pilot
             {
                 SpotLightParameter* m_spot_light_params = (SpotLightParameter*)m_light_res.m_parameter;
 
+                DirectionalLightParameter* m_directional_light_params = (DirectionalLightParameter*)m_light_res.m_parameter;
+
+                Matrix3x3 rotation_matrix = Matrix3x3::fromQuaternion(std::get<0>(rts));
+
                 m_light_part_desc.m_spot_light_desc.m_is_active     = true;
                 m_light_part_desc.m_spot_light_desc.m_position      = std::get<1>(rts);
+                m_light_part_desc.m_spot_light_desc.m_direction     = -rotation_matrix.getColumn(2);
                 m_light_part_desc.m_spot_light_desc.m_color         = m_spot_light_params->color;
                 m_light_part_desc.m_spot_light_desc.m_intensity     = m_spot_light_params->intensity;
                 m_light_part_desc.m_spot_light_desc.m_radius        = m_spot_light_params->falloff_radius;
                 m_light_part_desc.m_spot_light_desc.m_inner_radians = Math::degreesToRadians(m_spot_light_params->inner_angle);
                 m_light_part_desc.m_spot_light_desc.m_outer_radians = Math::degreesToRadians(m_spot_light_params->outer_angle);
             }
-
-            RenderSwapContext& render_swap_context = g_runtime_global_context.m_render_system->getSwapContext();
-            RenderSwapData&    logic_swap_data     = render_swap_context.getLogicSwapData();
 
             std::vector<GameObjectComponentDesc> dirty_light_part_descs = {m_light_part_desc};
             logic_swap_data.addDirtyGameObject(GameObjectDesc {m_parent_object.lock()->getID(), dirty_light_part_descs});
