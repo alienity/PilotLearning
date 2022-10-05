@@ -169,7 +169,9 @@ namespace RHI
     void D3D12CommandContext::ClearRenderTarget(D3D12RenderTargetView* RenderTargetView,
                                                 D3D12DepthStencilView* DepthStencilView)
     {
-        std::vector<D3D12RenderTargetView*> rtvs = {RenderTargetView};
+        std::vector<D3D12RenderTargetView*> rtvs = {};
+        if (RenderTargetView != nullptr)
+            rtvs.push_back(RenderTargetView);
         this->ClearRenderTarget(rtvs, DepthStencilView);
     }
 
@@ -228,7 +230,9 @@ namespace RHI
     void D3D12CommandContext::SetRenderTarget(D3D12RenderTargetView* RenderTargetView,
                                               D3D12DepthStencilView* DepthStencilView)
     {
-        std::vector<D3D12RenderTargetView*> rtvs = {RenderTargetView};
+        std::vector<D3D12RenderTargetView*> rtvs = {};
+        if (RenderTargetView != nullptr)
+            rtvs.push_back(RenderTargetView);
         this->SetRenderTarget(rtvs, DepthStencilView);
     }
 

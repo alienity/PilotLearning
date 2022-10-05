@@ -23,10 +23,10 @@ namespace Pilot
         REFLECTION_BODY(DirectionalLightParameter);
 
     public:
-        Vector3 forward = Vector3::Forward;
-        Vector3 up      = Vector3::Up;
         bool    shadows = false;
-        Vector3 shadow_bounds {128, 128, 512};
+        Vector2 shadow_bounds {512, 512};
+        float   shadow_near_plane {0.1f};
+        float   shadow_far_plane {500.0f};
         Vector2 shadowmap_size {512, 512};
     };
 

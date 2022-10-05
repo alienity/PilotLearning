@@ -11,9 +11,7 @@ namespace Pilot
 	{
     public:
         struct ShadowPassInitInfo : public RenderPassInitInfo
-        {
-            RHI::RgTextureDesc depthBufferTexDesc;
-        };
+        {};
 
         struct ShadowInputParameters : public PassInput
         {
@@ -23,17 +21,20 @@ namespace Pilot
             std::shared_ptr<RHI::D3D12Buffer> pMeshBuffer;
             std::shared_ptr<RHI::D3D12Buffer> pMaterialBuffer;
 
-            std::shared_ptr<RHI::D3D12Buffer> p_IndirectCommandBuffer;
+            std::shared_ptr<RHI::D3D12Buffer> p_IndirectShadowmapCommandBuffer;
         };
 
         struct ShadowOutputParameters : public PassOutput
         {
-            RHI::RgResourceHandle backBufDepth;
-            RHI::RgResourceHandle backBufDsv;
+            RHI::RgResourceHandle shadowmapTextureHandle;
+            RHI::RgResourceHandle shadowmapDSVHandle; 
+            RHI::RgResourceHandle shadowmapSRVHandle;
         };
 
     public:
         ~IndirectShadowPass() { destroy(); }
+
+        void prepareShadowmapSRVs(std::shared_ptr<RenderResourceBase> render_resource);
 
         void initialize(const ShadowPassInitInfo& init_info);
         void update(RHI::D3D12CommandContext& context,
@@ -43,9 +44,7 @@ namespace Pilot
         void destroy() override final;
 
     private:
-        std::shared_ptr<RHI::D3D12DynamicDescriptor<D3D12_SHADER_RESOURCE_VIEW_DESC>> pD3D12SRVDescriptor;
-
-        RHI::RgTextureDesc depthBufferTexDesc;
+        RHI::RgTextureDesc shadowmapTexDesc;
 	};
 }
 

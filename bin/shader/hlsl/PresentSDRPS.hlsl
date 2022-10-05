@@ -14,7 +14,9 @@ float4 PSMain(VertexAttributes input) : SV_Target0
 
     float4 outColor = baseColorTex.Sample(defaultSampler, input.texcoord);
 
-    outColor = pow(outColor, 1 / 2.2f);
+    const float gamma = 2.2f;
+
+    outColor = pow(outColor, 1.0f / gamma);
 
     return float4(outColor.rgb, 1);
 }

@@ -34,14 +34,16 @@ namespace Pilot
         GObjectID    m_gobject_id {k_invalid_gobject_id};
         GComponentID m_gcomponent_id {k_invalid_gcomponent_id};
 
-        Vector3 m_position;
-        Color   m_color;
-        float   m_intensity {1.0f};
-        Vector3 m_direction;
-        Vector3 m_up;
-        bool    m_shadowmap {false};
-        Vector3 m_shadow_bounds;
-        Vector2 m_shadowmap_size;
+        Vector3   m_position;
+        Color     m_color;
+        float     m_intensity {1.0f};
+        Vector3   m_direction;
+        bool      m_shadowmap {false};
+        Vector2   m_shadow_bounds;
+        float     m_shadow_near_plane {0.1f};
+        float     m_shadow_far_plane {500.0f};
+        Vector2   m_shadowmap_size {512, 512};
+        Matrix4x4 m_shadow_view_proj_mat;
     };
 
     struct PointLightDesc : public BasePartDesc

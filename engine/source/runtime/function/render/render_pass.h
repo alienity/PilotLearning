@@ -13,10 +13,11 @@ namespace Pilot
     
     struct VisiableNodes
     {
-        std::vector<RenderMeshNode>*              p_all_mesh_nodes {nullptr};
-        //std::vector<RenderMeshNode>*              p_directional_light_visible_mesh_nodes {nullptr};
-        //std::vector<RenderMeshNode>*              p_point_lights_visible_mesh_nodes {nullptr};
-        //std::vector<RenderMeshNode>*              p_main_camera_visible_mesh_nodes {nullptr};
+        std::vector<RenderMeshNode>* p_all_mesh_nodes {nullptr};
+        AmbientLightDesc*            p_ambient_light {nullptr};
+        DirectionLightDesc*          p_directional_light {nullptr};
+        std::vector<PointLightDesc>* p_point_light_list {nullptr};
+        std::vector<SpotLightDesc>*  p_spot_light_list {nullptr};
     };
 
     class RenderPass : public RenderPassBase

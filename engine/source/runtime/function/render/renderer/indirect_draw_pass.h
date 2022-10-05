@@ -26,9 +26,10 @@ namespace Pilot
 
             std::shared_ptr<RHI::D3D12Buffer> pIndirectCommandBuffer;
 
-            CD3DX12_RESOURCE_DESC outputRTDesc;
-            CD3DX12_CLEAR_VALUE   outputClearVal;
+            // shadowmap input
 
+            RHI::RgResourceHandle directionalShadowmapTexHandle;
+            RHI::RgResourceHandle directionalShadowmapSRVHandle;
         };
 
         struct DrawOutputParameters : public PassOutput
@@ -52,8 +53,6 @@ namespace Pilot
         void destroy() override final;
 
     private:
-        std::shared_ptr<RHI::D3D12DynamicDescriptor<D3D12_SHADER_RESOURCE_VIEW_DESC>> pD3D12SRVDescriptor;
-
         RHI::RgTextureDesc colorTexDesc;
         RHI::RgTextureDesc depthTexDesc;
 	};

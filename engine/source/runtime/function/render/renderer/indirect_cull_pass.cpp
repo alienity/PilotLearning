@@ -101,6 +101,7 @@ namespace Pilot
             copyContext.Open();
             {
                 copyContext.ResetCounter(indirectCullParams.p_IndirectCommandBuffer.get(), indirectCullParams.commandBufferCounterOffset);
+                copyContext.ResetCounter(indirectCullParams.p_IndirectShadowmapCommandBuffer.get(), indirectCullParams.commandBufferCounterOffset);
                 copyContext->CopyResource(indirectCullParams.pPerframeBuffer->GetResource(), pUploadPerframeBuffer->GetResource());
                 copyContext->CopyResource(indirectCullParams.pMaterialBuffer->GetResource(), pUploadMaterialBuffer->GetResource());
                 copyContext->CopyResource(indirectCullParams.pMeshBuffer->GetResource(), pUploadMeshBuffer->GetResource());
@@ -124,9 +125,15 @@ namespace Pilot
                 asyncCompute.Dispatch1D<128>(indirectCullParams.numMeshes);
             }
             {
-                D3D12ScopedEvent(asyncCompute, "Gpu Frustum Culling for rendering");
+                D3D12ScopedEvent(asyncCompute, "Gpu Frustum Culling for direction light shadowmap");
+                asyncCompute.SetPipelineState(registry.GetPipelineState(PipelineStates::IndirectCullShadowmap));
+                asyncCompute.SetComputeRootSignature(registry.GetRootSignature(RootSignatures::IndirectCull));
+                
+                asyncCompute->SetComputeRootConstantBufferView(0, indirectCullParams.pPerframeBuffer->GetGpuVirtualAddress());
+                asyncCompute->SetComputeRootShaderResourceView(1, indirectCullParams.pMeshBuffer->GetGpuVirtualAddress());
+                asyncCompute->SetComputeRootDescriptorTable(2, indirectCullParams.p_IndirectShadowmapCommandBufferUav->GetGpuHandle());
 
-
+                asyncCompute.Dispatch1D<128>(indirectCullParams.numMeshes);
             }
             asyncCompute.Close();
             ComputeSyncHandle = asyncCompute.Execute(false);

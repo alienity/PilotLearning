@@ -75,9 +75,7 @@ namespace Pilot
 
         m_render_scene->m_ambient_light.m_is_active = true;
         m_render_scene->m_ambient_light.m_color     = global_rendering_res.m_ambient_light;
-        //m_render_scene->m_directional_light.m_direction =
-        //    Vector3::normalize(global_rendering_res.m_directional_light.m_direction);
-        //m_render_scene->m_directional_light.m_color = global_rendering_res.m_directional_light.m_color.toVector3();
+
         m_render_scene->setVisibleNodesReference();
 
         // initialize renderer
@@ -212,17 +210,17 @@ namespace Pilot
 
                     GameObjectComponentId obj_part_id_pair = {gobject.getId(), game_object_part.m_component_id};
 
-                    bool is_entity_in_scene = m_render_scene->getInstanceIdAllocator().hasElement(obj_part_id_pair);
-                    uint32_t m_instance_id = static_cast<uint32_t>(m_render_scene->getInstanceIdAllocator().allocGuid(obj_part_id_pair));
-
                     // mesh properties
                     if (game_object_part.m_mesh_desc.m_is_active)
                     {
+                        bool is_entity_in_scene = m_render_scene->getInstanceIdAllocator().hasElement(obj_part_id_pair);
+                        uint32_t m_instance_id = static_cast<uint32_t>(m_render_scene->getInstanceIdAllocator().allocGuid(obj_part_id_pair));
+
                         RenderEntity render_entity;
                         render_entity.m_instance_id  = m_instance_id;
                         render_entity.m_model_matrix = game_object_part.m_transform_desc.m_transform_matrix;
 
-                        m_render_scene->addMeshInstanceIdToMap(render_entity.m_instance_id, gobject.getId());
+                        m_render_scene->addInstanceIdToMap(render_entity.m_instance_id, gobject.getId());
 
                         MeshSourceDesc mesh_source = {game_object_part.m_mesh_desc.m_mesh_file};
                         bool is_mesh_loaded        = m_render_scene->getMeshAssetIdAllocator().hasElement(mesh_source);
@@ -302,83 +300,121 @@ namespace Pilot
                         }
                     }
 
-                    // light properties
+                    // process light properties
                     {
-                        auto lightObj = m_render_scene->m_light_object_id_map.find(m_instance_id);
-
-                    }
-
-
-
-                    // process light
-                    if (game_object_part.m_ambeint_light_desc.m_is_active)
-                    {
-                        m_render_scene->m_ambient_light = game_object_part.m_ambeint_light_desc;
-                    }
-                    
-                    if (game_object_part.m_direction_light_desc.m_is_active)
-                    {
-                        m_render_scene->m_directional_light = game_object_part.m_direction_light_desc;
-                        m_render_scene->m_directional_light.m_gobject_id = gobject.getId();
-                        m_render_scene->m_directional_light.m_gcomponent_id = game_object_part.m_component_id;
-                    }
-
-                    if (game_object_part.m_point_light_desc.m_is_active)
-                    {
-                        uint32_t light_in_scene_index = -1;
-                        for (size_t i = 0; i < m_render_scene->m_point_light_list.size(); i++)
+                        // ambient light
+                        if (game_object_part.m_ambeint_light_desc.m_is_active)
                         {
-                            auto tmp_light = m_render_scene->m_point_light_list[i];
-
-                            if (tmp_light.m_gobject_id == gobject.getId() &&
-                                tmp_light.m_gcomponent_id == game_object_part.m_component_id)
-                            {
-                                light_in_scene_index = i;
-                                break;
-                            }
+                            m_render_scene->m_ambient_light = game_object_part.m_ambeint_light_desc;
                         }
 
-                        if (light_in_scene_index == -1)
+                        // direction light
+                        if (game_object_part.m_direction_light_desc.m_is_active)
                         {
-                            m_render_scene->m_point_light_list.push_back(game_object_part.m_point_light_desc);
-                            m_render_scene->m_point_light_list.back().m_gobject_id    = gobject.getId();
-                            m_render_scene->m_point_light_list.back().m_gcomponent_id = game_object_part.m_component_id;
+                            m_render_scene->m_directional_light              = game_object_part.m_direction_light_desc;
+                            m_render_scene->m_directional_light.m_gobject_id = gobject.getId();
+                            m_render_scene->m_directional_light.m_gcomponent_id = game_object_part.m_component_id;
                         }
                         else
                         {
-                            m_render_scene->m_point_light_list[light_in_scene_index] = game_object_part.m_point_light_desc;
-                            m_render_scene->m_point_light_list[light_in_scene_index].m_gobject_id = gobject.getId();
-                            m_render_scene->m_point_light_list[light_in_scene_index].m_gcomponent_id = game_object_part.m_component_id;
-                        }
-                    }
+                            bool is_direction_light_dirty =
+                                (m_render_scene->m_directional_light.m_gobject_id == gobject.getId()) &&
+                                (m_render_scene->m_directional_light.m_gcomponent_id == game_object_part.m_component_id);
 
-                    if (game_object_part.m_spot_light_desc.m_is_active)
-                    {
-                        uint32_t light_in_scene_index = -1;
-                        for (size_t i = 0; i < m_render_scene->m_spot_light_list.size(); i++)
-                        {
-                            auto tmp_light = m_render_scene->m_spot_light_list[i];
-
-                            if (tmp_light.m_gobject_id == gobject.getId() &&
-                                tmp_light.m_gcomponent_id == game_object_part.m_component_id)
+                            if (is_direction_light_dirty)
                             {
-                                light_in_scene_index = i;
-                                break;
+                                m_render_scene->m_directional_light.m_is_active = false;
                             }
                         }
 
-                        if (light_in_scene_index == -1)
+                        // point light
                         {
-                            m_render_scene->m_spot_light_list.push_back(game_object_part.m_spot_light_desc);
-                            m_render_scene->m_spot_light_list.back().m_gobject_id     = gobject.getId();
-                            m_render_scene->m_spot_light_list.back().m_gcomponent_id = game_object_part.m_component_id;
+                            int point_light_index_in_scene = -1;
+                            for (size_t i = 0; i < m_render_scene->m_point_light_list.size(); i++)
+                            {
+                                auto tmp_light = m_render_scene->m_point_light_list[i];
+
+                                if ((tmp_light.m_gobject_id == gobject.getId()) &&
+                                    (tmp_light.m_gcomponent_id == game_object_part.m_component_id))
+                                {
+                                    point_light_index_in_scene = i;
+                                    break;
+                                }
+                            }
+
+                            if (game_object_part.m_point_light_desc.m_is_active)
+                            {
+                                if (point_light_index_in_scene == -1)
+                                {
+                                    m_render_scene->m_point_light_list.push_back(game_object_part.m_point_light_desc);
+                                    m_render_scene->m_point_light_list.back().m_gobject_id = gobject.getId();
+                                    m_render_scene->m_point_light_list.back().m_gcomponent_id =
+                                        game_object_part.m_component_id;
+                                }
+                                else
+                                {
+                                    m_render_scene->m_point_light_list[point_light_index_in_scene] =
+                                        game_object_part.m_point_light_desc;
+                                    m_render_scene->m_point_light_list[point_light_index_in_scene].m_gobject_id =
+                                        gobject.getId();
+                                    m_render_scene->m_point_light_list[point_light_index_in_scene].m_gcomponent_id =
+                                        game_object_part.m_component_id;
+                                }
+                            }
+                            else
+                            {
+                                if (point_light_index_in_scene != -1)
+                                {
+                                    m_render_scene->m_point_light_list.erase(
+                                        m_render_scene->m_point_light_list.begin() + point_light_index_in_scene);
+                                }
+                            }
                         }
-                        else
+
+                        // spot light
                         {
-                            m_render_scene->m_spot_light_list[light_in_scene_index] = game_object_part.m_spot_light_desc;
-                            m_render_scene->m_spot_light_list[light_in_scene_index].m_gobject_id = gobject.getId();
-                            m_render_scene->m_spot_light_list[light_in_scene_index].m_gcomponent_id = game_object_part.m_component_id;
+                            int spot_light_index_in_scene = -1;
+                            for (size_t i = 0; i < m_render_scene->m_spot_light_list.size(); i++)
+                            {
+                                auto tmp_light = m_render_scene->m_spot_light_list[i];
+
+                                if ((tmp_light.m_gobject_id == gobject.getId()) &&
+                                    (tmp_light.m_gcomponent_id == game_object_part.m_component_id))
+                                {
+                                    spot_light_index_in_scene = i;
+                                    break;
+                                }
+                            }
+
+                            if (game_object_part.m_spot_light_desc.m_is_active)
+                            {
+                                if (spot_light_index_in_scene == -1)
+                                {
+                                    m_render_scene->m_spot_light_list.push_back(game_object_part.m_spot_light_desc);
+                                    m_render_scene->m_spot_light_list.back().m_gobject_id = gobject.getId();
+                                    m_render_scene->m_spot_light_list.back().m_gcomponent_id =
+                                        game_object_part.m_component_id;
+                                }
+                                else
+                                {
+                                    m_render_scene->m_spot_light_list[spot_light_index_in_scene] =
+                                        game_object_part.m_spot_light_desc;
+                                    m_render_scene->m_spot_light_list[spot_light_index_in_scene].m_gobject_id =
+                                        gobject.getId();
+                                    m_render_scene->m_spot_light_list[spot_light_index_in_scene].m_gcomponent_id =
+                                        game_object_part.m_component_id;
+                                }
+                            }
+                            else
+                            {
+                                if (spot_light_index_in_scene != -1)
+                                {
+                                    m_render_scene->m_spot_light_list.erase(m_render_scene->m_spot_light_list.begin() +
+                                                                            spot_light_index_in_scene);
+                                }
+                            }
                         }
+
                     }
 
                 }

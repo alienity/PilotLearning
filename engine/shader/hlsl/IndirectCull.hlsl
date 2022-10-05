@@ -13,7 +13,8 @@ struct CommandSignatureParams
 
 ConstantBuffer<MeshPerframeStorageBufferObject> g_ConstantBufferParams : register(b0, space0);
 StructuredBuffer<MeshInstance>                  g_MeshesInstance : register(t0, space0);
-AppendStructuredBuffer<CommandSignatureParams>  g_CommandBuffer : register(u0, space0);
+
+AppendStructuredBuffer<CommandSignatureParams> g_DrawSceneCommandBuffer : register(u0, space0);
 
 [numthreads(128, 1, 1)]
 void CSMain(CSParams Params)
@@ -38,7 +39,8 @@ void CSMain(CSParams Params)
             command.VertexBuffer         = mesh.vertexBuffer;
             command.IndexBuffer          = mesh.indexBuffer;
             command.DrawIndexedArguments = mesh.drawIndexedArguments;
-			g_CommandBuffer.Append(command);
+            g_DrawSceneCommandBuffer.Append(command);
 		}
+
 	}
 }

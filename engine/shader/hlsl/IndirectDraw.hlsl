@@ -83,6 +83,46 @@ float4 PSMain(VertexOutput input) : SV_Target0
 
     float3 outColor = ambientColor;
 
+    // direction light
+    {
+        float3 lightForward   = g_ConstantBufferParams.scene_directional_light.direction;
+        float3 lightColor     = g_ConstantBufferParams.scene_directional_light.color;
+        float  lightStrength  = g_ConstantBufferParams.scene_directional_light.intensity;
+        uint   shadowmap      = g_ConstantBufferParams.scene_directional_light.shadowmap;
+
+        lightColor = lightColor * lightStrength;
+
+        float3 lightDir = -lightForward;
+
+        float3 viewDir    = normalize(viewPos - positionWS);
+        float3 halfwayDir = normalize(lightDir + viewDir);
+
+        float  diff    = max(dot(vNout, lightDir), 0.0f);
+        float3 diffuse = lightColor * diff;
+
+        float  spec     = pow(max(dot(vNout, halfwayDir), 0.0f), 32);
+        float3 specular = lightColor * spec;
+
+        outColor = outColor + diffuse + specular;
+
+        if (shadowmap == 1)
+        {
+            float4x4 lightViewProjMat = g_ConstantBufferParams.scene_directional_light.directional_light_proj_view;
+
+            float4 fragPosLightSpace = lightViewProjMat * positionWS;
+
+            // perform perspective divide
+            float3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
+            // transform to [0,1] range
+            projCoords.xy = projCoords.xy * 0.5 + 0.5;
+            // get closest depth value from light's perspective (using [0,1] range fragPosLight as coords)
+            float closestDepth = texture(shadowMap, projCoords.xy).r; 
+
+
+        }
+
+    }
+
     uint point_light_num = g_ConstantBufferParams.point_light_num;
     uint i = 0;
     for (i = 0; i < point_light_num; i++)

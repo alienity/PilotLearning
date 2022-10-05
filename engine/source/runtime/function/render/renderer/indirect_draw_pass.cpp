@@ -42,6 +42,7 @@ namespace Pilot
             RHI::RgViewDesc().SetResource(drawPassOutput->renderTargetDepthHandle).AsDsv());
 
         graph.AddRenderPass("IndirectDrawPass")
+            .Read(drawPassInput->directionalShadowmapTexHandle)
             .Write(&drawPassOutput->renderTargetColorHandle)
             .Write(&drawPassOutput->renderTargetDepthHandle)
             .Execute([=](RHI::RenderGraphRegistry& registry, RHI::D3D12CommandContext& context) {

@@ -18,6 +18,7 @@ struct Shaders
     {
         inline static Shader ScreenQuadPresentVS;
         inline static Shader IndirectDrawVS;
+        inline static Shader IndirectDrawShadowmapVS;
     };
 
     // Mesh Shaders
@@ -31,12 +32,14 @@ struct Shaders
     {
         inline static Shader PresentSDRPS;
         inline static Shader IndirectDrawPS;
+        inline static Shader IndirectDrawShadowmapPS;
     };
 
 	// Compute Shaders
     struct CS
     {
         inline static Shader IndirectCull;
+        inline static Shader IndirectCullShadowmap;
     };
 
     static void Compile(ShaderCompiler* Compiler, const std::filesystem::path& ShaderPath)
@@ -48,6 +51,8 @@ struct Shaders
                 Compiler->CompileShader(RHI_SHADER_TYPE::Vertex, ShaderPath / "hlsl/ScreenQuadPresentVS.hlsl", Options);
             VS::IndirectDrawVS =
                 Compiler->CompileShader(RHI_SHADER_TYPE::Vertex, ShaderPath / "hlsl/IndirectDraw.hlsl", Options);
+            VS::IndirectDrawShadowmapVS =
+                Compiler->CompileShader(RHI_SHADER_TYPE::Vertex, ShaderPath / "hlsl/IndirectDrawShadowmap.hlsl", Options);
         }
 
 		// PS
@@ -57,6 +62,8 @@ struct Shaders
                 Compiler->CompileShader(RHI_SHADER_TYPE::Pixel, ShaderPath / "hlsl/PresentSDRPS.hlsl", Options);
             PS::IndirectDrawPS =
                 Compiler->CompileShader(RHI_SHADER_TYPE::Pixel, ShaderPath / "hlsl/IndirectDraw.hlsl", Options);
+            PS::IndirectDrawShadowmapPS =
+                Compiler->CompileShader(RHI_SHADER_TYPE::Pixel, ShaderPath / "hlsl/IndirectDrawShadowmap.hlsl", Options);
         }
 
 		// CS
@@ -64,6 +71,8 @@ struct Shaders
             ShaderCompileOptions Options(g_CSEntryPoint);
             CS::IndirectCull =
                 Compiler->CompileShader(RHI_SHADER_TYPE::Compute, ShaderPath / "hlsl/IndirectCull.hlsl", Options);
+            CS::IndirectCullShadowmap =
+                Compiler->CompileShader(RHI_SHADER_TYPE::Compute, ShaderPath / "hlsl/IndirectCullShadowmap.hlsl", Options);
         }
     }
 
@@ -119,6 +128,7 @@ struct RootSignatures
 struct CommandSignatures
 {
     inline static RHI::RgResourceHandle IndirectDraw;
+    inline static RHI::RgResourceHandle IndirectDrawShadowmap;
 
     static void Compile(RHI::D3D12Device* Device, RHI::RenderGraphRegistry& Registry)
     {
@@ -134,6 +144,18 @@ struct CommandSignatures
             IndirectDraw =
                 Registry.CreateCommandSignature(RHI::D3D12CommandSignature(Device, Builder, indirectDrawRootSignature));
         }
+        {
+            RHI::CommandSignatureDesc Builder(4, sizeof(HLSL::CommandSignatureParams));
+            Builder.AddConstant(0, 0, 1);
+            Builder.AddVertexBufferView(0);
+            Builder.AddIndexBufferView();
+            Builder.AddDrawIndexed();
+
+            ID3D12RootSignature* indirectDrawShadowmapRootSignature =
+                Registry.GetRootSignature(RootSignatures::IndirectDraw)->GetApiHandle();
+            IndirectDrawShadowmap = Registry.CreateCommandSignature(
+                RHI::D3D12CommandSignature(Device, Builder, indirectDrawShadowmapRootSignature));
+        }
     }
 
 
@@ -143,7 +165,9 @@ struct PipelineStates
 {
     inline static RHI::RgResourceHandle FullScreenPresent;
     inline static RHI::RgResourceHandle IndirectCull;
+    inline static RHI::RgResourceHandle IndirectCullShadowmap;
     inline static RHI::RgResourceHandle IndirectDraw;
+    inline static RHI::RgResourceHandle IndirectDrawShadowmap;
 
     static void Compile(DXGI_FORMAT PiplineRtFormat, DXGI_FORMAT PipelineDsFormat, DXGI_FORMAT RtFormat, DXGI_FORMAT DsFormat, RHI::D3D12Device* Device, RHI::RenderGraphRegistry& Registry)
     {
@@ -190,6 +214,17 @@ struct PipelineStates
             IndirectCull = Registry.CreatePipelineState(Device->CreatePipelineState(L"IndirectCull", Stream));
         }
         {
+            struct PsoStream
+            {
+                PipelineStateStreamRootSignature RootSignature;
+                PipelineStateStreamCS            CS;
+            } Stream;
+            Stream.RootSignature = Registry.GetRootSignature(RootSignatures::IndirectCull);
+            Stream.CS            = &Shaders::CS::IndirectCullShadowmap;
+
+            IndirectCullShadowmap = Registry.CreatePipelineState(Device->CreatePipelineState(L"IndirectCullShadowmap", Stream));
+        }
+        {
             RHI::D3D12InputLayout InputLayout =
                 Pilot::MeshVertex::D3D12MeshVertexPositionNormalTangentTexture::InputLayout;
             
@@ -221,6 +256,37 @@ struct PipelineStates
             Stream.RenderTargetState     = RenderTargetState;
 
             IndirectDraw = Registry.CreatePipelineState(Device->CreatePipelineState(L"IndirectDraw", Stream));
+        }
+        {
+            RHI::D3D12InputLayout InputLayout =
+                Pilot::MeshVertex::D3D12MeshVertexPositionNormalTangentTexture::InputLayout;
+
+            RHIDepthStencilState DepthStencilState;
+            DepthStencilState.DepthEnable = true;
+            DepthStencilState.DepthFunc   = RHI_COMPARISON_FUNC::GreaterEqual;
+
+            RHIRenderTargetState RenderTargetState;
+            RenderTargetState.NumRenderTargets = 0;
+            RenderTargetState.DSFormat         = PipelineDsFormat; // DXGI_FORMAT_D32_FLOAT;
+
+            struct PsoStream
+            {
+                PipelineStateStreamRootSignature     RootSignature;
+                PipelineStateStreamInputLayout       InputLayout;
+                PipelineStateStreamPrimitiveTopology PrimitiveTopologyType;
+                PipelineStateStreamVS                VS;
+                PipelineStateStreamPS                PS;
+                PipelineStateStreamDepthStencilState DepthStencilState;
+                PipelineStateStreamRenderTargetState RenderTargetState;
+            } Stream;
+            Stream.RootSignature         = Registry.GetRootSignature(RootSignatures::IndirectDraw);
+            Stream.InputLayout           = &InputLayout;
+            Stream.PrimitiveTopologyType = RHI_PRIMITIVE_TOPOLOGY::Triangle;
+            Stream.VS                    = &Shaders::VS::IndirectDrawShadowmapVS;
+            Stream.DepthStencilState     = DepthStencilState;
+            Stream.RenderTargetState     = RenderTargetState;
+
+            IndirectDrawShadowmap = Registry.CreatePipelineState(Device->CreatePipelineState(L"IndirectDrawShadowmap", Stream));
         }
     }
 };

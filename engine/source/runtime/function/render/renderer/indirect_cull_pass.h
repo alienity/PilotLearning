@@ -21,6 +21,9 @@ namespace Pilot
 
             std::shared_ptr<RHI::D3D12Buffer>              p_IndirectCommandBuffer;
             std::shared_ptr<RHI::D3D12UnorderedAccessView> p_IndirectCommandBufferUav;
+
+            std::shared_ptr<RHI::D3D12Buffer>              p_IndirectShadowmapCommandBuffer;
+            std::shared_ptr<RHI::D3D12UnorderedAccessView> p_IndirectShadowmapCommandBufferUav;
         };
 
     public:

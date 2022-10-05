@@ -50,7 +50,11 @@ namespace Pilot
 
     void RenderScene::setVisibleNodesReference()
     {
-        RenderPass::m_visiable_nodes.p_all_mesh_nodes = &m_all_mesh_nodes;
+        RenderPass::m_visiable_nodes.p_all_mesh_nodes    = &m_all_mesh_nodes;
+        RenderPass::m_visiable_nodes.p_ambient_light     = &m_ambient_light;
+        RenderPass::m_visiable_nodes.p_directional_light = &m_directional_light;
+        RenderPass::m_visiable_nodes.p_point_light_list  = &m_point_light_list;
+        RenderPass::m_visiable_nodes.p_spot_light_list   = &m_spot_light_list;
     }
 
     GuidAllocator<GameObjectComponentId>& RenderScene::getInstanceIdAllocator() { return m_instance_id_allocator; }
@@ -59,7 +63,7 @@ namespace Pilot
 
     GuidAllocator<MaterialSourceDesc>& RenderScene::getMaterialAssetdAllocator() { return m_material_asset_id_allocator; }
 
-    void RenderScene::addMeshInstanceIdToMap(uint32_t instance_id, GObjectID go_id)
+    void RenderScene::addInstanceIdToMap(uint32_t instance_id, GObjectID go_id)
     {
         m_mesh_object_id_map[instance_id] = go_id;
     }
@@ -85,17 +89,14 @@ namespace Pilot
             }
         }
 
-        GameObjectComponentId part_id = {go_id, 0};
-        size_t                find_guid;
-        if (m_instance_id_allocator.getElementGuid(part_id, find_guid))
+        for (auto it = m_render_entities.begin(); it != m_render_entities.end(); it++)
         {
-            for (auto it = m_render_entities.begin(); it != m_render_entities.end(); it++)
+            Pilot::GameObjectComponentId obj_com_id;
+            m_instance_id_allocator.getGuidRelatedElement(it->m_instance_id, obj_com_id);
+            if (obj_com_id.m_go_id == go_id)
             {
-                if (it->m_instance_id == find_guid)
-                {
-                    m_render_entities.erase(it);
-                    break;
-                }
+                m_render_entities.erase(it);
+                break;
             }
         }
     }
@@ -146,7 +147,6 @@ namespace Pilot
     {
         m_instance_id_allocator.clear();
         m_mesh_object_id_map.clear();
-        m_light_object_id_map.clear();
         m_point_light_list.clear();
         m_spot_light_list.clear();
         m_render_entities.clear();

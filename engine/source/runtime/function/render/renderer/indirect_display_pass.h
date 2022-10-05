@@ -36,7 +36,7 @@ namespace Pilot
         void destroy() override final;
 
     private:
-        std::shared_ptr<RHI::D3D12DynamicDescriptor<D3D12_SHADER_RESOURCE_VIEW_DESC>> pD3D12SRVDescriptor;
+
     };
 }
 

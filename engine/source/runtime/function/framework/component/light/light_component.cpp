@@ -49,6 +49,8 @@ namespace Pilot
             Matrix4x4 transform_matrix = m_transform_component_ptr->getMatrixWorld();
             std::tuple<Quaternion, Vector3, Vector3> rts = GLMUtil::decomposeMat4x4(transform_matrix);
 
+            m_light_part_desc = {};
+
             m_light_part_desc.m_transform_desc.m_is_active = true;
             m_light_part_desc.m_transform_desc.m_transform_matrix = transform_matrix;
             m_light_part_desc.m_transform_desc.m_rotation         = std::get<0>(rts);
@@ -67,9 +69,35 @@ namespace Pilot
                 m_light_part_desc.m_direction_light_desc.m_intensity      = m_directional_light_params->intensity;
                 m_light_part_desc.m_direction_light_desc.m_shadowmap      = m_directional_light_params->shadows;
                 m_light_part_desc.m_direction_light_desc.m_shadow_bounds  = m_directional_light_params->shadow_bounds;
+                m_light_part_desc.m_direction_light_desc.m_shadow_near_plane  = m_directional_light_params->shadow_near_plane;
+                m_light_part_desc.m_direction_light_desc.m_shadow_far_plane  = m_directional_light_params->shadow_far_plane;
+                m_light_part_desc.m_direction_light_desc.m_shadow_bounds  = m_directional_light_params->shadow_bounds;
                 m_light_part_desc.m_direction_light_desc.m_shadowmap_size = m_directional_light_params->shadowmap_size;
                 m_light_part_desc.m_direction_light_desc.m_direction      = -rotation_matrix.getColumn(2);
-                m_light_part_desc.m_direction_light_desc.m_up             = rotation_matrix.getColumn(1);
+                if (m_light_part_desc.m_direction_light_desc.m_shadowmap)
+                {
+                    //Matrix4x4 light_view_matrix = Math::makeViewMatrix(
+                    //    m_light_part_desc.m_transform_desc.m_position, m_light_part_desc.m_transform_desc.m_rotation);
+                    Vector3 eye_position = m_light_part_desc.m_transform_desc.m_position;
+                    Vector3 target_position = eye_position + m_light_part_desc.m_direction_light_desc.m_direction;
+                    Vector3 up_dir          = rotation_matrix.getColumn(1);
+
+                    Matrix4x4 light_view_matrix = Math::makeLookAtMatrix(eye_position, target_position, up_dir);
+
+                    Vector2 shadow_bounds = m_light_part_desc.m_direction_light_desc.m_shadow_bounds;
+                    float shadow_near = m_light_part_desc.m_direction_light_desc.m_shadow_near_plane;
+                    float shadow_far  = m_light_part_desc.m_direction_light_desc.m_shadow_far_plane;
+
+                    Matrix4x4 light_proj_matrix = Math::makeOrthographicProjectionMatrix(-shadow_bounds.x * 0.5f,
+                                                                                         shadow_bounds.x * 0.5f,
+                                                                                         -shadow_bounds.y * 0.5f,
+                                                                                         shadow_bounds.y * 0.5f,
+                                                                                         shadow_near,
+                                                                                         shadow_far);
+
+                    m_light_part_desc.m_direction_light_desc.m_shadow_view_proj_mat = light_proj_matrix * light_view_matrix;
+                }
+
             }
             else if (m_light_res.m_parameter.getTypeName() == "PointLightParameter")
             {

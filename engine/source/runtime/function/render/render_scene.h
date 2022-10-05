@@ -42,7 +42,7 @@ namespace Pilot
         GuidAllocator<MeshSourceDesc>&        getMeshAssetIdAllocator();
         GuidAllocator<MaterialSourceDesc>&    getMaterialAssetdAllocator();
 
-        void      addMeshInstanceIdToMap(uint32_t instance_id, GObjectID go_id);
+        void      addInstanceIdToMap(uint32_t instance_id, GObjectID go_id);
         GObjectID getGObjectIDByMeshID(uint32_t mesh_id) const;
         void      deleteEntityByGObjectID(GObjectID go_id);
 
@@ -64,7 +64,5 @@ namespace Pilot
         GuidAllocator<MaterialSourceDesc>    m_material_asset_id_allocator;
         
         std::unordered_map<uint32_t, GObjectID> m_mesh_object_id_map;
-        std::unordered_map<uint32_t, GObjectID> m_light_object_id_map;
-        
     };
 } // namespace Piccolo

@@ -86,10 +86,12 @@ struct SceneSpotLight
 
 struct SceneDirectionalLight
 {
-    float3 direction;
-    float  _padding_direction;
-    float3 color;
-    float  intensity;
+    float3   direction;
+    float    _padding_direction;
+    float3   color;
+    float    intensity;
+    uint     shadowmap;
+    float3   _padding_shadowmap;
     float4x4 directional_light_proj_view;
 };
 

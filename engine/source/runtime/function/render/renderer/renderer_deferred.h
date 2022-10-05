@@ -44,6 +44,13 @@ namespace Pilot
         std::shared_ptr<RHI::D3D12Buffer>              p_IndirectCommandBuffer;
         std::shared_ptr<RHI::D3D12UnorderedAccessView> p_IndirectCommandBufferUav;
 
+        std::shared_ptr<RHI::D3D12Buffer>              p_IndirectShadowmapCommandBuffer;
+        std::shared_ptr<RHI::D3D12UnorderedAccessView> p_IndirectShadowmapCommandBufferUav;
+
+        std::shared_ptr<RHI::D3D12Texture>            p_DirectionLightShadowmap;
+        std::shared_ptr<RHI::D3D12RenderTargetView>   p_DirectionLightShadowmapRTV;
+        std::shared_ptr<RHI::D3D12ShaderResourceView> p_DirectionLightShadowmapSRV;
+
         std::shared_ptr<RHI::D3D12Buffer> pPerframeBuffer;
         std::shared_ptr<RHI::D3D12Buffer> pMaterialBuffer;
         std::shared_ptr<RHI::D3D12Buffer> pMeshBuffer;

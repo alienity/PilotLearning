@@ -47,6 +47,19 @@ namespace Pilot
         p_IndirectCommandBufferUav = std::make_shared<RHI::D3D12UnorderedAccessView>(
             device->GetLinkedDevice(), p_IndirectCommandBuffer.get(), HLSL::MeshLimit, commandBufferCounterOffset);
 
+        p_IndirectShadowmapCommandBuffer =
+            std::make_shared<RHI::D3D12Buffer>(device->GetLinkedDevice(),
+                                               commandBufferCounterOffset + sizeof(uint64_t),
+                                               sizeof(HLSL::CommandSignatureParams),
+                                               D3D12_HEAP_TYPE_DEFAULT,
+                                               D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
+        p_IndirectShadowmapCommandBufferUav =
+            std::make_shared<RHI::D3D12UnorderedAccessView>(device->GetLinkedDevice(),
+                                                            p_IndirectShadowmapCommandBuffer.get(),
+                                                            HLSL::MeshLimit,
+                                                            commandBufferCounterOffset);
+
+
         pPerframeBuffer = std::make_shared<RHI::D3D12Buffer>(device->GetLinkedDevice(),
                                                              sizeof(HLSL::MeshPerframeStorageBufferObject),
                                                              sizeof(HLSL::MeshPerframeStorageBufferObject),
@@ -110,6 +123,14 @@ namespace Pilot
         }
 
         {
+            IndirectShadowPass::ShadowPassInitInfo shadowPassInit;
+
+            mIndirectShadowPass = std::make_shared<IndirectShadowPass>();
+            mIndirectShadowPass->setCommonInfo(renderPassCommonInfo);
+            mIndirectShadowPass->initialize(shadowPassInit);
+        }
+
+        {
             mDisplayPass = std::make_shared<DisplayPass>();
         }
     }
@@ -131,6 +152,7 @@ namespace Pilot
     void DeferredRenderer::PreparePassData(std::shared_ptr<RenderResourceBase> render_resource)
     {
         mIndirectCullPass->prepareMeshData(render_resource, numMeshes);
+        mIndirectShadowPass->prepareShadowmapSRVs(render_resource);
     }
 
     DeferredRenderer::~DeferredRenderer() 
@@ -150,6 +172,8 @@ namespace Pilot
         indirectCullParams.pMeshBuffer                = pMeshBuffer;
         indirectCullParams.p_IndirectCommandBuffer    = p_IndirectCommandBuffer;
         indirectCullParams.p_IndirectCommandBufferUav = p_IndirectCommandBufferUav;
+        indirectCullParams.p_IndirectShadowmapCommandBuffer    = p_IndirectShadowmapCommandBuffer;
+        indirectCullParams.p_IndirectShadowmapCommandBufferUav = p_IndirectShadowmapCommandBufferUav;
         mIndirectCullPass->cullMeshs(context, renderGraphRegistry, indirectCullParams);
 
         RHI::D3D12SwapChainResource backBufferResource = swapChain->GetCurrentBackBufferResource();
@@ -186,15 +210,30 @@ namespace Pilot
         }
         */
 
+        // indirect draw shadow
+        IndirectShadowPass::ShadowInputParameters  mShadowmapIntputParams;
+        IndirectShadowPass::ShadowOutputParameters mShadowmapOutputParams;
+
+        mShadowmapIntputParams.commandBufferCounterOffset       = commandBufferCounterOffset;
+        mShadowmapIntputParams.pPerframeBuffer                  = pPerframeBuffer;
+        mShadowmapIntputParams.pMeshBuffer                      = pMeshBuffer;
+        mShadowmapIntputParams.pMaterialBuffer                  = pMaterialBuffer;
+        mShadowmapIntputParams.p_IndirectShadowmapCommandBuffer = indirectCullParams.p_IndirectShadowmapCommandBuffer;
+
+        mIndirectShadowPass->update(context, graph, mShadowmapIntputParams, mShadowmapOutputParams);
+
+
         // indirect draw
         IndirectDrawPass::DrawInputParameters  mDrawIntputParams;
         IndirectDrawPass::DrawOutputParameters mDrawOutputParams;
 
-        mDrawIntputParams.commandBufferCounterOffset = commandBufferCounterOffset;
-        mDrawIntputParams.pPerframeBuffer            = pPerframeBuffer;
-        mDrawIntputParams.pMeshBuffer                = pMeshBuffer;
-        mDrawIntputParams.pMaterialBuffer            = pMaterialBuffer;
-        mDrawIntputParams.pIndirectCommandBuffer     = p_IndirectCommandBuffer;
+        mDrawIntputParams.commandBufferCounterOffset    = commandBufferCounterOffset;
+        mDrawIntputParams.pPerframeBuffer               = pPerframeBuffer;
+        mDrawIntputParams.pMeshBuffer                   = pMeshBuffer;
+        mDrawIntputParams.pMaterialBuffer               = pMaterialBuffer;
+        mDrawIntputParams.pIndirectCommandBuffer        = indirectCullParams.p_IndirectCommandBuffer;
+        mDrawIntputParams.directionalShadowmapTexHandle = mShadowmapOutputParams.shadowmapTextureHandle;
+        mDrawIntputParams.directionalShadowmapSRVHandle = mShadowmapOutputParams.shadowmapSRVHandle;
 
         mIndirectDrawPass->update(context, graph, mDrawIntputParams, mDrawOutputParams);
         
