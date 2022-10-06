@@ -27,9 +27,7 @@ namespace Pilot
             std::shared_ptr<RHI::D3D12Buffer> pIndirectCommandBuffer;
 
             // shadowmap input
-
             RHI::RgResourceHandle directionalShadowmapTexHandle;
-            RHI::RgResourceHandle directionalShadowmapSRVHandle;
         };
 
         struct DrawOutputParameters : public PassOutput

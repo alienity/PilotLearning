@@ -9,22 +9,42 @@ namespace Pilot
 
     void IndirectShadowPass::initialize(const ShadowPassInitInfo& init_info)
     {
-        Vector2 shadowmap_size = m_visiable_nodes.p_directional_light->m_shadowmap_size;
+        //Vector2 shadowmap_size = m_visiable_nodes.p_directional_light->m_shadowmap_size;
 
-        shadowmapTexDesc = RHI::RgTextureDesc("ShadowmapTex")
-                               .SetFormat(DXGI_FORMAT_D32_FLOAT)
-                               .SetExtent(shadowmap_size.x, shadowmap_size.y)
-                               .SetAllowDepthStencil()
-                               .SetClearValue(RHI::RgClearValue(0.0f, 0xff));
+        //shadowmapTexDesc = RHI::RgTextureDesc("ShadowmapTex")
+        //                       .SetFormat(DXGI_FORMAT_D32_FLOAT)
+        //                       .SetExtent(shadowmap_size.x, shadowmap_size.y)
+        //                       .SetAllowDepthStencil()
+        //                       .SetClearValue(RHI::RgClearValue(0.0f, 0xff));
 
     }
 
-    void IndirectShadowPass::prepareShadowmapSRVs(std::shared_ptr<RenderResourceBase> render_resource)
+    void IndirectShadowPass::prepareShadowmaps(std::shared_ptr<RenderResourceBase> render_resource)
     {
-        // 每帧执行，判断是否需要shadowmap，同时创建shadowmaptexture和对应的srv和uav，这些都可以提前创建好，然后把对应的
-        // srv的index设置到buffer上，之后等待上传，就可以在shader中采样使用了，但是这样就不能使用rendergraph的自动创建
-        // 纹理和释放纹理了，只能在这个pass里面自己释放，但是也没差，挺好的
+        if (m_visiable_nodes.p_directional_light->m_shadowmap)
+        {
+            if (p_DirectionLightShadowmap == nullptr)
+            {
+                Vector2 shadowmap_size  = m_visiable_nodes.p_directional_light->m_shadowmap_size;
 
+                D3D12_RESOURCE_FLAGS shadowmapFlags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
+                CD3DX12_RESOURCE_DESC shadowmapTexDesc = CD3DX12_RESOURCE_DESC::Tex2D(
+                    DXGI_FORMAT_D32_FLOAT, shadowmap_size.x, shadowmap_size.y, 1, 1, 1, 0, shadowmapFlags);
+                CD3DX12_CLEAR_VALUE shadowmapClearVal = CD3DX12_CLEAR_VALUE(DXGI_FORMAT_D32_FLOAT, 0, 1);
+
+                p_DirectionLightShadowmap = std::make_shared<RHI::D3D12Texture>(
+                    m_Device->GetLinkedDevice(), shadowmapTexDesc, shadowmapClearVal);
+
+                p_DirectionLightShadowmapDSV = std::make_shared<RHI::D3D12DepthStencilView>(
+                    m_Device->GetLinkedDevice(), p_DirectionLightShadowmap.get());
+
+                p_DirectionLightShadowmapSRV = std::make_shared<RHI::D3D12ShaderResourceView>(
+                    m_Device->GetLinkedDevice(), p_DirectionLightShadowmap.get(), false, 0, 1);
+            }
+            RenderResource* real_resource = (RenderResource*)render_resource.get();
+            real_resource->m_mesh_perframe_storage_buffer_object.scene_directional_light.shadowmap_srv_index =
+                p_DirectionLightShadowmapSRV->GetIndex();
+        }
     }
 
     void IndirectShadowPass::update(RHI::D3D12CommandContext& context,
@@ -44,16 +64,14 @@ namespace Pilot
         std::shared_ptr<RHI::D3D12Buffer> p_IndirectShadowmapCommandBuffer = drawPassInput->p_IndirectShadowmapCommandBuffer;
 
         Vector2 shadowmap_size  = m_visiable_nodes.p_directional_light->m_shadowmap_size;
-        shadowmapTexDesc.Width  = shadowmap_size.x;
-        shadowmapTexDesc.Height = shadowmap_size.y; 
+        
+        RHI::RgResourceHandle dirShadowMapHandle = graph.Import<RHI::D3D12Texture>(p_DirectionLightShadowmap.get());
+        RHI::RgResourceHandle dirShadowmapDSVHandle = graph.Import<RHI::D3D12DepthStencilView>(p_DirectionLightShadowmapDSV.get());
+        RHI::RgResourceHandle dirShadowmapSRVHandle = graph.Import<RHI::D3D12ShaderResourceView>(p_DirectionLightShadowmapSRV.get());
 
-        drawPassOutput->shadowmapTextureHandle = graph.Create<RHI::D3D12Texture>(shadowmapTexDesc);
-
-        drawPassOutput->shadowmapDSVHandle = graph.Create<RHI::D3D12DepthStencilView>(
-            RHI::RgViewDesc().SetResource(drawPassOutput->shadowmapTextureHandle).AsDsv());
-
-        drawPassOutput->shadowmapSRVHandle = graph.Create<RHI::D3D12ShaderResourceView>(
-            RHI::RgViewDesc().SetResource(drawPassOutput->shadowmapTextureHandle).AsTextureSrv());
+        drawPassOutput->shadowmapTextureHandle = dirShadowMapHandle;
+        drawPassOutput->shadowmapDSVHandle     = dirShadowmapDSVHandle;
+        drawPassOutput->shadowmapSRVHandle     = dirShadowmapSRVHandle;
 
         graph.AddRenderPass("IndirectShadowPass")
             .Write(&drawPassOutput->shadowmapTextureHandle)
@@ -69,7 +87,7 @@ namespace Pilot
                 context.SetViewport(RHIViewport {0.0f, 0.0f, (float)shadowmap_size.x, (float)shadowmap_size.y, 0.0f, 1.0f});
                 context.SetScissorRect(RHIRect {0, 0, (int)shadowmap_size.x, (int)shadowmap_size.y});
 
-                context.SetGraphicsRootSignature(registry.GetRootSignature(RootSignatures::IndirectDraw));
+                context.SetGraphicsRootSignature(registry.GetRootSignature(RootSignatures::IndirectDrawShadowmap));
                 context.SetPipelineState(registry.GetPipelineState(PipelineStates::IndirectDrawShadowmap));
                 context->SetGraphicsRootConstantBufferView(1, pPerframeBuffer->GetGpuVirtualAddress());
                 context->SetGraphicsRootShaderResourceView(2, pMeshBuffer->GetGpuVirtualAddress());

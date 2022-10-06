@@ -86,13 +86,15 @@ struct SceneSpotLight
 
 struct SceneDirectionalLight
 {
-    float3   direction;
-    float    _padding_direction;
-    float3   color;
-    float    intensity;
-    uint     shadowmap;
-    float3   _padding_shadowmap;
-    float4x4 directional_light_proj_view;
+    float3    direction;
+    float     _padding_direction;
+    float3    color;
+    float     intensity;
+    uint      shadowmap;           // 1 - use shadowmap, 0 - do not use shadowmap
+    uint      shadowmap_srv_index; // shadowmap srv in descriptorheap index
+    float     shadowmap_width;
+    float     _padding_shadowmap;
+    float4x4  directional_light_proj_view;
 };
 
 // ==================== Mesh ====================

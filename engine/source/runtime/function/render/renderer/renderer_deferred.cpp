@@ -152,7 +152,7 @@ namespace Pilot
     void DeferredRenderer::PreparePassData(std::shared_ptr<RenderResourceBase> render_resource)
     {
         mIndirectCullPass->prepareMeshData(render_resource, numMeshes);
-        mIndirectShadowPass->prepareShadowmapSRVs(render_resource);
+        mIndirectShadowPass->prepareShadowmaps(render_resource);
     }
 
     DeferredRenderer::~DeferredRenderer() 
@@ -233,7 +233,6 @@ namespace Pilot
         mDrawIntputParams.pMaterialBuffer               = pMaterialBuffer;
         mDrawIntputParams.pIndirectCommandBuffer        = indirectCullParams.p_IndirectCommandBuffer;
         mDrawIntputParams.directionalShadowmapTexHandle = mShadowmapOutputParams.shadowmapTextureHandle;
-        mDrawIntputParams.directionalShadowmapSRVHandle = mShadowmapOutputParams.shadowmapSRVHandle;
 
         mIndirectDrawPass->update(context, graph, mDrawIntputParams, mDrawOutputParams);
         

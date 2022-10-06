@@ -34,7 +34,8 @@ namespace HLSL
         float     intensity;
         uint32_t  shadowmap; // 1 - use shadowmap, 0 - do not use shadowmap
         uint32_t  shadowmap_srv_index; // shadowmap srv in descriptorheap index
-        glm::vec2 _padding_shadowmap;
+        float     shadowmap_width;
+        float     _padding_shadowmap;
         glm::mat4 directional_light_proj_view;
     };
 

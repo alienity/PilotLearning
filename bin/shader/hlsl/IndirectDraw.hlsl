@@ -12,6 +12,7 @@ StructuredBuffer<MeshInstance> g_MeshesInstance : register(t0, space0);
 StructuredBuffer<MaterialInstance> g_MaterialsInstance : register(t1, space0);
 
 SamplerState defaultSampler : register(s10);
+SamplerComparisonState shadowmapSampler : register(s11);
 
 struct VertexInput
 {
@@ -103,15 +104,47 @@ float4 PSMain(VertexOutput input) : SV_Target0
         float  spec     = pow(max(dot(vNout, halfwayDir), 0.0f), 32);
         float3 specular = lightColor * spec;
 
-        outColor = outColor + diffuse + specular;
+        float3 directionLightColor = diffuse + specular;
 
         if (shadowmap == 1)
         {
             float4x4 lightViewProjMat = g_ConstantBufferParams.scene_directional_light.directional_light_proj_view;
 
-            // do PCF
-        }
+            float4 fragPosLightSpace = mul(lightViewProjMat, float4(positionWS, 1.0f));
 
+            // perform perspective divide
+            float3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
+            // transform to [0,1] range
+            projCoords.xy = projCoords.xy * 0.5 + 0.5;
+
+            float2 shadowTexCoord = float2(projCoords.x, 1 - projCoords.y);
+
+            // get closest depth value from light's perspective (using [0,1] range fragPosLight as coords)
+            Texture2D<float> shadowMap = ResourceDescriptorHeap[g_ConstantBufferParams.scene_directional_light.shadowmap_srv_index];
+
+            //float shadow_bias = 0.0004f;
+            float shadow_bias = max(0.001f * (1.0 - dot(vNormal, lightDir)), 0.0003f);  
+
+            float shadowTexelSize = 1.0f / g_ConstantBufferParams.scene_directional_light.shadowmap_width;
+
+            // PCF
+            float pcfDepth = projCoords.z;
+
+            float fShadow = 0.0f;
+            for (int x = -1; x <= 1; x++)
+            {
+                for (int y = -1; y <= 1; y++)
+                {
+                    float2 tempShadowTexCoord = shadowTexCoord + float2(x, y) * shadowTexelSize;
+                    float tempfShadow = shadowMap.SampleCmpLevelZero(shadowmapSampler, tempShadowTexCoord, pcfDepth + shadow_bias);
+                    fShadow += tempfShadow;
+                }
+            }
+            fShadow /= 9.0f;
+
+            directionLightColor *= fShadow;
+        }
+        outColor = outColor + directionLightColor;
     }
 
     uint point_light_num = g_ConstantBufferParams.point_light_num;

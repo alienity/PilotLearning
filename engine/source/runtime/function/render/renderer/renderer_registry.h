@@ -93,6 +93,7 @@ struct RootSignatures
     inline static RHI::RgResourceHandle FullScreenPresent;
     inline static RHI::RgResourceHandle IndirectCull;
     inline static RHI::RgResourceHandle IndirectDraw;
+    inline static RHI::RgResourceHandle IndirectDrawShadowmap;
 
     static void Compile(RHI::D3D12Device* Device, RHI::RenderGraphRegistry& Registry)
     {
@@ -112,6 +113,24 @@ struct RootSignatures
                                                                          .AllowSampleDescriptorHeapIndexing()));
 
 		IndirectDraw = Registry.CreateRootSignature(Device->CreateRootSignature(
+            RHI::RootSignatureDesc()
+                .Add32BitConstants<0, 0>(1)
+                .AddConstantBufferView<1, 0>()
+                .AddShaderResourceView<0, 0>()
+                .AddShaderResourceView<1, 0>()
+                .AddSampler<10, 0>(D3D12_FILTER::D3D12_FILTER_ANISOTROPIC,
+                                   D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_WRAP,
+                                   8)
+                .AddSampler<11, 0>(D3D12_FILTER::D3D12_FILTER_COMPARISON_ANISOTROPIC,
+                                   D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
+                                   8,
+                                   D3D12_COMPARISON_FUNC::D3D12_COMPARISON_FUNC_GREATER_EQUAL,
+                                   D3D12_STATIC_BORDER_COLOR_OPAQUE_BLACK)
+                .AllowInputLayout()
+                .AllowResourceDescriptorHeapIndexing()
+                .AllowSampleDescriptorHeapIndexing()));
+
+        IndirectDrawShadowmap = Registry.CreateRootSignature(Device->CreateRootSignature(
             RHI::RootSignatureDesc()
                 .Add32BitConstants<0, 0>(1)
                 .AddConstantBufferView<1, 0>()
@@ -152,7 +171,7 @@ struct CommandSignatures
             Builder.AddDrawIndexed();
 
             ID3D12RootSignature* indirectDrawShadowmapRootSignature =
-                Registry.GetRootSignature(RootSignatures::IndirectDraw)->GetApiHandle();
+                Registry.GetRootSignature(RootSignatures::IndirectDrawShadowmap)->GetApiHandle();
             IndirectDrawShadowmap = Registry.CreateCommandSignature(
                 RHI::D3D12CommandSignature(Device, Builder, indirectDrawShadowmapRootSignature));
         }
@@ -279,7 +298,7 @@ struct PipelineStates
                 PipelineStateStreamDepthStencilState DepthStencilState;
                 PipelineStateStreamRenderTargetState RenderTargetState;
             } Stream;
-            Stream.RootSignature         = Registry.GetRootSignature(RootSignatures::IndirectDraw);
+            Stream.RootSignature         = Registry.GetRootSignature(RootSignatures::IndirectDrawShadowmap);
             Stream.InputLayout           = &InputLayout;
             Stream.PrimitiveTopologyType = RHI_PRIMITIVE_TOPOLOGY::Triangle;
             Stream.VS                    = &Shaders::VS::IndirectDrawShadowmapVS;

@@ -210,6 +210,8 @@ namespace Pilot
                 render_scene->m_directional_light.m_intensity;
             m_mesh_perframe_storage_buffer_object.scene_directional_light.shadowmap =
                 render_scene->m_directional_light.m_shadowmap ? 1 : 0;
+            m_mesh_perframe_storage_buffer_object.scene_directional_light.shadowmap_width =
+                render_scene->m_directional_light.m_shadowmap_size.x;
             m_mesh_perframe_storage_buffer_object.scene_directional_light.directional_light_proj_view =
                 GLMUtil::fromMat4x4(render_scene->m_directional_light.m_shadow_view_proj_mat);
         }

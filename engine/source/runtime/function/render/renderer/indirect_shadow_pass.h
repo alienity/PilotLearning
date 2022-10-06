@@ -34,7 +34,7 @@ namespace Pilot
     public:
         ~IndirectShadowPass() { destroy(); }
 
-        void prepareShadowmapSRVs(std::shared_ptr<RenderResourceBase> render_resource);
+        void prepareShadowmaps(std::shared_ptr<RenderResourceBase> render_resource);
 
         void initialize(const ShadowPassInitInfo& init_info);
         void update(RHI::D3D12CommandContext& context,
@@ -44,7 +44,10 @@ namespace Pilot
         void destroy() override final;
 
     private:
-        RHI::RgTextureDesc shadowmapTexDesc;
+        std::shared_ptr<RHI::D3D12Texture>            p_DirectionLightShadowmap;
+        std::shared_ptr<RHI::D3D12DepthStencilView>   p_DirectionLightShadowmapDSV;
+        std::shared_ptr<RHI::D3D12ShaderResourceView> p_DirectionLightShadowmapSRV;
+
 	};
 }
 
