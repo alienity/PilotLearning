@@ -125,6 +125,32 @@ namespace Pilot
                 m_light_part_desc.m_spot_light_desc.m_radius        = m_spot_light_params->falloff_radius;
                 m_light_part_desc.m_spot_light_desc.m_inner_radians = Math::degreesToRadians(m_spot_light_params->inner_angle);
                 m_light_part_desc.m_spot_light_desc.m_outer_radians = Math::degreesToRadians(m_spot_light_params->outer_angle);
+
+                m_light_part_desc.m_spot_light_desc.m_shadowmap = m_spot_light_params->shadows;
+                m_light_part_desc.m_spot_light_desc.m_shadow_bounds        = m_spot_light_params->shadow_bounds;
+                m_light_part_desc.m_spot_light_desc.m_shadow_near_plane    = m_spot_light_params->shadow_near_plane;
+                m_light_part_desc.m_spot_light_desc.m_shadow_far_plane     = m_spot_light_params->shadow_far_plane;
+                m_light_part_desc.m_spot_light_desc.m_shadowmap_size       = m_spot_light_params->shadowmap_size;
+                if (m_light_part_desc.m_spot_light_desc.m_shadowmap)
+                {
+                    Vector3 eye_position    = m_light_part_desc.m_transform_desc.m_position;
+                    Vector3 target_position = eye_position + m_light_part_desc.m_spot_light_desc.m_direction;
+                    Vector3 up_dir          = rotation_matrix.getColumn(1);
+
+                    Matrix4x4 light_view_matrix = Math::makeLookAtMatrix(eye_position, target_position, up_dir);
+
+                    Vector2 shadow_bounds = m_light_part_desc.m_spot_light_desc.m_shadow_bounds;
+                    float   shadow_near   = m_light_part_desc.m_spot_light_desc.m_shadow_near_plane;
+                    float   shadow_far    = m_light_part_desc.m_spot_light_desc.m_shadow_far_plane;
+
+                    Pilot::Radian fovy = Pilot::Radian(m_light_part_desc.m_spot_light_desc.m_outer_radians);
+                    float aspect = 1.0f;
+
+                    Matrix4x4 light_proj_matrix = Math::makePerspectiveMatrix(fovy, aspect, shadow_near, shadow_far);
+
+                    m_light_part_desc.m_spot_light_desc.m_shadow_view_proj_mat =
+                        light_proj_matrix * light_view_matrix;
+                }
             }
 
             std::vector<GameObjectComponentDesc> dirty_light_part_descs = {m_light_part_desc};

@@ -185,35 +185,29 @@ namespace Pilot
             Vector3 spot_light_direction = render_scene->m_spot_light_list[i].m_direction;
             float   spot_light_intensity = render_scene->m_spot_light_list[i].m_intensity;
 
-            float radius = render_scene->m_spot_light_list[i].m_radius;
             Color color  = render_scene->m_spot_light_list[i].m_color;
 
-            float inner_radians = render_scene->m_spot_light_list[i].m_inner_radians;
-            float outer_radians = render_scene->m_spot_light_list[i].m_outer_radians;
-
             m_mesh_perframe_storage_buffer_object.scene_spot_lights[i].position = GLMUtil::fromVec3(spot_light_position);
-            m_mesh_perframe_storage_buffer_object.scene_spot_lights[i].radius = radius;
+            m_mesh_perframe_storage_buffer_object.scene_spot_lights[i].radius = render_scene->m_spot_light_list[i].m_radius;
             m_mesh_perframe_storage_buffer_object.scene_spot_lights[i].color = GLMUtil::fromVec3(Vector3(color.r, color.g, color.b));
             m_mesh_perframe_storage_buffer_object.scene_spot_lights[i].intensity = spot_light_intensity;
             m_mesh_perframe_storage_buffer_object.scene_spot_lights[i].direction = GLMUtil::fromVec3(spot_light_direction);
-            m_mesh_perframe_storage_buffer_object.scene_spot_lights[i].inner_radians = inner_radians;
-            m_mesh_perframe_storage_buffer_object.scene_spot_lights[i].outer_radians = outer_radians;
+            m_mesh_perframe_storage_buffer_object.scene_spot_lights[i].inner_radians = render_scene->m_spot_light_list[i].m_inner_radians;
+            m_mesh_perframe_storage_buffer_object.scene_spot_lights[i].outer_radians = render_scene->m_spot_light_list[i].m_outer_radians;
+
+            m_mesh_perframe_storage_buffer_object.scene_spot_lights[i].shadowmap = render_scene->m_spot_light_list[i].m_shadowmap;
+            m_mesh_perframe_storage_buffer_object.scene_spot_lights[i].shadowmap_width = render_scene->m_spot_light_list[i].m_shadowmap_size.x;
+            m_mesh_perframe_storage_buffer_object.scene_spot_lights[i].spot_light_proj_view = GLMUtil::fromMat4x4(render_scene->m_spot_light_list[i].m_shadow_view_proj_mat);
         }
 
         {
             // directional light
-            m_mesh_perframe_storage_buffer_object.scene_directional_light.direction =
-                GLMUtil::fromVec3(Vector3::normalize(render_scene->m_directional_light.m_direction));
-            m_mesh_perframe_storage_buffer_object.scene_directional_light.color =
-                GLMUtil::fromVec3(render_scene->m_directional_light.m_color.toVector3());
-            m_mesh_perframe_storage_buffer_object.scene_directional_light.intensity =
-                render_scene->m_directional_light.m_intensity;
-            m_mesh_perframe_storage_buffer_object.scene_directional_light.shadowmap =
-                render_scene->m_directional_light.m_shadowmap ? 1 : 0;
-            m_mesh_perframe_storage_buffer_object.scene_directional_light.shadowmap_width =
-                render_scene->m_directional_light.m_shadowmap_size.x;
-            m_mesh_perframe_storage_buffer_object.scene_directional_light.directional_light_proj_view =
-                GLMUtil::fromMat4x4(render_scene->m_directional_light.m_shadow_view_proj_mat);
+            m_mesh_perframe_storage_buffer_object.scene_directional_light.direction = GLMUtil::fromVec3(Vector3::normalize(render_scene->m_directional_light.m_direction));
+            m_mesh_perframe_storage_buffer_object.scene_directional_light.color = GLMUtil::fromVec3(render_scene->m_directional_light.m_color.toVector3());
+            m_mesh_perframe_storage_buffer_object.scene_directional_light.intensity = render_scene->m_directional_light.m_intensity;
+            m_mesh_perframe_storage_buffer_object.scene_directional_light.shadowmap = render_scene->m_directional_light.m_shadowmap ? 1 : 0;
+            m_mesh_perframe_storage_buffer_object.scene_directional_light.shadowmap_width = render_scene->m_directional_light.m_shadowmap_size.x;
+            m_mesh_perframe_storage_buffer_object.scene_directional_light.directional_light_proj_view = GLMUtil::fromMat4x4(render_scene->m_directional_light.m_shadow_view_proj_mat);
         }
     }
 

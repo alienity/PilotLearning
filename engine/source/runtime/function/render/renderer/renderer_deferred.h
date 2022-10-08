@@ -41,27 +41,9 @@ namespace Pilot
         std::shared_ptr<IndirectDrawPass>   mIndirectDrawPass;
         std::shared_ptr<DisplayPass>        mDisplayPass;
         
-        std::shared_ptr<RHI::D3D12Buffer>              p_IndirectCommandBuffer;
-        std::shared_ptr<RHI::D3D12UnorderedAccessView> p_IndirectCommandBufferUav;
-
-        std::shared_ptr<RHI::D3D12Buffer>              p_IndirectShadowmapCommandBuffer;
-        std::shared_ptr<RHI::D3D12UnorderedAccessView> p_IndirectShadowmapCommandBufferUav;
-
-        std::shared_ptr<RHI::D3D12Buffer> pPerframeBuffer;
-        std::shared_ptr<RHI::D3D12Buffer> pMaterialBuffer;
-        std::shared_ptr<RHI::D3D12Buffer> pMeshBuffer;
-
         std::shared_ptr<RHI::D3D12Texture>            p_RenderTargetTex;
         std::shared_ptr<RHI::D3D12ShaderResourceView> p_RenderTargetTexSRV;
         std::shared_ptr<RHI::D3D12RenderTargetView>   p_RenderTargetTexRTV;
-
-        uint32_t numPointLights = 0;
-        uint32_t numMaterials   = 0;
-        uint32_t numMeshes      = 0;
-
-        std::uint64_t totalCommandBufferSizeInBytes = HLSL::MeshLimit * sizeof(HLSL::CommandSignatureParams);
-        std::uint64_t commandBufferCounterOffset =
-            D3D12RHIUtils::AlignUp(totalCommandBufferSizeInBytes, D3D12_UAV_COUNTER_PLACEMENT_ALIGNMENT);
 
 	private:
         WindowSystem*  windowSystem;

@@ -3,7 +3,13 @@
 #include "Math.hlsli"
 #include "SharedTypes.hlsli"
 
-cbuffer RootConstants : register(b0, space0) { uint meshIndex; };
+cbuffer RootConstants : register(b0, space0) 
+{ 
+    uint meshIndex;
+#if defined(SPOTSHADOW)
+    uint spotIndex;
+#endif
+};
 
 ConstantBuffer<MeshPerframeStorageBufferObject> g_ConstantBufferParams : register(b1, space0);
 
@@ -36,8 +42,16 @@ VertexOutput VSMain(VertexInput input)
 
     MeshInstance mesh = g_MeshesInstance[meshIndex];
 
+	#if defined(DIRECTIONSHADOW)
+    float4x4 view_proj_mat = g_ConstantBufferParams.scene_directional_light.directional_light_proj_view;
+    #elif defined(SPOTSHADOW)
+    float4x4 view_proj_mat = g_ConstantBufferParams.scene_spot_lights[spotIndex].spot_light_proj_view;
+    #else
+    float4x4 view_proj_mat = g_ConstantBufferParams.cameraInstance.projViewMatrix;
+    #endif
+
     output.positionWS = mul(mesh.localToWorldMatrix, float4(input.position, 1.0f)).xyz;
-    output.position   = mul(g_ConstantBufferParams.scene_directional_light.directional_light_proj_view, float4(output.positionWS, 1.0f));
+    output.position   = mul(view_proj_mat, float4(output.positionWS, 1.0f));
 
     output.texcoord    = input.texcoord;
 

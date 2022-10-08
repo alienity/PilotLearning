@@ -7,42 +7,71 @@
 
 namespace Pilot
 {
+    struct DrawCallCommandBuffer
+    {
+        std::shared_ptr<RHI::D3D12Buffer>              p_IndirectCommandBuffer;
+        std::shared_ptr<RHI::D3D12UnorderedAccessView> p_IndirectCommandBufferUav;
+    };
+
+    struct ShadowmapCommandBuffer : public DrawCallCommandBuffer
+    {
+        GObjectID    m_gobject_id {k_invalid_gobject_id};
+        GComponentID m_gcomponent_id {k_invalid_gcomponent_id};
+        uint32_t     m_lightIndex;
+
+        void Reset()
+        {
+            m_gobject_id               = k_invalid_gcomponent_id;
+            m_gcomponent_id            = k_invalid_gcomponent_id;
+            p_IndirectCommandBufferUav = nullptr;
+            p_IndirectCommandBuffer    = nullptr;
+        }
+    };
+
     class IndirectCullPass : public RenderPass
 	{
     public:
-        struct IndirectCullParams
+        struct IndirectCullOutput
         {
-            uint32_t numMeshes;
-            uint32_t commandBufferCounterOffset;
-
             std::shared_ptr<RHI::D3D12Buffer> pPerframeBuffer;
             std::shared_ptr<RHI::D3D12Buffer> pMaterialBuffer;
             std::shared_ptr<RHI::D3D12Buffer> pMeshBuffer;
 
-            std::shared_ptr<RHI::D3D12Buffer>              p_IndirectCommandBuffer;
-            std::shared_ptr<RHI::D3D12UnorderedAccessView> p_IndirectCommandBufferUav;
-
-            std::shared_ptr<RHI::D3D12Buffer>              p_IndirectShadowmapCommandBuffer;
-            std::shared_ptr<RHI::D3D12UnorderedAccessView> p_IndirectShadowmapCommandBufferUav;
+            std::shared_ptr<RHI::D3D12Buffer> p_IndirectCommandBuffer;
+            std::shared_ptr<RHI::D3D12Buffer> p_DirShadowmapCommandBuffer;
+            std::vector<std::shared_ptr<RHI::D3D12Buffer>> p_SpotShadowmapCommandBuffers;
         };
 
     public:
         ~IndirectCullPass() { destroy(); }
 
         void initialize(const RenderPassInitInfo& init_info);
-        void prepareMeshData(std::shared_ptr<RenderResourceBase> render_resource, uint32_t& numMeshes);
-        void cullMeshs(RHI::D3D12CommandContext& context,
-                       RHI::RenderGraphRegistry& registry,
-                       IndirectCullParams&       indirectCullParams);
+        void prepareMeshData(std::shared_ptr<RenderResourceBase> render_resource);
+        void cullMeshs(RHI::D3D12CommandContext& context, RHI::RenderGraphRegistry& registry, IndirectCullOutput& indirectCullOutput);
 
         void destroy() override final;
 
     private:
+        void prepareBuffer();
 
-        // 因为每帧都需要上传，所以这里就直接申请一份内存
+    private:
+
+        // for upload
         std::shared_ptr<RHI::D3D12Buffer> pUploadPerframeBuffer;
         std::shared_ptr<RHI::D3D12Buffer> pUploadMaterialBuffer;
         std::shared_ptr<RHI::D3D12Buffer> pUploadMeshBuffer;
+
+        // used for later pass computation
+        std::shared_ptr<RHI::D3D12Buffer> pPerframeBuffer;
+        std::shared_ptr<RHI::D3D12Buffer> pMaterialBuffer;
+        std::shared_ptr<RHI::D3D12Buffer> pMeshBuffer;
+
+        // used for later draw call
+        DrawCallCommandBuffer commandBufferForDraw;
+
+        // used for shadowmap drawing
+        ShadowmapCommandBuffer dirShadowmapCommandBuffer;
+        std::vector<ShadowmapCommandBuffer> spotShadowmapCommandBuffer;
 
         HLSL::MeshPerframeStorageBufferObject* pPerframeObj = nullptr;
         HLSL::MaterialInstance*                pMaterialObj = nullptr;

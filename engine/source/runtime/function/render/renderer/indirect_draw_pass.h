@@ -18,8 +18,6 @@ namespace Pilot
 
         struct DrawInputParameters : public PassInput
         {
-            uint32_t commandBufferCounterOffset;
-
             std::shared_ptr<RHI::D3D12Buffer> pPerframeBuffer;
             std::shared_ptr<RHI::D3D12Buffer> pMeshBuffer;
             std::shared_ptr<RHI::D3D12Buffer> pMaterialBuffer;
@@ -28,6 +26,7 @@ namespace Pilot
 
             // shadowmap input
             RHI::RgResourceHandle directionalShadowmapTexHandle;
+            std::vector<RHI::RgResourceHandle> spotShadowmapTexHandles;
         };
 
         struct DrawOutputParameters : public PassOutput

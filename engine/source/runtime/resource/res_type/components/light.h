@@ -48,6 +48,12 @@ namespace Pilot
         float falloff_radius {5.0f};
         float inner_angle {45.0f};
         float outer_angle {60.0f};
+
+        bool    shadows = false;
+        Vector2 shadow_bounds {32, 32};
+        float   shadow_near_plane {0.1f};
+        float   shadow_far_plane {32.0f};
+        Vector2 shadowmap_size {256, 256};
     };
 
     REFLECTION_TYPE(LightComponentRes)

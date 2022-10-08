@@ -69,6 +69,13 @@ namespace Pilot
         float m_radius;
         float m_inner_radians;
         float m_outer_radians;
+
+        bool      m_shadowmap {false};
+        Vector2   m_shadow_bounds;
+        float     m_shadow_near_plane {0.1f};
+        float     m_shadow_far_plane {500.0f};
+        Vector2   m_shadowmap_size {512, 512};
+        Matrix4x4 m_shadow_view_proj_mat;
     };
 
     //========================================================================

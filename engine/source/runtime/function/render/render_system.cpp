@@ -80,7 +80,7 @@ namespace Pilot
 
         // initialize renderer
         m_renderer_manager->InitRenderer();
-        m_renderer_manager->PreparePassData(m_render_resource);
+        //m_renderer_manager->PreparePassData(m_render_resource);
     }
 
     void RenderSystem::tick()

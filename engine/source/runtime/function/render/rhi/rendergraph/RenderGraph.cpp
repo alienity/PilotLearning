@@ -24,7 +24,7 @@ namespace RHI
 		// Only allow buffers/textures
 		assert(Resource && Resource->IsValid());
 		assert(Resource->Type == RgResourceType::Buffer || Resource->Type == RgResourceType::Texture);
-		Resource->Version++;
+		//Resource->Version++;
 		Writes.insert(*Resource);
 		ReadWrites.insert(*Resource);
 		return *this;

@@ -23,8 +23,6 @@ namespace Pilot
         DrawInputParameters*  drawPassInput  = &passInput;
         DrawOutputParameters* drawPassOutput = &passOutput;
 
-        int commandBufferCounterOffset = drawPassInput->commandBufferCounterOffset;
-
         std::shared_ptr<RHI::D3D12Buffer> pPerframeBuffer = drawPassInput->pPerframeBuffer;
         std::shared_ptr<RHI::D3D12Buffer> pMeshBuffer     = drawPassInput->pMeshBuffer;
         std::shared_ptr<RHI::D3D12Buffer> pMaterialBuffer = drawPassInput->pMaterialBuffer;
@@ -41,36 +39,49 @@ namespace Pilot
         drawPassOutput->renderTargetDepthDSVHandle = graph.Create<RHI::D3D12DepthStencilView>(
             RHI::RgViewDesc().SetResource(drawPassOutput->renderTargetDepthHandle).AsDsv());
 
-        graph.AddRenderPass("IndirectDrawPass")
-            .Read(drawPassInput->directionalShadowmapTexHandle)
-            .Write(&drawPassOutput->renderTargetColorHandle)
-            .Write(&drawPassOutput->renderTargetDepthHandle)
-            .Execute([=](RHI::RenderGraphRegistry& registry, RHI::D3D12CommandContext& context) {
-                ID3D12CommandSignature* pCommandSignature = registry.GetCommandSignature(CommandSignatures::IndirectDraw)->GetApiHandle();
+        RHI::RenderPass& drawpass = graph.AddRenderPass("IndirectDrawPass");
 
-                RHI::D3D12RenderTargetView* renderTargetView = registry.GetD3D12RenderTargetView(drawPassOutput->renderTargetColorRTVHandle);
-                RHI::D3D12DepthStencilView* depthStencilView = registry.GetD3D12DepthStencilView(drawPassOutput->renderTargetDepthDSVHandle);
+        if (drawPassInput->directionalShadowmapTexHandle.IsValid())
+        {
+            drawpass.Read(drawPassInput->directionalShadowmapTexHandle);
+        }
+        for (size_t i = 0; i < drawPassInput->spotShadowmapTexHandles.size(); i++)
+        {
+            drawpass.Read(drawPassInput->spotShadowmapTexHandles[i]);
+        }
+        drawpass.Write(&drawPassOutput->renderTargetColorHandle);
+        drawpass.Write(&drawPassOutput->renderTargetDepthHandle);
 
-                context->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-                context.SetViewport(RHIViewport {0.0f, 0.0f, (float)colorTexDesc.Width, (float)colorTexDesc.Height, 0.0f, 1.0f});
-                context.SetScissorRect(RHIRect {0, 0, (int)colorTexDesc.Width, (int)colorTexDesc.Height});
-                
-                context.ClearRenderTarget(renderTargetView, depthStencilView);
-                context.SetRenderTarget(renderTargetView, depthStencilView);
+        drawpass.Execute([=](RHI::RenderGraphRegistry& registry, RHI::D3D12CommandContext& context) {
+            ID3D12CommandSignature* pCommandSignature =
+                registry.GetCommandSignature(CommandSignatures::IndirectDraw)->GetApiHandle();
 
-                context.SetGraphicsRootSignature(registry.GetRootSignature(RootSignatures::IndirectDraw));
-                context.SetPipelineState(registry.GetPipelineState(PipelineStates::IndirectDraw));
-                context->SetGraphicsRootConstantBufferView(1, pPerframeBuffer->GetGpuVirtualAddress());
-                context->SetGraphicsRootShaderResourceView(2, pMeshBuffer->GetGpuVirtualAddress());
-                context->SetGraphicsRootShaderResourceView(3, pMaterialBuffer->GetGpuVirtualAddress());
+            RHI::D3D12RenderTargetView* renderTargetView =
+                registry.GetD3D12RenderTargetView(drawPassOutput->renderTargetColorRTVHandle);
+            RHI::D3D12DepthStencilView* depthStencilView =
+                registry.GetD3D12DepthStencilView(drawPassOutput->renderTargetDepthDSVHandle);
 
-                context->ExecuteIndirect(pCommandSignature,
-                                         HLSL::MeshLimit,
-                                         pIndirectCommandBuffer->GetResource(),
-                                         0,
-                                         pIndirectCommandBuffer->GetResource(),
-                                         commandBufferCounterOffset);
-            });
+            context->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+            context.SetViewport(
+                RHIViewport {0.0f, 0.0f, (float)colorTexDesc.Width, (float)colorTexDesc.Height, 0.0f, 1.0f});
+            context.SetScissorRect(RHIRect {0, 0, (int)colorTexDesc.Width, (int)colorTexDesc.Height});
+
+            context.ClearRenderTarget(renderTargetView, depthStencilView);
+            context.SetRenderTarget(renderTargetView, depthStencilView);
+
+            context.SetGraphicsRootSignature(registry.GetRootSignature(RootSignatures::IndirectDraw));
+            context.SetPipelineState(registry.GetPipelineState(PipelineStates::IndirectDraw));
+            context->SetGraphicsRootConstantBufferView(1, pPerframeBuffer->GetGpuVirtualAddress());
+            context->SetGraphicsRootShaderResourceView(2, pMeshBuffer->GetGpuVirtualAddress());
+            context->SetGraphicsRootShaderResourceView(3, pMaterialBuffer->GetGpuVirtualAddress());
+
+            context->ExecuteIndirect(pCommandSignature,
+                                     HLSL::MeshLimit,
+                                     pIndirectCommandBuffer->GetResource(),
+                                     0,
+                                     pIndirectCommandBuffer->GetResource(),
+                                     HLSL::commandBufferCounterOffset);
+        });
     }
 
 

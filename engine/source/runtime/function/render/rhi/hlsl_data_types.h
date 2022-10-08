@@ -58,6 +58,12 @@ namespace HLSL
         float     inner_radians;
         float     outer_radians;
         glm::vec2 _padding_radians;
+
+        uint32_t  shadowmap;           // 1 - use shadowmap, 0 - do not use shadowmap
+        uint32_t  shadowmap_srv_index; // shadowmap srv in descriptorheap index
+        float     shadowmap_width;
+        float     _padding_shadowmap;
+        glm::mat4 spot_light_proj_view;
     };
 
     struct CameraInstance
@@ -169,5 +175,9 @@ namespace HLSL
 
         glm::uvec3 _padding_uniform;
     };
+
+    const std::uint64_t totalCommandBufferSizeInBytes = HLSL::MeshLimit * sizeof(HLSL::CommandSignatureParams);
+    const std::uint64_t commandBufferCounterOffset = D3D12RHIUtils::AlignUp(totalCommandBufferSizeInBytes, D3D12_UAV_COUNTER_PLACEMENT_ALIGNMENT);
+
 
 } // namespace HLSL

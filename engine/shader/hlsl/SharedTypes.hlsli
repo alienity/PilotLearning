@@ -73,15 +73,20 @@ struct ScenePointLight
 
 struct SceneSpotLight
 {
-    float3 position;
-    float  radius;
-    float3 color; 
-    float  intensity;
-    float3 direction;
-    float  _padding_direction;
-    float  inner_radians;
-    float  outer_radians;
-    float2 _padding_radians;
+    float3   position;
+    float    radius;
+    float3   color;
+    float    intensity;
+    float3   direction;
+    float    _padding_direction;
+    float    inner_radians;
+    float    outer_radians;
+    float2   _padding_radians;
+    uint     shadowmap;           // 1 - use shadowmap, 0 - do not use shadowmap
+    uint     shadowmap_srv_index; // shadowmap srv in descriptorheap index
+    float    shadowmap_width;
+    float    _padding_shadowmap;
+    float4x4 spot_light_proj_view;
 };
 
 struct SceneDirectionalLight
