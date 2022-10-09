@@ -106,6 +106,7 @@ namespace Pilot
                     spotShadow.m_gobject_id        = curSpotLightDesc.m_gobject_id;
                     spotShadow.m_gcomponent_id     = curSpotLightDesc.m_gcomponent_id;
                     spotShadow.m_spot_index        = i;
+                    spotShadow.m_shadowmap_size    = shadowmap_size;
                     spotShadow.p_LightShadowmap    = p_SpotLightShadowmap;
                     spotShadow.p_LightShadowmapDSV = p_SpotLightShadowmapDSV;
                     spotShadow.p_LightShadowmapSRV = p_SpotLightShadowmapSRV;
@@ -181,11 +182,11 @@ namespace Pilot
 
                 Vector2 shadowmap_size = directionalShadowmap.m_shadowmap_size;
 
+                context.SetGraphicsRootSignature(registry.GetRootSignature(RootSignatures::IndirectDrawDirectionShadowmap));
+                context.SetPipelineState(registry.GetPipelineState(PipelineStates::IndirectDrawDirectionShadowmap));
                 context.SetViewport(RHIViewport {0.0f, 0.0f, (float)shadowmap_size.x, (float)shadowmap_size.y, 0.0f, 1.0f});
                 context.SetScissorRect(RHIRect {0, 0, (int)shadowmap_size.x, (int)shadowmap_size.y});
 
-                context.SetGraphicsRootSignature(registry.GetRootSignature(RootSignatures::IndirectDrawDirectionShadowmap));
-                context.SetPipelineState(registry.GetPipelineState(PipelineStates::IndirectDrawDirectionShadowmap));
                 context->SetGraphicsRootConstantBufferView(1, pPerframeBuffer->GetGpuVirtualAddress());
                 context->SetGraphicsRootShaderResourceView(2, pMeshBuffer->GetGpuVirtualAddress());
                 context->SetGraphicsRootShaderResourceView(3, pMaterialBuffer->GetGpuVirtualAddress());
@@ -214,11 +215,11 @@ namespace Pilot
                 Vector2  shadowmap_size = spotShadowmaps[i].m_shadowmap_size;
                 uint32_t spot_index     = spotShadowmaps[i].m_spot_index;
 
+                context.SetGraphicsRootSignature(registry.GetRootSignature(RootSignatures::IndirectDrawSpotShadowmap));
+                context.SetPipelineState(registry.GetPipelineState(PipelineStates::IndirectDrawSpotShadowmap));
                 context.SetViewport(RHIViewport {0.0f, 0.0f, (float)shadowmap_size.x, (float)shadowmap_size.y, 0.0f, 1.0f});
                 context.SetScissorRect(RHIRect {0, 0, (int)shadowmap_size.x, (int)shadowmap_size.y});
 
-                context.SetGraphicsRootSignature(registry.GetRootSignature(RootSignatures::IndirectDrawSpotShadowmap));
-                context.SetPipelineState(registry.GetPipelineState(PipelineStates::IndirectDrawSpotShadowmap));
                 context->SetGraphicsRoot32BitConstant(0, spot_index, 1);
                 context->SetGraphicsRootConstantBufferView(1, pPerframeBuffer->GetGpuVirtualAddress());
                 context->SetGraphicsRootShaderResourceView(2, pMeshBuffer->GetGpuVirtualAddress());
@@ -234,8 +235,6 @@ namespace Pilot
                                          pSpotCommandBuffers[i]->GetResource(),
                                          HLSL::commandBufferCounterOffset);
             }
-
-
 
         });
     }
