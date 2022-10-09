@@ -43,9 +43,9 @@ VertexOutput VSMain(VertexInput input)
     MeshInstance mesh = g_MeshesInstance[meshIndex];
 
 	#if defined(DIRECTIONSHADOW)
-    float4x4 view_proj_mat = g_ConstantBufferParams.scene_directional_light.directional_light_proj_view;
+    float4x4 view_proj_mat = g_ConstantBufferParams.scene_directional_light.light_proj_view;
     #elif defined(SPOTSHADOW)
-    float4x4 view_proj_mat = g_ConstantBufferParams.scene_spot_lights[spotIndex].spot_light_proj_view;
+    float4x4 view_proj_mat = g_ConstantBufferParams.scene_spot_lights[spotIndex].light_proj_view;
     #else
     float4x4 view_proj_mat = g_ConstantBufferParams.cameraInstance.projViewMatrix;
     #endif

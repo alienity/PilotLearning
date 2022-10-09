@@ -86,7 +86,7 @@ struct SceneSpotLight
     uint     shadowmap_srv_index; // shadowmap srv in descriptorheap index
     float    shadowmap_width;
     float    _padding_shadowmap;
-    float4x4 spot_light_proj_view;
+    float4x4 light_proj_view;
 };
 
 struct SceneDirectionalLight
@@ -99,7 +99,7 @@ struct SceneDirectionalLight
     uint      shadowmap_srv_index; // shadowmap srv in descriptorheap index
     float     shadowmap_width;
     float     _padding_shadowmap;
-    float4x4  directional_light_proj_view;
+    float4x4  light_proj_view;
 };
 
 // ==================== Mesh ====================

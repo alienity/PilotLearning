@@ -67,11 +67,11 @@ namespace Pilot
                 m_light_part_desc.m_direction_light_desc.m_position       = std::get<1>(rts);
                 m_light_part_desc.m_direction_light_desc.m_color          = m_directional_light_params->color;
                 m_light_part_desc.m_direction_light_desc.m_intensity      = m_directional_light_params->intensity;
+
                 m_light_part_desc.m_direction_light_desc.m_shadowmap      = m_directional_light_params->shadows;
                 m_light_part_desc.m_direction_light_desc.m_shadow_bounds  = m_directional_light_params->shadow_bounds;
                 m_light_part_desc.m_direction_light_desc.m_shadow_near_plane  = m_directional_light_params->shadow_near_plane;
                 m_light_part_desc.m_direction_light_desc.m_shadow_far_plane  = m_directional_light_params->shadow_far_plane;
-                m_light_part_desc.m_direction_light_desc.m_shadow_bounds  = m_directional_light_params->shadow_bounds;
                 m_light_part_desc.m_direction_light_desc.m_shadowmap_size = m_directional_light_params->shadowmap_size;
                 m_light_part_desc.m_direction_light_desc.m_direction      = -rotation_matrix.getColumn(2);
                 if (m_light_part_desc.m_direction_light_desc.m_shadowmap)
@@ -129,7 +129,7 @@ namespace Pilot
                 m_light_part_desc.m_spot_light_desc.m_shadowmap         = m_spot_light_params->shadows;
                 m_light_part_desc.m_spot_light_desc.m_shadow_bounds     = m_spot_light_params->shadow_bounds;
                 m_light_part_desc.m_spot_light_desc.m_shadow_near_plane = m_spot_light_params->shadow_near_plane;
-                m_light_part_desc.m_spot_light_desc.m_shadow_far_plane  = m_spot_light_params->shadow_far_plane;
+                m_light_part_desc.m_spot_light_desc.m_shadow_far_plane  = m_spot_light_params->falloff_radius + 10.0f;
                 m_light_part_desc.m_spot_light_desc.m_shadowmap_size    = m_spot_light_params->shadowmap_size;
                 if (m_light_part_desc.m_spot_light_desc.m_shadowmap)
                 {
@@ -147,8 +147,7 @@ namespace Pilot
 
                     Matrix4x4 light_proj_matrix = Math::makePerspectiveMatrix(fovy, aspect, shadow_near, shadow_far);
 
-                    m_light_part_desc.m_spot_light_desc.m_shadow_view_proj_mat =
-                        light_proj_matrix * light_view_matrix;
+                    m_light_part_desc.m_spot_light_desc.m_shadow_view_proj_mat = light_proj_matrix * light_view_matrix;
                 }
             }
 

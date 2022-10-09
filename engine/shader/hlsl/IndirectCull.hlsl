@@ -35,9 +35,9 @@ void CSMain(CSParams Params)
         mesh.boundingBox.Transform(mesh.localToWorldMatrix, aabb);
 
 		#if defined(DIRECTIONSHADOW)
-        Frustum frustum = ExtractPlanesDX(g_ConstantBufferParams.scene_directional_light.directional_light_proj_view);
+        Frustum frustum = ExtractPlanesDX(g_ConstantBufferParams.scene_directional_light.light_proj_view);
 		#elif defined(SPOTSHADOW)
-        Frustum frustum = ExtractPlanesDX(g_ConstantBufferParams.scene_spot_lights[spotIndex].spot_light_proj_view);
+        Frustum frustum = ExtractPlanesDX(g_ConstantBufferParams.scene_spot_lights[spotIndex].light_proj_view);
 		#else
         Frustum frustum = ExtractPlanesDX(g_ConstantBufferParams.cameraInstance.projViewMatrix);
 		#endif
