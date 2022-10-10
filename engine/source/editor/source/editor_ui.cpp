@@ -510,6 +510,40 @@ namespace Pilot
                 createComponentUI(object_instance);
             }
         };
+        m_editor_ui_creator["MeshComponentRes"] = [this, &asset_folder](const std::string& name, void* value_ptr) -> void {
+            bool isDirty = false;
+
+            if (g_editor_node_state_array[g_node_depth].second)
+            {
+                static std::string testChar;
+
+                MeshComponentRes* mesh_res_ptr = static_cast<MeshComponentRes*>(value_ptr);
+
+                ImGui::TextColored(ImVec4(1.0f, 0.0f, 1.0f, 1.0f), "Drag mesh file to here <_<");
+                if (ImGui::BeginDragDropTarget())
+                {
+                    if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("MESH_FILE_PATH"))
+                    {
+                        IM_ASSERT(payload->DataSize == sizeof(char*));
+                        const char* payload_filepath = (const char*)payload->Data;
+                        testChar = payload_filepath;
+                    }
+                    ImGui::EndDragDropTarget();
+                }
+
+                ImGui::NewLine();
+                ImGui::Text(testChar.c_str());
+
+                for (size_t i = 0; i < mesh_res_ptr->m_sub_meshes.size(); i++)
+                {
+                    Reflection::TypeMeta field_meta = Reflection::TypeMeta::newMetaFromName("SubMeshRes");
+                    auto child_instance = Reflection::ReflectionInstance(field_meta, (void*)&mesh_res_ptr->m_sub_meshes[i]);
+                    m_editor_ui_creator["TreeNodePush"](field_meta.getTypeName(), nullptr);
+                    createLeafNodeUI(child_instance);
+                    m_editor_ui_creator["TreeNodePop"](field_meta.getTypeName(), nullptr);
+                }
+            }
+        };
     }
 
     std::string EditorUI::getLeafUINodeParentLabel()
@@ -1195,6 +1229,15 @@ namespace Pilot
         if (is_folder)
         {
             bool open = ImGui::TreeNodeEx(node->m_file_name.c_str(), ImGuiTreeNodeFlags_SpanFullWidth);
+            if (strcmp(node->m_file_type.c_str(), "obj") == 0)
+            {
+                if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_None))
+                {
+                    ImGui::SetDragDropPayload("MESH_FILE_PATH", node->m_file_name.c_str(), sizeof(char*));
+                    ImGui::Text("Drag %s", node->m_file_name.c_str());
+                    ImGui::EndDragDropSource();
+                }
+            }
             ImGui::TableNextColumn();
             ImGui::SetNextItemWidth(100.0f);
             ImGui::TextUnformatted(node->m_file_type.c_str());
@@ -1210,10 +1253,20 @@ namespace Pilot
             ImGui::TreeNodeEx(node->m_file_name.c_str(),
                               ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen |
                                   ImGuiTreeNodeFlags_SpanFullWidth);
-            if (ImGui::IsItemClicked() && !ImGui::IsItemToggledOpen())
+            if (strcmp(node->m_file_type.c_str(), "obj") == 0)
             {
-                //onFileContentItemClicked(node);
+                if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_None))
+                {
+                    ImGui::SetDragDropPayload("MESH_FILE_PATH", node->m_file_name.c_str(), sizeof(char*));
+                    ImGui::Text("Drag %s", node->m_file_name.c_str());
+                    ImGui::EndDragDropSource();
+                }
             }
+
+            //if (ImGui::IsItemClicked() && !ImGui::IsItemToggledOpen())
+            //{
+            //    //onFileContentItemClicked(node);
+            //}
             ImGui::TableNextColumn();
             ImGui::SetNextItemWidth(100.0f);
             ImGui::TextUnformatted(node->m_file_type.c_str());
