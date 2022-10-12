@@ -42,7 +42,6 @@ namespace Pilot
         void onCursorPos(double xpos, double ypos);
         void onCursorEnter(int entered);
         void onScroll(double xoffset, double yoffset);
-        void onMouseButtonClicked(int key, int action);
         void onWindowClosed();
 
         bool isCursorInRect(Vector2 pos, Vector2 size) const;

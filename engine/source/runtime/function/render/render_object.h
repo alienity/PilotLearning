@@ -95,7 +95,7 @@ namespace Pilot
     struct GameObjectMeshDesc : public BasePartDesc
     {
         std::string m_mesh_file;
-
+        
         GameObjectMaterialDesc m_material_desc;
     };
 
@@ -136,16 +136,6 @@ namespace Pilot
         SpotLightDesc           m_spot_light_desc;
     };
 
-    struct GameObjectComponentId
-    {
-        GObjectID m_go_id {k_invalid_gobject_id};
-        size_t m_component_id {k_invalid_gcomponent_id};
-
-        bool operator==(const GameObjectComponentId& rhs) const { return m_go_id == rhs.m_go_id && m_component_id == rhs.m_component_id; }
-        size_t getHashValue() const { return m_go_id ^ (m_component_id << 1); }
-        bool   isValid() const { return m_go_id != k_invalid_gobject_id && m_component_id != k_invalid_gcomponent_id; }
-    };
-
     class GameObjectDesc
     {
     public:
@@ -160,9 +150,3 @@ namespace Pilot
         std::vector<GameObjectComponentDesc> m_object_components;
     };
 } // namespace Pilot
-
-template<>
-struct std::hash<Pilot::GameObjectComponentId>
-{
-    size_t operator()(const Pilot::GameObjectComponentId& rhs) const noexcept { return rhs.getHashValue(); }
-};

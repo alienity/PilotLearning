@@ -26,8 +26,9 @@ namespace Pilot
         std::vector<SpotLightDesc>  m_spot_light_list;
 
         // render entities
-        std::vector<RenderEntity> m_render_entities;
+        std::vector<RenderEntity>   m_render_entities;
 
+    public:
         // all objects (updated per frame)
         std::vector<RenderMeshNode> m_all_mesh_nodes;
 
@@ -37,17 +38,9 @@ namespace Pilot
         // set visible nodes ptr in render pass
         void setVisibleNodesReference();
 
-        GuidAllocator<GameObjectComponentId>& getInstanceIdAllocator();
-
-        GuidAllocator<MeshSourceDesc>&        getMeshAssetIdAllocator();
-        GuidAllocator<MaterialSourceDesc>&    getMaterialAssetdAllocator();
-
-        void      addInstanceIdToMap(uint32_t instance_id, GObjectID go_id);
-        GObjectID getGObjectIDByMeshID(uint32_t mesh_id) const;
-        void      deleteEntityByGObjectID(GObjectID go_id);
-
-        //void addLightInstanceToMap(uint32_t instance_id, GObjectID go_id);
-        //void deleteLightByGObjectID(GObjectID go_id);
+        void deleteEntityByGObjectID(GObjectID go_id);
+        void deleteEntityByGObjectID(GObjectID go_id, GComponentID com_id);
+        void deleteEntityByGObjectID(GObjectID go_id, GComponentID com_id, uint32_t mesh_asset_id);
 
         void deleteDirectionLightByGObjectID(GObjectID go_id);
         void deletePointLightByGObjectID(GObjectID go_id);
@@ -55,14 +48,14 @@ namespace Pilot
 
         void clearForLevelReloading();
 
+        GuidAllocator<MeshSourceDesc>&     getMeshAssetIdAllocator() { return m_mesh_asset_id_allocator; };
+        GuidAllocator<MaterialSourceDesc>& getMaterialAssetdAllocator() { return m_material_asset_id_allocator; };
+
     private:
         friend class RenderSystem;
-
-        GuidAllocator<GameObjectComponentId> m_instance_id_allocator;
 
         GuidAllocator<MeshSourceDesc>        m_mesh_asset_id_allocator;
         GuidAllocator<MaterialSourceDesc>    m_material_asset_id_allocator;
         
-        std::unordered_map<uint32_t, GObjectID> m_mesh_object_id_map;
     };
 } // namespace Piccolo

@@ -184,8 +184,6 @@ namespace Pilot
             }
         }
 
-        g_editor_global_context.m_render_system->setSelectedAxis(m_selected_axis);
-
         return m_selected_axis;
     }
 
@@ -233,12 +231,10 @@ namespace Pilot
             {
                 selected_aixs->m_model_matrix = axis_model_matrix * Matrix4x4(rotation);
             }
-
-            g_editor_global_context.m_render_system->setVisibleAxis(*selected_aixs);
         }
         else
         {
-            g_editor_global_context.m_render_system->setVisibleAxis(std::nullopt);
+
         }
     }
 
@@ -413,8 +409,6 @@ namespace Pilot
             m_rotation_axis.m_model_matrix    = axis_model_matrix;
             m_scale_aixs.m_model_matrix       = axis_model_matrix;
 
-            g_editor_global_context.m_render_system->setVisibleAxis(m_translation_axis);
-
             transform_component->setPosition(new_translation);
             transform_component->setRotation(new_rotation);
             transform_component->setScale(new_scale);
@@ -530,41 +524,6 @@ namespace Pilot
             transform_component->setScale(new_scale);
         }
         setSelectedObjectMatrix(new_model_matrix);
-    }
-
-    void EditorSceneManager::uploadAxisResource()
-    {
-        auto& instance_id_allocator   = g_editor_global_context.m_render_system->getGOInstanceIdAllocator();
-        auto& mesh_asset_id_allocator = g_editor_global_context.m_render_system->getMeshAssetIdAllocator();
-
-        // assign some value that won't be used by other game objects
-        {
-            GameObjectComponentId axis_instance_id = {0xFFAA, 0xFFAA};
-            MeshSourceDesc   mesh_source_desc = {"%%translation_axis%%"};
-
-            m_translation_axis.m_instance_id   = instance_id_allocator.allocGuid(axis_instance_id);
-            m_translation_axis.m_mesh_asset_id = mesh_asset_id_allocator.allocGuid(mesh_source_desc);
-        }
-
-        {
-            GameObjectComponentId axis_instance_id = {0xFFBB, 0xFFBB};
-            MeshSourceDesc   mesh_source_desc = {"%%rotate_axis%%"};
-
-            m_rotation_axis.m_instance_id   = instance_id_allocator.allocGuid(axis_instance_id);
-            m_rotation_axis.m_mesh_asset_id = mesh_asset_id_allocator.allocGuid(mesh_source_desc);
-        }
-
-        {
-            GameObjectComponentId axis_instance_id = {0xFFCC, 0xFFCC};
-            MeshSourceDesc   mesh_source_desc = {"%%scale_axis%%"};
-
-            m_scale_aixs.m_instance_id   = instance_id_allocator.allocGuid(axis_instance_id);
-            m_scale_aixs.m_mesh_asset_id = mesh_asset_id_allocator.allocGuid(mesh_source_desc);
-        }
-
-        g_editor_global_context.m_render_system->createAxis(
-            {m_translation_axis, m_rotation_axis, m_scale_aixs},
-            {m_translation_axis.m_mesh_data, m_rotation_axis.m_mesh_data, m_scale_aixs.m_mesh_data});
     }
 
     size_t EditorSceneManager::getGuidOfPickedMesh(const Vector2& picked_uv) const

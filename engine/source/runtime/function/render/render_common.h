@@ -70,17 +70,8 @@ namespace Pilot
         glm::mat4          model_matrix_inverse;
         D3D12Mesh*         ref_mesh     = nullptr;
         D3D12PBRMaterial*  ref_material = nullptr;
-        uint32_t           node_id;
         MeshBoundingBox    bounding_box;
         bool               enable_vertex_blending = false;
-    };
-
-    struct RenderAxisNode
-    {
-        glm::mat4  model_matrix {glm::mat4(1.0f)};
-        D3D12Mesh* ref_mesh {nullptr};
-        uint32_t   node_id;
-        bool       enable_vertex_blending {false};
     };
 
     struct RenderParticleBillboardNode

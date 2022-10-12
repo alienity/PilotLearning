@@ -28,8 +28,7 @@ namespace Pilot
             //{
             //    temp_node.joint_matrices[joint_index] = GLMUtil::fromMat4x4(entity.m_joint_matrices[joint_index]);
             //}
-            temp_node.node_id = entity.m_instance_id;
-
+            
             D3D12Mesh& mesh_asset            = render_resource->getEntityMesh(entity);
             temp_node.ref_mesh               = &mesh_asset;
             temp_node.enable_vertex_blending = entity.m_enable_vertex_blending;
@@ -57,46 +56,35 @@ namespace Pilot
         RenderPass::m_visiable_nodes.p_spot_light_list   = &m_spot_light_list;
     }
 
-    GuidAllocator<GameObjectComponentId>& RenderScene::getInstanceIdAllocator() { return m_instance_id_allocator; }
-
-    GuidAllocator<MeshSourceDesc>& RenderScene::getMeshAssetIdAllocator() { return m_mesh_asset_id_allocator; }
-
-    GuidAllocator<MaterialSourceDesc>& RenderScene::getMaterialAssetdAllocator() { return m_material_asset_id_allocator; }
-
-    void RenderScene::addInstanceIdToMap(uint32_t instance_id, GObjectID go_id)
-    {
-        m_mesh_object_id_map[instance_id] = go_id;
-    }
-
-    GObjectID RenderScene::getGObjectIDByMeshID(uint32_t mesh_id) const
-    {
-        auto find_it = m_mesh_object_id_map.find(mesh_id);
-        if (find_it != m_mesh_object_id_map.end())
-        {
-            return find_it->second;
-        }
-        return GObjectID();
-    }
-
     void RenderScene::deleteEntityByGObjectID(GObjectID go_id)
     {
-        for (auto it = m_mesh_object_id_map.begin(); it != m_mesh_object_id_map.end(); it++)
-        {
-            if (it->second == go_id)
-            {
-                m_mesh_object_id_map.erase(it);
-                break;
-            }
-        }
-
         for (auto it = m_render_entities.begin(); it != m_render_entities.end(); it++)
         {
-            Pilot::GameObjectComponentId obj_com_id;
-            m_instance_id_allocator.getGuidRelatedElement(it->m_instance_id, obj_com_id);
-            if (obj_com_id.m_go_id == go_id)
+            if (it->m_gobject_id == go_id)
             {
                 m_render_entities.erase(it);
-                break;
+            }
+        }
+    }
+
+    void RenderScene::deleteEntityByGObjectID(GObjectID go_id, GComponentID com_id)
+    {
+        for (auto it = m_render_entities.begin(); it != m_render_entities.end(); it++)
+        {
+            if (it->m_gobject_id == go_id && it->m_gcomponent_id == com_id)
+            {
+                m_render_entities.erase(it);
+            }
+        }
+    }
+
+    void RenderScene::deleteEntityByGObjectID(GObjectID go_id, GComponentID com_id, uint32_t mesh_asset_id)
+    {
+        for (auto it = m_render_entities.begin(); it != m_render_entities.end(); it++)
+        {
+            if (it->m_gobject_id == go_id && it->m_gcomponent_id == com_id && it->m_mesh_asset_id == mesh_asset_id)
+            {
+                m_render_entities.erase(it);
             }
         }
     }
@@ -145,8 +133,6 @@ namespace Pilot
 
     void RenderScene::clearForLevelReloading()
     {
-        m_instance_id_allocator.clear();
-        m_mesh_object_id_map.clear();
         m_point_light_list.clear();
         m_spot_light_list.clear();
         m_render_entities.clear();

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "runtime/core/math/moyu_math.h"
+#include "function/framework/object/object_id_allocator.h"
 
 #include <cstdint>
 #include <vector>
@@ -10,7 +11,9 @@ namespace Pilot
     class RenderEntity
     {
     public:
-        uint32_t  m_instance_id {0};
+        GObjectID    m_gobject_id {k_invalid_gobject_id};
+        GComponentID m_gcomponent_id {k_invalid_gcomponent_id};
+
         Matrix4x4 m_model_matrix {Matrix4x4::Identity};
 
         // mesh

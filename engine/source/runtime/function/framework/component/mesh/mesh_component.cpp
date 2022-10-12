@@ -31,7 +31,7 @@ namespace Pilot
 
             meshComponent.m_mesh_desc.m_is_active = true;
             meshComponent.m_mesh_desc.m_mesh_file = asset_manager->getFullPath(sub_mesh.m_obj_file_ref).generic_string();
-
+            
             meshComponent.m_mesh_desc.m_material_desc.m_with_texture = sub_mesh.m_material.empty() == false;
 
             if (meshComponent.m_mesh_desc.m_material_desc.m_with_texture)
@@ -48,7 +48,6 @@ namespace Pilot
 
             //auto object_space_transform = sub_mesh.m_transform.getMatrix();
             
-            meshComponent.m_component_id               = m_id;
             meshComponent.m_transform_desc.m_is_active = true;
             
             ++raw_mesh_count;

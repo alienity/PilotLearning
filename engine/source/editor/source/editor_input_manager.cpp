@@ -29,8 +29,6 @@ namespace Pilot
             std::bind(&EditorInputManager::onCursorEnter, this, std::placeholders::_1));
         g_editor_global_context.m_window_system->registerOnScrollFunc(
             std::bind(&EditorInputManager::onScroll, this, std::placeholders::_1, std::placeholders::_2));
-        g_editor_global_context.m_window_system->registerOnMouseButtonFunc(
-            std::bind(&EditorInputManager::onMouseButtonClicked, this, std::placeholders::_1, std::placeholders::_2));
         g_editor_global_context.m_window_system->registerOnWindowCloseFunc(
             std::bind(&EditorInputManager::onWindowClosed, this));
         g_editor_global_context.m_window_system->registerOnKeyFunc(std::bind(&EditorInputManager::onKey,
@@ -270,32 +268,6 @@ namespace Pilot
             {
                 g_editor_global_context.m_scene_manager->getEditorCamera()->zoom(
                     (float)yoffset * 2.0f); // wheel scrolled up = zoom in by 2 extra degrees
-            }
-        }
-    }
-
-    void EditorInputManager::onMouseButtonClicked(int key, int action)
-    {
-        if (!g_is_editor_mode)
-            return;
-        if (m_cursor_on_axis != 3)
-            return;
-
-        std::shared_ptr<Level> current_active_level =
-            g_runtime_global_context.m_world_manager->getCurrentActiveLevel().lock();
-        if (current_active_level == nullptr)
-            return;
-
-        if (isCursorInRect(m_engine_window_pos, m_engine_window_size))
-        {
-            if (key == GLFW_MOUSE_BUTTON_LEFT)
-            {
-                Vector2 picked_uv((m_mouse_x - m_engine_window_pos.x) / m_engine_window_size.x,
-                                  (m_mouse_y - m_engine_window_pos.y) / m_engine_window_size.y);
-                size_t  select_mesh_id = g_editor_global_context.m_scene_manager->getGuidOfPickedMesh(picked_uv);
-
-                size_t gobject_id = g_editor_global_context.m_render_system->getGObjectIDByMeshID(select_mesh_id);
-                g_editor_global_context.m_scene_manager->onGObjectSelected(gobject_id);
             }
         }
     }

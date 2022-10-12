@@ -139,41 +139,6 @@ namespace Pilot
         //return m_render_pipeline->getGuidOfPickedMesh(picked_uv);
     }
 
-    GObjectID RenderSystem::getGObjectIDByMeshID(uint32_t mesh_id) const
-    {
-        return m_render_scene->getGObjectIDByMeshID(mesh_id);
-    }
-
-    void RenderSystem::createAxis(std::array<RenderEntity, 3> axis_entities, std::array<RenderMeshData, 3> mesh_datas)
-    {
-        for (int i = 0; i < axis_entities.size(); i++)
-        {
-            m_render_resource->uploadGameObjectRenderResource(axis_entities[i], mesh_datas[i]);
-        }
-    }
-
-    void RenderSystem::setVisibleAxis(std::optional<RenderEntity> axis)
-    {
-        //if (axis.has_value())
-        //{
-        //    std::static_pointer_cast<RenderPipeline>(m_render_pipeline)->setAxisVisibleState(true);
-        //}
-        //else
-        //{
-        //    std::static_pointer_cast<RenderPipeline>(m_render_pipeline)->setAxisVisibleState(false);
-        //}
-    }
-
-    void RenderSystem::setSelectedAxis(size_t selected_axis)
-    {
-        //std::static_pointer_cast<RenderPipeline>(m_render_pipeline)->setSelectedAxis(selected_axis);
-    }
-
-    GuidAllocator<GameObjectComponentId>& RenderSystem::getGOInstanceIdAllocator()
-    {
-        return m_render_scene->getInstanceIdAllocator();
-    }
-
     GuidAllocator<MeshSourceDesc>& RenderSystem::getMeshAssetIdAllocator()
     {
         return m_render_scene->getMeshAssetIdAllocator();
@@ -208,19 +173,14 @@ namespace Pilot
                 {
                     const auto& game_object_part = gobject.getObjectParts()[part_index];
 
-                    GameObjectComponentId obj_part_id_pair = {gobject.getId(), game_object_part.m_component_id};
-
                     // mesh properties
                     if (game_object_part.m_mesh_desc.m_is_active)
                     {
-                        bool is_entity_in_scene = m_render_scene->getInstanceIdAllocator().hasElement(obj_part_id_pair);
-                        uint32_t m_instance_id = static_cast<uint32_t>(m_render_scene->getInstanceIdAllocator().allocGuid(obj_part_id_pair));
-
                         RenderEntity render_entity;
-                        render_entity.m_instance_id  = m_instance_id;
-                        render_entity.m_model_matrix = game_object_part.m_transform_desc.m_transform_matrix;
+                        render_entity.m_gobject_id    = gobject.getId();
+                        render_entity.m_gcomponent_id = game_object_part.m_component_id;
 
-                        m_render_scene->addInstanceIdToMap(render_entity.m_instance_id, gobject.getId());
+                        render_entity.m_model_matrix  = game_object_part.m_transform_desc.m_transform_matrix;
 
                         MeshSourceDesc mesh_source = {game_object_part.m_mesh_desc.m_mesh_file};
                         bool is_mesh_loaded        = m_render_scene->getMeshAssetIdAllocator().hasElement(mesh_source);
@@ -283,21 +243,24 @@ namespace Pilot
                         }
 
                         // add object to render scene if needed
+                        bool is_entity_in_scene = false;
+                        for (size_t i = 0; i < m_render_scene->m_render_entities.size(); i++)
+                        {
+                            RenderEntity& entity = m_render_scene->m_render_entities[i];
+                            if (entity.m_gobject_id == render_entity.m_gobject_id &&
+                                entity.m_gcomponent_id == render_entity.m_gcomponent_id &&
+                                entity.m_mesh_asset_id == render_entity.m_mesh_asset_id)
+                            {
+                                is_entity_in_scene = true;
+                                entity = render_entity;
+                                break;
+                            }
+                        }
                         if (!is_entity_in_scene)
                         {
                             m_render_scene->m_render_entities.push_back(render_entity);
                         }
-                        else
-                        {
-                            for (auto& entity : m_render_scene->m_render_entities)
-                            {
-                                if (entity.m_instance_id == render_entity.m_instance_id)
-                                {
-                                    entity = render_entity;
-                                    break;
-                                }
-                            }
-                        }
+
                     }
 
                     // process light properties
@@ -332,7 +295,7 @@ namespace Pilot
                             int point_light_index_in_scene = -1;
                             for (size_t i = 0; i < m_render_scene->m_point_light_list.size(); i++)
                             {
-                                auto tmp_light = m_render_scene->m_point_light_list[i];
+                                auto& tmp_light = m_render_scene->m_point_light_list[i];
 
                                 if ((tmp_light.m_gobject_id == gobject.getId()) &&
                                     (tmp_light.m_gcomponent_id == game_object_part.m_component_id))
@@ -376,7 +339,7 @@ namespace Pilot
                             int spot_light_index_in_scene = -1;
                             for (size_t i = 0; i < m_render_scene->m_spot_light_list.size(); i++)
                             {
-                                auto tmp_light = m_render_scene->m_spot_light_list[i];
+                                auto& tmp_light = m_render_scene->m_spot_light_list[i];
 
                                 if ((tmp_light.m_gobject_id == gobject.getId()) &&
                                     (tmp_light.m_gcomponent_id == game_object_part.m_component_id))
