@@ -515,24 +515,22 @@ namespace Pilot
 
             if (g_editor_node_state_array[g_node_depth].second)
             {
-                static std::string testChar;
 
                 MeshComponentRes* mesh_res_ptr = static_cast<MeshComponentRes*>(value_ptr);
 
+                std::string drag_file_path;
+                
                 ImGui::TextColored(ImVec4(1.0f, 0.0f, 1.0f, 1.0f), "Drag mesh file to here <_<");
                 if (ImGui::BeginDragDropTarget())
                 {
                     if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("MESH_FILE_PATH"))
                     {
-                        IM_ASSERT(payload->DataSize == sizeof(char*));
-                        const char* payload_filepath = (const char*)payload->Data;
-                        testChar = payload_filepath;
+                        IM_ASSERT(payload->DataSize == sizeof(std::string));
+                        std::string payload_filepath = *(std::string*)payload->Data;
+                        drag_file_path = payload_filepath;
                     }
                     ImGui::EndDragDropTarget();
                 }
-
-                ImGui::NewLine();
-                ImGui::Text(testChar.c_str());
 
                 for (size_t i = 0; i < mesh_res_ptr->m_sub_meshes.size(); i++)
                 {
@@ -541,6 +539,23 @@ namespace Pilot
                     m_editor_ui_creator["TreeNodePush"](field_meta.getTypeName(), nullptr);
                     createLeafNodeUI(child_instance);
                     m_editor_ui_creator["TreeNodePop"](field_meta.getTypeName(), nullptr);
+                }
+
+                if (!drag_file_path.empty())
+                {
+                    std::shared_ptr<GObject> selected_object = g_editor_global_context.m_scene_manager->getSelectedGObject().lock();
+                    MeshComponent* curSelectedMeshComponent = selected_object->tryGetComponent<MeshComponent>("MeshComponent");
+                    if (curSelectedMeshComponent != nullptr)
+                    {
+                        std::string relative_path = "asset/" + drag_file_path;
+                        curSelectedMeshComponent->addNewMeshRes(relative_path);
+                        
+                        if (!m_editor_component_stack.empty())
+                        {
+                            Component* m_component_ptr = m_editor_component_stack.back();
+                            m_component_ptr->setDirtyFlag(isDirty);
+                        }
+                    }
                 }
             }
         };
@@ -948,6 +963,23 @@ namespace Pilot
                 }
             }
 
+            if (ImGui::MenuItem("Mesh Component"))
+            {
+                if (selected_object->tryGetComponentConst<const MeshComponent>("MeshComponent"))
+                {
+                    LOG_INFO("object {} already has Mesh Component", selected_object->getName());
+                }
+                else
+                {
+                    auto mesh_component = PILOT_REFLECTION_NEW(MeshComponent);
+                    mesh_component->reset();
+                    mesh_component->postLoadResource(selected_object);
+                    selected_object->tryAddComponent(mesh_component);
+
+                    LOG_INFO("Add New Mesh Component");
+                }
+            }
+
 
             ImGui::EndPopup();
         }
@@ -1233,7 +1265,7 @@ namespace Pilot
             {
                 if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_None))
                 {
-                    ImGui::SetDragDropPayload("MESH_FILE_PATH", node->m_file_name.c_str(), sizeof(char*));
+                    ImGui::SetDragDropPayload("MESH_FILE_PATH", &node->m_relative_path, sizeof(std::string));
                     ImGui::Text("Drag %s", node->m_file_name.c_str());
                     ImGui::EndDragDropSource();
                 }
@@ -1257,7 +1289,7 @@ namespace Pilot
             {
                 if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_None))
                 {
-                    ImGui::SetDragDropPayload("MESH_FILE_PATH", node->m_file_name.c_str(), sizeof(char*));
+                    ImGui::SetDragDropPayload("MESH_FILE_PATH", &node->m_relative_path, sizeof(std::string));
                     ImGui::Text("Drag %s", node->m_file_name.c_str());
                     ImGui::EndDragDropSource();
                 }

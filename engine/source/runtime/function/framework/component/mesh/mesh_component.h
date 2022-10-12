@@ -19,11 +19,15 @@ namespace Pilot
     public:
         MeshComponent() {};
 
+        void reset();
+
         void postLoadResource(std::weak_ptr<GObject> parent_object) override;
 
         const std::vector<GameObjectComponentDesc>& getRawMeshes() const { return m_raw_meshes; }
 
         void tick(float delta_time) override;
+
+        bool addNewMeshRes(std::string mesh_file_path);
 
     private:
         META(Enable)

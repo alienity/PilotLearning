@@ -14,18 +14,19 @@ namespace Pilot
         std::string         m_file_name;
         std::string         m_file_type;
         std::string         m_file_path;
+        std::string         m_relative_path;
         int                 m_node_depth;
         EditorFileNodeArray m_child_nodes;
         EditorFileNode() = default;
-        EditorFileNode(const std::string& name, const std::string& type, const std::string& path, int depth) :
-            m_file_name(name), m_file_type(type), m_file_path(path), m_node_depth(depth)
+        EditorFileNode(const std::string& name, const std::string& type , const std::string& relative_path, const std::string& path, int depth) :
+            m_file_name(name), m_file_type(type), m_file_path(path), m_relative_path(relative_path), m_node_depth(depth)
         {}
     };
 
     class EditorFileService
     {
         EditorFileNodeArray m_file_node_array;
-        EditorFileNode      m_root_node{ "asset", "Folder", "asset", -1 };
+        EditorFileNode      m_root_node {"asset", "Folder", "asset", "asset", -1};
 
     private:
         EditorFileNode* getParentNodePtr(EditorFileNode* file_node);

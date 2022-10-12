@@ -115,28 +115,31 @@ namespace Pilot
         // load object definition components
         m_definition_url = object_instance_res.m_definition;
 
-        ObjectDefinitionRes definition_res;
-
-        const bool is_loaded_success = g_runtime_global_context.m_asset_manager->loadAsset(m_definition_url, definition_res);
-        if (!is_loaded_success)
+        if (!m_definition_url.empty())
         {
-            LOG_INFO("{} do not have definition_res", m_name);
-            return true;
-        }
+            ObjectDefinitionRes definition_res;
 
-        for (auto loaded_component : definition_res.m_components)
-        {
-            if (loaded_component.getPtr() == NULL)
-                continue;
+            const bool is_loaded_success = g_runtime_global_context.m_asset_manager->loadAsset(m_definition_url, definition_res);
+            if (!is_loaded_success)
+            {
+                LOG_INFO("{} do not have definition_res", m_name);
+                return true;
+            }
 
-            const std::string type_name = loaded_component.getTypeName();
-            // don't create component if it has been instanced
-            if (hasComponent(type_name))
-                continue;
+            for (auto loaded_component : definition_res.m_components)
+            {
+                if (loaded_component.getPtr() == NULL)
+                    continue;
 
-            loaded_component->postLoadResource(weak_from_this());
+                const std::string type_name = loaded_component.getTypeName();
+                // don't create component if it has been instanced
+                if (hasComponent(type_name))
+                    continue;
 
-            m_components.push_back(loaded_component);
+                loaded_component->postLoadResource(weak_from_this());
+
+                m_components.push_back(loaded_component);
+            }
         }
 
         return true;

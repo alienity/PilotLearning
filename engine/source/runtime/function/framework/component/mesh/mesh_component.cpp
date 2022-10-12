@@ -13,6 +13,12 @@
 
 namespace Pilot
 {
+    void MeshComponent::reset()
+    {
+        m_raw_meshes.clear();
+        m_mesh_res = {};
+    }
+
     void MeshComponent::postLoadResource(std::weak_ptr<GObject> parent_object)
     {
         m_parent_object = parent_object;
@@ -20,6 +26,7 @@ namespace Pilot
         std::shared_ptr<AssetManager> asset_manager = g_runtime_global_context.m_asset_manager;
         ASSERT(asset_manager);
 
+        m_raw_meshes.clear();
         m_raw_meshes.resize(m_mesh_res.m_sub_meshes.size());
 
         size_t raw_mesh_count = 0;
@@ -80,11 +87,29 @@ namespace Pilot
                 dirty_mesh_parts.push_back(mesh_part);
             }
 
-            RenderSwapContext& render_swap_context = g_runtime_global_context.m_render_system->getSwapContext();
-            RenderSwapData&    logic_swap_data     = render_swap_context.getLogicSwapData();
+            if (!dirty_mesh_parts.empty())
+            {
+                RenderSwapContext& render_swap_context = g_runtime_global_context.m_render_system->getSwapContext();
+                RenderSwapData&    logic_swap_data     = render_swap_context.getLogicSwapData();
 
-            logic_swap_data.addDirtyGameObject(GameObjectDesc {m_parent_object.lock()->getID(), dirty_mesh_parts});
+                logic_swap_data.addDirtyGameObject(GameObjectDesc {m_parent_object.lock()->getID(), dirty_mesh_parts});
+            }
         }
 
     }
+
+    bool MeshComponent::addNewMeshRes(std::string mesh_file_path)
+    {
+        SubMeshRes newSubMeshRes = {};
+        newSubMeshRes.m_obj_file_ref = mesh_file_path;
+        newSubMeshRes.m_transform    = Transform();
+        newSubMeshRes.m_material     = "asset/objects/environment/_material/gold.material.json";
+
+        m_mesh_res.m_sub_meshes.push_back(newSubMeshRes);
+
+        postLoadResource(m_parent_object);
+
+        return true;
+    }
+
 } // namespace Piccolo

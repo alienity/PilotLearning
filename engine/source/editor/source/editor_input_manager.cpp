@@ -108,10 +108,10 @@ namespace Pilot
                 case GLFW_KEY_D:
                     m_editor_command |= (unsigned int)EditorCommand::camera_right;
                     break;
-                case GLFW_KEY_Q:
+                case GLFW_KEY_E:
                     m_editor_command |= (unsigned int)EditorCommand::camera_up;
                     break;
-                case GLFW_KEY_E:
+                case GLFW_KEY_Q:
                     m_editor_command |= (unsigned int)EditorCommand::camera_down;
                     break;
                 case GLFW_KEY_T:
@@ -149,10 +149,10 @@ namespace Pilot
                 case GLFW_KEY_D:
                     m_editor_command &= (k_complement_control_command ^ (unsigned int)EditorCommand::camera_right);
                     break;
-                case GLFW_KEY_Q:
+                case GLFW_KEY_E:
                     m_editor_command &= (k_complement_control_command ^ (unsigned int)EditorCommand::camera_up);
                     break;
-                case GLFW_KEY_E:
+                case GLFW_KEY_Q:
                     m_editor_command &= (k_complement_control_command ^ (unsigned int)EditorCommand::camera_down);
                     break;
                 case GLFW_KEY_T:
