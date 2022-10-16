@@ -77,6 +77,16 @@ namespace Pilot
                 if (depth < file_segment_count - 1)
                 {
                     file_node->m_file_type = "Folder";
+
+                    std::filesystem::path file_relative_path = "";
+                    for (size_t j = 0; j <= file_segment_index; j++)
+                        file_relative_path.append(all_file_segments[file_index][j]);
+
+                    std::filesystem::path file_full_path = asset_folder;
+                    file_full_path.append(file_relative_path.string());
+
+                    file_node->m_relative_path = file_relative_path.string();
+                    file_node->m_file_path     = file_full_path.string();
                 }
                 else
                 {
@@ -100,12 +110,12 @@ namespace Pilot
                 file_node->m_node_depth = depth;
                 node_array.push_back(file_node);
 
-                bool node_exists = checkFileArray(file_node.get());
+                bool node_exists = checkFileArray(file_node);
                 if (node_exists == false)
                 {
                     m_file_node_array.push_back(file_node);
                 }
-                EditorFileNode* parent_node_ptr = getParentNodePtr(node_array[depth].get());
+                std::shared_ptr<EditorFileNode> parent_node_ptr = getParentNodePtr(node_array[depth]);
                 if (parent_node_ptr != nullptr && node_exists == false)
                 {
                     parent_node_ptr->m_child_nodes.push_back(file_node);
@@ -115,7 +125,7 @@ namespace Pilot
         }
     }
 
-    bool EditorFileService::checkFileArray(EditorFileNode* file_node)
+    bool EditorFileService::checkFileArray(std::shared_ptr<EditorFileNode> file_node)
     {
         int editor_node_count = m_file_node_array.size();
         for (int file_node_index = 0; file_node_index < editor_node_count; file_node_index++)
@@ -129,7 +139,12 @@ namespace Pilot
         return false;
     }
 
-    EditorFileNode* EditorFileService::getParentNodePtr(EditorFileNode* file_node)
+    std::shared_ptr<EditorFileNode> EditorFileService::getEditorRootNode()
+    {
+        return m_file_node_array.empty() ? nullptr : m_file_node_array[0];
+    }
+
+    std::shared_ptr<EditorFileNode> EditorFileService::getParentNodePtr(std::shared_ptr<EditorFileNode> file_node)
     {
         int editor_node_count = m_file_node_array.size();
         for (int file_node_index = 0; file_node_index < editor_node_count; file_node_index++)
@@ -137,9 +152,21 @@ namespace Pilot
             if (m_file_node_array[file_node_index]->m_file_name == file_node->m_file_name &&
                 m_file_node_array[file_node_index]->m_node_depth == file_node->m_node_depth)
             {
-                return m_file_node_array[file_node_index].get();
+                return m_file_node_array[file_node_index];
             }
         }
         return nullptr;
     }
+
+    std::shared_ptr<EditorFileNode> EditorFileService::getSelectedEditorNode()
+    {
+        return m_editor_node_ptr;
+    }
+
+    void EditorFileService::setSelectedEditorNode(std::shared_ptr<EditorFileNode> selected_node)
+    {
+        m_editor_node_ptr = selected_node;
+    }
+
+
 } // namespace Pilot

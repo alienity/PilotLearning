@@ -1,6 +1,9 @@
 #pragma once
 #include "runtime/core/math/moyu_math.h"
 #include "runtime/core/meta/reflection/reflection.h"
+#include "runtime/resource/res_type/components/mesh.h"
+
+#include "runtime/resource/res_type/components/material.h"
 
 namespace Pilot
 {

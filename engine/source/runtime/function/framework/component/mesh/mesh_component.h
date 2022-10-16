@@ -3,6 +3,7 @@
 #include "runtime/function/framework/component/component.h"
 
 #include "runtime/resource/res_type/components/mesh.h"
+#include "runtime/resource/res_type/components/material.h"
 
 #include "runtime/function/render/render_object.h"
 
@@ -29,9 +30,16 @@ namespace Pilot
 
         bool addNewMeshRes(std::string mesh_file_path);
 
+        MaterialRes& getMaterialRes(std::string material_path);
+        void createMaterial(std::string mesh_file_path, std::string material_path);
+        void updateMaterial(std::string mesh_file_path, std::string material_path);
+
     private:
         META(Enable)
         MeshComponentRes m_mesh_res;
+
+        std::unordered_map<std::string, MaterialRes> m_material_res_map;
+        std::unordered_map<std::string, bool> m_material_dirty_map;
 
         std::vector<GameObjectComponentDesc> m_raw_meshes;
     };

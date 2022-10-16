@@ -84,6 +84,16 @@ namespace Pilot
 
     struct GameObjectMaterialDesc
     {
+        bool m_blend {false};
+        bool m_double_sided {false};
+
+        Vector4 m_base_color_factor {1.0f, 1.0f, 1.0f, 1.0f};
+        float   m_metallic_factor {1.0f};
+        float   m_roughness_factor {1.0f};
+        float   m_normal_scale {1.0f};
+        float   m_occlusion_strength {1.0f};
+        Vector3 m_emissive_factor {0.0f, 0.0f, 0.0f};
+
         std::string m_base_color_texture_file;
         std::string m_metallic_roughness_texture_file;
         std::string m_normal_texture_file;

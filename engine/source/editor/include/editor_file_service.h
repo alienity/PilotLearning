@@ -23,18 +23,33 @@ namespace Pilot
         {}
     };
 
+    inline bool operator==(const EditorFileNode& lhs, const EditorFileNode& rhs)
+    {
+        return lhs.m_file_name == rhs.m_file_name && lhs.m_file_type == rhs.m_file_type &&
+               lhs.m_file_path == rhs.m_file_path && lhs.m_relative_path == rhs.m_relative_path &&
+               lhs.m_node_depth == rhs.m_node_depth;
+    }
+    inline bool operator!=(const EditorFileNode& lhs, const EditorFileNode& rhs) { return !(lhs == rhs); }
+
     class EditorFileService
     {
         EditorFileNodeArray m_file_node_array;
         EditorFileNode      m_root_node {"asset", "Folder", "asset", "asset", -1};
 
     private:
-        EditorFileNode* getParentNodePtr(EditorFileNode* file_node);
-        bool            checkFileArray(EditorFileNode* file_node);
+        std::shared_ptr<EditorFileNode> getParentNodePtr(std::shared_ptr<EditorFileNode> file_node);
+        bool                            checkFileArray(std::shared_ptr<EditorFileNode> file_node);
 
     public:
-        EditorFileNode* getEditorRootNode() { return m_file_node_array.empty() ? nullptr : m_file_node_array[0].get(); }
+        std::shared_ptr<EditorFileNode> getEditorRootNode();
 
         void buildEngineFileTree();
+
+        std::shared_ptr<EditorFileNode> getSelectedEditorNode();
+
+        void setSelectedEditorNode(std::shared_ptr<EditorFileNode> selected_node);
+
+    private:
+        std::shared_ptr<EditorFileNode> m_editor_node_ptr;
     };
 } // namespace Pilot

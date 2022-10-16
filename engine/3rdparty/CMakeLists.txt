@@ -12,6 +12,11 @@ if(NOT TARGET ImGuizmo)
     set_target_properties(ImGuizmo PROPERTIES FOLDER ${third_party_folder}/ImGuizmo)
 endif()
 
+if(NOT TARGET ImGuiFileDialog)
+    include(ImGuiFileDialog.cmake)
+    set_target_properties(ImGuiFileDialog PROPERTIES FOLDER ${third_party_folder}/ImGuiFileDialog-Lib_Only)
+endif()
+
 if(NOT TARGET DirectX-Headers)
     add_subdirectory(DirectX-Headers)
     set_target_properties(DirectX-Headers PROPERTIES FOLDER ${third_party_folder}/DirectX-Headers)

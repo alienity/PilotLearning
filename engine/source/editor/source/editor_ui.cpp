@@ -286,6 +286,41 @@ namespace Pilot
                 }
             }
         };
+        m_editor_ui_creator["Vector4"] = [this](const std::string& name, void* value_ptr) -> void {
+            bool isDirty = false;
+
+            Vector4* vec_ptr = static_cast<Vector4*>(value_ptr);
+            float    val[4]  = {vec_ptr->x, vec_ptr->y, vec_ptr->z, vec_ptr->w};
+            if (g_node_depth == -1)
+            {
+                std::string label = "##" + name;
+                ImGui::Text("%s", name.c_str());
+                ImGui::SameLine();
+                isDirty = ImGui::DragFloat4(label.c_str(), val);
+            }
+            else
+            {
+                if (g_editor_node_state_array[g_node_depth].second)
+                {
+                    std::string full_label = "##" + getLeafUINodeParentLabel() + name;
+                    ImGui::Text("%s", (name + ":").c_str());
+                    isDirty = ImGui::DragFloat4(full_label.c_str(), val);
+                }
+            }
+            vec_ptr->x = val[0];
+            vec_ptr->y = val[1];
+            vec_ptr->z = val[2];
+            vec_ptr->w = val[3];
+
+            if (isDirty)
+            {
+                if (!m_editor_component_stack.empty())
+                {
+                    Component* m_component_ptr = m_editor_component_stack.back();
+                    m_component_ptr->setDirtyFlag(isDirty);
+                }
+            }
+        };
         m_editor_ui_creator["Quaternion"] = [this](const std::string& name, void* value_ptr) -> void {
             bool isDirty = false;
 
@@ -511,8 +546,6 @@ namespace Pilot
             }
         };
         m_editor_ui_creator["MeshComponentRes"] = [this, &asset_folder](const std::string& name, void* value_ptr) -> void {
-            bool isDirty = false;
-
             if (g_editor_node_state_array[g_node_depth].second)
             {
 
@@ -535,9 +568,12 @@ namespace Pilot
                 for (size_t i = 0; i < mesh_res_ptr->m_sub_meshes.size(); i++)
                 {
                     Reflection::TypeMeta field_meta = Reflection::TypeMeta::newMetaFromName("SubMeshRes");
-                    auto child_instance = Reflection::ReflectionInstance(field_meta, (void*)&mesh_res_ptr->m_sub_meshes[i]);
+                    //auto child_instance = Reflection::ReflectionInstance(field_meta, (void*)&mesh_res_ptr->m_sub_meshes[i]);
                     m_editor_ui_creator["TreeNodePush"](field_meta.getTypeName(), nullptr);
-                    createLeafNodeUI(child_instance);
+
+                    //createLeafNodeUI(child_instance);
+                    m_editor_ui_creator[field_meta.getTypeName()](std::string("SubMeshRes[%d]", i), (void*)&mesh_res_ptr->m_sub_meshes[i]);
+
                     m_editor_ui_creator["TreeNodePop"](field_meta.getTypeName(), nullptr);
                 }
 
@@ -553,8 +589,80 @@ namespace Pilot
                         if (!m_editor_component_stack.empty())
                         {
                             Component* m_component_ptr = m_editor_component_stack.back();
-                            m_component_ptr->setDirtyFlag(isDirty);
+                            m_component_ptr->setDirtyFlag(true);
                         }
+                    }
+                }
+            }
+        };
+        m_editor_ui_creator["SubMeshRes"] = [this, &asset_folder](const std::string& name, void* value_ptr) -> void {
+            if (g_editor_node_state_array[g_node_depth].second)
+            {
+                SubMeshRes* sub_mesh_res_ptr = static_cast<SubMeshRes*>(value_ptr);
+                if (sub_mesh_res_ptr != nullptr)
+                {
+                    m_editor_ui_creator["std::string"](std::string("mesh_file_path"), (void*)&sub_mesh_res_ptr->m_obj_file_ref);
+                    m_editor_ui_creator["Transform"](std::string("sub_mesh_transform"), (void*)&sub_mesh_res_ptr->m_transform);
+
+                    {
+                        ImGui::TextColored(ImVec4(1.0f, 0.0f, 1.0f, 1.0f), "MaterialRes : ");
+                        //ImGui::SameLine();
+                        ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), sub_mesh_res_ptr->m_material.c_str());
+
+                        std::string m_new_material_path;
+
+                        if (ImGui::BeginDragDropTarget())
+                        {
+                            if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("MATERIAL_FILE_PATH"))
+                            {
+                                IM_ASSERT(payload->DataSize == sizeof(std::string));
+                                std::string payload_filepath = *(std::string*)payload->Data;
+                                std::string material_file_path = payload_filepath;
+
+                                m_new_material_path = material_file_path;
+                            }
+                            ImGui::EndDragDropTarget();
+                        }
+
+                        std::shared_ptr<GObject> selected_object = g_editor_global_context.m_scene_manager->getSelectedGObject().lock();
+                        MeshComponent* curSelectedMeshComponent = selected_object->tryGetComponent<MeshComponent>("MeshComponent");
+
+                        static char cname[128];
+                        if (!m_new_material_path.empty())
+                        {
+                            memset(cname, 0, 128);
+                            memcpy(cname, m_new_material_path.c_str(), m_new_material_path.size());
+                        }
+                        ImGui::InputText("New MaterialRes Path : ", cname, IM_ARRAYSIZE(cname));
+                        if (ImGui::Button("Change Or Create New Material"))
+                        {
+                            curSelectedMeshComponent->createMaterial(sub_mesh_res_ptr->m_obj_file_ref, cname);
+                        }
+
+                        bool isDefaultMat = strcmp(sub_mesh_res_ptr->m_material.c_str(),
+                                                   "asset/objects/environment/_material/gold.material.json") == 0;
+
+                        m_editor_ui_creator["TreeNodePush"]("MaterialRes", nullptr);
+                        {
+                            if (isDefaultMat)
+                            {
+                                ImGui::BeginDisabled(true);
+                            }
+
+                            curSelectedMeshComponent->updateMaterial(sub_mesh_res_ptr->m_obj_file_ref, sub_mesh_res_ptr->m_material);
+                            MaterialRes& material_res_ptr = curSelectedMeshComponent->getMaterialRes(sub_mesh_res_ptr->m_material);
+                            
+                            Reflection::TypeMeta field_meta = Reflection::TypeMeta::newMetaFromName("MaterialRes");
+                            auto material_instance = Reflection::ReflectionInstance(field_meta, (void*)&material_res_ptr);
+                            createComponentUI(material_instance);
+
+                            if (isDefaultMat)
+                            {
+                                ImGui::EndDisabled();
+                            }
+                        }
+
+                        m_editor_ui_creator["TreeNodePop"]("MaterialRes", nullptr);
                     }
                 }
             }
@@ -1020,7 +1128,7 @@ namespace Pilot
             }
             m_last_file_tree_update = current_time;
 
-            EditorFileNode* editor_root_node = m_editor_file_service.getEditorRootNode();
+            std::shared_ptr<EditorFileNode> editor_root_node = m_editor_file_service.getEditorRootNode();
             buildEditorFileAssetsUITree(editor_root_node);
             ImGui::EndTable();
         }
@@ -1253,56 +1361,152 @@ namespace Pilot
         }
     }
 
-    void EditorUI::buildEditorFileAssetsUITree(EditorFileNode* node)
+    void EditorUI::fileDragHelper(std::shared_ptr<EditorFileNode> node)
     {
+        if (strcmp(node->m_file_type.c_str(), "obj") == 0)
+        {
+            if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_None))
+            {
+                ImGui::SetDragDropPayload("MESH_FILE_PATH", &node->m_relative_path, sizeof(std::string));
+                ImGui::Text("Drag Mesh %s", node->m_file_name.c_str());
+                ImGui::EndDragDropSource();
+            }
+        }
+        if (node->m_file_name.find(".material") != std::string::npos)
+        {
+            if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_None))
+            {
+                ImGui::SetDragDropPayload("MATERIAL_FILE_PATH", &node->m_relative_path, sizeof(std::string));
+                ImGui::Text("Drag Material %s", node->m_file_name.c_str());
+                ImGui::EndDragDropSource();
+            }
+        }
+        if (node->m_file_name.find(".material") != std::string::npos)
+        {
+            if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_None))
+            {
+                ImGui::SetDragDropPayload("MATERIAL_FILE_PATH", &node->m_relative_path, sizeof(std::string));
+                ImGui::Text("Drag Material %s", node->m_file_name.c_str());
+                ImGui::EndDragDropSource();
+            }
+        }
+        if (strcmp(node->m_file_type.c_str(), "Folder") == 0)
+        {
+            std::shared_ptr<EditorFileNode> cur_sel_file_node = m_editor_file_service.getSelectedEditorNode();
+
+            bool is_cur_node = cur_sel_file_node != nullptr && cur_sel_file_node == node;
+
+            if (is_cur_node)
+            {
+                bool should_create_material = false;
+
+                if (ImGui::BeginPopupContextWindow())
+                {
+                    if (ImGui::MenuItem(" Create Material "))
+                    {
+                        should_create_material = true;
+                    }
+                    ImGui::EndPopup();
+                }
+
+                if (should_create_material)
+                {
+                    if (!ImGui::IsPopupOpen("CreateNewMaterial?"))
+                    {
+                        ImGui::OpenPopup("CreateNewMaterial?");
+                    }
+                }
+
+                ImVec2 center = ImGui::GetMainViewport()->GetCenter();
+                ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+
+                ImGuiWindowFlags flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoSavedSettings |
+                                         ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_AlwaysAutoResize;
+                if (ImGui::BeginPopupModal("CreateNewMaterial?", NULL, flags))
+                {
+                    static char cname[128];
+                    if (cname[0] == '\0')
+                    {
+                        const std::string temp_name = "temp.material.json";
+                        memcpy(cname, temp_name.c_str(), temp_name.size());
+                    }
+                    bool isPathAvail = ImGui::InputText("##Name", cname, IM_ARRAYSIZE(cname), ImGuiInputTextFlags_EnterReturnsTrue);
+                    if (isPathAvail || ImGui::Button("Save"))
+                    {
+                        // create default gold material
+                        std::shared_ptr<AssetManager> asset_manager = g_runtime_global_context.m_asset_manager;
+                        ASSERT(asset_manager);
+
+                        MaterialRes default_material_res;
+                        asset_manager->loadAsset("asset/objects/environment/_material/gold.material.json",
+                                                 default_material_res);
+                        std::string material_path = "asset/" + node->m_relative_path + "/" + std::string(cname);
+                        asset_manager->saveAsset(default_material_res, material_path);
+
+                        m_last_file_tree_update = std::chrono::time_point<std::chrono::steady_clock>();
+
+                        ImGui::CloseCurrentPopup();
+                    }
+                    ImGui::SameLine();
+                    if (ImGui::Button("Close"))
+                    {
+                        ImGui::CloseCurrentPopup();
+                    }
+                    memset(cname, 0, 128);
+                    ImGui::EndPopup();
+                }
+            }
+        }
+    }
+
+    void EditorUI::buildEditorFileAssetsUITree(std::shared_ptr<EditorFileNode> node)
+    {
+        ImGuiTreeNodeFlags node_flags =
+            ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_SpanFullWidth;
+
+        std::shared_ptr<EditorFileNode> cur_sel_file_node = m_editor_file_service.getSelectedEditorNode();
+
+        bool is_cur_node = cur_sel_file_node != nullptr && cur_sel_file_node == node;
+
+        if (is_cur_node)
+        {
+            node_flags |= ImGuiTreeNodeFlags_Selected;
+        }
+
         ImGui::TableNextRow();
         ImGui::TableNextColumn();
-        const bool is_folder = (node->m_child_nodes.size() > 0);
-        if (is_folder)
-        {
-            bool open = ImGui::TreeNodeEx(node->m_file_name.c_str(), ImGuiTreeNodeFlags_SpanFullWidth);
-            if (strcmp(node->m_file_type.c_str(), "obj") == 0)
-            {
-                if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_None))
-                {
-                    ImGui::SetDragDropPayload("MESH_FILE_PATH", &node->m_relative_path, sizeof(std::string));
-                    ImGui::Text("Drag %s", node->m_file_name.c_str());
-                    ImGui::EndDragDropSource();
-                }
-            }
-            ImGui::TableNextColumn();
-            ImGui::SetNextItemWidth(100.0f);
-            ImGui::TextUnformatted(node->m_file_type.c_str());
-            if (open)
-            {
-                for (int child_n = 0; child_n < node->m_child_nodes.size(); child_n++)
-                    buildEditorFileAssetsUITree(node->m_child_nodes[child_n].get());
-                ImGui::TreePop();
-            }
-        }
-        else
-        {
-            ImGui::TreeNodeEx(node->m_file_name.c_str(),
-                              ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen |
-                                  ImGuiTreeNodeFlags_SpanFullWidth);
-            if (strcmp(node->m_file_type.c_str(), "obj") == 0)
-            {
-                if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_None))
-                {
-                    ImGui::SetDragDropPayload("MESH_FILE_PATH", &node->m_relative_path, sizeof(std::string));
-                    ImGui::Text("Drag %s", node->m_file_name.c_str());
-                    ImGui::EndDragDropSource();
-                }
-            }
 
-            //if (ImGui::IsItemClicked() && !ImGui::IsItemToggledOpen())
-            //{
-            //    //onFileContentItemClicked(node);
-            //}
-            ImGui::TableNextColumn();
-            ImGui::SetNextItemWidth(100.0f);
-            ImGui::TextUnformatted(node->m_file_type.c_str());
+        const bool is_folder = (node->m_child_nodes.size() > 0);
+        if (!is_folder)
+            node_flags |= ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen;
+
+        bool open = ImGui::TreeNodeEx(node->m_file_name.c_str(), node_flags);
+
+        if (ImGui::IsItemClicked() && !ImGui::IsItemToggledOpen())
+        {
+            if (!is_cur_node)
+            {
+                m_editor_file_service.setSelectedEditorNode(node);
+            }
+            else
+            {
+                m_editor_file_service.setSelectedEditorNode(nullptr);
+            }
         }
+
+        fileDragHelper(node);
+        ImGui::TableNextColumn();
+        ImGui::SetNextItemWidth(100.0f);
+        ImGui::TextUnformatted(node->m_file_type.c_str());
+
+        if (is_folder && open)
+        {
+            for (int child_n = 0; child_n < node->m_child_nodes.size(); child_n++)
+                buildEditorFileAssetsUITree(node->m_child_nodes[child_n]);
+            ImGui::TreePop();
+        }
+
+
     }
 
     /*

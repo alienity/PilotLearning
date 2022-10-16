@@ -26,7 +26,7 @@ namespace Pilot
 
     private:
         //void        onFileContentItemClicked(EditorFileNode* node);
-        void        buildEditorFileAssetsUITree(EditorFileNode* node);
+        void        buildEditorFileAssetsUITree(std::shared_ptr<EditorFileNode> node);
         void        drawAxisToggleButton(const char* string_id, bool check_state, int axis_mode);
         void        createComponentUI(Reflection::ReflectionInstance& instance);
         void        createLeafNodeUI(Reflection::ReflectionInstance& instance);
@@ -42,6 +42,8 @@ namespace Pilot
         void setUIColorStyle();
 
         void showEditorWorldObjectsRecursive(std::weak_ptr<GObject> node_obj);
+
+        void fileDragHelper(std::shared_ptr<EditorFileNode> node);
 
     public:
         virtual void initialize(WindowUIInitInfo init_info) override final;
