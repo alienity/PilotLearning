@@ -4,10 +4,12 @@
 #include "runtime/core/meta/reflection/reflection_register.h"
 
 #include "runtime/function/framework/world/world_manager.h"
+#include "runtime/function/framework/material/material_manager.h"
 #include "runtime/function/global/global_context.h"
 #include "runtime/function/input/input_system.h"
 #include "runtime/function/render/render_system.h"
 #include "runtime/function/render/window_system.h"
+
 
 namespace Pilot
 {
@@ -87,6 +89,7 @@ namespace Pilot
     {
         g_runtime_global_context.m_world_manager->tick(delta_time);
         g_runtime_global_context.m_input_system->tick();
+        g_runtime_global_context.m_material_manager->tick(delta_time);
     }
 
     bool PilotEngine::rendererTick()

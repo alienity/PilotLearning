@@ -9,6 +9,7 @@
 
 #include "runtime/engine.h"
 #include "runtime/function/framework/world/world_manager.h"
+#include "runtime/function/framework/material/material_manager.h"
 #include "runtime/function/input/input_system.h"
 #include "runtime/function/render/render_system.h"
 #include "runtime/function/render/window_system.h"
@@ -31,6 +32,9 @@ namespace Pilot
         m_world_manager = std::make_shared<WorldManager>();
         m_world_manager->initialize();
 
+        m_material_manager = std::make_shared<MaterialManager>();
+        m_material_manager->initialize(m_asset_manager);
+
         m_window_system = std::make_shared<WindowSystem>();
         WindowCreateInfo window_create_info;
         m_window_system->initialize(window_create_info);
@@ -52,6 +56,9 @@ namespace Pilot
 
         m_world_manager->clear();
         m_world_manager.reset();
+
+        m_material_manager->clear();
+        m_material_manager.reset();
 
         m_input_system->clear();
         m_input_system.reset();

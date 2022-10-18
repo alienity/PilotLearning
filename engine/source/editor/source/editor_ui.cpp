@@ -21,6 +21,7 @@
 
 #include "runtime/function/framework/level/level.h"
 #include "runtime/function/framework/world/world_manager.h"
+#include "runtime/function/framework/material/material_manager.h"
 #include "runtime/function/global/global_context.h"
 #include "runtime/function/input/input_system.h"
 #include "runtime/function/render/render_camera.h"
@@ -617,7 +618,7 @@ namespace Pilot
                             {
                                 IM_ASSERT(payload->DataSize == sizeof(std::string));
                                 std::string payload_filepath = *(std::string*)payload->Data;
-                                std::string material_file_path = payload_filepath;
+                                std::string material_file_path = "asset/" + payload_filepath;
 
                                 m_new_material_path = material_file_path;
                             }
@@ -627,39 +628,32 @@ namespace Pilot
                         std::shared_ptr<GObject> selected_object = g_editor_global_context.m_scene_manager->getSelectedGObject().lock();
                         MeshComponent* curSelectedMeshComponent = selected_object->tryGetComponent<MeshComponent>("MeshComponent");
 
-                        static char cname[128];
                         if (!m_new_material_path.empty())
                         {
-                            memset(cname, 0, 128);
-                            memcpy(cname, m_new_material_path.c_str(), m_new_material_path.size());
+                            curSelectedMeshComponent->updateMaterial(sub_mesh_res_ptr->m_obj_file_ref, m_new_material_path);
+                            g_runtime_global_context.m_material_manager->setMaterialDirty(m_new_material_path, true);
                         }
-                        ImGui::InputText("New MaterialRes Path : ", cname, IM_ARRAYSIZE(cname));
-                        if (ImGui::Button("Change Or Create New Material"))
-                        {
-                            curSelectedMeshComponent->createMaterial(sub_mesh_res_ptr->m_obj_file_ref, cname);
-                        }
-
-                        bool isDefaultMat = strcmp(sub_mesh_res_ptr->m_material.c_str(),
-                                                   "asset/objects/environment/_material/gold.material.json") == 0;
+                        
+                        bool isDefaultMat = strcmp(sub_mesh_res_ptr->m_material.c_str(), "asset/objects/environment/_material/gold.material.json") == 0;
 
                         m_editor_ui_creator["TreeNodePush"]("MaterialRes", nullptr);
                         {
                             if (isDefaultMat)
-                            {
                                 ImGui::BeginDisabled(true);
-                            }
 
-                            curSelectedMeshComponent->updateMaterial(sub_mesh_res_ptr->m_obj_file_ref, sub_mesh_res_ptr->m_material);
-                            MaterialRes& material_res_ptr = curSelectedMeshComponent->getMaterialRes(sub_mesh_res_ptr->m_material);
-                            
+                            MaterialRes material_res = g_runtime_global_context.m_material_manager->loadMaterialRes(sub_mesh_res_ptr->m_material);
+                            MaterialRes old_material_res = material_res;
                             Reflection::TypeMeta field_meta = Reflection::TypeMeta::newMetaFromName("MaterialRes");
-                            auto material_instance = Reflection::ReflectionInstance(field_meta, (void*)&material_res_ptr);
+                            auto material_instance = Reflection::ReflectionInstance(field_meta, (void*)&material_res);
                             createComponentUI(material_instance);
+                            if (old_material_res != material_res)
+                            {
+                                g_runtime_global_context.m_material_manager->saveMaterialRes(sub_mesh_res_ptr->m_material, material_res);
+                                g_runtime_global_context.m_material_manager->setMaterialDirty(sub_mesh_res_ptr->m_material);
+                            }
 
                             if (isDefaultMat)
-                            {
                                 ImGui::EndDisabled();
-                            }
                         }
 
                         m_editor_ui_creator["TreeNodePop"]("MaterialRes", nullptr);
@@ -1424,14 +1418,9 @@ namespace Pilot
                                          ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_AlwaysAutoResize;
                 if (ImGui::BeginPopupModal("CreateNewMaterial?", NULL, flags))
                 {
-                    static char cname[128];
-                    if (cname[0] == '\0')
-                    {
-                        const std::string temp_name = "temp.material.json";
-                        memcpy(cname, temp_name.c_str(), temp_name.size());
-                    }
-                    bool isPathAvail = ImGui::InputText("##Name", cname, IM_ARRAYSIZE(cname), ImGuiInputTextFlags_EnterReturnsTrue);
-                    if (isPathAvail || ImGui::Button("Save"))
+                    static char cname[128] = "temp.material.json";
+                    ImGui::InputText("##Name", cname, IM_ARRAYSIZE(cname));
+                    if (ImGui::Button("Save"))
                     {
                         // create default gold material
                         std::shared_ptr<AssetManager> asset_manager = g_runtime_global_context.m_asset_manager;
@@ -1445,14 +1434,15 @@ namespace Pilot
 
                         m_last_file_tree_update = std::chrono::time_point<std::chrono::steady_clock>();
 
+                        memset(cname, 0, 128);
                         ImGui::CloseCurrentPopup();
                     }
                     ImGui::SameLine();
                     if (ImGui::Button("Close"))
                     {
+                        memset(cname, 0, 128);
                         ImGui::CloseCurrentPopup();
                     }
-                    memset(cname, 0, 128);
                     ImGui::EndPopup();
                 }
             }
