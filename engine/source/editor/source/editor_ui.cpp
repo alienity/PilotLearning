@@ -634,7 +634,7 @@ namespace Pilot
                             g_runtime_global_context.m_material_manager->setMaterialDirty(m_new_material_path, true);
                         }
                         
-                        bool isDefaultMat = strcmp(sub_mesh_res_ptr->m_material.c_str(), "asset/objects/environment/_material/gold.material.json") == 0;
+                        bool isDefaultMat = sub_mesh_res_ptr->m_material == _default_gold_material_path;
 
                         m_editor_ui_creator["TreeNodePush"]("MaterialRes", nullptr);
                         {
@@ -643,9 +643,12 @@ namespace Pilot
 
                             MaterialRes material_res = g_runtime_global_context.m_material_manager->loadMaterialRes(sub_mesh_res_ptr->m_material);
                             MaterialRes old_material_res = material_res;
+                            m_editor_ui_creator["MaterialRes"]("MaterialRes", &material_res);
+                            /*
                             Reflection::TypeMeta field_meta = Reflection::TypeMeta::newMetaFromName("MaterialRes");
                             auto material_instance = Reflection::ReflectionInstance(field_meta, (void*)&material_res);
                             createComponentUI(material_instance);
+                            */
                             if (old_material_res != material_res)
                             {
                                 g_runtime_global_context.m_material_manager->saveMaterialRes(sub_mesh_res_ptr->m_material, material_res);
@@ -658,6 +661,53 @@ namespace Pilot
 
                         m_editor_ui_creator["TreeNodePop"]("MaterialRes", nullptr);
                     }
+                }
+            }
+        };
+        m_editor_ui_creator["MaterialRes"] = [this, &asset_folder](const std::string& name, void* value_ptr) -> void {
+            if (g_editor_node_state_array[g_node_depth].second)
+            {
+                MaterialRes* mat_res_ptr = static_cast<MaterialRes*>(value_ptr);
+
+                ImGui::Checkbox("IsBlend", &mat_res_ptr->m_blend);
+                ImGui::Checkbox("IsDoubleSide", &mat_res_ptr->m_double_sided);
+                ImGui::DragFloat4("BaseColorFactor", mat_res_ptr->m_base_color_factor.ptr(), 0.02f, 0.0f, 1.0f);
+                ImGui::DragFloat("MetallicFactor", &mat_res_ptr->m_metallic_factor, 0.02f, 0.0f, 1.0f);
+                ImGui::DragFloat("RoughnessFactor", &mat_res_ptr->m_roughness_factor, 0.02f, 0.0f, 1.0f);
+                ImGui::DragFloat("NormalScale", &mat_res_ptr->m_normal_scale, 0.02f, 0.0f, 1.0f);
+                ImGui::DragFloat("OcclusionStrength", &mat_res_ptr->m_occlusion_strength, 0.02f, 0.0f, 1.0f);
+                ImGui::DragFloat3("OcclusionStrength", mat_res_ptr->m_emissive_factor.ptr(), 0.02f, 0.0f, 1.0f);
+
+                m_editor_ui_creator["TextureFilePath"]("BaseColorTextureFile", &mat_res_ptr->m_base_colour_texture_file);
+                m_editor_ui_creator["TextureFilePath"]("MetallicRoughnessTextureFile", &mat_res_ptr->m_metallic_roughness_texture_file);
+                m_editor_ui_creator["TextureFilePath"]("NormalTextureFile", &mat_res_ptr->m_normal_texture_file);
+                m_editor_ui_creator["TextureFilePath"]("OcclusionTextureFile", &mat_res_ptr->m_occlusion_texture_file);
+                m_editor_ui_creator["TextureFilePath"]("EmissiveTextureFile", &mat_res_ptr->m_emissive_texture_file);
+            }
+        };
+
+        m_editor_ui_creator["TextureFilePath"] = [this, &asset_folder](const std::string& name, void* value_ptr) -> void {
+            if (g_editor_node_state_array[g_node_depth].second)
+            {
+                std::string* texture_path = static_cast<std::string*>(value_ptr);
+
+                //ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), name.c_str());
+                //ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), texture_path->c_str());
+                static char str1[128];
+                memset(str1, 0, 128);
+                memcpy(str1, texture_path->c_str(), texture_path->size());
+                ImGui::InputText(name.c_str(), str1, IM_ARRAYSIZE(str1), ImGuiInputTextFlags_ReadOnly);
+                if (ImGui::BeginDragDropTarget())
+                {
+                    if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("TEXTURE_FILE_PATH"))
+                    {
+                        IM_ASSERT(payload->DataSize == sizeof(std::string));
+                        std::string payload_filepath  = *(std::string*)payload->Data;
+                        std::string texture_file_path = "asset/" + payload_filepath;
+
+                        *texture_path = texture_file_path;
+                    }
+                    ImGui::EndDragDropTarget();
                 }
             }
         };
@@ -1363,6 +1413,15 @@ namespace Pilot
             {
                 ImGui::SetDragDropPayload("MESH_FILE_PATH", &node->m_relative_path, sizeof(std::string));
                 ImGui::Text("Drag Mesh %s", node->m_file_name.c_str());
+                ImGui::EndDragDropSource();
+            }
+        }
+        if (node->m_file_type == "jpg" || node->m_file_type == "png" || node->m_file_type == "tga")
+        {
+            if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_None))
+            {
+                ImGui::SetDragDropPayload("TEXTURE_FILE_PATH", &node->m_relative_path, sizeof(std::string));
+                ImGui::Text("Drag Texture %s", node->m_file_name.c_str());
                 ImGui::EndDragDropSource();
             }
         }
