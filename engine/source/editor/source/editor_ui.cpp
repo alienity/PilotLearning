@@ -1485,9 +1485,11 @@ namespace Pilot
                         std::shared_ptr<AssetManager> asset_manager = g_runtime_global_context.m_asset_manager;
                         ASSERT(asset_manager);
 
-                        MaterialRes default_material_res;
-                        asset_manager->loadAsset("asset/objects/environment/_material/gold.material.json",
-                                                 default_material_res);
+                        MaterialRes default_material_res = {};
+                        default_material_res.m_base_colour_texture_file = _default_color_texture_path;
+                        default_material_res.m_metallic_roughness_texture_file = _default_metallic_roughness_texture_path;
+                        default_material_res.m_normal_texture_file = _default_normal_texture_path;
+
                         std::string material_path = "asset/" + node->m_relative_path + "/" + std::string(cname);
                         asset_manager->saveAsset(default_material_res, material_path);
 

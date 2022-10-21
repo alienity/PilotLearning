@@ -9,6 +9,7 @@
 #include <cstdint>
 #include <map>
 #include <vector>
+#include <tuple>
 
 namespace Pilot
 {
@@ -16,14 +17,14 @@ namespace Pilot
 
     struct IBLResource
     {
-        RHI::D3D12Texture            _brdfLUT_texture_image;
-        RHI::D3D12ShaderResourceView _brdfLUT_texture_image_view;
+        std::shared_ptr<RHI::D3D12Texture>            _brdfLUT_texture_image;
+        std::shared_ptr<RHI::D3D12ShaderResourceView> _brdfLUT_texture_image_view;
 
-        RHI::D3D12Texture            _irradiance_texture_image;
-        RHI::D3D12ShaderResourceView _irradiance_texture_image_view;
+        std::shared_ptr<RHI::D3D12Texture>            _irradiance_texture_image;
+        std::shared_ptr<RHI::D3D12ShaderResourceView> _irradiance_texture_image_view;
 
-        RHI::D3D12Texture            _specular_texture_image;
-        RHI::D3D12ShaderResourceView _specular_texture_image_view;
+        std::shared_ptr<RHI::D3D12Texture>            _specular_texture_image;
+        std::shared_ptr<RHI::D3D12ShaderResourceView> _specular_texture_image_view;
     };
 
     struct IBLResourceData
@@ -44,8 +45,8 @@ namespace Pilot
 
     struct ColorGradingResource
     {
-        RHI::D3D12Texture            _color_grading_LUT_texture_image;
-        RHI::D3D12ShaderResourceView _color_grading_LUT_texture_image_view;
+        std::shared_ptr<RHI::D3D12Texture>            _color_grading_LUT_texture_image;
+        std::shared_ptr<RHI::D3D12ShaderResourceView> _color_grading_LUT_texture_image_view;
     };
 
     struct ColorGradingResourceData
@@ -64,10 +65,10 @@ namespace Pilot
 
     struct DefaultResource
     {
-        RHI::D3D12Texture            _white_texture2d_image;
-        RHI::D3D12ShaderResourceView _white_texture2d_image_view;
-        RHI::D3D12Texture            _black_texture2d_image;
-        RHI::D3D12ShaderResourceView _black_texture2d_image_view;
+        std::shared_ptr<RHI::D3D12Texture>            _white_texture2d_image;
+        std::shared_ptr<RHI::D3D12ShaderResourceView> _white_texture2d_image_view;
+        std::shared_ptr<RHI::D3D12Texture>            _black_texture2d_image;
+        std::shared_ptr<RHI::D3D12ShaderResourceView> _black_texture2d_image_view;
     };
 
     class RenderResource : public RenderResourceBase
@@ -94,6 +95,8 @@ namespace Pilot
 
         D3D12PBRMaterial& getEntityMaterial(RenderEntity entity);
 
+        std::size_t hashTexture2D(uint32_t width, uint32_t height, uint32_t mip_levels, void* pixels_ptr, DXGI_FORMAT format);
+
         // global rendering resource, include IBL data, global storage buffer
         GlobalRenderResource m_global_render_resource;
 
@@ -107,53 +110,21 @@ namespace Pilot
         HLSL::MeshDirectionalLightShadowPerframeStorageBufferObject m_mesh_directional_light_shadow_perframe_storage_buffer_object;
         HLSL::MeshInstance      m_all_mesh_buffer_object;
 
-
-
         // cached mesh and material
         std::map<size_t, D3D12Mesh>        m_d3d12_meshes;
         std::map<size_t, D3D12PBRMaterial> m_d3d12_pbr_materials;
 
     protected:
-        void createDynamicBuffer(void*             buffer_data,
-                                 uint32_t          buffer_size,
-                                 uint32_t          buffer_stride,
-                                 RHI::D3D12Buffer& dynamicBuffer);
-        void createDynamicBuffer(std::shared_ptr<BufferData>& buffer_data,
-                                 RHI::D3D12Buffer&            dynamicBuffer);
+        std::shared_ptr<RHI::D3D12Buffer> createDynamicBuffer(void* buffer_data, uint32_t buffer_size, uint32_t buffer_stride);
+        std::shared_ptr<RHI::D3D12Buffer> createDynamicBuffer(std::shared_ptr<BufferData>& buffer_data);
         
-        void createStaticBuffer(void*                         buffer_data,
-                                uint32_t                      buffer_size,
-                                uint32_t                      buffer_stride,
-                                RHI::D3D12Buffer&             staticBuffer,
-                                bool                          raw,
-                                RHI::D3D12ShaderResourceView& staticBuffer_view,
-                                bool                          batch = false);
-        void createStaticBuffer(std::shared_ptr<BufferData>&  buffer_data,
-                                RHI::D3D12Buffer&             staticBuffer,
-                                bool                          raw,
-                                RHI::D3D12ShaderResourceView& staticBuffer_view,
-                                bool                          batch = false);
+        BufferViewTuple createStaticBuffer(void* buffer_data, uint32_t buffer_size, uint32_t buffer_stride, bool raw, bool batch = false);
+        BufferViewTuple createStaticBuffer(std::shared_ptr<BufferData>& buffer_data, bool raw, bool batch = false);
 
-        void createTex2D(uint32_t                      width,
-                         uint32_t                      height,
-                         void*                         pixels,
-                         DXGI_FORMAT                   format,
-                         bool                          is_srgb,
-                         RHI::D3D12Texture&            tex2d,
-                         RHI::D3D12ShaderResourceView& tex2d_view,
-                         bool                          genMips = false,
-                         bool                          batch = false);
-        void createTex2D(std::shared_ptr<TextureData>& tex2d_data,
-                         RHI::D3D12Texture&            tex2d,
-                         RHI::D3D12ShaderResourceView& tex2d_view,
-                         bool                          genMips = false,
-                         bool                          batch = false);
+        TextureViewTuple createTex2D(uint32_t width, uint32_t height, void* pixels, DXGI_FORMAT format, bool is_srgb, bool genMips = false, bool batch = false);
+        TextureViewTuple createTex2D(std::shared_ptr<TextureData>& tex2d_data, bool genMips = false, bool batch = false);
 
-        void createCubeMap(std::array<std::shared_ptr<TextureData>, 6>& cube_maps,
-                           RHI::D3D12Texture&                           cube_tex,
-                           RHI::D3D12ShaderResourceView&                cube_tex_view,
-                           bool                                         genMips = false,
-                           bool                                         batch = false);
+        TextureViewTuple createCubeMap(std::array<std::shared_ptr<TextureData>, 6>& cube_maps, bool genMips = false, bool batch = false);
 
     private:
 

@@ -36,13 +36,12 @@ namespace Pilot
             D3D12PBRMaterial& material_asset = render_resource->getEntityMaterial(entity);
             temp_node.ref_material           = &material_asset;
 
-            MeshBoundingBox mesh_bounding_box = {};
-            mesh_bounding_box.center =
-                GLMUtil::fromVec3((mesh_asset_bounding_box.max_bound + mesh_asset_bounding_box.min_bound) * 0.5f);
-            mesh_bounding_box.extent =
-                GLMUtil::fromVec3((mesh_asset_bounding_box.max_bound - mesh_asset_bounding_box.min_bound) * 0.5f);
+            Vector3 box_center = (mesh_asset_bounding_box.max_bound + mesh_asset_bounding_box.min_bound) * 0.5f;
+            Vector3 box_extent = (mesh_asset_bounding_box.max_bound - mesh_asset_bounding_box.min_bound) * 0.5f;
 
-            temp_node.bounding_box     = mesh_bounding_box;
+            MeshBoundingBox mesh_bounding_box = {GLMUtil::fromVec3(box_center), GLMUtil::fromVec3(box_extent)};
+
+            temp_node.bounding_box = mesh_bounding_box;
         }
         render_resource->m_mesh_perframe_storage_buffer_object.total_mesh_num = m_render_entities.size();
     }

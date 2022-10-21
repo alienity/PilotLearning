@@ -60,24 +60,26 @@ namespace Pilot
         startUploadBatch();
         {
             // create irradiance cubemap
-            createCubeMap(irradiance_maps,
-                          m_global_render_resource._ibl_resource._irradiance_texture_image,
-                          m_global_render_resource._ibl_resource._irradiance_texture_image_view);
+            auto irridiance_view_pair = createCubeMap(irradiance_maps);
+            m_global_render_resource._ibl_resource._irradiance_texture_image      = std::get<0>(irridiance_view_pair);
+            m_global_render_resource._ibl_resource._irradiance_texture_image_view = std::get<1>(irridiance_view_pair);
 
             // create specular cubemap
-            createCubeMap(specular_maps,
-                          m_global_render_resource._ibl_resource._specular_texture_image,
-                          m_global_render_resource._ibl_resource._specular_texture_image_view);
+            auto specular_view_pair = createCubeMap(specular_maps);
+            m_global_render_resource._ibl_resource._specular_texture_image      = std::get<0>(specular_view_pair);
+            m_global_render_resource._ibl_resource._specular_texture_image_view = std::get<1>(specular_view_pair);
 
             // create brdf lut texture
-            createTex2D(brdf_map,
-                        m_global_render_resource._ibl_resource._brdfLUT_texture_image,
-                        m_global_render_resource._ibl_resource._brdfLUT_texture_image_view);
+            auto lut_view_pair = createTex2D(brdf_map);
+            m_global_render_resource._ibl_resource._brdfLUT_texture_image      = std::get<0>(lut_view_pair);
+            m_global_render_resource._ibl_resource._brdfLUT_texture_image_view = std::get<1>(lut_view_pair);
 
             // create color grading texture
-            createTex2D(color_grading_map,
-                        m_global_render_resource._color_grading_resource._color_grading_LUT_texture_image,
-                        m_global_render_resource._color_grading_resource._color_grading_LUT_texture_image_view);
+            auto color_grading_view_pair = createTex2D(color_grading_map);
+            m_global_render_resource._color_grading_resource._color_grading_LUT_texture_image =
+                std::get<0>(color_grading_view_pair);
+            m_global_render_resource._color_grading_resource._color_grading_LUT_texture_image_view =
+                std::get<1>(color_grading_view_pair);
         }
         {
             auto genDefaultData = ([](bool isWhite) {
@@ -85,26 +87,27 @@ namespace Pilot
 
                 char val = isWhite ? 255 : 0;
 
-                default_map->m_width              = 1;
-                default_map->m_height             = 1;
-                default_map->m_pixels             = new char[4] {val, val, val, val};
-                default_map->m_format             = DXGI_FORMAT::DXGI_FORMAT_R8G8B8A8_UNORM;
-                default_map->m_depth              = 1;
-                default_map->m_array_layers       = 1;
-                default_map->m_mip_levels         = 1;
+                default_map->m_width        = 1;
+                default_map->m_height       = 1;
+                default_map->m_pixels       = new char[4] {val, val, val, val};
+                default_map->m_need_release = true;
+                default_map->m_format       = DXGI_FORMAT::DXGI_FORMAT_R8G8B8A8_UNORM;
+                default_map->m_depth        = 1;
+                default_map->m_array_layers = 1;
+                default_map->m_mip_levels   = 1;
 
                 return default_map;
                 });
 
             std::shared_ptr<TextureData> default_white_data = genDefaultData(true);
-            createTex2D(default_white_data,
-                        m_default_resource._white_texture2d_image,
-                        m_default_resource._white_texture2d_image_view);
+            auto white_view_pair = createTex2D(default_white_data);
+            m_default_resource._white_texture2d_image       = std::get<0>(white_view_pair);
+            m_default_resource._white_texture2d_image_view  = std::get<1>(white_view_pair);
 
             std::shared_ptr<TextureData> default_black_data = genDefaultData(false);
-            createTex2D(default_black_data,
-                        m_default_resource._black_texture2d_image,
-                        m_default_resource._black_texture2d_image_view);
+            auto black_view_pair = createTex2D(default_black_data);
+            m_default_resource._black_texture2d_image       = std::get<0>(black_view_pair);
+            m_default_resource._black_texture2d_image_view  = std::get<1>(black_view_pair);
 
         }
         endUploadBatch();
@@ -277,181 +280,163 @@ namespace Pilot
         else
         {
             D3D12PBRMaterial temp;
-            auto              res = m_d3d12_pbr_materials.insert(std::make_pair(assetid, std::move(temp)));
+            auto res = m_d3d12_pbr_materials.insert(std::make_pair(assetid, std::move(temp)));
             assert(res.second);
 
             float empty_image[] = {0.5f, 0.5f, 0.5f, 0.5f};
 
-            void*              base_color_image_pixels = empty_image;
-            uint32_t           base_color_image_width  = 1;
-            uint32_t           base_color_image_height = 1;
-            DXGI_FORMAT        base_color_image_format = DXGI_FORMAT::DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
-            if (material_data.m_base_color_texture)
+            void* base_color_image_pixels = empty_image;
+            
+            std::shared_ptr<TextureData> base_color_texture_data = material_data.m_base_color_texture;
+            if (base_color_texture_data == nullptr)
             {
-                base_color_image_pixels = material_data.m_base_color_texture->m_pixels;
-                base_color_image_width  = static_cast<uint32_t>(material_data.m_base_color_texture->m_width);
-                base_color_image_height = static_cast<uint32_t>(material_data.m_base_color_texture->m_height);
-                base_color_image_format = material_data.m_base_color_texture->m_format;
+                base_color_texture_data                 = std::make_shared<TextureData>();
+                base_color_texture_data->m_width        = 1;
+                base_color_texture_data->m_height       = 1;
+                base_color_texture_data->m_depth        = 0;
+                base_color_texture_data->m_mip_levels   = 0;
+                base_color_texture_data->m_array_layers = 0;
+                base_color_texture_data->m_is_srgb      = true;
+                base_color_texture_data->m_format       = DXGI_FORMAT::DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
+                base_color_texture_data->m_pixels       = empty_image;
             }
 
-            void*              metallic_roughness_image_pixels = empty_image;
-            uint32_t           metallic_roughness_width        = 1;
-            uint32_t           metallic_roughness_height       = 1;
-            DXGI_FORMAT        metallic_roughness_format       = DXGI_FORMAT::DXGI_FORMAT_R8G8B8A8_UNORM;
-            if (material_data.m_metallic_roughness_texture)
+            std::shared_ptr<TextureData> metallic_roughness_texture_data = material_data.m_metallic_roughness_texture;
+            if (metallic_roughness_texture_data == nullptr)
             {
-                metallic_roughness_image_pixels = material_data.m_metallic_roughness_texture->m_pixels;
-                metallic_roughness_width  = static_cast<uint32_t>(material_data.m_metallic_roughness_texture->m_width);
-                metallic_roughness_height = static_cast<uint32_t>(material_data.m_metallic_roughness_texture->m_height);
-                metallic_roughness_format = material_data.m_metallic_roughness_texture->m_format;
+                metallic_roughness_texture_data                 = std::make_shared<TextureData>();
+                metallic_roughness_texture_data->m_width        = 1;
+                metallic_roughness_texture_data->m_height       = 1;
+                metallic_roughness_texture_data->m_depth        = 0;
+                metallic_roughness_texture_data->m_mip_levels   = 0;
+                metallic_roughness_texture_data->m_array_layers = 0;
+                metallic_roughness_texture_data->m_is_srgb      = false;
+                metallic_roughness_texture_data->m_format       = DXGI_FORMAT::DXGI_FORMAT_R8G8B8A8_UNORM;
+                metallic_roughness_texture_data->m_pixels       = empty_image;
             }
 
-            void*              normal_roughness_image_pixels = empty_image;
-            uint32_t           normal_roughness_width        = 1;
-            uint32_t           normal_roughness_height       = 1;
-            DXGI_FORMAT        normal_roughness_format       = DXGI_FORMAT::DXGI_FORMAT_R8G8B8A8_UNORM;
-            if (material_data.m_normal_texture)
+            std::shared_ptr<TextureData> normal_texture_data = material_data.m_normal_texture;
+            if (normal_texture_data == nullptr)
             {
-                normal_roughness_image_pixels = material_data.m_normal_texture->m_pixels;
-                normal_roughness_width        = static_cast<uint32_t>(material_data.m_normal_texture->m_width);
-                normal_roughness_height       = static_cast<uint32_t>(material_data.m_normal_texture->m_height);
-                normal_roughness_format       = material_data.m_normal_texture->m_format;
+                normal_texture_data                 = std::make_shared<TextureData>();
+                normal_texture_data->m_width        = 1;
+                normal_texture_data->m_height       = 1;
+                normal_texture_data->m_depth        = 0;
+                normal_texture_data->m_mip_levels   = 0;
+                normal_texture_data->m_array_layers = 0;
+                normal_texture_data->m_is_srgb      = false;
+                normal_texture_data->m_format       = DXGI_FORMAT::DXGI_FORMAT_R8G8B8A8_UNORM;
+                normal_texture_data->m_pixels       = empty_image;
             }
 
-            void*              occlusion_image_pixels = empty_image;
-            uint32_t           occlusion_image_width  = 1;
-            uint32_t           occlusion_image_height = 1;
-            DXGI_FORMAT        occlusion_image_format = DXGI_FORMAT::DXGI_FORMAT_R8G8B8A8_UNORM;
-            if (material_data.m_occlusion_texture)
+            std::shared_ptr<TextureData> occlusion_texture_data = material_data.m_occlusion_texture;
+            if (occlusion_texture_data == nullptr)
             {
-                occlusion_image_pixels = material_data.m_occlusion_texture->m_pixels;
-                occlusion_image_width  = static_cast<uint32_t>(material_data.m_occlusion_texture->m_width);
-                occlusion_image_height = static_cast<uint32_t>(material_data.m_occlusion_texture->m_height);
-                occlusion_image_format = material_data.m_occlusion_texture->m_format;
+                occlusion_texture_data                 = std::make_shared<TextureData>();
+                occlusion_texture_data->m_width        = 1;
+                occlusion_texture_data->m_height       = 1;
+                occlusion_texture_data->m_depth        = 0;
+                occlusion_texture_data->m_mip_levels   = 0;
+                occlusion_texture_data->m_array_layers = 0;
+                occlusion_texture_data->m_is_srgb      = false;
+                occlusion_texture_data->m_format       = DXGI_FORMAT::DXGI_FORMAT_R8G8B8A8_UNORM;
+                occlusion_texture_data->m_pixels       = empty_image;
             }
 
-            void*              emissive_image_pixels = empty_image;
-            uint32_t           emissive_image_width  = 1;
-            uint32_t           emissive_image_height = 1;
-            DXGI_FORMAT        emissive_image_format = DXGI_FORMAT::DXGI_FORMAT_R8G8B8A8_UNORM;
-            if (material_data.m_emissive_texture)
+            std::shared_ptr<TextureData> emission_texture_data = material_data.m_emissive_texture;
+            if (emission_texture_data == nullptr)
             {
-                emissive_image_pixels = material_data.m_emissive_texture->m_pixels;
-                emissive_image_width  = static_cast<uint32_t>(material_data.m_emissive_texture->m_width);
-                emissive_image_height = static_cast<uint32_t>(material_data.m_emissive_texture->m_height);
-                emissive_image_format = material_data.m_emissive_texture->m_format;
+                emission_texture_data                  = std::make_shared<TextureData>();
+                emission_texture_data->m_width         = 1;
+                emission_texture_data->m_height        = 1;
+                emission_texture_data->m_depth         = 0;
+                emission_texture_data->m_mip_levels    = 0;
+                emission_texture_data->m_array_layers  = 0;
+                emission_texture_data->m_is_srgb       = false;
+                emission_texture_data->m_format        = DXGI_FORMAT::DXGI_FORMAT_R8G8B8A8_UNORM;
+                emission_texture_data->m_pixels        = empty_image;
             }
 
             D3D12PBRMaterial& now_material = res.first->second;
+            {
+                now_material.m_blend        = material_data.m_blend;
+                now_material.m_double_sided = material_data.m_double_sided;
 
-            HLSL::MeshPerMaterialUniformBufferObject material_uniform_buffer_info;
-            material_uniform_buffer_info.is_blend          = entity.m_blend;
-            material_uniform_buffer_info.is_double_sided   = entity.m_double_sided;
-            material_uniform_buffer_info.baseColorFactor   = GLMUtil::fromVec4(entity.m_base_color_factor);
-            material_uniform_buffer_info.metallicFactor    = entity.m_metallic_factor;
-            material_uniform_buffer_info.roughnessFactor   = entity.m_roughness_factor;
-            material_uniform_buffer_info.normalScale       = entity.m_normal_scale;
-            material_uniform_buffer_info.occlusionStrength = entity.m_occlusion_strength;
-            material_uniform_buffer_info.emissiveFactor    = GLMUtil::fromVec3(entity.m_emissive_factor);
-
-            TextureDataToUpdate update_texture_data;
-            update_texture_data.base_color_image_pixels         = base_color_image_pixels;
-            update_texture_data.base_color_image_width          = base_color_image_width;
-            update_texture_data.base_color_image_height         = base_color_image_height;
-            update_texture_data.base_color_image_format         = base_color_image_format;
-            update_texture_data.metallic_roughness_image_pixels = metallic_roughness_image_pixels;
-            update_texture_data.metallic_roughness_image_width  = metallic_roughness_width;
-            update_texture_data.metallic_roughness_image_height = metallic_roughness_height;
-            update_texture_data.metallic_roughness_image_format = metallic_roughness_format;
-            update_texture_data.normal_roughness_image_pixels   = normal_roughness_image_pixels;
-            update_texture_data.normal_roughness_image_width    = normal_roughness_width;
-            update_texture_data.normal_roughness_image_height   = normal_roughness_height;
-            update_texture_data.normal_roughness_image_format   = normal_roughness_format;
-            update_texture_data.occlusion_image_pixels          = occlusion_image_pixels;
-            update_texture_data.occlusion_image_width           = occlusion_image_width;
-            update_texture_data.occlusion_image_height          = occlusion_image_height;
-            update_texture_data.occlusion_image_format          = occlusion_image_format;
-            update_texture_data.emissive_image_pixels           = emissive_image_pixels;
-            update_texture_data.emissive_image_width            = emissive_image_width;
-            update_texture_data.emissive_image_height           = emissive_image_height;
-            update_texture_data.emissive_image_format           = emissive_image_format;
-            update_texture_data.now_material                    = &now_material;
-
+                now_material.m_base_color_factor  = material_data.m_base_color_factor;
+                now_material.m_metallic_factor    = material_data.m_metallic_factor;
+                now_material.m_roughness_factor   = material_data.m_roughness_factor;
+                now_material.m_normal_scale       = material_data.m_normal_scale;
+                now_material.m_occlusion_strength = material_data.m_occlusion_strength;
+                now_material.m_emissive_factor    = material_data.m_emissive_factor;
+            }
             {
                 startUploadBatch();
 
+                HLSL::MeshPerMaterialUniformBufferObject material_uniform_buffer_info;
+                material_uniform_buffer_info.is_blend          = material_data.m_blend;
+                material_uniform_buffer_info.is_double_sided   = material_data.m_double_sided;
+                material_uniform_buffer_info.baseColorFactor   = GLMUtil::fromVec4(material_data.m_base_color_factor);
+                material_uniform_buffer_info.metallicFactor    = material_data.m_metallic_factor;
+                material_uniform_buffer_info.roughnessFactor   = material_data.m_roughness_factor;
+                material_uniform_buffer_info.normalScale       = material_data.m_normal_scale;
+                material_uniform_buffer_info.occlusionStrength = material_data.m_occlusion_strength;
+                material_uniform_buffer_info.emissiveFactor    = GLMUtil::fromVec3(material_data.m_emissive_factor);
+
                 uint32_t buffer_size = sizeof(HLSL::MeshPerMaterialUniformBufferObject);
-                createStaticBuffer(&material_uniform_buffer_info,
-                                   buffer_size,
-                                   buffer_size,
-                                   now_material.material_uniform_buffer,
-                                   false,
-                                   now_material.material_uniform_buffer_view,
-                                   false);
+                auto uniform_buffer_pair =
+                    createStaticBuffer(&material_uniform_buffer_info, buffer_size, buffer_size, false, false);
+                now_material.material_uniform_buffer      = std::get<0>(uniform_buffer_pair);
+                now_material.material_uniform_buffer_view = std::get<1>(uniform_buffer_pair);
 
-                createTex2D(update_texture_data.base_color_image_width,
-                            update_texture_data.base_color_image_height,
-                            update_texture_data.base_color_image_pixels,
-                            update_texture_data.base_color_image_format,
-                            true,
-                            now_material.base_color_texture_image,
-                            now_material.base_color_image_view,
-                            true,
-                            false);
+                auto base_color_pair = createTex2D(base_color_texture_data->m_width,
+                                                   base_color_texture_data->m_height,
+                                                   base_color_texture_data->m_pixels,
+                                                   base_color_texture_data->m_format,
+                                                   true,
+                                                   true,
+                                                   false);
+                now_material.base_color_texture_image = std::get<0>(base_color_pair);
+                now_material.base_color_image_view    = std::get<1>(base_color_pair);
 
-                createTex2D(update_texture_data.metallic_roughness_image_width,
-                            update_texture_data.metallic_roughness_image_height,
-                            update_texture_data.metallic_roughness_image_pixels,
-                            update_texture_data.metallic_roughness_image_format,
-                            false,
-                            now_material.metallic_roughness_texture_image,
-                            now_material.metallic_roughness_image_view,
-                            true,
-                            false);
+                auto metal_rough_pair = createTex2D(metallic_roughness_texture_data->m_width,
+                                                    metallic_roughness_texture_data->m_height,
+                                                    metallic_roughness_texture_data->m_pixels,
+                                                    metallic_roughness_texture_data->m_format,
+                                                    false,
+                                                    true,
+                                                    false);
+                now_material.metallic_roughness_texture_image = std::get<0>(metal_rough_pair);
+                now_material.metallic_roughness_image_view    = std::get<1>(metal_rough_pair);
 
-                createTex2D(update_texture_data.normal_roughness_image_width,
-                            update_texture_data.normal_roughness_image_height,
-                            update_texture_data.normal_roughness_image_pixels,
-                            update_texture_data.normal_roughness_image_format,
-                            false,
-                            now_material.normal_texture_image,
-                            now_material.normal_image_view,
-                            true,
-                            false);
+                auto normal_rough_pair = createTex2D(normal_texture_data->m_width,
+                                                     normal_texture_data->m_height,
+                                                     normal_texture_data->m_pixels,
+                                                     normal_texture_data->m_format,
+                                                     false,
+                                                     true,
+                                                     false);
+                now_material.normal_texture_image = std::get<0>(normal_rough_pair);
+                now_material.normal_image_view    = std::get<1>(normal_rough_pair);
 
-                if (material_data.m_occlusion_texture)
-                {
-                    createTex2D(update_texture_data.occlusion_image_width,
-                                update_texture_data.occlusion_image_height,
-                                update_texture_data.occlusion_image_pixels,
-                                update_texture_data.occlusion_image_format,
-                                false,
-                                now_material.occlusion_texture_image,
-                                now_material.occlusion_image_view,
-                                true,
-                                false);
-                }
-                else
-                {
-                    // TODO: 设置一个空白的纹理
-                }
+                auto occlusion_view_pair = createTex2D(occlusion_texture_data->m_width,
+                                                       occlusion_texture_data->m_height,
+                                                       occlusion_texture_data->m_pixels,
+                                                       occlusion_texture_data->m_format,
+                                                       false,
+                                                       true,
+                                                       false);
+                now_material.occlusion_texture_image = std::get<0>(occlusion_view_pair);
+                now_material.occlusion_image_view    = std::get<1>(occlusion_view_pair);
 
-                if (material_data.m_emissive_texture)
-                {
-                    createTex2D(update_texture_data.emissive_image_width,
-                                update_texture_data.emissive_image_height,
-                                update_texture_data.emissive_image_pixels,
-                                update_texture_data.emissive_image_format,
-                                false,
-                                now_material.emissive_texture_image,
-                                now_material.emissive_image_view,
-                                true,
-                                false);
-                }
-                else
-                {
-                    // TODO: 设置一个空白的纹理
-                }
+                auto emissive_view_pair = createTex2D(emission_texture_data->m_width,
+                                                      emission_texture_data->m_height,
+                                                      emission_texture_data->m_pixels,
+                                                      emission_texture_data->m_format,
+                                                      false,
+                                                      true,
+                                                      false);
+                now_material.emissive_texture_image = std::get<0>(emissive_view_pair);
+                now_material.emissive_image_view    = std::get<1>(emissive_view_pair);
 
                 endUploadBatch();
             }
@@ -858,47 +843,54 @@ namespace Pilot
         }
     }
 
-    //-------------------------------------------------------------------------------------------
-    void RenderResource::createDynamicBuffer(void*             buffer_data,
-                                             uint32_t          buffer_size,
-                                             uint32_t          buffer_stride,
-                                             RHI::D3D12Buffer& dynamicBuffer)
+    std::size_t RenderResource::hashTexture2D(uint32_t    width,
+                                              uint32_t    height,
+                                              uint32_t    mip_levels,
+                                              void*       pixels_ptr,
+                                              DXGI_FORMAT format)
     {
-        assert(buffer_size % buffer_stride == 0);
-        dynamicBuffer = RHI::D3D12Buffer(m_Device->GetLinkedDevice(),
-                                         buffer_size,
-                                         buffer_stride,
-                                         D3D12_HEAP_TYPE::D3D12_HEAP_TYPE_UPLOAD,
-                                         D3D12_RESOURCE_FLAGS::D3D12_RESOURCE_FLAG_NONE);
-        void* bufferPtr = dynamicBuffer.GetCpuVirtualAddress<void>();
-        memcpy(bufferPtr, buffer_data, buffer_size);
+        std::size_t h0 = std::hash<uint32_t> {}(width);
+        h0 = (h0 ^ (std::hash<uint32_t> {}(height) << 1));
+        h0 = (h0 ^ (std::hash<uint32_t> {}(mip_levels) << 1));
+        h0 = (h0 ^ (std::hash<void*> {}(pixels_ptr) << 1));
+        h0 = (h0 ^ (std::hash<uint32_t> {}(format) << 1));
+        return h0;
     }
 
-    void RenderResource::createDynamicBuffer(std::shared_ptr<BufferData>& buffer_data,
-                                             RHI::D3D12Buffer&            dynamicBuffer)
+    //-------------------------------------------------------------------------------------------
+    std::shared_ptr<RHI::D3D12Buffer> RenderResource::createDynamicBuffer(void* buffer_data, uint32_t buffer_size, uint32_t buffer_stride)
     {
-        createDynamicBuffer(buffer_data->m_data, buffer_data->m_size, buffer_data->m_size, dynamicBuffer);
+        assert(buffer_size % buffer_stride == 0);
+        std::shared_ptr<RHI::D3D12Buffer> dynamicBuffer =
+            std::make_shared<RHI::D3D12Buffer>(m_Device->GetLinkedDevice(),
+                                               buffer_size,
+                                               buffer_stride,
+                                               D3D12_HEAP_TYPE::D3D12_HEAP_TYPE_UPLOAD,
+                                               D3D12_RESOURCE_FLAGS::D3D12_RESOURCE_FLAG_NONE);
+        void* bufferPtr = dynamicBuffer->GetCpuVirtualAddress<void>();
+        memcpy(bufferPtr, buffer_data, buffer_size);
+        return dynamicBuffer;
+    }
+
+    std::shared_ptr<RHI::D3D12Buffer> RenderResource::createDynamicBuffer(std::shared_ptr<BufferData>& buffer_data)
+    {
+        return createDynamicBuffer(buffer_data->m_data, buffer_data->m_size, buffer_data->m_size);
     }
     
-    void RenderResource::createStaticBuffer(void*                         buffer_data,
-                                            uint32_t                      buffer_size,
-                                            uint32_t                      buffer_stride,
-                                            RHI::D3D12Buffer&             staticBuffer,
-                                            bool                          raw,
-                                            RHI::D3D12ShaderResourceView& staticBuffer_view,
-                                            bool                          batch)
+    BufferViewTuple RenderResource::createStaticBuffer(void* buffer_data, uint32_t buffer_size, uint32_t buffer_stride, bool raw, bool batch)
     {
         assert(buffer_size % buffer_stride == 0);
 
         if (batch)
             this->startUploadBatch();
 
-        staticBuffer = RHI::D3D12Buffer(m_Device->GetLinkedDevice(),
-                                        buffer_size,
-                                        buffer_stride,
-                                        D3D12_HEAP_TYPE::D3D12_HEAP_TYPE_DEFAULT,
-                                        D3D12_RESOURCE_FLAGS::D3D12_RESOURCE_FLAG_NONE,
-                                        D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+        std::shared_ptr<RHI::D3D12Buffer> staticBuffer =
+            std::make_shared<RHI::D3D12Buffer>(m_Device->GetLinkedDevice(),
+                                               buffer_size,
+                                               buffer_stride,
+                                               D3D12_HEAP_TYPE::D3D12_HEAP_TYPE_DEFAULT,
+                                               D3D12_RESOURCE_FLAGS::D3D12_RESOURCE_FLAG_NONE,
+                                               D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 
         uint32_t number_elements = buffer_size / buffer_stride;
 
@@ -919,121 +911,121 @@ namespace Pilot
             resourceViewDesc.Buffer.Flags               = D3D12_BUFFER_SRV_FLAGS::D3D12_BUFFER_SRV_FLAG_RAW;
         }
 
-        staticBuffer_view = RHI::D3D12ShaderResourceView(m_Device->GetLinkedDevice(), resourceViewDesc, &staticBuffer);
+        std::shared_ptr<RHI::D3D12ShaderResourceView> staticBuffer_view =
+            std::make_shared<RHI::D3D12ShaderResourceView>(
+                m_Device->GetLinkedDevice(), resourceViewDesc, staticBuffer.get());
 
-        D3D12_RESOURCE_STATES tex2d_ori_state = staticBuffer.GetResourceState().GetSubresourceState(0);
+        D3D12_RESOURCE_STATES tex2d_ori_state = staticBuffer->GetResourceState().GetSubresourceState(0);
 
-        m_ResourceUpload->Transition(staticBuffer.GetResource(), tex2d_ori_state, D3D12_RESOURCE_STATE_COPY_DEST);
+        m_ResourceUpload->Transition(staticBuffer->GetResource(), tex2d_ori_state, D3D12_RESOURCE_STATE_COPY_DEST);
 
         D3D12_SUBRESOURCE_DATA resourceInitData = {buffer_data, buffer_size, buffer_size};
-        m_ResourceUpload->Upload(staticBuffer.GetResource(), 0, &resourceInitData, 1);
+        m_ResourceUpload->Upload(staticBuffer->GetResource(), 0, &resourceInitData, 1);
 
-        m_ResourceUpload->Transition(staticBuffer.GetResource(), D3D12_RESOURCE_STATE_COPY_DEST, tex2d_ori_state);
+        m_ResourceUpload->Transition(staticBuffer->GetResource(), D3D12_RESOURCE_STATE_COPY_DEST, tex2d_ori_state);
 
         if (batch)
             this->endUploadBatch();
+
+        return std::make_tuple(staticBuffer, staticBuffer_view);
     }
 
-    void RenderResource::createStaticBuffer(std::shared_ptr<BufferData>&  buffer_data,
-                                            RHI::D3D12Buffer&             staticBuffer,
-                                            bool                          raw,
-                                            RHI::D3D12ShaderResourceView& staticBuffer_view,
-                                            bool                          batch)
+    BufferViewTuple RenderResource::createStaticBuffer(std::shared_ptr<BufferData>& buffer_data, bool raw, bool batch)
     {
-        createStaticBuffer(
-            buffer_data->m_data, buffer_data->m_size, buffer_data->m_size, staticBuffer, raw, staticBuffer_view, batch);
+        return createStaticBuffer(buffer_data->m_data, buffer_data->m_size, buffer_data->m_size, raw, batch);
     }
 
-    void RenderResource::createTex2D(uint32_t                      width,
-                                     uint32_t                      height,
-                                     void*                         pixels,
-                                     DXGI_FORMAT                   format,
-                                     bool                          is_srgb,
-                                     RHI::D3D12Texture&            tex2d,
-                                     RHI::D3D12ShaderResourceView& tex2d_view,
-                                     bool                          genMips,
-                                     bool                          batch)
+    TextureViewTuple RenderResource::createTex2D(uint32_t width, uint32_t height, void* pixels, DXGI_FORMAT format, bool is_srgb, bool genMips, bool batch)
     {
-        if (batch)
-            this->startUploadBatch();
 
         uint32_t tex2d_miplevels = 1;
         if (genMips)
+        {
             tex2d_miplevels = static_cast<uint32_t>(std::floor(std::log2(std::max(width, height)))) + 1;
-
-        D3D12_RESOURCE_FLAGS resourceFlags = D3D12_RESOURCE_FLAG_NONE/* | D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS*/;
-        D3D12_RESOURCE_DESC  resourceDesc =
-            CD3DX12_RESOURCE_DESC::Tex2D(format, width, height, 1, tex2d_miplevels, 1, 0, resourceFlags);
-
-        tex2d = RHI::D3D12Texture(m_Device->GetLinkedDevice(), resourceDesc, std::nullopt, false);
-
-        D3D12_SHADER_RESOURCE_VIEW_DESC resourceViewDesc;
-        resourceViewDesc.Format        = is_srgb ? D3D12RHIUtils::MakeSRGB(resourceDesc.Format) : resourceDesc.Format;
-        resourceViewDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
-        resourceViewDesc.Shader4ComponentMapping       = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-        resourceViewDesc.Texture2D.MostDetailedMip     = 0;
-        resourceViewDesc.Texture2D.MipLevels           = resourceDesc.MipLevels;
-        resourceViewDesc.Texture2D.PlaneSlice          = 0;
-        resourceViewDesc.Texture2D.ResourceMinLODClamp = 0;
-
-        tex2d_view = RHI::D3D12ShaderResourceView(m_Device->GetLinkedDevice(), resourceViewDesc, &tex2d);
-
-        D3D12_SUBRESOURCE_DATA resourceInitData;
-        resourceInitData.pData      = pixels;
-        resourceInitData.RowPitch   = resourceDesc.Width * D3D12RHIUtils::BytesPerPixel(format);
-        resourceInitData.SlicePitch = resourceInitData.RowPitch * resourceDesc.Height;
-
-        D3D12_RESOURCE_STATES tex2d_ori_state = tex2d.GetResourceState().GetSubresourceState(0);
-
-        if (tex2d_ori_state != D3D12_RESOURCE_STATE_COPY_DEST)
-        {
-            m_ResourceUpload->Transition(tex2d.GetResource(), tex2d_ori_state, D3D12_RESOURCE_STATE_COPY_DEST);
         }
 
-        m_ResourceUpload->Upload(tex2d.GetResource(), 0, &resourceInitData, 1);
-
-        D3D12_RESOURCE_STATES currentState = D3D12_RESOURCE_STATE_COPY_DEST;
-
-        if (genMips)
+        std::size_t tex_hash = hashTexture2D(width, height, tex2d_miplevels, pixels, format);
+        auto tex_view_pair_iter = _Texture_View_Caches.find(tex_hash);
+        if (tex_view_pair_iter != _Texture_View_Caches.end())
         {
-            currentState = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
-            m_ResourceUpload->Transition(
-                tex2d.GetResource(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-            m_ResourceUpload->GenerateMips(tex2d.GetResource());
+            return tex_view_pair_iter->second;
         }
-
-        if (currentState != tex2d_ori_state)
+        else
         {
-            m_ResourceUpload->Transition(tex2d.GetResource(), currentState, tex2d_ori_state);
-        }
+            if (batch)
+                this->startUploadBatch();
 
-        if (batch)
-            this->endUploadBatch();
+            D3D12_RESOURCE_FLAGS resourceFlags =
+                D3D12_RESOURCE_FLAG_NONE /* | D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS*/;
+            D3D12_RESOURCE_DESC resourceDesc =
+                CD3DX12_RESOURCE_DESC::Tex2D(format, width, height, 1, tex2d_miplevels, 1, 0, resourceFlags);
+
+            std::shared_ptr<RHI::D3D12Texture> tex2d =
+                std::make_shared<RHI::D3D12Texture>(m_Device->GetLinkedDevice(), resourceDesc, std::nullopt, false);
+
+            D3D12_SHADER_RESOURCE_VIEW_DESC resourceViewDesc;
+            resourceViewDesc.Format = is_srgb ? D3D12RHIUtils::MakeSRGB(resourceDesc.Format) : resourceDesc.Format;
+            resourceViewDesc.ViewDimension                 = D3D12_SRV_DIMENSION_TEXTURE2D;
+            resourceViewDesc.Shader4ComponentMapping       = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+            resourceViewDesc.Texture2D.MostDetailedMip     = 0;
+            resourceViewDesc.Texture2D.MipLevels           = resourceDesc.MipLevels;
+            resourceViewDesc.Texture2D.PlaneSlice          = 0;
+            resourceViewDesc.Texture2D.ResourceMinLODClamp = 0;
+
+            std::shared_ptr<RHI::D3D12ShaderResourceView> tex2d_view = std::make_shared<RHI::D3D12ShaderResourceView>(
+                m_Device->GetLinkedDevice(), resourceViewDesc, tex2d.get());
+
+            D3D12_SUBRESOURCE_DATA resourceInitData;
+            resourceInitData.pData      = pixels;
+            resourceInitData.RowPitch   = resourceDesc.Width * D3D12RHIUtils::BytesPerPixel(format);
+            resourceInitData.SlicePitch = resourceInitData.RowPitch * resourceDesc.Height;
+
+            D3D12_RESOURCE_STATES tex2d_ori_state = tex2d->GetResourceState().GetSubresourceState(0);
+
+            if (tex2d_ori_state != D3D12_RESOURCE_STATE_COPY_DEST)
+            {
+                m_ResourceUpload->Transition(tex2d->GetResource(), tex2d_ori_state, D3D12_RESOURCE_STATE_COPY_DEST);
+            }
+
+            m_ResourceUpload->Upload(tex2d->GetResource(), 0, &resourceInitData, 1);
+
+            D3D12_RESOURCE_STATES currentState = D3D12_RESOURCE_STATE_COPY_DEST;
+
+            if (genMips)
+            {
+                currentState = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+                m_ResourceUpload->Transition(
+                    tex2d->GetResource(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+                m_ResourceUpload->GenerateMips(tex2d->GetResource());
+            }
+
+            if (currentState != tex2d_ori_state)
+            {
+                m_ResourceUpload->Transition(tex2d->GetResource(), currentState, tex2d_ori_state);
+            }
+
+            if (batch)
+                this->endUploadBatch();
+
+            auto tex_view_pair = std::make_tuple(tex2d, tex2d_view);
+            _Texture_View_Caches[tex_hash] = tex_view_pair;
+
+            return tex_view_pair;
+        }
     }
 
-    void RenderResource::createTex2D(std::shared_ptr<TextureData>& tex2d_data,
-                                     RHI::D3D12Texture&            tex2d,
-                                     RHI::D3D12ShaderResourceView& tex2d_view,
-                                     bool                          genMips,
-                                     bool                          batch)
+    TextureViewTuple RenderResource::createTex2D(std::shared_ptr<TextureData>& tex2d_data, bool genMips, bool batch)
     {
-        createTex2D(tex2d_data->m_width,
-                    tex2d_data->m_height,
-                    tex2d_data->m_pixels,
-                    tex2d_data->m_format,
-                    tex2d_data->m_is_srgb,
-                    tex2d,
-                    tex2d_view,
-                    genMips,
-                    batch);
+        return createTex2D(tex2d_data->m_width,
+                           tex2d_data->m_height,
+                           tex2d_data->m_pixels,
+                           tex2d_data->m_format,
+                           tex2d_data->m_is_srgb,
+                           genMips,
+                           batch);
     }
-
-
-    void RenderResource::createCubeMap(std::array<std::shared_ptr<TextureData>, 6>& cube_maps,
-                                       RHI::D3D12Texture&                           cube_tex,
-                                       RHI::D3D12ShaderResourceView&                cube_tex_view,
-                                       bool                                         genMips,
-                                       bool                                         batch)
+    
+    TextureViewTuple RenderResource::createCubeMap(std::array<std::shared_ptr<TextureData>, 6>& cube_maps, bool genMips, bool batch)
     {
         if (batch)
             this->startUploadBatch();
@@ -1055,7 +1047,8 @@ namespace Pilot
                                                                         0,
                                                                         resourceFlags);
 
-        cube_tex = RHI::D3D12Texture(m_Device->GetLinkedDevice(), resourceDesc, std::nullopt, true);
+        std::shared_ptr<RHI::D3D12Texture> cube_tex =
+            std::make_shared<RHI::D3D12Texture>(m_Device->GetLinkedDevice(), resourceDesc, std::nullopt, true);
 
         D3D12_SHADER_RESOURCE_VIEW_DESC resourceViewDesc;
         resourceViewDesc.Format                          = resourceDesc.Format;
@@ -1065,11 +1058,12 @@ namespace Pilot
         resourceViewDesc.TextureCube.MipLevels           = resourceDesc.MipLevels;
         resourceViewDesc.TextureCube.ResourceMinLODClamp = 0;
 
-        cube_tex_view = RHI::D3D12ShaderResourceView(m_Device->GetLinkedDevice(), resourceViewDesc, &cube_tex);
+        std::shared_ptr<RHI::D3D12ShaderResourceView> cube_tex_view = std::make_shared<RHI::D3D12ShaderResourceView>(
+            m_Device->GetLinkedDevice(), resourceViewDesc, cube_tex.get());
 
-        D3D12_RESOURCE_STATES tex2d_ori_state = cube_tex.GetResourceState().GetSubresourceState(0);
+        D3D12_RESOURCE_STATES tex2d_ori_state = cube_tex->GetResourceState().GetSubresourceState(0);
 
-        m_ResourceUpload->Transition(cube_tex.GetResource(), tex2d_ori_state, D3D12_RESOURCE_STATE_COPY_DEST);
+        m_ResourceUpload->Transition(cube_tex->GetResource(), tex2d_ori_state, D3D12_RESOURCE_STATE_COPY_DEST);
 
         UINT bytesPerPixel = D3D12RHIUtils::BytesPerPixel(resourceViewDesc.Format);
 
@@ -1080,16 +1074,18 @@ namespace Pilot
             resourceInitData.RowPitch   = cube_maps[i]->m_width * bytesPerPixel;
             resourceInitData.SlicePitch = resourceInitData.RowPitch * resourceDesc.Height;
 
-            m_ResourceUpload->Upload(cube_tex.GetResource(), cubemap_miplevels * i, &resourceInitData, 1);
+            m_ResourceUpload->Upload(cube_tex->GetResource(), cubemap_miplevels * i, &resourceInitData, 1);
 
             if (genMips)
-                m_ResourceUpload->GenerateMips(cube_tex.GetResource());
+                m_ResourceUpload->GenerateMips(cube_tex->GetResource());
         }
 
-        m_ResourceUpload->Transition(cube_tex.GetResource(), D3D12_RESOURCE_STATE_COPY_DEST, tex2d_ori_state);
+        m_ResourceUpload->Transition(cube_tex->GetResource(), D3D12_RESOURCE_STATE_COPY_DEST, tex2d_ori_state);
 
         if (batch)
             this->endUploadBatch();
+
+        return std::make_tuple(cube_tex, cube_tex_view);
     }
 
 

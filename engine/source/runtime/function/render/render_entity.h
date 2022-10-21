@@ -24,13 +24,5 @@ namespace Pilot
 
         // material
         size_t  m_material_asset_id {0};
-        bool    m_blend {false};
-        bool    m_double_sided {false};
-        Vector4 m_base_color_factor {1.0f, 1.0f, 1.0f, 1.0f};
-        float   m_metallic_factor {1.0f};
-        float   m_roughness_factor {1.0f};
-        float   m_normal_scale {1.0f};
-        float   m_occlusion_strength {1.0f};
-        Vector3 m_emissive_factor {0.0f, 0.0f, 0.0f};
     };
 } // namespace Pilot

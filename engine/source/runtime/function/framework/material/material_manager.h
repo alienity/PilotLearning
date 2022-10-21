@@ -16,6 +16,10 @@ namespace Pilot
 
     static std::string _default_gold_material_path = "asset/objects/environment/_material/gold.material.json";
 
+    static std::string _default_color_texture_path              = "asset/texture/default/albedo.jpg";
+    static std::string _default_metallic_roughness_texture_path = "asset/texture/default/mr.jpg";
+    static std::string _default_normal_texture_path             = "asset/texture/default/normal.jpg";
+
     class MaterialManager
     {
     public:

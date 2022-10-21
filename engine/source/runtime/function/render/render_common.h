@@ -35,23 +35,36 @@ namespace Pilot
     // material
     struct D3D12PBRMaterial
     {
-        RHI::D3D12Texture            base_color_texture_image;
-        RHI::D3D12ShaderResourceView base_color_image_view;
+        // Factors
+        bool m_blend;
+        bool m_double_sided;
 
-        RHI::D3D12Texture            metallic_roughness_texture_image;
-        RHI::D3D12ShaderResourceView metallic_roughness_image_view;
+        Vector4 m_base_color_factor;
+        float   m_metallic_factor;
+        float   m_roughness_factor;
+        float   m_normal_scale;
+        float   m_occlusion_strength;
+        Vector3 m_emissive_factor;
 
-        RHI::D3D12Texture            normal_texture_image;
-        RHI::D3D12ShaderResourceView normal_image_view;
+        // Textures
 
-        RHI::D3D12Texture            occlusion_texture_image;
-        RHI::D3D12ShaderResourceView occlusion_image_view;
+        std::shared_ptr<RHI::D3D12Texture>            base_color_texture_image;
+        std::shared_ptr<RHI::D3D12ShaderResourceView> base_color_image_view;
 
-        RHI::D3D12Texture            emissive_texture_image;
-        RHI::D3D12ShaderResourceView emissive_image_view;
+        std::shared_ptr<RHI::D3D12Texture>            metallic_roughness_texture_image;
+        std::shared_ptr<RHI::D3D12ShaderResourceView> metallic_roughness_image_view;
 
-        RHI::D3D12Buffer             material_uniform_buffer;
-        RHI::D3D12ShaderResourceView material_uniform_buffer_view;
+        std::shared_ptr<RHI::D3D12Texture>            normal_texture_image;
+        std::shared_ptr<RHI::D3D12ShaderResourceView> normal_image_view;
+
+        std::shared_ptr<RHI::D3D12Texture>            occlusion_texture_image;
+        std::shared_ptr<RHI::D3D12ShaderResourceView> occlusion_image_view;
+
+        std::shared_ptr<RHI::D3D12Texture>            emissive_texture_image;
+        std::shared_ptr<RHI::D3D12ShaderResourceView> emissive_image_view;
+
+        std::shared_ptr<RHI::D3D12Buffer>             material_uniform_buffer;
+        std::shared_ptr<RHI::D3D12ShaderResourceView> material_uniform_buffer_view;
         
         //VkDescriptorSet material_descriptor_set;
     };
@@ -79,28 +92,4 @@ namespace Pilot
         std::vector<Vector4> positions;
     };
 
-    struct TextureDataToUpdate
-    {
-        void*              base_color_image_pixels;
-        uint32_t           base_color_image_width;
-        uint32_t           base_color_image_height;
-        DXGI_FORMAT        base_color_image_format;
-        void*              metallic_roughness_image_pixels;
-        uint32_t           metallic_roughness_image_width;
-        uint32_t           metallic_roughness_image_height;
-        DXGI_FORMAT        metallic_roughness_image_format;
-        void*              normal_roughness_image_pixels;
-        uint32_t           normal_roughness_image_width;
-        uint32_t           normal_roughness_image_height;
-        DXGI_FORMAT        normal_roughness_image_format;
-        void*              occlusion_image_pixels;
-        uint32_t           occlusion_image_width;
-        uint32_t           occlusion_image_height;
-        DXGI_FORMAT        occlusion_image_format;
-        void*              emissive_image_pixels;
-        uint32_t           emissive_image_width;
-        uint32_t           emissive_image_height;
-        DXGI_FORMAT        emissive_image_format;
-        D3D12PBRMaterial* now_material;
-    };
 } // namespace Pilot

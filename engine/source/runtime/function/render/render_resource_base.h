@@ -16,13 +16,14 @@ namespace Pilot
     class RenderScene;
     class RenderCamera;
 
+    typedef std::tuple<std::shared_ptr<RHI::D3D12Buffer>, std::shared_ptr<RHI::D3D12ShaderResourceView>> BufferViewTuple;
+    typedef std::tuple<std::shared_ptr<RHI::D3D12Texture>, std::shared_ptr<RHI::D3D12ShaderResourceView>> TextureViewTuple;
+
     class RenderResourceBase
     {
     public:
-        std::shared_ptr<RHI::D3D12Texture>            _Texture_White;
-        std::shared_ptr<RHI::D3D12ShaderResourceView> _Texture_White_View;
-        std::shared_ptr<RHI::D3D12Texture>            _Texture_Black;
-        std::shared_ptr<RHI::D3D12ShaderResourceView> _Texture_Black_View;
+        std::unordered_map<std::size_t, std::shared_ptr<TextureData>> _TextureData_Caches;
+        std::unordered_map<std::size_t, TextureViewTuple> _Texture_View_Caches; // key - TextureData Hash Value
 
     public:
         RenderResourceBase() = default;

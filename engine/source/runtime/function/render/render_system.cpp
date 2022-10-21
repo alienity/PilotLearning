@@ -206,40 +206,28 @@ namespace Pilot
                         // material properties
                         //if (game_object_part.m_material_desc.m_is_active)
                         {
-                            MaterialSourceDesc material_source;
-                            if (game_object_part.m_mesh_desc.m_material_desc.m_with_texture)
-                            {
-                                material_source = {
-                                    game_object_part.m_mesh_desc.m_material_desc.m_base_color_texture_file,
-                                    game_object_part.m_mesh_desc.m_material_desc.m_metallic_roughness_texture_file,
-                                    game_object_part.m_mesh_desc.m_material_desc.m_normal_texture_file,
-                                    game_object_part.m_mesh_desc.m_material_desc.m_occlusion_texture_file,
-                                    game_object_part.m_mesh_desc.m_material_desc.m_emissive_texture_file};
-                            }
-                            else
-                            {
-                                // TODO: move to default material definition json file
-                                material_source = {
-                                    asset_manager->getFullPath("asset/texture/default/albedo.jpg").generic_string(),
-                                    asset_manager->getFullPath("asset/texture/default/mr.jpg").generic_string(),
-                                    asset_manager->getFullPath("asset/texture/default/normal.jpg").generic_string(),
-                                    "",
-                                    ""};
-                            }
-                            bool is_material_loaded = m_render_scene->getMaterialAssetdAllocator().hasElement(material_source);
+                            MaterialSourceDesc material_source = {
+                                game_object_part.m_mesh_desc.m_material_desc.m_blend,
+                                game_object_part.m_mesh_desc.m_material_desc.m_double_sided,
 
-                            RenderMaterialData material_data;
-                            if (!is_material_loaded)
-                            {
-                                material_data = m_render_resource->loadMaterialData(material_source);
-                            }
+                                game_object_part.m_mesh_desc.m_material_desc.m_base_color_factor,
+                                game_object_part.m_mesh_desc.m_material_desc.m_metallic_factor,
+                                game_object_part.m_mesh_desc.m_material_desc.m_roughness_factor,
+                                game_object_part.m_mesh_desc.m_material_desc.m_normal_scale,
+                                game_object_part.m_mesh_desc.m_material_desc.m_occlusion_strength,
+                                game_object_part.m_mesh_desc.m_material_desc.m_emissive_factor,
+
+                                game_object_part.m_mesh_desc.m_material_desc.m_base_color_texture_file,
+                                game_object_part.m_mesh_desc.m_material_desc.m_metallic_roughness_texture_file,
+                                game_object_part.m_mesh_desc.m_material_desc.m_normal_texture_file,
+                                game_object_part.m_mesh_desc.m_material_desc.m_occlusion_texture_file,
+                                game_object_part.m_mesh_desc.m_material_desc.m_emissive_texture_file};
 
                             render_entity.m_material_asset_id = m_render_scene->getMaterialAssetdAllocator().allocGuid(material_source);
 
-                            if (!is_material_loaded)
-                            {
-                                m_render_resource->uploadGameObjectRenderResource(render_entity, material_data);
-                            }
+                            RenderMaterialData material_data = m_render_resource->loadMaterialData(material_source);
+
+                            m_render_resource->uploadGameObjectRenderResource(render_entity, material_data);
                         }
 
                         // add object to render scene if needed

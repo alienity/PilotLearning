@@ -54,66 +54,89 @@ namespace Pilot
 
     std::shared_ptr<TextureData> RenderResourceBase::loadTextureHDR(std::string file, int desired_channels)
     {
-        std::shared_ptr<AssetManager> asset_manager = g_runtime_global_context.m_asset_manager;
-        ASSERT(asset_manager);
+        std::size_t h1 = std::hash<std::string> {}(file);
+        std::size_t h2 = std::hash<int> {}(desired_channels);
+        std::size_t tex_hash = h1 ^ (h2 << 1);
 
-        std::shared_ptr<TextureData> texture = std::make_shared<TextureData>();
+        std::shared_ptr<TextureData> texture = _TextureData_Caches[tex_hash];
 
-        int iw, ih, n;
-        texture->m_pixels =
-            stbi_loadf(asset_manager->getFullPath(file).generic_string().c_str(), &iw, &ih, &n, desired_channels);
-
-        if (!texture->m_pixels)
-            return nullptr;
-
-        texture->m_width  = iw;
-        texture->m_height = ih;
-        switch (desired_channels)
+        if (texture == nullptr)
         {
-            case 1:
-                texture->m_format = DXGI_FORMAT::DXGI_FORMAT_R32_FLOAT;
-                break;
-            case 2:
-                texture->m_format = DXGI_FORMAT::DXGI_FORMAT_R32G32_FLOAT;
-                break;
-            case 3:
-                texture->m_format = DXGI_FORMAT::DXGI_FORMAT_R32G32B32_FLOAT;
-                break;
-            case 4:
-                texture->m_format = DXGI_FORMAT::DXGI_FORMAT_R32G32B32A32_FLOAT;
-                break;
-            default:
-                // three component format is not supported in some vulkan driver implementations
-                throw std::runtime_error("unsupported channels number");
-                break;
+            std::shared_ptr<AssetManager> asset_manager = g_runtime_global_context.m_asset_manager;
+            ASSERT(asset_manager);
+
+            texture = std::make_shared<TextureData>();
+
+            int iw, ih, n;
+            texture->m_pixels =
+                stbi_loadf(asset_manager->getFullPath(file).generic_string().c_str(), &iw, &ih, &n, desired_channels);
+
+            texture->m_need_release = true;
+
+            if (!texture->m_pixels)
+                return nullptr;
+
+            texture->m_width  = iw;
+            texture->m_height = ih;
+            switch (desired_channels)
+            {
+                case 1:
+                    texture->m_format = DXGI_FORMAT::DXGI_FORMAT_R32_FLOAT;
+                    break;
+                case 2:
+                    texture->m_format = DXGI_FORMAT::DXGI_FORMAT_R32G32_FLOAT;
+                    break;
+                case 3:
+                    texture->m_format = DXGI_FORMAT::DXGI_FORMAT_R32G32B32_FLOAT;
+                    break;
+                case 4:
+                    texture->m_format = DXGI_FORMAT::DXGI_FORMAT_R32G32B32A32_FLOAT;
+                    break;
+                default:
+                    // three component format is not supported in some vulkan driver implementations
+                    throw std::runtime_error("unsupported channels number");
+                    break;
+            }
+            texture->m_depth        = 1;
+            texture->m_array_layers = 1;
+            texture->m_mip_levels   = 1;
+
+            _TextureData_Caches[tex_hash] = texture;
         }
-        texture->m_depth        = 1;
-        texture->m_array_layers = 1;
-        texture->m_mip_levels   = 1;
 
         return texture;
     }
 
     std::shared_ptr<TextureData> RenderResourceBase::loadTexture(std::string file, bool is_srgb)
     {
-        std::shared_ptr<AssetManager> asset_manager = g_runtime_global_context.m_asset_manager;
-        ASSERT(asset_manager);
+        std::size_t tex_hash = std::hash<std::string> {}(file);
 
-        std::shared_ptr<TextureData> texture = std::make_shared<TextureData>();
+        std::shared_ptr<TextureData> texture = _TextureData_Caches[tex_hash];
 
-        int iw, ih, n;
-        texture->m_pixels = stbi_load(asset_manager->getFullPath(file).generic_string().c_str(), &iw, &ih, &n, 4);
+        if (texture == nullptr)
+        {
+            std::shared_ptr<AssetManager> asset_manager = g_runtime_global_context.m_asset_manager;
+            ASSERT(asset_manager);
 
-        if (!texture->m_pixels)
-            return nullptr;
+            texture = std::make_shared<TextureData>();
 
-        texture->m_width        = iw;
-        texture->m_height       = ih;
-        texture->m_format =
-            (is_srgb) ? DXGI_FORMAT::DXGI_FORMAT_R8G8B8A8_UNORM_SRGB : DXGI_FORMAT::DXGI_FORMAT_R8G8B8A8_UNORM;
-        texture->m_depth        = 1;
-        texture->m_array_layers = 1;
-        texture->m_mip_levels   = 1;
+            int iw, ih, n;
+            texture->m_pixels = stbi_load(asset_manager->getFullPath(file).generic_string().c_str(), &iw, &ih, &n, 4);
+            texture->m_need_release = true;
+
+            if (!texture->m_pixels)
+                return nullptr;
+
+            texture->m_width  = iw;
+            texture->m_height = ih;
+            texture->m_format =
+                (is_srgb) ? DXGI_FORMAT::DXGI_FORMAT_R8G8B8A8_UNORM_SRGB : DXGI_FORMAT::DXGI_FORMAT_R8G8B8A8_UNORM;
+            texture->m_depth        = 1;
+            texture->m_array_layers = 1;
+            texture->m_mip_levels   = 1;
+
+            _TextureData_Caches[tex_hash] = texture;
+        }
 
         return texture;
     }
@@ -191,11 +214,22 @@ namespace Pilot
     RenderMaterialData RenderResourceBase::loadMaterialData(const MaterialSourceDesc& source)
     {
         RenderMaterialData ret;
+
+        ret.m_blend                       = source.m_blend;
+        ret.m_double_sided                = source.m_double_sided;
+        ret.m_base_color_factor           = source.m_base_color_factor;
+        ret.m_metallic_factor             = source.m_metallic_factor;
+        ret.m_roughness_factor            = source.m_roughness_factor;
+        ret.m_normal_scale                = source.m_normal_scale;
+        ret.m_occlusion_strength          = source.m_occlusion_strength;
+        ret.m_emissive_factor             = source.m_emissive_factor;
+
         ret.m_base_color_texture         = loadTexture(source.m_base_color_file, true);
         ret.m_metallic_roughness_texture = loadTexture(source.m_metallic_roughness_file);
         ret.m_normal_texture             = loadTexture(source.m_normal_file);
         ret.m_occlusion_texture          = loadTexture(source.m_occlusion_file);
         ret.m_emissive_texture           = loadTexture(source.m_emissive_file);
+
         return ret;
     }
 
