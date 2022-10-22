@@ -50,7 +50,8 @@ namespace RHI
             Id      = UINT_MAX;
         }
 
-        RgResourceType  Type : 15; // 14 bit to represent type, might remove some bits from this and give it to version
+        RgResourceType Type : 15; // 14 bit to represent type, might remove some bits from
+                                                            // this and give it to version
         RgResourceFlags Flags : 1;
         std::uint64_t   Version : 16; // 16 bits to represent version should be more than enough, we can always just
                                       // increase bit used if is not enough

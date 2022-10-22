@@ -48,6 +48,7 @@ namespace Pilot
         p_RenderTargetTexSRV = std::make_shared<RHI::D3D12ShaderResourceView>(device->GetLinkedDevice(), p_RenderTargetTex.get(), false, std::nullopt, std::nullopt);
         p_RenderTargetTexRTV = std::make_shared<RHI::D3D12RenderTargetView>(device->GetLinkedDevice(), p_RenderTargetTex.get());
 
+
     }
 
     void DeferredRenderer::InitPass()
@@ -55,34 +56,45 @@ namespace Pilot
         RenderPassCommonInfo renderPassCommonInfo = {
             &renderGraphAllocator, &renderGraphRegistry, device, windowsSystem};
 
+        // Prepare common resources
+        const FLOAT renderTargetClearColor[4] = {0, 0, 0, 0};
+        RHI::RgTextureDesc colorTexDesc = RHI::RgTextureDesc("ColorBuffer")
+                                              .SetFormat(pipleineColorFormat)
+                                              .SetExtent(viewport.width, viewport.height)
+                                              .SetAllowRenderTarget()
+                                              .SetClearValue(renderTargetClearColor);
+        RHI::RgTextureDesc depthTexDesc = RHI::RgTextureDesc("DepthBuffer")
+                                              .SetFormat(pipleineDepthFormat)
+                                              .SetExtent(viewport.width, viewport.height)
+                                              .SetAllowDepthStencil()
+                                              .SetClearValue(RHI::RgClearValue(0.0f, 0xff));
+
+        // Cull pass
         {
             mIndirectCullPass = std::make_shared<IndirectCullPass>();
             mIndirectCullPass->setCommonInfo(renderPassCommonInfo);
             mIndirectCullPass->initialize({});
         }
-
+        // Opaque drawing pass
         {
             IndirectDrawPass::DrawPassInitInfo drawPassInit;
+            drawPassInit.colorTexDesc = colorTexDesc;
+            drawPassInit.depthTexDesc = depthTexDesc;
 
-            const FLOAT renderTargetClearColor[4] = {0, 0, 0, 0};
-
-            drawPassInit.colorTexDesc = RHI::RgTextureDesc("ColorBuffer")
-                                            .SetFormat(pipleineColorFormat)
-                                            .SetExtent(viewport.width, viewport.height)
-                                            .SetAllowRenderTarget()
-                                            .SetClearValue(renderTargetClearColor);
-
-            drawPassInit.depthTexDesc = RHI::RgTextureDesc("DepthBuffer")
-                                            .SetFormat(pipleineDepthFormat)
-                                            .SetExtent(viewport.width, viewport.height)
-                                            .SetAllowDepthStencil()
-                                            .SetClearValue(RHI::RgClearValue(0.0f, 0xff));
-
-            mIndirectDrawPass = std::make_shared<IndirectDrawPass>();
-            mIndirectDrawPass->setCommonInfo(renderPassCommonInfo);
-            mIndirectDrawPass->initialize(drawPassInit);
+            mIndirectOpaqueDrawPass = std::make_shared<IndirectDrawPass>();
+            mIndirectOpaqueDrawPass->setCommonInfo(renderPassCommonInfo);
+            mIndirectOpaqueDrawPass->initialize(drawPassInit);
         }
+        // Transparent drawing pass
+        {
+            IndirectDrawTransparentPass::DrawPassInitInfo drawPassInit;
+            drawPassInit.colorTexDesc = colorTexDesc;
+            drawPassInit.depthTexDesc = depthTexDesc;
 
+            mIndirectTransparentDrawPass = std::make_shared<IndirectDrawTransparentPass>();
+            mIndirectTransparentDrawPass->setCommonInfo(renderPassCommonInfo);
+            mIndirectTransparentDrawPass->initialize(drawPassInit);
+        }
         {
             IndirectShadowPass::ShadowPassInitInfo shadowPassInit;
 
@@ -90,7 +102,7 @@ namespace Pilot
             mIndirectShadowPass->setCommonInfo(renderPassCommonInfo);
             mIndirectShadowPass->initialize(shadowPassInit);
         }
-
+        // UI drawing pass
         {
             mDisplayPass = std::make_shared<DisplayPass>();
         }
@@ -120,7 +132,8 @@ namespace Pilot
     {
         mUIPass = nullptr;
         mIndirectCullPass = nullptr;
-        mIndirectDrawPass = nullptr;
+        mIndirectOpaqueDrawPass = nullptr;
+        mIndirectTransparentDrawPass = nullptr;
     }
 
     void DeferredRenderer::OnRender(RHI::D3D12CommandContext& context)
@@ -149,28 +162,46 @@ namespace Pilot
         mShadowmapIntputParams.pMaterialBuffer            = indirectCullOutput.pMaterialBuffer;
         mShadowmapIntputParams.p_DirectionalCommandBuffer = indirectCullOutput.p_DirShadowmapCommandBuffer;
         mShadowmapIntputParams.p_SpotCommandBuffer        = indirectCullOutput.p_SpotShadowmapCommandBuffers;
-
         mIndirectShadowPass->update(context, graph, mShadowmapIntputParams, mShadowmapOutputParams);
 
 
-        // indirect draw
+        // indirect opaque draw
         IndirectDrawPass::DrawInputParameters  mDrawIntputParams;
         IndirectDrawPass::DrawOutputParameters mDrawOutputParams;
 
-        mDrawIntputParams.pPerframeBuffer        = indirectCullOutput.pPerframeBuffer;
-        mDrawIntputParams.pMeshBuffer            = indirectCullOutput.pMeshBuffer;
-        mDrawIntputParams.pMaterialBuffer        = indirectCullOutput.pMaterialBuffer;
-        mDrawIntputParams.pIndirectCommandBuffer = indirectCullOutput.p_IndirectCommandBuffer;
-        mDrawIntputParams.directionalShadowmapTexHandle =
-            mShadowmapOutputParams.directionalShadowmapRGHandle.shadowmapTextureHandle;
+        mDrawIntputParams.pPerframeBuffer               = indirectCullOutput.pPerframeBuffer;
+        mDrawIntputParams.pMeshBuffer                   = indirectCullOutput.pMeshBuffer;
+        mDrawIntputParams.pMaterialBuffer               = indirectCullOutput.pMaterialBuffer;
+        mDrawIntputParams.pIndirectCommandBuffer        = indirectCullOutput.p_OpaqueDrawCommandBuffer;
+        mDrawIntputParams.directionalShadowmapTexHandle = mShadowmapOutputParams.directionalShadowmapRGHandle.shadowmapTextureHandle;
         for (size_t i = 0; i < mShadowmapOutputParams.spotShadowmapRGHandle.size(); i++)
         {
-            mDrawIntputParams.spotShadowmapTexHandles.push_back(
-                mShadowmapOutputParams.spotShadowmapRGHandle[i].shadowmapTextureHandle);
+            mDrawIntputParams.spotShadowmapTexHandles.push_back(mShadowmapOutputParams.spotShadowmapRGHandle[i].shadowmapTextureHandle);
         }
-
-        mIndirectDrawPass->update(context, graph, mDrawIntputParams, mDrawOutputParams);
+        mIndirectOpaqueDrawPass->update(context, graph, mDrawIntputParams, mDrawOutputParams);
         
+
+        // indirect transparent draw
+        IndirectDrawTransparentPass::DrawInputParameters  mDrawTransIntputParams;
+        IndirectDrawTransparentPass::DrawOutputParameters mDrawTransOutputParams;
+
+        mDrawTransIntputParams.pPerframeBuffer   = indirectCullOutput.pPerframeBuffer;
+        mDrawTransIntputParams.pMeshBuffer       = indirectCullOutput.pMeshBuffer;
+        mDrawTransIntputParams.pMaterialBuffer   = indirectCullOutput.pMaterialBuffer;
+        mDrawTransIntputParams.pIndirectCommandBuffer = indirectCullOutput.p_TransparentDrawCommandBuffer;
+        mDrawTransIntputParams.directionalShadowmapTexHandle = mShadowmapOutputParams.directionalShadowmapRGHandle.shadowmapTextureHandle;
+        for (size_t i = 0; i < mShadowmapOutputParams.spotShadowmapRGHandle.size(); i++)
+        {
+            mDrawTransIntputParams.spotShadowmapTexHandles.push_back(mShadowmapOutputParams.spotShadowmapRGHandle[i].shadowmapTextureHandle);
+        }
+        mDrawTransOutputParams.renderTargetColorHandle    = mDrawOutputParams.renderTargetColorHandle;
+        mDrawTransOutputParams.renderTargetColorSRVHandle = mDrawOutputParams.renderTargetColorSRVHandle;
+        mDrawTransOutputParams.renderTargetColorRTVHandle = mDrawOutputParams.renderTargetColorRTVHandle;
+        mDrawTransOutputParams.renderTargetDepthHandle    = mDrawOutputParams.renderTargetDepthHandle;
+        mDrawTransOutputParams.renderTargetDepthDSVHandle = mDrawOutputParams.renderTargetDepthDSVHandle;
+        mIndirectTransparentDrawPass->update(context, graph, mDrawTransIntputParams, mDrawTransOutputParams);
+
+
         // display
         DisplayPass::DisplayInputParameters  mDisplayIntputParams;
         DisplayPass::DisplayOutputParameters mDisplayOutputParams;

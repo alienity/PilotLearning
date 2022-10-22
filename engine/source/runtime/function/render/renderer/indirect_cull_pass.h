@@ -37,7 +37,8 @@ namespace Pilot
             std::shared_ptr<RHI::D3D12Buffer> pMaterialBuffer;
             std::shared_ptr<RHI::D3D12Buffer> pMeshBuffer;
 
-            std::shared_ptr<RHI::D3D12Buffer> p_IndirectCommandBuffer;
+            std::shared_ptr<RHI::D3D12Buffer> p_OpaqueDrawCommandBuffer;
+            std::shared_ptr<RHI::D3D12Buffer> p_TransparentDrawCommandBuffer;
             std::shared_ptr<RHI::D3D12Buffer> p_DirShadowmapCommandBuffer;
             std::vector<std::shared_ptr<RHI::D3D12Buffer>> p_SpotShadowmapCommandBuffers;
         };
@@ -52,6 +53,7 @@ namespace Pilot
         void destroy() override final;
 
     private:
+        void initializeDrawBuffer();
         void prepareBuffer();
 
     private:
@@ -67,7 +69,8 @@ namespace Pilot
         std::shared_ptr<RHI::D3D12Buffer> pMeshBuffer;
 
         // used for later draw call
-        DrawCallCommandBuffer commandBufferForDraw;
+        DrawCallCommandBuffer commandBufferForOpaqueDraw;
+        DrawCallCommandBuffer commandBufferForTransparentDraw;
 
         // used for shadowmap drawing
         ShadowmapCommandBuffer dirShadowmapCommandBuffer;

@@ -1,4 +1,4 @@
-#include "runtime/function/render/renderer/indirect_draw_pass.h"
+#include "runtime/function/render/renderer/indirect_draw_transparent_pass.h"
 
 #include "runtime/resource/config_manager/config_manager.h"
 
@@ -9,16 +9,16 @@
 namespace Pilot
 {
 
-	void IndirectDrawPass::initialize(const DrawPassInitInfo& init_info)
+	void IndirectDrawTransparentPass::initialize(const DrawPassInitInfo& init_info)
 	{
         colorTexDesc = init_info.colorTexDesc;
         depthTexDesc = init_info.depthTexDesc;
 	}
 
-    void IndirectDrawPass::update(RHI::D3D12CommandContext& context,
-                                  RHI::RenderGraph&         graph,
-                                  DrawInputParameters&      passInput,
-                                  DrawOutputParameters&     passOutput)
+    void IndirectDrawTransparentPass::update(RHI::D3D12CommandContext& context,
+                                             RHI::RenderGraph&         graph,
+                                             DrawInputParameters&      passInput,
+                                             DrawOutputParameters&     passOutput)
     {
         DrawInputParameters*  drawPassInput  = &passInput;
         DrawOutputParameters* drawPassOutput = &passOutput;
@@ -31,7 +31,7 @@ namespace Pilot
 
         bool needClearRenderTarget = initializeRenderTarget(graph, drawPassOutput);
 
-        RHI::RenderPass& drawpass = graph.AddRenderPass("IndirectDrawOpaquePass");
+        RHI::RenderPass& drawpass = graph.AddRenderPass("IndirectDrawTransparentPass");
 
         if (drawPassInput->directionalShadowmapTexHandle.IsValid())
         {
@@ -65,7 +65,7 @@ namespace Pilot
             context.SetRenderTarget(renderTargetView, depthStencilView);
 
             context.SetGraphicsRootSignature(registry.GetRootSignature(RootSignatures::IndirectDraw));
-            context.SetPipelineState(registry.GetPipelineState(PipelineStates::IndirectDraw));
+            context.SetPipelineState(registry.GetPipelineState(PipelineStates::IndirectDrawTransparent));
             context->SetGraphicsRootConstantBufferView(1, pPerframeBuffer->GetGpuVirtualAddress());
             context->SetGraphicsRootShaderResourceView(2, pMeshBuffer->GetGpuVirtualAddress());
             context->SetGraphicsRootShaderResourceView(3, pMaterialBuffer->GetGpuVirtualAddress());
@@ -79,13 +79,9 @@ namespace Pilot
         });
     }
 
+    void IndirectDrawTransparentPass::destroy() {}
 
-    void IndirectDrawPass::destroy()
-    {
-
-    }
-
-    bool IndirectDrawPass::initializeRenderTarget(RHI::RenderGraph& graph, DrawOutputParameters* drawPassOutput)
+    bool IndirectDrawTransparentPass::initializeRenderTarget(RHI::RenderGraph& graph, DrawOutputParameters* drawPassOutput)
     {
         bool needClearRenderTarget = false;
         if (!drawPassOutput->renderTargetColorHandle.IsValid())

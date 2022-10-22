@@ -671,7 +671,7 @@ namespace Pilot
 
                 ImGui::Checkbox("IsBlend", &mat_res_ptr->m_blend);
                 ImGui::Checkbox("IsDoubleSide", &mat_res_ptr->m_double_sided);
-                ImGui::DragFloat4("BaseColorFactor", mat_res_ptr->m_base_color_factor.ptr(), 0.02f, 0.0f, 1.0f);
+                ImGui::ColorEdit4("BaseColorFactor", mat_res_ptr->m_base_color_factor.ptr());
                 ImGui::DragFloat("MetallicFactor", &mat_res_ptr->m_metallic_factor, 0.02f, 0.0f, 1.0f);
                 ImGui::DragFloat("RoughnessFactor", &mat_res_ptr->m_roughness_factor, 0.02f, 0.0f, 1.0f);
                 ImGui::DragFloat("NormalScale", &mat_res_ptr->m_normal_scale, 0.02f, 0.0f, 1.0f);

@@ -7,7 +7,7 @@
 
 namespace Pilot
 {
-    class IndirectDrawPass : public RenderPass
+    class IndirectDrawTransparentPass : public RenderPass
 	{
     public:
         struct DrawPassInitInfo : public RenderPassInitInfo
@@ -20,9 +20,9 @@ namespace Pilot
         {
             DrawInputParameters()
             {
-                pPerframeBuffer = nullptr;
-                pMeshBuffer     = nullptr;
-                pMaterialBuffer = nullptr;
+                pPerframeBuffer        = nullptr;
+                pMeshBuffer            = nullptr;
+                pMaterialBuffer        = nullptr;
                 pIndirectCommandBuffer = nullptr;
                 directionalShadowmapTexHandle.Invalidate();
                 spotShadowmapTexHandles.clear();
@@ -59,7 +59,7 @@ namespace Pilot
         };
 
     public:
-        ~IndirectDrawPass() { destroy(); }
+        ~IndirectDrawTransparentPass() { destroy(); }
 
         void initialize(const DrawPassInitInfo& init_info);
         void update(RHI::D3D12CommandContext& context,

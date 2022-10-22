@@ -52,18 +52,36 @@ namespace Pilot
         pMaterialObj = pUploadMaterialBuffer->GetCpuVirtualAddress<HLSL::MaterialInstance>();
         pMeshesObj   = pUploadMeshBuffer->GetCpuVirtualAddress<HLSL::MeshInstance>();
 
-        // buffer for later draw
-        commandBufferForDraw.p_IndirectCommandBuffer =
-            std::make_shared<RHI::D3D12Buffer>(m_Device->GetLinkedDevice(),
-                                               HLSL::commandBufferCounterOffset + sizeof(uint64_t),
-                                               sizeof(HLSL::CommandSignatureParams),
-                                               D3D12_HEAP_TYPE_DEFAULT,
-                                               D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
-        commandBufferForDraw.p_IndirectCommandBufferUav =
-            std::make_shared<RHI::D3D12UnorderedAccessView>(m_Device->GetLinkedDevice(),
-                                                            commandBufferForDraw.p_IndirectCommandBuffer.get(),
-                                                            HLSL::MeshLimit,
-                                                            HLSL::commandBufferCounterOffset);
+
+        initializeDrawBuffer();
+    }
+
+    void IndirectCullPass::initializeDrawBuffer()
+    {
+        // buffer for opaque draw
+        auto opaqueBuffer = std::make_shared<RHI::D3D12Buffer>(m_Device->GetLinkedDevice(),
+                                                               HLSL::commandBufferCounterOffset + sizeof(uint64_t),
+                                                               sizeof(HLSL::CommandSignatureParams),
+                                                               D3D12_HEAP_TYPE_DEFAULT,
+                                                               D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
+        auto opaqueBufferUAV = std::make_shared<RHI::D3D12UnorderedAccessView>(
+            m_Device->GetLinkedDevice(), opaqueBuffer.get(), HLSL::MeshLimit, HLSL::commandBufferCounterOffset);
+
+        commandBufferForOpaqueDraw.p_IndirectCommandBuffer    = opaqueBuffer;
+        commandBufferForOpaqueDraw.p_IndirectCommandBufferUav = opaqueBufferUAV;
+
+
+        // buffer for transparent draw
+        auto transparentBuffer = std::make_shared<RHI::D3D12Buffer>(m_Device->GetLinkedDevice(),
+                                                                    HLSL::commandBufferCounterOffset + sizeof(uint64_t),
+                                                                    sizeof(HLSL::CommandSignatureParams),
+                                                                    D3D12_HEAP_TYPE_DEFAULT,
+                                                                    D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
+        auto transparentBufferUAV = std::make_shared<RHI::D3D12UnorderedAccessView>(
+            m_Device->GetLinkedDevice(), transparentBuffer.get(), HLSL::MeshLimit, HLSL::commandBufferCounterOffset);
+
+        commandBufferForTransparentDraw.p_IndirectCommandBuffer    = transparentBuffer;
+        commandBufferForTransparentDraw.p_IndirectCommandBufferUav = transparentBufferUAV;
 
     }
 
@@ -223,8 +241,9 @@ namespace Pilot
         indirectCullOutput.pPerframeBuffer = pPerframeBuffer;
         indirectCullOutput.pMaterialBuffer = pMaterialBuffer;
         indirectCullOutput.pMeshBuffer     = pMeshBuffer;
-        indirectCullOutput.p_IndirectCommandBuffer    = commandBufferForDraw.p_IndirectCommandBuffer;
-        indirectCullOutput.p_DirShadowmapCommandBuffer = dirShadowmapCommandBuffer.p_IndirectCommandBuffer;
+        indirectCullOutput.p_OpaqueDrawCommandBuffer      = commandBufferForOpaqueDraw.p_IndirectCommandBuffer;
+        indirectCullOutput.p_TransparentDrawCommandBuffer = commandBufferForTransparentDraw.p_IndirectCommandBuffer;
+        indirectCullOutput.p_DirShadowmapCommandBuffer    = dirShadowmapCommandBuffer.p_IndirectCommandBuffer;
         for (size_t i = 0; i < spotShadowmapCommandBuffer.size(); i++)
         {
             indirectCullOutput.p_SpotShadowmapCommandBuffers.push_back(
@@ -239,7 +258,8 @@ namespace Pilot
             RHI::D3D12CommandContext& copyContext = m_Device->GetLinkedDevice()->GetCopyContext1();
             copyContext.Open();
             {
-                copyContext.ResetCounter(commandBufferForDraw.p_IndirectCommandBuffer.get(), HLSL::commandBufferCounterOffset);
+                copyContext.ResetCounter(commandBufferForOpaqueDraw.p_IndirectCommandBuffer.get(), HLSL::commandBufferCounterOffset);
+                copyContext.ResetCounter(commandBufferForTransparentDraw.p_IndirectCommandBuffer.get(), HLSL::commandBufferCounterOffset);
                 if (dirShadowmapCommandBuffer.p_IndirectCommandBuffer != nullptr)
                 {
                     copyContext.ResetCounter(dirShadowmapCommandBuffer.p_IndirectCommandBuffer.get(), HLSL::commandBufferCounterOffset);
@@ -259,6 +279,7 @@ namespace Pilot
             asyncCompute.GetCommandQueue()->WaitForSyncHandle(copySyncHandle);
 
             asyncCompute.Open();
+            // Opaque and Transparent object cull
             {
                 D3D12ScopedEvent(asyncCompute, "Gpu Frustum Culling for rendering");
                 asyncCompute.SetPipelineState(registry.GetPipelineState(PipelineStates::IndirectCull));
@@ -266,22 +287,29 @@ namespace Pilot
 
                 asyncCompute->SetComputeRootConstantBufferView(0, pPerframeBuffer->GetGpuVirtualAddress());
                 asyncCompute->SetComputeRootShaderResourceView(1, pMeshBuffer->GetGpuVirtualAddress());
-                asyncCompute->SetComputeRootDescriptorTable(2, commandBufferForDraw.p_IndirectCommandBufferUav->GetGpuHandle());
+                asyncCompute->SetComputeRootShaderResourceView(2, pMaterialBuffer->GetGpuVirtualAddress());
+                asyncCompute->SetComputeRootDescriptorTable(3, commandBufferForOpaqueDraw.p_IndirectCommandBufferUav->GetGpuHandle());
+                asyncCompute->SetComputeRootDescriptorTable(4, commandBufferForTransparentDraw.p_IndirectCommandBufferUav->GetGpuHandle());
 
                 asyncCompute.Dispatch1D<128>(numMeshes);
             }
+
+            // DirectionLight shadow cull
             if (dirShadowmapCommandBuffer.p_IndirectCommandBuffer != nullptr)
             {
                 D3D12ScopedEvent(asyncCompute, "Gpu Frustum Culling direction light");
                 asyncCompute.SetPipelineState(registry.GetPipelineState(PipelineStates::IndirectCullDirectionShadowmap));
-                asyncCompute.SetComputeRootSignature(registry.GetRootSignature(RootSignatures::IndirectCull));
+                asyncCompute.SetComputeRootSignature(registry.GetRootSignature(RootSignatures::IndirectCullDirectionShadowmap));
                 
                 asyncCompute->SetComputeRootConstantBufferView(0, pPerframeBuffer->GetGpuVirtualAddress());
                 asyncCompute->SetComputeRootShaderResourceView(1,pMeshBuffer->GetGpuVirtualAddress());
-                asyncCompute->SetComputeRootDescriptorTable(2, dirShadowmapCommandBuffer.p_IndirectCommandBufferUav->GetGpuHandle());
+                asyncCompute->SetComputeRootShaderResourceView(2, pMaterialBuffer->GetGpuVirtualAddress());
+                asyncCompute->SetComputeRootDescriptorTable(3, dirShadowmapCommandBuffer.p_IndirectCommandBufferUav->GetGpuHandle());
 
                 asyncCompute.Dispatch1D<128>(numMeshes);
             }
+
+            // SpotLight shadow cull
             if (!spotShadowmapCommandBuffer.empty())
             {
                 D3D12ScopedEvent(asyncCompute, "Gpu Frustum Culling spot light");
@@ -293,7 +321,8 @@ namespace Pilot
                     asyncCompute->SetComputeRootConstantBufferView(0, pPerframeBuffer->GetGpuVirtualAddress());
                     asyncCompute->SetComputeRoot32BitConstant(1, spotShadowmapCommandBuffer[i].m_lightIndex, 0);
                     asyncCompute->SetComputeRootShaderResourceView(2, pMeshBuffer->GetGpuVirtualAddress());
-                    asyncCompute->SetComputeRootDescriptorTable(3, spotShadowmapCommandBuffer[i].p_IndirectCommandBufferUav->GetGpuHandle());
+                    asyncCompute->SetComputeRootShaderResourceView(3, pMaterialBuffer->GetGpuVirtualAddress());
+                    asyncCompute->SetComputeRootDescriptorTable(4, spotShadowmapCommandBuffer[i].p_IndirectCommandBufferUav->GetGpuHandle());
 
                     asyncCompute.Dispatch1D<128>(numMeshes);
                 }
@@ -316,8 +345,10 @@ namespace Pilot
         pMaterialBuffer = nullptr;
         pMeshBuffer     = nullptr;
 
-        commandBufferForDraw.p_IndirectCommandBufferUav = nullptr;
-        commandBufferForDraw.p_IndirectCommandBuffer    = nullptr;
+        commandBufferForOpaqueDraw.p_IndirectCommandBufferUav = nullptr;
+        commandBufferForOpaqueDraw.p_IndirectCommandBuffer    = nullptr;
+        commandBufferForTransparentDraw.p_IndirectCommandBufferUav = nullptr;
+        commandBufferForTransparentDraw.p_IndirectCommandBuffer    = nullptr;
 
         dirShadowmapCommandBuffer.Reset();
         for (size_t i = 0; i < spotShadowmapCommandBuffer.size(); i++)

@@ -7,6 +7,7 @@
 #include "runtime/function/render/renderer/indirect_cull_pass.h"
 #include "runtime/function/render/renderer/indirect_shadow_pass.h"
 #include "runtime/function/render/renderer/indirect_draw_pass.h"
+#include "runtime/function/render/renderer/indirect_draw_transparent_pass.h"
 #include "runtime/function/render/renderer/indirect_display_pass.h"
 
 namespace Pilot
@@ -35,11 +36,12 @@ namespace Pilot
         DXGI_FORMAT pipleineColorFormat;
         DXGI_FORMAT pipleineDepthFormat;
 
-        std::shared_ptr<UIPass>             mUIPass;
-        std::shared_ptr<IndirectCullPass>   mIndirectCullPass;
-        std::shared_ptr<IndirectShadowPass> mIndirectShadowPass;
-        std::shared_ptr<IndirectDrawPass>   mIndirectDrawPass;
-        std::shared_ptr<DisplayPass>        mDisplayPass;
+        std::shared_ptr<UIPass>                      mUIPass;
+        std::shared_ptr<IndirectCullPass>            mIndirectCullPass;
+        std::shared_ptr<IndirectShadowPass>          mIndirectShadowPass;
+        std::shared_ptr<IndirectDrawPass>            mIndirectOpaqueDrawPass;
+        std::shared_ptr<IndirectDrawTransparentPass> mIndirectTransparentDrawPass;
+        std::shared_ptr<DisplayPass>                 mDisplayPass;
         
         std::shared_ptr<RHI::D3D12Texture>            p_RenderTargetTex;
         std::shared_ptr<RHI::D3D12ShaderResourceView> p_RenderTargetTexSRV;
