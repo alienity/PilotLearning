@@ -257,7 +257,7 @@ float4 PSMain(VertexOutput input) : SV_Target0
 
     outColor = outColor * baseColor.rgb;
 
-    return float4(outColor.rgb, 1);
+    return float4(outColor.rgb, baseColor.a);
 }
 
 

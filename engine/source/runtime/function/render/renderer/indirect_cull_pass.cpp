@@ -292,6 +292,15 @@ namespace Pilot
                 asyncCompute->SetComputeRootDescriptorTable(4, commandBufferForTransparentDraw.p_IndirectCommandBufferUav->GetGpuHandle());
 
                 asyncCompute.Dispatch1D<128>(numMeshes);
+
+                // Transition to indirect argument state
+                asyncCompute.TransitionBarrier(commandBufferForOpaqueDraw.p_IndirectCommandBuffer.get(), D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT);
+                asyncCompute.TransitionBarrier(commandBufferForTransparentDraw.p_IndirectCommandBuffer.get(), D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT);
+            }
+
+            // Transparent object bitonic sort
+            {
+                
             }
 
             // DirectionLight shadow cull
@@ -307,6 +316,8 @@ namespace Pilot
                 asyncCompute->SetComputeRootDescriptorTable(3, dirShadowmapCommandBuffer.p_IndirectCommandBufferUav->GetGpuHandle());
 
                 asyncCompute.Dispatch1D<128>(numMeshes);
+
+                asyncCompute.TransitionBarrier(dirShadowmapCommandBuffer.p_IndirectCommandBuffer.get(), D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT);
             }
 
             // SpotLight shadow cull
@@ -325,6 +336,8 @@ namespace Pilot
                     asyncCompute->SetComputeRootDescriptorTable(4, spotShadowmapCommandBuffer[i].p_IndirectCommandBufferUav->GetGpuHandle());
 
                     asyncCompute.Dispatch1D<128>(numMeshes);
+
+                    asyncCompute.TransitionBarrier(spotShadowmapCommandBuffer[i].p_IndirectCommandBuffer.get(), D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT);
                 }
             }
             asyncCompute.Close();

@@ -25,7 +25,7 @@ AppendStructuredBuffer<CommandSignatureParams> g_TransDrawCommandBuffer : regist
     uint index = (Params.GroupID.x * 128) + Params.GroupIndex;
     if (index < g_ConstantBufferParams.total_mesh_num)
     {
-        MeshInstance     mesh     = g_MeshesInstance[index];
+        MeshInstance mesh = g_MeshesInstance[index];
         MaterialInstance material = g_MaterialsInstance[mesh.materialIndex];
 
         StructuredBuffer<PerMaterialUniformBufferObject> matBuffer =
