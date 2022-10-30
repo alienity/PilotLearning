@@ -269,7 +269,8 @@ namespace RHI
                       ResourceStateDeterminer(CD3DX12_RESOURCE_DESC::Buffer(SizeInBytes, ResourceFlags), HeapType)
                           .InferInitialState(),
                       std::nullopt),
-        HeapType(HeapType), Stride(Stride), ScopedPointer(HeapType == D3D12_HEAP_TYPE_UPLOAD ? Resource.Get() : nullptr)
+        HeapType(HeapType), SizeInBytes(SizeInBytes), Stride(Stride),
+        ScopedPointer(HeapType == D3D12_HEAP_TYPE_UPLOAD ? Resource.Get() : nullptr)
         // We do not need to unmap until we are done with the resource.  However, we must not write to
         // the resource while it is in use by the GPU (so we must use synchronization techniques).
         ,
@@ -287,7 +288,8 @@ namespace RHI
                       CD3DX12_RESOURCE_DESC::Buffer(SizeInBytes, ResourceFlags),
                       InitialResourceState,
                       std::nullopt),
-        HeapType(HeapType), Stride(Stride), ScopedPointer(HeapType == D3D12_HEAP_TYPE_UPLOAD ? Resource.Get() : nullptr)
+        HeapType(HeapType), SizeInBytes(SizeInBytes), Stride(Stride),
+        ScopedPointer(HeapType == D3D12_HEAP_TYPE_UPLOAD ? Resource.Get() : nullptr)
         // We do not need to unmap until we are done with the resource.  However, we must not write to
         // the resource while it is in use by the GPU (so we must use synchronization techniques).
         ,

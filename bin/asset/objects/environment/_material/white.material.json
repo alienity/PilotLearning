@@ -1,1 +1,7 @@
-{"base_color_factor": {"w": 1, "x": 1, "y": 1, "z": 1}, "base_colour_texture_file": "asset/objects/_textures/white.tga", "blend": true, "double_sided": false, "emissive_factor": {"x": 0, "y": 0, "z": 0}, "emissive_texture_file": "", "metallic_factor": 1, "metallic_roughness_texture_file": "asset/objects/_textures/mr.tga", "normal_scale": 1, "normal_texture_file": "asset/objects/_textures/n.tga", "occlusion_strength": 1, "occlusion_texture_file": "", "roughness_factor": 1, "shader_name": ""}
+{
+  "base_colour_texture_file": "asset/objects/_textures/white.tga",
+  "metallic_roughness_texture_file": "asset/objects/_textures/mr.tga",
+  "normal_texture_file": "asset/objects/_textures/n.tga",
+  "occlusion_texture_file": "",
+  "emissive_texture_file": ""
+}

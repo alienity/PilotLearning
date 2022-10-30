@@ -132,6 +132,7 @@ namespace RHI
         [[nodiscard]] D3D12_GPU_VIRTUAL_ADDRESS GetGpuVirtualAddress() const;
         [[nodiscard]] D3D12_GPU_VIRTUAL_ADDRESS GetGpuVirtualAddress(UINT Index) const;
         [[nodiscard]] UINT                      GetStride() const { return Stride; }
+        [[nodiscard]] UINT                      GetSizeInBytes() const { return SizeInBytes; }
         template<typename T>
         [[nodiscard]] T* GetCpuVirtualAddress() const
         {
@@ -167,6 +168,7 @@ namespace RHI
 
     private:
         D3D12_HEAP_TYPE    HeapType = {};
+        UINT               SizeInBytes = 0;
         UINT               Stride   = 0;
         D3D12ScopedPointer ScopedPointer; // Upload heap
         BYTE*              CpuVirtualAddress = nullptr;

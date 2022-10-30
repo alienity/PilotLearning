@@ -669,14 +669,14 @@ namespace Pilot
             {
                 MaterialRes* mat_res_ptr = static_cast<MaterialRes*>(value_ptr);
 
-                ImGui::Checkbox("IsBlend", &mat_res_ptr->m_blend);
-                ImGui::Checkbox("IsDoubleSide", &mat_res_ptr->m_double_sided);
-                ImGui::ColorEdit4("BaseColorFactor", mat_res_ptr->m_base_color_factor.ptr());
-                ImGui::DragFloat("MetallicFactor", &mat_res_ptr->m_metallic_factor, 0.02f, 0.0f, 1.0f);
-                ImGui::DragFloat("RoughnessFactor", &mat_res_ptr->m_roughness_factor, 0.02f, 0.0f, 1.0f);
-                ImGui::DragFloat("NormalScale", &mat_res_ptr->m_normal_scale, 0.02f, 0.0f, 1.0f);
-                ImGui::DragFloat("OcclusionStrength", &mat_res_ptr->m_occlusion_strength, 0.02f, 0.0f, 1.0f);
-                ImGui::DragFloat3("OcclusionStrength", mat_res_ptr->m_emissive_factor.ptr(), 0.02f, 0.0f, 1.0f);
+                ImGui::Checkbox("##IsBlend", &mat_res_ptr->m_blend);
+                ImGui::Checkbox("##IsDoubleSide", &mat_res_ptr->m_double_sided);
+                ImGui::ColorEdit4("##BaseColorFactor", mat_res_ptr->m_base_color_factor.ptr());
+                ImGui::DragFloat("##MetallicFactor", &mat_res_ptr->m_metallic_factor, 0.02f, 0.0f, 1.0f);
+                ImGui::DragFloat("##RoughnessFactor", &mat_res_ptr->m_roughness_factor, 0.02f, 0.0f, 1.0f);
+                ImGui::DragFloat("##NormalScale", &mat_res_ptr->m_normal_scale, 0.02f, 0.0f, 1.0f);
+                ImGui::DragFloat("##OcclusionStrength", &mat_res_ptr->m_occlusion_strength, 0.02f, 0.0f, 1.0f);
+                ImGui::DragFloat3("##OcclusionStrength", mat_res_ptr->m_emissive_factor.ptr(), 0.02f, 0.0f, 1.0f);
 
                 m_editor_ui_creator["TextureFilePath"]("BaseColorTextureFile", &mat_res_ptr->m_base_colour_texture_file);
                 m_editor_ui_creator["TextureFilePath"]("MetallicRoughnessTextureFile", &mat_res_ptr->m_metallic_roughness_texture_file);

@@ -24,8 +24,8 @@ namespace Pilot
 
 #define REFLECTION_BODY(class_name) \
     friend class Reflection::TypeFieldReflectionOparator::Type##class_name##Operator; \
-    friend class PSerializer;
-    // public: virtual std::string getTypeName() override {return #class_name;}
+    friend class PSerializer; \
+    public: virtual std::string getTypeName() {return #class_name;}
 
 #define REFLECTION_TYPE(class_name) \
     namespace Reflection \

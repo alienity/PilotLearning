@@ -225,6 +225,7 @@ namespace RHI
 
 	struct RgBufferUav
 	{
+        bool          Raw;
         std::uint32_t NumElements;
         std::uint64_t CounterOffsetInBytes;
 	};
@@ -287,9 +288,10 @@ namespace RHI
 			return *this;
 		}
 
-		RgViewDesc& AsBufferUav(std::uint32_t NumElements, std::uint64_t CounterOffsetInBytes)
+		RgViewDesc& AsBufferUav(bool Raw, std::uint32_t NumElements, std::uint64_t CounterOffsetInBytes)
 		{
 			Type						   = RgViewType::BufferUav;
+            BufferUav.Raw                  = Raw;
 			BufferUav.NumElements		   = NumElements;
 			BufferUav.CounterOffsetInBytes = CounterOffsetInBytes;
 			return *this;

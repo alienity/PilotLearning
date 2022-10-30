@@ -575,6 +575,7 @@ namespace RHI
                                           D3D12Resource*                          CounterResource = nullptr);
         explicit D3D12UnorderedAccessView(D3D12LinkedDevice* Device,
                                           D3D12Buffer*       Buffer,
+                                          bool               Raw,
                                           UINT               NumElements,
                                           UINT64             CounterOffsetInBytes);
         explicit D3D12UnorderedAccessView(D3D12LinkedDevice*  Device,
@@ -586,7 +587,7 @@ namespace RHI
 
     private:
         static D3D12_UNORDERED_ACCESS_VIEW_DESC
-        GetDesc(D3D12Buffer* Buffer, UINT NumElements, UINT64 CounterOffsetInBytes);
+        GetDesc(D3D12Buffer* Buffer, bool Raw, UINT NumElements, UINT64 CounterOffsetInBytes);
         static D3D12_UNORDERED_ACCESS_VIEW_DESC
         GetDesc(D3D12Texture* Texture, std::optional<UINT> OptArraySlice, std::optional<UINT> OptMipSlice);
 

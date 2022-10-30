@@ -198,7 +198,7 @@ namespace RHI
 			{
 			case RgViewType::BufferUav:
 			{
-				UnorderedAccessViews[i] = D3D12UnorderedAccessView(Device->GetLinkedDevice(), GetD3D12Buffer(RgView.Desc.AssociatedResource), RgView.Desc.BufferUav.NumElements, RgView.Desc.BufferUav.CounterOffsetInBytes);
+				UnorderedAccessViews[i] = D3D12UnorderedAccessView(Device->GetLinkedDevice(), GetD3D12Buffer(RgView.Desc.AssociatedResource), RgView.Desc.BufferUav.Raw, RgView.Desc.BufferUav.NumElements, RgView.Desc.BufferUav.CounterOffsetInBytes);
 			}
 			break;
 

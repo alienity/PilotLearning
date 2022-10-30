@@ -39,6 +39,14 @@ struct Shaders
 	// Compute Shaders
     struct CS
     {
+        inline static Shader BitonicIndirectArgsCS;
+        inline static Shader Bitonic32PreSortCS;
+        inline static Shader Bitonic32InnerSortCS;
+        inline static Shader Bitonic32OuterSortCS;
+        inline static Shader Bitonic64PreSortCS;
+        inline static Shader Bitonic64InnerSortCS;
+        inline static Shader Bitonic64OuterSortCS;
+        inline static Shader IndirectCullForSort;
         inline static Shader IndirectCull;
         inline static Shader IndirectCullDirectionShadowmap;
         inline static Shader IndirectCullSpotShadowmap;
@@ -78,6 +86,34 @@ struct Shaders
 
 		// CS
         {
+            constexpr LPCWSTR g_CSSortEntryPoint = L"main";
+
+            CS::BitonicIndirectArgsCS = Compiler->CompileShader(RHI_SHADER_TYPE::Compute,
+                                                                ShaderPath / "hlsl/BitonicIndirectArgsCS.hlsl",
+                                                                ShaderCompileOptions(g_CSSortEntryPoint));
+            CS::Bitonic32PreSortCS    = Compiler->CompileShader(RHI_SHADER_TYPE::Compute,
+                                                             ShaderPath / "hlsl/Bitonic32PreSortCS.hlsl",
+                                                             ShaderCompileOptions(g_CSSortEntryPoint));
+            CS::Bitonic32InnerSortCS  = Compiler->CompileShader(RHI_SHADER_TYPE::Compute,
+                                                               ShaderPath / "hlsl/Bitonic32InnerSortCS.hlsl",
+                                                               ShaderCompileOptions(g_CSSortEntryPoint));
+            CS::Bitonic32OuterSortCS  = Compiler->CompileShader(RHI_SHADER_TYPE::Compute,
+                                                               ShaderPath / "hlsl/Bitonic32OuterSortCS.hlsl",
+                                                               ShaderCompileOptions(g_CSSortEntryPoint));
+            CS::Bitonic64PreSortCS    = Compiler->CompileShader(RHI_SHADER_TYPE::Compute,
+                                                             ShaderPath / "hlsl/Bitonic64PreSortCS.hlsl",
+                                                             ShaderCompileOptions(g_CSSortEntryPoint));
+            CS::Bitonic64InnerSortCS  = Compiler->CompileShader(RHI_SHADER_TYPE::Compute,
+                                                               ShaderPath / "hlsl/Bitonic64InnerSortCS.hlsl",
+                                                               ShaderCompileOptions(g_CSSortEntryPoint));
+            CS::Bitonic64OuterSortCS  = Compiler->CompileShader(RHI_SHADER_TYPE::Compute,
+                                                               ShaderPath / "hlsl/Bitonic64OuterSortCS.hlsl",
+                                                               ShaderCompileOptions(g_CSSortEntryPoint));
+
+           CS::IndirectCullForSort = Compiler->CompileShader(RHI_SHADER_TYPE::Compute,
+                                                              ShaderPath / "hlsl/IndirectCullForSort.hlsl",
+                                                              ShaderCompileOptions(g_CSEntryPoint));
+
             ShaderCompileOptions meshCSOption(g_CSEntryPoint);
             CS::IndirectCull =
                 Compiler->CompileShader(RHI_SHADER_TYPE::Compute, ShaderPath / "hlsl/IndirectCull.hlsl", meshCSOption);
@@ -108,7 +144,10 @@ struct Libraries
 
 struct RootSignatures
 {
+    inline static RHI::RgResourceHandle BitonicSortRootSignature;
+
     inline static RHI::RgResourceHandle FullScreenPresent;
+    inline static RHI::RgResourceHandle IndirectCullForSort;
     inline static RHI::RgResourceHandle IndirectCull;
     inline static RHI::RgResourceHandle IndirectCullDirectionShadowmap;
     inline static RHI::RgResourceHandle IndirectCullSpotShadowmap;
@@ -118,97 +157,146 @@ struct RootSignatures
 
     static void Compile(RHI::D3D12Device* Device, RHI::RenderGraphRegistry& Registry)
     {
-        FullScreenPresent = Registry.CreateRootSignature(Device->CreateRootSignature(
-            RHI::RootSignatureDesc()
-                .Add32BitConstants<0, 0>(1)
-                .AddSampler<10, 0>(D3D12_FILTER::D3D12_FILTER_ANISOTROPIC, D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_WRAP, 8)
-                .AllowResourceDescriptorHeapIndexing()
-                .AllowSampleDescriptorHeapIndexing()));
+        {
+            RHI::RootSignatureDesc rootSigDesc = RHI::RootSignatureDesc()
+                                                     .Add32BitConstants<0, 0>(2)
+                                                     .AddShaderResourceView<0, 0>()
+                                                     .AddUnorderedAccessViewWithCounter<0, 0>()
+                                                     .Add32BitConstants<1, 0>(2)
+                                                     .AllowResourceDescriptorHeapIndexing();
 
-		IndirectCull =
-            Registry.CreateRootSignature(Device->CreateRootSignature(RHI::RootSignatureDesc()
-                                                                         .AddConstantBufferView<0, 0>()
-                                                                         .AddShaderResourceView<0, 0>()
-                                                                         .AddShaderResourceView<1, 0>()
-                                                                         .AddUnorderedAccessViewWithCounter<0, 0>()
-                                                                         .AddUnorderedAccessViewWithCounter<1, 0>()
-                                                                         .AllowResourceDescriptorHeapIndexing()
-                                                                         .AllowSampleDescriptorHeapIndexing()));
+            BitonicSortRootSignature = Registry.CreateRootSignature(Device->CreateRootSignature(rootSigDesc));
+        }
+        {
+            RHI::RootSignatureDesc rootSigDesc =
+                RHI::RootSignatureDesc()
+                    .Add32BitConstants<0, 0>(1)
+                    .AddSampler<10, 0>(D3D12_FILTER::D3D12_FILTER_ANISOTROPIC,
+                                       D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_WRAP,
+                                       8)
+                    .AllowResourceDescriptorHeapIndexing()
+                    .AllowSampleDescriptorHeapIndexing();
 
-        IndirectCullDirectionShadowmap =
-            Registry.CreateRootSignature(Device->CreateRootSignature(RHI::RootSignatureDesc()
-                                                                         .AddConstantBufferView<0, 0>()
-                                                                         .AddShaderResourceView<0, 0>()
-                                                                         .AddShaderResourceView<1, 0>()
-                                                                         .AddUnorderedAccessViewWithCounter<0, 0>()
-                                                                         .AllowResourceDescriptorHeapIndexing()
-                                                                         .AllowSampleDescriptorHeapIndexing()));
+            FullScreenPresent = Registry.CreateRootSignature(Device->CreateRootSignature(rootSigDesc));
+        }
 
-		IndirectCullSpotShadowmap =
-            Registry.CreateRootSignature(Device->CreateRootSignature(RHI::RootSignatureDesc()
-                                                                         .AddConstantBufferView<0, 0>()
-                                                                         .Add32BitConstants<1, 0>(1)
-                                                                         .AddShaderResourceView<0, 0>()
-                                                                         .AddShaderResourceView<1, 0>()
-                                                                         .AddUnorderedAccessViewWithCounter<0, 0>()
-                                                                         .AllowResourceDescriptorHeapIndexing()
-                                                                         .AllowSampleDescriptorHeapIndexing()));
+        {
+            RHI::RootSignatureDesc rootSigDesc = RHI::RootSignatureDesc()
+                                                     .AddConstantBufferView<0, 0>()
+                                                     .AddShaderResourceView<0, 0>()
+                                                     .AddShaderResourceView<1, 0>()
+                                                     .AddUnorderedAccessViewWithCounter<0, 0>()
+                                                     .AddUnorderedAccessViewWithCounter<1, 0>()
+                                                     .AllowResourceDescriptorHeapIndexing()
+                                                     .AllowSampleDescriptorHeapIndexing();
 
-		IndirectDraw = Registry.CreateRootSignature(Device->CreateRootSignature(
-            RHI::RootSignatureDesc()
-                .Add32BitConstants<0, 0>(1)
-                .AddConstantBufferView<1, 0>()
-                .AddShaderResourceView<0, 0>()
-                .AddShaderResourceView<1, 0>()
-                .AddSampler<10, 0>(D3D12_FILTER::D3D12_FILTER_ANISOTROPIC,
-                                   D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_WRAP,
-                                   8)
-                .AddSampler<11, 0>(D3D12_FILTER::D3D12_FILTER_COMPARISON_ANISOTROPIC,
-                                   D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
-                                   8,
-                                   D3D12_COMPARISON_FUNC::D3D12_COMPARISON_FUNC_GREATER_EQUAL,
-                                   D3D12_STATIC_BORDER_COLOR_OPAQUE_BLACK)
-                .AllowInputLayout()
-                .AllowResourceDescriptorHeapIndexing()
-                .AllowSampleDescriptorHeapIndexing()));
+            IndirectCullForSort = Registry.CreateRootSignature(Device->CreateRootSignature(rootSigDesc));
+            IndirectCull        = IndirectCullForSort;
+        }
 
-        IndirectDrawDirectionShadowmap = Registry.CreateRootSignature(Device->CreateRootSignature(
-            RHI::RootSignatureDesc()
-                .Add32BitConstants<0, 0>(1)
-                .AddConstantBufferView<1, 0>()
-                .AddShaderResourceView<0, 0>()
-                .AddShaderResourceView<1, 0>()
-                .AddSampler<10, 0>(D3D12_FILTER::D3D12_FILTER_ANISOTROPIC,
-                                   D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_WRAP,
-                                   8)
-                .AllowInputLayout()
-                .AllowResourceDescriptorHeapIndexing()
-                .AllowSampleDescriptorHeapIndexing()));
+        {
+            RHI::RootSignatureDesc rootSigDesc = RHI::RootSignatureDesc()
+                                                     .AddConstantBufferView<0, 0>()
+                                                     .AddShaderResourceView<0, 0>()
+                                                     .AddShaderResourceView<1, 0>()
+                                                     .AddUnorderedAccessViewWithCounter<0, 0>()
+                                                     .AllowResourceDescriptorHeapIndexing()
+                                                     .AllowSampleDescriptorHeapIndexing();
 
-        IndirectDrawSpotShadowmap = Registry.CreateRootSignature(Device->CreateRootSignature(
-            RHI::RootSignatureDesc()
-                .Add32BitConstants<0, 0>(2)
-                .AddConstantBufferView<1, 0>()
-                .AddShaderResourceView<0, 0>()
-                .AddShaderResourceView<1, 0>()
-                .AddSampler<10, 0>(D3D12_FILTER::D3D12_FILTER_ANISOTROPIC,
-                                   D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_WRAP,
-                                   8)
-                .AllowInputLayout()
-                .AllowResourceDescriptorHeapIndexing()
-                .AllowSampleDescriptorHeapIndexing()));
+            IndirectCullDirectionShadowmap = Registry.CreateRootSignature(Device->CreateRootSignature(rootSigDesc));
+        }
+
+        {
+            RHI::RootSignatureDesc rootSigDesc = RHI::RootSignatureDesc()
+                                                     .AddConstantBufferView<0, 0>()
+                                                     .Add32BitConstants<1, 0>(1)
+                                                     .AddShaderResourceView<0, 0>()
+                                                     .AddShaderResourceView<1, 0>()
+                                                     .AddUnorderedAccessViewWithCounter<0, 0>()
+                                                     .AllowResourceDescriptorHeapIndexing()
+                                                     .AllowSampleDescriptorHeapIndexing();
+
+            IndirectCullSpotShadowmap = Registry.CreateRootSignature(Device->CreateRootSignature(rootSigDesc));
+        }
+
+        {
+            RHI::RootSignatureDesc rootSigDesc =
+                RHI::RootSignatureDesc()
+                    .Add32BitConstants<0, 0>(1)
+                    .AddConstantBufferView<1, 0>()
+                    .AddShaderResourceView<0, 0>()
+                    .AddShaderResourceView<1, 0>()
+                    .AddSampler<10, 0>(D3D12_FILTER::D3D12_FILTER_ANISOTROPIC,
+                                       D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_WRAP,
+                                       8)
+                    .AddSampler<11, 0>(D3D12_FILTER::D3D12_FILTER_COMPARISON_ANISOTROPIC,
+                                       D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
+                                       8,
+                                       D3D12_COMPARISON_FUNC::D3D12_COMPARISON_FUNC_GREATER_EQUAL,
+                                       D3D12_STATIC_BORDER_COLOR_OPAQUE_BLACK)
+                    .AllowInputLayout()
+                    .AllowResourceDescriptorHeapIndexing()
+                    .AllowSampleDescriptorHeapIndexing();
+
+            IndirectDraw = Registry.CreateRootSignature(Device->CreateRootSignature(rootSigDesc));
+        }
+
+        {
+            RHI::RootSignatureDesc rootSigDesc =
+                RHI::RootSignatureDesc()
+                    .Add32BitConstants<0, 0>(1)
+                    .AddConstantBufferView<1, 0>()
+                    .AddShaderResourceView<0, 0>()
+                    .AddShaderResourceView<1, 0>()
+                    .AddSampler<10, 0>(D3D12_FILTER::D3D12_FILTER_ANISOTROPIC,
+                                       D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_WRAP,
+                                       8)
+                    .AllowInputLayout()
+                    .AllowResourceDescriptorHeapIndexing()
+                    .AllowSampleDescriptorHeapIndexing();
+
+            IndirectDrawDirectionShadowmap = Registry.CreateRootSignature(Device->CreateRootSignature(rootSigDesc));
+        }
+
+        {
+            RHI::RootSignatureDesc rootSigDesc =
+                RHI::RootSignatureDesc()
+                    .Add32BitConstants<0, 0>(2)
+                    .AddConstantBufferView<1, 0>()
+                    .AddShaderResourceView<0, 0>()
+                    .AddShaderResourceView<1, 0>()
+                    .AddSampler<10, 0>(D3D12_FILTER::D3D12_FILTER_ANISOTROPIC,
+                                       D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_WRAP,
+                                       8)
+                    .AllowInputLayout()
+                    .AllowResourceDescriptorHeapIndexing()
+                    .AllowSampleDescriptorHeapIndexing();
+
+            IndirectDrawSpotShadowmap = Registry.CreateRootSignature(Device->CreateRootSignature(rootSigDesc));
+        }
 
     }
 };
 
 struct CommandSignatures
 {
+    inline static RHI::RgResourceHandle DispatchIndirectCommandSignature;
+
     inline static RHI::RgResourceHandle IndirectDraw;
     inline static RHI::RgResourceHandle IndirectDrawDirectionShadowmap;
     inline static RHI::RgResourceHandle IndirectDrawSpotShadowmap;
 
     static void Compile(RHI::D3D12Device* Device, RHI::RenderGraphRegistry& Registry)
     {
+        {
+            RHI::CommandSignatureDesc Builder(1, sizeof(D3D12_DISPATCH_ARGUMENTS));
+            Builder.AddDispatch();
+
+            DispatchIndirectCommandSignature =
+                Registry.CreateCommandSignature(RHI::D3D12CommandSignature(Device, Builder, nullptr));
+
+        }
+
         {
             RHI::CommandSignatureDesc Builder(4, sizeof(HLSL::CommandSignatureParams));
             Builder.AddConstant(0, 0, 1);
@@ -252,7 +340,16 @@ struct CommandSignatures
 
 struct PipelineStates
 {
+    inline static RHI::RgResourceHandle BitonicIndirectArgsPSO;
+    inline static RHI::RgResourceHandle Bitonic32PreSortPSO;
+    inline static RHI::RgResourceHandle Bitonic32InnerSortPSO;
+    inline static RHI::RgResourceHandle Bitonic32OuterSortPSO;
+    inline static RHI::RgResourceHandle Bitonic64PreSortPSO;
+    inline static RHI::RgResourceHandle Bitonic64InnerSortPSO;
+    inline static RHI::RgResourceHandle Bitonic64OuterSortPSO;
+
     inline static RHI::RgResourceHandle FullScreenPresent;
+    inline static RHI::RgResourceHandle IndirectCullForSort;
     inline static RHI::RgResourceHandle IndirectCull;
     inline static RHI::RgResourceHandle IndirectCullDirectionShadowmap;
     inline static RHI::RgResourceHandle IndirectCullSpotShadowmap;
@@ -264,6 +361,42 @@ struct PipelineStates
 
     static void Compile(DXGI_FORMAT PiplineRtFormat, DXGI_FORMAT PipelineDsFormat, DXGI_FORMAT RtFormat, DXGI_FORMAT DsFormat, RHI::D3D12Device* Device, RHI::RenderGraphRegistry& Registry)
     {
+        {
+            struct PsoStream
+            {
+                PipelineStateStreamRootSignature RootSignature;
+                PipelineStateStreamCS            CS;
+            } Stream;
+            Stream.RootSignature = Registry.GetRootSignature(RootSignatures::BitonicSortRootSignature);
+
+            Stream.CS = &Shaders::CS::BitonicIndirectArgsCS;
+            BitonicIndirectArgsPSO =
+                Registry.CreatePipelineState(Device->CreatePipelineState(L"Bitonic Sort: Indirect Args CS", Stream));
+
+            Stream.CS = &Shaders::CS::Bitonic32PreSortCS;
+            Bitonic32PreSortPSO =
+                Registry.CreatePipelineState(Device->CreatePipelineState(L"Bitonic Sort: 32 Pre Sort CS", Stream));
+
+            Stream.CS = &Shaders::CS::Bitonic32InnerSortCS;
+            Bitonic32InnerSortPSO =
+                Registry.CreatePipelineState(Device->CreatePipelineState(L"Bitonic Sort: 32 Inner Sort CS", Stream));
+
+            Stream.CS = &Shaders::CS::Bitonic32OuterSortCS;
+            Bitonic32OuterSortPSO =
+                Registry.CreatePipelineState(Device->CreatePipelineState(L"Bitonic Sort: 32 Outer Sort CS", Stream));
+
+            Stream.CS = &Shaders::CS::Bitonic64PreSortCS;
+            Bitonic64PreSortPSO =
+                Registry.CreatePipelineState(Device->CreatePipelineState(L"Bitonic Sort: 64 Pre Sort CS", Stream));
+
+            Stream.CS = &Shaders::CS::Bitonic64InnerSortCS;
+            Bitonic64InnerSortPSO =
+                Registry.CreatePipelineState(Device->CreatePipelineState(L"Bitonic Sort: 64 Inner Sort CS", Stream));
+
+            Stream.CS = &Shaders::CS::Bitonic64OuterSortCS;
+            Bitonic64OuterSortPSO =
+                Registry.CreatePipelineState(Device->CreatePipelineState(L"Bitonic Sort: 64 Outer Sort CS", Stream));
+        }
         {
             RHI::D3D12InputLayout InputLayout;
 
@@ -294,6 +427,17 @@ struct PipelineStates
             Stream.RenderTargetState     = RenderTargetState;
 
             FullScreenPresent = Registry.CreatePipelineState(Device->CreatePipelineState(L"FullScreenPresent", Stream));
+        }
+        {
+            struct PsoStream
+            {
+                PipelineStateStreamRootSignature RootSignature;
+                PipelineStateStreamCS            CS;
+            } Stream;
+            Stream.RootSignature = Registry.GetRootSignature(RootSignatures::IndirectCullForSort);
+            Stream.CS            = &Shaders::CS::IndirectCullForSort;
+
+            IndirectCullForSort = Registry.CreatePipelineState(Device->CreatePipelineState(L"IndirectCullForSort", Stream));
         }
         {
             struct PsoStream
