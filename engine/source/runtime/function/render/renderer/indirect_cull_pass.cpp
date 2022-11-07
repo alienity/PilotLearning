@@ -73,31 +73,27 @@ namespace Pilot
                                                    sizeof(HLSL::BitonicSortCommandSigParams),
                                                    D3D12_HEAP_TYPE_DEFAULT,
                                                    D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
+            opaqueIndexBuffer->SetResourceName("OpaqueIndexBuffer");
 
-            auto opaqueIndexBufferSRV = std::make_shared<RHI::D3D12ShaderResourceView>(
-                m_Device->GetLinkedDevice(), opaqueIndexBuffer.get(), false, 0, HLSL::MeshLimit);
+            auto opaqueIndexBufferSRV =
+                std::make_shared<RHI::D3D12ShaderResourceView>(m_Device->GetLinkedDevice(), opaqueIndexBuffer.get());
 
             auto opaqueIndexBufferUAV =
-                std::make_shared<RHI::D3D12UnorderedAccessView>(m_Device->GetLinkedDevice(),
-                                                                opaqueIndexBuffer.get(),
-                                                                false,
-                                                                HLSL::MeshLimit,
-                                                                HLSL::indexCommandBufferCounterOffset);
+                std::make_shared<RHI::D3D12UnorderedAccessView>(m_Device->GetLinkedDevice(), opaqueIndexBuffer.get());
 
             commandBufferForOpaqueDraw.p_IndirectIndexCommandBuffer    = opaqueIndexBuffer;
             commandBufferForOpaqueDraw.p_IndirectIndexCommandBufferSRV = opaqueIndexBufferSRV;
             commandBufferForOpaqueDraw.p_IndirectIndexCommandBufferUav = opaqueIndexBufferUAV;
 
-            auto opaqueBuffer    = std::make_shared<RHI::D3D12Buffer>(m_Device->GetLinkedDevice(),
+            auto opaqueBuffer = std::make_shared<RHI::D3D12Buffer>(m_Device->GetLinkedDevice(),
                                                                    HLSL::commandBufferCounterOffset + sizeof(uint64_t),
                                                                    sizeof(HLSL::CommandSignatureParams),
                                                                    D3D12_HEAP_TYPE_DEFAULT,
                                                                    D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
-            auto opaqueBufferUAV = std::make_shared<RHI::D3D12UnorderedAccessView>(m_Device->GetLinkedDevice(),
-                                                                                   opaqueBuffer.get(),
-                                                                                   false,
-                                                                                   HLSL::MeshLimit,
-                                                                                   HLSL::commandBufferCounterOffset);
+            opaqueBuffer->SetResourceName("OpaqueBuffer");
+
+            auto opaqueBufferUAV = std::make_shared<RHI::D3D12UnorderedAccessView>(
+                m_Device->GetLinkedDevice(), opaqueBuffer.get(), HLSL::MeshLimit, HLSL::commandBufferCounterOffset);
 
             commandBufferForOpaqueDraw.p_IndirectSortCommandBuffer    = opaqueBuffer;
             commandBufferForOpaqueDraw.p_IndirectSortCommandBufferUav = opaqueBufferUAV;
@@ -111,16 +107,13 @@ namespace Pilot
                                                    sizeof(HLSL::BitonicSortCommandSigParams),
                                                    D3D12_HEAP_TYPE_DEFAULT,
                                                    D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
+            transparentIndexBuffer->SetResourceName("TransparentIndexBuffer");
 
             auto transparentIndexBufferSRV = std::make_shared<RHI::D3D12ShaderResourceView>(
-                m_Device->GetLinkedDevice(), transparentIndexBuffer.get(), false, 0, HLSL::MeshLimit);
+                m_Device->GetLinkedDevice(), transparentIndexBuffer.get());
 
-            auto transparentIndexBufferUAV =
-                std::make_shared<RHI::D3D12UnorderedAccessView>(m_Device->GetLinkedDevice(),
-                                                                transparentIndexBuffer.get(),
-                                                                false,
-                                                                HLSL::MeshLimit,
-                                                                HLSL::indexCommandBufferCounterOffset);
+            auto transparentIndexBufferUAV = std::make_shared<RHI::D3D12UnorderedAccessView>(
+                m_Device->GetLinkedDevice(), transparentIndexBuffer.get());
 
             commandBufferForTransparentDraw.p_IndirectIndexCommandBuffer    = transparentIndexBuffer;
             commandBufferForTransparentDraw.p_IndirectIndexCommandBufferSRV = transparentIndexBufferSRV;
@@ -132,10 +125,11 @@ namespace Pilot
                                                    sizeof(HLSL::CommandSignatureParams),
                                                    D3D12_HEAP_TYPE_DEFAULT,
                                                    D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
+            transparentBuffer->SetResourceName("TransparentBuffer");
+
             auto transparentBufferUAV =
                 std::make_shared<RHI::D3D12UnorderedAccessView>(m_Device->GetLinkedDevice(),
                                                                 transparentBuffer.get(),
-                                                                false,
                                                                 HLSL::MeshLimit,
                                                                 HLSL::commandBufferCounterOffset);
 
@@ -307,7 +301,7 @@ namespace Pilot
                                        bool                                           sortAscending)
     {
         const uint32_t ElementSizeBytes      = keyIndexList->GetStride();
-        const uint32_t MaxNumElements        = keyIndexList->GetSizeInBytes() / ElementSizeBytes;
+        const uint32_t MaxNumElements        = 1024; //keyIndexList->GetSizeInBytes() / ElementSizeBytes;
         const uint32_t AlignedMaxNumElements = Pilot::AlignPowerOfTwo(MaxNumElements);
         const uint32_t MaxIterations         = Pilot::Log2(std::max(2048u, AlignedMaxNumElements)) - 10;
 
@@ -317,16 +311,13 @@ namespace Pilot
 
         // This controls two things.  It is a key that will sort to the end, and it is a mask used to
         // determine whether the current group should sort ascending or descending.
-        context->SetComputeRoot32BitConstant(3, counterOffset, 0);
-        context->SetComputeRoot32BitConstant(3, sortAscending ? 0xffffffff : 0, 1);
+        context.SetConstants(3, counterOffset, sortAscending ? 0xffffffff : 0);
         
         // Generate execute indirect arguments
         context.SetPipelineState(registry.GetPipelineState(PipelineStates::BitonicIndirectArgsPSO));
         context.TransitionBarrier(countBuffer.get(), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
         context.TransitionBarrier(pSortDispatchArgs.get(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-        context->SetComputeRoot32BitConstant(0, MaxIterations, 0);
-        //context->SetComputeRootShaderResourceView(1, countBuffer->GetGpuVirtualAddress());
-        //context->SetComputeRootUnorderedAccessView(2, keyIndexList->GetGpuVirtualAddress());
+        context.SetConstants(0, MaxIterations);
         context->SetComputeRootDescriptorTable(1, countBufferSRV->GetGpuHandle());
         context->SetComputeRootDescriptorTable(2, keyIndexListUAV->GetGpuHandle());
         context.Dispatch(1, 1, 1);
@@ -336,6 +327,8 @@ namespace Pilot
         context.TransitionBarrier(pSortDispatchArgs.get(), D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT);
         context.TransitionBarrier(keyIndexList.get(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
         context.UAVBarrier(keyIndexList.get());
+        context.FlushResourceBarriers();
+
         //context->SetComputeRootUnorderedAccessView(2, keyIndexList->GetGpuVirtualAddress());
         context->SetComputeRootDescriptorTable(2, keyIndexListUAV->GetGpuHandle());
 
@@ -447,10 +440,14 @@ namespace Pilot
             asyncCompute.Open();
             // Opaque and Transparent object cull
             {
+                asyncCompute.TransitionBarrier(commandBufferForOpaqueDraw.p_IndirectIndexCommandBuffer.get(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+                asyncCompute.TransitionBarrier(commandBufferForTransparentDraw.p_IndirectIndexCommandBuffer.get(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+                asyncCompute.UAVBarrier(commandBufferForOpaqueDraw.p_IndirectIndexCommandBuffer.get());
+                asyncCompute.UAVBarrier(commandBufferForTransparentDraw.p_IndirectIndexCommandBuffer.get());
+
                 D3D12ScopedEvent(asyncCompute, "Gpu Frustum Culling for Sort");
                 asyncCompute.SetPipelineState(registry.GetPipelineState(PipelineStates::IndirectCullForSort));
                 asyncCompute.SetComputeRootSignature(registry.GetRootSignature(RootSignatures::IndirectCullForSort));
-
                 asyncCompute->SetComputeRootConstantBufferView(0, pPerframeBuffer->GetGpuVirtualAddress());
                 asyncCompute->SetComputeRootShaderResourceView(1, pMeshBuffer->GetGpuVirtualAddress());
                 asyncCompute->SetComputeRootShaderResourceView(2, pMaterialBuffer->GetGpuVirtualAddress());
@@ -459,7 +456,7 @@ namespace Pilot
 
                 asyncCompute.Dispatch1D<128>(numMeshes);
             }
-
+            
             //  Opaque object bitonic sort
             {
                 D3D12ScopedEvent(asyncCompute, "Bitonic Sort for opaque");
@@ -469,7 +466,9 @@ namespace Pilot
                             commandBufferForOpaqueDraw.p_IndirectIndexCommandBufferUav,
                             commandBufferForOpaqueDraw.p_IndirectIndexCommandBuffer,
                             commandBufferForOpaqueDraw.p_IndirectIndexCommandBufferSRV,
-                            HLSL::commandBufferCounterOffset, true, false);
+                            HLSL::commandBufferCounterOffset,
+                            true,
+                            false);
             }
 
             // Transparent object bitonic sort
@@ -485,7 +484,7 @@ namespace Pilot
                             true,
                             true);
             }
-
+            
             // Output Object Buffer
             {
                 /*

@@ -563,6 +563,17 @@ namespace RHI
         D3D12ShaderResourceView(Device, GetDesc(Buffer, Raw, FirstElement, NumElements), Buffer)
     {}
 
+    D3D12ShaderResourceView::D3D12ShaderResourceView(D3D12LinkedDevice* Device,
+                                                     D3D12Buffer*       Buffer,
+                                                     UINT               FirstElement,
+                                                     UINT               NumElements) :
+        D3D12ShaderResourceView(Device, GetDesc(Buffer, false, FirstElement, NumElements), Buffer)
+    {}
+
+    D3D12ShaderResourceView::D3D12ShaderResourceView(D3D12LinkedDevice* Device, D3D12Buffer* Buffer) :
+        D3D12ShaderResourceView(Device, GetDesc(Buffer, true, 0, 0), Buffer)
+    {}
+
     D3D12ShaderResourceView::D3D12ShaderResourceView(D3D12LinkedDevice*  Device,
                                                      D3D12Texture*       Texture,
                                                      bool                sRGB,
@@ -701,9 +712,10 @@ namespace RHI
                                                        D3D12Resource*                          Resource,
                                                        D3D12Resource* CounterResource /*= nullptr*/) :
         D3D12DynamicView(Device, Desc, Resource),
-        CounterResource(CounterResource)
+        CounterResource((Desc.Buffer.Flags == D3D12_BUFFER_UAV_FLAG_RAW) ? nullptr : CounterResource)
     {
-        assert(!(CounterResource != nullptr && Desc.Buffer.Flags == D3D12_BUFFER_UAV_FLAG_RAW) && "cannot create byteaddressbuffer with counter resource");
+        assert(!(this->CounterResource != nullptr && Desc.Buffer.Flags == D3D12_BUFFER_UAV_FLAG_RAW) &&
+               "cannot create byteaddressbuffer with counter resource");
         RecreateView();
     }
 
@@ -712,7 +724,18 @@ namespace RHI
                                                        bool               Raw,
                                                        UINT               NumElements,
                                                        UINT64             CounterOffsetInBytes) :
-        D3D12UnorderedAccessView(Device, GetDesc(Buffer, Raw, NumElements, CounterOffsetInBytes), Buffer, Buffer)
+        D3D12UnorderedAccessView(Device, GetDesc(Buffer, Raw, NumElements, CounterOffsetInBytes), Buffer, Raw ? nullptr : Buffer)
+    {}
+
+    D3D12UnorderedAccessView::D3D12UnorderedAccessView(D3D12LinkedDevice* Device,
+                                                       D3D12Buffer*       Buffer,
+                                                       UINT               NumElements,
+                                                       UINT64             CounterOffsetInBytes) :
+        D3D12UnorderedAccessView(Device, GetDesc(Buffer, false, NumElements, CounterOffsetInBytes), Buffer, Buffer)
+    {}
+
+    D3D12UnorderedAccessView::D3D12UnorderedAccessView(D3D12LinkedDevice* Device, D3D12Buffer* Buffer) :
+        D3D12UnorderedAccessView(Device, GetDesc(Buffer, true, 0, 0), Buffer, nullptr)
     {}
 
     D3D12UnorderedAccessView::D3D12UnorderedAccessView(D3D12LinkedDevice*  Device,

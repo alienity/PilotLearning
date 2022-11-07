@@ -547,6 +547,12 @@ namespace RHI
                                          bool               Raw,
                                          UINT               FirstElement,
                                          UINT               NumElements);
+        explicit D3D12ShaderResourceView(D3D12LinkedDevice* Device,
+                                         D3D12Buffer*       Buffer,
+                                         UINT               FirstElement,
+                                         UINT               NumElements);
+        explicit D3D12ShaderResourceView(D3D12LinkedDevice* Device,
+                                         D3D12Buffer*       Buffer);
         explicit D3D12ShaderResourceView(D3D12LinkedDevice*  Device,
                                          D3D12Texture*       Texture,
                                          bool                sRGB,
@@ -578,6 +584,11 @@ namespace RHI
                                           bool               Raw,
                                           UINT               NumElements,
                                           UINT64             CounterOffsetInBytes);
+        explicit D3D12UnorderedAccessView(D3D12LinkedDevice* Device,
+                                          D3D12Buffer*       Buffer,
+                                          UINT               NumElements,
+                                          UINT64             CounterOffsetInBytes);
+        explicit D3D12UnorderedAccessView(D3D12LinkedDevice* Device, D3D12Buffer* Buffer);
         explicit D3D12UnorderedAccessView(D3D12LinkedDevice*  Device,
                                           D3D12Texture*       Texture,
                                           std::optional<UINT> OptArraySlice,

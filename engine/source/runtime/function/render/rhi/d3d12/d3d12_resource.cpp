@@ -112,9 +112,8 @@ namespace RHI
                                  Microsoft::WRL::ComPtr<ID3D12Resource>&& Resource,
                                  D3D12_CLEAR_VALUE                        ClearValue,
                                  D3D12_RESOURCE_STATES                    InitialResourceState) :
-        D3D12LinkedDeviceChild(Parent),
-        Resource(std::move(Resource)), ClearValue(ClearValue), Desc(this->Resource->GetDesc()),
-        PlaneCount(D3D12GetFormatPlaneCount(Parent->GetDevice(), Desc.Format)),
+        D3D12LinkedDeviceChild(Parent),m_pResource(std::move(Resource)), ClearValue(ClearValue),
+        Desc(this->m_pResource->GetDesc()), PlaneCount(D3D12GetFormatPlaneCount(Parent->GetDevice(), Desc.Format)),
         NumSubresources(CalculateNumSubresources()), ResourceState(NumSubresources, InitialResourceState)
     {}
 
@@ -124,10 +123,27 @@ namespace RHI
                                  D3D12_RESOURCE_STATES            InitialResourceState,
                                  std::optional<D3D12_CLEAR_VALUE> ClearValue) :
         D3D12LinkedDeviceChild(Parent),
-        Resource(InitializeResource(HeapProperties, Desc, InitialResourceState, ClearValue)), ClearValue(ClearValue),
-        Desc(Resource->GetDesc()), PlaneCount(D3D12GetFormatPlaneCount(Parent->GetDevice(), Desc.Format)),
+        m_pResource(InitializeResource(HeapProperties, Desc, InitialResourceState, ClearValue)), ClearValue(ClearValue),
+        Desc(m_pResource->GetDesc()), PlaneCount(D3D12GetFormatPlaneCount(Parent->GetDevice(), Desc.Format)),
         NumSubresources(CalculateNumSubresources()), ResourceState(NumSubresources, InitialResourceState)
     {}
+
+    void D3D12Resource ::Destroy()
+    {
+        m_pResource       = nullptr;
+    }
+
+    D3D12_GPU_VIRTUAL_ADDRESS D3D12Resource::GetGpuVirtualAddress() const
+    {
+        return m_pResource->GetGPUVirtualAddress();
+    }
+
+    void D3D12Resource::SetResourceName(std::string name)
+    {
+        std::wstring stemp = std::wstring(name.begin(), name.end());
+        LPCWSTR      sw    = stemp.c_str();
+        m_pResource->SetName(sw);
+    }
 
     bool D3D12Resource::ImplicitStatePromotion(D3D12_RESOURCE_STATES State) const noexcept
     {
@@ -256,8 +272,6 @@ namespace RHI
                       std::nullopt)
     {}
 
-    D3D12_GPU_VIRTUAL_ADDRESS D3D12ASBuffer::GetGpuVirtualAddress() const { return Resource->GetGPUVirtualAddress(); }
-
     D3D12Buffer::D3D12Buffer(D3D12LinkedDevice*   Parent,
                              UINT64               SizeInBytes,
                              UINT                 Stride,
@@ -270,7 +284,7 @@ namespace RHI
                           .InferInitialState(),
                       std::nullopt),
         HeapType(HeapType), SizeInBytes(SizeInBytes), Stride(Stride),
-        ScopedPointer(HeapType == D3D12_HEAP_TYPE_UPLOAD ? Resource.Get() : nullptr)
+        ScopedPointer(HeapType == D3D12_HEAP_TYPE_UPLOAD ? m_pResource.Get() : nullptr)
         // We do not need to unmap until we are done with the resource.  However, we must not write to
         // the resource while it is in use by the GPU (so we must use synchronization techniques).
         ,
@@ -289,18 +303,16 @@ namespace RHI
                       InitialResourceState,
                       std::nullopt),
         HeapType(HeapType), SizeInBytes(SizeInBytes), Stride(Stride),
-        ScopedPointer(HeapType == D3D12_HEAP_TYPE_UPLOAD ? Resource.Get() : nullptr)
+        ScopedPointer(HeapType == D3D12_HEAP_TYPE_UPLOAD ? m_pResource.Get() : nullptr)
         // We do not need to unmap until we are done with the resource.  However, we must not write to
         // the resource while it is in use by the GPU (so we must use synchronization techniques).
         ,
         CpuVirtualAddress(ScopedPointer.Address)
     {}
 
-    D3D12_GPU_VIRTUAL_ADDRESS D3D12Buffer::GetGpuVirtualAddress() const { return Resource->GetGPUVirtualAddress(); }
-
     D3D12_GPU_VIRTUAL_ADDRESS D3D12Buffer::GetGpuVirtualAddress(UINT Index) const
     {
-        return Resource->GetGPUVirtualAddress() + static_cast<UINT64>(Index) * Stride;
+        return m_pResource->GetGPUVirtualAddress() + static_cast<UINT64>(Index) * Stride;
     }
 
     D3D12Texture::D3D12Texture(D3D12LinkedDevice*                       Parent,
@@ -333,6 +345,56 @@ namespace RHI
         UINT PlaneSlice = OptPlaneSlice.value_or(0);
         return D3D12CalcSubresource(MipSlice, ArraySlice, PlaneSlice, Desc.MipLevels, Desc.DepthOrArraySize);
     }
+
+    UploadBuffer::UploadBuffer(D3D12LinkedDevice* Parent, const std::wstring& name, size_t BufferSize) :
+        D3D12Resource(Parent,
+                      CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
+                      CD3DX12_RESOURCE_DESC::Buffer(BufferSize),
+                      D3D12_RESOURCE_STATE_GENERIC_READ,
+                      std::nullopt),
+        m_BufferSize(BufferSize)
+    {
+        this->m_pResource->SetName(name.c_str());
+    }
+
+    void* UploadBuffer::Map(void)
+    {
+        void* Memory;
+        m_pResource->Map(0, &CD3DX12_RANGE(0, m_BufferSize), &Memory);
+        return Memory;
+    }
+
+    void UploadBuffer::Unmap(size_t begin, size_t end)
+    {
+        m_pResource->Unmap(0, &CD3DX12_RANGE(begin, std::min(end, m_BufferSize)));
+    }
+
+    void PixelBuffer::AssociateWithResource(ID3D12Device*         Device,
+                                            const std::wstring&   Name,
+                                            ID3D12Resource*       Resource,
+                                            D3D12_RESOURCE_STATES CurrentState)
+    {
+        (Device); // Unused until we support multiple adapters
+
+        assert(Resource != nullptr);
+        D3D12_RESOURCE_DESC ResourceDesc = Resource->GetDesc();
+
+        m_pResource.Attach(Resource);
+
+        ResourceState = (1, CurrentState);
+
+        m_Width     = (uint32_t)ResourceDesc.Width; // We don't care about large virtual textures yet
+        m_Height    = ResourceDesc.Height;
+        m_ArraySize = ResourceDesc.DepthOrArraySize;
+        m_Format    = ResourceDesc.Format;
+
+#ifndef RELEASE
+        m_pResource->SetName(Name.c_str());
+#else
+        (Name);
+#endif
+    }
+
 
 }
 

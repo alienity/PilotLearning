@@ -1,5 +1,6 @@
 #pragma once
 
+#include "runtime/function/render/rhi/d3d12/d3d12_rootSignature.h"
 #include "runtime/function/render/rhi/rhi.h"
 #include "runtime/function/render/rhi/rendergraph/RenderGraphCommon.h"
 #include "runtime/function/render/rhi/rendergraph/RenderGraphRegistry.h"
@@ -158,12 +159,22 @@ struct RootSignatures
     static void Compile(RHI::D3D12Device* Device, RHI::RenderGraphRegistry& Registry)
     {
         {
-            RHI::RootSignatureDesc rootSigDesc = RHI::RootSignatureDesc()
-                                                     .Add32BitConstants<0, 0>(2)
-                                                     .AddShaderResourceView<0, 0>()
-                                                     .AddUnorderedAccessViewWithCounter<0, 0>()
-                                                     .Add32BitConstants<1, 0>(2)
-                                                     .AllowResourceDescriptorHeapIndexing();
+            //RHI::RootSignatureDesc rootSigDesc = RHI::RootSignatureDesc()
+            //                                         .Add32BitConstants<0, 0>(2)
+            //                                         .AddShaderResourceView<0, 0>()
+            //                                         .AddUnorderedAccessViewWithCounter<0, 0>()
+            //                                         .Add32BitConstants<1, 0>(2)
+            //                                         .AllowResourceDescriptorHeapIndexing();
+
+            RHI::RootSignatureDesc rootSigDesc =
+                RHI::RootSignatureDesc()
+                    .Add32BitConstants<0, 0>(2)
+                    .AddDescriptorTable(
+                        RHI::D3D12DescriptorTable(1).AddSRVRange<0, 0>(1, D3D12_DESCRIPTOR_RANGE_FLAG_NONE, 0))
+                    .AddDescriptorTable(
+                        RHI::D3D12DescriptorTable(1).AddUAVRange<0, 0>(1, D3D12_DESCRIPTOR_RANGE_FLAG_NONE, 0))
+                    .Add32BitConstants<1, 0>(2)
+                    .AllowResourceDescriptorHeapIndexing();
 
             BitonicSortRootSignature = Registry.CreateRootSignature(Device->CreateRootSignature(rootSigDesc));
         }

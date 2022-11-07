@@ -52,13 +52,30 @@ namespace RHI
                       D3D12_RESOURCE_STATES            InitialResourceState,
                       std::optional<D3D12_CLEAR_VALUE> ClearValue);
 
+        ~D3D12Resource() { Destroy(); };
+
+        virtual void Destroy();
+
         D3D12Resource(D3D12Resource&&) noexcept = default;
         D3D12Resource& operator=(D3D12Resource&&) noexcept = default;
 
         D3D12Resource(const D3D12Resource&) = delete;
         D3D12Resource& operator=(const D3D12Resource&) = delete;
 
-        [[nodiscard]] ID3D12Resource*   GetResource() const { return Resource.Get(); }
+        ID3D12Resource*       operator->() { return m_pResource.Get(); }
+        const ID3D12Resource* operator->() const { return m_pResource.Get(); }
+
+        ID3D12Resource*       GetResource() { return m_pResource.Get(); }
+        const ID3D12Resource* GetResource() const { return m_pResource.Get(); }
+
+        ID3D12Resource** GetAddressOf() { return m_pResource.GetAddressOf(); }
+
+        [[nodiscard]] D3D12_GPU_VIRTUAL_ADDRESS GetGpuVirtualAddress() const;
+
+        uint32_t GetVersionID() const { return VersionID; }
+
+        void SetResourceName(std::string name);
+
         [[nodiscard]] D3D12_CLEAR_VALUE GetClearValue() const noexcept
         {
             return ClearValue.has_value() ? *ClearValue : D3D12_CLEAR_VALUE {};
@@ -96,12 +113,16 @@ namespace RHI
     protected:
         // TODO: Add support for custom heap properties for UMA GPUs
 
-        Microsoft::WRL::ComPtr<ID3D12Resource> Resource;
+        Microsoft::WRL::ComPtr<ID3D12Resource> m_pResource;
         std::optional<D3D12_CLEAR_VALUE>       ClearValue;
         D3D12_RESOURCE_DESC                    Desc            = {};
         UINT8                                  PlaneCount      = 0;
         UINT                                   NumSubresources = 0;
         CResourceState                         ResourceState;
+        std::string                            ResourceName;
+
+        // Used to identify when a resource changes so descriptors can be copied etc.
+        uint32_t VersionID = 0;
     };
 
     class D3D12ASBuffer : public D3D12Resource
@@ -109,8 +130,6 @@ namespace RHI
     public:
         D3D12ASBuffer() noexcept = default;
         D3D12ASBuffer(D3D12LinkedDevice* Parent, UINT64 SizeInBytes);
-
-        [[nodiscard]] D3D12_GPU_VIRTUAL_ADDRESS GetGpuVirtualAddress() const;
     };
 
     class D3D12Buffer : public D3D12Resource
@@ -129,7 +148,6 @@ namespace RHI
                     D3D12_RESOURCE_FLAGS  ResourceFlags,
                     D3D12_RESOURCE_STATES InitialResourceState);
 
-        [[nodiscard]] D3D12_GPU_VIRTUAL_ADDRESS GetGpuVirtualAddress() const;
         [[nodiscard]] D3D12_GPU_VIRTUAL_ADDRESS GetGpuVirtualAddress(UINT Index) const;
         [[nodiscard]] UINT                      GetStride() const { return Stride; }
         [[nodiscard]] UINT                      GetSizeInBytes() const { return SizeInBytes; }
@@ -143,7 +161,7 @@ namespace RHI
         [[nodiscard]] D3D12_VERTEX_BUFFER_VIEW GetVertexBufferView() const noexcept
         {
             D3D12_VERTEX_BUFFER_VIEW VertexBufferView = {};
-            VertexBufferView.BufferLocation           = Resource->GetGPUVirtualAddress();
+            VertexBufferView.BufferLocation           = m_pResource->GetGPUVirtualAddress();
             VertexBufferView.SizeInBytes              = static_cast<UINT>(Desc.Width);
             VertexBufferView.StrideInBytes            = Stride;
             return VertexBufferView;
@@ -153,7 +171,7 @@ namespace RHI
         GetIndexBufferView(DXGI_FORMAT Format = DXGI_FORMAT_R32_UINT) const noexcept
         {
             D3D12_INDEX_BUFFER_VIEW IndexBufferView = {};
-            IndexBufferView.BufferLocation          = Resource->GetGPUVirtualAddress();
+            IndexBufferView.BufferLocation          = m_pResource->GetGPUVirtualAddress();
             IndexBufferView.SizeInBytes             = static_cast<UINT>(Desc.Width);
             IndexBufferView.Format                  = Format;
             return IndexBufferView;
@@ -196,4 +214,75 @@ namespace RHI
     private:
         bool Cubemap = false;
     };
+
+    /**
+    // Description:  An upload buffer is visible to both the CPU and the GPU, but
+    // because the memory is write combined, you should avoid reading data with the CPU.
+    // An upload buffer is intended for moving data to a default GPU buffer.  You can
+    // read from a file directly into an upload buffer, rather than reading into regular
+    // cached memory, copying that to an upload buffer, and copying that to the GPU.
+    */
+    class UploadBuffer : public D3D12Resource
+    {
+    public:
+        UploadBuffer(D3D12LinkedDevice* Parent, const std::wstring& name, size_t BufferSize);
+
+        virtual ~UploadBuffer() { Destroy(); }
+
+        void* Map(void);
+        void  Unmap(size_t begin = 0, size_t end = -1);
+
+        size_t GetBufferSize() const { return m_BufferSize; }
+
+    protected:
+        size_t m_BufferSize;
+    };
+
+    class PixelBuffer : public D3D12Resource
+    {
+    public:
+        PixelBuffer() : m_Width(0), m_Height(0), m_ArraySize(0), m_Format(DXGI_FORMAT_UNKNOWN) {}
+
+        uint32_t           GetWidth(void) const { return m_Width; }
+        uint32_t           GetHeight(void) const { return m_Height; }
+        uint32_t           GetDepth(void) const { return m_ArraySize; }
+        const DXGI_FORMAT& GetFormat(void) const { return m_Format; }
+
+        // Write the raw pixel buffer contents to a file
+        // Note that data is preceded by a 16-byte header:  { DXGI_FORMAT, Pitch (in pixels), Width (in pixels), Height
+        // }
+        void ExportToFile(const std::wstring& FilePath);
+
+    protected:
+        D3D12_RESOURCE_DESC DescribeTex2D(uint32_t    Width,
+                                          uint32_t    Height,
+                                          uint32_t    DepthOrArraySize,
+                                          uint32_t    NumMips,
+                                          DXGI_FORMAT Format,
+                                          UINT        Flags);
+
+        void AssociateWithResource(ID3D12Device*         Device,
+                                   const std::wstring&   Name,
+                                   ID3D12Resource*       Resource,
+                                   D3D12_RESOURCE_STATES CurrentState);
+
+        void CreateTextureResource(ID3D12Device*              Device,
+                                   const std::wstring&        Name,
+                                   const D3D12_RESOURCE_DESC& ResourceDesc,
+                                   D3D12_CLEAR_VALUE          ClearValue,
+                                   D3D12_GPU_VIRTUAL_ADDRESS  VidMemPtr = D3D12_GPU_VIRTUAL_ADDRESS_UNKNOWN);
+
+        static DXGI_FORMAT GetBaseFormat(DXGI_FORMAT Format);
+        static DXGI_FORMAT GetUAVFormat(DXGI_FORMAT Format);
+        static DXGI_FORMAT GetDSVFormat(DXGI_FORMAT Format);
+        static DXGI_FORMAT GetDepthFormat(DXGI_FORMAT Format);
+        static DXGI_FORMAT GetStencilFormat(DXGI_FORMAT Format);
+        static size_t      BytesPerPixel(DXGI_FORMAT Format);
+
+        uint32_t    m_Width;
+        uint32_t    m_Height;
+        uint32_t    m_ArraySize;
+        DXGI_FORMAT m_Format;
+    };
+
 }
