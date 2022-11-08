@@ -1,10 +1,11 @@
 #pragma once
 #include "d3d12_core.h"
 #include "d3d12_linkedDevice.h"
-#include "d3d12_resource.h"
 
 namespace RHI
 {
+    class D3D12Resource;
+
     class CSubresourceSubset
     {
     public:
@@ -318,6 +319,8 @@ namespace RHI
         }
 
     protected:
+        friend class D3D12Resource;
+
         D3D12_CPU_DESCRIPTOR_HANDLE CpuHandle           = {NULL};
         UINT                        DescriptorHeapIndex = UINT_MAX;
     };
@@ -348,6 +351,8 @@ namespace RHI
         }
 
     protected:
+        friend class D3D12Resource;
+
         D3D12Descriptor<ViewDesc> Descriptor;
         ViewDesc                  Desc     = {};
         D3D12Resource*            Resource = nullptr;
@@ -370,7 +375,7 @@ namespace RHI
 
         void RecreateView();
 
-    private:
+    public:
         static D3D12_RENDER_TARGET_VIEW_DESC GetDesc(D3D12Texture*       Texture,
                                                      std::optional<UINT> OptArraySlice,
                                                      std::optional<UINT> OptMipSlice,
@@ -393,7 +398,7 @@ namespace RHI
 
         void RecreateView();
 
-    private:
+    public:
         static D3D12_DEPTH_STENCIL_VIEW_DESC GetDesc(D3D12Texture*       Texture,
                                                      std::optional<UINT> OptArraySlice = std::nullopt,
                                                      std::optional<UINT> OptMipSlice   = std::nullopt,
@@ -495,6 +500,8 @@ namespace RHI
         }
 
     protected:
+        friend class D3D12Resource;
+
         D3D12_CPU_DESCRIPTOR_HANDLE CpuHandle = {NULL};
         D3D12_GPU_DESCRIPTOR_HANDLE GpuHandle = {NULL};
         UINT                        Index     = UINT_MAX;
@@ -528,6 +535,8 @@ namespace RHI
         }
 
     protected:
+        friend class D3D12Resource;
+
         D3D12DynamicDescriptor<ViewDesc> Descriptor;
         ViewDesc                         Desc     = {};
         D3D12Resource*                   Resource = nullptr;
@@ -561,7 +570,7 @@ namespace RHI
 
         void RecreateView();
 
-    private:
+    public:
         static D3D12_SHADER_RESOURCE_VIEW_DESC GetDesc(D3D12ASBuffer* ASBuffer);
         static D3D12_SHADER_RESOURCE_VIEW_DESC
         GetDesc(D3D12Buffer* Buffer, bool Raw, UINT FirstElement, UINT NumElements);
@@ -596,7 +605,7 @@ namespace RHI
 
         void RecreateView();
 
-    private:
+    public:
         static D3D12_UNORDERED_ACCESS_VIEW_DESC
         GetDesc(D3D12Buffer* Buffer, bool Raw, UINT NumElements, UINT64 CounterOffsetInBytes);
         static D3D12_UNORDERED_ACCESS_VIEW_DESC

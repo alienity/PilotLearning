@@ -72,8 +72,8 @@ namespace Pilot
                                                    HLSL::indexCommandBufferCounterOffset + sizeof(uint64_t),
                                                    sizeof(HLSL::BitonicSortCommandSigParams),
                                                    D3D12_HEAP_TYPE_DEFAULT,
-                                                   D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
-            opaqueIndexBuffer->SetResourceName("OpaqueIndexBuffer");
+                                                   D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS,
+                                                   "OpaqueIndexBuffer");
 
             auto opaqueIndexBufferSRV =
                 std::make_shared<RHI::D3D12ShaderResourceView>(m_Device->GetLinkedDevice(), opaqueIndexBuffer.get());
@@ -89,8 +89,8 @@ namespace Pilot
                                                                    HLSL::commandBufferCounterOffset + sizeof(uint64_t),
                                                                    sizeof(HLSL::CommandSignatureParams),
                                                                    D3D12_HEAP_TYPE_DEFAULT,
-                                                                   D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
-            opaqueBuffer->SetResourceName("OpaqueBuffer");
+                                                                   D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS,
+                                                                   "OpaqueBuffer");
 
             auto opaqueBufferUAV = std::make_shared<RHI::D3D12UnorderedAccessView>(
                 m_Device->GetLinkedDevice(), opaqueBuffer.get(), HLSL::MeshLimit, HLSL::commandBufferCounterOffset);

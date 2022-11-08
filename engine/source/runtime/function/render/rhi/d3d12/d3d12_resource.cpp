@@ -1,5 +1,7 @@
 #include "d3d12_resource.h"
 #include "d3d12_linkedDevice.h"
+#include "d3d12_descriptor.h"
+#include "platform/system/hash.h"
 
 namespace RHI
 {
@@ -110,39 +112,66 @@ namespace RHI
 
     D3D12Resource::D3D12Resource(D3D12LinkedDevice*                       Parent,
                                  Microsoft::WRL::ComPtr<ID3D12Resource>&& Resource,
-                                 D3D12_CLEAR_VALUE                        ClearValue,
+                                 CD3DX12_CLEAR_VALUE                      ClearValue,
                                  D3D12_RESOURCE_STATES                    InitialResourceState) :
-        D3D12LinkedDeviceChild(Parent),m_pResource(std::move(Resource)), ClearValue(ClearValue),
-        Desc(this->m_pResource->GetDesc()), PlaneCount(D3D12GetFormatPlaneCount(Parent->GetDevice(), Desc.Format)),
-        NumSubresources(CalculateNumSubresources()), ResourceState(NumSubresources, InitialResourceState)
-    {}
-
-    D3D12Resource::D3D12Resource(D3D12LinkedDevice*               Parent,
-                                 D3D12_HEAP_PROPERTIES            HeapProperties,
-                                 D3D12_RESOURCE_DESC              Desc,
-                                 D3D12_RESOURCE_STATES            InitialResourceState,
-                                 std::optional<D3D12_CLEAR_VALUE> ClearValue) :
         D3D12LinkedDeviceChild(Parent),
-        m_pResource(InitializeResource(HeapProperties, Desc, InitialResourceState, ClearValue)), ClearValue(ClearValue),
-        Desc(m_pResource->GetDesc()), PlaneCount(D3D12GetFormatPlaneCount(Parent->GetDevice(), Desc.Format)),
-        NumSubresources(CalculateNumSubresources()), ResourceState(NumSubresources, InitialResourceState)
+        m_pResource(std::move(Resource)), m_ClearValue(ClearValue), m_Desc(this->m_pResource->GetDesc()),
+        m_PlaneCount(D3D12GetFormatPlaneCount(Parent->GetDevice(), m_Desc.Format)),
+        m_NumSubresources(CalculateNumSubresources()), m_ResourceState(m_NumSubresources, InitialResourceState),
+        m_GpuVirtualAddress(m_pResource->GetGPUVirtualAddress())
     {}
 
-    void D3D12Resource ::Destroy()
+    D3D12Resource::D3D12Resource(D3D12LinkedDevice*                       Parent,
+                                 Microsoft::WRL::ComPtr<ID3D12Resource>&& Resource,
+                                 CD3DX12_CLEAR_VALUE                      ClearValue,
+                                 D3D12_RESOURCE_STATES                    InitialResourceState,
+                                 std::string                              Name) :
+        D3D12LinkedDeviceChild(Parent),
+        m_pResource(std::move(Resource)), m_ClearValue(ClearValue), m_Desc(this->m_pResource->GetDesc()),
+        m_PlaneCount(D3D12GetFormatPlaneCount(Parent->GetDevice(), m_Desc.Format)),
+        m_NumSubresources(CalculateNumSubresources()), m_ResourceState(m_NumSubresources, InitialResourceState),
+        m_GpuVirtualAddress(m_pResource->GetGPUVirtualAddress())
     {
-        m_pResource       = nullptr;
+        this->SetResourceName(Name);
     }
 
-    D3D12_GPU_VIRTUAL_ADDRESS D3D12Resource::GetGpuVirtualAddress() const
+    D3D12Resource::D3D12Resource(D3D12LinkedDevice*                 Parent,
+                                 CD3DX12_HEAP_PROPERTIES            HeapProperties,
+                                 CD3DX12_RESOURCE_DESC              Desc,
+                                 D3D12_RESOURCE_STATES              InitialResourceState,
+                                 std::optional<CD3DX12_CLEAR_VALUE> ClearValue) :
+        D3D12LinkedDeviceChild(Parent),
+        m_pResource(InitializeResource(HeapProperties, Desc, InitialResourceState, ClearValue)),
+        m_ClearValue(ClearValue), m_Desc(m_pResource->GetDesc()),
+        m_PlaneCount(D3D12GetFormatPlaneCount(Parent->GetDevice(), Desc.Format)),
+        m_NumSubresources(CalculateNumSubresources()), m_ResourceState(m_NumSubresources, InitialResourceState),
+        m_GpuVirtualAddress(m_pResource->GetGPUVirtualAddress())
+    {}
+
+    D3D12Resource::D3D12Resource(D3D12LinkedDevice*                 Parent,
+                                 CD3DX12_HEAP_PROPERTIES            HeapProperties,
+                                 CD3DX12_RESOURCE_DESC              Desc,
+                                 D3D12_RESOURCE_STATES              InitialResourceState,
+                                 std::optional<CD3DX12_CLEAR_VALUE> ClearValue,
+                                 std::string                        Name) :
+        D3D12LinkedDeviceChild(Parent),
+        m_pResource(InitializeResource(HeapProperties, Desc, InitialResourceState, ClearValue)),
+        m_ClearValue(ClearValue), m_Desc(m_pResource->GetDesc()),
+        m_PlaneCount(D3D12GetFormatPlaneCount(Parent->GetDevice(), Desc.Format)),
+        m_NumSubresources(CalculateNumSubresources()), m_ResourceState(m_NumSubresources, InitialResourceState),
+        m_GpuVirtualAddress(m_pResource->GetGPUVirtualAddress())
     {
-        return m_pResource->GetGPUVirtualAddress();
+        this->SetResourceName(Name);
     }
+
+    void D3D12Resource ::Destroy() { m_pResource = nullptr; }
+
+    D3D12_GPU_VIRTUAL_ADDRESS D3D12Resource::GetGpuVirtualAddress() const { return m_GpuVirtualAddress; }
 
     void D3D12Resource::SetResourceName(std::string name)
     {
         std::wstring stemp = std::wstring(name.begin(), name.end());
-        LPCWSTR      sw    = stemp.c_str();
-        m_pResource->SetName(sw);
+        m_pResource->SetName(stemp.c_str());
     }
 
     bool D3D12Resource::ImplicitStatePromotion(D3D12_RESOURCE_STATES State) const noexcept
@@ -154,14 +183,14 @@ namespace RHI
         // When this access occurs the promotion acts like an implicit resource barrier. For subsequent accesses,
         // resource barriers will be required to change the resource state if necessary. Note that promotion from one
         // promoted read state into multiple read state is valid, but this is not the case for write states.
-        if (Desc.Dimension == D3D12_RESOURCE_DIMENSION_BUFFER)
+        if (m_Desc.Dimension == D3D12_RESOURCE_DIMENSION_BUFFER)
         {
             return true;
         }
         else
         {
             // Simultaneous-Access Textures
-            if (Desc.Flags & D3D12_RESOURCE_FLAG_ALLOW_SIMULTANEOUS_ACCESS)
+            if (m_Desc.Flags & D3D12_RESOURCE_FLAG_ALLOW_SIMULTANEOUS_ACCESS)
             {
                 // *Depth-stencil resources must be non-simultaneous-access textures and thus can never be implicitly
                 // promoted.
@@ -211,13 +240,13 @@ namespace RHI
         }
 
         // 2. Buffer resources on any queue type
-        if (Desc.Dimension == D3D12_RESOURCE_DIMENSION_BUFFER)
+        if (m_Desc.Dimension == D3D12_RESOURCE_DIMENSION_BUFFER)
         {
             return true;
         }
 
         // 3. Texture resources on any queue type that have the D3D12_RESOURCE_FLAG_ALLOW_SIMULTANEOUS_ACCESS flag set
-        if (Desc.Flags & D3D12_RESOURCE_FLAG_ALLOW_SIMULTANEOUS_ACCESS)
+        if (m_Desc.Flags & D3D12_RESOURCE_FLAG_ALLOW_SIMULTANEOUS_ACCESS)
         {
             return true;
         }
@@ -236,11 +265,78 @@ namespace RHI
         return false;
     }
 
+    const std::shared_ptr<D3D12ShaderResourceView> D3D12Resource::CreateSRV(D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc)
+    {
+        std::shared_ptr<D3D12ShaderResourceView> srv = nullptr; 
+        auto srvHandleIter = m_SRVHandleMap.find(srvDesc);
+        if (srvHandleIter != m_SRVHandleMap.end())
+        {
+            srv = std::make_shared<D3D12ShaderResourceView>(Parent, srvDesc, this);
+            m_SRVHandleMap[srvDesc] = srv;
+        }
+        else
+        {
+            srv = srvHandleIter->second;
+        }
+        return srv;
+    }
+
+    const std::shared_ptr<D3D12UnorderedAccessView> D3D12Resource::CreateUAV(D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc,
+                                                                             D3D12Resource* pCounterResource)
+    {
+        UnorderedAccessViewKey uavInfo = {uavDesc, pCounterResource};
+        std::shared_ptr<D3D12UnorderedAccessView> uav = nullptr; 
+        auto uavHandleIter = m_UAVHandleMap.find(uavInfo);
+        if (uavHandleIter != m_UAVHandleMap.end())
+        {
+            uav = std::make_shared<D3D12UnorderedAccessView>(Parent, uavDesc, this, pCounterResource);
+            m_UAVHandleMap[uavInfo] = uav;
+        }
+        else
+        {
+            uav = uavHandleIter->second;
+        }
+        return uav;
+    }
+
+    const std::shared_ptr<D3D12RenderTargetView> D3D12Resource::CreateRTV(D3D12_RENDER_TARGET_VIEW_DESC rtvDesc)
+    {
+        std::shared_ptr<D3D12RenderTargetView> rtv = nullptr; 
+        auto rtvHandleIter = m_RTVHandleMap.find(rtvDesc);
+        if (rtvHandleIter != m_RTVHandleMap.end())
+        {
+            rtv = std::make_shared<D3D12RenderTargetView>(Parent, rtvDesc, this);
+            m_RTVHandleMap[rtvDesc] = rtv;
+        }
+        else
+        {
+            rtv = rtvHandleIter->second;
+        }
+        return rtv;
+    }
+
+    const std::shared_ptr<D3D12DepthStencilView> D3D12Resource::CreateDSV(D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc)
+    {
+        std::shared_ptr<D3D12DepthStencilView> dsv = nullptr;
+
+        auto dsvHandleIter = m_DSVHandleMap.find(dsvDesc);
+        if (dsvHandleIter != m_DSVHandleMap.end())
+        {
+            dsv = std::make_shared<D3D12DepthStencilView>(Parent, dsvDesc, this);
+            m_DSVHandleMap[dsvDesc] = dsv;
+        }
+        else
+        {
+            dsv = dsvHandleIter->second;
+        }
+        return dsv;
+    }
+
     Microsoft::WRL::ComPtr<ID3D12Resource>
-    D3D12Resource::InitializeResource(D3D12_HEAP_PROPERTIES            HeapProperties,
-                                      D3D12_RESOURCE_DESC              Desc,
-                                      D3D12_RESOURCE_STATES            InitialResourceState,
-                                      std::optional<D3D12_CLEAR_VALUE> ClearValue) const
+    D3D12Resource::InitializeResource(CD3DX12_HEAP_PROPERTIES            HeapProperties,
+                                      CD3DX12_RESOURCE_DESC              Desc,
+                                      D3D12_RESOURCE_STATES              InitialResourceState,
+                                      std::optional<CD3DX12_CLEAR_VALUE> ClearValue) const
     {
         D3D12_CLEAR_VALUE* OptimizedClearValue = ClearValue.has_value() ? &(*ClearValue) : nullptr;
 
@@ -256,9 +352,9 @@ namespace RHI
 
     UINT D3D12Resource::CalculateNumSubresources() const
     {
-        if (Desc.Dimension != D3D12_RESOURCE_DIMENSION_BUFFER)
+        if (m_Desc.Dimension != D3D12_RESOURCE_DIMENSION_BUFFER)
         {
-            return Desc.MipLevels * Desc.DepthOrArraySize * PlaneCount;
+            return m_Desc.MipLevels * m_Desc.DepthOrArraySize * m_PlaneCount;
         }
         // Buffer only contains 1 subresource
         return 1;
@@ -283,12 +379,11 @@ namespace RHI
                       ResourceStateDeterminer(CD3DX12_RESOURCE_DESC::Buffer(SizeInBytes, ResourceFlags), HeapType)
                           .InferInitialState(),
                       std::nullopt),
-        HeapType(HeapType), SizeInBytes(SizeInBytes), Stride(Stride),
-        ScopedPointer(HeapType == D3D12_HEAP_TYPE_UPLOAD ? m_pResource.Get() : nullptr)
+        m_HeapType(HeapType), m_SizeInBytes(SizeInBytes), m_Stride(Stride),
+        m_ScopedPointer(HeapType == D3D12_HEAP_TYPE_UPLOAD ? m_pResource.Get() : nullptr),
         // We do not need to unmap until we are done with the resource.  However, we must not write to
         // the resource while it is in use by the GPU (so we must use synchronization techniques).
-        ,
-        CpuVirtualAddress(ScopedPointer.Address)
+        m_CpuVirtualAddress(m_ScopedPointer.Address)
     {}
 
     D3D12Buffer::D3D12Buffer(D3D12LinkedDevice*    Parent,
@@ -302,30 +397,44 @@ namespace RHI
                       CD3DX12_RESOURCE_DESC::Buffer(SizeInBytes, ResourceFlags),
                       InitialResourceState,
                       std::nullopt),
-        HeapType(HeapType), SizeInBytes(SizeInBytes), Stride(Stride),
-        ScopedPointer(HeapType == D3D12_HEAP_TYPE_UPLOAD ? m_pResource.Get() : nullptr)
+        m_HeapType(HeapType), m_SizeInBytes(SizeInBytes), m_Stride(Stride),
+        m_ScopedPointer(HeapType == D3D12_HEAP_TYPE_UPLOAD ? m_pResource.Get() : nullptr),
         // We do not need to unmap until we are done with the resource.  However, we must not write to
         // the resource while it is in use by the GPU (so we must use synchronization techniques).
-        ,
-        CpuVirtualAddress(ScopedPointer.Address)
+        m_CpuVirtualAddress(m_ScopedPointer.Address)
     {}
 
     D3D12_GPU_VIRTUAL_ADDRESS D3D12Buffer::GetGpuVirtualAddress(UINT Index) const
     {
-        return m_pResource->GetGPUVirtualAddress() + static_cast<UINT64>(Index) * Stride;
+        return m_pResource->GetGPUVirtualAddress() + static_cast<UINT64>(Index) * m_Stride;
+    }
+
+    const std::shared_ptr<D3D12ShaderResourceView> D3D12Buffer::GetDefaultSRV(bool Raw)
+    {
+        assert(!(m_Desc.Flags & D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE));
+        D3D12_SHADER_RESOURCE_VIEW_DESC desc = D3D12ShaderResourceView::GetDesc(this, Raw, 0, m_SizeInBytes / m_Stride);
+        return CreateSRV(desc);
+    }
+
+    const std::shared_ptr<D3D12UnorderedAccessView> D3D12Buffer::GetDefaultUAV(bool Raw)
+    {
+        assert(m_Desc.Flags & D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
+        D3D12_UNORDERED_ACCESS_VIEW_DESC desc =
+            D3D12UnorderedAccessView::GetDesc(this, Raw, m_SizeInBytes / m_Stride, m_SizeInBytes - sizeof(UINT64));
+        return CreateUAV(desc);
     }
 
     D3D12Texture::D3D12Texture(D3D12LinkedDevice*                       Parent,
                                Microsoft::WRL::ComPtr<ID3D12Resource>&& Resource,
-                               D3D12_CLEAR_VALUE                        ClearValue,
+                               CD3DX12_CLEAR_VALUE                      ClearValue,
                                D3D12_RESOURCE_STATES                    InitialResourceState) :
         D3D12Resource(Parent, std::move(Resource), ClearValue, InitialResourceState)
     {}
 
-    D3D12Texture::D3D12Texture(D3D12LinkedDevice*               Parent,
-                               const D3D12_RESOURCE_DESC&       Desc,
-                               std::optional<D3D12_CLEAR_VALUE> ClearValue /*= std::nullopt*/,
-                               bool                             Cubemap /*= false*/) :
+    D3D12Texture::D3D12Texture(D3D12LinkedDevice*                 Parent,
+                               const CD3DX12_RESOURCE_DESC&       Desc,
+                               std::optional<CD3DX12_CLEAR_VALUE> ClearValue/* = std::nullopt*/,
+                               bool                               Cubemap/*    = false*/) :
         D3D12Resource(Parent,
                       CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT, Parent->GetNodeMask(), Parent->GetNodeMask()),
                       Desc,
@@ -343,57 +452,45 @@ namespace RHI
         UINT ArraySlice = OptArraySlice.value_or(0);
         UINT MipSlice   = OptMipSlice.value_or(0);
         UINT PlaneSlice = OptPlaneSlice.value_or(0);
-        return D3D12CalcSubresource(MipSlice, ArraySlice, PlaneSlice, Desc.MipLevels, Desc.DepthOrArraySize);
+        return D3D12CalcSubresource(MipSlice, ArraySlice, PlaneSlice, m_Desc.MipLevels, m_Desc.DepthOrArraySize);
+    }
+
+    const std::shared_ptr<D3D12ShaderResourceView> D3D12Texture::GetDefaultSRV()
+    {
+        assert(!(m_Desc.Flags & D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE));
+        D3D12_SHADER_RESOURCE_VIEW_DESC desc = D3D12ShaderResourceView::GetDesc(this, false, 0, 0);
+        return CreateSRV(desc);
+    }
+
+    const std::shared_ptr<D3D12UnorderedAccessView> D3D12Texture::GetDefaultUAV()
+    {
+        assert(m_Desc.Flags & D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
+        D3D12_UNORDERED_ACCESS_VIEW_DESC desc = D3D12UnorderedAccessView::GetDesc(this, 0, 0);
+        return CreateUAV(desc);
+    }
+
+    const std::shared_ptr<D3D12RenderTargetView> D3D12Texture::GetDefaultRTV()
+    {
+        assert(m_Desc.Flags & D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET);
+        D3D12_RENDER_TARGET_VIEW_DESC desc = D3D12RenderTargetView::GetDesc(this, 0, 0, 0, false);
+        return CreateRTV(desc);
+    }
+
+    const std::shared_ptr<D3D12DepthStencilView> D3D12Texture::GetDefaultDSV()
+    {
+        assert(m_Desc.Flags & D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL);
+        D3D12_DEPTH_STENCIL_VIEW_DESC desc = D3D12DepthStencilView::GetDesc(this, 0, 0, 0);
+        return CreateDSV(desc);
     }
 
     UploadBuffer::UploadBuffer(D3D12LinkedDevice* Parent, const std::wstring& name, size_t BufferSize) :
-        D3D12Resource(Parent,
-                      CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
-                      CD3DX12_RESOURCE_DESC::Buffer(BufferSize),
-                      D3D12_RESOURCE_STATE_GENERIC_READ,
-                      std::nullopt),
-        m_BufferSize(BufferSize)
+        D3D12Buffer(Parent, BufferSize, BufferSize, D3D12_HEAP_TYPE_UPLOAD, D3D12_RESOURCE_FLAG_NONE, D3D12_RESOURCE_STATE_GENERIC_READ)
     {
         this->m_pResource->SetName(name.c_str());
     }
 
-    void* UploadBuffer::Map(void)
-    {
-        void* Memory;
-        m_pResource->Map(0, &CD3DX12_RANGE(0, m_BufferSize), &Memory);
-        return Memory;
-    }
+    size_t UploadBuffer::GetBufferSize() const { return D3D12Buffer::GetSizeInBytes(); }
 
-    void UploadBuffer::Unmap(size_t begin, size_t end)
-    {
-        m_pResource->Unmap(0, &CD3DX12_RANGE(begin, std::min(end, m_BufferSize)));
-    }
-
-    void PixelBuffer::AssociateWithResource(ID3D12Device*         Device,
-                                            const std::wstring&   Name,
-                                            ID3D12Resource*       Resource,
-                                            D3D12_RESOURCE_STATES CurrentState)
-    {
-        (Device); // Unused until we support multiple adapters
-
-        assert(Resource != nullptr);
-        D3D12_RESOURCE_DESC ResourceDesc = Resource->GetDesc();
-
-        m_pResource.Attach(Resource);
-
-        ResourceState = (1, CurrentState);
-
-        m_Width     = (uint32_t)ResourceDesc.Width; // We don't care about large virtual textures yet
-        m_Height    = ResourceDesc.Height;
-        m_ArraySize = ResourceDesc.DepthOrArraySize;
-        m_Format    = ResourceDesc.Format;
-
-#ifndef RELEASE
-        m_pResource->SetName(Name.c_str());
-#else
-        (Name);
-#endif
-    }
 
 
 }
