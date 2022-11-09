@@ -637,7 +637,9 @@ namespace RHI
             ViewDesc.ViewDimension              = D3D12_SRV_DIMENSION_BUFFER;
             ViewDesc.Format                     = DXGI_FORMAT_R32_TYPELESS;
             ViewDesc.Shader4ComponentMapping    = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+            ViewDesc.Buffer.FirstElement        = 0;
             ViewDesc.Buffer.NumElements         = (UINT)m_BufferSize / 4;
+            ViewDesc.Buffer.StructureByteStride = 0;
             ViewDesc.Buffer.Flags               = D3D12_BUFFER_SRV_FLAG_RAW;
         }
         return ViewDesc;
@@ -723,20 +725,28 @@ namespace RHI
     D3D12UnorderedAccessView::D3D12UnorderedAccessView(D3D12LinkedDevice* Device,
                                                        D3D12Buffer*       Buffer,
                                                        bool               Raw,
+                                                       UINT               FirstElement,
                                                        UINT               NumElements,
                                                        UINT64             CounterOffsetInBytes) :
-        D3D12UnorderedAccessView(Device, GetDesc(Buffer, Raw, NumElements, CounterOffsetInBytes), Buffer, Raw ? nullptr : Buffer)
+        D3D12UnorderedAccessView(Device,
+                                 GetDesc(Buffer, Raw, FirstElement, NumElements, CounterOffsetInBytes),
+                                 Buffer,
+                                 Raw ? nullptr : Buffer)
     {}
 
     D3D12UnorderedAccessView::D3D12UnorderedAccessView(D3D12LinkedDevice* Device,
                                                        D3D12Buffer*       Buffer,
+                                                       UINT               FirstElement,
                                                        UINT               NumElements,
                                                        UINT64             CounterOffsetInBytes) :
-        D3D12UnorderedAccessView(Device, GetDesc(Buffer, false, NumElements, CounterOffsetInBytes), Buffer, Buffer)
+        D3D12UnorderedAccessView(Device,
+                                 GetDesc(Buffer, false, FirstElement, NumElements, CounterOffsetInBytes),
+                                 Buffer,
+                                 Buffer)
     {}
 
     D3D12UnorderedAccessView::D3D12UnorderedAccessView(D3D12LinkedDevice* Device, D3D12Buffer* Buffer) :
-        D3D12UnorderedAccessView(Device, GetDesc(Buffer, true, 0, 0), Buffer, nullptr)
+        D3D12UnorderedAccessView(Device, GetDesc(Buffer, true, 0, 0, 0), Buffer, nullptr)
     {}
 
     D3D12UnorderedAccessView::D3D12UnorderedAccessView(D3D12LinkedDevice*  Device,
@@ -753,7 +763,7 @@ namespace RHI
     }
 
     D3D12_UNORDERED_ACCESS_VIEW_DESC
-    D3D12UnorderedAccessView::GetDesc(D3D12Buffer* Buffer, bool Raw, UINT NumElements, UINT64 CounterOffsetInBytes)
+    D3D12UnorderedAccessView::GetDesc(D3D12Buffer* Buffer, bool Raw, UINT FirstElement, UINT NumElements, UINT64 CounterOffsetInBytes)
     {
         D3D12_UNORDERED_ACCESS_VIEW_DESC UAVDesc = {};
 
@@ -761,9 +771,10 @@ namespace RHI
         {
             UAVDesc.ViewDimension               = D3D12_UAV_DIMENSION_BUFFER;
             UAVDesc.Format                      = DXGI_FORMAT_UNKNOWN;
-            UAVDesc.Buffer.CounterOffsetInBytes = CounterOffsetInBytes;
+            UAVDesc.Buffer.FirstElement         = FirstElement;
             UAVDesc.Buffer.NumElements          = NumElements;
             UAVDesc.Buffer.StructureByteStride  = Buffer->GetStride();
+            UAVDesc.Buffer.CounterOffsetInBytes = CounterOffsetInBytes;
             UAVDesc.Buffer.Flags                = D3D12_BUFFER_UAV_FLAG_NONE;
         }
         else
@@ -772,7 +783,10 @@ namespace RHI
 
             UAVDesc.ViewDimension                    = D3D12_UAV_DIMENSION_BUFFER;
             UAVDesc.Format                           = DXGI_FORMAT_R32_TYPELESS;
+            UAVDesc.Buffer.FirstElement              = 0;
             UAVDesc.Buffer.NumElements               = (UINT)m_BufferSize / 4;
+            UAVDesc.Buffer.StructureByteStride       = 0;
+            UAVDesc.Buffer.CounterOffsetInBytes      = 0;
             UAVDesc.Buffer.Flags                     = D3D12_BUFFER_UAV_FLAG_RAW;
         }
 

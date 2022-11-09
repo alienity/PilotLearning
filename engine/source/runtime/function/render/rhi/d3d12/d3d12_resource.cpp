@@ -409,19 +409,35 @@ namespace RHI
         return m_pResource->GetGPUVirtualAddress() + static_cast<UINT64>(Index) * m_Stride;
     }
 
-    const std::shared_ptr<D3D12ShaderResourceView> D3D12Buffer::GetDefaultSRV(bool Raw)
+    const std::shared_ptr<D3D12ShaderResourceView> D3D12Buffer::GetStructuredBufferSRV(UINT FirstElement,
+                                                                                       UINT NumElements)
     {
         assert(!(m_Desc.Flags & D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE));
-        D3D12_SHADER_RESOURCE_VIEW_DESC desc = D3D12ShaderResourceView::GetDesc(this, Raw, 0, m_SizeInBytes / m_Stride);
+        D3D12_SHADER_RESOURCE_VIEW_DESC desc = D3D12ShaderResourceView::GetDesc(this, false, FirstElement, NumElements);
         return CreateSRV(desc);
     }
 
-    const std::shared_ptr<D3D12UnorderedAccessView> D3D12Buffer::GetDefaultUAV(bool Raw)
+    const std::shared_ptr<D3D12UnorderedAccessView>
+    D3D12Buffer::GetStructuredBufferUAV(UINT FirstElement, UINT NumElements, UINT64 CounterOffsetInBytes)
     {
         assert(m_Desc.Flags & D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
         D3D12_UNORDERED_ACCESS_VIEW_DESC desc =
-            D3D12UnorderedAccessView::GetDesc(this, Raw, m_SizeInBytes / m_Stride, m_SizeInBytes - sizeof(UINT64));
-        return CreateUAV(desc);
+            D3D12UnorderedAccessView::GetDesc(this, false, FirstElement, NumElements, CounterOffsetInBytes);
+        return CreateUAV(desc, this);
+    }
+    
+    const std::shared_ptr<D3D12ShaderResourceView> D3D12Buffer::GetByteAddressBufferSRV()
+    {
+        assert(!(m_Desc.Flags & D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE));
+        D3D12_SHADER_RESOURCE_VIEW_DESC desc = D3D12ShaderResourceView::GetDesc(this, true, 0, 0);
+        return CreateSRV(desc);
+    }
+
+    const std::shared_ptr<D3D12UnorderedAccessView> D3D12Buffer::GetByteAddressBufferUAV()
+    {
+        assert(m_Desc.Flags & D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
+        D3D12_UNORDERED_ACCESS_VIEW_DESC desc = D3D12UnorderedAccessView::GetDesc(this, true, 0, 0, 0);
+        return CreateUAV(desc, this);
     }
 
     D3D12Texture::D3D12Texture(D3D12LinkedDevice*                       Parent,

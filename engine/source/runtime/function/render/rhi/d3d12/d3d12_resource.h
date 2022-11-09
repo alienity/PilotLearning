@@ -89,7 +89,7 @@ namespace RHI
 
         [[nodiscard]] D3D12_GPU_VIRTUAL_ADDRESS GetGpuVirtualAddress() const;
 
-        uint32_t GetVersionID() const { return VersionID; }
+        uint32_t GetVersionID() const { return m_VersionID; }
 
         void SetResourceName(std::string name);
 
@@ -170,7 +170,7 @@ namespace RHI
         // clang-format on
 
         // Used to identify when a resource changes so descriptors can be copied etc.
-        uint32_t VersionID = 0;
+        uint32_t m_VersionID = 0;
     };
 
     class D3D12ASBuffer : public D3D12Resource
@@ -232,8 +232,12 @@ namespace RHI
             memcpy(&m_CpuVirtualAddress[Index * Stride], &Data, sizeof(T));
         }
 
-        const std::shared_ptr<D3D12ShaderResourceView>  GetDefaultSRV(bool Raw = false);
-        const std::shared_ptr<D3D12UnorderedAccessView> GetDefaultUAV(bool Raw = false);
+        const std::shared_ptr<D3D12ShaderResourceView> GetStructuredBufferSRV(UINT FirstElement, UINT NumElements);
+        const std::shared_ptr<D3D12UnorderedAccessView>
+        GetStructuredBufferUAV(UINT FirstElement, UINT NumElements, UINT64 CounterOffsetInBytes);
+
+        const std::shared_ptr<D3D12ShaderResourceView>  GetByteAddressBufferSRV();
+        const std::shared_ptr<D3D12UnorderedAccessView> GetByteAddressBufferUAV();
 
     private:
         D3D12_HEAP_TYPE    m_HeapType  = {};
