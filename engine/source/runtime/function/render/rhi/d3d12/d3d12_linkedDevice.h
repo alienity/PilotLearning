@@ -47,11 +47,13 @@ namespace RHI
 
         void WaitIdle();
 
-        void            BeginResourceUpload();
+        D3D12CommandContext& BeginResourceUpload();
         D3D12SyncHandle EndResourceUpload(bool WaitForCompletion);
 
         void Upload(const std::vector<D3D12_SUBRESOURCE_DATA>& Subresources, ID3D12Resource* Resource);
         void Upload(const D3D12_SUBRESOURCE_DATA& Subresource, ID3D12Resource* Resource);
+        void Upload(const std::vector<D3D12_SUBRESOURCE_DATA>& Subresources, UINT FirstSubresource, ID3D12Resource* Resource);
+        void Upload(const D3D12_SUBRESOURCE_DATA& Subresource, UINT FirstSubresource, ID3D12Resource* Resource);
         void Upload(const void* Data, UINT64 SizeInBytes, ID3D12Resource* Resource);
 
     private:

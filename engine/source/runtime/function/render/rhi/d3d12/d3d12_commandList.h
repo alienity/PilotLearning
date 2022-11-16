@@ -65,6 +65,9 @@ namespace RHI
 
         void Close();
 
+        D3D12_RESOURCE_STATES GetResourceStateTracked(D3D12Resource* Resource,
+                                                      UINT Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES);
+
         void TransitionBarrier(D3D12Resource*        Resource,
                                D3D12_RESOURCE_STATES State,
                                UINT                  Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES);

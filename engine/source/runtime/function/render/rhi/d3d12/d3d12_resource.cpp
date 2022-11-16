@@ -115,7 +115,7 @@ namespace RHI
                                  CD3DX12_CLEAR_VALUE                      ClearValue,
                                  D3D12_RESOURCE_STATES                    InitialResourceState) :
         D3D12LinkedDeviceChild(Parent),
-        m_pResource(std::move(Resource)), m_ClearValue(ClearValue), m_Desc(this->m_pResource->GetDesc()),
+        m_pResource(std::move(Resource)), m_Desc(this->m_pResource->GetDesc()),
         m_PlaneCount(D3D12GetFormatPlaneCount(Parent->GetDevice(), m_Desc.Format)),
         m_NumSubresources(CalculateNumSubresources()), m_ResourceState(m_NumSubresources, InitialResourceState),
         m_GpuVirtualAddress(m_pResource->GetGPUVirtualAddress())
@@ -125,7 +125,7 @@ namespace RHI
                                  Microsoft::WRL::ComPtr<ID3D12Resource>&& Resource,
                                  CD3DX12_CLEAR_VALUE                      ClearValue,
                                  D3D12_RESOURCE_STATES                    InitialResourceState,
-                                 std::string                              Name) :
+                                 std::wstring                             Name) :
         D3D12LinkedDeviceChild(Parent),
         m_pResource(std::move(Resource)), m_ClearValue(ClearValue), m_Desc(this->m_pResource->GetDesc()),
         m_PlaneCount(D3D12GetFormatPlaneCount(Parent->GetDevice(), m_Desc.Format)),
@@ -153,7 +153,7 @@ namespace RHI
                                  CD3DX12_RESOURCE_DESC              Desc,
                                  D3D12_RESOURCE_STATES              InitialResourceState,
                                  std::optional<CD3DX12_CLEAR_VALUE> ClearValue,
-                                 std::string                        Name) :
+                                 std::wstring                       Name) :
         D3D12LinkedDeviceChild(Parent),
         m_pResource(InitializeResource(HeapProperties, Desc, InitialResourceState, ClearValue)),
         m_ClearValue(ClearValue), m_Desc(m_pResource->GetDesc()),
@@ -164,14 +164,19 @@ namespace RHI
         this->SetResourceName(Name);
     }
 
-    void D3D12Resource ::Destroy() { m_pResource = nullptr; }
+    void D3D12Resource ::Destroy()
+    {
+        m_pResource = nullptr;
+        m_GpuVirtualAddress = D3D12_GPU_VIRTUAL_ADDRESS_NULL;
+        ++m_VersionID;
+    }
 
     D3D12_GPU_VIRTUAL_ADDRESS D3D12Resource::GetGpuVirtualAddress() const { return m_GpuVirtualAddress; }
 
-    void D3D12Resource::SetResourceName(std::string name)
+    void D3D12Resource::SetResourceName(std::wstring name)
     {
-        std::wstring stemp = std::wstring(name.begin(), name.end());
-        m_pResource->SetName(stemp.c_str());
+        this->m_ResourceName = name;
+        m_pResource->SetName(name.c_str());
     }
 
     bool D3D12Resource::ImplicitStatePromotion(D3D12_RESOURCE_STATES State) const noexcept
@@ -471,43 +476,84 @@ namespace RHI
         return D3D12CalcSubresource(MipSlice, ArraySlice, PlaneSlice, m_Desc.MipLevels, m_Desc.DepthOrArraySize);
     }
 
-    const std::shared_ptr<D3D12ShaderResourceView> D3D12Texture::GetDefaultSRV()
+    const std::shared_ptr<D3D12ShaderResourceView>
+    D3D12Texture::GetDefaultSRV(bool sRGB, std::optional<UINT> OptMostDetailedMip, std::optional<UINT> OptMipLevels)
     {
         assert(!(m_Desc.Flags & D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE));
-        D3D12_SHADER_RESOURCE_VIEW_DESC desc = D3D12ShaderResourceView::GetDesc(this, false, 0, 0);
+        D3D12_SHADER_RESOURCE_VIEW_DESC desc =
+            D3D12ShaderResourceView::GetDesc(this, sRGB, OptMostDetailedMip, OptMipLevels);
         return CreateSRV(desc);
     }
 
-    const std::shared_ptr<D3D12UnorderedAccessView> D3D12Texture::GetDefaultUAV()
+    const std::shared_ptr<D3D12UnorderedAccessView> D3D12Texture::GetDefaultUAV(std::optional<UINT> OptArraySlice,
+                                                                                std::optional<UINT> OptMipSlice)
     {
         assert(m_Desc.Flags & D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
-        D3D12_UNORDERED_ACCESS_VIEW_DESC desc = D3D12UnorderedAccessView::GetDesc(this, 0, 0);
+        D3D12_UNORDERED_ACCESS_VIEW_DESC desc = D3D12UnorderedAccessView::GetDesc(this, OptArraySlice, OptMipSlice);
         return CreateUAV(desc);
     }
 
-    const std::shared_ptr<D3D12RenderTargetView> D3D12Texture::GetDefaultRTV()
+    const std::shared_ptr<D3D12RenderTargetView> D3D12Texture::GetDefaultRTV(bool                sRGB,
+                                                                             std::optional<UINT> OptArraySlice,
+                                                                             std::optional<UINT> OptMipSlice,
+                                                                             std::optional<UINT> OptArraySize)
     {
         assert(m_Desc.Flags & D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET);
-        D3D12_RENDER_TARGET_VIEW_DESC desc = D3D12RenderTargetView::GetDesc(this, 0, 0, 0, false);
+        D3D12_RENDER_TARGET_VIEW_DESC desc =
+            D3D12RenderTargetView::GetDesc(this, OptArraySlice, OptMipSlice, OptArraySize, sRGB);
         return CreateRTV(desc);
     }
 
-    const std::shared_ptr<D3D12DepthStencilView> D3D12Texture::GetDefaultDSV()
+    const std::shared_ptr<D3D12DepthStencilView> D3D12Texture::GetDefaultDSV(std::optional<UINT> OptArraySlice,
+                                                                             std::optional<UINT> OptMipSlice,
+                                                                             std::optional<UINT> OptArraySize)
     {
         assert(m_Desc.Flags & D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL);
-        D3D12_DEPTH_STENCIL_VIEW_DESC desc = D3D12DepthStencilView::GetDesc(this, 0, 0, 0);
+        D3D12_DEPTH_STENCIL_VIEW_DESC desc =
+            D3D12DepthStencilView::GetDesc(this, OptArraySlice, OptMipSlice, OptArraySize);
         return CreateDSV(desc);
     }
 
-    UploadBuffer::UploadBuffer(D3D12LinkedDevice* Parent, const std::wstring& name, size_t BufferSize) :
+    void D3D12Texture::AssociateWithResource(D3D12LinkedDevice*                       Parent,
+                                             const std::wstring&                      Name,
+                                             Microsoft::WRL::ComPtr<ID3D12Resource>&& Resource,
+                                             D3D12_RESOURCE_STATES                    CurrentState)
+    {
+        assert(Resource != nullptr);
+
+        this->Parent              = Parent;
+        this->m_pResource         = Resource;
+        this->m_GpuVirtualAddress = Resource->GetGPUVirtualAddress();
+        this->m_ClearValue        = CD3DX12_CLEAR_VALUE();
+        this->m_Desc              = CD3DX12_RESOURCE_DESC(Resource->GetDesc());
+
+        this->m_PlaneCount      = D3D12GetFormatPlaneCount(Parent->GetDevice(), m_Desc.Format);
+        this->m_NumSubresources = this->CalculateNumSubresources();
+        this->m_ResourceState   = CResourceState(m_NumSubresources, CurrentState);
+        this->m_ResourceName    = Name;
+
+#ifndef RELEASE
+        m_pResource->SetName(Name.c_str());
+#else
+        (Name);
+#endif
+    }
+
+    UploadBuffer::UploadBuffer(D3D12LinkedDevice* Parent, UINT BufferSize, const std::wstring& name) :
         D3D12Buffer(Parent, BufferSize, BufferSize, D3D12_HEAP_TYPE_UPLOAD, D3D12_RESOURCE_FLAG_NONE, D3D12_RESOURCE_STATE_GENERIC_READ)
     {
         this->m_pResource->SetName(name.c_str());
     }
 
-    size_t UploadBuffer::GetBufferSize() const { return D3D12Buffer::GetSizeInBytes(); }
+    UINT UploadBuffer::GetBufferSize() const
+    {
+        return D3D12Buffer::GetSizeInBytes();
+    }
 
+    ReadbackBuffer::ReadbackBuffer(UINT NumElements, UINT ElementSize, const std::wstring& name)
+    {
 
+    }
 
 }
 

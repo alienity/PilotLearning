@@ -61,6 +61,12 @@ namespace RHI
         VERIFY_D3D12_API(GraphicsCommandList->Close());
     }
 
+    D3D12_RESOURCE_STATES D3D12CommandListHandle::GetResourceStateTracked(D3D12Resource* Resource, UINT Subresource)
+    {
+        CResourceState& ResourceState = ResourceStateTracker.GetResourceState(Resource);
+        return ResourceState.GetSubresourceState(Subresource);
+    }
+
     void D3D12CommandListHandle::TransitionBarrier(D3D12Resource*        Resource,
                                                    D3D12_RESOURCE_STATES State,
                                                    UINT Subresource /*= D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES*/)
@@ -110,7 +116,10 @@ namespace RHI
         AddAliasing(BeforeResource, AfterResource);
     }
 
-    void D3D12CommandListHandle::UAVBarrier(D3D12Resource* Resource) { AddUAV(Resource); }
+    void D3D12CommandListHandle::UAVBarrier(D3D12Resource* Resource)
+    {
+        AddUAV(Resource);
+    }
 
     void D3D12CommandListHandle::FlushResourceBarriers()
     {
@@ -159,6 +168,7 @@ namespace RHI
             D3D12_RESOURCE_STATES StatePrevious =
                 StateCommandList != D3D12_RESOURCE_STATE_UNKNOWN ? StateCommandList : StateAfter;
 
+            // If global state is not same as commandlist space state, then change the global state
             if (StateBefore != StatePrevious)
             {
                 ResourceState.SetSubresourceState(Subresource, StatePrevious);
