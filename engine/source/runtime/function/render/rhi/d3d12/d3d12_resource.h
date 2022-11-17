@@ -87,7 +87,7 @@ namespace RHI
 
         ID3D12Resource** GetAddressOf() { return m_pResource.GetAddressOf(); }
 
-        [[nodiscard]] D3D12_GPU_VIRTUAL_ADDRESS GetGpuVirtualAddress() const;
+        inline D3D12_GPU_VIRTUAL_ADDRESS GetGpuVirtualAddress() const { return m_GpuVirtualAddress; }
 
         UINT   GetVersionID() const { return m_VersionID; }
         UINT64 GetUniqueId() const { return g_GlobalUniqueId; }

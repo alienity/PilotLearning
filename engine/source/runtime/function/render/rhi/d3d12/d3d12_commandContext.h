@@ -123,6 +123,10 @@ namespace RHI
 
         void SetPredication(D3D12Resource* Buffer, UINT64 BufferOffset, D3D12_PREDICATION_OP Op);
 
+        void DispatchRays(const D3D12_DISPATCH_RAYS_DESC* pDesc);
+
+        void DispatchMesh(UINT ThreadGroupCountX, UINT ThreadGroupCountY, UINT ThreadGroupCountZ);
+
     protected:
         template<RHI_PIPELINE_STATE_TYPE PsoType>
         void SetDynamicResourceDescriptorTables(D3D12RootSignature* RootSignature);
@@ -205,10 +209,7 @@ namespace RHI
         void SetConstantBuffer(UINT RootIndex, D3D12_GPU_VIRTUAL_ADDRESS CBV);
         void SetDynamicConstantBufferView(UINT RootParameterIndex, UINT64 BufferSize, const void* BufferData);
         template<typename T>
-        void SetDynamicConstantBufferView(UINT RootParameterIndex, const T& Data)
-        {
-            SetConstantBuffer(RootParameterIndex, sizeof(T), &Data);
-        }
+        void SetDynamicConstantBufferView(UINT RootParameterIndex, const T& Data) { SetConstantBuffer(RootParameterIndex, sizeof(T), &Data); }
         void SetBufferSRV(UINT RootIndex, const std::shared_ptr<D3D12Buffer> BufferSRV, UINT64 Offset = 0);
         void SetBufferUAV(UINT RootIndex, const std::shared_ptr<D3D12Buffer> BufferUAV, UINT64 Offset = 0);
         void SetDescriptorTable(UINT RootIndex, D3D12_GPU_DESCRIPTOR_HANDLE FirstHandle);
@@ -225,7 +226,7 @@ namespace RHI
         void SetDynamicIB(UINT64 IndexCount, const UINT16* IBData);
         void SetDynamicSRV(UINT RootIndex, UINT64 BufferSize, const void* BufferData);
 
-        void Draw( UINT VertexCount, UINT VertexStartOffset = 0 );
+        void Draw(UINT VertexCount, UINT VertexStartOffset = 0);
         void DrawIndexed(UINT IndexCount, UINT StartIndexLocation = 0, INT BaseVertexLocation = 0);
         void DrawInstanced(UINT VertexCount, UINT InstanceCount, UINT StartVertexLocation, UINT StartInstanceLocation);
         void DrawIndexedInstanced(UINT IndexCount, UINT InstanceCount, UINT StartIndexLocation, INT  BaseVertexLocation, UINT StartInstanceLocation);
@@ -271,10 +272,6 @@ namespace RHI
         void Dispatch2D(UINT64 ThreadCountX, UINT64 ThreadCountY, UINT64 GroupSizeX = 8, UINT64 GroupSizeY = 8);
         void Dispatch3D(UINT64 ThreadCountX, UINT64 ThreadCountY, UINT64 ThreadCountZ, UINT64 GroupSizeX, UINT64 GroupSizeY, UINT64 GroupSizeZ);
         void DispatchIndirect(D3D12Resource& ArgumentBuffer, UINT64 ArgumentBufferOffset = 0);
-
-        void DispatchRays(const D3D12_DISPATCH_RAYS_DESC* pDesc);
-
-        void DispatchMesh(UINT ThreadGroupCountX, UINT ThreadGroupCountY, UINT ThreadGroupCountZ);
 
     private:
         template<typename T>

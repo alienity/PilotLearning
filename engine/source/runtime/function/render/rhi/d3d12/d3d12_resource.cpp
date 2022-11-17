@@ -171,8 +171,6 @@ namespace RHI
         ++m_VersionID;
     }
 
-    D3D12_GPU_VIRTUAL_ADDRESS D3D12Resource::GetGpuVirtualAddress() const { return m_GpuVirtualAddress; }
-
     void D3D12Resource::SetResourceName(std::wstring name)
     {
         this->m_ResourceName = name;
