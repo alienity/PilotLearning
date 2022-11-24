@@ -217,6 +217,11 @@ namespace RHI
     struct D3D12DescriptorTraits
     {};
     template<>
+    struct D3D12DescriptorTraits<D3D12_CONSTANT_BUFFER_VIEW_DESC>
+    {
+        static auto Create() { return &ID3D12Device::CreateConstantBufferView; }
+    };
+    template<>
     struct D3D12DescriptorTraits<D3D12_RENDER_TARGET_VIEW_DESC>
     {
         static auto Create() { return &ID3D12Device::CreateRenderTargetView; }
@@ -541,6 +546,21 @@ namespace RHI
         ViewDesc                         Desc     = {};
         D3D12Resource*                   Resource = nullptr;
         CViewSubresourceSubset           ViewSubresourceSubset;
+    };
+
+    class D3D12ConstantBufferView : public D3D12DynamicView<D3D12_CONSTANT_BUFFER_VIEW_DESC>
+    {
+    public:
+        D3D12ConstantBufferView() noexcept = default;
+        explicit D3D12ConstantBufferView(D3D12LinkedDevice*                     Device,
+                                         const D3D12_CONSTANT_BUFFER_VIEW_DESC& Desc,
+                                         D3D12Resource*                         Resource);
+        explicit D3D12ConstantBufferView(D3D12LinkedDevice* Device, D3D12Buffer* Buffer, UINT32 Offset, UINT32 Size);
+
+        void RecreateView();
+
+    public:
+        static D3D12_CONSTANT_BUFFER_VIEW_DESC GetDesc(D3D12Buffer* Buffer, UINT Offset, UINT Size);
     };
 
     class D3D12ShaderResourceView : public D3D12DynamicView<D3D12_SHADER_RESOURCE_VIEW_DESC>

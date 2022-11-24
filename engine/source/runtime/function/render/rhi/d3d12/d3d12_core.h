@@ -497,6 +497,120 @@ namespace D3D12RHIUtils
 
 namespace RHI
 {
+    typedef UINT64 RHIBufferID;
+    typedef UINT64 RHITextureID;
+
+    enum RHIIndexFormat
+    {
+        RHIIndexFormat16,
+        RHIIndexFormat32,
+        RHIIndexFormatCount
+    };
+
+    enum RHIBufferMode
+    {
+        RHIBufferModeImmutable = 0,
+        RHIBufferModeDynamic   = 1,
+        RHIBufferModeScratch   = 3,
+        RHIBufferModeCount
+    };
+
+    enum RHIBufferTarget
+    {
+        RHIBufferTargetNone                            = 0,
+        RHIBufferTargetVertex                          = (1 << 0),
+        RHIBufferTargetIndex                           = (1 << 1),
+        RHIBufferTargetStructured                      = (1 << 4),
+        RHIBufferTargetRaw                             = (1 << 5),
+        RHIBufferTargetAppend                          = (1 << 6),
+        RHIBufferTargetCounter                         = (1 << 7),
+        RHIBufferTargetIndirectArgs                    = (1 << 8),
+        RHIBufferTargetRayTracingAccelerationStructure = (1 << 10),
+        RHIBufferTargetRayTracingShaderTable           = (1 << 11),
+        RHIBufferTargetComputeNeeded = RHIBufferTargetStructured | RHIBufferTargetRaw | RHIBufferTargetAppend |
+                                       RHIBufferTargetCounter | RHIBufferTargetIndirectArgs |
+                                       RHIBufferTargetRayTracingAccelerationStructure,
+    };
+
+    struct RHIBufferDesc
+    {
+        bool operator==(const RHIBufferDesc& o) const
+        {
+            return size == o.size && number == o.number && stride == o.stride && target == o.target && mode == o.mode;
+        }
+        bool operator!=(const RHIBufferDesc& o) const { return !(*this == o); }
+
+        UINT            size;   // buffer的字节数
+        UINT            number; // element的数量
+        UINT32          stride; // index/vertex/struct的大小
+        RHIBufferTarget target; // buffer使用来干啥
+        RHIBufferMode   mode;   // 更新模式，是静态的，动态的，或者是可读回的
+    };
+
+    struct RHIBufferData
+    {
+        BYTE*  m_Data;
+        UINT64 m_DataLen;
+    };
+
+    enum RHISurfaceCreateFlags
+    {
+        RHISurfaceCreateFlagNone            = 0,
+        RHISurfaceCreateMipmap              = (1 << 0),
+        RHISurfaceCreateSRGB                = (1 << 1),
+        RHISurfaceCreateShadowmap           = (1 << 2),
+        RHISurfaceCreateRandomWrite         = (1 << 3),
+        RHISurfaceCreateSampleOnly          = (1 << 4),
+        RHISurfaceCreateNeverUsed           = (1 << 5),
+        RHISurfaceCreateAutoGenMips         = (1 << 6),
+        RHISurfaceRenderTextureAsBackBuffer = (1 << 7),
+        RHISurfaceCreateNoDepth             = (1 << 8),
+        RHISurfaceCreateBindMS              = (1 << 9),
+        RHISurfaceCreateNotFlipped          = (1 << 10),
+        RHISurfaceCreateStencilTexture      = (1 << 11),
+    };
+
+    enum RHITextureDimension
+    {
+        RHITexDimUnknown = -1, // unknown
+        RHITexDimNone    = 0,  // no texture
+        RHITexDim2D,
+        RHITexDim3D,
+        RHITexDimCube,
+        RHITexDim2DArray,
+        RHITexDimCubeArray,
+        RHITexDimCount
+    };
+
+    enum RHIRenderTextureSubElement
+    {
+        RHIRenderTextureSubElementColor,
+        RHIRenderTextureSubElementDepth,
+        RHIRenderTextureSubElementStencil,
+        RHIRenderTextureSubElementDefault
+    };
+
+    struct RHIRenderSurfaceBase
+    {
+        RHITextureID          textureID;
+        UINT16                width;
+        UINT16                height;
+        UINT16                depth;
+        UINT8                 samples;
+        UINT8                 mipCount;
+        RHISurfaceCreateFlags flags;
+        RHITextureDimension   dim;
+        DXGI_FORMAT           graphicsFormat;
+        UINT8                 loadAction;
+        UINT8                 storeAction;
+        bool                  colorSurface;
+        bool                  backBuffer;
+    };
+
+}
+
+namespace RHI
+{
     enum class RHID3D12CommandQueueType
     {
         Direct,

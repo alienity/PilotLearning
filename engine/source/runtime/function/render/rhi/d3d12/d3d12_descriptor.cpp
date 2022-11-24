@@ -544,6 +544,39 @@ namespace RHI
         return ViewDesc;
     }
 
+    D3D12ConstantBufferView::D3D12ConstantBufferView(D3D12LinkedDevice*                     Device,
+                                                     const D3D12_CONSTANT_BUFFER_VIEW_DESC& Desc,
+                                                     D3D12Resource*                         Resource) :
+        D3D12DynamicView(Device, Desc, Resource)
+    {
+        RecreateView();
+    }
+
+    D3D12ConstantBufferView::D3D12ConstantBufferView(D3D12LinkedDevice* Device,
+                                                     D3D12Buffer*       Buffer,
+                                                     UINT32             Offset,
+                                                     UINT32             Size) :
+        D3D12ConstantBufferView(Device, GetDesc(Buffer, Offset, Size), Buffer)
+    {}
+
+    void D3D12ConstantBufferView::RecreateView()
+    {
+        ID3D12Resource* D3D12Resource = nullptr;
+        if (Resource)
+        {
+            D3D12Resource = Resource->GetResource();
+        }
+        Descriptor.CreateView(Desc, D3D12Resource);
+    }
+
+    D3D12_CONSTANT_BUFFER_VIEW_DESC D3D12ConstantBufferView::GetDesc(D3D12Buffer* Buffer, UINT Offset, UINT Size)
+    {
+        D3D12_CONSTANT_BUFFER_VIEW_DESC CBVDesc;
+        CBVDesc.BufferLocation = Buffer->GetGpuVirtualAddress() + Offset;
+        CBVDesc.SizeInBytes    = Size;
+        return CBVDesc;
+    }
+
     D3D12ShaderResourceView::D3D12ShaderResourceView(D3D12LinkedDevice*                     Device,
                                                      const D3D12_SHADER_RESOURCE_VIEW_DESC& Desc,
                                                      D3D12Resource*                         Resource) :

@@ -3,6 +3,8 @@
 
 namespace RHI
 {
+    UINT64 RHIBufferID::g_GlobalBufferID = 0;
+
     D3D12Exception::D3D12Exception(int Line, HRESULT ErrorCode) : ErrorCode(ErrorCode) {}
 
     const char* D3D12Exception::GetErrorType() const noexcept { return "[D3D12]"; }

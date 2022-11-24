@@ -115,8 +115,8 @@ namespace RHI
                                  CD3DX12_CLEAR_VALUE                      ClearValue,
                                  D3D12_RESOURCE_STATES                    InitialResourceState) :
         D3D12LinkedDeviceChild(Parent),
-        m_pResource(std::move(Resource)), m_Desc(this->m_pResource->GetDesc()),
-        m_PlaneCount(D3D12GetFormatPlaneCount(Parent->GetDevice(), m_Desc.Format)),
+        m_pResource(std::move(Resource)), m_ResourceDesc(this->m_pResource->GetDesc()),
+        m_PlaneCount(D3D12GetFormatPlaneCount(Parent->GetDevice(), m_ResourceDesc.Format)),
         m_NumSubresources(CalculateNumSubresources()), m_ResourceState(m_NumSubresources, InitialResourceState),
         m_GpuVirtualAddress(m_pResource->GetGPUVirtualAddress())
     {}
@@ -127,8 +127,8 @@ namespace RHI
                                  D3D12_RESOURCE_STATES                    InitialResourceState,
                                  std::wstring                             Name) :
         D3D12LinkedDeviceChild(Parent),
-        m_pResource(std::move(Resource)), m_ClearValue(ClearValue), m_Desc(this->m_pResource->GetDesc()),
-        m_PlaneCount(D3D12GetFormatPlaneCount(Parent->GetDevice(), m_Desc.Format)),
+        m_pResource(std::move(Resource)), m_ClearValue(ClearValue), m_ResourceDesc(this->m_pResource->GetDesc()),
+        m_PlaneCount(D3D12GetFormatPlaneCount(Parent->GetDevice(), m_ResourceDesc.Format)),
         m_NumSubresources(CalculateNumSubresources()), m_ResourceState(m_NumSubresources, InitialResourceState),
         m_GpuVirtualAddress(m_pResource->GetGPUVirtualAddress())
     {
@@ -142,7 +142,7 @@ namespace RHI
                                  std::optional<CD3DX12_CLEAR_VALUE> ClearValue) :
         D3D12LinkedDeviceChild(Parent),
         m_pResource(InitializeResource(HeapProperties, Desc, InitialResourceState, ClearValue)),
-        m_ClearValue(ClearValue), m_Desc(m_pResource->GetDesc()),
+        m_ClearValue(ClearValue), m_ResourceDesc(m_pResource->GetDesc()),
         m_PlaneCount(D3D12GetFormatPlaneCount(Parent->GetDevice(), Desc.Format)),
         m_NumSubresources(CalculateNumSubresources()), m_ResourceState(m_NumSubresources, InitialResourceState),
         m_GpuVirtualAddress(m_pResource->GetGPUVirtualAddress())
@@ -156,7 +156,7 @@ namespace RHI
                                  std::wstring                       Name) :
         D3D12LinkedDeviceChild(Parent),
         m_pResource(InitializeResource(HeapProperties, Desc, InitialResourceState, ClearValue)),
-        m_ClearValue(ClearValue), m_Desc(m_pResource->GetDesc()),
+        m_ClearValue(ClearValue), m_ResourceDesc(m_pResource->GetDesc()),
         m_PlaneCount(D3D12GetFormatPlaneCount(Parent->GetDevice(), Desc.Format)),
         m_NumSubresources(CalculateNumSubresources()), m_ResourceState(m_NumSubresources, InitialResourceState),
         m_GpuVirtualAddress(m_pResource->GetGPUVirtualAddress())
@@ -186,14 +186,14 @@ namespace RHI
         // When this access occurs the promotion acts like an implicit resource barrier. For subsequent accesses,
         // resource barriers will be required to change the resource state if necessary. Note that promotion from one
         // promoted read state into multiple read state is valid, but this is not the case for write states.
-        if (m_Desc.Dimension == D3D12_RESOURCE_DIMENSION_BUFFER)
+        if (m_ResourceDesc.Dimension == D3D12_RESOURCE_DIMENSION_BUFFER)
         {
             return true;
         }
         else
         {
             // Simultaneous-Access Textures
-            if (m_Desc.Flags & D3D12_RESOURCE_FLAG_ALLOW_SIMULTANEOUS_ACCESS)
+            if (m_ResourceDesc.Flags & D3D12_RESOURCE_FLAG_ALLOW_SIMULTANEOUS_ACCESS)
             {
                 // *Depth-stencil resources must be non-simultaneous-access textures and thus can never be implicitly
                 // promoted.
@@ -243,13 +243,13 @@ namespace RHI
         }
 
         // 2. Buffer resources on any queue type
-        if (m_Desc.Dimension == D3D12_RESOURCE_DIMENSION_BUFFER)
+        if (m_ResourceDesc.Dimension == D3D12_RESOURCE_DIMENSION_BUFFER)
         {
             return true;
         }
 
         // 3. Texture resources on any queue type that have the D3D12_RESOURCE_FLAG_ALLOW_SIMULTANEOUS_ACCESS flag set
-        if (m_Desc.Flags & D3D12_RESOURCE_FLAG_ALLOW_SIMULTANEOUS_ACCESS)
+        if (m_ResourceDesc.Flags & D3D12_RESOURCE_FLAG_ALLOW_SIMULTANEOUS_ACCESS)
         {
             return true;
         }
@@ -266,73 +266,6 @@ namespace RHI
         }
 
         return false;
-    }
-
-    const std::shared_ptr<D3D12ShaderResourceView> D3D12Resource::CreateSRV(D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc)
-    {
-        std::shared_ptr<D3D12ShaderResourceView> srv = nullptr; 
-        auto srvHandleIter = m_SRVHandleMap.find(srvDesc);
-        if (srvHandleIter != m_SRVHandleMap.end())
-        {
-            srv = std::make_shared<D3D12ShaderResourceView>(Parent, srvDesc, this);
-            m_SRVHandleMap[srvDesc] = srv;
-        }
-        else
-        {
-            srv = srvHandleIter->second;
-        }
-        return srv;
-    }
-
-    const std::shared_ptr<D3D12UnorderedAccessView> D3D12Resource::CreateUAV(D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc,
-                                                                             D3D12Resource* pCounterResource)
-    {
-        UnorderedAccessViewKey uavInfo = {uavDesc, pCounterResource};
-        std::shared_ptr<D3D12UnorderedAccessView> uav = nullptr; 
-        auto uavHandleIter = m_UAVHandleMap.find(uavInfo);
-        if (uavHandleIter != m_UAVHandleMap.end())
-        {
-            uav = std::make_shared<D3D12UnorderedAccessView>(Parent, uavDesc, this, pCounterResource);
-            m_UAVHandleMap[uavInfo] = uav;
-        }
-        else
-        {
-            uav = uavHandleIter->second;
-        }
-        return uav;
-    }
-
-    const std::shared_ptr<D3D12RenderTargetView> D3D12Resource::CreateRTV(D3D12_RENDER_TARGET_VIEW_DESC rtvDesc)
-    {
-        std::shared_ptr<D3D12RenderTargetView> rtv = nullptr; 
-        auto rtvHandleIter = m_RTVHandleMap.find(rtvDesc);
-        if (rtvHandleIter != m_RTVHandleMap.end())
-        {
-            rtv = std::make_shared<D3D12RenderTargetView>(Parent, rtvDesc, this);
-            m_RTVHandleMap[rtvDesc] = rtv;
-        }
-        else
-        {
-            rtv = rtvHandleIter->second;
-        }
-        return rtv;
-    }
-
-    const std::shared_ptr<D3D12DepthStencilView> D3D12Resource::CreateDSV(D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc)
-    {
-        std::shared_ptr<D3D12DepthStencilView> dsv = nullptr;
-
-        auto dsvHandleIter = m_DSVHandleMap.find(dsvDesc);
-        if (dsvHandleIter != m_DSVHandleMap.end())
-        {
-            dsv = std::make_shared<D3D12DepthStencilView>(Parent, dsvDesc, this);
-            m_DSVHandleMap[dsvDesc] = dsv;
-        }
-        else
-        {
-            dsv = dsvHandleIter->second;
-        }
-        return dsv;
     }
 
     Microsoft::WRL::ComPtr<ID3D12Resource>
@@ -355,9 +288,9 @@ namespace RHI
 
     UINT D3D12Resource::CalculateNumSubresources() const
     {
-        if (m_Desc.Dimension != D3D12_RESOURCE_DIMENSION_BUFFER)
+        if (m_ResourceDesc.Dimension != D3D12_RESOURCE_DIMENSION_BUFFER)
         {
-            return m_Desc.MipLevels * m_Desc.DepthOrArraySize * m_PlaneCount;
+            return m_ResourceDesc.MipLevels * m_ResourceDesc.DepthOrArraySize * m_PlaneCount;
         }
         // Buffer only contains 1 subresource
         return 1;
@@ -412,37 +345,6 @@ namespace RHI
         return m_pResource->GetGPUVirtualAddress() + static_cast<UINT64>(Index) * m_Stride;
     }
 
-    const std::shared_ptr<D3D12ShaderResourceView> D3D12Buffer::GetStructuredBufferSRV(UINT FirstElement,
-                                                                                       UINT NumElements)
-    {
-        assert(!(m_Desc.Flags & D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE));
-        D3D12_SHADER_RESOURCE_VIEW_DESC desc = D3D12ShaderResourceView::GetDesc(this, false, FirstElement, NumElements);
-        return CreateSRV(desc);
-    }
-
-    const std::shared_ptr<D3D12UnorderedAccessView>
-    D3D12Buffer::GetStructuredBufferUAV(UINT FirstElement, UINT NumElements, UINT64 CounterOffsetInBytes)
-    {
-        assert(m_Desc.Flags & D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
-        D3D12_UNORDERED_ACCESS_VIEW_DESC desc =
-            D3D12UnorderedAccessView::GetDesc(this, false, FirstElement, NumElements, CounterOffsetInBytes);
-        return CreateUAV(desc, this);
-    }
-    
-    const std::shared_ptr<D3D12ShaderResourceView> D3D12Buffer::GetByteAddressBufferSRV()
-    {
-        assert(!(m_Desc.Flags & D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE));
-        D3D12_SHADER_RESOURCE_VIEW_DESC desc = D3D12ShaderResourceView::GetDesc(this, true, 0, 0);
-        return CreateSRV(desc);
-    }
-
-    const std::shared_ptr<D3D12UnorderedAccessView> D3D12Buffer::GetByteAddressBufferUAV()
-    {
-        assert(m_Desc.Flags & D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
-        D3D12_UNORDERED_ACCESS_VIEW_DESC desc = D3D12UnorderedAccessView::GetDesc(this, true, 0, 0, 0);
-        return CreateUAV(desc, this);
-    }
-
     D3D12Texture::D3D12Texture(D3D12LinkedDevice*                       Parent,
                                Microsoft::WRL::ComPtr<ID3D12Resource>&& Resource,
                                CD3DX12_CLEAR_VALUE                      ClearValue,
@@ -471,45 +373,7 @@ namespace RHI
         UINT ArraySlice = OptArraySlice.value_or(0);
         UINT MipSlice   = OptMipSlice.value_or(0);
         UINT PlaneSlice = OptPlaneSlice.value_or(0);
-        return D3D12CalcSubresource(MipSlice, ArraySlice, PlaneSlice, m_Desc.MipLevels, m_Desc.DepthOrArraySize);
-    }
-
-    const std::shared_ptr<D3D12ShaderResourceView>
-    D3D12Texture::GetDefaultSRV(bool sRGB, std::optional<UINT> OptMostDetailedMip, std::optional<UINT> OptMipLevels)
-    {
-        assert(!(m_Desc.Flags & D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE));
-        D3D12_SHADER_RESOURCE_VIEW_DESC desc =
-            D3D12ShaderResourceView::GetDesc(this, sRGB, OptMostDetailedMip, OptMipLevels);
-        return CreateSRV(desc);
-    }
-
-    const std::shared_ptr<D3D12UnorderedAccessView> D3D12Texture::GetDefaultUAV(std::optional<UINT> OptArraySlice,
-                                                                                std::optional<UINT> OptMipSlice)
-    {
-        assert(m_Desc.Flags & D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
-        D3D12_UNORDERED_ACCESS_VIEW_DESC desc = D3D12UnorderedAccessView::GetDesc(this, OptArraySlice, OptMipSlice);
-        return CreateUAV(desc);
-    }
-
-    const std::shared_ptr<D3D12RenderTargetView> D3D12Texture::GetDefaultRTV(bool                sRGB,
-                                                                             std::optional<UINT> OptArraySlice,
-                                                                             std::optional<UINT> OptMipSlice,
-                                                                             std::optional<UINT> OptArraySize)
-    {
-        assert(m_Desc.Flags & D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET);
-        D3D12_RENDER_TARGET_VIEW_DESC desc =
-            D3D12RenderTargetView::GetDesc(this, OptArraySlice, OptMipSlice, OptArraySize, sRGB);
-        return CreateRTV(desc);
-    }
-
-    const std::shared_ptr<D3D12DepthStencilView> D3D12Texture::GetDefaultDSV(std::optional<UINT> OptArraySlice,
-                                                                             std::optional<UINT> OptMipSlice,
-                                                                             std::optional<UINT> OptArraySize)
-    {
-        assert(m_Desc.Flags & D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL);
-        D3D12_DEPTH_STENCIL_VIEW_DESC desc =
-            D3D12DepthStencilView::GetDesc(this, OptArraySlice, OptMipSlice, OptArraySize);
-        return CreateDSV(desc);
+        return D3D12CalcSubresource(MipSlice, ArraySlice, PlaneSlice, m_ResourceDesc.MipLevels, m_ResourceDesc.DepthOrArraySize);
     }
 
     void D3D12Texture::AssociateWithResource(D3D12LinkedDevice*                       Parent,
@@ -523,9 +387,9 @@ namespace RHI
         this->m_pResource         = Resource;
         this->m_GpuVirtualAddress = Resource->GetGPUVirtualAddress();
         this->m_ClearValue        = CD3DX12_CLEAR_VALUE();
-        this->m_Desc              = CD3DX12_RESOURCE_DESC(Resource->GetDesc());
+        this->m_ResourceDesc              = CD3DX12_RESOURCE_DESC(Resource->GetDesc());
 
-        this->m_PlaneCount      = D3D12GetFormatPlaneCount(Parent->GetDevice(), m_Desc.Format);
+        this->m_PlaneCount      = D3D12GetFormatPlaneCount(Parent->GetDevice(), m_ResourceDesc.Format);
         this->m_NumSubresources = this->CalculateNumSubresources();
         this->m_ResourceState   = CResourceState(m_NumSubresources, CurrentState);
         this->m_ResourceName    = Name;
@@ -537,21 +401,210 @@ namespace RHI
 #endif
     }
 
+    //=========================================================================================================
+
+    std::shared_ptr<BufferD3D12> BufferD3D12::CreateBuffer(D3D12LinkedDevice* Parent,
+                                                           RHIBufferTarget    bufferTarget,
+                                                           UINT32             numElements,
+                                                           UINT32             elementSize,
+                                                           bool               mapplable,
+                                                           std::wstring&      name,
+                                                           BYTE*              initialData,
+                                                           UINT               dataLen)
+    {
+        std::shared_ptr<BufferD3D12> pBufferD3D12 = std::make_shared<BufferD3D12>(Parent);
+
+        UINT sizeInBytes = numElements * elementSize;
+        D3D12_HEAP_TYPE heapType = mapplable ? D3D12_HEAP_TYPE::D3D12_HEAP_TYPE_UPLOAD : D3D12_HEAP_TYPE::D3D12_HEAP_TYPE_DEFAULT;
+        
+        D3D12_RESOURCE_FLAGS resourceFlag = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
+
+        D3D12_RESOURCE_STATES initState = D3D12_RESOURCE_STATE_GENERIC_READ;
+
+        RHIBufferMode bufferMode = mapplable ? RHIBufferMode::RHIBufferModeDynamic : RHIBufferMode::RHIBufferModeImmutable;
+
+        pBufferD3D12->m_Desc = {sizeInBytes, numElements, elementSize, bufferTarget, bufferMode};
+        pBufferD3D12->m_Data = {initialData, dataLen};
+        pBufferD3D12->m_Name = name;
+
+        pBufferD3D12->p_ResourceD3D12Buffer =
+            std::make_shared<D3D12Buffer>(Parent, sizeInBytes, elementSize, heapType, resourceFlag, initState);
+
+        if (bufferTarget & RHIBufferTarget::RHIBufferTargetRaw)
+        {
+            pBufferD3D12->p_CounterBufferD3D12 = nullptr;
+        }
+        else
+        {
+            std::wstring counterName = L"Counter";
+            pBufferD3D12->p_CounterBufferD3D12 =
+                CreateBuffer(Parent, RHIBufferTarget::RHIBufferTargetCounter, 1, sizeof(UINT32), false, counterName, nullptr, 0);
+        }
+
+        // Inflate Buffer
+        if (initialData != nullptr)
+        {
+
+        }
+
+        // Reset CounterBuffer
+        if (bufferTarget & RHIBufferTarget::RHIBufferTargetCounter)
+        {
+
+        }
+
+        return pBufferD3D12;
+    }
+
+    std::shared_ptr<BufferD3D12> BufferD3D12::GetCounterBuffer() { return this->p_CounterBufferD3D12; }
+
+    bool BufferD3D12::InflateBuffer(BYTE* initialData, UINT dataLen)
+    {
+
+    }
+
+    void BufferD3D12::ResetCounterBuffer()
+    {
+
+    }
+
+    std::shared_ptr<D3D12ConstantBufferView> BufferD3D12::CreateCBV(D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc)
+    {
+
+    }
+
+    std::shared_ptr<D3D12ShaderResourceView> BufferD3D12::CreateSRV(D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc)
+    {
+
+    }
+
+    std::shared_ptr<D3D12UnorderedAccessView> BufferD3D12::CreateUAV(D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc)
+    {
+
+    }
+
+    std::shared_ptr<D3D12ConstantBufferView> BufferD3D12::GetDefaultCBV()
+    {
+
+    }
+
+    std::shared_ptr<D3D12ShaderResourceView> BufferD3D12::GetDefaultSRV()
+    {
+
+    }
+
+    std::shared_ptr<D3D12UnorderedAccessView> BufferD3D12::GetDefaultUAV()
+    {
+
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    /*
+    const std::shared_ptr<D3D12ShaderResourceView> D3D12Resource::CreateSRV(D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc)
+    {
+        std::shared_ptr<D3D12ShaderResourceView> srv           = nullptr;
+        auto                                     srvHandleIter = m_SRVHandleMap.find(srvDesc);
+        if (srvHandleIter != m_SRVHandleMap.end())
+        {
+            srv                     = std::make_shared<D3D12ShaderResourceView>(Parent, srvDesc, this);
+            m_SRVHandleMap[srvDesc] = srv;
+        }
+        else
+        {
+            srv = srvHandleIter->second;
+        }
+        return srv;
+    }
+
+    const std::shared_ptr<D3D12UnorderedAccessView> D3D12Resource::CreateUAV(D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc,
+                                                                             D3D12Resource* pCounterResource)
+    {
+        UnorderedAccessViewKey                    uavInfo       = {uavDesc, pCounterResource};
+        std::shared_ptr<D3D12UnorderedAccessView> uav           = nullptr;
+        auto                                      uavHandleIter = m_UAVHandleMap.find(uavInfo);
+        if (uavHandleIter != m_UAVHandleMap.end())
+        {
+            uav = std::make_shared<D3D12UnorderedAccessView>(Parent, uavDesc, this, pCounterResource);
+            m_UAVHandleMap[uavInfo] = uav;
+        }
+        else
+        {
+            uav = uavHandleIter->second;
+        }
+        return uav;
+    }
+
+    const std::shared_ptr<D3D12RenderTargetView> D3D12Resource::CreateRTV(D3D12_RENDER_TARGET_VIEW_DESC rtvDesc)
+    {
+        std::shared_ptr<D3D12RenderTargetView> rtv           = nullptr;
+        auto                                   rtvHandleIter = m_RTVHandleMap.find(rtvDesc);
+        if (rtvHandleIter != m_RTVHandleMap.end())
+        {
+            rtv                     = std::make_shared<D3D12RenderTargetView>(Parent, rtvDesc, this);
+            m_RTVHandleMap[rtvDesc] = rtv;
+        }
+        else
+        {
+            rtv = rtvHandleIter->second;
+        }
+        return rtv;
+    }
+
+    const std::shared_ptr<D3D12DepthStencilView> D3D12Resource::CreateDSV(D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc)
+    {
+        std::shared_ptr<D3D12DepthStencilView> dsv = nullptr;
+
+        auto dsvHandleIter = m_DSVHandleMap.find(dsvDesc);
+        if (dsvHandleIter != m_DSVHandleMap.end())
+        {
+            dsv                     = std::make_shared<D3D12DepthStencilView>(Parent, dsvDesc, this);
+            m_DSVHandleMap[dsvDesc] = dsv;
+        }
+        else
+        {
+            dsv = dsvHandleIter->second;
+        }
+        return dsv;
+    }
+
+    void D3D12Resource::CacheSRV(std::string srvName, std::shared_ptr<D3D12ShaderResourceView>) {}
+
+    void D3D12Resource::CacheUAV(std::string srvName, std::shared_ptr<D3D12UnorderedAccessView>) {}
+
+
     UploadBuffer::UploadBuffer(D3D12LinkedDevice* Parent, UINT BufferSize, const std::wstring& name) :
-        D3D12Buffer(Parent, BufferSize, BufferSize, D3D12_HEAP_TYPE_UPLOAD, D3D12_RESOURCE_FLAG_NONE, D3D12_RESOURCE_STATE_GENERIC_READ)
+        D3D12Buffer(Parent,
+                    BufferSize,
+                    BufferSize,
+                    D3D12_HEAP_TYPE_UPLOAD,
+                    D3D12_RESOURCE_FLAG_NONE,
+                    D3D12_RESOURCE_STATE_GENERIC_READ)
     {
         this->m_pResource->SetName(name.c_str());
     }
 
-    UINT UploadBuffer::GetBufferSize() const
-    {
-        return D3D12Buffer::GetSizeInBytes();
-    }
+    UINT UploadBuffer::GetBufferSize() const { return D3D12Buffer::GetSizeInBytes(); }
 
-    ReadbackBuffer::ReadbackBuffer(UINT NumElements, UINT ElementSize, const std::wstring& name)
-    {
-
-    }
+    ReadbackBuffer::ReadbackBuffer(UINT NumElements, UINT ElementSize, const std::wstring& name) {}
+    */
 
 }
 

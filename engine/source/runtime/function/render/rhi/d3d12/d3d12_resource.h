@@ -107,14 +107,14 @@ namespace RHI
         [[nodiscard]] inline FLOAT GetClearDepth() const { return GetClearValue().DepthStencil.Depth; }
         [[nodiscard]] inline UINT8 GetClearStencil() const { return GetClearValue().DepthStencil.Stencil; }
 
-        [[nodiscard]] inline const D3D12_RESOURCE_DESC& GetDesc() const noexcept { return m_Desc; }
-        [[nodiscard]] inline D3D12_RESOURCE_DIMENSION   GetDimension() const { return m_Desc.Dimension; }
-        [[nodiscard]] inline UINT64                     GetWidth() const { return m_Desc.Width; }
-        [[nodiscard]] inline UINT64                     GetHeight() const { return m_Desc.Height; }
-        [[nodiscard]] inline UINT16                     GetArraySize() const { return m_Desc.ArraySize(); }
-        [[nodiscard]] inline UINT16                     GetDepth() const { return m_Desc.Depth(); }
-        [[nodiscard]] inline UINT16                     GetMipLevels() const { return m_Desc.MipLevels; }
-        [[nodiscard]] inline DXGI_FORMAT                GetFormat() const { return m_Desc.Format; }
+        [[nodiscard]] inline const D3D12_RESOURCE_DESC& GetDesc() const noexcept { return m_ResourceDesc; }
+        [[nodiscard]] inline D3D12_RESOURCE_DIMENSION   GetDimension() const { return m_ResourceDesc.Dimension; }
+        [[nodiscard]] inline UINT64                     GetWidth() const { return m_ResourceDesc.Width; }
+        [[nodiscard]] inline UINT64                     GetHeight() const { return m_ResourceDesc.Height; }
+        [[nodiscard]] inline UINT16                     GetArraySize() const { return m_ResourceDesc.ArraySize(); }
+        [[nodiscard]] inline UINT16                     GetDepth() const { return m_ResourceDesc.Depth(); }
+        [[nodiscard]] inline UINT16                     GetMipLevels() const { return m_ResourceDesc.MipLevels; }
+        [[nodiscard]] inline DXGI_FORMAT                GetFormat() const { return m_ResourceDesc.Format; }
 
         [[nodiscard]] inline UINT8           GetPlaneCount() const noexcept { return m_PlaneCount; }
         [[nodiscard]] inline UINT            GetNumSubresources() const noexcept { return m_NumSubresources; }
@@ -135,12 +135,6 @@ namespace RHI
         [[nodiscard]] bool ImplicitStateDecay(D3D12_RESOURCE_STATES   State,
                                               D3D12_COMMAND_LIST_TYPE AccessedQueueType) const noexcept;
 
-        const std::shared_ptr<D3D12ShaderResourceView>  CreateSRV(D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc);
-        const std::shared_ptr<D3D12UnorderedAccessView> CreateUAV(D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc,
-                                                                  D3D12Resource* pCounterResource = nullptr);
-        const std::shared_ptr<D3D12RenderTargetView>    CreateRTV(D3D12_RENDER_TARGET_VIEW_DESC rtvDesc);
-        const std::shared_ptr<D3D12DepthStencilView>    CreateDSV(D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc);
-
     protected:
         Microsoft::WRL::ComPtr<ID3D12Resource> InitializeResource(CD3DX12_HEAP_PROPERTIES HeapProperties,
                                                                   CD3DX12_RESOURCE_DESC Desc,
@@ -154,24 +148,14 @@ namespace RHI
 
         Microsoft::WRL::ComPtr<ID3D12Resource> m_pResource;
         D3D12_GPU_VIRTUAL_ADDRESS              m_GpuVirtualAddress;
-        BYTE*                                  m_CpuVirtualAddress;
         std::optional<CD3DX12_CLEAR_VALUE>     m_ClearValue;
-        CD3DX12_RESOURCE_DESC                  m_Desc            = {};
+        CD3DX12_RESOURCE_DESC                  m_ResourceDesc    = {};
         UINT8                                  m_PlaneCount      = 0;
         UINT                                   m_NumSubresources = 0;
         CResourceState                         m_ResourceState;
         std::wstring                           m_ResourceName;
 
         static UINT64                          g_GlobalUniqueId;
-
-    protected:
-        // clang-format off
-        robin_hood::unordered_map<D3D12_RENDER_TARGET_VIEW_DESC, std::shared_ptr<D3D12RenderTargetView>> m_RTVHandleMap;
-        robin_hood::unordered_map<D3D12_DEPTH_STENCIL_VIEW_DESC, std::shared_ptr<D3D12DepthStencilView>> m_DSVHandleMap;
-        robin_hood::unordered_map<D3D12_SHADER_RESOURCE_VIEW_DESC, std::shared_ptr<D3D12ShaderResourceView>> m_SRVHandleMap;
-        struct UnorderedAccessViewKey { D3D12_UNORDERED_ACCESS_VIEW_DESC desc; D3D12Resource* pCounterResource; };
-        robin_hood::unordered_map<UnorderedAccessViewKey, std::shared_ptr<D3D12UnorderedAccessView>> m_UAVHandleMap;
-        // clang-format on
 
         // Used to identify when a resource changes so descriptors can be copied etc.
         UINT m_VersionID = 0;
@@ -200,7 +184,7 @@ namespace RHI
                     D3D12_RESOURCE_FLAGS  ResourceFlags,
                     D3D12_RESOURCE_STATES InitialResourceState);
 
-        [[nodiscard]] D3D12_GPU_VIRTUAL_ADDRESS GetGpuVirtualAddress(UINT Index) const;
+        [[nodiscard]] D3D12_GPU_VIRTUAL_ADDRESS GetGpuVirtualAddress(UINT Index = 0) const;
         [[nodiscard]] UINT                      GetStride() const { return m_Stride; }
         [[nodiscard]] UINT                      GetSizeInBytes() const { return m_SizeInBytes; }
         template<typename T>
@@ -214,7 +198,7 @@ namespace RHI
         {
             D3D12_VERTEX_BUFFER_VIEW VertexBufferView = {};
             VertexBufferView.BufferLocation           = m_pResource->GetGPUVirtualAddress();
-            VertexBufferView.SizeInBytes              = static_cast<UINT>(m_Desc.Width);
+            VertexBufferView.SizeInBytes              = static_cast<UINT>(m_ResourceDesc.Width);
             VertexBufferView.StrideInBytes            = m_Stride;
             return VertexBufferView;
         }
@@ -224,7 +208,7 @@ namespace RHI
         {
             D3D12_INDEX_BUFFER_VIEW IndexBufferView = {};
             IndexBufferView.BufferLocation          = m_pResource->GetGPUVirtualAddress();
-            IndexBufferView.SizeInBytes             = static_cast<UINT>(m_Desc.Width);
+            IndexBufferView.SizeInBytes             = static_cast<UINT>(m_ResourceDesc.Width);
             IndexBufferView.Format                  = Format;
             return IndexBufferView;
         }
@@ -236,19 +220,11 @@ namespace RHI
             memcpy(&m_CpuVirtualAddress[Index * Stride], &Data, sizeof(T));
         }
 
-        const std::shared_ptr<D3D12ShaderResourceView> GetStructuredBufferSRV(UINT FirstElement, UINT NumElements);
-        const std::shared_ptr<D3D12UnorderedAccessView>
-        GetStructuredBufferUAV(UINT FirstElement, UINT NumElements, UINT64 CounterOffsetInBytes);
-
-        const std::shared_ptr<D3D12ShaderResourceView>  GetByteAddressBufferSRV();
-        const std::shared_ptr<D3D12UnorderedAccessView> GetByteAddressBufferUAV();
-
-        virtual void CreateDerivedViews(void) {};
-
     private:
         D3D12_HEAP_TYPE    m_HeapType  = {};
         UINT               m_SizeInBytes = 0;
         UINT               m_Stride      = 0;
+        BYTE*              m_CpuVirtualAddress;
         D3D12ScopedPointer m_ScopedPointer; // Upload heap
     };
 
@@ -271,24 +247,6 @@ namespace RHI
 
         [[nodiscard]] bool IsCubemap() const noexcept { return Cubemap; }
 
-        const std::shared_ptr<D3D12ShaderResourceView> GetDefaultSRV(bool sRGB = false,
-                                                                      std::optional<UINT> OptMostDetailedMip = std::nullopt,
-                                                                      std::optional<UINT> OptMipLevelse = std::nullopt);
-        const std::shared_ptr<D3D12UnorderedAccessView> GetDefaultUAV(std::optional<UINT> OptArraySlicee = std::nullopt,
-                                                                      std::optional<UINT> OptMipSlicee = std::nullopt);
-
-        const std::shared_ptr<D3D12RenderTargetView> GetDefaultRTV(bool sRGB = false,
-                                                                   std::optional<UINT> OptArraySlice = std::nullopt,
-                                                                   std::optional<UINT> OptMipSlice   = std::nullopt,
-                                                                   std::optional<UINT> OptArraySize  = std::nullopt);
-        const std::shared_ptr<D3D12DepthStencilView> GetDefaultDSV(std::optional<UINT> OptArraySlice = std::nullopt,
-                                                                   std::optional<UINT> OptMipSlice   = std::nullopt,
-                                                                   std::optional<UINT> OptArraySize  = std::nullopt);
-
-        // Write the raw pixel buffer contents to a file
-        // Note that data is preceded by a 16-byte header:  { DXGI_FORMAT, Pitch (in pixels), Width (in pixels), Height }
-        void ExportToFile(const std::wstring& FilePath);
-
     protected:
 
         void AssociateWithResource(D3D12LinkedDevice*                       Parent,
@@ -300,79 +258,83 @@ namespace RHI
         bool Cubemap = false;
     };
 
-    class ByteAddressBuffer : public D3D12Buffer
+    //===========================================================================================================
+
+    class BufferD3D12 : public D3D12LinkedDeviceChild
     {
     public:
-        ByteAddressBuffer(D3D12LinkedDevice*    Parent,
-                          UINT64                SizeInBytes,
-                          D3D12_HEAP_TYPE       HeapType,
-                          D3D12_RESOURCE_FLAGS  ResourceFlags,
-                          D3D12_RESOURCE_STATES InitialResourceState);
+        static std::shared_ptr<BufferD3D12> CreateBuffer(D3D12LinkedDevice* Parent,
+                                                         RHIBufferTarget    bufferTarget,
+                                                         UINT32             numElements,
+                                                         UINT32             elementSize,
+                                                         bool               mapplable,
+                                                         std::wstring&      name,
+                                                         BYTE*              initialData = nullptr,
+                                                         UINT               dataLen     = 0);
 
-        virtual void CreateDerivedViews(void) override;
-    };
+        BufferD3D12() = default;
+        BufferD3D12(D3D12LinkedDevice* Parent) : D3D12LinkedDeviceChild(Parent) {};
 
-    class StructuredBuffer : public D3D12Buffer
-    {
-    public:
-        StructuredBuffer(D3D12LinkedDevice*    Parent,
-                         UINT64                SizeInBytes,
-                         D3D12_HEAP_TYPE       HeapType,
-                         D3D12_RESOURCE_FLAGS  ResourceFlags,
-                         D3D12_RESOURCE_STATES InitialResourceState);
+        std::shared_ptr<BufferD3D12> GetCounterBuffer();
 
-        virtual void Destroy(void) override
-        {
-            p_SepCounterBuffer = nullptr;
-            D3D12Buffer::Destroy();
-        }
+        bool InflateBuffer(BYTE* initialData, UINT dataLen);
+        void ResetCounterBuffer();
 
-        virtual void CreateDerivedViews(void) override;
-
-        std::shared_ptr<ByteAddressBuffer> GetCounterBuffer(void) { return p_SepCounterBuffer; }
-
-        const std::shared_ptr<D3D12ShaderResourceView>  GetCounterSRV();
-        const std::shared_ptr<D3D12UnorderedAccessView> GetCounterUAV();
-
-    private:
-        std::shared_ptr<ByteAddressBuffer> p_SepCounterBuffer;
-    };
-
-    class TypedBuffer : public D3D12Buffer
-    {
-    public:
-        TypedBuffer(DXGI_FORMAT Format) : m_DataFormat(Format) {}
-        virtual void CreateDerivedViews(void) override;
+        std::shared_ptr<D3D12ConstantBufferView>  CreateCBV(D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc);
+        std::shared_ptr<D3D12ShaderResourceView>  CreateSRV(D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc);
+        std::shared_ptr<D3D12UnorderedAccessView> CreateUAV(D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc);
+        
+        std::shared_ptr<D3D12ConstantBufferView>  GetDefaultCBV();
+        std::shared_ptr<D3D12ShaderResourceView>  GetDefaultSRV();
+        std::shared_ptr<D3D12UnorderedAccessView> GetDefaultUAV();
 
     protected:
-        DXGI_FORMAT m_DataFormat;
+        RHIBufferDesc m_Desc;
+        RHIBufferData m_Data;
+
+        std::wstring m_Name;
+
+        std::shared_ptr<D3D12Buffer> p_ResourceD3D12Buffer;
+
+        std::shared_ptr<BufferD3D12> p_CounterBufferD3D12;
+
+        struct BUFFER_UNORDERED_ACCESS_VIEW_KEY { D3D12_UNORDERED_ACCESS_VIEW_DESC Desc; D3D12Resource* PCounterResource; };
+
+        robin_hood::unordered_map<D3D12_CONSTANT_BUFFER_VIEW_DESC, std::shared_ptr<D3D12ConstantBufferView>> m_CBVHandleMap;
+        robin_hood::unordered_map<D3D12_SHADER_RESOURCE_VIEW_DESC, std::shared_ptr<D3D12ShaderResourceView>> m_SRVHandleMap;
+        robin_hood::unordered_map<BUFFER_UNORDERED_ACCESS_VIEW_KEY, std::shared_ptr<D3D12UnorderedAccessView>> m_UAVHandleMap;
     };
 
-    /**
-    // Description:  An upload buffer is visible to both the CPU and the GPU, but
-    // because the memory is write combined, you should avoid reading data with the CPU.
-    // An upload buffer is intended for moving data to a default GPU buffer.  You can
-    // read from a file directly into an upload buffer, rather than reading into regular
-    // cached memory, copying that to an upload buffer, and copying that to the GPU.
-    */
-    class UploadBuffer : public D3D12Buffer
+    class SurfaceD3D12 : public D3D12LinkedDeviceChild
     {
     public:
-        UploadBuffer(D3D12LinkedDevice* Parent, UINT BufferSize, const std::wstring& name);
+        static std::shared_ptr<SurfaceD3D12> CreateTexture2D(const std::wstring& name,
+                                                            const void*         initialData = nullptr);
 
-        virtual ~UploadBuffer() { Destroy(); }
+        std::shared_ptr<D3D12ShaderResourceView>  CreateSRV(D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc);
+        std::shared_ptr<D3D12UnorderedAccessView> CreateUAV(D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc);
+        std::shared_ptr<D3D12RenderTargetView>    CreateRTV(D3D12_RENDER_TARGET_VIEW_DESC rtvDesc);
+        std::shared_ptr<D3D12DepthStencilView>    CreateDSV(D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc);
 
-        UINT GetBufferSize() const;
-    };
+        std::shared_ptr<D3D12ShaderResourceView>  GetDefaultSRV();
+        std::shared_ptr<D3D12UnorderedAccessView> GetDefaultUAV();
+        std::shared_ptr<D3D12RenderTargetView>    GetDefaultRTV();
+        std::shared_ptr<D3D12DepthStencilView>    GetDefaultDSV();
 
-    class ReadbackBuffer : public D3D12Buffer
-    {
-    public:
-        ReadbackBuffer(UINT NumElements, UINT ElementSize, const std::wstring& name);
-        virtual ~ReadbackBuffer() { Destroy(); }
+        
+        // Write the raw pixel buffer contents to a file
+        // Note that data is preceded by a 16-byte header:  { DXGI_FORMAT, Pitch (in pixels), Width (in pixels), Height }
+        void ExportToFile(const std::wstring& FilePath);
 
-        void* Map(void);
-        void  Unmap(void);
+    protected:
+        RHIBufferDesc m_Desc;
+
+        std::shared_ptr<D3D12Texture> p_ResourceD3D12Texture;
+
+        robin_hood::unordered_map<D3D12_RENDER_TARGET_VIEW_DESC, std::shared_ptr<D3D12RenderTargetView>> m_RTVHandleMap;
+        robin_hood::unordered_map<D3D12_DEPTH_STENCIL_VIEW_DESC, std::shared_ptr<D3D12DepthStencilView>> m_DSVHandleMap;
+        robin_hood::unordered_map<D3D12_SHADER_RESOURCE_VIEW_DESC, std::shared_ptr<D3D12ShaderResourceView>> m_SRVHandleMap;
+        robin_hood::unordered_map<D3D12_UNORDERED_ACCESS_VIEW_DESC, std::shared_ptr<D3D12UnorderedAccessView>> m_UAVHandleMap;
     };
 
 }
