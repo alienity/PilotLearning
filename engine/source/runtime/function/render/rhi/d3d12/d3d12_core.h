@@ -558,20 +558,23 @@ namespace RHI
     enum RHISurfaceCreateFlags
     {
         RHISurfaceCreateFlagNone            = 0,
-        RHISurfaceCreateMipmap              = (1 << 0),
-        RHISurfaceCreateSRGB                = (1 << 1),
-        RHISurfaceCreateShadowmap           = (1 << 2),
+        RHISurfaceCreateRenderTexture       = (1 << 0),
+        RHISurfaceCreateDepthTexture        = (1 << 1),
+        RHISurfaceCreateStencilTexture      = (1 << 2),
         RHISurfaceCreateRandomWrite         = (1 << 3),
-        RHISurfaceCreateSampleOnly          = (1 << 4),
-        RHISurfaceCreateNeverUsed           = (1 << 5),
-        RHISurfaceCreateAutoGenMips         = (1 << 6),
-        RHISurfaceRenderTextureAsBackBuffer = (1 << 7),
-        RHISurfaceCreateNoDepth             = (1 << 8),
-        RHISurfaceCreateBindMS              = (1 << 9),
-        RHISurfaceCreateNotFlipped          = (1 << 10),
-        RHISurfaceCreateStencilTexture      = (1 << 11),
+        RHISurfaceCreateMipmap              = (1 << 4),
+        RHISurfaceCreateAutoGenMips         = (1 << 5),
+        RHISurfaceCreateSRGB                = (1 << 6),
+        RHISurfaceCreateShadowmap           = (1 << 7),
+        RHISurfaceCreateSampleOnly          = (1 << 8),
+        RHISurfaceRenderTextureAsBackBuffer = (1 << 9),
+        RHISurfaceCreateBindMS              = (1 << 10),
+        RHISurfaceCreateNotFlipped          = (1 << 11)
     };
     DEFINE_ENUM_FLAG_OPERATORS(RHISurfaceCreateFlags);
+
+    // 最大允许的mipmap数是12
+    #define MAXMIPLEVELS 12
 
     enum RHITextureDimension
     {

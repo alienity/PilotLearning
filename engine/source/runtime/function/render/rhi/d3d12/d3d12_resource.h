@@ -254,7 +254,8 @@ namespace RHI
                                                std::optional<UINT> OptMipSlice   = std::nullopt,
                                                std::optional<UINT> OptPlaneSlice = std::nullopt) const noexcept;
 
-        [[nodiscard]] bool IsCubemap() const noexcept { return Cubemap; }
+        [[nodiscard]] bool IsCubemap() const noexcept { return IsCubemap; }
+        [[nodiscard]] bool IsArray() const noexcept { return IsArray; }
 
     protected:
 
@@ -264,7 +265,8 @@ namespace RHI
                                    D3D12_RESOURCE_STATES                    CurrentState);
 
     protected:
-        bool Cubemap = false;
+        bool IsCubemap = false;
+        bool IsArray   = false;
     };
 
     //===========================================================================================================
@@ -277,14 +279,17 @@ namespace RHI
     class BufferD3D12 : public D3D12LinkedDeviceChild
     {
     public:
-        static std::shared_ptr<BufferD3D12> CreateBuffer(D3D12LinkedDevice* Parent,
-                                                         RHIBufferTarget    bufferTarget,
-                                                         UINT32             numElements,
-                                                         UINT32             elementSize,
-                                                         bool               mapplable,
-                                                         std::wstring&      name,
-                                                         BYTE*              initialData = nullptr,
-                                                         UINT               dataLen     = 0);
+        static std::shared_ptr<BufferD3D12>
+        CreateBuffer(D3D12LinkedDevice*    Parent,
+                     RHIBufferTarget       bufferTarget,
+                     UINT32                numElements,
+                     UINT32                elementSize,
+                     bool                  mapplable       = false,
+                     bool                  randomReadWrite = false,
+                     const std::wstring    name            = L"Buffer",
+                     D3D12_RESOURCE_STATES initState       = D3D12_RESOURCE_STATE_GENERIC_READ,
+                     BYTE*                 initialData     = nullptr,
+                     UINT                  dataLen         = 0);
 
         BufferD3D12() = default;
         BufferD3D12(D3D12LinkedDevice* Parent) : D3D12LinkedDeviceChild(Parent) {};
@@ -324,24 +329,76 @@ namespace RHI
     class SurfaceD3D12 : public D3D12LinkedDeviceChild
     {
     public:
-        static std::shared_ptr<SurfaceD3D12> Create2D(D3D12LinkedDevice*    Parent,
-                                                      UINT8                 width,
-                                                      UINT8                 height,
-                                                      UINT8                 numMips,
-                                                      DXGI_FORMAT           format,
-                                                      RHISurfaceCreateFlags flags,
-                                                      const std::wstring&   name,
-                                                      const void*           initialData = nullptr,
-                                                      UINT                  dataLen     = 0);
+        static std::shared_ptr<SurfaceD3D12> Create2D(D3D12LinkedDevice*     Parent,
+                                                      UINT8                  width,
+                                                      UINT8                  height,
+                                                      UINT8                  numMips,
+                                                      DXGI_FORMAT            format,
+                                                      RHISurfaceCreateFlags  flags,
+                                                      UINT32                 sampleCount = 1,
+                                                      const std::wstring     name        = L"Texture2D",
+                                                      CD3DX12_CLEAR_VALUE    clearValue  = CD3DX12_CLEAR_VALUE(),
+                                                      D3D12_RESOURCE_STATES  initState   = D3D12_RESOURCE_STATE_COMMON,
+                                                      D3D12_SUBRESOURCE_DATA initData    = {nullptr, 0, 0});
 
-        void AssociateWithResource(D3D12LinkedDevice*    Parent,
-                                   const std::wstring&   Name,
-                                   ID3D12Resource*       Resource,
-                                   D3D12_RESOURCE_STATES CurrentState);
+
+        static std::shared_ptr<SurfaceD3D12> Create2DArray(D3D12LinkedDevice*                  Parent,
+                                                           UINT8                               width,
+                                                           UINT8                               height,
+                                                           UINT8                               arraySize,
+                                                           UINT8                               numMips,
+                                                           DXGI_FORMAT                         format,
+                                                           RHISurfaceCreateFlags               flags,
+                                                           UINT32                              sampleCount = 1,
+                                                           const std::wstring                  name        = L"Texture2DArray",
+                                                           CD3DX12_CLEAR_VALUE                 clearValue  = CD3DX12_CLEAR_VALUE(),
+                                                           D3D12_RESOURCE_STATES               initState   = D3D12_RESOURCE_STATE_COMMON,
+                                                           std::vector<D3D12_SUBRESOURCE_DATA> initDatas   = {});
+
+         static std::shared_ptr<SurfaceD3D12> CreateCubeMap(D3D12LinkedDevice*                  Parent,
+                                                            UINT8                               width,
+                                                            UINT8                               height,
+                                                            UINT8                               numMips,
+                                                            DXGI_FORMAT                         format,
+                                                            RHISurfaceCreateFlags               flags,
+                                                            UINT32                              sampleCount = 1,
+                                                            const std::wstring                  name        = L"TextureCubeMap",
+                                                            CD3DX12_CLEAR_VALUE                 clearValue  = CD3DX12_CLEAR_VALUE(),
+                                                            D3D12_RESOURCE_STATES               initState   = D3D12_RESOURCE_STATE_COMMON,
+                                                            std::vector<D3D12_SUBRESOURCE_DATA> initDatas   = {});
+
+         static std::shared_ptr<SurfaceD3D12> CreateCubeMapArray(D3D12LinkedDevice*                  Parent,
+                                                                 UINT8                               width,
+                                                                 UINT8                               height,
+                                                                 UINT8                               arraySize,
+                                                                 UINT8                               numMips,
+                                                                 DXGI_FORMAT                         format,
+                                                                 RHISurfaceCreateFlags               flags,
+                                                                 UINT32                              sampleCount = 1,
+                                                                 const std::wstring                  name        = L"TextureCubeMapArray",
+                                                                 CD3DX12_CLEAR_VALUE                 clearValue  = CD3DX12_CLEAR_VALUE(),
+                                                                 D3D12_RESOURCE_STATES               initState   = D3D12_RESOURCE_STATE_COMMON,
+                                                                 std::vector<D3D12_SUBRESOURCE_DATA> initDatas   = {});
+
+        static std::shared_ptr<SurfaceD3D12> Create3D(D3D12LinkedDevice*     Parent,
+                                                       UINT8                  width,
+                                                       UINT8                  height,
+                                                       UINT8                  depth,
+                                                       UINT8                  numMips,
+                                                       DXGI_FORMAT            format,
+                                                       RHISurfaceCreateFlags  flags,
+                                                       UINT32                 sampleCount = 1,
+                                                       const std::wstring     name        = L"Texture3D",
+                                                       CD3DX12_CLEAR_VALUE    clearValue  = CD3DX12_CLEAR_VALUE(),
+                                                       D3D12_RESOURCE_STATES  initState   = D3D12_RESOURCE_STATE_COMMON,
+                                                       D3D12_SUBRESOURCE_DATA initData    = {nullptr, 0, 0});
+
+        static std::shared_ptr<SurfaceD3D12>
+        CreateFromSwapchain(D3D12LinkedDevice* Parent, ID3D12Resource* pResource, std::wstring name = L"Backbuffer");
 
         std::shared_ptr<D3D12Texture> GetResourceTexture();
 
-        bool InflateTexture(BYTE* initialData, UINT dataLen);
+        bool InflateTexture(std::vector<D3D12_SUBRESOURCE_DATA> initDatas);
 
         std::shared_ptr<D3D12ShaderResourceView>  CreateSRV(D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc);
         std::shared_ptr<D3D12UnorderedAccessView> CreateUAV(D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc);

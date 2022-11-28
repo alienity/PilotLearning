@@ -404,24 +404,26 @@ namespace RHI
 
     //=========================================================================================================
 
-    std::shared_ptr<BufferD3D12> BufferD3D12::CreateBuffer(D3D12LinkedDevice* Parent,
-                                                           RHIBufferTarget    bufferTarget,
-                                                           UINT32             numElements,
-                                                           UINT32             elementSize,
-                                                           bool               mapplable,
-                                                           std::wstring&      name,
-                                                           BYTE*              initialData,
-                                                           UINT               dataLen)
+    std::shared_ptr<BufferD3D12> BufferD3D12::CreateBuffer(D3D12LinkedDevice*    Parent,
+                                                           RHIBufferTarget       bufferTarget,
+                                                           UINT32                numElements,
+                                                           UINT32                elementSize,
+                                                           bool                  mapplable,
+                                                           bool                  randomReadWrite,
+                                                           const std::wstring    name,
+                                                           D3D12_RESOURCE_STATES initState,
+                                                           BYTE*                 initialData,
+                                                           UINT                  dataLen)
     {
         std::shared_ptr<BufferD3D12> pBufferD3D12 = std::make_shared<BufferD3D12>(Parent);
 
         UINT sizeInBytes = numElements * elementSize;
-        D3D12_RESOURCE_FLAGS resourceFlag = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
+        D3D12_RESOURCE_FLAGS resourceFlag =
+            randomReadWrite ? D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS : D3D12_RESOURCE_FLAG_NONE;
         RHIBufferMode bufferMode = mapplable ? RHIBufferMode::RHIBufferModeDynamic : RHIBufferMode::RHIBufferModeImmutable;
 
         D3D12_HEAP_TYPE heapType = mapplable ? D3D12_HEAP_TYPE::D3D12_HEAP_TYPE_UPLOAD : D3D12_HEAP_TYPE::D3D12_HEAP_TYPE_DEFAULT;
-        D3D12_RESOURCE_STATES initState = D3D12_RESOURCE_STATE_GENERIC_READ;
-
+        
         pBufferD3D12->m_Desc = {sizeInBytes, numElements, elementSize, bufferTarget, bufferMode};
         pBufferD3D12->m_Data = {initialData, dataLen};
         pBufferD3D12->m_Name = name;
@@ -431,11 +433,18 @@ namespace RHI
 
         if (bufferTarget & (RHIBufferTarget::RHIBufferTargetAppend | RHIBufferTarget::RHIBufferTargetCounter))
         {
-            std::wstring    counterName = name + L"_Counter";
             RHIBufferTarget counterTarget =
                 RHIBufferTarget::RHIBufferTargetRaw | RHIBufferTarget::RHIBufferTargetCounter;
-            pBufferD3D12->p_CounterBufferD3D12 =
-                CreateBuffer(Parent, counterTarget, 1, sizeof(UINT32), false, counterName, nullptr, 0);
+            pBufferD3D12->p_CounterBufferD3D12 = CreateBuffer(Parent,
+                                                              counterTarget,
+                                                              1,
+                                                              sizeof(UINT32),
+                                                              false,
+                                                              false,
+                                                              name + L"_Counter",
+                                                              D3D12_RESOURCE_STATE_GENERIC_READ,
+                                                              nullptr,
+                                                              0);
         }
         else
         {
