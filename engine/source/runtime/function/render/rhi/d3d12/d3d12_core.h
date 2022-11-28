@@ -520,6 +520,7 @@ namespace RHI
         RHIBufferTargetNone                            = 0,
         RHIBufferTargetVertex                          = (1 << 0),
         RHIBufferTargetIndex                           = (1 << 1),
+        RHIBufferReadBack                              = (1 << 2),
         RHIBufferTargetStructured                      = (1 << 4),
         RHIBufferTargetRaw                             = (1 << 5),
         RHIBufferTargetAppend                          = (1 << 6),
@@ -531,6 +532,7 @@ namespace RHI
                                        RHIBufferTargetCounter | RHIBufferTargetIndirectArgs |
                                        RHIBufferTargetRayTracingAccelerationStructure,
     };
+    DEFINE_ENUM_FLAG_OPERATORS(RHIBufferTarget);
 
     struct RHIBufferDesc
     {
@@ -569,6 +571,7 @@ namespace RHI
         RHISurfaceCreateNotFlipped          = (1 << 10),
         RHISurfaceCreateStencilTexture      = (1 << 11),
     };
+    DEFINE_ENUM_FLAG_OPERATORS(RHISurfaceCreateFlags);
 
     enum RHITextureDimension
     {
@@ -590,7 +593,7 @@ namespace RHI
         RHIRenderTextureSubElementDefault
     };
 
-    struct RHIRenderSurfaceBase
+    struct RHIRenderSurfaceBaseDesc
     {
         RHITextureID          textureID;
         UINT16                width;

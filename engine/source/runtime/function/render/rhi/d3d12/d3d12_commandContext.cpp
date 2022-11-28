@@ -85,7 +85,9 @@ namespace RHI
         {
             CommandAllocator = CommandAllocatorPool.RequestCommandAllocator();
         }
-        CommandListHandle.Open(CommandAllocator.Get());
+        bool isCommandListNew = CommandListHandle.Open(CommandAllocator.Get());
+        if (!isCommandListNew)
+            return;
 
         if (Type == RHID3D12CommandQueueType::Direct || Type == RHID3D12CommandQueueType::AsyncCompute)
         {
@@ -162,14 +164,18 @@ namespace RHI
         CommandListHandle->CopyTextureRegion(&destLoc, x, y, z, &srcLoc, &box);
     }
 
-
     void D3D12CommandContext::ResetCounter(D3D12Resource* CounterResource, UINT64 CounterOffset, UINT Value /*= 0*/)
     {
         D3D12Allocation Allocation = CpuConstantAllocator.Allocate(sizeof(UINT));
         std::memcpy(Allocation.CpuVirtualAddress, &Value, sizeof(UINT));
 
+        D3D12_RESOURCE_STATES originalState = CounterResource->GetResourceState().GetSubresourceState(0);
+
+        TransitionBarrier(
+            CounterResource, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES, true);
         CommandListHandle->CopyBufferRegion(
             CounterResource->GetResource(), CounterOffset, Allocation.Resource, Allocation.Offset, sizeof(UINT));
+        TransitionBarrier(CounterResource, originalState, D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES, true);
     }
 
     D3D12Allocation D3D12CommandContext::ReserveUploadMemory(UINT64 SizeInBytes, UINT Alignment)
@@ -191,7 +197,10 @@ namespace RHI
     {
         D3D12_RESOURCE_STATES trackedResourceState = CommandListHandle.GetResourceStateTracked(Resource);
 
-        CommandListHandle.TransitionBarrier(Resource, State, Subresource);
+        if (trackedResourceState != State)
+        {
+            CommandListHandle.TransitionBarrier(Resource, State, Subresource);
+        }
         
         if (trackedResourceState == D3D12_RESOURCE_STATE_UNORDERED_ACCESS &&
             State == D3D12_RESOURCE_STATE_UNORDERED_ACCESS)
@@ -904,13 +913,16 @@ namespace RHI
         RHI::D3D12Allocation mem = InitContext.ReserveUploadMemory(NumBytes);
         SIMDMemCopy(mem.CpuVirtualAddress, Data, Pilot::DivideByMultiple(NumBytes, 16));
 
-        // copy data to the intermediate upload heap and then schedule a copy from the upload heap to the default texture
-        InitContext.TransitionBarrier(Dest, D3D12_RESOURCE_STATE_COPY_DEST, true);
-        InitContext->CopyBufferRegion(Dest->GetResource(), DestOffset, mem.Resource, 0, NumBytes);
-        InitContext.TransitionBarrier(Dest, D3D12_RESOURCE_STATE_GENERIC_READ, true);
+        D3D12_RESOURCE_STATES originalState = Dest->GetResourceState().GetSubresourceState(0);
 
-        // Execute the command list and wait for it to finish so we can release the upload buffer
-        Parent->EndResourceUpload(true);
+        // copy data to the intermediate upload heap and then schedule a copy from the upload heap to the default texture
+        InitContext.TransitionBarrier(
+            Dest, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES, true);
+        InitContext->CopyBufferRegion(Dest->GetResource(), DestOffset, mem.Resource, 0, NumBytes);
+        InitContext.TransitionBarrier(Dest, originalState, D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES, true);
+
+        //// Execute the command list and wait for it to finish so we can release the upload buffer
+        //Parent->EndResourceUpload(true);
     }
 
     void D3D12CommandContext::InitializeTextureArraySlice(D3D12LinkedDevice* Parent, D3D12Resource* Dest, UINT SliceIndex, D3D12Resource* Src)

@@ -11,7 +11,7 @@ namespace RHI
 
 	CResourceState& D3D12ResourceStateTracker::GetResourceState(D3D12Resource* Resource)
     {
-        CResourceState& ResourceState = ResourceStates[Resource];
+        CResourceState& ResourceState = ResourceStates[Resource->GetResource()];
         // If ResourceState was just created, its state is uninitialized
         if (ResourceState.IsUninitialized())
         {
@@ -44,19 +44,31 @@ namespace RHI
 #ifdef MOYU_RHI_D3D12_DEBUG_RESOURCE_STATES
         GraphicsCommandList->QueryInterface(IID_PPV_ARGS(&DebugCommandList));
 #endif
+        CommandListState = D3D12CommandListState::Closed;
     }
 
-	void D3D12CommandListHandle::Open(ID3D12CommandAllocator* CommandAllocator)
+	bool D3D12CommandListHandle::Open(ID3D12CommandAllocator* CommandAllocator)
     {
+        // 如果正在录制，那就不需要重置内存
+        if (CommandListState != D3D12CommandListState::Recording)
+            return false;
+
         VERIFY_D3D12_API(GraphicsCommandList->Reset(CommandAllocator, nullptr));
 
         // Reset resource state tracking and resource barriers
         ResourceStateTracker.Reset();
         NumResourceBarriers = 0;
+
+        // start commandList state
+        CommandListState = D3D12CommandListState::Recording;
+
+        return true;
     }
 
     void D3D12CommandListHandle::Close()
     {
+        CommandListState = D3D12CommandListState::Pending;
+
         FlushResourceBarriers();
         VERIFY_D3D12_API(GraphicsCommandList->Close());
     }

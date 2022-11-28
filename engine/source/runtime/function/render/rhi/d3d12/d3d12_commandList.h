@@ -4,6 +4,13 @@
 
 namespace RHI
 {
+    enum D3D12CommandListState
+    {
+        Closed,    // 没有被录制，且未等待执行
+        Recording, // 正在录制
+        Pending,   // 等待执行
+    };
+
     // https://www.youtube.com/watch?v=nmB2XMasz2o, Resource state tracking
     struct PendingResourceBarrier
     {
@@ -26,7 +33,8 @@ namespace RHI
         void Add(const PendingResourceBarrier& PendingResourceBarrier);
 
     private:
-        robin_hood::unordered_map<D3D12Resource*, CResourceState> ResourceStates;
+        //robin_hood::unordered_map<D3D12Resource*, CResourceState> ResourceStates;
+        robin_hood::unordered_map<ID3D12Resource*, CResourceState> ResourceStates;
 
         // Pending resource transitions are committed to a separate commandlist before this commandlist
         // is executed on the command queue. This guarantees that resources will
@@ -61,7 +69,7 @@ namespace RHI
         }
         ID3D12GraphicsCommandList* operator->() const noexcept { return GetGraphicsCommandList(); }
 
-        void Open(ID3D12CommandAllocator* CommandAllocator);
+        bool Open(ID3D12CommandAllocator* CommandAllocator);
 
         void Close();
 
@@ -112,5 +120,7 @@ namespace RHI
         D3D12ResourceStateTracker ResourceStateTracker;
         D3D12_RESOURCE_BARRIER    ResourceBarriers[NumBatches] = {};
         UINT                      NumResourceBarriers          = 0;
+
+        D3D12CommandListState CommandListState = D3D12CommandListState::Closed;
     };
 } // namespace RHI

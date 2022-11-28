@@ -6,8 +6,11 @@ namespace RHI
 {
     class D3D12RenderTargetView;
     class D3D12DepthStencilView;
+    class D3D12ConstantBufferView;
     class D3D12ShaderResourceView;
     class D3D12UnorderedAccessView;
+    class D3D12Allocation;
+    class D3D12CommandContext;
 
     // https://microsoft.github.io/DirectX-Specs/d3d/CPUEfficiency.html#subresource-state-tracking
     class CResourceState
@@ -190,8 +193,14 @@ namespace RHI
         template<typename T>
         [[nodiscard]] T* GetCpuVirtualAddress() const
         {
-            assert(m_CpuVirtualAddress && "Invalid CpuVirtualAddress");
+            ASSERT(m_CpuVirtualAddress && "Invalid CpuVirtualAddress");
             return reinterpret_cast<T*>(m_CpuVirtualAddress);
+        }
+
+        BYTE* GetCpuVirtualAddress() const
+        {
+            ASSERT(m_CpuVirtualAddress && "Invalid CpuVirtualAddress");
+            return m_CpuVirtualAddress;
         }
 
         [[nodiscard]] D3D12_VERTEX_BUFFER_VIEW GetVertexBufferView() const noexcept
@@ -260,6 +269,11 @@ namespace RHI
 
     //===========================================================================================================
 
+    /// <summary>
+    /// 可以创建StructureBuffer和ByteAddressBuffer，还有IndirectArgsBuffer是ByteAddressBuffer的子类
+    /// ，以及TypedBuffer，其中TypedBuffer是可以创建指定类型的SRV
+    /// </summary>
+
     class BufferD3D12 : public D3D12LinkedDeviceChild
     {
     public:
@@ -274,11 +288,13 @@ namespace RHI
 
         BufferD3D12() = default;
         BufferD3D12(D3D12LinkedDevice* Parent) : D3D12LinkedDeviceChild(Parent) {};
+        ~BufferD3D12();
 
+        std::shared_ptr<D3D12Buffer> GetResourceBuffer();
         std::shared_ptr<BufferD3D12> GetCounterBuffer();
 
         bool InflateBuffer(BYTE* initialData, UINT dataLen);
-        void ResetCounterBuffer();
+        void ResetCounterBuffer(D3D12CommandContext* pCommandContext);
 
         std::shared_ptr<D3D12ConstantBufferView>  CreateCBV(D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc);
         std::shared_ptr<D3D12ShaderResourceView>  CreateSRV(D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc);
@@ -308,8 +324,24 @@ namespace RHI
     class SurfaceD3D12 : public D3D12LinkedDeviceChild
     {
     public:
-        static std::shared_ptr<SurfaceD3D12> CreateTexture2D(const std::wstring& name,
-                                                            const void*         initialData = nullptr);
+        static std::shared_ptr<SurfaceD3D12> Create2D(D3D12LinkedDevice*    Parent,
+                                                      UINT8                 width,
+                                                      UINT8                 height,
+                                                      UINT8                 numMips,
+                                                      DXGI_FORMAT           format,
+                                                      RHISurfaceCreateFlags flags,
+                                                      const std::wstring&   name,
+                                                      const void*           initialData = nullptr,
+                                                      UINT                  dataLen     = 0);
+
+        void AssociateWithResource(D3D12LinkedDevice*    Parent,
+                                   const std::wstring&   Name,
+                                   ID3D12Resource*       Resource,
+                                   D3D12_RESOURCE_STATES CurrentState);
+
+        std::shared_ptr<D3D12Texture> GetResourceTexture();
+
+        bool InflateTexture(BYTE* initialData, UINT dataLen);
 
         std::shared_ptr<D3D12ShaderResourceView>  CreateSRV(D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc);
         std::shared_ptr<D3D12UnorderedAccessView> CreateUAV(D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc);
@@ -327,7 +359,7 @@ namespace RHI
         void ExportToFile(const std::wstring& FilePath);
 
     protected:
-        RHIBufferDesc m_Desc;
+        RHIRenderSurfaceBaseDesc m_Desc;
 
         std::shared_ptr<D3D12Texture> p_ResourceD3D12Texture;
 

@@ -1,6 +1,7 @@
 #include "d3d12_resource.h"
 #include "d3d12_linkedDevice.h"
 #include "d3d12_descriptor.h"
+#include "d3d12_commandContext.h"
 #include "platform/system/hash.h"
 
 namespace RHI
@@ -381,7 +382,7 @@ namespace RHI
                                              Microsoft::WRL::ComPtr<ID3D12Resource>&& Resource,
                                              D3D12_RESOURCE_STATES                    CurrentState)
     {
-        assert(Resource != nullptr);
+        ASSERT(Resource != nullptr);
 
         this->Parent              = Parent;
         this->m_pResource         = Resource;
@@ -415,13 +416,11 @@ namespace RHI
         std::shared_ptr<BufferD3D12> pBufferD3D12 = std::make_shared<BufferD3D12>(Parent);
 
         UINT sizeInBytes = numElements * elementSize;
-        D3D12_HEAP_TYPE heapType = mapplable ? D3D12_HEAP_TYPE::D3D12_HEAP_TYPE_UPLOAD : D3D12_HEAP_TYPE::D3D12_HEAP_TYPE_DEFAULT;
-        
         D3D12_RESOURCE_FLAGS resourceFlag = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
-
-        D3D12_RESOURCE_STATES initState = D3D12_RESOURCE_STATE_GENERIC_READ;
-
         RHIBufferMode bufferMode = mapplable ? RHIBufferMode::RHIBufferModeDynamic : RHIBufferMode::RHIBufferModeImmutable;
+
+        D3D12_HEAP_TYPE heapType = mapplable ? D3D12_HEAP_TYPE::D3D12_HEAP_TYPE_UPLOAD : D3D12_HEAP_TYPE::D3D12_HEAP_TYPE_DEFAULT;
+        D3D12_RESOURCE_STATES initState = D3D12_RESOURCE_STATE_GENERIC_READ;
 
         pBufferD3D12->m_Desc = {sizeInBytes, numElements, elementSize, bufferTarget, bufferMode};
         pBufferD3D12->m_Data = {initialData, dataLen};
@@ -430,75 +429,171 @@ namespace RHI
         pBufferD3D12->p_ResourceD3D12Buffer =
             std::make_shared<D3D12Buffer>(Parent, sizeInBytes, elementSize, heapType, resourceFlag, initState);
 
-        if (bufferTarget & RHIBufferTarget::RHIBufferTargetRaw)
+        if (bufferTarget & (RHIBufferTarget::RHIBufferTargetAppend | RHIBufferTarget::RHIBufferTargetCounter))
         {
-            pBufferD3D12->p_CounterBufferD3D12 = nullptr;
+            std::wstring    counterName = name + L"_Counter";
+            RHIBufferTarget counterTarget =
+                RHIBufferTarget::RHIBufferTargetRaw | RHIBufferTarget::RHIBufferTargetCounter;
+            pBufferD3D12->p_CounterBufferD3D12 =
+                CreateBuffer(Parent, counterTarget, 1, sizeof(UINT32), false, counterName, nullptr, 0);
         }
         else
         {
-            std::wstring counterName = L"Counter";
-            pBufferD3D12->p_CounterBufferD3D12 =
-                CreateBuffer(Parent, RHIBufferTarget::RHIBufferTargetCounter, 1, sizeof(UINT32), false, counterName, nullptr, 0);
+            pBufferD3D12->p_CounterBufferD3D12 = nullptr;
         }
+
+        bool uploadNeedFinished = false;
 
         // Inflate Buffer
         if (initialData != nullptr)
         {
-
+            pBufferD3D12->InflateBuffer(initialData, dataLen);
+            uploadNeedFinished = true;
         }
 
         // Reset CounterBuffer
         if (bufferTarget & RHIBufferTarget::RHIBufferTargetCounter)
         {
+            D3D12CommandContext& InitContext = Parent->BeginResourceUpload();
+            pBufferD3D12->ResetCounterBuffer(&InitContext);
+            uploadNeedFinished = true;
+        }
 
+        if (uploadNeedFinished)
+        {
+            Parent->EndResourceUpload(true);
         }
 
         return pBufferD3D12;
     }
 
+    BufferD3D12::~BufferD3D12()
+    {
+        if (m_Data.m_Data != nullptr)
+        {
+            free(m_Data.m_Data);
+            m_Data.m_Data = nullptr;
+        }
+        p_ResourceD3D12Buffer = nullptr;
+        p_CounterBufferD3D12  = nullptr;
+    }
+
+    std::shared_ptr<D3D12Buffer> BufferD3D12::GetResourceBuffer() { return this->p_ResourceD3D12Buffer; }
+
     std::shared_ptr<BufferD3D12> BufferD3D12::GetCounterBuffer() { return this->p_CounterBufferD3D12; }
 
     bool BufferD3D12::InflateBuffer(BYTE* initialData, UINT dataLen)
     {
+        ASSERT(this->m_Data.m_DataLen == dataLen);
+        if (!memcmp(this->m_Data.m_Data, initialData, dataLen))
+            return false;
 
+        free(this->m_Data.m_Data);
+        this->m_Data = {initialData, dataLen};
+
+        if (this->m_Desc.mode == RHIBufferMode::RHIBufferModeDynamic)
+        {
+            memcpy(this->p_ResourceD3D12Buffer->GetCpuVirtualAddress(), initialData, dataLen);
+        }
+        else
+        {
+            D3D12CommandContext::InitializeBuffer(Parent, p_ResourceD3D12Buffer.get(), m_Data.m_Data, m_Data.m_DataLen);
+        }
+
+        return true;
     }
 
-    void BufferD3D12::ResetCounterBuffer()
+    void BufferD3D12::ResetCounterBuffer(D3D12CommandContext* pCommandContext)
     {
-
+        ASSERT(p_CounterBufferD3D12 != nullptr);
+        pCommandContext->Open();
+        pCommandContext->ResetCounter(p_CounterBufferD3D12->GetResourceBuffer().get(), 0, 0);
     }
 
     std::shared_ptr<D3D12ConstantBufferView> BufferD3D12::CreateCBV(D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc)
     {
-
+        std::shared_ptr<D3D12ConstantBufferView> cbv = nullptr;
+        auto cbvHandleIter = m_CBVHandleMap.find(cbvDesc);
+        if (cbvHandleIter != m_CBVHandleMap.end())
+        {
+            cbv = std::make_shared<D3D12ConstantBufferView>(Parent, cbvDesc, this->GetResourceBuffer().get());
+            m_CBVHandleMap[cbvDesc] = cbv;
+        }
+        else
+        {
+            cbv = cbvHandleIter->second;
+        }
+        return cbv;
     }
 
     std::shared_ptr<D3D12ShaderResourceView> BufferD3D12::CreateSRV(D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc)
     {
-
+        std::shared_ptr<D3D12ShaderResourceView> srv = nullptr;
+        auto srvHandleIter = m_SRVHandleMap.find(srvDesc);
+        if (srvHandleIter != m_SRVHandleMap.end())
+        {
+            srv = std::make_shared<D3D12ShaderResourceView>(Parent, srvDesc, this->GetResourceBuffer().get());
+            m_SRVHandleMap[srvDesc] = srv;
+        }
+        else
+        {
+            srv = srvHandleIter->second;
+        }
+        return srv;
     }
 
     std::shared_ptr<D3D12UnorderedAccessView> BufferD3D12::CreateUAV(D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc)
     {
-
+        D3D12Resource* pCounterResource =
+            p_CounterBufferD3D12 != nullptr ? p_CounterBufferD3D12->GetResourceBuffer().get() : nullptr;
+        BUFFER_UNORDERED_ACCESS_VIEW_KEY uavKey = {uavDesc, pCounterResource};
+        std::shared_ptr<D3D12UnorderedAccessView> uav = nullptr;
+        auto uavHandleIter = m_UAVHandleMap.find(uavKey);
+        if (uavHandleIter != m_UAVHandleMap.end())
+        {
+            uav = std::make_shared<D3D12UnorderedAccessView>(
+                Parent, uavDesc, this->GetResourceBuffer().get(), pCounterResource);
+            m_UAVHandleMap[uavKey] = uav;
+        }
+        else
+        {
+            uav = uavHandleIter->second;
+        }
+        return uav;
     }
 
     std::shared_ptr<D3D12ConstantBufferView> BufferD3D12::GetDefaultCBV()
     {
-
+        return CreateCBV(D3D12ConstantBufferView::GetDesc(p_ResourceD3D12Buffer.get(), 0, m_Desc.size));
     }
 
     std::shared_ptr<D3D12ShaderResourceView> BufferD3D12::GetDefaultSRV()
     {
-
+        ASSERT(m_Desc.size % m_Desc.stride == 0);
+        return CreateSRV(D3D12ShaderResourceView::GetDesc(
+            p_ResourceD3D12Buffer.get(), m_Desc.target & RHIBufferTargetRaw, 0, m_Desc.number));
     }
 
     std::shared_ptr<D3D12UnorderedAccessView> BufferD3D12::GetDefaultUAV()
     {
-
+        return CreateUAV(D3D12UnorderedAccessView::GetDesc(
+            p_ResourceD3D12Buffer.get(), m_Desc.target & RHIBufferTargetRaw, 0, m_Desc.number, 0));
     }
 
 
+    std::shared_ptr<SurfaceD3D12> SurfaceD3D12::CreateTexture2D(D3D12LinkedDevice*  Parent,
+                                                                UINT                rowPitchBytes,
+                                                                UINT                width,
+                                                                UINT                height,
+                                                                DXGI_FORMAT         format,
+                                                                const std::wstring& name,
+                                                                const void*         initialData,
+                                                                UINT                dataLen)
+    {
+
+    }
+
+    std::shared_ptr<D3D12Texture> SurfaceD3D12::GetResourceTexture() { return p_ResourceD3D12Texture; }
 
 
 
