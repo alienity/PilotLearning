@@ -247,6 +247,17 @@ namespace RHI
                      D3D12_RESOURCE_STATES                    InitialResourceState);
         D3D12Texture(D3D12LinkedDevice*                 Parent,
                      const CD3DX12_RESOURCE_DESC&       Desc,
+                     const CD3DX12_HEAP_PROPERTIES&     HeapProperty,
+                     std::optional<CD3DX12_CLEAR_VALUE> ClearValue           = std::nullopt,
+                     D3D12_RESOURCE_STATES              InitialResourceState = D3D12_RESOURCE_STATE_COMMON,
+                     bool                               Cubemap              = false);
+        D3D12Texture(D3D12LinkedDevice*                 Parent,
+                     const CD3DX12_RESOURCE_DESC&       Desc,
+                     std::optional<CD3DX12_CLEAR_VALUE> ClearValue           = std::nullopt,
+                     D3D12_RESOURCE_STATES              InitialResourceState = D3D12_RESOURCE_STATE_COMMON,
+                     bool                               Cubemap              = false);
+        D3D12Texture(D3D12LinkedDevice*                 Parent,
+                     const CD3DX12_RESOURCE_DESC&       Desc,
                      std::optional<CD3DX12_CLEAR_VALUE> ClearValue = std::nullopt,
                      bool                               Cubemap    = false);
 
@@ -257,12 +268,12 @@ namespace RHI
         [[nodiscard]] bool IsCubemap() const noexcept { return IsCubemap; }
         [[nodiscard]] bool IsArray() const noexcept { return IsArray; }
 
-    protected:
+    public:
 
-        void AssociateWithResource(D3D12LinkedDevice*                       Parent,
-                                   const std::wstring&                      Name,
-                                   Microsoft::WRL::ComPtr<ID3D12Resource>&& Resource,
-                                   D3D12_RESOURCE_STATES                    CurrentState);
+        void AssociateWithResource(D3D12LinkedDevice*                     Parent,
+                                   const std::wstring&                    Name,
+                                   Microsoft::WRL::ComPtr<ID3D12Resource> Resource,
+                                   D3D12_RESOURCE_STATES                  CurrentState);
 
     protected:
         bool IsCubemap = false;
@@ -330,9 +341,9 @@ namespace RHI
     {
     public:
         static std::shared_ptr<SurfaceD3D12> Create2D(D3D12LinkedDevice*     Parent,
-                                                      UINT8                  width,
-                                                      UINT8                  height,
-                                                      UINT8                  numMips,
+                                                      UINT32                 width,
+                                                      UINT32                 height,
+                                                      INT32                  numMips,
                                                       DXGI_FORMAT            format,
                                                       RHISurfaceCreateFlags  flags,
                                                       UINT32                 sampleCount = 1,
@@ -341,12 +352,11 @@ namespace RHI
                                                       D3D12_RESOURCE_STATES  initState   = D3D12_RESOURCE_STATE_COMMON,
                                                       D3D12_SUBRESOURCE_DATA initData    = {nullptr, 0, 0});
 
-
         static std::shared_ptr<SurfaceD3D12> Create2DArray(D3D12LinkedDevice*                  Parent,
-                                                           UINT8                               width,
-                                                           UINT8                               height,
-                                                           UINT8                               arraySize,
-                                                           UINT8                               numMips,
+                                                           UINT32                               width,
+                                                           UINT32                               height,
+                                                           UINT32                               arraySize,
+                                                           INT32                               numMips,
                                                            DXGI_FORMAT                         format,
                                                            RHISurfaceCreateFlags               flags,
                                                            UINT32                              sampleCount = 1,
@@ -356,9 +366,9 @@ namespace RHI
                                                            std::vector<D3D12_SUBRESOURCE_DATA> initDatas   = {});
 
          static std::shared_ptr<SurfaceD3D12> CreateCubeMap(D3D12LinkedDevice*                  Parent,
-                                                            UINT8                               width,
-                                                            UINT8                               height,
-                                                            UINT8                               numMips,
+                                                            UINT32                               width,
+                                                            UINT32                               height,
+                                                            INT32                               numMips,
                                                             DXGI_FORMAT                         format,
                                                             RHISurfaceCreateFlags               flags,
                                                             UINT32                              sampleCount = 1,
@@ -368,10 +378,10 @@ namespace RHI
                                                             std::vector<D3D12_SUBRESOURCE_DATA> initDatas   = {});
 
          static std::shared_ptr<SurfaceD3D12> CreateCubeMapArray(D3D12LinkedDevice*                  Parent,
-                                                                 UINT8                               width,
-                                                                 UINT8                               height,
-                                                                 UINT8                               arraySize,
-                                                                 UINT8                               numMips,
+                                                                 UINT32                              width,
+                                                                 UINT32                              height,
+                                                                 UINT32                              arraySize,
+                                                                 INT32                               numMips,
                                                                  DXGI_FORMAT                         format,
                                                                  RHISurfaceCreateFlags               flags,
                                                                  UINT32                              sampleCount = 1,
@@ -381,10 +391,10 @@ namespace RHI
                                                                  std::vector<D3D12_SUBRESOURCE_DATA> initDatas   = {});
 
         static std::shared_ptr<SurfaceD3D12> Create3D(D3D12LinkedDevice*     Parent,
-                                                       UINT8                  width,
-                                                       UINT8                  height,
-                                                       UINT8                  depth,
-                                                       UINT8                  numMips,
+                                                       UINT32                 width,
+                                                       UINT32                 height,
+                                                       UINT32                 depth,
+                                                       INT32                  numMips,
                                                        DXGI_FORMAT            format,
                                                        RHISurfaceCreateFlags  flags,
                                                        UINT32                 sampleCount = 1,
@@ -394,7 +404,13 @@ namespace RHI
                                                        D3D12_SUBRESOURCE_DATA initData    = {nullptr, 0, 0});
 
         static std::shared_ptr<SurfaceD3D12>
-        CreateFromSwapchain(D3D12LinkedDevice* Parent, ID3D12Resource* pResource, std::wstring name = L"Backbuffer");
+        CreateFromSwapchain(D3D12LinkedDevice*                     Parent,
+                            Microsoft::WRL::ComPtr<ID3D12Resource> pResource,
+                            D3D12_RESOURCE_STATES                  initState = D3D12_RESOURCE_STATE_COMMON,
+                            std::wstring                           name      = L"Backbuffer");
+
+        SurfaceD3D12() = default;
+        SurfaceD3D12(D3D12LinkedDevice* Parent) : D3D12LinkedDeviceChild(Parent) {};
 
         std::shared_ptr<D3D12Texture> GetResourceTexture();
 
@@ -410,13 +426,17 @@ namespace RHI
         std::shared_ptr<D3D12RenderTargetView>    GetDefaultRTV();
         std::shared_ptr<D3D12DepthStencilView>    GetDefaultDSV();
 
-        
         // Write the raw pixel buffer contents to a file
         // Note that data is preceded by a 16-byte header:  { DXGI_FORMAT, Pitch (in pixels), Width (in pixels), Height }
         void ExportToFile(const std::wstring& FilePath);
 
     protected:
+        static INT GetMipLevels(UINT width, UINT height, INT32 numMips, RHISurfaceCreateFlags flags);
+
+    protected:
         RHIRenderSurfaceBaseDesc m_Desc;
+
+        std::wstring m_Name;
 
         std::shared_ptr<D3D12Texture> p_ResourceD3D12Texture;
 

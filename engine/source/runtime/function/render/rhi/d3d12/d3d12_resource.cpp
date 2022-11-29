@@ -355,6 +355,29 @@ namespace RHI
 
     D3D12Texture::D3D12Texture(D3D12LinkedDevice*                 Parent,
                                const CD3DX12_RESOURCE_DESC&       Desc,
+                               const CD3DX12_HEAP_PROPERTIES&     HeapProperty,
+                               std::optional<CD3DX12_CLEAR_VALUE> ClearValue,
+                               D3D12_RESOURCE_STATES              InitialResourceState,
+                               bool                               Cubemap) :
+        D3D12Resource(Parent, HeapProperty, Desc, InitialResourceState, ClearValue),
+        IsCubemap(Cubemap)
+    {}
+
+    D3D12Texture::D3D12Texture(D3D12LinkedDevice*                 Parent,
+                               const CD3DX12_RESOURCE_DESC&       Desc,
+                               std::optional<CD3DX12_CLEAR_VALUE> ClearValue,
+                               D3D12_RESOURCE_STATES              InitialResourceState,
+                               bool                               Cubemap) :
+        D3D12Resource(Parent,
+                      CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT, Parent->GetNodeMask(), Parent->GetNodeMask()),
+                      Desc,
+                      InitialResourceState,
+                      ClearValue),
+        IsCubemap(Cubemap)
+    {}
+
+    D3D12Texture::D3D12Texture(D3D12LinkedDevice*                 Parent,
+                               const CD3DX12_RESOURCE_DESC&       Desc,
                                std::optional<CD3DX12_CLEAR_VALUE> ClearValue/* = std::nullopt*/,
                                bool                               Cubemap/*    = false*/) :
         D3D12Resource(Parent,
@@ -362,7 +385,7 @@ namespace RHI
                       Desc,
                       ResourceStateDeterminer(Desc, D3D12_HEAP_TYPE_DEFAULT).InferInitialState(),
                       ClearValue),
-        Cubemap(Cubemap)
+        IsCubemap(Cubemap)
     {
         // Textures can only be in device local heap (for discrete GPUs) UMA case is not handled
     }
@@ -377,10 +400,10 @@ namespace RHI
         return D3D12CalcSubresource(MipSlice, ArraySlice, PlaneSlice, m_ResourceDesc.MipLevels, m_ResourceDesc.DepthOrArraySize);
     }
 
-    void D3D12Texture::AssociateWithResource(D3D12LinkedDevice*                       Parent,
-                                             const std::wstring&                      Name,
-                                             Microsoft::WRL::ComPtr<ID3D12Resource>&& Resource,
-                                             D3D12_RESOURCE_STATES                    CurrentState)
+    void D3D12Texture::AssociateWithResource(D3D12LinkedDevice*                     Parent,
+                                             const std::wstring&                    Name,
+                                             Microsoft::WRL::ComPtr<ID3D12Resource> Resource,
+                                             D3D12_RESOURCE_STATES                  CurrentState)
     {
         ASSERT(Resource != nullptr);
 
@@ -430,6 +453,7 @@ namespace RHI
 
         pBufferD3D12->p_ResourceD3D12Buffer =
             std::make_shared<D3D12Buffer>(Parent, sizeInBytes, elementSize, heapType, resourceFlag, initState);
+        pBufferD3D12->p_ResourceD3D12Buffer->SetResourceName(name);
 
         if (bufferTarget & (RHIBufferTarget::RHIBufferTargetAppend | RHIBufferTarget::RHIBufferTargetCounter))
         {
@@ -589,34 +613,403 @@ namespace RHI
             p_ResourceD3D12Buffer.get(), m_Desc.target & RHIBufferTargetRaw, 0, m_Desc.number, 0));
     }
 
-
-    std::shared_ptr<SurfaceD3D12> SurfaceD3D12::CreateTexture2D(D3D12LinkedDevice*  Parent,
-                                                                UINT                rowPitchBytes,
-                                                                UINT                width,
-                                                                UINT                height,
-                                                                DXGI_FORMAT         format,
-                                                                const std::wstring& name,
-                                                                const void*         initialData,
-                                                                UINT                dataLen)
+    std::shared_ptr<SurfaceD3D12> SurfaceD3D12::Create2D(D3D12LinkedDevice*     Parent,
+                                                         UINT32                 width,
+                                                         UINT32                 height,
+                                                         INT32                  numMips,
+                                                         DXGI_FORMAT            format,
+                                                         RHISurfaceCreateFlags  flags,
+                                                         UINT32                 sampleCount,
+                                                         const std::wstring     name,
+                                                         CD3DX12_CLEAR_VALUE    clearValue,
+                                                         D3D12_RESOURCE_STATES  initState,
+                                                         D3D12_SUBRESOURCE_DATA initData)
     {
+        std::shared_ptr<SurfaceD3D12> pSurfaceD3D12 = std::make_shared<SurfaceD3D12>(Parent);
 
+        INT mipLevels = SurfaceD3D12::GetMipLevels(width, height, numMips, flags);
+
+        pSurfaceD3D12->m_Desc = {width, height, 1, sampleCount, mipLevels, flags, RHITexDim2D, format, true, false};
+        pSurfaceD3D12->m_Name = name;
+
+        D3D12_RESOURCE_FLAGS resourceFlags = D3D12_RESOURCE_FLAG_NONE;
+        if (flags & RHISurfaceCreateRenderTarget)
+        {
+            ASSERT(!(flags & RHISurfaceCreateDepthStencil));
+            resourceFlags |= D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
+        }
+        else if (flags & RHISurfaceCreateDepthStencil)
+        {
+            ASSERT(!(flags & RHISurfaceCreateRenderTarget));
+            resourceFlags |= D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
+        }
+
+        if (flags & RHISurfaceCreateRandomWrite)
+        {
+            resourceFlags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
+        }
+
+        DXGI_FORMAT graphicFormat = format;
+        if (flags & RHISurfaceCreateSRGB)
+        {
+            graphicFormat = D3D12RHIUtils::MakeSRGB(format);
+        }
+
+        CD3DX12_RESOURCE_DESC resourceDesc =
+            CD3DX12_RESOURCE_DESC::Tex2D(graphicFormat, width, height, 1, mipLevels, sampleCount, 0, resourceFlags);
+
+        CD3DX12_HEAP_PROPERTIES resourceHeapProperties =
+            CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT, Parent->GetNodeMask(), Parent->GetNodeMask());
+
+        pSurfaceD3D12->p_ResourceD3D12Texture =
+            std::make_shared<D3D12Texture>(Parent, resourceDesc, resourceHeapProperties, clearValue, initState, false);
+        pSurfaceD3D12->p_ResourceD3D12Texture->SetResourceName(name);
+
+        return pSurfaceD3D12;
+    }
+
+    std::shared_ptr<SurfaceD3D12> SurfaceD3D12::Create2DArray(D3D12LinkedDevice*                  Parent,
+                                                              UINT32                              width,
+                                                              UINT32                              height,
+                                                              UINT32                              arraySize,
+                                                              INT32                               numMips,
+                                                              DXGI_FORMAT                         format,
+                                                              RHISurfaceCreateFlags               flags,
+                                                              UINT32                              sampleCount,
+                                                              const std::wstring                  name,
+                                                              CD3DX12_CLEAR_VALUE                 clearValue,
+                                                              D3D12_RESOURCE_STATES               initState,
+                                                              std::vector<D3D12_SUBRESOURCE_DATA> initDatas)
+    {
+        std::shared_ptr<SurfaceD3D12> pSurfaceD3D12 = std::make_shared<SurfaceD3D12>(Parent);
+
+        INT mipLevels = SurfaceD3D12::GetMipLevels(width, height, numMips, flags);
+
+        pSurfaceD3D12->m_Desc = {
+            width, height, arraySize, sampleCount, mipLevels, flags, RHITexDim2DArray, format, true, false};
+        pSurfaceD3D12->m_Name = name;
+
+        D3D12_RESOURCE_FLAGS resourceFlags = D3D12_RESOURCE_FLAG_NONE;
+        if (flags & RHISurfaceCreateRenderTarget)
+        {
+            ASSERT(!(flags & RHISurfaceCreateDepthStencil));
+            resourceFlags |= D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
+        }
+        else if (flags & RHISurfaceCreateDepthStencil)
+        {
+            ASSERT(!(flags & RHISurfaceCreateRenderTarget) && !(flags & RHISurfaceCreateRandomWrite));
+            resourceFlags |= D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
+        }
+
+        if (flags & RHISurfaceCreateRandomWrite)
+        {
+            resourceFlags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
+        }
+
+        DXGI_FORMAT graphicFormat = format;
+        if (flags & RHISurfaceCreateSRGB)
+        {
+            graphicFormat = D3D12RHIUtils::MakeSRGB(format);
+        }
+
+        CD3DX12_RESOURCE_DESC resourceDesc = CD3DX12_RESOURCE_DESC::Tex2D(
+            graphicFormat, width, height, arraySize, mipLevels, sampleCount, 0, resourceFlags);
+
+        CD3DX12_HEAP_PROPERTIES resourceHeapProperties =
+            CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT, Parent->GetNodeMask(), Parent->GetNodeMask());
+
+        pSurfaceD3D12->p_ResourceD3D12Texture =
+            std::make_shared<D3D12Texture>(Parent, resourceDesc, resourceHeapProperties, clearValue, initState, false);
+        pSurfaceD3D12->p_ResourceD3D12Texture->SetResourceName(name);
+
+        return pSurfaceD3D12;
+    }
+
+    std::shared_ptr<SurfaceD3D12> SurfaceD3D12::CreateCubeMap(D3D12LinkedDevice*                  Parent,
+                                                              UINT32                              width,
+                                                              UINT32                              height,
+                                                              INT32                               numMips,
+                                                              DXGI_FORMAT                         format,
+                                                              RHISurfaceCreateFlags               flags,
+                                                              UINT32                              sampleCount,
+                                                              const std::wstring                  name,
+                                                              CD3DX12_CLEAR_VALUE                 clearValue,
+                                                              D3D12_RESOURCE_STATES               initState,
+                                                              std::vector<D3D12_SUBRESOURCE_DATA> initDatas)
+    {
+        std::shared_ptr<SurfaceD3D12> pSurfaceD3D12 = std::make_shared<SurfaceD3D12>(Parent);
+
+        INT mipLevels = SurfaceD3D12::GetMipLevels(width, height, numMips, flags);
+
+        UINT cubeFaces = 6;
+
+        pSurfaceD3D12->m_Desc = {
+            width, height, cubeFaces, sampleCount, mipLevels, flags, RHITexDimCube, format, true, false};
+        pSurfaceD3D12->m_Name = name;
+
+        D3D12_RESOURCE_FLAGS resourceFlags = D3D12_RESOURCE_FLAG_NONE;
+        if (flags & RHISurfaceCreateRenderTarget)
+        {
+            ASSERT(!(flags & RHISurfaceCreateDepthStencil));
+            resourceFlags |= D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
+        }
+        else if (flags & RHISurfaceCreateDepthStencil)
+        {
+            ASSERT(!(flags & RHISurfaceCreateRenderTarget) && !(flags & RHISurfaceCreateRandomWrite));
+            resourceFlags |= D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
+        }
+
+        if (flags & RHISurfaceCreateRandomWrite)
+        {
+            resourceFlags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
+        }
+
+        DXGI_FORMAT graphicFormat = format;
+        if (flags & RHISurfaceCreateSRGB)
+        {
+            graphicFormat = D3D12RHIUtils::MakeSRGB(format);
+        }
+
+        CD3DX12_RESOURCE_DESC resourceDesc = CD3DX12_RESOURCE_DESC::Tex2D(
+            graphicFormat, width, height, cubeFaces, mipLevels, sampleCount, 0, resourceFlags);
+
+        CD3DX12_HEAP_PROPERTIES resourceHeapProperties =
+            CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT, Parent->GetNodeMask(), Parent->GetNodeMask());
+
+        pSurfaceD3D12->p_ResourceD3D12Texture =
+            std::make_shared<D3D12Texture>(Parent, resourceDesc, resourceHeapProperties, clearValue, initState, true);
+        pSurfaceD3D12->p_ResourceD3D12Texture->SetResourceName(name);
+
+        return pSurfaceD3D12;
+    }
+
+    std::shared_ptr<SurfaceD3D12> SurfaceD3D12::CreateCubeMapArray(D3D12LinkedDevice*                  Parent,
+                                                                   UINT32                              width,
+                                                                   UINT32                              height,
+                                                                   UINT32                              arraySize,
+                                                                   INT32                               numMips,
+                                                                   DXGI_FORMAT                         format,
+                                                                   RHISurfaceCreateFlags               flags,
+                                                                   UINT32                              sampleCount,
+                                                                   const std::wstring                  name,
+                                                                   CD3DX12_CLEAR_VALUE                 clearValue,
+                                                                   D3D12_RESOURCE_STATES               initState,
+                                                                   std::vector<D3D12_SUBRESOURCE_DATA> initDatas)
+    {
+        std::shared_ptr<SurfaceD3D12> pSurfaceD3D12 = std::make_shared<SurfaceD3D12>(Parent);
+
+        INT mipLevels = SurfaceD3D12::GetMipLevels(width, height, numMips, flags);
+
+        UINT cubeFaces = 6;
+        UINT cubeArrayFaces = cubeFaces * arraySize;
+
+        pSurfaceD3D12->m_Desc = {
+            width, height, cubeArrayFaces, sampleCount, mipLevels, flags, RHITexDimCubeArray, format, true, false};
+        pSurfaceD3D12->m_Name = name;
+
+        D3D12_RESOURCE_FLAGS resourceFlags = D3D12_RESOURCE_FLAG_NONE;
+        if (flags & RHISurfaceCreateRenderTarget)
+        {
+            ASSERT(!(flags & RHISurfaceCreateDepthStencil));
+            resourceFlags |= D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
+        }
+        else if (flags & RHISurfaceCreateDepthStencil)
+        {
+            ASSERT(!(flags & RHISurfaceCreateRenderTarget) && !(flags & RHISurfaceCreateRandomWrite));
+            resourceFlags |= D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
+        }
+
+        if (flags & RHISurfaceCreateRandomWrite)
+        {
+            resourceFlags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
+        }
+
+        DXGI_FORMAT graphicFormat = format;
+        if (flags & RHISurfaceCreateSRGB)
+        {
+            graphicFormat = D3D12RHIUtils::MakeSRGB(format);
+        }
+
+        CD3DX12_RESOURCE_DESC resourceDesc = CD3DX12_RESOURCE_DESC::Tex2D(
+            graphicFormat, width, height, cubeArrayFaces, mipLevels, sampleCount, 0, resourceFlags);
+
+        CD3DX12_HEAP_PROPERTIES resourceHeapProperties =
+            CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT, Parent->GetNodeMask(), Parent->GetNodeMask());
+
+        pSurfaceD3D12->p_ResourceD3D12Texture =
+            std::make_shared<D3D12Texture>(Parent, resourceDesc, resourceHeapProperties, clearValue, initState, true);
+        pSurfaceD3D12->p_ResourceD3D12Texture->SetResourceName(name);
+
+        return pSurfaceD3D12;
+    }
+
+    std::shared_ptr<SurfaceD3D12> SurfaceD3D12::Create3D(D3D12LinkedDevice*     Parent,
+                                                         UINT32                 width,
+                                                         UINT32                 height,
+                                                         UINT32                 depth,
+                                                         INT32                  numMips,
+                                                         DXGI_FORMAT            format,
+                                                         RHISurfaceCreateFlags  flags,
+                                                         UINT32                 sampleCount,
+                                                         const std::wstring     name,
+                                                         CD3DX12_CLEAR_VALUE    clearValue,
+                                                         D3D12_RESOURCE_STATES  initState,
+                                                         D3D12_SUBRESOURCE_DATA initData)
+    {
+        std::shared_ptr<SurfaceD3D12> pSurfaceD3D12 = std::make_shared<SurfaceD3D12>(Parent);
+
+        INT mipLevels = SurfaceD3D12::GetMipLevels(width, height, numMips, flags);
+
+        UINT textureDepth = 6;
+
+        pSurfaceD3D12->m_Desc = {
+            width, height, textureDepth, sampleCount, mipLevels, flags, RHITexDim3D, format, true, false};
+        pSurfaceD3D12->m_Name = name;
+
+        D3D12_RESOURCE_FLAGS resourceFlags = D3D12_RESOURCE_FLAG_NONE;
+        if (flags & RHISurfaceCreateRenderTarget)
+        {
+            ASSERT(!(flags & RHISurfaceCreateDepthStencil));
+            resourceFlags |= D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
+        }
+        else if (flags & RHISurfaceCreateDepthStencil)
+        {
+            ASSERT(!(flags & RHISurfaceCreateRenderTarget) && !(flags & RHISurfaceCreateRandomWrite));
+            resourceFlags |= D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
+        }
+
+        if (flags & RHISurfaceCreateRandomWrite)
+        {
+            resourceFlags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
+        }
+
+        DXGI_FORMAT graphicFormat = format;
+        if (flags & RHISurfaceCreateSRGB)
+        {
+            graphicFormat = D3D12RHIUtils::MakeSRGB(format);
+        }
+
+        CD3DX12_RESOURCE_DESC resourceDesc =
+            CD3DX12_RESOURCE_DESC::Tex3D(graphicFormat, width, height, textureDepth, mipLevels, resourceFlags);
+
+        CD3DX12_HEAP_PROPERTIES resourceHeapProperties =
+            CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT, Parent->GetNodeMask(), Parent->GetNodeMask());
+
+        pSurfaceD3D12->p_ResourceD3D12Texture =
+            std::make_shared<D3D12Texture>(Parent, resourceDesc, resourceHeapProperties, clearValue, initState, false);
+        pSurfaceD3D12->p_ResourceD3D12Texture->SetResourceName(name);
+
+        return pSurfaceD3D12;
+    }
+
+    std::shared_ptr<SurfaceD3D12> SurfaceD3D12::CreateFromSwapchain(D3D12LinkedDevice*                     Parent,
+                                                                    Microsoft::WRL::ComPtr<ID3D12Resource> pResource,
+                                                                    D3D12_RESOURCE_STATES                  initState,
+                                                                    std::wstring                           name)
+    {
+        std::shared_ptr<SurfaceD3D12> pSurfaceD3D12 = std::make_shared<SurfaceD3D12>(Parent);
+
+        D3D12_RESOURCE_DESC resourceDesc = pResource->GetDesc();
+
+        RHISurfaceCreateFlags flags = RHISurfaceCreateRenderTarget;
+
+        pSurfaceD3D12->m_Desc = {resourceDesc.Width,
+                                 resourceDesc.Height,
+                                 resourceDesc.DepthOrArraySize,
+                                 resourceDesc.SampleDesc.Count,
+                                 1,
+                                 flags,
+                                 RHITexDim2D,
+                                 resourceDesc.Format,
+                                 true,
+                                 true};
+        pSurfaceD3D12->m_Name = name;
+
+        D3D12_RESOURCE_FLAGS resourceFlags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
+        
+        pSurfaceD3D12->p_ResourceD3D12Texture = std::make_shared<D3D12Texture>();
+        pSurfaceD3D12->p_ResourceD3D12Texture->AssociateWithResource(Parent, name, pResource, initState);
+
+        return pSurfaceD3D12;
     }
 
     std::shared_ptr<D3D12Texture> SurfaceD3D12::GetResourceTexture() { return p_ResourceD3D12Texture; }
 
+    bool SurfaceD3D12::InflateTexture(std::vector<D3D12_SUBRESOURCE_DATA> initDatas)
+    {
 
+    }
 
+    std::shared_ptr<D3D12ShaderResourceView> SurfaceD3D12::CreateSRV(D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc)
+    {
 
+    }
 
+    std::shared_ptr<D3D12UnorderedAccessView> SurfaceD3D12::CreateUAV(D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc)
+    {
 
+    }
 
+    std::shared_ptr<D3D12RenderTargetView> SurfaceD3D12::CreateRTV(D3D12_RENDER_TARGET_VIEW_DESC rtvDesc)
+    {
 
+    }
 
+    std::shared_ptr<D3D12DepthStencilView> SurfaceD3D12::CreateDSV(D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc)
+    {
 
+    }
 
+    std::shared_ptr<D3D12ShaderResourceView> SurfaceD3D12::GetDefaultSRV()
+    {
 
+    }
 
+    std::shared_ptr<D3D12UnorderedAccessView> SurfaceD3D12::GetDefaultUAV()
+    {
 
+    }
+
+    std::shared_ptr<D3D12RenderTargetView> SurfaceD3D12::GetDefaultRTV()
+    {
+
+    }
+
+    std::shared_ptr<D3D12DepthStencilView> SurfaceD3D12::GetDefaultDSV()
+    {
+
+    }
+
+    void SurfaceD3D12::ExportToFile(const std::wstring& FilePath)
+    {
+
+    }
+
+    INT SurfaceD3D12::GetMipLevels(UINT width, UINT height, INT32 numMips, RHISurfaceCreateFlags flags)
+    {
+        INT mipLevels = 0;
+        if (flags & RHISurfaceCreateMipmap)
+        {
+            if (flags & RHISurfaceCreateAutoGenMips)
+            {
+                mipLevels = D3D12RHIUtils::ComputeNumMips(width, height);
+                mipLevels = MOYU_MIN(mipLevels, MAXMIPLEVELS);
+            }
+            else
+            {
+                if (numMips == -1)
+                {
+                    mipLevels = D3D12RHIUtils::ComputeNumMips(width, height);
+                    mipLevels = MOYU_MIN(mipLevels, MAXMIPLEVELS);
+                }
+                else
+                {
+                    mipLevels = numMips;
+                }
+            }
+        }
+        return mipLevels;
+    }
 
 
 

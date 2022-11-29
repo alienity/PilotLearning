@@ -36,6 +36,17 @@ namespace D3D12RHIUtils
         return size;
     }
 
+    // Compute the number of texture levels needed to reduce to 1x1.  This uses
+    // _BitScanReverse to find the highest set bit.  Each dimension reduces by
+    // half and truncates bits.  The dimension 256 (0x100) has 9 mip levels, same
+    // as the dimension 511 (0x1FF).
+    static inline uint32_t ComputeNumMips(uint32_t Width, uint32_t Height)
+    {
+        uint32_t HighBit;
+        _BitScanReverse((unsigned long*)&HighBit, Width | Height);
+        return HighBit + 1;
+    }
+
     //--------------------------------------------------------------------------------------
     // Return the BPP for a particular format
     //--------------------------------------------------------------------------------------
@@ -497,9 +508,8 @@ namespace D3D12RHIUtils
 
 namespace RHI
 {
-    typedef UINT64 RHIBufferID;
-    typedef UINT64 RHITextureID;
-
+    typedef UINT64 RHIResourceID;
+    
     enum RHIIndexFormat
     {
         RHIIndexFormat16,
@@ -558,9 +568,8 @@ namespace RHI
     enum RHISurfaceCreateFlags
     {
         RHISurfaceCreateFlagNone            = 0,
-        RHISurfaceCreateRenderTexture       = (1 << 0),
-        RHISurfaceCreateDepthTexture        = (1 << 1),
-        RHISurfaceCreateStencilTexture      = (1 << 2),
+        RHISurfaceCreateRenderTarget        = (1 << 0),
+        RHISurfaceCreateDepthStencil        = (1 << 1),
         RHISurfaceCreateRandomWrite         = (1 << 3),
         RHISurfaceCreateMipmap              = (1 << 4),
         RHISurfaceCreateAutoGenMips         = (1 << 5),
@@ -598,17 +607,15 @@ namespace RHI
 
     struct RHIRenderSurfaceBaseDesc
     {
-        RHITextureID          textureID;
-        UINT16                width;
-        UINT16                height;
-        UINT16                depth;
-        UINT8                 samples;
-        UINT8                 mipCount;
+        //RHIResourceID         textureID;
+        UINT64                width;
+        UINT64                height;
+        UINT64                depth;
+        UINT32                samples;
+        INT32                 mipCount;
         RHISurfaceCreateFlags flags;
         RHITextureDimension   dim;
         DXGI_FORMAT           graphicsFormat;
-        UINT8                 loadAction;
-        UINT8                 storeAction;
         bool                  colorSurface;
         bool                  backBuffer;
     };
