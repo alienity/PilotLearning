@@ -409,11 +409,11 @@ namespace RHI
 
     D3D12RenderTargetView::D3D12RenderTargetView(D3D12LinkedDevice*  Device,
                                                  D3D12Texture*       Texture,
+                                                 bool                sRGB /*= false*/,
                                                  std::optional<UINT> OptArraySlice /*= std::nullopt*/,
                                                  std::optional<UINT> OptMipSlice /*= std::nullopt*/,
-                                                 std::optional<UINT> OptArraySize /*= std::nullopt*/,
-                                                 bool                sRGB /*= false*/) :
-        D3D12RenderTargetView(Device, GetDesc(Texture, OptArraySlice, OptMipSlice, OptArraySize, sRGB), Texture)
+                                                 std::optional<UINT> OptArraySize /*= std::nullopt*/) :
+        D3D12RenderTargetView(Device, GetDesc(Texture, sRGB, OptArraySlice, OptMipSlice, OptArraySize), Texture)
     {}
 
     void D3D12RenderTargetView::RecreateView()
@@ -427,10 +427,10 @@ namespace RHI
     }
 
     D3D12_RENDER_TARGET_VIEW_DESC D3D12RenderTargetView::GetDesc(D3D12Texture*       Texture,
+                                                                 bool                sRGB,
                                                                  std::optional<UINT> OptArraySlice,
                                                                  std::optional<UINT> OptMipSlice,
-                                                                 std::optional<UINT> OptArraySize,
-                                                                 bool                sRGB)
+                                                                 std::optional<UINT> OptArraySize)
     {
         D3D12_RESOURCE_DESC Desc = Texture->GetDesc();
 

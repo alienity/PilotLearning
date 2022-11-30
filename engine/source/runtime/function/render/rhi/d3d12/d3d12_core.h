@@ -610,7 +610,7 @@ namespace RHI
         //RHIResourceID         textureID;
         UINT64                width;
         UINT64                height;
-        UINT64                depth;
+        UINT64                depthOrArray;
         UINT32                samples;
         INT32                 mipCount;
         RHISurfaceCreateFlags flags;

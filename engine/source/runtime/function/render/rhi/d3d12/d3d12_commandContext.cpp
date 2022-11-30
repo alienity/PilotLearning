@@ -921,8 +921,8 @@ namespace RHI
         InitContext->CopyBufferRegion(Dest->GetResource(), DestOffset, mem.Resource, 0, NumBytes);
         InitContext.TransitionBarrier(Dest, originalState, D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES, true);
 
-        //// Execute the command list and wait for it to finish so we can release the upload buffer
-        //Parent->EndResourceUpload(true);
+        // Execute the command list and wait for it to finish so we can release the upload buffer
+        Parent->EndResourceUpload(true);
     }
 
     void D3D12CommandContext::InitializeTextureArraySlice(D3D12LinkedDevice* Parent, D3D12Resource* Dest, UINT SliceIndex, D3D12Resource* Src)

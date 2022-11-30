@@ -373,19 +373,19 @@ namespace RHI
                                        D3D12Resource*                       Resource);
         explicit D3D12RenderTargetView(D3D12LinkedDevice*  Device,
                                        D3D12Texture*       Texture,
+                                       bool                sRGB          = false,
                                        std::optional<UINT> OptArraySlice = std::nullopt,
                                        std::optional<UINT> OptMipSlice   = std::nullopt,
-                                       std::optional<UINT> OptArraySize  = std::nullopt,
-                                       bool                sRGB          = false);
+                                       std::optional<UINT> OptArraySize  = std::nullopt);
 
         void RecreateView();
 
     public:
         static D3D12_RENDER_TARGET_VIEW_DESC GetDesc(D3D12Texture*       Texture,
-                                                     std::optional<UINT> OptArraySlice,
-                                                     std::optional<UINT> OptMipSlice,
-                                                     std::optional<UINT> OptArraySize,
-                                                     bool                sRGB);
+                                                     bool                sRGB          = false,
+                                                     std::optional<UINT> OptArraySlice = std::nullopt,
+                                                     std::optional<UINT> OptMipSlice   = std::nullopt,
+                                                     std::optional<UINT> OptArraySize  = std::nullopt);
     };
 
     class D3D12DepthStencilView : public D3D12View<D3D12_DEPTH_STENCIL_VIEW_DESC>

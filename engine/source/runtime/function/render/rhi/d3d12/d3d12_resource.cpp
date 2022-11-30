@@ -305,6 +305,16 @@ namespace RHI
                       std::nullopt)
     {}
 
+    D3D12Buffer::~D3D12Buffer()
+    {
+        if (m_Data.m_Data != nullptr)
+        {
+            free(m_Data.m_Data);
+            m_Data.m_Data = nullptr;
+        }
+        p_CounterBufferD3D12  = nullptr;
+    }
+
     D3D12Buffer::D3D12Buffer(D3D12LinkedDevice*   Parent,
                              UINT64               SizeInBytes,
                              UINT                 Stride,
@@ -344,6 +354,176 @@ namespace RHI
     D3D12_GPU_VIRTUAL_ADDRESS D3D12Buffer::GetGpuVirtualAddress(UINT Index) const
     {
         return m_pResource->GetGPUVirtualAddress() + static_cast<UINT64>(Index) * m_Stride;
+    }
+
+    std::shared_ptr<D3D12Buffer> D3D12Buffer::CreateBuffer(D3D12LinkedDevice*    Parent,
+                                                           RHIBufferTarget       bufferTarget,
+                                                           UINT32                numElements,
+                                                           UINT32                elementSize,
+                                                           bool                  mapplable,
+                                                           bool                  randomReadWrite,
+                                                           const std::wstring    name,
+                                                           D3D12_RESOURCE_STATES initState,
+                                                           BYTE*                 initialData,
+                                                           UINT                  dataLen)
+    {
+        std::shared_ptr<D3D12Buffer> pBufferD3D12 = std::make_shared<D3D12Buffer>(Parent);
+
+        UINT sizeInBytes = numElements * elementSize;
+        D3D12_RESOURCE_FLAGS resourceFlag =
+            randomReadWrite ? D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS : D3D12_RESOURCE_FLAG_NONE;
+        RHIBufferMode bufferMode =
+            mapplable ? RHIBufferMode::RHIBufferModeDynamic : RHIBufferMode::RHIBufferModeImmutable;
+
+        D3D12_HEAP_TYPE heapType =
+            mapplable ? D3D12_HEAP_TYPE::D3D12_HEAP_TYPE_UPLOAD : D3D12_HEAP_TYPE::D3D12_HEAP_TYPE_DEFAULT;
+
+        pBufferD3D12 =
+            std::make_shared<D3D12Buffer>(Parent, sizeInBytes, elementSize, heapType, resourceFlag, initState);
+        pBufferD3D12->SetResourceName(name);
+
+        pBufferD3D12->m_Desc = {sizeInBytes, numElements, elementSize, bufferTarget, bufferMode};
+        pBufferD3D12->m_Data = {initialData, dataLen};
+
+        if (bufferTarget & (RHIBufferTarget::RHIBufferTargetAppend | RHIBufferTarget::RHIBufferTargetCounter))
+        {
+            RHIBufferTarget counterTarget =
+                RHIBufferTarget::RHIBufferTargetRaw | RHIBufferTarget::RHIBufferTargetCounter;
+            pBufferD3D12->p_CounterBufferD3D12 = CreateBuffer(Parent,
+                                                              counterTarget,
+                                                              1,
+                                                              sizeof(UINT32),
+                                                              false,
+                                                              false,
+                                                              name + L"_Counter",
+                                                              D3D12_RESOURCE_STATE_GENERIC_READ,
+                                                              nullptr,
+                                                              0);
+        }
+        else
+        {
+            pBufferD3D12->p_CounterBufferD3D12 = nullptr;
+        }
+
+        bool uploadNeedFinished = false;
+
+        // Inflate Buffer
+        if (initialData != nullptr)
+        {
+            pBufferD3D12->InflateBuffer(initialData, dataLen);
+            uploadNeedFinished = true;
+        }
+
+        // Reset CounterBuffer
+        if (bufferTarget & RHIBufferTarget::RHIBufferTargetCounter)
+        {
+            D3D12CommandContext& InitContext = Parent->BeginResourceUpload();
+            pBufferD3D12->ResetCounterBuffer(&InitContext);
+            uploadNeedFinished = true;
+        }
+
+        if (uploadNeedFinished)
+        {
+            Parent->EndResourceUpload(true);
+        }
+
+        return pBufferD3D12;
+    }
+
+    std::shared_ptr<D3D12Buffer> D3D12Buffer::GetCounterBuffer() { return this->p_CounterBufferD3D12; }
+
+    bool D3D12Buffer::InflateBuffer(BYTE* initialData, UINT dataLen)
+    {
+        ASSERT(this->m_Data.m_DataLen == dataLen);
+        if (!memcmp(this->m_Data.m_Data, initialData, dataLen))
+            return false;
+
+        free(this->m_Data.m_Data);
+        this->m_Data = {initialData, dataLen};
+
+        if (this->m_Desc.mode == RHIBufferMode::RHIBufferModeDynamic)
+        {
+            memcpy(this->GetCpuVirtualAddress(), initialData, dataLen);
+        }
+        else
+        {
+            D3D12CommandContext::InitializeBuffer(Parent, this, m_Data.m_Data, m_Data.m_DataLen);
+        }
+
+        return true;
+    }
+
+    void D3D12Buffer::ResetCounterBuffer(D3D12CommandContext* pCommandContext)
+    {
+        ASSERT(p_CounterBufferD3D12 != nullptr);
+        pCommandContext->Open();
+        pCommandContext->ResetCounter(p_CounterBufferD3D12.get(), 0, 0);
+    }
+
+    std::shared_ptr<D3D12ConstantBufferView> D3D12Buffer::CreateCBV(D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc)
+    {
+        std::shared_ptr<D3D12ConstantBufferView> cbv           = nullptr;
+        auto                                     cbvHandleIter = m_CBVHandleMap.find(cbvDesc);
+        if (cbvHandleIter != m_CBVHandleMap.end())
+        {
+            cbv                     = std::make_shared<D3D12ConstantBufferView>(Parent, cbvDesc, this);
+            m_CBVHandleMap[cbvDesc] = cbv;
+        }
+        else
+        {
+            cbv = cbvHandleIter->second;
+        }
+        return cbv;
+    }
+
+    std::shared_ptr<D3D12ShaderResourceView> D3D12Buffer::CreateSRV(D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc)
+    {
+        std::shared_ptr<D3D12ShaderResourceView> srv           = nullptr;
+        auto                                     srvHandleIter = m_SRVHandleMap.find(srvDesc);
+        if (srvHandleIter != m_SRVHandleMap.end())
+        {
+            srv                     = std::make_shared<D3D12ShaderResourceView>(Parent, srvDesc, this);
+            m_SRVHandleMap[srvDesc] = srv;
+        }
+        else
+        {
+            srv = srvHandleIter->second;
+        }
+        return srv;
+    }
+
+    std::shared_ptr<D3D12UnorderedAccessView> D3D12Buffer::CreateUAV(D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc)
+    {
+        D3D12Resource* pCounterResource = p_CounterBufferD3D12 != nullptr ? p_CounterBufferD3D12.get() : nullptr;
+        BUFFER_UNORDERED_ACCESS_VIEW_KEY          uavKey        = {uavDesc, pCounterResource};
+        std::shared_ptr<D3D12UnorderedAccessView> uav           = nullptr;
+        auto                                      uavHandleIter = m_UAVHandleMap.find(uavKey);
+        if (uavHandleIter != m_UAVHandleMap.end())
+        {
+            uav = std::make_shared<D3D12UnorderedAccessView>(Parent, uavDesc, this, pCounterResource);
+            m_UAVHandleMap[uavKey] = uav;
+        }
+        else
+        {
+            uav = uavHandleIter->second;
+        }
+        return uav;
+    }
+
+    std::shared_ptr<D3D12ConstantBufferView> D3D12Buffer::GetDefaultCBV()
+    {
+        return CreateCBV(D3D12ConstantBufferView::GetDesc(this, 0, m_Desc.size));
+    }
+
+    std::shared_ptr<D3D12ShaderResourceView> D3D12Buffer::GetDefaultSRV()
+    {
+        ASSERT(m_Desc.size % m_Desc.stride == 0);
+        return CreateSRV(D3D12ShaderResourceView::GetDesc(this, m_Desc.target & RHIBufferTargetRaw, 0, m_Desc.number));
+    }
+
+    std::shared_ptr<D3D12UnorderedAccessView> D3D12Buffer::GetDefaultUAV()
+    {
+        return CreateUAV(D3D12UnorderedAccessView::GetDesc(this, m_Desc.target & RHIBufferTargetRaw, 0, m_Desc.number, 0));
     }
 
     D3D12Texture::D3D12Texture(D3D12LinkedDevice*                       Parent,
@@ -411,7 +591,7 @@ namespace RHI
         this->m_pResource         = Resource;
         this->m_GpuVirtualAddress = Resource->GetGPUVirtualAddress();
         this->m_ClearValue        = CD3DX12_CLEAR_VALUE();
-        this->m_ResourceDesc              = CD3DX12_RESOURCE_DESC(Resource->GetDesc());
+        this->m_ResourceDesc      = CD3DX12_RESOURCE_DESC(Resource->GetDesc());
 
         this->m_PlaneCount      = D3D12GetFormatPlaneCount(Parent->GetDevice(), m_ResourceDesc.Format);
         this->m_NumSubresources = this->CalculateNumSubresources();
@@ -425,195 +605,7 @@ namespace RHI
 #endif
     }
 
-    //=========================================================================================================
-
-    std::shared_ptr<BufferD3D12> BufferD3D12::CreateBuffer(D3D12LinkedDevice*    Parent,
-                                                           RHIBufferTarget       bufferTarget,
-                                                           UINT32                numElements,
-                                                           UINT32                elementSize,
-                                                           bool                  mapplable,
-                                                           bool                  randomReadWrite,
-                                                           const std::wstring    name,
-                                                           D3D12_RESOURCE_STATES initState,
-                                                           BYTE*                 initialData,
-                                                           UINT                  dataLen)
-    {
-        std::shared_ptr<BufferD3D12> pBufferD3D12 = std::make_shared<BufferD3D12>(Parent);
-
-        UINT sizeInBytes = numElements * elementSize;
-        D3D12_RESOURCE_FLAGS resourceFlag =
-            randomReadWrite ? D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS : D3D12_RESOURCE_FLAG_NONE;
-        RHIBufferMode bufferMode = mapplable ? RHIBufferMode::RHIBufferModeDynamic : RHIBufferMode::RHIBufferModeImmutable;
-
-        D3D12_HEAP_TYPE heapType = mapplable ? D3D12_HEAP_TYPE::D3D12_HEAP_TYPE_UPLOAD : D3D12_HEAP_TYPE::D3D12_HEAP_TYPE_DEFAULT;
-        
-        pBufferD3D12->m_Desc = {sizeInBytes, numElements, elementSize, bufferTarget, bufferMode};
-        pBufferD3D12->m_Data = {initialData, dataLen};
-        pBufferD3D12->m_Name = name;
-
-        pBufferD3D12->p_ResourceD3D12Buffer =
-            std::make_shared<D3D12Buffer>(Parent, sizeInBytes, elementSize, heapType, resourceFlag, initState);
-        pBufferD3D12->p_ResourceD3D12Buffer->SetResourceName(name);
-
-        if (bufferTarget & (RHIBufferTarget::RHIBufferTargetAppend | RHIBufferTarget::RHIBufferTargetCounter))
-        {
-            RHIBufferTarget counterTarget =
-                RHIBufferTarget::RHIBufferTargetRaw | RHIBufferTarget::RHIBufferTargetCounter;
-            pBufferD3D12->p_CounterBufferD3D12 = CreateBuffer(Parent,
-                                                              counterTarget,
-                                                              1,
-                                                              sizeof(UINT32),
-                                                              false,
-                                                              false,
-                                                              name + L"_Counter",
-                                                              D3D12_RESOURCE_STATE_GENERIC_READ,
-                                                              nullptr,
-                                                              0);
-        }
-        else
-        {
-            pBufferD3D12->p_CounterBufferD3D12 = nullptr;
-        }
-
-        bool uploadNeedFinished = false;
-
-        // Inflate Buffer
-        if (initialData != nullptr)
-        {
-            pBufferD3D12->InflateBuffer(initialData, dataLen);
-            uploadNeedFinished = true;
-        }
-
-        // Reset CounterBuffer
-        if (bufferTarget & RHIBufferTarget::RHIBufferTargetCounter)
-        {
-            D3D12CommandContext& InitContext = Parent->BeginResourceUpload();
-            pBufferD3D12->ResetCounterBuffer(&InitContext);
-            uploadNeedFinished = true;
-        }
-
-        if (uploadNeedFinished)
-        {
-            Parent->EndResourceUpload(true);
-        }
-
-        return pBufferD3D12;
-    }
-
-    BufferD3D12::~BufferD3D12()
-    {
-        if (m_Data.m_Data != nullptr)
-        {
-            free(m_Data.m_Data);
-            m_Data.m_Data = nullptr;
-        }
-        p_ResourceD3D12Buffer = nullptr;
-        p_CounterBufferD3D12  = nullptr;
-    }
-
-    std::shared_ptr<D3D12Buffer> BufferD3D12::GetResourceBuffer() { return this->p_ResourceD3D12Buffer; }
-
-    std::shared_ptr<BufferD3D12> BufferD3D12::GetCounterBuffer() { return this->p_CounterBufferD3D12; }
-
-    bool BufferD3D12::InflateBuffer(BYTE* initialData, UINT dataLen)
-    {
-        ASSERT(this->m_Data.m_DataLen == dataLen);
-        if (!memcmp(this->m_Data.m_Data, initialData, dataLen))
-            return false;
-
-        free(this->m_Data.m_Data);
-        this->m_Data = {initialData, dataLen};
-
-        if (this->m_Desc.mode == RHIBufferMode::RHIBufferModeDynamic)
-        {
-            memcpy(this->p_ResourceD3D12Buffer->GetCpuVirtualAddress(), initialData, dataLen);
-        }
-        else
-        {
-            D3D12CommandContext::InitializeBuffer(Parent, p_ResourceD3D12Buffer.get(), m_Data.m_Data, m_Data.m_DataLen);
-        }
-
-        return true;
-    }
-
-    void BufferD3D12::ResetCounterBuffer(D3D12CommandContext* pCommandContext)
-    {
-        ASSERT(p_CounterBufferD3D12 != nullptr);
-        pCommandContext->Open();
-        pCommandContext->ResetCounter(p_CounterBufferD3D12->GetResourceBuffer().get(), 0, 0);
-    }
-
-    std::shared_ptr<D3D12ConstantBufferView> BufferD3D12::CreateCBV(D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc)
-    {
-        std::shared_ptr<D3D12ConstantBufferView> cbv = nullptr;
-        auto cbvHandleIter = m_CBVHandleMap.find(cbvDesc);
-        if (cbvHandleIter != m_CBVHandleMap.end())
-        {
-            cbv = std::make_shared<D3D12ConstantBufferView>(Parent, cbvDesc, this->GetResourceBuffer().get());
-            m_CBVHandleMap[cbvDesc] = cbv;
-        }
-        else
-        {
-            cbv = cbvHandleIter->second;
-        }
-        return cbv;
-    }
-
-    std::shared_ptr<D3D12ShaderResourceView> BufferD3D12::CreateSRV(D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc)
-    {
-        std::shared_ptr<D3D12ShaderResourceView> srv = nullptr;
-        auto srvHandleIter = m_SRVHandleMap.find(srvDesc);
-        if (srvHandleIter != m_SRVHandleMap.end())
-        {
-            srv = std::make_shared<D3D12ShaderResourceView>(Parent, srvDesc, this->GetResourceBuffer().get());
-            m_SRVHandleMap[srvDesc] = srv;
-        }
-        else
-        {
-            srv = srvHandleIter->second;
-        }
-        return srv;
-    }
-
-    std::shared_ptr<D3D12UnorderedAccessView> BufferD3D12::CreateUAV(D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc)
-    {
-        D3D12Resource* pCounterResource =
-            p_CounterBufferD3D12 != nullptr ? p_CounterBufferD3D12->GetResourceBuffer().get() : nullptr;
-        BUFFER_UNORDERED_ACCESS_VIEW_KEY uavKey = {uavDesc, pCounterResource};
-        std::shared_ptr<D3D12UnorderedAccessView> uav = nullptr;
-        auto uavHandleIter = m_UAVHandleMap.find(uavKey);
-        if (uavHandleIter != m_UAVHandleMap.end())
-        {
-            uav = std::make_shared<D3D12UnorderedAccessView>(
-                Parent, uavDesc, this->GetResourceBuffer().get(), pCounterResource);
-            m_UAVHandleMap[uavKey] = uav;
-        }
-        else
-        {
-            uav = uavHandleIter->second;
-        }
-        return uav;
-    }
-
-    std::shared_ptr<D3D12ConstantBufferView> BufferD3D12::GetDefaultCBV()
-    {
-        return CreateCBV(D3D12ConstantBufferView::GetDesc(p_ResourceD3D12Buffer.get(), 0, m_Desc.size));
-    }
-
-    std::shared_ptr<D3D12ShaderResourceView> BufferD3D12::GetDefaultSRV()
-    {
-        ASSERT(m_Desc.size % m_Desc.stride == 0);
-        return CreateSRV(D3D12ShaderResourceView::GetDesc(
-            p_ResourceD3D12Buffer.get(), m_Desc.target & RHIBufferTargetRaw, 0, m_Desc.number));
-    }
-
-    std::shared_ptr<D3D12UnorderedAccessView> BufferD3D12::GetDefaultUAV()
-    {
-        return CreateUAV(D3D12UnorderedAccessView::GetDesc(
-            p_ResourceD3D12Buffer.get(), m_Desc.target & RHIBufferTargetRaw, 0, m_Desc.number, 0));
-    }
-
-    std::shared_ptr<SurfaceD3D12> SurfaceD3D12::Create2D(D3D12LinkedDevice*     Parent,
+    std::shared_ptr<D3D12Texture> D3D12Texture::Create2D(D3D12LinkedDevice*     Parent,
                                                          UINT32                 width,
                                                          UINT32                 height,
                                                          INT32                  numMips,
@@ -625,13 +617,6 @@ namespace RHI
                                                          D3D12_RESOURCE_STATES  initState,
                                                          D3D12_SUBRESOURCE_DATA initData)
     {
-        std::shared_ptr<SurfaceD3D12> pSurfaceD3D12 = std::make_shared<SurfaceD3D12>(Parent);
-
-        INT mipLevels = SurfaceD3D12::GetMipLevels(width, height, numMips, flags);
-
-        pSurfaceD3D12->m_Desc = {width, height, 1, sampleCount, mipLevels, flags, RHITexDim2D, format, true, false};
-        pSurfaceD3D12->m_Name = name;
-
         D3D12_RESOURCE_FLAGS resourceFlags = D3D12_RESOURCE_FLAG_NONE;
         if (flags & RHISurfaceCreateRenderTarget)
         {
@@ -649,26 +634,24 @@ namespace RHI
             resourceFlags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
         }
 
-        DXGI_FORMAT graphicFormat = format;
-        if (flags & RHISurfaceCreateSRGB)
-        {
-            graphicFormat = D3D12RHIUtils::MakeSRGB(format);
-        }
+        INT mipLevels = D3D12Texture::GetMipLevels(width, height, numMips, flags);
 
         CD3DX12_RESOURCE_DESC resourceDesc =
-            CD3DX12_RESOURCE_DESC::Tex2D(graphicFormat, width, height, 1, mipLevels, sampleCount, 0, resourceFlags);
+            CD3DX12_RESOURCE_DESC::Tex2D(format, width, height, 1, mipLevels, sampleCount, 0, resourceFlags);
 
         CD3DX12_HEAP_PROPERTIES resourceHeapProperties =
             CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT, Parent->GetNodeMask(), Parent->GetNodeMask());
 
-        pSurfaceD3D12->p_ResourceD3D12Texture =
+        std::shared_ptr<D3D12Texture> pSurfaceD3D12 =
             std::make_shared<D3D12Texture>(Parent, resourceDesc, resourceHeapProperties, clearValue, initState, false);
-        pSurfaceD3D12->p_ResourceD3D12Texture->SetResourceName(name);
+        pSurfaceD3D12->SetResourceName(name);
+
+        pSurfaceD3D12->m_Desc = {width, height, 1, sampleCount, mipLevels, flags, RHITexDim2D, format, true, false};
 
         return pSurfaceD3D12;
     }
 
-    std::shared_ptr<SurfaceD3D12> SurfaceD3D12::Create2DArray(D3D12LinkedDevice*                  Parent,
+    std::shared_ptr<D3D12Texture> D3D12Texture::Create2DArray(D3D12LinkedDevice*                  Parent,
                                                               UINT32                              width,
                                                               UINT32                              height,
                                                               UINT32                              arraySize,
@@ -681,14 +664,6 @@ namespace RHI
                                                               D3D12_RESOURCE_STATES               initState,
                                                               std::vector<D3D12_SUBRESOURCE_DATA> initDatas)
     {
-        std::shared_ptr<SurfaceD3D12> pSurfaceD3D12 = std::make_shared<SurfaceD3D12>(Parent);
-
-        INT mipLevels = SurfaceD3D12::GetMipLevels(width, height, numMips, flags);
-
-        pSurfaceD3D12->m_Desc = {
-            width, height, arraySize, sampleCount, mipLevels, flags, RHITexDim2DArray, format, true, false};
-        pSurfaceD3D12->m_Name = name;
-
         D3D12_RESOURCE_FLAGS resourceFlags = D3D12_RESOURCE_FLAG_NONE;
         if (flags & RHISurfaceCreateRenderTarget)
         {
@@ -706,26 +681,24 @@ namespace RHI
             resourceFlags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
         }
 
-        DXGI_FORMAT graphicFormat = format;
-        if (flags & RHISurfaceCreateSRGB)
-        {
-            graphicFormat = D3D12RHIUtils::MakeSRGB(format);
-        }
+        INT mipLevels = D3D12Texture::GetMipLevels(width, height, numMips, flags);
 
-        CD3DX12_RESOURCE_DESC resourceDesc = CD3DX12_RESOURCE_DESC::Tex2D(
-            graphicFormat, width, height, arraySize, mipLevels, sampleCount, 0, resourceFlags);
+        CD3DX12_RESOURCE_DESC resourceDesc = CD3DX12_RESOURCE_DESC::Tex2D(format, width, height, arraySize, mipLevels, sampleCount, 0, resourceFlags);
 
         CD3DX12_HEAP_PROPERTIES resourceHeapProperties =
             CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT, Parent->GetNodeMask(), Parent->GetNodeMask());
 
-        pSurfaceD3D12->p_ResourceD3D12Texture =
+        std::shared_ptr<D3D12Texture> pSurfaceD3D12 =
             std::make_shared<D3D12Texture>(Parent, resourceDesc, resourceHeapProperties, clearValue, initState, false);
-        pSurfaceD3D12->p_ResourceD3D12Texture->SetResourceName(name);
+        pSurfaceD3D12->SetResourceName(name);
 
+        pSurfaceD3D12->m_Desc = {
+            width, height, arraySize, sampleCount, mipLevels, flags, RHITexDim2DArray, format, true, false};
+        
         return pSurfaceD3D12;
     }
 
-    std::shared_ptr<SurfaceD3D12> SurfaceD3D12::CreateCubeMap(D3D12LinkedDevice*                  Parent,
+    std::shared_ptr<D3D12Texture> D3D12Texture::CreateCubeMap(D3D12LinkedDevice*                  Parent,
                                                               UINT32                              width,
                                                               UINT32                              height,
                                                               INT32                               numMips,
@@ -737,16 +710,6 @@ namespace RHI
                                                               D3D12_RESOURCE_STATES               initState,
                                                               std::vector<D3D12_SUBRESOURCE_DATA> initDatas)
     {
-        std::shared_ptr<SurfaceD3D12> pSurfaceD3D12 = std::make_shared<SurfaceD3D12>(Parent);
-
-        INT mipLevels = SurfaceD3D12::GetMipLevels(width, height, numMips, flags);
-
-        UINT cubeFaces = 6;
-
-        pSurfaceD3D12->m_Desc = {
-            width, height, cubeFaces, sampleCount, mipLevels, flags, RHITexDimCube, format, true, false};
-        pSurfaceD3D12->m_Name = name;
-
         D3D12_RESOURCE_FLAGS resourceFlags = D3D12_RESOURCE_FLAG_NONE;
         if (flags & RHISurfaceCreateRenderTarget)
         {
@@ -764,26 +727,25 @@ namespace RHI
             resourceFlags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
         }
 
-        DXGI_FORMAT graphicFormat = format;
-        if (flags & RHISurfaceCreateSRGB)
-        {
-            graphicFormat = D3D12RHIUtils::MakeSRGB(format);
-        }
+        UINT cubeFaces = 6;
+        INT  mipLevels = D3D12Texture::GetMipLevels(width, height, numMips, flags);
 
-        CD3DX12_RESOURCE_DESC resourceDesc = CD3DX12_RESOURCE_DESC::Tex2D(
-            graphicFormat, width, height, cubeFaces, mipLevels, sampleCount, 0, resourceFlags);
+        CD3DX12_RESOURCE_DESC resourceDesc = CD3DX12_RESOURCE_DESC::Tex2D(format, width, height, cubeFaces, mipLevels, sampleCount, 0, resourceFlags);
 
         CD3DX12_HEAP_PROPERTIES resourceHeapProperties =
             CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT, Parent->GetNodeMask(), Parent->GetNodeMask());
 
-        pSurfaceD3D12->p_ResourceD3D12Texture =
+        std::shared_ptr<D3D12Texture> pSurfaceD3D12 =
             std::make_shared<D3D12Texture>(Parent, resourceDesc, resourceHeapProperties, clearValue, initState, true);
-        pSurfaceD3D12->p_ResourceD3D12Texture->SetResourceName(name);
+        pSurfaceD3D12->SetResourceName(name);
 
+        pSurfaceD3D12->m_Desc = {
+            width, height, cubeFaces, sampleCount, mipLevels, flags, RHITexDimCube, format, true, false};
+        
         return pSurfaceD3D12;
     }
 
-    std::shared_ptr<SurfaceD3D12> SurfaceD3D12::CreateCubeMapArray(D3D12LinkedDevice*                  Parent,
+    std::shared_ptr<D3D12Texture> D3D12Texture::CreateCubeMapArray(D3D12LinkedDevice*                  Parent,
                                                                    UINT32                              width,
                                                                    UINT32                              height,
                                                                    UINT32                              arraySize,
@@ -796,17 +758,6 @@ namespace RHI
                                                                    D3D12_RESOURCE_STATES               initState,
                                                                    std::vector<D3D12_SUBRESOURCE_DATA> initDatas)
     {
-        std::shared_ptr<SurfaceD3D12> pSurfaceD3D12 = std::make_shared<SurfaceD3D12>(Parent);
-
-        INT mipLevels = SurfaceD3D12::GetMipLevels(width, height, numMips, flags);
-
-        UINT cubeFaces = 6;
-        UINT cubeArrayFaces = cubeFaces * arraySize;
-
-        pSurfaceD3D12->m_Desc = {
-            width, height, cubeArrayFaces, sampleCount, mipLevels, flags, RHITexDimCubeArray, format, true, false};
-        pSurfaceD3D12->m_Name = name;
-
         D3D12_RESOURCE_FLAGS resourceFlags = D3D12_RESOURCE_FLAG_NONE;
         if (flags & RHISurfaceCreateRenderTarget)
         {
@@ -824,26 +775,28 @@ namespace RHI
             resourceFlags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
         }
 
-        DXGI_FORMAT graphicFormat = format;
-        if (flags & RHISurfaceCreateSRGB)
-        {
-            graphicFormat = D3D12RHIUtils::MakeSRGB(format);
-        }
+        UINT cubeFaces      = 6;
+        UINT cubeArrayFaces = cubeFaces * arraySize;
+
+        INT mipLevels = D3D12Texture::GetMipLevels(width, height, numMips, flags);
 
         CD3DX12_RESOURCE_DESC resourceDesc = CD3DX12_RESOURCE_DESC::Tex2D(
-            graphicFormat, width, height, cubeArrayFaces, mipLevels, sampleCount, 0, resourceFlags);
+            format, width, height, cubeArrayFaces, mipLevels, sampleCount, 0, resourceFlags);
 
         CD3DX12_HEAP_PROPERTIES resourceHeapProperties =
             CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT, Parent->GetNodeMask(), Parent->GetNodeMask());
 
-        pSurfaceD3D12->p_ResourceD3D12Texture =
+        std::shared_ptr<D3D12Texture> pSurfaceD3D12 =
             std::make_shared<D3D12Texture>(Parent, resourceDesc, resourceHeapProperties, clearValue, initState, true);
-        pSurfaceD3D12->p_ResourceD3D12Texture->SetResourceName(name);
+        pSurfaceD3D12->SetResourceName(name);
 
+        pSurfaceD3D12->m_Desc = {
+            width, height, cubeArrayFaces, sampleCount, mipLevels, flags, RHITexDimCubeArray, format, true, false};
+        
         return pSurfaceD3D12;
     }
 
-    std::shared_ptr<SurfaceD3D12> SurfaceD3D12::Create3D(D3D12LinkedDevice*     Parent,
+    std::shared_ptr<D3D12Texture> D3D12Texture::Create3D(D3D12LinkedDevice*     Parent,
                                                          UINT32                 width,
                                                          UINT32                 height,
                                                          UINT32                 depth,
@@ -856,16 +809,6 @@ namespace RHI
                                                          D3D12_RESOURCE_STATES  initState,
                                                          D3D12_SUBRESOURCE_DATA initData)
     {
-        std::shared_ptr<SurfaceD3D12> pSurfaceD3D12 = std::make_shared<SurfaceD3D12>(Parent);
-
-        INT mipLevels = SurfaceD3D12::GetMipLevels(width, height, numMips, flags);
-
-        UINT textureDepth = 6;
-
-        pSurfaceD3D12->m_Desc = {
-            width, height, textureDepth, sampleCount, mipLevels, flags, RHITexDim3D, format, true, false};
-        pSurfaceD3D12->m_Name = name;
-
         D3D12_RESOURCE_FLAGS resourceFlags = D3D12_RESOURCE_FLAG_NONE;
         if (flags & RHISurfaceCreateRenderTarget)
         {
@@ -883,109 +826,150 @@ namespace RHI
             resourceFlags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
         }
 
-        DXGI_FORMAT graphicFormat = format;
-        if (flags & RHISurfaceCreateSRGB)
-        {
-            graphicFormat = D3D12RHIUtils::MakeSRGB(format);
-        }
+        INT mipLevels = D3D12Texture::GetMipLevels(width, height, numMips, flags);
+
+        UINT textureDepth = 6;
 
         CD3DX12_RESOURCE_DESC resourceDesc =
-            CD3DX12_RESOURCE_DESC::Tex3D(graphicFormat, width, height, textureDepth, mipLevels, resourceFlags);
+            CD3DX12_RESOURCE_DESC::Tex3D(format, width, height, textureDepth, mipLevels, resourceFlags);
 
         CD3DX12_HEAP_PROPERTIES resourceHeapProperties =
             CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT, Parent->GetNodeMask(), Parent->GetNodeMask());
 
-        pSurfaceD3D12->p_ResourceD3D12Texture =
+        std::shared_ptr<D3D12Texture> pSurfaceD3D12 =
             std::make_shared<D3D12Texture>(Parent, resourceDesc, resourceHeapProperties, clearValue, initState, false);
-        pSurfaceD3D12->p_ResourceD3D12Texture->SetResourceName(name);
+        pSurfaceD3D12->SetResourceName(name);
 
+        pSurfaceD3D12->m_Desc = {
+            width, height, textureDepth, sampleCount, mipLevels, flags, RHITexDim3D, format, true, false};
+        
         return pSurfaceD3D12;
     }
 
-    std::shared_ptr<SurfaceD3D12> SurfaceD3D12::CreateFromSwapchain(D3D12LinkedDevice*                     Parent,
+    std::shared_ptr<D3D12Texture> D3D12Texture::CreateFromSwapchain(D3D12LinkedDevice*                     Parent,
                                                                     Microsoft::WRL::ComPtr<ID3D12Resource> pResource,
                                                                     D3D12_RESOURCE_STATES                  initState,
                                                                     std::wstring                           name)
     {
-        std::shared_ptr<SurfaceD3D12> pSurfaceD3D12 = std::make_shared<SurfaceD3D12>(Parent);
+        std::shared_ptr<D3D12Texture> pSurfaceD3D12 = std::make_shared<D3D12Texture>();
+        pSurfaceD3D12->AssociateWithResource(Parent, name, pResource, initState);
+        pSurfaceD3D12->SetResourceName(name);
 
         D3D12_RESOURCE_DESC resourceDesc = pResource->GetDesc();
-
-        RHISurfaceCreateFlags flags = RHISurfaceCreateRenderTarget;
 
         pSurfaceD3D12->m_Desc = {resourceDesc.Width,
                                  resourceDesc.Height,
                                  resourceDesc.DepthOrArraySize,
                                  resourceDesc.SampleDesc.Count,
                                  1,
-                                 flags,
+                                 RHISurfaceCreateRenderTarget,
                                  RHITexDim2D,
                                  resourceDesc.Format,
                                  true,
                                  true};
-        pSurfaceD3D12->m_Name = name;
-
-        D3D12_RESOURCE_FLAGS resourceFlags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
         
-        pSurfaceD3D12->p_ResourceD3D12Texture = std::make_shared<D3D12Texture>();
-        pSurfaceD3D12->p_ResourceD3D12Texture->AssociateWithResource(Parent, name, pResource, initState);
-
         return pSurfaceD3D12;
     }
 
-    std::shared_ptr<D3D12Texture> SurfaceD3D12::GetResourceTexture() { return p_ResourceD3D12Texture; }
+    bool D3D12Texture::InflateTexture(std::vector<D3D12_SUBRESOURCE_DATA> initDatas)
+    {
+        D3D12CommandContext::InitializeTexture(Parent, this, 0, initDatas);
+        return true;
+    }
 
-    bool SurfaceD3D12::InflateTexture(std::vector<D3D12_SUBRESOURCE_DATA> initDatas)
+    std::shared_ptr<D3D12ShaderResourceView> D3D12Texture::CreateSRV(D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc)
+    {
+        std::shared_ptr<D3D12ShaderResourceView> srv = nullptr;
+        auto srvHandleIter = m_SRVHandleMap.find(srvDesc);
+        if (srvHandleIter != m_SRVHandleMap.end())
+        {
+            srv = std::make_shared<D3D12ShaderResourceView>(Parent, srvDesc, this);
+            m_SRVHandleMap[srvDesc] = srv;
+        }
+        else
+        {
+            srv = srvHandleIter->second;
+        }
+        return srv;
+    }
+
+    std::shared_ptr<D3D12UnorderedAccessView> D3D12Texture::CreateUAV(D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc)
+    {
+        std::shared_ptr<D3D12UnorderedAccessView> uav = nullptr;
+        auto uavHandleIter = m_UAVHandleMap.find(uavDesc);
+        if (uavHandleIter != m_UAVHandleMap.end())
+        {
+            uav = std::make_shared<D3D12UnorderedAccessView>(Parent, uavDesc, this, nullptr);
+            m_UAVHandleMap[uavDesc] = uav;
+        }
+        else
+        {
+            uav = uavHandleIter->second;
+        }
+        return uav;
+    }
+
+    std::shared_ptr<D3D12RenderTargetView> D3D12Texture::CreateRTV(D3D12_RENDER_TARGET_VIEW_DESC rtvDesc)
+    {
+        std::shared_ptr<D3D12RenderTargetView> rtv = nullptr;
+        auto rtvHandleIter = m_RTVHandleMap.find(rtvDesc);
+        if (rtvHandleIter != m_RTVHandleMap.end())
+        {
+            rtv = std::make_shared<D3D12RenderTargetView>(Parent, rtvDesc, this);
+            m_RTVHandleMap[rtvDesc] = rtv;
+        }
+        else
+        {
+            rtv = rtvHandleIter->second;
+        }
+        return rtv;
+    }
+
+    std::shared_ptr<D3D12DepthStencilView> D3D12Texture::CreateDSV(D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc)
+    {
+        std::shared_ptr<D3D12DepthStencilView> dsv = nullptr;
+        auto dsvHandleIter = m_DSVHandleMap.find(dsvDesc);
+        if (dsvHandleIter != m_DSVHandleMap.end())
+        {
+            dsv = std::make_shared<D3D12DepthStencilView>(Parent, dsvDesc, this);
+            m_DSVHandleMap[dsvDesc] = dsv;
+        }
+        else
+        {
+            dsv = dsvHandleIter->second;
+        }
+        return dsv;
+    }
+
+    std::shared_ptr<D3D12ShaderResourceView> D3D12Texture::GetDefaultSRV()
+    {
+        return CreateSRV(
+            D3D12ShaderResourceView::GetDesc(this, m_Desc.flags & RHISurfaceCreateSRGB, 0, m_Desc.mipCount));
+    }
+
+    std::shared_ptr<D3D12UnorderedAccessView> D3D12Texture::GetDefaultUAV()
+    {
+        return CreateUAV(D3D12UnorderedAccessView::GetDesc(this, m_Desc.depthOrArray, m_Desc.mipCount));
+    }
+
+    std::shared_ptr<D3D12RenderTargetView> D3D12Texture::GetDefaultRTV()
+    {
+        ASSERT(m_Desc.flags & RHISurfaceCreateRenderTarget);
+        return CreateRTV(D3D12RenderTargetView::GetDesc(this, m_Desc.flags & RHISurfaceCreateSRGB));
+    }
+
+    std::shared_ptr<D3D12DepthStencilView> D3D12Texture::GetDefaultDSV()
+    {
+        ASSERT(m_Desc.flags & RHISurfaceCreateDepthStencil);
+        return CreateDSV(D3D12DepthStencilView::GetDesc(this));
+    }
+
+    void D3D12Texture::ExportToFile(const std::wstring& FilePath)
     {
 
     }
 
-    std::shared_ptr<D3D12ShaderResourceView> SurfaceD3D12::CreateSRV(D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc)
-    {
-
-    }
-
-    std::shared_ptr<D3D12UnorderedAccessView> SurfaceD3D12::CreateUAV(D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc)
-    {
-
-    }
-
-    std::shared_ptr<D3D12RenderTargetView> SurfaceD3D12::CreateRTV(D3D12_RENDER_TARGET_VIEW_DESC rtvDesc)
-    {
-
-    }
-
-    std::shared_ptr<D3D12DepthStencilView> SurfaceD3D12::CreateDSV(D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc)
-    {
-
-    }
-
-    std::shared_ptr<D3D12ShaderResourceView> SurfaceD3D12::GetDefaultSRV()
-    {
-
-    }
-
-    std::shared_ptr<D3D12UnorderedAccessView> SurfaceD3D12::GetDefaultUAV()
-    {
-
-    }
-
-    std::shared_ptr<D3D12RenderTargetView> SurfaceD3D12::GetDefaultRTV()
-    {
-
-    }
-
-    std::shared_ptr<D3D12DepthStencilView> SurfaceD3D12::GetDefaultDSV()
-    {
-
-    }
-
-    void SurfaceD3D12::ExportToFile(const std::wstring& FilePath)
-    {
-
-    }
-
-    INT SurfaceD3D12::GetMipLevels(UINT width, UINT height, INT32 numMips, RHISurfaceCreateFlags flags)
+    INT D3D12Texture::GetMipLevels(UINT width, UINT height, INT32 numMips, RHISurfaceCreateFlags flags)
     {
         INT mipLevels = 0;
         if (flags & RHISurfaceCreateMipmap)
@@ -1010,98 +994,6 @@ namespace RHI
         }
         return mipLevels;
     }
-
-
-
-
-    /*
-    const std::shared_ptr<D3D12ShaderResourceView> D3D12Resource::CreateSRV(D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc)
-    {
-        std::shared_ptr<D3D12ShaderResourceView> srv           = nullptr;
-        auto                                     srvHandleIter = m_SRVHandleMap.find(srvDesc);
-        if (srvHandleIter != m_SRVHandleMap.end())
-        {
-            srv                     = std::make_shared<D3D12ShaderResourceView>(Parent, srvDesc, this);
-            m_SRVHandleMap[srvDesc] = srv;
-        }
-        else
-        {
-            srv = srvHandleIter->second;
-        }
-        return srv;
-    }
-
-    const std::shared_ptr<D3D12UnorderedAccessView> D3D12Resource::CreateUAV(D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc,
-                                                                             D3D12Resource* pCounterResource)
-    {
-        UnorderedAccessViewKey                    uavInfo       = {uavDesc, pCounterResource};
-        std::shared_ptr<D3D12UnorderedAccessView> uav           = nullptr;
-        auto                                      uavHandleIter = m_UAVHandleMap.find(uavInfo);
-        if (uavHandleIter != m_UAVHandleMap.end())
-        {
-            uav = std::make_shared<D3D12UnorderedAccessView>(Parent, uavDesc, this, pCounterResource);
-            m_UAVHandleMap[uavInfo] = uav;
-        }
-        else
-        {
-            uav = uavHandleIter->second;
-        }
-        return uav;
-    }
-
-    const std::shared_ptr<D3D12RenderTargetView> D3D12Resource::CreateRTV(D3D12_RENDER_TARGET_VIEW_DESC rtvDesc)
-    {
-        std::shared_ptr<D3D12RenderTargetView> rtv           = nullptr;
-        auto                                   rtvHandleIter = m_RTVHandleMap.find(rtvDesc);
-        if (rtvHandleIter != m_RTVHandleMap.end())
-        {
-            rtv                     = std::make_shared<D3D12RenderTargetView>(Parent, rtvDesc, this);
-            m_RTVHandleMap[rtvDesc] = rtv;
-        }
-        else
-        {
-            rtv = rtvHandleIter->second;
-        }
-        return rtv;
-    }
-
-    const std::shared_ptr<D3D12DepthStencilView> D3D12Resource::CreateDSV(D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc)
-    {
-        std::shared_ptr<D3D12DepthStencilView> dsv = nullptr;
-
-        auto dsvHandleIter = m_DSVHandleMap.find(dsvDesc);
-        if (dsvHandleIter != m_DSVHandleMap.end())
-        {
-            dsv                     = std::make_shared<D3D12DepthStencilView>(Parent, dsvDesc, this);
-            m_DSVHandleMap[dsvDesc] = dsv;
-        }
-        else
-        {
-            dsv = dsvHandleIter->second;
-        }
-        return dsv;
-    }
-
-    void D3D12Resource::CacheSRV(std::string srvName, std::shared_ptr<D3D12ShaderResourceView>) {}
-
-    void D3D12Resource::CacheUAV(std::string srvName, std::shared_ptr<D3D12UnorderedAccessView>) {}
-
-
-    UploadBuffer::UploadBuffer(D3D12LinkedDevice* Parent, UINT BufferSize, const std::wstring& name) :
-        D3D12Buffer(Parent,
-                    BufferSize,
-                    BufferSize,
-                    D3D12_HEAP_TYPE_UPLOAD,
-                    D3D12_RESOURCE_FLAG_NONE,
-                    D3D12_RESOURCE_STATE_GENERIC_READ)
-    {
-        this->m_pResource->SetName(name.c_str());
-    }
-
-    UINT UploadBuffer::GetBufferSize() const { return D3D12Buffer::GetSizeInBytes(); }
-
-    ReadbackBuffer::ReadbackBuffer(UINT NumElements, UINT ElementSize, const std::wstring& name) {}
-    */
 
 }
 
