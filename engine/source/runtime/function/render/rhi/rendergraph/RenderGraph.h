@@ -177,22 +177,6 @@ namespace RHI
             {
                 return Textures;
             }
-            else if constexpr (std::is_same_v<T, D3D12RenderTargetView>)
-            {
-                return RenderTargetViews;
-            }
-            else if constexpr (std::is_same_v<T, D3D12DepthStencilView>)
-            {
-                return DepthStencilViews;
-            }
-            else if constexpr (std::is_same_v<T, D3D12ShaderResourceView>)
-            {
-                return ShaderResourceViews;
-            }
-            else if constexpr (std::is_same_v<T, D3D12UnorderedAccessView>)
-            {
-                return UnorderedAccessViews;
-            }
         }
 
         template<typename T>
@@ -206,22 +190,6 @@ namespace RHI
             {
                 return ImportedTextures;
             }
-            else if constexpr (std::is_same_v<T, D3D12RenderTargetView>)
-            {
-                return ImportedRTVs;
-            }
-            else if constexpr (std::is_same_v<T, D3D12DepthStencilView>)
-            {
-                return ImportedDSVs;
-            }
-            else if constexpr (std::is_same_v<T, D3D12ShaderResourceView>)
-            {
-                return ImportedSRVs;
-            }
-            else if constexpr (std::is_same_v<T, D3D12UnorderedAccessView>)
-            {
-                return ImportedUAVs;
-            }
         }
 
     private:
@@ -232,17 +200,9 @@ namespace RHI
 
         std::vector<D3D12Buffer*>              ImportedBuffers;
         std::vector<D3D12Texture*>             ImportedTextures;
-        std::vector<D3D12RenderTargetView*>    ImportedRTVs;
-        std::vector<D3D12DepthStencilView*>    ImportedDSVs;
-        std::vector<D3D12ShaderResourceView*>  ImportedSRVs;
-        std::vector<D3D12UnorderedAccessView*> ImportedUAVs;
 
         std::vector<RgBuffer>  Buffers;
         std::vector<RgTexture> Textures;
-        std::vector<RgView>    RenderTargetViews;
-        std::vector<RgView>    DepthStencilViews;
-        std::vector<RgView>    ShaderResourceViews;
-        std::vector<RgView>    UnorderedAccessViews;
 
         std::vector<RenderPass*> RenderPasses;
         RenderPass*              ProloguePass;

@@ -46,12 +46,8 @@ namespace RHI
 	void RenderGraphRegistry::RealizeResources(RenderGraph* Graph, D3D12Device* Device)
 	{
 		this->Graph = Graph;
-		Buffers.resize(Graph->Buffers.size());
-		Textures.resize(Graph->Textures.size());
-		RenderTargetViews.resize(Graph->RenderTargetViews.size());
-		DepthStencilViews.resize(Graph->DepthStencilViews.size());
-		ShaderResourceViews.resize(Graph->ShaderResourceViews.size());
-		UnorderedAccessViews.resize(Graph->UnorderedAccessViews.size());
+		pBuffers.resize(Graph->Buffers.size());
+        pTextures.resize(Graph->Textures.size());
 
 		// This is used to check to see if any view associated with the texture needs to be updated in case if texture is dirty
 		// The view does not check for this, so do it here manually
@@ -124,115 +120,6 @@ namespace RHI
 			std::wstring Name = std::wstring(RgTexture.Desc.Name.begin(), RgTexture.Desc.Name.end());
 			Textures[i].GetResource()->SetName(Name.data());
 		}
-
-		for (size_t i = 0; i < Graph->RenderTargetViews.size(); ++i)
-		{
-			auto& RgView = Graph->RenderTargetViews[i];
-			if (!IsViewDirty(RgView) && !TextureDirtyHandles.contains(RgView.Desc.AssociatedResource))
-			{
-				continue;
-			}
-
-			std::optional<UINT> ArraySlice = RgView.Desc.RgRtv.ArraySlice != -1 ? RgView.Desc.RgRtv.ArraySlice : std::optional<UINT>{};
-			std::optional<UINT> MipSlice   = RgView.Desc.RgRtv.MipSlice != -1 ? RgView.Desc.RgRtv.MipSlice : std::optional<UINT>{};
-			std::optional<UINT> ArraySize  = RgView.Desc.RgRtv.ArraySize != -1 ? RgView.Desc.RgRtv.ArraySize : std::optional<UINT>{};
-
-            RenderTargetViews[i] = D3D12RenderTargetView(Device->GetLinkedDevice(), GetD3D12Texture(RgView.Desc.AssociatedResource), ArraySlice, MipSlice, ArraySize, RgView.Desc.RgRtv.sRGB);
-		}
-
-		for (size_t i = 0; i < Graph->DepthStencilViews.size(); ++i)
-		{
-			auto& RgView = Graph->DepthStencilViews[i];
-			if (!IsViewDirty(RgView) && !TextureDirtyHandles.contains(RgView.Desc.AssociatedResource))
-			{
-				continue;
-			}
-
-			std::optional<UINT> ArraySlice = RgView.Desc.RgDsv.ArraySlice != -1 ? RgView.Desc.RgDsv.ArraySlice : std::optional<UINT>{};
-			std::optional<UINT> MipSlice   = RgView.Desc.RgDsv.MipSlice != -1 ? RgView.Desc.RgDsv.MipSlice : std::optional<UINT>{};
-			std::optional<UINT> ArraySize  = RgView.Desc.RgDsv.ArraySize != -1 ? RgView.Desc.RgDsv.ArraySize : std::optional<UINT>{};
-
-			DepthStencilViews[i] = D3D12DepthStencilView(Device->GetLinkedDevice(), GetD3D12Texture(RgView.Desc.AssociatedResource), ArraySlice, MipSlice, ArraySize);
-		}
-
-		for (size_t i = 0; i < Graph->ShaderResourceViews.size(); ++i)
-		{
-			auto& RgView = Graph->ShaderResourceViews[i];
-			if (!IsViewDirty(RgView) && !TextureDirtyHandles.contains(RgView.Desc.AssociatedResource))
-			{
-				continue;
-			}
-
-			switch (RgView.Desc.Type)
-			{
-			case RgViewType::BufferSrv:
-			{
-                ShaderResourceViews[i] = D3D12ShaderResourceView(Device->GetLinkedDevice(), GetD3D12Buffer(RgView.Desc.AssociatedResource), RgView.Desc.BufferSrv.Raw, RgView.Desc.BufferSrv.FirstElement, RgView.Desc.BufferSrv.NumElements);
-			}
-			break;
-
-			case RgViewType::TextureSrv:
-			{
-				D3D12Texture*		Resource		= GetD3D12Texture(RgView.Desc.AssociatedResource);
-				bool				sRGB			= RgView.Desc.TextureSrv.sRGB;
-				std::optional<UINT> MostDetailedMip = RgView.Desc.TextureSrv.MostDetailedMip != -1 ? RgView.Desc.TextureSrv.MostDetailedMip : std::optional<UINT>{};
-				std::optional<UINT> MipLevels		= RgView.Desc.TextureSrv.MipLevels != -1 ? RgView.Desc.TextureSrv.MipLevels : std::optional<UINT>{};
-				ShaderResourceViews[i]				= D3D12ShaderResourceView(Device->GetLinkedDevice(), Resource, sRGB, MostDetailedMip, MipLevels);
-			}
-			break;
-
-			default:
-				assert(false && "Invalid Srv");
-			}
-		}
-
-		for (size_t i = 0; i < Graph->UnorderedAccessViews.size(); ++i)
-		{
-			auto& RgView = Graph->UnorderedAccessViews[i];
-			if (!IsViewDirty(RgView) && !TextureDirtyHandles.contains(RgView.Desc.AssociatedResource))
-			{
-				continue;
-			}
-
-			switch (RgView.Desc.Type)
-			{
-			case RgViewType::BufferUav:
-			{
-				UnorderedAccessViews[i] = D3D12UnorderedAccessView(Device->GetLinkedDevice(), GetD3D12Buffer(RgView.Desc.AssociatedResource), RgView.Desc.BufferUav.Raw, RgView.Desc.BufferUav.NumElements, RgView.Desc.BufferUav.CounterOffsetInBytes);
-			}
-			break;
-
-			case RgViewType::TextureUav:
-			{
-                D3D12Texture*       Resource   = GetD3D12Texture(RgView.Desc.AssociatedResource);
-				std::optional<UINT> ArraySlice = RgView.Desc.TextureUav.ArraySlice != -1 ? RgView.Desc.TextureUav.ArraySlice : std::optional<UINT>{};
-				std::optional<UINT> MipSlice   = RgView.Desc.TextureUav.MipSlice != -1 ? RgView.Desc.TextureUav.MipSlice : std::optional<UINT>{};
-				UnorderedAccessViews[i]		   = D3D12UnorderedAccessView(Device->GetLinkedDevice(), Resource, ArraySlice, MipSlice);
-			}
-			break;
-
-			default:
-				assert(false && "Invalid Uav");
-			}
-		}
-	}
-
-	bool RenderGraphRegistry::IsViewDirty(RgView& View)
-	{
-		RgResourceHandle Handle = View.Handle; // View andle
-
-		bool ViewDirty;
-		auto Iter = ViewDescTable.find(Handle);
-		if (Iter == ViewDescTable.end())
-		{
-			ViewDirty = true;
-		}
-		else
-		{
-			ViewDirty = Iter->second != View.Desc;
-		}
-		ViewDescTable[Handle] = View.Desc;
-		return ViewDirty;
 	}
 
 	D3D12Buffer* RenderGraphRegistry::GetD3D12Buffer(RgResourceHandle Handle)
@@ -270,77 +157,5 @@ namespace RHI
             return ImportedContainer[Handle.Id];
         }
 	}
-
-	D3D12RenderTargetView* RenderGraphRegistry::GetD3D12RenderTargetView(RgResourceHandle Handle)
-	{
-        assert(Handle.IsValid());
-        assert(Handle.Type == RgResourceTraits<D3D12RenderTargetView>::Enum);
-        if (!Handle.IsImported())
-        {
-            auto& Container = GetContainer<D3D12RenderTargetView>();
-            assert(Handle.Id < Container.size());
-            return &Container[Handle.Id];
-        }
-        else
-        {
-            auto& ImportedContainer = Graph->GetImportedContainer<D3D12RenderTargetView>();
-            assert(Handle.Id < ImportedContainer.size());
-            return ImportedContainer[Handle.Id];
-        }
-    }
-
-    D3D12DepthStencilView* RenderGraphRegistry::GetD3D12DepthStencilView(RgResourceHandle Handle)
-	{
-        assert(Handle.IsValid());
-        assert(Handle.Type == RgResourceTraits<D3D12DepthStencilView>::Enum);
-        if (!Handle.IsImported())
-        {
-            auto& Container = GetContainer<D3D12DepthStencilView>();
-            assert(Handle.Id < Container.size());
-            return &Container[Handle.Id];
-        }
-        else
-        {
-            auto& ImportedContainer = Graph->GetImportedContainer<D3D12DepthStencilView>();
-            assert(Handle.Id < ImportedContainer.size());
-            return ImportedContainer[Handle.Id];
-        }
-	}
-
-    D3D12ShaderResourceView* RenderGraphRegistry::GetD3D12ShaderResourceView(RgResourceHandle Handle)
-    {
-        assert(Handle.IsValid());
-        assert(Handle.Type == RgResourceTraits<D3D12ShaderResourceView>::Enum);
-        if (!Handle.IsImported())
-        {
-            auto& Container = GetContainer<D3D12ShaderResourceView>();
-            assert(Handle.Id < Container.size());
-            return &Container[Handle.Id];
-        }
-        else
-        {
-            auto& ImportedContainer = Graph->GetImportedContainer<D3D12ShaderResourceView>();
-            assert(Handle.Id < ImportedContainer.size());
-            return ImportedContainer[Handle.Id];
-        }
-    }
-
-    D3D12UnorderedAccessView* RenderGraphRegistry::GetD3D12UnorderedAccessView(RgResourceHandle Handle)
-    {
-        assert(Handle.IsValid());
-        assert(Handle.Type == RgResourceTraits<D3D12UnorderedAccessView>::Enum);
-        if (!Handle.IsImported())
-        {
-            auto& Container = GetContainer<D3D12UnorderedAccessView>();
-            assert(Handle.Id < Container.size());
-            return &Container[Handle.Id];
-        }
-        else
-        {
-            auto& ImportedContainer = Graph->GetImportedContainer<D3D12UnorderedAccessView>();
-            assert(Handle.Id < ImportedContainer.size());
-            return ImportedContainer[Handle.Id];
-        }
-    }
 
 } // namespace RHI

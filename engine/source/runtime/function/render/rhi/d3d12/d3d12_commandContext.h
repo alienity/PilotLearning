@@ -50,8 +50,8 @@ namespace RHI
                                      D3D12SyncHandle                                SyncHandle);
 
     private:
-        D3D12_COMMAND_LIST_TYPE                                    CommandListType;
-        CFencePool<Microsoft::WRL::ComPtr<ID3D12CommandAllocator>> CommandAllocatorPool;
+        D3D12_COMMAND_LIST_TYPE                                    m_CommandListType;
+        CFencePool<Microsoft::WRL::ComPtr<ID3D12CommandAllocator>> m_CommandAllocatorPool;
     };
 
     // clang-format off
@@ -71,7 +71,7 @@ namespace RHI
         [[nodiscard]] ID3D12GraphicsCommandList*  GetGraphicsCommandList() const noexcept;
         [[nodiscard]] ID3D12GraphicsCommandList4* GetGraphicsCommandList4() const noexcept;
         [[nodiscard]] ID3D12GraphicsCommandList6* GetGraphicsCommandList6() const noexcept;
-        D3D12CommandListHandle&                   operator->() { return CommandListHandle; }
+        D3D12CommandListHandle&                   operator->() { return m_CommandListHandle; }
 
         D3D12GraphicsContext& GetGraphicsContext();
         D3D12ComputeContext& GetComputeContext();
@@ -115,9 +115,6 @@ namespace RHI
         void PIXEndEvent(void);
         void PIXSetMarker(const wchar_t* label);
 
-        void SetDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE Type, ID3D12DescriptorHeap* HeapPtr);
-        void SetDescriptorHeaps(UINT HeapCount, D3D12_DESCRIPTOR_HEAP_TYPE Type[], ID3D12DescriptorHeap* HeapPtrs[]);
-
         void SetPipelineState(D3D12PipelineState* PipelineState);
         void SetPipelineState(D3D12RaytracingPipelineState* RaytracingPipelineState);
 
@@ -132,12 +129,12 @@ namespace RHI
         void SetDynamicResourceDescriptorTables(D3D12RootSignature* RootSignature);
 
     protected:
-        RHID3D12CommandQueueType                       Type;
-        D3D12_COMMAND_LIST_TYPE                        CommandListType;
-        D3D12CommandListHandle                         CommandListHandle;
-        Microsoft::WRL::ComPtr<ID3D12CommandAllocator> CommandAllocator;
-        D3D12CommandAllocatorPool                      CommandAllocatorPool;
-        D3D12LinearAllocator                           CpuConstantAllocator;
+        RHID3D12CommandQueueType                       m_Type;
+        D3D12_COMMAND_LIST_TYPE                        m_CommandListType;
+        D3D12CommandListHandle                         m_CommandListHandle;
+        Microsoft::WRL::ComPtr<ID3D12CommandAllocator> m_CommandAllocator;
+        D3D12CommandAllocatorPool                      m_CommandAllocatorPool;
+        D3D12LinearAllocator                           m_CpuLinearAllocator;
 
         // TODO: Finish cache
         // State Cache
@@ -172,13 +169,20 @@ namespace RHI
     class D3D12GraphicsContext : public D3D12CommandContext
     {
     public:
+        void ClearUAV(RHI::D3D12Buffer* Target);
+        void ClearUAV(RHI::D3D12Texture* Target);
+        void ClearColor(RHI::D3D12Texture* Target, D3D12_RECT* Rect = nullptr);
+        void ClearColor(RHI::D3D12Texture* Target, float Colour[4], D3D12_RECT* Rect = nullptr);
+        void ClearDepth(RHI::D3D12Texture* Target);
+        void ClearStencil(RHI::D3D12Texture* Target);
+        void ClearDepthAndStencil(RHI::D3D12Texture* Target);
+
         void ClearRenderTarget(D3D12RenderTargetView* RenderTargetView, D3D12DepthStencilView* DepthStencilView);
         void ClearRenderTarget(std::vector<D3D12RenderTargetView*> RenderTargetViews, D3D12DepthStencilView* DepthStencilView);
-        void ClearUAV(D3D12UnorderedAccessView* UnorderedAccessView);
-    
-        void BeginQuery(ID3D12QueryHeap* QueryHeap, D3D12_QUERY_TYPE Type, UINT HeapIndex);
-        void EndQuery(ID3D12QueryHeap* QueryHeap, D3D12_QUERY_TYPE Type, UINT HeapIndex);
-        void ResolveQueryData(ID3D12QueryHeap* QueryHeap, D3D12_QUERY_TYPE Type, UINT StartIndex, UINT NumQueries, ID3D12Resource* DestinationBuffer, UINT64 DestinationBufferOffset);
+        
+        //void BeginQuery(ID3D12QueryHeap* QueryHeap, D3D12_QUERY_TYPE Type, UINT HeapIndex);
+        //void EndQuery(ID3D12QueryHeap* QueryHeap, D3D12_QUERY_TYPE Type, UINT HeapIndex);
+        //void ResolveQueryData(ID3D12QueryHeap* QueryHeap, D3D12_QUERY_TYPE Type, UINT StartIndex, UINT NumQueries, ID3D12Resource* DestinationBuffer, UINT64 DestinationBufferOffset);
 
         void SetRootSignature(D3D12RootSignature* RootSignature);
 
@@ -230,7 +234,7 @@ namespace RHI
         void DrawIndexed(UINT IndexCount, UINT StartIndexLocation = 0, INT BaseVertexLocation = 0);
         void DrawInstanced(UINT VertexCount, UINT InstanceCount, UINT StartVertexLocation, UINT StartInstanceLocation);
         void DrawIndexedInstanced(UINT IndexCount, UINT InstanceCount, UINT StartIndexLocation, INT  BaseVertexLocation, UINT StartInstanceLocation);
-        void DrawIndirect(D3D12Resource& ArgumentBuffer, UINT64 ArgumentBufferOffset = 0);
+        //void DrawIndirect(D3D12Resource& ArgumentBuffer, UINT64 ArgumentBufferOffset = 0);
         void ExecuteIndirect(D3D12CommandSignature& CommandSig, D3D12Resource& ArgumentBuffer, UINT64 ArgumentStartOffset = 0,
             UINT32 MaxCommands = 1, D3D12Resource* CommandCounterBuffer = nullptr, UINT64 CounterOffset = 0);
 
@@ -240,8 +244,8 @@ namespace RHI
     class D3D12ComputeContext : public D3D12CommandContext
     {
     public:
-        void ClearUAV(std::shared_ptr<D3D12Buffer> Target);
-        void ClearUAV(std::shared_ptr<D3D12Texture> Target);
+        void ClearUAV(RHI::D3D12Buffer* Target);
+        void ClearUAV(RHI::D3D12Texture* Target);
 
         void SetRootSignature(D3D12RootSignature* RootSignature);
 

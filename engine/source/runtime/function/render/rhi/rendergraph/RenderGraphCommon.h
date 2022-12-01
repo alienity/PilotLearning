@@ -12,10 +12,6 @@ namespace RHI
 		Unknown,
 		Buffer,
 		Texture,
-		RenderTargetView,
-		DepthStencilView,
-		ShaderResourceView,
-		UnorderedAccessView,
 		RootSignature,
 		PipelineState,
 		RaytracingPipelineState,
@@ -191,145 +187,6 @@ namespace RHI
 		RgClearValue	 ClearValue			  = {};
 	};
 
-	enum class RgViewType
-	{
-		Rtv,
-		Dsv,
-		BufferSrv,
-		BufferUav,
-		TextureSrv,
-		TextureUav
-	};
-
-	struct RgRtv
-	{
-        bool          sRGB;
-        std::uint32_t ArraySlice;
-        std::uint32_t MipSlice;
-        std::uint32_t ArraySize;
-	};
-
-	struct RgDsv
-	{
-        std::uint32_t ArraySlice;
-        std::uint32_t MipSlice;
-        std::uint32_t ArraySize;
-	};
-
-	struct RgBufferSrv
-	{
-        bool          Raw;
-        std::uint32_t FirstElement;
-        std::uint32_t NumElements;
-	};
-
-	struct RgBufferUav
-	{
-        bool          Raw;
-        std::uint32_t NumElements;
-        std::uint64_t CounterOffsetInBytes;
-	};
-
-	struct RgTextureSrv
-	{
-        bool          sRGB;
-        std::uint32_t MostDetailedMip;
-        std::uint32_t MipLevels;
-	};
-
-	struct RgTextureUav
-	{
-        std::uint32_t ArraySlice;
-        std::uint32_t MipSlice;
-	};
-
-	struct RgViewDesc
-	{
-		[[nodiscard]] bool operator==(const RgViewDesc& RgViewDesc) const noexcept
-		{
-			return memcmp(this, &RgViewDesc, sizeof(RgViewDesc)) == 0;
-		}
-		[[nodiscard]] bool operator!=(const RgViewDesc& RgViewDesc) const noexcept
-		{
-			return !(*this == RgViewDesc);
-		}
-
-		RgViewDesc& SetResource(RgResourceHandle Resource)
-		{
-			this->AssociatedResource = Resource;
-			return *this;
-		}
-
-		RgViewDesc& AsRtv(bool sRGB, std::optional<UINT> OptArraySlice = std::nullopt, std::optional<UINT> OptMipSlice = std::nullopt, std::optional<UINT> OptArraySize = std::nullopt)
-		{
-			Type			 = RgViewType::Rtv;
-			RgRtv.sRGB		 = sRGB;
-			RgRtv.ArraySlice = OptArraySlice.value_or(-1);
-			RgRtv.MipSlice	 = OptMipSlice.value_or(-1);
-			RgRtv.ArraySize	 = OptArraySize.value_or(-1);
-			return *this;
-		}
-
-		RgViewDesc& AsDsv(std::optional<UINT> OptArraySlice = std::nullopt, std::optional<UINT> OptMipSlice = std::nullopt, std::optional<UINT> OptArraySize = std::nullopt)
-		{
-			Type			 = RgViewType::Dsv;
-			RgDsv.ArraySlice = OptArraySlice.value_or(-1);
-			RgDsv.MipSlice	 = OptMipSlice.value_or(-1);
-			RgDsv.ArraySize	 = OptArraySize.value_or(-1);
-			return *this;
-		}
-
-		RgViewDesc& AsBufferSrv(bool Raw, std::uint32_t FirstElement, std::uint32_t NumElements)
-		{
-			Type				   = RgViewType::BufferSrv;
-			BufferSrv.Raw		   = Raw;
-			BufferSrv.FirstElement = FirstElement;
-			BufferSrv.NumElements  = NumElements;
-			return *this;
-		}
-
-		RgViewDesc& AsBufferUav(bool Raw, std::uint32_t NumElements, std::uint64_t CounterOffsetInBytes)
-		{
-			Type						   = RgViewType::BufferUav;
-            BufferUav.Raw                  = Raw;
-			BufferUav.NumElements		   = NumElements;
-			BufferUav.CounterOffsetInBytes = CounterOffsetInBytes;
-			return *this;
-		}
-
-		RgViewDesc& AsTextureSrv(bool                         sRGB            = false,
-                                 std::optional<std::uint32_t> MostDetailedMip = std::nullopt,
-                                 std::optional<std::uint32_t> MipLevels       = std::nullopt)
-		{
-			Type					   = RgViewType::TextureSrv;
-			TextureSrv.sRGB			   = sRGB;
-			TextureSrv.MostDetailedMip = MostDetailedMip.value_or(-1);
-			TextureSrv.MipLevels	   = MipLevels.value_or(-1);
-			return *this;
-		}
-
-		RgViewDesc& AsTextureUav(std::optional<std::uint32_t> ArraySlice = std::nullopt,
-                                 std::optional<std::uint32_t> MipSlice   = std::nullopt)
-		{
-			Type				  = RgViewType::TextureUav;
-			TextureUav.ArraySlice = ArraySlice.value_or(-1);
-			TextureUav.MipSlice	  = MipSlice.value_or(-1);
-			return *this;
-		}
-
-		RgResourceHandle AssociatedResource;
-		RgViewType		 Type;
-		union
-		{
-			RgRtv		 RgRtv;
-			RgDsv		 RgDsv;
-			RgBufferSrv	 BufferSrv;
-			RgBufferUav	 BufferUav;
-			RgTextureSrv TextureSrv;
-			RgTextureUav TextureUav;
-		};
-	};
-
 	struct RgResource
 	{
 		RgResourceHandle Handle;
@@ -343,11 +200,6 @@ namespace RHI
 	struct RgTexture : RgResource
 	{
 		RgTextureDesc Desc;
-	};
-
-	struct RgView : RgResource
-	{
-		RgViewDesc Desc;
 	};
 
 	template<typename T>
@@ -376,41 +228,6 @@ namespace RHI
 		using Type				   = RgTexture;
 	};
 
-	template<>
-	struct RgResourceTraits<D3D12RenderTargetView>
-	{
-		static constexpr auto Enum = RgResourceType::RenderTargetView;
-		using ApiType			   = D3D12RenderTargetView;
-		using Desc				   = RgViewDesc;
-		using Type				   = RgView;
-	};
-
-	template<>
-	struct RgResourceTraits<D3D12DepthStencilView>
-	{
-		static constexpr auto Enum = RgResourceType::DepthStencilView;
-		using ApiType			   = D3D12DepthStencilView;
-		using Desc				   = RgViewDesc;
-		using Type				   = RgView;
-	};
-
-	template<>
-	struct RgResourceTraits<D3D12ShaderResourceView>
-	{
-		static constexpr auto Enum = RgResourceType::ShaderResourceView;
-		using ApiType			   = D3D12ShaderResourceView;
-		using Desc				   = RgViewDesc;
-		using Type				   = RgView;
-	};
-
-	template<>
-	struct RgResourceTraits<D3D12UnorderedAccessView>
-	{
-		static constexpr auto Enum = RgResourceType::UnorderedAccessView;
-		using ApiType			   = D3D12UnorderedAccessView;
-		using Desc				   = RgViewDesc;
-		using Type				   = RgView;
-	};
 } // namespace RHI
 
 #define GetRealVal(realType, renderGraphRegister, rgHandle)\
