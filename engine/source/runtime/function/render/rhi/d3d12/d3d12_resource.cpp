@@ -360,29 +360,33 @@ namespace RHI
                                                            RHIBufferTarget       bufferTarget,
                                                            UINT32                numElements,
                                                            UINT32                elementSize,
-                                                           bool                  mapplable,
-                                                           bool                  randomReadWrite,
                                                            const std::wstring    name,
+                                                           RHIBufferMode         mapplableMode,
                                                            D3D12_RESOURCE_STATES initState,
                                                            BYTE*                 initialData,
                                                            UINT                  dataLen)
     {
+
+        ASSERT(mapplableMode == RHIBufferMode::RHIBufferModeDynamic ||
+               mapplableMode == RHIBufferMode::RHIBufferModeImmutable);
+
         std::shared_ptr<D3D12Buffer> pBufferD3D12 = std::make_shared<D3D12Buffer>(Parent);
 
-        UINT sizeInBytes = numElements * elementSize;
-        D3D12_RESOURCE_FLAGS resourceFlag =
-            randomReadWrite ? D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS : D3D12_RESOURCE_FLAG_NONE;
-        RHIBufferMode bufferMode =
-            mapplable ? RHIBufferMode::RHIBufferModeDynamic : RHIBufferMode::RHIBufferModeImmutable;
+        bool mapplable = bufferTarget & RHIBufferTarget::RHIBufferRandomReadWrite;
 
+        D3D12_RESOURCE_FLAGS resourceFlag =
+            mapplable ? D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS : D3D12_RESOURCE_FLAG_NONE;
+        
         D3D12_HEAP_TYPE heapType =
             mapplable ? D3D12_HEAP_TYPE::D3D12_HEAP_TYPE_UPLOAD : D3D12_HEAP_TYPE::D3D12_HEAP_TYPE_DEFAULT;
+
+        UINT sizeInBytes = numElements * elementSize;
 
         pBufferD3D12 =
             std::make_shared<D3D12Buffer>(Parent, sizeInBytes, elementSize, heapType, resourceFlag, initState);
         pBufferD3D12->SetResourceName(name);
 
-        pBufferD3D12->m_Desc = {sizeInBytes, numElements, elementSize, bufferTarget, bufferMode};
+        pBufferD3D12->m_Desc = {sizeInBytes, numElements, elementSize, bufferTarget, mapplableMode};
         pBufferD3D12->m_Data = {initialData, dataLen};
 
         if (bufferTarget & (RHIBufferTarget::RHIBufferTargetAppend | RHIBufferTarget::RHIBufferTargetCounter))
@@ -393,9 +397,8 @@ namespace RHI
                                                               counterTarget,
                                                               1,
                                                               sizeof(UINT32),
-                                                              false,
-                                                              false,
                                                               name + L"_Counter",
+                                                              RHIBufferMode::RHIBufferModeImmutable,
                                                               D3D12_RESOURCE_STATE_GENERIC_READ,
                                                               nullptr,
                                                               0);
@@ -605,6 +608,66 @@ namespace RHI
 #endif
     }
 
+    std::shared_ptr<D3D12Texture> D3D12Texture::Create(D3D12LinkedDevice*                  Parent,
+                                                       RHIRenderSurfaceBaseDesc            desc,
+                                                       const std::wstring                  name,
+                                                       CD3DX12_CLEAR_VALUE                 clearValue,
+                                                       D3D12_RESOURCE_STATES               initState,
+                                                       std::vector<D3D12_SUBRESOURCE_DATA> initDatas)
+    {
+        D3D12_RESOURCE_FLAGS resourceFlags = D3D12_RESOURCE_FLAG_NONE;
+        if (desc.flags & RHISurfaceCreateRenderTarget)
+        {
+            ASSERT(!(desc.flags & RHISurfaceCreateDepthStencil));
+            resourceFlags |= D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
+        }
+        else if (desc.flags & RHISurfaceCreateDepthStencil)
+        {
+            ASSERT(!(desc.flags & RHISurfaceCreateRenderTarget));
+            resourceFlags |= D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
+        }
+
+        if (desc.flags & RHISurfaceCreateRandomWrite)
+        {
+            resourceFlags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
+        }
+
+        desc.mipCount = D3D12Texture::GetMipLevels(desc.width, desc.height, desc.mipCount, desc.flags);
+
+        D3D12_RESOURCE_DIMENSION dimension;
+        CD3DX12_RESOURCE_DESC resourceDesc;
+        if (desc.dim == RHITexDim2D || desc.dim == RHITexDim2DArray || desc.dim == RHITexDimCube || desc.dim == RHITexDimCubeArray)
+        {
+            dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+        }
+        else if (desc.dim == RHITexDim3D)
+        {
+            dimension = D3D12_RESOURCE_DIMENSION_TEXTURE3D;
+        }
+        resourceDesc = CD3DX12_RESOURCE_DESC(dimension,
+                                             0,
+                                             desc.height,
+                                             desc.height,
+                                             desc.depthOrArray,
+                                             desc.mipCount,
+                                             desc.graphicsFormat,
+                                             desc.samples,
+                                             0,
+                                             D3D12_TEXTURE_LAYOUT_UNKNOWN,
+                                             resourceFlags);
+
+        CD3DX12_HEAP_PROPERTIES resourceHeapProperties =
+            CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT, Parent->GetNodeMask(), Parent->GetNodeMask());
+
+        std::shared_ptr<D3D12Texture> pSurfaceD3D12 =
+            std::make_shared<D3D12Texture>(Parent, resourceDesc, resourceHeapProperties, clearValue, initState, false);
+        pSurfaceD3D12->SetResourceName(name);
+
+        pSurfaceD3D12->m_Desc = desc;
+        
+        return pSurfaceD3D12;
+    }
+
     std::shared_ptr<D3D12Texture> D3D12Texture::Create2D(D3D12LinkedDevice*     Parent,
                                                          UINT32                 width,
                                                          UINT32                 height,
@@ -617,38 +680,9 @@ namespace RHI
                                                          D3D12_RESOURCE_STATES  initState,
                                                          D3D12_SUBRESOURCE_DATA initData)
     {
-        D3D12_RESOURCE_FLAGS resourceFlags = D3D12_RESOURCE_FLAG_NONE;
-        if (flags & RHISurfaceCreateRenderTarget)
-        {
-            ASSERT(!(flags & RHISurfaceCreateDepthStencil));
-            resourceFlags |= D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
-        }
-        else if (flags & RHISurfaceCreateDepthStencil)
-        {
-            ASSERT(!(flags & RHISurfaceCreateRenderTarget));
-            resourceFlags |= D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
-        }
-
-        if (flags & RHISurfaceCreateRandomWrite)
-        {
-            resourceFlags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
-        }
-
-        INT mipLevels = D3D12Texture::GetMipLevels(width, height, numMips, flags);
-
-        CD3DX12_RESOURCE_DESC resourceDesc =
-            CD3DX12_RESOURCE_DESC::Tex2D(format, width, height, 1, mipLevels, sampleCount, 0, resourceFlags);
-
-        CD3DX12_HEAP_PROPERTIES resourceHeapProperties =
-            CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT, Parent->GetNodeMask(), Parent->GetNodeMask());
-
-        std::shared_ptr<D3D12Texture> pSurfaceD3D12 =
-            std::make_shared<D3D12Texture>(Parent, resourceDesc, resourceHeapProperties, clearValue, initState, false);
-        pSurfaceD3D12->SetResourceName(name);
-
-        pSurfaceD3D12->m_Desc = {width, height, 1, sampleCount, mipLevels, flags, RHITexDim2D, format, true, false};
-
-        return pSurfaceD3D12;
+        RHIRenderSurfaceBaseDesc desc = {
+            width, height, 1, sampleCount, numMips, flags, RHITexDim2D, format, true, false};
+        return Create(Parent, desc, name, clearValue, initState, {initData});
     }
 
     std::shared_ptr<D3D12Texture> D3D12Texture::Create2DArray(D3D12LinkedDevice*                  Parent,
@@ -664,38 +698,9 @@ namespace RHI
                                                               D3D12_RESOURCE_STATES               initState,
                                                               std::vector<D3D12_SUBRESOURCE_DATA> initDatas)
     {
-        D3D12_RESOURCE_FLAGS resourceFlags = D3D12_RESOURCE_FLAG_NONE;
-        if (flags & RHISurfaceCreateRenderTarget)
-        {
-            ASSERT(!(flags & RHISurfaceCreateDepthStencil));
-            resourceFlags |= D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
-        }
-        else if (flags & RHISurfaceCreateDepthStencil)
-        {
-            ASSERT(!(flags & RHISurfaceCreateRenderTarget) && !(flags & RHISurfaceCreateRandomWrite));
-            resourceFlags |= D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
-        }
-
-        if (flags & RHISurfaceCreateRandomWrite)
-        {
-            resourceFlags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
-        }
-
-        INT mipLevels = D3D12Texture::GetMipLevels(width, height, numMips, flags);
-
-        CD3DX12_RESOURCE_DESC resourceDesc = CD3DX12_RESOURCE_DESC::Tex2D(format, width, height, arraySize, mipLevels, sampleCount, 0, resourceFlags);
-
-        CD3DX12_HEAP_PROPERTIES resourceHeapProperties =
-            CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT, Parent->GetNodeMask(), Parent->GetNodeMask());
-
-        std::shared_ptr<D3D12Texture> pSurfaceD3D12 =
-            std::make_shared<D3D12Texture>(Parent, resourceDesc, resourceHeapProperties, clearValue, initState, false);
-        pSurfaceD3D12->SetResourceName(name);
-
-        pSurfaceD3D12->m_Desc = {
-            width, height, arraySize, sampleCount, mipLevels, flags, RHITexDim2DArray, format, true, false};
-        
-        return pSurfaceD3D12;
+        RHIRenderSurfaceBaseDesc desc = {
+            width, height, arraySize, sampleCount, numMips, flags, RHITexDim2DArray, format, true, false};
+        return Create(Parent, desc, name, clearValue, initState, initDatas);
     }
 
     std::shared_ptr<D3D12Texture> D3D12Texture::CreateCubeMap(D3D12LinkedDevice*                  Parent,
@@ -710,39 +715,10 @@ namespace RHI
                                                               D3D12_RESOURCE_STATES               initState,
                                                               std::vector<D3D12_SUBRESOURCE_DATA> initDatas)
     {
-        D3D12_RESOURCE_FLAGS resourceFlags = D3D12_RESOURCE_FLAG_NONE;
-        if (flags & RHISurfaceCreateRenderTarget)
-        {
-            ASSERT(!(flags & RHISurfaceCreateDepthStencil));
-            resourceFlags |= D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
-        }
-        else if (flags & RHISurfaceCreateDepthStencil)
-        {
-            ASSERT(!(flags & RHISurfaceCreateRenderTarget) && !(flags & RHISurfaceCreateRandomWrite));
-            resourceFlags |= D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
-        }
-
-        if (flags & RHISurfaceCreateRandomWrite)
-        {
-            resourceFlags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
-        }
-
         UINT cubeFaces = 6;
-        INT  mipLevels = D3D12Texture::GetMipLevels(width, height, numMips, flags);
-
-        CD3DX12_RESOURCE_DESC resourceDesc = CD3DX12_RESOURCE_DESC::Tex2D(format, width, height, cubeFaces, mipLevels, sampleCount, 0, resourceFlags);
-
-        CD3DX12_HEAP_PROPERTIES resourceHeapProperties =
-            CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT, Parent->GetNodeMask(), Parent->GetNodeMask());
-
-        std::shared_ptr<D3D12Texture> pSurfaceD3D12 =
-            std::make_shared<D3D12Texture>(Parent, resourceDesc, resourceHeapProperties, clearValue, initState, true);
-        pSurfaceD3D12->SetResourceName(name);
-
-        pSurfaceD3D12->m_Desc = {
-            width, height, cubeFaces, sampleCount, mipLevels, flags, RHITexDimCube, format, true, false};
-        
-        return pSurfaceD3D12;
+        RHIRenderSurfaceBaseDesc desc = {
+            width, height, cubeFaces, sampleCount, numMips, flags, RHITexDimCube, format, true, false};
+        return Create(Parent, desc, name, clearValue, initState, initDatas);
     }
 
     std::shared_ptr<D3D12Texture> D3D12Texture::CreateCubeMapArray(D3D12LinkedDevice*                  Parent,
@@ -758,42 +734,11 @@ namespace RHI
                                                                    D3D12_RESOURCE_STATES               initState,
                                                                    std::vector<D3D12_SUBRESOURCE_DATA> initDatas)
     {
-        D3D12_RESOURCE_FLAGS resourceFlags = D3D12_RESOURCE_FLAG_NONE;
-        if (flags & RHISurfaceCreateRenderTarget)
-        {
-            ASSERT(!(flags & RHISurfaceCreateDepthStencil));
-            resourceFlags |= D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
-        }
-        else if (flags & RHISurfaceCreateDepthStencil)
-        {
-            ASSERT(!(flags & RHISurfaceCreateRenderTarget) && !(flags & RHISurfaceCreateRandomWrite));
-            resourceFlags |= D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
-        }
-
-        if (flags & RHISurfaceCreateRandomWrite)
-        {
-            resourceFlags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
-        }
-
-        UINT cubeFaces      = 6;
+        UINT cubeFaces = 6;
         UINT cubeArrayFaces = cubeFaces * arraySize;
-
-        INT mipLevels = D3D12Texture::GetMipLevels(width, height, numMips, flags);
-
-        CD3DX12_RESOURCE_DESC resourceDesc = CD3DX12_RESOURCE_DESC::Tex2D(
-            format, width, height, cubeArrayFaces, mipLevels, sampleCount, 0, resourceFlags);
-
-        CD3DX12_HEAP_PROPERTIES resourceHeapProperties =
-            CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT, Parent->GetNodeMask(), Parent->GetNodeMask());
-
-        std::shared_ptr<D3D12Texture> pSurfaceD3D12 =
-            std::make_shared<D3D12Texture>(Parent, resourceDesc, resourceHeapProperties, clearValue, initState, true);
-        pSurfaceD3D12->SetResourceName(name);
-
-        pSurfaceD3D12->m_Desc = {
-            width, height, cubeArrayFaces, sampleCount, mipLevels, flags, RHITexDimCubeArray, format, true, false};
-        
-        return pSurfaceD3D12;
+        RHIRenderSurfaceBaseDesc desc = {
+            width, height, cubeArrayFaces, sampleCount, numMips, flags, RHITexDimCubeArray, format, true, false};
+        return Create(Parent, desc, name, clearValue, initState, initDatas);
     }
 
     std::shared_ptr<D3D12Texture> D3D12Texture::Create3D(D3D12LinkedDevice*     Parent,
@@ -809,41 +754,9 @@ namespace RHI
                                                          D3D12_RESOURCE_STATES  initState,
                                                          D3D12_SUBRESOURCE_DATA initData)
     {
-        D3D12_RESOURCE_FLAGS resourceFlags = D3D12_RESOURCE_FLAG_NONE;
-        if (flags & RHISurfaceCreateRenderTarget)
-        {
-            ASSERT(!(flags & RHISurfaceCreateDepthStencil));
-            resourceFlags |= D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
-        }
-        else if (flags & RHISurfaceCreateDepthStencil)
-        {
-            ASSERT(!(flags & RHISurfaceCreateRenderTarget) && !(flags & RHISurfaceCreateRandomWrite));
-            resourceFlags |= D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
-        }
-
-        if (flags & RHISurfaceCreateRandomWrite)
-        {
-            resourceFlags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
-        }
-
-        INT mipLevels = D3D12Texture::GetMipLevels(width, height, numMips, flags);
-
-        UINT textureDepth = 6;
-
-        CD3DX12_RESOURCE_DESC resourceDesc =
-            CD3DX12_RESOURCE_DESC::Tex3D(format, width, height, textureDepth, mipLevels, resourceFlags);
-
-        CD3DX12_HEAP_PROPERTIES resourceHeapProperties =
-            CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT, Parent->GetNodeMask(), Parent->GetNodeMask());
-
-        std::shared_ptr<D3D12Texture> pSurfaceD3D12 =
-            std::make_shared<D3D12Texture>(Parent, resourceDesc, resourceHeapProperties, clearValue, initState, false);
-        pSurfaceD3D12->SetResourceName(name);
-
-        pSurfaceD3D12->m_Desc = {
-            width, height, textureDepth, sampleCount, mipLevels, flags, RHITexDim3D, format, true, false};
-        
-        return pSurfaceD3D12;
+        RHIRenderSurfaceBaseDesc desc = {
+            width, height, depth, sampleCount, numMips, flags, RHITexDim3D, format, true, false};
+        return Create(Parent, desc, name, clearValue, initState, {initData});
     }
 
     std::shared_ptr<D3D12Texture> D3D12Texture::CreateFromSwapchain(D3D12LinkedDevice*                     Parent,

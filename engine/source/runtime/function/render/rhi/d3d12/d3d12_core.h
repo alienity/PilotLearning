@@ -521,7 +521,7 @@ namespace RHI
     {
         RHIBufferModeImmutable = 0,
         RHIBufferModeDynamic   = 1,
-        RHIBufferModeScratch   = 3,
+        RHIBufferModeScratch   = 3, // do not use
         RHIBufferModeCount
     };
 
@@ -531,6 +531,7 @@ namespace RHI
         RHIBufferTargetVertex                          = (1 << 0),
         RHIBufferTargetIndex                           = (1 << 1),
         RHIBufferReadBack                              = (1 << 2),
+        RHIBufferRandomReadWrite                       = (1 << 3),
         RHIBufferTargetStructured                      = (1 << 4),
         RHIBufferTargetRaw                             = (1 << 5),
         RHIBufferTargetAppend                          = (1 << 6),

@@ -236,12 +236,11 @@ namespace RHI
                      RHIBufferTarget       bufferTarget,
                      UINT32                numElements,
                      UINT32                elementSize,
-                     bool                  mapplable       = false,
-                     bool                  randomReadWrite = false,
-                     const std::wstring    name            = L"Buffer",
-                     D3D12_RESOURCE_STATES initState       = D3D12_RESOURCE_STATE_GENERIC_READ,
-                     BYTE*                 initialData     = nullptr,
-                     UINT                  dataLen         = 0);
+                     const std::wstring    name          = L"Buffer",
+                     RHIBufferMode         mapplableMode = RHIBufferMode::RHIBufferModeImmutable,
+                     D3D12_RESOURCE_STATES initState     = D3D12_RESOURCE_STATE_GENERIC_READ,
+                     BYTE*                 initialData   = nullptr,
+                     UINT                  dataLen       = 0);
 
         std::shared_ptr<D3D12Buffer> GetCounterBuffer();
 
@@ -314,6 +313,13 @@ namespace RHI
                                    D3D12_RESOURCE_STATES                  CurrentState);
 
     public:
+        static std::shared_ptr<D3D12Texture> Create(D3D12LinkedDevice*       Parent,
+                                                    RHIRenderSurfaceBaseDesc desc,
+                                                    const std::wstring       name       = L"Texture",
+                                                    CD3DX12_CLEAR_VALUE      clearValue = CD3DX12_CLEAR_VALUE(),
+                                                    D3D12_RESOURCE_STATES    initState  = D3D12_RESOURCE_STATE_COMMON,
+                                                    std::vector<D3D12_SUBRESOURCE_DATA> initDatas = {});
+
         static std::shared_ptr<D3D12Texture> Create2D(D3D12LinkedDevice*     Parent,
                                                       UINT32                 width,
                                                       UINT32                 height,
