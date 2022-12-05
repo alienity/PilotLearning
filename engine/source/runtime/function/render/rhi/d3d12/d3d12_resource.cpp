@@ -356,15 +356,15 @@ namespace RHI
         return m_pResource->GetGPUVirtualAddress() + static_cast<UINT64>(Index) * m_Stride;
     }
 
-    std::shared_ptr<D3D12Buffer> D3D12Buffer::CreateBuffer(D3D12LinkedDevice*    Parent,
-                                                           RHIBufferTarget       bufferTarget,
-                                                           UINT32                numElements,
-                                                           UINT32                elementSize,
-                                                           const std::wstring    name,
-                                                           RHIBufferMode         mapplableMode,
-                                                           D3D12_RESOURCE_STATES initState,
-                                                           BYTE*                 initialData,
-                                                           UINT                  dataLen)
+    std::shared_ptr<D3D12Buffer> D3D12Buffer::Create(D3D12LinkedDevice*    Parent,
+                                                     RHIBufferTarget       bufferTarget,
+                                                     UINT32                numElements,
+                                                     UINT32                elementSize,
+                                                     const std::wstring    name,
+                                                     RHIBufferMode         mapplableMode,
+                                                     D3D12_RESOURCE_STATES initState,
+                                                     BYTE*                 initialData,
+                                                     UINT                  dataLen)
     {
 
         ASSERT(mapplableMode == RHIBufferMode::RHIBufferModeDynamic ||
@@ -372,11 +372,13 @@ namespace RHI
 
         std::shared_ptr<D3D12Buffer> pBufferD3D12 = std::make_shared<D3D12Buffer>(Parent);
 
-        bool mapplable = bufferTarget & RHIBufferTarget::RHIBufferRandomReadWrite;
+        bool allowUAV = bufferTarget & RHIBufferTarget::RHIBufferRandomReadWrite;
 
         D3D12_RESOURCE_FLAGS resourceFlag =
-            mapplable ? D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS : D3D12_RESOURCE_FLAG_NONE;
+            allowUAV ? D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS : D3D12_RESOURCE_FLAG_NONE;
         
+        bool mapplable = mapplableMode == RHIBufferMode::RHIBufferModeDynamic;
+
         D3D12_HEAP_TYPE heapType =
             mapplable ? D3D12_HEAP_TYPE::D3D12_HEAP_TYPE_UPLOAD : D3D12_HEAP_TYPE::D3D12_HEAP_TYPE_DEFAULT;
 

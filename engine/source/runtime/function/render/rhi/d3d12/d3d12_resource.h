@@ -231,16 +231,15 @@ namespace RHI
         }
 
     public:
-        static std::shared_ptr<D3D12Buffer>
-        CreateBuffer(D3D12LinkedDevice*    Parent,
-                     RHIBufferTarget       bufferTarget,
-                     UINT32                numElements,
-                     UINT32                elementSize,
-                     const std::wstring    name          = L"Buffer",
-                     RHIBufferMode         mapplableMode = RHIBufferMode::RHIBufferModeImmutable,
-                     D3D12_RESOURCE_STATES initState     = D3D12_RESOURCE_STATE_GENERIC_READ,
-                     BYTE*                 initialData   = nullptr,
-                     UINT                  dataLen       = 0);
+        static std::shared_ptr<D3D12Buffer> Create(D3D12LinkedDevice* Parent,
+                                                   RHIBufferTarget    bufferTarget,
+                                                   UINT32             numElements,
+                                                   UINT32             elementSize,
+                                                   const std::wstring name     = L"Buffer",
+                                                   RHIBufferMode mapplableMode = RHIBufferMode::RHIBufferModeImmutable,
+                                                   D3D12_RESOURCE_STATES initState = D3D12_RESOURCE_STATE_GENERIC_READ,
+                                                   BYTE*                 initialData = nullptr,
+                                                   UINT                  dataLen     = 0);
 
         std::shared_ptr<D3D12Buffer> GetCounterBuffer();
 

@@ -11,54 +11,70 @@ namespace Pilot
     void IndirectCullPass::initialize(const RenderPassInitInfo& init_info)
     {
         // create default buffer
-        pPerframeBuffer = std::make_shared<RHI::D3D12Buffer>(m_Device->GetLinkedDevice(),
-                                                             sizeof(HLSL::MeshPerframeStorageBufferObject),
-                                                             sizeof(HLSL::MeshPerframeStorageBufferObject),
-                                                             D3D12_HEAP_TYPE_DEFAULT,
-                                                             D3D12_RESOURCE_FLAG_NONE);
+        pPerframeBuffer = RHI::D3D12Buffer::Create(m_Device->GetLinkedDevice(),
+                                                   RHI::RHIBufferRandomReadWrite,
+                                                   1,
+                                                   sizeof(HLSL::MeshPerframeStorageBufferObject),
+                                                   L"PerFrameBuffer",
+                                                   RHI::RHIBufferModeImmutable,
+                                                   D3D12_RESOURCE_STATE_GENERIC_READ);
 
-        pMaterialBuffer = std::make_shared<RHI::D3D12Buffer>(m_Device->GetLinkedDevice(),
-                                                             sizeof(HLSL::MaterialInstance) * HLSL::MaterialLimit,
-                                                             sizeof(HLSL::MaterialInstance),
-                                                             D3D12_HEAP_TYPE_DEFAULT,
-                                                             D3D12_RESOURCE_FLAG_NONE);
+        pMaterialBuffer = RHI::D3D12Buffer::Create(m_Device->GetLinkedDevice(),
+                                                   RHI::RHIBufferRandomReadWrite,
+                                                   HLSL::MaterialLimit,
+                                                   sizeof(HLSL::MaterialInstance),
+                                                   L"MaterialBuffer",
+                                                   RHI::RHIBufferModeImmutable,
+                                                   D3D12_RESOURCE_STATE_GENERIC_READ);
 
-        pMeshBuffer = std::make_shared<RHI::D3D12Buffer>(m_Device->GetLinkedDevice(),
-                                                         sizeof(HLSL::MeshInstance) * HLSL::MeshLimit,
-                                                         sizeof(HLSL::MeshInstance),
-                                                         D3D12_HEAP_TYPE_DEFAULT,
-                                                         D3D12_RESOURCE_FLAG_NONE);
+        pMeshBuffer = RHI::D3D12Buffer::Create(m_Device->GetLinkedDevice(),
+                                               RHI::RHIBufferRandomReadWrite,
+                                               HLSL::MeshLimit,
+                                               sizeof(HLSL::MeshInstance),
+                                               L"MeshBuffer",
+                                               RHI::RHIBufferModeImmutable,
+                                               D3D12_RESOURCE_STATE_GENERIC_READ);
 
         // create upload buffer
-        pUploadPerframeBuffer = std::make_shared<RHI::D3D12Buffer>(m_Device->GetLinkedDevice(),
-                                                                   sizeof(HLSL::MeshPerframeStorageBufferObject),
-                                                                   sizeof(HLSL::MeshPerframeStorageBufferObject),
-                                                                   D3D12_HEAP_TYPE_UPLOAD,
-                                                                   D3D12_RESOURCE_FLAG_NONE);
-        pUploadMaterialBuffer = std::make_shared<RHI::D3D12Buffer>(m_Device->GetLinkedDevice(),
-                                                                   sizeof(HLSL::MaterialInstance) * HLSL::MaterialLimit,
-                                                                   sizeof(HLSL::MaterialInstance),
-                                                                   D3D12_HEAP_TYPE_UPLOAD,
-                                                                   D3D12_RESOURCE_FLAG_NONE);
-        pUploadMeshBuffer     = std::make_shared<RHI::D3D12Buffer>(m_Device->GetLinkedDevice(),
-                                                               sizeof(HLSL::MeshInstance) * HLSL::MeshLimit,
-                                                               sizeof(HLSL::MeshInstance),
-                                                               D3D12_HEAP_TYPE_UPLOAD,
-                                                               D3D12_RESOURCE_FLAG_NONE);
+        pUploadPerframeBuffer = RHI::D3D12Buffer::Create(m_Device->GetLinkedDevice(),
+                                                         RHI::RHIBufferRandomReadWrite,
+                                                         1,
+                                                         sizeof(HLSL::MeshPerframeStorageBufferObject),
+                                                         L"UploadPerFrameBuffer",
+                                                         RHI::RHIBufferModeDynamic,
+                                                         D3D12_RESOURCE_STATE_GENERIC_READ);
+
+        pUploadMaterialBuffer = RHI::D3D12Buffer::Create(m_Device->GetLinkedDevice(),
+                                                         RHI::RHIBufferRandomReadWrite,
+                                                         HLSL::MaterialLimit,
+                                                         sizeof(HLSL::MaterialInstance),
+                                                         L"UploadMaterialBuffer",
+                                                         RHI::RHIBufferModeDynamic,
+                                                         D3D12_RESOURCE_STATE_GENERIC_READ);
+
+        pUploadMeshBuffer = RHI::D3D12Buffer::Create(m_Device->GetLinkedDevice(),
+                                                     RHI::RHIBufferRandomReadWrite,
+                                                     HLSL::MeshLimit,
+                                                     sizeof(HLSL::MeshInstance),
+                                                     L"UploadMeshBuffer",
+                                                     RHI::RHIBufferModeDynamic,
+                                                     D3D12_RESOURCE_STATE_GENERIC_READ);
 
         // for sort
-        int argNumber     = 22 * 23 / 2;
-        int argSize       = 12;
-        pSortDispatchArgs = std::make_shared<RHI::D3D12Buffer>(m_Device->GetLinkedDevice(),
-                                                               argSize * argNumber,
-                                                               argSize,
-                                                               D3D12_HEAP_TYPE_DEFAULT,
-                                                               D3D12_RESOURCE_FLAG_NONE);
+        int argNumber = 22 * 23 / 2;
+        int argSize   = 12;
 
-        pPerframeObj = pUploadPerframeBuffer->GetCpuVirtualAddress<HLSL::MeshPerframeStorageBufferObject>();
-        pMaterialObj = pUploadMaterialBuffer->GetCpuVirtualAddress<HLSL::MaterialInstance>();
-        pMeshesObj   = pUploadMeshBuffer->GetCpuVirtualAddress<HLSL::MeshInstance>();
+        pSortDispatchArgs = RHI::D3D12Buffer::Create(m_Device->GetLinkedDevice(),
+                                                     RHI::RHIBufferTargetIndirectArgs,
+                                                     argNumber,
+                                                     argSize,
+                                                     L"SortDispatchArgs",
+                                                     RHI::RHIBufferModeImmutable,
+                                                     D3D12_RESOURCE_STATE_GENERIC_READ);
 
+        //pPerframeObj = pUploadPerframeBuffer->GetCpuVirtualAddress<HLSL::MeshPerframeStorageBufferObject>();
+        //pMaterialObj = pUploadMaterialBuffer->GetCpuVirtualAddress<HLSL::MaterialInstance>();
+        //pMeshesObj   = pUploadMeshBuffer->GetCpuVirtualAddress<HLSL::MeshInstance>();
 
         initializeDrawBuffer();
     }
@@ -68,22 +84,22 @@ namespace Pilot
         // buffer for opaque draw
         {
             auto opaqueIndexBuffer =
-                std::make_shared<RHI::D3D12Buffer>(m_Device->GetLinkedDevice(),
-                                                   HLSL::indexCommandBufferCounterOffset + sizeof(uint64_t),
-                                                   sizeof(HLSL::BitonicSortCommandSigParams),
-                                                   D3D12_HEAP_TYPE_DEFAULT,
-                                                   D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS,
-                                                   "OpaqueIndexBuffer");
-
+                RHI::D3D12Buffer::Create(m_Device->GetLinkedDevice(),
+                                         RHI::RHIBufferRandomReadWrite | RHI::RHIBufferTargetStructured,
+                                         HLSL::MeshLimit,
+                                         sizeof(HLSL::BitonicSortCommandSigParams),
+                                         L"OpaqueIndexBuffer");
+            /*
             auto opaqueIndexBufferSRV =
                 std::make_shared<RHI::D3D12ShaderResourceView>(m_Device->GetLinkedDevice(), opaqueIndexBuffer.get());
 
             auto opaqueIndexBufferUAV =
                 std::make_shared<RHI::D3D12UnorderedAccessView>(m_Device->GetLinkedDevice(), opaqueIndexBuffer.get());
+            */
 
             commandBufferForOpaqueDraw.p_IndirectIndexCommandBuffer    = opaqueIndexBuffer;
-            commandBufferForOpaqueDraw.p_IndirectIndexCommandBufferSRV = opaqueIndexBufferSRV;
-            commandBufferForOpaqueDraw.p_IndirectIndexCommandBufferUav = opaqueIndexBufferUAV;
+            commandBufferForOpaqueDraw.p_IndirectIndexCommandBufferSRV = opaqueIndexBuffer->GetDefaultSRV();
+            commandBufferForOpaqueDraw.p_IndirectIndexCommandBufferUAV = opaqueIndexBuffer->GetDefaultUAV();
 
             auto opaqueBuffer = std::make_shared<RHI::D3D12Buffer>(m_Device->GetLinkedDevice(),
                                                                    HLSL::commandBufferCounterOffset + sizeof(uint64_t),
@@ -101,6 +117,8 @@ namespace Pilot
 
         // buffer for transparent draw
         {
+            auto transparentIndexBuffer = RHI::D3D12Buffer::CreateBuffer();
+
             auto transparentIndexBuffer =
                 std::make_shared<RHI::D3D12Buffer>(m_Device->GetLinkedDevice(),
                                                    HLSL::indexCommandBufferCounterOffset + sizeof(uint64_t),

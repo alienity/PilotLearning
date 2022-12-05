@@ -109,11 +109,13 @@ namespace RHI
 
         bool AssertResourceState(D3D12Resource* Resource, D3D12_RESOURCE_STATES State, UINT Subresource);
 
+        /*
         void InsertTimeStamp( ID3D12QueryHeap* pQueryHeap, uint32_t QueryIdx );
         void ResolveTimeStamps( ID3D12Resource* pReadbackHeap, ID3D12QueryHeap* pQueryHeap, uint32_t NumQueries );
         void PIXBeginEvent(const wchar_t* label);
         void PIXEndEvent(void);
         void PIXSetMarker(const wchar_t* label);
+        */
 
         void SetPipelineState(D3D12PipelineState* PipelineState);
         void SetPipelineState(D3D12RaytracingPipelineState* RaytracingPipelineState);

@@ -11,17 +11,17 @@ namespace Pilot
     {
         std::shared_ptr<RHI::D3D12Buffer>              p_IndirectIndexCommandBuffer;
         std::shared_ptr<RHI::D3D12ShaderResourceView>  p_IndirectIndexCommandBufferSRV;
-        std::shared_ptr<RHI::D3D12UnorderedAccessView> p_IndirectIndexCommandBufferUav;
+        std::shared_ptr<RHI::D3D12UnorderedAccessView> p_IndirectIndexCommandBufferUAV;
         std::shared_ptr<RHI::D3D12Buffer>              p_IndirectSortCommandBuffer;
-        std::shared_ptr<RHI::D3D12UnorderedAccessView> p_IndirectSortCommandBufferUav;
+        std::shared_ptr<RHI::D3D12UnorderedAccessView> p_IndirectSortCommandBufferUAV;
 
         void ResetBuffer()
         {
             p_IndirectIndexCommandBuffer    = nullptr;
             p_IndirectIndexCommandBufferSRV = nullptr;
-            p_IndirectIndexCommandBufferUav = nullptr;
+            p_IndirectIndexCommandBufferUAV = nullptr;
             p_IndirectSortCommandBuffer     = nullptr;
-            p_IndirectSortCommandBufferUav  = nullptr;
+            p_IndirectSortCommandBufferUAV  = nullptr;
         }
     };
 
@@ -101,9 +101,9 @@ namespace Pilot
         ShadowmapCommandBuffer dirShadowmapCommandBuffer;
         std::vector<ShadowmapCommandBuffer> spotShadowmapCommandBuffer;
 
-        HLSL::MeshPerframeStorageBufferObject* pPerframeObj = nullptr;
-        HLSL::MaterialInstance*                pMaterialObj = nullptr;
-        HLSL::MeshInstance*                    pMeshesObj   = nullptr;
+        //HLSL::MeshPerframeStorageBufferObject* pPerframeObj = nullptr;
+        //HLSL::MaterialInstance*                pMaterialObj = nullptr;
+        //HLSL::MeshInstance*                    pMeshesObj   = nullptr;
 	};
 }
 
