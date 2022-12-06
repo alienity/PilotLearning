@@ -391,19 +391,17 @@ namespace RHI
         pBufferD3D12->m_Desc = {sizeInBytes, numElements, elementSize, bufferTarget, mapplableMode};
         pBufferD3D12->m_Data = {initialData, dataLen};
 
-        if (bufferTarget & (RHIBufferTarget::RHIBufferTargetAppend | RHIBufferTarget::RHIBufferTargetCounter))
+        if (bufferTarget & RHIBufferTarget::RHIBufferTargetCounter)
         {
-            RHIBufferTarget counterTarget =
-                RHIBufferTarget::RHIBufferTargetRaw | RHIBufferTarget::RHIBufferTargetCounter;
-            pBufferD3D12->p_CounterBufferD3D12 = CreateBuffer(Parent,
-                                                              counterTarget,
-                                                              1,
-                                                              sizeof(UINT32),
-                                                              name + L"_Counter",
-                                                              RHIBufferMode::RHIBufferModeImmutable,
-                                                              D3D12_RESOURCE_STATE_GENERIC_READ,
-                                                              nullptr,
-                                                              0);
+            pBufferD3D12->p_CounterBufferD3D12 = Create(Parent,
+                                                        RHIBufferTarget::RHIBufferTargetRaw,
+                                                        1,
+                                                        sizeof(UINT32),
+                                                        name + L"_Counter",
+                                                        RHIBufferMode::RHIBufferModeImmutable,
+                                                        D3D12_RESOURCE_STATE_GENERIC_READ,
+                                                        nullptr,
+                                                        0);
         }
         else
         {
@@ -423,7 +421,7 @@ namespace RHI
         if (bufferTarget & RHIBufferTarget::RHIBufferTargetCounter)
         {
             D3D12CommandContext& InitContext = Parent->BeginResourceUpload();
-            pBufferD3D12->ResetCounterBuffer(&InitContext);
+            pBufferD3D12->p_CounterBufferD3D12->ResetCounterBuffer(&InitContext);
             uploadNeedFinished = true;
         }
 

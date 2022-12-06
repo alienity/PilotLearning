@@ -65,11 +65,9 @@ namespace Pilot
         void destroy() override final;
 
     private:
-        void initializeDrawBuffer();
         void prepareBuffer();
 
-        void bitonicSort(RHI::D3D12CommandContext&                      context,
-                         RHI::RenderGraphRegistry&                      registry,
+        void bitonicSort(RHI::D3D12ComputeContext&                      context,
                          std::shared_ptr<RHI::D3D12Buffer>              keyIndexList,
                          std::shared_ptr<RHI::D3D12UnorderedAccessView> keyIndexListUAV,
                          std::shared_ptr<RHI::D3D12Buffer>              countBuffer,
@@ -101,9 +99,9 @@ namespace Pilot
         ShadowmapCommandBuffer dirShadowmapCommandBuffer;
         std::vector<ShadowmapCommandBuffer> spotShadowmapCommandBuffer;
 
-        //HLSL::MeshPerframeStorageBufferObject* pPerframeObj = nullptr;
-        //HLSL::MaterialInstance*                pMaterialObj = nullptr;
-        //HLSL::MeshInstance*                    pMeshesObj   = nullptr;
+        HLSL::MeshPerframeStorageBufferObject* pPerframeObj = nullptr;
+        HLSL::MaterialInstance*                pMaterialObj = nullptr;
+        HLSL::MeshInstance*                    pMeshesObj   = nullptr;
 	};
 }
 

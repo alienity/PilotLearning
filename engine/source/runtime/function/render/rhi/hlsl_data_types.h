@@ -183,11 +183,11 @@ namespace HLSL
     };
 
     const std::uint64_t totalCommandBufferSizeInBytes = HLSL::MeshLimit * sizeof(HLSL::CommandSignatureParams);
-    const std::uint64_t commandBufferCounterOffset =
-        D3D12RHIUtils::AlignUp(totalCommandBufferSizeInBytes, D3D12_UAV_COUNTER_PLACEMENT_ALIGNMENT);
+    //const std::uint64_t commandBufferCounterOffset =
+    //    D3D12RHIUtils::AlignUp(totalCommandBufferSizeInBytes, D3D12_UAV_COUNTER_PLACEMENT_ALIGNMENT);
 
     const std::uint64_t totalIndexCommandBufferInBytes = HLSL::MeshLimit * sizeof(HLSL::BitonicSortCommandSigParams);
-    const std::uint64_t indexCommandBufferCounterOffset =
-        D3D12RHIUtils::AlignUp(totalIndexCommandBufferInBytes, D3D12_UAV_COUNTER_PLACEMENT_ALIGNMENT);
+    //const std::uint64_t indexCommandBufferCounterOffset =
+    //    D3D12RHIUtils::AlignUp(totalIndexCommandBufferInBytes, D3D12_UAV_COUNTER_PLACEMENT_ALIGNMENT);
 
 } // namespace HLSL

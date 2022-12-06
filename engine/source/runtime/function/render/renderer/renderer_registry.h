@@ -116,8 +116,8 @@ struct Shaders
                                                               ShaderCompileOptions(g_CSEntryPoint));
 
             ShaderCompileOptions meshCSOption(g_CSEntryPoint);
-            CS::IndirectCull =
-                Compiler->CompileShader(RHI_SHADER_TYPE::Compute, ShaderPath / "hlsl/IndirectCull.hlsl", meshCSOption);
+            CS::IndirectCull = Compiler->CompileShader(
+                    RHI_SHADER_TYPE::Compute, ShaderPath / "hlsl/IndirectCull.hlsl", meshCSOption);
 
             ShaderCompileOptions directionCSOption(g_CSEntryPoint);
             directionCSOption.SetDefine({L"DIRECTIONSHADOW"}, {L"1"});
@@ -145,27 +145,20 @@ struct Libraries
 
 struct RootSignatures
 {
-    inline static RHI::RgResourceHandle BitonicSortRootSignature;
+    inline static std::shared_ptr<RHI::D3D12RootSignature> pBitonicSortRootSignature;
 
-    inline static RHI::RgResourceHandle FullScreenPresent;
-    inline static RHI::RgResourceHandle IndirectCullForSort;
-    inline static RHI::RgResourceHandle IndirectCull;
-    inline static RHI::RgResourceHandle IndirectCullDirectionShadowmap;
-    inline static RHI::RgResourceHandle IndirectCullSpotShadowmap;
-    inline static RHI::RgResourceHandle IndirectDraw;
-    inline static RHI::RgResourceHandle IndirectDrawDirectionShadowmap;
-    inline static RHI::RgResourceHandle IndirectDrawSpotShadowmap;
+    inline static std::shared_ptr<RHI::D3D12RootSignature> pFullScreenPresent;
+    inline static std::shared_ptr<RHI::D3D12RootSignature> pIndirectCullForSort;
+    inline static std::shared_ptr<RHI::D3D12RootSignature> pIndirectCull;
+    inline static std::shared_ptr<RHI::D3D12RootSignature> pIndirectCullDirectionShadowmap;
+    inline static std::shared_ptr<RHI::D3D12RootSignature> pIndirectCullSpotShadowmap;
+    inline static std::shared_ptr<RHI::D3D12RootSignature> pIndirectDraw;
+    inline static std::shared_ptr<RHI::D3D12RootSignature> pIndirectDrawDirectionShadowmap;
+    inline static std::shared_ptr<RHI::D3D12RootSignature> pIndirectDrawSpotShadowmap;
 
-    static void Compile(RHI::D3D12Device* Device, RHI::RenderGraphRegistry& Registry)
+    static void Compile(RHI::D3D12Device* pDevice)
     {
         {
-            //RHI::RootSignatureDesc rootSigDesc = RHI::RootSignatureDesc()
-            //                                         .Add32BitConstants<0, 0>(2)
-            //                                         .AddShaderResourceView<0, 0>()
-            //                                         .AddUnorderedAccessViewWithCounter<0, 0>()
-            //                                         .Add32BitConstants<1, 0>(2)
-            //                                         .AllowResourceDescriptorHeapIndexing();
-
             RHI::RootSignatureDesc rootSigDesc =
                 RHI::RootSignatureDesc()
                     .Add32BitConstants<0, 0>(2)
@@ -176,8 +169,9 @@ struct RootSignatures
                     .Add32BitConstants<1, 0>(2)
                     .AllowResourceDescriptorHeapIndexing();
 
-            BitonicSortRootSignature = Registry.CreateRootSignature(Device->CreateRootSignature(rootSigDesc));
+            pBitonicSortRootSignature = std::make_shared<RHI::D3D12RootSignature>(pDevice, rootSigDesc);
         }
+
         {
             RHI::RootSignatureDesc rootSigDesc =
                 RHI::RootSignatureDesc()
@@ -188,7 +182,7 @@ struct RootSignatures
                     .AllowResourceDescriptorHeapIndexing()
                     .AllowSampleDescriptorHeapIndexing();
 
-            FullScreenPresent = Registry.CreateRootSignature(Device->CreateRootSignature(rootSigDesc));
+            pFullScreenPresent = std::make_shared<RHI::D3D12RootSignature>(pDevice, rootSigDesc);
         }
 
         {
@@ -201,8 +195,8 @@ struct RootSignatures
                                                      .AllowResourceDescriptorHeapIndexing()
                                                      .AllowSampleDescriptorHeapIndexing();
 
-            IndirectCullForSort = Registry.CreateRootSignature(Device->CreateRootSignature(rootSigDesc));
-            IndirectCull        = IndirectCullForSort;
+            pIndirectCullForSort = std::make_shared<RHI::D3D12RootSignature>(pDevice, rootSigDesc);
+            pIndirectCull        = pIndirectCullForSort;
         }
 
         {
@@ -214,7 +208,7 @@ struct RootSignatures
                                                      .AllowResourceDescriptorHeapIndexing()
                                                      .AllowSampleDescriptorHeapIndexing();
 
-            IndirectCullDirectionShadowmap = Registry.CreateRootSignature(Device->CreateRootSignature(rootSigDesc));
+            pIndirectCullDirectionShadowmap = std::make_shared<RHI::D3D12RootSignature>(pDevice, rootSigDesc);
         }
 
         {
@@ -227,7 +221,7 @@ struct RootSignatures
                                                      .AllowResourceDescriptorHeapIndexing()
                                                      .AllowSampleDescriptorHeapIndexing();
 
-            IndirectCullSpotShadowmap = Registry.CreateRootSignature(Device->CreateRootSignature(rootSigDesc));
+            pIndirectCullSpotShadowmap = std::make_shared<RHI::D3D12RootSignature>(pDevice, rootSigDesc);
         }
 
         {
@@ -249,7 +243,7 @@ struct RootSignatures
                     .AllowResourceDescriptorHeapIndexing()
                     .AllowSampleDescriptorHeapIndexing();
 
-            IndirectDraw = Registry.CreateRootSignature(Device->CreateRootSignature(rootSigDesc));
+            pIndirectDraw = std::make_shared<RHI::D3D12RootSignature>(pDevice, rootSigDesc);
         }
 
         {
@@ -266,7 +260,7 @@ struct RootSignatures
                     .AllowResourceDescriptorHeapIndexing()
                     .AllowSampleDescriptorHeapIndexing();
 
-            IndirectDrawDirectionShadowmap = Registry.CreateRootSignature(Device->CreateRootSignature(rootSigDesc));
+            pIndirectDrawDirectionShadowmap = std::make_shared<RHI::D3D12RootSignature>(pDevice, rootSigDesc);
         }
 
         {
@@ -283,7 +277,7 @@ struct RootSignatures
                     .AllowResourceDescriptorHeapIndexing()
                     .AllowSampleDescriptorHeapIndexing();
 
-            IndirectDrawSpotShadowmap = Registry.CreateRootSignature(Device->CreateRootSignature(rootSigDesc));
+            pIndirectDrawSpotShadowmap = std::make_shared<RHI::D3D12RootSignature>(pDevice, rootSigDesc);
         }
 
     }
@@ -291,21 +285,19 @@ struct RootSignatures
 
 struct CommandSignatures
 {
-    inline static RHI::RgResourceHandle DispatchIndirectCommandSignature;
+    inline static std::shared_ptr<RHI::D3D12CommandSignature> pDispatchIndirectCommandSignature;
 
-    inline static RHI::RgResourceHandle IndirectDraw;
-    inline static RHI::RgResourceHandle IndirectDrawDirectionShadowmap;
-    inline static RHI::RgResourceHandle IndirectDrawSpotShadowmap;
+    inline static std::shared_ptr<RHI::D3D12CommandSignature> pIndirectDraw;
+    inline static std::shared_ptr<RHI::D3D12CommandSignature> pIndirectDrawDirectionShadowmap;
+    inline static std::shared_ptr<RHI::D3D12CommandSignature> pIndirectDrawSpotShadowmap;
 
-    static void Compile(RHI::D3D12Device* Device, RHI::RenderGraphRegistry& Registry)
+    static void Compile(RHI::D3D12Device* pDevice)
     {
         {
             RHI::CommandSignatureDesc Builder(1, sizeof(D3D12_DISPATCH_ARGUMENTS));
             Builder.AddDispatch();
 
-            DispatchIndirectCommandSignature =
-                Registry.CreateCommandSignature(RHI::D3D12CommandSignature(Device, Builder, nullptr));
-
+            pDispatchIndirectCommandSignature = std::make_shared<RHI::D3D12CommandSignature>(pDevice, Builder, nullptr);
         }
 
         {
@@ -315,10 +307,8 @@ struct CommandSignatures
             Builder.AddIndexBufferView();
             Builder.AddDrawIndexed();
 
-            ID3D12RootSignature* indirectDrawRootSignature =
-                Registry.GetRootSignature(RootSignatures::IndirectDraw)->GetApiHandle();
-            IndirectDraw =
-                Registry.CreateCommandSignature(RHI::D3D12CommandSignature(Device, Builder, indirectDrawRootSignature));
+            pIndirectDraw =
+                std::make_shared<RHI::D3D12CommandSignature>(pDevice, Builder, RootSignatures::pIndirectDraw.get());
         }
         {
             RHI::CommandSignatureDesc Builder(4, sizeof(HLSL::CommandSignatureParams));
@@ -327,10 +317,8 @@ struct CommandSignatures
             Builder.AddIndexBufferView();
             Builder.AddDrawIndexed();
 
-            ID3D12RootSignature* indirectDrawShadowmapRootSignature =
-                Registry.GetRootSignature(RootSignatures::IndirectDrawDirectionShadowmap)->GetApiHandle();
-            IndirectDrawDirectionShadowmap = Registry.CreateCommandSignature(
-                RHI::D3D12CommandSignature(Device, Builder, indirectDrawShadowmapRootSignature));
+            pIndirectDrawDirectionShadowmap = std::make_shared<RHI::D3D12CommandSignature>(
+                pDevice, Builder, RootSignatures::pIndirectDrawDirectionShadowmap.get());
         }
         {
             RHI::CommandSignatureDesc Builder(4, sizeof(HLSL::CommandSignatureParams));
@@ -339,10 +327,8 @@ struct CommandSignatures
             Builder.AddIndexBufferView();
             Builder.AddDrawIndexed();
 
-            ID3D12RootSignature* indirectDrawShadowmapRootSignature =
-                Registry.GetRootSignature(RootSignatures::IndirectDrawSpotShadowmap)->GetApiHandle();
-            IndirectDrawSpotShadowmap = Registry.CreateCommandSignature(
-                RHI::D3D12CommandSignature(Device, Builder, indirectDrawShadowmapRootSignature));
+            pIndirectDrawSpotShadowmap = std::make_shared<RHI::D3D12CommandSignature>(
+                pDevice, Builder, RootSignatures::pIndirectDrawSpotShadowmap.get());
         }
     }
 
@@ -351,62 +337,64 @@ struct CommandSignatures
 
 struct PipelineStates
 {
-    inline static RHI::RgResourceHandle BitonicIndirectArgsPSO;
-    inline static RHI::RgResourceHandle Bitonic32PreSortPSO;
-    inline static RHI::RgResourceHandle Bitonic32InnerSortPSO;
-    inline static RHI::RgResourceHandle Bitonic32OuterSortPSO;
-    inline static RHI::RgResourceHandle Bitonic64PreSortPSO;
-    inline static RHI::RgResourceHandle Bitonic64InnerSortPSO;
-    inline static RHI::RgResourceHandle Bitonic64OuterSortPSO;
+    inline static std::shared_ptr<RHI::D3D12PipelineState> pBitonicIndirectArgsPSO;
+    inline static std::shared_ptr<RHI::D3D12PipelineState> pBitonic32PreSortPSO;
+    inline static std::shared_ptr<RHI::D3D12PipelineState> pBitonic32InnerSortPSO;
+    inline static std::shared_ptr<RHI::D3D12PipelineState> pBitonic32OuterSortPSO;
+    inline static std::shared_ptr<RHI::D3D12PipelineState> pBitonic64PreSortPSO;
+    inline static std::shared_ptr<RHI::D3D12PipelineState> pBitonic64InnerSortPSO;
+    inline static std::shared_ptr<RHI::D3D12PipelineState> pBitonic64OuterSortPSO;
 
-    inline static RHI::RgResourceHandle FullScreenPresent;
-    inline static RHI::RgResourceHandle IndirectCullForSort;
-    inline static RHI::RgResourceHandle IndirectCull;
-    inline static RHI::RgResourceHandle IndirectCullDirectionShadowmap;
-    inline static RHI::RgResourceHandle IndirectCullSpotShadowmap;
+    inline static std::shared_ptr<RHI::D3D12PipelineState> pFullScreenPresent;
+    inline static std::shared_ptr<RHI::D3D12PipelineState> pIndirectCullForSort;
+    inline static std::shared_ptr<RHI::D3D12PipelineState> pIndirectCull;
+    inline static std::shared_ptr<RHI::D3D12PipelineState> pIndirectCullDirectionShadowmap;
+    inline static std::shared_ptr<RHI::D3D12PipelineState> pIndirectCullSpotShadowmap;
 
-    inline static RHI::RgResourceHandle IndirectDraw;
-    inline static RHI::RgResourceHandle IndirectDrawTransparent;
-    inline static RHI::RgResourceHandle IndirectDrawDirectionShadowmap;
-    inline static RHI::RgResourceHandle IndirectDrawSpotShadowmap;
+    inline static std::shared_ptr<RHI::D3D12PipelineState> pIndirectDraw;
+    inline static std::shared_ptr<RHI::D3D12PipelineState> pIndirectDrawTransparent;
+    inline static std::shared_ptr<RHI::D3D12PipelineState> pIndirectDrawDirectionShadowmap;
+    inline static std::shared_ptr<RHI::D3D12PipelineState> pIndirectDrawSpotShadowmap;
 
-    static void Compile(DXGI_FORMAT PiplineRtFormat, DXGI_FORMAT PipelineDsFormat, DXGI_FORMAT RtFormat, DXGI_FORMAT DsFormat, RHI::D3D12Device* Device, RHI::RenderGraphRegistry& Registry)
+    static void Compile(DXGI_FORMAT PiplineRtFormat, DXGI_FORMAT PipelineDsFormat, DXGI_FORMAT RtFormat, DXGI_FORMAT DsFormat, RHI::D3D12Device* pDevice)
     {
         {
             struct PsoStream
             {
                 PipelineStateStreamRootSignature RootSignature;
                 PipelineStateStreamCS            CS;
-            } Stream;
-            Stream.RootSignature = Registry.GetRootSignature(RootSignatures::BitonicSortRootSignature);
+            } psoStream;
+            psoStream.RootSignature = PipelineStateStreamRootSignature(RootSignatures::pBitonicSortRootSignature.get());
+            psoStream.CS            = &Shaders::CS::BitonicIndirectArgsCS;
 
-            Stream.CS = &Shaders::CS::BitonicIndirectArgsCS;
-            BitonicIndirectArgsPSO =
-                Registry.CreatePipelineState(Device->CreatePipelineState(L"Bitonic Sort: Indirect Args CS", Stream));
+            PipelineStateStreamDesc psoDesc = {sizeof(PsoStream), &psoStream};
 
-            Stream.CS = &Shaders::CS::Bitonic32PreSortCS;
-            Bitonic32PreSortPSO =
-                Registry.CreatePipelineState(Device->CreatePipelineState(L"Bitonic Sort: 32 Pre Sort CS", Stream));
+            pBitonicIndirectArgsPSO =
+                std::make_shared<RHI::D3D12PipelineState>(pDevice, L"Bitonic Sort: Indirect Args CS", psoDesc);
 
-            Stream.CS = &Shaders::CS::Bitonic32InnerSortCS;
-            Bitonic32InnerSortPSO =
-                Registry.CreatePipelineState(Device->CreatePipelineState(L"Bitonic Sort: 32 Inner Sort CS", Stream));
+            psoStream.CS = &Shaders::CS::Bitonic32PreSortCS;
+            pBitonic32PreSortPSO =
+                std::make_shared<RHI::D3D12PipelineState>(pDevice, L"Bitonic Sort: 32 Pre Sort CS", psoDesc);
 
-            Stream.CS = &Shaders::CS::Bitonic32OuterSortCS;
-            Bitonic32OuterSortPSO =
-                Registry.CreatePipelineState(Device->CreatePipelineState(L"Bitonic Sort: 32 Outer Sort CS", Stream));
+            psoStream.CS = &Shaders::CS::Bitonic32InnerSortCS;
+            pBitonic32InnerSortPSO =
+                std::make_shared<RHI::D3D12PipelineState>(pDevice, L"Bitonic Sort: 32 Inner Sort CS", psoDesc);
 
-            Stream.CS = &Shaders::CS::Bitonic64PreSortCS;
-            Bitonic64PreSortPSO =
-                Registry.CreatePipelineState(Device->CreatePipelineState(L"Bitonic Sort: 64 Pre Sort CS", Stream));
+            psoStream.CS = &Shaders::CS::Bitonic32OuterSortCS;
+            pBitonic32OuterSortPSO =
+                std::make_shared<RHI::D3D12PipelineState>(pDevice, L"Bitonic Sort: 32 Outer Sort CS", psoDesc);
 
-            Stream.CS = &Shaders::CS::Bitonic64InnerSortCS;
-            Bitonic64InnerSortPSO =
-                Registry.CreatePipelineState(Device->CreatePipelineState(L"Bitonic Sort: 64 Inner Sort CS", Stream));
+            psoStream.CS = &Shaders::CS::Bitonic64PreSortCS;
+            pBitonic64PreSortPSO =
+                std::make_shared<RHI::D3D12PipelineState>(pDevice, L"Bitonic Sort: 64 Pre Sort CS", psoDesc);
 
-            Stream.CS = &Shaders::CS::Bitonic64OuterSortCS;
-            Bitonic64OuterSortPSO =
-                Registry.CreatePipelineState(Device->CreatePipelineState(L"Bitonic Sort: 64 Outer Sort CS", Stream));
+            psoStream.CS = &Shaders::CS::Bitonic64InnerSortCS;
+            pBitonic64InnerSortPSO =
+                std::make_shared<RHI::D3D12PipelineState>(pDevice, L"Bitonic Sort: 64 Inner Sort CS", psoDesc);
+
+            psoStream.CS = &Shaders::CS::Bitonic64OuterSortCS;
+            pBitonic64OuterSortPSO =
+                std::make_shared<RHI::D3D12PipelineState>(pDevice, L"Bitonic Sort: 64 Outer Sort CS", psoDesc);
         }
         {
             RHI::D3D12InputLayout InputLayout;
@@ -428,62 +416,74 @@ struct PipelineStates
                 PipelineStateStreamPS                PS;
                 PipelineStateStreamDepthStencilState DepthStencilState;
                 PipelineStateStreamRenderTargetState RenderTargetState;
-            } Stream;
-            Stream.RootSignature         = Registry.GetRootSignature(RootSignatures::FullScreenPresent);
-            Stream.InputLayout           = &InputLayout;
-            Stream.PrimitiveTopologyType = RHI_PRIMITIVE_TOPOLOGY::Triangle;
-            Stream.VS                    = &Shaders::VS::ScreenQuadPresentVS;
-            Stream.PS                    = &Shaders::PS::PresentSDRPS;
-            Stream.DepthStencilState     = DepthStencilState;
-            Stream.RenderTargetState     = RenderTargetState;
+            } psoStream;
+            psoStream.RootSignature      = PipelineStateStreamRootSignature(RootSignatures::pFullScreenPresent.get());
+            psoStream.InputLayout        = &InputLayout;
+            psoStream.PrimitiveTopologyType = RHI_PRIMITIVE_TOPOLOGY::Triangle;
+            psoStream.VS                    = &Shaders::VS::ScreenQuadPresentVS;
+            psoStream.PS                    = &Shaders::PS::PresentSDRPS;
+            psoStream.DepthStencilState     = DepthStencilState;
+            psoStream.RenderTargetState     = RenderTargetState;
 
-            FullScreenPresent = Registry.CreatePipelineState(Device->CreatePipelineState(L"FullScreenPresent", Stream));
+            PipelineStateStreamDesc psoDesc = {sizeof(PsoStream), &psoStream};
+
+            pFullScreenPresent = std::make_shared<RHI::D3D12PipelineState>(pDevice, L"FullScreenPresent", psoDesc);
         }
         {
             struct PsoStream
             {
                 PipelineStateStreamRootSignature RootSignature;
                 PipelineStateStreamCS            CS;
-            } Stream;
-            Stream.RootSignature = Registry.GetRootSignature(RootSignatures::IndirectCullForSort);
-            Stream.CS            = &Shaders::CS::IndirectCullForSort;
+            } psoStream;
+            psoStream.RootSignature = PipelineStateStreamRootSignature(RootSignatures::pIndirectCullForSort.get());
+            psoStream.CS            = &Shaders::CS::IndirectCullForSort;
 
-            IndirectCullForSort = Registry.CreatePipelineState(Device->CreatePipelineState(L"IndirectCullForSort", Stream));
+            PipelineStateStreamDesc psoDesc = {sizeof(PsoStream), &psoStream};
+
+            pIndirectCullForSort = std::make_shared<RHI::D3D12PipelineState>(pDevice, L"IndirectCullForSort", psoDesc);
         }
         {
             struct PsoStream
             {
                 PipelineStateStreamRootSignature RootSignature;
                 PipelineStateStreamCS            CS;
-            } Stream;
-            Stream.RootSignature = Registry.GetRootSignature(RootSignatures::IndirectCull);
-            Stream.CS            = &Shaders::CS::IndirectCull;
+            } psoStream;
+            psoStream.RootSignature = PipelineStateStreamRootSignature(RootSignatures::pIndirectCull.get());
+            psoStream.CS            = &Shaders::CS::IndirectCull;
 
-            IndirectCull = Registry.CreatePipelineState(Device->CreatePipelineState(L"IndirectCull", Stream));
+            PipelineStateStreamDesc psoDesc = {sizeof(PsoStream), &psoStream};
+
+            pIndirectCull = std::make_shared<RHI::D3D12PipelineState>(pDevice, L"IndirectCull", psoDesc);
         }
         {
             struct PsoStream
             {
                 PipelineStateStreamRootSignature RootSignature;
                 PipelineStateStreamCS            CS;
-            } Stream;
-            Stream.RootSignature = Registry.GetRootSignature(RootSignatures::IndirectCullDirectionShadowmap);
-            Stream.CS            = &Shaders::CS::IndirectCullDirectionShadowmap;
+            } psoStream;
+            psoStream.RootSignature =
+                PipelineStateStreamRootSignature(RootSignatures::pIndirectCullDirectionShadowmap.get());
+            psoStream.CS = &Shaders::CS::IndirectCullDirectionShadowmap;
 
-            IndirectCullDirectionShadowmap =
-                Registry.CreatePipelineState(Device->CreatePipelineState(L"IndirectCullDirectionShadowmap", Stream));
+            PipelineStateStreamDesc psoDesc = {sizeof(PsoStream), &psoStream};
+
+            pIndirectCullDirectionShadowmap =
+                std::make_shared<RHI::D3D12PipelineState>(pDevice, L"IndirectCullDirectionShadowmap", psoDesc);
         }
         {
             struct PsoStream
             {
                 PipelineStateStreamRootSignature RootSignature;
                 PipelineStateStreamCS            CS;
-            } Stream;
-            Stream.RootSignature = Registry.GetRootSignature(RootSignatures::IndirectCullSpotShadowmap);
-            Stream.CS            = &Shaders::CS::IndirectCullSpotShadowmap;
+            } psoStream;
+            psoStream.RootSignature =
+                PipelineStateStreamRootSignature(RootSignatures::pIndirectCullSpotShadowmap.get());
+            psoStream.CS         = &Shaders::CS::IndirectCullSpotShadowmap;
 
-            IndirectCullSpotShadowmap =
-                Registry.CreatePipelineState(Device->CreatePipelineState(L"IndirectCullSpotShadowmap", Stream));
+            PipelineStateStreamDesc psoDesc = {sizeof(PsoStream), &psoStream};
+
+            pIndirectCullSpotShadowmap =
+                std::make_shared<RHI::D3D12PipelineState>(pDevice, L"IndirectCullSpotShadowmap", psoDesc);
         }
         {
             RHI::D3D12InputLayout InputLayout =
@@ -507,16 +507,18 @@ struct PipelineStates
                 PipelineStateStreamPS                PS;
                 PipelineStateStreamDepthStencilState DepthStencilState;
                 PipelineStateStreamRenderTargetState RenderTargetState;
-            } Stream;
-            Stream.RootSignature         = Registry.GetRootSignature(RootSignatures::IndirectDraw);
-            Stream.InputLayout           = &InputLayout;
-            Stream.PrimitiveTopologyType = RHI_PRIMITIVE_TOPOLOGY::Triangle;
-            Stream.VS                    = &Shaders::VS::IndirectDrawVS;
-            Stream.PS                    = &Shaders::PS::IndirectDrawPS;
-            Stream.DepthStencilState     = DepthStencilState;
-            Stream.RenderTargetState     = RenderTargetState;
+            } psoStream;
+            psoStream.RootSignature         = PipelineStateStreamRootSignature(RootSignatures::pIndirectDraw.get());
+            psoStream.InputLayout           = &InputLayout;
+            psoStream.PrimitiveTopologyType = RHI_PRIMITIVE_TOPOLOGY::Triangle;
+            psoStream.VS                    = &Shaders::VS::IndirectDrawVS;
+            psoStream.PS                    = &Shaders::PS::IndirectDrawPS;
+            psoStream.DepthStencilState     = DepthStencilState;
+            psoStream.RenderTargetState     = RenderTargetState;
 
-            IndirectDraw = Registry.CreatePipelineState(Device->CreatePipelineState(L"IndirectDraw", Stream));
+            PipelineStateStreamDesc psoDesc = {sizeof(PsoStream), &psoStream};
+
+            pIndirectDraw = std::make_shared<RHI::D3D12PipelineState>(pDevice, L"IndirectDraw", psoDesc);
         }
         {
             //IndirectDrawTransparent
@@ -552,18 +554,19 @@ struct PipelineStates
                 PipelineStateStreamBlendState        BlendState;
                 PipelineStateStreamDepthStencilState DepthStencilState;
                 PipelineStateStreamRenderTargetState RenderTargetState;
-            } Stream;
-            Stream.RootSignature         = Registry.GetRootSignature(RootSignatures::IndirectDraw);
-            Stream.InputLayout           = &InputLayout;
-            Stream.PrimitiveTopologyType = RHI_PRIMITIVE_TOPOLOGY::Triangle;
-            Stream.VS                    = &Shaders::VS::IndirectDrawVS;
-            Stream.PS                    = &Shaders::PS::IndirectDrawPS;
-            Stream.BlendState            = BlendState;
-            Stream.DepthStencilState     = DepthStencilState;
-            Stream.RenderTargetState     = RenderTargetState;
+            } psoStream;
+            psoStream.RootSignature         = PipelineStateStreamRootSignature(RootSignatures::pIndirectDraw.get());
+            psoStream.InputLayout           = &InputLayout;
+            psoStream.PrimitiveTopologyType = RHI_PRIMITIVE_TOPOLOGY::Triangle;
+            psoStream.VS                    = &Shaders::VS::IndirectDrawVS;
+            psoStream.PS                    = &Shaders::PS::IndirectDrawPS;
+            psoStream.BlendState            = BlendState;
+            psoStream.DepthStencilState     = DepthStencilState;
+            psoStream.RenderTargetState     = RenderTargetState;
 
-            IndirectDrawTransparent =
-                Registry.CreatePipelineState(Device->CreatePipelineState(L"IndirectDrawTransparent", Stream));
+            PipelineStateStreamDesc psoDesc = {sizeof(PsoStream), &psoStream};
+
+            pIndirectDrawTransparent = std::make_shared<RHI::D3D12PipelineState>(pDevice, L"IndirectDrawTransparent", psoDesc);
         }
         {
             RHI::D3D12InputLayout InputLayout =
@@ -586,16 +589,19 @@ struct PipelineStates
                 PipelineStateStreamPS                PS;
                 PipelineStateStreamDepthStencilState DepthStencilState;
                 PipelineStateStreamRenderTargetState RenderTargetState;
-            } Stream;
-            Stream.RootSignature         = Registry.GetRootSignature(RootSignatures::IndirectDrawDirectionShadowmap);
-            Stream.InputLayout           = &InputLayout;
-            Stream.PrimitiveTopologyType = RHI_PRIMITIVE_TOPOLOGY::Triangle;
-            Stream.VS                    = &Shaders::VS::IndirectDrawDirectionShadowmapVS;
-            Stream.DepthStencilState     = DepthStencilState;
-            Stream.RenderTargetState     = RenderTargetState;
+            } psoStream;
+            psoStream.RootSignature =
+                PipelineStateStreamRootSignature(RootSignatures::pIndirectDrawDirectionShadowmap.get());
+            psoStream.InputLayout           = &InputLayout;
+            psoStream.PrimitiveTopologyType = RHI_PRIMITIVE_TOPOLOGY::Triangle;
+            psoStream.VS                    = &Shaders::VS::IndirectDrawDirectionShadowmapVS;
+            psoStream.DepthStencilState     = DepthStencilState;
+            psoStream.RenderTargetState     = RenderTargetState;
 
-            IndirectDrawDirectionShadowmap =
-                Registry.CreatePipelineState(Device->CreatePipelineState(L"IndirectDrawDirectionShadowmap", Stream));
+            PipelineStateStreamDesc psoDesc = {sizeof(PsoStream), &psoStream};
+
+            pIndirectDrawDirectionShadowmap =
+                std::make_shared<RHI::D3D12PipelineState>(pDevice, L"IndirectDrawDirectionShadowmap", psoDesc);
         }
         {
             RHI::D3D12InputLayout InputLayout =
@@ -618,16 +624,19 @@ struct PipelineStates
                 PipelineStateStreamPS                PS;
                 PipelineStateStreamDepthStencilState DepthStencilState;
                 PipelineStateStreamRenderTargetState RenderTargetState;
-            } Stream;
-            Stream.RootSignature         = Registry.GetRootSignature(RootSignatures::IndirectDrawSpotShadowmap);
-            Stream.InputLayout           = &InputLayout;
-            Stream.PrimitiveTopologyType = RHI_PRIMITIVE_TOPOLOGY::Triangle;
-            Stream.VS                    = &Shaders::VS::IndirectDrawSpotShadowmapVS;
-            Stream.DepthStencilState     = DepthStencilState;
-            Stream.RenderTargetState     = RenderTargetState;
+            } psoStream;
+            psoStream.RootSignature =
+                PipelineStateStreamRootSignature(RootSignatures::pIndirectDrawSpotShadowmap.get());
+            psoStream.InputLayout           = &InputLayout;
+            psoStream.PrimitiveTopologyType = RHI_PRIMITIVE_TOPOLOGY::Triangle;
+            psoStream.VS                    = &Shaders::VS::IndirectDrawSpotShadowmapVS;
+            psoStream.DepthStencilState     = DepthStencilState;
+            psoStream.RenderTargetState     = RenderTargetState;
 
-            IndirectDrawSpotShadowmap =
-                Registry.CreatePipelineState(Device->CreatePipelineState(L"IndirectDrawSpotShadowmap", Stream));
+            PipelineStateStreamDesc psoDesc = {sizeof(PsoStream), &psoStream};
+
+            pIndirectDrawSpotShadowmap =
+                std::make_shared<RHI::D3D12PipelineState>(pDevice, L"IndirectDrawSpotShadowmap", psoDesc);
         }
     }
 };

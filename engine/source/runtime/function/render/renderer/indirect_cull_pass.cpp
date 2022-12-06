@@ -72,89 +72,62 @@ namespace Pilot
                                                      RHI::RHIBufferModeImmutable,
                                                      D3D12_RESOURCE_STATE_GENERIC_READ);
 
-        //pPerframeObj = pUploadPerframeBuffer->GetCpuVirtualAddress<HLSL::MeshPerframeStorageBufferObject>();
-        //pMaterialObj = pUploadMaterialBuffer->GetCpuVirtualAddress<HLSL::MaterialInstance>();
-        //pMeshesObj   = pUploadMeshBuffer->GetCpuVirtualAddress<HLSL::MeshInstance>();
+        pPerframeObj = pUploadPerframeBuffer->GetCpuVirtualAddress<HLSL::MeshPerframeStorageBufferObject>();
+        pMaterialObj = pUploadMaterialBuffer->GetCpuVirtualAddress<HLSL::MaterialInstance>();
+        pMeshesObj   = pUploadMeshBuffer->GetCpuVirtualAddress<HLSL::MeshInstance>();
 
-        initializeDrawBuffer();
-    }
-
-    void IndirectCullPass::initializeDrawBuffer()
-    {
         // buffer for opaque draw
         {
-            auto opaqueIndexBuffer =
+            RHI::RHIBufferTarget opaqueIndexTarget = RHI::RHIBufferRandomReadWrite | RHI::RHIBufferTargetStructured;
+
+            std::shared_ptr<RHI::D3D12Buffer> opaqueIndexBuffer =
                 RHI::D3D12Buffer::Create(m_Device->GetLinkedDevice(),
-                                         RHI::RHIBufferRandomReadWrite | RHI::RHIBufferTargetStructured,
+                                         opaqueIndexTarget,
                                          HLSL::MeshLimit,
                                          sizeof(HLSL::BitonicSortCommandSigParams),
                                          L"OpaqueIndexBuffer");
-            /*
-            auto opaqueIndexBufferSRV =
-                std::make_shared<RHI::D3D12ShaderResourceView>(m_Device->GetLinkedDevice(), opaqueIndexBuffer.get());
-
-            auto opaqueIndexBufferUAV =
-                std::make_shared<RHI::D3D12UnorderedAccessView>(m_Device->GetLinkedDevice(), opaqueIndexBuffer.get());
-            */
 
             commandBufferForOpaqueDraw.p_IndirectIndexCommandBuffer    = opaqueIndexBuffer;
             commandBufferForOpaqueDraw.p_IndirectIndexCommandBufferSRV = opaqueIndexBuffer->GetDefaultSRV();
             commandBufferForOpaqueDraw.p_IndirectIndexCommandBufferUAV = opaqueIndexBuffer->GetDefaultUAV();
 
-            auto opaqueBuffer = std::make_shared<RHI::D3D12Buffer>(m_Device->GetLinkedDevice(),
-                                                                   HLSL::commandBufferCounterOffset + sizeof(uint64_t),
-                                                                   sizeof(HLSL::CommandSignatureParams),
-                                                                   D3D12_HEAP_TYPE_DEFAULT,
-                                                                   D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS,
-                                                                   "OpaqueBuffer");
-
-            auto opaqueBufferUAV = std::make_shared<RHI::D3D12UnorderedAccessView>(
-                m_Device->GetLinkedDevice(), opaqueBuffer.get(), HLSL::MeshLimit, HLSL::commandBufferCounterOffset);
+            std::shared_ptr<RHI::D3D12Buffer> opaqueBuffer =
+                RHI::D3D12Buffer::Create(m_Device->GetLinkedDevice(),
+                                         opaqueIndexTarget,
+                                         HLSL::MeshLimit,
+                                         sizeof(HLSL::CommandSignatureParams),
+                                         L"OpaqueBuffer");
 
             commandBufferForOpaqueDraw.p_IndirectSortCommandBuffer    = opaqueBuffer;
-            commandBufferForOpaqueDraw.p_IndirectSortCommandBufferUav = opaqueBufferUAV;
+            commandBufferForOpaqueDraw.p_IndirectSortCommandBufferUAV = opaqueBuffer->GetDefaultUAV();
         }
 
         // buffer for transparent draw
         {
-            auto transparentIndexBuffer = RHI::D3D12Buffer::CreateBuffer();
+            RHI::RHIBufferTarget transparentIndexTarget =
+                RHI::RHIBufferRandomReadWrite | RHI::RHIBufferTargetStructured;
 
-            auto transparentIndexBuffer =
-                std::make_shared<RHI::D3D12Buffer>(m_Device->GetLinkedDevice(),
-                                                   HLSL::indexCommandBufferCounterOffset + sizeof(uint64_t),
-                                                   sizeof(HLSL::BitonicSortCommandSigParams),
-                                                   D3D12_HEAP_TYPE_DEFAULT,
-                                                   D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
-            transparentIndexBuffer->SetResourceName("TransparentIndexBuffer");
-
-            auto transparentIndexBufferSRV = std::make_shared<RHI::D3D12ShaderResourceView>(
-                m_Device->GetLinkedDevice(), transparentIndexBuffer.get());
-
-            auto transparentIndexBufferUAV = std::make_shared<RHI::D3D12UnorderedAccessView>(
-                m_Device->GetLinkedDevice(), transparentIndexBuffer.get());
+            std::shared_ptr<RHI::D3D12Buffer> transparentIndexBuffer =
+                RHI::D3D12Buffer::Create(m_Device->GetLinkedDevice(),
+                                         transparentIndexTarget,
+                                         HLSL::MeshLimit,
+                                         sizeof(HLSL::BitonicSortCommandSigParams),
+                                         L"TransparentIndexBuffer");
 
             commandBufferForTransparentDraw.p_IndirectIndexCommandBuffer    = transparentIndexBuffer;
-            commandBufferForTransparentDraw.p_IndirectIndexCommandBufferSRV = transparentIndexBufferSRV;
-            commandBufferForTransparentDraw.p_IndirectIndexCommandBufferUav = transparentIndexBufferUAV;
+            commandBufferForTransparentDraw.p_IndirectIndexCommandBufferSRV = transparentIndexBuffer->GetDefaultSRV();
+            commandBufferForTransparentDraw.p_IndirectIndexCommandBufferUAV = transparentIndexBuffer->GetDefaultUAV();
 
-            auto transparentBuffer =
-                std::make_shared<RHI::D3D12Buffer>(m_Device->GetLinkedDevice(),
-                                                   HLSL::commandBufferCounterOffset + sizeof(uint64_t),
-                                                   sizeof(HLSL::CommandSignatureParams),
-                                                   D3D12_HEAP_TYPE_DEFAULT,
-                                                   D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
-            transparentBuffer->SetResourceName("TransparentBuffer");
-
-            auto transparentBufferUAV =
-                std::make_shared<RHI::D3D12UnorderedAccessView>(m_Device->GetLinkedDevice(),
-                                                                transparentBuffer.get(),
-                                                                HLSL::MeshLimit,
-                                                                HLSL::commandBufferCounterOffset);
-
+            std::shared_ptr<RHI::D3D12Buffer> transparentBuffer =
+                RHI::D3D12Buffer::Create(m_Device->GetLinkedDevice(),
+                                         transparentIndexTarget,
+                                         HLSL::MeshLimit,
+                                         sizeof(HLSL::CommandSignatureParams),
+                                         L"TransparentBuffer");
+            
             commandBufferForTransparentDraw.p_IndirectSortCommandBuffer    = transparentBuffer;
-            commandBufferForTransparentDraw.p_IndirectSortCommandBufferUav = transparentBufferUAV;
+            commandBufferForTransparentDraw.p_IndirectSortCommandBufferUAV = transparentBuffer->GetDefaultUAV();
         }
-
     }
 
     void IndirectCullPass::prepareMeshData(std::shared_ptr<RenderResourceBase> render_resource)
@@ -228,23 +201,20 @@ namespace Pilot
 
             if (dirShadowmapCommandBuffer.p_IndirectSortCommandBuffer == nullptr)
             {
+                RHI::RHIBufferTarget indirectCommandTarget =
+                    RHI::RHIBufferRandomReadWrite | RHI::RHIBufferTargetStructured | RHI::RHIBufferTargetCounter;
+
                 std::shared_ptr<RHI::D3D12Buffer> p_IndirectCommandBuffer =
-                    std::make_shared<RHI::D3D12Buffer>(m_Device->GetLinkedDevice(),
-                                                       HLSL::commandBufferCounterOffset + sizeof(uint64_t),
-                                                       sizeof(HLSL::CommandSignatureParams),
-                                                       D3D12_HEAP_TYPE_DEFAULT,
-                                                       D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
-                std::shared_ptr<RHI::D3D12UnorderedAccessView> p_IndirectCommandBufferUav =
-                    std::make_shared<RHI::D3D12UnorderedAccessView>(m_Device->GetLinkedDevice(),
-                                                                    p_IndirectCommandBuffer.get(),
-                                                                    false,
-                                                                    HLSL::MeshLimit,
-                                                                    HLSL::commandBufferCounterOffset);
+                    RHI::D3D12Buffer::Create(m_Device->GetLinkedDevice(),
+                                             indirectCommandTarget,
+                                             HLSL::MeshLimit,
+                                             sizeof(HLSL::CommandSignatureParams),
+                                             L"DirectionIndirectSortCommandBuffer");
 
                 dirShadowmapCommandBuffer.m_gobject_id    = m_visiable_nodes.p_directional_light->m_gobject_id;
                 dirShadowmapCommandBuffer.m_gcomponent_id = m_visiable_nodes.p_directional_light->m_gcomponent_id;
-                dirShadowmapCommandBuffer.p_IndirectSortCommandBuffer = p_IndirectCommandBuffer;
-                dirShadowmapCommandBuffer.p_IndirectSortCommandBufferUav = p_IndirectCommandBufferUav;
+                dirShadowmapCommandBuffer.p_IndirectSortCommandBuffer    = p_IndirectCommandBuffer;
+                dirShadowmapCommandBuffer.p_IndirectSortCommandBufferUAV = p_IndirectCommandBuffer->GetDefaultUAV();
             }
         }
         else
@@ -282,24 +252,21 @@ namespace Pilot
                 {
                     ShadowmapCommandBuffer spotShadowCommandBuffer = {};
 
+                    RHI::RHIBufferTarget indirectCommandTarget =
+                        RHI::RHIBufferRandomReadWrite | RHI::RHIBufferTargetStructured | RHI::RHIBufferTargetCounter;
+
                     std::shared_ptr<RHI::D3D12Buffer> p_IndirectCommandBuffer =
-                        std::make_shared<RHI::D3D12Buffer>(m_Device->GetLinkedDevice(),
-                                                           HLSL::commandBufferCounterOffset + sizeof(uint64_t),
-                                                           sizeof(HLSL::CommandSignatureParams),
-                                                           D3D12_HEAP_TYPE_DEFAULT,
-                                                           D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
-                    std::shared_ptr<RHI::D3D12UnorderedAccessView> p_IndirectCommandBufferUav =
-                        std::make_shared<RHI::D3D12UnorderedAccessView>(m_Device->GetLinkedDevice(),
-                                                                        p_IndirectCommandBuffer.get(),
-                                                                        false,
-                                                                        HLSL::MeshLimit,
-                                                                        HLSL::commandBufferCounterOffset);
+                        RHI::D3D12Buffer::Create(m_Device->GetLinkedDevice(),
+                                                 indirectCommandTarget,
+                                                 HLSL::MeshLimit,
+                                                 sizeof(HLSL::CommandSignatureParams),
+                                                 std::wstring(L"SpotIndirectSortCommandBuffer_" + i));
 
                     spotShadowCommandBuffer.m_lightIndex                   = i;
                     spotShadowCommandBuffer.m_gobject_id                   = curSpotLightDesc.m_gobject_id;
                     spotShadowCommandBuffer.m_gcomponent_id                = curSpotLightDesc.m_gcomponent_id;
                     spotShadowCommandBuffer.p_IndirectSortCommandBuffer    = p_IndirectCommandBuffer;
-                    spotShadowCommandBuffer.p_IndirectSortCommandBufferUav = p_IndirectCommandBufferUav;
+                    spotShadowCommandBuffer.p_IndirectSortCommandBufferUAV = p_IndirectCommandBuffer->GetDefaultUAV();
 
                     spotShadowmapCommandBuffer.push_back(spotShadowCommandBuffer);
                 }
@@ -308,8 +275,7 @@ namespace Pilot
         }
     }
 
-    void IndirectCullPass::bitonicSort(RHI::D3D12CommandContext&                      context,
-                                       RHI::RenderGraphRegistry&                      registry,
+    void IndirectCullPass::bitonicSort(RHI::D3D12ComputeContext&                      context,
                                        std::shared_ptr<RHI::D3D12Buffer>              keyIndexList,
                                        std::shared_ptr<RHI::D3D12UnorderedAccessView> keyIndexListUAV,
                                        std::shared_ptr<RHI::D3D12Buffer>              countBuffer,
@@ -325,14 +291,14 @@ namespace Pilot
 
         assert(ElementSizeBytes == 4 || ElementSizeBytes == 8, "Invalid key-index list for bitonic sort");
 
-        context.SetComputeRootSignature(registry.GetRootSignature(RootSignatures::BitonicSortRootSignature));
+        context.SetRootSignature(RootSignatures::pBitonicSortRootSignature.get());
 
         // This controls two things.  It is a key that will sort to the end, and it is a mask used to
         // determine whether the current group should sort ascending or descending.
         context.SetConstants(3, counterOffset, sortAscending ? 0xffffffff : 0);
         
         // Generate execute indirect arguments
-        context.SetPipelineState(registry.GetPipelineState(PipelineStates::BitonicIndirectArgsPSO));
+        context.SetPipelineState(PipelineStates::pBitonicIndirectArgsPSO.get());
         context.TransitionBarrier(countBuffer.get(), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
         context.TransitionBarrier(pSortDispatchArgs.get(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
         context.SetConstants(0, MaxIterations);
@@ -344,7 +310,7 @@ namespace Pilot
         // that will drift to the end of the sorted list.
         context.TransitionBarrier(pSortDispatchArgs.get(), D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT);
         context.TransitionBarrier(keyIndexList.get(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-        context.UAVBarrier(keyIndexList.get());
+        context.InsertUAVBarrier(keyIndexList.get());
         context.FlushResourceBarriers();
 
         //context->SetComputeRootUnorderedAccessView(2, keyIndexList->GetGpuVirtualAddress());
@@ -352,18 +318,16 @@ namespace Pilot
 
         if (!isPartiallyPreSorted)
         {
-            context.SetPipelineState(ElementSizeBytes == 4 ?
-                                         registry.GetPipelineState(PipelineStates::Bitonic32PreSortPSO) :
-                                         registry.GetPipelineState(PipelineStates::Bitonic64PreSortPSO));
-            context->ExecuteIndirect(
-                registry.GetCommandSignature(CommandSignatures::DispatchIndirectCommandSignature)->GetApiHandle(),
-                1,
-                pSortDispatchArgs->GetResource(),
-                0,
-                pSortDispatchArgs->GetResource(),
-                counterOffset);
+            context.SetPipelineState(ElementSizeBytes == 4 ? PipelineStates::pBitonic32PreSortPSO.get() :
+                                                             PipelineStates::pBitonic64PreSortPSO.get());
+            context->ExecuteIndirect(CommandSignatures::pDispatchIndirectCommandSignature->GetApiHandle(),
+                                     1,
+                                     pSortDispatchArgs->GetResource(),
+                                     0,
+                                     pSortDispatchArgs->GetResource(),
+                                     counterOffset);
             //context.DispatchIndirect(s_DispatchArgs, 0);
-            context.UAVBarrier(keyIndexList.get());
+            context.InsertUAVBarrier(keyIndexList.get());
         }
 
         uint32_t IndirectArgsOffset = 12;
@@ -374,37 +338,33 @@ namespace Pilot
 
         for (uint32_t k = 4096; k <= AlignedMaxNumElements; k *= 2)
         {
-            context.SetPipelineState(ElementSizeBytes == 4 ?
-                                         registry.GetPipelineState(PipelineStates::Bitonic32OuterSortPSO) :
-                                         registry.GetPipelineState(PipelineStates::Bitonic64OuterSortPSO));
+            context.SetPipelineState(ElementSizeBytes == 4 ? PipelineStates::pBitonic32OuterSortPSO.get() :
+                                                             PipelineStates::pBitonic64OuterSortPSO.get());
 
             for (uint32_t j = k / 2; j >= 2048; j /= 2)
             {
                 context->SetComputeRoot32BitConstant(0, k, j);
-                context->ExecuteIndirect(
-                    registry.GetCommandSignature(CommandSignatures::DispatchIndirectCommandSignature)->GetApiHandle(),
-                    1,
-                    pSortDispatchArgs->GetResource(),
-                    IndirectArgsOffset,
-                    pSortDispatchArgs->GetResource(),
-                    counterOffset);
+                context->ExecuteIndirect(CommandSignatures::pDispatchIndirectCommandSignature->GetApiHandle(),
+                                         1,
+                                         pSortDispatchArgs->GetResource(),
+                                         IndirectArgsOffset,
+                                         pSortDispatchArgs->GetResource(),
+                                         counterOffset);
                 //context.DispatchIndirect(s_DispatchArgs, IndirectArgsOffset);
-                context.UAVBarrier(keyIndexList.get());
+                context.InsertUAVBarrier(keyIndexList.get());
                 IndirectArgsOffset += 12;
             }
 
-            context.SetPipelineState(ElementSizeBytes == 4 ?
-                                         registry.GetPipelineState(PipelineStates::Bitonic32InnerSortPSO) :
-                                         registry.GetPipelineState(PipelineStates::Bitonic64InnerSortPSO));
-            context->ExecuteIndirect(
-                registry.GetCommandSignature(CommandSignatures::DispatchIndirectCommandSignature)->GetApiHandle(),
-                1,
-                pSortDispatchArgs->GetResource(),
-                IndirectArgsOffset,
-                pSortDispatchArgs->GetResource(),
-                counterOffset);
+            context.SetPipelineState(ElementSizeBytes == 4 ? PipelineStates::pBitonic32InnerSortPSO.get() :
+                                                             PipelineStates::pBitonic64InnerSortPSO.get());
+            context->ExecuteIndirect(CommandSignatures::pDispatchIndirectCommandSignature->GetApiHandle(),
+                                     1,
+                                     pSortDispatchArgs->GetResource(),
+                                     IndirectArgsOffset,
+                                     pSortDispatchArgs->GetResource(),
+                                     counterOffset);
             //context.DispatchIndirect(s_DispatchArgs, IndirectArgsOffset);
-            context.UAVBarrier(keyIndexList.get());
+            context.InsertUAVBarrier(keyIndexList.get());
             IndirectArgsOffset += 12;
         }
     }
@@ -460,8 +420,8 @@ namespace Pilot
             {
                 asyncCompute.TransitionBarrier(commandBufferForOpaqueDraw.p_IndirectIndexCommandBuffer.get(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
                 asyncCompute.TransitionBarrier(commandBufferForTransparentDraw.p_IndirectIndexCommandBuffer.get(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-                asyncCompute.UAVBarrier(commandBufferForOpaqueDraw.p_IndirectIndexCommandBuffer.get());
-                asyncCompute.UAVBarrier(commandBufferForTransparentDraw.p_IndirectIndexCommandBuffer.get());
+                asyncCompute.InsertUAVBarrier(commandBufferForOpaqueDraw.p_IndirectIndexCommandBuffer.get());
+                asyncCompute.InsertUAVBarrier(commandBufferForTransparentDraw.p_IndirectIndexCommandBuffer.get());
 
                 D3D12ScopedEvent(asyncCompute, "Gpu Frustum Culling for Sort");
                 asyncCompute.SetPipelineState(registry.GetPipelineState(PipelineStates::IndirectCullForSort));
