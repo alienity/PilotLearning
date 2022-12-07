@@ -10,18 +10,18 @@ namespace Pilot
     struct DrawCallCommandBuffer
     {
         std::shared_ptr<RHI::D3D12Buffer>              p_IndirectIndexCommandBuffer;
-        std::shared_ptr<RHI::D3D12ShaderResourceView>  p_IndirectIndexCommandBufferSRV;
-        std::shared_ptr<RHI::D3D12UnorderedAccessView> p_IndirectIndexCommandBufferUAV;
+        //std::shared_ptr<RHI::D3D12ShaderResourceView>  p_IndirectIndexCommandBufferSRV;
+        //std::shared_ptr<RHI::D3D12UnorderedAccessView> p_IndirectIndexCommandBufferUAV;
         std::shared_ptr<RHI::D3D12Buffer>              p_IndirectSortCommandBuffer;
-        std::shared_ptr<RHI::D3D12UnorderedAccessView> p_IndirectSortCommandBufferUAV;
+        //std::shared_ptr<RHI::D3D12UnorderedAccessView> p_IndirectSortCommandBufferUAV;
 
         void ResetBuffer()
         {
             p_IndirectIndexCommandBuffer    = nullptr;
-            p_IndirectIndexCommandBufferSRV = nullptr;
-            p_IndirectIndexCommandBufferUAV = nullptr;
+            //p_IndirectIndexCommandBufferSRV = nullptr;
+            //p_IndirectIndexCommandBufferUAV = nullptr;
             p_IndirectSortCommandBuffer     = nullptr;
-            p_IndirectSortCommandBufferUAV  = nullptr;
+            //p_IndirectSortCommandBufferUAV  = nullptr;
         }
     };
 

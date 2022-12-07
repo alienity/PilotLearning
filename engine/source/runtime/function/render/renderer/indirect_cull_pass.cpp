@@ -78,7 +78,8 @@ namespace Pilot
 
         // buffer for opaque draw
         {
-            RHI::RHIBufferTarget opaqueIndexTarget = RHI::RHIBufferRandomReadWrite | RHI::RHIBufferTargetStructured;
+            RHI::RHIBufferTarget opaqueIndexTarget =
+                RHI::RHIBufferRandomReadWrite | RHI::RHIBufferTargetStructured | RHI::RHIBufferTargetCounter;
 
             std::shared_ptr<RHI::D3D12Buffer> opaqueIndexBuffer =
                 RHI::D3D12Buffer::Create(m_Device->GetLinkedDevice(),
@@ -88,8 +89,8 @@ namespace Pilot
                                          L"OpaqueIndexBuffer");
 
             commandBufferForOpaqueDraw.p_IndirectIndexCommandBuffer    = opaqueIndexBuffer;
-            commandBufferForOpaqueDraw.p_IndirectIndexCommandBufferSRV = opaqueIndexBuffer->GetDefaultSRV();
-            commandBufferForOpaqueDraw.p_IndirectIndexCommandBufferUAV = opaqueIndexBuffer->GetDefaultUAV();
+            //commandBufferForOpaqueDraw.p_IndirectIndexCommandBufferSRV = opaqueIndexBuffer->GetDefaultSRV();
+            //commandBufferForOpaqueDraw.p_IndirectIndexCommandBufferUAV = opaqueIndexBuffer->GetDefaultUAV();
 
             std::shared_ptr<RHI::D3D12Buffer> opaqueBuffer =
                 RHI::D3D12Buffer::Create(m_Device->GetLinkedDevice(),
@@ -99,13 +100,13 @@ namespace Pilot
                                          L"OpaqueBuffer");
 
             commandBufferForOpaqueDraw.p_IndirectSortCommandBuffer    = opaqueBuffer;
-            commandBufferForOpaqueDraw.p_IndirectSortCommandBufferUAV = opaqueBuffer->GetDefaultUAV();
+            //commandBufferForOpaqueDraw.p_IndirectSortCommandBufferUAV = opaqueBuffer->GetDefaultUAV();
         }
 
         // buffer for transparent draw
         {
             RHI::RHIBufferTarget transparentIndexTarget =
-                RHI::RHIBufferRandomReadWrite | RHI::RHIBufferTargetStructured;
+                RHI::RHIBufferRandomReadWrite | RHI::RHIBufferTargetStructured | RHI::RHIBufferTargetCounter;
 
             std::shared_ptr<RHI::D3D12Buffer> transparentIndexBuffer =
                 RHI::D3D12Buffer::Create(m_Device->GetLinkedDevice(),
@@ -115,8 +116,8 @@ namespace Pilot
                                          L"TransparentIndexBuffer");
 
             commandBufferForTransparentDraw.p_IndirectIndexCommandBuffer    = transparentIndexBuffer;
-            commandBufferForTransparentDraw.p_IndirectIndexCommandBufferSRV = transparentIndexBuffer->GetDefaultSRV();
-            commandBufferForTransparentDraw.p_IndirectIndexCommandBufferUAV = transparentIndexBuffer->GetDefaultUAV();
+            //commandBufferForTransparentDraw.p_IndirectIndexCommandBufferSRV = transparentIndexBuffer->GetDefaultSRV();
+            //commandBufferForTransparentDraw.p_IndirectIndexCommandBufferUAV = transparentIndexBuffer->GetDefaultUAV();
 
             std::shared_ptr<RHI::D3D12Buffer> transparentBuffer =
                 RHI::D3D12Buffer::Create(m_Device->GetLinkedDevice(),
@@ -126,7 +127,7 @@ namespace Pilot
                                          L"TransparentBuffer");
             
             commandBufferForTransparentDraw.p_IndirectSortCommandBuffer    = transparentBuffer;
-            commandBufferForTransparentDraw.p_IndirectSortCommandBufferUAV = transparentBuffer->GetDefaultUAV();
+            //commandBufferForTransparentDraw.p_IndirectSortCommandBufferUAV = transparentBuffer->GetDefaultUAV();
         }
     }
 
@@ -214,7 +215,7 @@ namespace Pilot
                 dirShadowmapCommandBuffer.m_gobject_id    = m_visiable_nodes.p_directional_light->m_gobject_id;
                 dirShadowmapCommandBuffer.m_gcomponent_id = m_visiable_nodes.p_directional_light->m_gcomponent_id;
                 dirShadowmapCommandBuffer.p_IndirectSortCommandBuffer    = p_IndirectCommandBuffer;
-                dirShadowmapCommandBuffer.p_IndirectSortCommandBufferUAV = p_IndirectCommandBuffer->GetDefaultUAV();
+                //dirShadowmapCommandBuffer.p_IndirectSortCommandBufferUAV = p_IndirectCommandBuffer->GetDefaultUAV();
             }
         }
         else
@@ -266,7 +267,7 @@ namespace Pilot
                     spotShadowCommandBuffer.m_gobject_id                   = curSpotLightDesc.m_gobject_id;
                     spotShadowCommandBuffer.m_gcomponent_id                = curSpotLightDesc.m_gcomponent_id;
                     spotShadowCommandBuffer.p_IndirectSortCommandBuffer    = p_IndirectCommandBuffer;
-                    spotShadowCommandBuffer.p_IndirectSortCommandBufferUAV = p_IndirectCommandBuffer->GetDefaultUAV();
+                    //spotShadowCommandBuffer.p_IndirectSortCommandBufferUAV = p_IndirectCommandBuffer->GetDefaultUAV();
 
                     spotShadowmapCommandBuffer.push_back(spotShadowCommandBuffer);
                 }
@@ -393,17 +394,17 @@ namespace Pilot
             RHI::D3D12CommandContext& copyContext = m_Device->GetLinkedDevice()->GetCopyContext1();
             copyContext.Open();
             {
-                copyContext.ResetCounter(commandBufferForOpaqueDraw.p_IndirectIndexCommandBuffer.get(), HLSL::indexCommandBufferCounterOffset);
-                copyContext.ResetCounter(commandBufferForOpaqueDraw.p_IndirectSortCommandBuffer.get(), HLSL::commandBufferCounterOffset);
-                copyContext.ResetCounter(commandBufferForTransparentDraw.p_IndirectIndexCommandBuffer.get(), HLSL::indexCommandBufferCounterOffset);
-                copyContext.ResetCounter(commandBufferForTransparentDraw.p_IndirectSortCommandBuffer.get(), HLSL::commandBufferCounterOffset);
+                copyContext.ResetCounter(commandBufferForOpaqueDraw.p_IndirectIndexCommandBuffer->GetCounterBuffer().get());
+                copyContext.ResetCounter(commandBufferForOpaqueDraw.p_IndirectSortCommandBuffer->GetCounterBuffer().get());
+                copyContext.ResetCounter(commandBufferForTransparentDraw.p_IndirectIndexCommandBuffer->GetCounterBuffer().get());
+                copyContext.ResetCounter(commandBufferForTransparentDraw.p_IndirectSortCommandBuffer->GetCounterBuffer().get());
                 if (dirShadowmapCommandBuffer.p_IndirectSortCommandBuffer != nullptr)
                 {
-                    copyContext.ResetCounter(dirShadowmapCommandBuffer.p_IndirectSortCommandBuffer.get(), HLSL::commandBufferCounterOffset);
+                    copyContext.ResetCounter(dirShadowmapCommandBuffer.p_IndirectSortCommandBuffer->GetCounterBuffer().get());
                 }
                 for (size_t i = 0; i < spotShadowmapCommandBuffer.size(); i++)
                 {
-                    copyContext.ResetCounter(spotShadowmapCommandBuffer[i].p_IndirectSortCommandBuffer.get(), HLSL::commandBufferCounterOffset);
+                    copyContext.ResetCounter(spotShadowmapCommandBuffer[i].p_IndirectSortCommandBuffer->GetCounterBuffer().get());
                 }
                 copyContext->CopyResource(pPerframeBuffer->GetResource(), pUploadPerframeBuffer->GetResource());
                 copyContext->CopyResource(pMaterialBuffer->GetResource(), pUploadMaterialBuffer->GetResource());
@@ -412,7 +413,7 @@ namespace Pilot
             copyContext.Close();
             RHI::D3D12SyncHandle copySyncHandle = copyContext.Execute(false);
 
-            RHI::D3D12CommandContext& asyncCompute = m_Device->GetLinkedDevice()->GetAsyncComputeCommandContext();
+            RHI::D3D12ComputeContext& asyncCompute = m_Device->GetLinkedDevice()->GetAsyncComputeCommandContext().GetComputeContext();
             asyncCompute.GetCommandQueue()->WaitForSyncHandle(copySyncHandle);
 
             asyncCompute.Open();
@@ -424,43 +425,43 @@ namespace Pilot
                 asyncCompute.InsertUAVBarrier(commandBufferForTransparentDraw.p_IndirectIndexCommandBuffer.get());
 
                 D3D12ScopedEvent(asyncCompute, "Gpu Frustum Culling for Sort");
-                asyncCompute.SetPipelineState(registry.GetPipelineState(PipelineStates::IndirectCullForSort));
-                asyncCompute.SetComputeRootSignature(registry.GetRootSignature(RootSignatures::IndirectCullForSort));
+                asyncCompute.SetPipelineState(PipelineStates::pIndirectCullForSort.get());
+                asyncCompute.SetRootSignature(RootSignatures::pIndirectCullForSort.get());
                 asyncCompute->SetComputeRootConstantBufferView(0, pPerframeBuffer->GetGpuVirtualAddress());
                 asyncCompute->SetComputeRootShaderResourceView(1, pMeshBuffer->GetGpuVirtualAddress());
                 asyncCompute->SetComputeRootShaderResourceView(2, pMaterialBuffer->GetGpuVirtualAddress());
-                asyncCompute->SetComputeRootDescriptorTable(3, commandBufferForOpaqueDraw.p_IndirectIndexCommandBufferUav->GetGpuHandle());
-                asyncCompute->SetComputeRootDescriptorTable(4, commandBufferForTransparentDraw.p_IndirectIndexCommandBufferUav->GetGpuHandle());
+                asyncCompute->SetComputeRootDescriptorTable(3, commandBufferForOpaqueDraw.p_IndirectIndexCommandBuffer->GetDefaultUAV()->GetGpuHandle());
+                asyncCompute->SetComputeRootDescriptorTable(4, commandBufferForTransparentDraw.p_IndirectIndexCommandBuffer->GetDefaultUAV()->GetGpuHandle());
 
-                asyncCompute.Dispatch1D<128>(numMeshes);
+                asyncCompute.Dispatch1D(numMeshes, 128);
             }
             
             //  Opaque object bitonic sort
             {
                 D3D12ScopedEvent(asyncCompute, "Bitonic Sort for opaque");
-                bitonicSort(asyncCompute,
-                            registry,
-                            commandBufferForOpaqueDraw.p_IndirectIndexCommandBuffer,
-                            commandBufferForOpaqueDraw.p_IndirectIndexCommandBufferUav,
-                            commandBufferForOpaqueDraw.p_IndirectIndexCommandBuffer,
-                            commandBufferForOpaqueDraw.p_IndirectIndexCommandBufferSRV,
-                            HLSL::commandBufferCounterOffset,
-                            true,
-                            false);
+                bitonicSort(
+                    asyncCompute,
+                    commandBufferForOpaqueDraw.p_IndirectIndexCommandBuffer,
+                    commandBufferForOpaqueDraw.p_IndirectIndexCommandBuffer->GetDefaultUAV(),
+                    commandBufferForOpaqueDraw.p_IndirectIndexCommandBuffer->GetCounterBuffer(),
+                    commandBufferForOpaqueDraw.p_IndirectIndexCommandBuffer->GetCounterBuffer()->GetDefaultSRV(),
+                    0,
+                    true,
+                    false);
             }
 
             // Transparent object bitonic sort
             {
                 D3D12ScopedEvent(asyncCompute, "Bitonic Sort for transparent");
-                bitonicSort(asyncCompute,
-                            registry,
-                            commandBufferForTransparentDraw.p_IndirectIndexCommandBuffer,
-                            commandBufferForTransparentDraw.p_IndirectIndexCommandBufferUav,
-                            commandBufferForTransparentDraw.p_IndirectIndexCommandBuffer,
-                            commandBufferForTransparentDraw.p_IndirectIndexCommandBufferSRV,
-                            HLSL::commandBufferCounterOffset,
-                            true,
-                            true);
+                bitonicSort(
+                    asyncCompute,
+                    commandBufferForTransparentDraw.p_IndirectIndexCommandBuffer,
+                    commandBufferForTransparentDraw.p_IndirectIndexCommandBuffer->GetDefaultUAV(),
+                    commandBufferForTransparentDraw.p_IndirectIndexCommandBuffer->GetCounterBuffer(),
+                    commandBufferForTransparentDraw.p_IndirectIndexCommandBuffer->GetCounterBuffer()->GetDefaultSRV(),
+                    0,
+                    true,
+                    true);
             }
             
             // Output Object Buffer
@@ -492,19 +493,17 @@ namespace Pilot
             if (dirShadowmapCommandBuffer.p_IndirectSortCommandBuffer != nullptr)
             {
                 D3D12ScopedEvent(asyncCompute, "Gpu Frustum Culling direction light");
-                asyncCompute.SetPipelineState(registry.GetPipelineState(PipelineStates::IndirectCullDirectionShadowmap));
-                asyncCompute.SetComputeRootSignature(registry.GetRootSignature(RootSignatures::IndirectCullDirectionShadowmap));
+                asyncCompute.SetPipelineState(PipelineStates::pIndirectCullDirectionShadowmap.get());
+                asyncCompute.SetRootSignature(RootSignatures::pIndirectCullDirectionShadowmap.get());
                 
                 asyncCompute->SetComputeRootConstantBufferView(0, pPerframeBuffer->GetGpuVirtualAddress());
                 asyncCompute->SetComputeRootShaderResourceView(1,pMeshBuffer->GetGpuVirtualAddress());
                 asyncCompute->SetComputeRootShaderResourceView(2, pMaterialBuffer->GetGpuVirtualAddress());
-                asyncCompute->SetComputeRootDescriptorTable(
-                    3, dirShadowmapCommandBuffer.p_IndirectSortCommandBufferUav->GetGpuHandle());
+                asyncCompute->SetComputeRootDescriptorTable(3, dirShadowmapCommandBuffer.p_IndirectSortCommandBuffer->GetDefaultUAV()->GetGpuHandle());
 
-                asyncCompute.Dispatch1D<128>(numMeshes);
+                asyncCompute.Dispatch1D(numMeshes, 128);
 
-                asyncCompute.TransitionBarrier(dirShadowmapCommandBuffer.p_IndirectSortCommandBuffer.get(),
-                                               D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT);
+                asyncCompute.TransitionBarrier(dirShadowmapCommandBuffer.p_IndirectSortCommandBuffer.get(), D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT);
             }
 
             // SpotLight shadow cull
@@ -513,20 +512,18 @@ namespace Pilot
                 D3D12ScopedEvent(asyncCompute, "Gpu Frustum Culling spot light");
                 for (size_t i = 0; i < spotShadowmapCommandBuffer.size(); i++)
                 {
-                    asyncCompute.SetPipelineState(registry.GetPipelineState(PipelineStates::IndirectCullSpotShadowmap));
-                    asyncCompute.SetComputeRootSignature(registry.GetRootSignature(RootSignatures::IndirectCullSpotShadowmap));
+                    asyncCompute.SetPipelineState(PipelineStates::pIndirectCullSpotShadowmap.get());
+                    asyncCompute.SetRootSignature(RootSignatures::pIndirectCullSpotShadowmap.get());
 
                     asyncCompute->SetComputeRootConstantBufferView(0, pPerframeBuffer->GetGpuVirtualAddress());
                     asyncCompute->SetComputeRoot32BitConstant(1, spotShadowmapCommandBuffer[i].m_lightIndex, 0);
                     asyncCompute->SetComputeRootShaderResourceView(2, pMeshBuffer->GetGpuVirtualAddress());
                     asyncCompute->SetComputeRootShaderResourceView(3, pMaterialBuffer->GetGpuVirtualAddress());
-                    asyncCompute->SetComputeRootDescriptorTable(
-                        4, spotShadowmapCommandBuffer[i].p_IndirectSortCommandBufferUav->GetGpuHandle());
+                    asyncCompute->SetComputeRootDescriptorTable(4, spotShadowmapCommandBuffer[i].p_IndirectSortCommandBuffer->GetDefaultUAV()->GetGpuHandle());
 
-                    asyncCompute.Dispatch1D<128>(numMeshes);
+                    asyncCompute.Dispatch1D(numMeshes, 128);
 
-                    asyncCompute.TransitionBarrier(spotShadowmapCommandBuffer[i].p_IndirectSortCommandBuffer.get(),
-                                                   D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT);
+                    asyncCompute.TransitionBarrier(spotShadowmapCommandBuffer[i].p_IndirectSortCommandBuffer.get(), D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT);
                 }
             }
             asyncCompute.Close();

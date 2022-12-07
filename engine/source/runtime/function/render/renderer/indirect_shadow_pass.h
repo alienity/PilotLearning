@@ -15,16 +15,16 @@ namespace Pilot
         Vector2 m_shadowmap_size;
 
         std::shared_ptr<RHI::D3D12Texture>            p_LightShadowmap;
-        std::shared_ptr<RHI::D3D12DepthStencilView>   p_LightShadowmapDSV;
-        std::shared_ptr<RHI::D3D12ShaderResourceView> p_LightShadowmapSRV;
+        //std::shared_ptr<RHI::D3D12DepthStencilView>   p_LightShadowmapDSV;
+        //std::shared_ptr<RHI::D3D12ShaderResourceView> p_LightShadowmapSRV;
 
         void Reset() 
         {
             m_gobject_id = k_invalid_gobject_id;
             m_gcomponent_id = k_invalid_gcomponent_id;
             p_LightShadowmap = nullptr;
-            p_LightShadowmapDSV = nullptr;
-            p_LightShadowmapSRV = nullptr;
+            //p_LightShadowmapDSV = nullptr;
+            //p_LightShadowmapSRV = nullptr;
         }
     };
 
@@ -37,16 +37,16 @@ namespace Pilot
         Vector2  m_shadowmap_size;
 
         std::shared_ptr<RHI::D3D12Texture>            p_LightShadowmap;
-        std::shared_ptr<RHI::D3D12DepthStencilView>   p_LightShadowmapDSV;
-        std::shared_ptr<RHI::D3D12ShaderResourceView> p_LightShadowmapSRV;
+        //std::shared_ptr<RHI::D3D12DepthStencilView>   p_LightShadowmapDSV;
+        //std::shared_ptr<RHI::D3D12ShaderResourceView> p_LightShadowmapSRV;
 
         void Reset()
         {
             m_gobject_id        = k_invalid_gobject_id;
             m_gcomponent_id     = k_invalid_gcomponent_id;
             p_LightShadowmap    = nullptr;
-            p_LightShadowmapDSV = nullptr;
-            p_LightShadowmapSRV = nullptr;
+            //p_LightShadowmapDSV = nullptr;
+            //p_LightShadowmapSRV = nullptr;
         }
     };
 
@@ -56,8 +56,8 @@ namespace Pilot
         struct ShadowmapRGHandle
         {
             RHI::RgResourceHandle shadowmapTextureHandle;
-            RHI::RgResourceHandle shadowmapDSVHandle;
-            RHI::RgResourceHandle shadowmapSRVHandle;
+            //RHI::RgResourceHandle shadowmapDSVHandle;
+            //RHI::RgResourceHandle shadowmapSRVHandle;
         };
         
         struct ShadowPassInitInfo : public RenderPassInitInfo

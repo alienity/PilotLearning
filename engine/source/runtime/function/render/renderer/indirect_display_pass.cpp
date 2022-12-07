@@ -23,23 +23,30 @@ namespace Pilot
             .Read(drawPassInput->inputRTColorHandle)
             .Write(&drawPassOutput->renderTargetColorHandle)
             .Execute([=](RHI::RenderGraphRegistry& registry, RHI::D3D12CommandContext& context) {
+                
+                RHI::D3D12GraphicsContext& graphicContext = context.GetGraphicsContext();
 
-                RHI::D3D12ShaderResourceView* inputRTColorSRV = registry.GetD3D12ShaderResourceView(drawPassInput->inputRTColorSRVHandle);
+                //RHI::D3D12ShaderResourceView* inputRTColorSRV = registry.GetD3D12ShaderResourceView(drawPassInput->inputRTColorSRVHandle);
+
+                RHI::D3D12Texture* inputRTColor = registry.GetD3D12Texture(drawPassInput->inputRTColorHandle);
+                RHI::D3D12ShaderResourceView* inputRTColorSRV = inputRTColor->GetDefaultSRV().get();
 
                 RHI::D3D12Texture* rtColorTexture = registry.GetD3D12Texture(drawPassOutput->renderTargetColorHandle);
+                RHI::D3D12RenderTargetView* rtColorRTV = rtColorTexture->GetDefaultRTV().get();
+
                 D3D12_RESOURCE_DESC rtColorTextureDesc = rtColorTexture->GetDesc();
 
                 int rtColorWidth  = rtColorTextureDesc.Width;
                 int rtColorHeight = rtColorTextureDesc.Height;
 
-                context.SetGraphicsRootSignature(registry.GetRootSignature(RootSignatures::FullScreenPresent));
-                context.SetPipelineState(registry.GetPipelineState(PipelineStates::FullScreenPresent));
-                context->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-                context.SetViewport(RHIViewport {0, 0, (float)rtColorWidth, (float)rtColorHeight, 0, 1});
-                context.SetScissorRect(RHIRect {0, 0, (long)rtColorWidth, (long)rtColorHeight});
-                context->SetGraphicsRoot32BitConstant(0, inputRTColorSRV->GetIndex(), 0);
-                context.SetRenderTarget(registry.GetD3D12RenderTargetView(drawPassOutput->renderTargetColorRTVHandle), nullptr);
-                context->DrawInstanced(3, 1, 0, 0);
+                graphicContext.SetRootSignature(RootSignatures::pFullScreenPresent.get());
+                graphicContext.SetPipelineState(PipelineStates::pFullScreenPresent.get());
+                graphicContext->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+                graphicContext.SetViewport(RHIViewport {0, 0, (float)rtColorWidth, (float)rtColorHeight, 0, 1});
+                graphicContext.SetScissorRect(RHIRect {0, 0, (long)rtColorWidth, (long)rtColorHeight});
+                graphicContext->SetGraphicsRoot32BitConstant(0, inputRTColorSRV->GetIndex(), 0);
+                graphicContext.SetRenderTarget(rtColorRTV, nullptr);
+                graphicContext->DrawInstanced(3, 1, 0, 0);
             });
     }
 

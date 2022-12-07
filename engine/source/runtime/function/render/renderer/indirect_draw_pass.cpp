@@ -45,37 +45,40 @@ namespace Pilot
         drawpass.Write(&drawPassOutput->renderTargetDepthHandle);
 
         drawpass.Execute([=](RHI::RenderGraphRegistry& registry, RHI::D3D12CommandContext& context) {
-            ID3D12CommandSignature* pCommandSignature =
-                registry.GetCommandSignature(CommandSignatures::IndirectDraw)->GetApiHandle();
 
-            RHI::D3D12RenderTargetView* renderTargetView =
-                registry.GetD3D12RenderTargetView(drawPassOutput->renderTargetColorRTVHandle);
-            RHI::D3D12DepthStencilView* depthStencilView =
-                registry.GetD3D12DepthStencilView(drawPassOutput->renderTargetDepthDSVHandle);
+            RHI::D3D12GraphicsContext& graphicContext = context.GetGraphicsContext();
 
-            context->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-            context.SetViewport(
+            ID3D12CommandSignature* pCommandSignature = CommandSignatures::pIndirectDraw->GetApiHandle();
+
+            RHI::D3D12Texture* renderTargetColor = registry.GetD3D12Texture(drawPassOutput->renderTargetColorHandle);
+            RHI::D3D12Texture* renderTargetDepth = registry.GetD3D12Texture(drawPassOutput->renderTargetDepthHandle);
+
+            RHI::D3D12RenderTargetView* renderTargetView = renderTargetColor->GetDefaultRTV().get();
+            RHI::D3D12DepthStencilView* depthStencilView = renderTargetDepth->GetDefaultDSV().get();
+
+            graphicContext->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+            graphicContext.SetViewport(
                 RHIViewport {0.0f, 0.0f, (float)colorTexDesc.Width, (float)colorTexDesc.Height, 0.0f, 1.0f});
-            context.SetScissorRect(RHIRect {0, 0, (int)colorTexDesc.Width, (int)colorTexDesc.Height});
+            graphicContext.SetScissorRect(RHIRect {0, 0, (int)colorTexDesc.Width, (int)colorTexDesc.Height});
 
             if (needClearRenderTarget)
             {
-                context.ClearRenderTarget(renderTargetView, depthStencilView);
+                graphicContext.ClearRenderTarget(renderTargetView, depthStencilView);
             }
-            context.SetRenderTarget(renderTargetView, depthStencilView);
+            graphicContext.SetRenderTarget(renderTargetView, depthStencilView);
 
-            context.SetGraphicsRootSignature(registry.GetRootSignature(RootSignatures::IndirectDraw));
-            context.SetPipelineState(registry.GetPipelineState(PipelineStates::IndirectDraw));
-            context->SetGraphicsRootConstantBufferView(1, pPerframeBuffer->GetGpuVirtualAddress());
-            context->SetGraphicsRootShaderResourceView(2, pMeshBuffer->GetGpuVirtualAddress());
-            context->SetGraphicsRootShaderResourceView(3, pMaterialBuffer->GetGpuVirtualAddress());
+            graphicContext.SetRootSignature(RootSignatures::pIndirectDraw.get());
+            graphicContext.SetPipelineState(PipelineStates::pIndirectDraw.get());
+            graphicContext->SetGraphicsRootConstantBufferView(1, pPerframeBuffer->GetGpuVirtualAddress());
+            graphicContext->SetGraphicsRootShaderResourceView(2, pMeshBuffer->GetGpuVirtualAddress());
+            graphicContext->SetGraphicsRootShaderResourceView(3, pMaterialBuffer->GetGpuVirtualAddress());
 
-            context->ExecuteIndirect(pCommandSignature,
-                                     HLSL::MeshLimit,
-                                     pIndirectCommandBuffer->GetResource(),
-                                     0,
-                                     pIndirectCommandBuffer->GetResource(),
-                                     HLSL::commandBufferCounterOffset);
+            graphicContext->ExecuteIndirect(pCommandSignature,
+                                            HLSL::MeshLimit,
+                                            pIndirectCommandBuffer->GetResource(),
+                                            0,
+                                            pIndirectCommandBuffer->GetCounterBuffer()->GetResource(),
+                                            0);
         });
     }
 
@@ -93,31 +96,10 @@ namespace Pilot
             needClearRenderTarget = true;
             drawPassOutput->renderTargetColorHandle = graph.Create<RHI::D3D12Texture>(colorTexDesc);
         }
-        if (drawPassOutput->renderTargetColorHandle.IsValid())
-        {
-            if (!drawPassOutput->renderTargetColorSRVHandle.IsValid())
-            {
-                drawPassOutput->renderTargetColorSRVHandle = graph.Create<RHI::D3D12ShaderResourceView>(
-                    RHI::RgViewDesc().SetResource(drawPassOutput->renderTargetColorHandle).AsTextureSrv());
-            }
-            if (!drawPassOutput->renderTargetColorRTVHandle.IsValid())
-            {
-                drawPassOutput->renderTargetColorRTVHandle = graph.Create<RHI::D3D12RenderTargetView>(
-                    RHI::RgViewDesc().SetResource(drawPassOutput->renderTargetColorHandle).AsRtv(false));
-            }
-        }
         if (!drawPassOutput->renderTargetDepthHandle.IsValid())
         {
             needClearRenderTarget = true;
             drawPassOutput->renderTargetDepthHandle = graph.Create<RHI::D3D12Texture>(depthTexDesc);
-        }
-        if (drawPassOutput->renderTargetDepthHandle.IsValid())
-        {
-            if (!drawPassOutput->renderTargetDepthDSVHandle.IsValid())
-            {
-                drawPassOutput->renderTargetDepthDSVHandle = graph.Create<RHI::D3D12DepthStencilView>(
-                    RHI::RgViewDesc().SetResource(drawPassOutput->renderTargetDepthHandle).AsDsv());
-            }
         }
         return needClearRenderTarget;
     }

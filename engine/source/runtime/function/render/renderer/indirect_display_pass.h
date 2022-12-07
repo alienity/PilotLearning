@@ -16,13 +16,11 @@ namespace Pilot
         struct DisplayInputParameters : public PassInput
         {
             RHI::RgResourceHandle inputRTColorHandle;
-            RHI::RgResourceHandle inputRTColorSRVHandle;
         };
 
         struct DisplayOutputParameters : public PassOutput
         {
             RHI::RgResourceHandle renderTargetColorHandle;
-            RHI::RgResourceHandle renderTargetColorRTVHandle;
         };
 
     public:

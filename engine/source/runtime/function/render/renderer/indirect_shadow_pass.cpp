@@ -40,14 +40,15 @@ namespace Pilot
                 directionalShadowmap.p_LightShadowmap = std::make_shared<RHI::D3D12Texture>(
                     m_Device->GetLinkedDevice(), shadowmapTexDesc, shadowmapClearVal);
 
-                directionalShadowmap.p_LightShadowmapDSV = std::make_shared<RHI::D3D12DepthStencilView>(
-                    m_Device->GetLinkedDevice(), directionalShadowmap.p_LightShadowmap.get());
+                //directionalShadowmap.p_LightShadowmapDSV = std::make_shared<RHI::D3D12DepthStencilView>(
+                //    m_Device->GetLinkedDevice(), directionalShadowmap.p_LightShadowmap.get());
 
-                directionalShadowmap.p_LightShadowmapSRV = std::make_shared<RHI::D3D12ShaderResourceView>(
-                    m_Device->GetLinkedDevice(), directionalShadowmap.p_LightShadowmap.get(), false, 0, 1);
+                //directionalShadowmap.p_LightShadowmapSRV = std::make_shared<RHI::D3D12ShaderResourceView>(
+                //    m_Device->GetLinkedDevice(), directionalShadowmap.p_LightShadowmap.get(), false, 0, 1);
             }
 
-            real_resource->m_mesh_perframe_storage_buffer_object.scene_directional_light.shadowmap_srv_index = directionalShadowmap.p_LightShadowmapSRV->GetIndex();
+            real_resource->m_mesh_perframe_storage_buffer_object.scene_directional_light.shadowmap_srv_index =
+                directionalShadowmap.p_LightShadowmap->GetDefaultSRV()->GetIndex();
         }
         else
         {
@@ -108,8 +109,8 @@ namespace Pilot
                     spotShadow.m_spot_index        = i;
                     spotShadow.m_shadowmap_size    = shadowmap_size;
                     spotShadow.p_LightShadowmap    = p_SpotLightShadowmap;
-                    spotShadow.p_LightShadowmapDSV = p_SpotLightShadowmapDSV;
-                    spotShadow.p_LightShadowmapSRV = p_SpotLightShadowmapSRV;
+                    //spotShadow.p_LightShadowmapDSV = p_SpotLightShadowmapDSV;
+                    //spotShadow.p_LightShadowmapSRV = p_SpotLightShadowmapSRV;
 
                     spotShadowmaps.push_back(spotShadow);
 
@@ -148,10 +149,11 @@ namespace Pilot
         if (directionalShadowmap.p_LightShadowmap != nullptr)
         {
             RHI::RgResourceHandle dirShadowMapHandle = graph.Import<RHI::D3D12Texture>(directionalShadowmap.p_LightShadowmap.get());
-            RHI::RgResourceHandle dirShadowmapDSVHandle = graph.Import<RHI::D3D12DepthStencilView>(directionalShadowmap.p_LightShadowmapDSV.get());
-            RHI::RgResourceHandle dirShadowmapSRVHandle = graph.Import<RHI::D3D12ShaderResourceView>(directionalShadowmap.p_LightShadowmapSRV.get());
+            //RHI::RgResourceHandle dirShadowmapDSVHandle = graph.Import<RHI::D3D12DepthStencilView>(directionalShadowmap.p_LightShadowmapDSV.get());
+            //RHI::RgResourceHandle dirShadowmapSRVHandle = graph.Import<RHI::D3D12ShaderResourceView>(directionalShadowmap.p_LightShadowmapSRV.get());
 
-            drawPassOutput->directionalShadowmapRGHandle = {dirShadowMapHandle, dirShadowmapDSVHandle, dirShadowmapSRVHandle};
+            //drawPassOutput->directionalShadowmapRGHandle = {dirShadowMapHandle, dirShadowmapDSVHandle, dirShadowmapSRVHandle};
+            drawPassOutput->directionalShadowmapRGHandle = {dirShadowMapHandle};
 
             shadowpass.Write(&dirShadowMapHandle);
         }
@@ -159,81 +161,90 @@ namespace Pilot
         for (size_t i = 0; i < spotShadowmaps.size(); i++)
         {
             RHI::RgResourceHandle spotShadowMapHandle = graph.Import<RHI::D3D12Texture>(spotShadowmaps[i].p_LightShadowmap.get());
-            RHI::RgResourceHandle spotShadowmapDSVHandle = graph.Import<RHI::D3D12DepthStencilView>(spotShadowmaps[i].p_LightShadowmapDSV.get());
-            RHI::RgResourceHandle spotShadowmapSRVHandle = graph.Import<RHI::D3D12ShaderResourceView>(spotShadowmaps[i].p_LightShadowmapSRV.get());
+            //RHI::RgResourceHandle spotShadowmapDSVHandle = graph.Import<RHI::D3D12DepthStencilView>(spotShadowmaps[i].p_LightShadowmapDSV.get());
+            //RHI::RgResourceHandle spotShadowmapSRVHandle = graph.Import<RHI::D3D12ShaderResourceView>(spotShadowmaps[i].p_LightShadowmapSRV.get());
 
-            drawPassOutput->spotShadowmapRGHandle.push_back({spotShadowMapHandle, spotShadowmapDSVHandle, spotShadowmapSRVHandle});
+            //drawPassOutput->spotShadowmapRGHandle.push_back({spotShadowMapHandle, spotShadowmapDSVHandle, spotShadowmapSRVHandle});
+            drawPassOutput->spotShadowmapRGHandle.push_back({spotShadowMapHandle});
             
             shadowpass.Write(&spotShadowMapHandle);
         }
 
 
         shadowpass.Execute([=](RHI::RenderGraphRegistry& registry, RHI::D3D12CommandContext& context) {
+
+            RHI::D3D12GraphicsContext& graphicContext = context.GetGraphicsContext();
+
             if (directionalShadowmap.m_gobject_id != k_invalid_gobject_id &&
                 directionalShadowmap.m_gcomponent_id != k_invalid_gcomponent_id)
             {
-                ID3D12CommandSignature* pCommandSignature =
-                    registry.GetCommandSignature(CommandSignatures::IndirectDrawDirectionShadowmap)->GetApiHandle();
+                ID3D12CommandSignature* pCommandSignature = CommandSignatures::pIndirectDrawDirectionShadowmap->GetApiHandle();
 
-                RHI::D3D12DepthStencilView* shadowmapStencilView =
-                    registry.GetD3D12DepthStencilView(drawPassOutput->directionalShadowmapRGHandle.shadowmapDSVHandle);
+                RHI::D3D12Texture* shadowmapStencilTex =
+                    registry.GetD3D12Texture(drawPassOutput->directionalShadowmapRGHandle.shadowmapTextureHandle);
 
-                context->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+                RHI::D3D12DepthStencilView* shadowmapStencilView = shadowmapStencilTex->GetDefaultDSV().get();
+
+                graphicContext->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
                 Vector2 shadowmap_size = directionalShadowmap.m_shadowmap_size;
 
-                context.SetGraphicsRootSignature(registry.GetRootSignature(RootSignatures::IndirectDrawDirectionShadowmap));
-                context.SetPipelineState(registry.GetPipelineState(PipelineStates::IndirectDrawDirectionShadowmap));
-                context.SetViewport(RHIViewport {0.0f, 0.0f, (float)shadowmap_size.x, (float)shadowmap_size.y, 0.0f, 1.0f});
-                context.SetScissorRect(RHIRect {0, 0, (int)shadowmap_size.x, (int)shadowmap_size.y});
+                graphicContext.SetRootSignature(RootSignatures::pIndirectDrawDirectionShadowmap.get());
+                graphicContext.SetPipelineState(PipelineStates::pIndirectDrawDirectionShadowmap.get());
+                graphicContext.SetViewport(
+                    RHIViewport {0.0f, 0.0f, (float)shadowmap_size.x, (float)shadowmap_size.y, 0.0f, 1.0f});
+                graphicContext.SetScissorRect(RHIRect {0, 0, (int)shadowmap_size.x, (int)shadowmap_size.y});
 
-                context->SetGraphicsRootConstantBufferView(1, pPerframeBuffer->GetGpuVirtualAddress());
-                context->SetGraphicsRootShaderResourceView(2, pMeshBuffer->GetGpuVirtualAddress());
-                context->SetGraphicsRootShaderResourceView(3, pMaterialBuffer->GetGpuVirtualAddress());
+                graphicContext->SetGraphicsRootConstantBufferView(1, pPerframeBuffer->GetGpuVirtualAddress());
+                graphicContext->SetGraphicsRootShaderResourceView(2, pMeshBuffer->GetGpuVirtualAddress());
+                graphicContext->SetGraphicsRootShaderResourceView(3, pMaterialBuffer->GetGpuVirtualAddress());
 
-                context.ClearRenderTarget(nullptr, shadowmapStencilView);
-                context.SetRenderTarget(nullptr, shadowmapStencilView);
+                graphicContext.ClearRenderTarget(nullptr, shadowmapStencilView);
+                graphicContext.SetRenderTarget(nullptr, shadowmapStencilView);
 
-                context->ExecuteIndirect(pCommandSignature,
-                                         HLSL::MeshLimit,
-                                         pDirectionCommandBuffer->GetResource(),
-                                         0,
-                                         pDirectionCommandBuffer->GetResource(),
-                                         HLSL::commandBufferCounterOffset);
+                graphicContext->ExecuteIndirect(pCommandSignature,
+                                                HLSL::MeshLimit,
+                                                pDirectionCommandBuffer->GetResource(),
+                                                0,
+                                                pDirectionCommandBuffer->GetCounterBuffer()->GetResource(),
+                                                0);
             }
 
             for (size_t i = 0; i < spotShadowmaps.size(); i++)
             {
                 ID3D12CommandSignature* pCommandSignature =
-                    registry.GetCommandSignature(CommandSignatures::IndirectDrawSpotShadowmap)->GetApiHandle();
+                    CommandSignatures::pIndirectDrawSpotShadowmap->GetApiHandle();
 
-                RHI::D3D12DepthStencilView* shadowmapStencilView =
-                    registry.GetD3D12DepthStencilView(drawPassOutput->spotShadowmapRGHandle[i].shadowmapDSVHandle);
+                RHI::D3D12Texture* shadowmapDepthTex =
+                    registry.GetD3D12Texture(drawPassOutput->spotShadowmapRGHandle[i].shadowmapTextureHandle);
 
-                context->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+                RHI::D3D12DepthStencilView* shadowmapStencilView = shadowmapDepthTex->GetDefaultDSV().get();
+
+                graphicContext->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
                 Vector2  shadowmap_size = spotShadowmaps[i].m_shadowmap_size;
                 uint32_t spot_index     = spotShadowmaps[i].m_spot_index;
 
-                context.SetGraphicsRootSignature(registry.GetRootSignature(RootSignatures::IndirectDrawSpotShadowmap));
-                context.SetPipelineState(registry.GetPipelineState(PipelineStates::IndirectDrawSpotShadowmap));
-                context.SetViewport(RHIViewport {0.0f, 0.0f, (float)shadowmap_size.x, (float)shadowmap_size.y, 0.0f, 1.0f});
-                context.SetScissorRect(RHIRect {0, 0, (int)shadowmap_size.x, (int)shadowmap_size.y});
+                graphicContext.SetRootSignature(RootSignatures::pIndirectDrawSpotShadowmap.get());
+                graphicContext.SetPipelineState(PipelineStates::pIndirectDrawSpotShadowmap.get());
+                graphicContext.SetViewport(
+                    RHIViewport {0.0f, 0.0f, (float)shadowmap_size.x, (float)shadowmap_size.y, 0.0f, 1.0f});
+                graphicContext.SetScissorRect(RHIRect {0, 0, (int)shadowmap_size.x, (int)shadowmap_size.y});
 
-                context->SetGraphicsRoot32BitConstant(0, spot_index, 1);
-                context->SetGraphicsRootConstantBufferView(1, pPerframeBuffer->GetGpuVirtualAddress());
-                context->SetGraphicsRootShaderResourceView(2, pMeshBuffer->GetGpuVirtualAddress());
-                context->SetGraphicsRootShaderResourceView(3, pMaterialBuffer->GetGpuVirtualAddress());
+                graphicContext->SetGraphicsRoot32BitConstant(0, spot_index, 1);
+                graphicContext->SetGraphicsRootConstantBufferView(1, pPerframeBuffer->GetGpuVirtualAddress());
+                graphicContext->SetGraphicsRootShaderResourceView(2, pMeshBuffer->GetGpuVirtualAddress());
+                graphicContext->SetGraphicsRootShaderResourceView(3, pMaterialBuffer->GetGpuVirtualAddress());
 
-                context.ClearRenderTarget(nullptr, shadowmapStencilView);
-                context.SetRenderTarget(nullptr, shadowmapStencilView);
+                graphicContext.ClearRenderTarget(nullptr, shadowmapStencilView);
+                graphicContext.SetRenderTarget(nullptr, shadowmapStencilView);
 
-                context->ExecuteIndirect(pCommandSignature,
-                                         HLSL::MeshLimit,
-                                         pSpotCommandBuffers[i]->GetResource(),
-                                         0,
-                                         pSpotCommandBuffers[i]->GetResource(),
-                                         HLSL::commandBufferCounterOffset);
+                graphicContext->ExecuteIndirect(pCommandSignature,
+                                                HLSL::MeshLimit,
+                                                pSpotCommandBuffers[i]->GetResource(),
+                                                0,
+                                                pSpotCommandBuffers[i]->GetCounterBuffer()->GetResource(),
+                                                0);
             }
 
         });

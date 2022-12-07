@@ -29,9 +29,9 @@ namespace Pilot
 
         // 初始化全局对象
         Shaders::Compile(compiler, shaderRootPath);
-        RootSignatures::Compile(device, renderGraphRegistry);
-        CommandSignatures::Compile(device, renderGraphRegistry);
-        PipelineStates::Compile(pipleineColorFormat, pipleineDepthFormat, backBufferFormat, depthBufferFormat, device, renderGraphRegistry);
+        RootSignatures::Compile(device);
+        CommandSignatures::Compile(device);
+        PipelineStates::Compile(pipleineColorFormat, pipleineDepthFormat, backBufferFormat, depthBufferFormat, device);
 
         InitGlobalBuffer();
         InitPass();
@@ -45,8 +45,8 @@ namespace Pilot
         CD3DX12_CLEAR_VALUE renderTargetClearValue    = CD3DX12_CLEAR_VALUE(backBufferFormat, renderTargetClearColor);
 
         p_RenderTargetTex = std::make_shared<RHI::D3D12Texture>(device->GetLinkedDevice(), renderTargetBufferDesc, renderTargetClearValue);
-        p_RenderTargetTexSRV = std::make_shared<RHI::D3D12ShaderResourceView>(device->GetLinkedDevice(), p_RenderTargetTex.get(), false, std::nullopt, std::nullopt);
-        p_RenderTargetTexRTV = std::make_shared<RHI::D3D12RenderTargetView>(device->GetLinkedDevice(), p_RenderTargetTex.get());
+        //p_RenderTargetTexSRV = std::make_shared<RHI::D3D12ShaderResourceView>(device->GetLinkedDevice(), p_RenderTargetTex.get(), false, std::nullopt, std::nullopt);
+        //p_RenderTargetTexRTV = std::make_shared<RHI::D3D12RenderTargetView>(device->GetLinkedDevice(), p_RenderTargetTex.get());
 
 
     }
@@ -119,7 +119,8 @@ namespace Pilot
         uiPassInitInfo.window_ui = window_ui;
         mUIPass->initialize(uiPassInitInfo);
 
-        window_ui->setGameView(p_RenderTargetTexSRV->GetGpuHandle(), backBufferWidth, backBufferHeight);
+        //window_ui->setGameView(p_RenderTargetTexSRV->GetGpuHandle(), backBufferWidth, backBufferHeight);
+        window_ui->setGameView(p_RenderTargetTex->GetDefaultSRV()->GetGpuHandle(), backBufferWidth, backBufferHeight);
     }
 
     void DeferredRenderer::PreparePassData(std::shared_ptr<RenderResourceBase> render_resource)
@@ -151,7 +152,7 @@ namespace Pilot
 
         // game view output
         RHI::RgResourceHandle renderTargetColorHandle = graph.Import(p_RenderTargetTex.get());
-        RHI::RgResourceHandle renderTargetColorRTVHandle = graph.Import(p_RenderTargetTexRTV.get());
+        //RHI::RgResourceHandle renderTargetColorRTVHandle = graph.Import(p_RenderTargetTexRTV.get());
 
         // indirect draw shadow
         IndirectShadowPass::ShadowInputParameters  mShadowmapIntputParams;
@@ -195,10 +196,10 @@ namespace Pilot
             mDrawTransIntputParams.spotShadowmapTexHandles.push_back(mShadowmapOutputParams.spotShadowmapRGHandle[i].shadowmapTextureHandle);
         }
         mDrawTransOutputParams.renderTargetColorHandle    = mDrawOutputParams.renderTargetColorHandle;
-        mDrawTransOutputParams.renderTargetColorSRVHandle = mDrawOutputParams.renderTargetColorSRVHandle;
-        mDrawTransOutputParams.renderTargetColorRTVHandle = mDrawOutputParams.renderTargetColorRTVHandle;
+        //mDrawTransOutputParams.renderTargetColorSRVHandle = mDrawOutputParams.renderTargetColorSRVHandle;
+        //mDrawTransOutputParams.renderTargetColorRTVHandle = mDrawOutputParams.renderTargetColorRTVHandle;
         mDrawTransOutputParams.renderTargetDepthHandle    = mDrawOutputParams.renderTargetDepthHandle;
-        mDrawTransOutputParams.renderTargetDepthDSVHandle = mDrawOutputParams.renderTargetDepthDSVHandle;
+        //mDrawTransOutputParams.renderTargetDepthDSVHandle = mDrawOutputParams.renderTargetDepthDSVHandle;
         mIndirectTransparentDrawPass->update(context, graph, mDrawTransIntputParams, mDrawTransOutputParams);
 
 
@@ -207,10 +208,10 @@ namespace Pilot
         DisplayPass::DisplayOutputParameters mDisplayOutputParams;
 
         mDisplayIntputParams.inputRTColorHandle    = mDrawOutputParams.renderTargetColorHandle;
-        mDisplayIntputParams.inputRTColorSRVHandle = mDrawOutputParams.renderTargetColorSRVHandle;
+        //mDisplayIntputParams.inputRTColorSRVHandle = mDrawOutputParams.renderTargetColorSRVHandle;
 
         mDisplayOutputParams.renderTargetColorHandle    = renderTargetColorHandle;
-        mDisplayOutputParams.renderTargetColorRTVHandle = renderTargetColorRTVHandle;
+        //mDisplayOutputParams.renderTargetColorRTVHandle = renderTargetColorRTVHandle;
 
         mDisplayPass->update(context, graph, mDisplayIntputParams, mDisplayOutputParams);
 

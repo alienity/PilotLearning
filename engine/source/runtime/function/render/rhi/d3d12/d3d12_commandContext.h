@@ -86,7 +86,7 @@ namespace RHI
         void CopyBufferRegion(D3D12Resource* Dest, UINT64 DestOffset, D3D12Resource* Src, UINT64 SrcOffset, UINT64 NumBytes);
         void CopySubresource(D3D12Resource* Dest, UINT DestSubIndex, D3D12Resource* Src, UINT SrcSubIndex);
         void CopyTextureRegion(D3D12Resource* Dest, UINT x, UINT y, UINT z, D3D12Resource* Source, RECT& rect);
-        void ResetCounter(D3D12Resource* CounterResource, UINT64 CounterOffset, UINT Value = 0);
+        void ResetCounter(D3D12Resource* CounterResource, UINT64 CounterOffset = 0, UINT Value = 0);
 
         // Creates a readback buffer of sufficient size, copies the texture into it,
         // and returns row pitch in bytes.

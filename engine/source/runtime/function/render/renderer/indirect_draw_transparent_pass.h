@@ -44,18 +44,18 @@ namespace Pilot
             DrawOutputParameters()
             {
                 renderTargetColorHandle.Invalidate();
-                renderTargetColorSRVHandle.Invalidate();
-                renderTargetColorRTVHandle.Invalidate();
+                //renderTargetColorSRVHandle.Invalidate();
+                //renderTargetColorRTVHandle.Invalidate();
                 renderTargetDepthHandle.Invalidate();
-                renderTargetDepthDSVHandle.Invalidate();
+                //renderTargetDepthDSVHandle.Invalidate();
             }
 
             RHI::RgResourceHandle renderTargetColorHandle;
-            RHI::RgResourceHandle renderTargetColorSRVHandle;
-            RHI::RgResourceHandle renderTargetColorRTVHandle;
+            //RHI::RgResourceHandle renderTargetColorSRVHandle;
+            //RHI::RgResourceHandle renderTargetColorRTVHandle;
 
             RHI::RgResourceHandle renderTargetDepthHandle;
-            RHI::RgResourceHandle renderTargetDepthDSVHandle;
+            //RHI::RgResourceHandle renderTargetDepthDSVHandle;
         };
 
     public:
