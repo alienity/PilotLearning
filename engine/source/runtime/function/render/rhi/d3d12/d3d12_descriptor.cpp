@@ -561,12 +561,7 @@ namespace RHI
 
     void D3D12ConstantBufferView::RecreateView()
     {
-        ID3D12Resource* D3D12Resource = nullptr;
-        if (Resource)
-        {
-            D3D12Resource = Resource->GetResource();
-        }
-        Descriptor.CreateView(Desc, D3D12Resource);
+        Descriptor.CreateView(Desc);
     }
 
     D3D12_CONSTANT_BUFFER_VIEW_DESC D3D12ConstantBufferView::GetDesc(D3D12Buffer* Buffer, UINT Offset, UINT Size)

@@ -178,8 +178,8 @@ namespace Pilot
             curMeshInstance.enable_vertex_blending = temp_node.enable_vertex_blending;
             curMeshInstance.model_matrix           = temp_node.model_matrix;
             curMeshInstance.model_matrix_inverse   = temp_node.model_matrix_inverse;
-            curMeshInstance.vertexBuffer           = temp_node.ref_mesh->mesh_vertex_buffer.GetVertexBufferView();
-            curMeshInstance.indexBuffer            = temp_node.ref_mesh->mesh_index_buffer.GetIndexBufferView();
+            curMeshInstance.vertexBuffer           = temp_node.ref_mesh->p_mesh_vertex_buffer->GetVertexBufferView();
+            curMeshInstance.indexBuffer            = temp_node.ref_mesh->p_mesh_index_buffer->GetIndexBufferView();
             curMeshInstance.drawIndexedArguments   = drawIndexedArguments;
             curMeshInstance.boundingBox            = boundingBox;
             curMeshInstance.materialIndex          = i;
@@ -290,7 +290,7 @@ namespace Pilot
         const uint32_t AlignedMaxNumElements = Pilot::AlignPowerOfTwo(MaxNumElements);
         const uint32_t MaxIterations         = Pilot::Log2(std::max(2048u, AlignedMaxNumElements)) - 10;
 
-        assert(ElementSizeBytes == 4 || ElementSizeBytes == 8, "Invalid key-index list for bitonic sort");
+        ASSERT(ElementSizeBytes == 4 || ElementSizeBytes == 8); // , "Invalid key-index list for bitonic sort"
 
         context.SetRootSignature(RootSignatures::pBitonicSortRootSignature.get());
 

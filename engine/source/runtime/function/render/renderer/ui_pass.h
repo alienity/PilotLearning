@@ -25,7 +25,6 @@ namespace Pilot
         struct UIOutputParameters : public PassOutput
         {
             RHI::RgResourceHandle backBufColorHandle;
-            RHI::RgResourceHandle backBufColorRTVHandle;
         };
 
     public:

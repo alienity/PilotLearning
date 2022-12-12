@@ -70,7 +70,7 @@ namespace RHI
 
     D3D12GraphicsContext& D3D12CommandContext::GetGraphicsContext()
     {
-        ASSERT(m_CommandListType != D3D12_COMMAND_LIST_TYPE_COMPUTE, "Cannot convert async compute context to graphics");
+        ASSERT(m_CommandListType != D3D12_COMMAND_LIST_TYPE_COMPUTE);
         return reinterpret_cast<D3D12GraphicsContext&>(*this);
     }
 
@@ -293,7 +293,7 @@ namespace RHI
     template<RHI_PIPELINE_STATE_TYPE PsoType>
     void D3D12CommandContext::SetDynamicResourceDescriptorTables(D3D12RootSignature* RootSignature)
     {
-        ID3D12GraphicsCommandList* CommandList = CommandListHandle.GetGraphicsCommandList();
+        ID3D12GraphicsCommandList* m_CommandList = m_CommandListHandle.GetGraphicsCommandList();
 
         // Bindless descriptors
         UINT NumParameters      = RootSignature->GetNumParameters();
@@ -301,11 +301,11 @@ namespace RHI
         auto ResourceDescriptor = GetParentLinkedDevice()->GetResourceDescriptorHeap().GetGpuDescriptorHandle(0);
         auto SamplerDescriptor  = GetParentLinkedDevice()->GetSamplerDescriptorHeap().GetGpuDescriptorHandle(0);
 
-        (CommandList->*D3D12DescriptorTableTraits<PsoType>::Bind())(
+        (m_CommandList->*D3D12DescriptorTableTraits<PsoType>::Bind())(
             RootParameters::DescriptorTable::ShaderResourceDescriptorTable + Offset, ResourceDescriptor);
-        (CommandList->*D3D12DescriptorTableTraits<PsoType>::Bind())(
+        (m_CommandList->*D3D12DescriptorTableTraits<PsoType>::Bind())(
             RootParameters::DescriptorTable::UnorderedAccessDescriptorTable + Offset, ResourceDescriptor);
-        (CommandList->*D3D12DescriptorTableTraits<PsoType>::Bind())(
+        (m_CommandList->*D3D12DescriptorTableTraits<PsoType>::Bind())(
             RootParameters::DescriptorTable::SamplerDescriptorTable + Offset, SamplerDescriptor);
     }
 
@@ -982,8 +982,8 @@ namespace RHI
 
         InitContext.TransitionBarrier(Dest, D3D12_RESOURCE_STATE_COPY_DEST, true);
 
-        const D3D12_RESOURCE_DESC& DestDesc = Dest->GetResource()->GetDesc();
-        const D3D12_RESOURCE_DESC& SrcDesc  = Src->GetResource()->GetDesc();
+        const CD3DX12_RESOURCE_DESC& DestDesc = Dest->GetDesc();
+        const CD3DX12_RESOURCE_DESC& SrcDesc  = Src->GetDesc();
 
         ASSERT(SliceIndex < DestDesc.DepthOrArraySize && SrcDesc.DepthOrArraySize == 1 &&
                DestDesc.Width == SrcDesc.Width && DestDesc.Height == SrcDesc.Height &&

@@ -105,9 +105,7 @@ namespace RHI
     public:
         // The root signature must be specified if and only if the command signature changes one of the root arguments.
         D3D12CommandSignature() noexcept = default;
-        explicit D3D12CommandSignature(D3D12Device*          Parent,
-                                       CommandSignatureDesc& Builder,
-                                       ID3D12RootSignature*  RootSignature);
+        D3D12CommandSignature(D3D12Device* Parent, CommandSignatureDesc& Builder, ID3D12RootSignature* RootSignature = nullptr);
 
         [[nodiscard]] ID3D12CommandSignature* GetApiHandle() const noexcept { return CommandSignature.Get(); }
 

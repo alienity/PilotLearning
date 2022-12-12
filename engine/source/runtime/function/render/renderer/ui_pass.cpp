@@ -41,30 +41,31 @@ namespace Pilot
         UIOutputParameters* uiPassOutput = (UIOutputParameters*)(&passOutput);
 
         RHI::RgResourceHandle backBufColorHandle    = uiPassOutput->backBufColorHandle;
-        RHI::RgResourceHandle backBufColorRTVHandle = uiPassOutput->backBufColorRTVHandle;
-
+        
         graph.AddRenderPass("UIPass")
             .Read(uiPassInput->renderTargetColorHandle)
             .Write(&backBufColorHandle)
             .Execute([=](RHI::RenderGraphRegistry& registry, RHI::D3D12CommandContext& context) {
 
-                RHI::D3D12Texture*          backBufColorTex = registry.GetD3D12Texture(backBufColorHandle);
-                RHI::D3D12RenderTargetView* backBufColorRTV = registry.GetD3D12RenderTargetView(backBufColorRTVHandle);
+                RHI::D3D12GraphicsContext& graphicsContext = context.GetGraphicsContext();
 
-                D3D12_RESOURCE_DESC backBufDesc = backBufColorTex->GetDesc();
+                RHI::D3D12Texture*          backBufColorTex = registry.GetD3D12Texture(backBufColorHandle);
+                RHI::D3D12RenderTargetView* backBufColorRTV = backBufColorTex->GetDefaultRTV().get();
+
+                CD3DX12_RESOURCE_DESC backBufDesc = backBufColorTex->GetDesc();
 
                 int backBufWidth  = backBufDesc.Width;
                 int backBufHeight = backBufDesc.Height;
 
                 RHIViewport viewport = {0.0f, 0.0f, (float)backBufWidth, (float)backBufHeight, 0.0f, 1.0f};
 
-                context.SetViewport(viewport);
-                context.SetScissorRect(RHIRect {0, 0, backBufWidth, backBufHeight});
+                graphicsContext.SetViewport(viewport);
+                graphicsContext.SetScissorRect(RHIRect {0, 0, backBufWidth, backBufHeight});
 
-                context.ClearRenderTarget(backBufColorRTV, nullptr);
-                context.SetRenderTarget(backBufColorRTV, nullptr);
+                graphicsContext.ClearRenderTarget(backBufColorRTV, nullptr);
+                graphicsContext.SetRenderTarget(backBufColorRTV, nullptr);
 
-                ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), context.GetGraphicsCommandList());
+                ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), graphicsContext.GetGraphicsCommandList());
             });
     }
 

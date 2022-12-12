@@ -17,12 +17,6 @@ namespace RHI
         virtual void PostPresent() {}
     };
 
-    struct D3D12SwapChainResource
-    {
-        D3D12Texture*          BackBuffer;
-        D3D12RenderTargetView* RtView;
-    };
-
     // HDR is not fully supported yet, still WIP
     // Currently HDR code is based on D3D12HDR Sample from Microsoft Samples
     class D3D12SwapChain : public D3D12DeviceChild
@@ -69,8 +63,8 @@ namespace RHI
         // Calling this function to ensure the correct color space for the different pixel formats.
         void EnsureSwapChainColorSpace(BitDepth BitDepth, bool EnableST2084);
 
-        [[nodiscard]] D3D12Texture*          GetBackBuffer(UINT Index);
-        [[nodiscard]] D3D12SwapChainResource GetCurrentBackBufferResource();
+        [[nodiscard]] D3D12Texture* GetBackBuffer(UINT Index);
+        [[nodiscard]] D3D12Texture* GetCurrentBackBufferResource();
 
         [[nodiscard]] RHIViewport GetViewport() const noexcept;
         [[nodiscard]] RHIRect     GetScissorRect() const noexcept;
@@ -82,8 +76,6 @@ namespace RHI
     private:
         Microsoft::WRL::ComPtr<IDXGISwapChain4> InitializeSwapChain();
 
-        void CreateRenderTargetViews();
-
     private:
         HWND WindowHandle   = nullptr;
         UINT Width          = 0;
@@ -91,10 +83,9 @@ namespace RHI
         bool TearingSupport = false;
         RECT WindowBounds   = {};
 
-        Microsoft::WRL::ComPtr<IDXGISwapChain4> SwapChain4;
-        D3D12Texture                            BackBuffers[BackBufferCount];
-        D3D12RenderTargetView                   RenderTargetViews[BackBufferCount];
-
+        Microsoft::WRL::ComPtr<IDXGISwapChain4> p_SwapChain4;
+        std::shared_ptr<D3D12Texture>           p_BackBuffers[BackBufferCount];
+        
         bool                  HDRSupport        = false;
         bool                  EnableST2084      = false;
         BitDepth              CurrentBitDepth   = _8;

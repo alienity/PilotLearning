@@ -178,6 +178,17 @@ namespace RHI
         m_pResource->SetName(name.c_str());
     }
 
+    const D3D12_CLEAR_VALUE D3D12Resource::GetClearValue() const noexcept
+    {
+        return m_ClearValue.has_value() ? m_ClearValue.value() : D3D12_CLEAR_VALUE {};
+    }
+
+    inline void D3D12Resource::GetClearColor(FLOAT color[4]) const
+    {
+        D3D12_CLEAR_VALUE clear_val = GetClearValue();
+        memcpy(color, clear_val.Color, sizeof(clear_val.Color));
+    }
+
     bool D3D12Resource::ImplicitStatePromotion(D3D12_RESOURCE_STATES State) const noexcept
     {
         // All buffer resources as well as textures with the D3D12_RESOURCE_FLAG_ALLOW_SIMULTANEOUS_ACCESS flag set are
@@ -543,7 +554,7 @@ namespace RHI
                                D3D12_RESOURCE_STATES              InitialResourceState,
                                bool                               Cubemap) :
         D3D12Resource(Parent, HeapProperty, Desc, InitialResourceState, ClearValue),
-        IsCubemap(Cubemap)
+        m_IsCubemap(Cubemap)
     {}
 
     D3D12Texture::D3D12Texture(D3D12LinkedDevice*                 Parent,
@@ -556,7 +567,7 @@ namespace RHI
                       Desc,
                       InitialResourceState,
                       ClearValue),
-        IsCubemap(Cubemap)
+        m_IsCubemap(Cubemap)
     {}
 
     D3D12Texture::D3D12Texture(D3D12LinkedDevice*                 Parent,
@@ -568,7 +579,7 @@ namespace RHI
                       Desc,
                       ResourceStateDeterminer(Desc, D3D12_HEAP_TYPE_DEFAULT).InferInitialState(),
                       ClearValue),
-        IsCubemap(Cubemap)
+        m_IsCubemap(Cubemap)
     {
         // Textures can only be in device local heap (for discrete GPUs) UMA case is not handled
     }

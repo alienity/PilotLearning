@@ -25,11 +25,11 @@ namespace Pilot
 
         uint32_t mesh_vertex_count;
 
-        RHI::D3D12Buffer mesh_vertex_buffer;
+        std::shared_ptr<RHI::D3D12Buffer> p_mesh_vertex_buffer;
 
         uint32_t mesh_index_count;
 
-        RHI::D3D12Buffer mesh_index_buffer;
+        std::shared_ptr<RHI::D3D12Buffer> p_mesh_index_buffer;
     };
 
     // material

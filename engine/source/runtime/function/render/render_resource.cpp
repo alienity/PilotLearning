@@ -743,27 +743,28 @@ namespace Pilot
                     glm::vec2(vertex_buffer_data[vertex_index].u, vertex_buffer_data[vertex_index].v);
             }
 
-            now_mesh.mesh_vertex_buffer =
-                RHI::D3D12Buffer(m_Device->GetLinkedDevice(),
-                                 vertex_buffer_size,
-                                 inputLayoutStride,
-                                 D3D12_HEAP_TYPE::D3D12_HEAP_TYPE_DEFAULT,
-                                 D3D12_RESOURCE_FLAGS::D3D12_RESOURCE_FLAG_NONE,
-                                 D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
+            now_mesh.p_mesh_vertex_buffer =
+                RHI::D3D12Buffer::Create(m_Device->GetLinkedDevice(),
+                                         RHI::RHIBufferTargetVertex,
+                                         vertex_count,
+                                         sizeof(MeshVertexDataDefinition),
+                                         L"MeshVertexBuffer",
+                                         RHI::RHIBufferModeImmutable,
+                                         D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
             {
                 startUploadBatch();
 
                 {
                     D3D12_RESOURCE_STATES buf_ori_state =
-                        now_mesh.mesh_vertex_buffer.GetResourceState().GetSubresourceState(0);
+                        now_mesh.p_mesh_vertex_buffer->GetResourceState().GetSubresourceState(0);
 
-                    m_ResourceUpload->Transition(now_mesh.mesh_vertex_buffer.GetResource(),
+                    m_ResourceUpload->Transition(now_mesh.p_mesh_vertex_buffer->GetResource(),
                                                  buf_ori_state,
                                                  D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_DEST);
 
-                    m_ResourceUpload->Upload(now_mesh.mesh_vertex_buffer.GetResource(), inefficient_staging_buffer);
+                    m_ResourceUpload->Upload(now_mesh.p_mesh_vertex_buffer->GetResource(), inefficient_staging_buffer);
 
-                    m_ResourceUpload->Transition(now_mesh.mesh_vertex_buffer.GetResource(),
+                    m_ResourceUpload->Transition(now_mesh.p_mesh_vertex_buffer->GetResource(),
                                                  D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_DEST,
                                                  buf_ori_state);
                 }
@@ -778,32 +779,37 @@ namespace Pilot
     {
         uint32_t buffer_size = index_buffer_size;
 
+        uint32_t index_count = index_buffer_size / sizeof(uint32_t);
+
         DirectX::SharedGraphicsResource inefficient_staging_buffer = m_GraphicsMemory->Allocate(buffer_size);
 
         void* staging_buffer_data = inefficient_staging_buffer.Memory();
 
         memcpy(staging_buffer_data, index_buffer_data, (size_t)buffer_size);
 
-        now_mesh.mesh_index_buffer = RHI::D3D12Buffer(m_Device->GetLinkedDevice(),
-                                                      buffer_size,
-                                                      sizeof(std::uint32_t),
-                                                      D3D12_HEAP_TYPE::D3D12_HEAP_TYPE_DEFAULT,
-                                                      D3D12_RESOURCE_FLAGS::D3D12_RESOURCE_FLAG_NONE,
-                                                      D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_INDEX_BUFFER);
+        now_mesh.p_mesh_index_buffer =
+            RHI::D3D12Buffer::Create(m_Device->GetLinkedDevice(),
+                                     RHI::RHIBufferTargetIndex,
+                                     index_count,
+                                     sizeof(uint32_t),
+                                     L"MeshIndexBuffer",
+                                     RHI::RHIBufferModeImmutable,
+                                     D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_INDEX_BUFFER);
+
         {
             startUploadBatch();
 
             {
                 D3D12_RESOURCE_STATES buf_ori_state =
-                    now_mesh.mesh_index_buffer.GetResourceState().GetSubresourceState(0);
+                    now_mesh.p_mesh_index_buffer->GetResourceState().GetSubresourceState(0);
 
-                m_ResourceUpload->Transition(now_mesh.mesh_index_buffer.GetResource(),
+                m_ResourceUpload->Transition(now_mesh.p_mesh_index_buffer->GetResource(),
                                              buf_ori_state,
                                              D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_DEST);
 
-                m_ResourceUpload->Upload(now_mesh.mesh_index_buffer.GetResource(), inefficient_staging_buffer);
+                m_ResourceUpload->Upload(now_mesh.p_mesh_index_buffer->GetResource(), inefficient_staging_buffer);
 
-                m_ResourceUpload->Transition(now_mesh.mesh_index_buffer.GetResource(),
+                m_ResourceUpload->Transition(now_mesh.p_mesh_index_buffer->GetResource(),
                                              D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_DEST,
                                              buf_ori_state);
             }
@@ -957,7 +963,7 @@ namespace Pilot
 
             D3D12_RESOURCE_FLAGS resourceFlags =
                 D3D12_RESOURCE_FLAG_NONE /* | D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS*/;
-            D3D12_RESOURCE_DESC resourceDesc =
+            CD3DX12_RESOURCE_DESC resourceDesc =
                 CD3DX12_RESOURCE_DESC::Tex2D(format, width, height, 1, tex2d_miplevels, 1, 0, resourceFlags);
 
             std::shared_ptr<RHI::D3D12Texture> tex2d =
@@ -1037,15 +1043,15 @@ namespace Pilot
                 static_cast<uint32_t>(std::floor(std::log2(std::max(cube_maps[0]->m_width, cube_maps[0]->m_height)))) +
                 1;
 
-        D3D12_RESOURCE_FLAGS resourceFlags = D3D12_RESOURCE_FLAG_NONE | D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
-        D3D12_RESOURCE_DESC  resourceDesc  = CD3DX12_RESOURCE_DESC::Tex2D(cube_maps[0]->m_format,
-                                                                        cube_maps[0]->m_width,
-                                                                        cube_maps[0]->m_height,
-                                                                        6,
-                                                                        cubemap_miplevels,
-                                                                        1,
-                                                                        0,
-                                                                        resourceFlags);
+        D3D12_RESOURCE_FLAGS  resourceFlags = D3D12_RESOURCE_FLAG_NONE | D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
+        CD3DX12_RESOURCE_DESC resourceDesc  = CD3DX12_RESOURCE_DESC::Tex2D(cube_maps[0]->m_format,
+                                                                          cube_maps[0]->m_width,
+                                                                          cube_maps[0]->m_height,
+                                                                          6,
+                                                                          cubemap_miplevels,
+                                                                          1,
+                                                                          0,
+                                                                          resourceFlags);
 
         std::shared_ptr<RHI::D3D12Texture> cube_tex =
             std::make_shared<RHI::D3D12Texture>(m_Device->GetLinkedDevice(), resourceDesc, std::nullopt, true);

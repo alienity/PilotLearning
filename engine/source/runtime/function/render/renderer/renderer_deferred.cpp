@@ -10,9 +10,9 @@ namespace Pilot
 
     void DeferredRenderer::Initialize()
     {
-        RHI::D3D12SwapChainResource backBufferResource = swapChain->GetCurrentBackBufferResource();
+        RHI::D3D12Texture* pBackBufferResource = swapChain->GetCurrentBackBufferResource();
         
-        D3D12_RESOURCE_DESC backDesc = backBufferResource.BackBuffer->GetDesc();
+        CD3DX12_RESOURCE_DESC backDesc = pBackBufferResource->GetDesc();
 
         backBufferWidth   = backDesc.Width;
         backBufferHeight  = backDesc.Height;
@@ -142,18 +142,16 @@ namespace Pilot
         IndirectCullPass::IndirectCullOutput indirectCullOutput;
         mIndirectCullPass->cullMeshs(context, renderGraphRegistry, indirectCullOutput);
 
-        RHI::D3D12SwapChainResource backBufferResource = swapChain->GetCurrentBackBufferResource();
+        RHI::D3D12Texture* pBackBufferResource = swapChain->GetCurrentBackBufferResource();
 
         RHI::RenderGraph graph(renderGraphAllocator, renderGraphRegistry);
 
         // backbuffer output
-        RHI::RgResourceHandle backBufColorHandle    = graph.Import(backBufferResource.BackBuffer);
-        RHI::RgResourceHandle backBufColorRTVHandle = graph.Import(backBufferResource.RtView);
+        RHI::RgResourceHandle backBufColorHandle    = graph.Import(pBackBufferResource);
 
         // game view output
         RHI::RgResourceHandle renderTargetColorHandle = graph.Import(p_RenderTargetTex.get());
-        //RHI::RgResourceHandle renderTargetColorRTVHandle = graph.Import(p_RenderTargetTexRTV.get());
-
+        
         // indirect draw shadow
         IndirectShadowPass::ShadowInputParameters  mShadowmapIntputParams;
         IndirectShadowPass::ShadowOutputParameters mShadowmapOutputParams;
@@ -223,8 +221,7 @@ namespace Pilot
             mUIIntputParams.renderTargetColorHandle = mDisplayOutputParams.renderTargetColorHandle;
 
             mUIOutputParams.backBufColorHandle    = backBufColorHandle;
-            mUIOutputParams.backBufColorRTVHandle = backBufColorRTVHandle;
-
+            
             mUIPass->update(context, graph, mUIIntputParams, mUIOutputParams);
         }
 
@@ -232,8 +229,7 @@ namespace Pilot
 
         {
             // Transfer the state of the backbuffer to Present
-            context.TransitionBarrier(backBufferResource.BackBuffer,
-                                      D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_PRESENT);
+            context.TransitionBarrier(p_RenderTargetTex.get(), D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_PRESENT);
         }
 
 

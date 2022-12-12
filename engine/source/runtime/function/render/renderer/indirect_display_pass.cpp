@@ -34,7 +34,7 @@ namespace Pilot
                 RHI::D3D12Texture* rtColorTexture = registry.GetD3D12Texture(drawPassOutput->renderTargetColorHandle);
                 RHI::D3D12RenderTargetView* rtColorRTV = rtColorTexture->GetDefaultRTV().get();
 
-                D3D12_RESOURCE_DESC rtColorTextureDesc = rtColorTexture->GetDesc();
+                CD3DX12_RESOURCE_DESC rtColorTextureDesc = rtColorTexture->GetDesc();
 
                 int rtColorWidth  = rtColorTextureDesc.Width;
                 int rtColorHeight = rtColorTextureDesc.Height;

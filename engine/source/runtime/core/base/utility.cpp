@@ -1,6 +1,7 @@
 #include "utility.h"
 #include "macro.h"
 #include "runtime/core/math/moyu_math.h"
+#include <Windows.h>
 #include <locale>
 #include <stringapiset.h>
 
@@ -104,7 +105,7 @@ void SIMDMemFill(void* __restrict _Dest, __m128 FillVector, size_t NumQuadwords)
 {
     ASSERT(Pilot::IsAligned(_Dest, 16));
 
-    register const __m128i Source = _mm_castps_si128(FillVector);
+    const __m128i Source = _mm_castps_si128(FillVector);
     __m128i* __restrict Dest      = (__m128i* __restrict)_Dest;
 
     switch (((size_t)Dest >> 4) & 3)

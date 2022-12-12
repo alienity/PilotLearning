@@ -97,27 +97,19 @@ namespace RHI
 
         void SetResourceName(std::wstring name);
 
-        [[nodiscard]] D3D12_CLEAR_VALUE GetClearValue() const noexcept
-        {
-            return m_ClearValue.has_value() ? *m_ClearValue : D3D12_CLEAR_VALUE {};
-        }
-
-        [[nodiscard]] inline void GetClearColor(FLOAT color[4]) const
-        {
-            D3D12_CLEAR_VALUE clear_val = GetClearValue();
-            memcpy(color, clear_val.Color, sizeof(clear_val.Color));
-        }
+        [[nodiscard]] const D3D12_CLEAR_VALUE GetClearValue() const noexcept;
+        [[nodiscard]] inline void  GetClearColor(FLOAT color[4]) const;
         [[nodiscard]] inline FLOAT GetClearDepth() const { return GetClearValue().DepthStencil.Depth; }
         [[nodiscard]] inline UINT8 GetClearStencil() const { return GetClearValue().DepthStencil.Stencil; }
 
-        [[nodiscard]] inline const D3D12_RESOURCE_DESC& GetDesc() const noexcept { return m_ResourceDesc; }
-        [[nodiscard]] inline D3D12_RESOURCE_DIMENSION   GetDimension() const { return m_ResourceDesc.Dimension; }
-        [[nodiscard]] inline UINT64                     GetWidth() const { return m_ResourceDesc.Width; }
-        [[nodiscard]] inline UINT64                     GetHeight() const { return m_ResourceDesc.Height; }
-        [[nodiscard]] inline UINT16                     GetArraySize() const { return m_ResourceDesc.ArraySize(); }
-        [[nodiscard]] inline UINT16                     GetDepth() const { return m_ResourceDesc.Depth(); }
-        [[nodiscard]] inline UINT16                     GetMipLevels() const { return m_ResourceDesc.MipLevels; }
-        [[nodiscard]] inline DXGI_FORMAT                GetFormat() const { return m_ResourceDesc.Format; }
+        [[nodiscard]] inline const CD3DX12_RESOURCE_DESC& GetDesc() const noexcept { return m_ResourceDesc; }
+        [[nodiscard]] inline D3D12_RESOURCE_DIMENSION     GetDimension() const { return m_ResourceDesc.Dimension; }
+        [[nodiscard]] inline UINT64                       GetWidth() const { return m_ResourceDesc.Width; }
+        [[nodiscard]] inline UINT64                       GetHeight() const { return m_ResourceDesc.Height; }
+        [[nodiscard]] inline UINT16                       GetArraySize() const { return m_ResourceDesc.ArraySize(); }
+        [[nodiscard]] inline UINT16                       GetDepth() const { return m_ResourceDesc.Depth(); }
+        [[nodiscard]] inline UINT16                       GetMipLevels() const { return m_ResourceDesc.MipLevels; }
+        [[nodiscard]] inline DXGI_FORMAT                  GetFormat() const { return m_ResourceDesc.Format; }
 
         [[nodiscard]] inline UINT8           GetPlaneCount() const noexcept { return m_PlaneCount; }
         [[nodiscard]] inline UINT            GetNumSubresources() const noexcept { return m_NumSubresources; }
@@ -227,7 +219,7 @@ namespace RHI
         void CopyData(UINT Index, const T& Data)
         {
             assert(m_CpuVirtualAddress && "Invalid CpuVirtualAddress");
-            memcpy(&m_CpuVirtualAddress[Index * Stride], &Data, sizeof(T));
+            memcpy(&m_CpuVirtualAddress[Index * m_Stride], &Data, sizeof(T));
         }
 
     public:
@@ -285,24 +277,24 @@ namespace RHI
         D3D12Texture(D3D12LinkedDevice*                 Parent,
                      const CD3DX12_RESOURCE_DESC&       Desc,
                      const CD3DX12_HEAP_PROPERTIES&     HeapProperty,
-                     std::optional<CD3DX12_CLEAR_VALUE> ClearValue           = std::nullopt,
-                     D3D12_RESOURCE_STATES              InitialResourceState = D3D12_RESOURCE_STATE_COMMON,
-                     bool                               Cubemap              = false);
+                     std::optional<CD3DX12_CLEAR_VALUE> ClearValue,
+                     D3D12_RESOURCE_STATES              InitialResourceState,
+                     bool                               Cubemap = false);
         D3D12Texture(D3D12LinkedDevice*                 Parent,
                      const CD3DX12_RESOURCE_DESC&       Desc,
-                     std::optional<CD3DX12_CLEAR_VALUE> ClearValue           = std::nullopt,
-                     D3D12_RESOURCE_STATES              InitialResourceState = D3D12_RESOURCE_STATE_COMMON,
-                     bool                               Cubemap              = false);
+                     std::optional<CD3DX12_CLEAR_VALUE> ClearValue,
+                     D3D12_RESOURCE_STATES              InitialResourceState,
+                     bool                               Cubemap = false);
         D3D12Texture(D3D12LinkedDevice*                 Parent,
                      const CD3DX12_RESOURCE_DESC&       Desc,
-                     std::optional<CD3DX12_CLEAR_VALUE> ClearValue = std::nullopt,
-                     bool                               Cubemap    = false);
+                     std::optional<CD3DX12_CLEAR_VALUE> ClearValue,
+                     bool                               Cubemap = false);
 
         [[nodiscard]] UINT GetSubresourceIndex(std::optional<UINT> OptArraySlice = std::nullopt,
                                                std::optional<UINT> OptMipSlice   = std::nullopt,
                                                std::optional<UINT> OptPlaneSlice = std::nullopt) const noexcept;
 
-        [[nodiscard]] bool IsCubemap() const noexcept { return IsCubemap; }
+        [[nodiscard]] bool IsCubemap() const noexcept { return m_IsCubemap; }
 
     public:
 
@@ -420,7 +412,7 @@ namespace RHI
         robin_hood::unordered_map<D3D12_UNORDERED_ACCESS_VIEW_DESC, std::shared_ptr<D3D12UnorderedAccessView>> m_UAVHandleMap;
 
     protected:
-        bool IsCubemap = false;
+        bool m_IsCubemap = false;
     };
 
 }

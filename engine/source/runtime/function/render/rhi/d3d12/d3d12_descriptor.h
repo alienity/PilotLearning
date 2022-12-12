@@ -478,6 +478,11 @@ namespace RHI
                 Resource, CounterResource, nullptr, CpuHandle);
         }
 
+        void CreateView(const ViewDesc& Desc)
+        {
+            (GetParentLinkedDevice()->GetDevice()->*D3D12DescriptorTraits<ViewDesc>::Create())(&Desc, CpuHandle);
+        }
+
         void CreateView(const ViewDesc& Desc, ID3D12Resource* Resource)
         {
             (GetParentLinkedDevice()->GetDevice()->*D3D12DescriptorTraits<ViewDesc>::Create())(

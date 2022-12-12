@@ -7,7 +7,7 @@ namespace RHI
     D3D12SwapChain::D3D12SwapChain(D3D12Device* Parent, HWND HWnd)
         : D3D12DeviceChild(Parent)
         , WindowHandle(HWnd)
-        , SwapChain4(InitializeSwapChain())
+        , p_SwapChain4(InitializeSwapChain())
         , Fence(Parent, 0, D3D12_FENCE_FLAG_NONE)
     {
         // Check display HDR support and initialize ST.2084 support to match the display's support.
@@ -15,7 +15,7 @@ namespace RHI
         EnableST2084 = HDRSupport;
 
         DXGI_SWAP_CHAIN_DESC1 Desc = {};
-        SwapChain4->GetDesc1(&Desc);
+        p_SwapChain4->GetDesc1(&Desc);
         Resize(Desc.Width, Desc.Height);
     }
     // clang-format on
@@ -124,22 +124,22 @@ namespace RHI
         if (CurrentColorSpace != ColorSpace)
         {
             UINT ColorSpaceSupport = 0;
-            if (SUCCEEDED(SwapChain4->CheckColorSpaceSupport(ColorSpace, &ColorSpaceSupport)) &&
+            if (SUCCEEDED(p_SwapChain4->CheckColorSpaceSupport(ColorSpace, &ColorSpaceSupport)) &&
                 (ColorSpaceSupport & DXGI_SWAP_CHAIN_COLOR_SPACE_SUPPORT_FLAG_PRESENT) ==
                     DXGI_SWAP_CHAIN_COLOR_SPACE_SUPPORT_FLAG_PRESENT)
             {
-                VERIFY_D3D12_API(SwapChain4->SetColorSpace1(ColorSpace));
+                VERIFY_D3D12_API(p_SwapChain4->SetColorSpace1(ColorSpace));
                 CurrentColorSpace = ColorSpace;
             }
         }
     }
 
-    D3D12Texture* D3D12SwapChain::GetBackBuffer(UINT Index) { return &BackBuffers[Index]; }
+    D3D12Texture* D3D12SwapChain::GetBackBuffer(UINT Index) { return p_BackBuffers[Index].get(); }
 
-    D3D12SwapChainResource D3D12SwapChain::GetCurrentBackBufferResource()
+    D3D12Texture* D3D12SwapChain::GetCurrentBackBufferResource()
     {
-        UINT BackBufferIndex = SwapChain4->GetCurrentBackBufferIndex();
-        return {GetBackBuffer(BackBufferIndex), &RenderTargetViews[BackBufferIndex]};
+        UINT backBufferIndex = p_SwapChain4->GetCurrentBackBufferIndex();
+        return p_BackBuffers[backBufferIndex].get();
     }
 
     RHIViewport D3D12SwapChain::GetViewport() const noexcept
@@ -162,9 +162,9 @@ namespace RHI
 
         GetWindowRect(WindowHandle, &WindowBounds);
 
-        for (auto& BackBuffer : BackBuffers)
+        for (size_t i = 0; i < 3; i++)
         {
-            BackBuffer = D3D12Texture {};
+            p_BackBuffers[i] = nullptr;
         }
 
         if (this->Width != Width || this->Height != Height)
@@ -176,22 +176,20 @@ namespace RHI
         }
 
         DXGI_SWAP_CHAIN_DESC1 Desc = {};
-        VERIFY_D3D12_API(SwapChain4->GetDesc1(&Desc));
-        VERIFY_D3D12_API(SwapChain4->ResizeBuffers(0, Width, Height, DXGI_FORMAT_UNKNOWN, Desc.Flags));
+        VERIFY_D3D12_API(p_SwapChain4->GetDesc1(&Desc));
+        VERIFY_D3D12_API(p_SwapChain4->ResizeBuffers(0, Width, Height, DXGI_FORMAT_UNKNOWN, Desc.Flags));
 
         EnsureSwapChainColorSpace(CurrentBitDepth, EnableST2084);
 
         for (UINT i = 0; i < BackBufferCount; ++i)
         {
             Microsoft::WRL::ComPtr<ID3D12Resource> Resource;
-            VERIFY_D3D12_API(SwapChain4->GetBuffer(i, IID_PPV_ARGS(&Resource)));
-            FLOAT             Color[4]   = {0.0f, 0.0f, 0.0f, 0.0f};
-            D3D12_CLEAR_VALUE ClearValue = CD3DX12_CLEAR_VALUE(Desc.Format, Color);
-            BackBuffers[i]               = D3D12Texture(
-                GetParentDevice()->GetLinkedDevice(), std::move(Resource), ClearValue, D3D12_RESOURCE_STATE_PRESENT);
+            VERIFY_D3D12_API(p_SwapChain4->GetBuffer(i, IID_PPV_ARGS(&Resource)));
+            p_BackBuffers[i] = D3D12Texture::CreateFromSwapchain(GetParentDevice()->GetLinkedDevice(),
+                                                                 std::move(Resource),
+                                                                 D3D12_RESOURCE_STATE_PRESENT,
+                                                                 L"SwapChainBackBuffer");
         }
-
-        CreateRenderTargetViews();
     }
 
 	void D3D12SwapChain::Present(bool VSync, IPresent& Present)
@@ -200,7 +198,7 @@ namespace RHI
         {
             UINT    SyncInterval = VSync ? 1u : 0u;
             UINT    PresentFlags = (TearingSupport && !VSync) ? DXGI_PRESENT_ALLOW_TEARING : 0u;
-            HRESULT Result       = SwapChain4->Present(SyncInterval, PresentFlags);
+            HRESULT Result       = p_SwapChain4->Present(SyncInterval, PresentFlags);
         }
         Present.PostPresent();
 
@@ -245,14 +243,5 @@ namespace RHI
 
         return SwapChain4;
     }
-
-    void D3D12SwapChain::CreateRenderTargetViews()
-    {
-        for (UINT i = 0; i < BackBufferCount; ++i)
-        {
-            RenderTargetViews[i] = D3D12RenderTargetView(GetParentDevice()->GetLinkedDevice(), &BackBuffers[i]);
-        }
-    }
-
 }
 

@@ -522,8 +522,23 @@ namespace RHI
         SizeInBytes += HitGroupShaderTable->GetTotalSizeInBytes();
         SizeInBytes = D3D12RHIUtils::AlignUp<UINT64>(SizeInBytes, D3D12_RAYTRACING_SHADER_TABLE_BYTE_ALIGNMENT);
 
-        SBTBuffer       = D3D12Buffer(Device, SizeInBytes, 0, D3D12_HEAP_TYPE_DEFAULT, D3D12_RESOURCE_FLAG_NONE);
-        SBTUploadBuffer = D3D12Buffer(Device, SizeInBytes, 0, D3D12_HEAP_TYPE_UPLOAD, D3D12_RESOURCE_FLAG_NONE);
+        pSBTBuffer = D3D12Buffer::Create(Device,
+                                         RHIBufferTargetRayTracingAccelerationStructure,
+                                         1,
+                                         SizeInBytes,
+                                         L"SBTBuffer",
+                                         RHIBufferModeImmutable,
+                                         D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE);
+
+        pSBTUploadBuffer =
+            D3D12Buffer::Create(Device,
+                                RHIBufferTargetRayTracingAccelerationStructure,
+                                1,
+                                SizeInBytes,
+                                L"SBTBuffer",
+                                RHIBufferModeDynamic,
+                                D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE);
+
         CpuData         = std::make_unique<BYTE[]>(SizeInBytes);
     }
 
@@ -537,9 +552,9 @@ namespace RHI
             HitGroupShaderTable->Write(BaseAddress + HitGroupShaderTableOffset);
         }
 
-        BYTE* Address = SBTUploadBuffer.GetCpuVirtualAddress<BYTE>();
+        BYTE* Address = pSBTUploadBuffer->GetCpuVirtualAddress<BYTE>();
         std::memcpy(Address, CpuData.get(), SizeInBytes);
-        CommandList->CopyBufferRegion(SBTBuffer.GetResource(), 0, SBTUploadBuffer.GetResource(), 0, SizeInBytes);
+        CommandList->CopyBufferRegion(pSBTBuffer->GetResource(), 0, pSBTUploadBuffer->GetResource(), 0, SizeInBytes);
     }
 
     D3D12_DISPATCH_RAYS_DESC D3D12RaytracingShaderBindingTable::GetDesc(UINT RayGenerationShaderIndex,
@@ -553,7 +568,7 @@ namespace RHI
         UINT64 MissShaderRecordStride          = MissShaderTable->GetStrideInBytes();
         UINT64 HitGroupShaderRecordStride      = HitGroupShaderTable->GetStrideInBytes();
 
-        D3D12_GPU_VIRTUAL_ADDRESS BaseAddress = SBTBuffer.GetGpuVirtualAddress();
+        D3D12_GPU_VIRTUAL_ADDRESS BaseAddress = pSBTBuffer->GetGpuVirtualAddress();
 
         D3D12_DISPATCH_RAYS_DESC Desc  = {};
         Desc.RayGenerationShaderRecord = {BaseAddress + RayGenerationShaderTableOffset +

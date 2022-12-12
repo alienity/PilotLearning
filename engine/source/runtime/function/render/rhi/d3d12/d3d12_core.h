@@ -319,7 +319,7 @@ namespace D3D12RHIUtils
     }
 
     //--------------------------------------------------------------------------------------
-    DXGI_FORMAT GetBaseFormat(DXGI_FORMAT defaultFormat)
+    inline DXGI_FORMAT GetBaseFormat(DXGI_FORMAT defaultFormat)
     {
         switch (defaultFormat)
         {
@@ -366,7 +366,7 @@ namespace D3D12RHIUtils
         }
     }
 
-    DXGI_FORMAT GetUAVFormat(DXGI_FORMAT defaultFormat)
+    inline DXGI_FORMAT GetUAVFormat(DXGI_FORMAT defaultFormat)
     {
         switch (defaultFormat)
         {
@@ -401,7 +401,7 @@ namespace D3D12RHIUtils
             case DXGI_FORMAT_X24_TYPELESS_G8_UINT:
             case DXGI_FORMAT_D16_UNORM:
 
-                assert(false, "Requested a UAV Format for a depth stencil Format.");
+                ASSERT(false);//, "Requested a UAV Format for a depth stencil Format.");
 #endif
 
             default:
@@ -409,7 +409,7 @@ namespace D3D12RHIUtils
         }
     }
 
-    DXGI_FORMAT GetDSVFormat(DXGI_FORMAT defaultFormat)
+    inline DXGI_FORMAT GetDSVFormat(DXGI_FORMAT defaultFormat)
     {
         switch (defaultFormat)
         {
@@ -444,7 +444,7 @@ namespace D3D12RHIUtils
         }
     }
 
-    DXGI_FORMAT GetDepthFormat(DXGI_FORMAT defaultFormat)
+    inline DXGI_FORMAT GetDepthFormat(DXGI_FORMAT defaultFormat)
     {
         switch (defaultFormat)
         {
@@ -479,7 +479,7 @@ namespace D3D12RHIUtils
         }
     }
 
-    DXGI_FORMAT GetStencilFormat(DXGI_FORMAT defaultFormat)
+    inline DXGI_FORMAT GetStencilFormat(DXGI_FORMAT defaultFormat)
     {
         switch (defaultFormat)
         {
@@ -578,8 +578,7 @@ namespace RHI
         RHISurfaceCreateShadowmap           = (1 << 7),
         RHISurfaceCreateSampleOnly          = (1 << 8),
         RHISurfaceRenderTextureAsBackBuffer = (1 << 9),
-        RHISurfaceCreateBindMS              = (1 << 10),
-        RHISurfaceCreateNotFlipped          = (1 << 11)
+        RHISurfaceCreateBindMS              = (1 << 10)
     };
     DEFINE_ENUM_FLAG_OPERATORS(RHISurfaceCreateFlags);
 

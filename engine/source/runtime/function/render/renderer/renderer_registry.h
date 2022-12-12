@@ -297,7 +297,8 @@ struct CommandSignatures
             RHI::CommandSignatureDesc Builder(1, sizeof(D3D12_DISPATCH_ARGUMENTS));
             Builder.AddDispatch();
 
-            pDispatchIndirectCommandSignature = std::make_shared<RHI::D3D12CommandSignature>(pDevice, Builder, nullptr);
+            pDispatchIndirectCommandSignature =
+                std::make_shared<RHI::D3D12CommandSignature>(pDevice, Builder);
         }
 
         {
@@ -308,7 +309,7 @@ struct CommandSignatures
             Builder.AddDrawIndexed();
 
             pIndirectDraw =
-                std::make_shared<RHI::D3D12CommandSignature>(pDevice, Builder, RootSignatures::pIndirectDraw.get());
+                std::make_shared<RHI::D3D12CommandSignature>(pDevice, Builder, RootSignatures::pIndirectDraw->GetApiHandle());
         }
         {
             RHI::CommandSignatureDesc Builder(4, sizeof(HLSL::CommandSignatureParams));
@@ -318,7 +319,7 @@ struct CommandSignatures
             Builder.AddDrawIndexed();
 
             pIndirectDrawDirectionShadowmap = std::make_shared<RHI::D3D12CommandSignature>(
-                pDevice, Builder, RootSignatures::pIndirectDrawDirectionShadowmap.get());
+                pDevice, Builder, RootSignatures::pIndirectDrawDirectionShadowmap->GetApiHandle());
         }
         {
             RHI::CommandSignatureDesc Builder(4, sizeof(HLSL::CommandSignatureParams));
@@ -328,7 +329,7 @@ struct CommandSignatures
             Builder.AddDrawIndexed();
 
             pIndirectDrawSpotShadowmap = std::make_shared<RHI::D3D12CommandSignature>(
-                pDevice, Builder, RootSignatures::pIndirectDrawSpotShadowmap.get());
+                pDevice, Builder, RootSignatures::pIndirectDrawSpotShadowmap->GetApiHandle());
         }
     }
 

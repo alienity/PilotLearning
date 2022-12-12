@@ -363,7 +363,7 @@ namespace RHI
 
         UINT64 SizeInBytes = 0;
 
-        D3D12Buffer             SBTBuffer, SBTUploadBuffer;
+        std::shared_ptr<D3D12Buffer> pSBTBuffer, pSBTUploadBuffer;
         std::unique_ptr<BYTE[]> CpuData;
     };
 
