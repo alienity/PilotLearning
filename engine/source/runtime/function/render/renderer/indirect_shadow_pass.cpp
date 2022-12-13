@@ -180,7 +180,7 @@ namespace Pilot
             {
                 ID3D12CommandSignature* pCommandSignature = CommandSignatures::pIndirectDrawDirectionShadowmap->GetApiHandle();
 
-                RHI::D3D12Texture* shadowmapStencilTex =
+                std::shared_ptr<RHI::D3D12Texture> shadowmapStencilTex =
                     registry.GetD3D12Texture(drawPassOutput->directionalShadowmapRGHandle.shadowmapTextureHandle);
 
                 RHI::D3D12DepthStencilView* shadowmapStencilView = shadowmapStencilTex->GetDefaultDSV().get();
@@ -215,7 +215,7 @@ namespace Pilot
                 ID3D12CommandSignature* pCommandSignature =
                     CommandSignatures::pIndirectDrawSpotShadowmap->GetApiHandle();
 
-                RHI::D3D12Texture* shadowmapDepthTex =
+                std::shared_ptr<RHI::D3D12Texture> shadowmapDepthTex =
                     registry.GetD3D12Texture(drawPassOutput->spotShadowmapRGHandle[i].shadowmapTextureHandle);
 
                 RHI::D3D12DepthStencilView* shadowmapStencilView = shadowmapDepthTex->GetDefaultDSV().get();

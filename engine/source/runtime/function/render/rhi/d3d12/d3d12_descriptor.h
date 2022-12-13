@@ -522,7 +522,7 @@ namespace RHI
     {
     public:
         D3D12DynamicView() noexcept = default;
-        explicit D3D12DynamicView(D3D12LinkedDevice* Device, const ViewDesc& Desc, D3D12Resource* Resource) :
+        D3D12DynamicView(D3D12LinkedDevice* Device, const ViewDesc& Desc, D3D12Resource* Resource) :
             Descriptor(Device), Desc(Desc), Resource(Resource),
             ViewSubresourceSubset(Resource ? CViewSubresourceSubset::FromView(this) : CViewSubresourceSubset())
         {}
@@ -553,14 +553,44 @@ namespace RHI
         CViewSubresourceSubset           ViewSubresourceSubset;
     };
 
-    class D3D12ConstantBufferView : public D3D12DynamicView<D3D12_CONSTANT_BUFFER_VIEW_DESC>
+    template<typename ViewDesc>
+    class D3D12DynamicConstantView
+    {
+    public:
+        D3D12DynamicConstantView() noexcept = default;
+        D3D12DynamicConstantView(D3D12LinkedDevice* Device, const ViewDesc& Desc, D3D12Resource* Resource) :
+            Descriptor(Device), Desc(Desc), Resource(Resource)
+        {}
+
+        D3D12DynamicConstantView(D3D12DynamicConstantView&&) noexcept = default;
+        D3D12DynamicConstantView& operator=(D3D12DynamicConstantView&&) = default;
+
+        D3D12DynamicConstantView(const D3D12DynamicConstantView&) = delete;
+        D3D12DynamicConstantView& operator=(const D3D12DynamicConstantView&) = delete;
+
+        [[nodiscard]] bool                          IsValid() const noexcept { return Descriptor.IsValid(); }
+        [[nodiscard]] D3D12_CPU_DESCRIPTOR_HANDLE   GetCpuHandle() const noexcept { return Descriptor.GetCpuHandle(); }
+        [[nodiscard]] D3D12_GPU_DESCRIPTOR_HANDLE   GetGpuHandle() const noexcept { return Descriptor.GetGpuHandle(); }
+        [[nodiscard]] UINT                          GetIndex() const noexcept { return Descriptor.GetIndex(); }
+        [[nodiscard]] ViewDesc                      GetDesc() const noexcept { return Desc; }
+        [[nodiscard]] D3D12Resource*                GetResource() const noexcept { return Resource; }
+        
+    protected:
+        friend class D3D12Resource;
+
+        D3D12DynamicDescriptor<ViewDesc> Descriptor;
+        ViewDesc                         Desc     = {};
+        D3D12Resource*                   Resource = nullptr;
+    };
+
+    class D3D12ConstantBufferView : public D3D12DynamicConstantView<D3D12_CONSTANT_BUFFER_VIEW_DESC>
     {
     public:
         D3D12ConstantBufferView() noexcept = default;
-        explicit D3D12ConstantBufferView(D3D12LinkedDevice*                     Device,
-                                         const D3D12_CONSTANT_BUFFER_VIEW_DESC& Desc,
-                                         D3D12Resource*                         Resource);
-        explicit D3D12ConstantBufferView(D3D12LinkedDevice* Device, D3D12Buffer* Buffer, UINT32 Offset, UINT32 Size);
+        D3D12ConstantBufferView(D3D12LinkedDevice*                     Device,
+                                const D3D12_CONSTANT_BUFFER_VIEW_DESC& Desc,
+                                D3D12Resource*                         Resource);
+        D3D12ConstantBufferView(D3D12LinkedDevice* Device, D3D12Buffer* Buffer, UINT32 Offset, UINT32 Size);
 
         void RecreateView();
 
@@ -572,26 +602,22 @@ namespace RHI
     {
     public:
         D3D12ShaderResourceView() noexcept = default;
-        explicit D3D12ShaderResourceView(D3D12LinkedDevice*                     Device,
-                                         const D3D12_SHADER_RESOURCE_VIEW_DESC& Desc,
-                                         D3D12Resource*                         Resource);
-        explicit D3D12ShaderResourceView(D3D12LinkedDevice* Device, D3D12ASBuffer* ASBuffer);
-        explicit D3D12ShaderResourceView(D3D12LinkedDevice* Device,
-                                         D3D12Buffer*       Buffer,
-                                         bool               Raw,
-                                         UINT               FirstElement,
-                                         UINT               NumElements);
-        explicit D3D12ShaderResourceView(D3D12LinkedDevice* Device,
-                                         D3D12Buffer*       Buffer,
-                                         UINT               FirstElement,
-                                         UINT               NumElements);
-        explicit D3D12ShaderResourceView(D3D12LinkedDevice* Device,
-                                         D3D12Buffer*       Buffer);
-        explicit D3D12ShaderResourceView(D3D12LinkedDevice*  Device,
-                                         D3D12Texture*       Texture,
-                                         bool                sRGB,
-                                         std::optional<UINT> OptMostDetailedMip,
-                                         std::optional<UINT> OptMipLevels);
+        D3D12ShaderResourceView(D3D12LinkedDevice*                     Device,
+                                const D3D12_SHADER_RESOURCE_VIEW_DESC& Desc,
+                                D3D12Resource*                         Resource);
+        D3D12ShaderResourceView(D3D12LinkedDevice* Device, D3D12ASBuffer* ASBuffer);
+        D3D12ShaderResourceView(D3D12LinkedDevice* Device,
+                                D3D12Buffer*       Buffer,
+                                bool               Raw,
+                                UINT               FirstElement,
+                                UINT               NumElements);
+        D3D12ShaderResourceView(D3D12LinkedDevice* Device, D3D12Buffer* Buffer, UINT FirstElement, UINT NumElements);
+        D3D12ShaderResourceView(D3D12LinkedDevice* Device, D3D12Buffer* Buffer);
+        D3D12ShaderResourceView(D3D12LinkedDevice*  Device,
+                                D3D12Texture*       Texture,
+                                bool                sRGB,
+                                std::optional<UINT> OptMostDetailedMip,
+                                std::optional<UINT> OptMipLevels);
 
         void RecreateView();
 
@@ -609,26 +635,26 @@ namespace RHI
     {
     public:
         D3D12UnorderedAccessView() noexcept = default;
-        explicit D3D12UnorderedAccessView(D3D12LinkedDevice*                      Device,
-                                          const D3D12_UNORDERED_ACCESS_VIEW_DESC& Desc,
-                                          D3D12Resource*                          Resource,
-                                          D3D12Resource*                          CounterResource = nullptr);
-        explicit D3D12UnorderedAccessView(D3D12LinkedDevice* Device,
-                                          D3D12Buffer*       Buffer,
-                                          bool               Raw,
-                                          UINT               FirstElement,
-                                          UINT               NumElements,
-                                          UINT64             CounterOffsetInBytes);
-        explicit D3D12UnorderedAccessView(D3D12LinkedDevice* Device,
-                                          D3D12Buffer*       Buffer,
-                                          UINT               FirstElement,                              
-                                          UINT               NumElements,
-                                          UINT64             CounterOffsetInBytes);
-        explicit D3D12UnorderedAccessView(D3D12LinkedDevice* Device, D3D12Buffer* Buffer);
-        explicit D3D12UnorderedAccessView(D3D12LinkedDevice*  Device,
-                                          D3D12Texture*       Texture,
-                                          std::optional<UINT> OptArraySlice,
-                                          std::optional<UINT> OptMipSlice);
+        D3D12UnorderedAccessView(D3D12LinkedDevice*                      Device,
+                                 const D3D12_UNORDERED_ACCESS_VIEW_DESC& Desc,
+                                 D3D12Resource*                          Resource,
+                                 D3D12Resource*                          CounterResource = nullptr);
+        D3D12UnorderedAccessView(D3D12LinkedDevice* Device,
+                                 D3D12Buffer*       Buffer,
+                                 bool               Raw,
+                                 UINT               FirstElement,
+                                 UINT               NumElements,
+                                 UINT64             CounterOffsetInBytes);
+        D3D12UnorderedAccessView(D3D12LinkedDevice* Device,
+                                 D3D12Buffer*       Buffer,
+                                 UINT               FirstElement,
+                                 UINT               NumElements,
+                                 UINT64             CounterOffsetInBytes);
+        D3D12UnorderedAccessView(D3D12LinkedDevice* Device, D3D12Buffer* Buffer);
+        D3D12UnorderedAccessView(D3D12LinkedDevice*  Device,
+                                 D3D12Texture*       Texture,
+                                 std::optional<UINT> OptArraySlice,
+                                 std::optional<UINT> OptMipSlice);
 
         void RecreateView();
 

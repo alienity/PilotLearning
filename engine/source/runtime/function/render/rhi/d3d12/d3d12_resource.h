@@ -1,6 +1,7 @@
 #pragma once
 #include "d3d12_core.h"
 #include "runtime/core/base/robin_hood.h"
+#include "city.h"
 
 namespace RHI
 {
@@ -97,7 +98,7 @@ namespace RHI
 
         void SetResourceName(std::wstring name);
 
-        [[nodiscard]] const D3D12_CLEAR_VALUE GetClearValue() const noexcept;
+        [[nodiscard]] const CD3DX12_CLEAR_VALUE GetClearValue() const noexcept;
         [[nodiscard]] inline void  GetClearColor(FLOAT color[4]) const;
         [[nodiscard]] inline FLOAT GetClearDepth() const { return GetClearValue().DepthStencil.Depth; }
         [[nodiscard]] inline UINT8 GetClearStencil() const { return GetClearValue().DepthStencil.Stencil; }
@@ -254,9 +255,9 @@ namespace RHI
 
         struct BUFFER_UNORDERED_ACCESS_VIEW_KEY { D3D12_UNORDERED_ACCESS_VIEW_DESC Desc; D3D12Resource* PCounterResource; };
 
-        robin_hood::unordered_map<D3D12_CONSTANT_BUFFER_VIEW_DESC, std::shared_ptr<D3D12ConstantBufferView>> m_CBVHandleMap;
-        robin_hood::unordered_map<D3D12_SHADER_RESOURCE_VIEW_DESC, std::shared_ptr<D3D12ShaderResourceView>> m_SRVHandleMap;
-        robin_hood::unordered_map<BUFFER_UNORDERED_ACCESS_VIEW_KEY, std::shared_ptr<D3D12UnorderedAccessView>> m_UAVHandleMap;
+        robin_hood::unordered_map<uint64, std::shared_ptr<D3D12ConstantBufferView>>    m_CBVHandleMap;
+        robin_hood::unordered_map<uint64, std::shared_ptr<D3D12ShaderResourceView>>    m_SRVHandleMap;
+        robin_hood::unordered_map<uint64, std::shared_ptr<D3D12UnorderedAccessView>>   m_UAVHandleMap;
 
     private:
         D3D12_HEAP_TYPE    m_HeapType  = {};
@@ -406,10 +407,15 @@ namespace RHI
     protected:
         RHIRenderSurfaceBaseDesc m_Desc;
         
-        robin_hood::unordered_map<D3D12_RENDER_TARGET_VIEW_DESC, std::shared_ptr<D3D12RenderTargetView>> m_RTVHandleMap;
-        robin_hood::unordered_map<D3D12_DEPTH_STENCIL_VIEW_DESC, std::shared_ptr<D3D12DepthStencilView>> m_DSVHandleMap;
-        robin_hood::unordered_map<D3D12_SHADER_RESOURCE_VIEW_DESC, std::shared_ptr<D3D12ShaderResourceView>> m_SRVHandleMap;
-        robin_hood::unordered_map<D3D12_UNORDERED_ACCESS_VIEW_DESC, std::shared_ptr<D3D12UnorderedAccessView>> m_UAVHandleMap;
+        // D3D12_RENDER_TARGET_VIEW_DESC
+        // D3D12_DEPTH_STENCIL_VIEW_DESC
+        // D3D12_SHADER_RESOURCE_VIEW_DESC
+        // D3D12_UNORDERED_ACCESS_VIEW_DESC
+
+        std::unordered_map<uint64, std::shared_ptr<D3D12RenderTargetView>>      m_RTVHandleMap;
+        std::unordered_map<uint64, std::shared_ptr<D3D12DepthStencilView>>      m_DSVHandleMap;
+        std::unordered_map<uint64, std::shared_ptr<D3D12ShaderResourceView>>    m_SRVHandleMap;
+        std::unordered_map<uint64, std::shared_ptr<D3D12UnorderedAccessView>>   m_UAVHandleMap;
 
     protected:
         bool m_IsCubemap = false;

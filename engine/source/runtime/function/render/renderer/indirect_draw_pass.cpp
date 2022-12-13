@@ -50,8 +50,8 @@ namespace Pilot
 
             ID3D12CommandSignature* pCommandSignature = CommandSignatures::pIndirectDraw->GetApiHandle();
 
-            RHI::D3D12Texture* renderTargetColor = registry.GetD3D12Texture(drawPassOutput->renderTargetColorHandle);
-            RHI::D3D12Texture* renderTargetDepth = registry.GetD3D12Texture(drawPassOutput->renderTargetDepthHandle);
+            std::shared_ptr<RHI::D3D12Texture> renderTargetColor = registry.GetD3D12Texture(drawPassOutput->renderTargetColorHandle);
+            std::shared_ptr<RHI::D3D12Texture> renderTargetDepth = registry.GetD3D12Texture(drawPassOutput->renderTargetDepthHandle);
 
             RHI::D3D12RenderTargetView* renderTargetView = renderTargetColor->GetDefaultRTV().get();
             RHI::D3D12DepthStencilView* depthStencilView = renderTargetDepth->GetDefaultDSV().get();

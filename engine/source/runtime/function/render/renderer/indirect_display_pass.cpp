@@ -28,10 +28,10 @@ namespace Pilot
 
                 //RHI::D3D12ShaderResourceView* inputRTColorSRV = registry.GetD3D12ShaderResourceView(drawPassInput->inputRTColorSRVHandle);
 
-                RHI::D3D12Texture* inputRTColor = registry.GetD3D12Texture(drawPassInput->inputRTColorHandle);
+                std::shared_ptr<RHI::D3D12Texture> inputRTColor = registry.GetD3D12Texture(drawPassInput->inputRTColorHandle);
                 RHI::D3D12ShaderResourceView* inputRTColorSRV = inputRTColor->GetDefaultSRV().get();
 
-                RHI::D3D12Texture* rtColorTexture = registry.GetD3D12Texture(drawPassOutput->renderTargetColorHandle);
+                std::shared_ptr<RHI::D3D12Texture> rtColorTexture = registry.GetD3D12Texture(drawPassOutput->renderTargetColorHandle);
                 RHI::D3D12RenderTargetView* rtColorRTV = rtColorTexture->GetDefaultRTV().get();
 
                 CD3DX12_RESOURCE_DESC rtColorTextureDesc = rtColorTexture->GetDesc();

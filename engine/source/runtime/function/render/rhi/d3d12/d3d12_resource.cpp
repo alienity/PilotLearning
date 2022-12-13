@@ -178,14 +178,14 @@ namespace RHI
         m_pResource->SetName(name.c_str());
     }
 
-    const D3D12_CLEAR_VALUE D3D12Resource::GetClearValue() const noexcept
+    const CD3DX12_CLEAR_VALUE D3D12Resource::GetClearValue() const noexcept
     {
-        return m_ClearValue.has_value() ? m_ClearValue.value() : D3D12_CLEAR_VALUE {};
+        return m_ClearValue.has_value() ? m_ClearValue.value() : CD3DX12_CLEAR_VALUE {};
     }
 
     inline void D3D12Resource::GetClearColor(FLOAT color[4]) const
     {
-        D3D12_CLEAR_VALUE clear_val = GetClearValue();
+        CD3DX12_CLEAR_VALUE clear_val = GetClearValue();
         memcpy(color, clear_val.Color, sizeof(clear_val.Color));
     }
 
@@ -381,8 +381,6 @@ namespace RHI
         ASSERT(mapplableMode == RHIBufferMode::RHIBufferModeDynamic ||
                mapplableMode == RHIBufferMode::RHIBufferModeImmutable);
 
-        std::shared_ptr<D3D12Buffer> pBufferD3D12 = std::make_shared<D3D12Buffer>(Parent);
-
         bool allowUAV = bufferTarget & RHIBufferTarget::RHIBufferRandomReadWrite;
 
         D3D12_RESOURCE_FLAGS resourceFlag =
@@ -395,7 +393,7 @@ namespace RHI
 
         UINT sizeInBytes = numElements * elementSize;
 
-        pBufferD3D12 =
+        std::shared_ptr<D3D12Buffer> pBufferD3D12 =
             std::make_shared<D3D12Buffer>(Parent, sizeInBytes, elementSize, heapType, resourceFlag, initState);
         pBufferD3D12->SetResourceName(name);
 
@@ -476,12 +474,14 @@ namespace RHI
 
     std::shared_ptr<D3D12ConstantBufferView> D3D12Buffer::CreateCBV(D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc)
     {
-        std::shared_ptr<D3D12ConstantBufferView> cbv           = nullptr;
-        auto                                     cbvHandleIter = m_CBVHandleMap.find(cbvDesc);
+        uint64 descHash = CityHash64((const char*)&cbvDesc, sizeof(D3D12_CONSTANT_BUFFER_VIEW_DESC));
+
+        std::shared_ptr<D3D12ConstantBufferView> cbv = nullptr;
+        auto cbvHandleIter = m_CBVHandleMap.find(descHash);
         if (cbvHandleIter != m_CBVHandleMap.end())
         {
-            cbv                     = std::make_shared<D3D12ConstantBufferView>(Parent, cbvDesc, this);
-            m_CBVHandleMap[cbvDesc] = cbv;
+            cbv = std::make_shared<D3D12ConstantBufferView>(Parent, cbvDesc, this);
+            m_CBVHandleMap[descHash] = cbv;
         }
         else
         {
@@ -492,12 +492,14 @@ namespace RHI
 
     std::shared_ptr<D3D12ShaderResourceView> D3D12Buffer::CreateSRV(D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc)
     {
-        std::shared_ptr<D3D12ShaderResourceView> srv           = nullptr;
-        auto                                     srvHandleIter = m_SRVHandleMap.find(srvDesc);
+        uint64 descHash = CityHash64((const char*)&srvDesc, sizeof(D3D12_SHADER_RESOURCE_VIEW_DESC));
+
+        std::shared_ptr<D3D12ShaderResourceView> srv = nullptr;
+        auto srvHandleIter = m_SRVHandleMap.find(descHash);
         if (srvHandleIter != m_SRVHandleMap.end())
         {
-            srv                     = std::make_shared<D3D12ShaderResourceView>(Parent, srvDesc, this);
-            m_SRVHandleMap[srvDesc] = srv;
+            srv = std::make_shared<D3D12ShaderResourceView>(Parent, srvDesc, this);
+            m_SRVHandleMap[descHash] = srv;
         }
         else
         {
@@ -510,12 +512,16 @@ namespace RHI
     {
         D3D12Resource* pCounterResource = p_CounterBufferD3D12 != nullptr ? p_CounterBufferD3D12.get() : nullptr;
         BUFFER_UNORDERED_ACCESS_VIEW_KEY          uavKey        = {uavDesc, pCounterResource};
-        std::shared_ptr<D3D12UnorderedAccessView> uav           = nullptr;
-        auto                                      uavHandleIter = m_UAVHandleMap.find(uavKey);
+
+        uint64 descHash = CityHash64((const char*)&uavKey, sizeof(BUFFER_UNORDERED_ACCESS_VIEW_KEY));
+
+        std::shared_ptr<D3D12UnorderedAccessView> uav = nullptr;
+        auto uavHandleIter = m_UAVHandleMap.find(descHash);
         if (uavHandleIter != m_UAVHandleMap.end())
         {
-            uav = std::make_shared<D3D12UnorderedAccessView>(Parent, uavDesc, this, pCounterResource);
-            m_UAVHandleMap[uavKey] = uav;
+            uav = std::make_shared<D3D12UnorderedAccessView>(
+                Parent, uavDesc, (D3D12Resource*)this, (D3D12Resource*)pCounterResource);
+            m_UAVHandleMap[descHash] = uav;
         }
         else
         {
@@ -803,12 +809,14 @@ namespace RHI
 
     std::shared_ptr<D3D12ShaderResourceView> D3D12Texture::CreateSRV(D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc)
     {
+        uint64 descHash = CityHash64((const char*)&srvDesc, sizeof(D3D12_SHADER_RESOURCE_VIEW_DESC));
+
         std::shared_ptr<D3D12ShaderResourceView> srv = nullptr;
-        auto srvHandleIter = m_SRVHandleMap.find(srvDesc);
+        auto srvHandleIter = m_SRVHandleMap.find(descHash);
         if (srvHandleIter != m_SRVHandleMap.end())
         {
             srv = std::make_shared<D3D12ShaderResourceView>(Parent, srvDesc, this);
-            m_SRVHandleMap[srvDesc] = srv;
+            m_SRVHandleMap[descHash] = srv;
         }
         else
         {
@@ -819,12 +827,15 @@ namespace RHI
 
     std::shared_ptr<D3D12UnorderedAccessView> D3D12Texture::CreateUAV(D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc)
     {
+        uint64 descHash = CityHash64((const char*)&uavDesc, sizeof(D3D12_UNORDERED_ACCESS_VIEW_DESC));
+
         std::shared_ptr<D3D12UnorderedAccessView> uav = nullptr;
-        auto uavHandleIter = m_UAVHandleMap.find(uavDesc);
+        auto uavHandleIter = m_UAVHandleMap.find(descHash);
         if (uavHandleIter != m_UAVHandleMap.end())
         {
-            uav = std::make_shared<D3D12UnorderedAccessView>(Parent, uavDesc, this, nullptr);
-            m_UAVHandleMap[uavDesc] = uav;
+            uav = std::make_shared<D3D12UnorderedAccessView>(
+                Parent, uavDesc, (D3D12Resource*)this, (D3D12Resource*)nullptr);
+            m_UAVHandleMap[descHash] = uav;
         }
         else
         {
@@ -835,12 +846,14 @@ namespace RHI
 
     std::shared_ptr<D3D12RenderTargetView> D3D12Texture::CreateRTV(D3D12_RENDER_TARGET_VIEW_DESC rtvDesc)
     {
+        uint64 descHash = CityHash64((const char*)&rtvDesc, sizeof(D3D12_RENDER_TARGET_VIEW_DESC));
+
         std::shared_ptr<D3D12RenderTargetView> rtv = nullptr;
-        auto rtvHandleIter = m_RTVHandleMap.find(rtvDesc);
+        auto rtvHandleIter = m_RTVHandleMap.find(descHash);
         if (rtvHandleIter != m_RTVHandleMap.end())
         {
             rtv = std::make_shared<D3D12RenderTargetView>(Parent, rtvDesc, this);
-            m_RTVHandleMap[rtvDesc] = rtv;
+            m_RTVHandleMap[descHash] = rtv;
         }
         else
         {
@@ -851,12 +864,14 @@ namespace RHI
 
     std::shared_ptr<D3D12DepthStencilView> D3D12Texture::CreateDSV(D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc)
     {
+        uint64 descHash = CityHash64((const char*)&dsvDesc, sizeof(D3D12_DEPTH_STENCIL_VIEW_DESC));
+
         std::shared_ptr<D3D12DepthStencilView> dsv = nullptr;
-        auto dsvHandleIter = m_DSVHandleMap.find(dsvDesc);
+        auto dsvHandleIter = m_DSVHandleMap.find(descHash);
         if (dsvHandleIter != m_DSVHandleMap.end())
         {
             dsv = std::make_shared<D3D12DepthStencilView>(Parent, dsvDesc, this);
-            m_DSVHandleMap[dsvDesc] = dsv;
+            m_DSVHandleMap[descHash] = dsv;
         }
         else
         {

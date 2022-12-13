@@ -49,7 +49,7 @@ namespace Pilot
 
                 RHI::D3D12GraphicsContext& graphicsContext = context.GetGraphicsContext();
 
-                RHI::D3D12Texture*          backBufColorTex = registry.GetD3D12Texture(backBufColorHandle);
+                std::shared_ptr<RHI::D3D12Texture> backBufColorTex = registry.GetD3D12Texture(backBufColorHandle);
                 RHI::D3D12RenderTargetView* backBufColorRTV = backBufColorTex->GetDefaultRTV().get();
 
                 CD3DX12_RESOURCE_DESC backBufDesc = backBufColorTex->GetDesc();

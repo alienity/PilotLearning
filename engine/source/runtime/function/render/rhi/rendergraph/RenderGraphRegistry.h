@@ -63,22 +63,22 @@ namespace RHI
 		}
         */
 
-		D3D12Buffer*              GetD3D12Buffer(RgResourceHandle Handle);
-        D3D12Texture*             GetD3D12Texture(RgResourceHandle Handle);
+		std::shared_ptr<D3D12Buffer> GetD3D12Buffer(RgResourceHandle Handle);
+        std::shared_ptr<D3D12Texture> GetD3D12Texture(RgResourceHandle Handle);
 
 	private:
-		template<typename T>
-		[[nodiscard]] auto GetContainer() -> std::vector<typename RgResourceTraits<T>::ApiType>&
-		{
-			if constexpr (std::is_same_v<T, D3D12Buffer>)
-			{
+        template<typename T>
+        [[nodiscard]] auto GetContainer() -> std::vector<std::shared_ptr<typename RgResourceTraits<T>::ApiType>>&
+        {
+            if constexpr (std::is_same_v<T, D3D12Buffer>)
+            {
                 return pBuffers;
-			}
-			else if constexpr (std::is_same_v<T, D3D12Texture>)
-			{
+            }
+            else if constexpr (std::is_same_v<T, D3D12Texture>)
+            {
                 return pTextures;
-			}
-		}
+            }
+        }
 
 	private:
 		RenderGraph*					Graph = nullptr;

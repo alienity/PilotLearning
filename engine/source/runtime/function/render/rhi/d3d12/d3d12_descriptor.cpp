@@ -547,7 +547,7 @@ namespace RHI
     D3D12ConstantBufferView::D3D12ConstantBufferView(D3D12LinkedDevice*                     Device,
                                                      const D3D12_CONSTANT_BUFFER_VIEW_DESC& Desc,
                                                      D3D12Resource*                         Resource) :
-        D3D12DynamicView(Device, Desc, Resource)
+        D3D12DynamicConstantView(Device, Desc, Resource)
     {
         RecreateView();
     }

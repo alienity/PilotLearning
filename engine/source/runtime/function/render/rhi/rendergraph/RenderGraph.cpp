@@ -1,5 +1,4 @@
 #include "RenderGraph.h"
-#include <assert.h>
 #include <algorithm>
 
 namespace RHI
@@ -12,8 +11,8 @@ namespace RHI
 	RenderPass& RenderPass::Read(RgResourceHandle Resource)
 	{
 		// Only allow buffers/textures
-		assert(Resource.IsValid());
-		assert(Resource.Type == RgResourceType::Buffer || Resource.Type == RgResourceType::Texture);
+        ASSERT(Resource.IsValid());
+        ASSERT(Resource.Type == RgResourceType::Buffer || Resource.Type == RgResourceType::Texture);
 		Reads.insert(Resource);
 		ReadWrites.insert(Resource);
 		return *this;
@@ -22,8 +21,8 @@ namespace RHI
 	RenderPass& RenderPass::Write(RgResourceHandle* Resource)
 	{
 		// Only allow buffers/textures
-		assert(Resource && Resource->IsValid());
-		assert(Resource->Type == RgResourceType::Buffer || Resource->Type == RgResourceType::Texture);
+        ASSERT(Resource && Resource->IsValid());
+        ASSERT(Resource->Type == RgResourceType::Buffer || Resource->Type == RgResourceType::Texture);
 		//Resource->Version++;
 		Writes.insert(*Resource);
 		ReadWrites.insert(*Resource);
@@ -69,9 +68,9 @@ namespace RHI
 				ReadState |= D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
 			}
 
-			D3D12Texture* Texture = RenderGraph->GetRegistry().GetD3D12Texture(Read);
+			std::shared_ptr<D3D12Texture> pTexture = RenderGraph->GetRegistry().GetD3D12Texture(Read);
 
-			Context.TransitionBarrier(Texture, ReadState);
+			Context.TransitionBarrier(pTexture.get(), ReadState);
 		}
 		for (auto Write : Writes)
 		{
@@ -88,9 +87,9 @@ namespace RHI
 			{
 				WriteState |= D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
 			}
-            D3D12Texture* Texture = RenderGraph->GetRegistry().GetD3D12Texture(Write);
+            std::shared_ptr<D3D12Texture> pTexture = RenderGraph->GetRegistry().GetD3D12Texture(Write);
 
-			Context.TransitionBarrier(Texture, WriteState);
+			Context.TransitionBarrier(pTexture.get(), WriteState);
 		}
 
 		Context.FlushResourceBarriers();
@@ -165,50 +164,50 @@ namespace RHI
 
 	bool RenderGraph::AllowRenderTarget(RgResourceHandle Resource) const noexcept
 	{
-		assert(Resource.Type == RgResourceType::Texture);
+        ASSERT(Resource.Type == RgResourceType::Texture);
 		if (Resource.IsImported())
 		{
-            assert(Resource.Id < ImportedTextures.size());
-            auto TexDesc = ImportedTextures[Resource.Id]->GetDesc();
+            ASSERT(Resource.Id < pImportedTextures.size());
+            auto TexDesc = pImportedTextures[Resource.Id]->GetDesc();
             return TexDesc.Flags & D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
 		}
 		else
 		{
-            assert(Resource.Id < Textures.size());
+            ASSERT(Resource.Id < Textures.size());
             return Textures[Resource.Id].Desc.AllowRenderTarget;
 		}
 	}
 
 	bool RenderGraph::AllowDepthStencil(RgResourceHandle Resource) const noexcept
 	{
-		assert(Resource.Type == RgResourceType::Texture);
+        ASSERT(Resource.Type == RgResourceType::Texture);
         if (Resource.IsImported())
 		{
-            assert(Resource.Id < ImportedTextures.size());
-            auto TexDesc = ImportedTextures[Resource.Id]->GetDesc();
+            ASSERT(Resource.Id < pImportedTextures.size());
+            auto TexDesc = pImportedTextures[Resource.Id]->GetDesc();
             return TexDesc.Flags & D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
 		}
 		else
 		{
-            assert(Resource.Id < Textures.size());
+            ASSERT(Resource.Id < Textures.size());
             return Textures[Resource.Id].Desc.AllowDepthStencil;
 		}
 	}
 
 	bool RenderGraph::AllowUnorderedAccess(RgResourceHandle Resource) const noexcept
 	{
-		assert(Resource.Type == RgResourceType::Buffer || Resource.Type == RgResourceType::Texture);
+        ASSERT(Resource.Type == RgResourceType::Buffer || Resource.Type == RgResourceType::Texture);
         if (Resource.Type == RgResourceType::Texture)
 		{
             if (Resource.IsImported())
             {
-                assert(Resource.Id < ImportedTextures.size());
-                auto TexDesc = ImportedTextures[Resource.Id]->GetDesc();
+                ASSERT(Resource.Id < pImportedTextures.size());
+                auto TexDesc = pImportedTextures[Resource.Id]->GetDesc();
                 return TexDesc.Flags & D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
             }
             else
             {
-                assert(Resource.Id < Textures.size());
+                ASSERT(Resource.Id < Textures.size());
                 return Textures[Resource.Id].Desc.AllowUnorderedAccess;
             }
 		}
@@ -216,13 +215,13 @@ namespace RHI
 		{
             if (Resource.IsImported())
             {
-                assert(Resource.Id < ImportedBuffers.size());
-                auto BufferDesc = ImportedBuffers[Resource.Id]->GetDesc();
+                ASSERT(Resource.Id < pImportedBuffers.size());
+                auto BufferDesc = pImportedBuffers[Resource.Id]->GetDesc();
                 return BufferDesc.Flags & D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
             }
             else
             {
-                assert(Resource.Id < Buffers.size());
+                ASSERT(Resource.Id < Buffers.size());
                 return Buffers[Resource.Id].Desc.UnorderedAccess;
             }
 		}
