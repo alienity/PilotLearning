@@ -39,12 +39,21 @@ namespace Pilot
 
     void DeferredRenderer::InitGlobalBuffer()
     {
-        CD3DX12_RESOURCE_DESC renderTargetBufferDesc = CD3DX12_RESOURCE_DESC::Tex2D(
-            backBufferFormat, viewport.width, viewport.height, 1, 1, 1, 0, D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET);
+        //CD3DX12_RESOURCE_DESC renderTargetBufferDesc = CD3DX12_RESOURCE_DESC::Tex2D(
+        //    backBufferFormat, viewport.width, viewport.height, 1, 1, 1, 0, D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET);
         const FLOAT         renderTargetClearColor[4] = {0, 0, 0, 0};
         CD3DX12_CLEAR_VALUE renderTargetClearValue    = CD3DX12_CLEAR_VALUE(backBufferFormat, renderTargetClearColor);
 
-        p_RenderTargetTex = std::make_shared<RHI::D3D12Texture>(device->GetLinkedDevice(), renderTargetBufferDesc, renderTargetClearValue);
+        //p_RenderTargetTex = std::make_shared<RHI::D3D12Texture>(device->GetLinkedDevice(), renderTargetBufferDesc, renderTargetClearValue);
+        p_RenderTargetTex = RHI::D3D12Texture::Create2D(device->GetLinkedDevice(),
+                                                        viewport.width,
+                                                        viewport.height,
+                                                        1,
+                                                        backBufferFormat,
+                                                        RHI::RHISurfaceCreateRenderTarget,
+                                                        1,
+                                                        L"RenderTargetTexture",
+                                                        renderTargetClearValue);
         //p_RenderTargetTexSRV = std::make_shared<RHI::D3D12ShaderResourceView>(device->GetLinkedDevice(), p_RenderTargetTex.get(), false, std::nullopt, std::nullopt);
         //p_RenderTargetTexRTV = std::make_shared<RHI::D3D12RenderTargetView>(device->GetLinkedDevice(), p_RenderTargetTex.get());
 

@@ -91,8 +91,6 @@ namespace RHI
 
         ID3D12Resource** GetAddressOf() { return m_pResource.GetAddressOf(); }
 
-        inline D3D12_GPU_VIRTUAL_ADDRESS GetGpuVirtualAddress() const { return m_GpuVirtualAddress; }
-
         UINT   GetVersionID() const { return m_VersionID; }
         UINT64 GetUniqueId() const { return g_GlobalUniqueId; }
 
@@ -143,7 +141,6 @@ namespace RHI
         // TODO: Add support for custom heap properties for UMA GPUs
 
         Microsoft::WRL::ComPtr<ID3D12Resource> m_pResource;
-        D3D12_GPU_VIRTUAL_ADDRESS              m_GpuVirtualAddress;
         std::optional<CD3DX12_CLEAR_VALUE>     m_ClearValue;
         CD3DX12_RESOURCE_DESC                  m_ResourceDesc    = {};
         UINT8                                  m_PlaneCount      = 0;
@@ -162,6 +159,11 @@ namespace RHI
     public:
         D3D12ASBuffer() noexcept = default;
         D3D12ASBuffer(D3D12LinkedDevice* Parent, UINT64 SizeInBytes);
+
+        D3D12_GPU_VIRTUAL_ADDRESS GetGpuVirtualAddress() const;
+
+    private:
+        D3D12_GPU_VIRTUAL_ADDRESS m_GpuVirtualAddress;
     };
 
     class D3D12Buffer : public D3D12Resource
@@ -260,11 +262,12 @@ namespace RHI
         robin_hood::unordered_map<uint64, std::shared_ptr<D3D12UnorderedAccessView>>   m_UAVHandleMap;
 
     private:
-        D3D12_HEAP_TYPE    m_HeapType  = {};
-        UINT               m_SizeInBytes = 0;
-        UINT               m_Stride      = 0;
-        BYTE*              m_CpuVirtualAddress;
-        D3D12ScopedPointer m_ScopedPointer; // Upload heap
+        D3D12_HEAP_TYPE           m_HeapType    = {};
+        UINT                      m_SizeInBytes = 0;
+        UINT                      m_Stride      = 0;
+        BYTE*                     m_CpuVirtualAddress;
+        D3D12_GPU_VIRTUAL_ADDRESS m_GpuVirtualAddress;
+        D3D12ScopedPointer        m_ScopedPointer; // Upload heap
     };
 
     class D3D12Texture : public D3D12Resource

@@ -32,13 +32,23 @@ namespace Pilot
             {
                 Vector2 shadowmap_size = m_visiable_nodes.p_directional_light->m_shadowmap_size;
 
-                D3D12_RESOURCE_FLAGS  shadowmapFlags   = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
-                CD3DX12_RESOURCE_DESC shadowmapTexDesc = CD3DX12_RESOURCE_DESC::Tex2D(
-                    DXGI_FORMAT_D32_FLOAT, shadowmap_size.x, shadowmap_size.y, 1, 1, 1, 0, shadowmapFlags);
+                //D3D12_RESOURCE_FLAGS  shadowmapFlags   = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
+                //CD3DX12_RESOURCE_DESC shadowmapTexDesc = CD3DX12_RESOURCE_DESC::Tex2D(
+                //    DXGI_FORMAT_D32_FLOAT, shadowmap_size.x, shadowmap_size.y, 1, 1, 1, 0, shadowmapFlags);
                 CD3DX12_CLEAR_VALUE shadowmapClearVal = CD3DX12_CLEAR_VALUE(DXGI_FORMAT_D32_FLOAT, 0, 1);
 
-                directionalShadowmap.p_LightShadowmap = std::make_shared<RHI::D3D12Texture>(
-                    m_Device->GetLinkedDevice(), shadowmapTexDesc, shadowmapClearVal);
+                //directionalShadowmap.p_LightShadowmap = std::make_shared<RHI::D3D12Texture>(
+                //    m_Device->GetLinkedDevice(), shadowmapTexDesc, shadowmapClearVal);
+
+                directionalShadowmap.p_LightShadowmap = RHI::D3D12Texture::Create2D(m_Device->GetLinkedDevice(),
+                                                                                    shadowmap_size.x,
+                                                                                    shadowmap_size.y,
+                                                                                    1,
+                                                                                    DXGI_FORMAT_D32_FLOAT,
+                                                                                    RHI::RHISurfaceCreateShadowmap,
+                                                                                    1,
+                                                                                    L"DirectionShadowmap",
+                                                                                    shadowmapClearVal);
 
                 //directionalShadowmap.p_LightShadowmapDSV = std::make_shared<RHI::D3D12DepthStencilView>(
                 //    m_Device->GetLinkedDevice(), directionalShadowmap.p_LightShadowmap.get());

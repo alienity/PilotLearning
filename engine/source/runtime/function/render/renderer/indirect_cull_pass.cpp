@@ -37,7 +37,7 @@ namespace Pilot
 
         // create upload buffer
         pUploadPerframeBuffer = RHI::D3D12Buffer::Create(m_Device->GetLinkedDevice(),
-                                                         RHI::RHIBufferRandomReadWrite,
+                                                         RHI::RHIBufferTargetNone,
                                                          1,
                                                          sizeof(HLSL::MeshPerframeStorageBufferObject),
                                                          L"UploadPerFrameBuffer",
@@ -45,7 +45,7 @@ namespace Pilot
                                                          D3D12_RESOURCE_STATE_GENERIC_READ);
 
         pUploadMaterialBuffer = RHI::D3D12Buffer::Create(m_Device->GetLinkedDevice(),
-                                                         RHI::RHIBufferRandomReadWrite,
+                                                         RHI::RHIBufferTargetNone,
                                                          HLSL::MaterialLimit,
                                                          sizeof(HLSL::MaterialInstance),
                                                          L"UploadMaterialBuffer",
@@ -53,7 +53,7 @@ namespace Pilot
                                                          D3D12_RESOURCE_STATE_GENERIC_READ);
 
         pUploadMeshBuffer = RHI::D3D12Buffer::Create(m_Device->GetLinkedDevice(),
-                                                     RHI::RHIBufferRandomReadWrite,
+                                                     RHI::RHIBufferTargetNone,
                                                      HLSL::MeshLimit,
                                                      sizeof(HLSL::MeshInstance),
                                                      L"UploadMeshBuffer",

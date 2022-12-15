@@ -118,8 +118,7 @@ namespace RHI
         D3D12LinkedDeviceChild(Parent),
         m_pResource(std::move(Resource)), m_ResourceDesc(this->m_pResource->GetDesc()),
         m_PlaneCount(D3D12GetFormatPlaneCount(Parent->GetDevice(), m_ResourceDesc.Format)),
-        m_NumSubresources(CalculateNumSubresources()), m_ResourceState(m_NumSubresources, InitialResourceState),
-        m_GpuVirtualAddress(m_pResource->GetGPUVirtualAddress())
+        m_NumSubresources(CalculateNumSubresources()), m_ResourceState(m_NumSubresources, InitialResourceState)
     {}
 
     D3D12Resource::D3D12Resource(D3D12LinkedDevice*                       Parent,
@@ -130,8 +129,7 @@ namespace RHI
         D3D12LinkedDeviceChild(Parent),
         m_pResource(std::move(Resource)), m_ClearValue(ClearValue), m_ResourceDesc(this->m_pResource->GetDesc()),
         m_PlaneCount(D3D12GetFormatPlaneCount(Parent->GetDevice(), m_ResourceDesc.Format)),
-        m_NumSubresources(CalculateNumSubresources()), m_ResourceState(m_NumSubresources, InitialResourceState),
-        m_GpuVirtualAddress(m_pResource->GetGPUVirtualAddress())
+        m_NumSubresources(CalculateNumSubresources()), m_ResourceState(m_NumSubresources, InitialResourceState)
     {
         this->SetResourceName(Name);
     }
@@ -145,8 +143,7 @@ namespace RHI
         m_pResource(InitializeResource(HeapProperties, Desc, InitialResourceState, ClearValue)),
         m_ClearValue(ClearValue), m_ResourceDesc(m_pResource->GetDesc()),
         m_PlaneCount(D3D12GetFormatPlaneCount(Parent->GetDevice(), Desc.Format)),
-        m_NumSubresources(CalculateNumSubresources()), m_ResourceState(m_NumSubresources, InitialResourceState),
-        m_GpuVirtualAddress(m_pResource->GetGPUVirtualAddress())
+        m_NumSubresources(CalculateNumSubresources()), m_ResourceState(m_NumSubresources, InitialResourceState)
     {}
 
     D3D12Resource::D3D12Resource(D3D12LinkedDevice*                 Parent,
@@ -159,8 +156,7 @@ namespace RHI
         m_pResource(InitializeResource(HeapProperties, Desc, InitialResourceState, ClearValue)),
         m_ClearValue(ClearValue), m_ResourceDesc(m_pResource->GetDesc()),
         m_PlaneCount(D3D12GetFormatPlaneCount(Parent->GetDevice(), Desc.Format)),
-        m_NumSubresources(CalculateNumSubresources()), m_ResourceState(m_NumSubresources, InitialResourceState),
-        m_GpuVirtualAddress(m_pResource->GetGPUVirtualAddress())
+        m_NumSubresources(CalculateNumSubresources()), m_ResourceState(m_NumSubresources, InitialResourceState)
     {
         this->SetResourceName(Name);
     }
@@ -168,7 +164,6 @@ namespace RHI
     void D3D12Resource ::Destroy()
     {
         m_pResource = nullptr;
-        m_GpuVirtualAddress = D3D12_GPU_VIRTUAL_ADDRESS_NULL;
         ++m_VersionID;
     }
 
@@ -313,11 +308,17 @@ namespace RHI
                       CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT, Parent->GetNodeMask(), Parent->GetNodeMask()),
                       CD3DX12_RESOURCE_DESC::Buffer(SizeInBytes, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS),
                       D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE,
-                      std::nullopt)
+                      std::nullopt),
+        m_GpuVirtualAddress(m_pResource->GetGPUVirtualAddress())
     {}
+
+    D3D12_GPU_VIRTUAL_ADDRESS D3D12ASBuffer::GetGpuVirtualAddress() const { return m_GpuVirtualAddress; }
 
     D3D12Buffer::~D3D12Buffer()
     {
+        m_CpuVirtualAddress = nullptr;
+        m_GpuVirtualAddress = D3D12_GPU_VIRTUAL_ADDRESS_NULL;
+
         if (m_Data.m_Data != nullptr)
         {
             free(m_Data.m_Data);
@@ -338,6 +339,7 @@ namespace RHI
                           .InferInitialState(),
                       std::nullopt),
         m_HeapType(HeapType), m_SizeInBytes(SizeInBytes), m_Stride(Stride),
+        m_GpuVirtualAddress(m_pResource->GetGPUVirtualAddress()),
         m_ScopedPointer(HeapType == D3D12_HEAP_TYPE_UPLOAD ? m_pResource.Get() : nullptr),
         // We do not need to unmap until we are done with the resource.  However, we must not write to
         // the resource while it is in use by the GPU (so we must use synchronization techniques).
@@ -356,6 +358,7 @@ namespace RHI
                       InitialResourceState,
                       std::nullopt),
         m_HeapType(HeapType), m_SizeInBytes(SizeInBytes), m_Stride(Stride),
+        m_GpuVirtualAddress(m_pResource->GetGPUVirtualAddress()),
         m_ScopedPointer(HeapType == D3D12_HEAP_TYPE_UPLOAD ? m_pResource.Get() : nullptr),
         // We do not need to unmap until we are done with the resource.  However, we must not write to
         // the resource while it is in use by the GPU (so we must use synchronization techniques).
@@ -364,7 +367,8 @@ namespace RHI
 
     D3D12_GPU_VIRTUAL_ADDRESS D3D12Buffer::GetGpuVirtualAddress(UINT Index) const
     {
-        return m_pResource->GetGPUVirtualAddress() + static_cast<UINT64>(Index) * m_Stride;
+        //return m_pResource->GetGPUVirtualAddress() + static_cast<UINT64>(Index) * m_Stride;
+        return m_GpuVirtualAddress + static_cast<UINT64>(Index) * m_Stride;
     }
 
     std::shared_ptr<D3D12Buffer> D3D12Buffer::Create(D3D12LinkedDevice*    Parent,
@@ -380,6 +384,9 @@ namespace RHI
 
         ASSERT(mapplableMode == RHIBufferMode::RHIBufferModeDynamic ||
                mapplableMode == RHIBufferMode::RHIBufferModeImmutable);
+
+        ASSERT(!((mapplableMode == RHIBufferMode::RHIBufferModeDynamic) &&
+                 (bufferTarget & RHIBufferTarget::RHIBufferRandomReadWrite)));
 
         bool allowUAV = bufferTarget & RHIBufferTarget::RHIBufferRandomReadWrite;
 
@@ -425,12 +432,12 @@ namespace RHI
             pBufferD3D12->InflateBuffer(initialData, dataLen);
             uploadNeedFinished = true;
         }
-
+        /*
         // Reset CounterBuffer
         if (bufferTarget & RHIBufferTarget::RHIBufferTargetCounter)
         {
             D3D12CommandContext& InitContext = Parent->BeginResourceUpload();
-            pBufferD3D12->p_CounterBufferD3D12->ResetCounterBuffer(&InitContext);
+            pBufferD3D12->ResetCounterBuffer(&InitContext);
             uploadNeedFinished = true;
         }
 
@@ -438,7 +445,7 @@ namespace RHI
         {
             Parent->EndResourceUpload(true);
         }
-
+        */
         return pBufferD3D12;
     }
 
@@ -478,7 +485,7 @@ namespace RHI
 
         std::shared_ptr<D3D12ConstantBufferView> cbv = nullptr;
         auto cbvHandleIter = m_CBVHandleMap.find(descHash);
-        if (cbvHandleIter != m_CBVHandleMap.end())
+        if (cbvHandleIter == m_CBVHandleMap.end())
         {
             cbv = std::make_shared<D3D12ConstantBufferView>(Parent, cbvDesc, this);
             m_CBVHandleMap[descHash] = cbv;
@@ -496,7 +503,7 @@ namespace RHI
 
         std::shared_ptr<D3D12ShaderResourceView> srv = nullptr;
         auto srvHandleIter = m_SRVHandleMap.find(descHash);
-        if (srvHandleIter != m_SRVHandleMap.end())
+        if (srvHandleIter == m_SRVHandleMap.end())
         {
             srv = std::make_shared<D3D12ShaderResourceView>(Parent, srvDesc, this);
             m_SRVHandleMap[descHash] = srv;
@@ -517,7 +524,7 @@ namespace RHI
 
         std::shared_ptr<D3D12UnorderedAccessView> uav = nullptr;
         auto uavHandleIter = m_UAVHandleMap.find(descHash);
-        if (uavHandleIter != m_UAVHandleMap.end())
+        if (uavHandleIter == m_UAVHandleMap.end())
         {
             uav = std::make_shared<D3D12UnorderedAccessView>(
                 Parent, uavDesc, (D3D12Resource*)this, (D3D12Resource*)pCounterResource);
@@ -609,7 +616,6 @@ namespace RHI
 
         this->Parent              = Parent;
         this->m_pResource         = Resource;
-        this->m_GpuVirtualAddress = Resource->GetGPUVirtualAddress();
         this->m_ClearValue        = CD3DX12_CLEAR_VALUE();
         this->m_ResourceDesc      = CD3DX12_RESOURCE_DESC(Resource->GetDesc());
 
@@ -638,7 +644,7 @@ namespace RHI
             ASSERT(!(desc.flags & RHISurfaceCreateDepthStencil));
             resourceFlags |= D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
         }
-        else if (desc.flags & RHISurfaceCreateDepthStencil)
+        else if (desc.flags & (RHISurfaceCreateDepthStencil | RHISurfaceCreateShadowmap))
         {
             ASSERT(!(desc.flags & RHISurfaceCreateRenderTarget));
             resourceFlags |= D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
@@ -813,7 +819,7 @@ namespace RHI
 
         std::shared_ptr<D3D12ShaderResourceView> srv = nullptr;
         auto srvHandleIter = m_SRVHandleMap.find(descHash);
-        if (srvHandleIter != m_SRVHandleMap.end())
+        if (srvHandleIter == m_SRVHandleMap.end())
         {
             srv = std::make_shared<D3D12ShaderResourceView>(Parent, srvDesc, this);
             m_SRVHandleMap[descHash] = srv;
@@ -831,7 +837,7 @@ namespace RHI
 
         std::shared_ptr<D3D12UnorderedAccessView> uav = nullptr;
         auto uavHandleIter = m_UAVHandleMap.find(descHash);
-        if (uavHandleIter != m_UAVHandleMap.end())
+        if (uavHandleIter == m_UAVHandleMap.end())
         {
             uav = std::make_shared<D3D12UnorderedAccessView>(
                 Parent, uavDesc, (D3D12Resource*)this, (D3D12Resource*)nullptr);
@@ -850,7 +856,7 @@ namespace RHI
 
         std::shared_ptr<D3D12RenderTargetView> rtv = nullptr;
         auto rtvHandleIter = m_RTVHandleMap.find(descHash);
-        if (rtvHandleIter != m_RTVHandleMap.end())
+        if (rtvHandleIter == m_RTVHandleMap.end())
         {
             rtv = std::make_shared<D3D12RenderTargetView>(Parent, rtvDesc, this);
             m_RTVHandleMap[descHash] = rtv;
@@ -868,7 +874,7 @@ namespace RHI
 
         std::shared_ptr<D3D12DepthStencilView> dsv = nullptr;
         auto dsvHandleIter = m_DSVHandleMap.find(descHash);
-        if (dsvHandleIter != m_DSVHandleMap.end())
+        if (dsvHandleIter == m_DSVHandleMap.end())
         {
             dsv = std::make_shared<D3D12DepthStencilView>(Parent, dsvDesc, this);
             m_DSVHandleMap[descHash] = dsv;
