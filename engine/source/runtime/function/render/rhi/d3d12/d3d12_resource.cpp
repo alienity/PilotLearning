@@ -423,7 +423,7 @@ namespace RHI
         {
             pBufferD3D12->p_CounterBufferD3D12 = nullptr;
         }
-
+        /*
         bool uploadNeedFinished = false;
 
         // Inflate Buffer
@@ -432,7 +432,7 @@ namespace RHI
             pBufferD3D12->InflateBuffer(initialData, dataLen);
             uploadNeedFinished = true;
         }
-        /*
+
         // Reset CounterBuffer
         if (bufferTarget & RHIBufferTarget::RHIBufferTargetCounter)
         {
@@ -916,7 +916,7 @@ namespace RHI
 
     INT D3D12Texture::GetMipLevels(UINT width, UINT height, INT32 numMips, RHISurfaceCreateFlags flags)
     {
-        INT mipLevels = 0;
+        INT mipLevels = MOYU_MIN(numMips, MAXMIPLEVELS);
         if (flags & RHISurfaceCreateMipmap)
         {
             if (flags & RHISurfaceCreateAutoGenMips)

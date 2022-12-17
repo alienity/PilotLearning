@@ -39,12 +39,9 @@ namespace Pilot
 
     void DeferredRenderer::InitGlobalBuffer()
     {
-        //CD3DX12_RESOURCE_DESC renderTargetBufferDesc = CD3DX12_RESOURCE_DESC::Tex2D(
-        //    backBufferFormat, viewport.width, viewport.height, 1, 1, 1, 0, D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET);
         const FLOAT         renderTargetClearColor[4] = {0, 0, 0, 0};
         CD3DX12_CLEAR_VALUE renderTargetClearValue    = CD3DX12_CLEAR_VALUE(backBufferFormat, renderTargetClearColor);
 
-        //p_RenderTargetTex = std::make_shared<RHI::D3D12Texture>(device->GetLinkedDevice(), renderTargetBufferDesc, renderTargetClearValue);
         p_RenderTargetTex = RHI::D3D12Texture::Create2D(device->GetLinkedDevice(),
                                                         viewport.width,
                                                         viewport.height,
@@ -54,10 +51,6 @@ namespace Pilot
                                                         1,
                                                         L"RenderTargetTexture",
                                                         renderTargetClearValue);
-        //p_RenderTargetTexSRV = std::make_shared<RHI::D3D12ShaderResourceView>(device->GetLinkedDevice(), p_RenderTargetTex.get(), false, std::nullopt, std::nullopt);
-        //p_RenderTargetTexRTV = std::make_shared<RHI::D3D12RenderTargetView>(device->GetLinkedDevice(), p_RenderTargetTex.get());
-
-
     }
 
     void DeferredRenderer::InitPass()
@@ -128,7 +121,6 @@ namespace Pilot
         uiPassInitInfo.window_ui = window_ui;
         mUIPass->initialize(uiPassInitInfo);
 
-        //window_ui->setGameView(p_RenderTargetTexSRV->GetGpuHandle(), backBufferWidth, backBufferHeight);
         window_ui->setGameView(p_RenderTargetTex->GetDefaultSRV()->GetGpuHandle(), backBufferWidth, backBufferHeight);
     }
 
@@ -202,11 +194,8 @@ namespace Pilot
         {
             mDrawTransIntputParams.spotShadowmapTexHandles.push_back(mShadowmapOutputParams.spotShadowmapRGHandle[i].shadowmapTextureHandle);
         }
-        mDrawTransOutputParams.renderTargetColorHandle    = mDrawOutputParams.renderTargetColorHandle;
-        //mDrawTransOutputParams.renderTargetColorSRVHandle = mDrawOutputParams.renderTargetColorSRVHandle;
-        //mDrawTransOutputParams.renderTargetColorRTVHandle = mDrawOutputParams.renderTargetColorRTVHandle;
-        mDrawTransOutputParams.renderTargetDepthHandle    = mDrawOutputParams.renderTargetDepthHandle;
-        //mDrawTransOutputParams.renderTargetDepthDSVHandle = mDrawOutputParams.renderTargetDepthDSVHandle;
+        mDrawTransOutputParams.renderTargetColorHandle = mDrawOutputParams.renderTargetColorHandle;
+        mDrawTransOutputParams.renderTargetDepthHandle = mDrawOutputParams.renderTargetDepthHandle;
         mIndirectTransparentDrawPass->update(context, graph, mDrawTransIntputParams, mDrawTransOutputParams);
 
 
@@ -214,11 +203,8 @@ namespace Pilot
         DisplayPass::DisplayInputParameters  mDisplayIntputParams;
         DisplayPass::DisplayOutputParameters mDisplayOutputParams;
 
-        mDisplayIntputParams.inputRTColorHandle    = mDrawOutputParams.renderTargetColorHandle;
-        //mDisplayIntputParams.inputRTColorSRVHandle = mDrawOutputParams.renderTargetColorSRVHandle;
-
-        mDisplayOutputParams.renderTargetColorHandle    = renderTargetColorHandle;
-        //mDisplayOutputParams.renderTargetColorRTVHandle = renderTargetColorRTVHandle;
+        mDisplayIntputParams.inputRTColorHandle      = mDrawOutputParams.renderTargetColorHandle;
+        mDisplayOutputParams.renderTargetColorHandle = renderTargetColorHandle;
 
         mDisplayPass->update(context, graph, mDisplayIntputParams, mDisplayOutputParams);
 
@@ -229,7 +215,7 @@ namespace Pilot
 
             mUIIntputParams.renderTargetColorHandle = mDisplayOutputParams.renderTargetColorHandle;
 
-            mUIOutputParams.backBufColorHandle    = backBufColorHandle;
+            mUIOutputParams.backBufColorHandle = backBufColorHandle;
             
             mUIPass->update(context, graph, mUIIntputParams, mUIOutputParams);
         }

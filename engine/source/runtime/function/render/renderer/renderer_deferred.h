@@ -43,9 +43,7 @@ namespace Pilot
         std::shared_ptr<IndirectDrawTransparentPass> mIndirectTransparentDrawPass;
         std::shared_ptr<DisplayPass>                 mDisplayPass;
         
-        std::shared_ptr<RHI::D3D12Texture>            p_RenderTargetTex;
-        //std::shared_ptr<RHI::D3D12ShaderResourceView> p_RenderTargetTexSRV;
-        //std::shared_ptr<RHI::D3D12RenderTargetView>   p_RenderTargetTexRTV;
+        std::shared_ptr<RHI::D3D12Texture> p_RenderTargetTex;
 
 	private:
         WindowSystem*  windowSystem;

@@ -26,8 +26,6 @@ namespace Pilot
                 
                 RHI::D3D12GraphicsContext& graphicContext = context.GetGraphicsContext();
 
-                //RHI::D3D12ShaderResourceView* inputRTColorSRV = registry.GetD3D12ShaderResourceView(drawPassInput->inputRTColorSRVHandle);
-
                 std::shared_ptr<RHI::D3D12Texture> inputRTColor = registry.GetD3D12Texture(drawPassInput->inputRTColorHandle);
                 RHI::D3D12ShaderResourceView* inputRTColorSRV = inputRTColor->GetDefaultSRV().get();
 

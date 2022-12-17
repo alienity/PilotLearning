@@ -89,9 +89,7 @@ namespace Pilot
                                          L"OpaqueIndexBuffer");
 
             commandBufferForOpaqueDraw.p_IndirectIndexCommandBuffer    = opaqueIndexBuffer;
-            //commandBufferForOpaqueDraw.p_IndirectIndexCommandBufferSRV = opaqueIndexBuffer->GetDefaultSRV();
-            //commandBufferForOpaqueDraw.p_IndirectIndexCommandBufferUAV = opaqueIndexBuffer->GetDefaultUAV();
-
+            
             std::shared_ptr<RHI::D3D12Buffer> opaqueBuffer =
                 RHI::D3D12Buffer::Create(m_Device->GetLinkedDevice(),
                                          opaqueIndexTarget,
@@ -99,8 +97,7 @@ namespace Pilot
                                          sizeof(HLSL::CommandSignatureParams),
                                          L"OpaqueBuffer");
 
-            commandBufferForOpaqueDraw.p_IndirectSortCommandBuffer    = opaqueBuffer;
-            //commandBufferForOpaqueDraw.p_IndirectSortCommandBufferUAV = opaqueBuffer->GetDefaultUAV();
+            commandBufferForOpaqueDraw.p_IndirectSortCommandBuffer = opaqueBuffer;
         }
 
         // buffer for transparent draw
@@ -115,10 +112,8 @@ namespace Pilot
                                          sizeof(HLSL::BitonicSortCommandSigParams),
                                          L"TransparentIndexBuffer");
 
-            commandBufferForTransparentDraw.p_IndirectIndexCommandBuffer    = transparentIndexBuffer;
-            //commandBufferForTransparentDraw.p_IndirectIndexCommandBufferSRV = transparentIndexBuffer->GetDefaultSRV();
-            //commandBufferForTransparentDraw.p_IndirectIndexCommandBufferUAV = transparentIndexBuffer->GetDefaultUAV();
-
+            commandBufferForTransparentDraw.p_IndirectIndexCommandBuffer = transparentIndexBuffer;
+            
             std::shared_ptr<RHI::D3D12Buffer> transparentBuffer =
                 RHI::D3D12Buffer::Create(m_Device->GetLinkedDevice(),
                                          transparentIndexTarget,
@@ -126,8 +121,7 @@ namespace Pilot
                                          sizeof(HLSL::CommandSignatureParams),
                                          L"TransparentBuffer");
             
-            commandBufferForTransparentDraw.p_IndirectSortCommandBuffer    = transparentBuffer;
-            //commandBufferForTransparentDraw.p_IndirectSortCommandBufferUAV = transparentBuffer->GetDefaultUAV();
+            commandBufferForTransparentDraw.p_IndirectSortCommandBuffer = transparentBuffer;
         }
     }
 
@@ -136,23 +130,22 @@ namespace Pilot
         RenderResource* real_resource = (RenderResource*)render_resource.get();
         memcpy(pPerframeObj, &real_resource->m_mesh_perframe_storage_buffer_object, sizeof(HLSL::MeshPerframeStorageBufferObject));
 
-        std::vector<RenderMeshNode>& renderMeshNodes = *m_visiable_nodes.p_all_mesh_nodes;
+        std::vector<RenderMeshNode>* renderMeshNodes = m_visiable_nodes.p_all_mesh_nodes;
 
-        uint32_t numMeshes = renderMeshNodes.size();
+        uint32_t numMeshes = renderMeshNodes->size();
         assert(numMeshes < HLSL::MeshLimit);
         for (size_t i = 0; i < numMeshes; i++)
         {
-            RenderMeshNode& temp_node = renderMeshNodes[i];
+            RenderMeshNode& temp_node = renderMeshNodes->at(i);
 
-            std::shared_ptr<RHI::D3D12ShaderResourceView> defaultWhiteView = real_resource->m_default_resource._white_texture2d_image_view;
-            std::shared_ptr<RHI::D3D12ShaderResourceView> defaultBlackView = real_resource->m_default_resource._black_texture2d_image_view;
+            std::shared_ptr<RHI::D3D12ShaderResourceView> defaultWhiteView = real_resource->m_default_resource._white_texture2d_image->GetDefaultSRV();
+            std::shared_ptr<RHI::D3D12ShaderResourceView> defaultBlackView = real_resource->m_default_resource._black_texture2d_image->GetDefaultSRV();
 
-            std::shared_ptr<RHI::D3D12ShaderResourceView> uniformBufferView = temp_node.ref_material->material_uniform_buffer_view;
-            std::shared_ptr<RHI::D3D12ShaderResourceView> baseColorView = temp_node.ref_material->base_color_image_view;
-            std::shared_ptr<RHI::D3D12ShaderResourceView> metallicRoughnessView = temp_node.ref_material->metallic_roughness_image_view;
-            std::shared_ptr<RHI::D3D12ShaderResourceView> normalView   = temp_node.ref_material->normal_image_view;
-            std::shared_ptr<RHI::D3D12ShaderResourceView> emissionView = temp_node.ref_material->emissive_image_view;
-
+            std::shared_ptr<RHI::D3D12ShaderResourceView> uniformBufferView = temp_node.ref_material->material_uniform_buffer->GetDefaultSRV();
+            std::shared_ptr<RHI::D3D12ShaderResourceView> baseColorView = temp_node.ref_material->base_color_texture_image->GetDefaultSRV();
+            std::shared_ptr<RHI::D3D12ShaderResourceView> metallicRoughnessView = temp_node.ref_material->metallic_roughness_texture_image->GetDefaultSRV();
+            std::shared_ptr<RHI::D3D12ShaderResourceView> normalView   = temp_node.ref_material->normal_texture_image->GetDefaultSRV();
+            std::shared_ptr<RHI::D3D12ShaderResourceView> emissionView = temp_node.ref_material->emissive_texture_image->GetDefaultSRV();
 
             HLSL::MaterialInstance curMatInstance = {};
             curMatInstance.uniformBufferViewIndex = uniformBufferView->GetIndex();
@@ -214,8 +207,7 @@ namespace Pilot
 
                 dirShadowmapCommandBuffer.m_gobject_id    = m_visiable_nodes.p_directional_light->m_gobject_id;
                 dirShadowmapCommandBuffer.m_gcomponent_id = m_visiable_nodes.p_directional_light->m_gcomponent_id;
-                dirShadowmapCommandBuffer.p_IndirectSortCommandBuffer    = p_IndirectCommandBuffer;
-                //dirShadowmapCommandBuffer.p_IndirectSortCommandBufferUAV = p_IndirectCommandBuffer->GetDefaultUAV();
+                dirShadowmapCommandBuffer.p_IndirectSortCommandBuffer = p_IndirectCommandBuffer;
             }
         }
         else
@@ -263,12 +255,11 @@ namespace Pilot
                                                  sizeof(HLSL::CommandSignatureParams),
                                                  std::wstring(L"SpotIndirectSortCommandBuffer_" + i));
 
-                    spotShadowCommandBuffer.m_lightIndex                   = i;
-                    spotShadowCommandBuffer.m_gobject_id                   = curSpotLightDesc.m_gobject_id;
-                    spotShadowCommandBuffer.m_gcomponent_id                = curSpotLightDesc.m_gcomponent_id;
-                    spotShadowCommandBuffer.p_IndirectSortCommandBuffer    = p_IndirectCommandBuffer;
-                    //spotShadowCommandBuffer.p_IndirectSortCommandBufferUAV = p_IndirectCommandBuffer->GetDefaultUAV();
-
+                    spotShadowCommandBuffer.m_lightIndex                = i;
+                    spotShadowCommandBuffer.m_gobject_id                = curSpotLightDesc.m_gobject_id;
+                    spotShadowCommandBuffer.m_gcomponent_id             = curSpotLightDesc.m_gcomponent_id;
+                    spotShadowCommandBuffer.p_IndirectSortCommandBuffer = p_IndirectCommandBuffer;
+                    
                     spotShadowmapCommandBuffer.push_back(spotShadowCommandBuffer);
                 }
 

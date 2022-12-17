@@ -48,23 +48,12 @@ namespace Pilot
 
         // Textures
 
-        std::shared_ptr<RHI::D3D12Texture>            base_color_texture_image;
-        std::shared_ptr<RHI::D3D12ShaderResourceView> base_color_image_view;
-
-        std::shared_ptr<RHI::D3D12Texture>            metallic_roughness_texture_image;
-        std::shared_ptr<RHI::D3D12ShaderResourceView> metallic_roughness_image_view;
-
-        std::shared_ptr<RHI::D3D12Texture>            normal_texture_image;
-        std::shared_ptr<RHI::D3D12ShaderResourceView> normal_image_view;
-
-        std::shared_ptr<RHI::D3D12Texture>            occlusion_texture_image;
-        std::shared_ptr<RHI::D3D12ShaderResourceView> occlusion_image_view;
-
-        std::shared_ptr<RHI::D3D12Texture>            emissive_texture_image;
-        std::shared_ptr<RHI::D3D12ShaderResourceView> emissive_image_view;
-
-        std::shared_ptr<RHI::D3D12Buffer>             material_uniform_buffer;
-        std::shared_ptr<RHI::D3D12ShaderResourceView> material_uniform_buffer_view;
+        std::shared_ptr<RHI::D3D12Texture> base_color_texture_image;
+        std::shared_ptr<RHI::D3D12Texture> metallic_roughness_texture_image;
+        std::shared_ptr<RHI::D3D12Texture> normal_texture_image;
+        std::shared_ptr<RHI::D3D12Texture> occlusion_texture_image;
+        std::shared_ptr<RHI::D3D12Texture> emissive_texture_image;
+        std::shared_ptr<RHI::D3D12Buffer>  material_uniform_buffer;
         
         //VkDescriptorSet material_descriptor_set;
     };

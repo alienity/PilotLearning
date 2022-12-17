@@ -32,29 +32,17 @@ namespace Pilot
             {
                 Vector2 shadowmap_size = m_visiable_nodes.p_directional_light->m_shadowmap_size;
 
-                //D3D12_RESOURCE_FLAGS  shadowmapFlags   = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
-                //CD3DX12_RESOURCE_DESC shadowmapTexDesc = CD3DX12_RESOURCE_DESC::Tex2D(
-                //    DXGI_FORMAT_D32_FLOAT, shadowmap_size.x, shadowmap_size.y, 1, 1, 1, 0, shadowmapFlags);
-                CD3DX12_CLEAR_VALUE shadowmapClearVal = CD3DX12_CLEAR_VALUE(DXGI_FORMAT_D32_FLOAT, 0, 1);
+                directionalShadowmap.p_LightShadowmap =
+                    RHI::D3D12Texture::Create2D(m_Device->GetLinkedDevice(),
+                                                shadowmap_size.x,
+                                                shadowmap_size.y,
+                                                1,
+                                                DXGI_FORMAT_D32_FLOAT,
+                                                RHI::RHISurfaceCreateShadowmap,
+                                                1,
+                                                L"DirectionShadowmap",
+                                                CD3DX12_CLEAR_VALUE(DXGI_FORMAT_D32_FLOAT, 0, 1));
 
-                //directionalShadowmap.p_LightShadowmap = std::make_shared<RHI::D3D12Texture>(
-                //    m_Device->GetLinkedDevice(), shadowmapTexDesc, shadowmapClearVal);
-
-                directionalShadowmap.p_LightShadowmap = RHI::D3D12Texture::Create2D(m_Device->GetLinkedDevice(),
-                                                                                    shadowmap_size.x,
-                                                                                    shadowmap_size.y,
-                                                                                    1,
-                                                                                    DXGI_FORMAT_D32_FLOAT,
-                                                                                    RHI::RHISurfaceCreateShadowmap,
-                                                                                    1,
-                                                                                    L"DirectionShadowmap",
-                                                                                    shadowmapClearVal);
-
-                //directionalShadowmap.p_LightShadowmapDSV = std::make_shared<RHI::D3D12DepthStencilView>(
-                //    m_Device->GetLinkedDevice(), directionalShadowmap.p_LightShadowmap.get());
-
-                //directionalShadowmap.p_LightShadowmapSRV = std::make_shared<RHI::D3D12ShaderResourceView>(
-                //    m_Device->GetLinkedDevice(), directionalShadowmap.p_LightShadowmap.get(), false, 0, 1);
             }
 
             real_resource->m_mesh_perframe_storage_buffer_object.scene_directional_light.shadowmap_srv_index =
@@ -96,22 +84,17 @@ namespace Pilot
                 if (curSpotLightDesc.m_is_active && !curSpotLighShaodwmaptExist)
                 {
                     Vector2 shadowmap_size = curSpotLightDesc.m_shadowmap_size;
-
-                    D3D12_RESOURCE_FLAGS  shadowmapFlags   = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
-                    CD3DX12_RESOURCE_DESC shadowmapTexDesc = CD3DX12_RESOURCE_DESC::Tex2D(
-                        DXGI_FORMAT_D32_FLOAT, shadowmap_size.x, shadowmap_size.y, 1, 1, 1, 0, shadowmapFlags);
-                    CD3DX12_CLEAR_VALUE shadowmapClearVal = CD3DX12_CLEAR_VALUE(DXGI_FORMAT_D32_FLOAT, 0, 1);
-
-                    std::shared_ptr<RHI::D3D12Texture> p_SpotLightShadowmap = std::make_shared<RHI::D3D12Texture>(
-                        m_Device->GetLinkedDevice(), shadowmapTexDesc, shadowmapClearVal);
-
-                    std::shared_ptr<RHI::D3D12DepthStencilView> p_SpotLightShadowmapDSV =
-                        std::make_shared<RHI::D3D12DepthStencilView>(m_Device->GetLinkedDevice(),
-                                                                     p_SpotLightShadowmap.get());
-
-                    std::shared_ptr<RHI::D3D12ShaderResourceView> p_SpotLightShadowmapSRV =
-                        std::make_shared<RHI::D3D12ShaderResourceView>(
-                            m_Device->GetLinkedDevice(), p_SpotLightShadowmap.get(), false, 0, 1);
+                    
+                    std::shared_ptr<RHI::D3D12Texture> p_SpotLightShadowmap =
+                        RHI::D3D12Texture::Create2D(m_Device->GetLinkedDevice(),
+                                                    shadowmap_size.x,
+                                                    shadowmap_size.y,
+                                                    1,
+                                                    DXGI_FORMAT_D32_FLOAT,
+                                                    RHI::RHISurfaceCreateShadowmap,
+                                                    1,
+                                                    L"SpotLightShadowmap",
+                                                    CD3DX12_CLEAR_VALUE(DXGI_FORMAT_D32_FLOAT, 0, 1));
 
                     SpotShadowmapStruct spotShadow = {};
                     spotShadow.m_gobject_id        = curSpotLightDesc.m_gobject_id;
@@ -119,12 +102,11 @@ namespace Pilot
                     spotShadow.m_spot_index        = i;
                     spotShadow.m_shadowmap_size    = shadowmap_size;
                     spotShadow.p_LightShadowmap    = p_SpotLightShadowmap;
-                    //spotShadow.p_LightShadowmapDSV = p_SpotLightShadowmapDSV;
-                    //spotShadow.p_LightShadowmapSRV = p_SpotLightShadowmapSRV;
 
                     spotShadowmaps.push_back(spotShadow);
 
-                    real_resource->m_mesh_perframe_storage_buffer_object.scene_spot_lights[i].shadowmap_srv_index = p_SpotLightShadowmapSRV->GetIndex();
+                    real_resource->m_mesh_perframe_storage_buffer_object.scene_spot_lights[i].shadowmap_srv_index =
+                        p_SpotLightShadowmap->GetDefaultSRV()->GetIndex();
                 }
             }
         }
@@ -159,10 +141,7 @@ namespace Pilot
         if (directionalShadowmap.p_LightShadowmap != nullptr)
         {
             RHI::RgResourceHandle dirShadowMapHandle = graph.Import<RHI::D3D12Texture>(directionalShadowmap.p_LightShadowmap.get());
-            //RHI::RgResourceHandle dirShadowmapDSVHandle = graph.Import<RHI::D3D12DepthStencilView>(directionalShadowmap.p_LightShadowmapDSV.get());
-            //RHI::RgResourceHandle dirShadowmapSRVHandle = graph.Import<RHI::D3D12ShaderResourceView>(directionalShadowmap.p_LightShadowmapSRV.get());
 
-            //drawPassOutput->directionalShadowmapRGHandle = {dirShadowMapHandle, dirShadowmapDSVHandle, dirShadowmapSRVHandle};
             drawPassOutput->directionalShadowmapRGHandle = {dirShadowMapHandle};
 
             shadowpass.Write(&dirShadowMapHandle);
@@ -171,10 +150,7 @@ namespace Pilot
         for (size_t i = 0; i < spotShadowmaps.size(); i++)
         {
             RHI::RgResourceHandle spotShadowMapHandle = graph.Import<RHI::D3D12Texture>(spotShadowmaps[i].p_LightShadowmap.get());
-            //RHI::RgResourceHandle spotShadowmapDSVHandle = graph.Import<RHI::D3D12DepthStencilView>(spotShadowmaps[i].p_LightShadowmapDSV.get());
-            //RHI::RgResourceHandle spotShadowmapSRVHandle = graph.Import<RHI::D3D12ShaderResourceView>(spotShadowmaps[i].p_LightShadowmapSRV.get());
 
-            //drawPassOutput->spotShadowmapRGHandle.push_back({spotShadowMapHandle, spotShadowmapDSVHandle, spotShadowmapSRVHandle});
             drawPassOutput->spotShadowmapRGHandle.push_back({spotShadowMapHandle});
             
             shadowpass.Write(&spotShadowMapHandle);
