@@ -113,26 +113,12 @@ namespace RHI
 
     D3D12Resource::D3D12Resource(D3D12LinkedDevice*                       Parent,
                                  Microsoft::WRL::ComPtr<ID3D12Resource>&& Resource,
-                                 CD3DX12_CLEAR_VALUE                      ClearValue,
                                  D3D12_RESOURCE_STATES                    InitialResourceState) :
         D3D12LinkedDeviceChild(Parent),
-        m_pResource(std::move(Resource)), m_ResourceDesc(this->m_pResource->GetDesc()),
+        m_pResource(std::move(Resource)), m_ClearValue(std::nullopt), m_ResourceDesc(this->m_pResource->GetDesc()),
         m_PlaneCount(D3D12GetFormatPlaneCount(Parent->GetDevice(), m_ResourceDesc.Format)),
         m_NumSubresources(CalculateNumSubresources()), m_ResourceState(m_NumSubresources, InitialResourceState)
     {}
-
-    D3D12Resource::D3D12Resource(D3D12LinkedDevice*                       Parent,
-                                 Microsoft::WRL::ComPtr<ID3D12Resource>&& Resource,
-                                 CD3DX12_CLEAR_VALUE                      ClearValue,
-                                 D3D12_RESOURCE_STATES                    InitialResourceState,
-                                 std::wstring                             Name) :
-        D3D12LinkedDeviceChild(Parent),
-        m_pResource(std::move(Resource)), m_ClearValue(ClearValue), m_ResourceDesc(this->m_pResource->GetDesc()),
-        m_PlaneCount(D3D12GetFormatPlaneCount(Parent->GetDevice(), m_ResourceDesc.Format)),
-        m_NumSubresources(CalculateNumSubresources()), m_ResourceState(m_NumSubresources, InitialResourceState)
-    {
-        this->SetResourceName(Name);
-    }
 
     D3D12Resource::D3D12Resource(D3D12LinkedDevice*                 Parent,
                                  CD3DX12_HEAP_PROPERTIES            HeapProperties,
@@ -145,6 +131,19 @@ namespace RHI
         m_PlaneCount(D3D12GetFormatPlaneCount(Parent->GetDevice(), Desc.Format)),
         m_NumSubresources(CalculateNumSubresources()), m_ResourceState(m_NumSubresources, InitialResourceState)
     {}
+
+    D3D12Resource::D3D12Resource(D3D12LinkedDevice*                       Parent,
+                                 Microsoft::WRL::ComPtr<ID3D12Resource>&& Resource,
+                                 D3D12_RESOURCE_STATES                    InitialResourceState,
+                                 std::optional<CD3DX12_CLEAR_VALUE>       ClearValue,
+                                 std::wstring                             Name) :
+        D3D12LinkedDeviceChild(Parent),
+        m_pResource(std::move(Resource)), m_ClearValue(ClearValue), m_ResourceDesc(this->m_pResource->GetDesc()),
+        m_PlaneCount(D3D12GetFormatPlaneCount(Parent->GetDevice(), m_ResourceDesc.Format)),
+        m_NumSubresources(CalculateNumSubresources()), m_ResourceState(m_NumSubresources, InitialResourceState)
+    {
+        this->SetResourceName(Name);
+    }
 
     D3D12Resource::D3D12Resource(D3D12LinkedDevice*                 Parent,
                                  CD3DX12_HEAP_PROPERTIES            HeapProperties,
@@ -340,11 +339,12 @@ namespace RHI
                       std::nullopt),
         m_HeapType(HeapType), m_SizeInBytes(SizeInBytes), m_Stride(Stride),
         m_GpuVirtualAddress(m_pResource->GetGPUVirtualAddress()),
-        m_ScopedPointer(HeapType == D3D12_HEAP_TYPE_UPLOAD ? m_pResource.Get() : nullptr),
+        m_ScopedPointer(HeapType == D3D12_HEAP_TYPE_UPLOAD ? m_pResource.Get() : nullptr)
+    {
         // We do not need to unmap until we are done with the resource.  However, we must not write to
         // the resource while it is in use by the GPU (so we must use synchronization techniques).
-        m_CpuVirtualAddress(m_ScopedPointer.Address)
-    {}
+        m_CpuVirtualAddress = m_ScopedPointer.Address;
+    }
 
     D3D12Buffer::D3D12Buffer(D3D12LinkedDevice*    Parent,
                              UINT64                SizeInBytes,
@@ -359,11 +359,12 @@ namespace RHI
                       std::nullopt),
         m_HeapType(HeapType), m_SizeInBytes(SizeInBytes), m_Stride(Stride),
         m_GpuVirtualAddress(m_pResource->GetGPUVirtualAddress()),
-        m_ScopedPointer(HeapType == D3D12_HEAP_TYPE_UPLOAD ? m_pResource.Get() : nullptr),
+        m_ScopedPointer(HeapType == D3D12_HEAP_TYPE_UPLOAD ? m_pResource.Get() : nullptr)
+    {
         // We do not need to unmap until we are done with the resource.  However, we must not write to
         // the resource while it is in use by the GPU (so we must use synchronization techniques).
-        m_CpuVirtualAddress(m_ScopedPointer.Address)
-    {}
+        m_CpuVirtualAddress = m_ScopedPointer.Address;
+    }
 
     D3D12_GPU_VIRTUAL_ADDRESS D3D12Buffer::GetGpuVirtualAddress(UINT Index) const
     {
@@ -409,8 +410,11 @@ namespace RHI
 
         if (bufferTarget & RHIBufferTarget::RHIBufferTargetCounter)
         {
+            RHIBufferTarget counterBufferTarget = bufferTarget | RHIBufferTarget::RHIBufferTargetRaw;
+            counterBufferTarget &= ~RHIBufferTarget::RHIBufferTargetCounter;
+
             pBufferD3D12->p_CounterBufferD3D12 = Create(Parent,
-                                                        RHIBufferTarget::RHIBufferTargetRaw,
+                                                        counterBufferTarget,
                                                         1,
                                                         sizeof(UINT32),
                                                         name + L"_Counter",
@@ -518,7 +522,7 @@ namespace RHI
     std::shared_ptr<D3D12UnorderedAccessView> D3D12Buffer::CreateUAV(D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc)
     {
         D3D12Resource* pCounterResource = p_CounterBufferD3D12 != nullptr ? p_CounterBufferD3D12.get() : nullptr;
-        BUFFER_UNORDERED_ACCESS_VIEW_KEY          uavKey        = {uavDesc, pCounterResource};
+        BUFFER_UNORDERED_ACCESS_VIEW_KEY uavKey = {uavDesc, pCounterResource};
 
         uint64 descHash = CityHash64((const char*)&uavKey, sizeof(BUFFER_UNORDERED_ACCESS_VIEW_KEY));
 
@@ -553,11 +557,12 @@ namespace RHI
         return CreateUAV(D3D12UnorderedAccessView::GetDesc(this, m_Desc.target & RHIBufferTargetRaw, 0, m_Desc.number, 0));
     }
 
+    RHIBufferDesc& D3D12Buffer::GetBufferDesc() { return m_Desc; }
+
     D3D12Texture::D3D12Texture(D3D12LinkedDevice*                       Parent,
                                Microsoft::WRL::ComPtr<ID3D12Resource>&& Resource,
-                               CD3DX12_CLEAR_VALUE                      ClearValue,
                                D3D12_RESOURCE_STATES                    InitialResourceState) :
-        D3D12Resource(Parent, std::move(Resource), ClearValue, InitialResourceState)
+        D3D12Resource(Parent, std::move(Resource), InitialResourceState)
     {}
 
     D3D12Texture::D3D12Texture(D3D12LinkedDevice*                 Parent,
@@ -634,8 +639,8 @@ namespace RHI
     std::shared_ptr<D3D12Texture> D3D12Texture::Create(D3D12LinkedDevice*                  Parent,
                                                        RHIRenderSurfaceBaseDesc            desc,
                                                        const std::wstring                  name,
-                                                       CD3DX12_CLEAR_VALUE                 clearValue,
                                                        D3D12_RESOURCE_STATES               initState,
+                                                       std::optional<CD3DX12_CLEAR_VALUE>  clearValue,
                                                        std::vector<D3D12_SUBRESOURCE_DATA> initDatas)
     {
         D3D12_RESOURCE_FLAGS resourceFlags = D3D12_RESOURCE_FLAG_NONE;
@@ -691,21 +696,21 @@ namespace RHI
         return pSurfaceD3D12;
     }
 
-    std::shared_ptr<D3D12Texture> D3D12Texture::Create2D(D3D12LinkedDevice*     Parent,
-                                                         UINT32                 width,
-                                                         UINT32                 height,
-                                                         INT32                  numMips,
-                                                         DXGI_FORMAT            format,
-                                                         RHISurfaceCreateFlags  flags,
-                                                         UINT32                 sampleCount,
-                                                         const std::wstring     name,
-                                                         CD3DX12_CLEAR_VALUE    clearValue,
-                                                         D3D12_RESOURCE_STATES  initState,
-                                                         D3D12_SUBRESOURCE_DATA initData)
+    std::shared_ptr<D3D12Texture> D3D12Texture::Create2D(D3D12LinkedDevice*                 Parent,
+                                                         UINT32                             width,
+                                                         UINT32                             height,
+                                                         INT32                              numMips,
+                                                         DXGI_FORMAT                        format,
+                                                         RHISurfaceCreateFlags              flags,
+                                                         UINT32                             sampleCount,
+                                                         const std::wstring                 name,
+                                                         D3D12_RESOURCE_STATES              initState,
+                                                         std::optional<CD3DX12_CLEAR_VALUE> clearValue,
+                                                         D3D12_SUBRESOURCE_DATA             initData)
     {
         RHIRenderSurfaceBaseDesc desc = {
             width, height, 1, sampleCount, numMips, flags, RHITexDim2D, format, true, false};
-        return Create(Parent, desc, name, clearValue, initState, {initData});
+        return Create(Parent, desc, name, initState, clearValue, {initData});
     }
 
     std::shared_ptr<D3D12Texture> D3D12Texture::Create2DArray(D3D12LinkedDevice*                  Parent,
@@ -717,13 +722,13 @@ namespace RHI
                                                               RHISurfaceCreateFlags               flags,
                                                               UINT32                              sampleCount,
                                                               const std::wstring                  name,
-                                                              CD3DX12_CLEAR_VALUE                 clearValue,
                                                               D3D12_RESOURCE_STATES               initState,
+                                                              std::optional<CD3DX12_CLEAR_VALUE>  clearValue,
                                                               std::vector<D3D12_SUBRESOURCE_DATA> initDatas)
     {
         RHIRenderSurfaceBaseDesc desc = {
             width, height, arraySize, sampleCount, numMips, flags, RHITexDim2DArray, format, true, false};
-        return Create(Parent, desc, name, clearValue, initState, initDatas);
+        return Create(Parent, desc, name, initState, clearValue, initDatas);
     }
 
     std::shared_ptr<D3D12Texture> D3D12Texture::CreateCubeMap(D3D12LinkedDevice*                  Parent,
@@ -734,14 +739,14 @@ namespace RHI
                                                               RHISurfaceCreateFlags               flags,
                                                               UINT32                              sampleCount,
                                                               const std::wstring                  name,
-                                                              CD3DX12_CLEAR_VALUE                 clearValue,
                                                               D3D12_RESOURCE_STATES               initState,
+                                                              std::optional<CD3DX12_CLEAR_VALUE>  clearValue,
                                                               std::vector<D3D12_SUBRESOURCE_DATA> initDatas)
     {
         UINT cubeFaces = 6;
         RHIRenderSurfaceBaseDesc desc = {
             width, height, cubeFaces, sampleCount, numMips, flags, RHITexDimCube, format, true, false};
-        return Create(Parent, desc, name, clearValue, initState, initDatas);
+        return Create(Parent, desc, name, initState, clearValue, initDatas);
     }
 
     std::shared_ptr<D3D12Texture> D3D12Texture::CreateCubeMapArray(D3D12LinkedDevice*                  Parent,
@@ -753,33 +758,33 @@ namespace RHI
                                                                    RHISurfaceCreateFlags               flags,
                                                                    UINT32                              sampleCount,
                                                                    const std::wstring                  name,
-                                                                   CD3DX12_CLEAR_VALUE                 clearValue,
                                                                    D3D12_RESOURCE_STATES               initState,
+                                                                   std::optional<CD3DX12_CLEAR_VALUE>  clearValue,
                                                                    std::vector<D3D12_SUBRESOURCE_DATA> initDatas)
     {
         UINT cubeFaces = 6;
         UINT cubeArrayFaces = cubeFaces * arraySize;
         RHIRenderSurfaceBaseDesc desc = {
             width, height, cubeArrayFaces, sampleCount, numMips, flags, RHITexDimCubeArray, format, true, false};
-        return Create(Parent, desc, name, clearValue, initState, initDatas);
+        return Create(Parent, desc, name, initState, clearValue, initDatas);
     }
 
-    std::shared_ptr<D3D12Texture> D3D12Texture::Create3D(D3D12LinkedDevice*     Parent,
-                                                         UINT32                 width,
-                                                         UINT32                 height,
-                                                         UINT32                 depth,
-                                                         INT32                  numMips,
-                                                         DXGI_FORMAT            format,
-                                                         RHISurfaceCreateFlags  flags,
-                                                         UINT32                 sampleCount,
-                                                         const std::wstring     name,
-                                                         CD3DX12_CLEAR_VALUE    clearValue,
-                                                         D3D12_RESOURCE_STATES  initState,
-                                                         D3D12_SUBRESOURCE_DATA initData)
+    std::shared_ptr<D3D12Texture> D3D12Texture::Create3D(D3D12LinkedDevice*                 Parent,
+                                                         UINT32                             width,
+                                                         UINT32                             height,
+                                                         UINT32                             depth,
+                                                         INT32                              numMips,
+                                                         DXGI_FORMAT                        format,
+                                                         RHISurfaceCreateFlags              flags,
+                                                         UINT32                             sampleCount,
+                                                         const std::wstring                 name,
+                                                         D3D12_RESOURCE_STATES              initState,
+                                                         std::optional<CD3DX12_CLEAR_VALUE> clearValue,
+                                                         D3D12_SUBRESOURCE_DATA             initData)
     {
         RHIRenderSurfaceBaseDesc desc = {
             width, height, depth, sampleCount, numMips, flags, RHITexDim3D, format, true, false};
-        return Create(Parent, desc, name, clearValue, initState, {initData});
+        return Create(Parent, desc, name, initState, clearValue, {initData});
     }
 
     std::shared_ptr<D3D12Texture> D3D12Texture::CreateFromSwapchain(D3D12LinkedDevice*                     Parent,

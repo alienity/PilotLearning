@@ -41,6 +41,7 @@ namespace Pilot
                                                 RHI::RHISurfaceCreateShadowmap,
                                                 1,
                                                 L"DirectionShadowmap",
+                                                D3D12_RESOURCE_STATE_COMMON,
                                                 CD3DX12_CLEAR_VALUE(DXGI_FORMAT_D32_FLOAT, 0, 1));
 
             }
@@ -94,6 +95,7 @@ namespace Pilot
                                                     RHI::RHISurfaceCreateShadowmap,
                                                     1,
                                                     L"SpotLightShadowmap",
+                                                    D3D12_RESOURCE_STATE_COMMON,
                                                     CD3DX12_CLEAR_VALUE(DXGI_FORMAT_D32_FLOAT, 0, 1));
 
                     SpotShadowmapStruct spotShadow = {};

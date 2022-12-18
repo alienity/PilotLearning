@@ -49,8 +49,8 @@ namespace RHI
 
 	bool D3D12CommandListHandle::Open(ID3D12CommandAllocator* CommandAllocator)
     {
-        // 如果正在录制，那就不需要重置内存
-        if (CommandListState != D3D12CommandListState::Recording)
+        // skip reset if current commandlist is recording now
+        if (CommandListState == D3D12CommandListState::Recording)
             return false;
 
         VERIFY_D3D12_API(GraphicsCommandList->Reset(CommandAllocator, nullptr));

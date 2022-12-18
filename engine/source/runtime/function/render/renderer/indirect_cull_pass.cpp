@@ -65,7 +65,7 @@ namespace Pilot
         int argSize   = 12;
 
         pSortDispatchArgs = RHI::D3D12Buffer::Create(m_Device->GetLinkedDevice(),
-                                                     RHI::RHIBufferTargetIndirectArgs,
+                                                     RHI::RHIBufferTargetIndirectArgs | RHI::RHIBufferRandomReadWrite| RHI::RHIBufferTargetCounter,
                                                      argNumber,
                                                      argSize,
                                                      L"SortDispatchArgs",
@@ -88,7 +88,7 @@ namespace Pilot
                                          sizeof(HLSL::BitonicSortCommandSigParams),
                                          L"OpaqueIndexBuffer");
 
-            commandBufferForOpaqueDraw.p_IndirectIndexCommandBuffer    = opaqueIndexBuffer;
+            commandBufferForOpaqueDraw.p_IndirectIndexCommandBuffer = opaqueIndexBuffer;
             
             std::shared_ptr<RHI::D3D12Buffer> opaqueBuffer =
                 RHI::D3D12Buffer::Create(m_Device->GetLinkedDevice(),
@@ -316,7 +316,7 @@ namespace Pilot
                                      1,
                                      pSortDispatchArgs->GetResource(),
                                      0,
-                                     pSortDispatchArgs->GetResource(),
+                                     pSortDispatchArgs->GetCounterBuffer()->GetResource(),
                                      counterOffset);
             //context.DispatchIndirect(s_DispatchArgs, 0);
             context.InsertUAVBarrier(keyIndexList.get());
@@ -340,7 +340,7 @@ namespace Pilot
                                          1,
                                          pSortDispatchArgs->GetResource(),
                                          IndirectArgsOffset,
-                                         pSortDispatchArgs->GetResource(),
+                                         pSortDispatchArgs->GetCounterBuffer()->GetResource(),
                                          counterOffset);
                 //context.DispatchIndirect(s_DispatchArgs, IndirectArgsOffset);
                 context.InsertUAVBarrier(keyIndexList.get());
@@ -353,7 +353,7 @@ namespace Pilot
                                      1,
                                      pSortDispatchArgs->GetResource(),
                                      IndirectArgsOffset,
-                                     pSortDispatchArgs->GetResource(),
+                                     pSortDispatchArgs->GetCounterBuffer()->GetResource(),
                                      counterOffset);
             //context.DispatchIndirect(s_DispatchArgs, IndirectArgsOffset);
             context.InsertUAVBarrier(keyIndexList.get());
@@ -382,7 +382,8 @@ namespace Pilot
         RHI::D3D12SyncHandle ComputeSyncHandle;
         if (numMeshes > 0)
         {
-            RHI::D3D12CommandContext& copyContext = m_Device->GetLinkedDevice()->GetCopyContext1();
+            //RHI::D3D12CommandContext& copyContext = m_Device->GetLinkedDevice()->GetCopyContext1();
+            RHI::D3D12CommandContext& copyContext = m_Device->GetLinkedDevice()->GetCommandContext();
             copyContext.Open();
             {
                 copyContext.ResetCounter(commandBufferForOpaqueDraw.p_IndirectIndexCommandBuffer->GetCounterBuffer().get());
@@ -397,9 +398,9 @@ namespace Pilot
                 {
                     copyContext.ResetCounter(spotShadowmapCommandBuffer[i].p_IndirectSortCommandBuffer->GetCounterBuffer().get());
                 }
-                copyContext->CopyResource(pPerframeBuffer->GetResource(), pUploadPerframeBuffer->GetResource());
-                copyContext->CopyResource(pMaterialBuffer->GetResource(), pUploadMaterialBuffer->GetResource());
-                copyContext->CopyResource(pMeshBuffer->GetResource(), pUploadMeshBuffer->GetResource());
+                copyContext.CopyBuffer(pPerframeBuffer.get(), pUploadPerframeBuffer.get());
+                copyContext.CopyBuffer(pMaterialBuffer.get(), pUploadMaterialBuffer.get());
+                copyContext.CopyBuffer(pMeshBuffer.get(), pUploadMeshBuffer.get());
             }
             copyContext.Close();
             RHI::D3D12SyncHandle copySyncHandle = copyContext.Execute(false);

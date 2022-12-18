@@ -120,23 +120,25 @@ namespace RHI
         return SyncHandle;
     }
 
-    void D3D12CommandContext::CopyBuffer(D3D12Resource* Dest, D3D12Resource* Src)
+    void D3D12CommandContext::CopyBuffer(D3D12Buffer* Dest, D3D12Buffer* Src)
     {
+        if (Src->GetBufferDesc().mode == RHIBufferMode::RHIBufferModeImmutable)
+            TransitionBarrier(Src, D3D12_RESOURCE_STATE_COPY_SOURCE);
         TransitionBarrier(Dest, D3D12_RESOURCE_STATE_COPY_DEST);
-        TransitionBarrier(Src, D3D12_RESOURCE_STATE_COPY_SOURCE);
         FlushResourceBarriers();
         m_CommandListHandle->CopyResource(Dest->GetResource(), Src->GetResource());
     }
 
-    void D3D12CommandContext::CopyBufferRegion(D3D12Resource* Dest, UINT64 DestOffset, D3D12Resource* Src, UINT64 SrcOffset, UINT64 NumBytes)
+    void D3D12CommandContext::CopyBufferRegion(D3D12Buffer* Dest, UINT64 DestOffset, D3D12Buffer* Src, UINT64 SrcOffset, UINT64 NumBytes)
     {
+        if (Src->GetBufferDesc().mode == RHIBufferMode::RHIBufferModeImmutable)
+            TransitionBarrier(Src, D3D12_RESOURCE_STATE_COPY_SOURCE);
         TransitionBarrier(Dest, D3D12_RESOURCE_STATE_COPY_DEST);
-        TransitionBarrier(Src, D3D12_RESOURCE_STATE_COPY_SOURCE);
         FlushResourceBarriers();
         m_CommandListHandle->CopyBufferRegion(Dest->GetResource(), DestOffset, Src->GetResource(), SrcOffset, NumBytes);
     }
 
-    void D3D12CommandContext::CopySubresource(D3D12Resource* Dest, UINT DestSubIndex, D3D12Resource* Src, UINT SrcSubIndex)
+    void D3D12CommandContext::CopySubresource(D3D12Texture* Dest, UINT DestSubIndex, D3D12Texture* Src, UINT SrcSubIndex)
     {
         FlushResourceBarriers();
         D3D12_TEXTURE_COPY_LOCATION DestLocation = {
@@ -146,7 +148,7 @@ namespace RHI
         m_CommandListHandle->CopyTextureRegion(&DestLocation, 0, 0, 0, &SrcLocation, nullptr);
     }
 
-    void D3D12CommandContext::CopyTextureRegion(D3D12Resource* Dest, UINT x, UINT y, UINT z, D3D12Resource* Source, RECT& Rect)
+    void D3D12CommandContext::CopyTextureRegion(D3D12Texture* Dest, UINT x, UINT y, UINT z, D3D12Texture* Source, RECT& Rect)
     {
         TransitionBarrier(Dest, D3D12_RESOURCE_STATE_COPY_DEST);
         TransitionBarrier(Source, D3D12_RESOURCE_STATE_COPY_SOURCE);
@@ -165,7 +167,7 @@ namespace RHI
         m_CommandListHandle->CopyTextureRegion(&destLoc, x, y, z, &srcLoc, &box);
     }
 
-    void D3D12CommandContext::ResetCounter(D3D12Resource* CounterResource, UINT64 CounterOffset, UINT Value /*= 0*/)
+    void D3D12CommandContext::ResetCounter(D3D12Buffer* CounterResource, UINT64 CounterOffset, UINT Value /*= 0*/)
     {
         D3D12Allocation Allocation = m_CpuLinearAllocator.Allocate(sizeof(UINT));
         std::memcpy(Allocation.CpuVirtualAddress, &Value, sizeof(UINT));
@@ -184,7 +186,7 @@ namespace RHI
         return m_CpuLinearAllocator.Allocate(SizeInBytes, Alignment);
     }
 
-    void D3D12CommandContext::WriteBuffer(D3D12Resource* Dest, UINT64 DestOffset, const void* BufferData, UINT64 NumBytes)
+    void D3D12CommandContext::WriteBuffer(D3D12Buffer* Dest, UINT64 DestOffset, const void* BufferData, UINT64 NumBytes)
     {
         ASSERT(BufferData != nullptr && Pilot::IsAligned(BufferData, 16));
         D3D12Allocation TempSpace = m_CpuLinearAllocator.Allocate(NumBytes, 512);
@@ -194,7 +196,7 @@ namespace RHI
             Dest->GetResource(), DestOffset, TempSpace.Resource, TempSpace.Offset, NumBytes);
     }
 
-    void D3D12CommandContext::FillBuffer(D3D12Resource* Dest, UINT64 DestOffset, DWParam Value, UINT64 NumBytes)
+    void D3D12CommandContext::FillBuffer(D3D12Buffer* Dest, UINT64 DestOffset, DWParam Value, UINT64 NumBytes)
     {
         D3D12Allocation TempSpace   = m_CpuLinearAllocator.Allocate(NumBytes, 512);
         __m128   VectorValue = _mm_set1_ps(Value.Float);
@@ -929,12 +931,12 @@ namespace RHI
         ASSERT(CommandContext.GetCommandQueue()->GetType() != D3D12_COMMAND_LIST_TYPE_COPY);
     }
 
-    void D3D12CommandContext::InitializeTexture(D3D12LinkedDevice* Parent, D3D12Resource* Dest, std::vector<D3D12_SUBRESOURCE_DATA> Subresources)
+    void D3D12CommandContext::InitializeTexture(D3D12LinkedDevice* Parent, D3D12Texture* Dest, std::vector<D3D12_SUBRESOURCE_DATA> Subresources)
     {
         D3D12CommandContext::InitializeTexture(Parent, Dest, 0, Subresources);
     }
 
-    void D3D12CommandContext::InitializeTexture(D3D12LinkedDevice* Parent, D3D12Resource* Dest, UINT FirstSubresource, std::vector<D3D12_SUBRESOURCE_DATA> Subresources)
+    void D3D12CommandContext::InitializeTexture(D3D12LinkedDevice* Parent, D3D12Texture* Dest, UINT FirstSubresource, std::vector<D3D12_SUBRESOURCE_DATA> Subresources)
     {
         /*
         Parent->BeginResourceUpload();
@@ -957,7 +959,7 @@ namespace RHI
         Parent->EndResourceUpload(true);
     }
 
-    void D3D12CommandContext::InitializeBuffer(D3D12LinkedDevice* Parent, D3D12Resource* Dest, const void* Data, UINT64 NumBytes, UINT64 DestOffset)
+    void D3D12CommandContext::InitializeBuffer(D3D12LinkedDevice* Parent, D3D12Buffer* Dest, const void* Data, UINT64 NumBytes, UINT64 DestOffset)
     {
         D3D12CommandContext& InitContext = Parent->BeginResourceUpload();
 
@@ -976,7 +978,7 @@ namespace RHI
         Parent->EndResourceUpload(true);
     }
 
-    void D3D12CommandContext::InitializeTextureArraySlice(D3D12LinkedDevice* Parent, D3D12Resource* Dest, UINT SliceIndex, D3D12Resource* Src)
+    void D3D12CommandContext::InitializeTextureArraySlice(D3D12LinkedDevice* Parent, D3D12Texture* Dest, UINT SliceIndex, D3D12Texture* Src)
     {
         D3D12CommandContext& InitContext = Parent->BeginResourceUpload();
 

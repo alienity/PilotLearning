@@ -878,32 +878,18 @@ namespace Pilot
         if (batch)
             this->startUploadBatch();
 
-        std::shared_ptr<RHI::D3D12Buffer> staticBuffer =
-            std::make_shared<RHI::D3D12Buffer>(m_Device->GetLinkedDevice(),
-                                               buffer_size,
-                                               buffer_stride,
-                                               D3D12_HEAP_TYPE::D3D12_HEAP_TYPE_DEFAULT,
-                                               D3D12_RESOURCE_FLAGS::D3D12_RESOURCE_FLAG_NONE,
-                                               D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-
         uint32_t number_elements = buffer_size / buffer_stride;
 
-        D3D12_SHADER_RESOURCE_VIEW_DESC resourceViewDesc;
-        resourceViewDesc.Format                          = DXGI_FORMAT::DXGI_FORMAT_UNKNOWN;
-        resourceViewDesc.ViewDimension                   = D3D12_SRV_DIMENSION_BUFFER;
-        resourceViewDesc.Shader4ComponentMapping         = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-        resourceViewDesc.Buffer.FirstElement             = 0;
-        resourceViewDesc.Buffer.NumElements              = number_elements;
-        resourceViewDesc.Buffer.StructureByteStride      = buffer_stride;
-        resourceViewDesc.Buffer.Flags                    = D3D12_BUFFER_SRV_FLAGS::D3D12_BUFFER_SRV_FLAG_NONE;
-        if (raw)
-        {
-            resourceViewDesc.Format                     = DXGI_FORMAT::DXGI_FORMAT_R32_TYPELESS;
-            resourceViewDesc.Buffer.FirstElement        = 0;
-            resourceViewDesc.Buffer.NumElements         = buffer_size / 4;
-            resourceViewDesc.Buffer.StructureByteStride = 0;
-            resourceViewDesc.Buffer.Flags               = D3D12_BUFFER_SRV_FLAGS::D3D12_BUFFER_SRV_FLAG_RAW;
-        }
+        RHI::RHIBufferTarget bufferTarget = raw ? RHI::RHIBufferTargetRaw : RHI::RHIBufferTargetStructured;
+
+        std::shared_ptr<RHI::D3D12Buffer> staticBuffer =
+            RHI::D3D12Buffer::Create(m_Device->GetLinkedDevice(),
+                                     bufferTarget,
+                                     number_elements,
+                                     buffer_stride,
+                                     L"StaticBuffer",
+                                     RHI::RHIBufferModeImmutable,
+                                     D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 
         D3D12_RESOURCE_STATES tex2d_ori_state = staticBuffer->GetResourceState().GetSubresourceState(0);
 

@@ -54,18 +54,17 @@ namespace RHI
         D3D12Resource() noexcept = default;
         D3D12Resource(D3D12LinkedDevice*                       Parent,
                       Microsoft::WRL::ComPtr<ID3D12Resource>&& Resource,
-                      CD3DX12_CLEAR_VALUE                      ClearValue,
                       D3D12_RESOURCE_STATES                    InitialResourceState);
-        D3D12Resource(D3D12LinkedDevice*                       Parent,
-                      Microsoft::WRL::ComPtr<ID3D12Resource>&& Resource,
-                      CD3DX12_CLEAR_VALUE                      ClearValue,
-                      D3D12_RESOURCE_STATES                    InitialResourceState,
-                      std::wstring                             Name);
         D3D12Resource(D3D12LinkedDevice*                 Parent,
                       CD3DX12_HEAP_PROPERTIES            HeapProperties,
                       CD3DX12_RESOURCE_DESC              Desc,
                       D3D12_RESOURCE_STATES              InitialResourceState,
                       std::optional<CD3DX12_CLEAR_VALUE> ClearValue);
+        D3D12Resource(D3D12LinkedDevice*                       Parent,
+                      Microsoft::WRL::ComPtr<ID3D12Resource>&& Resource,
+                      D3D12_RESOURCE_STATES                    InitialResourceState,
+                      std::optional<CD3DX12_CLEAR_VALUE>       ClearValue,
+                      std::wstring                             Name);
         D3D12Resource(D3D12LinkedDevice*                 Parent,
                       CD3DX12_HEAP_PROPERTIES            HeapProperties,
                       CD3DX12_RESOURCE_DESC              Desc,
@@ -249,6 +248,8 @@ namespace RHI
         std::shared_ptr<D3D12ShaderResourceView>  GetDefaultSRV();
         std::shared_ptr<D3D12UnorderedAccessView> GetDefaultUAV();
 
+        RHIBufferDesc& GetBufferDesc();
+
     protected:
         RHIBufferDesc m_Desc;
         RHIBufferData m_Data;
@@ -276,7 +277,6 @@ namespace RHI
         D3D12Texture() noexcept = default;
         D3D12Texture(D3D12LinkedDevice*                       Parent,
                      Microsoft::WRL::ComPtr<ID3D12Resource>&& Resource,
-                     CD3DX12_CLEAR_VALUE                      ClearValue,
                      D3D12_RESOURCE_STATES                    InitialResourceState);
         D3D12Texture(D3D12LinkedDevice*                 Parent,
                      const CD3DX12_RESOURCE_DESC&       Desc,
@@ -310,10 +310,10 @@ namespace RHI
     public:
         static std::shared_ptr<D3D12Texture> Create(D3D12LinkedDevice*       Parent,
                                                     RHIRenderSurfaceBaseDesc desc,
-                                                    const std::wstring       name       = L"Texture",
-                                                    CD3DX12_CLEAR_VALUE      clearValue = CD3DX12_CLEAR_VALUE(),
-                                                    D3D12_RESOURCE_STATES    initState  = D3D12_RESOURCE_STATE_COMMON,
-                                                    std::vector<D3D12_SUBRESOURCE_DATA> initDatas = {});
+                                                    const std::wstring       name      = L"Texture",
+                                                    D3D12_RESOURCE_STATES    initState = D3D12_RESOURCE_STATE_COMMON,
+                                                    std::optional<CD3DX12_CLEAR_VALUE>  clearValue = std::nullopt,
+                                                    std::vector<D3D12_SUBRESOURCE_DATA> initDatas  = {});
 
         static std::shared_ptr<D3D12Texture> Create2D(D3D12LinkedDevice*     Parent,
                                                       UINT32                 width,
@@ -323,8 +323,8 @@ namespace RHI
                                                       RHISurfaceCreateFlags  flags,
                                                       UINT32                 sampleCount = 1,
                                                       const std::wstring     name        = L"Texture2D",
-                                                      CD3DX12_CLEAR_VALUE    clearValue  = CD3DX12_CLEAR_VALUE(),
                                                       D3D12_RESOURCE_STATES  initState   = D3D12_RESOURCE_STATE_COMMON,
+                                                      std::optional<CD3DX12_CLEAR_VALUE> clearValue = std::nullopt,
                                                       D3D12_SUBRESOURCE_DATA initData    = {});
 
         static std::shared_ptr<D3D12Texture>
@@ -337,8 +337,8 @@ namespace RHI
                       RHISurfaceCreateFlags               flags,
                       UINT32                              sampleCount = 1,
                       const std::wstring                  name        = L"Texture2DArray",
-                      CD3DX12_CLEAR_VALUE                 clearValue  = CD3DX12_CLEAR_VALUE(),
                       D3D12_RESOURCE_STATES               initState   = D3D12_RESOURCE_STATE_COMMON,
+                      std::optional<CD3DX12_CLEAR_VALUE>  clearValue  = std::nullopt,
                       std::vector<D3D12_SUBRESOURCE_DATA> initDatas   = {});
 
         static std::shared_ptr<D3D12Texture>
@@ -350,8 +350,8 @@ namespace RHI
                       RHISurfaceCreateFlags               flags,
                       UINT32                              sampleCount = 1,
                       const std::wstring                  name        = L"TextureCubeMap",
-                      CD3DX12_CLEAR_VALUE                 clearValue  = CD3DX12_CLEAR_VALUE(),
                       D3D12_RESOURCE_STATES               initState   = D3D12_RESOURCE_STATE_COMMON,
+                      std::optional<CD3DX12_CLEAR_VALUE>  clearValue  = std::nullopt,
                       std::vector<D3D12_SUBRESOURCE_DATA> initDatas   = {});
 
         static std::shared_ptr<D3D12Texture>
@@ -364,8 +364,8 @@ namespace RHI
                            RHISurfaceCreateFlags               flags,
                            UINT32                              sampleCount = 1,
                            const std::wstring                  name        = L"TextureCubeMapArray",
-                           CD3DX12_CLEAR_VALUE                 clearValue  = CD3DX12_CLEAR_VALUE(),
                            D3D12_RESOURCE_STATES               initState   = D3D12_RESOURCE_STATE_COMMON,
+                           std::optional<CD3DX12_CLEAR_VALUE>  clearValue  = std::nullopt,
                            std::vector<D3D12_SUBRESOURCE_DATA> initDatas   = {});
 
         static std::shared_ptr<D3D12Texture> Create3D(D3D12LinkedDevice*     Parent,
@@ -377,8 +377,8 @@ namespace RHI
                                                       RHISurfaceCreateFlags  flags,
                                                       UINT32                 sampleCount = 1,
                                                       const std::wstring     name        = L"Texture3D",
-                                                      CD3DX12_CLEAR_VALUE    clearValue  = CD3DX12_CLEAR_VALUE(),
                                                       D3D12_RESOURCE_STATES  initState   = D3D12_RESOURCE_STATE_COMMON,
+                                                      std::optional<CD3DX12_CLEAR_VALUE> clearValue = std::nullopt,
                                                       D3D12_SUBRESOURCE_DATA initData    = {});
 
         static std::shared_ptr<D3D12Texture>

@@ -82,11 +82,11 @@ namespace RHI
         // Returns D3D12SyncHandle, may be ignored if WaitForCompletion is true
         D3D12SyncHandle Execute(bool WaitForCompletion);
 
-        void CopyBuffer(D3D12Resource* Dest, D3D12Resource* Src);
-        void CopyBufferRegion(D3D12Resource* Dest, UINT64 DestOffset, D3D12Resource* Src, UINT64 SrcOffset, UINT64 NumBytes);
-        void CopySubresource(D3D12Resource* Dest, UINT DestSubIndex, D3D12Resource* Src, UINT SrcSubIndex);
-        void CopyTextureRegion(D3D12Resource* Dest, UINT x, UINT y, UINT z, D3D12Resource* Source, RECT& rect);
-        void ResetCounter(D3D12Resource* CounterResource, UINT64 CounterOffset = 0, UINT Value = 0);
+        void CopyBuffer(D3D12Buffer* Dest, D3D12Buffer* Src);
+        void CopyBufferRegion(D3D12Buffer* Dest, UINT64 DestOffset, D3D12Buffer* Src, UINT64 SrcOffset, UINT64 NumBytes);
+        void CopySubresource(D3D12Texture* Dest, UINT DestSubIndex, D3D12Texture* Src, UINT SrcSubIndex);
+        void CopyTextureRegion(D3D12Texture* Dest, UINT x, UINT y, UINT z, D3D12Texture* Source, RECT& rect);
+        void ResetCounter(D3D12Buffer* CounterResource, UINT64 CounterOffset = 0, UINT Value = 0);
 
         // Creates a readback buffer of sufficient size, copies the texture into it,
         // and returns row pitch in bytes.
@@ -94,13 +94,13 @@ namespace RHI
 
         D3D12Allocation ReserveUploadMemory(UINT64 SizeInBytes, UINT Alignment = D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT);
 
-        static void InitializeTexture(D3D12LinkedDevice* Parent, D3D12Resource* Dest, std::vector<D3D12_SUBRESOURCE_DATA> Subresources);
-        static void InitializeTexture(D3D12LinkedDevice* Parent, D3D12Resource* Dest, UINT FirstSubresource, std::vector<D3D12_SUBRESOURCE_DATA> Subresources);
-        static void InitializeBuffer(D3D12LinkedDevice* Parent, D3D12Resource* Dest, const void* Data, UINT64 NumBytes, UINT64 DestOffset = 0);
-        static void InitializeTextureArraySlice(D3D12LinkedDevice* Parent, D3D12Resource* Dest, UINT SliceIndex, D3D12Resource* Src);
+        static void InitializeTexture(D3D12LinkedDevice* Parent, D3D12Texture* Dest, std::vector<D3D12_SUBRESOURCE_DATA> Subresources);
+        static void InitializeTexture(D3D12LinkedDevice* Parent, D3D12Texture* Dest, UINT FirstSubresource, std::vector<D3D12_SUBRESOURCE_DATA> Subresources);
+        static void InitializeBuffer(D3D12LinkedDevice* Parent, D3D12Buffer* Dest, const void* Data, UINT64 NumBytes, UINT64 DestOffset = 0);
+        static void InitializeTextureArraySlice(D3D12LinkedDevice* Parent, D3D12Texture* Dest, UINT SliceIndex, D3D12Texture* Src);
 
-        void WriteBuffer(D3D12Resource* Dest, UINT64 DestOffset, const void* BufferData, UINT64 NumBytes);
-        void FillBuffer(D3D12Resource* Dest, UINT64 DestOffset, DWParam Value, UINT64 NumBytes);
+        void WriteBuffer(D3D12Buffer* Dest, UINT64 DestOffset, const void* BufferData, UINT64 NumBytes);
+        void FillBuffer(D3D12Buffer* Dest, UINT64 DestOffset, DWParam Value, UINT64 NumBytes);
 
         void TransitionBarrier(D3D12Resource* Resource, D3D12_RESOURCE_STATES State, UINT Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES, bool FlushImmediate = false);
         void AliasingBarrier(D3D12Resource* BeforeResource, D3D12Resource* AfterResource, bool FlushImmediate = false);

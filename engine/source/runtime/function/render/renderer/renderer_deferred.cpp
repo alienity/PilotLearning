@@ -50,6 +50,7 @@ namespace Pilot
                                                         RHI::RHISurfaceCreateRenderTarget,
                                                         1,
                                                         L"RenderTargetTexture",
+                                                        D3D12_RESOURCE_STATE_COMMON,
                                                         renderTargetClearValue);
     }
 

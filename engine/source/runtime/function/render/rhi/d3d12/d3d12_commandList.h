@@ -102,6 +102,10 @@ namespace RHI
 
         void AddAliasing(D3D12Resource* BeforeResource, D3D12Resource* AfterResource);
 
+        // https://www.gamedev.net/forums/topic/673079-error-using-resource-barrier-from-multiple-commandlists-for-same-resource/
+        // As I understand it, the different command list types (graphics/direct, compute, and copy) can only deal with resource states that 
+        // they can understand. So In order to transition to or from a pixel shader resource, you need to use a graphics command list. 
+        // So you'll need to transition to and from the UAV state on your graphics command list, rather than on your compute command list. 
         void AddUAV(D3D12Resource* Resource);
 
     private:

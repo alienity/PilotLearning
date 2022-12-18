@@ -131,7 +131,7 @@ namespace RHI
 			std::wstring textureName = std::wstring(RgTexture.Desc.Name.begin(), RgTexture.Desc.Name.end());
 
 			 pTextures[i] = D3D12Texture::Create(
-                Device->GetLinkedDevice(), textureDesc, textureName, clearValue, D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COMMON);
+                Device->GetLinkedDevice(), textureDesc, textureName, D3D12_RESOURCE_STATE_COMMON, clearValue);
 		}
 	}
 
