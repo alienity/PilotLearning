@@ -225,7 +225,10 @@ namespace Pilot
 
         {
             // Transfer the state of the backbuffer to Present
-            context.TransitionBarrier(p_RenderTargetTex.get(), D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_PRESENT);
+            context.TransitionBarrier(pBackBufferResource,
+                                      D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_PRESENT,
+                                      D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES,
+                                      true);
         }
 
 

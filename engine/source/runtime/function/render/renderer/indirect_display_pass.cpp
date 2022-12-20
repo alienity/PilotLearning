@@ -26,13 +26,13 @@ namespace Pilot
                 
                 RHI::D3D12GraphicsContext& graphicContext = context.GetGraphicsContext();
 
-                std::shared_ptr<RHI::D3D12Texture> inputRTColor = registry.GetD3D12Texture(drawPassInput->inputRTColorHandle);
-                RHI::D3D12ShaderResourceView* inputRTColorSRV = inputRTColor->GetDefaultSRV().get();
+                RHI::D3D12Texture* pInputRTColor = registry.GetD3D12Texture(drawPassInput->inputRTColorHandle);
+                RHI::D3D12ShaderResourceView* pInputRTColorSRV = pInputRTColor->GetDefaultSRV().get();
 
-                std::shared_ptr<RHI::D3D12Texture> rtColorTexture = registry.GetD3D12Texture(drawPassOutput->renderTargetColorHandle);
-                RHI::D3D12RenderTargetView* rtColorRTV = rtColorTexture->GetDefaultRTV().get();
+                RHI::D3D12Texture* pRTColorTexture = registry.GetD3D12Texture(drawPassOutput->renderTargetColorHandle);
+                RHI::D3D12RenderTargetView* pRTColorRTV = pRTColorTexture->GetDefaultRTV().get();
 
-                CD3DX12_RESOURCE_DESC rtColorTextureDesc = rtColorTexture->GetDesc();
+                CD3DX12_RESOURCE_DESC rtColorTextureDesc = pRTColorTexture->GetDesc();
 
                 int rtColorWidth  = rtColorTextureDesc.Width;
                 int rtColorHeight = rtColorTextureDesc.Height;
@@ -42,8 +42,8 @@ namespace Pilot
                 graphicContext->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
                 graphicContext.SetViewport(RHIViewport {0, 0, (float)rtColorWidth, (float)rtColorHeight, 0, 1});
                 graphicContext.SetScissorRect(RHIRect {0, 0, (long)rtColorWidth, (long)rtColorHeight});
-                graphicContext->SetGraphicsRoot32BitConstant(0, inputRTColorSRV->GetIndex(), 0);
-                graphicContext.SetRenderTarget(rtColorRTV, nullptr);
+                graphicContext->SetGraphicsRoot32BitConstant(0, pInputRTColorSRV->GetIndex(), 0);
+                graphicContext.SetRenderTarget(pRTColorRTV, nullptr);
                 graphicContext->DrawInstanced(3, 1, 0, 0);
             });
     }

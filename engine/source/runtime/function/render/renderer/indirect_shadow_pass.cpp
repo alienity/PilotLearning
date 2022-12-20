@@ -168,10 +168,10 @@ namespace Pilot
             {
                 ID3D12CommandSignature* pCommandSignature = CommandSignatures::pIndirectDrawDirectionShadowmap->GetApiHandle();
 
-                std::shared_ptr<RHI::D3D12Texture> shadowmapStencilTex =
+                RHI::D3D12Texture* pShadowmapStencilTex =
                     registry.GetD3D12Texture(drawPassOutput->directionalShadowmapRGHandle.shadowmapTextureHandle);
 
-                RHI::D3D12DepthStencilView* shadowmapStencilView = shadowmapStencilTex->GetDefaultDSV().get();
+                RHI::D3D12DepthStencilView* shadowmapStencilView = pShadowmapStencilTex->GetDefaultDSV().get();
 
                 graphicContext->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
@@ -203,10 +203,10 @@ namespace Pilot
                 ID3D12CommandSignature* pCommandSignature =
                     CommandSignatures::pIndirectDrawSpotShadowmap->GetApiHandle();
 
-                std::shared_ptr<RHI::D3D12Texture> shadowmapDepthTex =
+                RHI::D3D12Texture* pShadowmapDepthTex =
                     registry.GetD3D12Texture(drawPassOutput->spotShadowmapRGHandle[i].shadowmapTextureHandle);
 
-                RHI::D3D12DepthStencilView* shadowmapStencilView = shadowmapDepthTex->GetDefaultDSV().get();
+                RHI::D3D12DepthStencilView* shadowmapStencilView = pShadowmapDepthTex->GetDefaultDSV().get();
 
                 graphicContext->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 

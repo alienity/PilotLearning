@@ -63,8 +63,8 @@ namespace RHI
 		}
         */
 
-		std::shared_ptr<D3D12Buffer> GetD3D12Buffer(RgResourceHandle Handle);
-        std::shared_ptr<D3D12Texture> GetD3D12Texture(RgResourceHandle Handle);
+		D3D12Buffer*  GetD3D12Buffer(RgResourceHandle Handle);
+        D3D12Texture* GetD3D12Texture(RgResourceHandle Handle);
 
 	private:
         template<typename T>

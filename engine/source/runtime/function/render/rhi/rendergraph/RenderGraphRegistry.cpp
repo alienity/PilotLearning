@@ -98,7 +98,7 @@ namespace RHI
                     break;
             }
 
-			RHISurfaceCreateFlags textureFlags;
+			RHISurfaceCreateFlags textureFlags = RHISurfaceCreateFlagNone;
 			CD3DX12_CLEAR_VALUE clearValue;
 
             if (Desc.AllowRenderTarget)
@@ -135,7 +135,7 @@ namespace RHI
 		}
 	}
 
-	std::shared_ptr<D3D12Buffer> RenderGraphRegistry::GetD3D12Buffer(RgResourceHandle Handle)
+	D3D12Buffer* RenderGraphRegistry::GetD3D12Buffer(RgResourceHandle Handle)
 	{
         assert(Handle.IsValid());
         assert(Handle.Type == RgResourceTraits<D3D12Buffer>::Enum);
@@ -143,7 +143,7 @@ namespace RHI
 		{
             auto& Container = GetContainer<D3D12Buffer>();
             assert(Handle.Id < Container.size());
-            return Container[Handle.Id];
+            return Container[Handle.Id].get();
 		}
 		else
 		{
@@ -153,7 +153,7 @@ namespace RHI
 		}
 	}
 
-	std::shared_ptr<D3D12Texture> RenderGraphRegistry::GetD3D12Texture(RgResourceHandle Handle)
+	D3D12Texture* RenderGraphRegistry::GetD3D12Texture(RgResourceHandle Handle)
 	{
         assert(Handle.IsValid());
         assert(Handle.Type == RgResourceTraits<D3D12Texture>::Enum);
@@ -161,7 +161,7 @@ namespace RHI
         {
             auto& Container = GetContainer<D3D12Texture>();
             assert(Handle.Id < Container.size());
-            return Container[Handle.Id];
+            return Container[Handle.Id].get();
         }
         else
         {

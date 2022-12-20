@@ -313,19 +313,6 @@ namespace RHI
 
     D3D12_GPU_VIRTUAL_ADDRESS D3D12ASBuffer::GetGpuVirtualAddress() const { return m_GpuVirtualAddress; }
 
-    D3D12Buffer::~D3D12Buffer()
-    {
-        m_CpuVirtualAddress = nullptr;
-        m_GpuVirtualAddress = D3D12_GPU_VIRTUAL_ADDRESS_NULL;
-
-        if (m_Data.m_Data != nullptr)
-        {
-            free(m_Data.m_Data);
-            m_Data.m_Data = nullptr;
-        }
-        p_CounterBufferD3D12  = nullptr;
-    }
-
     D3D12Buffer::D3D12Buffer(D3D12LinkedDevice*   Parent,
                              UINT64               SizeInBytes,
                              UINT                 Stride,
@@ -364,6 +351,27 @@ namespace RHI
         // We do not need to unmap until we are done with the resource.  However, we must not write to
         // the resource while it is in use by the GPU (so we must use synchronization techniques).
         m_CpuVirtualAddress = m_ScopedPointer.Address;
+    }
+
+    void D3D12Buffer::Destroy()
+    {
+        m_ScopedPointer.~D3D12ScopedPointer();
+        m_pResource = nullptr;
+        ++m_VersionID;
+
+        m_CpuVirtualAddress = nullptr;
+        m_GpuVirtualAddress = D3D12_GPU_VIRTUAL_ADDRESS_NULL;
+
+        if (m_Data.m_Data != nullptr)
+        {
+            free(m_Data.m_Data);
+            m_Data.m_Data = nullptr;
+        }
+        p_CounterBufferD3D12 = nullptr;
+
+        m_CBVHandleMap.clear();
+        m_SRVHandleMap.clear();
+        m_UAVHandleMap.clear();
     }
 
     D3D12_GPU_VIRTUAL_ADDRESS D3D12Buffer::GetGpuVirtualAddress(UINT Index) const
@@ -600,6 +608,17 @@ namespace RHI
         m_IsCubemap(Cubemap)
     {
         // Textures can only be in device local heap (for discrete GPUs) UMA case is not handled
+    }
+
+    void D3D12Texture::Destroy()
+    {
+        m_pResource = nullptr;
+        ++m_VersionID;
+
+        m_RTVHandleMap.clear();
+        m_DSVHandleMap.clear();
+        m_SRVHandleMap.clear();
+        m_UAVHandleMap.clear();
     }
 
     UINT D3D12Texture::GetSubresourceIndex(std::optional<UINT> OptArraySlice /*= std::nullopt*/,
@@ -910,7 +929,7 @@ namespace RHI
 
     std::shared_ptr<D3D12DepthStencilView> D3D12Texture::GetDefaultDSV()
     {
-        ASSERT(m_Desc.flags & RHISurfaceCreateDepthStencil);
+        ASSERT(m_Desc.flags & (RHISurfaceCreateDepthStencil | RHISurfaceCreateShadowmap));
         return CreateDSV(D3D12DepthStencilView::GetDesc(this));
     }
 

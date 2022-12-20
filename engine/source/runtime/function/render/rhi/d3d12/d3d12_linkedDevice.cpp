@@ -37,7 +37,7 @@ namespace RHI
         ResourceDescriptorHeap.SetName(L"Resource Descriptor Heap");
         SamplerDescriptorHeap.SetName(L"Sampler Descriptor Heap");
 #endif
-        constexpr size_t NumThreads = 1;
+        constexpr size_t NumThreads = 3;
         AvailableCommandContexts.reserve(NumThreads);
         for (unsigned int i = 0; i < NumThreads; ++i)
         {
@@ -51,7 +51,7 @@ namespace RHI
                 this, RHID3D12CommandQueueType::AsyncCompute, D3D12_COMMAND_LIST_TYPE_COMPUTE);
         }
         //CopyContext1 = D3D12CommandContext(this, RHID3D12CommandQueueType::Copy1, D3D12_COMMAND_LIST_TYPE_COPY);
-        //CopyContext2 = D3D12CommandContext(this, RHID3D12CommandQueueType::Copy2, D3D12_COMMAND_LIST_TYPE_COPY);
+        //CopyContext2 = D3D12CommandContext(this, RHID3D12CommandQueueType::Copy2, D3D12_COMMAND_LIST_TYPE_DIRECT);
     }
     // clang-format on
 

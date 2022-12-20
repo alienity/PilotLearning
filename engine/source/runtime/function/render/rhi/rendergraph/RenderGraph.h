@@ -180,7 +180,7 @@ namespace RHI
         }
 
         template<typename T>
-        [[nodiscard]] auto GetImportedContainer() -> std::vector<std::shared_ptr<typename RgResourceTraits<T>::ApiType>>&
+        [[nodiscard]] auto GetImportedContainer() -> std::vector<typename RgResourceTraits<T>::ApiType*>&
         {
             if constexpr (std::is_same_v<T, D3D12Buffer>)
             {
@@ -198,8 +198,8 @@ namespace RHI
         RenderGraphAllocator& Allocator;
         RenderGraphRegistry&  Registry;
 
-        std::vector<std::shared_ptr<D3D12Buffer>>  pImportedBuffers;
-        std::vector<std::shared_ptr<D3D12Texture>> pImportedTextures;
+        std::vector<D3D12Buffer*>  pImportedBuffers;
+        std::vector<D3D12Texture*> pImportedTextures;
 
         std::vector<RgBuffer>  Buffers;
         std::vector<RgTexture> Textures;

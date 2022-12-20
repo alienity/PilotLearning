@@ -169,7 +169,6 @@ namespace RHI
     {
     public:
         D3D12Buffer() noexcept = default;
-        ~D3D12Buffer();
         D3D12Buffer(D3D12LinkedDevice*   Parent,
                     UINT64               SizeInBytes,
                     UINT                 Stride,
@@ -181,6 +180,8 @@ namespace RHI
                     D3D12_HEAP_TYPE       HeapType,
                     D3D12_RESOURCE_FLAGS  ResourceFlags,
                     D3D12_RESOURCE_STATES InitialResourceState);
+
+        virtual void Destroy() override;
 
         [[nodiscard]] D3D12_GPU_VIRTUAL_ADDRESS GetGpuVirtualAddress(UINT Index = 0) const;
         [[nodiscard]] UINT                      GetStride() const { return m_Stride; }
@@ -293,6 +294,8 @@ namespace RHI
                      const CD3DX12_RESOURCE_DESC&       Desc,
                      std::optional<CD3DX12_CLEAR_VALUE> ClearValue,
                      bool                               Cubemap = false);
+
+        virtual void Destroy() override;
 
         [[nodiscard]] UINT GetSubresourceIndex(std::optional<UINT> OptArraySlice = std::nullopt,
                                                std::optional<UINT> OptMipSlice   = std::nullopt,

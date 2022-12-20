@@ -68,9 +68,9 @@ namespace RHI
 				ReadState |= D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
 			}
 
-			std::shared_ptr<D3D12Texture> pTexture = RenderGraph->GetRegistry().GetD3D12Texture(Read);
+			D3D12Texture* pTexture = RenderGraph->GetRegistry().GetD3D12Texture(Read);
 
-			Context.TransitionBarrier(pTexture.get(), ReadState);
+			Context.TransitionBarrier(pTexture, ReadState);
 		}
 		for (auto Write : Writes)
 		{
@@ -87,9 +87,9 @@ namespace RHI
 			{
 				WriteState |= D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
 			}
-            std::shared_ptr<D3D12Texture> pTexture = RenderGraph->GetRegistry().GetD3D12Texture(Write);
+            D3D12Texture* pTexture = RenderGraph->GetRegistry().GetD3D12Texture(Write);
 
-			Context.TransitionBarrier(pTexture.get(), WriteState);
+			Context.TransitionBarrier(pTexture, WriteState);
 		}
 
 		Context.FlushResourceBarriers();

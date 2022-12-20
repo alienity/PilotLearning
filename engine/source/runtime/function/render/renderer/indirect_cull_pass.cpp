@@ -383,7 +383,7 @@ namespace Pilot
         if (numMeshes > 0)
         {
             //RHI::D3D12CommandContext& copyContext = m_Device->GetLinkedDevice()->GetCopyContext1();
-            RHI::D3D12CommandContext& copyContext = m_Device->GetLinkedDevice()->GetCommandContext();
+            RHI::D3D12CommandContext& copyContext = m_Device->GetLinkedDevice()->GetCommandContext(1);
             copyContext.Open();
             {
                 copyContext.ResetCounter(commandBufferForOpaqueDraw.p_IndirectIndexCommandBuffer->GetCounterBuffer().get());
@@ -405,7 +405,8 @@ namespace Pilot
             copyContext.Close();
             RHI::D3D12SyncHandle copySyncHandle = copyContext.Execute(false);
 
-            RHI::D3D12ComputeContext& asyncCompute = m_Device->GetLinkedDevice()->GetAsyncComputeCommandContext().GetComputeContext();
+            //RHI::D3D12ComputeContext& asyncCompute = m_Device->GetLinkedDevice()->GetAsyncComputeCommandContext().GetComputeContext();
+            RHI::D3D12ComputeContext& asyncCompute = m_Device->GetLinkedDevice()->GetCommandContext(2).GetComputeContext();
             asyncCompute.GetCommandQueue()->WaitForSyncHandle(copySyncHandle);
 
             asyncCompute.Open();
@@ -413,8 +414,8 @@ namespace Pilot
             {
                 asyncCompute.TransitionBarrier(commandBufferForOpaqueDraw.p_IndirectIndexCommandBuffer.get(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
                 asyncCompute.TransitionBarrier(commandBufferForTransparentDraw.p_IndirectIndexCommandBuffer.get(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-                asyncCompute.InsertUAVBarrier(commandBufferForOpaqueDraw.p_IndirectIndexCommandBuffer.get());
-                asyncCompute.InsertUAVBarrier(commandBufferForTransparentDraw.p_IndirectIndexCommandBuffer.get());
+                //asyncCompute.InsertUAVBarrier(commandBufferForOpaqueDraw.p_IndirectIndexCommandBuffer.get());
+                //asyncCompute.InsertUAVBarrier(commandBufferForTransparentDraw.p_IndirectIndexCommandBuffer.get());
 
                 D3D12ScopedEvent(asyncCompute, "Gpu Frustum Culling for Sort");
                 asyncCompute.SetPipelineState(PipelineStates::pIndirectCullForSort.get());
