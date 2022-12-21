@@ -355,7 +355,7 @@ namespace RHI
 
     void D3D12Buffer::Destroy()
     {
-        m_ScopedPointer.~D3D12ScopedPointer();
+        m_ScopedPointer.Release();
         m_pResource = nullptr;
         ++m_VersionID;
 
@@ -693,7 +693,7 @@ namespace RHI
         }
         resourceDesc = CD3DX12_RESOURCE_DESC(dimension,
                                              0,
-                                             desc.height,
+                                             desc.width,
                                              desc.height,
                                              desc.depthOrArray,
                                              desc.mipCount,

@@ -459,27 +459,25 @@ namespace Pilot
             
             // Output Object Buffer
             {
-                /*
                 D3D12ScopedEvent(asyncCompute, "Grabs all objects to render");
-                asyncCompute.SetPipelineState(registry.GetPipelineState(PipelineStates::IndirectCullForSort));
-                asyncCompute.SetComputeRootSignature(registry.GetRootSignature(RootSignatures::IndirectCullForSort));
+                asyncCompute.SetPipelineState(PipelineStates::pIndirectCull.get());
+                asyncCompute.SetRootSignature(RootSignatures::pIndirectCull.get());
 
                 asyncCompute->SetComputeRootConstantBufferView(0, pPerframeBuffer->GetGpuVirtualAddress());
                 asyncCompute->SetComputeRootShaderResourceView(1, pMeshBuffer->GetGpuVirtualAddress());
                 asyncCompute->SetComputeRootShaderResourceView(2, pMaterialBuffer->GetGpuVirtualAddress());
                 asyncCompute->SetComputeRootDescriptorTable(
-                    3, commandBufferForOpaqueDraw.p_IndirectIndexCommandBufferUav->GetGpuHandle());
+                    3, commandBufferForOpaqueDraw.p_IndirectSortCommandBuffer->GetDefaultUAV()->GetGpuHandle());
                 asyncCompute->SetComputeRootDescriptorTable(
-                    4, commandBufferForTransparentDraw.p_IndirectIndexCommandBufferUav->GetGpuHandle());
+                    4, commandBufferForTransparentDraw.p_IndirectSortCommandBuffer->GetDefaultUAV()->GetGpuHandle());
 
-                asyncCompute.Dispatch1D<128>(numMeshes);
+                asyncCompute.Dispatch1D(numMeshes, 128);
 
                 // Transition to indirect argument state
                 asyncCompute.TransitionBarrier(commandBufferForOpaqueDraw.p_IndirectSortCommandBuffer.get(),
                                                D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT);
                 asyncCompute.TransitionBarrier(commandBufferForTransparentDraw.p_IndirectSortCommandBuffer.get(),
                                                D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT);
-                */
             }
 
             // DirectionLight shadow cull

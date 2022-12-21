@@ -855,13 +855,16 @@ namespace RHI
             }
             return *this;
         }
-        ~D3D12ScopedPointer()
+        void Release()
         {
             if (Resource)
             {
                 Resource->Unmap(0, nullptr);
             }
+            Resource = nullptr;
+            Address  = nullptr;
         }
+        ~D3D12ScopedPointer() { Release(); }
 
         ID3D12Resource* Resource = nullptr;
         BYTE*           Address  = nullptr;
