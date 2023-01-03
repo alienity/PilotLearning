@@ -164,13 +164,13 @@ namespace RHI
     // ======================================== Private ========================================
     void D3D12Device::ReportLiveObjects()
     {
-#ifdef _DEBUG
-        Microsoft::WRL::ComPtr<IDXGIDebug> Debug;
-        if (SUCCEEDED(DXGIGetDebugInterface1(0, IID_PPV_ARGS(&Debug))))
-        {
-            Debug->ReportLiveObjects(DXGI_DEBUG_ALL, DXGI_DEBUG_RLO_IGNORE_INTERNAL);
-        }
-#endif
+//#ifdef _DEBUG
+//        Microsoft::WRL::ComPtr<IDXGIDebug> Debug;
+//        if (SUCCEEDED(DXGIGetDebugInterface1(0, IID_PPV_ARGS(&Debug))))
+//        {
+//            Debug->ReportLiveObjects(DXGI_DEBUG_ALL, DXGI_DEBUG_RLO_IGNORE_INTERNAL);
+//        }
+//#endif
     }
 
     void D3D12Device::OnDeviceRemoved(PVOID Context, BOOLEAN)

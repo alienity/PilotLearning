@@ -244,10 +244,14 @@ namespace RHI
         std::shared_ptr<D3D12ConstantBufferView>  CreateCBV(D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc);
         std::shared_ptr<D3D12ShaderResourceView>  CreateSRV(D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc);
         std::shared_ptr<D3D12UnorderedAccessView> CreateUAV(D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc);
+        std::shared_ptr<D3D12UnorderedAccessView> CreateUAV(D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc, D3D12Resource* pCounterRes);
         
         std::shared_ptr<D3D12ConstantBufferView>  GetDefaultCBV();
         std::shared_ptr<D3D12ShaderResourceView>  GetDefaultSRV();
         std::shared_ptr<D3D12UnorderedAccessView> GetDefaultUAV();
+
+        std::shared_ptr<D3D12UnorderedAccessView> GetDefaultStructureUAV(bool hasCounter = false);
+        std::shared_ptr<D3D12UnorderedAccessView> GetDefaultRawUAV(bool hasCounter = false);
 
         RHIBufferDesc& GetBufferDesc();
 

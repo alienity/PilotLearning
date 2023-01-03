@@ -61,6 +61,10 @@ namespace RHI
         {
             UploadSyncHandle.WaitForCompletion();
         }
+
+        #ifdef _DEBUG
+        ASSERT(m_DebugResources.size() == 0);
+        #endif
     }
 
     ID3D12Device* D3D12LinkedDevice::GetDevice() const { return GetParentDevice()->GetD3D12Device(); }
@@ -255,5 +259,27 @@ namespace RHI
         };
         Upload(SubresourceData, Resource);
     }
+
+    #ifdef _DEBUG
+    void D3D12LinkedDevice::AddDebugResource(D3D12Resource* res) { m_DebugResources.push_back(res); }
+
+    void D3D12LinkedDevice::RemoveDebugResource(D3D12Resource* res)
+    {
+        int resIndex = -1;
+        for (size_t i = 0; i < m_DebugResources.size(); i++)
+        {
+            if (m_DebugResources[i] == res)
+            {
+                resIndex = i;
+                break;
+            }
+        }
+        if (resIndex != -1)
+        {
+            m_DebugResources.erase(m_DebugResources.begin() + resIndex);
+        }
+    }
+    #endif
+
 }
 

@@ -10,18 +10,12 @@ namespace Pilot
     struct DrawCallCommandBuffer
     {
         std::shared_ptr<RHI::D3D12Buffer>              p_IndirectIndexCommandBuffer;
-        //std::shared_ptr<RHI::D3D12ShaderResourceView>  p_IndirectIndexCommandBufferSRV;
-        //std::shared_ptr<RHI::D3D12UnorderedAccessView> p_IndirectIndexCommandBufferUAV;
         std::shared_ptr<RHI::D3D12Buffer>              p_IndirectSortCommandBuffer;
-        //std::shared_ptr<RHI::D3D12UnorderedAccessView> p_IndirectSortCommandBufferUAV;
 
         void ResetBuffer()
         {
             p_IndirectIndexCommandBuffer    = nullptr;
-            //p_IndirectIndexCommandBufferSRV = nullptr;
-            //p_IndirectIndexCommandBufferUAV = nullptr;
             p_IndirectSortCommandBuffer     = nullptr;
-            //p_IndirectSortCommandBufferUAV  = nullptr;
         }
     };
 
@@ -67,14 +61,11 @@ namespace Pilot
     private:
         void prepareBuffer();
 
-        void bitonicSort(RHI::D3D12ComputeContext&                      context,
-                         std::shared_ptr<RHI::D3D12Buffer>              keyIndexList,
-                         std::shared_ptr<RHI::D3D12UnorderedAccessView> keyIndexListUAV,
-                         std::shared_ptr<RHI::D3D12Buffer>              countBuffer,
-                         std::shared_ptr<RHI::D3D12ShaderResourceView>  countBufferSRV,
-                         uint32_t                                       counterOffset,
-                         bool                                           isPartiallyPreSorted,
-                         bool                                           sortAscending);
+        void bitonicSort(RHI::D3D12ComputeContext&      context,
+                         RHI::D3D12Buffer*              keyIndexList,
+                         RHI::D3D12Buffer*              countBuffer,
+                         bool                           isPartiallyPreSorted,
+                         bool                           sortAscending);
 
     private:
 
@@ -98,10 +89,6 @@ namespace Pilot
         // used for shadowmap drawing
         ShadowmapCommandBuffer dirShadowmapCommandBuffer;
         std::vector<ShadowmapCommandBuffer> spotShadowmapCommandBuffer;
-
-        HLSL::MeshPerframeStorageBufferObject* pPerframeObj = nullptr;
-        HLSL::MaterialInstance*                pMaterialObj = nullptr;
-        HLSL::MeshInstance*                    pMeshesObj   = nullptr;
 	};
 }
 

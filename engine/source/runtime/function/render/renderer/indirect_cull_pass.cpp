@@ -62,19 +62,19 @@ namespace Pilot
 
         // for sort
         int argNumber = 22 * 23 / 2;
-        int argSize   = 12;
-
+        
         pSortDispatchArgs = RHI::D3D12Buffer::Create(m_Device->GetLinkedDevice(),
-                                                     RHI::RHIBufferTargetIndirectArgs | RHI::RHIBufferRandomReadWrite| RHI::RHIBufferTargetCounter,
+                                                     RHI::RHIBufferTargetIndirectArgs | RHI::RHIBufferRandomReadWrite | RHI::RHIBufferTargetRaw,
                                                      argNumber,
-                                                     argSize,
+                                                     sizeof(D3D12_DISPATCH_ARGUMENTS),
                                                      L"SortDispatchArgs",
                                                      RHI::RHIBufferModeImmutable,
                                                      D3D12_RESOURCE_STATE_GENERIC_READ);
 
-        pPerframeObj = pUploadPerframeBuffer->GetCpuVirtualAddress<HLSL::MeshPerframeStorageBufferObject>();
-        pMaterialObj = pUploadMaterialBuffer->GetCpuVirtualAddress<HLSL::MaterialInstance>();
-        pMeshesObj   = pUploadMeshBuffer->GetCpuVirtualAddress<HLSL::MeshInstance>();
+        HLSL::MeshPerframeStorageBufferObject* pPerframeObj =
+            pUploadPerframeBuffer->GetCpuVirtualAddress<HLSL::MeshPerframeStorageBufferObject>();
+        HLSL::MaterialInstance* pMaterialObj = pUploadMaterialBuffer->GetCpuVirtualAddress<HLSL::MaterialInstance>();
+        HLSL::MeshInstance*     pMeshesObj   = pUploadMeshBuffer->GetCpuVirtualAddress<HLSL::MeshInstance>();
 
         // buffer for opaque draw
         {
@@ -128,9 +128,14 @@ namespace Pilot
     void IndirectCullPass::prepareMeshData(std::shared_ptr<RenderResourceBase> render_resource)
     {
         RenderResource* real_resource = (RenderResource*)render_resource.get();
-        memcpy(pPerframeObj, &real_resource->m_mesh_perframe_storage_buffer_object, sizeof(HLSL::MeshPerframeStorageBufferObject));
+        memcpy(pUploadPerframeBuffer->GetCpuVirtualAddress<HLSL::MeshPerframeStorageBufferObject>(),
+               &real_resource->m_mesh_perframe_storage_buffer_object,
+               sizeof(HLSL::MeshPerframeStorageBufferObject));
 
         std::vector<RenderMeshNode>* renderMeshNodes = m_visiable_nodes.p_all_mesh_nodes;
+
+        HLSL::MaterialInstance* pMaterialObj = pUploadMaterialBuffer->GetCpuVirtualAddress<HLSL::MaterialInstance>();
+        HLSL::MeshInstance* pMeshesObj = pUploadMeshBuffer->GetCpuVirtualAddress<HLSL::MeshInstance>();
 
         uint32_t numMeshes = renderMeshNodes->size();
         assert(numMeshes < HLSL::MeshLimit);
@@ -267,14 +272,11 @@ namespace Pilot
         }
     }
 
-    void IndirectCullPass::bitonicSort(RHI::D3D12ComputeContext&                      context,
-                                       std::shared_ptr<RHI::D3D12Buffer>              keyIndexList,
-                                       std::shared_ptr<RHI::D3D12UnorderedAccessView> keyIndexListUAV,
-                                       std::shared_ptr<RHI::D3D12Buffer>              countBuffer,
-                                       std::shared_ptr<RHI::D3D12ShaderResourceView>  countBufferSRV,
-                                       uint32_t                                       counterOffset,
-                                       bool                                           isPartiallyPreSorted,
-                                       bool                                           sortAscending)
+    void IndirectCullPass::bitonicSort(RHI::D3D12ComputeContext& context,
+                                       RHI::D3D12Buffer*         keyIndexList,
+                                       RHI::D3D12Buffer*         countBuffer,
+                                       bool                      isPartiallyPreSorted,
+                                       bool                      sortAscending)
     {
         const uint32_t ElementSizeBytes      = keyIndexList->GetStride();
         const uint32_t MaxNumElements        = 1024; //keyIndexList->GetSizeInBytes() / ElementSizeBytes;
@@ -287,26 +289,27 @@ namespace Pilot
 
         // This controls two things.  It is a key that will sort to the end, and it is a mask used to
         // determine whether the current group should sort ascending or descending.
-        context.SetConstants(3, counterOffset, sortAscending ? 0xffffffff : 0);
+        //context.SetConstants(3, counterOffset, sortAscending ? 0xffffffff : 0);
+        context.SetConstants(3, 0, sortAscending ? 0x7F7FFFFF : 0);
         
         // Generate execute indirect arguments
         context.SetPipelineState(PipelineStates::pBitonicIndirectArgsPSO.get());
-        context.TransitionBarrier(countBuffer.get(), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+        context.TransitionBarrier(countBuffer, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
         context.TransitionBarrier(pSortDispatchArgs.get(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
         context.SetConstants(0, MaxIterations);
-        context->SetComputeRootDescriptorTable(1, countBufferSRV->GetGpuHandle());
-        context->SetComputeRootDescriptorTable(2, keyIndexListUAV->GetGpuHandle());
+        context->SetComputeRootDescriptorTable(1, countBuffer->GetDefaultSRV()->GetGpuHandle());
+        context->SetComputeRootDescriptorTable(2, pSortDispatchArgs->GetDefaultUAV()->GetGpuHandle());
         context.Dispatch(1, 1, 1);
 
         // Pre-Sort the buffer up to k = 2048.  This also pads the list with invalid indices
         // that will drift to the end of the sorted list.
         context.TransitionBarrier(pSortDispatchArgs.get(), D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT);
-        context.TransitionBarrier(keyIndexList.get(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-        context.InsertUAVBarrier(keyIndexList.get());
+        context.TransitionBarrier(keyIndexList, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+        context.InsertUAVBarrier(keyIndexList);
         context.FlushResourceBarriers();
 
         //context->SetComputeRootUnorderedAccessView(2, keyIndexList->GetGpuVirtualAddress());
-        context->SetComputeRootDescriptorTable(2, keyIndexListUAV->GetGpuHandle());
+        context->SetComputeRootDescriptorTable(2, keyIndexList->GetDefaultRawUAV()->GetGpuHandle());
 
         if (!isPartiallyPreSorted)
         {
@@ -316,10 +319,10 @@ namespace Pilot
                                      1,
                                      pSortDispatchArgs->GetResource(),
                                      0,
-                                     pSortDispatchArgs->GetCounterBuffer()->GetResource(),
-                                     counterOffset);
+                                     countBuffer->GetResource(),
+                                     0);
             //context.DispatchIndirect(s_DispatchArgs, 0);
-            context.InsertUAVBarrier(keyIndexList.get());
+            context.InsertUAVBarrier(keyIndexList);
         }
 
         uint32_t IndirectArgsOffset = 12;
@@ -340,10 +343,10 @@ namespace Pilot
                                          1,
                                          pSortDispatchArgs->GetResource(),
                                          IndirectArgsOffset,
-                                         pSortDispatchArgs->GetCounterBuffer()->GetResource(),
-                                         counterOffset);
+                                         countBuffer->GetResource(),
+                                         0);
                 //context.DispatchIndirect(s_DispatchArgs, IndirectArgsOffset);
-                context.InsertUAVBarrier(keyIndexList.get());
+                context.InsertUAVBarrier(keyIndexList);
                 IndirectArgsOffset += 12;
             }
 
@@ -353,10 +356,10 @@ namespace Pilot
                                      1,
                                      pSortDispatchArgs->GetResource(),
                                      IndirectArgsOffset,
-                                     pSortDispatchArgs->GetCounterBuffer()->GetResource(),
-                                     counterOffset);
+                                     countBuffer->GetResource(),
+                                     0);
             //context.DispatchIndirect(s_DispatchArgs, IndirectArgsOffset);
-            context.InsertUAVBarrier(keyIndexList.get());
+            context.InsertUAVBarrier(keyIndexList);
             IndirectArgsOffset += 12;
         }
     }
@@ -432,31 +435,60 @@ namespace Pilot
             //  Opaque object bitonic sort
             {
                 D3D12ScopedEvent(asyncCompute, "Bitonic Sort for opaque");
-                bitonicSort(
-                    asyncCompute,
-                    commandBufferForOpaqueDraw.p_IndirectIndexCommandBuffer,
-                    commandBufferForOpaqueDraw.p_IndirectIndexCommandBuffer->GetDefaultUAV(),
-                    commandBufferForOpaqueDraw.p_IndirectIndexCommandBuffer->GetCounterBuffer(),
-                    commandBufferForOpaqueDraw.p_IndirectIndexCommandBuffer->GetCounterBuffer()->GetDefaultSRV(),
-                    0,
-                    true,
-                    false);
+
+                RHI::D3D12Buffer* bufferPtr = commandBufferForOpaqueDraw.p_IndirectIndexCommandBuffer.get();
+
+                bitonicSort(asyncCompute,
+                            bufferPtr,
+                            bufferPtr->GetCounterBuffer().get(),
+                            false,
+                            false);
             }
 
             // Transparent object bitonic sort
             {
                 D3D12ScopedEvent(asyncCompute, "Bitonic Sort for transparent");
-                bitonicSort(
-                    asyncCompute,
-                    commandBufferForTransparentDraw.p_IndirectIndexCommandBuffer,
-                    commandBufferForTransparentDraw.p_IndirectIndexCommandBuffer->GetDefaultUAV(),
-                    commandBufferForTransparentDraw.p_IndirectIndexCommandBuffer->GetCounterBuffer(),
-                    commandBufferForTransparentDraw.p_IndirectIndexCommandBuffer->GetCounterBuffer()->GetDefaultSRV(),
-                    0,
-                    true,
-                    true);
+
+                RHI::D3D12Buffer* bufferPtr = commandBufferForTransparentDraw.p_IndirectIndexCommandBuffer.get();
+
+                bitonicSort(asyncCompute,
+                            bufferPtr,
+                            bufferPtr->GetCounterBuffer().get(),
+                            false,
+                            true);
             }
             
+            // Output sorted opaque object
+            {
+                D3D12ScopedEvent(asyncCompute, "Grabs opaque objects to render");
+
+                asyncCompute.SetRootSignature(RootSignatures::pIndirectCull.get());
+                asyncCompute.SetPipelineState(PipelineStates::pIndirectCull.get());
+
+                asyncCompute->SetComputeRootConstantBufferView(0, pPerframeBuffer->GetGpuVirtualAddress());
+                asyncCompute->SetComputeRootShaderResourceView(1, pMeshBuffer->GetGpuVirtualAddress());
+                asyncCompute->SetComputeRootShaderResourceView(2, pMaterialBuffer->GetGpuVirtualAddress());
+
+                asyncCompute->ExecuteIndirect(CommandSignatures::pDispatchIndirectCommandSignature->GetApiHandle(),
+                                              1,
+                                              pSortDispatchArgs->GetResource(),
+                                              0,
+                                              commandBufferForOpaqueDraw.p_IndirectIndexCommandBuffer->GetResource(),
+                                              0);
+
+                // Transition to indirect argument state
+                asyncCompute.TransitionBarrier(commandBufferForOpaqueDraw.p_IndirectSortCommandBuffer.get(),
+                                               D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT);
+            }
+
+            // Output sorted transparent object
+            {
+                D3D12ScopedEvent(asyncCompute, "Grabs transparent objects to render");
+
+
+            }
+
+            /*
             // Output Object Buffer
             {
                 D3D12ScopedEvent(asyncCompute, "Grabs all objects to render");
@@ -466,6 +498,7 @@ namespace Pilot
                 asyncCompute->SetComputeRootConstantBufferView(0, pPerframeBuffer->GetGpuVirtualAddress());
                 asyncCompute->SetComputeRootShaderResourceView(1, pMeshBuffer->GetGpuVirtualAddress());
                 asyncCompute->SetComputeRootShaderResourceView(2, pMaterialBuffer->GetGpuVirtualAddress());
+
                 asyncCompute->SetComputeRootDescriptorTable(
                     3, commandBufferForOpaqueDraw.p_IndirectSortCommandBuffer->GetDefaultUAV()->GetGpuHandle());
                 asyncCompute->SetComputeRootDescriptorTable(
@@ -479,6 +512,7 @@ namespace Pilot
                 asyncCompute.TransitionBarrier(commandBufferForTransparentDraw.p_IndirectSortCommandBuffer.get(),
                                                D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT);
             }
+            */
 
             // DirectionLight shadow cull
             if (dirShadowmapCommandBuffer.p_IndirectSortCommandBuffer != nullptr)

@@ -47,7 +47,7 @@ void main( uint3 DTid : SV_DispatchThreadID  )
     Element A = LoadElement(Index1);
     Element B = LoadElement(Index2);
 
-    if (ShouldSwap(A, B))
+    if (ShouldSwapF(A, B))
     {
         StoreElement(Index1, B);
         StoreElement(Index2, A);

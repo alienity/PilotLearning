@@ -111,14 +111,21 @@ namespace RHI
         }
     }
 
+    UINT64 D3D12Resource::g_GlobalUniqueId = 0;
+
     D3D12Resource::D3D12Resource(D3D12LinkedDevice*                       Parent,
                                  Microsoft::WRL::ComPtr<ID3D12Resource>&& Resource,
                                  D3D12_RESOURCE_STATES                    InitialResourceState) :
         D3D12LinkedDeviceChild(Parent),
         m_pResource(std::move(Resource)), m_ClearValue(std::nullopt), m_ResourceDesc(this->m_pResource->GetDesc()),
         m_PlaneCount(D3D12GetFormatPlaneCount(Parent->GetDevice(), m_ResourceDesc.Format)),
-        m_NumSubresources(CalculateNumSubresources()), m_ResourceState(m_NumSubresources, InitialResourceState)
-    {}
+        m_NumSubresources(CalculateNumSubresources()), m_ResourceState(m_NumSubresources, InitialResourceState),
+        m_VersionID(g_GlobalUniqueId++)
+    {
+#ifdef _DEBUG
+        Parent->AddDebugResource(this);
+#endif
+    }
 
     D3D12Resource::D3D12Resource(D3D12LinkedDevice*                 Parent,
                                  CD3DX12_HEAP_PROPERTIES            HeapProperties,
@@ -129,8 +136,13 @@ namespace RHI
         m_pResource(InitializeResource(HeapProperties, Desc, InitialResourceState, ClearValue)),
         m_ClearValue(ClearValue), m_ResourceDesc(m_pResource->GetDesc()),
         m_PlaneCount(D3D12GetFormatPlaneCount(Parent->GetDevice(), Desc.Format)),
-        m_NumSubresources(CalculateNumSubresources()), m_ResourceState(m_NumSubresources, InitialResourceState)
-    {}
+        m_NumSubresources(CalculateNumSubresources()), m_ResourceState(m_NumSubresources, InitialResourceState),
+        m_VersionID(g_GlobalUniqueId++)
+    {
+#ifdef _DEBUG
+        Parent->AddDebugResource(this);
+#endif
+    }
 
     D3D12Resource::D3D12Resource(D3D12LinkedDevice*                       Parent,
                                  Microsoft::WRL::ComPtr<ID3D12Resource>&& Resource,
@@ -140,9 +152,13 @@ namespace RHI
         D3D12LinkedDeviceChild(Parent),
         m_pResource(std::move(Resource)), m_ClearValue(ClearValue), m_ResourceDesc(this->m_pResource->GetDesc()),
         m_PlaneCount(D3D12GetFormatPlaneCount(Parent->GetDevice(), m_ResourceDesc.Format)),
-        m_NumSubresources(CalculateNumSubresources()), m_ResourceState(m_NumSubresources, InitialResourceState)
+        m_NumSubresources(CalculateNumSubresources()), m_ResourceState(m_NumSubresources, InitialResourceState),
+        m_VersionID(g_GlobalUniqueId++)
     {
+#ifdef _DEBUG
+        Parent->AddDebugResource(this);
         this->SetResourceName(Name);
+#endif
     }
 
     D3D12Resource::D3D12Resource(D3D12LinkedDevice*                 Parent,
@@ -155,15 +171,20 @@ namespace RHI
         m_pResource(InitializeResource(HeapProperties, Desc, InitialResourceState, ClearValue)),
         m_ClearValue(ClearValue), m_ResourceDesc(m_pResource->GetDesc()),
         m_PlaneCount(D3D12GetFormatPlaneCount(Parent->GetDevice(), Desc.Format)),
-        m_NumSubresources(CalculateNumSubresources()), m_ResourceState(m_NumSubresources, InitialResourceState)
+        m_NumSubresources(CalculateNumSubresources()), m_ResourceState(m_NumSubresources, InitialResourceState),
+        m_VersionID(g_GlobalUniqueId++)
     {
+#ifdef _DEBUG
+        Parent->AddDebugResource(this);
         this->SetResourceName(Name);
+#endif
     }
 
-    void D3D12Resource ::Destroy()
+    void D3D12Resource::Destroy()
     {
+        Parent->RemoveDebugResource(this);
         m_pResource = nullptr;
-        ++m_VersionID;
+        m_VersionID = 0;
     }
 
     void D3D12Resource::SetResourceName(std::wstring name)
@@ -355,9 +376,10 @@ namespace RHI
 
     void D3D12Buffer::Destroy()
     {
+        Parent->RemoveDebugResource(this);
         m_ScopedPointer.Release();
         m_pResource = nullptr;
-        ++m_VersionID;
+        m_VersionID = 0;
 
         m_CpuVirtualAddress = nullptr;
         m_GpuVirtualAddress = D3D12_GPU_VIRTUAL_ADDRESS_NULL;
@@ -530,16 +552,21 @@ namespace RHI
     std::shared_ptr<D3D12UnorderedAccessView> D3D12Buffer::CreateUAV(D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc)
     {
         D3D12Resource* pCounterResource = p_CounterBufferD3D12 != nullptr ? p_CounterBufferD3D12.get() : nullptr;
-        BUFFER_UNORDERED_ACCESS_VIEW_KEY uavKey = {uavDesc, pCounterResource};
+        return CreateUAV(uavDesc, pCounterResource);
+    }
+
+    std::shared_ptr<D3D12UnorderedAccessView> D3D12Buffer::CreateUAV(D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc, D3D12Resource* pCounterRes)
+    {
+        BUFFER_UNORDERED_ACCESS_VIEW_KEY uavKey = {uavDesc, pCounterRes};
 
         uint64 descHash = CityHash64((const char*)&uavKey, sizeof(BUFFER_UNORDERED_ACCESS_VIEW_KEY));
 
-        std::shared_ptr<D3D12UnorderedAccessView> uav = nullptr;
-        auto uavHandleIter = m_UAVHandleMap.find(descHash);
+        std::shared_ptr<D3D12UnorderedAccessView> uav           = nullptr;
+        auto                                      uavHandleIter = m_UAVHandleMap.find(descHash);
         if (uavHandleIter == m_UAVHandleMap.end())
         {
             uav = std::make_shared<D3D12UnorderedAccessView>(
-                Parent, uavDesc, (D3D12Resource*)this, (D3D12Resource*)pCounterResource);
+                Parent, uavDesc, (D3D12Resource*)this, (D3D12Resource*)pCounterRes);
             m_UAVHandleMap[descHash] = uav;
         }
         else
@@ -563,6 +590,20 @@ namespace RHI
     std::shared_ptr<D3D12UnorderedAccessView> D3D12Buffer::GetDefaultUAV()
     {
         return CreateUAV(D3D12UnorderedAccessView::GetDesc(this, m_Desc.target & RHIBufferTargetRaw, 0, m_Desc.number, 0));
+    }
+
+    std::shared_ptr<D3D12UnorderedAccessView> D3D12Buffer::GetDefaultStructureUAV(bool hasCounter)
+    {
+        D3D12Resource* pCounterResource = hasCounter ? (p_CounterBufferD3D12 != nullptr ? p_CounterBufferD3D12.get() : nullptr) : nullptr;
+        D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc = D3D12UnorderedAccessView::GetDesc(this, false, 0, m_Desc.number, 0);
+        return CreateUAV(uavDesc, pCounterResource);
+    }
+
+    std::shared_ptr<D3D12UnorderedAccessView> D3D12Buffer::GetDefaultRawUAV(bool hasCounter)
+    {
+        D3D12Resource* pCounterResource = hasCounter ? (p_CounterBufferD3D12 != nullptr ? p_CounterBufferD3D12.get() : nullptr) : nullptr;
+        D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc = D3D12UnorderedAccessView::GetDesc(this, true, 0, m_Desc.number, 0);
+        return CreateUAV(uavDesc, pCounterResource);
     }
 
     RHIBufferDesc& D3D12Buffer::GetBufferDesc() { return m_Desc; }
@@ -612,8 +653,9 @@ namespace RHI
 
     void D3D12Texture::Destroy()
     {
+        Parent->RemoveDebugResource(this);
         m_pResource = nullptr;
-        ++m_VersionID;
+        m_VersionID = 0;
 
         m_RTVHandleMap.clear();
         m_DSVHandleMap.clear();

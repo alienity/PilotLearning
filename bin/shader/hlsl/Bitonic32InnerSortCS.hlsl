@@ -91,7 +91,7 @@ void main( uint3 Gid : SV_GroupID, uint GI : SV_GroupIndex )
         uint A = gs_SortKeys[Index1];
         uint B = gs_SortKeys[Index2];
 
-        if (ShouldSwap(A, B))
+        if (ShouldSwapF(A, B))
         {
             // Swap the keys
             gs_SortKeys[Index1] = B;

@@ -9,6 +9,8 @@
 
 namespace RHI
 {
+    class D3D12Resource;
+
     class D3D12LinkedDevice : public D3D12DeviceChild
     {
     public:
@@ -56,6 +58,11 @@ namespace RHI
         void Upload(const D3D12_SUBRESOURCE_DATA& Subresource, UINT FirstSubresource, ID3D12Resource* Resource);
         void Upload(const void* Data, UINT64 SizeInBytes, ID3D12Resource* Resource);
 
+        #ifdef _DEBUG
+        void AddDebugResource(D3D12Resource* res);
+        void RemoveDebugResource(D3D12Resource* res);
+        #endif
+
     private:
         D3D12NodeMask     NodeMask;
         D3D12CommandQueue GraphicsQueue;
@@ -82,5 +89,9 @@ namespace RHI
 
         D3D12SyncHandle                                     UploadSyncHandle;
         std::vector<Microsoft::WRL::ComPtr<ID3D12Resource>> TrackedResources;
+
+        #ifdef _DEBUG
+        std::vector<D3D12Resource*> m_DebugResources;
+        #endif
     };
 }

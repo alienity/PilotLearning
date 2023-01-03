@@ -30,7 +30,7 @@ cbuffer CB1 : register(b1)
     //   Descending:  0x00000000
     //   Ascending:   0xffffffff
     // Also used by the ShouldSwap() function to invert ordering.
-    uint NullItem; 
+    uint NullItem;  // 0x7F7FFFFF
 }
 
 // Takes Value and widens it by one bit at the location of the bit
@@ -52,8 +52,32 @@ bool ShouldSwap(uint A, uint B)
     return (A ^ NullItem) < (B ^ NullItem);
 }
 
+bool ShouldSwapF(uint A, uint B)
+{
+    if (NullItem == 0x7F7FFFFF)
+    {
+        return asfloat(A) > asfloat(B);
+    }
+    else
+    {
+        return asfloat(A) < asfloat(B);
+    }
+}
+
 // Same as above, but only compares the upper 32-bit word.
 bool ShouldSwap(uint2 A, uint2 B)
 {
     return (A.y ^ NullItem) < (B.y ^ NullItem);
+}
+
+bool ShouldSwapF(uint2 A, uint2 B)
+{
+    if (NullItem == 0x7F7FFFFF)
+    {
+        return asfloat(A.y) > asfloat(B.y);
+    }
+    else
+    {
+        return asfloat(A.y) < asfloat(B.y);
+    }
 }

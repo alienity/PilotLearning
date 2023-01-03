@@ -41,7 +41,7 @@ void CSMain(CSParams Params) {
         if (visible)
         {
             float3 cameraPos = g_ConstantBufferParams.cameraInstance.cameraPosition;
-            float3 aabbCenter = mesh.boundingBox.Center;
+            float3 aabbCenter = aabb.Center;
 
             float meshDistance = distance(cameraPos, aabbCenter);
 
