@@ -1,6 +1,7 @@
 #pragma once
 #include "d3d12_core.h"
 #include "d3d12_linkedDevice.h"
+#include "d3d12_descriptorHeap.h"
 
 namespace RHI
 {
@@ -326,8 +327,9 @@ namespace RHI
     protected:
         friend class D3D12Resource;
 
-        D3D12_CPU_DESCRIPTOR_HANDLE CpuHandle           = {NULL};
-        UINT                        DescriptorHeapIndex = UINT_MAX;
+        //D3D12_CPU_DESCRIPTOR_HANDLE CpuHandle           = {NULL};
+        //UINT                        DescriptorHeapIndex = UINT_MAX;
+        DescriptorHeapAllocation m_DescriptorHeapAllocation;
     };
 
     template<typename ViewDesc>
@@ -512,9 +514,10 @@ namespace RHI
     protected:
         friend class D3D12Resource;
 
-        D3D12_CPU_DESCRIPTOR_HANDLE CpuHandle = {NULL};
-        D3D12_GPU_DESCRIPTOR_HANDLE GpuHandle = {NULL};
-        UINT                        Index     = UINT_MAX;
+        //D3D12_CPU_DESCRIPTOR_HANDLE CpuHandle = {NULL};
+        //D3D12_GPU_DESCRIPTOR_HANDLE GpuHandle = {NULL};
+        //UINT                        Index     = UINT_MAX;
+        DescriptorHeapAllocation m_DescriptorHeapAllocation;
     };
 
     template<typename ViewDesc>

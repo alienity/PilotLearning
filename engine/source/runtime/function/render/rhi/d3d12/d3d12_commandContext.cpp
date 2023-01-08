@@ -93,8 +93,8 @@ namespace RHI
             m_Type == RHID3D12CommandQueueType::Copy2)
         {
             ID3D12DescriptorHeap* DescriptorHeaps[2] = {
-                GetParentLinkedDevice()->GetResourceDescriptorHeap(),
-                GetParentLinkedDevice()->GetSamplerDescriptorHeap(),
+                GetParentLinkedDevice()->GetResourceDescriptorHeap()->GetDescriptorHeap(),
+                GetParentLinkedDevice()->GetSamplerDescriptorHeap()->GetDescriptorHeap(),
             };
 
             m_CommandListHandle->SetDescriptorHeaps(2, DescriptorHeaps);
@@ -443,22 +443,21 @@ namespace RHI
         this->ClearRenderTarget(rtvs, DepthStencilView);
     }
 
-    /*
     void D3D12GraphicsContext::BeginQuery(ID3D12QueryHeap* QueryHeap, D3D12_QUERY_TYPE Type, UINT HeapIndex)
     {
-        // TODO:
+        m_CommandListHandle->BeginQuery(QueryHeap, Type, HeapIndex);
     }
 
     void D3D12GraphicsContext::EndQuery(ID3D12QueryHeap* QueryHeap, D3D12_QUERY_TYPE Type, UINT HeapIndex)
     {
-        // TODO:
+        m_CommandListHandle->EndQuery(QueryHeap, Type, HeapIndex);
     }
 
     void D3D12GraphicsContext::ResolveQueryData(ID3D12QueryHeap* QueryHeap, D3D12_QUERY_TYPE Type, UINT StartIndex, UINT NumQueries, ID3D12Resource* DestinationBuffer, UINT64 DestinationBufferOffset)
     {
-        // TODO:
+        m_CommandListHandle->ResolveQueryData(
+            QueryHeap, Type, StartIndex, NumQueries, DestinationBuffer, DestinationBufferOffset);
     }
-    */
 
 	void D3D12GraphicsContext::SetRootSignature(D3D12RootSignature* RootSignature)
     {

@@ -132,9 +132,9 @@ namespace RHI
     {
         if (!Desc.IsLocal())
         {
-            // If a root signature is local we don't add bindless descriptor table because it will conflict with global
-            // root signature
-            AddBindlessParameters(Desc);
+            //// If a root signature is local we don't add bindless descriptor table because it will conflict with global
+            //// root signature
+            //AddBindlessParameters(Desc);
         }
 
         D3D12_VERSIONED_ROOT_SIGNATURE_DESC ApiDesc;
@@ -173,17 +173,17 @@ namespace RHI
                     case D3D12_DESCRIPTOR_RANGE_TYPE_CBV:
                     case D3D12_DESCRIPTOR_RANGE_TYPE_SRV:
                     case D3D12_DESCRIPTOR_RANGE_TYPE_UAV:
-                        ResourceDescriptorTableBitMask.set(i, true);
+                        m_ResourceDescriptorTableBitMask.set(i, true);
                         break;
                     case D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER:
-                        SamplerTableBitMask.set(i, true);
+                        m_SamplerTableBitMask.set(i, true);
                         break;
                 }
 
                 // Calculate total number of descriptors in the descriptor table.
                 for (UINT j = 0; j < DescriptorTable1.NumDescriptorRanges; ++j)
                 {
-                    NumDescriptorsPerTable[i] += DescriptorTable1.pDescriptorRanges[j].NumDescriptors;
+                    m_NumDescriptorsPerTable[i] += DescriptorTable1.pDescriptorRanges[j].NumDescriptors;
                 }
             }
         }
@@ -195,9 +195,9 @@ namespace RHI
         switch (Type)
         {
             case D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV:
-                return ResourceDescriptorTableBitMask;
+                return m_ResourceDescriptorTableBitMask;
             case D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER:
-                return SamplerTableBitMask;
+                return m_SamplerTableBitMask;
             default:
                 return {};
         }
@@ -206,55 +206,51 @@ namespace RHI
     UINT D3D12RootSignature::GetNumDescriptors(UINT RootParameterIndex) const noexcept
     {
         assert(RootParameterIndex < MOYU_RHI_D3D12_GLOBAL_ROOT_DESCRIPTOR_TABLE_LIMIT);
-        return NumDescriptorsPerTable[RootParameterIndex];
+        return m_NumDescriptorsPerTable[RootParameterIndex];
     }
 
-    // SM6.6已经支持了Dynamic Resources，这里虽然是为LocalRootSignature准备的，但是对于Graphics和Compute以后也都不需要了
-    // HLSL Dynamic Resources
-    // https://microsoft.github.io/DirectX-Specs/d3d/HLSL_ShaderModel6_6.html
-    // https://microsoft.github.io/DirectX-Specs/d3d/HLSL_SM_6_6_DynamicResources.html
-    void D3D12RootSignature::AddBindlessParameters(RootSignatureDesc& Desc)
-    {
-        // TODO: Maybe consider this as a fall back options when SM6.6 dynamic resource binding is integrated
-        /* Descriptor Tables */
-
-        constexpr D3D12_DESCRIPTOR_RANGE_FLAGS DescriptorDataVolatile =
-            D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE | D3D12_DESCRIPTOR_RANGE_FLAG_DATA_VOLATILE;
-        constexpr D3D12_DESCRIPTOR_RANGE_FLAGS DescriptorVolatile = D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE;
-        Desc.AddDescriptorTable(
-                // ShaderResource
-                D3D12DescriptorTable(4)
-                    .AddSRVRange<0, 100>(UINT_MAX, DescriptorDataVolatile, 0)  // g_ByteAddressBufferTable
-                    .AddSRVRange<0, 101>(UINT_MAX, DescriptorDataVolatile, 0)  // g_Texture2DTable
-                    .AddSRVRange<0, 102>(UINT_MAX, DescriptorDataVolatile, 0)  // g_Texture2DArrayTable
-                    .AddSRVRange<0, 103>(UINT_MAX, DescriptorDataVolatile, 0)) // g_TextureCubeTable
-            .AddDescriptorTable(
-                // UnorderedAccess
-                D3D12DescriptorTable(2)
-                    .AddUAVRange<0, 100>(UINT_MAX, DescriptorDataVolatile, 0)  // g_RWTexture2DTable
-                    .AddUAVRange<0, 101>(UINT_MAX, DescriptorDataVolatile, 0)) // g_RWTexture2DArrayTable
-            .AddDescriptorTable(
-                // Sampler
-                D3D12DescriptorTable(1).AddSamplerRange<0, 100>(UINT_MAX, DescriptorVolatile, 0)); // g_SamplerTable
-
-        constexpr D3D12_FILTER               PointFilter  = D3D12_FILTER_MIN_MAG_MIP_POINT;
-        constexpr D3D12_FILTER               LinearFilter = D3D12_FILTER_MIN_MAG_MIP_LINEAR;
-        constexpr D3D12_FILTER               Anisotropic  = D3D12_FILTER_ANISOTROPIC;
-        constexpr D3D12_TEXTURE_ADDRESS_MODE Wrap         = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
-        constexpr D3D12_TEXTURE_ADDRESS_MODE Clamp        = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
-        constexpr D3D12_TEXTURE_ADDRESS_MODE Border       = D3D12_TEXTURE_ADDRESS_MODE_BORDER;
-        Desc.AddSampler<0, 101>(PointFilter, Wrap, 16)  // g_SamplerPointWrap
-            .AddSampler<1, 101>(PointFilter, Clamp, 16) // g_SamplerPointClamp
-
-            .AddSampler<2, 101>(LinearFilter, Wrap, 16)  // g_SamplerLinearWrap
-            .AddSampler<3, 101>(LinearFilter, Clamp, 16) // g_SamplerLinearClamp
-            .AddSampler<4, 101>(LinearFilter,
-                                Border,
-                                16,
-                                D3D12_COMPARISON_FUNC_LESS_EQUAL,
-                                D3D12_STATIC_BORDER_COLOR_TRANSPARENT_BLACK) // g_SamplerLinearBorder
-
-            .AddSampler<5, 101>(Anisotropic, Wrap, 16)   // g_SamplerAnisotropicWrap
-            .AddSampler<6, 101>(Anisotropic, Clamp, 16); // g_SamplerAnisotropicClamp
-    }
+    //// SM6.6已经支持了Dynamic Resources，这里虽然是为LocalRootSignature准备的，但是对于Graphics和Compute以后也都不需要了
+    //// HLSL Dynamic Resources
+    //// https://microsoft.github.io/DirectX-Specs/d3d/HLSL_ShaderModel6_6.html
+    //// https://microsoft.github.io/DirectX-Specs/d3d/HLSL_SM_6_6_DynamicResources.html
+    //void D3D12RootSignature::AddBindlessParameters(RootSignatureDesc& Desc)
+    //{
+    //    // TODO: Maybe consider this as a fall back options when SM6.6 dynamic resource binding is integrated
+    //    /* Descriptor Tables */
+    //    constexpr D3D12_DESCRIPTOR_RANGE_FLAGS DescriptorDataVolatile =
+    //        D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE | D3D12_DESCRIPTOR_RANGE_FLAG_DATA_VOLATILE;
+    //    constexpr D3D12_DESCRIPTOR_RANGE_FLAGS DescriptorVolatile = D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE;
+    //    Desc.AddDescriptorTable(
+    //            // ShaderResource
+    //            D3D12DescriptorTable(4)
+    //                .AddSRVRange<0, 100>(UINT_MAX, DescriptorDataVolatile, 0)  // g_ByteAddressBufferTable
+    //                .AddSRVRange<0, 101>(UINT_MAX, DescriptorDataVolatile, 0)  // g_Texture2DTable
+    //                .AddSRVRange<0, 102>(UINT_MAX, DescriptorDataVolatile, 0)  // g_Texture2DArrayTable
+    //                .AddSRVRange<0, 103>(UINT_MAX, DescriptorDataVolatile, 0)) // g_TextureCubeTable
+    //        .AddDescriptorTable(
+    //            // UnorderedAccess
+    //            D3D12DescriptorTable(2)
+    //                .AddUAVRange<0, 100>(UINT_MAX, DescriptorDataVolatile, 0)  // g_RWTexture2DTable
+    //                .AddUAVRange<0, 101>(UINT_MAX, DescriptorDataVolatile, 0)) // g_RWTexture2DArrayTable
+    //        .AddDescriptorTable(
+    //            // Sampler
+    //            D3D12DescriptorTable(1).AddSamplerRange<0, 100>(UINT_MAX, DescriptorVolatile, 0)); // g_SamplerTable
+    //    constexpr D3D12_FILTER               PointFilter  = D3D12_FILTER_MIN_MAG_MIP_POINT;
+    //    constexpr D3D12_FILTER               LinearFilter = D3D12_FILTER_MIN_MAG_MIP_LINEAR;
+    //    constexpr D3D12_FILTER               Anisotropic  = D3D12_FILTER_ANISOTROPIC;
+    //    constexpr D3D12_TEXTURE_ADDRESS_MODE Wrap         = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+    //    constexpr D3D12_TEXTURE_ADDRESS_MODE Clamp        = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
+    //    constexpr D3D12_TEXTURE_ADDRESS_MODE Border       = D3D12_TEXTURE_ADDRESS_MODE_BORDER;
+    //    Desc.AddSampler<0, 101>(PointFilter, Wrap, 16)  // g_SamplerPointWrap
+    //        .AddSampler<1, 101>(PointFilter, Clamp, 16) // g_SamplerPointClamp
+    //        .AddSampler<2, 101>(LinearFilter, Wrap, 16)  // g_SamplerLinearWrap
+    //        .AddSampler<3, 101>(LinearFilter, Clamp, 16) // g_SamplerLinearClamp
+    //        .AddSampler<4, 101>(LinearFilter,
+    //                            Border,
+    //                            16,
+    //                            D3D12_COMPARISON_FUNC_LESS_EQUAL,
+    //                            D3D12_STATIC_BORDER_COLOR_TRANSPARENT_BLACK) // g_SamplerLinearBorder
+    //        .AddSampler<5, 101>(Anisotropic, Wrap, 16)   // g_SamplerAnisotropicWrap
+    //        .AddSampler<6, 101>(Anisotropic, Clamp, 16); // g_SamplerAnisotropicClamp
+    //}
 }

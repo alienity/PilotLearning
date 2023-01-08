@@ -3,17 +3,23 @@
 
 #include "runtime/platform/system/hash.h"
 
-// D3D12.DescriptorAllocatorPageSize
-// Descriptor Allocator Page Size
-static int CVar_DescriptorAllocatorPageSize = 2048;
+//// D3D12.DescriptorAllocatorPageSize
+//// Descriptor Allocator Page Size
+//static int CVar_DescriptorAllocatorPageSize = 2048;
+//
+//// D3D12.GlobalResourceViewHeapSize
+//// Global Resource View Heap Size
+//static int CVar_GlobalResourceViewHeapSize = 65535;
+//
+//// D3D12.GlobalSamplerHeapSize
+//// Global Sampler Heap Size
+//static int CVar_GlobalSamplerHeapSize = D3D12_MAX_SHADER_VISIBLE_SAMPLER_HEAP_SIZE;
 
-// D3D12.GlobalResourceViewHeapSize
-// Global Resource View Heap Size
-static int CVar_GlobalResourceViewHeapSize = 65535;
-
-// D3D12.GlobalSamplerHeapSize
-// Global Sampler Heap Size
-static int CVar_GlobalSamplerHeapSize = D3D12_MAX_SHADER_VISIBLE_SAMPLER_HEAP_SIZE;
+static int CVar_GlobalCPUViewHeapSize           = 256;
+static int CVar_GlobalStaticGPUViewHeapSize     = 16384;
+static int CVar_GlobalDynamicGPUViewHeapSize    = 8192;
+static int CVar_GlobalStaticGPUSamplerHeapSize  = 1024;
+static int CVar_GlobalDynamicGPUSamplerHeapSize = 1024;
 
 namespace RHI
 {
@@ -21,37 +27,57 @@ namespace RHI
     D3D12LinkedDevice::D3D12LinkedDevice(D3D12Device* Parent, D3D12NodeMask NodeMask)
         : D3D12DeviceChild(Parent)
         , NodeMask(NodeMask)
-        , GraphicsQueue(this, RHID3D12CommandQueueType::Direct)
-        , AsyncComputeQueue(this, RHID3D12CommandQueueType::AsyncCompute)
-        , CopyQueue1(this, RHID3D12CommandQueueType::Copy1)
-        , CopyQueue2(this, RHID3D12CommandQueueType::Copy2)
-        , Profiler(this, 1)
-        , RtvHeapManager(this, D3D12_DESCRIPTOR_HEAP_TYPE_RTV, CVar_DescriptorAllocatorPageSize)
-        , DsvHeapManager(this, D3D12_DESCRIPTOR_HEAP_TYPE_DSV, CVar_DescriptorAllocatorPageSize)
-        , ResourceDescriptorHeap(this, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, CVar_GlobalResourceViewHeapSize)
-        , SamplerDescriptorHeap(this, D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, CVar_GlobalSamplerHeapSize)
-        , CopyContext1(this, RHID3D12CommandQueueType::Copy1, D3D12_COMMAND_LIST_TYPE_COPY)
-        , CopyContext2(this, RHID3D12CommandQueueType::Copy2, D3D12_COMMAND_LIST_TYPE_DIRECT)
+        //, GraphicsQueue(this, RHID3D12CommandQueueType::Direct)
+        //, AsyncComputeQueue(this, RHID3D12CommandQueueType::AsyncCompute)
+        //, CopyQueue1(this, RHID3D12CommandQueueType::Copy1)
+        //, CopyQueue2(this, RHID3D12CommandQueueType::Copy2)
+        //, Profiler(this, 1)
+        //, RtvHeapManager(this, D3D12_DESCRIPTOR_HEAP_TYPE_RTV, CVar_DescriptorAllocatorPageSize)
+        //, DsvHeapManager(this, D3D12_DESCRIPTOR_HEAP_TYPE_DSV, CVar_DescriptorAllocatorPageSize)
+        //, ResourceDescriptorHeap(this, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, CVar_GlobalResourceViewHeapSize)
+        //, SamplerDescriptorHeap(this, D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, CVar_GlobalSamplerHeapSize)
+        //, CopyContext1(this, RHID3D12CommandQueueType::Copy1, D3D12_COMMAND_LIST_TYPE_COPY)
+        //, CopyContext2(this, RHID3D12CommandQueueType::Copy2, D3D12_COMMAND_LIST_TYPE_DIRECT)
     {
+        m_GraphicsQueue = std::make_shared<D3D12CommandQueue>(this, RHID3D12CommandQueueType::Direct);
+        m_AsyncComputeQueue = std::make_shared<D3D12CommandQueue>(this, RHID3D12CommandQueueType::AsyncCompute);
+        m_CopyQueue1 = std::make_shared<D3D12CommandQueue>(this, RHID3D12CommandQueueType::Copy1);
+        m_CopyQueue2 = std::make_shared<D3D12CommandQueue>(this, RHID3D12CommandQueueType::Copy2);
+        m_Profiler = std::make_shared<D3D12Profiler>(this, 1);
+        m_RtvDescriptorHeaps = std::make_shared<CPUDescriptorHeap>(
+                this, CVar_GlobalCPUViewHeapSize, D3D12_DESCRIPTOR_HEAP_TYPE_RTV, D3D12_DESCRIPTOR_HEAP_FLAG_NONE);
+        m_DsvDescriptorHeaps = std::make_shared<CPUDescriptorHeap>(
+                this, CVar_GlobalCPUViewHeapSize, D3D12_DESCRIPTOR_HEAP_TYPE_DSV, D3D12_DESCRIPTOR_HEAP_FLAG_NONE);
+        m_ResourceDescriptorHeap = std::make_shared<GPUDescriptorHeap>(this,
+                                                         CVar_GlobalStaticGPUViewHeapSize,
+                                                         CVar_GlobalDynamicGPUViewHeapSize,
+                                                         D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,
+                                                         D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
+        m_SamplerDescriptorHeap = std::make_shared<GPUDescriptorHeap>(this,
+                                                         CVar_GlobalStaticGPUSamplerHeapSize,
+                                                         CVar_GlobalDynamicGPUSamplerHeapSize,
+                                                         D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER,
+                                                         D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
+
 #if _DEBUG
-        ResourceDescriptorHeap.SetName(L"Resource Descriptor Heap");
-        SamplerDescriptorHeap.SetName(L"Sampler Descriptor Heap");
+        //ResourceDescriptorHeap.SetName(L"Resource Descriptor Heap");
+        //SamplerDescriptorHeap.SetName(L"Sampler Descriptor Heap");
 #endif
         constexpr size_t NumThreads = 3;
-        AvailableCommandContexts.reserve(NumThreads);
+        m_AvailableCommandContexts.reserve(NumThreads);
         for (unsigned int i = 0; i < NumThreads; ++i)
         {
-            AvailableCommandContexts.emplace_back(
-                this, RHID3D12CommandQueueType::Direct, D3D12_COMMAND_LIST_TYPE_DIRECT);
+            m_AvailableCommandContexts.emplace_back(std::make_shared<D3D12CommandContext>(
+                this, RHID3D12CommandQueueType::Direct, D3D12_COMMAND_LIST_TYPE_DIRECT));
         }
-        AvailableAsyncCommandContexts.reserve(NumThreads);
+        m_AvailableAsyncCommandContexts.reserve(NumThreads);
         for (unsigned int i = 0; i < NumThreads; ++i)
         {
-            AvailableAsyncCommandContexts.emplace_back(
-                this, RHID3D12CommandQueueType::AsyncCompute, D3D12_COMMAND_LIST_TYPE_COMPUTE);
+            m_AvailableAsyncCommandContexts.emplace_back(std::make_shared<D3D12CommandContext>(
+                this, RHID3D12CommandQueueType::AsyncCompute, D3D12_COMMAND_LIST_TYPE_COMPUTE));
         }
-        //CopyContext1 = D3D12CommandContext(this, RHID3D12CommandQueueType::Copy1, D3D12_COMMAND_LIST_TYPE_COPY);
-        //CopyContext2 = D3D12CommandContext(this, RHID3D12CommandQueueType::Copy2, D3D12_COMMAND_LIST_TYPE_DIRECT);
+        m_CopyContext1 = std::make_shared<D3D12CommandContext>(this, RHID3D12CommandQueueType::Copy1, D3D12_COMMAND_LIST_TYPE_COPY);
+        m_CopyContext2 = std::make_shared<D3D12CommandContext>(this, RHID3D12CommandQueueType::Copy2, D3D12_COMMAND_LIST_TYPE_DIRECT);
     }
     // clang-format on
 
@@ -61,6 +87,18 @@ namespace RHI
         {
             UploadSyncHandle.WaitForCompletion();
         }
+
+        m_GraphicsQueue     = nullptr;
+        m_AsyncComputeQueue = nullptr;
+        m_CopyQueue1        = nullptr;
+        m_CopyQueue2        = nullptr;
+
+        m_Profiler          = nullptr;
+
+        m_RtvDescriptorHeaps     = nullptr;
+        m_DsvDescriptorHeaps     = nullptr;
+        m_ResourceDescriptorHeap = nullptr;
+        m_SamplerDescriptorHeap  = nullptr;
 
         #ifdef _DEBUG
         ASSERT(m_DebugResources.size() == 0);
@@ -76,13 +114,13 @@ namespace RHI
         switch (Type)
         {
             case RHID3D12CommandQueueType::Direct:
-                return &GraphicsQueue;
+                return m_GraphicsQueue.get();
             case RHID3D12CommandQueueType::AsyncCompute:
-                return &AsyncComputeQueue;
+                return m_AsyncComputeQueue.get();
             case RHID3D12CommandQueueType::Copy1:
-                return &CopyQueue1;
+                return m_CopyQueue1.get();
             case RHID3D12CommandQueueType::Copy2:
-                return &CopyQueue2;
+                return m_CopyQueue2.get();
         }
         return nullptr;
     }
@@ -99,29 +137,29 @@ namespace RHI
 
     D3D12CommandQueue* D3D12LinkedDevice::GetCopyQueue1() { return GetCommandQueue(RHID3D12CommandQueueType::Copy1); }
 
-    D3D12Profiler* D3D12LinkedDevice::GetProfiler() { return &Profiler; }
+    D3D12Profiler* D3D12LinkedDevice::GetProfiler() { return m_Profiler.get(); }
 
-    D3D12DescriptorHeap& D3D12LinkedDevice::GetResourceDescriptorHeap() noexcept { return ResourceDescriptorHeap; }
+    GPUDescriptorHeap* D3D12LinkedDevice::GetResourceDescriptorHeap() noexcept { return m_ResourceDescriptorHeap.get(); }
 
-    D3D12DescriptorHeap& D3D12LinkedDevice::GetSamplerDescriptorHeap() noexcept { return SamplerDescriptorHeap; }
+    GPUDescriptorHeap* D3D12LinkedDevice::GetSamplerDescriptorHeap() noexcept { return m_SamplerDescriptorHeap.get(); }
 
-    D3D12CommandContext& D3D12LinkedDevice::GetCommandContext(UINT ThreadIndex /*= 0*/)
+    D3D12CommandContext* D3D12LinkedDevice::GetCommandContext(UINT ThreadIndex /*= 0*/)
     {
-        assert(ThreadIndex < AvailableCommandContexts.size());
-        return AvailableCommandContexts[ThreadIndex];
+        assert(ThreadIndex < m_AvailableCommandContexts.size());
+        return m_AvailableCommandContexts[ThreadIndex].get();
     }
 
-    D3D12CommandContext& D3D12LinkedDevice::GetAsyncComputeCommandContext(UINT ThreadIndex /*= 0*/)
+    D3D12CommandContext* D3D12LinkedDevice::GetAsyncComputeCommandContext(UINT ThreadIndex /*= 0*/)
     {
-        assert(ThreadIndex < AvailableAsyncCommandContexts.size());
-        return AvailableAsyncCommandContexts[ThreadIndex];
+        assert(ThreadIndex < m_AvailableAsyncCommandContexts.size());
+        return m_AvailableAsyncCommandContexts[ThreadIndex].get();
     }
 
-    D3D12CommandContext& D3D12LinkedDevice::GetCopyContext1() { return CopyContext1; }
+    D3D12CommandContext* D3D12LinkedDevice::GetCopyContext1() { return m_CopyContext1.get(); }
 
-    void D3D12LinkedDevice::OnBeginFrame() { Profiler.OnBeginFrame(); }
+    void D3D12LinkedDevice::OnBeginFrame() { m_Profiler->OnBeginFrame(); }
 
-    void D3D12LinkedDevice::OnEndFrame() { Profiler.OnEndFrame(); }
+    void D3D12LinkedDevice::OnEndFrame() { m_Profiler->OnEndFrame(); }
 
     D3D12_RESOURCE_ALLOCATION_INFO D3D12LinkedDevice::GetResourceAllocationInfo(const D3D12_RESOURCE_DESC& Desc) const
     {
@@ -179,27 +217,27 @@ namespace RHI
 
     void D3D12LinkedDevice::WaitIdle()
     {
-        GraphicsQueue.WaitIdle();
-        AsyncComputeQueue.WaitIdle();
-        CopyQueue1.WaitIdle();
-        CopyQueue2.WaitIdle();
+        m_GraphicsQueue->WaitIdle();
+        m_AsyncComputeQueue->WaitIdle();
+        m_CopyQueue1->WaitIdle();
+        m_CopyQueue2->WaitIdle();
     }
 
-    D3D12CommandContext& D3D12LinkedDevice::BeginResourceUpload()
+    D3D12CommandContext* D3D12LinkedDevice::BeginResourceUpload()
     {
         if (UploadSyncHandle && UploadSyncHandle.IsComplete())
         {
             TrackedResources.clear();
         }
 
-        CopyContext2.Open();
-        return CopyContext2;
+        m_CopyContext2->Open();
+        return m_CopyContext2.get();
     }
 
     D3D12SyncHandle D3D12LinkedDevice::EndResourceUpload(bool WaitForCompletion)
     {
-        CopyContext2->Close();
-        UploadSyncHandle = CopyContext2.Execute(WaitForCompletion);
+        m_CopyContext2->Close();
+        UploadSyncHandle = m_CopyContext2->Execute(WaitForCompletion);
         return UploadSyncHandle;
     }
 
@@ -227,7 +265,13 @@ namespace RHI
                                                               nullptr,
                                                               IID_PPV_ARGS(UploadResource.ReleaseAndGetAddressOf())));
 
-        UpdateSubresources(CopyContext2.GetGraphicsCommandList(), Resource, UploadResource.Get(), 0, FirstSubresource, NumSubresources, Subresources.data());
+        UpdateSubresources(m_CopyContext2->GetGraphicsCommandList(),
+                           Resource,
+                           UploadResource.Get(),
+                           0,
+                           FirstSubresource,
+                           NumSubresources,
+                           Subresources.data());
 
         TrackedResources.push_back(std::move(UploadResource));
     }
@@ -245,7 +289,13 @@ namespace RHI
                                                               nullptr,
                                                               IID_PPV_ARGS(UploadResource.ReleaseAndGetAddressOf())));
 
-        UpdateSubresources<1>(CopyContext2.GetGraphicsCommandList(), Resource, UploadResource.Get(), 0, FirstSubresource, 1, &Subresource);
+        UpdateSubresources<1>(m_CopyContext2->GetGraphicsCommandList(),
+                              Resource,
+                              UploadResource.Get(),
+                              0,
+                              FirstSubresource,
+                              1,
+                              &Subresource);
 
         TrackedResources.push_back(std::move(UploadResource));
     }

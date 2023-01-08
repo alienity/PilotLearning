@@ -144,11 +144,11 @@ namespace RHI
         }
 
         template<UINT ShaderRegister, UINT RegisterSpace>
-        RootSignatureDesc& AddSampler(D3D12_FILTER               Filter,
-                                      D3D12_TEXTURE_ADDRESS_MODE AddressUVW,
-                                      UINT                       MaxAnisotropy,
-                                      D3D12_COMPARISON_FUNC      ComparisonFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL,
-                                      D3D12_STATIC_BORDER_COLOR  BorderColor = D3D12_STATIC_BORDER_COLOR_OPAQUE_WHITE)
+        RootSignatureDesc& AddStaticSampler(D3D12_FILTER               Filter,
+                                            D3D12_TEXTURE_ADDRESS_MODE AddressUVW,
+                                            UINT                       MaxAnisotropy,
+                                            D3D12_COMPARISON_FUNC      ComparisonFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL,
+                                            D3D12_STATIC_BORDER_COLOR  BorderColor = D3D12_STATIC_BORDER_COLOR_OPAQUE_WHITE)
         {
             CD3DX12_STATIC_SAMPLER_DESC& Desc = StaticSamplers.emplace_back();
             Desc.Init(ShaderRegister,
@@ -213,22 +213,22 @@ namespace RHI
 
         [[nodiscard]] UINT GetNumDescriptors(UINT RootParameterIndex) const noexcept;
 
-    private:
-        // Pre SM6.6 bindless root parameter setup
-        static void AddBindlessParameters(RootSignatureDesc& Desc);
+    //private:
+    //    // Pre SM6.6 bindless root parameter setup
+    //    static void AddBindlessParameters(RootSignatureDesc& Desc);
 
     private:
         Microsoft::WRL::ComPtr<ID3D12RootSignature> RootSignature;
         UINT                                        NumParameters = 0;
 
         // Need to know the number of descriptors per descriptor table
-        UINT NumDescriptorsPerTable[MOYU_RHI_D3D12_GLOBAL_ROOT_DESCRIPTOR_TABLE_LIMIT] = {};
+        UINT m_NumDescriptorsPerTable[MOYU_RHI_D3D12_GLOBAL_ROOT_DESCRIPTOR_TABLE_LIMIT] = {};
 
         // A bit mask that represents the root parameter indices that are
         // descriptor tables for CBV, UAV, and SRV
-        std::bitset<MOYU_RHI_D3D12_GLOBAL_ROOT_DESCRIPTOR_TABLE_LIMIT> ResourceDescriptorTableBitMask;
+        std::bitset<MOYU_RHI_D3D12_GLOBAL_ROOT_DESCRIPTOR_TABLE_LIMIT> m_ResourceDescriptorTableBitMask;
         // A bit mask that represents the root parameter indices that are
         // descriptor tables for Samplers
-        std::bitset<MOYU_RHI_D3D12_GLOBAL_ROOT_DESCRIPTOR_TABLE_LIMIT> SamplerTableBitMask;
+        std::bitset<MOYU_RHI_D3D12_GLOBAL_ROOT_DESCRIPTOR_TABLE_LIMIT> m_SamplerTableBitMask;
     };
 } // namespace RHI

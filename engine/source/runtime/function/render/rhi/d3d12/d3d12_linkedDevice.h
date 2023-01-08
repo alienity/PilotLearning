@@ -25,21 +25,21 @@ namespace RHI
         [[nodiscard]] D3D12CommandQueue*   GetAsyncComputeQueue();
         [[nodiscard]] D3D12CommandQueue*   GetCopyQueue1();
         [[nodiscard]] D3D12Profiler*       GetProfiler();
-        [[nodiscard]] D3D12DescriptorHeap& GetResourceDescriptorHeap() noexcept;
-        [[nodiscard]] D3D12DescriptorHeap& GetSamplerDescriptorHeap() noexcept;
-        // clang-format off
-		template<typename ViewDesc> CDescriptorHeapManager& GetHeapManager() noexcept;
-		template<> CDescriptorHeapManager& GetHeapManager<D3D12_RENDER_TARGET_VIEW_DESC>() noexcept { return RtvHeapManager; }
-		template<> CDescriptorHeapManager& GetHeapManager<D3D12_DEPTH_STENCIL_VIEW_DESC>() noexcept { return DsvHeapManager; }
-		template<typename ViewDesc> D3D12DescriptorHeap& GetDescriptorHeap() noexcept;
-		template<> D3D12DescriptorHeap& GetDescriptorHeap<D3D12_CONSTANT_BUFFER_VIEW_DESC>() noexcept { return ResourceDescriptorHeap; }
-		template<> D3D12DescriptorHeap& GetDescriptorHeap<D3D12_SHADER_RESOURCE_VIEW_DESC>() noexcept { return ResourceDescriptorHeap; }
-		template<> D3D12DescriptorHeap& GetDescriptorHeap<D3D12_UNORDERED_ACCESS_VIEW_DESC>() noexcept { return ResourceDescriptorHeap; }
-		template<> D3D12DescriptorHeap& GetDescriptorHeap<D3D12_SAMPLER_DESC>() noexcept { return SamplerDescriptorHeap; }
-        // clang-format on
-        [[nodiscard]] D3D12CommandContext& GetCommandContext(UINT ThreadIndex = 0);
-        [[nodiscard]] D3D12CommandContext& GetAsyncComputeCommandContext(UINT ThreadIndex = 0);
-        [[nodiscard]] D3D12CommandContext& GetCopyContext1();
+        [[nodiscard]] GPUDescriptorHeap*   GetResourceDescriptorHeap() noexcept;
+        [[nodiscard]] GPUDescriptorHeap*   GetSamplerDescriptorHeap() noexcept;
+  //      // clang-format off
+		//template<typename ViewDesc> CDescriptorHeapManager& GetHeapManager() noexcept;
+		//template<> CDescriptorHeapManager& GetHeapManager<D3D12_RENDER_TARGET_VIEW_DESC>() noexcept { return RtvHeapManager; }
+		//template<> CDescriptorHeapManager& GetHeapManager<D3D12_DEPTH_STENCIL_VIEW_DESC>() noexcept { return DsvHeapManager; }
+		//template<typename ViewDesc> D3D12DescriptorHeap& GetDescriptorHeap() noexcept;
+		//template<> D3D12DescriptorHeap& GetDescriptorHeap<D3D12_CONSTANT_BUFFER_VIEW_DESC>() noexcept { return ResourceDescriptorHeap; }
+		//template<> D3D12DescriptorHeap& GetDescriptorHeap<D3D12_SHADER_RESOURCE_VIEW_DESC>() noexcept { return ResourceDescriptorHeap; }
+		//template<> D3D12DescriptorHeap& GetDescriptorHeap<D3D12_UNORDERED_ACCESS_VIEW_DESC>() noexcept { return ResourceDescriptorHeap; }
+		//template<> D3D12DescriptorHeap& GetDescriptorHeap<D3D12_SAMPLER_DESC>() noexcept { return SamplerDescriptorHeap; }
+  //      // clang-format on
+        [[nodiscard]] D3D12CommandContext* GetCommandContext(UINT ThreadIndex = 0);
+        [[nodiscard]] D3D12CommandContext* GetAsyncComputeCommandContext(UINT ThreadIndex = 0);
+        [[nodiscard]] D3D12CommandContext* GetCopyContext1();
 
         void OnBeginFrame();
         void OnEndFrame();
@@ -49,7 +49,7 @@ namespace RHI
 
         void WaitIdle();
 
-        D3D12CommandContext& BeginResourceUpload();
+        D3D12CommandContext* BeginResourceUpload();
         D3D12SyncHandle EndResourceUpload(bool WaitForCompletion);
 
         void Upload(const std::vector<D3D12_SUBRESOURCE_DATA>& Subresources, ID3D12Resource* Resource);
@@ -65,21 +65,26 @@ namespace RHI
 
     private:
         D3D12NodeMask     NodeMask;
-        D3D12CommandQueue GraphicsQueue;
-        D3D12CommandQueue AsyncComputeQueue;
-        D3D12CommandQueue CopyQueue1;
-        D3D12CommandQueue CopyQueue2;
-        D3D12Profiler     Profiler;
+        std::shared_ptr<D3D12CommandQueue> m_GraphicsQueue;
+        std::shared_ptr<D3D12CommandQueue> m_AsyncComputeQueue;
+        std::shared_ptr<D3D12CommandQueue> m_CopyQueue1;
+        std::shared_ptr<D3D12CommandQueue> m_CopyQueue2;
+        std::shared_ptr<D3D12Profiler>     m_Profiler;
 
-        CDescriptorHeapManager RtvHeapManager;
-        CDescriptorHeapManager DsvHeapManager;
-        D3D12DescriptorHeap    ResourceDescriptorHeap;
-        D3D12DescriptorHeap    SamplerDescriptorHeap;
+        //CDescriptorHeapManager RtvHeapManager;
+        //CDescriptorHeapManager DsvHeapManager;
+        //D3D12DescriptorHeap    ResourceDescriptorHeap;
+        //D3D12DescriptorHeap    SamplerDescriptorHeap;
 
-        std::vector<D3D12CommandContext> AvailableCommandContexts;
-        std::vector<D3D12CommandContext> AvailableAsyncCommandContexts;
-        D3D12CommandContext              CopyContext1;
-        D3D12CommandContext              CopyContext2;
+        std::shared_ptr<CPUDescriptorHeap> m_RtvDescriptorHeaps;
+        std::shared_ptr<CPUDescriptorHeap> m_DsvDescriptorHeaps;
+        std::shared_ptr<GPUDescriptorHeap> m_ResourceDescriptorHeap; // D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV
+        std::shared_ptr<GPUDescriptorHeap> m_SamplerDescriptorHeap;  // D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER
+
+        std::vector<std::shared_ptr<D3D12CommandContext>> m_AvailableCommandContexts;
+        std::vector<std::shared_ptr<D3D12CommandContext>> m_AvailableAsyncCommandContexts;
+        std::shared_ptr<D3D12CommandContext>              m_CopyContext1;
+        std::shared_ptr<D3D12CommandContext>              m_CopyContext2;
 
         struct ResourceAllocationInfoTable
         {

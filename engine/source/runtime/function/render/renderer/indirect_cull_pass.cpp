@@ -61,20 +61,13 @@ namespace Pilot
                                                      D3D12_RESOURCE_STATE_GENERIC_READ);
 
         // for sort
-        int argNumber = 22 * 23 / 2;
-        
         pSortDispatchArgs = RHI::D3D12Buffer::Create(m_Device->GetLinkedDevice(),
                                                      RHI::RHIBufferTargetIndirectArgs | RHI::RHIBufferRandomReadWrite | RHI::RHIBufferTargetRaw,
-                                                     argNumber,
+                                                     22 * 23 / 2,
                                                      sizeof(D3D12_DISPATCH_ARGUMENTS),
                                                      L"SortDispatchArgs",
                                                      RHI::RHIBufferModeImmutable,
                                                      D3D12_RESOURCE_STATE_GENERIC_READ);
-
-        HLSL::MeshPerframeStorageBufferObject* pPerframeObj =
-            pUploadPerframeBuffer->GetCpuVirtualAddress<HLSL::MeshPerframeStorageBufferObject>();
-        HLSL::MaterialInstance* pMaterialObj = pUploadMaterialBuffer->GetCpuVirtualAddress<HLSL::MaterialInstance>();
-        HLSL::MeshInstance*     pMeshesObj   = pUploadMeshBuffer->GetCpuVirtualAddress<HLSL::MeshInstance>();
 
         // buffer for opaque draw
         {

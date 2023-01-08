@@ -176,7 +176,7 @@ struct RootSignatures
             RHI::RootSignatureDesc rootSigDesc =
                 RHI::RootSignatureDesc()
                     .Add32BitConstants<0, 0>(1)
-                    .AddSampler<10, 0>(D3D12_FILTER::D3D12_FILTER_ANISOTROPIC,
+                    .AddStaticSampler<10, 0>(D3D12_FILTER::D3D12_FILTER_ANISOTROPIC,
                                        D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_WRAP,
                                        8)
                     .AllowResourceDescriptorHeapIndexing()
@@ -231,10 +231,10 @@ struct RootSignatures
                     .AddConstantBufferView<1, 0>()
                     .AddShaderResourceView<0, 0>()
                     .AddShaderResourceView<1, 0>()
-                    .AddSampler<10, 0>(D3D12_FILTER::D3D12_FILTER_ANISOTROPIC,
+                    .AddStaticSampler<10, 0>(D3D12_FILTER::D3D12_FILTER_ANISOTROPIC,
                                        D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_WRAP,
                                        8)
-                    .AddSampler<11, 0>(D3D12_FILTER::D3D12_FILTER_COMPARISON_ANISOTROPIC,
+                    .AddStaticSampler<11, 0>(D3D12_FILTER::D3D12_FILTER_COMPARISON_ANISOTROPIC,
                                        D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
                                        8,
                                        D3D12_COMPARISON_FUNC::D3D12_COMPARISON_FUNC_GREATER_EQUAL,
@@ -253,7 +253,7 @@ struct RootSignatures
                     .AddConstantBufferView<1, 0>()
                     .AddShaderResourceView<0, 0>()
                     .AddShaderResourceView<1, 0>()
-                    .AddSampler<10, 0>(D3D12_FILTER::D3D12_FILTER_ANISOTROPIC,
+                    .AddStaticSampler<10, 0>(D3D12_FILTER::D3D12_FILTER_ANISOTROPIC,
                                        D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_WRAP,
                                        8)
                     .AllowInputLayout()
@@ -270,7 +270,7 @@ struct RootSignatures
                     .AddConstantBufferView<1, 0>()
                     .AddShaderResourceView<0, 0>()
                     .AddShaderResourceView<1, 0>()
-                    .AddSampler<10, 0>(D3D12_FILTER::D3D12_FILTER_ANISOTROPIC,
+                    .AddStaticSampler<10, 0>(D3D12_FILTER::D3D12_FILTER_ANISOTROPIC,
                                        D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_WRAP,
                                        8)
                     .AllowInputLayout()

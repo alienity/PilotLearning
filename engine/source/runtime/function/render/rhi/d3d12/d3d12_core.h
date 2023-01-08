@@ -702,6 +702,7 @@ namespace RHI
             return *this;
         }
 
+        // 根据Fence是否为空，来判断当前SyncHandle是否是可用的，不可用的时候可以不做检查直接把对象给释放掉
         explicit operator bool() const noexcept;
 
         [[nodiscard]] auto GetValue() const noexcept -> UINT64;

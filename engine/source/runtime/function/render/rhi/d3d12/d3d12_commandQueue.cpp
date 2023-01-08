@@ -78,7 +78,7 @@ namespace RHI
         if (WaitForCompletion)
         {
             HostWaitForValue(FenceValue);
-            assert(SyncHandle.IsComplete());
+            ASSERT(SyncHandle.IsComplete());
         }
 
         return SyncHandle;
