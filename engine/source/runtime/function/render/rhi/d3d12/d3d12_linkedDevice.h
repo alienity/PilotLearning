@@ -63,18 +63,20 @@ namespace RHI
         void RemoveDebugResource(D3D12Resource* res);
         #endif
 
+        //-------------------------×ÊÔ´ÊÍ·Å--------------------------
+        void ReleaseResource(ID3D12Resource* Resource, RHID3D12CommandQueueType);
+        
+        //-----------------------------------------------------------
+
     private:
         D3D12NodeMask     NodeMask;
+        
         std::shared_ptr<D3D12CommandQueue> m_GraphicsQueue;
         std::shared_ptr<D3D12CommandQueue> m_AsyncComputeQueue;
         std::shared_ptr<D3D12CommandQueue> m_CopyQueue1;
         std::shared_ptr<D3D12CommandQueue> m_CopyQueue2;
-        std::shared_ptr<D3D12Profiler>     m_Profiler;
 
-        //CDescriptorHeapManager RtvHeapManager;
-        //CDescriptorHeapManager DsvHeapManager;
-        //D3D12DescriptorHeap    ResourceDescriptorHeap;
-        //D3D12DescriptorHeap    SamplerDescriptorHeap;
+        std::shared_ptr<D3D12Profiler> m_Profiler;
 
         std::shared_ptr<CPUDescriptorHeap> m_RtvDescriptorHeaps;
         std::shared_ptr<CPUDescriptorHeap> m_DsvDescriptorHeaps;
@@ -98,5 +100,17 @@ namespace RHI
         #ifdef _DEBUG
         std::vector<D3D12Resource*> m_DebugResources;
         #endif
+
+        struct ActiveSharedData
+        {
+            UINT m_Fence;
+
+            std::vector<DescriptorHeapAllocation> m_DynamicDescriptorHeapAllocations;
+            std::vector<DescriptorHeapAllocation> m_RetiredDescriptorHeapAllocations;
+            std::vector<D3D12Resource*>           m_RetiredResource;
+        };
+
+        // FrameData[MAXFRAME]
+
     };
 }

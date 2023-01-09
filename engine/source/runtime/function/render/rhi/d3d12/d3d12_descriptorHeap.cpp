@@ -204,11 +204,11 @@ namespace RHI
         {}
     }
 
-    void DescriptorHeapAllocation::ReleaseDescriptorHeapAllocation(UINT32 FenceValue)
+    void DescriptorHeapAllocation::ReleaseDescriptorHeapAllocation()
     {
         if (!IsNull() && m_pAllocator)
         {
-            m_pAllocator->Free(std::move(*this), FenceValue);
+            m_pAllocator->Free(std::move(*this));
             // Allocation must have been disposed by the allocator
             ASSERT(IsNull(), "Non-null descriptor is being destroyed");
         }
@@ -404,28 +404,12 @@ namespace RHI
         return Allocation;
     }
 
-    void CPUDescriptorHeap::Free(DescriptorHeapAllocation&& Allocation, UINT32 FenceValue)
+    void CPUDescriptorHeap::Free(DescriptorHeapAllocation&& Allocation)
     {
-        m_RetiredAllocationPairs.push_back(std::make_pair(FenceValue, std::move(Allocation)));
+        this->FreeAllocation(std::move(Allocation));
     }
 
-    void CPUDescriptorHeap::CleanUp(UINT32 FenceValue)
-    {
-        for (auto it = m_RetiredAllocationPairs.begin(); it != m_RetiredAllocationPairs.end();)
-        {
-            if (it->first <= FenceValue)
-            {
-                this->FreeAllocation(std::move(it->second), FenceValue);
-                it = m_RetiredAllocationPairs.erase(it);
-            }
-            else
-            {
-                ++it;
-            }
-        }
-    }
-
-    void CPUDescriptorHeap::FreeAllocation(DescriptorHeapAllocation&& Allocation, UINT32 FenceValue)
+    void CPUDescriptorHeap::FreeAllocation(DescriptorHeapAllocation&& Allocation)
     {
         std::lock_guard<std::mutex> LockGuard(m_HeapPoolMutex);
         auto ManagerId = Allocation.GetAllocationManagerId();
@@ -458,46 +442,18 @@ namespace RHI
         return m_HeapAllocationManager.Allocate(Count);
     }
 
-	void GPUDescriptorHeap::Free(DescriptorHeapAllocation&& Allocation, UINT32 FenceValue)
+	void GPUDescriptorHeap::Free(DescriptorHeapAllocation&& Allocation)
     {
         auto MgrId = Allocation.GetAllocationManagerId();
         ASSERT(MgrId == 0 || MgrId == 1, "Unexpected allocation manager ID");
 
         if (MgrId == 0)
         {
-            m_RetiredHeapAllocationPairs.push_back(std::make_pair(FenceValue, std::move(Allocation)));
+            m_HeapAllocationManager.FreeAllocation(std::move(Allocation));
         }
         else
         {
-            m_RetiredDynamicAllocationPairs.push_back(std::make_pair(FenceValue, std::move(Allocation)));
-        }
-    }
-
-	void GPUDescriptorHeap::CleanUp(UINT32 FenceValue)
-    {
-        for (auto it = m_RetiredHeapAllocationPairs.begin(); it != m_RetiredHeapAllocationPairs.end();)
-        {
-            if (it->first <= FenceValue)
-            {
-                this->m_HeapAllocationManager.FreeAllocation(std::move(it->second));
-                it = m_RetiredHeapAllocationPairs.erase(it);
-            }
-            else
-            {
-                ++it;
-            }
-        }
-        for (auto it = m_RetiredDynamicAllocationPairs.begin(); it != m_RetiredDynamicAllocationPairs.end();)
-        {
-            if (it->first <= FenceValue)
-            {
-                this->m_DynamicAllocationsManager.FreeAllocation(std::move(it->second));
-                it = m_RetiredDynamicAllocationPairs.erase(it);
-            }
-            else
-            {
-                ++it;
-            }
+            m_DynamicAllocationsManager.FreeAllocation(std::move(Allocation));
         }
     }
 
@@ -564,276 +520,14 @@ namespace RHI
         return Allocation;
     }
 
-    void DynamicSuballocationsManager::Free(DescriptorHeapAllocation&& Allocation, UINT32 FenceValue)
+    void DynamicSuballocationsManager::Free(DescriptorHeapAllocation&& Allocation)
     {
         // Do nothing. Dynamic allocations are not disposed individually, but as whole chunks
         // at the end of the frame by ReleaseAllocations()
         Allocation.Reset();
     }
 
-    void DynamicSuballocationsManager::CleanUp(UINT32 FenceValue)
-    {
-        ASSERT(
-            "Useless Function",
-            "The descriptors are pushed back to the parent descriptor heap, then released at the end of the frame");
-
-        // Clear the list and dispose all allocated chunks of GPU descriptor heap.
-        // The chunks will be added to release queues and eventually returned to the
-        // parent GPU heap.
-        for (auto& Allocation : m_Suballocations)
-        {
-            m_ParentGPUHeap->Free(std::move(Allocation), FenceValue);
-        }
-        m_Suballocations.clear();
-        m_CurrDescriptorCount         = 0;
-        m_CurrSuballocationsTotalSize = 0;
-    };
-
     UINT32 DynamicSuballocationsManager::GetDescriptorSize() const { return m_ParentGPUHeap->GetDescriptorSize(); }
-
-    
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-//    static Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> CreateDescriptorHeap(ID3D12Device*               Device,
-//                                                                             D3D12_DESCRIPTOR_HEAP_TYPE  Type,
-//                                                                             std::uint32_t               NumDescriptors,
-//                                                                             D3D12_DESCRIPTOR_HEAP_FLAGS Flags,
-//                                                                             std::uint32_t               NodeMask)
-//    {
-//        Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> DescriptorHeap;
-//        D3D12_DESCRIPTOR_HEAP_DESC                   Desc = {Type, NumDescriptors, Flags, NodeMask};
-//        VERIFY_D3D12_API(Device->CreateDescriptorHeap(&Desc, IID_PPV_ARGS(&DescriptorHeap)));
-//        return DescriptorHeap;
-//    }
-//
-//    // clang-format off
-//    D3D12DescriptorHeap::D3D12DescriptorHeap(D3D12LinkedDevice*         Parent,
-//                                             D3D12_DESCRIPTOR_HEAP_TYPE Type,
-//                                             UINT                       NumDescriptors)
-//        : D3D12LinkedDeviceChild(Parent)
-//        , m_DescriptorHeap(CreateDescriptorHeap(Parent->GetDevice(),
-//                                            Type,
-//                                            NumDescriptors,
-//                                            D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE,
-//                                            Parent->GetNodeMask()))
-//        , m_Desc(m_DescriptorHeap->GetDesc())
-//        , m_CpuBaseAddress(m_DescriptorHeap->GetCPUDescriptorHandleForHeapStart())
-//        , m_GpuBaseAddress(m_DescriptorHeap->GetGPUDescriptorHandleForHeapStart())
-//        , m_DescriptorSize(Parent->GetParentDevice()->GetSizeOfDescriptor(Type))
-//    {}
-//    // clang-format on
-//
-//	void D3D12DescriptorHeap::Allocate(D3D12_CPU_DESCRIPTOR_HANDLE& CpuDescriptorHandle,
-//                                       D3D12_GPU_DESCRIPTOR_HANDLE& GpuDescriptorHandle,
-//                                       UINT&                        Index)
-//    {
-//        std::lock_guard<std::mutex> Guard(m_Mutex);
-//        Index               = m_IndexPool.Allocate();
-//        CpuDescriptorHandle = this->GetCpuDescriptorHandle(Index);
-//        GpuDescriptorHandle = this->GetGpuDescriptorHandle(Index);
-//    }
-//
-//	void D3D12DescriptorHeap::Release(UINT Index)
-//    {
-//        std::lock_guard<std::mutex> Guard(m_Mutex);
-//        m_IndexPool.Release(Index);
-//    }
-//
-//	D3D12_CPU_DESCRIPTOR_HANDLE D3D12DescriptorHeap::GetCpuDescriptorHandle(UINT Index) const noexcept
-//    {
-//        return CD3DX12_CPU_DESCRIPTOR_HANDLE(m_CpuBaseAddress, static_cast<INT>(Index), m_DescriptorSize);
-//    }
-//
-//    D3D12_GPU_DESCRIPTOR_HANDLE D3D12DescriptorHeap::GetGpuDescriptorHandle(UINT Index) const noexcept
-//    {
-//        return CD3DX12_GPU_DESCRIPTOR_HANDLE(m_GpuBaseAddress, static_cast<INT>(Index), m_DescriptorSize);
-//    }
-//
-//    // clang-format off
-//	CDescriptorHeapManager::CDescriptorHeapManager(D3D12LinkedDevice*         Parent,
-//                                                   D3D12_DESCRIPTOR_HEAP_TYPE Type,
-//                                                   UINT                       PageSize)
-//        : D3D12LinkedDeviceChild(Parent)
-//        , m_Desc({Type, PageSize, D3D12_DESCRIPTOR_HEAP_FLAG_NONE, Parent->GetNodeMask()})
-//        , m_DescriptorSize(Parent->GetParentDevice()->GetSizeOfDescriptor(Type))
-//    {}
-//    // clang-format on
-//
-//    D3D12_CPU_DESCRIPTOR_HANDLE CDescriptorHeapManager::AllocateHeapSlot(UINT& OutDescriptorHeapIndex)
-//    {
-//        std::lock_guard<std::mutex> Guard(m_Mutex);
-//
-//        if (m_FreeHeaps.empty())
-//        {
-//            AllocateHeap(); // throw( _com_error )
-//        }
-//        ASSERT(!m_FreeHeaps.empty());
-//        UINT        Index     = m_FreeHeaps.front();
-//        SHeapEntry& HeapEntry = m_Heaps[Index];
-//        ASSERT(!HeapEntry.m_FreeList.empty());
-//        SFreeRange&                 Range = *HeapEntry.m_FreeList.begin();
-//        D3D12_CPU_DESCRIPTOR_HANDLE Ret   = {Range.m_Start};
-//        Range.m_Start += m_DescriptorSize;
-//
-//        if (Range.m_Start == Range.m_End)
-//        {
-//            HeapEntry.m_FreeList.pop_front();
-//            if (HeapEntry.m_FreeList.empty())
-//            {
-//                m_FreeHeaps.pop_front();
-//            }
-//        }
-//        OutDescriptorHeapIndex = Index;
-//        return Ret;
-//    }
-//
-//void CDescriptorHeapManager::FreeHeapSlot(D3D12_CPU_DESCRIPTOR_HANDLE Offset, UINT DescriptorHeapIndex) noexcept
-//    {
-//        std::lock_guard<std::mutex> Guard(m_Mutex);
-//        try
-//        {
-//            ASSERT(DescriptorHeapIndex < m_Heaps.size());
-//            SHeapEntry& HeapEntry = m_Heaps[DescriptorHeapIndex];
-//
-//            SFreeRange NewRange = {Offset.ptr, Offset.ptr + m_DescriptorSize};
-//
-//            bool bFound = false;
-//            for (auto Iter = HeapEntry.m_FreeList.begin(), m_End = HeapEntry.m_FreeList.end(); Iter != m_End && !bFound;
-//                 ++Iter)
-//            {
-//                SFreeRange& Range = *Iter;
-//                ASSERT(Range.m_Start <= Range.m_End);
-//                if (Range.m_Start == Offset.ptr + m_DescriptorSize)
-//                {
-//                    Range.m_Start = Offset.ptr;
-//                    bFound      = true;
-//                }
-//                else if (Range.m_End == Offset.ptr)
-//                {
-//                    Range.m_End += m_DescriptorSize;
-//                    bFound = true;
-//                }
-//                else
-//                {
-//                    ASSERT(Range.m_End < Offset.ptr || Range.m_Start > Offset.ptr);
-//                    if (Range.m_Start > Offset.ptr)
-//                    {
-//                        HeapEntry.m_FreeList.insert(Iter, NewRange); // throw( bad_alloc )
-//                        bFound = true;
-//                    }
-//                }
-//            }
-//
-//            if (!bFound)
-//            {
-//                if (HeapEntry.m_FreeList.empty())
-//                {
-//                    m_FreeHeaps.push_back(DescriptorHeapIndex); // throw( bad_alloc )
-//                }
-//                HeapEntry.m_FreeList.push_back(NewRange); // throw( bad_alloc )
-//            }
-//        }
-//        catch (std::bad_alloc&)
-//        {
-//            // Do nothing - there will be slots that can no longer be reclaimed.
-//        }
-//    }
-//
-//	void CDescriptorHeapManager::AllocateHeap()
-//    {
-//        SHeapEntry NewEntry;
-//        VERIFY_D3D12_API(Parent->GetDevice()->CreateDescriptorHeap(&m_Desc, IID_PPV_ARGS(&NewEntry.m_DescriptorHeap)));
-//        D3D12_CPU_DESCRIPTOR_HANDLE HeapBase = NewEntry.m_DescriptorHeap->GetCPUDescriptorHandleForHeapStart();
-//        NewEntry.m_FreeList.push_back({HeapBase.ptr,
-//                                       HeapBase.ptr + static_cast<SIZE_T>(m_Desc.NumDescriptors) *
-//                                                          static_cast<SIZE_T>(m_DescriptorSize)}); // throw( bad_alloc )
-//
-//        m_Heaps.emplace_back(std::move(NewEntry));                    // throw( bad_alloc )
-//        m_FreeHeaps.push_back(static_cast<UINT>(m_Heaps.size() - 1)); // throw( bad_alloc )
-//    }
 
 }
 

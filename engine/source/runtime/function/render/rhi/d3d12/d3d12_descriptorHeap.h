@@ -17,6 +17,7 @@ namespace RHI
     class GPUDescriptorHeap;
     class DynamicSuballocationsManager;
     class DescriptorManager;
+    class DescriptorHandle;
 
     // The class handles free memory block management to accommodate variable-size allocation requests.
     // It keeps track of free blocks only and does not record allocation sizes. The class uses two ordered maps
@@ -156,10 +157,9 @@ namespace RHI
         IDescriptorAllocator(D3D12LinkedDevice* Parent) : D3D12LinkedDeviceChild(Parent) {}
 
         // Allocate Count descriptors
-        virtual DescriptorHeapAllocation Allocate(uint32_t Count)                                                = 0;
-        virtual void                     Free(DescriptorHeapAllocation&& Allocation, D3D12SyncHandle SyncHandle) = 0;
-        virtual UINT32                   GetDescriptorSize() const                                               = 0;
-        virtual void CleanUp(UINT32 FenceValue) = 0;
+        virtual DescriptorHeapAllocation Allocate(uint32_t Count)                    = 0;
+        virtual void                     Free(DescriptorHeapAllocation&& Allocation) = 0;
+        virtual UINT32                   GetDescriptorSize() const                   = 0;
     };
     
     // The class represents descriptor heap allocation (continuous descriptor range in a descriptor heap)
@@ -253,12 +253,12 @@ namespace RHI
         DescriptorHeapAllocation& operator=(const DescriptorHeapAllocation&) = delete;
         // clang-format on
 
-        void ReleaseDescriptorHeapAllocation(UINT32 FenceValue);
+        void ReleaseDescriptorHeapAllocation();
 
         // Destructor automatically releases this allocation through the allocator
         ~DescriptorHeapAllocation()
         {
-            this->ReleaseDescriptorHeapAllocation(0);
+            this->ReleaseDescriptorHeapAllocation();
         }
 
         // Returns CPU descriptor handle at the specified offset
@@ -490,15 +490,12 @@ namespace RHI
         }
 
         virtual DescriptorHeapAllocation Allocate(uint32_t Count) override final;
-        virtual void                     Free(DescriptorHeapAllocation&& Allocation, UINT32 FenceValue) override final;
+        virtual void                     Free(DescriptorHeapAllocation&& Allocation) override final;
         virtual UINT32                   GetDescriptorSize() const override final { return m_DescriptorSize; }
-        virtual void                     CleanUp(UINT32 FenceValue) override final;
 
     private:
-        void FreeAllocation(DescriptorHeapAllocation&& Allocation, UINT32 FenceValue);
+        void FreeAllocation(DescriptorHeapAllocation&& Allocation);
 
-        // Retired DescriptorHeapAllocations and FenceValue pairs
-        std::list<std::pair<UINT32, DescriptorHeapAllocation>> m_RetiredAllocationPairs;
         // Pool of descriptor heap managers
         std::mutex                                   m_HeapPoolMutex;
         std::vector<DescriptorHeapAllocationManager> m_HeapPool;
@@ -577,10 +574,8 @@ namespace RHI
         }
 
         virtual DescriptorHeapAllocation Allocate(uint32_t Count) override final;
-
-        virtual void   Free(DescriptorHeapAllocation&& Allocation, UINT32 FenceValue) override final;
-        virtual void   CleanUp(UINT32 FenceValue) override final;
-        virtual UINT32 GetDescriptorSize() const override final;
+        virtual void                     Free(DescriptorHeapAllocation&& Allocation) override final;
+        virtual UINT32                   GetDescriptorSize() const override final;
 
         DescriptorHeapAllocation AllocateDynamic(uint32_t Count);
 
@@ -598,13 +593,9 @@ namespace RHI
 
         // Allocation manager for static/mutable part
         DescriptorHeapAllocationManager m_HeapAllocationManager;
-        // Retired DescriptorHeapAllocations and FenceValue pairs
-        std::vector<std::pair<UINT32, DescriptorHeapAllocation>> m_RetiredHeapAllocationPairs;
 
         // Allocation manager for dynamic part
         DescriptorHeapAllocationManager m_DynamicAllocationsManager;
-        // Retired DescriptorHeapAllocations and FenceValue pairs
-        std::vector<std::pair<UINT32, DescriptorHeapAllocation>> m_RetiredDynamicAllocationPairs;
     };
 
     // The class facilitates allocation of dynamic descriptor handles. It requests a chunk of heap
@@ -645,11 +636,8 @@ namespace RHI
         */
 
         virtual DescriptorHeapAllocation Allocate(UINT32 Count) override final;
-        virtual void                     Free(DescriptorHeapAllocation&& Allocation, UINT32 FenceValue) override final;
-
-        void CleanUp(UINT32 FenceValue) override final;
-
-        virtual UINT32 GetDescriptorSize() const override final;
+        virtual void                     Free(DescriptorHeapAllocation&& Allocation) override final;
+        virtual UINT32                   GetDescriptorSize() const override final;
 
         inline size_t GetSuballocationCount() const { return m_Suballocations.size(); }
 
@@ -671,207 +659,47 @@ namespace RHI
         UINT32 m_PeakSuballocationsTotalSize = 0;
     };
 
-    class DescriptorManager final : public D3D12LinkedDeviceChild
+// This handle refers to a descriptor or a descriptor table (contiguous descriptors) that is shader visible.
+    class DescriptorHandle
     {
     public:
-        DescriptorManager(D3D12LinkedDevice* Parent);
-        ~DescriptorManager();
+        DescriptorHandle()
+        {
+            m_CpuHandle.ptr = D3D12_GPU_VIRTUAL_ADDRESS_UNKNOWN;
+            m_GpuHandle.ptr = D3D12_GPU_VIRTUAL_ADDRESS_UNKNOWN;
+        }
 
-        // 给新buffer或者texture申请存descriptor的
-        DescriptorHeapAllocation AllocateDescriptor(IN D3D12_DESCRIPTOR_HEAP_TYPE Type, IN UINT Count = 1);
-        DescriptorHeapAllocation AllocateGPUDescriptor(IN D3D12_DESCRIPTOR_HEAP_TYPE Type, IN UINT Count /*= 1*/);
-        // 最后在pass绘制中，把cpuvisible的descriptor拷贝到这个申请的chunk中，完成绘制后一并释放掉
-        DescriptorHeapAllocation AllocateDynamicGPUVisibleDescriptor(IN D3D12_DESCRIPTOR_HEAP_TYPE Type, IN UINT Count = 1);
+        DescriptorHandle(D3D12_CPU_DESCRIPTOR_HANDLE CpuHandle, D3D12_GPU_DESCRIPTOR_HANDLE GpuHandle) :
+            m_CpuHandle(CpuHandle), m_GpuHandle(GpuHandle)
+        {}
 
-        // 把资源根据CommandQueue的ID回收到缓存队列中
-        virtual void Retire(IN int commandQueueID, IN DescriptorHeapAllocation&& descAllocation);
-        // 在pass结束的时候需要把缓存帧中的资源先释放掉
-        virtual void CleanRetiredDescriptors(IN int commandQueueID, IN int fenceValue);
-        // 只是提供一个对称的释放接口，避免执行玩了之后忘记
-        void Free(IN DescriptorHeapAllocation&& Allocation, IN UINT32 FenceValue);
-        // 只是提供一个统一的清理接口，避免忘记
-        void CleanUp(IN UINT32 FenceValue);
-        // 优先使用该方法，在pass结束的手动调用根据pass的commandQueue的ID进行释放
-        void CleanUp(IN int CommandQueueID, IN UINT32 FenceValue);
+        DescriptorHandle operator+(INT OffsetScaledByDescriptorSize) const
+        {
+            DescriptorHandle ret = *this;
+            ret += OffsetScaledByDescriptorSize;
+            return ret;
+        }
+
+        void operator+=(INT OffsetScaledByDescriptorSize)
+        {
+            if (m_CpuHandle.ptr != D3D12_GPU_VIRTUAL_ADDRESS_UNKNOWN)
+                m_CpuHandle.ptr += OffsetScaledByDescriptorSize;
+            if (m_GpuHandle.ptr != D3D12_GPU_VIRTUAL_ADDRESS_UNKNOWN)
+                m_GpuHandle.ptr += OffsetScaledByDescriptorSize;
+        }
+
+        inline const D3D12_CPU_DESCRIPTOR_HANDLE* operator&() const { return &m_CpuHandle; }
+                                                  operator D3D12_CPU_DESCRIPTOR_HANDLE() const { return m_CpuHandle; }
+                                                  operator D3D12_GPU_DESCRIPTOR_HANDLE() const { return m_GpuHandle; }
+
+        inline size_t   GetCpuPtr() const { return m_CpuHandle.ptr; }
+        inline uint64_t GetGpuPtr() const { return m_GpuHandle.ptr; }
+        inline bool     IsNull() const { return m_CpuHandle.ptr == D3D12_GPU_VIRTUAL_ADDRESS_UNKNOWN; }
+        inline bool     IsShaderVisible() const { return m_GpuHandle.ptr != D3D12_GPU_VIRTUAL_ADDRESS_UNKNOWN; }
 
     private:
-        CPUDescriptorHeap* m_CPUDescriptorHeaps[D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES];
-        GPUDescriptorHeap* m_GPUDescriptorHeaps[2]; // D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV == 0
-                                                    // D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER     == 1
-        // Every context must use its own allocator that maintains individual list of retired descriptor heaps to
-        // avoid interference with other command contexts
-        // The allocations in heaps are discarded at the end of the frame.
-        DynamicSuballocationsManager* m_DynamicGPUDescriptorAllocator[2];
-
-        // 根据CommandQueue的ID缓存的Descriptors
-        std::list<std::pair<int, DescriptorHeapAllocation>> m_RetiredDescriptorAllocations;
+        D3D12_CPU_DESCRIPTOR_HANDLE m_CpuHandle;
+        D3D12_GPU_DESCRIPTOR_HANDLE m_GpuHandle;
     };
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
- //   struct DescriptorIndexPool
- //   {
- //       // Removes the first element from the free list and returns its index
- //       UINT Allocate()
- //       {
- //           UINT NewIndex;
- //           if (!m_IndexQueue.empty())
- //           {
- //               NewIndex = m_IndexQueue.front();
- //               m_IndexQueue.pop();
- //           }
- //           else
- //           {
- //               NewIndex = m_Index++;
- //           }
- //           return NewIndex;
- //       }
-
- //       void Release(UINT Index) { m_IndexQueue.push(Index); }
-
- //       std::queue<UINT> m_IndexQueue;
- //       UINT             m_Index = 0;
- //   };
-
- //   // Dynamic resource binding heap, descriptor index are maintained in a free list
- //   class D3D12DescriptorHeap : public D3D12LinkedDeviceChild
- //   {
- //   public:
- //       explicit D3D12DescriptorHeap(D3D12LinkedDevice* Parent, D3D12_DESCRIPTOR_HEAP_TYPE Type, UINT NumDescriptors);
-
- //       void SetName(LPCWSTR Name) const { m_DescriptorHeap->SetName(Name); }
-
- //       operator ID3D12DescriptorHeap*() const noexcept { return m_DescriptorHeap.Get(); }
-
- //       void Allocate(D3D12_CPU_DESCRIPTOR_HANDLE& CpuDescriptorHandle,
- //                     D3D12_GPU_DESCRIPTOR_HANDLE& GpuDescriptorHandle,
- //                     UINT&                        Index);
-
- //       void Release(UINT Index);
-
- //       DescriptorHandle Allocate(uint32_t Count = 1);
-
-
- //       [[nodiscard]] D3D12_CPU_DESCRIPTOR_HANDLE GetCpuDescriptorHandle(UINT Index) const noexcept;
- //       [[nodiscard]] D3D12_GPU_DESCRIPTOR_HANDLE GetGpuDescriptorHandle(UINT Index) const noexcept;
-
- //   private:
- //       Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> m_DescriptorHeap;
- //       D3D12_DESCRIPTOR_HEAP_DESC                   m_Desc;
- //       D3D12_CPU_DESCRIPTOR_HANDLE                  m_CpuBaseAddress = {};
- //       D3D12_GPU_DESCRIPTOR_HANDLE                  m_GpuBaseAddress = {};
- //       UINT                                         m_DescriptorSize = 0;
-
- //       DescriptorIndexPool m_IndexPool;
- //       std::mutex          m_Mutex;
- //   };
-
-	//// Used for RTV/DSV Heaps
- //   class CDescriptorHeapManager : public D3D12LinkedDeviceChild
- //   {
- //   public: // Types
- //       using HeapOffsetRaw = decltype(D3D12_CPU_DESCRIPTOR_HANDLE::ptr);
-
- //   private: // Types
- //       struct SFreeRange
- //       {
- //           HeapOffsetRaw m_Start;
- //           HeapOffsetRaw m_End;
- //       };
- //       struct SHeapEntry
- //       {
- //           Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> m_DescriptorHeap;
- //           std::list<SFreeRange>                        m_FreeList;
- //       };
-
- //       // Note: This data structure relies on the pointer validity guarantee of std::deque,
- //       // that as long as inserts/deletes are only on either end of the container, pointers
- //       // to elements continue to be valid. If trimming becomes an option, the free heap
- //       // list must be re-generated at that time.
- //       using THeapMap = std::deque<SHeapEntry>;
-
- //   public: // Methods
- //       explicit CDescriptorHeapManager(D3D12LinkedDevice* Parent, D3D12_DESCRIPTOR_HEAP_TYPE Type, UINT PageSize);
-
- //       D3D12_CPU_DESCRIPTOR_HANDLE AllocateHeapSlot(UINT& OutDescriptorHeapIndex);
-
- //       void FreeHeapSlot(D3D12_CPU_DESCRIPTOR_HANDLE Offset, UINT DescriptorHeapIndex) noexcept;
-
- //   private: // Methods
- //       void AllocateHeap();
-
- //   private: // Members
- //       const D3D12_DESCRIPTOR_HEAP_DESC m_Desc;
- //       const UINT                       m_DescriptorSize;
- //       std::mutex                       m_Mutex;
-
- //       THeapMap        m_Heaps;
- //       std::list<UINT> m_FreeHeaps;
- //   };
 
 }

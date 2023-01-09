@@ -6,77 +6,12 @@ namespace RHI
     // DynamicDescriptorHeap Implementation
     //
 
-    std::mutex                                                DynamicDescriptorHeap::sm_Mutex;
-    std::vector<Microsoft::WRL::ComPtr<ID3D12DescriptorHeap>> DynamicDescriptorHeap::sm_DescriptorHeapPool[2];
-    std::queue<std::pair<uint64_t, ID3D12DescriptorHeap*>>    DynamicDescriptorHeap::sm_RetiredDescriptorHeaps[2];
-    std::queue<ID3D12DescriptorHeap*>                         DynamicDescriptorHeap::sm_AvailableDescriptorHeaps[2];
+    std::mutex DynamicDescriptorHeap::sm_Mutex;
 
-    ID3D12DescriptorHeap* DynamicDescriptorHeap::RequestDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE HeapType)
-    {
-        std::lock_guard<std::mutex> LockGuard(sm_Mutex);
-
-        uint32_t idx = HeapType == D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER ? 1 : 0;
-
-        while (!sm_RetiredDescriptorHeaps[idx].empty() &&
-               g_CommandManager.IsFenceComplete(sm_RetiredDescriptorHeaps[idx].front().first))
-        {
-            sm_AvailableDescriptorHeaps[idx].push(sm_RetiredDescriptorHeaps[idx].front().second);
-            sm_RetiredDescriptorHeaps[idx].pop();
-        }
-
-        if (!sm_AvailableDescriptorHeaps[idx].empty())
-        {
-            ID3D12DescriptorHeap* HeapPtr = sm_AvailableDescriptorHeaps[idx].front();
-            sm_AvailableDescriptorHeaps[idx].pop();
-            return HeapPtr;
-        }
-        else
-        {
-            D3D12_DESCRIPTOR_HEAP_DESC HeapDesc = {};
-            HeapDesc.Type                       = HeapType;
-            HeapDesc.NumDescriptors             = kNumDescriptorsPerHeap;
-            HeapDesc.Flags                      = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
-            HeapDesc.NodeMask                   = 1;
-            Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> HeapPtr;
-            ASSERT(g_Device->CreateDescriptorHeap(&HeapDesc, IID_PPV_ARGS(&HeapPtr)));
-            sm_DescriptorHeapPool[idx].emplace_back(HeapPtr);
-            return HeapPtr.Get();
-        }
-    }
-
-    void DynamicDescriptorHeap::DiscardDescriptorHeaps(D3D12_DESCRIPTOR_HEAP_TYPE                HeapType,
-                                                       uint64_t                                  FenceValue,
-                                                       const std::vector<ID3D12DescriptorHeap*>& UsedHeaps)
-    {
-        uint32_t                    idx = HeapType == D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER ? 1 : 0;
-        std::lock_guard<std::mutex> LockGuard(sm_Mutex);
-        for (auto iter = UsedHeaps.begin(); iter != UsedHeaps.end(); ++iter)
-            sm_RetiredDescriptorHeaps[idx].push(std::make_pair(FenceValue, *iter));
-    }
-
-    void DynamicDescriptorHeap::RetireCurrentHeap(void)
-    {
-        // Don't retire unused heaps.
-        if (m_CurrentOffset == 0)
-        {
-            ASSERT(m_CurrentHeapPtr == nullptr);
-            return;
-        }
-
-        ASSERT(m_CurrentHeapPtr != nullptr);
-        m_RetiredHeaps.push_back(m_CurrentHeapPtr);
-        m_CurrentHeapPtr = nullptr;
-        m_CurrentOffset  = 0;
-    }
-
-    void DynamicDescriptorHeap::RetireUsedHeaps(uint64_t fenceValue)
-    {
-        DiscardDescriptorHeaps(m_DescriptorType, fenceValue, m_RetiredHeaps);
-        m_RetiredHeaps.clear();
-    }
-
-    DynamicDescriptorHeap::DynamicDescriptorHeap(D3D12CommandContext&       OwningContext,
+    DynamicDescriptorHeap::DynamicDescriptorHeap(D3D12LinkedDevice*         Parent,
+                                                 D3D12CommandContext&       OwningContext,
                                                  D3D12_DESCRIPTOR_HEAP_TYPE HeapType) :
+        D3D12LinkedDeviceChild(Parent),
         m_OwningContext(OwningContext), m_DescriptorType(HeapType)
     {
         m_CurrentHeapPtr = nullptr;
@@ -86,10 +21,8 @@ namespace RHI
 
     DynamicDescriptorHeap::~DynamicDescriptorHeap() {}
 
-    void DynamicDescriptorHeap::CleanupUsedHeaps(uint64_t fenceValue)
+    void DynamicDescriptorHeap::CleanupUsedHeaps()
     {
-        RetireCurrentHeap();
-        RetireUsedHeaps(fenceValue);
         m_GraphicsHandleCache.ClearCache();
         m_ComputeHandleCache.ClearCache();
     }

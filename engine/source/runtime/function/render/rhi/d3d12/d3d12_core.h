@@ -624,7 +624,7 @@ namespace RHI
 
 namespace RHI
 {
-    enum class RHID3D12CommandQueueType
+    enum RHID3D12CommandQueueType
     {
         Direct,
         AsyncCompute,

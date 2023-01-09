@@ -14,19 +14,15 @@ namespace RHI
 	// This class is a linear allocation system for dynamically generated descriptor tables.  It internally caches
     // CPU descriptor handles so that when not enough space is available in the current heap, necessary descriptors
     // can be re-copied to the new heap.
-    class DynamicDescriptorHeap
+    class DynamicDescriptorHeap : public D3D12LinkedDeviceChild
     {
     public:
-        DynamicDescriptorHeap(D3D12CommandContext& OwningContext, D3D12_DESCRIPTOR_HEAP_TYPE HeapType);
+        DynamicDescriptorHeap(D3D12LinkedDevice*         Parent,
+                              D3D12CommandContext&       OwningContext,
+                              D3D12_DESCRIPTOR_HEAP_TYPE HeapType);
         ~DynamicDescriptorHeap();
 
-        static void DestroyAll(void)
-        {
-            sm_DescriptorHeapPool[0].clear();
-            sm_DescriptorHeapPool[1].clear();
-        }
-
-        void CleanupUsedHeaps(uint64_t fenceValue);
+        void CleanupUsedHeaps();
 
         // Copy multiple handles into the cache area reserved for the specified root parameter.
         void SetGraphicsDescriptorHandles(UINT                              RootIndex,
@@ -76,34 +72,24 @@ namespace RHI
 
     private:
         // Static members
-        static const uint32_t                                            kNumDescriptorsPerHeap = 1024;
-        static std::mutex                                                sm_Mutex;
-        static std::vector<Microsoft::WRL::ComPtr<ID3D12DescriptorHeap>> sm_DescriptorHeapPool[2];
-        static std::queue<std::pair<uint64_t, ID3D12DescriptorHeap*>>    sm_RetiredDescriptorHeaps[2];
-        static std::queue<ID3D12DescriptorHeap*>                         sm_AvailableDescriptorHeaps[2];
-
-        // Static methods
-        static ID3D12DescriptorHeap* RequestDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE HeapType);
-        static void                  DiscardDescriptorHeaps(D3D12_DESCRIPTOR_HEAP_TYPE                HeapType,
-                                                            uint64_t                                  FenceValueForReset,
-                                                            const std::vector<ID3D12DescriptorHeap*>& UsedHeaps);
+        static const UINT32 kNumDescriptorsPerHeap = 1024;
+        static std::mutex     sm_Mutex;
 
         // Non-static members
-        D3D12CommandContext&               m_OwningContext;
+        D3D12CommandContext*               m_OwningContext;
         ID3D12DescriptorHeap*              m_CurrentHeapPtr;
         const D3D12_DESCRIPTOR_HEAP_TYPE   m_DescriptorType;
-        uint32_t                           m_DescriptorSize;
-        uint32_t                           m_CurrentOffset;
+        UINT32                             m_DescriptorSize;
+        UINT32                             m_CurrentOffset;
         DescriptorHandle                   m_FirstDescriptor;
-        std::vector<ID3D12DescriptorHeap*> m_RetiredHeaps;
 
         // Describes a descriptor table entry:  a region of the handle cache and which handles have been set
         struct DescriptorTableCache
         {
-            DescriptorTableCache() : AssignedHandlesBitMap(0) {}
-            uint32_t                     AssignedHandlesBitMap;
+            DescriptorTableCache() : AssignedHandlesBitMap(0), TableStart {0}, TableSize {0} {}
+            UINT32                       AssignedHandlesBitMap;
             D3D12_CPU_DESCRIPTOR_HANDLE* TableStart;
-            uint32_t                     TableSize;
+            UINT32                       TableSize;
         };
 
         struct DescriptorHandleCache
@@ -117,20 +103,20 @@ namespace RHI
                 m_MaxCachedDescriptors       = 0;
             }
 
-            uint32_t m_RootDescriptorTablesBitMap;
-            uint32_t m_StaleRootParamsBitMap;
-            uint32_t m_MaxCachedDescriptors;
+            UINT32 m_RootDescriptorTablesBitMap;
+            UINT32 m_StaleRootParamsBitMap;
+            UINT32 m_MaxCachedDescriptors;
 
-            static const uint32_t kMaxNumDescriptors      = 256;
-            static const uint32_t kMaxNumDescriptorTables = 16;
+            static const UINT32 kMaxNumDescriptors      = 256;
+            static const UINT32 kMaxNumDescriptorTables = 16;
 
-            uint32_t ComputeStagedSize();
-            void     CopyAndBindStaleTables(
-                    D3D12_DESCRIPTOR_HEAP_TYPE Type,
-                    uint32_t                   DescriptorSize,
-                    DescriptorHandle           DestHandleStart,
-                    ID3D12GraphicsCommandList* CmdList,
-                    void (STDMETHODCALLTYPE ID3D12GraphicsCommandList::*SetFunc)(UINT, D3D12_GPU_DESCRIPTOR_HANDLE));
+            UINT32 ComputeStagedSize();
+            void   CopyAndBindStaleTables(
+                  D3D12_DESCRIPTOR_HEAP_TYPE Type,
+                  UINT32                     DescriptorSize,
+                  DescriptorHandle           DestHandleStart,
+                  ID3D12GraphicsCommandList* CmdList,
+                  void (STDMETHODCALLTYPE ID3D12GraphicsCommandList::*SetFunc)(UINT, D3D12_GPU_DESCRIPTOR_HANDLE));
 
             DescriptorTableCache        m_RootDescriptorTable[kMaxNumDescriptorTables];
             D3D12_CPU_DESCRIPTOR_HANDLE m_HandleCache[kMaxNumDescriptors];
@@ -146,13 +132,11 @@ namespace RHI
         DescriptorHandleCache m_GraphicsHandleCache;
         DescriptorHandleCache m_ComputeHandleCache;
 
-        bool HasSpace(uint32_t Count)
+        bool HasSpace(UINT32 Count)
         {
             return (m_CurrentHeapPtr != nullptr && m_CurrentOffset + Count <= kNumDescriptorsPerHeap);
         }
 
-        void                  RetireCurrentHeap(void);
-        void                  RetireUsedHeaps(uint64_t fenceValue);
         ID3D12DescriptorHeap* GetHeapPointer();
 
         DescriptorHandle Allocate(UINT Count)

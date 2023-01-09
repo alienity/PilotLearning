@@ -27,17 +27,6 @@ namespace RHI
     D3D12LinkedDevice::D3D12LinkedDevice(D3D12Device* Parent, D3D12NodeMask NodeMask)
         : D3D12DeviceChild(Parent)
         , NodeMask(NodeMask)
-        //, GraphicsQueue(this, RHID3D12CommandQueueType::Direct)
-        //, AsyncComputeQueue(this, RHID3D12CommandQueueType::AsyncCompute)
-        //, CopyQueue1(this, RHID3D12CommandQueueType::Copy1)
-        //, CopyQueue2(this, RHID3D12CommandQueueType::Copy2)
-        //, Profiler(this, 1)
-        //, RtvHeapManager(this, D3D12_DESCRIPTOR_HEAP_TYPE_RTV, CVar_DescriptorAllocatorPageSize)
-        //, DsvHeapManager(this, D3D12_DESCRIPTOR_HEAP_TYPE_DSV, CVar_DescriptorAllocatorPageSize)
-        //, ResourceDescriptorHeap(this, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, CVar_GlobalResourceViewHeapSize)
-        //, SamplerDescriptorHeap(this, D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, CVar_GlobalSamplerHeapSize)
-        //, CopyContext1(this, RHID3D12CommandQueueType::Copy1, D3D12_COMMAND_LIST_TYPE_COPY)
-        //, CopyContext2(this, RHID3D12CommandQueueType::Copy2, D3D12_COMMAND_LIST_TYPE_DIRECT)
     {
         m_GraphicsQueue = std::make_shared<D3D12CommandQueue>(this, RHID3D12CommandQueueType::Direct);
         m_AsyncComputeQueue = std::make_shared<D3D12CommandQueue>(this, RHID3D12CommandQueueType::AsyncCompute);
