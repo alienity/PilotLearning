@@ -13,75 +13,73 @@ namespace Pilot
 
     RendererManager::~RendererManager()
     {
-        Device->WaitIdle();
+        p_Device->WaitIdle();
 
-        MoYuRenderer = nullptr;
+        p_MoYuRenderer = nullptr;
 
-        Compiler     = nullptr;
-        SwapChain    = nullptr;
-        Device       = nullptr;
+        p_Compiler   = nullptr;
+        p_SwapChain = nullptr;
+        p_Device     = nullptr;
     }
 
     void RendererManager::Initialize(RendererManagerInitInfo initialize_info)
     {
-        Compiler = std::make_unique<ShaderCompiler>();
-        Device   = std::make_unique<RHI::D3D12Device>(initialize_info.Options);
+        p_Compiler = std::make_unique<ShaderCompiler>();
+        p_Device   = std::make_unique<RHI::D3D12Device>(initialize_info.Options);
 
-        if (Device->SupportsDynamicResources())
+        if (p_Device->SupportsDynamicResources())
         {
-            Compiler->SetShaderModel(RHI_SHADER_MODEL::ShaderModel_6_6);
+            p_Compiler->SetShaderModel(RHI_SHADER_MODEL::ShaderModel_6_6);
         }
 
-        WinSystem = initialize_info.Window_system;
+        p_WinSystem = initialize_info.Window_system;
 
-        HWND win32handle = glfwGetWin32Window(WinSystem->getWindow());
-        SwapChain        = std::make_unique<RHI::D3D12SwapChain>(Device.get(), win32handle);
+        HWND win32handle = glfwGetWin32Window(p_WinSystem->getWindow());
+        p_SwapChain      = std::make_unique<RHI::D3D12SwapChain>(p_Device.get(), win32handle);
     }
 
     void RendererManager::InitRenderer()
     {
-        RendererInitParams rendererInitParams = {Device.get(), Compiler.get(), SwapChain.get(), WinSystem.get()};
+        RendererInitParams rendererInitParams = {
+            p_Device.get(), p_Compiler.get(), p_SwapChain.get(), p_WinSystem.get()};
 
-        MoYuRenderer = std::make_unique<DeferredRenderer>(rendererInitParams);
-        MoYuRenderer->Initialize();
+        p_MoYuRenderer = std::make_unique<DeferredRenderer>(rendererInitParams);
+        p_MoYuRenderer->Initialize();
     }
 
     void RendererManager::InitUIRenderer(WindowUI* window_ui)
     {
-        MoYuRenderer->InitializeUIRenderBackend(window_ui);
+        p_MoYuRenderer->InitializeUIRenderBackend(window_ui);
     }
 
     void RendererManager::PreparePassData(std::shared_ptr<RenderResourceBase> render_resource)
     {
-        MoYuRenderer->PreparePassData(render_resource);
+        p_MoYuRenderer->PreparePassData(render_resource);
     }
 
     void RendererManager::Tick()
     {
-        RHI::D3D12CommandContext& Context = Device->GetLinkedDevice()->GetCommandContext();
+        RHI::D3D12CommandContext* pContext = p_Device->GetLinkedDevice()->GetCommandContext();
 
-        Device->OnBeginFrame();
+        p_Device->OnBeginFrame();
 
-        Context.Open();
+        pContext->Open();
         {
-            MoYuRenderer->OnRender(Context);
+            p_MoYuRenderer->OnRender(pContext);
         }
-        Context.Close();
+        pContext->Close();
 
-        RendererPresent Present(Context);
-        SwapChain->Present(true, Present);
-        Device->OnEndFrame();
+        RendererPresent mPresent(pContext);
+        p_SwapChain->Present(true, mPresent);
+        p_Device->OnEndFrame();
     }
 
-    RHI::D3D12Device* RendererManager::GetDevice() 
-    {
-        return Device.get();
-    }
+    RHI::D3D12Device* RendererManager::GetDevice() { return p_Device.get(); }
 
     Renderer::Renderer(RendererInitParams renderer_init_info) :
-        device(renderer_init_info.device), compiler(renderer_init_info.compiler),
-        swapChain(renderer_init_info.swapChain), renderGraphAllocator(65536),
-        windowsSystem(renderer_init_info.windowSystem)
+        pDevice(renderer_init_info.pDevice), pCompiler(renderer_init_info.pCompiler),
+        pSwapChain(renderer_init_info.pSwapChain), renderGraphAllocator(65536),
+        pWindowSystem(renderer_init_info.pWindowSystem)
     {}
 
     void Renderer::Initialize() {}
@@ -90,6 +88,6 @@ namespace Pilot
 
     Renderer::~Renderer() {}
 
-    void Renderer::OnRender(RHI::D3D12CommandContext& Context) {}
+    void Renderer::OnRender(RHI::D3D12CommandContext* pContext) {}
 
 } // namespace Pilot

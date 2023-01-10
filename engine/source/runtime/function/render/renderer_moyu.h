@@ -44,32 +44,32 @@ namespace Pilot
 
         RHI::D3D12Device* GetDevice();
         
-        std::unique_ptr<RHI::D3D12Device>    Device;
-        std::unique_ptr<ShaderCompiler>      Compiler;
-        std::unique_ptr<RHI::D3D12SwapChain> SwapChain;
-        std::shared_ptr<WindowSystem>        WinSystem;
-        std::unique_ptr<Renderer>            MoYuRenderer;
+        std::unique_ptr<RHI::D3D12Device>    p_Device;
+        std::unique_ptr<ShaderCompiler>      p_Compiler;
+        std::unique_ptr<RHI::D3D12SwapChain> p_SwapChain;
+        std::shared_ptr<WindowSystem>        p_WinSystem;
+        std::unique_ptr<Renderer>            p_MoYuRenderer;
     };
 
     class RendererPresent : public RHI::IPresent
     {
     public:
-        RendererPresent(RHI::D3D12CommandContext& Context) noexcept : Context(Context) {}
+        RendererPresent(RHI::D3D12CommandContext* pContext) noexcept : pContext(pContext) {}
 
-        void PrePresent() override { SyncHandle = Context.Execute(false); }
+        void PrePresent() override { SyncHandle = pContext->Execute(false); }
 
         void PostPresent() override { SyncHandle.WaitForCompletion(); }
 
-        RHI::D3D12CommandContext& Context;
+        RHI::D3D12CommandContext* pContext;
         RHI::D3D12SyncHandle      SyncHandle;
     };
 
     struct RendererInitParams
     {
-        RHI::D3D12Device*    device;
-        ShaderCompiler*      compiler;
-        RHI::D3D12SwapChain* swapChain;
-        WindowSystem*        windowSystem;
+        RHI::D3D12Device*    pDevice;
+        ShaderCompiler*      pCompiler;
+        RHI::D3D12SwapChain* pSwapChain;
+        WindowSystem*        pWindowSystem;
     };
 
     class Renderer
@@ -83,7 +83,7 @@ namespace Pilot
 
         virtual ~Renderer();
 
-        virtual void OnRender(RHI::D3D12CommandContext& Context);
+        virtual void OnRender(RHI::D3D12CommandContext* pContext);
 
         virtual void OnResize() {}
 
@@ -95,10 +95,10 @@ namespace Pilot
         }
 
     protected:
-        RHI::D3D12Device*    device        = nullptr;
-        ShaderCompiler*      compiler      = nullptr;
-        RHI::D3D12SwapChain* swapChain     = nullptr;
-        WindowSystem*        windowsSystem = nullptr;
+        RHI::D3D12Device*    pDevice       = nullptr;
+        ShaderCompiler*      pCompiler     = nullptr;
+        RHI::D3D12SwapChain* pSwapChain    = nullptr;
+        WindowSystem*        pWindowSystem = nullptr;
 
         RHI::RenderGraphAllocator renderGraphAllocator;
         RHI::RenderGraphRegistry  renderGraphRegistry;

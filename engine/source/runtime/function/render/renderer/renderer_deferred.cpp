@@ -144,7 +144,7 @@ namespace Pilot
         IndirectCullPass::IndirectCullOutput indirectCullOutput;
         mIndirectCullPass->cullMeshs(context, renderGraphRegistry, indirectCullOutput);
 
-        RHI::D3D12Texture* pBackBufferResource = swapChain->GetCurrentBackBufferResource();
+        RHI::D3D12Texture* pBackBufferResource = pSwapChain->GetCurrentBackBufferResource();
 
         RHI::RenderGraph graph(renderGraphAllocator, renderGraphRegistry);
 

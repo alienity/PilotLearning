@@ -64,11 +64,16 @@ namespace RHI
         #endif
 
         //-------------------------×ÊÔ´ÊÍ·Å--------------------------
-        void ReleaseResource(ID3D12Resource* Resource, RHID3D12CommandQueueType);
+        void Release(std::shared_ptr<D3D12Resource> Resource);
+        void Release(ID3D12Resource* D3D12Resource);
+        void Release(DescriptorHeapAllocation&& Allocation);
         
+        void Release(D3D12SyncHandle syncHandle);
         //-----------------------------------------------------------
 
     private:
+        static constexpr UINT MaxSharedBufferCount = 3;
+
         D3D12NodeMask     NodeMask;
         
         std::shared_ptr<D3D12CommandQueue> m_GraphicsQueue;
@@ -103,14 +108,13 @@ namespace RHI
 
         struct ActiveSharedData
         {
-            UINT m_Fence;
-
-            std::vector<DescriptorHeapAllocation> m_DynamicDescriptorHeapAllocations;
-            std::vector<DescriptorHeapAllocation> m_RetiredDescriptorHeapAllocations;
-            std::vector<D3D12Resource*>           m_RetiredResource;
+            std::vector<DescriptorHeapAllocation>               m_DynamicDescriptorHeapAllocations;
+            std::vector<DescriptorHeapAllocation>               m_RetiredDescriptorHeapAllocations;
+            std::vector<Microsoft::WRL::ComPtr<ID3D12Resource>> m_RetiredResource;
         };
 
-        // FrameData[MAXFRAME]
+        std::pair<D3D12SyncHandle, ActiveSharedData> m_ActiveSharedDatas[MaxSharedBufferCount];
 
+        UINT m_CurrentBufferIndex = 0;
     };
 }

@@ -83,6 +83,8 @@ namespace RHI
         bool TearingSupport = false;
         RECT WindowBounds   = {};
 
+        UINT m_CurrentBackBufferIndex = 0;
+
         Microsoft::WRL::ComPtr<IDXGISwapChain4> p_SwapChain4;
         std::shared_ptr<D3D12Texture>           p_BackBuffers[BackBufferCount];
         

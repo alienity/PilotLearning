@@ -138,8 +138,8 @@ namespace RHI
 
     D3D12Texture* D3D12SwapChain::GetCurrentBackBufferResource()
     {
-        UINT backBufferIndex = p_SwapChain4->GetCurrentBackBufferIndex();
-        return p_BackBuffers[backBufferIndex].get();
+        //UINT backBufferIndex = p_SwapChain4->GetCurrentBackBufferIndex();
+        return p_BackBuffers[m_CurrentBackBufferIndex].get();
     }
 
     RHIViewport D3D12SwapChain::GetViewport() const noexcept
@@ -204,6 +204,8 @@ namespace RHI
 
         UINT64 ValueToWaitFor = Fence.Signal(GetParentDevice()->GetLinkedDevice()->GetGraphicsQueue());
         SyncHandle            = D3D12SyncHandle(&Fence, ValueToWaitFor);
+
+        m_CurrentBackBufferIndex = (m_CurrentBackBufferIndex + 1) % BackBufferCount;
     }
 
     Microsoft::WRL::ComPtr<IDXGISwapChain4> D3D12SwapChain::InitializeSwapChain()

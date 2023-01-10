@@ -417,11 +417,6 @@ namespace RHI
     protected:
         RHIRenderSurfaceBaseDesc m_Desc;
         
-        // D3D12_RENDER_TARGET_VIEW_DESC
-        // D3D12_DEPTH_STENCIL_VIEW_DESC
-        // D3D12_SHADER_RESOURCE_VIEW_DESC
-        // D3D12_UNORDERED_ACCESS_VIEW_DESC
-
         std::unordered_map<uint64, std::shared_ptr<D3D12RenderTargetView>>      m_RTVHandleMap;
         std::unordered_map<uint64, std::shared_ptr<D3D12DepthStencilView>>      m_DSVHandleMap;
         std::unordered_map<uint64, std::shared_ptr<D3D12ShaderResourceView>>    m_SRVHandleMap;

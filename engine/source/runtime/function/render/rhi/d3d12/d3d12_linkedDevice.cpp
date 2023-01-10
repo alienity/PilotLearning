@@ -148,7 +148,10 @@ namespace RHI
 
     void D3D12LinkedDevice::OnBeginFrame() { m_Profiler->OnBeginFrame(); }
 
-    void D3D12LinkedDevice::OnEndFrame() { m_Profiler->OnEndFrame(); }
+    void D3D12LinkedDevice::OnEndFrame()
+    {
+        m_Profiler->OnEndFrame();
+    }
 
     D3D12_RESOURCE_ALLOCATION_INFO D3D12LinkedDevice::GetResourceAllocationInfo(const D3D12_RESOURCE_DESC& Desc) const
     {
@@ -319,6 +322,12 @@ namespace RHI
         }
     }
     #endif
+
+    void D3D12LinkedDevice::Release(D3D12SyncHandle syncHandle)
+    {
+        m_CurrentBufferIndex = (m_CurrentBufferIndex + 1) % MaxSharedBufferCount;
+
+    }
 
 }
 
