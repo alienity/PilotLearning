@@ -234,12 +234,20 @@ namespace RHI
         return GPUHandle;
     }
 
+    DescriptorHandle DescriptorHeapAllocation::GetDescriptorHandle(UINT32 Offset) const
+    {
+        ASSERT(Offset >= 0 && Offset < m_NumHandles);
+        D3D12_CPU_DESCRIPTOR_HANDLE CPUHandle = GetCpuHandle(Offset);
+        D3D12_GPU_DESCRIPTOR_HANDLE GPUHandle = GetGpuHandle(Offset);
+        DescriptorHandle Handle = DescriptorHandle(CPUHandle, GPUHandle);
+        return Handle;
+    }
+
     UINT DescriptorHeapAllocation::GetDescriptorHeapOffsetIndex(UINT32 Offset) const
     {
         ASSERT(Offset >= 0 && Offset < m_NumHandles);
-        D3D12_CPU_DESCRIPTOR_HANDLE m_HeapStartHandle = m_pDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
-        UINT handleOffsetIndex = (m_HeapStartHandle.ptr - m_FirstCpuHandle.ptr) / m_DescriptorSize;
-        return handleOffsetIndex + Offset;
+        ASSERT(m_DescriptorHandleOffsetIndex != InvalidDescriptorHandleOffsetIndex);
+        return m_DescriptorHandleOffsetIndex + Offset;
     }
 
 	DescriptorHeapAllocationManager::DescriptorHeapAllocationManager(IDescriptorAllocator*             ParentAllocator,

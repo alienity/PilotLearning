@@ -39,6 +39,7 @@ namespace RHI
     {
     public:
         explicit D3D12Device(const DeviceOptions& Options);
+        ~D3D12Device();
 
         void CreateDxgiFactory();
 

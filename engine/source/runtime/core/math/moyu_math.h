@@ -329,7 +329,10 @@ namespace Pilot
         static float invSqrt(float value) { return 1.f / sqrt(value); }
         static bool  realEqual(float a, float b, float tolerance = std::numeric_limits<float>::epsilon());
         static float clamp(float v, float min, float max) { return std::clamp(v, min, max); }
-        
+        static float saturate(float f) { return std::max(std::min(f, 1.0f), 0.0f); }
+        static float max(float a, float b) { return std::max(a, b); }
+        static float min(float a, float b) { return std::min(a, b); }
+
         static float degreesToRadians(float degrees);
         static float radiansToDegrees(float radians);
         static float angleUnitsToRadians(float units);

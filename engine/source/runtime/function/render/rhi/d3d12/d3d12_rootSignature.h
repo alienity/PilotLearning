@@ -164,6 +164,53 @@ namespace RHI
             return *this;
         }
 
+        template<UINT ShaderRegister, UINT RegisterSpace>
+        RootSignatureDesc& AddStaticSampler(const D3D12_SAMPLER_DESC& NonStaticSamplerDesc,
+                                            D3D12_SHADER_VISIBILITY   Visibility = D3D12_SHADER_VISIBILITY_ALL)
+        {
+            CD3DX12_STATIC_SAMPLER_DESC& Desc = StaticSamplers.emplace_back();
+            Desc.Filter                       = NonStaticSamplerDesc.Filter;
+            Desc.AddressU                     = NonStaticSamplerDesc.AddressU;
+            Desc.AddressV                     = NonStaticSamplerDesc.AddressV;
+            Desc.AddressW                     = NonStaticSamplerDesc.AddressW;
+            Desc.MipLODBias                   = NonStaticSamplerDesc.MipLODBias;
+            Desc.MaxAnisotropy                = NonStaticSamplerDesc.MaxAnisotropy;
+            Desc.ComparisonFunc               = NonStaticSamplerDesc.ComparisonFunc;
+            Desc.BorderColor                  = D3D12_STATIC_BORDER_COLOR_OPAQUE_WHITE;
+            Desc.MinLOD                       = NonStaticSamplerDesc.MinLOD;
+            Desc.MaxLOD                       = NonStaticSamplerDesc.MaxLOD;
+            Desc.ShaderRegister               = ShaderRegister;
+            Desc.RegisterSpace                = RegisterSpace;
+            Desc.ShaderVisibility             = Visibility;
+
+            if (Desc.AddressU == D3D12_TEXTURE_ADDRESS_MODE_BORDER ||
+                Desc.AddressV == D3D12_TEXTURE_ADDRESS_MODE_BORDER ||
+                Desc.AddressW == D3D12_TEXTURE_ADDRESS_MODE_BORDER)
+            {
+                ASSERT(
+                    // Transparent Black
+                    NonStaticSamplerDesc.BorderColor[0] == 0.0f && NonStaticSamplerDesc.BorderColor[1] == 0.0f &&
+                        NonStaticSamplerDesc.BorderColor[2] == 0.0f && NonStaticSamplerDesc.BorderColor[3] == 0.0f ||
+                    // Opaque Black
+                    NonStaticSamplerDesc.BorderColor[0] == 0.0f && NonStaticSamplerDesc.BorderColor[1] == 0.0f &&
+                        NonStaticSamplerDesc.BorderColor[2] == 0.0f && NonStaticSamplerDesc.BorderColor[3] == 1.0f ||
+                    // Opaque White
+                    NonStaticSamplerDesc.BorderColor[0] == 1.0f && NonStaticSamplerDesc.BorderColor[1] == 1.0f &&
+                        NonStaticSamplerDesc.BorderColor[2] == 1.0f && NonStaticSamplerDesc.BorderColor[3] == 1.0f);
+
+                if (NonStaticSamplerDesc.BorderColor[3] == 1.0f)
+                {
+                    if (NonStaticSamplerDesc.BorderColor[0] == 1.0f)
+                        Desc.BorderColor = D3D12_STATIC_BORDER_COLOR_OPAQUE_WHITE;
+                    else
+                        Desc.BorderColor = D3D12_STATIC_BORDER_COLOR_OPAQUE_BLACK;
+                }
+                else
+                    Desc.BorderColor = D3D12_STATIC_BORDER_COLOR_TRANSPARENT_BLACK;
+            }
+            return *this;
+        }
+
         RootSignatureDesc& AllowInputLayout() noexcept;
         RootSignatureDesc& DenyVSAccess() noexcept;
         RootSignatureDesc& DenyHSAccess() noexcept;

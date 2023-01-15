@@ -69,6 +69,8 @@ namespace RHI
         [[nodiscard]] RHIViewport GetViewport() const noexcept;
         [[nodiscard]] RHIRect     GetScissorRect() const noexcept;
 
+        RHI::D3D12SyncHandle GetSyncHandle() const noexcept;
+
         void Resize(UINT Width, UINT Height);
 
         void Present(bool VSync, IPresent& Present);
@@ -94,8 +96,8 @@ namespace RHI
         DisplayCurve          DisplayCurve      = sRGB;
         DXGI_COLOR_SPACE_TYPE CurrentColorSpace = DXGI_COLOR_SPACE_RGB_FULL_G22_NONE_P709;
 
-        D3D12Fence      Fence;
-        D3D12SyncHandle SyncHandle;
+        D3D12Fence      m_Fence;
+        D3D12SyncHandle m_SyncHandle;
     };
 
 }

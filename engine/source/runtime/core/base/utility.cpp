@@ -1,9 +1,16 @@
 #include "utility.h"
 #include "macro.h"
+#include "city.h"
 #include "runtime/core/math/moyu_math.h"
+
 #include <Windows.h>
 #include <locale>
 #include <stringapiset.h>
+
+std::uint64_t Utility::Hash64(const void* Object, size_t SizeInBytes)
+{
+    return CityHash64(static_cast<const char*>(Object), SizeInBytes);
+}
 
 // A faster version of memcopy that uses SSE instructions.  TODO:  Write an ARM variant if necessary.
 void SIMDMemCopy(void* __restrict _Dest, const void* __restrict _Source, size_t NumQuadwords)

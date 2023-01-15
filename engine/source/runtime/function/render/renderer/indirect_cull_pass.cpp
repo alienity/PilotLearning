@@ -265,7 +265,7 @@ namespace Pilot
         }
     }
 
-    void IndirectCullPass::bitonicSort(RHI::D3D12ComputeContext& context,
+    void IndirectCullPass::bitonicSort(RHI::D3D12ComputeContext* context,
                                        RHI::D3D12Buffer*         keyIndexList,
                                        RHI::D3D12Buffer*         countBuffer,
                                        bool                      isPartiallyPreSorted,
@@ -278,44 +278,45 @@ namespace Pilot
 
         ASSERT(ElementSizeBytes == 4 || ElementSizeBytes == 8); // , "Invalid key-index list for bitonic sort"
 
-        context.SetRootSignature(RootSignatures::pBitonicSortRootSignature.get());
+        context->SetRootSignature(RootSignatures::pBitonicSortRootSignature.get());
 
         // This controls two things.  It is a key that will sort to the end, and it is a mask used to
         // determine whether the current group should sort ascending or descending.
         //context.SetConstants(3, counterOffset, sortAscending ? 0xffffffff : 0);
-        context.SetConstants(3, 0, sortAscending ? 0x7F7FFFFF : 0);
+        context->SetConstants(3, 0, sortAscending ? 0x7F7FFFFF : 0);
         
         // Generate execute indirect arguments
-        context.SetPipelineState(PipelineStates::pBitonicIndirectArgsPSO.get());
-        context.TransitionBarrier(countBuffer, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-        context.TransitionBarrier(pSortDispatchArgs.get(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-        context.SetConstants(0, MaxIterations);
-        context->SetComputeRootDescriptorTable(1, countBuffer->GetDefaultSRV()->GetGpuHandle());
-        context->SetComputeRootDescriptorTable(2, pSortDispatchArgs->GetDefaultUAV()->GetGpuHandle());
-        context.Dispatch(1, 1, 1);
+        context->SetPipelineState(PipelineStates::pBitonicIndirectArgsPSO.get());
+        context->TransitionBarrier(countBuffer, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+        context->TransitionBarrier(pSortDispatchArgs.get(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+        context->SetConstants(0, MaxIterations);
+        context->SetDescriptorTable(1, countBuffer->GetDefaultSRV()->GetGpuHandle());
+        context->SetDescriptorTable(2, pSortDispatchArgs->GetDefaultUAV()->GetGpuHandle());
+        context->Dispatch(1, 1, 1);
 
         // Pre-Sort the buffer up to k = 2048.  This also pads the list with invalid indices
         // that will drift to the end of the sorted list.
-        context.TransitionBarrier(pSortDispatchArgs.get(), D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT);
-        context.TransitionBarrier(keyIndexList, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-        context.InsertUAVBarrier(keyIndexList);
-        context.FlushResourceBarriers();
+        context->TransitionBarrier(pSortDispatchArgs.get(), D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT);
+        context->TransitionBarrier(keyIndexList, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+        context->InsertUAVBarrier(keyIndexList);
+        context->FlushResourceBarriers();
 
         //context->SetComputeRootUnorderedAccessView(2, keyIndexList->GetGpuVirtualAddress());
-        context->SetComputeRootDescriptorTable(2, keyIndexList->GetDefaultRawUAV()->GetGpuHandle());
+        context->SetDescriptorTable(2, keyIndexList->GetDefaultRawUAV()->GetGpuHandle());
 
         if (!isPartiallyPreSorted)
         {
-            context.SetPipelineState(ElementSizeBytes == 4 ? PipelineStates::pBitonic32PreSortPSO.get() :
-                                                             PipelineStates::pBitonic64PreSortPSO.get());
-            context->ExecuteIndirect(CommandSignatures::pDispatchIndirectCommandSignature->GetApiHandle(),
-                                     1,
-                                     pSortDispatchArgs->GetResource(),
-                                     0,
-                                     countBuffer->GetResource(),
-                                     0);
+            context->SetPipelineState(ElementSizeBytes == 4 ? PipelineStates::pBitonic32PreSortPSO.get() :
+                                                              PipelineStates::pBitonic64PreSortPSO.get());
+
+            context->DispatchIndirect(CommandSignatures::pDispatchIndirectCommandSignature->GetApiHandle(),
+                                        1,
+                                        pSortDispatchArgs->GetResource(),
+                                        0,
+                                        countBuffer->GetResource(),
+                                        0);
             //context.DispatchIndirect(s_DispatchArgs, 0);
-            context.InsertUAVBarrier(keyIndexList);
+            context->InsertUAVBarrier(keyIndexList);
         }
 
         uint32_t IndirectArgsOffset = 12;
@@ -326,20 +327,20 @@ namespace Pilot
 
         for (uint32_t k = 4096; k <= AlignedMaxNumElements; k *= 2)
         {
-            context.SetPipelineState(ElementSizeBytes == 4 ? PipelineStates::pBitonic32OuterSortPSO.get() :
+            context->SetPipelineState(ElementSizeBytes == 4 ? PipelineStates::pBitonic32OuterSortPSO.get() :
                                                              PipelineStates::pBitonic64OuterSortPSO.get());
 
             for (uint32_t j = k / 2; j >= 2048; j /= 2)
             {
-                context->SetComputeRoot32BitConstant(0, k, j);
-                context->ExecuteIndirect(CommandSignatures::pDispatchIndirectCommandSignature->GetApiHandle(),
-                                         1,
-                                         pSortDispatchArgs->GetResource(),
-                                         IndirectArgsOffset,
-                                         countBuffer->GetResource(),
-                                         0);
+                (*context)->SetComputeRoot32BitConstant(0, k, j);
+                (*context)->ExecuteIndirect(CommandSignatures::pDispatchIndirectCommandSignature->GetApiHandle(),
+                                            1,
+                                            pSortDispatchArgs->GetResource(),
+                                            IndirectArgsOffset,
+                                            countBuffer->GetResource(),
+                                            0);
                 //context.DispatchIndirect(s_DispatchArgs, IndirectArgsOffset);
-                context.InsertUAVBarrier(keyIndexList);
+                context->InsertUAVBarrier(keyIndexList);
                 IndirectArgsOffset += 12;
             }
 
@@ -379,55 +380,55 @@ namespace Pilot
         if (numMeshes > 0)
         {
             //RHI::D3D12CommandContext& copyContext = m_Device->GetLinkedDevice()->GetCopyContext1();
-            RHI::D3D12CommandContext& copyContext = m_Device->GetLinkedDevice()->GetCommandContext(1);
-            copyContext.Open();
+            RHI::D3D12CommandContext* pCopyContext = m_Device->GetLinkedDevice()->GetCommandContext(1);
+            pCopyContext->Open();
             {
-                copyContext.ResetCounter(commandBufferForOpaqueDraw.p_IndirectIndexCommandBuffer->GetCounterBuffer().get());
-                copyContext.ResetCounter(commandBufferForOpaqueDraw.p_IndirectSortCommandBuffer->GetCounterBuffer().get());
-                copyContext.ResetCounter(commandBufferForTransparentDraw.p_IndirectIndexCommandBuffer->GetCounterBuffer().get());
-                copyContext.ResetCounter(commandBufferForTransparentDraw.p_IndirectSortCommandBuffer->GetCounterBuffer().get());
+                pCopyContext->ResetCounter(commandBufferForOpaqueDraw.p_IndirectIndexCommandBuffer->GetCounterBuffer().get());
+                pCopyContext->ResetCounter(commandBufferForOpaqueDraw.p_IndirectSortCommandBuffer->GetCounterBuffer().get());
+                pCopyContext->ResetCounter(commandBufferForTransparentDraw.p_IndirectIndexCommandBuffer->GetCounterBuffer().get());
+                pCopyContext->ResetCounter(commandBufferForTransparentDraw.p_IndirectSortCommandBuffer->GetCounterBuffer().get());
                 if (dirShadowmapCommandBuffer.p_IndirectSortCommandBuffer != nullptr)
                 {
-                    copyContext.ResetCounter(dirShadowmapCommandBuffer.p_IndirectSortCommandBuffer->GetCounterBuffer().get());
+                    pCopyContext->ResetCounter(dirShadowmapCommandBuffer.p_IndirectSortCommandBuffer->GetCounterBuffer().get());
                 }
                 for (size_t i = 0; i < spotShadowmapCommandBuffer.size(); i++)
                 {
-                    copyContext.ResetCounter(spotShadowmapCommandBuffer[i].p_IndirectSortCommandBuffer->GetCounterBuffer().get());
+                    pCopyContext->ResetCounter(spotShadowmapCommandBuffer[i].p_IndirectSortCommandBuffer->GetCounterBuffer().get());
                 }
-                copyContext.CopyBuffer(pPerframeBuffer.get(), pUploadPerframeBuffer.get());
-                copyContext.CopyBuffer(pMaterialBuffer.get(), pUploadMaterialBuffer.get());
-                copyContext.CopyBuffer(pMeshBuffer.get(), pUploadMeshBuffer.get());
+                pCopyContext->CopyBuffer(pPerframeBuffer.get(), pUploadPerframeBuffer.get());
+                pCopyContext->CopyBuffer(pMaterialBuffer.get(), pUploadMaterialBuffer.get());
+                pCopyContext->CopyBuffer(pMeshBuffer.get(), pUploadMeshBuffer.get());
             }
-            copyContext.Close();
-            RHI::D3D12SyncHandle copySyncHandle = copyContext.Execute(false);
+            pCopyContext->Close();
+            RHI::D3D12SyncHandle copySyncHandle = pCopyContext->Execute(false);
 
             //RHI::D3D12ComputeContext& asyncCompute = m_Device->GetLinkedDevice()->GetAsyncComputeCommandContext().GetComputeContext();
-            RHI::D3D12ComputeContext& asyncCompute = m_Device->GetLinkedDevice()->GetCommandContext(2).GetComputeContext();
-            asyncCompute.GetCommandQueue()->WaitForSyncHandle(copySyncHandle);
+            RHI::D3D12ComputeContext* pAsyncCompute = m_Device->GetLinkedDevice()->GetCommandContext(2)->GetComputeContext();
+            pAsyncCompute->GetCommandQueue()->WaitForSyncHandle(copySyncHandle);
 
-            asyncCompute.Open();
+            pAsyncCompute->Open();
             // Opaque and Transparent object cull
             {
-                asyncCompute.TransitionBarrier(commandBufferForOpaqueDraw.p_IndirectIndexCommandBuffer.get(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-                asyncCompute.TransitionBarrier(commandBufferForTransparentDraw.p_IndirectIndexCommandBuffer.get(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+                pAsyncCompute->TransitionBarrier(commandBufferForOpaqueDraw.p_IndirectIndexCommandBuffer.get(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+                pAsyncCompute->TransitionBarrier(commandBufferForTransparentDraw.p_IndirectIndexCommandBuffer.get(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
                 //asyncCompute.InsertUAVBarrier(commandBufferForOpaqueDraw.p_IndirectIndexCommandBuffer.get());
                 //asyncCompute.InsertUAVBarrier(commandBufferForTransparentDraw.p_IndirectIndexCommandBuffer.get());
 
-                D3D12ScopedEvent(asyncCompute, "Gpu Frustum Culling for Sort");
-                asyncCompute.SetPipelineState(PipelineStates::pIndirectCullForSort.get());
-                asyncCompute.SetRootSignature(RootSignatures::pIndirectCullForSort.get());
-                asyncCompute->SetComputeRootConstantBufferView(0, pPerframeBuffer->GetGpuVirtualAddress());
-                asyncCompute->SetComputeRootShaderResourceView(1, pMeshBuffer->GetGpuVirtualAddress());
-                asyncCompute->SetComputeRootShaderResourceView(2, pMaterialBuffer->GetGpuVirtualAddress());
-                asyncCompute->SetComputeRootDescriptorTable(3, commandBufferForOpaqueDraw.p_IndirectIndexCommandBuffer->GetDefaultUAV()->GetGpuHandle());
-                asyncCompute->SetComputeRootDescriptorTable(4, commandBufferForTransparentDraw.p_IndirectIndexCommandBuffer->GetDefaultUAV()->GetGpuHandle());
+                D3D12ScopedEvent(pAsyncCompute, "Gpu Frustum Culling for Sort");
+                pAsyncCompute->SetPipelineState(PipelineStates::pIndirectCullForSort.get());
+                pAsyncCompute->SetRootSignature(RootSignatures::pIndirectCullForSort.get());
+                (*pAsyncCompute)->SetComputeRootConstantBufferView(0, pPerframeBuffer->GetGpuVirtualAddress());
+                (*pAsyncCompute)->SetComputeRootShaderResourceView(1, pMeshBuffer->GetGpuVirtualAddress());
+                (*pAsyncCompute)->SetComputeRootShaderResourceView(2, pMaterialBuffer->GetGpuVirtualAddress());
+                (*pAsyncCompute)->SetComputeRootDescriptorTable(3, commandBufferForOpaqueDraw.p_IndirectIndexCommandBuffer->GetDefaultUAV()->GetGpuHandle());
+                (*pAsyncCompute)->SetComputeRootDescriptorTable(4, commandBufferForTransparentDraw.p_IndirectIndexCommandBuffer->GetDefaultUAV()->GetGpuHandle());
 
-                asyncCompute.Dispatch1D(numMeshes, 128);
+                pAsyncCompute->Dispatch1D(numMeshes, 128);
             }
             
             //  Opaque object bitonic sort
             {
-                D3D12ScopedEvent(asyncCompute, "Bitonic Sort for opaque");
+                D3D12ScopedEvent(pAsyncCompute, "Bitonic Sort for opaque");
 
                 RHI::D3D12Buffer* bufferPtr = commandBufferForOpaqueDraw.p_IndirectIndexCommandBuffer.get();
 

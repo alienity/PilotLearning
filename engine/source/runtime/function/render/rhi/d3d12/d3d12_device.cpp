@@ -75,6 +75,8 @@ namespace RHI
     }
     // clang-format off
 
+    D3D12Device::~D3D12Device() {}
+
 	void D3D12Device::CreateDxgiFactory()
     {
 #ifdef _DEBUG

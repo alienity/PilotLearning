@@ -8,7 +8,7 @@ namespace RHI
     class CommandSignatureDesc
     {
     public:
-        explicit CommandSignatureDesc(size_t NumParameters, size_t Stride) : Stride(Stride)
+        explicit CommandSignatureDesc(size_t NumParameters)
         {
             Parameters.reserve(NumParameters);
         }
@@ -94,7 +94,6 @@ namespace RHI
 
     private:
         std::vector<D3D12_INDIRECT_ARGUMENT_DESC> Parameters;
-        uint32_t                                  Stride                = 0;
         bool                                      RequiresRootSignature = false;
 
         friend class D3D12CommandSignature;

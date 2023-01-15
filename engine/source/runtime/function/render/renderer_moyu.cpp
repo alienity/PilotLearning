@@ -71,6 +71,9 @@ namespace Pilot
 
         RendererPresent mPresent(pContext);
         p_SwapChain->Present(true, mPresent);
+
+        p_Device->GetLinkedDevice()->Release(p_SwapChain->GetSyncHandle());
+
         p_Device->OnEndFrame();
     }
 

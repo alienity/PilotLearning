@@ -73,8 +73,8 @@ namespace RHI
         [[nodiscard]] ID3D12GraphicsCommandList6* GetGraphicsCommandList6() const noexcept;
         D3D12CommandListHandle&                   operator->() { return m_CommandListHandle; }
 
-        D3D12GraphicsContext& GetGraphicsContext();
-        D3D12ComputeContext& GetComputeContext();
+        D3D12GraphicsContext* GetGraphicsContext();
+        D3D12ComputeContext* GetComputeContext();
 
         void Open();
         void Close();
@@ -137,6 +137,8 @@ namespace RHI
         Microsoft::WRL::ComPtr<ID3D12CommandAllocator> m_CommandAllocator;
         D3D12CommandAllocatorPool                      m_CommandAllocatorPool;
         D3D12LinearAllocator                           m_CpuLinearAllocator;
+
+        DynamicSuballocationsManager m_DynamicSuballocationsManager;
 
         // TODO: Finish cache
         // State Cache
@@ -216,8 +218,8 @@ namespace RHI
         void SetDynamicConstantBufferView(UINT RootParameterIndex, UINT64 BufferSize, const void* BufferData);
         template<typename T>
         void SetDynamicConstantBufferView(UINT RootParameterIndex, const T& Data) { SetConstantBuffer(RootParameterIndex, sizeof(T), &Data); }
-        void SetBufferSRV(UINT RootIndex, const std::shared_ptr<D3D12Buffer> BufferSRV, UINT64 Offset = 0);
-        void SetBufferUAV(UINT RootIndex, const std::shared_ptr<D3D12Buffer> BufferUAV, UINT64 Offset = 0);
+        void SetBufferSRV(UINT RootIndex, D3D12Buffer* BufferSRV, UINT64 Offset = 0);
+        void SetBufferUAV(UINT RootIndex, D3D12Buffer* BufferUAV, UINT64 Offset = 0);
         void SetDescriptorTable(UINT RootIndex, D3D12_GPU_DESCRIPTOR_HANDLE FirstHandle);
 
         void SetDynamicDescriptor(UINT RootIndex, UINT Offset, D3D12_CPU_DESCRIPTOR_HANDLE Handle);
@@ -236,8 +238,8 @@ namespace RHI
         void DrawIndexed(UINT IndexCount, UINT StartIndexLocation = 0, INT BaseVertexLocation = 0);
         void DrawInstanced(UINT VertexCount, UINT InstanceCount, UINT StartVertexLocation, UINT StartInstanceLocation);
         void DrawIndexedInstanced(UINT IndexCount, UINT InstanceCount, UINT StartIndexLocation, INT  BaseVertexLocation, UINT StartInstanceLocation);
-        void DrawIndirect(D3D12Resource& ArgumentBuffer, UINT64 ArgumentBufferOffset = 0);
-        void ExecuteIndirect(D3D12CommandSignature& CommandSig, D3D12Resource& ArgumentBuffer, UINT64 ArgumentStartOffset = 0,
+        void DrawIndirect(D3D12Resource* ArgumentBuffer, UINT64 ArgumentBufferOffset = 0);
+        void ExecuteIndirect(D3D12CommandSignature* CommandSig, D3D12Resource* ArgumentBuffer, UINT64 ArgumentStartOffset = 0,
             UINT32 MaxCommands = 1, D3D12Resource* CommandCounterBuffer = nullptr, UINT64 CounterOffset = 0);
 
     private:
@@ -264,8 +266,8 @@ namespace RHI
         {
             SetConstantBuffer(RootParameterIndex, sizeof(T), &Data);
         }
-        void SetBufferSRV(UINT RootIndex, const std::shared_ptr<D3D12Buffer> BufferSRV, UINT64 Offset = 0);
-        void SetBufferUAV(UINT RootIndex, const std::shared_ptr<D3D12Buffer> BufferUAV, UINT64 Offset = 0);
+        void SetBufferSRV(UINT RootIndex, D3D12Buffer* BufferSRV, UINT64 Offset = 0);
+        void SetBufferUAV(UINT RootIndex, D3D12Buffer* BufferUAV, UINT64 Offset = 0);
         void SetDescriptorTable(UINT RootIndex, D3D12_GPU_DESCRIPTOR_HANDLE FirstHandle);
 
         void SetDynamicDescriptor( UINT RootIndex, UINT Offset, D3D12_CPU_DESCRIPTOR_HANDLE Handle );
@@ -277,8 +279,9 @@ namespace RHI
         void Dispatch1D(UINT64 ThreadCountX, UINT64 GroupSizeX = 64);
         void Dispatch2D(UINT64 ThreadCountX, UINT64 ThreadCountY, UINT64 GroupSizeX = 8, UINT64 GroupSizeY = 8);
         void Dispatch3D(UINT64 ThreadCountX, UINT64 ThreadCountY, UINT64 ThreadCountZ, UINT64 GroupSizeX, UINT64 GroupSizeY, UINT64 GroupSizeZ);
-        void DispatchIndirect(D3D12Resource& ArgumentBuffer, UINT64 ArgumentBufferOffset = 0);
-        void DispatchIndirect(D3D12Resource& ArgumentBuffer, UINT64 ArgumentBufferOffset = 0);
+        void DispatchIndirect(D3D12Resource* ArgumentBuffer, UINT64 ArgumentBufferOffset = 0);
+        void ExecuteIndirect(D3D12CommandSignature* CommandSig, D3D12Resource* ArgumentBuffer, UINT64 ArgumentStartOffset = 0,
+            UINT32 MaxCommands = 1, D3D12Resource* CommandCounterBuffer = nullptr, UINT64 CounterOffset = 0);
 
     private:
         template<typename T>
@@ -293,7 +296,7 @@ namespace RHI
     class D3D12ScopedEventObject
     {
     public:
-        D3D12ScopedEventObject(D3D12CommandContext& CommandContext, std::string_view Name);
+        D3D12ScopedEventObject(D3D12CommandContext* CommandContext, std::string_view Name);
 
     private:
         D3D12ProfileBlock ProfileBlock;

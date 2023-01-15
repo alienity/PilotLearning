@@ -130,7 +130,7 @@ namespace Pilot
     
     EngineContentViewport RenderSystem::getEngineContentViewport() const
     {
-        return m_renderer_manager->MoYuRenderer->GetViewPort();
+        return m_renderer_manager->p_MoYuRenderer->GetViewPort();
     }
 
     uint32_t RenderSystem::getGuidOfPickedMesh(const Vector2& picked_uv)

@@ -61,7 +61,7 @@ namespace Pilot
     private:
         void prepareBuffer();
 
-        void bitonicSort(RHI::D3D12ComputeContext&      context,
+        void bitonicSort(RHI::D3D12ComputeContext*      context,
                          RHI::D3D12Buffer*              keyIndexList,
                          RHI::D3D12Buffer*              countBuffer,
                          bool                           isPartiallyPreSorted,

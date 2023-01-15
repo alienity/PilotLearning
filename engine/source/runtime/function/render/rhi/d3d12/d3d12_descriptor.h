@@ -252,14 +252,13 @@ namespace RHI
         {
             if (Parent)
             {
-                CDescriptorHeapManager& Manager = Parent->GetHeapManager<ViewDesc>();
-                CpuHandle                       = Manager.AllocateHeapSlot(DescriptorHeapIndex);
+                RHI::CPUDescriptorHeap* pCPUDescriptorHeap = Parent->GetHeapManager<ViewDesc>();
+                m_DescriptorHeapAllocation = pCPUDescriptorHeap->Allocate(1);
             }
         }
         D3D12Descriptor(D3D12Descriptor&& D3D12Descriptor) noexcept :
             D3D12LinkedDeviceChild(std::exchange(D3D12Descriptor.Parent, {})),
-            CpuHandle(std::exchange(D3D12Descriptor.CpuHandle, {})),
-            DescriptorHeapIndex(std::exchange(D3D12Descriptor.DescriptorHeapIndex, UINT_MAX))
+            m_DescriptorHeapAllocation(std::exchange(D3D12Descriptor.m_DescriptorHeapAllocation, {}))
         {}
         D3D12Descriptor& operator=(D3D12Descriptor&& D3D12Descriptor) noexcept
         {
@@ -269,9 +268,8 @@ namespace RHI
             }
 
             InternalDestroy();
-            Parent              = std::exchange(D3D12Descriptor.Parent, {});
-            CpuHandle           = std::exchange(D3D12Descriptor.CpuHandle, {});
-            DescriptorHeapIndex = std::exchange(D3D12Descriptor.DescriptorHeapIndex, UINT_MAX);
+            Parent                     = std::exchange(D3D12Descriptor.Parent, {});
+            m_DescriptorHeapAllocation = std::exchange(D3D12Descriptor.m_DescriptorHeapAllocation, {});
 
             return *this;
         }
@@ -280,35 +278,35 @@ namespace RHI
         D3D12Descriptor(const D3D12Descriptor&) = delete;
         D3D12Descriptor& operator=(const D3D12Descriptor&) = delete;
 
-        [[nodiscard]] bool                        IsValid() const noexcept { return DescriptorHeapIndex != UINT_MAX; }
+        [[nodiscard]] bool IsValid() const noexcept { return !m_DescriptorHeapAllocation.IsNull(); }
         [[nodiscard]] D3D12_CPU_DESCRIPTOR_HANDLE GetCpuHandle() const noexcept
         {
             assert(IsValid());
-            return CpuHandle;
+            return m_DescriptorHeapAllocation.GetCpuHandle(0);
         }
 
         void CreateDefaultView(ID3D12Resource* Resource)
         {
             (GetParentLinkedDevice()->GetDevice()->*D3D12DescriptorTraits<ViewDesc>::Create())(
-                Resource, nullptr, CpuHandle);
+                Resource, nullptr, m_DescriptorHeapAllocation.GetCpuHandle(0));
         }
 
         void CreateDefaultView(ID3D12Resource* Resource, ID3D12Resource* CounterResource)
         {
             (GetParentLinkedDevice()->GetDevice()->*D3D12DescriptorTraits<ViewDesc>::Create())(
-                Resource, CounterResource, nullptr, CpuHandle);
+                Resource, CounterResource, nullptr, m_DescriptorHeapAllocation.GetCpuHandle(0));
         }
 
         void CreateView(const ViewDesc& Desc, ID3D12Resource* Resource)
         {
             (GetParentLinkedDevice()->GetDevice()->*D3D12DescriptorTraits<ViewDesc>::Create())(
-                Resource, &Desc, CpuHandle);
+                Resource, &Desc, m_DescriptorHeapAllocation.GetCpuHandle(0));
         }
 
         void CreateView(const ViewDesc& Desc, ID3D12Resource* Resource, ID3D12Resource* CounterResource)
         {
             (GetParentLinkedDevice()->GetDevice()->*D3D12DescriptorTraits<ViewDesc>::Create())(
-                Resource, CounterResource, &Desc, CpuHandle);
+                Resource, CounterResource, &Desc, m_DescriptorHeapAllocation.GetCpuHandle(0));
         }
 
     private:
@@ -316,19 +314,13 @@ namespace RHI
         {
             if (Parent && IsValid())
             {
-                CDescriptorHeapManager& Manager = Parent->GetHeapManager<ViewDesc>();
-                Manager.FreeHeapSlot(CpuHandle, DescriptorHeapIndex);
-                Parent              = nullptr;
-                CpuHandle           = {NULL};
-                DescriptorHeapIndex = UINT_MAX;
+                Parent->Retire(m_DescriptorHeapAllocation);
+                Parent = nullptr;
             }
         }
 
     protected:
         friend class D3D12Resource;
-
-        //D3D12_CPU_DESCRIPTOR_HANDLE CpuHandle           = {NULL};
-        //UINT                        DescriptorHeapIndex = UINT_MAX;
         DescriptorHeapAllocation m_DescriptorHeapAllocation;
     };
 
@@ -421,15 +413,13 @@ namespace RHI
         {
             if (Parent)
             {
-                D3D12DescriptorHeap& DescriptorHeap = Parent->GetDescriptorHeap<ViewDesc>();
-                DescriptorHeap.Allocate(CpuHandle, GpuHandle, Index);
+                RHI::GPUDescriptorHeap* pDescriptorHeap = Parent->GetDescriptorHeap<ViewDesc>();
+                m_DescriptorHeapAllocation = pDescriptorHeap->Allocate(1);
             }
         }
         D3D12DynamicDescriptor(D3D12DynamicDescriptor&& D3D12DynamicDescriptor) noexcept :
             D3D12LinkedDeviceChild(std::exchange(D3D12DynamicDescriptor.Parent, {})),
-            CpuHandle(std::exchange(D3D12DynamicDescriptor.CpuHandle, {})),
-            GpuHandle(std::exchange(D3D12DynamicDescriptor.GpuHandle, {})),
-            Index(std::exchange(D3D12DynamicDescriptor.Index, UINT_MAX))
+            m_DescriptorHeapAllocation(std::exchange(D3D12DynamicDescriptor.m_DescriptorHeapAllocation, {}))
         {}
         D3D12DynamicDescriptor& operator=(D3D12DynamicDescriptor&& D3D12DynamicDescriptor) noexcept
         {
@@ -440,9 +430,7 @@ namespace RHI
 
             InternalDestroy();
             Parent    = std::exchange(D3D12DynamicDescriptor.Parent, {});
-            CpuHandle = std::exchange(D3D12DynamicDescriptor.CpuHandle, {});
-            GpuHandle = std::exchange(D3D12DynamicDescriptor.GpuHandle, {});
-            Index     = std::exchange(D3D12DynamicDescriptor.Index, UINT_MAX);
+            m_DescriptorHeapAllocation = std::exchange(D3D12DynamicDescriptor.m_DescriptorHeapAllocation, {});
 
             return *this;
         }
@@ -451,50 +439,51 @@ namespace RHI
         D3D12DynamicDescriptor(const D3D12DynamicDescriptor&) = delete;
         D3D12DynamicDescriptor& operator=(const D3D12DynamicDescriptor&) = delete;
 
-        [[nodiscard]] bool                        IsValid() const noexcept { return Index != UINT_MAX; }
+        [[nodiscard]] bool IsValid() const noexcept { return !m_DescriptorHeapAllocation.IsNull(); }
         [[nodiscard]] D3D12_CPU_DESCRIPTOR_HANDLE GetCpuHandle() const noexcept
         {
             assert(IsValid());
-            return CpuHandle;
+            return m_DescriptorHeapAllocation.GetCpuHandle();
         }
         [[nodiscard]] D3D12_GPU_DESCRIPTOR_HANDLE GetGpuHandle() const noexcept
         {
             assert(IsValid());
-            return GpuHandle;
+            return m_DescriptorHeapAllocation.GetGpuHandle();
         }
         [[nodiscard]] UINT GetIndex() const noexcept
         {
             assert(IsValid());
-            return Index;
+            return m_DescriptorHeapAllocation.GetDescriptorHeapOffsetIndex(0);
         }
 
         void CreateDefaultView(ID3D12Resource* Resource)
         {
             (GetParentLinkedDevice()->GetDevice()->*D3D12DescriptorTraits<ViewDesc>::Create())(
-                Resource, nullptr, CpuHandle);
+                Resource, nullptr, m_DescriptorHeapAllocation.GetCpuHandle());
         }
 
         void CreateDefaultView(ID3D12Resource* Resource, ID3D12Resource* CounterResource)
         {
             (GetParentLinkedDevice()->GetDevice()->*D3D12DescriptorTraits<ViewDesc>::Create())(
-                Resource, CounterResource, nullptr, CpuHandle);
+                Resource, CounterResource, nullptr, m_DescriptorHeapAllocation.GetCpuHandle());
         }
 
         void CreateView(const ViewDesc& Desc)
         {
-            (GetParentLinkedDevice()->GetDevice()->*D3D12DescriptorTraits<ViewDesc>::Create())(&Desc, CpuHandle);
+            (GetParentLinkedDevice()->GetDevice()->*D3D12DescriptorTraits<ViewDesc>::Create())(
+                &Desc, m_DescriptorHeapAllocation.GetCpuHandle());
         }
 
         void CreateView(const ViewDesc& Desc, ID3D12Resource* Resource)
         {
             (GetParentLinkedDevice()->GetDevice()->*D3D12DescriptorTraits<ViewDesc>::Create())(
-                Resource, &Desc, CpuHandle);
+                Resource, &Desc, m_DescriptorHeapAllocation.GetCpuHandle());
         }
 
         void CreateView(const ViewDesc& Desc, ID3D12Resource* Resource, ID3D12Resource* CounterResource)
         {
             (GetParentLinkedDevice()->GetDevice()->*D3D12DescriptorTraits<ViewDesc>::Create())(
-                Resource, CounterResource, &Desc, CpuHandle);
+                Resource, CounterResource, &Desc, m_DescriptorHeapAllocation.GetCpuHandle());
         }
 
     private:
@@ -502,21 +491,13 @@ namespace RHI
         {
             if (Parent && IsValid())
             {
-                D3D12DescriptorHeap& DescriptorHeap = Parent->GetDescriptorHeap<ViewDesc>();
-                DescriptorHeap.Release(Index);
+                Parent->Retire(m_DescriptorHeapAllocation);
                 Parent    = nullptr;
-                CpuHandle = {NULL};
-                GpuHandle = {NULL};
-                Index     = UINT_MAX;
             }
         }
 
     protected:
         friend class D3D12Resource;
-
-        //D3D12_CPU_DESCRIPTOR_HANDLE CpuHandle = {NULL};
-        //D3D12_GPU_DESCRIPTOR_HANDLE GpuHandle = {NULL};
-        //UINT                        Index     = UINT_MAX;
         DescriptorHeapAllocation m_DescriptorHeapAllocation;
     };
 

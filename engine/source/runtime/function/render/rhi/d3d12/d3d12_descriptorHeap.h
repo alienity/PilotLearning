@@ -178,10 +178,12 @@ namespace RHI
             // clang-format off
             m_NumHandles{ 1 }, // One null descriptor handle
             m_pDescriptorHeap{ nullptr },
-            m_DescriptorSize{ 0 }
+            m_DescriptorSize{ 0 },
+            m_pAllocator { nullptr }
         {
             m_FirstCpuHandle.ptr = 0;
             m_FirstGpuHandle.ptr = 0;
+            m_DescriptorHandleOffsetIndex = InvalidDescriptorHandleOffsetIndex;
         }
 
         // Initializes non-null allocation
@@ -204,6 +206,8 @@ namespace RHI
             auto DescriptorSize = m_pAllocator->GetDescriptorSize();
             ASSERT(DescriptorSize < std::numeric_limits<UINT16>::max(), "DescriptorSize exceeds allowed limit");
             m_DescriptorSize = static_cast<UINT16>(DescriptorSize);
+            D3D12_CPU_DESCRIPTOR_HANDLE m_HeapStartHandle = m_pDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
+            m_DescriptorHandleOffsetIndex = (m_HeapStartHandle.ptr - m_FirstCpuHandle.ptr) / m_DescriptorSize;
         }
 
         // Move constructor (copy is not allowed)
@@ -215,7 +219,8 @@ namespace RHI
             m_pAllocator{ std::move(Allocation.m_pAllocator) },
             m_AllocationManagerId{ std::move(Allocation.m_AllocationManagerId) },
             m_pDescriptorHeap{ std::move(Allocation.m_pDescriptorHeap) },
-            m_DescriptorSize{ std::move(Allocation.m_DescriptorSize) }
+            m_DescriptorSize{ std::move(Allocation.m_DescriptorSize) },
+            m_DescriptorHandleOffsetIndex{ std::move(Allocation.m_DescriptorHandleOffsetIndex) }
         // clang-format on
         {
             Allocation.Reset();
@@ -224,13 +229,14 @@ namespace RHI
         // Move assignment (assignment is not allowed)
         DescriptorHeapAllocation& operator=(DescriptorHeapAllocation&& Allocation) noexcept
         {
-            m_FirstCpuHandle      = std::move(Allocation.m_FirstCpuHandle);
-            m_FirstGpuHandle      = std::move(Allocation.m_FirstGpuHandle);
-            m_NumHandles          = std::move(Allocation.m_NumHandles);
-            m_pAllocator          = std::move(Allocation.m_pAllocator);
-            m_AllocationManagerId = std::move(Allocation.m_AllocationManagerId);
-            m_pDescriptorHeap     = std::move(Allocation.m_pDescriptorHeap);
-            m_DescriptorSize      = std::move(Allocation.m_DescriptorSize);
+            m_FirstCpuHandle              = std::move(Allocation.m_FirstCpuHandle);
+            m_FirstGpuHandle              = std::move(Allocation.m_FirstGpuHandle);
+            m_NumHandles                  = std::move(Allocation.m_NumHandles);
+            m_pAllocator                  = std::move(Allocation.m_pAllocator);
+            m_AllocationManagerId         = std::move(Allocation.m_AllocationManagerId);
+            m_pDescriptorHeap             = std::move(Allocation.m_pDescriptorHeap);
+            m_DescriptorSize              = std::move(Allocation.m_DescriptorSize);
+            m_DescriptorHandleOffsetIndex = std::move(Allocation.m_DescriptorHandleOffsetIndex);
 
             Allocation.Reset();
 
@@ -239,13 +245,14 @@ namespace RHI
 
         void Reset()
         {
-            m_FirstCpuHandle.ptr  = 0;
-            m_FirstGpuHandle.ptr  = 0;
-            m_pAllocator          = nullptr;
-            m_pDescriptorHeap     = nullptr;
-            m_NumHandles          = 0;
-            m_AllocationManagerId = InvalidAllocationMgrId;
-            m_DescriptorSize      = 0;
+            m_FirstCpuHandle.ptr          = 0;
+            m_FirstGpuHandle.ptr          = 0;
+            m_pAllocator                  = nullptr;
+            m_pDescriptorHeap             = nullptr;
+            m_NumHandles                  = 0;
+            m_AllocationManagerId         = InvalidAllocationMgrId;
+            m_DescriptorSize              = 0;
+            m_DescriptorHandleOffsetIndex = InvalidDescriptorHandleOffsetIndex;
         }
 
         // clang-format off
@@ -267,6 +274,9 @@ namespace RHI
         // Returns GPU descriptor handle at the specified offset
         D3D12_GPU_DESCRIPTOR_HANDLE GetGpuHandle(UINT32 Offset = 0) const;
 
+        // Returns DescriptorHandle at the specified offset
+        DescriptorHandle GetDescriptorHandle(UINT32 Offset = 0) const;
+
         template<typename HandleType>
         HandleType GetHandle(UINT32 Offset = 0) const;
 
@@ -280,6 +290,12 @@ namespace RHI
         D3D12_GPU_DESCRIPTOR_HANDLE GetHandle<D3D12_GPU_DESCRIPTOR_HANDLE>(UINT32 Offset) const
         {
             return GetGpuHandle(Offset);
+        }
+
+        template<>
+        DescriptorHandle GetHandle<DescriptorHandle>(UINT32 Offset) const
+        {
+            return GetDescriptorHandle(Offset);
         }
 
         // Returns pointer to D3D12 descriptor heap that contains this allocation
@@ -314,6 +330,11 @@ namespace RHI
 
         // Number of descriptors in the allocation
         UINT32 m_NumHandles = 0;
+
+        // The handle offset of this allocation in descriptorheap
+        UINT32 m_DescriptorHandleOffsetIndex = InvalidDescriptorHandleOffsetIndex;
+
+        static constexpr UINT32 InvalidDescriptorHandleOffsetIndex = 0xFFFFFFFF;
 
         static constexpr UINT16 InvalidAllocationMgrId = 0xFFFF;
 
@@ -634,6 +655,7 @@ namespace RHI
         // 在一帧的结尾释放掉这里申请的所有资源
         void ReleaseAllocations(UINT32 FenceValue);
         */
+        void RetireAllcations();
 
         virtual DescriptorHeapAllocation Allocate(UINT32 Count) override final;
         virtual void                     Free(DescriptorHeapAllocation&& Allocation) override final;
@@ -659,7 +681,7 @@ namespace RHI
         UINT32 m_PeakSuballocationsTotalSize = 0;
     };
 
-// This handle refers to a descriptor or a descriptor table (contiguous descriptors) that is shader visible.
+    // This handle refers to a descriptor or a descriptor table (contiguous descriptors) that is shader visible.
     class DescriptorHandle
     {
     public:
@@ -689,8 +711,8 @@ namespace RHI
         }
 
         inline const D3D12_CPU_DESCRIPTOR_HANDLE* operator&() const { return &m_CpuHandle; }
-                                                  operator D3D12_CPU_DESCRIPTOR_HANDLE() const { return m_CpuHandle; }
-                                                  operator D3D12_GPU_DESCRIPTOR_HANDLE() const { return m_GpuHandle; }
+        operator D3D12_CPU_DESCRIPTOR_HANDLE() const { return m_CpuHandle; }
+        operator D3D12_GPU_DESCRIPTOR_HANDLE() const { return m_GpuHandle; }
 
         inline size_t   GetCpuPtr() const { return m_CpuHandle.ptr; }
         inline uint64_t GetGpuPtr() const { return m_GpuHandle.ptr; }

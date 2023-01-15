@@ -10,7 +10,7 @@ namespace Pilot
 
     void DeferredRenderer::Initialize()
     {
-        RHI::D3D12Texture* pBackBufferResource = swapChain->GetCurrentBackBufferResource();
+        RHI::D3D12Texture* pBackBufferResource = pSwapChain->GetCurrentBackBufferResource();
         
         CD3DX12_RESOURCE_DESC backDesc = pBackBufferResource->GetDesc();
 
@@ -28,10 +28,10 @@ namespace Pilot
         const std::filesystem::path&   shaderRootPath = config_manager->getShaderFolder();
 
         // 初始化全局对象
-        Shaders::Compile(compiler, shaderRootPath);
-        RootSignatures::Compile(device);
-        CommandSignatures::Compile(device);
-        PipelineStates::Compile(pipleineColorFormat, pipleineDepthFormat, backBufferFormat, depthBufferFormat, device);
+        Shaders::Compile(pCompiler, shaderRootPath);
+        RootSignatures::Compile(pDevice);
+        CommandSignatures::Compile(pDevice);
+        PipelineStates::Compile(pipleineColorFormat, pipleineDepthFormat, backBufferFormat, depthBufferFormat, pDevice);
 
         InitGlobalBuffer();
         InitPass();
@@ -42,7 +42,7 @@ namespace Pilot
         const FLOAT         renderTargetClearColor[4] = {0, 0, 0, 0};
         CD3DX12_CLEAR_VALUE renderTargetClearValue    = CD3DX12_CLEAR_VALUE(backBufferFormat, renderTargetClearColor);
 
-        p_RenderTargetTex = RHI::D3D12Texture::Create2D(device->GetLinkedDevice(),
+        p_RenderTargetTex = RHI::D3D12Texture::Create2D(pDevice->GetLinkedDevice(),
                                                         viewport.width,
                                                         viewport.height,
                                                         1,
@@ -57,7 +57,7 @@ namespace Pilot
     void DeferredRenderer::InitPass()
     {
         RenderPassCommonInfo renderPassCommonInfo = {
-            &renderGraphAllocator, &renderGraphRegistry, device, windowsSystem};
+            &renderGraphAllocator, &renderGraphRegistry, pDevice, pWindowSystem};
 
         // Prepare common resources
         const FLOAT renderTargetClearColor[4] = {0, 0, 0, 0};
@@ -114,7 +114,7 @@ namespace Pilot
     void DeferredRenderer::InitializeUIRenderBackend(WindowUI* window_ui)
     {
         RenderPassCommonInfo renderPassCommonInfo = {
-            &renderGraphAllocator, &renderGraphRegistry, device, windowsSystem};
+            &renderGraphAllocator, &renderGraphRegistry, pDevice, pWindowSystem};
 
         mUIPass = std::make_shared<UIPass>();
         mUIPass->setCommonInfo(renderPassCommonInfo);

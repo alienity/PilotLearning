@@ -8,7 +8,7 @@ namespace RHI
         : D3D12DeviceChild(Parent)
         , WindowHandle(HWnd)
         , p_SwapChain4(InitializeSwapChain())
-        , Fence(Parent, 0, D3D12_FENCE_FLAG_NONE)
+        , m_Fence(Parent, 0, D3D12_FENCE_FLAG_NONE)
     {
         // Check display HDR support and initialize ST.2084 support to match the display's support.
         DisplayHDRSupport();
@@ -22,10 +22,13 @@ namespace RHI
 
     D3D12SwapChain::~D3D12SwapChain()
     {
-        if (SyncHandle)
+        if (m_SyncHandle)
         {
-            SyncHandle.WaitForCompletion();
+            m_SyncHandle.WaitForCompletion();
         }
+        p_SwapChain4->Release();
+        for (size_t i = 0; i < BackBufferCount; i++)
+            p_BackBuffers[i] = nullptr;
     }
 
     void D3D12SwapChain::DisplayHDRSupport()
@@ -152,12 +155,14 @@ namespace RHI
         return RHIRect {0, 0, static_cast<long>(Width), static_cast<long>(Height)};
     }
 
+    RHI::D3D12SyncHandle D3D12SwapChain::GetSyncHandle() const noexcept { return m_SyncHandle; }
+
     void D3D12SwapChain::Resize(UINT Width, UINT Height)
     {
-        if (SyncHandle)
+        if (m_SyncHandle)
         {
-            SyncHandle.WaitForCompletion();
-            SyncHandle = nullptr;
+            m_SyncHandle.WaitForCompletion();
+            m_SyncHandle = nullptr;
         }
 
         GetWindowRect(WindowHandle, &WindowBounds);
@@ -202,8 +207,8 @@ namespace RHI
         }
         Present.PostPresent();
 
-        UINT64 ValueToWaitFor = Fence.Signal(GetParentDevice()->GetLinkedDevice()->GetGraphicsQueue());
-        SyncHandle            = D3D12SyncHandle(&Fence, ValueToWaitFor);
+        UINT64 ValueToWaitFor = m_Fence.Signal(GetParentDevice()->GetLinkedDevice()->GetGraphicsQueue());
+        m_SyncHandle          = D3D12SyncHandle(&m_Fence, ValueToWaitFor);
 
         m_CurrentBackBufferIndex = (m_CurrentBackBufferIndex + 1) % BackBufferCount;
     }

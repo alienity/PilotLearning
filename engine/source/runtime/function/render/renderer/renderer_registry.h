@@ -162,10 +162,8 @@ struct RootSignatures
             RHI::RootSignatureDesc rootSigDesc =
                 RHI::RootSignatureDesc()
                     .Add32BitConstants<0, 0>(2)
-                    .AddDescriptorTable(
-                        RHI::D3D12DescriptorTable(1).AddSRVRange<0, 0>(1, D3D12_DESCRIPTOR_RANGE_FLAG_NONE, 0))
-                    .AddDescriptorTable(
-                        RHI::D3D12DescriptorTable(1).AddUAVRange<0, 0>(1, D3D12_DESCRIPTOR_RANGE_FLAG_NONE, 0))
+                    .AddDescriptorTable(RHI::D3D12DescriptorTable(1).AddSRVRange<0, 0>(1, D3D12_DESCRIPTOR_RANGE_FLAG_NONE, 0))
+                    .AddDescriptorTable(RHI::D3D12DescriptorTable(1).AddUAVRange<0, 0>(1, D3D12_DESCRIPTOR_RANGE_FLAG_NONE, 0))
                     .Add32BitConstants<1, 0>(2)
                     .AllowResourceDescriptorHeapIndexing();
 
@@ -176,9 +174,7 @@ struct RootSignatures
             RHI::RootSignatureDesc rootSigDesc =
                 RHI::RootSignatureDesc()
                     .Add32BitConstants<0, 0>(1)
-                    .AddStaticSampler<10, 0>(D3D12_FILTER::D3D12_FILTER_ANISOTROPIC,
-                                       D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_WRAP,
-                                       8)
+                    .AddStaticSampler<10, 0>(D3D12_FILTER::D3D12_FILTER_ANISOTROPIC, D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_WRAP, 8)
                     .AllowResourceDescriptorHeapIndexing()
                     .AllowSampleDescriptorHeapIndexing();
 
@@ -231,9 +227,7 @@ struct RootSignatures
                     .AddConstantBufferView<1, 0>()
                     .AddShaderResourceView<0, 0>()
                     .AddShaderResourceView<1, 0>()
-                    .AddStaticSampler<10, 0>(D3D12_FILTER::D3D12_FILTER_ANISOTROPIC,
-                                       D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_WRAP,
-                                       8)
+                    .AddStaticSampler<10, 0>(D3D12_FILTER::D3D12_FILTER_ANISOTROPIC, D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_WRAP, 8)
                     .AddStaticSampler<11, 0>(D3D12_FILTER::D3D12_FILTER_COMPARISON_ANISOTROPIC,
                                        D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
                                        8,
@@ -294,7 +288,7 @@ struct CommandSignatures
     static void Compile(RHI::D3D12Device* pDevice)
     {
         {
-            RHI::CommandSignatureDesc Builder(1, sizeof(D3D12_DISPATCH_ARGUMENTS));
+            RHI::CommandSignatureDesc Builder(1);
             Builder.AddDispatch();
 
             pDispatchIndirectCommandSignature =
@@ -302,7 +296,7 @@ struct CommandSignatures
         }
 
         {
-            RHI::CommandSignatureDesc Builder(4, sizeof(HLSL::CommandSignatureParams));
+            RHI::CommandSignatureDesc Builder(4);
             Builder.AddConstant(0, 0, 1);
             Builder.AddVertexBufferView(0);
             Builder.AddIndexBufferView();
@@ -312,7 +306,7 @@ struct CommandSignatures
                 std::make_shared<RHI::D3D12CommandSignature>(pDevice, Builder, RootSignatures::pIndirectDraw->GetApiHandle());
         }
         {
-            RHI::CommandSignatureDesc Builder(4, sizeof(HLSL::CommandSignatureParams));
+            RHI::CommandSignatureDesc Builder(4);
             Builder.AddConstant(0, 0, 1);
             Builder.AddVertexBufferView(0);
             Builder.AddIndexBufferView();
@@ -322,7 +316,7 @@ struct CommandSignatures
                 pDevice, Builder, RootSignatures::pIndirectDrawDirectionShadowmap->GetApiHandle());
         }
         {
-            RHI::CommandSignatureDesc Builder(4, sizeof(HLSL::CommandSignatureParams));
+            RHI::CommandSignatureDesc Builder(4);
             Builder.AddConstant(0, 0, 1);
             Builder.AddVertexBufferView(0);
             Builder.AddIndexBufferView();
