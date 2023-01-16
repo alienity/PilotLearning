@@ -9,8 +9,8 @@
 
 namespace RHI
 {
-    void InitializeCommonState(D3D12Device* pParent);
-    void DestroyCommonState(void);
+    void InitializeCommonState(D3D12LinkedDevice* pParent);
+    void DestroyCommonState();
 
     extern SamplerDesc SamplerLinearWrapDesc;
     extern SamplerDesc SamplerAnisoWrapDesc;

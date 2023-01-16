@@ -72,6 +72,10 @@ namespace RHI
         D3D12PipelineState() noexcept = default;
         explicit D3D12PipelineState(D3D12Device* Parent, std::wstring Name, const PipelineStateStreamDesc& Desc);
 
+        explicit D3D12PipelineState(D3D12Device* Parent, std::wstring Name, const D3D12_GRAPHICS_PIPELINE_STATE_DESC Desc);
+        explicit D3D12PipelineState(D3D12Device* Parent, std::wstring Name, const D3DX12_MESH_SHADER_PIPELINE_STATE_DESC Desc);
+        explicit D3D12PipelineState(D3D12Device* Parent, std::wstring Name, const D3D12_COMPUTE_PIPELINE_STATE_DESC Desc);
+
         D3D12PipelineState(D3D12PipelineState&&) noexcept = default;
         D3D12PipelineState& operator=(D3D12PipelineState&&) noexcept = default;
 

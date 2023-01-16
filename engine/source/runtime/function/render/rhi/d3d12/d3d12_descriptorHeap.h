@@ -661,6 +661,8 @@ namespace RHI
         virtual void                     Free(DescriptorHeapAllocation&& Allocation) override final;
         virtual UINT32                   GetDescriptorSize() const override final;
 
+        DescriptorHandle AllocateDescHandle();
+
         inline size_t GetSuballocationCount() const { return m_Suballocations.size(); }
 
     private:

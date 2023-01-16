@@ -1,6 +1,7 @@
 #include "d3d12_linkedDevice.h"
 #include "d3d12_device.h"
 #include "d3d12_samplerManager.h"
+#include "d3d12_graphicsCommon.h"
 #include "runtime/core/base/utility.h"
 
 //// D3D12.DescriptorAllocatorPageSize
@@ -33,6 +34,7 @@ namespace RHI
         m_CopyQueue1 = std::make_shared<D3D12CommandQueue>(this, RHID3D12CommandQueueType::Copy1);
         m_CopyQueue2 = std::make_shared<D3D12CommandQueue>(this, RHID3D12CommandQueueType::Copy2);
         m_Profiler = std::make_shared<D3D12Profiler>(this, 1);
+
         m_RtvDescriptorHeaps = std::make_shared<CPUDescriptorHeap>(
                 this, CVar_GlobalCPUViewHeapSize, D3D12_DESCRIPTOR_HEAP_TYPE_RTV, D3D12_DESCRIPTOR_HEAP_FLAG_NONE);
         m_DsvDescriptorHeaps = std::make_shared<CPUDescriptorHeap>(
@@ -47,6 +49,8 @@ namespace RHI
                                                          CVar_GlobalDynamicGPUSamplerHeapSize,
                                                          D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER,
                                                          D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
+        // initialize common states
+        RHI::InitializeCommonState(this);
 
 #if _DEBUG
         //ResourceDescriptorHeap.SetName(L"Resource Descriptor Heap");

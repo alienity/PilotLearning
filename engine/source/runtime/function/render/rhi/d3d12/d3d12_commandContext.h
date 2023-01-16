@@ -3,6 +3,7 @@
 #include "d3d12_commandList.h"
 #include "d3d12_resourceAllocator.h"
 #include "d3d12_commandSignature.h"
+#include "d3d12_dynamicDescriptorHeap.h"
 #include "d3d12_profiler.h"
 
 #include "core/color/color.h"
@@ -138,7 +139,13 @@ namespace RHI
         D3D12CommandAllocatorPool                      m_CommandAllocatorPool;
         D3D12LinearAllocator                           m_CpuLinearAllocator;
 
-        DynamicSuballocationsManager m_DynamicSuballocationsManager;
+        // Every context must use its own allocator that maintains individual list of retired descriptor heaps to
+        // avoid interference with other command contexts
+        // The allocations in heaps are discarded at the end of the frame.
+        std::shared_ptr<DynamicSuballocationsManager> m_DynamicGPUDescriptorAllocator[2];
+
+        std::shared_ptr<DynamicDescriptorHeap> m_pDynamicViewDescriptorHeap;	// HEAP_TYPE_CBV_SRV_UAV
+        std::shared_ptr<DynamicDescriptorHeap> m_DynamicSamplerDescriptorHeap;	// HEAP_TYPE_SAMPLER
 
         // TODO: Finish cache
         // State Cache

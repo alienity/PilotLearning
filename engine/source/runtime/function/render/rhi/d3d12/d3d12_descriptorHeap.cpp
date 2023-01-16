@@ -488,6 +488,20 @@ namespace RHI
     }
     */
 
+    void DynamicSuballocationsManager::RetireAllcations()
+    {
+        // Clear the list and dispose all allocated chunks of GPU descriptor heap.
+        // The chunks will be added to release queues and eventually returned to the
+        // parent GPU heap.
+        for (auto& Allocation : m_Suballocations)
+        {
+            m_ParentGPUHeap->Free(std::move(Allocation));
+        }
+        m_Suballocations.clear();
+        m_CurrDescriptorCount         = 0;
+        m_CurrSuballocationsTotalSize = 0;
+    }
+
     DescriptorHeapAllocation DynamicSuballocationsManager::Allocate(UINT32 Count)
     {
         // This method is intentionally lock-free as it is expected to
@@ -536,6 +550,12 @@ namespace RHI
     }
 
     UINT32 DynamicSuballocationsManager::GetDescriptorSize() const { return m_ParentGPUHeap->GetDescriptorSize(); }
+
+    DescriptorHandle DynamicSuballocationsManager::AllocateDescHandle()
+    {
+        DescriptorHeapAllocation curAllocation = this->Allocate(1);
+        return curAllocation.GetDescriptorHandle();
+    }
 
 }
 

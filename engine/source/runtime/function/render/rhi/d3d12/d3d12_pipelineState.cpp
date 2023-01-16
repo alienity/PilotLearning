@@ -158,6 +158,30 @@ namespace RHI
         PipelineState = Create(Parent, Name, Parser.Type, Parser);
     }
 
+    D3D12PipelineState::D3D12PipelineState(D3D12Device*                       Parent,
+                                           std::wstring                       Name,
+                                           D3D12_GRAPHICS_PIPELINE_STATE_DESC Desc) :
+        D3D12DeviceChild(Parent)
+    {
+        PipelineState = Compile<D3D12_GRAPHICS_PIPELINE_STATE_DESC>(Parent, Name, Desc);
+    }
+
+    D3D12PipelineState::D3D12PipelineState(D3D12Device*                           Parent,
+                                           std::wstring                           Name,
+                                           D3DX12_MESH_SHADER_PIPELINE_STATE_DESC Desc) :
+        D3D12DeviceChild(Parent)
+    {
+        PipelineState = Compile<D3DX12_MESH_SHADER_PIPELINE_STATE_DESC>(Parent, Name, Desc);
+    }
+
+    D3D12PipelineState::D3D12PipelineState(D3D12Device*                      Parent,
+                                           std::wstring                      Name,
+                                           D3D12_COMPUTE_PIPELINE_STATE_DESC Desc) :
+        D3D12DeviceChild(Parent)
+    {
+        PipelineState = Compile<D3D12_COMPUTE_PIPELINE_STATE_DESC>(Parent, Name, Desc);
+    }
+
     ID3D12PipelineState* D3D12PipelineState::GetApiHandle() const noexcept
     {
         //if (CompilationWork)

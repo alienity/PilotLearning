@@ -14,8 +14,6 @@
 
 namespace RHI
 {
-    D3D12Device* p_Parent;
-
     std::shared_ptr<D3D12Texture> PDefaultTextures[kNumDefaultTextures];
     D3D12Texture* GetDefaultTexture(eDefaultTexture texID)
     {
@@ -79,41 +77,39 @@ namespace RHI
 
 
     
-    void InitializeCommonState(D3D12Device* pParent)
+    void InitializeCommonState(D3D12LinkedDevice* pParent)
     {
-        p_Parent = pParent;
-
         SamplerLinearWrapDesc.Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR;
-        SamplerLinearWrap            = SamplerLinearWrapDesc.CreateDescriptor(p_Parent->GetLinkedDevice());
+        SamplerLinearWrap            = SamplerLinearWrapDesc.CreateDescriptor(pParent);
 
         SamplerAnisoWrapDesc.MaxAnisotropy = 4;
-        SamplerAnisoWrap                   = SamplerAnisoWrapDesc.CreateDescriptor(p_Parent->GetLinkedDevice());
+        SamplerAnisoWrap                   = SamplerAnisoWrapDesc.CreateDescriptor(pParent);
 
         SamplerShadowDesc.Filter         = D3D12_FILTER_COMPARISON_MIN_MAG_LINEAR_MIP_POINT;
         SamplerShadowDesc.ComparisonFunc = D3D12_COMPARISON_FUNC_GREATER_EQUAL;
         SamplerShadowDesc.SetTextureAddressMode(D3D12_TEXTURE_ADDRESS_MODE_CLAMP);
-        SamplerShadow = SamplerShadowDesc.CreateDescriptor(p_Parent->GetLinkedDevice());
+        SamplerShadow = SamplerShadowDesc.CreateDescriptor(pParent);
 
         SamplerLinearClampDesc.Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR;
         SamplerLinearClampDesc.SetTextureAddressMode(D3D12_TEXTURE_ADDRESS_MODE_CLAMP);
-        SamplerLinearClamp = SamplerLinearClampDesc.CreateDescriptor(p_Parent->GetLinkedDevice());
+        SamplerLinearClamp = SamplerLinearClampDesc.CreateDescriptor(pParent);
 
         SamplerVolumeWrapDesc.Filter = D3D12_FILTER_MIN_MAG_MIP_POINT;
-        SamplerVolumeWrap            = SamplerVolumeWrapDesc.CreateDescriptor(p_Parent->GetLinkedDevice());
+        SamplerVolumeWrap            = SamplerVolumeWrapDesc.CreateDescriptor(pParent);
 
         SamplerPointClampDesc.Filter = D3D12_FILTER_MIN_MAG_MIP_POINT;
         SamplerPointClampDesc.SetTextureAddressMode(D3D12_TEXTURE_ADDRESS_MODE_CLAMP);
-        SamplerPointClamp = SamplerPointClampDesc.CreateDescriptor(p_Parent->GetLinkedDevice());
+        SamplerPointClamp = SamplerPointClampDesc.CreateDescriptor(pParent);
 
         SamplerLinearBorderDesc.Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR;
         SamplerLinearBorderDesc.SetTextureAddressMode(D3D12_TEXTURE_ADDRESS_MODE_BORDER);
         SamplerLinearBorderDesc.SetBorderColor(Pilot::Color(0.0f, 0.0f, 0.0f, 0.0f));
-        SamplerLinearBorder = SamplerLinearBorderDesc.CreateDescriptor(p_Parent->GetLinkedDevice());
+        SamplerLinearBorder = SamplerLinearBorderDesc.CreateDescriptor(pParent);
 
         SamplerPointBorderDesc.Filter = D3D12_FILTER_MIN_MAG_MIP_POINT;
         SamplerPointBorderDesc.SetTextureAddressMode(D3D12_TEXTURE_ADDRESS_MODE_BORDER);
         SamplerPointBorderDesc.SetBorderColor(Pilot::Color(0.0f, 0.0f, 0.0f, 0.0f));
-        SamplerPointBorder = SamplerPointBorderDesc.CreateDescriptor(p_Parent->GetLinkedDevice());
+        SamplerPointBorder = SamplerPointBorderDesc.CreateDescriptor(pParent);
 
         // Default rasterizer states
         RasterizerDefault.FillMode              = D3D12_FILL_MODE_SOLID;
@@ -128,7 +124,7 @@ namespace RHI
         RasterizerDefault.ForcedSampleCount     = 0;
         RasterizerDefault.ConservativeRaster    = D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF;
 
-RasterizerDefaultMsaa                   = RasterizerDefault;
+        RasterizerDefaultMsaa                   = RasterizerDefault;
         RasterizerDefaultMsaa.MultisampleEnable = TRUE;
 
         RasterizerDefaultCw                       = RasterizerDefault;
@@ -210,11 +206,11 @@ RasterizerDefaultMsaa                   = RasterizerDefault;
 
         RHI::CommandSignatureDesc mDispatchIndirectDesc(1);
         mDispatchIndirectDesc.AddDispatch();
-        pDispatchIndirectCommandSignature = new D3D12CommandSignature(pParent, mDispatchIndirectDesc);
+        pDispatchIndirectCommandSignature = new D3D12CommandSignature(pParent->GetParentDevice(), mDispatchIndirectDesc);
 
         RHI::CommandSignatureDesc mDrawIndirectDesc(1);
         mDrawIndirectDesc.AddDraw();
-        pDrawIndirectCommandSignature = new D3D12CommandSignature(pParent, mDrawIndirectDesc);
+        pDrawIndirectCommandSignature = new D3D12CommandSignature(pParent->GetParentDevice(), mDrawIndirectDesc);
 
         RHI::RootSignatureDesc mCommonRSDesc;
         mCommonRSDesc.Add32BitConstants<0, 0>(4);
@@ -225,15 +221,38 @@ RasterizerDefaultMsaa                   = RasterizerDefault;
         mCommonRSDesc.AddStaticSampler<1, 0>(SamplerPointBorderDesc);
         mCommonRSDesc.AddStaticSampler<2, 0>(SamplerLinearBorderDesc);
 
-        g_pCommonRS = new D3D12RootSignature(pParent, mCommonRSDesc);
+        g_pCommonRS = new D3D12RootSignature(pParent->GetParentDevice(), mCommonRSDesc);
         
-        for (size_t i = 0; i < 4; i++)
-        {
-            PipelineStateStreamDesc genMipPSODesc;
+#define CreatePSO(ObjName, Index, PSOName, ShaderByteCode) \
+    D3D12_COMPUTE_PIPELINE_STATE_DESC genPSODesc##Index;\
+    genPSODesc##Index.pRootSignature = g_pCommonRS->GetApiHandle();\
+    genPSODesc##Index.CS = CD3DX12_SHADER_BYTECODE((const void*)ShaderByteCode, sizeof(ShaderByteCode));\
+    g_pGenerateMipsLinearPSO[Index]  = new D3D12PipelineState(pParent->GetParentDevice(), PSOName, genPSODesc##Index);
 
-            g_pGenerateMipsLinearPSO[i] = new D3D12PipelineState(pParent, L"Generate Mips Linear CS", );
-        }
+        CreatePSO(g_pGenerateMipsLinearPS, 0, L"Generate Mips Linear CS", g_pGenerateMipsLinearCS)
+        CreatePSO(g_pGenerateMipsLinearPS, 1, L"Generate Mips Linear Odd X CS", g_pGenerateMipsLinearOddXCS)
+        CreatePSO(g_pGenerateMipsLinearPS, 2, L"Generate Mips Linear Odd Y CS", g_pGenerateMipsLinearOddYCS)
+        CreatePSO(g_pGenerateMipsLinearPS, 3, L"Generate Mips Linear Odd CS", g_pGenerateMipsLinearOddCS)
+        CreatePSO(g_GenerateMipsGammaPSO, 0, L"Generate Mips Gamma CS", g_pGenerateMipsGammaCS)
+        CreatePSO(g_GenerateMipsGammaPSO, 1, L"Generate Mips Gamma Odd X CS", g_pGenerateMipsGammaOddXCS)
+        CreatePSO(g_GenerateMipsGammaPSO, 2, L"Generate Mips Gamma Odd Y CS", g_pGenerateMipsGammaOddYCS)
+        CreatePSO(g_GenerateMipsGammaPSO, 3, L"Generate Mips Gamma Odd CS", g_pGenerateMipsGammaOddCS)
 
+        D3D12_GRAPHICS_PIPELINE_STATE_DESC mDownsampleDepthDesc;
+        mDownsampleDepthDesc.pRootSignature                 = g_pCommonRS->GetApiHandle();
+        mDownsampleDepthDesc.RasterizerState                = RasterizerTwoSided;
+        mDownsampleDepthDesc.BlendState                     = BlendDisable;
+        mDownsampleDepthDesc.DepthStencilState              = DepthStateReadWrite;
+        mDownsampleDepthDesc.SampleMask                     = 0xFFFFFFFF;
+        mDownsampleDepthDesc.InputLayout.NumElements        = 0;
+        mDownsampleDepthDesc.InputLayout.pInputElementDescs = nullptr;
+        mDownsampleDepthDesc.PrimitiveTopologyType          = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+        mDownsampleDepthDesc.VS = CD3DX12_SHADER_BYTECODE((const void*)g_pScreenQuadCommonVS, sizeof(g_pScreenQuadCommonVS));
+        mDownsampleDepthDesc.PS = CD3DX12_SHADER_BYTECODE((const void*)g_pDownsampleDepthPS, sizeof(g_pDownsampleDepthPS));
+        mDownsampleDepthDesc.DSVFormat          = DXGI_FORMAT_D32_FLOAT;
+        mDownsampleDepthDesc.SampleDesc.Count   = 1;
+        mDownsampleDepthDesc.SampleDesc.Quality = 0;
+        g_pDownsampleDepthPSO = new D3D12PipelineState(pParent->GetParentDevice(), L"DownsampleDepth PSO", mDownsampleDepthDesc);
     }
 
     void DestroyCommonState(void)
@@ -246,8 +265,6 @@ RasterizerDefaultMsaa                   = RasterizerDefault;
         delete[] g_pGenerateMipsLinearPSO;
         delete[] g_pGenerateMipsGammaPSO;
         delete g_pDownsampleDepthPSO;
-
-
     }
 
 }

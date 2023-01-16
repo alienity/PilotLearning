@@ -1,5 +1,6 @@
 #pragma once
 #include "d3d12_core.h"
+#include "d3d12_linkedDevice.h"
 #include "d3d12_rootSignature.h"
 #include "d3d12_descriptorHeap.h"
 
@@ -17,9 +18,9 @@ namespace RHI
     class DynamicDescriptorHeap : public D3D12LinkedDeviceChild
     {
     public:
-        DynamicDescriptorHeap(D3D12LinkedDevice*         Parent,
-                              D3D12CommandContext&       OwningContext,
-                              D3D12_DESCRIPTOR_HEAP_TYPE HeapType);
+        DynamicDescriptorHeap(D3D12LinkedDevice*   Parent,
+                              D3D12CommandContext* POwningContext,
+                              GPUDescriptorHeap*   PDescriptorHeap);
         ~DynamicDescriptorHeap();
 
         void CleanupUsedHeaps();
@@ -77,8 +78,8 @@ namespace RHI
 
         // Non-static members
         D3D12CommandContext*               m_OwningContext;
-        ID3D12DescriptorHeap*              m_CurrentHeapPtr;
-        const D3D12_DESCRIPTOR_HEAP_TYPE   m_DescriptorType;
+        GPUDescriptorHeap*                 m_CurrentHeap;
+        D3D12_DESCRIPTOR_HEAP_TYPE         m_DescriptorType;
         UINT32                             m_DescriptorSize;
         UINT32                             m_CurrentOffset;
         DescriptorHandle                   m_FirstDescriptor;
@@ -112,6 +113,7 @@ namespace RHI
 
             UINT32 ComputeStagedSize();
             void   CopyAndBindStaleTables(
+                  D3D12LinkedDevice*         PDevice,
                   D3D12_DESCRIPTOR_HEAP_TYPE Type,
                   UINT32                     DescriptorSize,
                   DescriptorHandle           DestHandleStart,
@@ -131,13 +133,6 @@ namespace RHI
 
         DescriptorHandleCache m_GraphicsHandleCache;
         DescriptorHandleCache m_ComputeHandleCache;
-
-        bool HasSpace(UINT32 Count)
-        {
-            return (m_CurrentHeapPtr != nullptr && m_CurrentOffset + Count <= kNumDescriptorsPerHeap);
-        }
-
-        ID3D12DescriptorHeap* GetHeapPointer();
 
         DescriptorHandle Allocate(UINT Count)
         {

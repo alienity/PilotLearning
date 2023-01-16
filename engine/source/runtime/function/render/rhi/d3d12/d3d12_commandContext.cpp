@@ -6,6 +6,7 @@
 #include "d3d12_rootSignature.h"
 #include "d3d12_descriptor.h"
 #include "d3d12_resource.h"
+#include "d3d12_graphicsCommon.h"
 
 #include "runtime/core/base/utility.h"
 #include "runtime/core/base/macro.h"
@@ -46,7 +47,12 @@ namespace RHI
         D3D12LinkedDeviceChild(Parent),
         m_Type(Type), m_CommandListType(CommandListType), m_CommandListHandle(Parent, CommandListType),
         m_CommandAllocator(nullptr), m_CommandAllocatorPool(Parent, CommandListType), m_CpuLinearAllocator(Parent)
-    {}
+    {
+        m_DynamicGPUDescriptorAllocator[0] = std::make_shared<DynamicSuballocationsManager>(
+            Parent->GetResourceDescriptorHeap(), 256, "CBV_SRV_UAV dynamic descriptor allocator");
+        m_DynamicGPUDescriptorAllocator[1] = std::make_shared<DynamicSuballocationsManager>(
+            Parent->GetSamplerDescriptorHeap(), 64, "SAMPLER dynamic descriptor allocator");
+    }
 
 	D3D12CommandQueue* D3D12CommandContext::GetCommandQueue() const noexcept
     {
@@ -115,8 +121,11 @@ namespace RHI
 
         // Release the command allocator so it can be reused.
         m_CommandAllocatorPool.DiscardCommandAllocator(std::exchange(m_CommandAllocator, nullptr), SyncHandle);
-
+        // Release temp resourcce
         m_CpuLinearAllocator.Version(SyncHandle);
+        // Release temp Allocations
+        m_DynamicGPUDescriptorAllocator[0]->RetireAllcations();
+        m_DynamicGPUDescriptorAllocator[1]->RetireAllcations();
         return SyncHandle;
     }
 
@@ -775,7 +784,7 @@ namespace RHI
 
     void D3D12GraphicsContext::DrawIndirect(D3D12Resource* ArgumentBuffer, UINT64 ArgumentBufferOffset)
     {
-        ExecuteIndirect(Graphics::DrawIndirectCommandSignature, ArgumentBuffer, ArgumentBufferOffset);
+        ExecuteIndirect(pDispatchIndirectCommandSignature, ArgumentBuffer, ArgumentBufferOffset);
     }
 
     void D3D12GraphicsContext::ExecuteIndirect(D3D12CommandSignature* CommandSig,

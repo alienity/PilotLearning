@@ -8,15 +8,15 @@ namespace RHI
 
     std::mutex DynamicDescriptorHeap::sm_Mutex;
 
-    DynamicDescriptorHeap::DynamicDescriptorHeap(D3D12LinkedDevice*         Parent,
-                                                 D3D12CommandContext&       OwningContext,
-                                                 D3D12_DESCRIPTOR_HEAP_TYPE HeapType) :
+    DynamicDescriptorHeap::DynamicDescriptorHeap(D3D12LinkedDevice*   Parent,
+                                                 D3D12CommandContext* POwningContext,
+                                                 GPUDescriptorHeap*   PDescriptorHeap) :
         D3D12LinkedDeviceChild(Parent),
-        m_OwningContext(OwningContext), m_DescriptorType(HeapType)
+        m_OwningContext(POwningContext), m_CurrentHeap(PDescriptorHeap)
     {
-        m_CurrentHeapPtr = nullptr;
         m_CurrentOffset  = 0;
-        m_DescriptorSize = Graphics::g_Device->GetDescriptorHandleIncrementSize(HeapType);
+        m_DescriptorSize = PDescriptorHeap->GetDescriptorSize();
+        m_DescriptorType = PDescriptorHeap->GetHeapDesc().Type;
     }
 
     DynamicDescriptorHeap::~DynamicDescriptorHeap() {}
@@ -25,19 +25,6 @@ namespace RHI
     {
         m_GraphicsHandleCache.ClearCache();
         m_ComputeHandleCache.ClearCache();
-    }
-
-    inline ID3D12DescriptorHeap* DynamicDescriptorHeap::GetHeapPointer()
-    {
-        if (m_CurrentHeapPtr == nullptr)
-        {
-            ASSERT(m_CurrentOffset == 0);
-            m_CurrentHeapPtr  = RequestDescriptorHeap(m_DescriptorType);
-            m_FirstDescriptor = DescriptorHandle(m_CurrentHeapPtr->GetCPUDescriptorHandleForHeapStart(),
-                                                 m_CurrentHeapPtr->GetGPUDescriptorHandleForHeapStart());
-        }
-
-        return m_CurrentHeapPtr;
     }
 
     uint32_t DynamicDescriptorHeap::DescriptorHandleCache::ComputeStagedSize()
@@ -61,6 +48,7 @@ namespace RHI
     }
 
     void DynamicDescriptorHeap::DescriptorHandleCache::CopyAndBindStaleTables(
+        D3D12LinkedDevice*         PDevice,
         D3D12_DESCRIPTOR_HEAP_TYPE Type,
         uint32_t                   DescriptorSize,
         DescriptorHandle           DestHandleStart,
@@ -132,13 +120,13 @@ namespace RHI
                 // If we run out of temp room, copy what we've got so far
                 if (NumSrcDescriptorRanges + DescriptorCount > kMaxDescriptorsPerCopy)
                 {
-                    g_Device->CopyDescriptors(NumDestDescriptorRanges,
-                                              pDestDescriptorRangeStarts,
-                                              pDestDescriptorRangeSizes,
-                                              NumSrcDescriptorRanges,
-                                              pSrcDescriptorRangeStarts,
-                                              pSrcDescriptorRangeSizes,
-                                              Type);
+                    PDevice->GetDevice()->CopyDescriptors(NumDestDescriptorRanges,
+                                                          pDestDescriptorRangeStarts,
+                                                          pDestDescriptorRangeSizes,
+                                                          NumSrcDescriptorRanges,
+                                                          pSrcDescriptorRangeStarts,
+                                                          pSrcDescriptorRangeSizes,
+                                                          Type);
 
                     NumSrcDescriptorRanges  = 0;
                     NumDestDescriptorRanges = 0;
@@ -163,13 +151,13 @@ namespace RHI
             }
         }
 
-        g_Device->CopyDescriptors(NumDestDescriptorRanges,
-                                  pDestDescriptorRangeStarts,
-                                  pDestDescriptorRangeSizes,
-                                  NumSrcDescriptorRanges,
-                                  pSrcDescriptorRangeStarts,
-                                  pSrcDescriptorRangeSizes,
-                                  Type);
+        PDevice->GetDevice()->CopyDescriptors(NumDestDescriptorRanges,
+                                              pDestDescriptorRangeStarts,
+                                              pDestDescriptorRangeSizes,
+                                              NumSrcDescriptorRanges,
+                                              pSrcDescriptorRangeStarts,
+                                              pSrcDescriptorRangeSizes,
+                                              Type);
     }
 
     void DynamicDescriptorHeap::CopyAndBindStagedTables(
@@ -178,16 +166,8 @@ namespace RHI
         void (STDMETHODCALLTYPE ID3D12GraphicsCommandList::*SetFunc)(UINT, D3D12_GPU_DESCRIPTOR_HANDLE))
     {
         uint32_t NeededSize = HandleCache.ComputeStagedSize();
-        if (!HasSpace(NeededSize))
-        {
-            RetireCurrentHeap();
-            UnbindAllValid();
-            NeededSize = HandleCache.ComputeStagedSize();
-        }
-
-        // This can trigger the creation of a new heap
-        m_OwningContext.SetDescriptorHeap(m_DescriptorType, GetHeapPointer());
-        HandleCache.CopyAndBindStaleTables(m_DescriptorType, m_DescriptorSize, Allocate(NeededSize), CmdList, SetFunc);
+        HandleCache.CopyAndBindStaleTables(
+            this->GetParentLinkedDevice(), m_DescriptorType, m_DescriptorSize, Allocate(NeededSize), CmdList, SetFunc);
     }
 
     void DynamicDescriptorHeap::UnbindAllValid(void)
@@ -198,18 +178,10 @@ namespace RHI
 
     D3D12_GPU_DESCRIPTOR_HANDLE DynamicDescriptorHeap::UploadDirect(D3D12_CPU_DESCRIPTOR_HANDLE Handle)
     {
-        if (!HasSpace(1))
-        {
-            RetireCurrentHeap();
-            UnbindAllValid();
-        }
-
-        m_OwningContext.SetDescriptorHeap(m_DescriptorType, GetHeapPointer());
-
         DescriptorHandle DestHandle = m_FirstDescriptor + m_CurrentOffset * m_DescriptorSize;
         m_CurrentOffset += 1;
 
-        g_Device->CopyDescriptorsSimple(1, DestHandle, Handle, m_DescriptorType);
+        this->GetParentLinkedDevice()->GetDevice()->CopyDescriptorsSimple(1, DestHandle, Handle, m_DescriptorType);
 
         return DestHandle;
     }
@@ -251,7 +223,7 @@ namespace RHI
     {
         UINT CurrentOffset = 0;
 
-        ASSERT(RootSig.m_NumParameters <= 16, "Maybe we need to support something greater");
+        ASSERT(RootSig.GetNumParameters() <= 16, "Maybe we need to support something greater");
 
         m_StaleRootParamsBitMap      = 0;
         m_RootDescriptorTablesBitMap = (Type == D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER ? RootSig.m_SamplerTableBitMap :
