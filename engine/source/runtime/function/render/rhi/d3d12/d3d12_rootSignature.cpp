@@ -142,6 +142,7 @@ namespace RHI
         ApiDesc.Desc_1_1 = Desc.Build();
 
         m_NumParameters = ApiDesc.Desc_1_1.NumParameters;
+        m_NumStaticSamplers = ApiDesc.Desc_1_1.NumStaticSamplers;
 
         // Serialize the root signature
         Microsoft::WRL::ComPtr<ID3DBlob> SerializedRootSignatureBlob;
@@ -163,7 +164,7 @@ namespace RHI
         m_DescriptorTableBitMask = 0;
         m_SamplerTableBitMask    = 0;
 
-        for (UINT Param = 0; Param < ApiDesc.Desc_1_1.NumParameters; ++Param)
+        for (UINT i = 0; i < ApiDesc.Desc_1_1.NumParameters; ++i)
         {
             const D3D12_ROOT_PARAMETER1& RootParameter = ApiDesc.Desc_1_1.pParameters[i];
             if (RootParameter.ParameterType == D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE)
@@ -176,29 +177,28 @@ namespace RHI
                     case D3D12_DESCRIPTOR_RANGE_TYPE_CBV:
                     case D3D12_DESCRIPTOR_RANGE_TYPE_SRV:
                     case D3D12_DESCRIPTOR_RANGE_TYPE_UAV:
-                        m_DescriptorTableBitMask |= (1 << Param); 
+                        m_DescriptorTableBitMask |= (1 << i); 
                         break;
                     case D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER:
-                        m_SamplerTableBitMask |= (1 << Param); 
+                        m_SamplerTableBitMask |= (1 << i); 
                         break;
                 }
 
                 // Calculate total number of descriptors in the descriptor table.
                 for (UINT j = 0; j < DescriptorTable1.NumDescriptorRanges; ++j)
                 {
-                    m_NumDescriptorsPerTable[i] += DescriptorTable1.pDescriptorRanges[j].NumDescriptors;
+                    m_DescriptorTableSize[i] += DescriptorTable1.pDescriptorRanges[j].NumDescriptors;
                 }
             }
         }
     }
 
-	std::bitset<MOYU_RHI_D3D12_GLOBAL_ROOT_DESCRIPTOR_TABLE_LIMIT>
-    D3D12RootSignature::GetDescriptorTableBitMask(D3D12_DESCRIPTOR_HEAP_TYPE Type) const noexcept
+	uint32_t D3D12RootSignature::GetDescriptorTableBitMask(D3D12_DESCRIPTOR_HEAP_TYPE Type) const noexcept
     {
         switch (Type)
         {
             case D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV:
-                return m_ResourceDescriptorTableBitMask;
+                return m_DescriptorTableBitMask;
             case D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER:
                 return m_SamplerTableBitMask;
             default:
@@ -206,13 +206,13 @@ namespace RHI
         }
     }
 
-    UINT D3D12RootSignature::GetNumDescriptors(UINT RootParameterIndex) const noexcept
+    UINT D3D12RootSignature::GetDescriptorTableSize(UINT RootParameterIndex) const noexcept
     {
-        assert(RootParameterIndex < MOYU_RHI_D3D12_GLOBAL_ROOT_DESCRIPTOR_TABLE_LIMIT);
-        return m_NumDescriptorsPerTable[RootParameterIndex];
+        ASSERT(RootParameterIndex < MOYU_RHI_D3D12_GLOBAL_ROOT_DESCRIPTOR_TABLE_LIMIT);
+        return m_DescriptorTableSize[RootParameterIndex];
     }
 
-    //// SM6.6ÒÑ¾­Ö§³ÖÁËDynamic Resources£¬ÕâÀïËäÈ»ÊÇÎªLocalRootSignature×¼±¸µÄ£¬µ«ÊÇ¶ÔÓÚGraphicsºÍComputeÒÔºóÒ²¶¼²»ÐèÒªÁË
+    //// SM6.6ï¿½Ñ¾ï¿½Ö§ï¿½ï¿½ï¿½ï¿½Dynamic Resourcesï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½È»ï¿½ï¿½ÎªLocalRootSignature×¼ï¿½ï¿½ï¿½Ä£ï¿½ï¿½ï¿½ï¿½Ç¶ï¿½ï¿½ï¿½Graphicsï¿½ï¿½Computeï¿½Ôºï¿½Ò²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Òªï¿½ï¿½
     //// HLSL Dynamic Resources
     //// https://microsoft.github.io/DirectX-Specs/d3d/HLSL_ShaderModel6_6.html
     //// https://microsoft.github.io/DirectX-Specs/d3d/HLSL_SM_6_6_DynamicResources.html

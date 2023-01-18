@@ -52,10 +52,6 @@ namespace RHI
         // initialize common states
         RHI::InitializeCommonState(this);
 
-#if _DEBUG
-        //ResourceDescriptorHeap.SetName(L"Resource Descriptor Heap");
-        //SamplerDescriptorHeap.SetName(L"Sampler Descriptor Heap");
-#endif
         constexpr size_t NumThreads = 3;
         m_AvailableCommandContexts.reserve(NumThreads);
         for (unsigned int i = 0; i < NumThreads; ++i)

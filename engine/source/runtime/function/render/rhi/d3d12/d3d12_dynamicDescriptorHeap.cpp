@@ -6,15 +6,12 @@ namespace RHI
     // DynamicDescriptorHeap Implementation
     //
 
-    std::mutex DynamicDescriptorHeap::sm_Mutex;
-
     DynamicDescriptorHeap::DynamicDescriptorHeap(D3D12LinkedDevice*   Parent,
                                                  D3D12CommandContext* POwningContext,
                                                  GPUDescriptorHeap*   PDescriptorHeap) :
         D3D12LinkedDeviceChild(Parent),
-        m_OwningContext(POwningContext), m_CurrentHeap(PDescriptorHeap)
+        m_OwningContext(POwningContext)
     {
-        m_CurrentOffset  = 0;
         m_DescriptorSize = PDescriptorHeap->GetDescriptorSize();
         m_DescriptorType = PDescriptorHeap->GetHeapDesc().Type;
 
@@ -28,12 +25,13 @@ namespace RHI
 
     DynamicDescriptorHeap::~DynamicDescriptorHeap()
     {
-        m_DynamicSubAllocManager->RetireAllcations();
+        this->CleanupUsedHeaps();
         delete m_DynamicSubAllocManager;
     }
 
     void DynamicDescriptorHeap::CleanupUsedHeaps()
     {
+        m_DynamicSubAllocManager->RetireAllcations();
         m_GraphicsHandleCache.ClearCache();
         m_ComputeHandleCache.ClearCache();
     }
@@ -227,8 +225,8 @@ namespace RHI
         ASSERT(RootSig->GetNumParameters() <= 16, "Maybe we need to support something greater");
 
         m_StaleRootParamsBitMap      = 0;
-        m_RootDescriptorTablesBitMap = (Type == D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER ? RootSig.m_SamplerTableBitMap :
-                                                                                     RootSig.m_DescriptorTableBitMap);
+
+        m_RootDescriptorTablesBitMap = RootSig->GetDescriptorTableBitMask(Type);
 
         unsigned long TableParams = m_RootDescriptorTablesBitMap;
         unsigned long RootIndex;
@@ -236,7 +234,7 @@ namespace RHI
         {
             TableParams ^= (1 << RootIndex);
 
-            UINT TableSize = RootSig.m_DescriptorTableSize[RootIndex];
+            UINT TableSize = RootSig->GetDescriptorTableSize(RootIndex);
             ASSERT(TableSize > 0);
 
             DescriptorTableCache& RootDescriptorTable = m_RootDescriptorTable[RootIndex];

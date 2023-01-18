@@ -239,11 +239,11 @@ namespace RHI
 
         [[nodiscard]] ID3D12RootSignature* GetApiHandle() const noexcept { return m_RootSignature.Get(); }
         [[nodiscard]] UINT                 GetNumParameters() const noexcept { return m_NumParameters; }
+        [[nodiscard]] UINT                 GetNumStaticSamplers() const noexcept { return m_NumStaticSamplers; }
 
-        [[nodiscard]] std::bitset<MOYU_RHI_D3D12_GLOBAL_ROOT_DESCRIPTOR_TABLE_LIMIT>
-        GetDescriptorTableBitMask(D3D12_DESCRIPTOR_HEAP_TYPE Type) const noexcept;
+        [[nodiscard]] UINT32 GetDescriptorTableBitMask(D3D12_DESCRIPTOR_HEAP_TYPE Type) const noexcept;
 
-        [[nodiscard]] UINT GetNumDescriptors(UINT RootParameterIndex) const noexcept;
+        [[nodiscard]] UINT GetDescriptorTableSize(UINT RootParameterIndex) const noexcept;
 
     //private:
     //    // Pre SM6.6 bindless root parameter setup
@@ -253,11 +253,10 @@ namespace RHI
         Microsoft::WRL::ComPtr<ID3D12RootSignature> m_RootSignature;
 
         UINT m_NumParameters = 0;
-        UINT m_NumSamplers = 0;
-        UINT m_NumInitializedStaticSamplers;
-        uint32_t m_DescriptorTableBitMask;  // One bit is set for root parameters that are non-sampler descriptor tables
-        uint32_t m_SamplerTableBitMask;     // One bit is set for root parameters that are sampler descriptor tables
-        uint32_t m_DescriptorTableSize[16]; // Non-sampler descriptor tables need to know their descriptor count
+        UINT m_NumStaticSamplers = 0;
+        UINT32 m_DescriptorTableBitMask;  // One bit is set for root parameters that are non-sampler descriptor tables
+        UINT32 m_SamplerTableBitMask;     // One bit is set for root parameters that are sampler descriptor tables
+        UINT32 m_DescriptorTableSize[16]; // Non-sampler descriptor tables need to know their descriptor count
 
 
         /*

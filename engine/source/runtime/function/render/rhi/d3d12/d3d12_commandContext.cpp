@@ -48,10 +48,10 @@ namespace RHI
         m_Type(Type), m_CommandListType(CommandListType), m_CommandListHandle(Parent, CommandListType),
         m_CommandAllocator(nullptr), m_CommandAllocatorPool(Parent, CommandListType), m_CpuLinearAllocator(Parent)
     {
-        m_DynamicGPUDescriptorAllocator[0] = std::make_shared<DynamicSuballocationsManager>(
-            Parent->GetResourceDescriptorHeap(), 256, "CBV_SRV_UAV dynamic descriptor allocator");
-        m_DynamicGPUDescriptorAllocator[1] = std::make_shared<DynamicSuballocationsManager>(
-            Parent->GetSamplerDescriptorHeap(), 64, "SAMPLER dynamic descriptor allocator");
+        m_pDynamicViewDescriptorHeap =
+            std::make_shared<DynamicDescriptorHeap>(Parent, this, Parent->GetResourceDescriptorHeap());
+        m_pDynamicSamplerDescriptorHeap =
+            std::make_shared<DynamicDescriptorHeap>(Parent, this, Parent->GetSamplerDescriptorHeap());
     }
 
 	D3D12CommandQueue* D3D12CommandContext::GetCommandQueue() const noexcept
@@ -119,6 +119,9 @@ namespace RHI
     {
         D3D12SyncHandle SyncHandle = GetCommandQueue()->ExecuteCommandLists({&m_CommandListHandle}, WaitForCompletion);
 
+        // Release dynamic descriptors
+        m_pDynamicViewDescriptorHeap->CleanupUsedHeaps();
+        m_pDynamicSamplerDescriptorHeap->CleanupUsedHeaps();
         // Release the command allocator so it can be reused.
         m_CommandAllocatorPool.DiscardCommandAllocator(std::exchange(m_CommandAllocator, nullptr), SyncHandle);
         // Release temp resourcce
@@ -215,10 +218,7 @@ namespace RHI
             Dest->GetResource(), DestOffset, TempSpace.Resource, TempSpace.Offset, NumBytes);
     }
 
-    void D3D12CommandContext::TransitionBarrier(D3D12Resource*        Resource,
-                                                D3D12_RESOURCE_STATES State,
-                                                UINT                  Subresource,
-                                                bool                  FlushImmediate)
+    void D3D12CommandContext::TransitionBarrier(D3D12Resource* Resource, D3D12_RESOURCE_STATES State, UINT Subresource, bool FlushImmediate)
     {
         D3D12_RESOURCE_STATES trackedResourceState = m_CommandListHandle.GetResourceStateTracked(Resource);
 
@@ -527,12 +527,7 @@ namespace RHI
                     Viewport.MaxDepth);
     }
 
-    void D3D12GraphicsContext::SetViewport(FLOAT TopLeftX,
-                                           FLOAT TopLeftY,
-                                           FLOAT Width,
-                                           FLOAT Height,
-                                           FLOAT MinDepth,
-                                           FLOAT MaxDepth)
+    void D3D12GraphicsContext::SetViewport(FLOAT TopLeftX, FLOAT TopLeftY, FLOAT Width, FLOAT Height, FLOAT MinDepth, FLOAT MaxDepth)
     {
         Cache.Graphics.NumViewports = 1;
         Cache.Graphics.Viewports[0] = CD3DX12_VIEWPORT(TopLeftX, TopLeftY, Width, Height, MinDepth, MaxDepth);
@@ -764,8 +759,8 @@ namespace RHI
                                              UINT StartInstanceLocation)
     {
         FlushResourceBarriers();
-        //m_DynamicViewDescriptorHeap.CommitGraphicsRootDescriptorTables(m_CommandListHandle);
-        //m_DynamicSamplerDescriptorHeap.CommitGraphicsRootDescriptorTables(m_CommandListHandle);
+        m_pDynamicViewDescriptorHeap->CommitGraphicsRootDescriptorTables(m_CommandListHandle.GetGraphicsCommandList());
+        m_pDynamicSamplerDescriptorHeap->CommitGraphicsRootDescriptorTables(m_CommandListHandle.GetGraphicsCommandList());
         m_CommandListHandle->DrawInstanced(VertexCountPerInstance, InstanceCount, StartVertexLocation, StartInstanceLocation);
     }
 
@@ -776,10 +771,9 @@ namespace RHI
                                                     UINT StartInstanceLocation)
     {
         FlushResourceBarriers();
-        //m_DynamicViewDescriptorHeap.CommitGraphicsRootDescriptorTables(CommandListHandle);
-        //m_DynamicSamplerDescriptorHeap.CommitGraphicsRootDescriptorTables(CommandListHandle);
-        m_CommandListHandle->DrawIndexedInstanced(
-            IndexCountPerInstance, InstanceCount, StartIndexLocation, BaseVertexLocation, StartInstanceLocation);
+        m_pDynamicViewDescriptorHeap->CommitGraphicsRootDescriptorTables(m_CommandListHandle.GetGraphicsCommandList());
+        m_pDynamicSamplerDescriptorHeap->CommitGraphicsRootDescriptorTables(m_CommandListHandle.GetGraphicsCommandList());
+        m_CommandListHandle->DrawIndexedInstanced(IndexCountPerInstance, InstanceCount, StartIndexLocation, BaseVertexLocation, StartInstanceLocation);
     }
 
     void D3D12GraphicsContext::DrawIndirect(D3D12Resource* ArgumentBuffer, UINT64 ArgumentBufferOffset)
@@ -795,8 +789,8 @@ namespace RHI
                                                UINT64                 CounterOffset)
     {
         FlushResourceBarriers();
-        //m_DynamicViewDescriptorHeap.CommitComputeRootDescriptorTables(CommandListHandle);
-        //m_DynamicSamplerDescriptorHeap.CommitComputeRootDescriptorTables(CommandListHandle);
+        m_pDynamicViewDescriptorHeap->CommitComputeRootDescriptorTables(m_CommandListHandle.GetGraphicsCommandList());
+        m_pDynamicSamplerDescriptorHeap->CommitComputeRootDescriptorTables(m_CommandListHandle.GetGraphicsCommandList());
         m_CommandListHandle->ExecuteIndirect(CommandSig->GetApiHandle(),
                                              MaxCommands,
                                              ArgumentBuffer->GetResource(),

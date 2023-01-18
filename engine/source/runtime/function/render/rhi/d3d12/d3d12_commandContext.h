@@ -145,7 +145,7 @@ namespace RHI
         std::shared_ptr<DynamicSuballocationsManager> m_DynamicGPUDescriptorAllocator[2];
 
         std::shared_ptr<DynamicDescriptorHeap> m_pDynamicViewDescriptorHeap;	// HEAP_TYPE_CBV_SRV_UAV
-        std::shared_ptr<DynamicDescriptorHeap> m_DynamicSamplerDescriptorHeap;	// HEAP_TYPE_SAMPLER
+        std::shared_ptr<DynamicDescriptorHeap> m_pDynamicSamplerDescriptorHeap;	// HEAP_TYPE_SAMPLER
 
         // TODO: Finish cache
         // State Cache
