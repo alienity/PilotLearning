@@ -16,57 +16,43 @@ namespace RHI
     // Describes ranges of descriptors that might have offsets relative to the initial range descriptor
     // I use this to emulate bindless resource, SM6.6 provides global variables for DescriptorHeaps
     // that you can directly index into
+
+    // clang-format off
     class D3D12DescriptorTable
     {
     public:
         explicit D3D12DescriptorTable(size_t NumRanges) { DescriptorRanges.reserve(NumRanges); }
 
         template<UINT BaseShaderRegister, UINT RegisterSpace>
-        D3D12DescriptorTable& AddSRVRange(UINT                         NumDescriptors,
-                                          D3D12_DESCRIPTOR_RANGE_FLAGS Flags,
-                                          UINT OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND)
+        D3D12DescriptorTable& AddSRVRange(UINT NumDescriptors, D3D12_DESCRIPTOR_RANGE_FLAGS Flags, UINT OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND)
         {
-            return AddDescriptorRange<BaseShaderRegister, RegisterSpace>(
-                D3D12_DESCRIPTOR_RANGE_TYPE_SRV, NumDescriptors, Flags, OffsetInDescriptorsFromTableStart);
+            return AddDescriptorRange<BaseShaderRegister, RegisterSpace>(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, NumDescriptors, Flags, OffsetInDescriptorsFromTableStart);
         }
 
         template<UINT BaseShaderRegister, UINT RegisterSpace>
-        D3D12DescriptorTable& AddUAVRange(UINT                         NumDescriptors,
-                                          D3D12_DESCRIPTOR_RANGE_FLAGS Flags,
-                                          UINT OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND)
+        D3D12DescriptorTable& AddUAVRange(UINT NumDescriptors, D3D12_DESCRIPTOR_RANGE_FLAGS Flags, UINT OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND)
         {
-            return AddDescriptorRange<BaseShaderRegister, RegisterSpace>(
-                D3D12_DESCRIPTOR_RANGE_TYPE_UAV, NumDescriptors, Flags, OffsetInDescriptorsFromTableStart);
+            return AddDescriptorRange<BaseShaderRegister, RegisterSpace>(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, NumDescriptors, Flags, OffsetInDescriptorsFromTableStart);
         }
 
         template<UINT BaseShaderRegister, UINT RegisterSpace>
-        D3D12DescriptorTable& AddCBVRange(UINT                         NumDescriptors,
-                                          D3D12_DESCRIPTOR_RANGE_FLAGS Flags,
-                                          UINT OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND)
+        D3D12DescriptorTable& AddCBVRange(UINT NumDescriptors, D3D12_DESCRIPTOR_RANGE_FLAGS Flags, UINT OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND)
         {
-            return AddDescriptorRange<BaseShaderRegister, RegisterSpace>(
-                D3D12_DESCRIPTOR_RANGE_TYPE_CBV, NumDescriptors, Flags, OffsetInDescriptorsFromTableStart);
+            return AddDescriptorRange<BaseShaderRegister, RegisterSpace>(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, NumDescriptors, Flags, OffsetInDescriptorsFromTableStart);
         }
 
         template<UINT BaseShaderRegister, UINT RegisterSpace>
         D3D12DescriptorTable&
-        AddSamplerRange(UINT                         NumDescriptors,
-                        D3D12_DESCRIPTOR_RANGE_FLAGS Flags,
-                        UINT OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND)
+        AddSamplerRange(UINT NumDescriptors, D3D12_DESCRIPTOR_RANGE_FLAGS Flags, UINT OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND)
         {
-            return AddDescriptorRange<BaseShaderRegister, RegisterSpace>(
-                D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER, NumDescriptors, Flags, OffsetInDescriptorsFromTableStart);
+            return AddDescriptorRange<BaseShaderRegister, RegisterSpace>(D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER, NumDescriptors, Flags, OffsetInDescriptorsFromTableStart);
         }
 
         template<UINT BaseShaderRegister, UINT RegisterSpace>
-        D3D12DescriptorTable& AddDescriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE  Type,
-                                                 UINT                         NumDescriptors,
-                                                 D3D12_DESCRIPTOR_RANGE_FLAGS Flags,
-                                                 UINT                         OffsetInDescriptorsFromTableStart)
+        D3D12DescriptorTable& AddDescriptorRange(D3D12_DESCRIPTOR_RANGE_TYPE Type, UINT NumDescriptors, D3D12_DESCRIPTOR_RANGE_FLAGS Flags, UINT OffsetInDescriptorsFromTableStart)
         {
             CD3DX12_DESCRIPTOR_RANGE1& Range = DescriptorRanges.emplace_back();
-            Range.Init(
-                Type, NumDescriptors, BaseShaderRegister, RegisterSpace, Flags, OffsetInDescriptorsFromTableStart);
+            Range.Init(Type, NumDescriptors, BaseShaderRegister, RegisterSpace, Flags, OffsetInDescriptorsFromTableStart);
             return *this;
         }
 
@@ -76,6 +62,7 @@ namespace RHI
     private:
         std::vector<CD3DX12_DESCRIPTOR_RANGE1> DescriptorRanges;
     };
+    // clang-format on
 
     class RootSignatureDesc
     {
@@ -126,8 +113,7 @@ namespace RHI
         }
 
         template<UINT ShaderRegister, UINT RegisterSpace>
-        RootSignatureDesc&
-        AddUnorderedAccessViewWithCounter(D3D12_DESCRIPTOR_RANGE_FLAGS Flags = D3D12_DESCRIPTOR_RANGE_FLAG_NONE)
+        RootSignatureDesc& AddUnorderedAccessViewWithCounter(D3D12_DESCRIPTOR_RANGE_FLAGS Flags = D3D12_DESCRIPTOR_RANGE_FLAG_NONE)
         {
             D3D12DescriptorTable DescriptorTable(1);
             DescriptorTable.AddUAVRange<ShaderRegister, RegisterSpace>(1, Flags);
@@ -135,8 +121,7 @@ namespace RHI
         }
 
         template<UINT ShaderRegister, UINT RegisterSpace>
-        RootSignatureDesc&
-        AddRaytracingAccelerationStructure(D3D12_DESCRIPTOR_RANGE_FLAGS Flags = D3D12_DESCRIPTOR_RANGE_FLAG_NONE)
+        RootSignatureDesc& AddRaytracingAccelerationStructure(D3D12_DESCRIPTOR_RANGE_FLAGS Flags = D3D12_DESCRIPTOR_RANGE_FLAG_NONE)
         {
             D3D12DescriptorTable DescriptorTable(1);
             DescriptorTable.AddSRVRange<ShaderRegister, RegisterSpace>(1, Flags);
@@ -252,8 +237,8 @@ namespace RHI
         D3D12RootSignature(const D3D12RootSignature&) = delete;
         D3D12RootSignature& operator=(const D3D12RootSignature&) = delete;
 
-        [[nodiscard]] ID3D12RootSignature* GetApiHandle() const noexcept { return RootSignature.Get(); }
-        [[nodiscard]] UINT                 GetNumParameters() const noexcept { return NumParameters; }
+        [[nodiscard]] ID3D12RootSignature* GetApiHandle() const noexcept { return m_RootSignature.Get(); }
+        [[nodiscard]] UINT                 GetNumParameters() const noexcept { return m_NumParameters; }
 
         [[nodiscard]] std::bitset<MOYU_RHI_D3D12_GLOBAL_ROOT_DESCRIPTOR_TABLE_LIMIT>
         GetDescriptorTableBitMask(D3D12_DESCRIPTOR_HEAP_TYPE Type) const noexcept;
@@ -265,9 +250,17 @@ namespace RHI
     //    static void AddBindlessParameters(RootSignatureDesc& Desc);
 
     private:
-        Microsoft::WRL::ComPtr<ID3D12RootSignature> RootSignature;
-        UINT                                        NumParameters = 0;
+        Microsoft::WRL::ComPtr<ID3D12RootSignature> m_RootSignature;
 
+        UINT m_NumParameters = 0;
+        UINT m_NumSamplers = 0;
+        UINT m_NumInitializedStaticSamplers;
+        uint32_t m_DescriptorTableBitMask;  // One bit is set for root parameters that are non-sampler descriptor tables
+        uint32_t m_SamplerTableBitMask;     // One bit is set for root parameters that are sampler descriptor tables
+        uint32_t m_DescriptorTableSize[16]; // Non-sampler descriptor tables need to know their descriptor count
+
+
+        /*
         // Need to know the number of descriptors per descriptor table
         UINT m_NumDescriptorsPerTable[MOYU_RHI_D3D12_GLOBAL_ROOT_DESCRIPTOR_TABLE_LIMIT] = {};
 
@@ -277,5 +270,6 @@ namespace RHI
         // A bit mask that represents the root parameter indices that are
         // descriptor tables for Samplers
         std::bitset<MOYU_RHI_D3D12_GLOBAL_ROOT_DESCRIPTOR_TABLE_LIMIT> m_SamplerTableBitMask;
+        */
     };
 } // namespace RHI

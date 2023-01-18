@@ -42,16 +42,13 @@ namespace RHI
             m_ComputeHandleCache.StageDescriptorHandles(RootIndex, Offset, NumHandles, Handles);
         }
 
-        // Bypass the cache and upload directly to the shader-visible heap
-        D3D12_GPU_DESCRIPTOR_HANDLE UploadDirect(D3D12_CPU_DESCRIPTOR_HANDLE Handles);
-
         // Deduce cache layout needed to support the descriptor tables needed by the root signature.
-        void ParseGraphicsRootSignature(const D3D12RootSignature& RootSig)
+        void ParseGraphicsRootSignature(const D3D12RootSignature* RootSig)
         {
             m_GraphicsHandleCache.ParseRootSignature(m_DescriptorType, RootSig);
         }
 
-        void ParseComputeRootSignature(const D3D12RootSignature& RootSig)
+        void ParseComputeRootSignature(const D3D12RootSignature* RootSig)
         {
             m_ComputeHandleCache.ParseRootSignature(m_DescriptorType, RootSig);
         }
@@ -79,6 +76,7 @@ namespace RHI
         // Non-static members
         D3D12CommandContext*               m_OwningContext;
         GPUDescriptorHeap*                 m_CurrentHeap;
+        DynamicSuballocationsManager*      m_DynamicSubAllocManager;
         D3D12_DESCRIPTOR_HEAP_TYPE         m_DescriptorType;
         UINT32                             m_DescriptorSize;
         UINT32                             m_CurrentOffset;
@@ -128,7 +126,7 @@ namespace RHI
                                         UINT                              Offset,
                                         UINT                              NumHandles,
                                         const D3D12_CPU_DESCRIPTOR_HANDLE Handles[]);
-            void ParseRootSignature(D3D12_DESCRIPTOR_HEAP_TYPE Type, const D3D12RootSignature& RootSig);
+            void ParseRootSignature(D3D12_DESCRIPTOR_HEAP_TYPE Type, const D3D12RootSignature* RootSig);
         };
 
         DescriptorHandleCache m_GraphicsHandleCache;

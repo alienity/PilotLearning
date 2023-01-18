@@ -141,7 +141,7 @@ namespace RHI
         ApiDesc.Version  = D3D_ROOT_SIGNATURE_VERSION_1_1;
         ApiDesc.Desc_1_1 = Desc.Build();
 
-        NumParameters = ApiDesc.Desc_1_1.NumParameters;
+        m_NumParameters = ApiDesc.Desc_1_1.NumParameters;
 
         // Serialize the root signature
         Microsoft::WRL::ComPtr<ID3DBlob> SerializedRootSignatureBlob;
@@ -158,9 +158,12 @@ namespace RHI
         VERIFY_D3D12_API(Parent->GetD3D12Device()->CreateRootSignature(Parent->GetAllNodeMask(),
                                                                        SerializedRootSignatureBlob->GetBufferPointer(),
                                                                        SerializedRootSignatureBlob->GetBufferSize(),
-                                                                       IID_PPV_ARGS(&RootSignature)));
+                                                                       IID_PPV_ARGS(&m_RootSignature)));
 
-        for (UINT i = 0; i < ApiDesc.Desc_1_1.NumParameters; ++i)
+        m_DescriptorTableBitMask = 0;
+        m_SamplerTableBitMask    = 0;
+
+        for (UINT Param = 0; Param < ApiDesc.Desc_1_1.NumParameters; ++Param)
         {
             const D3D12_ROOT_PARAMETER1& RootParameter = ApiDesc.Desc_1_1.pParameters[i];
             if (RootParameter.ParameterType == D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE)
@@ -173,10 +176,10 @@ namespace RHI
                     case D3D12_DESCRIPTOR_RANGE_TYPE_CBV:
                     case D3D12_DESCRIPTOR_RANGE_TYPE_SRV:
                     case D3D12_DESCRIPTOR_RANGE_TYPE_UAV:
-                        m_ResourceDescriptorTableBitMask.set(i, true);
+                        m_DescriptorTableBitMask |= (1 << Param); 
                         break;
                     case D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER:
-                        m_SamplerTableBitMask.set(i, true);
+                        m_SamplerTableBitMask |= (1 << Param); 
                         break;
                 }
 

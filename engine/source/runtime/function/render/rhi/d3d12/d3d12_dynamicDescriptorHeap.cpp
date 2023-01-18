@@ -17,9 +17,20 @@ namespace RHI
         m_CurrentOffset  = 0;
         m_DescriptorSize = PDescriptorHeap->GetDescriptorSize();
         m_DescriptorType = PDescriptorHeap->GetHeapDesc().Type;
+
+        bool isSRVHeap = m_DescriptorType == D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+        int mDynamicChunkSize = isSRVHeap ? 256 : 16;
+        std::string mManagerName =
+            isSRVHeap ? "CBV_SRV_UAV dynamic descriptor allocator" : "SAMPLER dynamic descriptor allocator";
+
+        m_DynamicSubAllocManager = new DynamicSuballocationsManager(PDescriptorHeap, mDynamicChunkSize, mManagerName);
     }
 
-    DynamicDescriptorHeap::~DynamicDescriptorHeap() {}
+    DynamicDescriptorHeap::~DynamicDescriptorHeap()
+    {
+        m_DynamicSubAllocManager->RetireAllcations();
+        delete m_DynamicSubAllocManager;
+    }
 
     void DynamicDescriptorHeap::CleanupUsedHeaps()
     {
@@ -176,16 +187,6 @@ namespace RHI
         m_ComputeHandleCache.UnbindAllValid();
     }
 
-    D3D12_GPU_DESCRIPTOR_HANDLE DynamicDescriptorHeap::UploadDirect(D3D12_CPU_DESCRIPTOR_HANDLE Handle)
-    {
-        DescriptorHandle DestHandle = m_FirstDescriptor + m_CurrentOffset * m_DescriptorSize;
-        m_CurrentOffset += 1;
-
-        this->GetParentLinkedDevice()->GetDevice()->CopyDescriptorsSimple(1, DestHandle, Handle, m_DescriptorType);
-
-        return DestHandle;
-    }
-
     void DynamicDescriptorHeap::DescriptorHandleCache::UnbindAllValid()
     {
         m_StaleRootParamsBitMap = 0;
@@ -219,11 +220,11 @@ namespace RHI
     }
 
     void DynamicDescriptorHeap::DescriptorHandleCache::ParseRootSignature(D3D12_DESCRIPTOR_HEAP_TYPE Type,
-                                                                          const D3D12RootSignature&  RootSig)
+                                                                          const D3D12RootSignature*  RootSig)
     {
         UINT CurrentOffset = 0;
 
-        ASSERT(RootSig.GetNumParameters() <= 16, "Maybe we need to support something greater");
+        ASSERT(RootSig->GetNumParameters() <= 16, "Maybe we need to support something greater");
 
         m_StaleRootParamsBitMap      = 0;
         m_RootDescriptorTablesBitMap = (Type == D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER ? RootSig.m_SamplerTableBitMap :
