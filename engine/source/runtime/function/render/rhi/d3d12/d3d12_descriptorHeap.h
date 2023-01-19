@@ -19,6 +19,50 @@ namespace RHI
     class DescriptorManager;
     class DescriptorHandle;
 
+
+    // This handle refers to a descriptor or a descriptor table (contiguous descriptors) that is shader visible.
+    class DescriptorHandle
+    {
+    public:
+        DescriptorHandle()
+        {
+            m_CpuHandle.ptr = D3D12_GPU_VIRTUAL_ADDRESS_UNKNOWN;
+            m_GpuHandle.ptr = D3D12_GPU_VIRTUAL_ADDRESS_UNKNOWN;
+        }
+
+        DescriptorHandle(D3D12_CPU_DESCRIPTOR_HANDLE CpuHandle, D3D12_GPU_DESCRIPTOR_HANDLE GpuHandle) :
+            m_CpuHandle(CpuHandle), m_GpuHandle(GpuHandle)
+        {}
+
+        DescriptorHandle operator+(INT OffsetScaledByDescriptorSize) const
+        {
+            DescriptorHandle ret = *this;
+            ret += OffsetScaledByDescriptorSize;
+            return ret;
+        }
+
+        void operator+=(INT OffsetScaledByDescriptorSize)
+        {
+            if (m_CpuHandle.ptr != D3D12_GPU_VIRTUAL_ADDRESS_UNKNOWN)
+                m_CpuHandle.ptr += OffsetScaledByDescriptorSize;
+            if (m_GpuHandle.ptr != D3D12_GPU_VIRTUAL_ADDRESS_UNKNOWN)
+                m_GpuHandle.ptr += OffsetScaledByDescriptorSize;
+        }
+
+        inline const D3D12_CPU_DESCRIPTOR_HANDLE* operator&() const { return &m_CpuHandle; }
+                                                  operator D3D12_CPU_DESCRIPTOR_HANDLE() const { return m_CpuHandle; }
+                                                  operator D3D12_GPU_DESCRIPTOR_HANDLE() const { return m_GpuHandle; }
+
+        inline size_t   GetCpuPtr() const { return m_CpuHandle.ptr; }
+        inline uint64_t GetGpuPtr() const { return m_GpuHandle.ptr; }
+        inline bool     IsNull() const { return m_CpuHandle.ptr == D3D12_GPU_VIRTUAL_ADDRESS_UNKNOWN; }
+        inline bool     IsShaderVisible() const { return m_GpuHandle.ptr != D3D12_GPU_VIRTUAL_ADDRESS_UNKNOWN; }
+
+    private:
+        D3D12_CPU_DESCRIPTOR_HANDLE m_CpuHandle;
+        D3D12_GPU_DESCRIPTOR_HANDLE m_GpuHandle;
+    };
+
     // The class handles free memory block management to accommodate variable-size allocation requests.
     // It keeps track of free blocks only and does not record allocation sizes. The class uses two ordered maps
     // to facilitate operations. The first map keeps blocks sorted by their offsets. The second multimap keeps blocks
@@ -683,47 +727,5 @@ namespace RHI
         UINT32 m_PeakSuballocationsTotalSize = 0;
     };
 
-    // This handle refers to a descriptor or a descriptor table (contiguous descriptors) that is shader visible.
-    class DescriptorHandle
-    {
-    public:
-        DescriptorHandle()
-        {
-            m_CpuHandle.ptr = D3D12_GPU_VIRTUAL_ADDRESS_UNKNOWN;
-            m_GpuHandle.ptr = D3D12_GPU_VIRTUAL_ADDRESS_UNKNOWN;
-        }
-
-        DescriptorHandle(D3D12_CPU_DESCRIPTOR_HANDLE CpuHandle, D3D12_GPU_DESCRIPTOR_HANDLE GpuHandle) :
-            m_CpuHandle(CpuHandle), m_GpuHandle(GpuHandle)
-        {}
-
-        DescriptorHandle operator+(INT OffsetScaledByDescriptorSize) const
-        {
-            DescriptorHandle ret = *this;
-            ret += OffsetScaledByDescriptorSize;
-            return ret;
-        }
-
-        void operator+=(INT OffsetScaledByDescriptorSize)
-        {
-            if (m_CpuHandle.ptr != D3D12_GPU_VIRTUAL_ADDRESS_UNKNOWN)
-                m_CpuHandle.ptr += OffsetScaledByDescriptorSize;
-            if (m_GpuHandle.ptr != D3D12_GPU_VIRTUAL_ADDRESS_UNKNOWN)
-                m_GpuHandle.ptr += OffsetScaledByDescriptorSize;
-        }
-
-        inline const D3D12_CPU_DESCRIPTOR_HANDLE* operator&() const { return &m_CpuHandle; }
-        operator D3D12_CPU_DESCRIPTOR_HANDLE() const { return m_CpuHandle; }
-        operator D3D12_GPU_DESCRIPTOR_HANDLE() const { return m_GpuHandle; }
-
-        inline size_t   GetCpuPtr() const { return m_CpuHandle.ptr; }
-        inline uint64_t GetGpuPtr() const { return m_GpuHandle.ptr; }
-        inline bool     IsNull() const { return m_CpuHandle.ptr == D3D12_GPU_VIRTUAL_ADDRESS_UNKNOWN; }
-        inline bool     IsShaderVisible() const { return m_GpuHandle.ptr != D3D12_GPU_VIRTUAL_ADDRESS_UNKNOWN; }
-
-    private:
-        D3D12_CPU_DESCRIPTOR_HANDLE m_CpuHandle;
-        D3D12_GPU_DESCRIPTOR_HANDLE m_GpuHandle;
-    };
 
 }

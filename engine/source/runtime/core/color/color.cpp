@@ -117,12 +117,12 @@ namespace Pilot
         static const float kMinVal = float(1.f / (1 << 16));
 
         // Clamp RGB to [0, 1.FF*2^16]
-        float r = Math::clamp(r, 0.0f, kMaxVal);
-        float g = Math::clamp(g, 0.0f, kMaxVal);
-        float b = Math::clamp(b, 0.0f, kMaxVal);
+        float _r = Math::clamp(r, 0.0f, kMaxVal);
+        float _g = Math::clamp(g, 0.0f, kMaxVal);
+        float _b = Math::clamp(b, 0.0f, kMaxVal);
 
         // Compute the maximum channel, no less than 1.0*2^-15
-        float MaxChannel = Math::max(Math::max(r, g), Math::max(b, kMinVal));
+        float MaxChannel = Math::max(Math::max(_r, _g), Math::max(_b, kMinVal));
 
         // Take the exponent of the maximum channel (rounding up the 9th bit) and
         // add 15 to it.  When added to the channels, it causes the implicit '1.0'
@@ -140,9 +140,9 @@ namespace Pilot
         // This shifts the 9-bit values we need into the lowest bits, rounding as
         // needed.  Note that if the channel has a smaller exponent than the max
         // channel, it will shift even more.  This is intentional.
-        R.f = r + E.f;
-        G.f = g + E.f;
-        B.f = b + E.f;
+        R.f = _r + E.f;
+        G.f = _g + E.f;
+        B.f = _b + E.f;
 
         // Convert the Bias to the correct exponent in the upper 5 bits.
         E.i <<= 4;

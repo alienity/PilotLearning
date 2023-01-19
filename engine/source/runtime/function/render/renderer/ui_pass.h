@@ -31,8 +31,7 @@ namespace Pilot
         ~UIPass() { destroy(); }
 
         void initialize(const UIPassInitInfo& init_info);
-        void update(RHI::D3D12CommandContext& context,
-                    RHI::RenderGraph&         graph,
+        void update(RHI::RenderGraph&         graph,
                     UIInputParameters&        passInput,
                     UIOutputParameters&       passOutput);
         void destroy() override final;

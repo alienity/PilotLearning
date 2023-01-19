@@ -27,8 +27,7 @@ namespace Pilot
         ~DisplayPass() { destroy(); }
 
         void initialize(const DisplayPassInitInfo& init_info);
-        void update(RHI::D3D12CommandContext& context,
-                    RHI::RenderGraph&         graph,
+        void update(RHI::RenderGraph&         graph,
                     DisplayInputParameters&   passInput,
                     DisplayOutputParameters&  passOutput);
         void destroy() override final;

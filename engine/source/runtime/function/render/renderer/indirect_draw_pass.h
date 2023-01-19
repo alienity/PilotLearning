@@ -44,26 +44,18 @@ namespace Pilot
             DrawOutputParameters()
             {
                 renderTargetColorHandle.Invalidate();
-                //renderTargetColorSRVHandle.Invalidate();
-                //renderTargetColorRTVHandle.Invalidate();
                 renderTargetDepthHandle.Invalidate();
-                //renderTargetDepthDSVHandle.Invalidate();
             }
 
             RHI::RgResourceHandle renderTargetColorHandle;
-            //RHI::RgResourceHandle renderTargetColorSRVHandle;
-            //RHI::RgResourceHandle renderTargetColorRTVHandle;
-
             RHI::RgResourceHandle renderTargetDepthHandle;
-            //RHI::RgResourceHandle renderTargetDepthDSVHandle;
         };
 
     public:
         ~IndirectDrawPass() { destroy(); }
 
         void initialize(const DrawPassInitInfo& init_info);
-        void update(RHI::D3D12CommandContext& context,
-                    RHI::RenderGraph&         graph,
+        void update(RHI::RenderGraph&         graph,
                     DrawInputParameters&      passInput,
                     DrawOutputParameters&     passOutput);
         void destroy() override final;

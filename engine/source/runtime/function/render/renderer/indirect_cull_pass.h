@@ -54,7 +54,7 @@ namespace Pilot
 
         void initialize(const RenderPassInitInfo& init_info);
         void prepareMeshData(std::shared_ptr<RenderResourceBase> render_resource);
-        void cullMeshs(RHI::D3D12CommandContext& context, RHI::RenderGraphRegistry& registry, IndirectCullOutput& indirectCullOutput);
+        void cullMeshs(RHI::D3D12CommandContext* context, RHI::RenderGraphRegistry* registry, IndirectCullOutput& indirectCullOutput);
 
         void destroy() override final;
 

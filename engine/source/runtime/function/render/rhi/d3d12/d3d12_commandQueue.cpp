@@ -1,5 +1,6 @@
 #include "d3d12_commandQueue.h"
 #include "d3d12_linkedDevice.h"
+#include "d3d12_commandContext.h"
 
 namespace RHI
 {

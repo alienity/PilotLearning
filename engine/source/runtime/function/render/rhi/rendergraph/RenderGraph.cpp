@@ -56,7 +56,7 @@ namespace RHI
 		Writes.insert(RenderPass->Writes.begin(), RenderPass->Writes.end());
 	}
 
-	void RenderGraphDependencyLevel::Execute(RenderGraph* RenderGraph, D3D12CommandContext& Context)
+	void RenderGraphDependencyLevel::Execute(RenderGraph* RenderGraph, D3D12CommandContext* Context)
 	{
 		// Figure out all the barriers needed for each level
 		// Handle resource transitions for all registered resources
@@ -68,9 +68,9 @@ namespace RHI
 				ReadState |= D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
 			}
 
-			D3D12Texture* pTexture = RenderGraph->GetRegistry().GetD3D12Texture(Read);
+			D3D12Texture* pTexture = RenderGraph->GetRegistry()->GetD3D12Texture(Read);
 
-			Context.TransitionBarrier(pTexture, ReadState);
+			Context->TransitionBarrier(pTexture, ReadState);
 		}
 		for (auto Write : Writes)
 		{
@@ -87,12 +87,12 @@ namespace RHI
 			{
 				WriteState |= D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
 			}
-            D3D12Texture* pTexture = RenderGraph->GetRegistry().GetD3D12Texture(Write);
+            D3D12Texture* pTexture = RenderGraph->GetRegistry()->GetD3D12Texture(Write);
 
-			Context.TransitionBarrier(pTexture, WriteState);
+			Context->TransitionBarrier(pTexture, WriteState);
 		}
 
-		Context.FlushResourceBarriers();
+		Context->FlushResourceBarriers();
 
 		for (auto& RenderPass : RenderPasses)
 		{
@@ -143,17 +143,17 @@ namespace RHI
 		return *EpiloguePass;
 	}
 
-	RenderGraphRegistry& RenderGraph::GetRegistry() const noexcept
+	RenderGraphRegistry* RenderGraph::GetRegistry() const noexcept
 	{
-		return Registry;
+		return &Registry;
 	}
 
-	void RenderGraph::Execute(D3D12CommandContext& Context)
+	void RenderGraph::Execute(D3D12CommandContext* Context)
 	{
         EpiloguePass->PassIndex = PassIndex++;
 		RenderPasses.push_back(EpiloguePass);
 		Setup();
-		Registry.RealizeResources(this, Context.GetParentLinkedDevice()->GetParentDevice());
+		Registry.RealizeResources(this, Context->GetParentLinkedDevice()->GetParentDevice());
 
 		D3D12ScopedEvent(Context, "Render Graph");
 		for (auto& DependencyLevel : DependencyLevels)

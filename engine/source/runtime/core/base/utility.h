@@ -32,7 +32,7 @@ namespace Utility
     std::string  RemoveExtension(const std::string& str);
     std::wstring RemoveExtension(const std::wstring& str);
 
-    static std::uint64_t Hash64(const void* Object, size_t SizeInBytes);
+    std::uint64_t Hash64(const void* Object, size_t SizeInBytes);
 
 } // namespace Utility
 

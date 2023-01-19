@@ -27,7 +27,7 @@
 #define PolitNameOf(name) #name
 
 #ifdef NDEBUG
-#define ASSERT(statement)
+#define ASSERT(statement, log)
 #else
-#define ASSERT(statement) assert(statement)
+#define ASSERT(statement, log) assert(statement)
 #endif

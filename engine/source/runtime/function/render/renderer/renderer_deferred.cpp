@@ -139,10 +139,10 @@ namespace Pilot
         mIndirectTransparentDrawPass = nullptr;
     }
 
-    void DeferredRenderer::OnRender(RHI::D3D12CommandContext& context)
+    void DeferredRenderer::OnRender(RHI::D3D12CommandContext* context)
     {
         IndirectCullPass::IndirectCullOutput indirectCullOutput;
-        mIndirectCullPass->cullMeshs(context, renderGraphRegistry, indirectCullOutput);
+        mIndirectCullPass->cullMeshs(context, &renderGraphRegistry, indirectCullOutput);
 
         RHI::D3D12Texture* pBackBufferResource = pSwapChain->GetCurrentBackBufferResource();
 
@@ -163,7 +163,7 @@ namespace Pilot
         mShadowmapIntputParams.pMaterialBuffer            = indirectCullOutput.pMaterialBuffer;
         mShadowmapIntputParams.p_DirectionalCommandBuffer = indirectCullOutput.p_DirShadowmapCommandBuffer;
         mShadowmapIntputParams.p_SpotCommandBuffer        = indirectCullOutput.p_SpotShadowmapCommandBuffers;
-        mIndirectShadowPass->update(context, graph, mShadowmapIntputParams, mShadowmapOutputParams);
+        mIndirectShadowPass->update(graph, mShadowmapIntputParams, mShadowmapOutputParams);
 
 
         // indirect opaque draw
@@ -179,7 +179,7 @@ namespace Pilot
         {
             mDrawIntputParams.spotShadowmapTexHandles.push_back(mShadowmapOutputParams.spotShadowmapRGHandle[i].shadowmapTextureHandle);
         }
-        mIndirectOpaqueDrawPass->update(context, graph, mDrawIntputParams, mDrawOutputParams);
+        mIndirectOpaqueDrawPass->update(graph, mDrawIntputParams, mDrawOutputParams);
         
 
         // indirect transparent draw
@@ -197,7 +197,7 @@ namespace Pilot
         }
         mDrawTransOutputParams.renderTargetColorHandle = mDrawOutputParams.renderTargetColorHandle;
         mDrawTransOutputParams.renderTargetDepthHandle = mDrawOutputParams.renderTargetDepthHandle;
-        mIndirectTransparentDrawPass->update(context, graph, mDrawTransIntputParams, mDrawTransOutputParams);
+        mIndirectTransparentDrawPass->update(graph, mDrawTransIntputParams, mDrawTransOutputParams);
 
 
         // display
@@ -207,7 +207,7 @@ namespace Pilot
         mDisplayIntputParams.inputRTColorHandle      = mDrawOutputParams.renderTargetColorHandle;
         mDisplayOutputParams.renderTargetColorHandle = renderTargetColorHandle;
 
-        mDisplayPass->update(context, graph, mDisplayIntputParams, mDisplayOutputParams);
+        mDisplayPass->update(graph, mDisplayIntputParams, mDisplayOutputParams);
 
         if (mUIPass != nullptr)
         {
@@ -218,14 +218,14 @@ namespace Pilot
 
             mUIOutputParams.backBufColorHandle = backBufColorHandle;
             
-            mUIPass->update(context, graph, mUIIntputParams, mUIOutputParams);
+            mUIPass->update(graph, mUIIntputParams, mUIOutputParams);
         }
 
         graph.Execute(context);
 
         {
             // Transfer the state of the backbuffer to Present
-            context.TransitionBarrier(pBackBufferResource,
+            context->TransitionBarrier(pBackBufferResource,
                                       D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_PRESENT,
                                       D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES,
                                       true);

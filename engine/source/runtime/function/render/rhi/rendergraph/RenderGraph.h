@@ -60,7 +60,7 @@ namespace RHI
     class RenderPass
     {
     public:
-        using ExecuteCallback = Delegate<void(RenderGraphRegistry& Registry, D3D12CommandContext& Context)>;
+        using ExecuteCallback = Delegate<void(RenderGraphRegistry* Registry, D3D12CommandContext* Context)>;
 
         RenderPass(std::string_view Name);
 
@@ -95,7 +95,7 @@ namespace RHI
     public:
         void AddRenderPass(RenderPass* RenderPass);
 
-        void Execute(RenderGraph* RenderGraph, D3D12CommandContext& Context);
+        void Execute(RenderGraph* RenderGraph, D3D12CommandContext* Context);
 
     private:
         std::vector<RenderPass*> RenderPasses;
@@ -141,9 +141,9 @@ namespace RHI
         [[nodiscard]] RenderPass& GetProloguePass() const noexcept;
         [[nodiscard]] RenderPass& GetEpiloguePass() const noexcept;
 
-        [[nodiscard]] RenderGraphRegistry& GetRegistry() const noexcept;
+        [[nodiscard]] RenderGraphRegistry* GetRegistry() const noexcept;
 
-        void Execute(D3D12CommandContext& Context);
+        void Execute(D3D12CommandContext* Context);
 
         void ExportDgml(DgmlBuilder& Builder) const;
 

@@ -224,7 +224,7 @@ namespace RHI
 
         ASSERT(RootSig->GetNumParameters() <= 16, "Maybe we need to support something greater");
 
-        m_StaleRootParamsBitMap      = 0;
+        m_StaleRootParamsBitMap = 0;
 
         m_RootDescriptorTablesBitMap = RootSig->GetDescriptorTableBitMask(Type);
 

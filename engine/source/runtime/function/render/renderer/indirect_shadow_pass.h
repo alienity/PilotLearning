@@ -75,8 +75,7 @@ namespace Pilot
         void prepareShadowmaps(std::shared_ptr<RenderResourceBase> render_resource);
 
         void initialize(const ShadowPassInitInfo& init_info);
-        void update(RHI::D3D12CommandContext& context,
-                    RHI::RenderGraph&         graph,
+        void update(RHI::RenderGraph&         graph,
                     ShadowInputParameters&      passInput,
                     ShadowOutputParameters&     passOutput);
         void destroy() override final;

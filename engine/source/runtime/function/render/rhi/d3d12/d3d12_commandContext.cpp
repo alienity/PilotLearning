@@ -14,8 +14,7 @@
 namespace RHI
 {
     // D3D12CommandAllocatorPool
-    D3D12CommandAllocatorPool::D3D12CommandAllocatorPool(D3D12LinkedDevice*      Parent,
-                                                         D3D12_COMMAND_LIST_TYPE CommandListType) noexcept :
+    D3D12CommandAllocatorPool::D3D12CommandAllocatorPool(D3D12LinkedDevice* Parent, D3D12_COMMAND_LIST_TYPE CommandListType) noexcept :
         D3D12LinkedDeviceChild(Parent),
         m_CommandListType(CommandListType)
     {}
@@ -34,24 +33,19 @@ namespace RHI
     }
 
 	void
-    D3D12CommandAllocatorPool::DiscardCommandAllocator(Microsoft::WRL::ComPtr<ID3D12CommandAllocator> CommandAllocator,
-                                                       D3D12SyncHandle                                SyncHandle)
+    D3D12CommandAllocatorPool::DiscardCommandAllocator(Microsoft::WRL::ComPtr<ID3D12CommandAllocator> CommandAllocator, D3D12SyncHandle SyncHandle)
     {
         m_CommandAllocatorPool.ReturnToPool(std::move(CommandAllocator), SyncHandle);
     }
 
 	// D3D12CommandContext
-    D3D12CommandContext::D3D12CommandContext(D3D12LinkedDevice*       Parent,
-                                             RHID3D12CommandQueueType Type,
-                                             D3D12_COMMAND_LIST_TYPE  CommandListType) :
+    D3D12CommandContext::D3D12CommandContext(D3D12LinkedDevice* Parent, RHID3D12CommandQueueType Type, D3D12_COMMAND_LIST_TYPE CommandListType) :
         D3D12LinkedDeviceChild(Parent),
         m_Type(Type), m_CommandListType(CommandListType), m_CommandListHandle(Parent, CommandListType),
         m_CommandAllocator(nullptr), m_CommandAllocatorPool(Parent, CommandListType), m_CpuLinearAllocator(Parent)
     {
-        m_pDynamicViewDescriptorHeap =
-            std::make_shared<DynamicDescriptorHeap>(Parent, this, Parent->GetResourceDescriptorHeap());
-        m_pDynamicSamplerDescriptorHeap =
-            std::make_shared<DynamicDescriptorHeap>(Parent, this, Parent->GetSamplerDescriptorHeap());
+        m_pDynamicViewDescriptorHeap = std::make_shared<DynamicDescriptorHeap>(Parent, this, Parent->GetResourceDescriptorHeap());
+        m_pDynamicSamplerDescriptorHeap = std::make_shared<DynamicDescriptorHeap>(Parent, this, Parent->GetSamplerDescriptorHeap());
     }
 
 	D3D12CommandQueue* D3D12CommandContext::GetCommandQueue() const noexcept
@@ -95,8 +89,7 @@ namespace RHI
         if (!isCommandListNew)
             return;
 
-        if (m_Type == RHID3D12CommandQueueType::Direct || m_Type == RHID3D12CommandQueueType::AsyncCompute ||
-            m_Type == RHID3D12CommandQueueType::Copy2)
+        if (m_Type == RHID3D12CommandQueueType::Direct || m_Type == RHID3D12CommandQueueType::AsyncCompute || m_Type == RHID3D12CommandQueueType::Copy2)
         {
             ID3D12DescriptorHeap* DescriptorHeaps[2] = {
                 GetParentLinkedDevice()->GetResourceDescriptorHeap()->GetDescriptorHeap(),
@@ -126,9 +119,6 @@ namespace RHI
         m_CommandAllocatorPool.DiscardCommandAllocator(std::exchange(m_CommandAllocator, nullptr), SyncHandle);
         // Release temp resourcce
         m_CpuLinearAllocator.Version(SyncHandle);
-        // Release temp Allocations
-        m_DynamicGPUDescriptorAllocator[0]->RetireAllcations();
-        m_DynamicGPUDescriptorAllocator[1]->RetireAllcations();
         return SyncHandle;
     }
 
@@ -153,10 +143,8 @@ namespace RHI
     void D3D12CommandContext::CopySubresource(D3D12Texture* Dest, UINT DestSubIndex, D3D12Texture* Src, UINT SrcSubIndex)
     {
         FlushResourceBarriers();
-        D3D12_TEXTURE_COPY_LOCATION DestLocation = {
-            Dest->GetResource(), D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX, DestSubIndex};
-        D3D12_TEXTURE_COPY_LOCATION SrcLocation = {
-            Src->GetResource(), D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX, SrcSubIndex};
+        D3D12_TEXTURE_COPY_LOCATION DestLocation = {Dest->GetResource(), D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX, DestSubIndex};
+        D3D12_TEXTURE_COPY_LOCATION SrcLocation = {Src->GetResource(), D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX, SrcSubIndex};
         m_CommandListHandle->CopyTextureRegion(&DestLocation, 0, 0, 0, &SrcLocation, nullptr);
     }
 
@@ -181,16 +169,8 @@ namespace RHI
 
     void D3D12CommandContext::ResetCounter(D3D12Buffer* CounterResource, UINT64 CounterOffset, UINT Value /*= 0*/)
     {
-        D3D12Allocation Allocation = m_CpuLinearAllocator.Allocate(sizeof(UINT));
-        std::memcpy(Allocation.CpuVirtualAddress, &Value, sizeof(UINT));
-
-        D3D12_RESOURCE_STATES originalState = CounterResource->GetResourceState().GetSubresourceState(0);
-
-        TransitionBarrier(
-            CounterResource, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES, true);
-        m_CommandListHandle->CopyBufferRegion(
-            CounterResource->GetResource(), CounterOffset, Allocation.Resource, Allocation.Offset, sizeof(UINT));
-        TransitionBarrier(CounterResource, originalState, D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES, true);
+        FillBuffer(CounterResource, 0, Value, sizeof(UINT));
+        TransitionBarrier(CounterResource, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
     }
 
     D3D12Allocation D3D12CommandContext::ReserveUploadMemory(UINT64 SizeInBytes, UINT Alignment)
@@ -204,8 +184,7 @@ namespace RHI
         D3D12Allocation TempSpace = m_CpuLinearAllocator.Allocate(NumBytes, 512);
         SIMDMemCopy(TempSpace.CpuVirtualAddress, BufferData, Pilot::DivideByMultiple(NumBytes, 16));
         TransitionBarrier(Dest, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES, true);
-        m_CommandListHandle->CopyBufferRegion(
-            Dest->GetResource(), DestOffset, TempSpace.Resource, TempSpace.Offset, NumBytes);
+        m_CommandListHandle->CopyBufferRegion(Dest->GetResource(), DestOffset, TempSpace.Resource, TempSpace.Offset, NumBytes);
     }
 
     void D3D12CommandContext::FillBuffer(D3D12Buffer* Dest, UINT64 DestOffset, DWParam Value, UINT64 NumBytes)
@@ -214,8 +193,7 @@ namespace RHI
         __m128   VectorValue = _mm_set1_ps(Value.Float);
         SIMDMemFill(TempSpace.CpuVirtualAddress, VectorValue, Pilot::DivideByMultiple(NumBytes, 16));
         TransitionBarrier(Dest, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES, true);
-        m_CommandListHandle->CopyBufferRegion(
-            Dest->GetResource(), DestOffset, TempSpace.Resource, TempSpace.Offset, NumBytes);
+        m_CommandListHandle->CopyBufferRegion(Dest->GetResource(), DestOffset, TempSpace.Resource, TempSpace.Offset, NumBytes);
     }
 
     void D3D12CommandContext::TransitionBarrier(D3D12Resource* Resource, D3D12_RESOURCE_STATES State, UINT Subresource, bool FlushImmediate)
@@ -297,10 +275,10 @@ namespace RHI
     void D3D12CommandContext::DispatchMesh(UINT ThreadGroupCountX, UINT ThreadGroupCountY, UINT ThreadGroupCountZ)
     {
         m_CommandListHandle.FlushResourceBarriers();
-        m_CommandListHandle.GetGraphicsCommandList6()->DispatchMesh(
-            ThreadGroupCountX, ThreadGroupCountY, ThreadGroupCountZ);
+        m_CommandListHandle.GetGraphicsCommandList6()->DispatchMesh(ThreadGroupCountX, ThreadGroupCountY, ThreadGroupCountZ);
     }
 
+    /*
     template<RHI_PIPELINE_STATE_TYPE PsoType>
     void D3D12CommandContext::SetDynamicResourceDescriptorTables(D3D12RootSignature* RootSignature)
     {
@@ -312,14 +290,11 @@ namespace RHI
         auto ResourceDescriptor = GetParentLinkedDevice()->GetResourceDescriptorHeap().GetGpuDescriptorHandle(0);
         auto SamplerDescriptor  = GetParentLinkedDevice()->GetSamplerDescriptorHeap().GetGpuDescriptorHandle(0);
 
-        (m_CommandList->*D3D12DescriptorTableTraits<PsoType>::Bind())(
-            RootParameters::DescriptorTable::ShaderResourceDescriptorTable + Offset, ResourceDescriptor);
-        (m_CommandList->*D3D12DescriptorTableTraits<PsoType>::Bind())(
-            RootParameters::DescriptorTable::UnorderedAccessDescriptorTable + Offset, ResourceDescriptor);
-        (m_CommandList->*D3D12DescriptorTableTraits<PsoType>::Bind())(
-            RootParameters::DescriptorTable::SamplerDescriptorTable + Offset, SamplerDescriptor);
+        (m_CommandList->*D3D12DescriptorTableTraits<PsoType>::Bind())(RootParameters::DescriptorTable::ShaderResourceDescriptorTable + Offset, ResourceDescriptor);
+        (m_CommandList->*D3D12DescriptorTableTraits<PsoType>::Bind())(RootParameters::DescriptorTable::UnorderedAccessDescriptorTable + Offset, ResourceDescriptor);
+        (m_CommandList->*D3D12DescriptorTableTraits<PsoType>::Bind())(RootParameters::DescriptorTable::SamplerDescriptorTable + Offset, SamplerDescriptor);
     }
-
+    */
     // ================================Graphic=====================================
 
     void D3D12GraphicsContext::ClearUAV(RHI::D3D12Buffer* Target)
@@ -470,6 +445,15 @@ namespace RHI
 
 	void D3D12GraphicsContext::SetRootSignature(D3D12RootSignature* RootSignature)
     {
+        if (Cache.RootSignature == RootSignature)
+            return;
+
+        m_CommandListHandle->SetGraphicsRootSignature(RootSignature->GetApiHandle());
+
+        m_pDynamicViewDescriptorHeap->ParseGraphicsRootSignature(RootSignature);
+        m_pDynamicSamplerDescriptorHeap->ParseGraphicsRootSignature(RootSignature);
+
+        /*
         if (Cache.RootSignature != RootSignature)
         {
             Cache.RootSignature = RootSignature;
@@ -478,6 +462,7 @@ namespace RHI
 
             SetDynamicResourceDescriptorTables<RHI_PIPELINE_STATE_TYPE::Graphics>(RootSignature);
         }
+        */
     }
 
     void D3D12GraphicsContext::SetRenderTargets(std::vector<D3D12RenderTargetView*> RenderTargetViews)
@@ -668,22 +653,22 @@ namespace RHI
 
     void D3D12GraphicsContext::SetDynamicDescriptor(UINT RootIndex, UINT Offset, D3D12_CPU_DESCRIPTOR_HANDLE Handle)
     {
-
+        SetDynamicDescriptors(RootIndex, Offset, 1, &Handle);
     }
 
     void D3D12GraphicsContext::SetDynamicDescriptors(UINT RootIndex, UINT Offset, UINT Count, const D3D12_CPU_DESCRIPTOR_HANDLE Handles[])
     {
-
+        m_pDynamicViewDescriptorHeap->SetGraphicsDescriptorHandles(RootIndex, Offset, Count, Handles);
     }
 
     void D3D12GraphicsContext::SetDynamicSampler(UINT RootIndex, UINT Offset, D3D12_CPU_DESCRIPTOR_HANDLE Handle)
     {
-
+        SetDynamicSamplers(RootIndex, Offset, 1, &Handle);
     }
 
     void D3D12GraphicsContext::SetDynamicSamplers(UINT RootIndex, UINT Offset, UINT Count, const D3D12_CPU_DESCRIPTOR_HANDLE Handles[])
     {
-
+        m_pDynamicSamplerDescriptorHeap->SetComputeDescriptorHandles(RootIndex, Offset, Count, Handles);
     }
 
     void D3D12GraphicsContext::SetIndexBuffer(const D3D12_INDEX_BUFFER_VIEW& IBView)
@@ -778,7 +763,7 @@ namespace RHI
 
     void D3D12GraphicsContext::DrawIndirect(D3D12Resource* ArgumentBuffer, UINT64 ArgumentBufferOffset)
     {
-        ExecuteIndirect(pDispatchIndirectCommandSignature, ArgumentBuffer, ArgumentBufferOffset);
+        ExecuteIndirect(RHI::pDispatchIndirectCommandSignature, ArgumentBuffer, ArgumentBufferOffset);
     }
 
     void D3D12GraphicsContext::ExecuteIndirect(D3D12CommandSignature* CommandSig,
@@ -789,8 +774,8 @@ namespace RHI
                                                UINT64                 CounterOffset)
     {
         FlushResourceBarriers();
-        m_pDynamicViewDescriptorHeap->CommitComputeRootDescriptorTables(m_CommandListHandle.GetGraphicsCommandList());
-        m_pDynamicSamplerDescriptorHeap->CommitComputeRootDescriptorTables(m_CommandListHandle.GetGraphicsCommandList());
+        m_pDynamicViewDescriptorHeap->CommitGraphicsRootDescriptorTables(m_CommandListHandle.GetGraphicsCommandList());
+        m_pDynamicSamplerDescriptorHeap->CommitGraphicsRootDescriptorTables(m_CommandListHandle.GetGraphicsCommandList());
         m_CommandListHandle->ExecuteIndirect(CommandSig->GetApiHandle(),
                                              MaxCommands,
                                              ArgumentBuffer->GetResource(),
@@ -824,6 +809,15 @@ namespace RHI
 
 	void D3D12ComputeContext::SetRootSignature(D3D12RootSignature* RootSignature)
     {
+        if (Cache.RootSignature == RootSignature)
+            return;
+
+        m_CommandListHandle->SetComputeRootSignature(RootSignature->GetApiHandle());
+
+        m_pDynamicViewDescriptorHeap->ParseComputeRootSignature(RootSignature);
+        m_pDynamicSamplerDescriptorHeap->ParseComputeRootSignature(RootSignature);
+
+        /*
         if (Cache.RootSignature != RootSignature)
         {
             Cache.RootSignature = RootSignature;
@@ -832,6 +826,7 @@ namespace RHI
 
             SetDynamicResourceDescriptorTables<RHI_PIPELINE_STATE_TYPE::Compute>(RootSignature);
         }
+        */
     }
 
     void D3D12ComputeContext::SetConstantArray(UINT RootIndex, UINT NumConstants, const void* pConstants)
@@ -884,6 +879,14 @@ namespace RHI
         m_CommandListHandle->SetComputeRootConstantBufferView(RootIndex, cb.GpuVirtualAddress);
     }
 
+    void D3D12ComputeContext::SetDynamicSRV(UINT RootIndex, UINT64 BufferSize, const void* BufferData)
+    {
+        ASSERT(BufferData != nullptr && Pilot::IsAligned(BufferData, 16));
+        D3D12Allocation cb = m_CpuLinearAllocator.Allocate(BufferSize);
+        SIMDMemCopy(cb.CpuVirtualAddress, BufferData, Pilot::AlignUp(BufferSize, 16) >> 4);
+        m_CommandListHandle->SetComputeRootShaderResourceView(RootIndex, cb.GpuVirtualAddress);
+    }
+
     void D3D12ComputeContext::SetBufferSRV(UINT RootIndex, D3D12Buffer* BufferSRV, UINT64 Offset)
     {
         ASSERT((BufferSRV->GetResourceState().GetSubresourceState(0) &
@@ -900,6 +903,26 @@ namespace RHI
     void D3D12ComputeContext::SetDescriptorTable(UINT RootIndex, D3D12_GPU_DESCRIPTOR_HANDLE FirstHandle)
     {
         m_CommandListHandle->SetComputeRootDescriptorTable(RootIndex, FirstHandle);
+    }
+
+    void D3D12ComputeContext::SetDynamicDescriptor(UINT RootIndex, UINT Offset, D3D12_CPU_DESCRIPTOR_HANDLE Handle)
+    {
+        SetDynamicDescriptors(RootIndex, Offset, 1, &Handle);
+    }
+
+    void D3D12ComputeContext::SetDynamicDescriptors(UINT RootIndex, UINT Offset, UINT Count, const D3D12_CPU_DESCRIPTOR_HANDLE Handles[])
+    {
+        m_pDynamicViewDescriptorHeap->SetComputeDescriptorHandles(RootIndex, Offset, Count, Handles);
+    }
+
+    void D3D12ComputeContext::SetDynamicSampler(UINT RootIndex, UINT Offset, D3D12_CPU_DESCRIPTOR_HANDLE Handle)
+    {
+        SetDynamicSamplers(RootIndex, Offset, 1, &Handle);
+    }
+
+    void D3D12ComputeContext::SetDynamicSamplers(UINT RootIndex, UINT Offset, UINT Count, const D3D12_CPU_DESCRIPTOR_HANDLE Handles[])
+    {
+        m_pDynamicSamplerDescriptorHeap->SetComputeDescriptorHandles(RootIndex, Offset, Count, Handles);
     }
 
     void D3D12ComputeContext::Dispatch(UINT ThreadGroupCountX, UINT ThreadGroupCountY, UINT ThreadGroupCountZ)

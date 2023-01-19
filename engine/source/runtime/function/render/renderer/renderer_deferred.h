@@ -25,7 +25,7 @@ namespace Pilot
 
 		virtual ~DeferredRenderer();
 
-		virtual void OnRender(RHI::D3D12CommandContext& Context);
+		virtual void OnRender(RHI::D3D12CommandContext* Context);
 
     public:
         uint32_t    backBufferWidth;

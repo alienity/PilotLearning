@@ -3,7 +3,7 @@
 #include "runtime/function/render/rhi/rhi.h"
 #include "runtime/function/render/rhi/d3d12/d3d12_resource.h"
 #include "runtime/function/render/rhi/d3d12/d3d12_descriptor.h"
-#include "runtime/platform/system/hash.h"
+#include "runtime/core/base/utility.h"
 
 namespace RHI
 {
@@ -31,11 +31,11 @@ namespace RHI
 
 		[[nodiscard]] bool operator==(const RgResourceHandle& rhs) const noexcept
         {
-            return Hash::Hash64(this, sizeof(RgResourceHandle)) == Hash::Hash64(&rhs, sizeof(RgResourceHandle));
+            return Utility::Hash64(this, sizeof(RgResourceHandle)) == Utility::Hash64(&rhs, sizeof(RgResourceHandle));
         }
         [[nodiscard]] bool operator!=(const RgResourceHandle& rhs) const noexcept
         {
-            return Hash::Hash64(this, sizeof(RgResourceHandle)) != Hash::Hash64(&rhs, sizeof(RgResourceHandle));
+            return Utility::Hash64(this, sizeof(RgResourceHandle)) != Utility::Hash64(&rhs, sizeof(RgResourceHandle));
         }
 
         void Invalidate()
@@ -238,7 +238,7 @@ struct std::hash<RHI::RgResourceHandle>
 {
 	size_t operator()(const RHI::RgResourceHandle& RenderResourceHandle) const noexcept
 	{
-		return Hash::Hash64(&RenderResourceHandle, sizeof(RenderResourceHandle));
+        return Utility::Hash64(&RenderResourceHandle, sizeof(RenderResourceHandle));
 	}
 };
 
@@ -247,6 +247,6 @@ struct robin_hood::hash<RHI::RgResourceHandle>
 {
 	size_t operator()(const RHI::RgResourceHandle& RenderResourceHandle) const noexcept
 	{
-		return Hash::Hash64(&RenderResourceHandle, sizeof(RenderResourceHandle));
+        return Utility::Hash64(&RenderResourceHandle, sizeof(RenderResourceHandle));
 	}
 };

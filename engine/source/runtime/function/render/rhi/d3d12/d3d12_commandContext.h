@@ -127,9 +127,9 @@ namespace RHI
 
         void DispatchMesh(UINT ThreadGroupCountX, UINT ThreadGroupCountY, UINT ThreadGroupCountZ);
 
-    protected:
-        template<RHI_PIPELINE_STATE_TYPE PsoType>
-        void SetDynamicResourceDescriptorTables(D3D12RootSignature* RootSignature);
+    //protected:
+    //    template<RHI_PIPELINE_STATE_TYPE PsoType>
+    //    void SetDynamicResourceDescriptorTables(D3D12RootSignature* RootSignature);
 
     protected:
         RHID3D12CommandQueueType                       m_Type;
@@ -142,8 +142,6 @@ namespace RHI
         // Every context must use its own allocator that maintains individual list of retired descriptor heaps to
         // avoid interference with other command contexts
         // The allocations in heaps are discarded at the end of the frame.
-        std::shared_ptr<DynamicSuballocationsManager> m_DynamicGPUDescriptorAllocator[2];
-
         std::shared_ptr<DynamicDescriptorHeap> m_pDynamicViewDescriptorHeap;	// HEAP_TYPE_CBV_SRV_UAV
         std::shared_ptr<DynamicDescriptorHeap> m_pDynamicSamplerDescriptorHeap;	// HEAP_TYPE_SAMPLER
 
@@ -273,14 +271,15 @@ namespace RHI
         {
             SetConstantBuffer(RootParameterIndex, sizeof(T), &Data);
         }
+        void SetDynamicSRV(UINT RootIndex, UINT64 BufferSize, const void* BufferData);
         void SetBufferSRV(UINT RootIndex, D3D12Buffer* BufferSRV, UINT64 Offset = 0);
         void SetBufferUAV(UINT RootIndex, D3D12Buffer* BufferUAV, UINT64 Offset = 0);
         void SetDescriptorTable(UINT RootIndex, D3D12_GPU_DESCRIPTOR_HANDLE FirstHandle);
 
-        void SetDynamicDescriptor( UINT RootIndex, UINT Offset, D3D12_CPU_DESCRIPTOR_HANDLE Handle );
-        void SetDynamicDescriptors( UINT RootIndex, UINT Offset, UINT Count, const D3D12_CPU_DESCRIPTOR_HANDLE Handles[] );
-        void SetDynamicSampler( UINT RootIndex, UINT Offset, D3D12_CPU_DESCRIPTOR_HANDLE Handle );
-        void SetDynamicSamplers( UINT RootIndex, UINT Offset, UINT Count, const D3D12_CPU_DESCRIPTOR_HANDLE Handles[] );
+        void SetDynamicDescriptor(UINT RootIndex, UINT Offset, D3D12_CPU_DESCRIPTOR_HANDLE Handle);
+        void SetDynamicDescriptors(UINT RootIndex, UINT Offset, UINT Count, const D3D12_CPU_DESCRIPTOR_HANDLE Handles[]);
+        void SetDynamicSampler(UINT RootIndex, UINT Offset, D3D12_CPU_DESCRIPTOR_HANDLE Handle);
+        void SetDynamicSamplers(UINT RootIndex, UINT Offset, UINT Count, const D3D12_CPU_DESCRIPTOR_HANDLE Handles[]);
         
         void Dispatch(UINT ThreadGroupCountX, UINT ThreadGroupCountY, UINT ThreadGroupCountZ);
         void Dispatch1D(UINT64 ThreadCountX, UINT64 GroupSizeX = 64);
