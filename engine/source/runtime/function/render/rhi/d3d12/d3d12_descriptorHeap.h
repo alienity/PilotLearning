@@ -251,7 +251,7 @@ namespace RHI
             ASSERT(DescriptorSize < std::numeric_limits<UINT16>::max(), "DescriptorSize exceeds allowed limit");
             m_DescriptorSize = static_cast<UINT16>(DescriptorSize);
             D3D12_CPU_DESCRIPTOR_HANDLE m_HeapStartHandle = m_pDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
-            m_DescriptorHandleOffsetIndex = (m_HeapStartHandle.ptr - m_FirstCpuHandle.ptr) / m_DescriptorSize;
+            m_DescriptorHandleOffsetIndex = (m_FirstCpuHandle.ptr - m_HeapStartHandle.ptr) / m_DescriptorSize;
         }
 
         // Move constructor (copy is not allowed)

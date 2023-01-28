@@ -760,7 +760,7 @@ namespace RHI
 
     void D3D12GraphicsContext::DrawIndirect(D3D12Resource* ArgumentBuffer, UINT64 ArgumentBufferOffset)
     {
-        ExecuteIndirect(RHI::pDispatchIndirectCommandSignature, ArgumentBuffer, ArgumentBufferOffset);
+        ExecuteIndirect(RHI::pDrawIndirectCommandSignature, ArgumentBuffer, ArgumentBufferOffset);
     }
 
     void D3D12GraphicsContext::ExecuteIndirect(D3D12CommandSignature* CommandSig,
@@ -954,7 +954,7 @@ namespace RHI
 
     void D3D12ComputeContext::DispatchIndirect(D3D12Resource* ArgumentBuffer, UINT64 ArgumentBufferOffset)
     {
-
+        ExecuteIndirect(RHI::pDispatchIndirectCommandSignature, ArgumentBuffer, ArgumentBufferOffset);
     }
 
     void D3D12ComputeContext::ExecuteIndirect(D3D12CommandSignature* CommandSig,
@@ -964,7 +964,15 @@ namespace RHI
                                               D3D12Resource*         CommandCounterBuffer,
                                               UINT64                 CounterOffset)
     {
-
+        FlushResourceBarriers();
+        m_pDynamicViewDescriptorHeap->CommitGraphicsRootDescriptorTables(m_CommandListHandle.GetGraphicsCommandList());
+        m_pDynamicSamplerDescriptorHeap->CommitGraphicsRootDescriptorTables(m_CommandListHandle.GetGraphicsCommandList());
+        m_CommandListHandle->ExecuteIndirect(CommandSig->GetApiHandle(),
+                                             MaxCommands,
+                                             ArgumentBuffer->GetResource(),
+                                             ArgumentStartOffset,
+                                             CommandCounterBuffer == nullptr ? nullptr : CommandCounterBuffer->GetResource(),
+                                             CounterOffset);
     }
 
     D3D12ScopedEventObject::D3D12ScopedEventObject(D3D12CommandContext* CommandContext, std::string_view Name) :
