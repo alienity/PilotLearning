@@ -3,6 +3,9 @@
 
 namespace RHI
 {
+    class D3D12Device;
+    class D3D12CommandQueue;
+
     class D3D12Fence : public D3D12DeviceChild
     {
     public:

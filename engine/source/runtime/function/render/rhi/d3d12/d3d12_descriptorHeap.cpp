@@ -2,6 +2,8 @@
 #include "d3d12_device.h"
 #include "d3d12_linkedDevice.h"
 
+#include "runtime/core/math/moyu_math.h"
+
 namespace RHI
 {
     VariableSizeAllocationsManager::Allocation VariableSizeAllocationsManager::Allocate(OffsetType Size,

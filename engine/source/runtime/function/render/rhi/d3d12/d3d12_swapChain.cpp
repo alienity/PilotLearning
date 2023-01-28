@@ -1,5 +1,10 @@
 #include "d3d12_swapChain.h"
 #include "d3d12_device.h"
+#include "d3d12_linkedDevice.h"
+#include "d3d12_fence.h"
+#include "d3d12_resource.h"
+#include "d3d12_descriptor.h"
+#include "d3d12_commandQueue.h"
 
 namespace RHI
 {
@@ -8,7 +13,7 @@ namespace RHI
         : D3D12DeviceChild(Parent)
         , WindowHandle(HWnd)
         , p_SwapChain4(InitializeSwapChain())
-        , m_Fence(Parent, 0, D3D12_FENCE_FLAG_NONE)
+        , m_Fence(std::make_shared<D3D12Fence>(Parent, 0, D3D12_FENCE_FLAG_NONE))
     {
         // Check display HDR support and initialize ST.2084 support to match the display's support.
         DisplayHDRSupport();
@@ -207,8 +212,8 @@ namespace RHI
         }
         Present.PostPresent();
 
-        UINT64 ValueToWaitFor = m_Fence.Signal(GetParentDevice()->GetLinkedDevice()->GetGraphicsQueue());
-        m_SyncHandle          = D3D12SyncHandle(&m_Fence, ValueToWaitFor);
+        UINT64 ValueToWaitFor = m_Fence->Signal(GetParentDevice()->GetLinkedDevice()->GetGraphicsQueue());
+        m_SyncHandle          = D3D12SyncHandle(m_Fence.get(), ValueToWaitFor);
 
         m_CurrentBackBufferIndex = (m_CurrentBackBufferIndex + 1) % BackBufferCount;
     }

@@ -47,14 +47,14 @@ void CSMain(CSParams Params) {
 
             uint2 sortIndexDistance = uint2(index, asuint(meshDistance));
 
-            if (matBuffer[0].is_blend)
-            {
-                g_TransSortIndexDisBuffer.Append(sortIndexDistance);
-            }
-            else
-            {
+            //if (matBuffer[0].is_blend)
+            //{
+            //    g_TransSortIndexDisBuffer.Append(sortIndexDistance);
+            //}
+            //else
+            //{
                 g_OpaqueSortIndexDisBuffer.Append(sortIndexDistance);
-            }
+            //}
         }
     }
 }

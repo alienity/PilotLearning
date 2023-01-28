@@ -2,10 +2,7 @@
 #include "d3d12_device.h"
 #include "d3d12_linkedDevice.h"
 #include "d3d12_commandQueue.h"
-#include "d3d12_pipelineState.h"
-#include "d3d12_rootSignature.h"
 #include "d3d12_descriptor.h"
-#include "d3d12_resource.h"
 #include "d3d12_graphicsCommon.h"
 
 #include "runtime/core/base/utility.h"

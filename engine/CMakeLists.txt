@@ -6,8 +6,8 @@ set(ENGINE_SHADER_DIR "/shader")
 set(ENGINE_INIT_CONFIG "${ENGINE_ROOT_DIR}/MoYuEditor.ini")
 
 set(THIRD_PARTY_DLL 
-${THIRD_PARTY_DIR}/dxc_2022_07_18/bin/x64/dxcompiler.dll
-${THIRD_PARTY_DIR}/dxc_2022_07_18/bin/x64/dxil.dll
+${THIRD_PARTY_DIR}/dxc_2022_12_16/bin/x64/dxcompiler.dll
+${THIRD_PARTY_DIR}/dxc_2022_12_16/bin/x64/dxil.dll
 ${THIRD_PARTY_DIR}/WinPixEventRuntime/bin/x64/WinPixEventRuntime.dll
 ${THIRD_PARTY_DIR}/DirectStorage/native/bin/x64/dstorage.dll
 ${THIRD_PARTY_DIR}/DirectStorage/native/bin/x64/dstoragecore.dll)
@@ -25,7 +25,7 @@ endif()
 
 set(wil_include ${THIRD_PARTY_DIR}/wil/include)
 set(directx_headers_include ${THIRD_PARTY_DIR}/DirectX-Headers/include)
-set(dxc_headers_include ${THIRD_PARTY_DIR}/dxc_2022_07_18/inc)
+set(dxc_headers_include ${THIRD_PARTY_DIR}/dxc_2022_12_16/inc)
 # set(vulkan_include ${THIRD_PARTY_DIR}/VulkanSDK/include)
 
 # if(WIN32)

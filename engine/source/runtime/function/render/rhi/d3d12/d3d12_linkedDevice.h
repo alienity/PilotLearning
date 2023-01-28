@@ -1,16 +1,19 @@
 #pragma once
 #include "d3d12_core.h"
-#include "d3d12_commandQueue.h"
 #include "d3d12_profiler.h"
-#include "d3d12_commandContext.h"
-#include "d3d12_descriptorHeap.h"
 
 #include <shared_mutex>
 
 namespace RHI
 {
+    class D3D12Device;
     class D3D12Resource;
-
+    class D3D12CommandQueue;
+    class GPUDescriptorHeap;
+    class CPUDescriptorHeap;
+    class DescriptorHeapAllocation;
+    class D3D12CommandContext;
+    
     class D3D12LinkedDevice : public D3D12DeviceChild
     {
     public:

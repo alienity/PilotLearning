@@ -1,4 +1,10 @@
 #include "d3d12_graphicsCommon.h"
+#include "d3d12_device.h"
+#include "d3d12_linkedDevice.h"
+#include "d3d12_samplerManager.h"
+#include "d3d12_commandSignature.h"
+#include "d3d12_rootSignature.h"
+#include "d3d12_pipelineState.h"
 
 #include "shaders/CompiledShaders/GenerateMipsGammaCS.h"
 #include "shaders/CompiledShaders/GenerateMipsGammaOddCS.h"
@@ -214,8 +220,8 @@ namespace RHI
 
         RHI::RootSignatureDesc mCommonRSDesc;
         mCommonRSDesc.Add32BitConstants<0, 0>(4);
-        mCommonRSDesc.AddDescriptorTable(RHI::D3D12DescriptorTable(1).AddSRVRange<1, 0>(10, D3D12_DESCRIPTOR_RANGE_FLAG_NONE, 0));
-        mCommonRSDesc.AddDescriptorTable(RHI::D3D12DescriptorTable(1).AddUAVRange<2, 0>(10, D3D12_DESCRIPTOR_RANGE_FLAG_NONE, 0));
+        mCommonRSDesc.AddDescriptorTable(RHI::D3D12DescriptorTable(1).AddSRVRange<0, 0>(10, D3D12_DESCRIPTOR_RANGE_FLAG_NONE, 0));
+        mCommonRSDesc.AddDescriptorTable(RHI::D3D12DescriptorTable(1).AddUAVRange<0, 0>(10, D3D12_DESCRIPTOR_RANGE_FLAG_NONE, 0));
         mCommonRSDesc.AddConstantBufferView<1, 0>();
         mCommonRSDesc.AddStaticSampler<0, 0>(SamplerLinearClampDesc);
         mCommonRSDesc.AddStaticSampler<1, 0>(SamplerPointBorderDesc);
@@ -224,10 +230,13 @@ namespace RHI
         g_pCommonRS = new D3D12RootSignature(pParent->GetParentDevice(), mCommonRSDesc);
         
 #define CreatePSO(ObjName, Index, PSOName, ShaderByteCode) \
-    D3D12_COMPUTE_PIPELINE_STATE_DESC genPSODesc##Index;\
-    genPSODesc##Index.pRootSignature = g_pCommonRS->GetApiHandle();\
-    genPSODesc##Index.CS = CD3DX12_SHADER_BYTECODE((const void*)ShaderByteCode, sizeof(ShaderByteCode));\
-    g_pGenerateMipsLinearPSO[Index]  = new D3D12PipelineState(pParent->GetParentDevice(), PSOName, genPSODesc##Index);
+    D3D12_COMPUTE_PIPELINE_STATE_DESC ObjName##Index##PSODesc = {};\
+    ObjName##Index##PSODesc.pRootSignature = g_pCommonRS->GetApiHandle();\
+    ObjName##Index##PSODesc.CS             = D3D12_SHADER_BYTECODE {ShaderByteCode, sizeof(ShaderByteCode)};\
+    ObjName##Index##PSODesc.NodeMask       = pParent->GetParentDevice()->GetAllNodeMask();\
+    ObjName##Index##PSODesc.CachedPSO      = D3D12_CACHED_PIPELINE_STATE();\
+    ObjName##Index##PSODesc.Flags          = D3D12_PIPELINE_STATE_FLAG_NONE;\
+    g_pGenerateMipsLinearPSO[Index]  = new D3D12PipelineState(pParent->GetParentDevice(), PSOName, ObjName##Index##PSODesc);
 
         CreatePSO(g_pGenerateMipsLinearPS, 0, L"Generate Mips Linear CS", g_pGenerateMipsLinearCS)
         CreatePSO(g_pGenerateMipsLinearPS, 1, L"Generate Mips Linear Odd X CS", g_pGenerateMipsLinearOddXCS)
@@ -238,7 +247,7 @@ namespace RHI
         CreatePSO(g_GenerateMipsGammaPSO, 2, L"Generate Mips Gamma Odd Y CS", g_pGenerateMipsGammaOddYCS)
         CreatePSO(g_GenerateMipsGammaPSO, 3, L"Generate Mips Gamma Odd CS", g_pGenerateMipsGammaOddCS)
 
-        D3D12_GRAPHICS_PIPELINE_STATE_DESC mDownsampleDepthDesc;
+        D3D12_GRAPHICS_PIPELINE_STATE_DESC mDownsampleDepthDesc = {};
         mDownsampleDepthDesc.pRootSignature                 = g_pCommonRS->GetApiHandle();
         mDownsampleDepthDesc.RasterizerState                = RasterizerTwoSided;
         mDownsampleDepthDesc.BlendState                     = BlendDisable;
@@ -247,11 +256,15 @@ namespace RHI
         mDownsampleDepthDesc.InputLayout.NumElements        = 0;
         mDownsampleDepthDesc.InputLayout.pInputElementDescs = nullptr;
         mDownsampleDepthDesc.PrimitiveTopologyType          = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-        mDownsampleDepthDesc.VS = CD3DX12_SHADER_BYTECODE((const void*)g_pScreenQuadCommonVS, sizeof(g_pScreenQuadCommonVS));
-        mDownsampleDepthDesc.PS = CD3DX12_SHADER_BYTECODE((const void*)g_pDownsampleDepthPS, sizeof(g_pDownsampleDepthPS));
+        mDownsampleDepthDesc.VS = D3D12_SHADER_BYTECODE {g_pScreenQuadCommonVS, sizeof(g_pScreenQuadCommonVS)};
+        mDownsampleDepthDesc.PS = D3D12_SHADER_BYTECODE {g_pDownsampleDepthPS, sizeof(g_pDownsampleDepthPS)};
+        mDownsampleDepthDesc.NumRenderTargets   = 0;
         mDownsampleDepthDesc.DSVFormat          = DXGI_FORMAT_D32_FLOAT;
         mDownsampleDepthDesc.SampleDesc.Count   = 1;
         mDownsampleDepthDesc.SampleDesc.Quality = 0;
+        mDownsampleDepthDesc.NodeMask           = pParent->GetParentDevice()->GetAllNodeMask();
+        mDownsampleDepthDesc.CachedPSO          = D3D12_CACHED_PIPELINE_STATE();
+        mDownsampleDepthDesc.Flags              = D3D12_PIPELINE_STATE_FLAG_NONE;
         g_pDownsampleDepthPSO = new D3D12PipelineState(pParent->GetParentDevice(), L"DownsampleDepth PSO", mDownsampleDepthDesc);
     }
 
@@ -262,8 +275,10 @@ namespace RHI
 
         delete g_pCommonRS;
 
-        delete[] g_pGenerateMipsLinearPSO;
-        delete[] g_pGenerateMipsGammaPSO;
+        for (size_t i = 0; i < 4; i++)
+            delete g_pGenerateMipsLinearPSO[i];
+        for (size_t i = 0; i < 4; i++)
+            delete g_pGenerateMipsGammaPSO[i];
         delete g_pDownsampleDepthPSO;
     }
 

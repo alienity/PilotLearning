@@ -1,12 +1,10 @@
 #pragma once
 #include "d3d12_core.h"
+#include "d3d12_linkedDevice.h"
 #include "runtime/core/color/color.h"
-#include <imgui_demo.cpp>
 
 namespace RHI
 {
-    class D3D12LinkedDevice;
-
     class SamplerDesc : public D3D12_SAMPLER_DESC
     {
     public:

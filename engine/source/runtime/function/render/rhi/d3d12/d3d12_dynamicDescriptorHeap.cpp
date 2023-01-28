@@ -1,4 +1,7 @@
 #include "d3d12_dynamicDescriptorHeap.h"
+#include "d3d12_linkedDevice.h"
+#include "d3d12_commandContext.h"
+#include "d3d12_rootSignature.h"
 
 namespace RHI
 {
@@ -46,7 +49,7 @@ namespace RHI
         {
             StaleParams ^= (1 << RootIndex);
 
-            uint32_t MaxSetHandle;
+            uint32_t MaxSetHandle = 0;
             ASSERT(TRUE == _BitScanReverse((unsigned long*)&MaxSetHandle,
                                            m_RootDescriptorTable[RootIndex].AssignedHandlesBitMap),
                    "Root entry marked as stale but has no stale descriptors");
@@ -77,7 +80,7 @@ namespace RHI
             RootIndices[StaleParamCount] = RootIndex;
             StaleParams ^= (1 << RootIndex);
 
-            uint32_t MaxSetHandle;
+            uint32_t MaxSetHandle = 0;
             ASSERT(TRUE == _BitScanReverse((unsigned long*)&MaxSetHandle,
                                            m_RootDescriptorTable[RootIndex].AssignedHandlesBitMap),
                    "Root entry marked as stale but has no stale descriptors");

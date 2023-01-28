@@ -1,4 +1,5 @@
 #include "d3d12_pipelineState.h"
+#include "d3d12_pipelineLibrary.h"
 #include "d3d12_device.h"
 #include "d3d12_rootSignature.h"
 #include "rhi_d3d12_mappings.h"
@@ -166,13 +167,13 @@ namespace RHI
         PipelineState = Compile<D3D12_GRAPHICS_PIPELINE_STATE_DESC>(Parent, Name, Desc);
     }
 
-    D3D12PipelineState::D3D12PipelineState(D3D12Device*                           Parent,
-                                           std::wstring                           Name,
-                                           D3DX12_MESH_SHADER_PIPELINE_STATE_DESC Desc) :
-        D3D12DeviceChild(Parent)
-    {
-        PipelineState = Compile<D3DX12_MESH_SHADER_PIPELINE_STATE_DESC>(Parent, Name, Desc);
-    }
+    //D3D12PipelineState::D3D12PipelineState(D3D12Device*                           Parent,
+    //                                       std::wstring                           Name,
+    //                                       D3DX12_MESH_SHADER_PIPELINE_STATE_DESC Desc) :
+    //    D3D12DeviceChild(Parent)
+    //{
+    //    PipelineState = Compile<D3DX12_MESH_SHADER_PIPELINE_STATE_DESC>(Parent, Name, Desc);
+    //}
 
     D3D12PipelineState::D3D12PipelineState(D3D12Device*                      Parent,
                                            std::wstring                      Name,
@@ -282,26 +283,26 @@ namespace RHI
                 L"Thread: {} has finished compiling PSO: {} in {}ms", GetCurrentThreadId(), Name.c_str(), Milliseconds);
         });
 
-        ID3D12Device2* Device2 = Device->GetD3D12Device5();
+        ID3D12Device5* Device5 = Device->GetD3D12Device5();
 
         Microsoft::WRL::ComPtr<ID3D12PipelineState> PipelineState;
 
         if (Device->GetPipelineLibrary())
         {
             ID3D12PipelineLibrary1* PipelineLibrary1 = Device->GetPipelineLibrary()->GetLibrary1();
-            HRESULT                 Result           = (PipelineLibrary1->*D3D12PipelineStateTraits<TDesc>::Load())(
+            HRESULT Result = (PipelineLibrary1->*D3D12PipelineStateTraits<TDesc>::Load())(
                 Name.data(), &Desc, IID_PPV_ARGS(&PipelineState));
             if (Result == E_INVALIDARG)
             {
                 VERIFY_D3D12_API(
-                    (Device2->*D3D12PipelineStateTraits<TDesc>::Create())(&Desc, IID_PPV_ARGS(&PipelineState)));
+                    (Device5->*D3D12PipelineStateTraits<TDesc>::Create())(&Desc, IID_PPV_ARGS(&PipelineState)));
                 StorePipeline(Device, Name, PipelineState.Get());
             }
         }
         else
         {
             VERIFY_D3D12_API(
-                (Device2->*D3D12PipelineStateTraits<TDesc>::Create())(&Desc, IID_PPV_ARGS(&PipelineState)));
+                (Device5->*D3D12PipelineStateTraits<TDesc>::Create())(&Desc, IID_PPV_ARGS(&PipelineState)));
         }
         return PipelineState;
     }

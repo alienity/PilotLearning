@@ -10,6 +10,7 @@
 #include "d3d12/d3d12_commandList.h"
 #include "d3d12/d3d12_commandContext.h"
 #include "d3d12/d3d12_descriptorHeap.h"
+#include "d3d12/d3d12_dynamicDescriptorHeap.h"
 #include "d3d12/d3d12_rootSignature.h"
 #include "d3d12/d3d12_pipelineState.h"
 #include "d3d12/d3d12_resource.h"

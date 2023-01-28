@@ -400,8 +400,8 @@ namespace Pilot
                 pAsyncCompute->SetPipelineState(PipelineStates::pIndirectCullForSort.get());
                 pAsyncCompute->SetRootSignature(RootSignatures::pIndirectCullForSort.get());
                 pAsyncCompute->SetConstantBuffer(0, pPerframeBuffer->GetGpuVirtualAddress());
-                pAsyncCompute->SetConstantBuffer(1, pMeshBuffer->GetGpuVirtualAddress());
-                pAsyncCompute->SetConstantBuffer(2, pMaterialBuffer->GetGpuVirtualAddress());
+                pAsyncCompute->SetBufferSRV(1, pMeshBuffer.get());
+                pAsyncCompute->SetBufferSRV(2, pMaterialBuffer.get());
                 pAsyncCompute->SetDescriptorTable(3, commandBufferForOpaqueDraw.p_IndirectIndexCommandBuffer->GetDefaultUAV()->GetGpuHandle());
                 pAsyncCompute->SetDescriptorTable(4, commandBufferForTransparentDraw.p_IndirectIndexCommandBuffer->GetDefaultUAV()->GetGpuHandle());
 
@@ -442,8 +442,8 @@ namespace Pilot
                 pAsyncCompute->SetRootSignature(RootSignatures::pIndirectCull.get());
 
                 pAsyncCompute->SetConstantBuffer(0, pPerframeBuffer->GetGpuVirtualAddress());
-                pAsyncCompute->SetConstantBuffer(1, pMeshBuffer->GetGpuVirtualAddress());
-                pAsyncCompute->SetConstantBuffer(2, pMaterialBuffer->GetGpuVirtualAddress());
+                pAsyncCompute->SetBufferSRV(1, pMeshBuffer.get());
+                pAsyncCompute->SetBufferSRV(2, pMaterialBuffer.get());
 
                 pAsyncCompute->DispatchIndirect(pSortDispatchArgs.get(), 0);
 

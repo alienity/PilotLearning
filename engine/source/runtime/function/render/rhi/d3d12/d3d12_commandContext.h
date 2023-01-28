@@ -1,9 +1,13 @@
 #pragma once
 #include "d3d12_core.h"
+#include "d3d12_linkedDevice.h"
+#include "d3d12_resource.h"
 #include "d3d12_commandList.h"
 #include "d3d12_resourceAllocator.h"
+#include "d3d12_rootSignature.h"
 #include "d3d12_commandSignature.h"
 #include "d3d12_dynamicDescriptorHeap.h"
+#include "d3d12_pipelineState.h"
 #include "d3d12_profiler.h"
 
 #include "core/color/color.h"
@@ -11,9 +15,7 @@
 namespace RHI
 {
     class D3D12CommandQueue;
-    class D3D12PipelineState;
-    class D3D12RaytracingPipelineState;
-    class D3D12RootSignature;
+    
     class D3D12RenderTargetView;
     class D3D12DepthStencilView;
     class D3D12ShaderResourceView;
@@ -47,8 +49,7 @@ namespace RHI
 
         [[nodiscard]] Microsoft::WRL::ComPtr<ID3D12CommandAllocator> RequestCommandAllocator();
 
-        void DiscardCommandAllocator(Microsoft::WRL::ComPtr<ID3D12CommandAllocator> CommandAllocator,
-                                     D3D12SyncHandle                                SyncHandle);
+        void DiscardCommandAllocator(Microsoft::WRL::ComPtr<ID3D12CommandAllocator> CommandAllocator, D3D12SyncHandle SyncHandle);
 
     private:
         D3D12_COMMAND_LIST_TYPE                                    m_CommandListType;
@@ -142,8 +143,8 @@ namespace RHI
         // Every context must use its own allocator that maintains individual list of retired descriptor heaps to
         // avoid interference with other command contexts
         // The allocations in heaps are discarded at the end of the frame.
-        std::shared_ptr<DynamicDescriptorHeap> m_pDynamicViewDescriptorHeap;	// HEAP_TYPE_CBV_SRV_UAV
-        std::shared_ptr<DynamicDescriptorHeap> m_pDynamicSamplerDescriptorHeap;	// HEAP_TYPE_SAMPLER
+        std::shared_ptr<RHI::DynamicDescriptorHeap> m_pDynamicViewDescriptorHeap;	// HEAP_TYPE_CBV_SRV_UAV
+        std::shared_ptr<RHI::DynamicDescriptorHeap> m_pDynamicSamplerDescriptorHeap;	// HEAP_TYPE_SAMPLER
 
         // TODO: Finish cache
         // State Cache

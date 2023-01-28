@@ -22,7 +22,8 @@ StructuredBuffer<MaterialInstance> g_MaterialsInstance : register(t1, space0);
 
 AppendStructuredBuffer<CommandSignatureParams> g_DrawSceneCommandBuffer : register(u0, space0);
 
-[numthreads(128, 1, 1)] void CSMain(CSParams Params) {
+[numthreads(128, 1, 1)]
+void CSMain(CSParams Params) {
     // Each thread processes one mesh instance
     // Compute index and ensure is within bounds
     uint index = (Params.GroupID.x * 128) + Params.GroupIndex;

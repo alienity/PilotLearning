@@ -1,14 +1,15 @@
 #pragma once
 #include "d3d12_core.h"
-#include "d3d12_device.h"
-#include "d3d12_samplerManager.h"
-#include "d3d12_commandSignature.h"
-#include "d3d12_rootSignature.h"
-#include "d3d12_pipelineState.h"
+#include "d3d12_linkedDevice.h"
 #include "d3d12_resource.h"
 
 namespace RHI
 {
+    class SamplerDesc;
+    class D3D12CommandSignature;
+    class D3D12RootSignature;
+    class D3D12PipelineState;
+
     void InitializeCommonState(D3D12LinkedDevice* pParent);
     void DestroyCommonState();
 

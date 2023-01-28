@@ -1,5 +1,6 @@
 #include "d3d12_samplerManager.h"
 #include "d3d12_linkedDevice.h"
+#include "d3d12_descriptorHeap.h"
 #include "runtime/core/base/utility.h"
 #include <map>
 

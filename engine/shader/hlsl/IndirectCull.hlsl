@@ -46,14 +46,16 @@ void CSMain(CSParams Params) {
             command.IndexBuffer          = mesh.indexBuffer;
             command.DrawIndexedArguments = mesh.drawIndexedArguments;
 
-            if (matBuffer[0].is_blend)
-            {
-                g_TransDrawCommandBuffer.Append(command);
-            }
-            else
-            {
-                g_OpaqueDrawCommandBuffer.Append(command);
-            }
+            g_DrawCommandBuffer.Append(command);
+
+            //if (matBuffer[0].is_blend)
+            //{
+            //    g_TransDrawCommandBuffer.Append(command);
+            //}
+            //else
+            //{
+            //    g_OpaqueDrawCommandBuffer.Append(command);
+            //}
         }
     }
 }

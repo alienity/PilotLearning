@@ -1,4 +1,9 @@
 #include "d3d12_device.h"
+#include "d3d12_linkedDevice.h"
+#include "d3d12_rootSignature.h"
+#include "d3d12_pipelineLibrary.h"
+#include "d3d12_pipelineState.h"
+#include "d3d12_fence.h"
 #include "runtime/core/base/macro.h"
 
 // D3D12.DRED
@@ -13,40 +18,41 @@ static bool CVar_AsyncPsoCompilation = false;
 namespace RHI
 {
     // clang-format off
-    D3D12Device::D3D12Device(const DeviceOptions& Options) 
-        : Device(InitializeDevice(Options))
-        , Device1(DeviceQueryInterface<ID3D12Device1>())
-        , Device5(DeviceQueryInterface<ID3D12Device5>())
-        , AllNodeMask(D3D12NodeMask::FromIndex(Device->GetNodeCount() - 1))
-        , FeatureSupport(InitializeFeatureSupport(Options))
-        , DescriptorSizeCache(InitializeDescriptorSizeCache())
-        , Dred(Device.Get())
-        , LinkedDevice(this, D3D12NodeMask::FromIndex(0))
-        // , PsoCompilationThreadPool(std::make_unique<ThreadPool>())
-        , Library(!Options.PsoCachePath.empty() ? std::make_unique<D3D12PipelineLibrary>(this, Options.PsoCachePath) : nullptr)
+    D3D12Device::D3D12Device(const DeviceOptions& Options) : m_Device(InitializeDevice(Options))
     {
-        VERIFY_D3D12_API(DStorageGetFactory(IID_PPV_ARGS(&DStorageFactory)));
+        m_Device1 = DeviceQueryInterface<ID3D12Device1>();
+        m_Device5 = DeviceQueryInterface<ID3D12Device5>();
+        m_Dred : m_Device.Get();
+
+        m_AllNodeMask = (D3D12NodeMask::FromIndex(m_Device->GetNodeCount() - 1));
+        m_FeatureSupport = InitializeFeatureSupport(Options);
+        m_DescriptorSizeCache = InitializeDescriptorSizeCache();
+        // , PsoCompilationThreadPool(std::make_unique<ThreadPool>())
+        m_Library = !Options.PsoCachePath.empty() ? std::make_unique<D3D12PipelineLibrary>(this, Options.PsoCachePath) : nullptr;
+        m_LinkedDevice = std::make_shared<D3D12LinkedDevice>(this, D3D12NodeMask::FromIndex(0));
+
+        VERIFY_D3D12_API(DStorageGetFactory(IID_PPV_ARGS(&m_DStorageFactory)));
 
         DSTORAGE_QUEUE_DESC QueueDesc = {DSTORAGE_REQUEST_SOURCE_FILE,
                                          DSTORAGE_MAX_QUEUE_CAPACITY,
                                          DSTORAGE_PRIORITY_NORMAL,
                                          "DStorageQueue: File",
-                                         Device.Get()};
+                                         m_Device.Get()};
         VERIFY_D3D12_API(
-            DStorageFactory->CreateQueue(&QueueDesc, IID_PPV_ARGS(&DStorageQueues[DSTORAGE_REQUEST_SOURCE_FILE])));
+            m_DStorageFactory->CreateQueue(&QueueDesc, IID_PPV_ARGS(&m_DStorageQueues[DSTORAGE_REQUEST_SOURCE_FILE])));
 
         QueueDesc = {DSTORAGE_REQUEST_SOURCE_MEMORY,
                      DSTORAGE_MAX_QUEUE_CAPACITY,
                      DSTORAGE_PRIORITY_NORMAL,
                      "DStorageQueue: Memory",
-                     Device.Get()};
+                     m_Device.Get()};
         VERIFY_D3D12_API(
-            DStorageFactory->CreateQueue(&QueueDesc, IID_PPV_ARGS(&DStorageQueues[DSTORAGE_REQUEST_SOURCE_MEMORY])));
+            m_DStorageFactory->CreateQueue(&QueueDesc, IID_PPV_ARGS(&m_DStorageQueues[DSTORAGE_REQUEST_SOURCE_MEMORY])));
 
-        DStorageFence = D3D12Fence(this, 0);
+        m_DStorageFence = std::make_shared<D3D12Fence>(this, 0);
 
         Microsoft::WRL::ComPtr<ID3D12InfoQueue> InfoQueue;
-        if (SUCCEEDED(Device->QueryInterface(IID_PPV_ARGS(&InfoQueue))))
+        if (SUCCEEDED(m_Device->QueryInterface(IID_PPV_ARGS(&InfoQueue))))
         {
             VERIFY_D3D12_API(InfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION, TRUE));
             VERIFY_D3D12_API(InfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR, TRUE));
@@ -90,67 +96,67 @@ namespace RHI
 
 	bool D3D12Device::SupportsWaveIntrinsics() const noexcept
     {
-        if (SUCCEEDED(FeatureSupport.GetStatus()))
+        if (SUCCEEDED(m_FeatureSupport.GetStatus()))
         {
-            return FeatureSupport.WaveOps();
+            return m_FeatureSupport.WaveOps();
         }
         return false;
     }
 
 	bool D3D12Device::SupportsRaytracing() const noexcept
     {
-        if (SUCCEEDED(FeatureSupport.GetStatus()))
+        if (SUCCEEDED(m_FeatureSupport.GetStatus()))
         {
-            return FeatureSupport.RaytracingTier() >= D3D12_RAYTRACING_TIER_1_0;
+            return m_FeatureSupport.RaytracingTier() >= D3D12_RAYTRACING_TIER_1_0;
         }
         return false;
     }
 
 	bool D3D12Device::SupportsDynamicResources() const noexcept
     {
-        if (SUCCEEDED(FeatureSupport.GetStatus()))
+        if (SUCCEEDED(m_FeatureSupport.GetStatus()))
         {
-            return FeatureSupport.HighestShaderModel() >= D3D_SHADER_MODEL_6_6 ||
-                   FeatureSupport.ResourceBindingTier() >= D3D12_RESOURCE_BINDING_TIER_3;
+            return m_FeatureSupport.HighestShaderModel() >= D3D_SHADER_MODEL_6_6 ||
+                   m_FeatureSupport.ResourceBindingTier() >= D3D12_RESOURCE_BINDING_TIER_3;
         }
         return false;
     }
 
 	bool D3D12Device::SupportsMeshShaders() const noexcept
     {
-        if (SUCCEEDED(FeatureSupport.GetStatus()))
+        if (SUCCEEDED(m_FeatureSupport.GetStatus()))
         {
-            return FeatureSupport.MeshShaderTier() >= D3D12_MESH_SHADER_TIER_1;
+            return m_FeatureSupport.MeshShaderTier() >= D3D12_MESH_SHADER_TIER_1;
         }
         return false;
     }
 
-	void D3D12Device::OnBeginFrame() { LinkedDevice.OnBeginFrame(); }
+	void D3D12Device::OnBeginFrame() { m_LinkedDevice->OnBeginFrame(); }
 
-    void D3D12Device::OnEndFrame() { LinkedDevice.OnEndFrame(); }
+    void D3D12Device::OnEndFrame() { m_LinkedDevice->OnEndFrame(); }
 
 	void D3D12Device::BeginCapture(const std::filesystem::path& Path) const
     {
         PIXCaptureParameters CaptureParameters          = {};
         CaptureParameters.GpuCaptureParameters.FileName = Path.c_str();
-        CaptureStatus                                   = PIXBeginCapture(PIX_CAPTURE_GPU, &CaptureParameters);
+        m_CaptureStatus                                   = PIXBeginCapture(PIX_CAPTURE_GPU, &CaptureParameters);
     }
 
     void D3D12Device::EndCapture() const
     {
-        if (SUCCEEDED(CaptureStatus))
+        if (SUCCEEDED(m_CaptureStatus))
         {
             PIXEndCapture(FALSE);
         }
     }
 
-	void D3D12Device::WaitIdle() { LinkedDevice.WaitIdle(); }
+	void D3D12Device::WaitIdle() { m_LinkedDevice->WaitIdle(); }
 
 	D3D12SyncHandle D3D12Device::DStorageSubmit(DSTORAGE_REQUEST_SOURCE_TYPE Type)
     {
-        UINT64 FenceValue = DStorageFence.Signal(DStorageQueues[Type].Get());
-        DStorageQueues[Type]->Submit();
-        return D3D12SyncHandle {&DStorageFence, FenceValue};
+        UINT64 FenceValue = m_DStorageFence->Signal(m_DStorageQueues[Type].Get());
+        m_DStorageQueues[Type]->Submit();
+        return D3D12SyncHandle {m_DStorageFence.get(), FenceValue};
     }
 
     D3D12RootSignature D3D12Device::CreateRootSignature(RootSignatureDesc& Desc)
@@ -249,7 +255,7 @@ namespace RHI
     {
         UINT FactoryFlags = Debug ? DXGI_CREATE_FACTORY_DEBUG : 0;
         // Create DXGIFactory
-        VERIFY_D3D12_API(CreateDXGIFactory2(FactoryFlags, IID_PPV_ARGS(&Factory6)));
+        VERIFY_D3D12_API(CreateDXGIFactory2(FactoryFlags, IID_PPV_ARGS(&m_Factory6)));
     }
 
     void D3D12Device::InitializeDxgiObjects()
@@ -259,17 +265,17 @@ namespace RHI
         // Enumerate hardware for an adapter that supports D3D12
         Microsoft::WRL::ComPtr<IDXGIAdapter3> AdapterIterator;
         UINT                                  AdapterId = 0;
-        while (SUCCEEDED(Factory6->EnumAdapterByGpuPreference(
+        while (SUCCEEDED(m_Factory6->EnumAdapterByGpuPreference(
             AdapterId, DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE, IID_PPV_ARGS(AdapterIterator.ReleaseAndGetAddressOf()))))
         {
             if (SUCCEEDED(
                     D3D12CreateDevice(AdapterIterator.Get(), D3D_FEATURE_LEVEL_11_0, __uuidof(ID3D12Device), nullptr)))
             {
-                Adapter3 = std::move(AdapterIterator);
-                if (SUCCEEDED(Adapter3->GetDesc2(&AdapterDesc)))
+                m_Adapter3 = std::move(AdapterIterator);
+                if (SUCCEEDED(m_Adapter3->GetDesc2(&m_AdapterDesc)))
                 {
-                    LOG_INFO("Adapter Vendor: {}", GetRHIVendorString(static_cast<RHI_VENDOR>(AdapterDesc.VendorId)));
-                    LOG_INFO(L"Adapter: {}", AdapterDesc.Description);
+                    LOG_INFO("Adapter Vendor: {}", GetRHIVendorString(static_cast<RHI_VENDOR>(m_AdapterDesc.VendorId)));
+                    LOG_INFO(L"Adapter: {}", m_AdapterDesc.Description);
                 }
                 break;
             }
@@ -326,14 +332,14 @@ namespace RHI
         }
 
         Microsoft::WRL::ComPtr<ID3D12Device> Device;
-        VERIFY_D3D12_API(D3D12CreateDevice(Adapter3.Get(), Options.FeatureLevel, IID_PPV_ARGS(&Device)));
+        VERIFY_D3D12_API(D3D12CreateDevice(m_Adapter3.Get(), Options.FeatureLevel, IID_PPV_ARGS(&Device)));
         return Device;
     }
 
     CD3DX12FeatureSupport D3D12Device::InitializeFeatureSupport(const DeviceOptions& Options)
     {
         CD3DX12FeatureSupport FeatureSupport;
-        if (FAILED(FeatureSupport.Init(Device.Get())))
+        if (FAILED(m_FeatureSupport.Init(m_Device.Get())))
         {
             LOG_WARN("Failed to initialize CD3DX12FeatureSupport, certain features might be unavailable.");
         }
@@ -391,7 +397,7 @@ namespace RHI
                                                         D3D12_DESCRIPTOR_HEAP_TYPE_DSV};
         for (size_t i = 0; i < std::size(Types); ++i)
         {
-            DescriptorSizeCache[i] = Device->GetDescriptorHandleIncrementSize(Types[i]);
+            DescriptorSizeCache[i] = m_Device->GetDescriptorHandleIncrementSize(Types[i]);
         }
         return DescriptorSizeCache;
     }

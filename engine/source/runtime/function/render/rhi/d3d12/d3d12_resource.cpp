@@ -525,7 +525,7 @@ namespace RHI
 
     std::shared_ptr<D3D12ConstantBufferView> D3D12Buffer::CreateCBV(D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc)
     {
-        uint64 descHash = Utility::Hash64((const char*)&cbvDesc, sizeof(D3D12_CONSTANT_BUFFER_VIEW_DESC));
+        UINT64 descHash = Utility::Hash64((const char*)&cbvDesc, sizeof(D3D12_CONSTANT_BUFFER_VIEW_DESC));
 
         std::shared_ptr<D3D12ConstantBufferView> cbv = nullptr;
         auto cbvHandleIter = m_CBVHandleMap.find(descHash);
@@ -543,7 +543,7 @@ namespace RHI
 
     std::shared_ptr<D3D12ShaderResourceView> D3D12Buffer::CreateSRV(D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc)
     {
-        uint64 descHash = Utility::Hash64((const char*)&srvDesc, sizeof(D3D12_SHADER_RESOURCE_VIEW_DESC));
+        UINT64 descHash = Utility::Hash64((const char*)&srvDesc, sizeof(D3D12_SHADER_RESOURCE_VIEW_DESC));
 
         std::shared_ptr<D3D12ShaderResourceView> srv = nullptr;
         auto srvHandleIter = m_SRVHandleMap.find(descHash);
@@ -569,7 +569,7 @@ namespace RHI
     {
         BUFFER_UNORDERED_ACCESS_VIEW_KEY uavKey = {uavDesc, pCounterRes};
 
-        uint64 descHash = Utility::Hash64((const char*)&uavKey, sizeof(BUFFER_UNORDERED_ACCESS_VIEW_KEY));
+        UINT64 descHash = Utility::Hash64((const char*)&uavKey, sizeof(BUFFER_UNORDERED_ACCESS_VIEW_KEY));
 
         std::shared_ptr<D3D12UnorderedAccessView> uav           = nullptr;
         auto                                      uavHandleIter = m_UAVHandleMap.find(descHash);
@@ -890,7 +890,7 @@ namespace RHI
 
     std::shared_ptr<D3D12ShaderResourceView> D3D12Texture::CreateSRV(D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc)
     {
-        uint64 descHash = Utility::Hash64((const char*)&srvDesc, sizeof(D3D12_SHADER_RESOURCE_VIEW_DESC));
+        UINT64 descHash = Utility::Hash64((const char*)&srvDesc, sizeof(D3D12_SHADER_RESOURCE_VIEW_DESC));
 
         std::shared_ptr<D3D12ShaderResourceView> srv = nullptr;
         auto srvHandleIter = m_SRVHandleMap.find(descHash);
@@ -908,7 +908,7 @@ namespace RHI
 
     std::shared_ptr<D3D12UnorderedAccessView> D3D12Texture::CreateUAV(D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc)
     {
-        uint64 descHash = Utility::Hash64((const char*)&uavDesc, sizeof(D3D12_UNORDERED_ACCESS_VIEW_DESC));
+        UINT64 descHash = Utility::Hash64((const char*)&uavDesc, sizeof(D3D12_UNORDERED_ACCESS_VIEW_DESC));
 
         std::shared_ptr<D3D12UnorderedAccessView> uav = nullptr;
         auto uavHandleIter = m_UAVHandleMap.find(descHash);
@@ -927,7 +927,7 @@ namespace RHI
 
     std::shared_ptr<D3D12RenderTargetView> D3D12Texture::CreateRTV(D3D12_RENDER_TARGET_VIEW_DESC rtvDesc)
     {
-        uint64 descHash = Utility::Hash64((const char*)&rtvDesc, sizeof(D3D12_RENDER_TARGET_VIEW_DESC));
+        UINT64 descHash = Utility::Hash64((const char*)&rtvDesc, sizeof(D3D12_RENDER_TARGET_VIEW_DESC));
 
         std::shared_ptr<D3D12RenderTargetView> rtv = nullptr;
         auto rtvHandleIter = m_RTVHandleMap.find(descHash);
@@ -945,7 +945,7 @@ namespace RHI
 
     std::shared_ptr<D3D12DepthStencilView> D3D12Texture::CreateDSV(D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc)
     {
-        uint64 descHash = Utility::Hash64((const char*)&dsvDesc, sizeof(D3D12_DEPTH_STENCIL_VIEW_DESC));
+        UINT64 descHash = Utility::Hash64((const char*)&dsvDesc, sizeof(D3D12_DEPTH_STENCIL_VIEW_DESC));
 
         std::shared_ptr<D3D12DepthStencilView> dsv = nullptr;
         auto dsvHandleIter = m_DSVHandleMap.find(descHash);

@@ -1,11 +1,12 @@
 #pragma once
 #include "d3d12_core.h"
-#include "d3d12_fence.h"
-#include "d3d12_resource.h"
-#include "d3d12_descriptor.h"
 
 namespace RHI
 {
+    class D3D12Device;
+    class D3D12Fence;
+    class D3D12Texture;
+
     // This class allows for customizable presents
     class IPresent
     {
@@ -96,7 +97,7 @@ namespace RHI
         DisplayCurve          DisplayCurve      = sRGB;
         DXGI_COLOR_SPACE_TYPE CurrentColorSpace = DXGI_COLOR_SPACE_RGB_FULL_G22_NONE_P709;
 
-        D3D12Fence      m_Fence;
+        std::shared_ptr<D3D12Fence> m_Fence;
         D3D12SyncHandle m_SyncHandle;
     };
 

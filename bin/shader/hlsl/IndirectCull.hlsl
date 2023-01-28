@@ -16,12 +16,13 @@ ConstantBuffer<MeshPerframeStorageBufferObject> g_ConstantBufferParams : registe
 StructuredBuffer<MeshInstance> g_MeshesInstance : register(t0, space0);
 StructuredBuffer<MaterialInstance> g_MaterialsInstance : register(t1, space0);
 
-AppendStructuredBuffer<CommandSignatureParams> g_OpaqueDrawCommandBuffer : register(u0, space0);
-AppendStructuredBuffer<CommandSignatureParams> g_TransDrawCommandBuffer : register(u1, space0);
+StructuredBuffer<uint2> g_SortIndexDisBuffer : register(t2, space0);
 
-[numthreads(128, 1, 1)] void CSMain(CSParams Params) {
-    // Each thread processes one mesh instance
-    // Compute index and ensure is within bounds
+AppendStructuredBuffer<CommandSignatureParams> g_DrawCommandBuffer : register(u0, space0);
+
+
+[numthreads(128, 1, 1)]
+void CSMain(CSParams Params) {
     uint index = (Params.GroupID.x * 128) + Params.GroupIndex;
     if (index < g_ConstantBufferParams.total_mesh_num)
     {
@@ -45,14 +46,16 @@ AppendStructuredBuffer<CommandSignatureParams> g_TransDrawCommandBuffer : regist
             command.IndexBuffer          = mesh.indexBuffer;
             command.DrawIndexedArguments = mesh.drawIndexedArguments;
 
-            if (matBuffer[0].is_blend)
-            {
-                g_TransDrawCommandBuffer.Append(command);
-            }
-            else
-            {
-                g_OpaqueDrawCommandBuffer.Append(command);
-            }
+            g_DrawCommandBuffer.Append(command);
+
+            //if (matBuffer[0].is_blend)
+            //{
+            //    g_TransDrawCommandBuffer.Append(command);
+            //}
+            //else
+            //{
+            //    g_OpaqueDrawCommandBuffer.Append(command);
+            //}
         }
     }
 }

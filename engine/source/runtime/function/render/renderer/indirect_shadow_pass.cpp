@@ -180,8 +180,8 @@ namespace Pilot
                 graphicContext->SetScissorRect(RHIRect {0, 0, (int)shadowmap_size.x, (int)shadowmap_size.y});
 
                 graphicContext->SetConstantBuffer(1, pPerframeBuffer->GetGpuVirtualAddress());
-                graphicContext->SetConstantBuffer(2, pMeshBuffer->GetGpuVirtualAddress());
-                graphicContext->SetConstantBuffer(3, pMaterialBuffer->GetGpuVirtualAddress());
+                graphicContext->SetBufferSRV(2, pMeshBuffer.get());
+                graphicContext->SetBufferSRV(3, pMaterialBuffer.get());
 
                 graphicContext->ClearRenderTarget(nullptr, shadowmapStencilView);
                 graphicContext->SetRenderTarget(nullptr, shadowmapStencilView);
@@ -213,8 +213,8 @@ namespace Pilot
 
                 graphicContext->SetConstant(0, 1, spot_index);
                 graphicContext->SetConstantBuffer(1, pPerframeBuffer->GetGpuVirtualAddress());
-                graphicContext->SetConstantBuffer(2, pMeshBuffer->GetGpuVirtualAddress());
-                graphicContext->SetConstantBuffer(3, pMaterialBuffer->GetGpuVirtualAddress());
+                graphicContext->SetBufferSRV(2, pMeshBuffer.get());
+                graphicContext->SetBufferSRV(3, pMaterialBuffer.get());
 
                 graphicContext->ClearRenderTarget(nullptr, shadowmapStencilView);
                 graphicContext->SetRenderTarget(nullptr, shadowmapStencilView);

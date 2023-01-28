@@ -6,6 +6,9 @@
 namespace RHI
 {
     class D3D12Resource;
+    class D3D12Buffer;
+    class D3D12ASBuffer;
+    class D3D12Texture;
 
     class CSubresourceSubset
     {
@@ -257,8 +260,8 @@ namespace RHI
             }
         }
         D3D12Descriptor(D3D12Descriptor&& D3D12Descriptor) noexcept :
-            D3D12LinkedDeviceChild(std::exchange(D3D12Descriptor.Parent, {})),
-            m_DescriptorHeapAllocation(std::exchange(D3D12Descriptor.m_DescriptorHeapAllocation, {}))
+            D3D12LinkedDeviceChild(std::move(D3D12Descriptor.Parent)),
+            m_DescriptorHeapAllocation(std::move(D3D12Descriptor.m_DescriptorHeapAllocation))
         {}
         D3D12Descriptor& operator=(D3D12Descriptor&& D3D12Descriptor) noexcept
         {
@@ -268,8 +271,8 @@ namespace RHI
             }
 
             InternalDestroy();
-            Parent                     = std::exchange(D3D12Descriptor.Parent, {});
-            m_DescriptorHeapAllocation = std::exchange(D3D12Descriptor.m_DescriptorHeapAllocation, {});
+            Parent                     = std::move(D3D12Descriptor.Parent);
+            m_DescriptorHeapAllocation = std::move(D3D12Descriptor.m_DescriptorHeapAllocation);
 
             return *this;
         }
@@ -314,7 +317,7 @@ namespace RHI
         {
             if (Parent && IsValid())
             {
-                Parent->Retire(m_DescriptorHeapAllocation);
+                Parent->Retire(std::move(m_DescriptorHeapAllocation));
                 Parent = nullptr;
             }
         }
@@ -418,8 +421,8 @@ namespace RHI
             }
         }
         D3D12DynamicDescriptor(D3D12DynamicDescriptor&& D3D12DynamicDescriptor) noexcept :
-            D3D12LinkedDeviceChild(std::exchange(D3D12DynamicDescriptor.Parent, {})),
-            m_DescriptorHeapAllocation(std::exchange(D3D12DynamicDescriptor.m_DescriptorHeapAllocation, {}))
+            D3D12LinkedDeviceChild(std::move(D3D12DynamicDescriptor.Parent)),
+            m_DescriptorHeapAllocation(std::move(D3D12DynamicDescriptor.m_DescriptorHeapAllocation))
         {}
         D3D12DynamicDescriptor& operator=(D3D12DynamicDescriptor&& D3D12DynamicDescriptor) noexcept
         {
@@ -429,8 +432,8 @@ namespace RHI
             }
 
             InternalDestroy();
-            Parent    = std::exchange(D3D12DynamicDescriptor.Parent, {});
-            m_DescriptorHeapAllocation = std::exchange(D3D12DynamicDescriptor.m_DescriptorHeapAllocation, {});
+            Parent    = std::move(D3D12DynamicDescriptor.Parent);
+            m_DescriptorHeapAllocation = std::move(D3D12DynamicDescriptor.m_DescriptorHeapAllocation);
 
             return *this;
         }
@@ -491,7 +494,7 @@ namespace RHI
         {
             if (Parent && IsValid())
             {
-                Parent->Retire(m_DescriptorHeapAllocation);
+                Parent->Retire(std::move(m_DescriptorHeapAllocation));
                 Parent    = nullptr;
             }
         }

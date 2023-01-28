@@ -66,8 +66,8 @@ namespace Pilot
             graphicContext->SetRootSignature(RootSignatures::pIndirectDraw.get());
             graphicContext->SetPipelineState(PipelineStates::pIndirectDraw.get());
             graphicContext->SetConstantBuffer(1, pPerframeBuffer->GetGpuVirtualAddress());
-            graphicContext->SetConstantBuffer(2, pMeshBuffer->GetGpuVirtualAddress());
-            graphicContext->SetConstantBuffer(3, pMaterialBuffer->GetGpuVirtualAddress());
+            graphicContext->SetBufferSRV(2, pMeshBuffer.get());
+            graphicContext->SetBufferSRV(3, pMaterialBuffer.get());
 
             graphicContext->ExecuteIndirect(CommandSignatures::pIndirectDraw.get(),
                                             pIndirectCommandBuffer.get(),

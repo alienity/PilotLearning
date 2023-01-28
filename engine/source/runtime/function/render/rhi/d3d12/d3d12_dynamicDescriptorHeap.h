@@ -1,7 +1,6 @@
 #pragma once
 #include "d3d12_core.h"
 #include "d3d12_linkedDevice.h"
-#include "d3d12_rootSignature.h"
 #include "d3d12_descriptorHeap.h"
 
 #include <vector>
@@ -9,8 +8,8 @@
 
 namespace RHI
 {
-
     class D3D12CommandContext;
+    class D3D12RootSignature;
 
 	// This class is a linear allocation system for dynamically generated descriptor tables.  It internally caches
     // CPU descriptor handles so that when not enough space is available in the current heap, necessary descriptors
