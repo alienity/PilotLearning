@@ -49,6 +49,8 @@ struct Shaders
         inline static Shader Bitonic64OuterSortCS;
         inline static Shader IndirectCullForSort;
         inline static Shader IndirectCull;
+        inline static Shader IndirectCullArgs;
+        inline static Shader IndirectCullGrab;
         inline static Shader IndirectCullDirectionShadowmap;
         inline static Shader IndirectCullSpotShadowmap;
     };
@@ -118,6 +120,10 @@ struct Shaders
             ShaderCompileOptions meshCSOption(g_CSEntryPoint);
             CS::IndirectCull = Compiler->CompileShader(
                     RHI_SHADER_TYPE::Compute, ShaderPath / "hlsl/IndirectCull.hlsl", meshCSOption);
+            CS::IndirectCullArgs = Compiler->CompileShader(
+                    RHI_SHADER_TYPE::Compute, ShaderPath / "hlsl/IndirectCullArgsCS.hlsl", meshCSOption);
+            CS::IndirectCullGrab = Compiler->CompileShader(
+                    RHI_SHADER_TYPE::Compute, ShaderPath / "hlsl/IndirectCullGrabCS.hlsl", meshCSOption);
 
             ShaderCompileOptions directionCSOption(g_CSEntryPoint);
             directionCSOption.SetDefine({L"DIRECTIONSHADOW"}, {L"1"});
@@ -150,6 +156,8 @@ struct RootSignatures
     inline static std::shared_ptr<RHI::D3D12RootSignature> pFullScreenPresent;
     inline static std::shared_ptr<RHI::D3D12RootSignature> pIndirectCullForSort;
     inline static std::shared_ptr<RHI::D3D12RootSignature> pIndirectCull;
+    inline static std::shared_ptr<RHI::D3D12RootSignature> pIndirectCullArgs;
+    inline static std::shared_ptr<RHI::D3D12RootSignature> pIndirectCullGrab;
     inline static std::shared_ptr<RHI::D3D12RootSignature> pIndirectCullDirectionShadowmap;
     inline static std::shared_ptr<RHI::D3D12RootSignature> pIndirectCullSpotShadowmap;
     inline static std::shared_ptr<RHI::D3D12RootSignature> pIndirectDraw;
@@ -193,6 +201,28 @@ struct RootSignatures
 
             pIndirectCullForSort = std::make_shared<RHI::D3D12RootSignature>(pDevice, rootSigDesc);
             pIndirectCull        = pIndirectCullForSort;
+        }
+
+        {
+            RHI::RootSignatureDesc rootSigDesc = RHI::RootSignatureDesc()
+                                                     .AddShaderResourceView<0, 0>()
+                                                     .AddUnorderedAccessView<0, 0>()
+                                                     .AllowResourceDescriptorHeapIndexing()
+                                                     .AllowSampleDescriptorHeapIndexing();
+
+            pIndirectCullArgs = std::make_shared<RHI::D3D12RootSignature>(pDevice, rootSigDesc);
+        }
+
+        {
+            RHI::RootSignatureDesc rootSigDesc = RHI::RootSignatureDesc()
+                                                     .AddShaderResourceView<0, 0>()
+                                                     .AddShaderResourceView<1, 0>()
+                                                     .AddShaderResourceView<2, 0>()
+                                                     .AddUnorderedAccessViewWithCounter<0, 0>()
+                                                     .AllowResourceDescriptorHeapIndexing()
+                                                     .AllowSampleDescriptorHeapIndexing();
+
+            pIndirectCullGrab = std::make_shared<RHI::D3D12RootSignature>(pDevice, rootSigDesc);
         }
 
         {
@@ -343,6 +373,8 @@ struct PipelineStates
     inline static std::shared_ptr<RHI::D3D12PipelineState> pFullScreenPresent;
     inline static std::shared_ptr<RHI::D3D12PipelineState> pIndirectCullForSort;
     inline static std::shared_ptr<RHI::D3D12PipelineState> pIndirectCull;
+    inline static std::shared_ptr<RHI::D3D12PipelineState> pIndirectCullArgs;
+    inline static std::shared_ptr<RHI::D3D12PipelineState> pIndirectCullGrab;
     inline static std::shared_ptr<RHI::D3D12PipelineState> pIndirectCullDirectionShadowmap;
     inline static std::shared_ptr<RHI::D3D12PipelineState> pIndirectCullSpotShadowmap;
 
@@ -449,6 +481,32 @@ struct PipelineStates
             PipelineStateStreamDesc psoDesc = {sizeof(PsoStream), &psoStream};
 
             pIndirectCull = std::make_shared<RHI::D3D12PipelineState>(pDevice, L"IndirectCull", psoDesc);
+        }
+        {
+            struct PsoStream
+            {
+                PipelineStateStreamRootSignature RootSignature;
+                PipelineStateStreamCS            CS;
+            } psoStream;
+            psoStream.RootSignature = PipelineStateStreamRootSignature(RootSignatures::pIndirectCullArgs.get());
+            psoStream.CS            = &Shaders::CS::IndirectCullArgs;
+
+            PipelineStateStreamDesc psoDesc = {sizeof(PsoStream), &psoStream};
+
+            pIndirectCullArgs = std::make_shared<RHI::D3D12PipelineState>(pDevice, L"IndirectCullArgs", psoDesc);
+        }
+        {
+            struct PsoStream
+            {
+                PipelineStateStreamRootSignature RootSignature;
+                PipelineStateStreamCS            CS;
+            } psoStream;
+            psoStream.RootSignature = PipelineStateStreamRootSignature(RootSignatures::pIndirectCullGrab.get());
+            psoStream.CS            = &Shaders::CS::IndirectCullGrab;
+
+            PipelineStateStreamDesc psoDesc = {sizeof(PsoStream), &psoStream};
+
+            pIndirectCullGrab = std::make_shared<RHI::D3D12PipelineState>(pDevice, L"IndirectCullGrab", psoDesc);
         }
         {
             struct PsoStream

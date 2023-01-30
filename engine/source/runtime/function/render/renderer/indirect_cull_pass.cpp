@@ -69,6 +69,15 @@ namespace Pilot
                                                      RHI::RHIBufferModeImmutable,
                                                      D3D12_RESOURCE_STATE_GENERIC_READ);
 
+        // for grab
+        pGrabDispatchArgs = RHI::D3D12Buffer::Create(m_Device->GetLinkedDevice(),
+                                                     RHI::RHIBufferTargetIndirectArgs | RHI::RHIBufferRandomReadWrite | RHI::RHIBufferTargetRaw,
+                                                     22 * 23 / 2,
+                                                     sizeof(D3D12_DISPATCH_ARGUMENTS),
+                                                     L"GrabDispatchArgs",
+                                                     RHI::RHIBufferModeImmutable,
+                                                     D3D12_RESOURCE_STATE_GENERIC_READ);
+
         // buffer for opaque draw
         {
             RHI::RHIBufferTarget opaqueIndexTarget =
@@ -340,6 +349,48 @@ namespace Pilot
         }
     }
 
+    void IndirectCullPass::grabObject(RHI::D3D12ComputeContext* context,
+                                      RHI::D3D12Buffer*         indirectIndexBuffer,
+                                      RHI::D3D12Buffer*         indirectSortBuffer)
+
+    {
+        {
+            context->TransitionBarrier(indirectIndexBuffer->GetCounterBuffer().get(),
+                                             D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+            context->TransitionBarrier(pGrabDispatchArgs.get(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+            context->InsertUAVBarrier(pGrabDispatchArgs.get());
+            context->FlushResourceBarriers();
+
+            context->SetPipelineState(PipelineStates::pIndirectCullArgs.get());
+            context->SetRootSignature(RootSignatures::pIndirectCullArgs.get());
+
+            context->SetBufferSRV(0, indirectIndexBuffer->GetCounterBuffer().get());
+            context->SetBufferUAV(1, pGrabDispatchArgs.get());
+
+            context->Dispatch(1, 1, 1);
+        }
+        {
+            context->TransitionBarrier(indirectIndexBuffer->GetCounterBuffer().get(),
+                                             D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+            context->TransitionBarrier(indirectIndexBuffer, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+            context->TransitionBarrier(pGrabDispatchArgs.get(), D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT);
+            context->FlushResourceBarriers();
+
+            context->SetPipelineState(PipelineStates::pIndirectCullGrab.get());
+            context->SetRootSignature(RootSignatures::pIndirectCullGrab.get());
+
+            context->SetBufferSRV(0, pMeshBuffer.get());
+            context->SetBufferSRV(1, indirectIndexBuffer->GetCounterBuffer().get());
+            context->SetBufferSRV(2, indirectIndexBuffer);
+            context->SetDescriptorTable(3, indirectSortBuffer->GetDefaultUAV()->GetGpuHandle());
+
+            context->DispatchIndirect(pGrabDispatchArgs.get(), 0);
+
+            // Transition to indirect argument state
+            context->TransitionBarrier(indirectSortBuffer, D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT);
+        }
+    }
+
     void IndirectCullPass::cullMeshs(RHI::D3D12CommandContext* context,
                                      RHI::RenderGraphRegistry* registry,
                                      IndirectCullOutput&       indirectCullOutput)
@@ -418,7 +469,7 @@ namespace Pilot
                             bufferPtr,
                             bufferPtr->GetCounterBuffer().get(),
                             false,
-                            false);
+                            true);
             }
 
             // Transparent object bitonic sort
@@ -431,13 +482,33 @@ namespace Pilot
                             bufferPtr,
                             bufferPtr->GetCounterBuffer().get(),
                             false,
-                            true);
+                            false);
             }
             
             // Output sorted opaque object
             {
                 D3D12ScopedEvent(pAsyncCompute, "Grabs opaque objects to render");
 
+                RHI::D3D12Buffer* indirectIndexBufferPtr = commandBufferForOpaqueDraw.p_IndirectIndexCommandBuffer.get();
+                RHI::D3D12Buffer* indirectSortBufferPtr = commandBufferForOpaqueDraw.p_IndirectSortCommandBuffer.get();
+
+                grabObject(pAsyncCompute, indirectIndexBufferPtr, indirectSortBufferPtr);
+            }
+
+            // Output sorted transparent object
+            {
+                D3D12ScopedEvent(pAsyncCompute, "Grabs transparent objects to render");
+
+                RHI::D3D12Buffer* indirectIndexBufferPtr = commandBufferForTransparentDraw.p_IndirectIndexCommandBuffer.get();
+                RHI::D3D12Buffer* indirectSortBufferPtr = commandBufferForTransparentDraw.p_IndirectSortCommandBuffer.get();
+
+                grabObject(pAsyncCompute, indirectIndexBufferPtr, indirectSortBufferPtr);
+            }
+
+            /*
+            // Output Object Buffer
+            {
+                D3D12ScopedEvent(pAsyncCompute, "Grabs all objects to render");
                 pAsyncCompute->SetPipelineState(PipelineStates::pIndirectCull.get());
                 pAsyncCompute->SetRootSignature(RootSignatures::pIndirectCull.get());
 
@@ -445,42 +516,14 @@ namespace Pilot
                 pAsyncCompute->SetBufferSRV(1, pMeshBuffer.get());
                 pAsyncCompute->SetBufferSRV(2, pMaterialBuffer.get());
 
-                pAsyncCompute->DispatchIndirect(pSortDispatchArgs.get(), 0);
+                pAsyncCompute->SetDescriptorTable(3, commandBufferForOpaqueDraw.p_IndirectSortCommandBuffer->GetDefaultUAV()->GetGpuHandle());
+                pAsyncCompute->SetDescriptorTable(4, commandBufferForTransparentDraw.p_IndirectSortCommandBuffer->GetDefaultUAV()->GetGpuHandle());
+
+                pAsyncCompute->Dispatch1D(numMeshes, 128);
 
                 // Transition to indirect argument state
                 pAsyncCompute->TransitionBarrier(commandBufferForOpaqueDraw.p_IndirectSortCommandBuffer.get(), D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT);
-            }
-
-            // Output sorted transparent object
-            {
-                D3D12ScopedEvent(pAsyncCompute, "Grabs transparent objects to render");
-
-
-            }
-
-            /*
-            // Output Object Buffer
-            {
-                D3D12ScopedEvent(asyncCompute, "Grabs all objects to render");
-                asyncCompute.SetPipelineState(PipelineStates::pIndirectCull.get());
-                asyncCompute.SetRootSignature(RootSignatures::pIndirectCull.get());
-
-                asyncCompute->SetComputeRootConstantBufferView(0, pPerframeBuffer->GetGpuVirtualAddress());
-                asyncCompute->SetComputeRootShaderResourceView(1, pMeshBuffer->GetGpuVirtualAddress());
-                asyncCompute->SetComputeRootShaderResourceView(2, pMaterialBuffer->GetGpuVirtualAddress());
-
-                asyncCompute->SetComputeRootDescriptorTable(
-                    3, commandBufferForOpaqueDraw.p_IndirectSortCommandBuffer->GetDefaultUAV()->GetGpuHandle());
-                asyncCompute->SetComputeRootDescriptorTable(
-                    4, commandBufferForTransparentDraw.p_IndirectSortCommandBuffer->GetDefaultUAV()->GetGpuHandle());
-
-                asyncCompute.Dispatch1D(numMeshes, 128);
-
-                // Transition to indirect argument state
-                asyncCompute.TransitionBarrier(commandBufferForOpaqueDraw.p_IndirectSortCommandBuffer.get(),
-                                               D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT);
-                asyncCompute.TransitionBarrier(commandBufferForTransparentDraw.p_IndirectSortCommandBuffer.get(),
-                                               D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT);
+                pAsyncCompute->TransitionBarrier(commandBufferForTransparentDraw.p_IndirectSortCommandBuffer.get(), D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT);
             }
             */
 

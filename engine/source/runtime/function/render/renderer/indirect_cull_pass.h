@@ -67,6 +67,10 @@ namespace Pilot
                          bool                           isPartiallyPreSorted,
                          bool                           sortAscending);
 
+        void grabObject(RHI::D3D12ComputeContext* context,
+                        RHI::D3D12Buffer*         indirectIndexBuffer,
+                        RHI::D3D12Buffer*         indirectSortBuffer);
+
     private:
 
         // for upload
@@ -81,6 +85,9 @@ namespace Pilot
 
         // for sort
         std::shared_ptr<RHI::D3D12Buffer> pSortDispatchArgs;
+
+        // for grab
+        std::shared_ptr<RHI::D3D12Buffer> pGrabDispatchArgs;
 
         // used for later draw call
         DrawCallCommandBuffer commandBufferForOpaqueDraw;
