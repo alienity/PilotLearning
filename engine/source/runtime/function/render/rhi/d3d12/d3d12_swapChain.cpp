@@ -31,7 +31,8 @@ namespace RHI
         {
             m_SyncHandle.WaitForCompletion();
         }
-        p_SwapChain4->Release();
+        p_SwapChain4->SetFullscreenState(FALSE, nullptr);
+        p_SwapChain4 = nullptr;
         for (size_t i = 0; i < BackBufferCount; i++)
             p_BackBuffers[i] = nullptr;
     }

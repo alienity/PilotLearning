@@ -346,41 +346,53 @@ namespace RHI
     void D3D12LinkedDevice::Release(D3D12SyncHandle syncHandle)
     {
         // release previous Allocation
-        if (m_ActiveSharedDatas[m_CurrentBufferIndex].first)
+        if (m_ActiveSharedDatas[m_CurrentBufferIndex].m_SyncHandle)
         {
-            if (!m_ActiveSharedDatas[m_CurrentBufferIndex].first.IsComplete())
+            if (!m_ActiveSharedDatas[m_CurrentBufferIndex].m_SyncHandle.IsComplete())
             {
-                m_ActiveSharedDatas[m_CurrentBufferIndex].first.WaitForCompletion();
-                for (size_t i = 0; i < m_CurrentFrameSharedDatas.m_RetiredResource.size(); i++)
-                {
-                    m_ActiveSharedDatas[m_CurrentBufferIndex].second.m_RetiredResource[i]->Release();
-                }
-                m_ActiveSharedDatas[m_CurrentBufferIndex].second.m_RetiredResource.clear();
+                m_ActiveSharedDatas[m_CurrentBufferIndex].m_SyncHandle.WaitForCompletion();
 
-                for (size_t i = 0; i < m_CurrentFrameSharedDatas.m_RetiredAllocations.size(); i++)
+                for (size_t i = 0; i < m_ActiveSharedDatas[m_CurrentBufferIndex].m_RetiredResource.size(); i++)
                 {
-                    m_ActiveSharedDatas[m_CurrentBufferIndex]
-                        .second.m_RetiredAllocations[i]
-                        .ReleaseDescriptorHeapAllocation();
+                    m_ActiveSharedDatas[m_CurrentBufferIndex].m_RetiredResource[i] = nullptr;
                 }
-                m_ActiveSharedDatas[m_CurrentBufferIndex].second.m_RetiredAllocations.clear();
+                m_ActiveSharedDatas[m_CurrentBufferIndex].m_RetiredResource.clear();
+
+                for (size_t i = 0; i < m_ActiveSharedDatas[m_CurrentBufferIndex].m_RetiredAllocations.size(); i++)
+                {
+                    m_ActiveSharedDatas[m_CurrentBufferIndex].m_RetiredAllocations[i].ReleaseDescriptorHeapAllocation();
+                }
+                m_ActiveSharedDatas[m_CurrentBufferIndex].m_RetiredAllocations.clear();
             }
         }
 
+        // stack current frame resource
         if (syncHandle)
         {
-            // stack current frame resource
-            m_ActiveSharedDatas[m_CurrentBufferIndex].first = syncHandle;
+            m_ActiveSharedDatas[m_CurrentBufferIndex].m_SyncHandle = syncHandle;
             for (size_t i = 0; i < m_CurrentFrameSharedDatas.m_RetiredResource.size(); i++)
             {
-                m_ActiveSharedDatas[m_CurrentBufferIndex].second.m_RetiredResource.push_back(
-                    m_CurrentFrameSharedDatas.m_RetiredResource[i]);
+                m_ActiveSharedDatas[m_CurrentBufferIndex].m_RetiredResource.push_back(m_CurrentFrameSharedDatas.m_RetiredResource[i]);
             }
+            m_CurrentFrameSharedDatas.m_RetiredResource.clear();
             for (size_t i = 0; i < m_CurrentFrameSharedDatas.m_RetiredAllocations.size(); i++)
             {
-                m_ActiveSharedDatas[m_CurrentBufferIndex].second.m_RetiredAllocations.push_back(
-                    std::move(m_CurrentFrameSharedDatas.m_RetiredAllocations[i]));
+                m_ActiveSharedDatas[m_CurrentBufferIndex].m_RetiredAllocations.push_back(std::move(m_CurrentFrameSharedDatas.m_RetiredAllocations[i]));
             }
+            m_CurrentFrameSharedDatas.m_RetiredAllocations.clear();
+        }
+        else // release resource directly
+        {
+            for (size_t i = 0; i < m_CurrentFrameSharedDatas.m_RetiredResource.size(); i++)
+            {
+                m_CurrentFrameSharedDatas.m_RetiredResource[i] = nullptr;
+            }
+            m_CurrentFrameSharedDatas.m_RetiredResource.clear();
+            for (size_t i = 0; i < m_CurrentFrameSharedDatas.m_RetiredAllocations.size(); i++)
+            {
+                m_CurrentFrameSharedDatas.m_RetiredAllocations[i].ReleaseDescriptorHeapAllocation();
+            }
+            m_CurrentFrameSharedDatas.m_RetiredAllocations.clear();
         }
 
         // update current BufferIndex

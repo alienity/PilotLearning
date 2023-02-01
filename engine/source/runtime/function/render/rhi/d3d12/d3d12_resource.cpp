@@ -185,9 +185,11 @@ namespace RHI
 #ifdef _DEBUG
         Parent->RemoveDebugResource(this);
 #endif
-        //m_pResource = nullptr;
-        Parent->Retire(m_pResource);
-
+        if (m_pResource != nullptr)
+        {
+            Parent->Retire(m_pResource);
+        }
+        m_pResource = nullptr;
         m_VersionID = 0;
     }
 
@@ -386,8 +388,8 @@ namespace RHI
 
         m_ScopedPointer.Release();
         
-        //m_pResource = nullptr;
         Parent->Retire(m_pResource);
+        m_pResource = nullptr;
 
         m_VersionID = 0;
 
@@ -663,8 +665,16 @@ namespace RHI
 
     void D3D12Texture::Destroy()
     {
+#ifdef _DEBUG
         Parent->RemoveDebugResource(this);
+#endif // _DEBUG
+
+        if (!m_Desc.backBuffer)
+        {
+            Parent->Retire(m_pResource);
+        }
         m_pResource = nullptr;
+
         m_VersionID = 0;
 
         m_RTVHandleMap.clear();

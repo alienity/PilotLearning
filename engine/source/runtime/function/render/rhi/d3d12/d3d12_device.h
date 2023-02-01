@@ -169,7 +169,9 @@ namespace RHI
             Microsoft::WRL::ComPtr<ID3D12Fence> DeviceRemovedFence;
             HANDLE                              DeviceRemovedWaitHandle;
             wil::unique_event                   DeviceRemovedEvent;
-        } m_Dred;
+        };
+
+        std::shared_ptr<Dred> m_Dred;
 
         // Represents a single node
         // TODO: Add Multi-Adapter support

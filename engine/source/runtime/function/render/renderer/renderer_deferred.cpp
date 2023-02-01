@@ -133,10 +133,12 @@ namespace Pilot
 
     DeferredRenderer::~DeferredRenderer() 
     {
-        mUIPass = nullptr;
-        mIndirectCullPass = nullptr;
-        mIndirectOpaqueDrawPass = nullptr;
+        mUIPass                      = nullptr;
+        mIndirectCullPass            = nullptr;
+        mIndirectShadowPass          = nullptr;
+        mIndirectOpaqueDrawPass      = nullptr;
         mIndirectTransparentDrawPass = nullptr;
+        mDisplayPass                 = nullptr;
     }
 
     void DeferredRenderer::OnRender(RHI::D3D12CommandContext* context)

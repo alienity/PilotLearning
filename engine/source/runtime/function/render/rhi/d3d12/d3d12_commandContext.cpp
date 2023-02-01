@@ -30,7 +30,7 @@ namespace RHI
     }
 
 	void
-    D3D12CommandAllocatorPool::DiscardCommandAllocator(Microsoft::WRL::ComPtr<ID3D12CommandAllocator> CommandAllocator, D3D12SyncHandle SyncHandle)
+    D3D12CommandAllocatorPool::DiscardCommandAllocator(Microsoft::WRL::ComPtr<ID3D12CommandAllocator>& CommandAllocator, D3D12SyncHandle SyncHandle)
     {
         m_CommandAllocatorPool.ReturnToPool(std::move(CommandAllocator), SyncHandle);
     }
@@ -113,7 +113,7 @@ namespace RHI
         m_pDynamicViewDescriptorHeap->CleanupUsedHeaps();
         m_pDynamicSamplerDescriptorHeap->CleanupUsedHeaps();
         // Release the command allocator so it can be reused.
-        m_CommandAllocatorPool.DiscardCommandAllocator(std::exchange(m_CommandAllocator, nullptr), SyncHandle);
+        m_CommandAllocatorPool.DiscardCommandAllocator(m_CommandAllocator, SyncHandle);
         // Release temp resourcce
         m_CpuLinearAllocator.Version(SyncHandle);
         return SyncHandle;

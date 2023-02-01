@@ -22,7 +22,7 @@ namespace RHI
     {
         m_Device1 = DeviceQueryInterface<ID3D12Device1>();
         m_Device5 = DeviceQueryInterface<ID3D12Device5>();
-        m_Dred : m_Device.Get();
+        m_Dred = std::make_shared<Dred>(m_Device.Get());
 
         m_AllNodeMask = (D3D12NodeMask::FromIndex(m_Device->GetNodeCount() - 1));
         m_FeatureSupport = InitializeFeatureSupport(Options);
@@ -81,7 +81,30 @@ namespace RHI
     }
     // clang-format off
 
-    D3D12Device::~D3D12Device() {}
+    D3D12Device::~D3D12Device()
+    {
+        m_Library = nullptr;
+        m_LinkedDevice = nullptr;
+
+        m_Adapter3 = nullptr;
+        m_Factory6 = nullptr;
+
+        m_DStorageFactory = nullptr;
+
+        m_DStorageQueues[0] = nullptr;
+        m_DStorageQueues[1] = nullptr;
+
+        m_DStorageFence = nullptr;
+
+
+        m_Dred = nullptr;
+
+        m_Device5 = nullptr;
+        m_Device1 = nullptr;
+        m_Device = nullptr;
+
+        D3D12Device::ReportLiveObjects();
+    }
 
 	void D3D12Device::CreateDxgiFactory()
     {
@@ -172,13 +195,13 @@ namespace RHI
     // ======================================== Private ========================================
     void D3D12Device::ReportLiveObjects()
     {
-//#ifdef _DEBUG
-//        Microsoft::WRL::ComPtr<IDXGIDebug> Debug;
-//        if (SUCCEEDED(DXGIGetDebugInterface1(0, IID_PPV_ARGS(&Debug))))
-//        {
-//            Debug->ReportLiveObjects(DXGI_DEBUG_ALL, DXGI_DEBUG_RLO_IGNORE_INTERNAL);
-//        }
-//#endif
+#ifdef _DEBUG
+        Microsoft::WRL::ComPtr<IDXGIDebug> Debug;
+        if (SUCCEEDED(DXGIGetDebugInterface1(0, IID_PPV_ARGS(&Debug))))
+        {
+            Debug->ReportLiveObjects(DXGI_DEBUG_ALL, DXGI_DEBUG_RLO_IGNORE_INTERNAL);
+        }
+#endif
     }
 
     void D3D12Device::OnDeviceRemoved(PVOID Context, BOOLEAN)

@@ -75,8 +75,8 @@ namespace RHI
         // Discard command allocator used exclusively to resolve resource barriers
         if (NumBarrierCommandList > 0)
         {
-            m_ResourceBarrierCommandAllocatorPool->DiscardCommandAllocator(
-                std::exchange(m_ResourceBarrierCommandAllocator, {}), m_SyncHandle);
+            m_ResourceBarrierCommandAllocatorPool->DiscardCommandAllocator(m_ResourceBarrierCommandAllocator,
+                                                                           m_SyncHandle);
         }
 
         if (WaitForCompletion)

@@ -49,7 +49,7 @@ namespace RHI
 
         [[nodiscard]] Microsoft::WRL::ComPtr<ID3D12CommandAllocator> RequestCommandAllocator();
 
-        void DiscardCommandAllocator(Microsoft::WRL::ComPtr<ID3D12CommandAllocator> CommandAllocator, D3D12SyncHandle SyncHandle);
+        void DiscardCommandAllocator(Microsoft::WRL::ComPtr<ID3D12CommandAllocator>& CommandAllocator, D3D12SyncHandle SyncHandle);
 
     private:
         D3D12_COMMAND_LIST_TYPE                                    m_CommandListType;

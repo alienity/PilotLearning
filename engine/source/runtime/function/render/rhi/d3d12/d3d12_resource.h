@@ -180,6 +180,8 @@ namespace RHI
                     D3D12_RESOURCE_FLAGS  ResourceFlags,
                     D3D12_RESOURCE_STATES InitialResourceState);
 
+        ~D3D12Buffer() { Destroy(); };
+
         virtual void Destroy() override;
 
         [[nodiscard]] D3D12_GPU_VIRTUAL_ADDRESS GetGpuVirtualAddress(UINT Index = 0) const;
@@ -297,6 +299,8 @@ namespace RHI
                      const CD3DX12_RESOURCE_DESC&       Desc,
                      std::optional<CD3DX12_CLEAR_VALUE> ClearValue,
                      bool                               Cubemap = false);
+
+        ~D3D12Texture() { Destroy(); };
 
         virtual void Destroy() override;
 

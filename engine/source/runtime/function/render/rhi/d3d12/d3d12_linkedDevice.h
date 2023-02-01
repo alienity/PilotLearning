@@ -110,11 +110,12 @@ namespace RHI
 
         struct ActiveSharedData
         {
+            D3D12SyncHandle                                     m_SyncHandle;
             std::vector<DescriptorHeapAllocation>               m_RetiredAllocations;
             std::vector<Microsoft::WRL::ComPtr<ID3D12Resource>> m_RetiredResource;
         };
         
-        std::pair<D3D12SyncHandle, ActiveSharedData> m_ActiveSharedDatas[MaxSharedBufferCount];
+        ActiveSharedData m_ActiveSharedDatas[MaxSharedBufferCount];
 
         ActiveSharedData m_CurrentFrameSharedDatas;
 
