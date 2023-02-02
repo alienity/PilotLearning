@@ -122,10 +122,10 @@ namespace RHI
         TDescriptorSizeCache                 InitializeDescriptorSizeCache();
 
     private:
-        struct ReportLiveObjectGuard
-        {
-            ~ReportLiveObjectGuard() { D3D12Device::ReportLiveObjects(); }
-        } MemoryGuard;
+        //struct ReportLiveObjectGuard
+        //{
+        //    ~ReportLiveObjectGuard() { D3D12Device::ReportLiveObjects(); }
+        //} MemoryGuard;
 
         /*struct WinPix
         {

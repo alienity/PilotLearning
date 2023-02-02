@@ -81,6 +81,9 @@ namespace RHI
             UploadSyncHandle.WaitForCompletion();
         }
 
+        // release common states
+        RHI::DestroyCommonState();
+
         m_GraphicsQueue     = nullptr;
         m_AsyncComputeQueue = nullptr;
         m_CopyQueue1        = nullptr;

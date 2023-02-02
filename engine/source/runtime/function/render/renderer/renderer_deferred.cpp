@@ -27,7 +27,7 @@ namespace Pilot
         std::shared_ptr<ConfigManager> config_manager = g_runtime_global_context.m_config_manager;
         const std::filesystem::path&   shaderRootPath = config_manager->getShaderFolder();
 
-        // 初始化全局对象
+        // initialize global objects
         Shaders::Compile(pCompiler, shaderRootPath);
         RootSignatures::Compile(pDevice);
         CommandSignatures::Compile(pDevice);
@@ -139,6 +139,11 @@ namespace Pilot
         mIndirectOpaqueDrawPass      = nullptr;
         mIndirectTransparentDrawPass = nullptr;
         mDisplayPass                 = nullptr;
+
+        // Release global objects
+        RootSignatures::Release();
+        CommandSignatures::Release();
+        PipelineStates::Release();
     }
 
     void DeferredRenderer::OnRender(RHI::D3D12CommandContext* context)

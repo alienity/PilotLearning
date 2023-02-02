@@ -236,16 +236,16 @@ namespace RHI
     ObjName##Index##PSODesc.NodeMask       = pParent->GetParentDevice()->GetAllNodeMask();\
     ObjName##Index##PSODesc.CachedPSO      = D3D12_CACHED_PIPELINE_STATE();\
     ObjName##Index##PSODesc.Flags          = D3D12_PIPELINE_STATE_FLAG_NONE;\
-    g_pGenerateMipsLinearPSO[Index]  = new D3D12PipelineState(pParent->GetParentDevice(), PSOName, ObjName##Index##PSODesc);
+    ObjName[Index] = new D3D12PipelineState(pParent->GetParentDevice(), PSOName, ObjName##Index##PSODesc);
 
-        CreatePSO(g_pGenerateMipsLinearPS, 0, L"Generate Mips Linear CS", g_pGenerateMipsLinearCS)
-        CreatePSO(g_pGenerateMipsLinearPS, 1, L"Generate Mips Linear Odd X CS", g_pGenerateMipsLinearOddXCS)
-        CreatePSO(g_pGenerateMipsLinearPS, 2, L"Generate Mips Linear Odd Y CS", g_pGenerateMipsLinearOddYCS)
-        CreatePSO(g_pGenerateMipsLinearPS, 3, L"Generate Mips Linear Odd CS", g_pGenerateMipsLinearOddCS)
-        CreatePSO(g_GenerateMipsGammaPSO, 0, L"Generate Mips Gamma CS", g_pGenerateMipsGammaCS)
-        CreatePSO(g_GenerateMipsGammaPSO, 1, L"Generate Mips Gamma Odd X CS", g_pGenerateMipsGammaOddXCS)
-        CreatePSO(g_GenerateMipsGammaPSO, 2, L"Generate Mips Gamma Odd Y CS", g_pGenerateMipsGammaOddYCS)
-        CreatePSO(g_GenerateMipsGammaPSO, 3, L"Generate Mips Gamma Odd CS", g_pGenerateMipsGammaOddCS)
+        CreatePSO(g_pGenerateMipsLinearPSO, 0, L"Generate Mips Linear CS", g_pGenerateMipsLinearCS)
+        CreatePSO(g_pGenerateMipsLinearPSO, 1, L"Generate Mips Linear Odd X CS", g_pGenerateMipsLinearOddXCS)
+        CreatePSO(g_pGenerateMipsLinearPSO, 2, L"Generate Mips Linear Odd Y CS", g_pGenerateMipsLinearOddYCS)
+        CreatePSO(g_pGenerateMipsLinearPSO, 3, L"Generate Mips Linear Odd CS", g_pGenerateMipsLinearOddCS)
+        CreatePSO(g_pGenerateMipsGammaPSO, 0, L"Generate Mips Gamma CS", g_pGenerateMipsGammaCS)
+        CreatePSO(g_pGenerateMipsGammaPSO, 1, L"Generate Mips Gamma Odd X CS", g_pGenerateMipsGammaOddXCS)
+        CreatePSO(g_pGenerateMipsGammaPSO, 2, L"Generate Mips Gamma Odd Y CS", g_pGenerateMipsGammaOddYCS)
+        CreatePSO(g_pGenerateMipsGammaPSO, 3, L"Generate Mips Gamma Odd CS", g_pGenerateMipsGammaOddCS)
 
         D3D12_GRAPHICS_PIPELINE_STATE_DESC mDownsampleDepthDesc = {};
         mDownsampleDepthDesc.pRootSignature                 = g_pCommonRS->GetApiHandle();
@@ -270,16 +270,24 @@ namespace RHI
 
     void DestroyCommonState(void)
     {
-        delete pDispatchIndirectCommandSignature;
-        delete pDrawIndirectCommandSignature;
+#define SAFERELEASE(a) delete a; a = nullptr;
 
-        delete g_pCommonRS;
+        SAFERELEASE(pDispatchIndirectCommandSignature)
+        SAFERELEASE(pDrawIndirectCommandSignature)
 
-        for (size_t i = 0; i < 4; i++)
-            delete g_pGenerateMipsLinearPSO[i];
-        for (size_t i = 0; i < 4; i++)
-            delete g_pGenerateMipsGammaPSO[i];
-        delete g_pDownsampleDepthPSO;
+        SAFERELEASE(g_pCommonRS)
+
+        SAFERELEASE(g_pGenerateMipsLinearPSO[0])
+        SAFERELEASE(g_pGenerateMipsLinearPSO[1])
+        SAFERELEASE(g_pGenerateMipsLinearPSO[2])
+        SAFERELEASE(g_pGenerateMipsLinearPSO[3])
+            
+        SAFERELEASE(g_pGenerateMipsGammaPSO[0])
+        SAFERELEASE(g_pGenerateMipsGammaPSO[1])
+        SAFERELEASE(g_pGenerateMipsGammaPSO[2])
+        SAFERELEASE(g_pGenerateMipsGammaPSO[3])
+
+        SAFERELEASE(g_pDownsampleDepthPSO)
     }
 
 }

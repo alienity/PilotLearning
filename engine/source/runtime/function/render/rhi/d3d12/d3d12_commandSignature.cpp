@@ -57,7 +57,7 @@ namespace RHI
 
         if (Builder.RequiresRootSignature)
         {
-            assert(RootSignature != nullptr);
+            ASSERT(RootSignature != nullptr);
         }
 
         VERIFY_D3D12_API(

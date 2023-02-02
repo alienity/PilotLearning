@@ -137,6 +137,7 @@ struct Shaders
         }
     }
 
+
 };
 
 struct Libraries
@@ -305,6 +306,21 @@ struct RootSignatures
         }
 
     }
+
+    static void Release()
+    {
+        pBitonicSortRootSignature       = nullptr;
+        pFullScreenPresent              = nullptr;
+        pIndirectCullForSort            = nullptr;
+        pIndirectCull                   = nullptr;
+        pIndirectCullArgs               = nullptr;
+        pIndirectCullGrab               = nullptr;
+        pIndirectCullDirectionShadowmap = nullptr;
+        pIndirectCullSpotShadowmap      = nullptr;
+        pIndirectDraw                   = nullptr;
+        pIndirectDrawDirectionShadowmap = nullptr;
+        pIndirectDrawSpotShadowmap      = nullptr;
+    }
 };
 
 struct CommandSignatures
@@ -357,7 +373,13 @@ struct CommandSignatures
         }
     }
 
-
+    static void Release()
+    {
+        pDispatchIndirectCommandSignature = nullptr;
+        pIndirectDraw                     = nullptr;
+        pIndirectDrawDirectionShadowmap   = nullptr;
+        pIndirectDrawSpotShadowmap        = nullptr;
+    }
 };
 
 struct PipelineStates
@@ -691,5 +713,29 @@ struct PipelineStates
             pIndirectDrawSpotShadowmap =
                 std::make_shared<RHI::D3D12PipelineState>(pDevice, L"IndirectDrawSpotShadowmap", psoDesc);
         }
+    }
+
+    static void Release()
+    {
+        pBitonicIndirectArgsPSO = nullptr;
+        pBitonic32PreSortPSO    = nullptr;
+        pBitonic32InnerSortPSO  = nullptr;
+        pBitonic32OuterSortPSO  = nullptr;
+        pBitonic64PreSortPSO    = nullptr;
+        pBitonic64InnerSortPSO  = nullptr;
+        pBitonic64OuterSortPSO  = nullptr;
+
+        pFullScreenPresent              = nullptr;
+        pIndirectCullForSort            = nullptr;
+        pIndirectCull                   = nullptr;
+        pIndirectCullArgs               = nullptr;
+        pIndirectCullGrab               = nullptr;
+        pIndirectCullDirectionShadowmap = nullptr;
+        pIndirectCullSpotShadowmap      = nullptr;
+
+        pIndirectDraw                   = nullptr;
+        pIndirectDrawTransparent        = nullptr;
+        pIndirectDrawDirectionShadowmap = nullptr;
+        pIndirectDrawSpotShadowmap      = nullptr;
     }
 };
