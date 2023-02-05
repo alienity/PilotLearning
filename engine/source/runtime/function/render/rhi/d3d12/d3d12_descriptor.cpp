@@ -684,7 +684,7 @@ namespace RHI
         UINT MipLevels       = OptMipLevels.value_or(Desc.MipLevels);
 
         D3D12_SHADER_RESOURCE_VIEW_DESC ViewDesc = {};
-        ViewDesc.Format                          = [](DXGI_FORMAT Format, bool sRGB) {
+        ViewDesc.Format = [](DXGI_FORMAT Format, bool sRGB) {
             if (sRGB)
             {
                 return D3D12RHIUtils::MakeSRGB(Format);

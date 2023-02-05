@@ -7,6 +7,7 @@
 #include "runtime/function/render/renderer/indirect_cull_pass.h"
 #include "runtime/function/render/renderer/indirect_shadow_pass.h"
 #include "runtime/function/render/renderer/indirect_draw_pass.h"
+#include "runtime/function/render/renderer/skybox_pass.h"
 #include "runtime/function/render/renderer/indirect_draw_transparent_pass.h"
 #include "runtime/function/render/renderer/indirect_display_pass.h"
 
@@ -40,6 +41,7 @@ namespace Pilot
         std::shared_ptr<IndirectCullPass>            mIndirectCullPass;
         std::shared_ptr<IndirectShadowPass>          mIndirectShadowPass;
         std::shared_ptr<IndirectDrawPass>            mIndirectOpaqueDrawPass;
+        std::shared_ptr<SkyBoxPass>                  mSkyBoxPass;
         std::shared_ptr<IndirectDrawTransparentPass> mIndirectTransparentDrawPass;
         std::shared_ptr<DisplayPass>                 mDisplayPass;
         

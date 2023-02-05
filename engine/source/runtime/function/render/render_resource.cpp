@@ -134,10 +134,13 @@ namespace Pilot
 
         // camera instance
         HLSL::CameraInstance cameraInstance;
-        cameraInstance.view_matrix      = GLMUtil::fromMat4x4(view_matrix);
-        cameraInstance.proj_matrix      = GLMUtil::fromMat4x4(proj_matrix);
-        cameraInstance.proj_view_matrix = proj_view_matrix;
-        cameraInstance.camera_position  = GLMUtil::fromVec3(camera_position);
+        cameraInstance.view_matrix              = GLMUtil::fromMat4x4(view_matrix);
+        cameraInstance.proj_matrix              = GLMUtil::fromMat4x4(proj_matrix);
+        cameraInstance.proj_view_matrix         = proj_view_matrix;
+        cameraInstance.view_matrix_inverse      = glm::inverse(cameraInstance.view_matrix);
+        cameraInstance.proj_matrix_inverse      = glm::inverse(cameraInstance.proj_matrix);
+        cameraInstance.proj_view_matrix_inverse = glm::inverse(cameraInstance.proj_view_matrix);
+        cameraInstance.camera_position          = GLMUtil::fromVec3(camera_position);
 
         // ambient light
         Vector3  ambient_light   = render_scene->m_ambient_light.m_color.toVector3();

@@ -140,7 +140,7 @@ namespace Pilot
         HLSL::MeshInstance* pMeshesObj = pUploadMeshBuffer->GetCpuVirtualAddress<HLSL::MeshInstance>();
 
         uint32_t numMeshes = renderMeshNodes->size();
-        assert(numMeshes < HLSL::MeshLimit);
+        ASSERT(numMeshes < HLSL::MeshLimit);
         for (size_t i = 0; i < numMeshes; i++)
         {
             RenderMeshNode& temp_node = renderMeshNodes->at(i);

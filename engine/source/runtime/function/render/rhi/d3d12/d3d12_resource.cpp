@@ -743,6 +743,8 @@ namespace RHI
 
         desc.mipCount = D3D12Texture::GetMipLevels(desc.width, desc.height, desc.mipCount, desc.flags);
 
+        bool isCubeMap = desc.dim == RHITexDimCube;
+
         D3D12_RESOURCE_DIMENSION dimension;
         CD3DX12_RESOURCE_DESC resourceDesc;
         if (desc.dim == RHITexDim2D || desc.dim == RHITexDim2DArray || desc.dim == RHITexDimCube || desc.dim == RHITexDimCubeArray)
@@ -768,8 +770,8 @@ namespace RHI
         CD3DX12_HEAP_PROPERTIES resourceHeapProperties =
             CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT, Parent->GetNodeMask(), Parent->GetNodeMask());
 
-        std::shared_ptr<D3D12Texture> pSurfaceD3D12 =
-            std::make_shared<D3D12Texture>(Parent, resourceDesc, resourceHeapProperties, clearValue, initState, false);
+        std::shared_ptr<D3D12Texture> pSurfaceD3D12 = std::make_shared<D3D12Texture>(
+            Parent, resourceDesc, resourceHeapProperties, clearValue, initState, isCubeMap);
         pSurfaceD3D12->SetResourceName(name);
 
         pSurfaceD3D12->m_Desc = desc;

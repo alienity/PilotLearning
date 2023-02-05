@@ -88,6 +88,16 @@ namespace Pilot
             mIndirectOpaqueDrawPass->setCommonInfo(renderPassCommonInfo);
             mIndirectOpaqueDrawPass->initialize(drawPassInit);
         }
+        // Skybox pass
+        {
+            SkyBoxPass::SkyBoxInitInfo drawPassInit;
+            drawPassInit.colorTexDesc = colorTexDesc;
+            drawPassInit.depthTexDesc = depthTexDesc;
+
+            mSkyBoxPass = std::make_shared<SkyBoxPass>();
+            mSkyBoxPass->setCommonInfo(renderPassCommonInfo);
+            mSkyBoxPass->initialize(drawPassInit);
+        }
         // Transparent drawing pass
         {
             IndirectDrawTransparentPass::DrawPassInitInfo drawPassInit;
@@ -129,6 +139,7 @@ namespace Pilot
     {
         mIndirectCullPass->prepareMeshData(render_resource);
         mIndirectShadowPass->prepareShadowmaps(render_resource);
+        mSkyBoxPass->prepareMeshData(render_resource);
     }
 
     DeferredRenderer::~DeferredRenderer() 
@@ -137,6 +148,7 @@ namespace Pilot
         mIndirectCullPass            = nullptr;
         mIndirectShadowPass          = nullptr;
         mIndirectOpaqueDrawPass      = nullptr;
+        mSkyBoxPass                  = nullptr;
         mIndirectTransparentDrawPass = nullptr;
         mDisplayPass                 = nullptr;
 
@@ -188,6 +200,14 @@ namespace Pilot
         }
         mIndirectOpaqueDrawPass->update(graph, mDrawIntputParams, mDrawOutputParams);
         
+        // skybox draw
+        SkyBoxPass::DrawInputParameters  mSkyboxIntputParams;
+        SkyBoxPass::DrawOutputParameters mSkyboxOutputParams;
+
+        mSkyboxIntputParams.pPerframeBuffer         = indirectCullOutput.pPerframeBuffer;
+        mSkyboxOutputParams.renderTargetColorHandle = mDrawOutputParams.renderTargetColorHandle;
+        mSkyboxOutputParams.renderTargetDepthHandle = mDrawOutputParams.renderTargetDepthHandle;
+        mSkyBoxPass->update(graph, mSkyboxIntputParams, mSkyboxOutputParams);
 
         // indirect transparent draw
         IndirectDrawTransparentPass::DrawInputParameters  mDrawTransIntputParams;

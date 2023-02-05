@@ -1,3 +1,5 @@
+#include "ShaderUtility.hlsli"
+
 struct VertexAttributes
 {
     float4 position : SV_POSITION;
@@ -12,11 +14,7 @@ float4 PSMain(VertexAttributes input) : SV_Target0
 {
     Texture2D<float4> baseColorTex = ResourceDescriptorHeap[texIndex];
 
-    float4 outColor = baseColorTex.Sample(defaultSampler, input.texcoord);
+    float4 linearRGB = baseColorTex[(int2)input.position.xy];
 
-    const float gamma = 2.2f;
-
-    outColor = pow(outColor, 1.0f / gamma);
-
-    return float4(outColor.rgb, 1);
+    return float4(ApplyDisplayProfile(linearRGB.rgb, DISPLAY_PLANE_FORMAT), 1.0f);
 }

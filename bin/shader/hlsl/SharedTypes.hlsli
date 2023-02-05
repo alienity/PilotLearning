@@ -145,6 +145,9 @@ struct CameraInstance
     float4x4 viewMatrix;
     float4x4 projMatrix;
     float4x4 projViewMatrix;
+    float4x4 viewMatrixInverse;
+    float4x4 projMatrixInverse;
+    float4x4 projViewMatrixInverse;
     float3   cameraPosition;
     float    _padding_cameraPosition;
 };

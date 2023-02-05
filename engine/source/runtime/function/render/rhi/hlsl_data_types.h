@@ -71,6 +71,9 @@ namespace HLSL
         glm::mat4 view_matrix;
         glm::mat4 proj_matrix;
         glm::mat4 proj_view_matrix;
+        glm::mat4 view_matrix_inverse;
+        glm::mat4 proj_matrix_inverse;
+        glm::mat4 proj_view_matrix_inverse;
         glm::vec3 camera_position;
         float     _padding_camera_position;
     };
