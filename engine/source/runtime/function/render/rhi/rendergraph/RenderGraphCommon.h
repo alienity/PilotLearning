@@ -46,8 +46,7 @@ namespace RHI
             Id      = UINT_MAX;
         }
 
-        RgResourceType Type : 15; // 14 bit to represent type, might remove some bits from
-                                                            // this and give it to version
+        RgResourceType Type : 15; // 14 bit to represent type, might remove some bits from this and give it to version
         RgResourceFlags Flags : 1;
         std::uint64_t   Version : 16; // 16 bits to represent version should be more than enough, we can always just
                                       // increase bit used if is not enough
@@ -98,6 +97,13 @@ namespace RHI
             this->Color[2] = Color[2];
             this->Color[3] = Color[3];
         }
+        const RgClearValue(float r, float g, float b, float a)
+        {
+            this->Color[0] = r;
+            this->Color[1] = g;
+            this->Color[2] = b;
+            this->Color[3] = a;
+        }
         const RgClearValue(std::float_t Depth, std::uint8_t Stencil) : DepthStencil {Depth, Stencil} {}
 
         union
@@ -144,6 +150,12 @@ namespace RHI
 			return *this;
 		}
 
+		RgTextureDesc& SetSampleCount(std::uint32_t SampleCount = 1)
+        {
+            this->SampleCount = SampleCount;
+            return *this;
+        }
+
 		RgTextureDesc& SetMipLevels(std::uint16_t MipLevels)
 		{
 			this->MipLevels = MipLevels;
@@ -181,6 +193,7 @@ namespace RHI
         std::uint32_t    Height               = 1;
         std::uint32_t    DepthOrArraySize     = 1;
         std::uint16_t    MipLevels            = 1;
+        std::uint32_t    SampleCount          = 1;
 		bool			 AllowRenderTarget	  = false;
 		bool			 AllowDepthStencil	  = false;
 		bool			 AllowUnorderedAccess = false;

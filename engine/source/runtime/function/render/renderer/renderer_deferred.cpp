@@ -60,17 +60,21 @@ namespace Pilot
             &renderGraphAllocator, &renderGraphRegistry, pDevice, pWindowSystem};
 
         // Prepare common resources
-        const FLOAT renderTargetClearColor[4] = {0, 0, 0, 0};
-        RHI::RgTextureDesc colorTexDesc = RHI::RgTextureDesc("ColorBuffer")
-                                              .SetFormat(pipleineColorFormat)
-                                              .SetExtent(viewport.width, viewport.height)
-                                              .SetAllowRenderTarget()
-                                              .SetClearValue(renderTargetClearColor);
-        RHI::RgTextureDesc depthTexDesc = RHI::RgTextureDesc("DepthBuffer")
-                                              .SetFormat(pipleineDepthFormat)
-                                              .SetExtent(viewport.width, viewport.height)
-                                              .SetAllowDepthStencil()
-                                              .SetClearValue(RHI::RgClearValue(0.0f, 0xff));
+        RHI::RgTextureDesc resolveColorTexDesc = RHI::RgTextureDesc("ColorBuffer")
+                                                     .SetFormat(pipleineColorFormat)
+                                                     .SetExtent(viewport.width, viewport.height)
+                                                     .SetAllowRenderTarget()
+                                                     .SetClearValue(RHI::RgClearValue(0, 0, 0, 0));
+        RHI::RgTextureDesc resolveDepthTexDesc = RHI::RgTextureDesc("DepthBuffer")
+                                                  .SetFormat(pipleineDepthFormat)
+                                                  .SetExtent(viewport.width, viewport.height)
+                                                  .SetAllowDepthStencil()
+                                                  .SetClearValue(RHI::RgClearValue(0.0f, 0xff));
+
+        RHI::RgTextureDesc msaaColorTexDesc = resolveColorTexDesc;
+        msaaColorTexDesc.SetSampleCount(4);
+        RHI::RgTextureDesc msaaDepthTexDesc = resolveDepthTexDesc;
+        msaaDepthTexDesc.SetSampleCount(4);
 
         // Cull pass
         {
@@ -81,8 +85,8 @@ namespace Pilot
         // Opaque drawing pass
         {
             IndirectDrawPass::DrawPassInitInfo drawPassInit;
-            drawPassInit.colorTexDesc = colorTexDesc;
-            drawPassInit.depthTexDesc = depthTexDesc;
+            drawPassInit.colorTexDesc = msaaColorTexDesc;
+            drawPassInit.depthTexDesc = msaaDepthTexDesc;
 
             mIndirectOpaqueDrawPass = std::make_shared<IndirectDrawPass>();
             mIndirectOpaqueDrawPass->setCommonInfo(renderPassCommonInfo);
@@ -91,8 +95,8 @@ namespace Pilot
         // Skybox pass
         {
             SkyBoxPass::SkyBoxInitInfo drawPassInit;
-            drawPassInit.colorTexDesc = colorTexDesc;
-            drawPassInit.depthTexDesc = depthTexDesc;
+            drawPassInit.colorTexDesc = msaaColorTexDesc;
+            drawPassInit.depthTexDesc = msaaDepthTexDesc;
 
             mSkyBoxPass = std::make_shared<SkyBoxPass>();
             mSkyBoxPass->setCommonInfo(renderPassCommonInfo);
@@ -101,13 +105,24 @@ namespace Pilot
         // Transparent drawing pass
         {
             IndirectDrawTransparentPass::DrawPassInitInfo drawPassInit;
-            drawPassInit.colorTexDesc = colorTexDesc;
-            drawPassInit.depthTexDesc = depthTexDesc;
+            drawPassInit.colorTexDesc = msaaColorTexDesc;
+            drawPassInit.depthTexDesc = msaaDepthTexDesc;
 
             mIndirectTransparentDrawPass = std::make_shared<IndirectDrawTransparentPass>();
             mIndirectTransparentDrawPass->setCommonInfo(renderPassCommonInfo);
             mIndirectTransparentDrawPass->initialize(drawPassInit);
         }
+        // resolve pass
+        {
+            MSAAResolvePass::MSAAResolveInitInfo resolvePassInit;
+            resolvePassInit.colorTexDesc = resolveColorTexDesc;
+            resolvePassInit.depthTexDesc = resolveDepthTexDesc;
+
+            mResolvePass = std::make_shared<MSAAResolvePass>();
+            mResolvePass->setCommonInfo(renderPassCommonInfo);
+            mResolvePass->initialize(resolvePassInit);
+        }
+        // shadow pass
         {
             IndirectShadowPass::ShadowPassInitInfo shadowPassInit;
 
@@ -150,6 +165,7 @@ namespace Pilot
         mIndirectOpaqueDrawPass      = nullptr;
         mSkyBoxPass                  = nullptr;
         mIndirectTransparentDrawPass = nullptr;
+        mResolvePass                 = nullptr;
         mDisplayPass                 = nullptr;
 
         // Release global objects
@@ -226,12 +242,27 @@ namespace Pilot
         mDrawTransOutputParams.renderTargetDepthHandle = mDrawOutputParams.renderTargetDepthHandle;
         mIndirectTransparentDrawPass->update(graph, mDrawTransIntputParams, mDrawTransOutputParams);
 
+        RHI::RgResourceHandle inputRTColorHandle = mDrawOutputParams.renderTargetColorHandle;
+
+        // resolve rendertarget
+        if (antialiasingMode == AntialiasingMode::MSAA)
+        {
+            MSAAResolvePass::DrawInputParameters  mMSAAResolveIntputParams;
+            MSAAResolvePass::DrawOutputParameters mMSAAResolveOutputParams;
+
+            mMSAAResolveIntputParams.renderTargetColorHandle = mDrawOutputParams.renderTargetColorHandle;
+            mMSAAResolveIntputParams.renderTargetDepthHandle = mDrawOutputParams.renderTargetDepthHandle;
+
+            mResolvePass->update(graph, mMSAAResolveIntputParams, mMSAAResolveOutputParams);
+
+            inputRTColorHandle = mMSAAResolveOutputParams.resolveTargetColorHandle;
+        }
 
         // display
         DisplayPass::DisplayInputParameters  mDisplayIntputParams;
         DisplayPass::DisplayOutputParameters mDisplayOutputParams;
 
-        mDisplayIntputParams.inputRTColorHandle      = mDrawOutputParams.renderTargetColorHandle;
+        mDisplayIntputParams.inputRTColorHandle      = inputRTColorHandle;
         mDisplayOutputParams.renderTargetColorHandle = renderTargetColorHandle;
 
         mDisplayPass->update(graph, mDisplayIntputParams, mDisplayOutputParams);

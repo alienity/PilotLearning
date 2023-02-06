@@ -396,7 +396,9 @@ struct PipelineStates
     inline static std::shared_ptr<RHI::D3D12PipelineState> pIndirectCullSpotShadowmap;
 
     inline static std::shared_ptr<RHI::D3D12PipelineState> pIndirectDraw;
+    inline static std::shared_ptr<RHI::D3D12PipelineState> pIndirectDrawMSAA;
     inline static std::shared_ptr<RHI::D3D12PipelineState> pIndirectDrawTransparent;
+    inline static std::shared_ptr<RHI::D3D12PipelineState> pIndirectDrawTransparentMSAA;
     inline static std::shared_ptr<RHI::D3D12PipelineState> pIndirectDrawDirectionShadowmap;
     inline static std::shared_ptr<RHI::D3D12PipelineState> pIndirectDrawSpotShadowmap;
 
@@ -558,11 +560,14 @@ struct PipelineStates
             RenderTargetState.NumRenderTargets = 1;
             RenderTargetState.DSFormat         = PipelineDsFormat; // DXGI_FORMAT_D32_FLOAT;
 
+            RHIRasterizerState RasterrizerState;
+
             struct PsoStream
             {
                 PipelineStateStreamRootSignature     RootSignature;
                 PipelineStateStreamInputLayout       InputLayout;
                 PipelineStateStreamPrimitiveTopology PrimitiveTopologyType;
+                PipelineStateStreamRasterizerState   RasterrizerState;
                 PipelineStateStreamVS                VS;
                 PipelineStateStreamPS                PS;
                 PipelineStateStreamDepthStencilState DepthStencilState;
@@ -571,6 +576,7 @@ struct PipelineStates
             psoStream.RootSignature         = PipelineStateStreamRootSignature(RootSignatures::pIndirectDraw.get());
             psoStream.InputLayout           = &InputLayout;
             psoStream.PrimitiveTopologyType = RHI_PRIMITIVE_TOPOLOGY::Triangle;
+            psoStream.RasterrizerState      = RasterrizerState;
             psoStream.VS                    = &Shaders::VS::IndirectDrawVS;
             psoStream.PS                    = &Shaders::PS::IndirectDrawPS;
             psoStream.DepthStencilState     = DepthStencilState;
@@ -579,6 +585,14 @@ struct PipelineStates
             PipelineStateStreamDesc psoDesc = {sizeof(PsoStream), &psoStream};
 
             pIndirectDraw = std::make_shared<RHI::D3D12PipelineState>(pDevice, L"IndirectDraw", psoDesc);
+
+            RHIRasterizerState MsaaRasterrizerState;
+            MsaaRasterrizerState.MultisampleEnable = true;
+
+            PsoStream msaaPsoStream = psoStream;
+
+
+
         }
         {
             //IndirectDrawTransparent

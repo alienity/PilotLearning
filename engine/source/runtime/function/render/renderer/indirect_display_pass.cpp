@@ -20,7 +20,7 @@ namespace Pilot
 
         graph.AddRenderPass("DisplayDrawPass")
             .Read(drawPassInput->inputRTColorHandle)
-            .Write(&drawPassOutput->renderTargetColorHandle)
+            .Write(drawPassOutput->renderTargetColorHandle)
             .Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
                 
                 RHI::D3D12GraphicsContext* graphicContext = context->GetGraphicsContext();

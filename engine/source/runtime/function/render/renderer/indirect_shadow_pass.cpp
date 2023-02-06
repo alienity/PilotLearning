@@ -145,7 +145,7 @@ namespace Pilot
 
             drawPassOutput->directionalShadowmapRGHandle = {dirShadowMapHandle};
 
-            shadowpass.Write(&dirShadowMapHandle);
+            shadowpass.Write(dirShadowMapHandle);
         }
 
         for (size_t i = 0; i < spotShadowmaps.size(); i++)
@@ -154,7 +154,7 @@ namespace Pilot
 
             drawPassOutput->spotShadowmapRGHandle.push_back({spotShadowMapHandle});
             
-            shadowpass.Write(&spotShadowMapHandle);
+            shadowpass.Write(spotShadowMapHandle);
         }
 
 

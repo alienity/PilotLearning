@@ -40,8 +40,8 @@ namespace Pilot
         {
             drawpass.Read(drawPassInput->spotShadowmapTexHandles[i]);
         }
-        drawpass.Write(&drawPassOutput->renderTargetColorHandle);
-        drawpass.Write(&drawPassOutput->renderTargetDepthHandle);
+        drawpass.Write(drawPassOutput->renderTargetColorHandle);
+        drawpass.Write(drawPassOutput->renderTargetDepthHandle);
 
         drawpass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
 

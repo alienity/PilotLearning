@@ -7,10 +7,10 @@
 
 namespace Pilot
 {
-    class SkyBoxPass : public RenderPass
+    class MSAAResolvePass : public RenderPass
 	{
     public:
-        struct SkyBoxInitInfo : public RenderPassInitInfo
+        struct MSAAResolveInitInfo : public RenderPassInitInfo
         {
             RHI::RgTextureDesc colorTexDesc;
             RHI::RgTextureDesc depthTexDesc;
@@ -20,16 +20,6 @@ namespace Pilot
         {
             DrawInputParameters()
             {
-                pPerframeBuffer = nullptr;
-            }
-
-            std::shared_ptr<RHI::D3D12Buffer> pPerframeBuffer;
-        };
-
-        struct DrawOutputParameters : public PassOutput
-        {
-            DrawOutputParameters()
-            {
                 renderTargetColorHandle.Invalidate();
                 renderTargetDepthHandle.Invalidate();
             }
@@ -38,24 +28,31 @@ namespace Pilot
             RHI::RgResourceHandle renderTargetDepthHandle;
         };
 
-    public:
-        ~SkyBoxPass() { destroy(); }
+        struct DrawOutputParameters : public PassOutput
+        {
+            DrawOutputParameters()
+            {
+                resolveTargetColorHandle.Invalidate();
+                resolveTargetDepthHandle.Invalidate();
+            }
 
-        void initialize(const SkyBoxInitInfo& init_info);
-        void prepareMeshData(std::shared_ptr<RenderResourceBase> render_resource);
+            RHI::RgResourceHandle resolveTargetColorHandle;
+            RHI::RgResourceHandle resolveTargetDepthHandle;
+        };
+
+    public:
+        ~MSAAResolvePass() { destroy(); }
+
+        void initialize(const MSAAResolveInitInfo& init_info);
         void update(RHI::RenderGraph& graph, DrawInputParameters& passInput, DrawOutputParameters& passOutput);
         void destroy() override final;
 
     protected:
-        bool initializeRenderTarget(RHI::RenderGraph& graph, DrawOutputParameters* drawPassOutput);
+        bool initializeResolveTarget(RHI::RenderGraph& graph, DrawOutputParameters* drawPassOutput);
 
     private:
         RHI::RgTextureDesc colorTexDesc;
         RHI::RgTextureDesc depthTexDesc;
-
-    private:
-        int   specularIBLTexIndex;
-        float specularIBLTexLevel;
 	};
 }
 

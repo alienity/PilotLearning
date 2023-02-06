@@ -32,10 +32,12 @@ namespace Pilot
 
         std::shared_ptr<RHI::D3D12Buffer> pPerframeBuffer = drawPassInput->pPerframeBuffer;
 
+        bool needClearRenderTarget = initializeRenderTarget(graph, drawPassOutput);
+
         RHI::RenderPass& drawpass = graph.AddRenderPass("SkyboxPass");
 
-        drawpass.Write(&drawPassOutput->renderTargetColorHandle);
-        drawpass.Write(&drawPassOutput->renderTargetDepthHandle);
+        drawpass.Write(drawPassOutput->renderTargetColorHandle);
+        drawpass.Write(drawPassOutput->renderTargetDepthHandle);
 
         drawpass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
 
@@ -50,6 +52,11 @@ namespace Pilot
             graphicContext->SetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
             graphicContext->SetViewport(RHIViewport {0.0f, 0.0f, (float)colorTexDesc.Width, (float)colorTexDesc.Height, 0.0f, 1.0f});
             graphicContext->SetScissorRect(RHIRect {0, 0, (int)colorTexDesc.Width, (int)colorTexDesc.Height});
+
+            if (needClearRenderTarget)
+            {
+                graphicContext->ClearRenderTarget(renderTargetView, depthStencilView);
+            }
             graphicContext->SetRenderTarget(renderTargetView, depthStencilView);
 
             graphicContext->SetRootSignature(RootSignatures::pSkyBoxRootSignature.get());
@@ -65,6 +72,22 @@ namespace Pilot
     void SkyBoxPass::destroy()
     {
 
+    }
+
+    bool SkyBoxPass::initializeRenderTarget(RHI::RenderGraph& graph, DrawOutputParameters* drawPassOutput)
+    {
+        bool needClearRenderTarget = false;
+        if (!drawPassOutput->renderTargetColorHandle.IsValid())
+        {
+            needClearRenderTarget                   = true;
+            drawPassOutput->renderTargetColorHandle = graph.Create<RHI::D3D12Texture>(colorTexDesc);
+        }
+        if (!drawPassOutput->renderTargetDepthHandle.IsValid())
+        {
+            needClearRenderTarget                   = true;
+            drawPassOutput->renderTargetDepthHandle = graph.Create<RHI::D3D12Texture>(depthTexDesc);
+        }
+        return needClearRenderTarget;
     }
 
 }

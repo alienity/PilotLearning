@@ -337,10 +337,8 @@ namespace RHI
 } // namespace RHI
 class Shader;
 
-using PipelineStateStreamRootSignature =
-    PipelineStateStreamSubobject<RHI::D3D12RootSignature*, RHI_PIPELINE_STATE_SUBOBJECT_TYPE::RootSignature>;
-using PipelineStateStreamInputLayout =
-    PipelineStateStreamSubobject<RHI::D3D12InputLayout*, RHI_PIPELINE_STATE_SUBOBJECT_TYPE::InputLayout>;
+using PipelineStateStreamRootSignature = PipelineStateStreamSubobject<RHI::D3D12RootSignature*, RHI_PIPELINE_STATE_SUBOBJECT_TYPE::RootSignature>;
+using PipelineStateStreamInputLayout = PipelineStateStreamSubobject<RHI::D3D12InputLayout*, RHI_PIPELINE_STATE_SUBOBJECT_TYPE::InputLayout>;
 using PipelineStateStreamVS = PipelineStateStreamSubobject<Shader*, RHI_PIPELINE_STATE_SUBOBJECT_TYPE::VS>;
 using PipelineStateStreamPS = PipelineStateStreamSubobject<Shader*, RHI_PIPELINE_STATE_SUBOBJECT_TYPE::PS>;
 using PipelineStateStreamDS = PipelineStateStreamSubobject<Shader*, RHI_PIPELINE_STATE_SUBOBJECT_TYPE::DS>;
@@ -349,16 +347,11 @@ using PipelineStateStreamGS = PipelineStateStreamSubobject<Shader*, RHI_PIPELINE
 using PipelineStateStreamCS = PipelineStateStreamSubobject<Shader*, RHI_PIPELINE_STATE_SUBOBJECT_TYPE::CS>;
 using PipelineStateStreamAS = PipelineStateStreamSubobject<Shader*, RHI_PIPELINE_STATE_SUBOBJECT_TYPE::AS>;
 using PipelineStateStreamMS = PipelineStateStreamSubobject<Shader*, RHI_PIPELINE_STATE_SUBOBJECT_TYPE::MS>;
-using PipelineStateStreamBlendState =
-    PipelineStateStreamSubobject<RHIBlendState, RHI_PIPELINE_STATE_SUBOBJECT_TYPE::BlendState>;
-using PipelineStateStreamRasterizerState =
-    PipelineStateStreamSubobject<RHIRasterizerState, RHI_PIPELINE_STATE_SUBOBJECT_TYPE::RasterizerState>;
-using PipelineStateStreamDepthStencilState =
-    PipelineStateStreamSubobject<RHIDepthStencilState, RHI_PIPELINE_STATE_SUBOBJECT_TYPE::DepthStencilState>;
-using PipelineStateStreamRenderTargetState =
-    PipelineStateStreamSubobject<RHIRenderTargetState, RHI_PIPELINE_STATE_SUBOBJECT_TYPE::RenderTargetState>;
-using PipelineStateStreamPrimitiveTopology =
-    PipelineStateStreamSubobject<RHI_PRIMITIVE_TOPOLOGY, RHI_PIPELINE_STATE_SUBOBJECT_TYPE::PrimitiveTopology>;
+using PipelineStateStreamBlendState = PipelineStateStreamSubobject<RHIBlendState, RHI_PIPELINE_STATE_SUBOBJECT_TYPE::BlendState>;
+using PipelineStateStreamRasterizerState = PipelineStateStreamSubobject<RHIRasterizerState, RHI_PIPELINE_STATE_SUBOBJECT_TYPE::RasterizerState>;
+using PipelineStateStreamDepthStencilState = PipelineStateStreamSubobject<RHIDepthStencilState, RHI_PIPELINE_STATE_SUBOBJECT_TYPE::DepthStencilState>;
+using PipelineStateStreamRenderTargetState = PipelineStateStreamSubobject<RHIRenderTargetState, RHI_PIPELINE_STATE_SUBOBJECT_TYPE::RenderTargetState>;
+using PipelineStateStreamPrimitiveTopology = PipelineStateStreamSubobject<RHI_PRIMITIVE_TOPOLOGY, RHI_PIPELINE_STATE_SUBOBJECT_TYPE::PrimitiveTopology>;
 
 class IPipelineParserCallbacks
 {

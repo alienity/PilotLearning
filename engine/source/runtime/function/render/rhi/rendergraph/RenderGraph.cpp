@@ -18,15 +18,29 @@ namespace RHI
 		return *this;
 	}
 
-	RenderPass& RenderPass::Write(RgResourceHandle* Resource)
+	RenderPass& RenderPass::Write(RgResourceHandle Resource)
 	{
 		// Only allow buffers/textures
         ASSERT(Resource && Resource->IsValid());
         ASSERT(Resource->Type == RgResourceType::Buffer || Resource->Type == RgResourceType::Texture);
 		//Resource->Version++;
-		Writes.insert(*Resource);
-		ReadWrites.insert(*Resource);
+		Writes.insert(Resource);
+		ReadWrites.insert(Resource);
 		return *this;
+	}
+
+	RenderPass& RenderPass::Resolve(RgResourceHandle SrcResource, RgResourceHandle DstResource)
+	{
+        // Only allow buffers/textures
+        ASSERT(Resource && Resource->IsValid());
+        ASSERT(Resource->Type == RgResourceType::Texture);
+        // Resource->Version++;
+        ResolveSrcDstPairs.push_back(std::pair<RgResourceHandle, RgResourceHandle>(SrcResource, DstResource));
+        Reads.insert(SrcResource);
+        Writes.insert(DstResource);
+        ReadWrites.insert(SrcResource);
+        ReadWrites.insert(DstResource);
+        return *this;
 	}
 
 	bool RenderPass::HasDependency(RgResourceHandle Resource) const
@@ -54,6 +68,7 @@ namespace RHI
 		RenderPasses.push_back(RenderPass);
 		Reads.insert(RenderPass->Reads.begin(), RenderPass->Reads.end());
 		Writes.insert(RenderPass->Writes.begin(), RenderPass->Writes.end());
+        ResolveSrcDstPairs.insert(ResolveSrcDstPairs.end(), RenderPass->ResolveSrcDstPairs.begin(), RenderPass->ResolveSrcDstPairs.end());
 	}
 
 	void RenderGraphDependencyLevel::Execute(RenderGraph* RenderGraph, D3D12CommandContext* Context)
@@ -62,6 +77,18 @@ namespace RHI
 		// Handle resource transitions for all registered resources
 		for (auto Read : Reads)
 		{
+            bool isResolveSrc = false;
+            for (size_t i = 0; i < ResolveSrcDstPairs.size(); i++)
+            {
+				if (ResolveSrcDstPairs[i].first == Read)
+				{
+                    isResolveSrc = true;
+                    break;
+				}
+			}
+            if (isResolveSrc)
+                continue;
+
 			D3D12_RESOURCE_STATES ReadState = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
 			if (RenderGraph->AllowUnorderedAccess(Read))
 			{
@@ -74,6 +101,18 @@ namespace RHI
 		}
 		for (auto Write : Writes)
 		{
+            bool isResolveDst = false;
+            for (size_t i = 0; i < ResolveSrcDstPairs.size(); i++)
+            {
+                if (ResolveSrcDstPairs[i].second == Write)
+                {
+                    isResolveDst = true;
+                    break;
+                }
+            }
+            if (isResolveDst)
+                continue;
+
 			D3D12_RESOURCE_STATES WriteState = D3D12_RESOURCE_STATE_COMMON;
 			if (RenderGraph->AllowRenderTarget(Write))
 			{

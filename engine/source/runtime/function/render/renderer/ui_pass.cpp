@@ -46,7 +46,7 @@ namespace Pilot
         
         graph.AddRenderPass("UIPass")
             .Read(uiPassInput->renderTargetColorHandle)
-            .Write(&backBufColorHandle)
+            .Write(backBufColorHandle)
             .Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
 
                 RHI::D3D12GraphicsContext* graphicsContext = context->GetGraphicsContext();

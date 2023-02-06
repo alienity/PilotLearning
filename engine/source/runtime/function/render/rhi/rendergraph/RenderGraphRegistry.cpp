@@ -120,7 +120,7 @@ namespace RHI
 			RHIRenderSurfaceBaseDesc textureDesc = {Desc.Width,
                                                     Desc.Height,
                                                     Desc.DepthOrArraySize,
-                                                    1,
+                                                    Desc.SampleCount,
                                                     Desc.MipLevels,
                                                     textureFlags,
                                                     textureDim,
