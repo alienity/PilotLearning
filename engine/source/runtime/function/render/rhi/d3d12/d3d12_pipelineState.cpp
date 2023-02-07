@@ -93,6 +93,12 @@ namespace RHI
         this->RenderTargetState = RenderTargetState;
     }
 
+    void D3D12PipelineParserCallbacks::SampleStateCb(const RHISampleState& SampleState)
+    {
+        Type                    = RHI_PIPELINE_STATE_TYPE::Graphics;
+        this->SampleState = SampleState;
+    }
+
     void D3D12PipelineParserCallbacks::PrimitiveTopologyTypeCb(RHI_PRIMITIVE_TOPOLOGY PrimitiveTopology)
     {
         Type                    = RHI_PIPELINE_STATE_TYPE::Graphics;
@@ -229,7 +235,7 @@ namespace RHI
                 Desc.PrimitiveTopologyType = RHITranslateD3D12(Parser.PrimitiveTopology);
                 Desc.NumRenderTargets      = Parser.RenderTargetState.NumRenderTargets;
                 Desc.DSVFormat             = Parser.RenderTargetState.DSFormat;
-                Desc.SampleDesc            = DefaultSampleDesc();
+                Desc.SampleDesc            = RHITranslateD3D12(Parser.SampleState); // DefaultSampleDesc();
                 Desc.NodeMask              = Device->GetAllNodeMask();
                 Desc.CachedPSO             = D3D12_CACHED_PIPELINE_STATE();
                 Desc.Flags                 = D3D12_PIPELINE_STATE_FLAG_NONE;
@@ -249,6 +255,7 @@ namespace RHI
                 Desc.PrimitiveTopologyType = RHITranslateD3D12(Parser.PrimitiveTopology);
                 Desc.NumRenderTargets      = Parser.RenderTargetState.NumRenderTargets;
                 Desc.DSVFormat = Parser.RenderTargetState.DSFormat, Desc.SampleDesc = DefaultSampleDesc();
+                Desc.SampleDesc = RHITranslateD3D12(Parser.SampleState);
                 Desc.NodeMask = Device->GetAllNodeMask(), Desc.CachedPSO = D3D12_CACHED_PIPELINE_STATE();
                 Desc.Flags = D3D12_PIPELINE_STATE_FLAG_NONE;
 

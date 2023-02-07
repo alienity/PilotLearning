@@ -84,6 +84,7 @@ enum class RHI_PIPELINE_STATE_SUBOBJECT_TYPE
     RasterizerState,
     DepthStencilState,
     RenderTargetState,
+    SampleState,
     PrimitiveTopology,
 
     NumTypes
@@ -288,6 +289,12 @@ struct RHIRenderTargetState
     DXGI_FORMAT   DSFormat         = DXGI_FORMAT_UNKNOWN;
 };
 
+struct RHISampleState
+{
+    std::uint32_t Count   = 1;
+    std::uint32_t Quality = 0;
+};
+
 struct RHIViewport
 {
     float TopLeftX;
@@ -351,6 +358,7 @@ using PipelineStateStreamBlendState = PipelineStateStreamSubobject<RHIBlendState
 using PipelineStateStreamRasterizerState = PipelineStateStreamSubobject<RHIRasterizerState, RHI_PIPELINE_STATE_SUBOBJECT_TYPE::RasterizerState>;
 using PipelineStateStreamDepthStencilState = PipelineStateStreamSubobject<RHIDepthStencilState, RHI_PIPELINE_STATE_SUBOBJECT_TYPE::DepthStencilState>;
 using PipelineStateStreamRenderTargetState = PipelineStateStreamSubobject<RHIRenderTargetState, RHI_PIPELINE_STATE_SUBOBJECT_TYPE::RenderTargetState>;
+using PipelineStateStreamSampleState = PipelineStateStreamSubobject<RHISampleState, RHI_PIPELINE_STATE_SUBOBJECT_TYPE::SampleState>;
 using PipelineStateStreamPrimitiveTopology = PipelineStateStreamSubobject<RHI_PRIMITIVE_TOPOLOGY, RHI_PIPELINE_STATE_SUBOBJECT_TYPE::PrimitiveTopology>;
 
 class IPipelineParserCallbacks
@@ -373,6 +381,7 @@ public:
     virtual void RasterizerStateCb(const RHIRasterizerState&) {}
     virtual void DepthStencilStateCb(const RHIDepthStencilState&) {}
     virtual void RenderTargetStateCb(const RHIRenderTargetState&) {}
+    virtual void SampleStateCb(const RHISampleState&) {}
     virtual void PrimitiveTopologyTypeCb(RHI_PRIMITIVE_TOPOLOGY) {}
 
     // Error Callbacks

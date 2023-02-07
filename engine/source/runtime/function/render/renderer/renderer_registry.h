@@ -403,6 +403,7 @@ struct PipelineStates
     inline static std::shared_ptr<RHI::D3D12PipelineState> pIndirectDrawSpotShadowmap;
 
     inline static std::shared_ptr<RHI::D3D12PipelineState> pSkyBoxPSO;
+    inline static std::shared_ptr<RHI::D3D12PipelineState> pSkyBoxPSOMSAA;
 
     static void Compile(DXGI_FORMAT PiplineRtFormat, DXGI_FORMAT PipelineDsFormat, DXGI_FORMAT RtFormat, DXGI_FORMAT DsFormat, RHI::D3D12Device* pDevice)
     {
@@ -560,8 +561,6 @@ struct PipelineStates
             RenderTargetState.NumRenderTargets = 1;
             RenderTargetState.DSFormat         = PipelineDsFormat; // DXGI_FORMAT_D32_FLOAT;
 
-            RHIRasterizerState RasterrizerState;
-
             struct PsoStream
             {
                 PipelineStateStreamRootSignature     RootSignature;
@@ -572,26 +571,25 @@ struct PipelineStates
                 PipelineStateStreamPS                PS;
                 PipelineStateStreamDepthStencilState DepthStencilState;
                 PipelineStateStreamRenderTargetState RenderTargetState;
+                PipelineStateStreamSampleState       SampleState;
             } psoStream;
             psoStream.RootSignature         = PipelineStateStreamRootSignature(RootSignatures::pIndirectDraw.get());
             psoStream.InputLayout           = &InputLayout;
             psoStream.PrimitiveTopologyType = RHI_PRIMITIVE_TOPOLOGY::Triangle;
-            psoStream.RasterrizerState      = RasterrizerState;
+            psoStream.RasterrizerState      = RHIRasterizerState();
             psoStream.VS                    = &Shaders::VS::IndirectDrawVS;
             psoStream.PS                    = &Shaders::PS::IndirectDrawPS;
             psoStream.DepthStencilState     = DepthStencilState;
             psoStream.RenderTargetState     = RenderTargetState;
+            psoStream.SampleState           = RHISampleState{1, 0};
 
             PipelineStateStreamDesc psoDesc = {sizeof(PsoStream), &psoStream};
-
             pIndirectDraw = std::make_shared<RHI::D3D12PipelineState>(pDevice, L"IndirectDraw", psoDesc);
 
-            RHIRasterizerState MsaaRasterrizerState;
-            MsaaRasterrizerState.MultisampleEnable = true;
+            psoStream.SampleState = RHISampleState{4, 0};
 
-            PsoStream msaaPsoStream = psoStream;
-
-
+            PipelineStateStreamDesc psoMSAADesc = {sizeof(PsoStream), &psoStream};
+            pIndirectDrawMSAA = std::make_shared<RHI::D3D12PipelineState>(pDevice, L"IndirectDrawMSAA", psoMSAADesc);
 
         }
         {
@@ -627,6 +625,7 @@ struct PipelineStates
                 PipelineStateStreamBlendState        BlendState;
                 PipelineStateStreamDepthStencilState DepthStencilState;
                 PipelineStateStreamRenderTargetState RenderTargetState;
+                PipelineStateStreamSampleState       SampleState;
             } psoStream;
             psoStream.RootSignature         = PipelineStateStreamRootSignature(RootSignatures::pIndirectDraw.get());
             psoStream.InputLayout           = &InputLayout;
@@ -636,10 +635,15 @@ struct PipelineStates
             psoStream.BlendState            = BlendState;
             psoStream.DepthStencilState     = DepthStencilState;
             psoStream.RenderTargetState     = RenderTargetState;
+            psoStream.SampleState           = RHISampleState{1, 0};
 
             PipelineStateStreamDesc psoDesc = {sizeof(PsoStream), &psoStream};
-
             pIndirectDrawTransparent = std::make_shared<RHI::D3D12PipelineState>(pDevice, L"IndirectDrawTransparent", psoDesc);
+
+            psoStream.SampleState = RHISampleState{4, 0};
+
+            PipelineStateStreamDesc psoMSAADesc = {sizeof(PsoStream), &psoStream};
+            pIndirectDrawTransparentMSAA = std::make_shared<RHI::D3D12PipelineState>(pDevice, L"IndirectDrawTransparentMSAA", psoMSAADesc);
         }
         {
             RHI::D3D12InputLayout InputLayout = Pilot::MeshVertex::D3D12MeshVertexPositionNormalTangentTexture::InputLayout;
@@ -728,6 +732,7 @@ struct PipelineStates
                 PipelineStateStreamPS                PS;
                 PipelineStateStreamDepthStencilState DepthStencilState;
                 PipelineStateStreamRenderTargetState RenderTargetState;
+                PipelineStateStreamSampleState       SampleState;
             } psoStream;
             psoStream.RootSignature      = PipelineStateStreamRootSignature(RootSignatures::pSkyBoxRootSignature.get());
             psoStream.InputLayout        = &InputLayout;
@@ -736,10 +741,15 @@ struct PipelineStates
             psoStream.PS                    = &Shaders::PS::SkyBoxPS;
             psoStream.DepthStencilState     = DepthStencilState;
             psoStream.RenderTargetState     = RenderTargetState;
+            psoStream.SampleState           = RHISampleState{1, 0};
 
             PipelineStateStreamDesc psoDesc = {sizeof(PsoStream), &psoStream};
-
             pSkyBoxPSO = std::make_shared<RHI::D3D12PipelineState>(pDevice, L"SkyBox", psoDesc);
+
+            psoStream.SampleState = RHISampleState{4, 0};
+
+            PipelineStateStreamDesc psoMSAADesc = {sizeof(PsoStream), &psoStream};
+            pSkyBoxPSOMSAA = std::make_shared<RHI::D3D12PipelineState>(pDevice, L"SkyBoxMSAA", psoMSAADesc);
         }
     }
 

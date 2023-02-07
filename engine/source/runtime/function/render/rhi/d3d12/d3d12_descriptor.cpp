@@ -445,22 +445,39 @@ namespace RHI
         switch (Desc.Dimension)
         {
             case D3D12_RESOURCE_DIMENSION_TEXTURE2D:
-                if (Desc.DepthOrArraySize > 1)
+                if (Desc.SampleDesc.Count != 1)
                 {
-                    ViewDesc.ViewDimension                  = D3D12_RTV_DIMENSION_TEXTURE2DARRAY;
-                    ViewDesc.Texture2DArray.MipSlice        = MipSlice;
-                    ViewDesc.Texture2DArray.FirstArraySlice = ArraySlice;
-                    ViewDesc.Texture2DArray.ArraySize       = ArraySize;
-                    ViewDesc.Texture2DArray.PlaneSlice      = 0;
+                    if (Desc.DepthOrArraySize > 1)
+                    {
+                        ViewDesc.ViewDimension                    = D3D12_RTV_DIMENSION_TEXTURE2DMSARRAY;
+                        ViewDesc.Texture2DMSArray.FirstArraySlice = ArraySlice;
+                        ViewDesc.Texture2DMSArray.ArraySize       = ArraySize;
+                    }
+                    else
+                    {
+                        // Because a multi sampled 2D texture contains a single subresource,
+                        // there is actually nothing to specify in D3D12_TEX2DMS_RTV. 
+                        ViewDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2DMS;
+                    }
                 }
                 else
                 {
-                    ViewDesc.ViewDimension        = D3D12_RTV_DIMENSION_TEXTURE2D;
-                    ViewDesc.Texture2D.MipSlice   = MipSlice;
-                    ViewDesc.Texture2D.PlaneSlice = 0;
+                    if (Desc.DepthOrArraySize > 1)
+                    {
+                        ViewDesc.ViewDimension                  = D3D12_RTV_DIMENSION_TEXTURE2DARRAY;
+                        ViewDesc.Texture2DArray.MipSlice        = MipSlice;
+                        ViewDesc.Texture2DArray.FirstArraySlice = ArraySlice;
+                        ViewDesc.Texture2DArray.ArraySize       = ArraySize;
+                        ViewDesc.Texture2DArray.PlaneSlice      = 0;
+                    }
+                    else
+                    {
+                        ViewDesc.ViewDimension        = D3D12_RTV_DIMENSION_TEXTURE2D;
+                        ViewDesc.Texture2D.MipSlice   = MipSlice;
+                        ViewDesc.Texture2D.PlaneSlice = 0;
+                    }
                 }
                 break;
-
             default:
                 break;
         }
@@ -520,17 +537,33 @@ namespace RHI
         switch (Desc.Dimension)
         {
             case D3D12_RESOURCE_DIMENSION_TEXTURE2D:
-                if (Desc.DepthOrArraySize > 1)
+                if (Desc.SampleDesc.Count != 1)
                 {
-                    ViewDesc.ViewDimension                  = D3D12_DSV_DIMENSION_TEXTURE2DARRAY;
-                    ViewDesc.Texture2DArray.MipSlice        = MipSlice;
-                    ViewDesc.Texture2DArray.FirstArraySlice = ArraySlice;
-                    ViewDesc.Texture2DArray.ArraySize       = ArraySize;
+                    if (Desc.DepthOrArraySize > 1)
+                    {
+                        ViewDesc.ViewDimension                    = D3D12_DSV_DIMENSION_TEXTURE2DMSARRAY;
+                        ViewDesc.Texture2DMSArray.FirstArraySlice = ArraySlice;
+                        ViewDesc.Texture2DMSArray.ArraySize       = ArraySize;
+                    }
+                    else
+                    {
+                        ViewDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2DMS;
+                    }
                 }
                 else
                 {
-                    ViewDesc.ViewDimension      = D3D12_DSV_DIMENSION_TEXTURE2D;
-                    ViewDesc.Texture2D.MipSlice = MipSlice;
+                    if (Desc.DepthOrArraySize > 1)
+                    {
+                        ViewDesc.ViewDimension                  = D3D12_DSV_DIMENSION_TEXTURE2DARRAY;
+                        ViewDesc.Texture2DArray.MipSlice        = MipSlice;
+                        ViewDesc.Texture2DArray.FirstArraySlice = ArraySlice;
+                        ViewDesc.Texture2DArray.ArraySize       = ArraySize;
+                    }
+                    else
+                    {
+                        ViewDesc.ViewDimension      = D3D12_DSV_DIMENSION_TEXTURE2D;
+                        ViewDesc.Texture2D.MipSlice = MipSlice;
+                    }
                 }
                 break;
 
@@ -703,34 +736,73 @@ namespace RHI
         switch (Desc.Dimension)
         {
             case D3D12_RESOURCE_DIMENSION_TEXTURE2D: {
-                if (Desc.DepthOrArraySize > 1)
+                if (Desc.SampleDesc.Count != 1)
                 {
-                    ViewDesc.ViewDimension                      = D3D12_SRV_DIMENSION_TEXTURE2DARRAY;
-                    ViewDesc.Texture2DArray.MostDetailedMip     = MostDetailedMip;
-                    ViewDesc.Texture2DArray.MipLevels           = MipLevels;
-                    ViewDesc.Texture2DArray.ArraySize           = Desc.DepthOrArraySize;
-                    ViewDesc.Texture2DArray.PlaneSlice          = 0;
-                    ViewDesc.Texture2DArray.ResourceMinLODClamp = 0.0f;
+                    if (Desc.DepthOrArraySize > 1)
+                    {
+                        ViewDesc.ViewDimension                      = D3D12_SRV_DIMENSION_TEXTURE2DMSARRAY;
+                        ViewDesc.Texture2DMSArray.FirstArraySlice   = 0;
+                        ViewDesc.Texture2DMSArray.ArraySize         = Desc.DepthOrArraySize;
+                    }
+                    else
+                    {
+                        // Since a multi sampled 2D texture contains a single subresource, 
+                        // there is actually nothing to specify in D3D12_TEX2DMS_SRV.
+                        ViewDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2DMS;
+                    }
                 }
                 else
                 {
-                    ViewDesc.ViewDimension                 = D3D12_SRV_DIMENSION_TEXTURE2D;
-                    ViewDesc.Texture2D.MostDetailedMip     = MostDetailedMip;
-                    ViewDesc.Texture2D.MipLevels           = MipLevels;
-                    ViewDesc.Texture2D.PlaneSlice          = 0;
-                    ViewDesc.Texture2D.ResourceMinLODClamp = 0.0f;
+                    if (Desc.DepthOrArraySize > 1)
+                    {
+                        ViewDesc.ViewDimension                      = D3D12_SRV_DIMENSION_TEXTURE2DARRAY;
+                        ViewDesc.Texture2DArray.MostDetailedMip     = MostDetailedMip;
+                        ViewDesc.Texture2DArray.MipLevels           = MipLevels;
+                        ViewDesc.Texture2DArray.FirstArraySlice     = 0;
+                        ViewDesc.Texture2DArray.ArraySize           = Desc.DepthOrArraySize;
+                        ViewDesc.Texture2DArray.PlaneSlice          = 0;
+                        ViewDesc.Texture2DArray.ResourceMinLODClamp = 0.0f;
+                    }
+                    else
+                    {
+                        ViewDesc.ViewDimension                 = D3D12_SRV_DIMENSION_TEXTURE2D;
+                        ViewDesc.Texture2D.MostDetailedMip     = MostDetailedMip;
+                        ViewDesc.Texture2D.MipLevels           = MipLevels;
+                        ViewDesc.Texture2D.PlaneSlice          = 0;
+                        ViewDesc.Texture2D.ResourceMinLODClamp = 0.0f;
+                    }
                 }
+
 
                 if (Texture->IsCubemap())
                 {
-                    ViewDesc.ViewDimension                   = D3D12_SRV_DIMENSION_TEXTURECUBE;
-                    ViewDesc.TextureCube.MostDetailedMip     = MostDetailedMip;
-                    ViewDesc.TextureCube.MipLevels           = MipLevels;
-                    ViewDesc.TextureCube.ResourceMinLODClamp = 0.0f;
+                    ASSERT(Desc.DepthOrArraySize % 6 == 0);
+                    if (Desc.DepthOrArraySize == 6)
+                    {
+                        ViewDesc.ViewDimension                   = D3D12_SRV_DIMENSION_TEXTURECUBE;
+                        ViewDesc.TextureCube.MostDetailedMip     = MostDetailedMip;
+                        ViewDesc.TextureCube.MipLevels           = MipLevels;
+                        ViewDesc.TextureCube.ResourceMinLODClamp = 0.0f;
+                    }
+                    else
+                    {
+                        ViewDesc.ViewDimension                        = D3D12_SRV_DIMENSION_TEXTURECUBEARRAY;
+                        ViewDesc.TextureCubeArray.MostDetailedMip     = MostDetailedMip;
+                        ViewDesc.TextureCubeArray.MipLevels           = MipLevels;
+                        ViewDesc.TextureCubeArray.First2DArrayFace    = 0;
+                        ViewDesc.TextureCubeArray.NumCubes            = Desc.DepthOrArraySize / 6;
+                        ViewDesc.TextureCubeArray.ResourceMinLODClamp = 0.0f;
+                    }
                 }
             }
             break;
-
+            case D3D12_RESOURCE_DIMENSION_TEXTURE3D: {
+                ViewDesc.ViewDimension                 = D3D12_SRV_DIMENSION_TEXTURE3D;
+                ViewDesc.Texture3D.MostDetailedMip     = MostDetailedMip;
+                ViewDesc.Texture3D.MipLevels           = MipLevels;
+                ViewDesc.Texture3D.ResourceMinLODClamp = 0.0f;
+            }
+            break;
             default:
                 break;
         }
@@ -835,23 +907,47 @@ namespace RHI
 
         switch (Desc.Dimension)
         {
-            case D3D12_RESOURCE_DIMENSION_TEXTURE2D:
-                if (Desc.DepthOrArraySize > 1)
+            case D3D12_RESOURCE_DIMENSION_TEXTURE2D: {
+                if (Desc.SampleDesc.Count != 1)
                 {
-                    ViewDesc.ViewDimension                  = D3D12_UAV_DIMENSION_TEXTURE2DARRAY;
-                    ViewDesc.Texture2DArray.MipSlice        = MipSlice;
-                    ViewDesc.Texture2DArray.FirstArraySlice = ArraySlice;
-                    ViewDesc.Texture2DArray.ArraySize       = Desc.DepthOrArraySize;
-                    ViewDesc.Texture2DArray.PlaneSlice      = 0;
+                    if (Desc.DepthOrArraySize > 1)
+                    {
+                        ViewDesc.ViewDimension                    = D3D12_UAV_DIMENSION_TEXTURE2DMSARRAY;
+                        ViewDesc.Texture2DMSArray.FirstArraySlice = ArraySlice;
+                        ViewDesc.Texture2DMSArray.ArraySize       = Desc.DepthOrArraySize;
+                    }
+                    else
+                    {
+                        ViewDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2DMS;
+                    }
                 }
                 else
                 {
-                    ViewDesc.ViewDimension        = D3D12_UAV_DIMENSION_TEXTURE2D;
-                    ViewDesc.Texture2D.MipSlice   = MipSlice;
-                    ViewDesc.Texture2D.PlaneSlice = 0;
+                    if (Desc.DepthOrArraySize > 1)
+                    {
+                        ViewDesc.ViewDimension                  = D3D12_UAV_DIMENSION_TEXTURE2DARRAY;
+                        ViewDesc.Texture2DArray.MipSlice        = MipSlice;
+                        ViewDesc.Texture2DArray.FirstArraySlice = ArraySlice;
+                        ViewDesc.Texture2DArray.ArraySize       = Desc.DepthOrArraySize;
+                        ViewDesc.Texture2DArray.PlaneSlice      = 0;
+                    }
+                    else
+                    {
+                        ViewDesc.ViewDimension        = D3D12_UAV_DIMENSION_TEXTURE2D;
+                        ViewDesc.Texture2D.MipSlice   = MipSlice;
+                        ViewDesc.Texture2D.PlaneSlice = 0;
+                    }
                 }
                 break;
+            }
+            case D3D12_RESOURCE_DIMENSION_TEXTURE3D: {
+                ViewDesc.ViewDimension         = D3D12_UAV_DIMENSION_TEXTURE3D;
+                ViewDesc.Texture3D.MipSlice    = MipSlice;
+                ViewDesc.Texture3D.FirstWSlice = 0;
+                ViewDesc.Texture3D.WSize       = ArraySlice;
 
+                break;
+            }
             default:
                 break;
         }

@@ -42,6 +42,7 @@ namespace RHI
         void RasterizerStateCb(const RHIRasterizerState& RasterizerState) override;
         void DepthStencilStateCb(const RHIDepthStencilState& DepthStencilState) override;
         void RenderTargetStateCb(const RHIRenderTargetState& RenderTargetState) override;
+        void SampleStateCb(const RHISampleState&) override;
         void PrimitiveTopologyTypeCb(RHI_PRIMITIVE_TOPOLOGY PrimitiveTopology) override;
 
         void ErrorBadInputParameter(size_t Index) override;
@@ -63,6 +64,7 @@ namespace RHI
         RHIRasterizerState                    RasterizerState;
         RHIDepthStencilState                  DepthStencilState;
         RHIRenderTargetState                  RenderTargetState;
+        RHISampleState                        SampleState;
         RHI_PRIMITIVE_TOPOLOGY                PrimitiveTopology = RHI_PRIMITIVE_TOPOLOGY::Undefined;
     };
 

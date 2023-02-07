@@ -77,6 +77,10 @@ void RHIParsePipelineStream(const PipelineStateStreamDesc& Desc, IPipelineParser
                 Callbacks->RasterizerStateCb(*reinterpret_cast<PipelineStateStreamRasterizerState*>(Stream));
                 SizeOfSubobject = sizeof(PipelineStateStreamRasterizerState);
                 break;
+            case RHI_PIPELINE_STATE_SUBOBJECT_TYPE::SampleState:
+                Callbacks->SampleStateCb(*reinterpret_cast<PipelineStateStreamSampleState*>(Stream));
+                SizeOfSubobject = sizeof(PipelineStateStreamSampleState);
+                break;
             case RHI_PIPELINE_STATE_SUBOBJECT_TYPE::DepthStencilState:
                 Callbacks->DepthStencilStateCb(*reinterpret_cast<PipelineStateStreamDepthStencilState*>(Stream));
                 SizeOfSubobject = sizeof(PipelineStateStreamDepthStencilState);

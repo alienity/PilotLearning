@@ -187,4 +187,9 @@ namespace RHI
         Desc.BackFace         = RHITranslateD3D12(DepthStencilState.BackFace);
         return Desc;
     }
+
+    inline DXGI_SAMPLE_DESC RHITranslateD3D12(const RHISampleState& SampleState)
+    {
+        return DXGI_SAMPLE_DESC {SampleState.Count, SampleState.Quality};
+    }
 }
