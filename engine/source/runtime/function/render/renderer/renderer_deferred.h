@@ -14,14 +14,7 @@
 
 namespace Pilot
 {
-    enum AntialiasingMode
-    {
-        NONE,
-        MSAA,
-        FXAA,
-        SMAA,
-        TAA
-    };
+
 
 	class DeferredRenderer final : public Renderer
 	{
@@ -57,8 +50,6 @@ namespace Pilot
         std::shared_ptr<DisplayPass>                 mDisplayPass;
         
         std::shared_ptr<RHI::D3D12Texture> p_RenderTargetTex;
-
-        AntialiasingMode antialiasingMode = AntialiasingMode::MSAA;
 
 	private:
         WindowSystem*  windowSystem;

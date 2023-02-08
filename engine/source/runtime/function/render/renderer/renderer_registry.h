@@ -6,6 +6,7 @@
 #include "runtime/function/render/rhi/rendergraph/RenderGraphRegistry.h"
 #include "runtime/function/render/rhi/rendergraph/RenderGraph.h"
 #include "runtime/function/render/render_mesh.h"
+#include "runtime/function/render/renderer/renderer_config.h"
 
 // clang-format off
 struct Shaders
@@ -396,14 +397,11 @@ struct PipelineStates
     inline static std::shared_ptr<RHI::D3D12PipelineState> pIndirectCullSpotShadowmap;
 
     inline static std::shared_ptr<RHI::D3D12PipelineState> pIndirectDraw;
-    inline static std::shared_ptr<RHI::D3D12PipelineState> pIndirectDrawMSAA;
     inline static std::shared_ptr<RHI::D3D12PipelineState> pIndirectDrawTransparent;
-    inline static std::shared_ptr<RHI::D3D12PipelineState> pIndirectDrawTransparentMSAA;
     inline static std::shared_ptr<RHI::D3D12PipelineState> pIndirectDrawDirectionShadowmap;
     inline static std::shared_ptr<RHI::D3D12PipelineState> pIndirectDrawSpotShadowmap;
 
     inline static std::shared_ptr<RHI::D3D12PipelineState> pSkyBoxPSO;
-    inline static std::shared_ptr<RHI::D3D12PipelineState> pSkyBoxPSOMSAA;
 
     static void Compile(DXGI_FORMAT PiplineRtFormat, DXGI_FORMAT PipelineDsFormat, DXGI_FORMAT RtFormat, DXGI_FORMAT DsFormat, RHI::D3D12Device* pDevice)
     {
@@ -561,6 +559,9 @@ struct PipelineStates
             RenderTargetState.NumRenderTargets = 1;
             RenderTargetState.DSFormat         = PipelineDsFormat; // DXGI_FORMAT_D32_FLOAT;
 
+            RHISampleState SampleState;
+            SampleState.Count = EngineConfig::g_AntialiasingMode == EngineConfig::MSAA ? 4 : 1;
+
             struct PsoStream
             {
                 PipelineStateStreamRootSignature     RootSignature;
@@ -581,16 +582,10 @@ struct PipelineStates
             psoStream.PS                    = &Shaders::PS::IndirectDrawPS;
             psoStream.DepthStencilState     = DepthStencilState;
             psoStream.RenderTargetState     = RenderTargetState;
-            psoStream.SampleState           = RHISampleState{1, 0};
+            psoStream.SampleState           = SampleState;
 
             PipelineStateStreamDesc psoDesc = {sizeof(PsoStream), &psoStream};
             pIndirectDraw = std::make_shared<RHI::D3D12PipelineState>(pDevice, L"IndirectDraw", psoDesc);
-
-            psoStream.SampleState = RHISampleState{4, 0};
-
-            PipelineStateStreamDesc psoMSAADesc = {sizeof(PsoStream), &psoStream};
-            pIndirectDrawMSAA = std::make_shared<RHI::D3D12PipelineState>(pDevice, L"IndirectDrawMSAA", psoMSAADesc);
-
         }
         {
             //IndirectDrawTransparent
@@ -615,6 +610,9 @@ struct PipelineStates
             RHIBlendState BlendState;
             BlendState.RenderTargets[0] = BlendDesc0;
 
+            RHISampleState SampleState;
+            SampleState.Count = EngineConfig::g_AntialiasingMode == EngineConfig::MSAA ? 4 : 1;
+
             struct PsoStream
             {
                 PipelineStateStreamRootSignature     RootSignature;
@@ -635,15 +633,10 @@ struct PipelineStates
             psoStream.BlendState            = BlendState;
             psoStream.DepthStencilState     = DepthStencilState;
             psoStream.RenderTargetState     = RenderTargetState;
-            psoStream.SampleState           = RHISampleState{1, 0};
+            psoStream.SampleState           = SampleState;
 
             PipelineStateStreamDesc psoDesc = {sizeof(PsoStream), &psoStream};
             pIndirectDrawTransparent = std::make_shared<RHI::D3D12PipelineState>(pDevice, L"IndirectDrawTransparent", psoDesc);
-
-            psoStream.SampleState = RHISampleState{4, 0};
-
-            PipelineStateStreamDesc psoMSAADesc = {sizeof(PsoStream), &psoStream};
-            pIndirectDrawTransparentMSAA = std::make_shared<RHI::D3D12PipelineState>(pDevice, L"IndirectDrawTransparentMSAA", psoMSAADesc);
         }
         {
             RHI::D3D12InputLayout InputLayout = Pilot::MeshVertex::D3D12MeshVertexPositionNormalTangentTexture::InputLayout;
@@ -723,6 +716,9 @@ struct PipelineStates
             RenderTargetState.NumRenderTargets = 1;
             RenderTargetState.DSFormat         = PipelineDsFormat; // DXGI_FORMAT_D32_FLOAT;
 
+            RHISampleState SampleState;
+            SampleState.Count = EngineConfig::g_AntialiasingMode == EngineConfig::MSAA ? 4 : 1;
+
             struct PsoStream
             {
                 PipelineStateStreamRootSignature     RootSignature;
@@ -741,15 +737,10 @@ struct PipelineStates
             psoStream.PS                    = &Shaders::PS::SkyBoxPS;
             psoStream.DepthStencilState     = DepthStencilState;
             psoStream.RenderTargetState     = RenderTargetState;
-            psoStream.SampleState           = RHISampleState{1, 0};
+            psoStream.SampleState           = SampleState;
 
             PipelineStateStreamDesc psoDesc = {sizeof(PsoStream), &psoStream};
             pSkyBoxPSO = std::make_shared<RHI::D3D12PipelineState>(pDevice, L"SkyBox", psoDesc);
-
-            psoStream.SampleState = RHISampleState{4, 0};
-
-            PipelineStateStreamDesc psoMSAADesc = {sizeof(PsoStream), &psoStream};
-            pSkyBoxPSOMSAA = std::make_shared<RHI::D3D12PipelineState>(pDevice, L"SkyBoxMSAA", psoMSAADesc);
         }
     }
 

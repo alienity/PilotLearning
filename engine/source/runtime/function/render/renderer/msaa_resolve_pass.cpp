@@ -41,17 +41,14 @@ namespace Pilot
             context->TransitionBarrier(pResolveTargetDepth, D3D12_RESOURCE_STATE_RESOLVE_DEST);
             context->FlushResourceBarriers();
 
-            context->GetGraphicsCommandList()->ResolveSubresource(pRenderTargetColor->GetResource(),
-                                                                  D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES,
-                                                                  pResolveTargetColor->GetResource(),
-                                                                  D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES,
-                                                                  colorTexDesc.Format);
+            context->GetGraphicsCommandList()->ResolveSubresource(
+                pResolveTargetColor->GetResource(), 0, pRenderTargetColor->GetResource(), 0, colorTexDesc.Format);
 
-            context->GetGraphicsCommandList()->ResolveSubresource(pRenderTargetDepth->GetResource(),
-                                                                  D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES,
-                                                                  pResolveTargetDepth->GetResource(),
-                                                                  D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES,
-                                                                  depthTexDesc.Format);
+            context->GetGraphicsCommandList()->ResolveSubresource(pResolveTargetDepth->GetResource(),
+                                                                  0,
+                                                                  pRenderTargetDepth->GetResource(),
+                                                                  0,
+                                                                  D3D12RHIUtils::GetDSVFormat(depthTexDesc.Format));
         });
     }
 

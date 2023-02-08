@@ -20,7 +20,7 @@ namespace Pilot
         depthBufferFormat = DXGI_FORMAT_D32_FLOAT;
 
         pipleineColorFormat = DXGI_FORMAT_R32G32B32A32_FLOAT;
-        pipleineDepthFormat = DXGI_FORMAT_D32_FLOAT;
+        pipleineDepthFormat = D3D12RHIUtils::GetBaseFormat(DXGI_FORMAT_D32_FLOAT);
 
         SetViewPort(0, 0, backBufferWidth, backBufferHeight);
 
@@ -59,22 +59,21 @@ namespace Pilot
         RenderPassCommonInfo renderPassCommonInfo = {
             &renderGraphAllocator, &renderGraphRegistry, pDevice, pWindowSystem};
 
-        // Prepare common resources
-        RHI::RgTextureDesc resolveColorTexDesc = RHI::RgTextureDesc("ColorBuffer")
-                                                     .SetFormat(pipleineColorFormat)
-                                                     .SetExtent(viewport.width, viewport.height)
-                                                     .SetAllowRenderTarget()
-                                                     .SetClearValue(RHI::RgClearValue(0, 0, 0, 0));
-        RHI::RgTextureDesc resolveDepthTexDesc = RHI::RgTextureDesc("DepthBuffer")
-                                                  .SetFormat(pipleineDepthFormat)
-                                                  .SetExtent(viewport.width, viewport.height)
-                                                  .SetAllowDepthStencil()
-                                                  .SetClearValue(RHI::RgClearValue(0.0f, 0xff));
+        int sampleCount = EngineConfig::g_AntialiasingMode == EngineConfig::MSAA ? 4 : 1;
 
-        RHI::RgTextureDesc msaaColorTexDesc = resolveColorTexDesc;
-        msaaColorTexDesc.SetSampleCount(4);
-        RHI::RgTextureDesc msaaDepthTexDesc = resolveDepthTexDesc;
-        msaaDepthTexDesc.SetSampleCount(4);
+        // Prepare common resources
+        RHI::RgTextureDesc colorTexDesc = RHI::RgTextureDesc("ColorBuffer")
+                                              .SetFormat(pipleineColorFormat)
+                                              .SetExtent(viewport.width, viewport.height)
+                                              .SetAllowRenderTarget()
+                                              .SetSampleCount(sampleCount)
+                                              .SetClearValue(RHI::RgClearValue(0, 0, 0, 0));
+        RHI::RgTextureDesc depthTexDesc = RHI::RgTextureDesc("DepthBuffer")
+                                              .SetFormat(pipleineDepthFormat)
+                                              .SetExtent(viewport.width, viewport.height)
+                                              .SetAllowDepthStencil()
+                                              .SetSampleCount(sampleCount)
+                                              .SetClearValue(RHI::RgClearValue(0.0f, 0xff));
 
         // Cull pass
         {
@@ -85,8 +84,8 @@ namespace Pilot
         // Opaque drawing pass
         {
             IndirectDrawPass::DrawPassInitInfo drawPassInit;
-            drawPassInit.colorTexDesc = msaaColorTexDesc;
-            drawPassInit.depthTexDesc = msaaDepthTexDesc;
+            drawPassInit.colorTexDesc = colorTexDesc;
+            drawPassInit.depthTexDesc = depthTexDesc;
 
             mIndirectOpaqueDrawPass = std::make_shared<IndirectDrawPass>();
             mIndirectOpaqueDrawPass->setCommonInfo(renderPassCommonInfo);
@@ -95,8 +94,8 @@ namespace Pilot
         // Skybox pass
         {
             SkyBoxPass::SkyBoxInitInfo drawPassInit;
-            drawPassInit.colorTexDesc = msaaColorTexDesc;
-            drawPassInit.depthTexDesc = msaaDepthTexDesc;
+            drawPassInit.colorTexDesc = colorTexDesc;
+            drawPassInit.depthTexDesc = depthTexDesc;
 
             mSkyBoxPass = std::make_shared<SkyBoxPass>();
             mSkyBoxPass->setCommonInfo(renderPassCommonInfo);
@@ -105,8 +104,8 @@ namespace Pilot
         // Transparent drawing pass
         {
             IndirectDrawTransparentPass::DrawPassInitInfo drawPassInit;
-            drawPassInit.colorTexDesc = msaaColorTexDesc;
-            drawPassInit.depthTexDesc = msaaDepthTexDesc;
+            drawPassInit.colorTexDesc = colorTexDesc;
+            drawPassInit.depthTexDesc = depthTexDesc;
 
             mIndirectTransparentDrawPass = std::make_shared<IndirectDrawTransparentPass>();
             mIndirectTransparentDrawPass->setCommonInfo(renderPassCommonInfo);
@@ -114,6 +113,11 @@ namespace Pilot
         }
         // resolve pass
         {
+            RHI::RgTextureDesc resolveColorTexDesc = colorTexDesc;
+            resolveColorTexDesc.SetSampleCount(1);
+            RHI::RgTextureDesc resolveDepthTexDesc = depthTexDesc;
+            resolveDepthTexDesc.SetSampleCount(1);
+
             MSAAResolvePass::MSAAResolveInitInfo resolvePassInit;
             resolvePassInit.colorTexDesc = resolveColorTexDesc;
             resolvePassInit.depthTexDesc = resolveDepthTexDesc;
@@ -245,7 +249,7 @@ namespace Pilot
         RHI::RgResourceHandle inputRTColorHandle = mDrawOutputParams.renderTargetColorHandle;
 
         // resolve rendertarget
-        if (antialiasingMode == AntialiasingMode::MSAA)
+        if (EngineConfig::g_AntialiasingMode == EngineConfig::MSAA)
         {
             MSAAResolvePass::DrawInputParameters  mMSAAResolveIntputParams;
             MSAAResolvePass::DrawOutputParameters mMSAAResolveOutputParams;

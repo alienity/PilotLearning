@@ -109,8 +109,9 @@ namespace RHI
             if (Desc.AllowDepthStencil)
             {
                 textureFlags |= RHISurfaceCreateDepthStencil;
-                clearValue = CD3DX12_CLEAR_VALUE(
-                    Desc.Format, Desc.ClearValue.DepthStencil.Depth, Desc.ClearValue.DepthStencil.Stencil);
+                clearValue = CD3DX12_CLEAR_VALUE(D3D12RHIUtils::GetDSVFormat(Desc.Format),
+                                                 Desc.ClearValue.DepthStencil.Depth,
+                                                 Desc.ClearValue.DepthStencil.Stencil);
             }
             if (Desc.AllowUnorderedAccess)
             {
