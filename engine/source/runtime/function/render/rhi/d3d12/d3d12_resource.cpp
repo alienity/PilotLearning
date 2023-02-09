@@ -791,8 +791,8 @@ namespace RHI
                                                          std::optional<CD3DX12_CLEAR_VALUE> clearValue,
                                                          D3D12_SUBRESOURCE_DATA             initData)
     {
-        RHIRenderSurfaceBaseDesc desc = {
-            width, height, 1, sampleCount, numMips, flags, RHITexDim2D, format, true, false};
+        DXGI_FORMAT clearFormat = clearValue != std::nullopt ? clearValue.value().Format : format;
+        RHIRenderSurfaceBaseDesc desc = {width, height, 1, sampleCount, numMips, flags, RHITexDim2D, format, clearFormat, true, false};
         return Create(Parent, desc, name, initState, clearValue, {initData});
     }
 
@@ -809,8 +809,8 @@ namespace RHI
                                                               std::optional<CD3DX12_CLEAR_VALUE>  clearValue,
                                                               std::vector<D3D12_SUBRESOURCE_DATA> initDatas)
     {
-        RHIRenderSurfaceBaseDesc desc = {
-            width, height, arraySize, sampleCount, numMips, flags, RHITexDim2DArray, format, true, false};
+        DXGI_FORMAT clearFormat = clearValue != std::nullopt ? clearValue.value().Format : format;
+        RHIRenderSurfaceBaseDesc desc = {width, height, arraySize, sampleCount, numMips, flags, RHITexDim2DArray, format, clearFormat, true, false};
         return Create(Parent, desc, name, initState, clearValue, initDatas);
     }
 
@@ -826,9 +826,9 @@ namespace RHI
                                                               std::optional<CD3DX12_CLEAR_VALUE>  clearValue,
                                                               std::vector<D3D12_SUBRESOURCE_DATA> initDatas)
     {
+        DXGI_FORMAT clearFormat = clearValue != std::nullopt ? clearValue.value().Format : format;
         UINT cubeFaces = 6;
-        RHIRenderSurfaceBaseDesc desc = {
-            width, height, cubeFaces, sampleCount, numMips, flags, RHITexDimCube, format, true, false};
+        RHIRenderSurfaceBaseDesc desc = {width, height, cubeFaces, sampleCount, numMips, flags, RHITexDimCube, format, clearFormat, true, false};
         return Create(Parent, desc, name, initState, clearValue, initDatas);
     }
 
@@ -845,10 +845,10 @@ namespace RHI
                                                                    std::optional<CD3DX12_CLEAR_VALUE>  clearValue,
                                                                    std::vector<D3D12_SUBRESOURCE_DATA> initDatas)
     {
+        DXGI_FORMAT clearFormat = clearValue != std::nullopt ? clearValue.value().Format : format;
         UINT cubeFaces = 6;
         UINT cubeArrayFaces = cubeFaces * arraySize;
-        RHIRenderSurfaceBaseDesc desc = {
-            width, height, cubeArrayFaces, sampleCount, numMips, flags, RHITexDimCubeArray, format, true, false};
+        RHIRenderSurfaceBaseDesc desc = {width, height, cubeArrayFaces, sampleCount, numMips, flags, RHITexDimCubeArray, format, clearFormat, true, false};
         return Create(Parent, desc, name, initState, clearValue, initDatas);
     }
 
@@ -865,8 +865,9 @@ namespace RHI
                                                          std::optional<CD3DX12_CLEAR_VALUE> clearValue,
                                                          D3D12_SUBRESOURCE_DATA             initData)
     {
-        RHIRenderSurfaceBaseDesc desc = {
-            width, height, depth, sampleCount, numMips, flags, RHITexDim3D, format, true, false};
+        DXGI_FORMAT clearFormat = clearValue != std::nullopt ? clearValue.value().Format : format;
+        UINT cubeFaces = 6;
+        RHIRenderSurfaceBaseDesc desc = {width, height, depth, sampleCount, numMips, flags, RHITexDim3D, format, clearFormat, true, false};
         return Create(Parent, desc, name, initState, clearValue, {initData});
     }
 
@@ -887,6 +888,7 @@ namespace RHI
                                  1,
                                  RHISurfaceCreateRenderTarget,
                                  RHITexDim2D,
+                                 resourceDesc.Format,
                                  resourceDesc.Format,
                                  true,
                                  true};

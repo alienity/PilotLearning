@@ -1,4 +1,5 @@
 #pragma once
+#include <cstdint>
 
 namespace EngineConfig
 {
@@ -11,7 +12,9 @@ namespace EngineConfig
         TAA
     };
 
+    extern std::uint32_t    g_MSAASampleCount;
     extern AntialiasingMode g_AntialiasingMode;
+    
 
 }
 

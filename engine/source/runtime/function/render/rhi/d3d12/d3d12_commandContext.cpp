@@ -195,7 +195,7 @@ namespace RHI
 
     void D3D12CommandContext::TransitionBarrier(D3D12Resource* Resource, D3D12_RESOURCE_STATES State, UINT Subresource, bool FlushImmediate)
     {
-        D3D12_RESOURCE_STATES trackedResourceState = m_CommandListHandle.GetResourceStateTracked(Resource);
+        D3D12_RESOURCE_STATES trackedResourceState = m_CommandListHandle.GetResourceStateTracked(Resource, Subresource);
 
         if (trackedResourceState != State)
         {

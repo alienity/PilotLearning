@@ -90,27 +90,29 @@ namespace RHI
 	struct RgClearValue
 	{
         RgClearValue() noexcept = default;
-        const RgClearValue(const std::float_t Color[4])
+        const RgClearValue(const std::float_t Color[4], DXGI_FORMAT Format = DXGI_FORMAT_UNKNOWN)
         {
             this->Color[0] = Color[0];
             this->Color[1] = Color[1];
             this->Color[2] = Color[2];
             this->Color[3] = Color[3];
+            this->ClearFormat = Format;
         }
-        const RgClearValue(float r, float g, float b, float a)
+        const RgClearValue(float r, float g, float b, float a, DXGI_FORMAT Format = DXGI_FORMAT_UNKNOWN)
         {
             this->Color[0] = r;
             this->Color[1] = g;
             this->Color[2] = b;
             this->Color[3] = a;
+            this->ClearFormat = Format;
         }
-        const RgClearValue(std::float_t Depth, std::uint8_t Stencil) : DepthStencil {Depth, Stencil} {}
+        const RgClearValue(std::float_t Depth, std::uint8_t Stencil, DXGI_FORMAT Format = DXGI_FORMAT_UNKNOWN) :
+            DepthStencil {Depth, Stencil}, ClearFormat(Format)
+        {}
 
-        union
-        {
-            std::float_t        Color[4];
-            RgDepthStencilValue DepthStencil;
-        };
+        std::float_t        Color[4];
+        RgDepthStencilValue DepthStencil;
+        DXGI_FORMAT ClearFormat;
 	};
 
 	struct RgTextureDesc

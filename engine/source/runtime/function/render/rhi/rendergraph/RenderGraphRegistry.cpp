@@ -104,14 +104,18 @@ namespace RHI
             if (Desc.AllowRenderTarget)
             {
                 textureFlags |= RHISurfaceCreateRenderTarget;
-                clearValue = CD3DX12_CLEAR_VALUE(Desc.Format, Desc.ClearValue.Color);
+                DXGI_FORMAT format = Desc.ClearValue.ClearFormat;
+                if (format == DXGI_FORMAT_UNKNOWN)
+                    format = Desc.Format;
+                clearValue = CD3DX12_CLEAR_VALUE(format, Desc.ClearValue.Color);
             }
             if (Desc.AllowDepthStencil)
             {
                 textureFlags |= RHISurfaceCreateDepthStencil;
-                clearValue = CD3DX12_CLEAR_VALUE(D3D12RHIUtils::GetDSVFormat(Desc.Format),
-                                                 Desc.ClearValue.DepthStencil.Depth,
-                                                 Desc.ClearValue.DepthStencil.Stencil);
+                DXGI_FORMAT format = Desc.ClearValue.ClearFormat;
+                if (format == DXGI_FORMAT_UNKNOWN)
+                    format = Desc.Format;
+                clearValue = CD3DX12_CLEAR_VALUE(format, Desc.ClearValue.DepthStencil.Depth, Desc.ClearValue.DepthStencil.Stencil);
             }
             if (Desc.AllowUnorderedAccess)
             {
@@ -126,6 +130,7 @@ namespace RHI
                                                     textureFlags,
                                                     textureDim,
                                                     Desc.Format,
+                                                    clearValue.Format,
                                                     true,
                                                     false};
 

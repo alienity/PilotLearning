@@ -35,20 +35,20 @@ namespace Pilot
             RHI::D3D12Texture* pResolveTargetColor = registry->GetD3D12Texture(drawPassOutput->resolveTargetColorHandle);
             RHI::D3D12Texture* pResolveTargetDepth = registry->GetD3D12Texture(drawPassOutput->resolveTargetDepthHandle);
 
-            context->TransitionBarrier(pRenderTargetColor, D3D12_RESOURCE_STATE_RESOLVE_SOURCE);
-            context->TransitionBarrier(pRenderTargetDepth, D3D12_RESOURCE_STATE_RESOLVE_SOURCE);
-            context->TransitionBarrier(pResolveTargetColor, D3D12_RESOURCE_STATE_RESOLVE_DEST);
-            context->TransitionBarrier(pResolveTargetDepth, D3D12_RESOURCE_STATE_RESOLVE_DEST);
+            context->TransitionBarrier(pRenderTargetColor, D3D12_RESOURCE_STATE_RESOLVE_SOURCE, 0);
+            context->TransitionBarrier(pRenderTargetDepth, D3D12_RESOURCE_STATE_RESOLVE_SOURCE, 0);
+            context->TransitionBarrier(pResolveTargetColor, D3D12_RESOURCE_STATE_RESOLVE_DEST, 0);
+            context->TransitionBarrier(pResolveTargetDepth, D3D12_RESOURCE_STATE_RESOLVE_DEST, 0);
             context->FlushResourceBarriers();
 
             context->GetGraphicsCommandList()->ResolveSubresource(
                 pResolveTargetColor->GetResource(), 0, pRenderTargetColor->GetResource(), 0, colorTexDesc.Format);
 
-            context->GetGraphicsCommandList()->ResolveSubresource(pResolveTargetDepth->GetResource(),
-                                                                  0,
-                                                                  pRenderTargetDepth->GetResource(),
-                                                                  0,
-                                                                  D3D12RHIUtils::GetDSVFormat(depthTexDesc.Format));
+            //context->GetGraphicsCommandList()->ResolveSubresource(pResolveTargetDepth->GetResource(),
+            //                                                      0,
+            //                                                      pRenderTargetDepth->GetResource(),
+            //                                                      0,
+            //                                                      D3D12RHIUtils::GetDSVFormat(depthTexDesc.Format));
         });
     }
 

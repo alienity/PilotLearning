@@ -20,7 +20,7 @@ namespace Pilot
         depthBufferFormat = DXGI_FORMAT_D32_FLOAT;
 
         pipleineColorFormat = DXGI_FORMAT_R32G32B32A32_FLOAT;
-        pipleineDepthFormat = D3D12RHIUtils::GetBaseFormat(DXGI_FORMAT_D32_FLOAT);
+        pipleineDepthFormat = DXGI_FORMAT_D32_FLOAT;
 
         SetViewPort(0, 0, backBufferWidth, backBufferHeight);
 
@@ -59,7 +59,7 @@ namespace Pilot
         RenderPassCommonInfo renderPassCommonInfo = {
             &renderGraphAllocator, &renderGraphRegistry, pDevice, pWindowSystem};
 
-        int sampleCount = EngineConfig::g_AntialiasingMode == EngineConfig::MSAA ? 4 : 1;
+        int sampleCount = EngineConfig::g_AntialiasingMode == EngineConfig::MSAA ? EngineConfig::g_MSAASampleCount : 1;
 
         // Prepare common resources
         RHI::RgTextureDesc colorTexDesc = RHI::RgTextureDesc("ColorBuffer")

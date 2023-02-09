@@ -616,6 +616,7 @@ namespace RHI
         RHISurfaceCreateFlags flags;
         RHITextureDimension   dim;
         DXGI_FORMAT           graphicsFormat;
+        DXGI_FORMAT           clearFormat;
         bool                  colorSurface;
         bool                  backBuffer;
     };
