@@ -56,10 +56,9 @@ namespace Pilot
 
     void DeferredRenderer::InitPass()
     {
-        RenderPassCommonInfo renderPassCommonInfo = {
-            &renderGraphAllocator, &renderGraphRegistry, pDevice, pWindowSystem};
+        RenderPassCommonInfo renderPassCommonInfo = {&renderGraphAllocator, &renderGraphRegistry, pDevice, pWindowSystem};
 
-        int sampleCount = EngineConfig::g_AntialiasingMode == EngineConfig::MSAA ? EngineConfig::g_MSAASampleCount : 1;
+        int sampleCount = EngineConfig::g_AntialiasingMode == EngineConfig::MSAA ? EngineConfig::g_MASSConfig.m_MSAASampleCount : 1;
 
         // Prepare common resources
         RHI::RgTextureDesc colorTexDesc = RHI::RgTextureDesc("ColorBuffer")
@@ -111,21 +110,6 @@ namespace Pilot
             mIndirectTransparentDrawPass->setCommonInfo(renderPassCommonInfo);
             mIndirectTransparentDrawPass->initialize(drawPassInit);
         }
-        // resolve pass
-        {
-            RHI::RgTextureDesc resolveColorTexDesc = colorTexDesc;
-            resolveColorTexDesc.SetSampleCount(1);
-            RHI::RgTextureDesc resolveDepthTexDesc = depthTexDesc;
-            resolveDepthTexDesc.SetSampleCount(1);
-
-            MSAAResolvePass::MSAAResolveInitInfo resolvePassInit;
-            resolvePassInit.colorTexDesc = resolveColorTexDesc;
-            resolvePassInit.depthTexDesc = resolveDepthTexDesc;
-
-            mResolvePass = std::make_shared<MSAAResolvePass>();
-            mResolvePass->setCommonInfo(renderPassCommonInfo);
-            mResolvePass->initialize(resolvePassInit);
-        }
         // shadow pass
         {
             IndirectShadowPass::ShadowPassInitInfo shadowPassInit;
@@ -133,6 +117,19 @@ namespace Pilot
             mIndirectShadowPass = std::make_shared<IndirectShadowPass>();
             mIndirectShadowPass->setCommonInfo(renderPassCommonInfo);
             mIndirectShadowPass->initialize(shadowPassInit);
+        }
+        // postprocess pass
+        {
+            RHI::RgTextureDesc resolveColorTexDesc = colorTexDesc;
+            resolveColorTexDesc.SetSampleCount(1);
+
+            PostprocessPasses::PostprocessInitInfo postInitInfo;
+            postInitInfo.colorTexDesc = resolveColorTexDesc;
+            postInitInfo.m_ShaderCompiler = pCompiler;
+
+            mPostprocessPasses = std::make_shared<PostprocessPasses>();
+            mPostprocessPasses->setCommonInfo(renderPassCommonInfo);
+            mPostprocessPasses->initialize(postInitInfo);
         }
         // UI drawing pass
         {
@@ -169,7 +166,7 @@ namespace Pilot
         mIndirectOpaqueDrawPass      = nullptr;
         mSkyBoxPass                  = nullptr;
         mIndirectTransparentDrawPass = nullptr;
-        mResolvePass                 = nullptr;
+        mPostprocessPasses           = nullptr;
         mDisplayPass                 = nullptr;
 
         // Release global objects
@@ -246,27 +243,23 @@ namespace Pilot
         mDrawTransOutputParams.renderTargetDepthHandle = mDrawOutputParams.renderTargetDepthHandle;
         mIndirectTransparentDrawPass->update(graph, mDrawTransIntputParams, mDrawTransOutputParams);
 
-        RHI::RgResourceHandle inputRTColorHandle = mDrawOutputParams.renderTargetColorHandle;
+        RHI::RgResourceHandle outputRTColorHandle = mDrawOutputParams.renderTargetColorHandle;
 
-        // resolve rendertarget
-        if (EngineConfig::g_AntialiasingMode == EngineConfig::MSAA)
-        {
-            MSAAResolvePass::DrawInputParameters  mMSAAResolveIntputParams;
-            MSAAResolvePass::DrawOutputParameters mMSAAResolveOutputParams;
+        // postprocess rendertarget
+        PostprocessPasses::PostprocessInputParameters  mPostprocessIntputParams;
+        PostprocessPasses::PostprocessOutputParameters mPostprocessOutputParams;
 
-            mMSAAResolveIntputParams.renderTargetColorHandle = mDrawOutputParams.renderTargetColorHandle;
-            mMSAAResolveIntputParams.renderTargetDepthHandle = mDrawOutputParams.renderTargetDepthHandle;
+        mPostprocessIntputParams.renderTargetColorHandle = mDrawTransOutputParams.renderTargetColorHandle;
 
-            mResolvePass->update(graph, mMSAAResolveIntputParams, mMSAAResolveOutputParams);
+        mPostprocessPasses->update(graph, mPostprocessIntputParams, mPostprocessOutputParams);
 
-            inputRTColorHandle = mMSAAResolveOutputParams.resolveTargetColorHandle;
-        }
+        outputRTColorHandle = mPostprocessOutputParams.postTargetColorHandle;
 
         // display
         DisplayPass::DisplayInputParameters  mDisplayIntputParams;
         DisplayPass::DisplayOutputParameters mDisplayOutputParams;
 
-        mDisplayIntputParams.inputRTColorHandle      = inputRTColorHandle;
+        mDisplayIntputParams.inputRTColorHandle      = outputRTColorHandle;
         mDisplayOutputParams.renderTargetColorHandle = renderTargetColorHandle;
 
         mDisplayPass->update(graph, mDisplayIntputParams, mDisplayOutputParams);

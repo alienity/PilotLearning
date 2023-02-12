@@ -983,7 +983,8 @@ namespace RHI
 
     std::shared_ptr<D3D12UnorderedAccessView> D3D12Texture::GetDefaultUAV()
     {
-        return CreateUAV(D3D12UnorderedAccessView::GetDesc(this, m_Desc.depthOrArray, m_Desc.mipCount));
+        //return CreateUAV(D3D12UnorderedAccessView::GetDesc(this, m_Desc.depthOrArray, m_Desc.mipCount));
+        return CreateUAV(D3D12UnorderedAccessView::GetDesc(this, 0, 0));
     }
 
     std::shared_ptr<D3D12RenderTargetView> D3D12Texture::GetDefaultRTV()

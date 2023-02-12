@@ -21,11 +21,11 @@ namespace Pilot
             DrawInputParameters()
             {
                 renderTargetColorHandle.Invalidate();
-                renderTargetDepthHandle.Invalidate();
+                //renderTargetDepthHandle.Invalidate();
             }
 
             RHI::RgResourceHandle renderTargetColorHandle;
-            RHI::RgResourceHandle renderTargetDepthHandle;
+            //RHI::RgResourceHandle renderTargetDepthHandle;
         };
 
         struct DrawOutputParameters : public PassOutput
@@ -33,11 +33,11 @@ namespace Pilot
             DrawOutputParameters()
             {
                 resolveTargetColorHandle.Invalidate();
-                resolveTargetDepthHandle.Invalidate();
+                //resolveTargetDepthHandle.Invalidate();
             }
 
             RHI::RgResourceHandle resolveTargetColorHandle;
-            RHI::RgResourceHandle resolveTargetDepthHandle;
+            //RHI::RgResourceHandle resolveTargetDepthHandle;
         };
 
     public:
@@ -52,7 +52,7 @@ namespace Pilot
 
     private:
         RHI::RgTextureDesc colorTexDesc;
-        RHI::RgTextureDesc depthTexDesc;
+        //RHI::RgTextureDesc depthTexDesc;
 	};
 }
 

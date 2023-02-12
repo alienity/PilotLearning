@@ -9,7 +9,7 @@
 #include "runtime/function/render/renderer/indirect_draw_pass.h"
 #include "runtime/function/render/renderer/skybox_pass.h"
 #include "runtime/function/render/renderer/indirect_draw_transparent_pass.h"
-#include "runtime/function/render/renderer/msaa_resolve_pass.h"
+#include "runtime/function/render/renderer/postprocess_passes.h"
 #include "runtime/function/render/renderer/indirect_display_pass.h"
 
 namespace Pilot
@@ -46,7 +46,7 @@ namespace Pilot
         std::shared_ptr<IndirectDrawPass>            mIndirectOpaqueDrawPass;
         std::shared_ptr<SkyBoxPass>                  mSkyBoxPass;
         std::shared_ptr<IndirectDrawTransparentPass> mIndirectTransparentDrawPass;
-        std::shared_ptr<MSAAResolvePass>             mResolvePass;
+        std::shared_ptr<PostprocessPasses>           mPostprocessPasses;
         std::shared_ptr<DisplayPass>                 mDisplayPass;
         
         std::shared_ptr<RHI::D3D12Texture> p_RenderTargetTex;

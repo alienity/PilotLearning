@@ -3,8 +3,10 @@
 namespace EngineConfig
 {
 
-    std::uint32_t    g_MSAASampleCount  = 4;
-    AntialiasingMode g_AntialiasingMode = AntialiasingMode::MSAA;
+    AntialiasingMode g_AntialiasingMode = AntialiasingMode::FXAA;
 
+    MSAAConfig g_MASSConfig = {4};
+
+    FXAAConfig g_FXAAConfig = FXAAConfig();
 
 }

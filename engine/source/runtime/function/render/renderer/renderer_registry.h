@@ -560,7 +560,7 @@ struct PipelineStates
             RenderTargetState.DSFormat         = PipelineDsFormat; // DXGI_FORMAT_D32_FLOAT;
 
             RHISampleState SampleState;
-            SampleState.Count = EngineConfig::g_AntialiasingMode == EngineConfig::MSAA ? EngineConfig::g_MSAASampleCount : 1;
+            SampleState.Count = EngineConfig::g_AntialiasingMode == EngineConfig::MSAA ? EngineConfig::g_MASSConfig.m_MSAASampleCount : 1;
 
             struct PsoStream
             {
@@ -611,7 +611,7 @@ struct PipelineStates
             BlendState.RenderTargets[0] = BlendDesc0;
 
             RHISampleState SampleState;
-            SampleState.Count = EngineConfig::g_AntialiasingMode == EngineConfig::MSAA ? EngineConfig::g_MSAASampleCount : 1;
+            SampleState.Count = EngineConfig::g_AntialiasingMode == EngineConfig::MSAA ? EngineConfig::g_MASSConfig.m_MSAASampleCount : 1;
 
             struct PsoStream
             {
@@ -717,7 +717,7 @@ struct PipelineStates
             RenderTargetState.DSFormat         = PipelineDsFormat; // DXGI_FORMAT_D32_FLOAT;
 
             RHISampleState SampleState;
-            SampleState.Count = EngineConfig::g_AntialiasingMode == EngineConfig::MSAA ? EngineConfig::g_MSAASampleCount : 1;
+            SampleState.Count = EngineConfig::g_AntialiasingMode == EngineConfig::MSAA ? EngineConfig::g_MASSConfig.m_MSAASampleCount : 1;
 
             struct PsoStream
             {
