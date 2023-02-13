@@ -50,9 +50,12 @@ namespace EngineConfig
 
     extern FXAAConfig g_FXAAConfig;
 
-    
-    
+    struct SMAAConfig
+    {
 
+    };
+    
+    extern SMAAConfig g_SMAAConfig;
 }
 
 // clang-format off
