@@ -121,6 +121,7 @@ namespace Pilot
         // postprocess pass
         {
             RHI::RgTextureDesc resolveColorTexDesc = colorTexDesc;
+            resolveColorTexDesc.SetAllowUnorderedAccess();
             resolveColorTexDesc.SetSampleCount(1);
 
             PostprocessPasses::PostprocessInitInfo postInitInfo;

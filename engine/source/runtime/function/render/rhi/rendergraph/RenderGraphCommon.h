@@ -164,21 +164,21 @@ namespace RHI
 			return *this;
 		}
 
-		RgTextureDesc& SetAllowRenderTarget()
+		RgTextureDesc& SetAllowRenderTarget(bool allow = true)
 		{
-			AllowRenderTarget = true;
+            AllowRenderTarget = allow;
 			return *this;
 		}
 
-		RgTextureDesc& SetAllowDepthStencil()
+		RgTextureDesc& SetAllowDepthStencil(bool allow = true)
 		{
-			AllowDepthStencil = true;
+			AllowDepthStencil = allow;
 			return *this;
 		}
 
-		RgTextureDesc& SetAllowUnorderedAccess()
+		RgTextureDesc& SetAllowUnorderedAccess(bool allow = true)
 		{
-			AllowUnorderedAccess = true;
+            AllowUnorderedAccess = allow;
 			return *this;
 		}
 

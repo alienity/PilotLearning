@@ -99,7 +99,8 @@ namespace RHI
             }
 
 			RHISurfaceCreateFlags textureFlags = RHISurfaceCreateFlagNone;
-			CD3DX12_CLEAR_VALUE clearValue;
+            std::optional<CD3DX12_CLEAR_VALUE> pClearValue;
+            //CD3DX12_CLEAR_VALUE clearValue = CD3DX12_CLEAR_VALUE();
 
             if (Desc.AllowRenderTarget)
             {
@@ -107,7 +108,7 @@ namespace RHI
                 DXGI_FORMAT format = Desc.ClearValue.ClearFormat;
                 if (format == DXGI_FORMAT_UNKNOWN)
                     format = Desc.Format;
-                clearValue = CD3DX12_CLEAR_VALUE(format, Desc.ClearValue.Color);
+                pClearValue = CD3DX12_CLEAR_VALUE(format, Desc.ClearValue.Color);
             }
             if (Desc.AllowDepthStencil)
             {
@@ -115,12 +116,14 @@ namespace RHI
                 DXGI_FORMAT format = Desc.ClearValue.ClearFormat;
                 if (format == DXGI_FORMAT_UNKNOWN)
                     format = Desc.Format;
-                clearValue = CD3DX12_CLEAR_VALUE(format, Desc.ClearValue.DepthStencil.Depth, Desc.ClearValue.DepthStencil.Stencil);
+                pClearValue = CD3DX12_CLEAR_VALUE(format, Desc.ClearValue.DepthStencil.Depth, Desc.ClearValue.DepthStencil.Stencil);
             }
             if (Desc.AllowUnorderedAccess)
             {
                 textureFlags |= RHISurfaceCreateRandomWrite;
             }
+
+			DXGI_FORMAT clearFormat = pClearValue.has_value() ? pClearValue->Format : Desc.Format;
 
 			RHIRenderSurfaceBaseDesc textureDesc = {Desc.Width,
                                                     Desc.Height,
@@ -130,14 +133,14 @@ namespace RHI
                                                     textureFlags,
                                                     textureDim,
                                                     Desc.Format,
-                                                    clearValue.Format,
+                                                    clearFormat,
                                                     true,
                                                     false};
 
 			std::wstring textureName = std::wstring(RgTexture.Desc.Name.begin(), RgTexture.Desc.Name.end());
 
 			 pTextures[i] = D3D12Texture::Create(
-                Device->GetLinkedDevice(), textureDesc, textureName, D3D12_RESOURCE_STATE_COMMON, clearValue);
+                Device->GetLinkedDevice(), textureDesc, textureName, D3D12_RESOURCE_STATE_COMMON, pClearValue);
 		}
 	}
 

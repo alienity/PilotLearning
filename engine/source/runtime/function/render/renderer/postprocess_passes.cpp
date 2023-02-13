@@ -10,6 +10,7 @@ namespace Pilot
 	void PostprocessPasses::initialize(const PostprocessInitInfo& init_info)
     {
         colorTexDesc = init_info.colorTexDesc;
+        colorTexDesc.SetAllowRenderTarget(false);
 
         RenderPassCommonInfo renderPassCommonInfo = {m_RenderGraphAllocator, m_RenderGraphRegistry, m_Device, m_WindowSystem};
 

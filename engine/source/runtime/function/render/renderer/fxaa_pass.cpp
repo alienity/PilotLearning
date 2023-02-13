@@ -13,6 +13,7 @@ namespace Pilot
 	{
         mTmpColorTexDesc = init_info.m_ColorTexDesc;
         mTmpColorTexDesc.SetAllowUnorderedAccess();
+        mTmpColorTexDesc.SetAllowRenderTarget(false);
 
         ShaderCompiler*       m_ShaderCompiler = init_info.m_ShaderCompiler;
         std::filesystem::path m_ShaderRootPath = init_info.m_ShaderRootPath;
@@ -23,7 +24,7 @@ namespace Pilot
 
         {
             RHI::RootSignatureDesc rootSigDesc = RHI::RootSignatureDesc()
-                                                     .Add32BitConstants<0, 0>(1)
+                                                     .Add32BitConstants<0, 0>(2)
                                                      .AllowResourceDescriptorHeapIndexing()
                                                      .AllowSampleDescriptorHeapIndexing();
 
@@ -93,9 +94,35 @@ namespace Pilot
         DrawInputParameters  drawPassInput  = passInput;
         DrawOutputParameters drawPassOutput = passOutput;
 
+        RHI::RgResourceHandle mTmpColorHandle = graph.Create<RHI::D3D12Texture>(mTmpColorTexDesc);
+
+        RHI::RenderPass& fxaaToLuminancePass = graph.AddRenderPass("FXAAToLuminance");
+
+        fxaaToLuminancePass.Read(drawPassInput.inputColorHandle);
+        fxaaToLuminancePass.Write(mTmpColorHandle);
+
+        fxaaToLuminancePass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
+            RHI::D3D12ComputeContext* computeContext = context->GetComputeContext();
+
+            RHI::D3D12Texture*             pInputColor = registry->GetD3D12Texture(drawPassInput.inputColorHandle);
+            RHI::D3D12ShaderResourceView*  rtSRVView   = pInputColor->GetDefaultSRV().get();
+            RHI::D3D12Texture*             pTempColor  = registry->GetD3D12Texture(mTmpColorHandle);
+            RHI::D3D12UnorderedAccessView* tmpUAVView  = pTempColor->GetDefaultUAV().get();
+
+            //computeContext->TransitionBarrier(pInputColor, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+            //computeContext->TransitionBarrier(pTempColor, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+            ////computeContext->InsertUAVBarrier(pTempColor);
+            computeContext->SetRootSignature(pFXAAToLuminanceSignature.get());
+            computeContext->SetPipelineState(pFXAAToLuminancePSO.get());
+            computeContext->SetConstants(0, rtSRVView->GetIndex(), tmpUAVView->GetIndex());
+            computeContext->Dispatch2D(pInputColor->GetWidth(), pInputColor->GetHeight(), 8);
+        });
+
         RHI::RenderPass& fxaapass = graph.AddRenderPass("FXAA");
 
-        initializeTmpTarget(graph);
+        fxaapass.Read(drawPassInput.inputColorHandle);
+        fxaapass.Read(mTmpColorHandle);
+        fxaapass.Write(drawPassOutput.targetColorHandle);
 
         fxaapass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
 
@@ -104,24 +131,14 @@ namespace Pilot
             RHI::D3D12Texture* pInputColor = registry->GetD3D12Texture(drawPassInput.inputColorHandle);
             RHI::D3D12ShaderResourceView* rtSRVView = pInputColor->GetDefaultSRV().get();
             RHI::D3D12Texture* pTempColor = registry->GetD3D12Texture(mTmpColorHandle);
-            RHI::D3D12UnorderedAccessView* tmpUAVView  = pTempColor->GetDefaultUAV().get();
-
-            computeContext->TransitionBarrier(pInputColor, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-            computeContext->InsertUAVBarrier(pInputColor);
-            computeContext->SetRootSignature(pFXAAToLuminanceSignature.get());
-            computeContext->SetPipelineState(pFXAAToLuminancePSO.get());
-            computeContext->SetConstants(0, rtSRVView->GetIndex(), tmpUAVView->GetIndex());
-            computeContext->Dispatch2D(pInputColor->GetWidth(), pInputColor->GetHeight(), 8);
-            
-            //============================================================================================
             RHI::D3D12ShaderResourceView* tmpSRVView = pTempColor->GetDefaultSRV().get();
 
             RHI::D3D12Texture* pOutputColor = registry->GetD3D12Texture(drawPassOutput.targetColorHandle);
             RHI::D3D12UnorderedAccessView* rtOutputUAVView = pOutputColor->GetDefaultUAV().get();
 
-            computeContext->TransitionBarrier(pInputColor, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-            computeContext->TransitionBarrier(pOutputColor, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-            computeContext->InsertUAVBarrier(pOutputColor);
+            //computeContext->TransitionBarrier(pInputColor, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+            //computeContext->TransitionBarrier(pOutputColor, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+            ////computeContext->InsertUAVBarrier(pOutputColor);
             computeContext->SetRootSignature(pFXAALuminanceSignature.get());
             computeContext->SetPipelineState(pFXAALuminancePSO.get());
 
@@ -157,12 +174,4 @@ namespace Pilot
         pFXAAGreenPSO       = nullptr;
     }
 
-    bool FXAAPass::initializeTmpTarget(RHI::RenderGraph& graph)
-    {
-        if (!mTmpColorHandle.IsValid())
-        {
-            mTmpColorHandle = graph.Create<RHI::D3D12Texture>(mTmpColorTexDesc);
-        }
-        return true;
-    }
 }

@@ -45,9 +45,6 @@ namespace Pilot
         void update(RHI::RenderGraph& graph, DrawInputParameters& passInput, DrawOutputParameters& passOutput);
         void destroy() override final;
 
-    protected:
-        bool initializeTmpTarget(RHI::RenderGraph& graph);
-
     private:
         Shader FXAAToLuminanceCS;
         Shader FXAALuminanceCS;
@@ -61,8 +58,7 @@ namespace Pilot
         std::shared_ptr<RHI::D3D12PipelineState> pFXAALuminancePSO;
         std::shared_ptr<RHI::D3D12PipelineState> pFXAAGreenPSO;
 
-        RHI::RgTextureDesc    mTmpColorTexDesc;
-        RHI::RgResourceHandle mTmpColorHandle;
+        RHI::RgTextureDesc mTmpColorTexDesc;
 
 	};
 }
