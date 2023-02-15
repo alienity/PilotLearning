@@ -54,8 +54,34 @@ namespace EngineConfig
     {
 
     };
-    
     extern SMAAConfig g_SMAAConfig;
+
+    struct HDRConfig
+    {
+        bool  m_EnableHDR              = true;
+        bool  m_EnableAdaptiveExposure = true;
+        float m_MinExposure            = -6.0f; // -8.0f, 0.0f, 0.25f ---- min max step
+        float m_MaxExposure            = 6.0f;  // 0.0f, 8.0f, 0.25f
+        float m_TargetLuminance        = 0.08f; // 0.01f, 0.99f, 0.01f
+        float m_AdaptationRate         = 0.05f; // 0.01f, 1.0f, 0.01f
+        float m_Exposure               = 2.0f;  // -8.0f, 8.0f, 0.25f
+    };
+    extern HDRConfig g_HDRConfig;
+
+    struct BloomConfig
+    {
+        bool m_BloomEnable = true;
+        // The threshold luminance above which a pixel will start to bloom
+        float m_BloomThreshold = 4.0f; // 0.0f, 8.0f, 0.1f
+        // A modulator controlling how much bloom is added back into the image
+        float m_BloomStrength  = 0.1f; // 0.0f, 2.0f, 0.05f
+        // Controls the "focus" of the blur.  High values spread out more causing a haze.
+        float m_BloomUpsampleFactor = 0.65f; // 0.0f, 1.0f, 0.05f
+        // High quality blurs 5 octaves of bloom; low quality only blurs 3.
+        bool m_HighQualityBloom = false;
+    };
+    extern BloomConfig g_BloomConfig;
+
 }
 
 // clang-format off

@@ -9,4 +9,8 @@ namespace EngineConfig
 
     FXAAConfig g_FXAAConfig = FXAAConfig();
 
+    HDRConfig g_HDRConfig = HDRConfig();
+
+    BloomConfig g_BloomConfig = BloomConfig();
+
 }

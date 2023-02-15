@@ -448,7 +448,6 @@ namespace RHI
         pBufferD3D12->SetResourceName(name);
 
         pBufferD3D12->m_Desc = {sizeInBytes, numElements, elementSize, bufferTarget, mapplableMode};
-        pBufferD3D12->m_Data = {initialData, dataLen};
 
         if (bufferTarget & RHIBufferTarget::RHIBufferTargetCounter)
         {
@@ -469,7 +468,7 @@ namespace RHI
         {
             pBufferD3D12->p_CounterBufferD3D12 = nullptr;
         }
-        /*
+
         bool uploadNeedFinished = false;
 
         // Inflate Buffer
@@ -482,8 +481,8 @@ namespace RHI
         // Reset CounterBuffer
         if (bufferTarget & RHIBufferTarget::RHIBufferTargetCounter)
         {
-            D3D12CommandContext& InitContext = Parent->BeginResourceUpload();
-            pBufferD3D12->ResetCounterBuffer(&InitContext);
+            D3D12CommandContext* pInitContext = Parent->BeginResourceUpload();
+            pBufferD3D12->ResetCounterBuffer(pInitContext);
             uploadNeedFinished = true;
         }
 
@@ -491,7 +490,7 @@ namespace RHI
         {
             Parent->EndResourceUpload(true);
         }
-        */
+        
         return pBufferD3D12;
     }
 
