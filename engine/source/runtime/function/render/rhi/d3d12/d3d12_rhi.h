@@ -66,21 +66,62 @@
 
 #include "dstorage.h"
 
-#include <cstddef>
-#include <cassert>
-
 #include <string_view>
 
-#include <memory>
-#include <mutex>
 #include <optional>
 #include <filesystem>
 
+#include <bitset>
+#include <algorithm>
+#include <atomic>
 #include <array>
-#include <vector>
+#include <cassert>
+#include <cmath>
+#include <cstddef>
+#include <cstdint>
+#include <cstdlib>
+#include <cstring>
+#include <cwchar>
+#include <exception>
+#include <initializer_list>
+#include <iterator>
+#include <list>
 #include <map>
 #include <queue>
-#include <bitset>
+#include <memory>
+#include <mutex>
+#include <new>
+#include <set>
+#include <stdexcept>
+#include <string>
+#include <system_error>
+#include <tuple>
+#include <type_traits>
+#include <utility>
+#include <vector>
+
+#pragma warning(push)
+#pragma warning(disable : 5204 5220)
+#include <future>
+#pragma warning(pop)
+
+#pragma warning(push)
+#pragma warning(disable : 4702)
+#include <functional>
+#pragma warning(pop)
+
+#include <malloc.h>
+
+#pragma warning(push)
+#pragma warning(disable : 4467 5038 5204 5220)
+#ifdef __MINGW32__
+#include <wrl/client.h>
+#else
+#include <wrl.h>
+#endif
+#pragma warning(pop)
+
+#include <wincodec.h>
 
 #define VERIFY_D3D12_API(expr) \
     do \

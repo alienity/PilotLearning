@@ -498,20 +498,27 @@ namespace RHI
 
     bool D3D12Buffer::InflateBuffer(BYTE* initialData, UINT dataLen)
     {
-        ASSERT(this->m_Data.m_DataLen == dataLen);
-        if (!memcmp(this->m_Data.m_Data, initialData, dataLen))
-            return false;
+        if (this->m_Data.m_Data != nullptr)
+        {
+            if (this->m_Data.m_DataLen == dataLen && !memcmp(this->m_Data.m_Data, initialData, dataLen))
+                return false;
 
-        free(this->m_Data.m_Data);
-        this->m_Data = {initialData, dataLen};
+            free(this->m_Data.m_Data);
+            this->m_Data.m_Data = nullptr;
+            this->m_Data.m_DataLen = 0;
+        }
+
+        this->m_Data.m_Data = (BYTE*)malloc(dataLen);
+        this->m_Data.m_DataLen = dataLen;
+        memcpy(this->m_Data.m_Data, initialData, dataLen);
 
         if (this->m_Desc.mode == RHIBufferMode::RHIBufferModeDynamic)
         {
-            memcpy(this->GetCpuVirtualAddress(), initialData, dataLen);
+            memcpy(this->GetCpuVirtualAddress(), this->m_Data.m_Data, this->m_Data.m_DataLen);
         }
         else
         {
-            D3D12CommandContext::InitializeBuffer(Parent, this, m_Data.m_Data, m_Data.m_DataLen);
+            D3D12CommandContext::InitializeBuffer(Parent, this, this->m_Data.m_Data, this->m_Data.m_DataLen);
         }
 
         return true;
@@ -519,9 +526,11 @@ namespace RHI
 
     void D3D12Buffer::ResetCounterBuffer(D3D12CommandContext* pCommandContext)
     {
-        ASSERT(p_CounterBufferD3D12 != nullptr);
-        pCommandContext->Open();
-        pCommandContext->ResetCounter(p_CounterBufferD3D12.get(), 0, 0);
+        if (p_CounterBufferD3D12 != nullptr)
+        {
+            pCommandContext->Open();
+            pCommandContext->ResetCounter(p_CounterBufferD3D12.get(), 0, 0);
+        }
     }
 
     std::shared_ptr<D3D12ConstantBufferView> D3D12Buffer::CreateCBV(D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc)
