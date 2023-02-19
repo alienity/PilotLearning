@@ -58,7 +58,7 @@ target_link_libraries(${TARGET_NAME} PUBLIC dxc)
 target_link_libraries(${TARGET_NAME} PUBLIC cityhash)
 # target_link_libraries(${TARGET_NAME} PUBLIC DirectX-Headers)
 target_link_libraries(${TARGET_NAME} PUBLIC DirectStorage)
-target_link_libraries(${TARGET_NAME} PUBLIC DirectXTK12)
+# target_link_libraries(${TARGET_NAME} PUBLIC DirectXTK12)
 target_link_libraries(${TARGET_NAME} PUBLIC d3d12.lib)
 
 add_definitions(-DUNICODE -D_UNICODE)
