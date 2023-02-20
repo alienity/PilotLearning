@@ -56,6 +56,8 @@ namespace RHI
         // initialize common states
         RHI::InitializeCommonState(this);
 
+        m_GraphicsMemory = std::shared_ptr<GraphicsMemory>(new GraphicsMemory(this));
+
         constexpr size_t NumThreads = 3;
         m_AvailableCommandContexts.reserve(NumThreads);
         for (unsigned int i = 0; i < NumThreads; ++i)
@@ -83,6 +85,8 @@ namespace RHI
 
         // release common states
         RHI::DestroyCommonState();
+
+        m_GraphicsMemory = nullptr;
 
         m_GraphicsQueue     = nullptr;
         m_AsyncComputeQueue = nullptr;
@@ -158,6 +162,8 @@ namespace RHI
     }
 
     D3D12CommandContext* D3D12LinkedDevice::GetCopyContext1() { return m_CopyContext1.get(); }
+
+    GraphicsMemory* D3D12LinkedDevice::GetGraphicsMemory() { return m_GraphicsMemory.get(); }
 
     void D3D12LinkedDevice::OnBeginFrame() { m_Profiler->OnBeginFrame(); }
 

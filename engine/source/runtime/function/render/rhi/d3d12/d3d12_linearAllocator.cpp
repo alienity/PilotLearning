@@ -12,7 +12,7 @@
 namespace RHI
 {
     LinearAllocatorPage::LinearAllocatorPage() noexcept :
-        pPrevPage(nullptr), pNextPage(nullptr), mMemory(nullptr), mPendingFence(0), mGpuAddress {}, mOffset(0),
+        pPrevPage(nullptr), pNextPage(nullptr), mMemory(nullptr), mSyncHandle(0), mGpuAddress {}, mOffset(0),
         mSize(0), mRefCount(1)
     {}
 
@@ -46,7 +46,7 @@ namespace RHI
                                      _In_ size_t        preallocateBytes) noexcept(false) :
         m_pendingPages(nullptr),
         m_usedPages(nullptr), m_unusedPages(nullptr), m_increment(pageSize), m_numPending(0), m_totalPages(0),
-        m_fenceCount(0), m_device(pDevice)
+        m_syncHandle(), m_device(pDevice)
     {
         assert(pDevice != nullptr);
 #if defined(_DEBUG) || defined(PROFILE)
@@ -66,7 +66,7 @@ namespace RHI
             }
         }
 
-        ThrowIfFailed(pDevice->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS((m_fence.ReleaseAndGetAddressOf()))));
+        //ThrowIfFailed(pDevice->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS((m_fence.ReleaseAndGetAddressOf()))));
     }
 
     LinearAllocator::~LinearAllocator()
@@ -110,7 +110,7 @@ namespace RHI
     }
 
     // Call this after you submit your work to the driver.
-    void LinearAllocator::FenceCommittedPages(_In_ ID3D12CommandQueue* commandQueue)
+    void LinearAllocator::FenceCommittedPages(_In_ D3D12SyncHandle syncHandle)
     {
         // No pending pages
         if (m_usedPages == nullptr)
@@ -134,8 +134,8 @@ namespace RHI
             {
                 // Signal the fence
                 numReady++;
-                page->mPendingFence = ++m_fenceCount;
-                ThrowIfFailed(commandQueue->Signal(m_fence.Get(), m_fenceCount));
+                page->mSyncHandle = syncHandle;
+                //ThrowIfFailed(commandQueue->Signal(m_fence.Get(), m_fenceCount));
 
                 // Link to the ready pages list
                 page->pNextPage = readyPages;
@@ -172,7 +172,11 @@ namespace RHI
     // (immediately before or after Present-time)
     void LinearAllocator::RetirePendingPages() noexcept
     {
-        const uint64_t fenceValue = m_fence->GetCompletedValue();
+        assert(m_syncHandle);
+
+        m_syncHandle.GetValue();
+
+        //const uint64_t fenceValue = m_fence->GetCompletedValue();
 
         // For each page that we know has a fence pending, check it. If the fence has passed,
         // we can mark the page for re-use.
@@ -181,13 +185,20 @@ namespace RHI
         {
             auto nextPage = page->pNextPage;
 
-            assert(page->mPendingFence != 0);
+            //assert(page->mPendingFence != 0);
+            assert(page->mSyncHandle);
 
-            if (fenceValue >= page->mPendingFence)
+            if (page->mSyncHandle.IsComplete())
             {
                 // Fence has passed. It is safe to use this page again.
                 ReleasePage(page);
             }
+
+            //if (fenceValue >= page->mPendingFence)
+            //{
+            //    // Fence has passed. It is safe to use this page again.
+            //    ReleasePage(page);
+            //}
 
             page = nextPage;
         }
@@ -454,7 +465,8 @@ namespace RHI
         m_debugName = name;
 
         // Rename existing pages
-        m_fence->SetName(name);
+        //m_fence->SetName(name);
+
         SetPageDebugName(m_pendingPages);
         SetPageDebugName(m_usedPages);
         SetPageDebugName(m_unusedPages);
@@ -469,202 +481,4 @@ namespace RHI
     }
 #endif
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    
-//    D3D12LinearAllocatorPage::D3D12LinearAllocatorPage(Microsoft::WRL::ComPtr<ID3D12Resource> Resource,
-//                                                       UINT64                                 PageSize) :
-//        Resource(Resource),
-//        Offset(0), PageSize(PageSize)
-//    {
-//        Resource->Map(0, nullptr, reinterpret_cast<void**>(&CpuVirtualAddress));
-//        GpuVirtualAddress = Resource->GetGPUVirtualAddress();
-//    }
-//
-//	D3D12LinearAllocatorPage::~D3D12LinearAllocatorPage() { Resource->Unmap(0, nullptr); }
-//
-//    std::optional<D3D12Allocation> D3D12LinearAllocatorPage::Suballocate(UINT64 Size, UINT Alignment)
-//    {
-//        UINT64 AlignedSize = D3D12RHIUtils::AlignUp(Size, static_cast<UINT64>(Alignment));
-//        if (Offset + AlignedSize > this->PageSize)
-//        {
-//            return std::nullopt;
-//        }
-//
-//        D3D12Allocation Allocation = {Resource.Get(),
-//                                      Offset,
-//                                      Size,
-//                                      CpuVirtualAddress + Offset,
-//                                      GpuVirtualAddress + Offset};
-//        Offset += AlignedSize;
-//        return Allocation;
-//    }
-//
-//    void D3D12LinearAllocatorPage::Reset() { Offset = 0; }
-//
-//	D3D12LinearAllocator::D3D12LinearAllocator(D3D12LinkedDevice* Parent) : D3D12LinkedDeviceChild(Parent) {}
-//
-//    void D3D12LinearAllocator::Version(D3D12SyncHandle SyncHandle)
-//    {
-//        if (!CurrentPage)
-//        {
-//            return;
-//        }
-//
-//        this->SyncHandle = SyncHandle;
-//
-//        RetiredPageList.push_back(std::exchange(CurrentPage, nullptr));
-//        DiscardPages(SyncHandle.GetValue(), RetiredPageList);
-//        RetiredPageList.clear();
-//    }
-//
-//    D3D12Allocation D3D12LinearAllocator::Allocate(UINT64 Size,
-//                                                   UINT Alignment /*= D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT*/)
-//    {
-//        if (!CurrentPage)
-//        {
-//            CurrentPage = RequestPage();
-//        }
-//
-//        std::optional<D3D12Allocation> OptAllocation = CurrentPage->Suballocate(Size, Alignment);
-//
-//        if (!OptAllocation)
-//        {
-//            RetiredPageList.push_back(CurrentPage);
-//
-//            CurrentPage   = RequestPage();
-//            OptAllocation = CurrentPage->Suballocate(Size, Alignment);
-//            assert(OptAllocation.has_value());
-//        }
-//
-//        return OptAllocation.value();
-//    }
-//
-//    D3D12LinearAllocatorPage* D3D12LinearAllocator::RequestPage()
-//    {
-//        while (SyncHandle && !RetiredPages.empty() && RetiredPages.front().first <= SyncHandle.GetValue())
-//        {
-//            AvailablePages.push(RetiredPages.front().second);
-//            RetiredPages.pop();
-//        }
-//
-//        D3D12LinearAllocatorPage* Page = nullptr;
-//
-//        if (!AvailablePages.empty())
-//        {
-//            Page = AvailablePages.front();
-//            Page->Reset();
-//            AvailablePages.pop();
-//        }
-//        else
-//        {
-//            Page = PagePool.emplace_back(CreateNewPage(CpuAllocatorPageSize)).get();
-//        }
-//
-//        return Page;
-//    }
-//
-//    std::unique_ptr<D3D12LinearAllocatorPage> D3D12LinearAllocator::CreateNewPage(UINT64 PageSize) const
-//    {
-//        auto HeapProperties =
-//            CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD, Parent->GetNodeMask(), Parent->GetNodeMask());
-//        auto ResourceDesc = CD3DX12_RESOURCE_DESC::Buffer(PageSize);
-//
-//        Microsoft::WRL::ComPtr<ID3D12Resource> Resource;
-//        VERIFY_D3D12_API(
-//            GetParentLinkedDevice()->GetDevice()->CreateCommittedResource(&HeapProperties,
-//                                                                          D3D12_HEAP_FLAG_NONE,
-//                                                                          &ResourceDesc,
-//                                                                          D3D12_RESOURCE_STATE_GENERIC_READ,
-//                                                                          nullptr,
-//                                                                          IID_PPV_ARGS(&Resource)));
-//
-//#ifdef _DEBUG
-//        Resource->SetName(L"Linear Allocator Page");
-//#endif
-//
-//        return std::make_unique<D3D12LinearAllocatorPage>(Resource, PageSize);
-//    }
-//
-//    void D3D12LinearAllocator::DiscardPages(UINT64 FenceValue, const std::vector<D3D12LinearAllocatorPage*>& Pages)
-//    {
-//        for (const auto& Page : Pages)
-//        {
-//            RetiredPages.push(std::make_pair(FenceValue, Page));
-//        }
-//    }
 }

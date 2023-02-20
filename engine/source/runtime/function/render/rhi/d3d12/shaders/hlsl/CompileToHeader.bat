@@ -17,5 +17,7 @@ dxc -Zi -E"main" -Vn"g_pGenerateMipsLinearOddCS" -D"_GAMING_DESKTOP=1" -T"cs_6_6
 dxc -Zi -E"main" -Vn"g_pGenerateMipsLinearOddXCS" -D"_GAMING_DESKTOP=1" -T"cs_6_6" -Fh"..\CompiledShaders\GenerateMipsLinearOddXCS.h" -Qembed_debug  -nologo ".\GenerateMipsLinearOddXCS.hlsl"
 dxc -Zi -E"main" -Vn"g_pGenerateMipsLinearOddYCS" -D"_GAMING_DESKTOP=1" -T"cs_6_6" -Fh"..\CompiledShaders\GenerateMipsLinearOddYCS.h" -Qembed_debug  -nologo ".\GenerateMipsLinearOddYCS.hlsl"
 
+dxc -Zi -E"main" -Vn"g_pGenerateMipsCS" -T"cs_6_6" -Fh"..\CompiledShaders\GenerateMipsCS.h" -Qembed_debug  -nologo ".\GenerateMips.hlsl"
+
 echo "finish compiling ..."
 

@@ -9,7 +9,6 @@ namespace RHI
     class D3D12ConstantBufferView;
     class D3D12ShaderResourceView;
     class D3D12UnorderedAccessView;
-    class D3D12Allocation;
     class D3D12CommandContext;
 
     // https://microsoft.github.io/DirectX-Specs/d3d/CPUEfficiency.html#subresource-state-tracking
@@ -316,6 +315,8 @@ namespace RHI
                                    const std::wstring&                    Name,
                                    Microsoft::WRL::ComPtr<ID3D12Resource> Resource,
                                    D3D12_RESOURCE_STATES                  CurrentState);
+
+        static void GenerateMipMaps(D3D12CommandContext* context, D3D12Texture* pTexture);
 
     public:
         static std::shared_ptr<D3D12Texture> Create(D3D12LinkedDevice*       Parent,

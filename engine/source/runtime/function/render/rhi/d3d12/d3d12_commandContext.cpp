@@ -39,7 +39,7 @@ namespace RHI
     D3D12CommandContext::D3D12CommandContext(D3D12LinkedDevice* Parent, RHID3D12CommandQueueType Type, D3D12_COMMAND_LIST_TYPE CommandListType) :
         D3D12LinkedDeviceChild(Parent),
         m_Type(Type), m_CommandListType(CommandListType), m_CommandListHandle(Parent, CommandListType),
-        m_CommandAllocator(nullptr), m_CommandAllocatorPool(Parent, CommandListType), m_CpuLinearAllocator(Parent)
+        m_CommandAllocator(nullptr), m_CommandAllocatorPool(Parent, CommandListType), m_GraphicsMemory(Parent->GetGraphicsMemory())
     {
         m_pDynamicViewDescriptorHeap = std::make_shared<DynamicDescriptorHeap>(Parent, this, Parent->GetResourceDescriptorHeap());
         m_pDynamicSamplerDescriptorHeap = std::make_shared<DynamicDescriptorHeap>(Parent, this, Parent->GetSamplerDescriptorHeap());
@@ -115,7 +115,8 @@ namespace RHI
         // Release the command allocator so it can be reused.
         m_CommandAllocatorPool.DiscardCommandAllocator(m_CommandAllocator, SyncHandle);
         // Release temp resourcce
-        m_CpuLinearAllocator.Version(SyncHandle);
+        //m_CpuLinearAllocator.Version(SyncHandle);
+        m_GraphicsMemory->Commit(SyncHandle);
         return SyncHandle;
     }
 
@@ -170,27 +171,27 @@ namespace RHI
         TransitionBarrier(CounterResource, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
     }
 
-    D3D12Allocation D3D12CommandContext::ReserveUploadMemory(UINT64 SizeInBytes, UINT Alignment)
+    GraphicsResource D3D12CommandContext::ReserveUploadMemory(UINT64 SizeInBytes, UINT Alignment)
     {
-        return m_CpuLinearAllocator.Allocate(SizeInBytes, Alignment);
+        return m_GraphicsMemory->Allocate(SizeInBytes, Alignment);
     }
 
     void D3D12CommandContext::WriteBuffer(D3D12Buffer* Dest, UINT64 DestOffset, const void* BufferData, UINT64 NumBytes)
     {
         ASSERT(BufferData != nullptr && Pilot::IsAligned(BufferData, 16));
-        D3D12Allocation TempSpace = m_CpuLinearAllocator.Allocate(NumBytes, 512);
-        SIMDMemCopy(TempSpace.CpuVirtualAddress, BufferData, Pilot::DivideByMultiple(NumBytes, 16));
+        GraphicsResource TempSpace = m_GraphicsMemory->Allocate(NumBytes, 512);
+        SIMDMemCopy(TempSpace.Memory(), BufferData, Pilot::DivideByMultiple(NumBytes, 16));
         TransitionBarrier(Dest, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES, true);
-        m_CommandListHandle->CopyBufferRegion(Dest->GetResource(), DestOffset, TempSpace.Resource, TempSpace.Offset, NumBytes);
+        m_CommandListHandle->CopyBufferRegion(Dest->GetResource(), DestOffset, TempSpace.Resource(), TempSpace.ResourceOffset(), NumBytes);
     }
 
     void D3D12CommandContext::FillBuffer(D3D12Buffer* Dest, UINT64 DestOffset, DWParam Value, UINT64 NumBytes)
     {
-        D3D12Allocation TempSpace   = m_CpuLinearAllocator.Allocate(NumBytes, 512);
+        GraphicsResource TempSpace   = m_GraphicsMemory->Allocate(NumBytes, 512);
         __m128   VectorValue = _mm_set1_ps(Value.Float);
-        SIMDMemFill(TempSpace.CpuVirtualAddress, VectorValue, Pilot::DivideByMultiple(NumBytes, 16));
+        SIMDMemFill(TempSpace.Memory(), VectorValue, Pilot::DivideByMultiple(NumBytes, 16));
         TransitionBarrier(Dest, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES, true);
-        m_CommandListHandle->CopyBufferRegion(Dest->GetResource(), DestOffset, TempSpace.Resource, TempSpace.Offset, NumBytes);
+        m_CommandListHandle->CopyBufferRegion(Dest->GetResource(), DestOffset, TempSpace.Resource(), TempSpace.ResourceOffset(), NumBytes);
     }
 
     void D3D12CommandContext::TransitionBarrier(D3D12Resource* Resource, D3D12_RESOURCE_STATES State, UINT Subresource, bool FlushImmediate)
@@ -624,10 +625,10 @@ namespace RHI
     void D3D12GraphicsContext::SetDynamicConstantBufferView(UINT RootIndex, UINT64 BufferSize, const void* BufferData)
     {
         ASSERT(BufferData != nullptr && Pilot::IsAligned(BufferData, 16));
-        D3D12Allocation cb = m_CpuLinearAllocator.Allocate(BufferSize);
+        GraphicsResource cb = m_GraphicsMemory->Allocate(BufferSize);
         // SIMDMemCopy(cb.DataPtr, BufferData, Math::AlignUp(BufferSize, 16) >> 4);
-        memcpy(cb.CpuVirtualAddress, BufferData, BufferSize);
-        m_CommandListHandle->SetGraphicsRootConstantBufferView(RootIndex, cb.GpuVirtualAddress);
+        memcpy(cb.Memory(), BufferData, BufferSize);
+        m_CommandListHandle->SetGraphicsRootConstantBufferView(RootIndex, cb.GpuAddress());
     }
 
     void D3D12GraphicsContext::SetBufferSRV(UINT RootIndex, D3D12Buffer* BufferSRV, UINT64 Offset)
@@ -688,12 +689,12 @@ namespace RHI
         ASSERT(VertexData != nullptr && Pilot::IsAligned(VertexData, 16));
 
         size_t BufferSize = Pilot::AlignUp(NumVertices * VertexStride, 16);
-        D3D12Allocation vb = m_CpuLinearAllocator.Allocate(BufferSize);
+        GraphicsResource vb = m_GraphicsMemory->Allocate(BufferSize);
 
-        SIMDMemCopy(vb.CpuVirtualAddress, VertexData, BufferSize >> 4);
+        SIMDMemCopy(vb.Memory(), VertexData, BufferSize >> 4);
 
         D3D12_VERTEX_BUFFER_VIEW VBView;
-        VBView.BufferLocation = vb.GpuVirtualAddress;
+        VBView.BufferLocation = vb.GpuAddress();
         VBView.SizeInBytes    = (UINT)BufferSize;
         VBView.StrideInBytes  = (UINT)VertexStride;
 
@@ -705,12 +706,12 @@ namespace RHI
         ASSERT(IndexData != nullptr && Pilot::IsAligned(IndexData, 16));
 
         size_t BufferSize = Pilot::AlignUp(IndexCount * sizeof(uint16_t), 16);
-        D3D12Allocation ib = m_CpuLinearAllocator.Allocate(BufferSize);
+        GraphicsResource ib = m_GraphicsMemory->Allocate(BufferSize);
 
-        SIMDMemCopy(ib.CpuVirtualAddress, IndexData, BufferSize >> 4);
+        SIMDMemCopy(ib.Memory(), IndexData, BufferSize >> 4);
 
         D3D12_INDEX_BUFFER_VIEW IBView;
-        IBView.BufferLocation = ib.GpuVirtualAddress;
+        IBView.BufferLocation = ib.GpuAddress();
         IBView.SizeInBytes    = (UINT)(IndexCount * sizeof(uint16_t));
         IBView.Format         = DXGI_FORMAT_R16_UINT;
 
@@ -720,9 +721,9 @@ namespace RHI
     void D3D12GraphicsContext::SetDynamicSRV(UINT RootIndex, UINT64 BufferSize, const void* BufferData)
     {
         ASSERT(BufferData != nullptr && Pilot::IsAligned(BufferData, 16));
-        D3D12Allocation cb = m_CpuLinearAllocator.Allocate(BufferSize);
-        SIMDMemCopy(cb.CpuVirtualAddress, BufferData, Pilot::AlignUp(BufferSize, 16) >> 4);
-        m_CommandListHandle->SetGraphicsRootShaderResourceView(RootIndex, cb.GpuVirtualAddress);
+        GraphicsResource cb = m_GraphicsMemory->Allocate(BufferSize);
+        SIMDMemCopy(cb.Memory(), BufferData, Pilot::AlignUp(BufferSize, 16) >> 4);
+        m_CommandListHandle->SetGraphicsRootShaderResourceView(RootIndex, cb.GpuAddress());
     }
 
     void D3D12GraphicsContext::Draw(UINT VertexCount, UINT VertexStartOffset)
@@ -870,18 +871,18 @@ namespace RHI
     void D3D12ComputeContext::SetDynamicConstantBufferView(UINT RootIndex, UINT64 BufferSize, const void* BufferData)
     {
         ASSERT(BufferData != nullptr && Pilot::IsAligned(BufferData, 16));
-        D3D12Allocation cb = m_CpuLinearAllocator.Allocate(BufferSize);
+        GraphicsResource cb = m_GraphicsMemory->Allocate(BufferSize);
         // SIMDMemCopy(cb.DataPtr, BufferData, Math::AlignUp(BufferSize, 16) >> 4);
-        memcpy(cb.CpuVirtualAddress, BufferData, BufferSize);
-        m_CommandListHandle->SetComputeRootConstantBufferView(RootIndex, cb.GpuVirtualAddress);
+        memcpy(cb.Memory(), BufferData, BufferSize);
+        m_CommandListHandle->SetComputeRootConstantBufferView(RootIndex, cb.GpuAddress());
     }
 
     void D3D12ComputeContext::SetDynamicSRV(UINT RootIndex, UINT64 BufferSize, const void* BufferData)
     {
         ASSERT(BufferData != nullptr && Pilot::IsAligned(BufferData, 16));
-        D3D12Allocation cb = m_CpuLinearAllocator.Allocate(BufferSize);
-        SIMDMemCopy(cb.CpuVirtualAddress, BufferData, Pilot::AlignUp(BufferSize, 16) >> 4);
-        m_CommandListHandle->SetComputeRootShaderResourceView(RootIndex, cb.GpuVirtualAddress);
+        GraphicsResource cb = m_GraphicsMemory->Allocate(BufferSize);
+        SIMDMemCopy(cb.Memory(), BufferData, Pilot::AlignUp(BufferSize, 16) >> 4);
+        m_CommandListHandle->SetComputeRootShaderResourceView(RootIndex, cb.GpuAddress());
     }
 
     void D3D12ComputeContext::SetBufferSRV(UINT RootIndex, D3D12Buffer* BufferSRV, UINT64 Offset)
@@ -1008,9 +1009,9 @@ namespace RHI
         D3D12CommandContext* InitContext = Parent->BeginResourceUpload();
 
         // copy data to the intermediate upload heap and then schedule a copy from the upload heap to the default texture
-        RHI::D3D12Allocation mem = InitContext->ReserveUploadMemory(uploadBufferSize);
-        UpdateSubresources(InitContext->GetGraphicsCommandList(), Dest->GetResource(), mem.Resource, 
-            mem.Offset, FirstSubresource, NumSubresources, Subresources.data());
+        RHI::GraphicsResource mem = InitContext->ReserveUploadMemory(uploadBufferSize);
+        UpdateSubresources(InitContext->GetGraphicsCommandList(), Dest->GetResource(), mem.Resource(), 
+            mem.ResourceOffset(), FirstSubresource, NumSubresources, Subresources.data());
         InitContext->TransitionBarrier(Dest, D3D12_RESOURCE_STATE_GENERIC_READ, true);
 
         // Execute the command list and wait for it to finish so we can release the upload buffer
@@ -1021,15 +1022,15 @@ namespace RHI
     {
         D3D12CommandContext* InitContext = Parent->BeginResourceUpload();
 
-        RHI::D3D12Allocation mem = InitContext->ReserveUploadMemory(NumBytes);
-        SIMDMemCopy(mem.CpuVirtualAddress, Data, Pilot::DivideByMultiple(NumBytes, 16));
+        RHI::GraphicsResource mem = InitContext->ReserveUploadMemory(NumBytes);
+        SIMDMemCopy(mem.Memory(), Data, Pilot::DivideByMultiple(NumBytes, 16));
 
         D3D12_RESOURCE_STATES originalState = Dest->GetResourceState().GetSubresourceState(0);
 
         // copy data to the intermediate upload heap and then schedule a copy from the upload heap to the default texture
         InitContext->TransitionBarrier(
             Dest, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES, true);
-        (*InitContext)->CopyBufferRegion(Dest->GetResource(), DestOffset, mem.Resource, 0, NumBytes);
+        (*InitContext)->CopyBufferRegion(Dest->GetResource(), DestOffset, mem.Resource(), 0, NumBytes);
         InitContext->TransitionBarrier(Dest, originalState, D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES, true);
 
         // Execute the command list and wait for it to finish so we can release the upload buffer

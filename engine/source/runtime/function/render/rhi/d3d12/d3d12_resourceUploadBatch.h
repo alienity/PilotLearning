@@ -6,10 +6,11 @@ namespace RHI
 {
 
     // Has a command list of it's own so it can upload at any time.
-    class ResourceUploadBatch
+    class ResourceUploadBatch : public D3D12LinkedDeviceChild
     {
     public:
-        explicit ResourceUploadBatch(_In_ ID3D12Device* device) noexcept(false);
+        explicit ResourceUploadBatch(_In_ D3D12LinkedDevice* Parent) noexcept(false);
+        //explicit ResourceUploadBatch(_In_ ID3D12Device* device) noexcept(false);
 
         ResourceUploadBatch(ResourceUploadBatch&&) noexcept;
         ResourceUploadBatch& operator=(ResourceUploadBatch&&) noexcept;

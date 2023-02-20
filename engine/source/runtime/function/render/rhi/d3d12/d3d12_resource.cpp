@@ -2,6 +2,8 @@
 #include "d3d12_linkedDevice.h"
 #include "d3d12_descriptor.h"
 #include "d3d12_commandContext.h"
+#include "d3d12_graphicsCommon.h"
+
 #include "runtime/core/base/utility.h"
 
 namespace RHI
@@ -723,6 +725,84 @@ namespace RHI
 #else
         (Name);
 #endif
+    }
+
+    void D3D12Texture::GenerateMipMaps(D3D12CommandContext* context, D3D12Texture* pTexture)
+    {
+        int m_NumMipMaps = pTexture->m_Desc.mipCount;
+        if (m_NumMipMaps == 0)
+            return;
+
+        int m_Width = pTexture->m_Desc.width;
+        int m_Height = pTexture->m_Desc.height;
+
+        DXGI_FORMAT m_Format = pTexture->m_Desc.graphicsFormat;
+
+        std::shared_ptr<D3D12ShaderResourceView> mDefaultSRV = pTexture->GetDefaultSRV();
+        D3D12_CPU_DESCRIPTOR_HANDLE m_SRVHandle = mDefaultSRV->GetCpuHandle();
+
+        D3D12ComputeContext* pContext = context->GetComputeContext();
+
+        pContext->SetRootSignature(g_pCommonRS);
+
+        pContext->TransitionBarrier(pTexture, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+        pContext->SetDynamicDescriptor(1, 0, m_SRVHandle);
+
+        for (uint32_t TopMip = 0; TopMip < m_NumMipMaps;)
+        {
+            uint32_t SrcWidth  = m_Width >> TopMip;
+            uint32_t SrcHeight = m_Height >> TopMip;
+            uint32_t DstWidth  = SrcWidth >> 1;
+            uint32_t DstHeight = SrcHeight >> 1;
+
+            // Determine if the first downsample is more than 2:1.  This happens whenever
+            // the source width or height is odd.
+            uint32_t NonPowerOfTwo = (SrcWidth & 1) | (SrcHeight & 1) << 1;
+            if (m_Format == DXGI_FORMAT_R8G8B8A8_UNORM_SRGB)
+                pContext->SetPipelineState(g_pGenerateMipsGammaPSO[NonPowerOfTwo]);
+            else
+                pContext->SetPipelineState(g_pGenerateMipsLinearPSO[NonPowerOfTwo]);
+
+            // We can downsample up to four times, but if the ratio between levels is not
+            // exactly 2:1, we have to shift our blend weights, which gets complicated or
+            // expensive.  Maybe we can update the code later to compute sample weights for
+            // each successive downsample.  We use _BitScanForward to count number of zeros
+            // in the low bits.  Zeros indicate we can divide by two without truncating.
+            uint32_t AdditionalMips;
+            _BitScanForward((unsigned long*)&AdditionalMips,
+                            (DstWidth == 1 ? DstHeight : DstWidth) | (DstHeight == 1 ? DstWidth : DstHeight));
+            uint32_t NumMips = 1 + (AdditionalMips > 3 ? 3 : AdditionalMips);
+            if (TopMip + NumMips > m_NumMipMaps)
+                NumMips = m_NumMipMaps - TopMip;
+
+            // These are clamped to 1 after computing additional mips because clamped
+            // dimensions should not limit us from downsampling multiple times.  (E.g.
+            // 16x1 -> 8x1 -> 4x1 -> 2x1 -> 1x1.)
+            if (DstWidth == 0)
+                DstWidth = 1;
+            if (DstHeight == 0)
+                DstHeight = 1;
+
+            D3D12_CPU_DESCRIPTOR_HANDLE mHandles[4];
+            for (size_t i = 0; i < NumMips; i++)
+            {
+                D3D12_UNORDERED_ACCESS_VIEW_DESC mTexUAVDesc = RHI::D3D12UnorderedAccessView::GetDesc(pTexture, 0, TopMip + 1 + i);
+                std::shared_ptr<D3D12UnorderedAccessView> mTexUAV = pTexture->CreateUAV(mTexUAVDesc);
+                mHandles[i] = mTexUAV->GetCpuHandle();
+            }
+
+            pContext->SetConstants(0, TopMip, NumMips, 1.0f / DstWidth, 1.0f / DstHeight);
+            //pContext->SetDynamicDescriptors(2, 0, NumMips, m_UAVHandle + TopMip + 1);
+            pContext->SetDynamicDescriptors(2, 0, NumMips, mHandles);
+            pContext->Dispatch2D(DstWidth, DstHeight);
+
+            pContext->InsertUAVBarrier(pTexture);
+
+            TopMip += NumMips;
+        }
+
+        pContext->TransitionBarrier(
+            pTexture, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
     }
 
     std::shared_ptr<D3D12Texture> D3D12Texture::Create(D3D12LinkedDevice*                  Parent,

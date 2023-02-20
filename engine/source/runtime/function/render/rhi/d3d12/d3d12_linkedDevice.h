@@ -1,6 +1,7 @@
 #pragma once
 #include "d3d12_core.h"
 #include "d3d12_profiler.h"
+#include "d3d12_graphicsMemory.h"
 
 #include <shared_mutex>
 
@@ -43,6 +44,8 @@ namespace RHI
         [[nodiscard]] D3D12CommandContext* GetCommandContext(UINT ThreadIndex = 0);
         [[nodiscard]] D3D12CommandContext* GetAsyncComputeCommandContext(UINT ThreadIndex = 0);
         [[nodiscard]] D3D12CommandContext* GetCopyContext1();
+
+        [[nodiscard]] GraphicsMemory* GetGraphicsMemory();
 
         void OnBeginFrame();
         void OnEndFrame();
@@ -94,6 +97,8 @@ namespace RHI
         std::vector<std::shared_ptr<D3D12CommandContext>> m_AvailableAsyncCommandContexts;
         std::shared_ptr<D3D12CommandContext>              m_CopyContext1;
         std::shared_ptr<D3D12CommandContext>              m_CopyContext2;
+
+        std::shared_ptr<GraphicsMemory> m_GraphicsMemory;
 
         struct ResourceAllocationInfoTable
         {

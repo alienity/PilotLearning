@@ -33,7 +33,8 @@ namespace RHI
         LinearAllocatorPage* pNextPage;
 
         void*                                  mMemory;
-        uint64_t                               mPendingFence;
+        //uint64_t                               mPendingFence;
+        D3D12SyncHandle                        mSyncHandle;
         D3D12_GPU_VIRTUAL_ADDRESS              mGpuAddress;
         size_t                                 mOffset;
         size_t                                 mSize;
@@ -68,7 +69,7 @@ namespace RHI
 
         // Call this after you submit your work to the driver.
         // (e.g. immediately before Present.)
-        void FenceCommittedPages(_In_ ID3D12CommandQueue* commandQueue);
+        void FenceCommittedPages(_In_ D3D12SyncHandle syncHandle);
 
         // Throws away all currently unused pages
         void Shrink() noexcept;
@@ -94,9 +95,12 @@ namespace RHI
         size_t                               m_increment;
         size_t                               m_numPending;
         size_t                               m_totalPages;
-        uint64_t                             m_fenceCount;
         Microsoft::WRL::ComPtr<ID3D12Device> m_device;
-        Microsoft::WRL::ComPtr<ID3D12Fence>  m_fence;
+        D3D12SyncHandle                      m_syncHandle;
+
+        // uint64_t                             m_fenceCount;
+        // Microsoft::WRL::ComPtr<ID3D12Fence>  m_fence;
+
 
         LinearAllocatorPage* GetPageForAlloc(size_t sizeBytes, size_t alignment);
         LinearAllocatorPage* GetCleanPageForAlloc();
@@ -120,137 +124,5 @@ namespace RHI
         void SetPageDebugName(LinearAllocatorPage* list) noexcept;
 #endif
     };
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    /*
-    struct D3D12Allocation
-    {
-        ID3D12Resource*           Resource;
-        UINT64                    Offset;
-        UINT64                    Size;
-        BYTE*                     CpuVirtualAddress;
-        D3D12_GPU_VIRTUAL_ADDRESS GpuVirtualAddress;
-    };
-
-	class D3D12LinearAllocatorPage
-    {
-    public:
-        explicit D3D12LinearAllocatorPage(Microsoft::WRL::ComPtr<ID3D12Resource> Resource, UINT64 PageSize);
-        ~D3D12LinearAllocatorPage();
-
-        std::optional<D3D12Allocation> Suballocate(UINT64 Size, UINT Alignment);
-
-        void Reset();
-
-    private:
-        Microsoft::WRL::ComPtr<ID3D12Resource> Resource;
-        UINT64                                 Offset;
-        UINT64                                 PageSize;
-        BYTE*                                  CpuVirtualAddress;
-        D3D12_GPU_VIRTUAL_ADDRESS              GpuVirtualAddress;
-    };
-
-	class D3D12LinearAllocator : public D3D12LinkedDeviceChild
-    {
-    public:
-        static constexpr UINT64 CpuAllocatorPageSize = D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT;
-
-        D3D12LinearAllocator() noexcept = default;
-        explicit D3D12LinearAllocator(D3D12LinkedDevice* Parent);
-
-        D3D12LinearAllocator(D3D12LinearAllocator&&) noexcept = default;
-        D3D12LinearAllocator& operator=(D3D12LinearAllocator&&) noexcept = default;
-
-        D3D12LinearAllocator(const D3D12LinearAllocator&) = delete;
-        D3D12LinearAllocator& operator=(const D3D12LinearAllocator&) = delete;
-
-        // Versions all the current constant data with SyncHandle to ensure memory is not overriden when it GPU uses it
-        void Version(D3D12SyncHandle SyncHandle);
-
-        [[nodiscard]] D3D12Allocation Allocate(UINT64 Size,
-                                               UINT   Alignment = D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT);
-
-        template<typename T>
-        [[nodiscard]] D3D12Allocation Allocate(const T& Data,
-                                               UINT     Alignment = D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT)
-        {
-            D3D12Allocation Allocation = Allocate(sizeof(T), Alignment);
-            std::memcpy(Allocation.CpuVirtualAddress, &Data, sizeof(T));
-            return Allocation;
-        }
-
-    private:
-        [[nodiscard]] D3D12LinearAllocatorPage* RequestPage();
-
-        [[nodiscard]] std::unique_ptr<D3D12LinearAllocatorPage> CreateNewPage(UINT64 PageSize) const;
-
-        void DiscardPages(UINT64 FenceValue, const std::vector<D3D12LinearAllocatorPage*>& Pages);
-
-    private:
-        std::vector<std::unique_ptr<D3D12LinearAllocatorPage>>   PagePool;
-        std::queue<std::pair<UINT64, D3D12LinearAllocatorPage*>> RetiredPages;
-        std::queue<D3D12LinearAllocatorPage*>                    AvailablePages;
-
-        D3D12SyncHandle                        SyncHandle;
-        D3D12LinearAllocatorPage*              CurrentPage = nullptr;
-        std::vector<D3D12LinearAllocatorPage*> RetiredPageList;
-    };
-    */
 
 } // namespace RHI

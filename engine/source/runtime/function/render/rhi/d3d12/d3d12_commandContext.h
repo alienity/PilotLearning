@@ -3,7 +3,7 @@
 #include "d3d12_linkedDevice.h"
 #include "d3d12_resource.h"
 #include "d3d12_commandList.h"
-#include "d3d12_resourceAllocator.h"
+#include "d3d12_graphicsMemory.h"
 #include "d3d12_rootSignature.h"
 #include "d3d12_commandSignature.h"
 #include "d3d12_dynamicDescriptorHeap.h"
@@ -94,7 +94,7 @@ namespace RHI
         // and returns row pitch in bytes.
         //uint32_t ReadbackTexture(ReadbackBuffer* DstBuffer, D3D12Texture* SrcBuffer);
 
-        D3D12Allocation ReserveUploadMemory(UINT64 SizeInBytes, UINT Alignment = D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT);
+        GraphicsResource ReserveUploadMemory(UINT64 SizeInBytes, UINT Alignment = D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT);
 
         static void InitializeTexture(D3D12LinkedDevice* Parent, D3D12Texture* Dest, std::vector<D3D12_SUBRESOURCE_DATA> Subresources);
         static void InitializeTexture(D3D12LinkedDevice* Parent, D3D12Texture* Dest, UINT FirstSubresource, std::vector<D3D12_SUBRESOURCE_DATA> Subresources);
@@ -138,8 +138,8 @@ namespace RHI
         D3D12CommandListHandle                         m_CommandListHandle;
         Microsoft::WRL::ComPtr<ID3D12CommandAllocator> m_CommandAllocator;
         D3D12CommandAllocatorPool                      m_CommandAllocatorPool;
-        D3D12LinearAllocator                           m_CpuLinearAllocator;
-
+        GraphicsMemory*                                m_GraphicsMemory;
+        
         // Every context must use its own allocator that maintains individual list of retired descriptor heaps to
         // avoid interference with other command contexts
         // The allocations in heaps are discarded at the end of the frame.

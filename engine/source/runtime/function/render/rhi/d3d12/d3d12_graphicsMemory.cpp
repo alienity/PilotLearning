@@ -143,7 +143,7 @@ namespace RHI
         }
 
         // Submit page fences to the command queue
-        void KickFences(_In_ ID3D12CommandQueue* commandQueue)
+        void KickFences(_In_ D3D12SyncHandle syncHandle)
         {
             ScopedLock lock(mMutex);
 
@@ -152,7 +152,7 @@ namespace RHI
                 if (i)
                 {
                     i->RetirePendingPages();
-                    i->FenceCommittedPages(commandQueue);
+                    i->FenceCommittedPages(syncHandle);
                 }
             }
         }
@@ -259,7 +259,7 @@ namespace RHI
 
         GraphicsResource Allocate(size_t size, size_t alignment) { return mDeviceAllocator->Alloc(size, alignment); }
 
-        void Commit(_In_ ID3D12CommandQueue* commandQueue) { mDeviceAllocator->KickFences(commandQueue); }
+        void Commit(_In_ D3D12SyncHandle syncHandle) { mDeviceAllocator->KickFences(syncHandle); }
 
         void GarbageCollect() { mDeviceAllocator->GarbageCollect(); }
 
@@ -350,7 +350,7 @@ namespace RHI
         return pImpl->Allocate(size, alignment);
     }
 
-    void GraphicsMemory::Commit(_In_ ID3D12CommandQueue* commandQueue) { pImpl->Commit(commandQueue); }
+    void GraphicsMemory::Commit(_In_ D3D12SyncHandle syncHandle) { pImpl->Commit(syncHandle); }
 
     void GraphicsMemory::GarbageCollect() { pImpl->GarbageCollect(); }
 

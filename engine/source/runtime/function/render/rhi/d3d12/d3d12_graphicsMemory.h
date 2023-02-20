@@ -141,7 +141,7 @@ namespace RHI
 
         // Submits all the pending one-shot memory to the GPU.
         // The memory will be recycled once the GPU is done with it.
-        void __cdecl Commit(_In_ ID3D12CommandQueue* commandQueue);
+        void __cdecl Commit(_In_ D3D12SyncHandle syncHandle);
 
         // This frees up any unused memory.
         // If you want to make sure all memory is reclaimed, idle the GPU before calling this.
