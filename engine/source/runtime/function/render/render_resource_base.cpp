@@ -22,8 +22,8 @@ namespace Pilot
     void RenderResourceBase::iniUploadBatch(RHI::D3D12Device* device)
     {
         m_Device         = device;
-        m_ResourceUpload = std::make_unique<DirectX::ResourceUploadBatch>(device->GetD3D12Device());
-        m_GraphicsMemory = std::make_unique<DirectX::GraphicsMemory>(device->GetD3D12Device());
+        m_ResourceUpload = device->GetLinkedDevice()->GetResourceUploadBatch();
+        m_GraphicsMemory = device->GetLinkedDevice()->GetGraphicsMemory();
     }
 
     void RenderResourceBase::startUploadBatch() 
@@ -36,8 +36,6 @@ namespace Pilot
         // Upload the resources to the GPU.
         auto uploadResourcesFinished = m_ResourceUpload->End(
             m_Device->GetLinkedDevice()->GetCommandQueue(RHI::RHID3D12CommandQueueType::Direct)->GetCommandQueue());
-        //auto uploadResourcesFinished = m_ResourceUpload->End(
-        //    m_Device->GetLinkedDevice()->GetCommandQueue(RHI::RHID3D12CommandQueueType::Copy1)->GetCommandQueue());
 
         // Wait for the upload thread to terminate
         uploadResourcesFinished.wait();
@@ -45,8 +43,11 @@ namespace Pilot
 
     void RenderResourceBase::commitUploadBatch()
     {
-        m_GraphicsMemory->Commit(
-            m_Device->GetLinkedDevice()->GetCommandQueue(RHI::RHID3D12CommandQueueType::Direct)->GetCommandQueue());
+        RHI::D3D12SyncHandle syncHandle = m_Device->GetLinkedDevice()
+                                              ->GetCommandQueue(RHI::RHID3D12CommandQueueType::Direct)
+                                              ->ExecuteCommandLists({}, false);
+
+        m_GraphicsMemory->Commit(syncHandle);
     }
 
     std::shared_ptr<TextureData> RenderResourceBase::loadTextureHDR(std::string file, int desired_channels)

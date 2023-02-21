@@ -4,12 +4,12 @@
 #include "runtime/function/render/render_swap_context.h"
 #include "runtime/function/render/render_type.h"
 
+#include "runtime/function/render/rhi/d3d12/d3d12_graphicsMemory.h"
+#include "runtime/function/render/rhi/d3d12/d3d12_resourceUploadBatch.h"
+
 #include <memory>
 #include <string>
 #include <unordered_map>
-
-#include "ResourceUploadBatch.h"
-#include "GraphicsMemory.h"
 
 namespace Pilot
 {
@@ -54,9 +54,9 @@ namespace Pilot
         AxisAlignedBox               getCachedBoudingBox(const MeshSourceDesc& source) const;
 
     protected:
-        RHI::D3D12Device* m_Device;
-        std::unique_ptr<DirectX::ResourceUploadBatch> m_ResourceUpload;
-        std::unique_ptr<DirectX::GraphicsMemory>      m_GraphicsMemory;
+        RHI::D3D12Device*         m_Device;
+        RHI::ResourceUploadBatch* m_ResourceUpload;
+        RHI::GraphicsMemory*      m_GraphicsMemory;
 
     private:
         void           initDefaultTexture();

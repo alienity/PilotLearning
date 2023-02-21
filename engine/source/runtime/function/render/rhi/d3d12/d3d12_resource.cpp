@@ -471,6 +471,7 @@ namespace RHI
             pBufferD3D12->p_CounterBufferD3D12 = nullptr;
         }
 
+        /*
         bool uploadNeedFinished = false;
 
         // Inflate Buffer
@@ -492,7 +493,7 @@ namespace RHI
         {
             Parent->EndResourceUpload(true);
         }
-        
+        */
         return pBufferD3D12;
     }
 
@@ -509,6 +510,9 @@ namespace RHI
             this->m_Data.m_Data = nullptr;
             this->m_Data.m_DataLen = 0;
         }
+
+        if (initialData == nullptr || dataLen == 0)
+            return false;
 
         this->m_Data.m_Data = (BYTE*)malloc(dataLen);
         this->m_Data.m_DataLen = dataLen;

@@ -6,6 +6,9 @@
 #include "d3d12_commandContext.h"
 #include "d3d12_samplerManager.h"
 #include "d3d12_graphicsCommon.h"
+#include "d3d12_graphicsMemory.h"
+#include "d3d12_resourceUploadBatch.h"
+
 #include "runtime/core/base/utility.h"
 
 //// D3D12.DescriptorAllocatorPageSize
@@ -57,6 +60,7 @@ namespace RHI
         RHI::InitializeCommonState(this);
 
         m_GraphicsMemory = std::shared_ptr<GraphicsMemory>(new GraphicsMemory(this));
+        m_ResourceUploadBatch = std::shared_ptr<ResourceUploadBatch>(new ResourceUploadBatch(this));
 
         constexpr size_t NumThreads = 3;
         m_AvailableCommandContexts.reserve(NumThreads);
@@ -71,7 +75,7 @@ namespace RHI
             m_AvailableAsyncCommandContexts.emplace_back(std::make_shared<D3D12CommandContext>(
                 this, RHID3D12CommandQueueType::AsyncCompute, D3D12_COMMAND_LIST_TYPE_COMPUTE));
         }
-        m_CopyContext1 = std::make_shared<D3D12CommandContext>(this, RHID3D12CommandQueueType::Copy1, D3D12_COMMAND_LIST_TYPE_COPY);
+        m_CopyContext1 = std::make_shared<D3D12CommandContext>(this, RHID3D12CommandQueueType::Copy1, D3D12_COMMAND_LIST_TYPE_DIRECT);
         m_CopyContext2 = std::make_shared<D3D12CommandContext>(this, RHID3D12CommandQueueType::Copy2, D3D12_COMMAND_LIST_TYPE_DIRECT);
     }
     // clang-format on
@@ -86,7 +90,8 @@ namespace RHI
         // release common states
         RHI::DestroyCommonState();
 
-        m_GraphicsMemory = nullptr;
+        m_GraphicsMemory      = nullptr;
+        m_ResourceUploadBatch = nullptr;
 
         m_GraphicsQueue     = nullptr;
         m_AsyncComputeQueue = nullptr;
@@ -164,6 +169,8 @@ namespace RHI
     D3D12CommandContext* D3D12LinkedDevice::GetCopyContext1() { return m_CopyContext1.get(); }
 
     GraphicsMemory* D3D12LinkedDevice::GetGraphicsMemory() { return m_GraphicsMemory.get(); }
+
+    ResourceUploadBatch* D3D12LinkedDevice::GetResourceUploadBatch() { return m_ResourceUploadBatch.get(); }
 
     void D3D12LinkedDevice::OnBeginFrame() { m_Profiler->OnBeginFrame(); }
 

@@ -83,9 +83,8 @@ namespace RHI
 
 #if defined(_DEBUG) || defined(PROFILE)
         // Debug info
-        const wchar_t* GetDebugName() const noexcept { return m_debugName.c_str(); }
-        void           SetDebugName(const wchar_t* name);
-        void           SetDebugName(const char* name);
+        const std::string GetDebugName() const noexcept { return m_debugName; }
+        void              SetDebugName(const std::string name);
 #endif
 
     private:
@@ -96,8 +95,7 @@ namespace RHI
         size_t                               m_numPending;
         size_t                               m_totalPages;
         Microsoft::WRL::ComPtr<ID3D12Device> m_device;
-        D3D12SyncHandle                      m_syncHandle;
-
+        
         // uint64_t                             m_fenceCount;
         // Microsoft::WRL::ComPtr<ID3D12Fence>  m_fence;
 
@@ -116,7 +114,7 @@ namespace RHI
         void FreePages(LinearAllocatorPage* list) noexcept;
 
 #if defined(_DEBUG) || defined(PROFILE)
-        std::wstring m_debugName;
+        std::string m_debugName;
 
         static void ValidateList(LinearAllocatorPage* list);
         void        ValidatePageLists();

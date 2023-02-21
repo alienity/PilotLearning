@@ -1,6 +1,7 @@
 #include "d3d12_linearAllocator.h"
 #include "d3d12_linkedDevice.h"
 #include "d3d12_PlatformHelpers.h"
+#include <Windows.h>
 
 // Set this to 1 to enable some additional debug validation
 #define VALIDATE_LISTS 0
@@ -46,11 +47,11 @@ namespace RHI
                                      _In_ size_t        preallocateBytes) noexcept(false) :
         m_pendingPages(nullptr),
         m_usedPages(nullptr), m_unusedPages(nullptr), m_increment(pageSize), m_numPending(0), m_totalPages(0),
-        m_syncHandle(), m_device(pDevice)
+        m_device(pDevice)
     {
         assert(pDevice != nullptr);
 #if defined(_DEBUG) || defined(PROFILE)
-        m_debugName = L"LinearAllocator";
+        m_debugName = "LinearAllocator";
 #endif
 
         const size_t preallocatePageCount = ((preallocateBytes + pageSize - 1) / pageSize);
@@ -172,10 +173,6 @@ namespace RHI
     // (immediately before or after Present-time)
     void LinearAllocator::RetirePendingPages() noexcept
     {
-        assert(m_syncHandle);
-
-        m_syncHandle.GetValue();
-
         //const uint64_t fenceValue = m_fence->GetCompletedValue();
 
         // For each page that we know has a fence pending, check it. If the fence has passed,
@@ -290,7 +287,8 @@ namespace RHI
         }
 
 #if defined(_DEBUG) || defined(PROFILE)
-        spResource->SetName(m_debugName.empty() ? L"LinearAllocator" : m_debugName.c_str());
+        spResource->SetName(m_debugName.empty() ? L"LinearAllocator" :
+                                                  std::wstring(m_debugName.begin(), m_debugName.end()).c_str());
 #endif
 
         // Get a pointer to the memory
@@ -450,17 +448,7 @@ namespace RHI
 #endif
 
     #if defined(_DEBUG) || defined(PROFILE)
-    void LinearAllocator::SetDebugName(const char* name)
-    {
-        wchar_t   wname[MAX_PATH] = {};
-        const int result = MultiByteToWideChar(65001, 0, name, static_cast<int>(strlen(name)), wname, MAX_PATH);
-        if (result > 0)
-        {
-            SetDebugName(wname);
-        }
-    }
-
-    void LinearAllocator::SetDebugName(const wchar_t* name)
+    void LinearAllocator::SetDebugName(const std::string name)
     {
         m_debugName = name;
 
@@ -474,9 +462,12 @@ namespace RHI
 
     void LinearAllocator::SetPageDebugName(LinearAllocatorPage* list) noexcept
     {
+        std::wstring stemp = std::wstring(m_debugName.begin(), m_debugName.end());
+        LPCWSTR      mw_debugName = stemp.c_str();
+
         for (auto page = list; page != nullptr; page = page->pNextPage)
         {
-            page->mUploadResource->SetName(m_debugName.c_str());
+            page->mUploadResource->SetName(mw_debugName);
         }
     }
 #endif

@@ -502,7 +502,7 @@ namespace D3D12RHIUtils
         }
     }
 
-    bool FormatIsUAVCompatible(_In_ ID3D12Device* device, bool typedUAVLoadAdditionalFormats, DXGI_FORMAT format) noexcept
+    inline bool FormatIsUAVCompatible(_In_ ID3D12Device* device, bool typedUAVLoadAdditionalFormats, DXGI_FORMAT format) noexcept
     {
         switch (format)
         {
@@ -574,7 +574,7 @@ namespace D3D12RHIUtils
         }
     }
 
-    bool FormatIsBGR(DXGI_FORMAT format) noexcept
+    inline bool FormatIsBGR(DXGI_FORMAT format) noexcept
     {
         switch (format)
         {
@@ -588,7 +588,7 @@ namespace D3D12RHIUtils
         }
     }
 
-    bool FormatIsSRGB(DXGI_FORMAT format) noexcept
+    inline bool FormatIsSRGB(DXGI_FORMAT format) noexcept
     {
         switch (format)
         {
@@ -601,7 +601,7 @@ namespace D3D12RHIUtils
         }
     }
 
-    DXGI_FORMAT ConvertSRVtoResourceFormat(DXGI_FORMAT format) noexcept
+    inline DXGI_FORMAT ConvertSRVtoResourceFormat(DXGI_FORMAT format) noexcept
     {
         switch (format)
         {
@@ -717,17 +717,17 @@ namespace RHI
         }
         bool operator!=(const RHIBufferDesc& o) const { return !(*this == o); }
 
-        UINT            size;   // buffer的字节数
-        UINT            number; // element的数量
-        UINT32          stride; // index/vertex/struct的大小
-        RHIBufferTarget target; // buffer使用来干啥
-        RHIBufferMode   mode;   // 更新模式，是静态的，动态的，或者是可读回的
+        UINT            size   = 0;                   // buffer的字节数
+        UINT            number = 0;                   // element的数量
+        UINT32          stride = 0;                   // index/vertex/struct的大小
+        RHIBufferTarget target = RHIBufferTargetNone; // buffer使用来干啥
+        RHIBufferMode mode = RHIBufferModeImmutable;  // 更新模式，是静态的，动态的，或者是可读回的
     };
 
     struct RHIBufferData
     {
-        BYTE*  m_Data;
-        UINT64 m_DataLen;
+        BYTE*  m_Data = nullptr;
+        UINT64 m_DataLen = 0;
     };
 
     enum RHISurfaceCreateFlags

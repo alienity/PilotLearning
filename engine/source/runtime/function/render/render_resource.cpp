@@ -7,6 +7,7 @@
 #include "runtime/function/render/rhi/d3d12/d3d12_core.h"
 #include "runtime/function/render/rhi/d3d12/d3d12_resource.h"
 #include "runtime/function/render/rhi/d3d12/d3d12_descriptor.h"
+#include "runtime/function/render/rhi/d3d12/d3d12_graphicsMemory.h"
 
 #include "runtime/function/render/rhi/hlsl_data_types.h"
 
@@ -702,7 +703,7 @@ namespace Pilot
             // temporary staging buffer
             uint32_t inefficient_staging_buffer_size = vertex_buffer_size;
 
-            DirectX::SharedGraphicsResource inefficient_staging_buffer =
+            RHI::SharedGraphicsResource inefficient_staging_buffer =
                 m_GraphicsMemory->Allocate(inefficient_staging_buffer_size);
             void* inefficient_staging_buffer_data = inefficient_staging_buffer.Memory();
 
@@ -769,7 +770,7 @@ namespace Pilot
 
         uint32_t index_count = index_buffer_size / sizeof(uint32_t);
 
-        DirectX::SharedGraphicsResource inefficient_staging_buffer = m_GraphicsMemory->Allocate(buffer_size);
+        RHI::SharedGraphicsResource inefficient_staging_buffer = m_GraphicsMemory->Allocate(buffer_size);
 
         void* staging_buffer_data = inefficient_staging_buffer.Memory();
 

@@ -1,7 +1,6 @@
 #pragma once
 #include "d3d12_core.h"
 #include "d3d12_profiler.h"
-#include "d3d12_graphicsMemory.h"
 
 #include <shared_mutex>
 
@@ -14,6 +13,8 @@ namespace RHI
     class CPUDescriptorHeap;
     class DescriptorHeapAllocation;
     class D3D12CommandContext;
+    class GraphicsMemory;
+    class ResourceUploadBatch;
     
     class D3D12LinkedDevice : public D3D12DeviceChild
     {
@@ -46,6 +47,7 @@ namespace RHI
         [[nodiscard]] D3D12CommandContext* GetCopyContext1();
 
         [[nodiscard]] GraphicsMemory* GetGraphicsMemory();
+        [[nodiscard]] ResourceUploadBatch* GetResourceUploadBatch();
 
         void OnBeginFrame();
         void OnEndFrame();
@@ -98,7 +100,8 @@ namespace RHI
         std::shared_ptr<D3D12CommandContext>              m_CopyContext1;
         std::shared_ptr<D3D12CommandContext>              m_CopyContext2;
 
-        std::shared_ptr<GraphicsMemory> m_GraphicsMemory;
+        std::shared_ptr<GraphicsMemory>      m_GraphicsMemory;
+        std::shared_ptr<ResourceUploadBatch> m_ResourceUploadBatch;
 
         struct ResourceAllocationInfoTable
         {

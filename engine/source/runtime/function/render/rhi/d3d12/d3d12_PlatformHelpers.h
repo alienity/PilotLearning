@@ -19,8 +19,8 @@
 #include <debugapi.h>
 #include <memoryapi.h>
 #include <handleapi.h>
-#include <stringapiset.h>
-#include <WinNls.h>
+#include <codecvt>
+#include <cstdint>
 
 #ifndef MAKEFOURCC
 #define MAKEFOURCC(ch0, ch1, ch2, ch3) \
