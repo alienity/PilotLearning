@@ -30,7 +30,8 @@ namespace Pilot
                                                     L"Exposure",
                                                     RHI::RHIBufferMode::RHIBufferModeDynamic,
                                                     D3D12_RESOURCE_STATE_GENERIC_READ,
-                                                    (BYTE*)initExposure, 32);
+                                                    (BYTE*)initExposure,
+                                                    sizeof(initExposure));
         
 
 

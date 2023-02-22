@@ -45,6 +45,7 @@ namespace RHI
         [[nodiscard]] D3D12CommandContext* GetCommandContext(UINT ThreadIndex = 0);
         [[nodiscard]] D3D12CommandContext* GetAsyncComputeCommandContext(UINT ThreadIndex = 0);
         [[nodiscard]] D3D12CommandContext* GetCopyContext1();
+        [[nodiscard]] D3D12CommandContext* GetCopyContext2();
 
         [[nodiscard]] GraphicsMemory* GetGraphicsMemory();
         [[nodiscard]] ResourceUploadBatch* GetResourceUploadBatch();
@@ -56,21 +57,6 @@ namespace RHI
         [[nodiscard]] bool                           ResourceSupport4KBAlignment(D3D12_RESOURCE_DESC& Desc) const;
 
         void WaitIdle();
-
-        D3D12CommandContext* BeginResourceUpload();
-        D3D12SyncHandle EndResourceUpload(bool WaitForCompletion);
-
-        void Upload(const std::vector<D3D12_SUBRESOURCE_DATA>& Subresources, ID3D12Resource* Resource);
-        void Upload(const D3D12_SUBRESOURCE_DATA& Subresource, ID3D12Resource* Resource);
-        void Upload(const std::vector<D3D12_SUBRESOURCE_DATA>& Subresources, UINT FirstSubresource, ID3D12Resource* Resource);
-        void Upload(const D3D12_SUBRESOURCE_DATA& Subresource, UINT FirstSubresource, ID3D12Resource* Resource);
-        void Upload(const void* Data, UINT64 SizeInBytes, ID3D12Resource* Resource);
-
-        #ifdef _DEBUG
-        void AddDebugResource(D3D12Resource* res);
-        void RemoveDebugResource(D3D12Resource* res);
-        #endif
-
         //-------------------------×ÊÔ´ÊÍ·Å--------------------------
         void Retire(Microsoft::WRL::ComPtr<ID3D12Resource> D3D12Resource);
         void Retire(DescriptorHeapAllocation&& Allocation);
@@ -109,13 +95,6 @@ namespace RHI
             robin_hood::unordered_map<std::uint64_t, D3D12_RESOURCE_ALLOCATION_INFO> Table;
         } mutable ResourceAllocationInfoTable;
 
-        D3D12SyncHandle                                     UploadSyncHandle;
-        std::vector<Microsoft::WRL::ComPtr<ID3D12Resource>> TrackedResources;
-
-        #ifdef _DEBUG
-        std::vector<D3D12Resource*> m_DebugResources;
-        #endif
-
         struct ActiveSharedData
         {
             D3D12SyncHandle                                     m_SyncHandle;
@@ -124,7 +103,6 @@ namespace RHI
         };
         
         ActiveSharedData m_ActiveSharedDatas[MaxSharedBufferCount];
-
         ActiveSharedData m_CurrentFrameSharedDatas;
 
         UINT m_CurrentBufferIndex = 0;

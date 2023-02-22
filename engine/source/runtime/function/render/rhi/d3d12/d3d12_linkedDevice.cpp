@@ -39,7 +39,7 @@ namespace RHI
         m_GraphicsQueue = std::make_shared<D3D12CommandQueue>(this, RHID3D12CommandQueueType::Direct);
         m_AsyncComputeQueue = std::make_shared<D3D12CommandQueue>(this, RHID3D12CommandQueueType::AsyncCompute);
         m_CopyQueue1 = std::make_shared<D3D12CommandQueue>(this, RHID3D12CommandQueueType::Copy1);
-        m_CopyQueue2 = std::make_shared<D3D12CommandQueue>(this, RHID3D12CommandQueueType::Copy2);
+        m_CopyQueue2 = std::make_shared<D3D12CommandQueue>(this, RHID3D12CommandQueueType::Direct); // RHID3D12CommandQueueType::Copy2
         m_Profiler = std::make_shared<D3D12Profiler>(this, 1);
 
         m_RtvDescriptorHeaps = std::make_shared<CPUDescriptorHeap>(
@@ -82,11 +82,6 @@ namespace RHI
 
 	D3D12LinkedDevice::~D3D12LinkedDevice()
     {
-        if (UploadSyncHandle)
-        {
-            UploadSyncHandle.WaitForCompletion();
-        }
-
         // release common states
         RHI::DestroyCommonState();
 
@@ -167,6 +162,7 @@ namespace RHI
     }
 
     D3D12CommandContext* D3D12LinkedDevice::GetCopyContext1() { return m_CopyContext1.get(); }
+    D3D12CommandContext* D3D12LinkedDevice::GetCopyContext2() { return m_CopyContext2.get(); }
 
     GraphicsMemory* D3D12LinkedDevice::GetGraphicsMemory() { return m_GraphicsMemory.get(); }
 
@@ -241,114 +237,6 @@ namespace RHI
         m_CopyQueue2->WaitIdle();
     }
 
-    D3D12CommandContext* D3D12LinkedDevice::BeginResourceUpload()
-    {
-        if (UploadSyncHandle && UploadSyncHandle.IsComplete())
-        {
-            TrackedResources.clear();
-        }
-
-        m_CopyContext2->Open();
-        return m_CopyContext2.get();
-    }
-
-    D3D12SyncHandle D3D12LinkedDevice::EndResourceUpload(bool WaitForCompletion)
-    {
-        m_CopyContext2->Close();
-        UploadSyncHandle = m_CopyContext2->Execute(WaitForCompletion);
-        return UploadSyncHandle;
-    }
-
-    void D3D12LinkedDevice::Upload(const std::vector<D3D12_SUBRESOURCE_DATA>& Subresources, ID3D12Resource* Resource)
-    {
-        Upload(Subresources, 0, Resource);
-    }
-
-    void D3D12LinkedDevice::Upload(const D3D12_SUBRESOURCE_DATA& Subresource, ID3D12Resource* Resource)
-    {
-        Upload(Subresource, 0, Resource);
-    }
-
-    void D3D12LinkedDevice::Upload(const std::vector<D3D12_SUBRESOURCE_DATA>& Subresources, UINT FirstSubresource, ID3D12Resource* Resource)
-    {
-        auto                  NumSubresources = static_cast<UINT>(Subresources.size());
-        UINT64                UploadSize     = GetRequiredIntermediateSize(Resource, FirstSubresource, NumSubresources);
-        D3D12_HEAP_PROPERTIES HeapProperties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD, NodeMask, NodeMask);
-        D3D12_RESOURCE_DESC   ResourceDesc   = CD3DX12_RESOURCE_DESC::Buffer(UploadSize);
-        Microsoft::WRL::ComPtr<ID3D12Resource> UploadResource;
-        VERIFY_D3D12_API(GetDevice()->CreateCommittedResource(&HeapProperties,
-                                                              D3D12_HEAP_FLAG_NONE,
-                                                              &ResourceDesc,
-                                                              D3D12_RESOURCE_STATE_GENERIC_READ,
-                                                              nullptr,
-                                                              IID_PPV_ARGS(UploadResource.ReleaseAndGetAddressOf())));
-
-        UpdateSubresources(m_CopyContext2->GetGraphicsCommandList(),
-                           Resource,
-                           UploadResource.Get(),
-                           0,
-                           FirstSubresource,
-                           NumSubresources,
-                           Subresources.data());
-
-        TrackedResources.push_back(std::move(UploadResource));
-    }
-
-    void D3D12LinkedDevice::Upload(const D3D12_SUBRESOURCE_DATA& Subresource, UINT FirstSubresource, ID3D12Resource* Resource)
-    {
-        UINT64                UploadSize     = GetRequiredIntermediateSize(Resource, FirstSubresource, 1);
-        D3D12_HEAP_PROPERTIES HeapProperties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD, NodeMask, NodeMask);
-        D3D12_RESOURCE_DESC   ResourceDesc   = CD3DX12_RESOURCE_DESC::Buffer(UploadSize);
-        Microsoft::WRL::ComPtr<ID3D12Resource> UploadResource;
-        VERIFY_D3D12_API(GetDevice()->CreateCommittedResource(&HeapProperties,
-                                                              D3D12_HEAP_FLAG_NONE,
-                                                              &ResourceDesc,
-                                                              D3D12_RESOURCE_STATE_GENERIC_READ,
-                                                              nullptr,
-                                                              IID_PPV_ARGS(UploadResource.ReleaseAndGetAddressOf())));
-
-        UpdateSubresources<1>(m_CopyContext2->GetGraphicsCommandList(),
-                              Resource,
-                              UploadResource.Get(),
-                              0,
-                              FirstSubresource,
-                              1,
-                              &Subresource);
-
-        TrackedResources.push_back(std::move(UploadResource));
-    }
-
-    void D3D12LinkedDevice::Upload(const void* Data, UINT64 SizeInBytes, ID3D12Resource* Resource)
-    {
-        D3D12_SUBRESOURCE_DATA SubresourceData = {
-            Data,
-            static_cast<LONG_PTR>(SizeInBytes),
-            static_cast<LONG_PTR>(SizeInBytes),
-        };
-        Upload(SubresourceData, Resource);
-    }
-
-    #ifdef _DEBUG
-    void D3D12LinkedDevice::AddDebugResource(D3D12Resource* res) { m_DebugResources.push_back(res); }
-
-    void D3D12LinkedDevice::RemoveDebugResource(D3D12Resource* res)
-    {
-        int resIndex = -1;
-        for (size_t i = 0; i < m_DebugResources.size(); i++)
-        {
-            if (m_DebugResources[i] == res)
-            {
-                resIndex = i;
-                break;
-            }
-        }
-        if (resIndex != -1)
-        {
-            m_DebugResources.erase(m_DebugResources.begin() + resIndex);
-        }
-    }
-    #endif
-    
     void D3D12LinkedDevice::Retire(Microsoft::WRL::ComPtr<ID3D12Resource> D3D12Resource)
     {
         m_CurrentFrameSharedDatas.m_RetiredResource.push_back(D3D12Resource);

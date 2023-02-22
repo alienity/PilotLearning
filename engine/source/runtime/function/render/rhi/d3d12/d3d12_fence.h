@@ -11,6 +11,8 @@ namespace RHI
     public:
         D3D12Fence() noexcept = default;
         explicit D3D12Fence(D3D12Device* Parent, UINT64 InitialValue, D3D12_FENCE_FLAGS Flags = D3D12_FENCE_FLAG_NONE);
+        
+        ~D3D12Fence();
 
         D3D12Fence(D3D12Fence&&) noexcept = default;
         D3D12Fence& operator=(D3D12Fence&&) noexcept = default;
@@ -38,5 +40,6 @@ namespace RHI
         UINT64                               CurrentValue      = 0;
         UINT64                               LastSignaledValue = 0;
         UINT64 LastCompletedValue = 0; // Cached to avoid call to ID3D12Fence::GetCompletedValue
+        HANDLE m_FenceEventHandle = nullptr;
     };
 } // namespace RHI

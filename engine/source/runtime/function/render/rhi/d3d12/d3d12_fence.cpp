@@ -14,7 +14,19 @@ namespace RHI
             return Fence;
         }()),
         CurrentValue(InitialValue + 1), LastSignaledValue(0), LastCompletedValue(InitialValue)
-    {}
+    {
+        m_FenceEventHandle = CreateEvent(nullptr, false, false, nullptr);
+        ASSERT(m_FenceEventHandle != NULL);
+    }
+
+    D3D12Fence::~D3D12Fence()
+    {
+        if (m_FenceEventHandle != nullptr)
+        {
+            CloseHandle(m_FenceEventHandle);
+            m_FenceEventHandle = nullptr;
+        }
+    }
 
     UINT64 D3D12Fence::Signal(D3D12CommandQueue* CommandQueue)
     {
@@ -49,8 +61,15 @@ namespace RHI
             return;
         }
 
-        VERIFY_D3D12_API(Fence->SetEventOnCompletion(Value, nullptr));
-        UpdateLastCompletedValue();
+        // TODO:  Think about how this might affect a multi-threaded situation.  Suppose thread A
+        // wants to wait for fence 100, then thread B comes along and wants to wait for 99.  If
+        // the fence can only have one event set on completion, then thread B has to wait for
+        // 100 before it knows 99 is ready.  Maybe insert sequential events?
+        {
+            VERIFY_D3D12_API(Fence->SetEventOnCompletion(Value, m_FenceEventHandle));
+            WaitForSingleObject(m_FenceEventHandle, INFINITE);
+            UpdateLastCompletedValue();
+        }
     }
 
     void D3D12Fence::InternalSignal(ID3D12CommandQueue* CommandQueue, UINT64 Value)

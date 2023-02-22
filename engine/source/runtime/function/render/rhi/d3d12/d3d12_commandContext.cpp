@@ -4,6 +4,8 @@
 #include "d3d12_commandQueue.h"
 #include "d3d12_descriptor.h"
 #include "d3d12_graphicsCommon.h"
+#include "d3d12_graphicsMemory.h"
+#include "d3d12_resourceUploadBatch.h"
 
 #include "runtime/core/base/utility.h"
 #include "runtime/core/base/macro.h"
@@ -168,7 +170,7 @@ namespace RHI
     void D3D12CommandContext::ResetCounter(D3D12Buffer* CounterResource, UINT64 CounterOffset, UINT Value /*= 0*/)
     {
         FillBuffer(CounterResource, 0, Value, sizeof(UINT));
-        TransitionBarrier(CounterResource, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+        TransitionBarrier(CounterResource, D3D12_RESOURCE_STATE_GENERIC_READ);
     }
 
     GraphicsResource D3D12CommandContext::ReserveUploadMemory(UINT64 SizeInBytes, UINT Alignment)
@@ -1003,43 +1005,102 @@ namespace RHI
         Parent->EndResourceUpload(true);
         */
 
-        UINT NumSubresources = Subresources.size();
+        if (Subresources.empty())
+            return;
+
+        UINT   NumSubresources  = Subresources.size();
         UINT64 uploadBufferSize = GetRequiredIntermediateSize(Dest->GetResource(), FirstSubresource, NumSubresources);
 
-        D3D12CommandContext* InitContext = Parent->BeginResourceUpload();
+        D3D12CommandContext* InitContext = Parent->GetCopyContext2();
+        InitContext->Open();
 
-        // copy data to the intermediate upload heap and then schedule a copy from the upload heap to the default texture
+        // copy data to the intermediate upload heap and then schedule a copy from the upload heap to the default
+        // texture
         RHI::GraphicsResource mem = InitContext->ReserveUploadMemory(uploadBufferSize);
-        UpdateSubresources(InitContext->GetGraphicsCommandList(), Dest->GetResource(), mem.Resource(), 
-            mem.ResourceOffset(), FirstSubresource, NumSubresources, Subresources.data());
+        UpdateSubresources(InitContext->GetGraphicsCommandList(),
+                           Dest->GetResource(),
+                           mem.Resource(),
+                           mem.ResourceOffset(),
+                           FirstSubresource,
+                           NumSubresources,
+                           Subresources.data());
         InitContext->TransitionBarrier(Dest, D3D12_RESOURCE_STATE_GENERIC_READ, true);
 
+        InitContext->Close();
+
         // Execute the command list and wait for it to finish so we can release the upload buffer
-        Parent->EndResourceUpload(true);
+        InitContext->Execute(true);
+
+        /*
+        RHI::ResourceUploadBatch* pUploadBatch    = Parent->GetResourceUploadBatch();
+        RHI::GraphicsMemory*      pGraphicsMemory = Parent->GetGraphicsMemory();
+
+        D3D12CommandContext* pUploadContext = Parent->GetCopyContext2();
+
+        pUploadBatch->Begin();
+
+        D3D12_RESOURCE_STATES originalState = Dest->GetResourceState().GetSubresourceState(0);
+
+        pUploadBatch->Transition(Dest->GetResource(), originalState, D3D12_RESOURCE_STATE_COPY_DEST);
+        pUploadBatch->Upload(Dest->GetResource(), FirstSubresource, Subresources.data(), Subresources.size());
+        pUploadBatch->Transition(Dest->GetResource(), D3D12_RESOURCE_STATE_COPY_DEST, originalState);
+
+        std::future<void> uploadResourcesFinished = pUploadBatch->End(pUploadContext->GetCommandQueue()->GetCommandQueue());
+        uploadResourcesFinished.wait();
+        */
     }
 
     void D3D12CommandContext::InitializeBuffer(D3D12LinkedDevice* Parent, D3D12Buffer* Dest, const void* Data, UINT64 NumBytes, UINT64 DestOffset)
     {
-        D3D12CommandContext* InitContext = Parent->BeginResourceUpload();
+        if (Data == nullptr)
+            return;
+
+        D3D12CommandContext* InitContext = Parent->GetCopyContext2();
+        InitContext->Open();
 
         RHI::GraphicsResource mem = InitContext->ReserveUploadMemory(NumBytes);
         SIMDMemCopy(mem.Memory(), Data, Pilot::DivideByMultiple(NumBytes, 16));
 
         D3D12_RESOURCE_STATES originalState = Dest->GetResourceState().GetSubresourceState(0);
 
-        // copy data to the intermediate upload heap and then schedule a copy from the upload heap to the default texture
+        // copy data to the intermediate upload heap and then schedule a copy from the upload heap to the default
+        // texture
         InitContext->TransitionBarrier(
             Dest, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES, true);
         (*InitContext)->CopyBufferRegion(Dest->GetResource(), DestOffset, mem.Resource(), 0, NumBytes);
         InitContext->TransitionBarrier(Dest, originalState, D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES, true);
 
+        InitContext->Close();
+
         // Execute the command list and wait for it to finish so we can release the upload buffer
-        Parent->EndResourceUpload(true);
+        InitContext->Execute(true);
+
+        /*
+        RHI::ResourceUploadBatch* pUploadBatch = Parent->GetResourceUploadBatch();
+        RHI::GraphicsMemory* pGraphicsMemory = Parent->GetGraphicsMemory();
+
+        D3D12CommandContext* pUploadContext = Parent->GetCopyContext2();
+
+        pUploadBatch->Begin();
+
+        D3D12_RESOURCE_STATES originalState = Dest->GetResourceState().GetSubresourceState(0);
+
+        SharedGraphicsResource mem = pGraphicsMemory->Allocate(NumBytes, 16);
+        SIMDMemCopy(mem.Memory(), Data, Pilot::DivideByMultiple(NumBytes, 16));
+
+        pUploadBatch->Transition(Dest->GetResource(), originalState, D3D12_RESOURCE_STATE_COPY_DEST);
+        pUploadBatch->Upload(Dest->GetResource(), DestOffset, mem);
+        pUploadBatch->Transition(Dest->GetResource(), D3D12_RESOURCE_STATE_COPY_DEST, originalState);
+
+        std::future<void> uploadResourcesFinished = pUploadBatch->End(pUploadContext->GetCommandQueue()->GetCommandQueue());
+        uploadResourcesFinished.wait();
+        */
     }
 
     void D3D12CommandContext::InitializeTextureArraySlice(D3D12LinkedDevice* Parent, D3D12Texture* Dest, UINT SliceIndex, D3D12Texture* Src)
     {
-        D3D12CommandContext* InitContext = Parent->BeginResourceUpload();
+        D3D12CommandContext* InitContext = Parent->GetCopyContext2();
+        InitContext->Open();
 
         InitContext->TransitionBarrier(Dest, D3D12_RESOURCE_STATE_COPY_DEST, true);
 
@@ -1064,7 +1125,10 @@ namespace RHI
         }
 
         InitContext->TransitionBarrier(Dest, D3D12_RESOURCE_STATE_GENERIC_READ);
-        Parent->EndResourceUpload(true);
+
+        InitContext->Close();
+
+        InitContext->Execute(true);
     }
 
 

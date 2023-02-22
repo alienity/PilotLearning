@@ -2,6 +2,7 @@
 #include "d3d12_linkedDevice.h"
 #include "d3d12_PlatformHelpers.h"
 #include "d3d12_resourceUploadBatch.h"
+#include "d3d12_commandContext.h"
 #include "shaders/CompiledShaders/GenerateMipsCS.h"
 
 namespace RHI
@@ -203,13 +204,13 @@ namespace RHI
             mTrackedObjects.push_back(scratchResource);
         }
 
-        void Upload(_In_ ID3D12Resource* resource, const SharedGraphicsResource& buffer)
+        void Upload(_In_ ID3D12Resource* resource, uint32_t destOffset, const SharedGraphicsResource& buffer)
         {
             if (!mInBeginEndBlock)
                 throw std::logic_error("Can't call Upload on a closed ResourceUploadBatch.");
 
             // Submit resource copy to command list
-            mList->CopyBufferRegion(resource, 0, buffer.Resource(), buffer.ResourceOffset(), buffer.Size());
+            mList->CopyBufferRegion(resource, destOffset, buffer.Resource(), buffer.ResourceOffset(), buffer.Size());
 
             // Remember this upload resource for delayed release
             mTrackedMemoryResources.push_back(buffer);
@@ -860,10 +861,9 @@ namespace RHI
         pImpl->Upload(resource, subresourceIndexStart, subRes, numSubresources);
     }
 
-    _Use_decl_annotations_ void ResourceUploadBatch::Upload(ID3D12Resource*               resource,
-                                                            const SharedGraphicsResource& buffer)
+    _Use_decl_annotations_ void ResourceUploadBatch::Upload(ID3D12Resource* resource, uint32_t destOffset, const SharedGraphicsResource& buffer)
     {
-        pImpl->Upload(resource, buffer);
+        pImpl->Upload(resource, destOffset, buffer);
     }
 
     void ResourceUploadBatch::GenerateMips(_In_ ID3D12Resource* resource) { pImpl->GenerateMips(resource); }

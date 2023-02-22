@@ -123,11 +123,7 @@ namespace RHI
         m_PlaneCount(D3D12GetFormatPlaneCount(Parent->GetDevice(), m_ResourceDesc.Format)),
         m_NumSubresources(CalculateNumSubresources()), m_ResourceState(m_NumSubresources, InitialResourceState),
         m_VersionID(g_GlobalUniqueId++)
-    {
-#ifdef _DEBUG
-        Parent->AddDebugResource(this);
-#endif
-    }
+    {}
 
     D3D12Resource::D3D12Resource(D3D12LinkedDevice*                 Parent,
                                  CD3DX12_HEAP_PROPERTIES            HeapProperties,
@@ -140,11 +136,7 @@ namespace RHI
         m_PlaneCount(D3D12GetFormatPlaneCount(Parent->GetDevice(), Desc.Format)),
         m_NumSubresources(CalculateNumSubresources()), m_ResourceState(m_NumSubresources, InitialResourceState),
         m_VersionID(g_GlobalUniqueId++)
-    {
-#ifdef _DEBUG
-        Parent->AddDebugResource(this);
-#endif
-    }
+    {}
 
     D3D12Resource::D3D12Resource(D3D12LinkedDevice*                       Parent,
                                  Microsoft::WRL::ComPtr<ID3D12Resource>&& Resource,
@@ -158,7 +150,6 @@ namespace RHI
         m_VersionID(g_GlobalUniqueId++)
     {
 #ifdef _DEBUG
-        Parent->AddDebugResource(this);
         this->SetResourceName(Name);
 #endif
     }
@@ -177,16 +168,12 @@ namespace RHI
         m_VersionID(g_GlobalUniqueId++)
     {
 #ifdef _DEBUG
-        Parent->AddDebugResource(this);
         this->SetResourceName(Name);
 #endif
     }
 
     void D3D12Resource::Destroy()
     {
-#ifdef _DEBUG
-        Parent->RemoveDebugResource(this);
-#endif
         if (m_pResource != nullptr)
         {
             Parent->Retire(m_pResource);
@@ -384,10 +371,6 @@ namespace RHI
 
     void D3D12Buffer::Destroy()
     {
-#ifdef _DEBUG
-        Parent->RemoveDebugResource(this);
-#endif // _DEBUG
-
         m_ScopedPointer.Release();
         
         Parent->Retire(m_pResource);
@@ -470,30 +453,22 @@ namespace RHI
         {
             pBufferD3D12->p_CounterBufferD3D12 = nullptr;
         }
-
-        /*
-        bool uploadNeedFinished = false;
-
+        
         // Inflate Buffer
         if (initialData != nullptr)
         {
             pBufferD3D12->InflateBuffer(initialData, dataLen);
-            uploadNeedFinished = true;
         }
 
         // Reset CounterBuffer
         if (bufferTarget & RHIBufferTarget::RHIBufferTargetCounter)
         {
-            D3D12CommandContext* pInitContext = Parent->BeginResourceUpload();
+            D3D12CommandContext* pInitContext = Parent->GetCopyContext2();
+            pInitContext->Open();
             pBufferD3D12->ResetCounterBuffer(pInitContext);
-            uploadNeedFinished = true;
+            pInitContext->Close();
+            pInitContext->Execute(true);
         }
-
-        if (uploadNeedFinished)
-        {
-            Parent->EndResourceUpload(true);
-        }
-        */
         return pBufferD3D12;
     }
 
@@ -679,10 +654,6 @@ namespace RHI
 
     void D3D12Texture::Destroy()
     {
-#ifdef _DEBUG
-        Parent->RemoveDebugResource(this);
-#endif // _DEBUG
-
         if (!m_Desc.backBuffer)
         {
             Parent->Retire(m_pResource);

@@ -751,7 +751,7 @@ namespace Pilot
                                                  buf_ori_state,
                                                  D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_DEST);
 
-                    m_ResourceUpload->Upload(now_mesh.p_mesh_vertex_buffer->GetResource(), inefficient_staging_buffer);
+                    m_ResourceUpload->Upload(now_mesh.p_mesh_vertex_buffer->GetResource(), 0, inefficient_staging_buffer);
 
                     m_ResourceUpload->Transition(now_mesh.p_mesh_vertex_buffer->GetResource(),
                                                  D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_DEST,
@@ -796,7 +796,7 @@ namespace Pilot
                                              buf_ori_state,
                                              D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_DEST);
 
-                m_ResourceUpload->Upload(now_mesh.p_mesh_index_buffer->GetResource(), inefficient_staging_buffer);
+                m_ResourceUpload->Upload(now_mesh.p_mesh_index_buffer->GetResource(), 0, inefficient_staging_buffer);
 
                 m_ResourceUpload->Transition(now_mesh.p_mesh_index_buffer->GetResource(),
                                              D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_DEST,

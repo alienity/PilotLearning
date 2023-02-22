@@ -5,6 +5,8 @@
 namespace RHI
 {
 
+    class D3D12LinkedDevice;
+
     // Has a command list of it's own so it can upload at any time.
     class ResourceUploadBatch : public D3D12LinkedDeviceChild
     {
@@ -30,7 +32,7 @@ namespace RHI
                             _In_reads_(numSubresources) const D3D12_SUBRESOURCE_DATA* subRes,
                             uint32_t                                                  numSubresources);
 
-        void __cdecl Upload(_In_ ID3D12Resource* resource, const SharedGraphicsResource& buffer);
+        void __cdecl Upload(_In_ ID3D12Resource* resource, uint32_t destOffset, const SharedGraphicsResource& buffer);
 
         // Asynchronously generate mips from a resource.
         // Resource must be in the PIXEL_SHADER_RESOURCE state
