@@ -82,6 +82,15 @@ namespace EngineConfig
     };
     extern BloomConfig g_BloomConfig;
 
+    struct ToneMappingConfig
+    {
+        // Graphics/Display/Paper White (nits)
+        float m_HDRPaperWhite = 200.0f; // 100.0f, 500.0f, 50.0f
+        // Graphics/Display/Peak Brightness (nits)
+        float m_MaxDisplayLuminance = 1000.0f; // 500.0f, 10000.0f, 100.0f
+    };
+    extern ToneMappingConfig g_ToneMappingConfig;
+
 }
 
 // clang-format off

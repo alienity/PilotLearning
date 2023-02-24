@@ -64,9 +64,9 @@ namespace RHI
 
         RenderPass(std::string_view Name);
 
-        RenderPass& Read(RgResourceHandle Resource);
-        RenderPass& Write(RgResourceHandle Resource);
-        RenderPass& Resolve(RgResourceHandle SrcResource, RgResourceHandle DstResource);
+        RenderPass& Read(RgResourceHandle Resource, bool IgnoreBarrier = false);
+        RenderPass& Write(RgResourceHandle Resource, bool IgnoreBarrier = false);
+        //RenderPass& Resolve(RgResourceHandle SrcResource, RgResourceHandle DstResource);
 
         template<typename PFNRenderPassCallback>
         void Execute(PFNRenderPassCallback&& Callback)
@@ -88,7 +88,9 @@ namespace RHI
         robin_hood::unordered_set<RgResourceHandle> Writes;
         robin_hood::unordered_set<RgResourceHandle> ReadWrites;
 
-        std::vector<std::pair<RgResourceHandle, RgResourceHandle>> ResolveSrcDstPairs;
+        std::vector<RgResourceHandle> IgnoreReads;
+        std::vector<RgResourceHandle> IgnoreWrites;
+        //std::vector<std::pair<RgResourceHandle, RgResourceHandle>> ResolveSrcDstPairs;
 
         ExecuteCallback Callback;
     };
@@ -107,7 +109,9 @@ namespace RHI
         robin_hood::unordered_set<RgResourceHandle> Reads;
         robin_hood::unordered_set<RgResourceHandle> Writes;
 
-        std::vector<std::pair<RgResourceHandle, RgResourceHandle>> ResolveSrcDstPairs;
+        std::vector<RgResourceHandle> IgnoreReads;
+        std::vector<RgResourceHandle> IgnoreWrites;
+        //std::vector<std::pair<RgResourceHandle, RgResourceHandle>> ResolveSrcDstPairs;
     };
 
     class RenderGraph

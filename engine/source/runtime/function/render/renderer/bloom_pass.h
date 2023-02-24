@@ -7,10 +7,10 @@
 
 namespace Pilot
 {
-    class ExposurePass : public RenderPass
+    class BloomPass : public RenderPass
 	{
     public:
-        struct ExposureInitInfo : public RenderPassInitInfo
+        struct BloomInitInfo : public RenderPassInitInfo
         {
             RHI::RgTextureDesc       m_ColorTexDesc;
             EngineConfig::HDRConfig  m_HDRConfig;
@@ -39,18 +39,14 @@ namespace Pilot
         };
 
     public:
-        ~ExposurePass() { destroy(); }
+        ~BloomPass() { destroy(); }
 
-        void initialize(const ExposureInitInfo& init_info);
+        void initialize(const BloomInitInfo& init_info);
         void update(RHI::RenderGraph& graph, DrawInputParameters& passInput, DrawOutputParameters& passOutput);
         void destroy() override final;
 
     private:
-
-        RHI::RgTextureDesc mTmpColorTexDesc;
-
-        std::shared_ptr<RHI::D3D12Buffer> p_ExposureBuffer;
-
+        
 	};
 }
 

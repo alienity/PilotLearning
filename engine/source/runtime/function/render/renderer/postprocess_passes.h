@@ -7,6 +7,10 @@
 
 #include "runtime/function/render/renderer/msaa_resolve_pass.h"
 #include "runtime/function/render/renderer/fxaa_pass.h"
+//#include "runtime/function/render/renderer/bloom_pass.h"
+//#include "runtime/function/render/renderer/extractLuma_pass.h"
+#include "runtime/function/render/renderer/hdr_tonemapping_pass.h"
+#include "runtime/function/render/renderer/exposure_pass.h"
 
 namespace Pilot
 {
@@ -23,22 +27,24 @@ namespace Pilot
         {
             PostprocessInputParameters()
             {
-                renderTargetColorHandle.Invalidate();
-                renderTargetDepthHandle.Invalidate();
+                inputSceneColorHandle.Invalidate();
+                inputSceneDepthHandle.Invalidate();
             }
 
-            RHI::RgResourceHandle renderTargetColorHandle;
-            RHI::RgResourceHandle renderTargetDepthHandle;
+            RHI::RgResourceHandle inputSceneColorHandle;
+            RHI::RgResourceHandle inputSceneDepthHandle;
         };
 
         struct PostprocessOutputParameters : public PassOutput
         {
             PostprocessOutputParameters()
             {
-                postTargetColorHandle.Invalidate();
+                postTargetColorHandle0.Invalidate();
+                postTargetColorHandle1.Invalidate();
             }
 
-            RHI::RgResourceHandle postTargetColorHandle;
+            RHI::RgResourceHandle postTargetColorHandle0;
+            RHI::RgResourceHandle postTargetColorHandle1;
         };
 
     public:
@@ -54,9 +60,12 @@ namespace Pilot
     private:
         RHI::RgTextureDesc colorTexDesc;
 
-        std::shared_ptr<MSAAResolvePass> mResolvePass;
-        std::shared_ptr<FXAAPass>        mFXAAPass;
 
+
+        std::shared_ptr<MSAAResolvePass>    mResolvePass;
+        std::shared_ptr<FXAAPass>           mFXAAPass;
+        std::shared_ptr<ExposurePass>       mExposurePass;
+        std::shared_ptr<HDRToneMappingPass> mHDRToneMappingPass;
 	};
 }
 

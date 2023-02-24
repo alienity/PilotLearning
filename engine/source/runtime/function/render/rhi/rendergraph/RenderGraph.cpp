@@ -8,17 +8,19 @@ namespace RHI
 	{
 	}
 
-	RenderPass& RenderPass::Read(RgResourceHandle Resource)
+	RenderPass& RenderPass::Read(RgResourceHandle Resource, bool IgnoreBarrier)
 	{
 		// Only allow buffers/textures
         ASSERT(Resource.IsValid());
         ASSERT(Resource.Type == RgResourceType::Buffer || Resource.Type == RgResourceType::Texture);
 		Reads.insert(Resource);
 		ReadWrites.insert(Resource);
+        if (IgnoreBarrier)
+            IgnoreReads.push_back(Resource);
 		return *this;
 	}
 
-	RenderPass& RenderPass::Write(RgResourceHandle Resource)
+	RenderPass& RenderPass::Write(RgResourceHandle Resource, bool IgnoreBarrier)
 	{
 		// Only allow buffers/textures
         ASSERT(Resource && Resource->IsValid());
@@ -26,21 +28,9 @@ namespace RHI
 		//Resource->Version++;
 		Writes.insert(Resource);
 		ReadWrites.insert(Resource);
+        if (IgnoreBarrier)
+            IgnoreWrites.push_back(Resource);
 		return *this;
-	}
-
-	RenderPass& RenderPass::Resolve(RgResourceHandle SrcResource, RgResourceHandle DstResource)
-	{
-        // Only allow buffers/textures
-        ASSERT(Resource && Resource->IsValid());
-        ASSERT(Resource->Type == RgResourceType::Texture);
-        // Resource->Version++;
-        ResolveSrcDstPairs.push_back(std::pair<RgResourceHandle, RgResourceHandle>(SrcResource, DstResource));
-        Reads.insert(SrcResource);
-        Writes.insert(DstResource);
-        ReadWrites.insert(SrcResource);
-        ReadWrites.insert(DstResource);
-        return *this;
 	}
 
 	bool RenderPass::HasDependency(RgResourceHandle Resource) const
@@ -68,7 +58,10 @@ namespace RHI
 		RenderPasses.push_back(RenderPass);
 		Reads.insert(RenderPass->Reads.begin(), RenderPass->Reads.end());
 		Writes.insert(RenderPass->Writes.begin(), RenderPass->Writes.end());
-        ResolveSrcDstPairs.insert(ResolveSrcDstPairs.end(), RenderPass->ResolveSrcDstPairs.begin(), RenderPass->ResolveSrcDstPairs.end());
+
+		IgnoreReads.insert(IgnoreReads.begin(), RenderPass->IgnoreReads.begin(), RenderPass->IgnoreReads.end());
+        IgnoreWrites.insert(IgnoreWrites.begin(), RenderPass->IgnoreWrites.begin(), RenderPass->IgnoreWrites.end());
+        //ResolveSrcDstPairs.insert(ResolveSrcDstPairs.end(), RenderPass->ResolveSrcDstPairs.begin(), RenderPass->ResolveSrcDstPairs.end());
 	}
 
 	void RenderGraphDependencyLevel::Execute(RenderGraph* RenderGraph, D3D12CommandContext* Context)
@@ -78,9 +71,9 @@ namespace RHI
 		for (auto Read : Reads)
 		{
             bool isResolveSrc = false;
-            for (size_t i = 0; i < ResolveSrcDstPairs.size(); i++)
+            for (size_t i = 0; i < IgnoreReads.size(); i++)
             {
-				if (ResolveSrcDstPairs[i].first == Read)
+                if (IgnoreReads[i] == Read)
 				{
                     isResolveSrc = true;
                     break;
@@ -102,9 +95,9 @@ namespace RHI
 		for (auto Write : Writes)
 		{
             bool isResolveDst = false;
-            for (size_t i = 0; i < ResolveSrcDstPairs.size(); i++)
+            for (size_t i = 0; i < IgnoreWrites.size(); i++)
             {
-                if (ResolveSrcDstPairs[i].second == Write)
+                if (IgnoreWrites[i] == Write)
                 {
                     isResolveDst = true;
                     break;

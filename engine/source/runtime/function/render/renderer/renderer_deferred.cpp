@@ -250,11 +250,11 @@ namespace Pilot
         PostprocessPasses::PostprocessInputParameters  mPostprocessIntputParams;
         PostprocessPasses::PostprocessOutputParameters mPostprocessOutputParams;
 
-        mPostprocessIntputParams.renderTargetColorHandle = mDrawTransOutputParams.renderTargetColorHandle;
+        mPostprocessIntputParams.inputSceneColorHandle = mDrawTransOutputParams.renderTargetColorHandle;
 
         mPostprocessPasses->update(graph, mPostprocessIntputParams, mPostprocessOutputParams);
 
-        outputRTColorHandle = mPostprocessOutputParams.postTargetColorHandle;
+        outputRTColorHandle = mPostprocessOutputParams.postTargetColorHandle1;
 
         // display
         DisplayPass::DisplayInputParameters  mDisplayIntputParams;

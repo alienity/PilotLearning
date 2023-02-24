@@ -7,10 +7,10 @@
 
 namespace Pilot
 {
-    class ExposurePass : public RenderPass
+    class ExtractLumaPass : public RenderPass
 	{
     public:
-        struct ExposureInitInfo : public RenderPassInitInfo
+        struct ExtractLumaInitInfo : public RenderPassInitInfo
         {
             RHI::RgTextureDesc       m_ColorTexDesc;
             EngineConfig::HDRConfig  m_HDRConfig;
@@ -39,18 +39,14 @@ namespace Pilot
         };
 
     public:
-        ~ExposurePass() { destroy(); }
+        ~ExtractLumaPass() { destroy(); }
 
-        void initialize(const ExposureInitInfo& init_info);
+        void initialize(const ExtractLumaInitInfo& init_info);
         void update(RHI::RenderGraph& graph, DrawInputParameters& passInput, DrawOutputParameters& passOutput);
         void destroy() override final;
 
     private:
-
-        RHI::RgTextureDesc mTmpColorTexDesc;
-
-        std::shared_ptr<RHI::D3D12Buffer> p_ExposureBuffer;
-
+        
 	};
 }
 

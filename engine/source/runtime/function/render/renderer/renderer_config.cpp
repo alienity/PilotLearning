@@ -13,4 +13,6 @@ namespace EngineConfig
 
     BloomConfig g_BloomConfig = BloomConfig();
 
+    ToneMappingConfig g_ToneMappingConfig = ToneMappingConfig();
+
 }

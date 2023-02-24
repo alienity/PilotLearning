@@ -270,7 +270,7 @@ namespace RHI
         template<typename T>
         void SetDynamicConstantBufferView(UINT RootParameterIndex, const T& Data)
         {
-            SetConstantBuffer(RootParameterIndex, sizeof(T), &Data);
+            SetDynamicConstantBufferView(RootParameterIndex, sizeof(T), &Data);
         }
         void SetDynamicSRV(UINT RootIndex, UINT64 BufferSize, const void* BufferData);
         void SetBufferSRV(UINT RootIndex, D3D12Buffer* BufferSRV, UINT64 Offset = 0);

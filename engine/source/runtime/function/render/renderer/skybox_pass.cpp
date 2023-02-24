@@ -1,7 +1,6 @@
 #include "runtime/function/render/renderer/skybox_pass.h"
-
+#include "runtime/function/render/rhi/rendergraph/RenderGraph.h"
 #include "runtime/resource/config_manager/config_manager.h"
-
 #include "runtime/function/render/rhi/rhi_core.h"
 
 #include <cassert>

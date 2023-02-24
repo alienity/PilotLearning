@@ -22,7 +22,11 @@ namespace Pilot
 
         RHI::RenderPass& resolvepass = graph.AddRenderPass("ResolveMSAA");
 
-        resolvepass.Resolve(drawPassInput.renderTargetColorHandle, drawPassOutput.resolveTargetColorHandle);
+        //resolvepass.Resolve(drawPassInput.renderTargetColorHandle, drawPassOutput.resolveTargetColorHandle);
+
+        resolvepass.Read(drawPassInput.renderTargetColorHandle, true);
+        resolvepass.Write(drawPassOutput.resolveTargetColorHandle, true);
+        
         //resolvepass.Resolve(drawPassInput->renderTargetDepthHandle, drawPassOutput->resolveTargetDepthHandle);
 
         resolvepass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
