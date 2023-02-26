@@ -15,6 +15,18 @@ namespace Pilot
         RenderPassCommonInfo renderPassCommonInfo = {m_RenderGraphAllocator, m_RenderGraphRegistry, m_Device, m_WindowSystem};
 
         {
+            mLuminanceColor = RHI::D3D12Texture::Create2D(m_Device->GetLinkedDevice(),
+                                                          colorTexDesc.Width,
+                                                          colorTexDesc.Height,
+                                                          1,
+                                                          DXGI_FORMAT_R8_UINT,
+                                                          RHI::RHISurfaceCreateRandomWrite,
+                                                          1,
+                                                          L"LuminanceColor",
+                                                          D3D12_RESOURCE_STATE_COMMON);
+
+        }
+        {
             MSAAResolvePass::MSAAResolveInitInfo resolvePassInit;
             resolvePassInit.colorTexDesc = colorTexDesc;
 
@@ -45,13 +57,37 @@ namespace Pilot
             mHDRToneMappingPass->initialize(toneMappingInit);
         }
         {
-            /*
             ExposurePass::ExposureInitInfo exposureInit;
+            exposureInit.m_ColorTexDesc   = colorTexDesc;
+            exposureInit.m_HDRConfig      = EngineConfig::g_HDRConfig;
+            exposureInit.m_ShaderCompiler = init_info.m_ShaderCompiler;
+            exposureInit.m_ShaderRootPath = g_runtime_global_context.m_config_manager->getShaderFolder();
 
             mExposurePass = std::make_shared<ExposurePass>();
             mExposurePass->setCommonInfo(renderPassCommonInfo);
             mExposurePass->initialize(exposureInit);
-            */
+        }
+
+        {
+            __declspec(align(16)) float initExposure[] = {
+                EngineConfig::g_HDRConfig.m_Exposure,
+                1.0f / EngineConfig::g_HDRConfig.m_Exposure,
+                EngineConfig::g_HDRConfig.m_Exposure,
+                0.0f,
+                EngineConfig::kInitialMinLog,
+                EngineConfig::kInitialMaxLog,
+                EngineConfig::kInitialMaxLog - EngineConfig::kInitialMinLog,
+                1.0f / (EngineConfig::kInitialMaxLog - EngineConfig::kInitialMinLog)};
+
+            mExposureBuffer = RHI::D3D12Buffer::Create(m_Device->GetLinkedDevice(),
+                                                       RHI::RHIBufferTarget::RHIBufferTargetNone,
+                                                       8,
+                                                       4,
+                                                       L"Exposure",
+                                                       RHI::RHIBufferMode::RHIBufferModeDynamic,
+                                                       D3D12_RESOURCE_STATE_GENERIC_READ,
+                                                       (BYTE*)initExposure,
+                                                       sizeof(initExposure));
         }
 
     }
@@ -65,6 +101,11 @@ namespace Pilot
 
         initializeResolveTarget(graph, drawPassOutput);
 
+        RHI::RgResourceHandle outputTargetHandle = inputSceneColorHandle;
+
+        RHI::RgResourceHandle exposureBufferHandle = graph.Import(mExposureBuffer.get());
+        RHI::RgResourceHandle luminanceColorHandle = graph.Import(mLuminanceColor.get());
+
         // resolve rendertarget
         if (EngineConfig::g_AntialiasingMode == EngineConfig::MSAA)
         {
@@ -76,24 +117,23 @@ namespace Pilot
             
             mResolvePass->update(graph, mMSAAResolveIntputParams, mMSAAResolveOutputParams);
 
-            //targetHandle = mMSAAResolveOutputParams.resolveTargetColorHandle;
+            outputTargetHandle = mMSAAResolveOutputParams.resolveTargetColorHandle;
         }
         else if (EngineConfig::g_AntialiasingMode == EngineConfig::FXAA)
         {
             FXAAPass::DrawInputParameters  mFXAAIntputParams;
             FXAAPass::DrawOutputParameters mFXAAOutputParams;
 
-            mFXAAIntputParams.inputColorHandle  = inputSceneColorHandle;
-            mFXAAOutputParams.targetColorHandle = drawPassOutput->postTargetColorHandle0;
+            mFXAAIntputParams.inputLumaColorHandle  = luminanceColorHandle;
+            mFXAAIntputParams.inputSceneColorHandle = inputSceneColorHandle;
+            mFXAAOutputParams.outputColorHandle     = drawPassOutput->postTargetColorHandle0;
 
             mFXAAPass->update(graph, mFXAAIntputParams, mFXAAOutputParams);
 
-            //targetHandle = mFXAAOutputParams.targetColorHandle;
+            outputTargetHandle = mFXAAOutputParams.outputColorHandle;
         }
         else
         {
-            //drawPassOutput->postTargetColorHandle0 = inputSceneColorHandle;
-
             RHI::RgResourceHandle mTmpTargetColorHandle = drawPassOutput->postTargetColorHandle0;
 
             RHI::RenderPass& blitPass = graph.AddRenderPass("BlitPass");
@@ -114,9 +154,11 @@ namespace Pilot
                 context->CopySubresource(pTempColor, 0, pInputColor, 0);
             });
 
+            outputTargetHandle = mTmpTargetColorHandle;
         }
 
         {
+            // ToneMapping
             HDRToneMappingPass::DrawInputParameters  mToneMappingIntputParams;
             HDRToneMappingPass::DrawOutputParameters mToneMappingOutputParams;
             
@@ -124,7 +166,21 @@ namespace Pilot
             mToneMappingOutputParams.outputPostEffectsHandle = drawPassOutput->postTargetColorHandle1;
 
             mHDRToneMappingPass->update(graph, mToneMappingIntputParams, mToneMappingOutputParams);
+
+            outputTargetHandle = mToneMappingOutputParams.outputPostEffectsHandle;
+
+            // Exposure
+            ExposurePass::DrawInputParameters  mExposureIntputParams;
+            ExposurePass::DrawOutputParameters mExposureOutputParams;
+
+            mExposureIntputParams.inputLumaLRHandle = mToneMappingOutputParams.outputLumaHandle;
+            mExposureOutputParams.exposureHandle    = exposureBufferHandle;
+
+            // Do this last so that the bright pass uses the same exposure as tone mapping
+            mExposurePass->update(graph, mExposureIntputParams, mExposureOutputParams);
         }
+
+        passOutput.outputColorHandle = outputTargetHandle;
     }
 
     void PostprocessPasses::destroy() {}

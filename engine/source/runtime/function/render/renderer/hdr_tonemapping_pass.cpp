@@ -9,12 +9,13 @@ namespace Pilot
 
 	void HDRToneMappingPass::initialize(const HDRToneMappingInitInfo& init_info)
 	{
-
-        m_LumaBufferDesc = init_info.m_ColorTexDesc;
-        m_LumaBufferDesc.SetMipLevels(1);
+        m_LumaBufferDesc = RHI::RgTextureDesc("LumaBuffer");
         m_LumaBufferDesc.SetFormat(DXGI_FORMAT_R8_UNORM);
+        m_LumaBufferDesc.SetType(RHI::RgTextureType::Texture2D);
+        m_LumaBufferDesc.SetExtent(init_info.m_ColorTexDesc.Width, init_info.m_ColorTexDesc.Height);
+        m_LumaBufferDesc.SetSampleCount(1);
+        m_LumaBufferDesc.SetMipLevels(1);
         m_LumaBufferDesc.SetAllowUnorderedAccess();
-        m_LumaBufferDesc.SetAllowRenderTarget(false);
 
         ShaderCompiler*       m_ShaderCompiler = init_info.m_ShaderCompiler;
         std::filesystem::path m_ShaderRootPath = init_info.m_ShaderRootPath;

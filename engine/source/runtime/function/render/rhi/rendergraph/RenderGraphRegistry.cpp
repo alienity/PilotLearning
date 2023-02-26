@@ -142,6 +142,46 @@ namespace RHI
 			 pTextures[i] = D3D12Texture::Create(
                 Device->GetLinkedDevice(), textureDesc, textureName, D3D12_RESOURCE_STATE_COMMON, pClearValue);
 		}
+
+		robin_hood::unordered_set<RgResourceHandle> BufferDirtyHandles;
+
+		for (size_t i = 0; i < Graph->Buffers.size(); ++i)
+        {
+             auto&            RgBuffer = Graph->Buffers[i];
+             RgResourceHandle Handle   = RgBuffer.Handle;
+             assert(!Handle.IsImported());
+
+             bool BufferDirty = false;
+             auto Iter        = BufferDescTable.find(Handle);
+             if (Iter == BufferDescTable.end())
+             {
+                BufferDirty = true;
+             }
+             else
+             {
+                BufferDirty = Iter->second != RgBuffer.Desc;
+             }
+             BufferDescTable[Handle] = RgBuffer.Desc;
+
+             if (!BufferDirty)
+             {
+                continue;
+             }
+
+             BufferDirtyHandles.insert(Handle);
+             RgBufferDesc& Desc = RgBuffer.Desc;
+
+             std::wstring bufferName = std::wstring(RgBuffer.Desc.mName.begin(), RgBuffer.Desc.mName.end());
+
+             pBuffers[i] = D3D12Buffer::Create(Device->GetLinkedDevice(),
+                                               Desc.mRHIBufferTarget,
+                                               Desc.mNumElements,
+                                               Desc.mElementSize,
+                                               bufferName,
+                                               Desc.mRHIBufferMode,
+                                               D3D12_RESOURCE_STATE_COMMON);
+        }
+
 	}
 
 	D3D12Buffer* RenderGraphRegistry::GetD3D12Buffer(RgResourceHandle Handle)

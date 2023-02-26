@@ -11,6 +11,9 @@ namespace EngineConfig
 
     HDRConfig g_HDRConfig = HDRConfig();
 
+    const float kInitialMinLog = -12.0f;
+    const float kInitialMaxLog = 4.0f;
+
     BloomConfig g_BloomConfig = BloomConfig();
 
     ToneMappingConfig g_ToneMappingConfig = ToneMappingConfig();

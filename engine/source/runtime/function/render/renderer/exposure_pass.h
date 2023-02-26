@@ -20,22 +20,21 @@ namespace Pilot
 
         struct DrawInputParameters : public PassInput
         {
-            DrawInputParameters()
-            {
-                inputColorHandle.Invalidate();
-            }
+            DrawInputParameters() { inputLumaLRHandle.Invalidate(); }
 
-            RHI::RgResourceHandle inputColorHandle;
+            RHI::RgResourceHandle inputLumaLRHandle;
         };
 
         struct DrawOutputParameters : public PassOutput
         {
             DrawOutputParameters()
             {
-                targetColorHandle.Invalidate();
+                exposureHandle.Invalidate();
+                histogramHandle.Invalidate();
             }
 
-            RHI::RgResourceHandle targetColorHandle;
+            RHI::RgResourceHandle exposureHandle;
+            RHI::RgResourceHandle histogramHandle;
         };
 
     public:
@@ -47,10 +46,15 @@ namespace Pilot
 
     private:
 
-        RHI::RgTextureDesc mTmpColorTexDesc;
+        RHI::RgBufferDesc  m_HistogramBufferDesc;
 
-        std::shared_ptr<RHI::D3D12Buffer> p_ExposureBuffer;
-
+        Shader                                   GenerateHistogramCS;
+        std::shared_ptr<RHI::D3D12RootSignature> pGenerateHistogramCSSignature;
+        std::shared_ptr<RHI::D3D12PipelineState> pGenerateHistogramCSPSO;
+        
+        Shader                                   AdaptExposureCS;
+        std::shared_ptr<RHI::D3D12RootSignature> pAdaptExposureCSSignature;
+        std::shared_ptr<RHI::D3D12PipelineState> pAdaptExposureCSPSO;
 	};
 }
 

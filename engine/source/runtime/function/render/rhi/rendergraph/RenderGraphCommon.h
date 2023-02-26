@@ -55,24 +55,6 @@ namespace RHI
 
 	static_assert(sizeof(RgResourceHandle) == sizeof(std::uint64_t));
 
-	struct RgBufferDesc
-    {
-        RgBufferDesc& SetSize(std::uint64_t SizeInBytes)
-        {
-            this->SizeInBytes = SizeInBytes;
-            return *this;
-        }
-
-        RgBufferDesc& AllowUnorderedAccess()
-        {
-            UnorderedAccess = true;
-            return *this;
-        }
-
-        std::uint64_t SizeInBytes     = 0;
-        bool          UnorderedAccess = false;
-    };
-
 	enum class RgTextureType
 	{
 		Texture2D,
@@ -114,6 +96,59 @@ namespace RHI
         RgDepthStencilValue DepthStencil;
         DXGI_FORMAT ClearFormat;
 	};
+
+    struct RgBufferDesc
+    {
+        RgBufferDesc() noexcept = default;
+        RgBufferDesc(std::string_view Name) : mName(Name) {}
+
+        [[nodiscard]] bool operator==(const RgBufferDesc& RgBufferDesc) const noexcept
+        {
+            return memcmp(this, &RgBufferDesc, sizeof(RgBufferDesc)) == 0;
+        }
+        [[nodiscard]] bool operator!=(const RgBufferDesc& RgBufferDesc) const noexcept
+        {
+            return !(*this == RgBufferDesc);
+        }
+
+        RgBufferDesc& SetSize(std::uint64_t numElements, std::uint64_t elementSize)
+        {
+            this->mNumElements = numElements;
+            this->mElementSize = elementSize;
+            return *this;
+        }
+
+        RgBufferDesc& SetRHIBufferMode(RHIBufferMode rhiBufferMode)
+        {
+            mRHIBufferMode = rhiBufferMode;
+            return *this;
+        }
+
+        RgBufferDesc& SetRHIBufferTarget(RHIBufferTarget rhiBufferTarget)
+        {
+            mRHIBufferTarget = rhiBufferTarget;
+            return *this;
+        }
+
+        RgBufferDesc& AllowUnorderedAccess(bool allow = true)
+        {
+			if (allow)
+			{
+                mRHIBufferTarget |= RHIBufferTarget::RHIBufferRandomReadWrite;
+			}
+			else
+			{
+                mRHIBufferTarget &= ~RHIBufferTarget::RHIBufferRandomReadWrite;
+			}
+            return *this;
+        }
+
+		std::string_view mName;
+        std::uint64_t    mNumElements     = 1;
+        std::uint64_t    mElementSize     = 4;
+        RHIBufferMode    mRHIBufferMode   = RHIBufferMode::RHIBufferModeImmutable;
+        RHIBufferTarget  mRHIBufferTarget = RHIBufferTarget::RHIBufferTargetNone;
+    };
 
 	struct RgTextureDesc
 	{

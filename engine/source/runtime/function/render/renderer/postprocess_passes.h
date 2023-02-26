@@ -41,10 +41,14 @@ namespace Pilot
             {
                 postTargetColorHandle0.Invalidate();
                 postTargetColorHandle1.Invalidate();
+
+                outputColorHandle.Invalidate();
             }
 
             RHI::RgResourceHandle postTargetColorHandle0;
             RHI::RgResourceHandle postTargetColorHandle1;
+
+            RHI::RgResourceHandle outputColorHandle;
         };
 
     public:
@@ -60,12 +64,13 @@ namespace Pilot
     private:
         RHI::RgTextureDesc colorTexDesc;
 
-
+        std::shared_ptr<RHI::D3D12Texture> mLuminanceColor;
+        std::shared_ptr<RHI::D3D12Buffer> mExposureBuffer;
 
         std::shared_ptr<MSAAResolvePass>    mResolvePass;
         std::shared_ptr<FXAAPass>           mFXAAPass;
-        std::shared_ptr<ExposurePass>       mExposurePass;
         std::shared_ptr<HDRToneMappingPass> mHDRToneMappingPass;
+        std::shared_ptr<ExposurePass>       mExposurePass;
 	};
 }
 

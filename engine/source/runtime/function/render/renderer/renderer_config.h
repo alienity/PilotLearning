@@ -68,6 +68,9 @@ namespace EngineConfig
     };
     extern HDRConfig g_HDRConfig;
 
+    extern const float kInitialMinLog;
+    extern const float kInitialMaxLog;
+
     struct BloomConfig
     {
         bool m_BloomEnable = true;

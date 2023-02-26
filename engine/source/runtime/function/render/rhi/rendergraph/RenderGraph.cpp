@@ -254,7 +254,7 @@ namespace RHI
             else
             {
                 ASSERT(Resource.Id < Buffers.size());
-                return Buffers[Resource.Id].Desc.UnorderedAccess;
+                return Buffers[Resource.Id].Desc.mRHIBufferTarget & RHIBufferTarget::RHIBufferRandomReadWrite;
             }
 		}
         return false;

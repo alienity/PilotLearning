@@ -22,20 +22,22 @@ namespace Pilot
         {
             DrawInputParameters()
             {
-                inputColorHandle.Invalidate();
+                inputSceneColorHandle.Invalidate();
+                inputLumaColorHandle.Invalidate();
             }
 
-            RHI::RgResourceHandle inputColorHandle;
+            RHI::RgResourceHandle inputSceneColorHandle;
+            RHI::RgResourceHandle inputLumaColorHandle;
         };
 
         struct DrawOutputParameters : public PassOutput
         {
             DrawOutputParameters()
             {
-                targetColorHandle.Invalidate();
+                outputColorHandle.Invalidate();
             }
 
-            RHI::RgResourceHandle targetColorHandle;
+            RHI::RgResourceHandle outputColorHandle;
         };
 
     public:
