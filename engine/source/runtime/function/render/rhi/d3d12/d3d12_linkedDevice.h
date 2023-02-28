@@ -78,8 +78,11 @@ namespace RHI
 
         std::shared_ptr<CPUDescriptorHeap> m_RtvDescriptorHeaps;
         std::shared_ptr<CPUDescriptorHeap> m_DsvDescriptorHeaps;
+        std::shared_ptr<CPUDescriptorHeap> m_CPUResourceDescriptorHeap;
+        std::shared_ptr<CPUDescriptorHeap> m_CPUSamplerDescriptorHeap;
         std::shared_ptr<GPUDescriptorHeap> m_ResourceDescriptorHeap; // D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV
         std::shared_ptr<GPUDescriptorHeap> m_SamplerDescriptorHeap;  // D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER
+
 
         std::vector<std::shared_ptr<D3D12CommandContext>> m_AvailableCommandContexts;
         std::vector<std::shared_ptr<D3D12CommandContext>> m_AvailableAsyncCommandContexts;

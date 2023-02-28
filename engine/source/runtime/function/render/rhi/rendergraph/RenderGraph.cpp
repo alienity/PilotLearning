@@ -83,14 +83,20 @@ namespace RHI
                 continue;
 
 			D3D12_RESOURCE_STATES ReadState = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
-			if (RenderGraph->AllowUnorderedAccess(Read))
+            if (RenderGraph->AllowUnorderedAccess(Read))
+            {
+                ReadState |= D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
+            }
+			if (Read.Type == RgResourceType::Texture)
 			{
-				ReadState |= D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
+                D3D12Texture* pTexture = RenderGraph->GetRegistry()->GetD3D12Texture(Read);
+                Context->TransitionBarrier(pTexture, ReadState);
 			}
-
-			D3D12Texture* pTexture = RenderGraph->GetRegistry()->GetD3D12Texture(Read);
-
-			Context->TransitionBarrier(pTexture, ReadState);
+			else
+			{
+                D3D12Buffer* pBuffer = RenderGraph->GetRegistry()->GetD3D12Buffer(Read);
+                Context->TransitionBarrier(pBuffer, ReadState);
+			}
 		}
 		for (auto Write : Writes)
 		{
@@ -107,21 +113,32 @@ namespace RHI
                 continue;
 
 			D3D12_RESOURCE_STATES WriteState = D3D12_RESOURCE_STATE_COMMON;
-			if (RenderGraph->AllowRenderTarget(Write))
+            if (Write.Type == RgResourceType::Texture)
 			{
-				WriteState |= D3D12_RESOURCE_STATE_RENDER_TARGET;
+                if (RenderGraph->AllowRenderTarget(Write))
+                {
+                    WriteState |= D3D12_RESOURCE_STATE_RENDER_TARGET;
+                }
+                if (RenderGraph->AllowDepthStencil(Write))
+                {
+                    WriteState |= D3D12_RESOURCE_STATE_DEPTH_WRITE;
+                }
+                if (RenderGraph->AllowUnorderedAccess(Write))
+                {
+                    WriteState |= D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
+                }
+                D3D12Texture* pTexture = RenderGraph->GetRegistry()->GetD3D12Texture(Write);
+                Context->TransitionBarrier(pTexture, WriteState);
 			}
-			if (RenderGraph->AllowDepthStencil(Write))
+			else
 			{
-				WriteState |= D3D12_RESOURCE_STATE_DEPTH_WRITE;
+                if (RenderGraph->AllowUnorderedAccess(Write))
+                {
+                    WriteState |= D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
+                }
+                D3D12Buffer* pBuffer = RenderGraph->GetRegistry()->GetD3D12Buffer(Write);
+                Context->TransitionBarrier(pBuffer, WriteState);
 			}
-			if (RenderGraph->AllowUnorderedAccess(Write))
-			{
-				WriteState |= D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
-			}
-            D3D12Texture* pTexture = RenderGraph->GetRegistry()->GetD3D12Texture(Write);
-
-			Context->TransitionBarrier(pTexture, WriteState);
 		}
 
 		Context->FlushResourceBarriers();

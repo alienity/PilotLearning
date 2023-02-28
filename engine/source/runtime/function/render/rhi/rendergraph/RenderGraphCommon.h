@@ -143,6 +143,19 @@ namespace RHI
             return *this;
         }
 
+		RgBufferDesc& AsRowBuffer(bool raw = true)
+        {
+            if (raw)
+            {
+                mRHIBufferTarget |= RHIBufferTarget::RHIBufferTargetRaw;
+            }
+            else
+            {
+                mRHIBufferTarget &= ~RHIBufferTarget::RHIBufferTargetRaw;
+            }
+            return *this;
+        }
+
 		std::string_view mName;
         std::uint64_t    mNumElements     = 1;
         std::uint64_t    mElementSize     = 4;

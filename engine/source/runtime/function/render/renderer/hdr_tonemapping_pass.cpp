@@ -60,12 +60,11 @@ namespace Pilot
                                     DrawInputParameters&  passInput,
                                     DrawOutputParameters& passOutput)
     {
-        DrawInputParameters  drawPassInput  = passInput;
-        DrawOutputParameters drawPassOutput = passOutput;
-
         RHI::RgResourceHandle mLumaBufferHandle = graph.Create<RHI::D3D12Texture>(m_LumaBufferDesc);
+        passOutput.outputLumaHandle = mLumaBufferHandle;
 
-        drawPassOutput.outputLumaHandle = mLumaBufferHandle;
+        DrawInputParameters&  drawPassInput  = passInput;
+        DrawOutputParameters& drawPassOutput = passOutput;
 
         RHI::RenderPass& tonemappingPass = graph.AddRenderPass("ToneMapping");
 

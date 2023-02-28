@@ -15,15 +15,8 @@ namespace Pilot
         m_HistogramBufferDesc.SetSize(256, 4);
         m_HistogramBufferDesc.SetRHIBufferMode(RHI::RHIBufferMode::RHIBufferModeImmutable);
         m_HistogramBufferDesc.AllowUnorderedAccess();
-
-        //p_HistogramBuffer = RHI::D3D12Buffer::Create(m_Device->GetLinkedDevice(),
-        //                                             RHI::RHIBufferTarget::RHIBufferTargetNone,
-        //                                             256,
-        //                                             sizeof(uint32_t),
-        //                                             L"Histogram",
-        //                                             RHI::RHIBufferMode::RHIBufferModeDynamic,
-        //                                             D3D12_RESOURCE_STATE_GENERIC_READ);
-
+        m_HistogramBufferDesc.AsRowBuffer();
+        
         ShaderCompiler*       m_ShaderCompiler = init_info.m_ShaderCompiler;
         std::filesystem::path m_ShaderRootPath = init_info.m_ShaderRootPath;
 
@@ -66,8 +59,8 @@ namespace Pilot
 
     void ExposurePass::update(RHI::RenderGraph& graph, DrawInputParameters& passInput, DrawOutputParameters& passOutput)
     {
-        DrawInputParameters  drawPassInput  = passInput;
-        DrawOutputParameters drawPassOutput = passOutput;
+        DrawInputParameters&  drawPassInput  = passInput;
+        DrawOutputParameters& drawPassOutput = passOutput;
 
         if (!EngineConfig::g_HDRConfig.m_EnableAdaptiveExposure)
         {
@@ -136,8 +129,7 @@ namespace Pilot
                 computeContext->Dispatch2D(
                     m_LumaLRColor->GetWidth(), m_LumaLRColor->GetHeight(), 16, m_LumaLRColor->GetHeight());
             });
-
-
+            /*
             RHI::RenderPass& genHistogram2Pass = graph.AddRenderPass("GenerateHDRDistogram2");
             genHistogram2Pass.Read(drawPassOutput.histogramHandle);
             genHistogram2Pass.Write(drawPassOutput.exposureHandle);
@@ -181,7 +173,7 @@ namespace Pilot
                 computeContext->Dispatch(1, 1, 64);
 
             });
-
+            */
         }
 
     }

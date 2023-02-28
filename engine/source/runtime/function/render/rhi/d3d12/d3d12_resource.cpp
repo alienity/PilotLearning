@@ -562,8 +562,8 @@ namespace RHI
 
         UINT64 descHash = Utility::Hash64((const char*)&uavKey, sizeof(BUFFER_UNORDERED_ACCESS_VIEW_KEY));
 
-        std::shared_ptr<D3D12UnorderedAccessView> uav           = nullptr;
-        auto                                      uavHandleIter = m_UAVHandleMap.find(descHash);
+        std::shared_ptr<D3D12UnorderedAccessView> uav = nullptr;
+        auto uavHandleIter = m_UAVHandleMap.find(descHash);
         if (uavHandleIter == m_UAVHandleMap.end())
         {
             uav = std::make_shared<D3D12UnorderedAccessView>(

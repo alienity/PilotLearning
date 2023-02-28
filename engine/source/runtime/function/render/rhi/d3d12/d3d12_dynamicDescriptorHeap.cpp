@@ -132,6 +132,11 @@ namespace RHI
                 // If we run out of temp room, copy what we've got so far
                 if (NumSrcDescriptorRanges + DescriptorCount > kMaxDescriptorsPerCopy)
                 {
+                    // https://learn.microsoft.com/en-us/windows/win32/api/d3d12/ne-d3d12-d3d12_descriptor_heap_flags
+                    // Descriptor heaps with the D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE flag 
+                    // can't be used as the source heaps in calls to ID3D12Device::CopyDescriptors or 
+                    // ID3D12Device::CopyDescriptorsSimple, because they could be resident in 
+                    // WRITE_COMBINE memory or GPU-local memory, which is very inefficient to read from.
                     PDevice->GetDevice()->CopyDescriptors(NumDestDescriptorRanges,
                                                           pDestDescriptorRangeStarts,
                                                           pDestDescriptorRangeSizes,

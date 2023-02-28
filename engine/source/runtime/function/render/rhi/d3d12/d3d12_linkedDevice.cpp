@@ -46,6 +46,12 @@ namespace RHI
                 this, CVar_GlobalCPUViewHeapSize, D3D12_DESCRIPTOR_HEAP_TYPE_RTV, D3D12_DESCRIPTOR_HEAP_FLAG_NONE);
         m_DsvDescriptorHeaps = std::make_shared<CPUDescriptorHeap>(
                 this, CVar_GlobalCPUViewHeapSize, D3D12_DESCRIPTOR_HEAP_TYPE_DSV, D3D12_DESCRIPTOR_HEAP_FLAG_NONE);
+
+        m_CPUResourceDescriptorHeap = std::make_shared<CPUDescriptorHeap>(
+                this, CVar_GlobalCPUViewHeapSize, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, D3D12_DESCRIPTOR_HEAP_FLAG_NONE);
+        m_CPUSamplerDescriptorHeap = std::make_shared<CPUDescriptorHeap>(
+                this, CVar_GlobalCPUViewHeapSize, D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, D3D12_DESCRIPTOR_HEAP_FLAG_NONE);
+
         m_ResourceDescriptorHeap = std::make_shared<GPUDescriptorHeap>(this,
                                                          CVar_GlobalStaticGPUViewHeapSize,
                                                          CVar_GlobalDynamicGPUViewHeapSize,

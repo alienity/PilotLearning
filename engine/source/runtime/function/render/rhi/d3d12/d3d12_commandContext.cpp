@@ -791,7 +791,7 @@ namespace RHI
         FlushResourceBarriers();
 
         std::shared_ptr<D3D12UnorderedAccessView> uav = Target->GetDefaultUAV();
-        const UINT ClearColor[4] = {};
+        const UINT ClearColor[4] = {0, 0, 0, 0};
         m_CommandListHandle->ClearUnorderedAccessViewUint(
             uav->GetGpuHandle(), uav->GetCpuHandle(), Target->GetResource(), ClearColor, 0, nullptr);
     }
