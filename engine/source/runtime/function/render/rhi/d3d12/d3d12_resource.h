@@ -6,6 +6,9 @@ namespace RHI
 {
     class D3D12RenderTargetView;
     class D3D12DepthStencilView;
+    class D3D12NoneVisualCBV;
+    class D3D12NoneVisualSRV;
+    class D3D12NoneVisualUAV;
     class D3D12ConstantBufferView;
     class D3D12ShaderResourceView;
     class D3D12UnorderedAccessView;
@@ -245,11 +248,20 @@ namespace RHI
         std::shared_ptr<D3D12ShaderResourceView>  CreateSRV(D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc);
         std::shared_ptr<D3D12UnorderedAccessView> CreateUAV(D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc);
         std::shared_ptr<D3D12UnorderedAccessView> CreateUAV(D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc, D3D12Resource* pCounterRes);
+
+        std::shared_ptr<D3D12NoneVisualCBV> CreateNoneVisualCBV(D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc);
+        std::shared_ptr<D3D12NoneVisualSRV> CreateNoneVisualSRV(D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc);
+        std::shared_ptr<D3D12NoneVisualUAV> CreateNoneVisualUAV(D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc);
+        std::shared_ptr<D3D12NoneVisualUAV> CreateNoneVisualUAV(D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc, D3D12Resource* pCounterRes);
         
         std::shared_ptr<D3D12ConstantBufferView>  GetDefaultCBV();
         std::shared_ptr<D3D12ShaderResourceView>  GetDefaultSRV();
         std::shared_ptr<D3D12UnorderedAccessView> GetDefaultUAV();
 
+        std::shared_ptr<D3D12NoneVisualCBV> GetDefaultNoneVisualCBV();
+        std::shared_ptr<D3D12NoneVisualSRV> GetDefaultNoneVisualSRV();
+        std::shared_ptr<D3D12NoneVisualUAV> GetDefaultNoneVisualUAV();
+        
         std::shared_ptr<D3D12UnorderedAccessView> GetDefaultStructureUAV(bool hasCounter = false);
         std::shared_ptr<D3D12UnorderedAccessView> GetDefaultRawUAV(bool hasCounter = false);
 
@@ -263,9 +275,13 @@ namespace RHI
 
         struct BUFFER_UNORDERED_ACCESS_VIEW_KEY { D3D12_UNORDERED_ACCESS_VIEW_DESC Desc; D3D12Resource* PCounterResource; };
 
-        robin_hood::unordered_map<UINT64, std::shared_ptr<D3D12ConstantBufferView>>    m_CBVHandleMap;
-        robin_hood::unordered_map<UINT64, std::shared_ptr<D3D12ShaderResourceView>>    m_SRVHandleMap;
-        robin_hood::unordered_map<UINT64, std::shared_ptr<D3D12UnorderedAccessView>>   m_UAVHandleMap;
+        robin_hood::unordered_map<UINT64, std::shared_ptr<D3D12ConstantBufferView>>  m_CBVHandleMap;
+        robin_hood::unordered_map<UINT64, std::shared_ptr<D3D12ShaderResourceView>>  m_SRVHandleMap;
+        robin_hood::unordered_map<UINT64, std::shared_ptr<D3D12UnorderedAccessView>> m_UAVHandleMap;
+
+        robin_hood::unordered_map<UINT64, std::shared_ptr<D3D12NoneVisualCBV>> m_NoneVisual_CBVHandleMap;
+        robin_hood::unordered_map<UINT64, std::shared_ptr<D3D12NoneVisualSRV>> m_NoneVisual_SRVHandleMap;
+        robin_hood::unordered_map<UINT64, std::shared_ptr<D3D12NoneVisualUAV>> m_NoneVisual_UAVHandleMap;
 
     private:
         D3D12_HEAP_TYPE           m_HeapType    = {};
@@ -402,13 +418,19 @@ namespace RHI
 
         std::shared_ptr<D3D12ShaderResourceView>  CreateSRV(D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc);
         std::shared_ptr<D3D12UnorderedAccessView> CreateUAV(D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc);
+        
         std::shared_ptr<D3D12RenderTargetView>    CreateRTV(D3D12_RENDER_TARGET_VIEW_DESC rtvDesc);
         std::shared_ptr<D3D12DepthStencilView>    CreateDSV(D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc);
+        std::shared_ptr<D3D12NoneVisualSRV>       CreateNoneVisualSRV(D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc);
+        std::shared_ptr<D3D12NoneVisualUAV>       CreateNoneVisualUAV(D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc);
 
         std::shared_ptr<D3D12ShaderResourceView>  GetDefaultSRV();
         std::shared_ptr<D3D12UnorderedAccessView> GetDefaultUAV();
+
         std::shared_ptr<D3D12RenderTargetView>    GetDefaultRTV();
         std::shared_ptr<D3D12DepthStencilView>    GetDefaultDSV();
+        std::shared_ptr<D3D12NoneVisualSRV>       GetDefaultNoneVisualSRV();
+        std::shared_ptr<D3D12NoneVisualUAV>       GetDefaultNoneVisualUAV();
 
         // Write the raw pixel buffer contents to a file
         // Note that data is preceded by a 16-byte header:  { DXGI_FORMAT, Pitch (in pixels), Width (in pixels), Height
@@ -421,10 +443,13 @@ namespace RHI
     protected:
         RHIRenderSurfaceBaseDesc m_Desc;
         
-        std::unordered_map<UINT64, std::shared_ptr<D3D12RenderTargetView>>      m_RTVHandleMap;
-        std::unordered_map<UINT64, std::shared_ptr<D3D12DepthStencilView>>      m_DSVHandleMap;
-        std::unordered_map<UINT64, std::shared_ptr<D3D12ShaderResourceView>>    m_SRVHandleMap;
-        std::unordered_map<UINT64, std::shared_ptr<D3D12UnorderedAccessView>>   m_UAVHandleMap;
+        robin_hood::unordered_map<UINT64, std::shared_ptr<D3D12RenderTargetView>> m_RTVHandleMap;
+        robin_hood::unordered_map<UINT64, std::shared_ptr<D3D12DepthStencilView>> m_DSVHandleMap;
+        robin_hood::unordered_map<UINT64, std::shared_ptr<D3D12NoneVisualSRV>>    m_NoneVisual_SRVHandleMap;
+        robin_hood::unordered_map<UINT64, std::shared_ptr<D3D12NoneVisualUAV>>    m_NoneVisual_UAVHandleMap;
+
+        robin_hood::unordered_map<UINT64, std::shared_ptr<D3D12ShaderResourceView>> m_SRVHandleMap;
+        robin_hood::unordered_map<UINT64, std::shared_ptr<D3D12UnorderedAccessView>> m_UAVHandleMap;
 
     protected:
         bool m_IsCubemap = false;

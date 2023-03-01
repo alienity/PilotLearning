@@ -9,6 +9,11 @@ namespace RHI
     class D3D12Buffer;
     class D3D12ASBuffer;
     class D3D12Texture;
+    class CViewSubresourceSubset;
+
+    //CViewSubresourceSubset ResourceToViewSubresourceSubset(D3D12Resource* Resource);
+    bool IsResourceIsBuffer(D3D12Resource* Resource);
+    bool IsResourceIsTexture(D3D12Resource* Resource);
 
     class CSubresourceSubset
     {
@@ -78,6 +83,14 @@ namespace RHI
                                           static_cast<UINT8>(pView->GetResource()->GetPlaneCount()));
         }
 
+        template<typename D, typename R>
+        static CViewSubresourceSubset FromView(const D desc, R* pResource)
+        {
+            return CViewSubresourceSubset(desc,
+                                          static_cast<UINT8>(pResource->GetMipLevels()),
+                                          static_cast<UINT16>(pResource->GetArraySize()),
+                                          static_cast<UINT8>(pResource->GetPlaneCount()));
+        }
     public:
         class CViewSubresourceIterator;
 
@@ -287,6 +300,11 @@ namespace RHI
             assert(IsValid());
             return m_DescriptorHeapAllocation.GetCpuHandle(0);
         }
+        [[nodiscard]] D3D12_GPU_DESCRIPTOR_HANDLE GetGpuHandle() const noexcept
+        {
+            assert(IsValid());
+            return m_DescriptorHeapAllocation.GetGpuHandle(0);
+        }
 
         void CreateDefaultView(ID3D12Resource* Resource)
         {
@@ -298,6 +316,12 @@ namespace RHI
         {
             (GetParentLinkedDevice()->GetDevice()->*D3D12DescriptorTraits<ViewDesc>::Create())(
                 Resource, CounterResource, nullptr, m_DescriptorHeapAllocation.GetCpuHandle(0));
+        }
+
+        void CreateView(const ViewDesc& Desc)
+        {
+            (GetParentLinkedDevice()->GetDevice()->*D3D12DescriptorTraits<ViewDesc>::Create())(
+                &Desc, m_DescriptorHeapAllocation.GetCpuHandle());
         }
 
         void CreateView(const ViewDesc& Desc, ID3D12Resource* Resource)
@@ -327,14 +351,15 @@ namespace RHI
         DescriptorHeapAllocation m_DescriptorHeapAllocation;
     };
 
+    //-------------------------------------------------------------------------------------------------------------------------------
+
     template<typename ViewDesc>
     class D3D12View
     {
     public:
         D3D12View() noexcept = default;
-        explicit D3D12View(D3D12LinkedDevice* Device, const ViewDesc& Desc, D3D12Resource* Resource) :
-            Descriptor(Device), Desc(Desc), Resource(Resource),
-            ViewSubresourceSubset(Resource ? CViewSubresourceSubset::FromView(this) : CViewSubresourceSubset())
+        explicit D3D12View(D3D12LinkedDevice* Device, const ViewDesc& Desc, D3D12Resource* Resource, CViewSubresourceSubset ViewSubresourceSubset) :
+            Descriptor(Device), Desc(Desc), Resource(Resource), ViewSubresourceSubset(ViewSubresourceSubset)
         {}
 
         D3D12View(D3D12View&&) noexcept = default;
@@ -347,6 +372,8 @@ namespace RHI
         [[nodiscard]] D3D12_CPU_DESCRIPTOR_HANDLE   GetCpuHandle() const noexcept { return Descriptor.GetCpuHandle(); }
         [[nodiscard]] ViewDesc                      GetDesc() const noexcept { return Desc; }
         [[nodiscard]] D3D12Resource*                GetResource() const noexcept { return Resource; }
+    protected:
+        [[nodiscard]] D3D12_GPU_DESCRIPTOR_HANDLE GetGpuHandle() const noexcept { return Descriptor.GetGpuHandle(); }
         [[nodiscard]] const CViewSubresourceSubset& GetViewSubresourceSubset() const noexcept
         {
             return ViewSubresourceSubset;
@@ -377,6 +404,10 @@ namespace RHI
 
         void RecreateView();
 
+        [[nodiscard]] const CViewSubresourceSubset& GetViewSubresourceSubset() const noexcept
+        {
+            return D3D12View::GetViewSubresourceSubset();
+        }
     public:
         static D3D12_RENDER_TARGET_VIEW_DESC GetDesc(D3D12Texture*       Texture,
                                                      bool                sRGB          = false,
@@ -389,9 +420,7 @@ namespace RHI
     {
     public:
         D3D12DepthStencilView() noexcept = default;
-        explicit D3D12DepthStencilView(D3D12LinkedDevice*                   Device,
-                                       const D3D12_DEPTH_STENCIL_VIEW_DESC& Desc,
-                                       D3D12Resource*                       Resource);
+        explicit D3D12DepthStencilView(D3D12LinkedDevice* Device, const D3D12_DEPTH_STENCIL_VIEW_DESC& Desc, D3D12Resource* Resource);
         explicit D3D12DepthStencilView(D3D12LinkedDevice*  Device,
                                        D3D12Texture*       Texture,
                                        std::optional<UINT> OptArraySlice = std::nullopt,
@@ -400,12 +429,91 @@ namespace RHI
 
         void RecreateView();
 
+        [[nodiscard]] const CViewSubresourceSubset& GetViewSubresourceSubset() const noexcept
+        {
+            return D3D12View::GetViewSubresourceSubset();
+        }
     public:
         static D3D12_DEPTH_STENCIL_VIEW_DESC GetDesc(D3D12Texture*       Texture,
                                                      std::optional<UINT> OptArraySlice = std::nullopt,
                                                      std::optional<UINT> OptMipSlice   = std::nullopt,
                                                      std::optional<UINT> OptArraySize  = std::nullopt);
     };
+
+
+    class D3D12NoneVisualCBV : public D3D12View<D3D12_CONSTANT_BUFFER_VIEW_DESC>
+    {
+    public:
+        D3D12NoneVisualCBV() noexcept = default;
+        D3D12NoneVisualCBV(D3D12LinkedDevice* Device, const D3D12_CONSTANT_BUFFER_VIEW_DESC& Desc, D3D12Resource* Resource);
+        D3D12NoneVisualCBV(D3D12LinkedDevice* Device, D3D12Buffer* Buffer, UINT32 Offset, UINT32 Size);
+
+        void RecreateView();
+
+        [[nodiscard]] D3D12_GPU_DESCRIPTOR_HANDLE GetGpuHandle() const noexcept { return D3D12View::GetGpuHandle(); }
+
+    public:
+        static D3D12_CONSTANT_BUFFER_VIEW_DESC GetDesc(D3D12Buffer* Buffer, UINT Offset, UINT Size);
+    };
+
+    class D3D12NoneVisualSRV : public D3D12View<D3D12_SHADER_RESOURCE_VIEW_DESC>
+    {
+    public:
+        D3D12NoneVisualSRV() noexcept = default;
+        D3D12NoneVisualSRV(D3D12LinkedDevice* Device, const D3D12_SHADER_RESOURCE_VIEW_DESC& Desc, D3D12Resource* Resource);
+        D3D12NoneVisualSRV(D3D12LinkedDevice* Device, D3D12ASBuffer* ASBuffer);
+        D3D12NoneVisualSRV(D3D12LinkedDevice* Device, D3D12Buffer* Buffer, bool Raw, UINT FirstElement, UINT NumElements);
+        D3D12NoneVisualSRV(D3D12LinkedDevice* Device, D3D12Buffer* Buffer, UINT FirstElement, UINT NumElements);
+        D3D12NoneVisualSRV(D3D12LinkedDevice* Device, D3D12Buffer* Buffer);
+        D3D12NoneVisualSRV(D3D12LinkedDevice* Device, D3D12Texture* Texture, bool sRGB, std::optional<UINT> OptMostDetailedMip, std::optional<UINT> OptMipLevels);
+
+        void RecreateView();
+
+        [[nodiscard]] D3D12_GPU_DESCRIPTOR_HANDLE GetGpuHandle() const noexcept { return D3D12View::GetGpuHandle(); }
+        [[nodiscard]] const CViewSubresourceSubset& GetViewSubresourceSubset() const noexcept
+        {
+            return D3D12View::GetViewSubresourceSubset();
+        }
+
+    public:
+        static D3D12_SHADER_RESOURCE_VIEW_DESC GetDesc(D3D12ASBuffer* ASBuffer);
+        static D3D12_SHADER_RESOURCE_VIEW_DESC
+        GetDesc(D3D12Buffer* Buffer, bool Raw, UINT FirstElement, UINT NumElements);
+        static D3D12_SHADER_RESOURCE_VIEW_DESC GetDesc(D3D12Texture*       Texture,
+                                                       bool                sRGB,
+                                                       std::optional<UINT> OptMostDetailedMip,
+                                                       std::optional<UINT> OptMipLevels);
+    };
+
+    class D3D12NoneVisualUAV : public D3D12View<D3D12_UNORDERED_ACCESS_VIEW_DESC>
+    {
+    public:
+        D3D12NoneVisualUAV() noexcept = default;
+        D3D12NoneVisualUAV(D3D12LinkedDevice* Device, const D3D12_UNORDERED_ACCESS_VIEW_DESC& Desc, D3D12Resource* Resource, D3D12Resource* CounterResource = nullptr);
+        D3D12NoneVisualUAV(D3D12LinkedDevice* Device, D3D12Buffer* Buffer, bool Raw, UINT FirstElement, UINT NumElements, UINT64 CounterOffsetInBytes);
+        D3D12NoneVisualUAV(D3D12LinkedDevice* Device, D3D12Buffer* Buffer, UINT FirstElement, UINT NumElements, UINT64 CounterOffsetInBytes);
+        D3D12NoneVisualUAV(D3D12LinkedDevice* Device, D3D12Buffer* Buffer);
+        D3D12NoneVisualUAV(D3D12LinkedDevice* Device, D3D12Texture* Texture, std::optional<UINT> OptArraySlice, std::optional<UINT> OptMipSlice);
+
+        void RecreateView();
+
+        [[nodiscard]] D3D12_GPU_DESCRIPTOR_HANDLE   GetGpuHandle() const noexcept { return D3D12View::GetGpuHandle(); }
+        [[nodiscard]] const CViewSubresourceSubset& GetViewSubresourceSubset() const noexcept
+        {
+            return D3D12View::GetViewSubresourceSubset();
+        }
+    public:
+        static D3D12_UNORDERED_ACCESS_VIEW_DESC
+        GetDesc(D3D12Buffer* Buffer, bool Raw, UINT FirstElement, UINT NumElements, UINT64 CounterOffsetInBytes);
+        static D3D12_UNORDERED_ACCESS_VIEW_DESC
+        GetDesc(D3D12Texture* Texture, std::optional<UINT> OptArraySlice, std::optional<UINT> OptMipSlice);
+        
+    private:
+        D3D12Resource* CounterResource = nullptr;
+    };
+
+
+    //-----------------------------------------------------------------------------------------------------
 
     template<typename ViewDesc>
     class D3D12DynamicDescriptor : public D3D12LinkedDeviceChild
@@ -509,9 +617,8 @@ namespace RHI
     {
     public:
         D3D12DynamicView() noexcept = default;
-        D3D12DynamicView(D3D12LinkedDevice* Device, const ViewDesc& Desc, D3D12Resource* Resource) :
-            Descriptor(Device), Desc(Desc), Resource(Resource),
-            ViewSubresourceSubset(Resource ? CViewSubresourceSubset::FromView(this) : CViewSubresourceSubset())
+        D3D12DynamicView(D3D12LinkedDevice* Device, const ViewDesc& Desc, D3D12Resource* Resource, CViewSubresourceSubset ViewSubresourceSubset) :
+            Descriptor(Device), Desc(Desc), Resource(Resource), ViewSubresourceSubset(ViewSubresourceSubset)
         {}
 
         D3D12DynamicView(D3D12DynamicView&&) noexcept = default;
@@ -526,6 +633,8 @@ namespace RHI
         [[nodiscard]] UINT                          GetIndex() const noexcept { return Descriptor.GetIndex(); }
         [[nodiscard]] ViewDesc                      GetDesc() const noexcept { return Desc; }
         [[nodiscard]] D3D12Resource*                GetResource() const noexcept { return Resource; }
+
+    protected:
         [[nodiscard]] const CViewSubresourceSubset& GetViewSubresourceSubset() const noexcept
         {
             return ViewSubresourceSubset;
@@ -540,37 +649,7 @@ namespace RHI
         CViewSubresourceSubset           ViewSubresourceSubset;
     };
 
-    template<typename ViewDesc>
-    class D3D12DynamicConstantView
-    {
-    public:
-        D3D12DynamicConstantView() noexcept = default;
-        D3D12DynamicConstantView(D3D12LinkedDevice* Device, const ViewDesc& Desc, D3D12Resource* Resource) :
-            Descriptor(Device), Desc(Desc), Resource(Resource)
-        {}
-
-        D3D12DynamicConstantView(D3D12DynamicConstantView&&) noexcept = default;
-        D3D12DynamicConstantView& operator=(D3D12DynamicConstantView&&) = default;
-
-        D3D12DynamicConstantView(const D3D12DynamicConstantView&) = delete;
-        D3D12DynamicConstantView& operator=(const D3D12DynamicConstantView&) = delete;
-
-        [[nodiscard]] bool                          IsValid() const noexcept { return Descriptor.IsValid(); }
-        [[nodiscard]] D3D12_CPU_DESCRIPTOR_HANDLE   GetCpuHandle() const noexcept { return Descriptor.GetCpuHandle(); }
-        [[nodiscard]] D3D12_GPU_DESCRIPTOR_HANDLE   GetGpuHandle() const noexcept { return Descriptor.GetGpuHandle(); }
-        [[nodiscard]] UINT                          GetIndex() const noexcept { return Descriptor.GetIndex(); }
-        [[nodiscard]] ViewDesc                      GetDesc() const noexcept { return Desc; }
-        [[nodiscard]] D3D12Resource*                GetResource() const noexcept { return Resource; }
-        
-    protected:
-        friend class D3D12Resource;
-
-        D3D12DynamicDescriptor<ViewDesc> Descriptor;
-        ViewDesc                         Desc     = {};
-        D3D12Resource*                   Resource = nullptr;
-    };
-
-    class D3D12ConstantBufferView : public D3D12DynamicConstantView<D3D12_CONSTANT_BUFFER_VIEW_DESC>
+    class D3D12ConstantBufferView : public D3D12DynamicView<D3D12_CONSTANT_BUFFER_VIEW_DESC>
     {
     public:
         D3D12ConstantBufferView() noexcept = default;
@@ -608,6 +687,10 @@ namespace RHI
 
         void RecreateView();
 
+        [[nodiscard]] const CViewSubresourceSubset& GetViewSubresourceSubset() const noexcept
+        {
+            return D3D12DynamicView::GetViewSubresourceSubset();
+        }
     public:
         static D3D12_SHADER_RESOURCE_VIEW_DESC GetDesc(D3D12ASBuffer* ASBuffer);
         static D3D12_SHADER_RESOURCE_VIEW_DESC
@@ -645,6 +728,10 @@ namespace RHI
 
         void RecreateView();
 
+        [[nodiscard]] const CViewSubresourceSubset& GetViewSubresourceSubset() const noexcept
+        {
+            return D3D12DynamicView::GetViewSubresourceSubset();
+        }
     public:
         static D3D12_UNORDERED_ACCESS_VIEW_DESC
         GetDesc(D3D12Buffer* Buffer, bool Raw, UINT FirstElement, UINT NumElements, UINT64 CounterOffsetInBytes);

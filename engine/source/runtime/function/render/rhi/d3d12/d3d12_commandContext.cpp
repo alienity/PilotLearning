@@ -791,9 +791,10 @@ namespace RHI
         FlushResourceBarriers();
 
         std::shared_ptr<D3D12UnorderedAccessView> uav = Target->GetDefaultUAV();
+        std::shared_ptr<D3D12NoneVisualUAV> cpu_uav = Target->GetDefaultNoneVisualUAV();
         const UINT ClearColor[4] = {0, 0, 0, 0};
         m_CommandListHandle->ClearUnorderedAccessViewUint(
-            uav->GetGpuHandle(), uav->GetCpuHandle(), Target->GetResource(), ClearColor, 0, nullptr);
+            uav->GetGpuHandle(), cpu_uav->GetCpuHandle(), Target->GetResource(), ClearColor, 0, nullptr);
     }
 
     void D3D12ComputeContext::ClearUAV(RHI::D3D12Texture* Target)
@@ -801,10 +802,11 @@ namespace RHI
         FlushResourceBarriers();
 
         std::shared_ptr<D3D12UnorderedAccessView> uav = Target->GetDefaultUAV();
+        std::shared_ptr<D3D12NoneVisualUAV> cpu_uav = Target->GetDefaultNoneVisualUAV();
         CD3DX12_RECT clearRect(0, 0, (LONG)Target->GetWidth(), (LONG)Target->GetHeight());
         D3D12_CLEAR_VALUE clearVal = Target->GetClearValue();
         m_CommandListHandle->ClearUnorderedAccessViewFloat(
-            uav->GetGpuHandle(), uav->GetCpuHandle(), Target->GetResource(), clearVal.Color, 1, &clearRect);
+            uav->GetGpuHandle(), cpu_uav->GetCpuHandle(), Target->GetResource(), clearVal.Color, 1, &clearRect);
     }
 
 	void D3D12ComputeContext::SetRootSignature(D3D12RootSignature* RootSignature)
@@ -873,7 +875,7 @@ namespace RHI
     void D3D12ComputeContext::SetDynamicConstantBufferView(UINT RootIndex, UINT64 BufferSize, const void* BufferData)
     {
         ASSERT(BufferData != nullptr && Pilot::IsAligned(BufferData, 16));
-        GraphicsResource cb = m_GraphicsMemory->Allocate(BufferSize);
+        GraphicsResource cb = m_GraphicsMemory->Allocate(BufferSize, 256);
         // SIMDMemCopy(cb.DataPtr, BufferData, Math::AlignUp(BufferSize, 16) >> 4);
         memcpy(cb.Memory(), BufferData, BufferSize);
         m_CommandListHandle->SetComputeRootConstantBufferView(RootIndex, cb.GpuAddress());
@@ -882,7 +884,7 @@ namespace RHI
     void D3D12ComputeContext::SetDynamicSRV(UINT RootIndex, UINT64 BufferSize, const void* BufferData)
     {
         ASSERT(BufferData != nullptr && Pilot::IsAligned(BufferData, 16));
-        GraphicsResource cb = m_GraphicsMemory->Allocate(BufferSize);
+        GraphicsResource cb = m_GraphicsMemory->Allocate(BufferSize, 256);
         SIMDMemCopy(cb.Memory(), BufferData, Pilot::AlignUp(BufferSize, 16) >> 4);
         m_CommandListHandle->SetComputeRootShaderResourceView(RootIndex, cb.GpuAddress());
     }

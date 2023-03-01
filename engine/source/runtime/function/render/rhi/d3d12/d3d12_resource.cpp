@@ -577,6 +577,69 @@ namespace RHI
         return uav;
     }
 
+    std::shared_ptr<D3D12NoneVisualCBV> D3D12Buffer::CreateNoneVisualCBV(D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc)
+    {
+        UINT64 descHash = Utility::Hash64((const char*)&cbvDesc, sizeof(D3D12_CONSTANT_BUFFER_VIEW_DESC));
+
+        std::shared_ptr<D3D12NoneVisualCBV> cbv = nullptr;
+        auto cbvHandleIter = m_NoneVisual_CBVHandleMap.find(descHash);
+        if (cbvHandleIter == m_NoneVisual_CBVHandleMap.end())
+        {
+            cbv = std::make_shared<D3D12NoneVisualCBV>(Parent, cbvDesc, this);
+            m_NoneVisual_CBVHandleMap[descHash] = cbv;
+        }
+        else
+        {
+            cbv = cbvHandleIter->second;
+        }
+        return cbv;
+    }
+
+    std::shared_ptr<D3D12NoneVisualSRV> D3D12Buffer::CreateNoneVisualSRV(D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc)
+    {
+        UINT64 descHash = Utility::Hash64((const char*)&srvDesc, sizeof(D3D12_SHADER_RESOURCE_VIEW_DESC));
+
+        std::shared_ptr<D3D12NoneVisualSRV> srv = nullptr;
+        auto srvHandleIter = m_NoneVisual_SRVHandleMap.find(descHash);
+        if (srvHandleIter == m_NoneVisual_SRVHandleMap.end())
+        {
+            srv = std::make_shared<D3D12NoneVisualSRV>(Parent, srvDesc, this);
+            m_NoneVisual_SRVHandleMap[descHash] = srv;
+        }
+        else
+        {
+            srv = srvHandleIter->second;
+        }
+        return srv;
+    }
+
+    std::shared_ptr<D3D12NoneVisualUAV> D3D12Buffer::CreateNoneVisualUAV(D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc)
+    {
+        D3D12Resource* pCounterResource = p_CounterBufferD3D12 != nullptr ? p_CounterBufferD3D12.get() : nullptr;
+        return CreateNoneVisualUAV(uavDesc, pCounterResource);
+    }
+
+    std::shared_ptr<D3D12NoneVisualUAV> D3D12Buffer::CreateNoneVisualUAV(D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc, D3D12Resource* pCounterRes)
+    {
+        BUFFER_UNORDERED_ACCESS_VIEW_KEY uavKey = {uavDesc, pCounterRes};
+
+        UINT64 descHash = Utility::Hash64((const char*)&uavKey, sizeof(BUFFER_UNORDERED_ACCESS_VIEW_KEY));
+
+        std::shared_ptr<D3D12NoneVisualUAV> uav = nullptr;
+        auto uavHandleIter = m_NoneVisual_UAVHandleMap.find(descHash);
+        if (uavHandleIter == m_NoneVisual_UAVHandleMap.end())
+        {
+            uav = std::make_shared<D3D12NoneVisualUAV>(
+                Parent, uavDesc, (D3D12Resource*)this, (D3D12Resource*)pCounterRes);
+            m_NoneVisual_UAVHandleMap[descHash] = uav;
+        }
+        else
+        {
+            uav = uavHandleIter->second;
+        }
+        return uav;
+    }
+
     std::shared_ptr<D3D12ConstantBufferView> D3D12Buffer::GetDefaultCBV()
     {
         return CreateCBV(D3D12ConstantBufferView::GetDesc(this, 0, m_Desc.size));
@@ -591,6 +654,22 @@ namespace RHI
     std::shared_ptr<D3D12UnorderedAccessView> D3D12Buffer::GetDefaultUAV()
     {
         return CreateUAV(D3D12UnorderedAccessView::GetDesc(this, m_Desc.target & RHIBufferTargetRaw, 0, m_Desc.number, 0));
+    }
+
+    std::shared_ptr<D3D12NoneVisualCBV> D3D12Buffer::GetDefaultNoneVisualCBV()
+    {
+        return CreateNoneVisualCBV(D3D12ConstantBufferView::GetDesc(this, 0, m_Desc.size));
+    }
+
+    std::shared_ptr<D3D12NoneVisualSRV> D3D12Buffer::GetDefaultNoneVisualSRV()
+    {
+        ASSERT(m_Desc.size % m_Desc.stride == 0);
+        return CreateNoneVisualSRV(D3D12ShaderResourceView::GetDesc(this, m_Desc.target & RHIBufferTargetRaw, 0, m_Desc.number));
+    }
+
+    std::shared_ptr<D3D12NoneVisualUAV> D3D12Buffer::GetDefaultNoneVisualUAV()
+    {
+        return CreateNoneVisualUAV(D3D12UnorderedAccessView::GetDesc(this, m_Desc.target & RHIBufferTargetRaw, 0, m_Desc.number, 0));
     }
 
     std::shared_ptr<D3D12UnorderedAccessView> D3D12Buffer::GetDefaultStructureUAV(bool hasCounter)
@@ -1038,6 +1117,42 @@ namespace RHI
         return dsv;
     }
 
+    std::shared_ptr<D3D12NoneVisualSRV> D3D12Texture::CreateNoneVisualSRV(D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc)
+    {
+        UINT64 descHash = Utility::Hash64((const char*)&srvDesc, sizeof(D3D12_SHADER_RESOURCE_VIEW_DESC));
+
+        std::shared_ptr<D3D12NoneVisualSRV> srv = nullptr;
+        auto srvHandleIter = m_NoneVisual_SRVHandleMap.find(descHash);
+        if (srvHandleIter == m_NoneVisual_SRVHandleMap.end())
+        {
+            srv = std::make_shared<D3D12NoneVisualSRV>(Parent, srvDesc, this);
+            m_NoneVisual_SRVHandleMap[descHash] = srv;
+        }
+        else
+        {
+            srv = srvHandleIter->second;
+        }
+        return srv;
+    }
+    std::shared_ptr<D3D12NoneVisualUAV> D3D12Texture::CreateNoneVisualUAV(D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc)
+    {
+        UINT64 descHash = Utility::Hash64((const char*)&uavDesc, sizeof(D3D12_UNORDERED_ACCESS_VIEW_DESC));
+
+        std::shared_ptr<D3D12NoneVisualUAV> uav = nullptr;
+        auto uavHandleIter = m_NoneVisual_UAVHandleMap.find(descHash);
+        if (uavHandleIter == m_NoneVisual_UAVHandleMap.end())
+        {
+            uav = std::make_shared<D3D12NoneVisualUAV>(
+                Parent, uavDesc, (D3D12Resource*)this, (D3D12Resource*)nullptr);
+            m_NoneVisual_UAVHandleMap[descHash] = uav;
+        }
+        else
+        {
+            uav = uavHandleIter->second;
+        }
+        return uav;
+    }
+
     std::shared_ptr<D3D12ShaderResourceView> D3D12Texture::GetDefaultSRV()
     {
         return CreateSRV(
@@ -1060,6 +1175,17 @@ namespace RHI
     {
         ASSERT(m_Desc.flags & (RHISurfaceCreateDepthStencil | RHISurfaceCreateShadowmap));
         return CreateDSV(D3D12DepthStencilView::GetDesc(this));
+    }
+
+    std::shared_ptr<D3D12NoneVisualSRV> D3D12Texture::GetDefaultNoneVisualSRV()
+    {
+        return CreateNoneVisualSRV(
+            D3D12ShaderResourceView::GetDesc(this, m_Desc.flags & RHISurfaceCreateSRGB, 0, m_Desc.mipCount));
+    }
+
+    std::shared_ptr<D3D12NoneVisualUAV> D3D12Texture::GetDefaultNoneVisualUAV()
+    {
+        return CreateNoneVisualUAV(D3D12UnorderedAccessView::GetDesc(this, 0, 0));
     }
 
     void D3D12Texture::ExportToFile(const std::wstring& FilePath)

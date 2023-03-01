@@ -36,6 +36,11 @@ namespace RHI
 		template<typename ViewDesc> CPUDescriptorHeap* GetHeapManager() noexcept;
 		template<> CPUDescriptorHeap* GetHeapManager<D3D12_RENDER_TARGET_VIEW_DESC>() noexcept { return m_RtvDescriptorHeaps.get(); }
 		template<> CPUDescriptorHeap* GetHeapManager<D3D12_DEPTH_STENCIL_VIEW_DESC>() noexcept { return m_DsvDescriptorHeaps.get(); }
+        template<> CPUDescriptorHeap* GetHeapManager<D3D12_CONSTANT_BUFFER_VIEW_DESC>() noexcept { return m_CPUResourceDescriptorHeap.get(); }
+		template<> CPUDescriptorHeap* GetHeapManager<D3D12_SHADER_RESOURCE_VIEW_DESC>() noexcept { return m_CPUResourceDescriptorHeap.get(); }
+		template<> CPUDescriptorHeap* GetHeapManager<D3D12_UNORDERED_ACCESS_VIEW_DESC>() noexcept { return m_CPUResourceDescriptorHeap.get(); }
+        template<> CPUDescriptorHeap* GetHeapManager<D3D12_SAMPLER_DESC>() noexcept { return m_CPUSamplerDescriptorHeap.get(); }
+
 		template<typename ViewDesc> GPUDescriptorHeap* GetDescriptorHeap() noexcept;
 		template<> GPUDescriptorHeap* GetDescriptorHeap<D3D12_CONSTANT_BUFFER_VIEW_DESC>() noexcept { return m_ResourceDescriptorHeap.get(); }
 		template<> GPUDescriptorHeap* GetDescriptorHeap<D3D12_SHADER_RESOURCE_VIEW_DESC>() noexcept { return m_ResourceDescriptorHeap.get(); }
