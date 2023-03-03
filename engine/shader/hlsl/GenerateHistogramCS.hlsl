@@ -37,7 +37,7 @@ cbuffer CB1 : register(b1)
 [numthreads( 16, 16, 1 )]
 void main( uint GI : SV_GroupIndex, uint3 DTid : SV_DispatchThreadID )
 {
-    Texture2D<uint> LumaBuf = ResourceDescriptorHeap[m_InputLumaBufIndex];
+    Texture2D<float> LumaBuf = ResourceDescriptorHeap[m_InputLumaBufIndex];
     RWByteAddressBuffer Histogram = ResourceDescriptorHeap[m_OutHistogramIndex];
 
     g_TileHistogram[GI] = 0;
@@ -47,7 +47,8 @@ void main( uint GI : SV_GroupIndex, uint3 DTid : SV_DispatchThreadID )
     // Loop until the entire column has been processed
     for (uint2 ST = DTid.xy; ST.y < kBufferHeight; ST.y += 16)
     {
-        uint QuantizedLogLuma = LumaBuf[ST];
+        uint QuantizedLogLuma = saturate(LumaBuf[ST]) * 255;
+        //uint QuantizedLogLuma = LumaBuf[ST];
         InterlockedAdd( g_TileHistogram[QuantizedLogLuma], 1 );
     }
 
