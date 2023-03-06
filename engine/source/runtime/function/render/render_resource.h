@@ -57,11 +57,11 @@ namespace Pilot
         ColorGradingResource _color_grading_resource;
     };
 
-    struct DefaultResource
-    {
-        std::shared_ptr<RHI::D3D12Texture> _white_texture2d_image;
-        std::shared_ptr<RHI::D3D12Texture> _black_texture2d_image;
-    };
+    //struct DefaultResource
+    //{
+    //    std::shared_ptr<RHI::D3D12Texture> _white_texture2d_image;
+    //    std::shared_ptr<RHI::D3D12Texture> _black_texture2d_image;
+    //};
 
     class RenderResource : public RenderResourceBase
     {
@@ -92,8 +92,8 @@ namespace Pilot
         // global rendering resource, include IBL data, global storage buffer
         GlobalRenderResource m_global_render_resource;
 
-        // default texture resource
-        DefaultResource m_default_resource;
+        //// default texture resource
+        //DefaultResource m_default_resource;
 
         // bindless objects
         HLSL::MeshPerframeStorageBufferObject                 m_mesh_perframe_storage_buffer_object;

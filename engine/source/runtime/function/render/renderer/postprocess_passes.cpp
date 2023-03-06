@@ -1,7 +1,6 @@
 #include "runtime/function/render/renderer/postprocess_passes.h"
-
+#include "runtime/function/render/rhi/d3d12/d3d12_graphicsCommon.h"
 #include "runtime/resource/config_manager/config_manager.h"
-
 #include "runtime/function/render/rhi/rhi_core.h"
 
 namespace Pilot
@@ -33,6 +32,7 @@ namespace Pilot
             mFXAAPass->setCommonInfo(renderPassCommonInfo);
             mFXAAPass->initialize(fxaaPassInit);
         }
+        if (EngineConfig::g_BloomConfig.m_BloomEnable)
         {
             BloomPass::BloomInitInfo bloomPassInit;
             bloomPassInit.m_ColorTexDesc  = colorTexDesc;
@@ -42,6 +42,17 @@ namespace Pilot
             mBloomPass = std::make_shared<BloomPass>();
             mBloomPass->setCommonInfo(renderPassCommonInfo);
             mBloomPass->initialize(bloomPassInit);
+        }
+        else
+        {
+            ExtractLumaPass::ExtractLumaInitInfo extractLumaPassInit;
+            extractLumaPassInit.m_ColorTexDesc = colorTexDesc;
+            extractLumaPassInit.m_ShaderCompiler = init_info.m_ShaderCompiler;
+            extractLumaPassInit.m_ShaderRootPath = g_runtime_global_context.m_config_manager->getShaderFolder();
+
+            mExtractLumaPass = std::make_shared<ExtractLumaPass>();
+            mExtractLumaPass->setCommonInfo(renderPassCommonInfo);
+            mExtractLumaPass->initialize(extractLumaPassInit);
         }
         {
             HDRToneMappingPass::HDRToneMappingInitInfo toneMappingInit;
@@ -93,15 +104,15 @@ namespace Pilot
                 EngineConfig::kInitialMaxLog - EngineConfig::kInitialMinLog,
                 1.0f / (EngineConfig::kInitialMaxLog - EngineConfig::kInitialMinLog)};
 
-            mExposureBuffer = RHI::D3D12Buffer::Create(m_Device->GetLinkedDevice(),
-                                                       RHI::RHIBufferTarget::RHIBufferRandomReadWrite,
-                                                       8,
-                                                       4,
-                                                       L"Exposure",
-                                                       RHI::RHIBufferMode::RHIBufferModeImmutable,
-                                                       D3D12_RESOURCE_STATE_GENERIC_READ,
-                                                       (BYTE*)initExposure,
-                                                       sizeof(initExposure));
+            m_ExposureBuffer = RHI::D3D12Buffer::Create(m_Device->GetLinkedDevice(),
+                                                        RHI::RHIBufferTarget::RHIBufferRandomReadWrite,
+                                                        8,
+                                                        4,
+                                                        L"Exposure",
+                                                        RHI::RHIBufferMode::RHIBufferModeImmutable,
+                                                        D3D12_RESOURCE_STATE_GENERIC_READ,
+                                                        (BYTE*)initExposure,
+                                                        sizeof(initExposure));
         }
 
     }
@@ -117,8 +128,8 @@ namespace Pilot
 
         RHI::RgResourceHandle outputTargetHandle = inputSceneColorHandle;
 
-        RHI::RgResourceHandle exposureBufferHandle = graph.Import(mExposureBuffer.get());
-        RHI::RgResourceHandle luminanceColorHandle = graph.Import(m_LumaBuffer.get());
+        RHI::RgResourceHandle exposureBufferHandle = graph.Import(m_ExposureBuffer.get());
+        RHI::RgResourceHandle lumaBufferHandle     = graph.Import(m_LumaBuffer.get());
 
         // resolve rendertarget
         if (EngineConfig::g_AntialiasingMode == EngineConfig::MSAA)
@@ -138,7 +149,7 @@ namespace Pilot
             FXAAPass::DrawInputParameters  mFXAAIntputParams;
             FXAAPass::DrawOutputParameters mFXAAOutputParams;
 
-            mFXAAIntputParams.inputLumaColorHandle  = luminanceColorHandle;
+            mFXAAIntputParams.inputLumaColorHandle  = lumaBufferHandle;
             mFXAAIntputParams.inputSceneColorHandle = inputSceneColorHandle;
             mFXAAOutputParams.outputColorHandle     = drawPassOutput->postTargetColorHandle0;
 
@@ -156,14 +167,37 @@ namespace Pilot
         }
         
         {
-            // Bloom
-            BloomPass::DrawInputParameters  mBloomIntputParams;
-            BloomPass::DrawOutputParameters mBloomOutputParams;
+            RHI::RgResourceHandle m_BllomHandle;  // Output Bloom Texture
+            RHI::RgResourceHandle m_LumaLRHandle; // LumaLR Texture
 
-            mBloomIntputParams.inputExposureHandle = exposureBufferHandle;
-            mBloomIntputParams.inputSceneColorHandle = outputTargetHandle;
+            if (EngineConfig::g_BloomConfig.m_BloomEnable)
+            {
+                // Bloom
+                BloomPass::DrawInputParameters  mBloomIntputParams;
+                BloomPass::DrawOutputParameters mBloomOutputParams;
 
-            mBloomPass->update(graph, mBloomIntputParams, mBloomOutputParams);
+                mBloomIntputParams.inputExposureHandle   = exposureBufferHandle;
+                mBloomIntputParams.inputSceneColorHandle = outputTargetHandle;
+
+                mBloomPass->update(graph, mBloomIntputParams, mBloomOutputParams);
+
+                m_BllomHandle  = mBloomOutputParams.outputBloomHandle;
+                m_LumaLRHandle = mBloomOutputParams.outputLumaLRHandle;
+            }
+            else
+            {
+                // ExtractLuma
+                ExtractLumaPass::DrawInputParameters  mExtractLumaIntputParams;
+                ExtractLumaPass::DrawOutputParameters mExtractLumaOutputParams;
+
+                mExtractLumaIntputParams.inputExposureHandle   = exposureBufferHandle;
+                mExtractLumaIntputParams.inputSceneColorHandle = outputTargetHandle;
+
+                mExtractLumaPass->update(graph, mExtractLumaIntputParams, mExtractLumaOutputParams);
+
+                m_BllomHandle  = graph.Import(RHI::GetDefaultTexture(RHI::kBlackOpaque2D));
+                m_LumaLRHandle = mExtractLumaOutputParams.outputLumaLRHandle;
+            }
 
             // ToneMapping
             HDRToneMappingPass::DrawInputParameters  mToneMappingIntputParams;

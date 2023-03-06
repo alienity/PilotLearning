@@ -192,7 +192,7 @@ namespace Pilot
                                                        graph.Create<RHI::D3D12Texture>(m_aBloomUAV5Desc[1])};
 
         drawPassOutput.outputLumaLRHandle = m_LumaLRHandle;
-        drawPassOutput.targetColorHandle  = m_aBloomUAV1Handle[1];
+        drawPassOutput.outputBloomHandle  = m_aBloomUAV1Handle[1];
 
         RHI::RenderPass& generateBloomPass = graph.AddRenderPass("GenerateBloom");
 

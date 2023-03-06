@@ -34,12 +34,11 @@ namespace Pilot
             DrawOutputParameters()
             {
                 outputLumaLRHandle.Invalidate();
-                targetColorHandle.Invalidate();
+                outputBloomHandle.Invalidate();
             }
 
             RHI::RgResourceHandle outputLumaLRHandle;
-            RHI::RgResourceHandle targetColorHandle;
-
+            RHI::RgResourceHandle outputBloomHandle;
         };
 
     public:

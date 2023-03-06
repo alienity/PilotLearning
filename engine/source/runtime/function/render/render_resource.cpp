@@ -75,6 +75,7 @@ namespace Pilot
             auto color_grading_tex = createTex2D(color_grading_map);
             m_global_render_resource._color_grading_resource._color_grading_LUT_texture_image = color_grading_tex;
         }
+        /*
         {
             auto genDefaultData = ([](bool isWhite) {
                 std::shared_ptr<TextureData> default_map = std::make_shared<TextureData>();
@@ -102,6 +103,7 @@ namespace Pilot
             m_default_resource._black_texture2d_image       = black_tex;
 
         }
+        */
         endUploadBatch();
     }
 

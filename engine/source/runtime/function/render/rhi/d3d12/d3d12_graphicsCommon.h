@@ -11,7 +11,9 @@ namespace RHI
     class D3D12PipelineState;
 
     void InitializeCommonState(D3D12LinkedDevice* pParent);
+    void InitializeCommonResource(D3D12LinkedDevice* pParent);
     void DestroyCommonState();
+    void DestroyCommonResource();
 
     extern SamplerDesc SamplerLinearWrapDesc;
     extern SamplerDesc SamplerAnisoWrapDesc;

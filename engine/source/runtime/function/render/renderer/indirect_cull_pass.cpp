@@ -3,6 +3,7 @@
 #include "runtime/function/render/window_system.h"
 #include "runtime/function/render/rhi/rhi_core.h"
 #include "runtime/core/math/moyu_math.h"
+#include "runtime/function/render/rhi/d3d12/d3d12_graphicsCommon.h"
 
 #include <cassert>
 
@@ -145,8 +146,11 @@ namespace Pilot
         {
             RenderMeshNode& temp_node = renderMeshNodes->at(i);
 
-            std::shared_ptr<RHI::D3D12ShaderResourceView> defaultWhiteView = real_resource->m_default_resource._white_texture2d_image->GetDefaultSRV();
-            std::shared_ptr<RHI::D3D12ShaderResourceView> defaultBlackView = real_resource->m_default_resource._black_texture2d_image->GetDefaultSRV();
+            //std::shared_ptr<RHI::D3D12ShaderResourceView> defaultWhiteView = real_resource->m_default_resource._white_texture2d_image->GetDefaultSRV();
+            //std::shared_ptr<RHI::D3D12ShaderResourceView> defaultBlackView = real_resource->m_default_resource._black_texture2d_image->GetDefaultSRV();
+
+            std::shared_ptr<RHI::D3D12ShaderResourceView> defaultWhiteView = RHI::GetDefaultTexture(RHI::eDefaultTexture::kWhiteOpaque2D)->GetDefaultSRV();
+            std::shared_ptr<RHI::D3D12ShaderResourceView> defaultBlackView = RHI::GetDefaultTexture(RHI::eDefaultTexture::kBlackOpaque2D)->GetDefaultSRV();
 
             std::shared_ptr<RHI::D3D12ShaderResourceView> uniformBufferView = temp_node.ref_material->material_uniform_buffer->GetDefaultSRV();
             std::shared_ptr<RHI::D3D12ShaderResourceView> baseColorView = temp_node.ref_material->base_color_texture_image->GetDefaultSRV();

@@ -20,13 +20,6 @@
 
 namespace RHI
 {
-    std::shared_ptr<D3D12Texture> PDefaultTextures[kNumDefaultTextures];
-    D3D12Texture* GetDefaultTexture(eDefaultTexture texID)
-    {
-        ASSERT(texID < kNumDefaultTextures);
-        return PDefaultTextures[texID].get();
-    }
-
     SamplerDesc SamplerLinearWrapDesc;
     SamplerDesc SamplerAnisoWrapDesc;
     SamplerDesc SamplerShadowDesc;
@@ -268,6 +261,67 @@ namespace RHI
         g_pDownsampleDepthPSO = new D3D12PipelineState(pParent->GetParentDevice(), L"DownsampleDepth PSO", mDownsampleDepthDesc);
     }
 
+    std::shared_ptr<D3D12Texture> PDefaultTextures[kNumDefaultTextures];
+    D3D12Texture*                 GetDefaultTexture(eDefaultTexture texID)
+    {
+        ASSERT(texID < kNumDefaultTextures);
+        return PDefaultTextures[texID].get();
+    }
+
+    void InitializeCommonResource(D3D12LinkedDevice* pParent)
+    {
+#define CreateSubData(data) D3D12_SUBRESOURCE_DATA {&data, 4, 4}
+
+#define Create2DTex(name, data) \
+    D3D12Texture::Create2D(pParent, \
+                           1, \
+                           1, \
+                           1, \
+                           DXGI_FORMAT_R8G8B8A8_UNORM, \
+                           RHISurfaceCreateFlags::RHISurfaceCreateFlagNone, \
+                           1, \
+                           name, \
+                           D3D12_RESOURCE_STATE_COMMON, \
+                           std::nullopt, \
+                           CreateSubData(data))
+
+        #define Create2DCubeTex(name, subdata) \
+    D3D12Texture::CreateCubeMap(pParent, \
+                                1, \
+                                1, \
+                                1, \
+                                DXGI_FORMAT_R8G8B8A8_UNORM, \
+                                RHISurfaceCreateFlags::RHISurfaceCreateFlagNone, \
+                                1, \
+                                name, \
+                                D3D12_RESOURCE_STATE_COMMON, \
+                                std::nullopt, \
+                                std::vector<D3D12_SUBRESOURCE_DATA> {CreateSubData(subdata), \
+                                                                     CreateSubData(subdata), \
+                                                                     CreateSubData(subdata), \
+                                                                     CreateSubData(subdata), \
+                                                                     CreateSubData(subdata), \
+                                                                     CreateSubData(subdata)})
+
+        // clang-format off
+        uint32_t MagentaPixel = 0xFFFF00FF;
+        PDefaultTextures[eDefaultTexture::kMagenta2D] = Create2DTex(L"DefaultMagenta2D", MagentaPixel);
+        uint32_t BlackOpaqueTexel = 0xFF000000;
+        PDefaultTextures[eDefaultTexture::kBlackOpaque2D] = Create2DTex(L"DefaultBlackOpaque2D", BlackOpaqueTexel);
+        uint32_t BlackTransparentTexel = 0x00000000;
+        PDefaultTextures[eDefaultTexture::kBlackTransparent2D] = Create2DTex(L"DefaultBlackTransparent2D", BlackTransparentTexel);
+        uint32_t WhiteOpaqueTexel = 0xFFFFFFFF;
+        PDefaultTextures[eDefaultTexture::kWhiteOpaque2D] = Create2DTex(L"DefaultWhiteOpaque2D", WhiteOpaqueTexel);
+        uint32_t WhiteTransparentTexel = 0x00FFFFFF;
+        PDefaultTextures[eDefaultTexture::kWhiteTransparent2D] = Create2DTex(L"DefaultWhiteTransparent2D", WhiteOpaqueTexel);
+        uint32_t FlatNormalTexel = 0x00FFFFFF;
+        PDefaultTextures[eDefaultTexture::kDefaultNormalMap] = Create2DTex(L"DefaultFlatNormal2D", FlatNormalTexel);
+        uint32_t BlackCubeTexels = 0x00000000;
+        PDefaultTextures[eDefaultTexture::kBlackCubeMap] = Create2DCubeTex(L"BlackCubeTex", BlackCubeTexels);
+        // clang-format on
+
+    }
+
     void DestroyCommonState(void)
     {
 #define SAFERELEASE(a) delete a; a = nullptr;
@@ -288,6 +342,17 @@ namespace RHI
         SAFERELEASE(g_pGenerateMipsGammaPSO[3])
 
         SAFERELEASE(g_pDownsampleDepthPSO)
+    }
+
+    void DestroyCommonResource()
+    {
+        PDefaultTextures[eDefaultTexture::kMagenta2D]          = nullptr;
+        PDefaultTextures[eDefaultTexture::kBlackOpaque2D]      = nullptr;
+        PDefaultTextures[eDefaultTexture::kBlackTransparent2D] = nullptr;
+        PDefaultTextures[eDefaultTexture::kWhiteOpaque2D]      = nullptr;
+        PDefaultTextures[eDefaultTexture::kWhiteTransparent2D] = nullptr;
+        PDefaultTextures[eDefaultTexture::kDefaultNormalMap]   = nullptr;
+        PDefaultTextures[eDefaultTexture::kBlackCubeMap]       = nullptr;
     }
 
 }

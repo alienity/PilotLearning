@@ -1016,9 +1016,13 @@ namespace RHI
         D3D12CommandContext* InitContext = Parent->GetCopyContext2();
         InitContext->Open();
 
+        D3D12_RESOURCE_STATES originalState = Dest->GetResourceState().GetSubresourceState(FirstSubresource);
+
+        InitContext->TransitionBarrier(Dest, D3D12_RESOURCE_STATE_COPY_DEST, FirstSubresource, true);
+
         // copy data to the intermediate upload heap and then schedule a copy from the upload heap to the default
         // texture
-        RHI::GraphicsResource mem = InitContext->ReserveUploadMemory(uploadBufferSize);
+        RHI::GraphicsResource mem = InitContext->ReserveUploadMemory(uploadBufferSize, D3D12_TEXTURE_DATA_PLACEMENT_ALIGNMENT);
         UpdateSubresources(InitContext->GetGraphicsCommandList(),
                            Dest->GetResource(),
                            mem.Resource(),
@@ -1026,7 +1030,7 @@ namespace RHI
                            FirstSubresource,
                            NumSubresources,
                            Subresources.data());
-        InitContext->TransitionBarrier(Dest, D3D12_RESOURCE_STATE_GENERIC_READ, true);
+        InitContext->TransitionBarrier(Dest, originalState, FirstSubresource, true);
 
         InitContext->Close();
 

@@ -918,6 +918,19 @@ namespace RHI
 
         pSurfaceD3D12->m_Desc = desc;
         
+        // Inflate Texture
+        if (!initDatas.empty())
+        {
+            for (size_t i = 0; i < initDatas.size(); i++)
+            {
+                UINT firstSubResource = pSurfaceD3D12->GetSubresourceIndex(i, 0, 0);
+                std::vector<D3D12_SUBRESOURCE_DATA> subresources = {initDatas[i]};
+                D3D12CommandContext::InitializeTexture(Parent, pSurfaceD3D12.get(), firstSubResource, subresources);
+            }
+
+            //pBufferD3D12->InflateBuffer(initialData, dataLen);
+        }
+
         return pSurfaceD3D12;
     }
 
@@ -935,7 +948,9 @@ namespace RHI
     {
         DXGI_FORMAT clearFormat = clearValue != std::nullopt ? clearValue.value().Format : format;
         RHIRenderSurfaceBaseDesc desc = {width, height, 1, sampleCount, numMips, flags, RHITexDim2D, format, clearFormat, true, false};
-        return Create(Parent, desc, name, initState, clearValue, {initData});
+        std::vector<D3D12_SUBRESOURCE_DATA> subDatas = {};
+        if (initData.pData != nullptr) subDatas.push_back(initData);
+        return Create(Parent, desc, name, initState, clearValue, subDatas);
     }
 
     std::shared_ptr<D3D12Texture> D3D12Texture::Create2DArray(D3D12LinkedDevice*                  Parent,
@@ -1010,7 +1025,9 @@ namespace RHI
         DXGI_FORMAT clearFormat = clearValue != std::nullopt ? clearValue.value().Format : format;
         UINT cubeFaces = 6;
         RHIRenderSurfaceBaseDesc desc = {width, height, depth, sampleCount, numMips, flags, RHITexDim3D, format, clearFormat, true, false};
-        return Create(Parent, desc, name, initState, clearValue, {initData});
+        std::vector<D3D12_SUBRESOURCE_DATA> subDatas = {};
+        if (initData.pData != nullptr) subDatas.push_back(initData);
+        return Create(Parent, desc, name, initState, clearValue, subDatas);
     }
 
     std::shared_ptr<D3D12Texture> D3D12Texture::CreateFromSwapchain(D3D12LinkedDevice*                     Parent,

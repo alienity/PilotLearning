@@ -12,30 +12,31 @@ namespace Pilot
     public:
         struct ExtractLumaInitInfo : public RenderPassInitInfo
         {
-            RHI::RgTextureDesc       m_ColorTexDesc;
-            EngineConfig::HDRConfig  m_HDRConfig;
-            ShaderCompiler*          m_ShaderCompiler;
-            std::filesystem::path    m_ShaderRootPath;
+            RHI::RgTextureDesc    m_ColorTexDesc;
+            ShaderCompiler*       m_ShaderCompiler;
+            std::filesystem::path m_ShaderRootPath;
         };
 
         struct DrawInputParameters : public PassInput
         {
             DrawInputParameters()
             {
-                inputColorHandle.Invalidate();
+                inputSceneColorHandle.Invalidate();
+                inputExposureHandle.Invalidate();
             }
 
-            RHI::RgResourceHandle inputColorHandle;
+            RHI::RgResourceHandle inputSceneColorHandle;
+            RHI::RgResourceHandle inputExposureHandle;
         };
 
         struct DrawOutputParameters : public PassOutput
         {
             DrawOutputParameters()
             {
-                targetColorHandle.Invalidate();
+                outputLumaLRHandle.Invalidate();
             }
 
-            RHI::RgResourceHandle targetColorHandle;
+            RHI::RgResourceHandle outputLumaLRHandle;
         };
 
     public:
@@ -46,7 +47,12 @@ namespace Pilot
         void destroy() override final;
 
     private:
+        Shader                                   ExtractLumaCS;
+        std::shared_ptr<RHI::D3D12RootSignature> pExtractLumaCSSignature;
+        std::shared_ptr<RHI::D3D12PipelineState> pExtractLumaCSPSO;
         
+        RHI::RgTextureDesc m_LumaLRDesc;
+
 	};
 }
 

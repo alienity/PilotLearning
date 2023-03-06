@@ -83,6 +83,9 @@ namespace RHI
         }
         m_CopyContext1 = std::make_shared<D3D12CommandContext>(this, RHID3D12CommandQueueType::Copy1, D3D12_COMMAND_LIST_TYPE_DIRECT);
         m_CopyContext2 = std::make_shared<D3D12CommandContext>(this, RHID3D12CommandQueueType::Copy2, D3D12_COMMAND_LIST_TYPE_DIRECT);
+
+        // initialize common resource
+        RHI::InitializeCommonResource(this);
     }
     // clang-format on
 
@@ -90,6 +93,7 @@ namespace RHI
     {
         // release common states
         RHI::DestroyCommonState();
+        RHI::DestroyCommonResource();
 
         m_GraphicsMemory      = nullptr;
         m_ResourceUploadBatch = nullptr;
