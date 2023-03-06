@@ -15,7 +15,7 @@
 // The histogram measures logarithmic luminance ranging from 2^-12 up to 2^4.  This should provide a nice window
 // where the exposure would range from 2^-4 up to 2^4.
 
-#include "PostEffectsRS.hlsli"
+//#include "PostEffectsRS.hlsli"
 #include "ShaderUtility.hlsli"
 
 //ByteAddressBuffer Histogram : register(t0);
@@ -38,7 +38,7 @@ cbuffer CB1 : register(b1)
 
 groupshared float gs_Accum[256];
 
-[RootSignature(PostEffects_RootSig)]
+//[RootSignature(PostEffects_RootSig)]
 [numthreads( 256, 1, 1 )]
 void main( uint GI : SV_GroupIndex )
 {

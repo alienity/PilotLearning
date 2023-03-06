@@ -7,7 +7,7 @@
 
 #include "runtime/function/render/renderer/msaa_resolve_pass.h"
 #include "runtime/function/render/renderer/fxaa_pass.h"
-//#include "runtime/function/render/renderer/bloom_pass.h"
+#include "runtime/function/render/renderer/bloom_pass.h"
 //#include "runtime/function/render/renderer/extractLuma_pass.h"
 #include "runtime/function/render/renderer/hdr_tonemapping_pass.h"
 #include "runtime/function/render/renderer/exposure_pass.h"
@@ -60,15 +60,21 @@ namespace Pilot
 
     protected:
         bool initializeResolveTarget(RHI::RenderGraph& graph, PostprocessOutputParameters* drawPassOutput);
+        void Blit(RHI::RenderGraph& graph, RHI::RgResourceHandle inputHandle, RHI::RgResourceHandle outputHandle);
 
     private:
         RHI::RgTextureDesc colorTexDesc;
 
-        std::shared_ptr<RHI::D3D12Texture> mLuminanceColor;
+        std::shared_ptr<RHI::D3D12Texture> m_LumaBuffer;
+        std::shared_ptr<RHI::D3D12Texture> m_TemporalColor[2];
+        std::shared_ptr<RHI::D3D12Texture> m_TemporalMinBound;
+        std::shared_ptr<RHI::D3D12Texture> m_TemporalMaxBound;
+
         std::shared_ptr<RHI::D3D12Buffer> mExposureBuffer;
 
         std::shared_ptr<MSAAResolvePass>    mResolvePass;
         std::shared_ptr<FXAAPass>           mFXAAPass;
+        std::shared_ptr<BloomPass>          mBloomPass;
         std::shared_ptr<HDRToneMappingPass> mHDRToneMappingPass;
         std::shared_ptr<ExposurePass>       mExposurePass;
 	};

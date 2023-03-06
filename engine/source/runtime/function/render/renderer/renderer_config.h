@@ -81,7 +81,7 @@ namespace EngineConfig
         // Controls the "focus" of the blur.  High values spread out more causing a haze.
         float m_BloomUpsampleFactor = 0.65f; // 0.0f, 1.0f, 0.05f
         // High quality blurs 5 octaves of bloom; low quality only blurs 3.
-        bool m_HighQualityBloom = false;
+        bool m_HighQualityBloom = true;
     };
     extern BloomConfig g_BloomConfig;
 

@@ -15,18 +15,6 @@ namespace Pilot
         RenderPassCommonInfo renderPassCommonInfo = {m_RenderGraphAllocator, m_RenderGraphRegistry, m_Device, m_WindowSystem};
 
         {
-            mLuminanceColor = RHI::D3D12Texture::Create2D(m_Device->GetLinkedDevice(),
-                                                          colorTexDesc.Width,
-                                                          colorTexDesc.Height,
-                                                          1,
-                                                          DXGI_FORMAT_R8_UINT,
-                                                          RHI::RHISurfaceCreateRandomWrite,
-                                                          1,
-                                                          L"LuminanceColor",
-                                                          D3D12_RESOURCE_STATE_COMMON);
-
-        }
-        {
             MSAAResolvePass::MSAAResolveInitInfo resolvePassInit;
             resolvePassInit.colorTexDesc = colorTexDesc;
 
@@ -44,6 +32,16 @@ namespace Pilot
             mFXAAPass = std::make_shared<FXAAPass>();
             mFXAAPass->setCommonInfo(renderPassCommonInfo);
             mFXAAPass->initialize(fxaaPassInit);
+        }
+        {
+            BloomPass::BloomInitInfo bloomPassInit;
+            bloomPassInit.m_ColorTexDesc  = colorTexDesc;
+            bloomPassInit.m_ShaderCompiler = init_info.m_ShaderCompiler;
+            bloomPassInit.m_ShaderRootPath = g_runtime_global_context.m_config_manager->getShaderFolder();
+
+            mBloomPass = std::make_shared<BloomPass>();
+            mBloomPass->setCommonInfo(renderPassCommonInfo);
+            mBloomPass->initialize(bloomPassInit);
         }
         {
             HDRToneMappingPass::HDRToneMappingInitInfo toneMappingInit;
@@ -68,6 +66,22 @@ namespace Pilot
             mExposurePass->initialize(exposureInit);
         }
 
+        
+        {
+#define Create2DTex(width, height, format, name) \
+    RHI::D3D12Texture::Create2D(m_Device->GetLinkedDevice(), \
+                                width, \
+                                height, \
+                                1, \
+                                format, \
+                                RHI::RHISurfaceCreateRandomWrite, \
+                                1, \
+                                name, \
+                                D3D12_RESOURCE_STATE_COMMON)
+
+            m_LumaBuffer = Create2DTex(colorTexDesc.Width, colorTexDesc.Height, DXGI_FORMAT_R8_UINT, L"LuminanceColor");
+
+        }
         {
             __declspec(align(16)) float initExposure[] = {
                 EngineConfig::g_HDRConfig.m_Exposure,
@@ -80,11 +94,11 @@ namespace Pilot
                 1.0f / (EngineConfig::kInitialMaxLog - EngineConfig::kInitialMinLog)};
 
             mExposureBuffer = RHI::D3D12Buffer::Create(m_Device->GetLinkedDevice(),
-                                                       RHI::RHIBufferTarget::RHIBufferTargetNone,
+                                                       RHI::RHIBufferTarget::RHIBufferRandomReadWrite,
                                                        8,
                                                        4,
                                                        L"Exposure",
-                                                       RHI::RHIBufferMode::RHIBufferModeDynamic,
+                                                       RHI::RHIBufferMode::RHIBufferModeImmutable,
                                                        D3D12_RESOURCE_STATE_GENERIC_READ,
                                                        (BYTE*)initExposure,
                                                        sizeof(initExposure));
@@ -104,7 +118,7 @@ namespace Pilot
         RHI::RgResourceHandle outputTargetHandle = inputSceneColorHandle;
 
         RHI::RgResourceHandle exposureBufferHandle = graph.Import(mExposureBuffer.get());
-        RHI::RgResourceHandle luminanceColorHandle = graph.Import(mLuminanceColor.get());
+        RHI::RgResourceHandle luminanceColorHandle = graph.Import(m_LumaBuffer.get());
 
         // resolve rendertarget
         if (EngineConfig::g_AntialiasingMode == EngineConfig::MSAA)
@@ -136,28 +150,21 @@ namespace Pilot
         {
             RHI::RgResourceHandle mTmpTargetColorHandle = drawPassOutput->postTargetColorHandle0;
 
-            RHI::RenderPass& blitPass = graph.AddRenderPass("BlitPass");
-
-            blitPass.Read(inputSceneColorHandle, true);
-            blitPass.Write(mTmpTargetColorHandle, true);
-
-            blitPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
-                // RHI::D3D12ComputeContext* computeContext = context->GetComputeContext();
-
-                RHI::D3D12Texture* pInputColor = registry->GetD3D12Texture(inputSceneColorHandle);
-                RHI::D3D12Texture* pTempColor  = registry->GetD3D12Texture(mTmpTargetColorHandle);
-
-                context->TransitionBarrier(pInputColor, D3D12_RESOURCE_STATE_COPY_SOURCE);
-                context->TransitionBarrier(pTempColor, D3D12_RESOURCE_STATE_COPY_DEST);
-                context->FlushResourceBarriers();
-
-                context->CopySubresource(pTempColor, 0, pInputColor, 0);
-            });
+            Blit(graph, inputSceneColorHandle, mTmpTargetColorHandle);
 
             outputTargetHandle = mTmpTargetColorHandle;
         }
-
+        
         {
+            // Bloom
+            BloomPass::DrawInputParameters  mBloomIntputParams;
+            BloomPass::DrawOutputParameters mBloomOutputParams;
+
+            mBloomIntputParams.inputExposureHandle = exposureBufferHandle;
+            mBloomIntputParams.inputSceneColorHandle = outputTargetHandle;
+
+            mBloomPass->update(graph, mBloomIntputParams, mBloomOutputParams);
+
             // ToneMapping
             HDRToneMappingPass::DrawInputParameters  mToneMappingIntputParams;
             HDRToneMappingPass::DrawOutputParameters mToneMappingOutputParams;
@@ -169,17 +176,16 @@ namespace Pilot
 
             outputTargetHandle = mToneMappingOutputParams.outputPostEffectsHandle;
 
-            // Exposure
+            // Exposure -- Do this last so that the bright pass uses the same exposure as tone mapping
             ExposurePass::DrawInputParameters  mExposureIntputParams;
             ExposurePass::DrawOutputParameters mExposureOutputParams;
 
             mExposureIntputParams.inputLumaLRHandle = mToneMappingOutputParams.outputLumaHandle;
             mExposureOutputParams.exposureHandle    = exposureBufferHandle;
 
-            // Do this last so that the bright pass uses the same exposure as tone mapping
             mExposurePass->update(graph, mExposureIntputParams, mExposureOutputParams);
         }
-
+        
         passOutput.outputColorHandle = outputTargetHandle;
     }
 
@@ -196,6 +202,27 @@ namespace Pilot
             drawPassOutput->postTargetColorHandle1 = graph.Create<RHI::D3D12Texture>(colorTexDesc);
         }
         return true;
+    }
+
+    void PostprocessPasses::Blit(RHI::RenderGraph& graph, RHI::RgResourceHandle inputHandle, RHI::RgResourceHandle outputHandle)
+    {
+        RHI::RenderPass& blitPass = graph.AddRenderPass("BlitPass");
+
+        blitPass.Read(inputHandle, true);
+        blitPass.Write(outputHandle, true);
+
+        blitPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
+            // RHI::D3D12ComputeContext* computeContext = context->GetComputeContext();
+
+            RHI::D3D12Texture* pInputColor = registry->GetD3D12Texture(inputHandle);
+            RHI::D3D12Texture* pTempColor  = registry->GetD3D12Texture(outputHandle);
+
+            context->TransitionBarrier(pInputColor, D3D12_RESOURCE_STATE_COPY_SOURCE);
+            context->TransitionBarrier(pTempColor, D3D12_RESOURCE_STATE_COPY_DEST);
+            context->FlushResourceBarriers();
+
+            context->CopySubresource(pTempColor, 0, pInputColor, 0);
+        });
     }
 
 }

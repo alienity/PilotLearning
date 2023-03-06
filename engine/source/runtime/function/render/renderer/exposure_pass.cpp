@@ -48,12 +48,32 @@ namespace Pilot
             pGenerateHistogramCSPSO = std::make_shared<RHI::D3D12PipelineState>(m_Device, L"GenerateHistogramPSO", psoDesc);
         }
 
-        AdaptExposureCS = m_ShaderCompiler->CompileShader(RHI_SHADER_TYPE::Compute,
-                                                          m_ShaderRootPath / "hlsl/GenerateHistogramCS.hlsl",
-                                                          ShaderCompileOptions(L"main"));
+        AdaptExposureCS = m_ShaderCompiler->CompileShader(
+            RHI_SHADER_TYPE::Compute, m_ShaderRootPath / "hlsl/AdaptExposureCS.hlsl", ShaderCompileOptions(L"main"));
 
+        {
+            RHI::RootSignatureDesc rootSigDesc = RHI::RootSignatureDesc()
+                                                     .Add32BitConstants<0, 0>(5)
+                                                     .AddConstantBufferView<1, 0>()
+                                                     .AllowResourceDescriptorHeapIndexing()
+                                                     .AllowSampleDescriptorHeapIndexing();
 
+            pAdaptExposureCSSignature = std::make_shared<RHI::D3D12RootSignature>(m_Device, rootSigDesc);
+        }
 
+        {
+            struct PsoStream
+            {
+                PipelineStateStreamRootSignature RootSignature;
+                PipelineStateStreamCS            CS;
+            } psoStream;
+            psoStream.RootSignature         = PipelineStateStreamRootSignature(pAdaptExposureCSSignature.get());
+            psoStream.CS                    = &AdaptExposureCS;
+            PipelineStateStreamDesc psoDesc = {sizeof(PsoStream), &psoStream};
+
+            pAdaptExposureCSPSO =
+                std::make_shared<RHI::D3D12PipelineState>(m_Device, L"AdaptExposureCSPSO", psoDesc);
+        }
 
     }
 
@@ -129,8 +149,8 @@ namespace Pilot
                 computeContext->Dispatch2D(
                     m_LumaLRColor->GetWidth(), m_LumaLRColor->GetHeight(), 16, m_LumaLRColor->GetHeight());
             });
-            /*
-            RHI::RenderPass& genHistogram2Pass = graph.AddRenderPass("GenerateHDRDistogram2");
+            
+            RHI::RenderPass& genHistogram2Pass = graph.AddRenderPass("AdaptExposure");
             genHistogram2Pass.Read(drawPassOutput.histogramHandle);
             genHistogram2Pass.Write(drawPassOutput.exposureHandle);
             genHistogram2Pass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
@@ -160,7 +180,8 @@ namespace Pilot
                                EngineConfig::g_HDRConfig.m_MaxExposure,
                                m_LumaLRColor->GetWidth() * m_LumaLRColor->GetHeight()};
                 
-                computeContext->SetDynamicConstantBufferView(0, sizeof(constants), &constants);
+                //computeContext->SetDynamicConstantBufferView(0, sizeof(constants), &constants);
+                computeContext->SetConstantArray(0, 5, &constants);
 
                 __declspec(align(16)) struct
                 {
@@ -173,7 +194,7 @@ namespace Pilot
                 computeContext->Dispatch(1, 1, 64);
 
             });
-            */
+            
         }
 
     }
