@@ -174,8 +174,7 @@ namespace Pilot
 	void BloomPass::update(RHI::RenderGraph& graph, DrawInputParameters& passInput, DrawOutputParameters& passOutput)
 	{
         DrawInputParameters  drawPassInput  = passInput;
-        DrawOutputParameters drawPassOutput = passOutput;
-
+        
         int kBloomWidth  = m_LumaLRDesc.Width;
         int kBloomHeight = m_LumaLRDesc.Height;
 
@@ -191,8 +190,8 @@ namespace Pilot
         RHI::RgResourceHandle m_aBloomUAV5Handle[2] = {graph.Create<RHI::D3D12Texture>(m_aBloomUAV5Desc[0]),
                                                        graph.Create<RHI::D3D12Texture>(m_aBloomUAV5Desc[1])};
 
-        drawPassOutput.outputLumaLRHandle = m_LumaLRHandle;
-        drawPassOutput.outputBloomHandle  = m_aBloomUAV1Handle[1];
+        passOutput.outputLumaLRHandle = m_LumaLRHandle;
+        passOutput.outputBloomHandle  = m_aBloomUAV1Handle[1];
 
         RHI::RenderPass& generateBloomPass = graph.AddRenderPass("GenerateBloom");
 

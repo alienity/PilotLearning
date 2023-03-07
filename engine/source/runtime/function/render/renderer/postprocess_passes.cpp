@@ -184,7 +184,7 @@ namespace Pilot
                 m_BllomHandle  = mBloomOutputParams.outputBloomHandle;
                 m_LumaLRHandle = mBloomOutputParams.outputLumaLRHandle;
             }
-            else
+            else if (EngineConfig::g_HDRConfig.m_EnableAdaptiveExposure)
             {
                 // ExtractLuma
                 ExtractLumaPass::DrawInputParameters  mExtractLumaIntputParams;
@@ -203,21 +203,24 @@ namespace Pilot
             HDRToneMappingPass::DrawInputParameters  mToneMappingIntputParams;
             HDRToneMappingPass::DrawOutputParameters mToneMappingOutputParams;
             
-            mToneMappingIntputParams.inputSceneColorHandle   = drawPassOutput->postTargetColorHandle0;
+            mToneMappingIntputParams.inputBloomHandle        = m_BllomHandle;
+            mToneMappingIntputParams.inputExposureHandle     = exposureBufferHandle;
+            mToneMappingIntputParams.inputSceneColorHandle   = outputTargetHandle;
             mToneMappingOutputParams.outputPostEffectsHandle = drawPassOutput->postTargetColorHandle1;
 
             mHDRToneMappingPass->update(graph, mToneMappingIntputParams, mToneMappingOutputParams);
 
             outputTargetHandle = mToneMappingOutputParams.outputPostEffectsHandle;
-
+            
             // Exposure -- Do this last so that the bright pass uses the same exposure as tone mapping
             ExposurePass::DrawInputParameters  mExposureIntputParams;
             ExposurePass::DrawOutputParameters mExposureOutputParams;
 
-            mExposureIntputParams.inputLumaLRHandle = mToneMappingOutputParams.outputLumaHandle;
+            mExposureIntputParams.inputLumaLRHandle = m_LumaLRHandle;
             mExposureOutputParams.exposureHandle    = exposureBufferHandle;
 
             mExposurePass->update(graph, mExposureIntputParams, mExposureOutputParams);
+            
         }
         
         passOutput.outputColorHandle = outputTargetHandle;

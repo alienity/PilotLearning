@@ -22,13 +22,13 @@ namespace Pilot
         {
             DrawInputParameters()
             {
-                //inputExposureHandle.Invalidate();
-                //inputBloomHandle.Invalidate();
+                inputExposureHandle.Invalidate();
+                inputBloomHandle.Invalidate();
                 inputSceneColorHandle.Invalidate();
             }
 
-            //RHI::RgResourceHandle inputExposureHandle;
-            //RHI::RgResourceHandle inputBloomHandle;
+            RHI::RgResourceHandle inputExposureHandle;
+            RHI::RgResourceHandle inputBloomHandle;
             RHI::RgResourceHandle inputSceneColorHandle;
         };
 
@@ -36,11 +36,11 @@ namespace Pilot
         {
             DrawOutputParameters()
             {
-                outputLumaHandle.Invalidate();
+                outputLumaBufferHandle.Invalidate();
                 outputPostEffectsHandle.Invalidate();
             }
 
-            RHI::RgResourceHandle outputLumaHandle;
+            RHI::RgResourceHandle outputLumaBufferHandle;
             RHI::RgResourceHandle outputPostEffectsHandle;
         };
 
@@ -61,14 +61,13 @@ namespace Pilot
 
         struct _UnbindIndexBuffer
         {
-            //uint32_t m_ExposureIndex;
-            //uint32_t m_BloomIndex;
+            uint32_t m_ExposureIndex;
+            uint32_t m_BloomIndex;
             uint32_t m_DstColorIndex;
             uint32_t m_SrcColorIndex;
             uint32_t m_OutLumaIndex;
         };
 
-        //std::shared_ptr<RHI::D3D12Buffer> p_UnbindIndexBuffer;
 	};
 }
 

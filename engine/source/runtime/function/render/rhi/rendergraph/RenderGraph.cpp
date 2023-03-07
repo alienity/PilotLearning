@@ -61,7 +61,6 @@ namespace RHI
 
 		IgnoreReads.insert(IgnoreReads.begin(), RenderPass->IgnoreReads.begin(), RenderPass->IgnoreReads.end());
         IgnoreWrites.insert(IgnoreWrites.begin(), RenderPass->IgnoreWrites.begin(), RenderPass->IgnoreWrites.end());
-        //ResolveSrcDstPairs.insert(ResolveSrcDstPairs.end(), RenderPass->ResolveSrcDstPairs.begin(), RenderPass->ResolveSrcDstPairs.end());
 	}
 
 	void RenderGraphDependencyLevel::Execute(RenderGraph* RenderGraph, D3D12CommandContext* Context)

@@ -33,8 +33,8 @@ cbuffer CB0 : register(b0)
 
 cbuffer CB1 : register(b1)
 {
-    //uint m_ExposureIndex;
-    //uint m_BloomIndex;
+    uint m_ExposureIndex;
+    uint m_BloomIndex;
     uint m_DstColorIndex;
     uint m_SrcColorIndex;
     uint m_OutLumaIndex;
@@ -44,8 +44,8 @@ cbuffer CB1 : register(b1)
 [numthreads( 8, 8, 1 )]
 void main( uint3 DTid : SV_DispatchThreadID )
 {
-    //StructuredBuffer<float> Exposure = ResourceDescriptorHeap[m_ExposureIndex];
-    //Texture2D<float3>       Bloom    = ResourceDescriptorHeap[m_BloomIndex];
+    StructuredBuffer<float> Exposure = ResourceDescriptorHeap[m_ExposureIndex];
+    Texture2D<float3>       Bloom    = ResourceDescriptorHeap[m_BloomIndex];
     RWTexture2D<float3>     DstColor = ResourceDescriptorHeap[m_DstColorIndex];
     Texture2D<float3>       SrcColor = ResourceDescriptorHeap[m_SrcColorIndex];
     RWTexture2D<float>      OutLuma  = ResourceDescriptorHeap[m_OutLumaIndex];
@@ -54,8 +54,8 @@ void main( uint3 DTid : SV_DispatchThreadID )
 
     float3 hdrColor = SrcColor[DTid.xy];
 
-    //hdrColor += g_BloomStrength * Bloom.SampleLevel(LinearSampler, TexCoord, 0);
-    //hdrColor *= Exposure[0];
+    hdrColor += g_BloomStrength * Bloom.SampleLevel(LinearSampler, TexCoord, 0);
+    hdrColor *= Exposure[0];
 
     // Tone map to SDR
     float3 sdrColor = TM_Stanard(hdrColor);

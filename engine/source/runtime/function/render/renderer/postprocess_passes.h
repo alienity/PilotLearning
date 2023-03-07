@@ -66,7 +66,6 @@ namespace Pilot
         RHI::RgTextureDesc colorTexDesc;
 
         std::shared_ptr<RHI::D3D12Texture> m_LumaBuffer;
-        std::shared_ptr<RHI::D3D12Texture> m_TemporalColor[2];
         std::shared_ptr<RHI::D3D12Texture> m_TemporalMinBound;
         std::shared_ptr<RHI::D3D12Texture> m_TemporalMaxBound;
 

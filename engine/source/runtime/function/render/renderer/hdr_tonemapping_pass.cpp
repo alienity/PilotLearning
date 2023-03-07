@@ -27,7 +27,9 @@ namespace Pilot
                 RHI::RootSignatureDesc()
                     .Add32BitConstants<0, 0>(3)
                     .AddConstantBufferView<1, 0>()
-                    .AddStaticSampler<10, 0>(D3D12_FILTER::D3D12_FILTER_ANISOTROPIC, D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_WRAP, 8)
+                    .AddStaticSampler<0, 0>(D3D12_FILTER::D3D12_FILTER_MIN_MAG_MIP_LINEAR,
+                                            D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_WRAP,
+                                            8)
                     .AllowResourceDescriptorHeapIndexing()
                     .AllowSampleDescriptorHeapIndexing();
 
@@ -47,13 +49,6 @@ namespace Pilot
             pToneMapCSPSO = std::make_shared<RHI::D3D12PipelineState>(m_Device, L"ToneMapPSO", psoDesc);
         }
 
-        //p_UnbindIndexBuffer = RHI::D3D12Buffer::Create(m_Device->GetLinkedDevice(),
-        //                                               RHI::RHIBufferTarget::RHIBufferTargetNone,
-        //                                               sizeof(_UnbindIndexBuffer) / sizeof(uint32_t),
-        //                                               sizeof(uint32_t),
-        //                                               L"ToneMapping",
-        //                                               RHI::RHIBufferMode::RHIBufferModeDynamic,
-        //                                               D3D12_RESOURCE_STATE_GENERIC_READ);
     }
 
 	void HDRToneMappingPass::update(RHI::RenderGraph&     graph,
@@ -61,27 +56,27 @@ namespace Pilot
                                     DrawOutputParameters& passOutput)
     {
         RHI::RgResourceHandle mLumaBufferHandle = graph.Create<RHI::D3D12Texture>(m_LumaBufferDesc);
-        passOutput.outputLumaHandle = mLumaBufferHandle;
+        passOutput.outputLumaBufferHandle = mLumaBufferHandle;
 
-        DrawInputParameters&  drawPassInput  = passInput;
-        DrawOutputParameters& drawPassOutput = passOutput;
+        DrawInputParameters  drawPassInput  = passInput;
+        DrawOutputParameters drawPassOutput = passOutput;
 
         RHI::RenderPass& tonemappingPass = graph.AddRenderPass("ToneMapping");
 
-        //tonemappingPass.Read(drawPassInput.inputExposureHandle);
-        //tonemappingPass.Read(drawPassInput.inputBloomHandle);
+        tonemappingPass.Read(drawPassInput.inputExposureHandle);
+        tonemappingPass.Read(drawPassInput.inputBloomHandle);
         tonemappingPass.Read(drawPassInput.inputSceneColorHandle);
-        tonemappingPass.Write(drawPassOutput.outputLumaHandle);
+        tonemappingPass.Write(drawPassOutput.outputLumaBufferHandle);
         tonemappingPass.Write(drawPassOutput.outputPostEffectsHandle);
 
         tonemappingPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
             RHI::D3D12ComputeContext* computeContext = context->GetComputeContext();
 
-            //RHI::D3D12Buffer* exposureStructure = registry->GetD3D12Buffer(drawPassInput.inputExposureHandle);
-            //RHI::D3D12ShaderResourceView* exposureStructureSRV = exposureStructure->GetDefaultSRV().get();
+            RHI::D3D12Buffer* exposureStructure = registry->GetD3D12Buffer(drawPassInput.inputExposureHandle);
+            RHI::D3D12ShaderResourceView* exposureStructureSRV = exposureStructure->GetDefaultSRV().get();
 
-            //RHI::D3D12Texture* bloomColor = registry->GetD3D12Texture(drawPassInput.inputBloomHandle);
-            //RHI::D3D12ShaderResourceView* bloomColorSRV = bloomColor->GetDefaultSRV().get();
+            RHI::D3D12Texture* bloomColor = registry->GetD3D12Texture(drawPassInput.inputBloomHandle);
+            RHI::D3D12ShaderResourceView* bloomColorSRV = bloomColor->GetDefaultSRV().get();
 
             RHI::D3D12Texture* sceneColor = registry->GetD3D12Texture(drawPassInput.inputSceneColorHandle);
             RHI::D3D12ShaderResourceView* sceneColorSRV = sceneColor->GetDefaultSRV().get();
@@ -89,8 +84,8 @@ namespace Pilot
             RHI::D3D12Texture* postEffectsColor = registry->GetD3D12Texture(drawPassOutput.outputPostEffectsHandle);
             RHI::D3D12UnorderedAccessView* postEffectsColorUAV = postEffectsColor->GetDefaultUAV().get();
             
-            RHI::D3D12Texture* inputLumaColor = registry->GetD3D12Texture(drawPassOutput.outputLumaHandle);
-            RHI::D3D12UnorderedAccessView* inputLumaColorUAV = inputLumaColor->GetDefaultUAV().get();
+            RHI::D3D12Texture* lumaBuffer = registry->GetD3D12Texture(drawPassOutput.outputLumaBufferHandle);
+            RHI::D3D12UnorderedAccessView* lumaBufferUAV = lumaBuffer->GetDefaultUAV().get();
 
             computeContext->SetRootSignature(pToneMapCSSignature.get());
             computeContext->SetPipelineState(pToneMapCSPSO.get());
@@ -100,16 +95,21 @@ namespace Pilot
             // Set constants
             computeContext->SetConstants(0, 1.0f / sceneColor->GetWidth(), 1.0f / sceneColor->GetHeight(), (float)m_BloomStrength);
 
-            //_UnbindIndexBuffer mTmpUnbindIndexBuffer = _UnbindIndexBuffer {exposureStructureSRV->GetIndex(),
-            //                                                               bloomColorSRV->GetIndex(),
-            //                                                               postEffectsColorUAV->GetIndex(),
-            //                                                               sceneColorSRV->GetIndex(),
-            //                                                               inputLumaColorUAV->GetIndex()};
+            __declspec(align(16)) struct
+            {
+                uint32_t m_ExposureIndex;
+                uint32_t m_BloomIndex;
+                uint32_t m_DstColorIndex;
+                uint32_t m_SrcColorIndex;
+                uint32_t m_OutLumaIndex;
+            } _DescriptorIndexConstants = {exposureStructureSRV->GetIndex(),
+                                           bloomColorSRV->GetIndex(),
+                                           postEffectsColorUAV->GetIndex(),
+                                           sceneColorSRV->GetIndex(),
+                                           lumaBufferUAV->GetIndex()};
 
-            _UnbindIndexBuffer mTmpUnbindIndexBuffer = _UnbindIndexBuffer {
-                postEffectsColorUAV->GetIndex(), sceneColorSRV->GetIndex(), inputLumaColorUAV->GetIndex()};
-
-            computeContext->SetDynamicConstantBufferView(1, mTmpUnbindIndexBuffer);
+            computeContext->SetDynamicConstantBufferView(
+                1, sizeof(_DescriptorIndexConstants), &_DescriptorIndexConstants);
 
             computeContext->Dispatch2D(sceneColor->GetWidth(), sceneColor->GetHeight(), 8);
         });
