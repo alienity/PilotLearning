@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<DirectedGraph Title="Render Graph" xmlns="http://schemas.microsoft.com/vs/2009/dgml">
+<Nodes>
+<Node Id="Prologue" Label="Prologue" />
+<Node Id="IndirectShadowPass" Label="IndirectShadowPass" />
+<Node Id="IndirectDrawOpaquePass" Label="IndirectDrawOpaquePass" />
+<Node Id="SkyboxPass" Label="SkyboxPass" />
+<Node Id="IndirectDrawTransparentPass" Label="IndirectDrawTransparentPass" />
+<Node Id="FXAAToLuminance" Label="FXAAToLuminance" />
+<Node Id="FXAA" Label="FXAA" />
+<Node Id="GenerateBloom" Label="GenerateBloom" />
+<Node Id="DownSampleBloom" Label="DownSampleBloom" />
+<Node Id="UpSample" Label="UpSample" />
+<Node Id="UpSample" Label="UpSample" />
+<Node Id="UpSample" Label="UpSample" />
+<Node Id="UpSample" Label="UpSample" />
+<Node Id="UpSample" Label="UpSample" />
+<Node Id="ToneMapping" Label="ToneMapping" />
+<Node Id="GenerateHDRDistogram" Label="GenerateHDRDistogram" />
+<Node Id="AdaptExposure" Label="AdaptExposure" />
+<Node Id="DisplayDrawPass" Label="DisplayDrawPass" />
+<Node Id="UIPass" Label="UIPass" />
+<Node Id="Epilogue" Label="Epilogue" />
+</Nodes>
+<Links>
+<Link Source="IndirectShadowPass" Target="IndirectDrawTransparentPass" Label="ColorBuffer" />
+<Link Source="IndirectShadowPass" Target="IndirectDrawTransparentPass" Label="ColorBuffer" />
+<Link Source="IndirectShadowPass" Target="IndirectDrawOpaquePass" Label="ColorBuffer" />
+<Link Source="IndirectShadowPass" Target="IndirectDrawOpaquePass" Label="ColorBuffer" />
+<Link Source="IndirectDrawOpaquePass" Target="FXAA" Label="ColorBuffer" />
+<Link Source="IndirectDrawOpaquePass" Target="FXAAToLuminance" Label="ColorBuffer" />
+<Link Source="SkyboxPass" Target="FXAA" Label="ColorBuffer" />
+<Link Source="SkyboxPass" Target="FXAAToLuminance" Label="ColorBuffer" />
+<Link Source="IndirectDrawTransparentPass" Target="FXAA" Label="ColorBuffer" />
+<Link Source="IndirectDrawTransparentPass" Target="FXAAToLuminance" Label="ColorBuffer" />
+<Link Source="FXAAToLuminance" Target="FXAA" Label="ColorBuffer" />
+<Link Source="FXAA" Target="ToneMapping" Label="ColorBuffer" />
+<Link Source="FXAA" Target="GenerateBloom" Label="ColorBuffer" />
+<Link Source="GenerateBloom" Target="GenerateHDRDistogram" Label="LumaLR" />
+<Link Source="GenerateBloom" Target="UpSample" Label="Bloom Buffer 1a" />
+<Link Source="GenerateBloom" Target="DownSampleBloom" Label="Bloom Buffer 1a" />
+<Link Source="DownSampleBloom" Target="UpSample" Label="Bloom Buffer 2a" />
+<Link Source="DownSampleBloom" Target="UpSample" Label="Bloom Buffer 3a" />
+<Link Source="DownSampleBloom" Target="UpSample" Label="Bloom Buffer 4a" />
+<Link Source="DownSampleBloom" Target="UpSample" Label="Bloom Buffer 5a" />
+<Link Source="UpSample" Target="UpSample" Label="Bloom Buffer 5b" />
+<Link Source="UpSample" Target="UpSample" Label="Bloom Buffer 4b" />
+<Link Source="UpSample" Target="UpSample" Label="Bloom Buffer 3b" />
+<Link Source="UpSample" Target="UpSample" Label="Bloom Buffer 2b" />
+<Link Source="UpSample" Target="ToneMapping" Label="Bloom Buffer 1b" />
+<Link Source="ToneMapping" Target="DisplayDrawPass" Label="ColorBuffer" />
+<Link Source="GenerateHDRDistogram" Target="AdaptExposure" Label="Histogram" />
+<Link Source="AdaptExposure" Target="ToneMapping" Label="Histogram" />
+<Link Source="AdaptExposure" Target="GenerateBloom" Label="Histogram" />
+<Link Source="DisplayDrawPass" Target="UIPass" Label="DepthBuffer" />
+</Links>
+</DirectedGraph>

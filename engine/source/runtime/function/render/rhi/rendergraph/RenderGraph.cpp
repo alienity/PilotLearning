@@ -3,10 +3,7 @@
 
 namespace RHI
 {
-	RenderPass::RenderPass(std::string_view Name)
-		: Name(Name)
-	{
-	}
+    RenderPass::RenderPass(std::string_view Name, RenderGraph* Graph) : Name(Name), ParentGraph(Graph) {}
 
 	RenderPass& RenderPass::Read(RgResourceHandle Resource, bool IgnoreBarrier)
 	{
@@ -24,7 +21,40 @@ namespace RHI
 	{
 		// Only allow buffers/textures
         ASSERT(Resource && Resource->IsValid());
-        ASSERT(Resource->Type == RgResourceType::Buffer || Resource->Type == RgResourceType::Texture);
+        ASSERT(Resource.Type == RgResourceType::Buffer || Resource.Type == RgResourceType::Texture);
+
+		switch (Resource.Type)
+        {
+            case RgResourceType::Buffer:
+			{
+                auto& Container = ParentGraph->GetContainer<D3D12Buffer>();
+                for (size_t i = 0; i < Container.size(); i++)
+                {
+					if (Container[i].Handle == Resource)
+					{
+                        Container[i].Handle.Version += 1;
+                        Resource.Version = Container[i].Handle.Version;
+					}
+				}
+                break;
+			}
+            case RgResourceType::Texture:
+			{
+                auto& Container = ParentGraph->GetContainer<D3D12Texture>();
+                for (size_t i = 0; i < Container.size(); i++)
+                {
+					if (Container[i].Handle == Resource)
+					{
+                        Container[i].Handle.Version += 1;
+                        Resource.Version = Container[i].Handle.Version;
+					}
+				}
+                break;
+			}
+            default:
+                break;
+        }
+
 		//Resource->Version++;
 		Writes.insert(Resource);
 		ReadWrites.insert(Resource);
@@ -158,9 +188,9 @@ namespace RHI
         Allocator.Reset();
 
         // Allocate epilogue pass after allocator reset
-        ProloguePass = Allocator.Construct<RenderPass>("Prologue");
+        ProloguePass = Allocator.Construct<RenderPass>("Prologue", this);
         ProloguePass->PassIndex = PassIndex++;
-        EpiloguePass = Allocator.Construct<RenderPass>("Epilogue");
+        EpiloguePass = Allocator.Construct<RenderPass>("Epilogue", this);
         RenderPasses.push_back(ProloguePass);
     }
 
@@ -175,7 +205,7 @@ namespace RHI
 
 	RenderPass& RenderGraph::AddRenderPass(std::string_view Name)
 	{
-		RenderPass* NewRenderPass = Allocator.Construct<RenderPass>(Name);
+		RenderPass* NewRenderPass = Allocator.Construct<RenderPass>(Name, this);
         NewRenderPass->PassIndex  = PassIndex++;
 		RenderPasses.emplace_back(NewRenderPass);
 		return *NewRenderPass;
@@ -293,7 +323,7 @@ namespace RHI
 				continue;
 			}
 
-			std::vector<std::uint64_t>& Indices = AdjacencyLists[i];
+            std::vector<IndiceAndDisPair>& Indices = AdjacencyLists[i];
 
 			// Reverse iterate the render passes here, because often or not, the adjacency list should be built upon
 			// the latest changes to the render passes since those pass are more likely to change the resource we are writing to from other passes
@@ -306,12 +336,13 @@ namespace RHI
 				}
 
 				RenderPass* Neighbor = RenderPasses[j];
-				for (auto Resource : Node->Writes)
+				for (RHI::RgResourceHandle& Resource : Node->Writes)
 				{
 					// If the neighbor reads from a resource written to by the current pass, then it is a dependency, add it to the adjacency list
 					if (Neighbor->ReadsFrom(Resource))
 					{
-						Indices.push_back(j);
+						//Indices.push_back(j);
+                        Indices.push_back({j, Resource.Version});
 						break;
 					}
 				}
@@ -349,9 +380,11 @@ namespace RHI
 			size_t u = TopologicalSortedPass->TopologicalIndex;
 			for (auto v : AdjacencyLists[u])
 			{
-				if (Distances[v] < Distances[u] + 1)
+				// 因为默认Distance是0，所以这里加1
+                int vDistance = v.Distance + 1;
+                if (Distances[v.Index] < Distances[u] + vDistance)
 				{
-					Distances[v] = Distances[u] + 1;
+                    Distances[v.Index] = Distances[u] + vDistance;
 				}
 			}
 		}
@@ -395,9 +428,9 @@ namespace RHI
 
 		for (auto i : AdjacencyLists[n])
 		{
-			if (!Visited[i])
+			if (!Visited[i.Index])
 			{
-				DepthFirstSearch(i, Visited, Stack);
+				DepthFirstSearch(i.Index, Visited, Stack);
 			}
 		}
 
@@ -413,7 +446,7 @@ namespace RHI
 
 			for (size_t j = 0; j < AdjacencyLists[i].size(); ++j)
 			{
-				RenderPass* Neighbor = RenderPasses[AdjacencyLists[i][j]];
+				RenderPass* Neighbor = RenderPasses[AdjacencyLists[i][j].Index];
 				for (auto Resource : Node->Writes)
 				{
 					if (Neighbor->ReadsFrom(Resource))

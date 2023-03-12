@@ -29,15 +29,6 @@ namespace RHI
         [[nodiscard]] bool IsValid() const noexcept { return Type != RgResourceType::Unknown && Id != UINT_MAX; }
         [[nodiscard]] bool IsImported() const noexcept { return Flags & RG_RESOURCE_FLAG_IMPORTED; }
 
-		[[nodiscard]] bool operator==(const RgResourceHandle& rhs) const noexcept
-        {
-            return Utility::Hash64(this, sizeof(RgResourceHandle)) == Utility::Hash64(&rhs, sizeof(RgResourceHandle));
-        }
-        [[nodiscard]] bool operator!=(const RgResourceHandle& rhs) const noexcept
-        {
-            return Utility::Hash64(this, sizeof(RgResourceHandle)) != Utility::Hash64(&rhs, sizeof(RgResourceHandle));
-        }
-
         void Invalidate()
         {
             Type    = RgResourceType::Unknown;
@@ -52,6 +43,23 @@ namespace RHI
                                       // increase bit used if is not enough
         std::uint64_t   Id : 32;      // 32 bit unsigned int
     };
+
+	inline bool operator==(const RgResourceHandle& lhs, const RgResourceHandle& rhs)
+    {
+        return lhs.Type == rhs.Type && lhs.Flags == rhs.Flags && lhs.Id == rhs.Id;
+    }
+    inline bool operator!=(const RgResourceHandle& lhs, const RgResourceHandle& rhs) { return !operator==(lhs, rhs); }
+    inline bool operator<(const RgResourceHandle& lhs, const RgResourceHandle& rhs)
+    {
+        if (lhs.Type == rhs.Type)
+        {
+            return lhs.Id < rhs.Id;
+        }
+        return lhs.Type < rhs.Type;
+    }
+    inline bool operator>(const RgResourceHandle& lhs, const RgResourceHandle& rhs) { return operator<(rhs, lhs); }
+    inline bool operator<=(const RgResourceHandle& lhs, const RgResourceHandle& rhs) { return !operator>(lhs, rhs); }
+    inline bool operator>=(const RgResourceHandle& lhs, const RgResourceHandle& rhs) { return !operator<(lhs, rhs); }
 
 	static_assert(sizeof(RgResourceHandle) == sizeof(std::uint64_t));
 
@@ -301,7 +309,9 @@ struct std::hash<RHI::RgResourceHandle>
 {
 	size_t operator()(const RHI::RgResourceHandle& RenderResourceHandle) const noexcept
 	{
-        return Utility::Hash64(&RenderResourceHandle, sizeof(RenderResourceHandle));
+        RHI::RgResourceHandle tmpHandle = {
+            RenderResourceHandle.Type, RenderResourceHandle.Flags, 0, RenderResourceHandle.Id};
+        return Utility::Hash64(&tmpHandle, sizeof(tmpHandle));
 	}
 };
 
@@ -310,6 +320,8 @@ struct robin_hood::hash<RHI::RgResourceHandle>
 {
 	size_t operator()(const RHI::RgResourceHandle& RenderResourceHandle) const noexcept
 	{
-        return Utility::Hash64(&RenderResourceHandle, sizeof(RenderResourceHandle));
+        RHI::RgResourceHandle tmpHandle = {
+            RenderResourceHandle.Type, RenderResourceHandle.Flags, 0, RenderResourceHandle.Id};
+        return Utility::Hash64(&tmpHandle, sizeof(tmpHandle));
 	}
 };

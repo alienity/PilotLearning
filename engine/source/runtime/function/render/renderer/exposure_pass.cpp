@@ -79,17 +79,17 @@ namespace Pilot
 
     void ExposurePass::update(RHI::RenderGraph& graph, DrawInputParameters& passInput, DrawOutputParameters& passOutput)
     {
-        DrawInputParameters&  drawPassInput  = passInput;
-        DrawOutputParameters& drawPassOutput = passOutput;
+        RHI::RgResourceHandle inputLumaLRHandle = passInput.inputLumaLRHandle;
+        RHI::RgResourceHandle outputExposureHandle = passOutput.exposureHandle;
 
         if (!EngineConfig::g_HDRConfig.m_EnableAdaptiveExposure)
         {
             RHI::RenderPass& defaultExposurePass = graph.AddRenderPass("DefaultUpdateExposure");
 
-            defaultExposurePass.Write(drawPassOutput.exposureHandle, true);
+            defaultExposurePass.Write(outputExposureHandle, true);
             defaultExposurePass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
 
-                RHI::D3D12Buffer* exposureStructure = registry->GetD3D12Buffer(drawPassOutput.exposureHandle);
+                RHI::D3D12Buffer* exposureStructure = registry->GetD3D12Buffer(outputExposureHandle);
                 
                 __declspec(align(16)) float initExposure[] = {
                     EngineConfig::g_HDRConfig.m_Exposure,
@@ -110,19 +110,19 @@ namespace Pilot
 
         // Generate an HDR histogram
         {
-            RHI::RgResourceHandle mHistogramBufferHandle = graph.Create<RHI::D3D12Buffer>(m_HistogramBufferDesc);
-            drawPassOutput.histogramHandle = mHistogramBufferHandle;
+            RHI::RgResourceHandle histogramHandle = graph.Create<RHI::D3D12Buffer>(m_HistogramBufferDesc);
+            passOutput.histogramHandle = histogramHandle;
 
             RHI::RenderPass& genHistogramPass = graph.AddRenderPass("GenerateHDRDistogram");
-            genHistogramPass.Read(drawPassInput.inputLumaLRHandle);
-            genHistogramPass.Write(drawPassOutput.histogramHandle);
+            genHistogramPass.Read(inputLumaLRHandle);
+            genHistogramPass.Write(histogramHandle);
             genHistogramPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
                 RHI::D3D12ComputeContext* computeContext = context->GetComputeContext();
 
-                RHI::D3D12Texture* m_LumaLRColor = registry->GetD3D12Texture(drawPassInput.inputLumaLRHandle);
+                RHI::D3D12Texture* m_LumaLRColor = registry->GetD3D12Texture(inputLumaLRHandle);
                 RHI::D3D12ShaderResourceView* m_LumaLRColorSRV = m_LumaLRColor->GetDefaultSRV().get();
 
-                RHI::D3D12Buffer* m_HistogramBuffer = registry->GetD3D12Buffer(drawPassOutput.histogramHandle);
+                RHI::D3D12Buffer* m_HistogramBuffer = registry->GetD3D12Buffer(histogramHandle);
                 RHI::D3D12UnorderedAccessView* m_HistogramBufferUAV = m_HistogramBuffer->GetDefaultUAV().get();
 
                 //computeContext->TransitionBarrier(m_HistogramBuffer, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, true);
@@ -151,17 +151,17 @@ namespace Pilot
             });
             
             RHI::RenderPass& genHistogram2Pass = graph.AddRenderPass("AdaptExposure");
-            genHistogram2Pass.Read(drawPassOutput.histogramHandle);
-            genHistogram2Pass.Write(drawPassOutput.exposureHandle);
+            genHistogram2Pass.Read(histogramHandle);
+            genHistogram2Pass.Write(outputExposureHandle);
             genHistogram2Pass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
                 RHI::D3D12ComputeContext* computeContext = context->GetComputeContext();
 
-                RHI::D3D12Texture* m_LumaLRColor = registry->GetD3D12Texture(drawPassInput.inputLumaLRHandle);
+                RHI::D3D12Texture* m_LumaLRColor = registry->GetD3D12Texture(inputLumaLRHandle);
                 
-                RHI::D3D12Buffer* m_HistogramBuffer = registry->GetD3D12Buffer(drawPassOutput.histogramHandle);
+                RHI::D3D12Buffer* m_HistogramBuffer = registry->GetD3D12Buffer(histogramHandle);
                 RHI::D3D12ShaderResourceView*  m_HistogramBufferSRV = m_HistogramBuffer->GetDefaultSRV().get();
 
-                RHI::D3D12Buffer* m_ExposureBuffer = registry->GetD3D12Buffer(drawPassOutput.exposureHandle);
+                RHI::D3D12Buffer* m_ExposureBuffer = registry->GetD3D12Buffer(outputExposureHandle);
                 RHI::D3D12UnorderedAccessView* m_exposureBufferUAV = m_ExposureBuffer->GetDefaultUAV().get();
 
                 computeContext->SetRootSignature(pAdaptExposureCSSignature.get());

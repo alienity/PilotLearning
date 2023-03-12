@@ -217,7 +217,9 @@ namespace Pilot
             ExposurePass::DrawOutputParameters mExposureOutputParams;
 
             mExposureIntputParams.inputLumaLRHandle = m_LumaLRHandle;
-            mExposureOutputParams.exposureHandle    = exposureBufferHandle;
+
+            //exposureBufferHandle.Version += 1; // 因为后续的pass输出与前面的pass输入重合，所以需要version来区分
+            mExposureOutputParams.exposureHandle = exposureBufferHandle;
 
             mExposurePass->update(graph, mExposureIntputParams, mExposureOutputParams);
             

@@ -12,6 +12,12 @@
 
 namespace RHI
 {
+    struct IndiceAndDisPair
+    {
+        std::uint64_t Index;
+        std::uint64_t Distance;
+    };
+
     class RenderGraphAllocator
     {
     public:
@@ -62,12 +68,11 @@ namespace RHI
     public:
         using ExecuteCallback = Delegate<void(RenderGraphRegistry* Registry, D3D12CommandContext* Context)>;
 
-        RenderPass(std::string_view Name);
+        RenderPass(std::string_view Name, RenderGraph* Graph);
 
         RenderPass& Read(RgResourceHandle Resource, bool IgnoreBarrier = false);
         RenderPass& Write(RgResourceHandle Resource, bool IgnoreBarrier = false);
-        //RenderPass& Resolve(RgResourceHandle SrcResource, RgResourceHandle DstResource);
-
+        
         template<typename PFNRenderPassCallback>
         void Execute(PFNRenderPassCallback&& Callback)
         {
@@ -80,6 +85,8 @@ namespace RHI
 
         [[nodiscard]] bool HasAnyDependencies() const noexcept;
 
+        RenderGraph* ParentGraph;
+
         std::string_view Name;
         size_t           TopologicalIndex = 0;
         size_t           PassIndex        = 0;
@@ -90,8 +97,7 @@ namespace RHI
 
         std::vector<RgResourceHandle> IgnoreReads;
         std::vector<RgResourceHandle> IgnoreWrites;
-        //std::vector<std::pair<RgResourceHandle, RgResourceHandle>> ResolveSrcDstPairs;
-
+        
         ExecuteCallback Callback;
     };
 
@@ -171,6 +177,8 @@ namespace RHI
             {
                 case RgResourceType::Texture:
                     return Textures[Handle.Id].Desc.Name;
+                case RgResourceType::Buffer:
+                    return Buffers[Handle.Id].Desc.mName;
             }
             return "<unknown>";
         }
@@ -203,6 +211,7 @@ namespace RHI
 
     private:
         friend class RenderGraphRegistry;
+        friend class RenderPass;
 
         RenderGraphAllocator& Allocator;
         RenderGraphRegistry&  Registry;
@@ -219,7 +228,7 @@ namespace RHI
 
         size_t PassIndex;
 
-        std::vector<std::vector<std::uint64_t>> AdjacencyLists;
+        std::vector<std::vector<IndiceAndDisPair>> AdjacencyLists;
         std::vector<RenderPass*>                TopologicalSortedPasses;
 
         std::vector<RenderGraphDependencyLevel> DependencyLevels;
