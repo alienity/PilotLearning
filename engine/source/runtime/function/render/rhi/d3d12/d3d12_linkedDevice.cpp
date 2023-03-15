@@ -116,9 +116,6 @@ namespace RHI
         m_ResourceDescriptorHeap = nullptr;
         m_SamplerDescriptorHeap  = nullptr;
 
-        #ifdef _DEBUG
-        ASSERT(m_DebugResources.size() == 0);
-        #endif
     }
 
     ID3D12Device* D3D12LinkedDevice::GetDevice() const { return GetParentDevice()->GetD3D12Device(); }

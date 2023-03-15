@@ -164,6 +164,8 @@ namespace RHI
         m_DescriptorTableBitMask = 0;
         m_SamplerTableBitMask    = 0;
 
+        memset(m_DescriptorTableSize, 0, sizeof(m_DescriptorTableSize));
+
         for (UINT i = 0; i < ApiDesc.Desc_1_1.NumParameters; ++i)
         {
             const D3D12_ROOT_PARAMETER1& RootParameter = ApiDesc.Desc_1_1.pParameters[i];

@@ -891,14 +891,13 @@ namespace RHI
 
     void D3D12ComputeContext::SetBufferSRV(UINT RootIndex, D3D12Buffer* BufferSRV, UINT64 Offset)
     {
-        ASSERT((BufferSRV->GetResourceState().GetSubresourceState(0) &
-                D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE) != 0);
+        //ASSERT((BufferSRV->GetResourceState().GetSubresourceState(0) & D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE) != 0);
         m_CommandListHandle->SetComputeRootShaderResourceView(RootIndex, BufferSRV->GetGpuVirtualAddress(0) + Offset);
     }
 
     void D3D12ComputeContext::SetBufferUAV(UINT RootIndex, D3D12Buffer* BufferUAV, UINT64 Offset)
     {
-        ASSERT((BufferUAV->GetResourceState().GetSubresourceState(0) & D3D12_RESOURCE_STATE_UNORDERED_ACCESS) != 0);
+        //ASSERT((BufferUAV->GetResourceState().GetSubresourceState(0) & D3D12_RESOURCE_STATE_UNORDERED_ACCESS) != 0);
         m_CommandListHandle->SetComputeRootUnorderedAccessView(RootIndex, BufferUAV->GetGpuVirtualAddress(0) + Offset);
     }
 

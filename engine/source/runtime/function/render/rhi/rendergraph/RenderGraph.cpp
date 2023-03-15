@@ -24,7 +24,7 @@ namespace RHI
 	RenderPass& RenderPass::Write(RgResourceHandle Resource, bool IgnoreBarrier)
 	{
 		// Only allow buffers/textures
-        ASSERT(Resource && Resource->IsValid());
+        ASSERT(Resource.IsValid());
         ASSERT(Resource.Type == RgResourceType::Buffer || Resource.Type == RgResourceType::Texture);
 		//Resource->Version++;
 		Writes.insert(Resource);
@@ -320,41 +320,56 @@ namespace RHI
 		}
 
 		// 3. 循环遍历找出所有并行执行的pass，并按顺序把他们排下来
-        while (!gRgResourceHandleQueue.empty())
+        while (!gRgResourceHandleQueue.empty() || !gRenderPassQueue.empty())
         {
-            // 遍历只被读取的RgResourceHandle
-            RHI::RgResourceHandle mRgResHandle = gRgResourceHandleQueue.front();
-            gRgResourceHandleQueue.pop();
+			if (!gRgResourceHandleQueue.empty())
+			{
+                // 遍历只被读取的RgResourceHandle
+                RHI::RgResourceHandle mRgResHandle = gRgResourceHandleQueue.front();
+                gRgResourceHandleQueue.pop();
 
-			std::queue<RgHandleOpPassIdx>& rgHandleOpQueue = RgHandleOpMap[mRgResHandle];
-            while (!rgHandleOpQueue.empty())
-            {
-                RgHandleOpPassIdx opidx = rgHandleOpQueue.front();
-                if (opidx.op == RgHandleOp::Read)
-				{
-                    gRenderPassQueue.push(opidx.passPtr);
-                    rgHandleOpQueue.pop();
-				}
-				else
-				{
-                    break;
-				}
-            }
-
-			std::vector<RenderPass*> mBatchLevel = {};
-            // 遍历只有写出的Pass
-            while (!gRenderPassQueue.empty())
-            {
-                RenderPass* rgPassPtr = gRenderPassQueue.front();
-                gRenderPassQueue.pop();
-				
-				for (auto it = rgPassPtr->Writes.begin(); it != rgPassPtr->Writes.end(); it++)
+                std::queue<RgHandleOpPassIdx>& rgHandleOpQueue = RgHandleOpMap[mRgResHandle];
+                while (!rgHandleOpQueue.empty())
                 {
-                    gRgResourceHandleQueue.push(*it);
-				}
-                mBatchLevel.push_back(rgPassPtr);
-            }
-            gGlobalRenderPassBatch.push_back(mBatchLevel);
+                    RgHandleOpPassIdx opidx = rgHandleOpQueue.front();
+                    if (opidx.op == RgHandleOp::Read)
+                    {
+                        gRenderPassQueue.push(opidx.passPtr);
+                        rgHandleOpQueue.pop();
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+			}
+
+			if (!gRenderPassQueue.empty())
+			{
+                std::vector<RenderPass*> mBatchLevel = {};
+                // 遍历只有写出的Pass
+                while (!gRenderPassQueue.empty())
+                {
+                    RenderPass* rgPassPtr = gRenderPassQueue.front();
+                    gRenderPassQueue.pop();
+
+                    for (auto it = rgPassPtr->Writes.begin(); it != rgPassPtr->Writes.end(); it++)
+                    {
+                        gRgResourceHandleQueue.push(*it);
+
+                        std::queue<RgHandleOpPassIdx>& rgHandleOpQueue = RgHandleOpMap[*it];
+                        ASSERT(!rgHandleOpQueue.empty());
+                        ASSERT(rgHandleOpQueue.front().op == RgHandleOp::Write);
+                        if (rgHandleOpQueue.empty())
+						{
+                            int test = 0;
+						}
+                        rgHandleOpQueue.pop();
+                    }
+                    mBatchLevel.push_back(rgPassPtr);
+                }
+                gGlobalRenderPassBatch.push_back(mBatchLevel);
+			}
         }
 
 		int test = 0;

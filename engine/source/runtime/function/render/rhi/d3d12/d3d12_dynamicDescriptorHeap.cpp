@@ -51,8 +51,7 @@ namespace RHI
 
             uint32_t MaxSetHandle = 0;
             ASSERT(TRUE == _BitScanReverse((unsigned long*)&MaxSetHandle,
-                                           m_RootDescriptorTable[RootIndex].AssignedHandlesBitMap),
-                   "Root entry marked as stale but has no stale descriptors");
+                                           m_RootDescriptorTable[RootIndex].AssignedHandlesBitMap));
 
             NeededSpace += MaxSetHandle + 1;
         }
@@ -82,8 +81,7 @@ namespace RHI
 
             uint32_t MaxSetHandle = 0;
             ASSERT(TRUE == _BitScanReverse((unsigned long*)&MaxSetHandle,
-                                           m_RootDescriptorTable[RootIndex].AssignedHandlesBitMap),
-                   "Root entry marked as stale but has no stale descriptors");
+                                           m_RootDescriptorTable[RootIndex].AssignedHandlesBitMap));
 
             NeededSpace += MaxSetHandle + 1;
             TableSize[StaleParamCount] = MaxSetHandle + 1;
@@ -91,8 +89,7 @@ namespace RHI
             ++StaleParamCount;
         }
 
-        ASSERT(StaleParamCount <= DescriptorHandleCache::kMaxNumDescriptorTables,
-               "We're only equipped to handle so many descriptor tables");
+        ASSERT(StaleParamCount <= DescriptorHandleCache::kMaxNumDescriptorTables);
 
         m_StaleRootParamsBitMap = 0;
 
@@ -213,8 +210,7 @@ namespace RHI
                                                                          UINT                              NumHandles,
                                                                          const D3D12_CPU_DESCRIPTOR_HANDLE Handles[])
     {
-        ASSERT(((1 << RootIndex) & m_RootDescriptorTablesBitMap) != 0,
-               "Root parameter is not a CBV_SRV_UAV descriptor table");
+        ASSERT(((1 << RootIndex) & m_RootDescriptorTablesBitMap) != 0);
         ASSERT(Offset + NumHandles <= m_RootDescriptorTable[RootIndex].TableSize);
 
         DescriptorTableCache&        TableCache = m_RootDescriptorTable[RootIndex];
@@ -230,7 +226,7 @@ namespace RHI
     {
         UINT CurrentOffset = 0;
 
-        ASSERT(RootSig->GetNumParameters() <= 16, "Maybe we need to support something greater");
+        ASSERT(RootSig->GetNumParameters() <= 16);
 
         m_StaleRootParamsBitMap = 0;
 
@@ -255,7 +251,7 @@ namespace RHI
 
         m_MaxCachedDescriptors = CurrentOffset;
 
-        ASSERT(m_MaxCachedDescriptors <= kMaxNumDescriptors, "Exceeded user-supplied maximum cache size");
+        ASSERT(m_MaxCachedDescriptors <= kMaxNumDescriptors);
     }
 
 }

@@ -435,6 +435,10 @@ namespace Pilot
                 pCopyContext->CopyBuffer(pPerframeBuffer.get(), pUploadPerframeBuffer.get());
                 pCopyContext->CopyBuffer(pMaterialBuffer.get(), pUploadMaterialBuffer.get());
                 pCopyContext->CopyBuffer(pMeshBuffer.get(), pUploadMeshBuffer.get());
+
+                pCopyContext->TransitionBarrier(pPerframeBuffer.get(), D3D12_RESOURCE_STATE_GENERIC_READ);
+                pCopyContext->TransitionBarrier(pMaterialBuffer.get(), D3D12_RESOURCE_STATE_GENERIC_READ);
+                pCopyContext->TransitionBarrier(pMeshBuffer.get(), D3D12_RESOURCE_STATE_GENERIC_READ);
             }
             pCopyContext->Close();
             RHI::D3D12SyncHandle copySyncHandle = pCopyContext->Execute(false);

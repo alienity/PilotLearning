@@ -51,11 +51,8 @@ namespace RHI
     inline bool operator!=(const RgResourceHandle& lhs, const RgResourceHandle& rhs) { return !operator==(lhs, rhs); }
     inline bool operator<(const RgResourceHandle& lhs, const RgResourceHandle& rhs)
     {
-        if (lhs.Type == rhs.Type)
-        {
-            return lhs.Id < rhs.Id;
-        }
-        return lhs.Type < rhs.Type;
+        return lhs.Type < rhs.Type || (lhs.Type == rhs.Type && lhs.Flags < rhs.Flags) ||
+               (lhs.Type == rhs.Type && lhs.Flags == rhs.Flags && lhs.Id < rhs.Id);
     }
     inline bool operator>(const RgResourceHandle& lhs, const RgResourceHandle& rhs) { return operator<(rhs, lhs); }
     inline bool operator<=(const RgResourceHandle& lhs, const RgResourceHandle& rhs) { return !operator>(lhs, rhs); }

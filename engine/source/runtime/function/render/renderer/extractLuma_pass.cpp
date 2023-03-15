@@ -31,7 +31,7 @@ namespace Pilot
             // roughly 16:9. The blurring algorithm is exactly 9 pixels by 9 pixels, so if the aspect ratio of each
             // pixel is not square, the blur will be oval in appearance rather than circular.  Coincidentally, they are
             // close to 1/2 of a 720p buffer and 1/3 of 1080p.  This is a common size for a bloom buffer on consoles.
-            ASSERT(kBloomWidth % 16 == 0 && kBloomHeight % 16 == 0, "Bloom buffer dimensions must be multiples of 16");
+            ASSERT(kBloomWidth % 16 == 0 && kBloomHeight % 16 == 0);
 
             // clang-format off
             m_LumaLRDesc = CreateTex2DDesc("LumaLR", kBloomWidth, kBloomHeight, DXGI_FORMAT_R8_UINT)

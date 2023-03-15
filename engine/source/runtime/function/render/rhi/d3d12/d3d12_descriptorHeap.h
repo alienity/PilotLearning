@@ -248,7 +248,7 @@ namespace RHI
         {
             ASSERT(m_pAllocator != nullptr && m_pDescriptorHeap != nullptr);
             auto DescriptorSize = m_pAllocator->GetDescriptorSize();
-            ASSERT(DescriptorSize < std::numeric_limits<UINT16>::max(), "DescriptorSize exceeds allowed limit");
+            ASSERT(DescriptorSize < std::numeric_limits<UINT16>::max());
             m_DescriptorSize = static_cast<UINT16>(DescriptorSize);
             D3D12_CPU_DESCRIPTOR_HANDLE m_HeapStartHandle = m_pDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
             m_DescriptorHandleOffsetIndex = (m_FirstCpuHandle.ptr - m_HeapStartHandle.ptr) / m_DescriptorSize;
@@ -453,8 +453,7 @@ namespace RHI
             // ASSERT(m_AllocationsCounter == 0, m_AllocationsCounter, " allocations have not been released. If these
             // allocations are referenced by release queue, the app will crash when
             // DescriptorHeapAllocationManager::FreeAllocation() is called.");
-            ASSERT(m_FreeBlockManager.GetFreeSize() == m_NumDescriptorsInAllocation,
-                   "Not all descriptors were released");
+            ASSERT(m_FreeBlockManager.GetFreeSize() == m_NumDescriptorsInAllocation);
         }
 
         // Allocates Count descriptors
@@ -537,14 +536,13 @@ namespace RHI
 
         ~CPUDescriptorHeap()
         {
-            ASSERT(m_CurrentSize == 0, "Not all allocations released");
+            ASSERT(m_CurrentSize == 0);
 
-            ASSERT(m_AvailableHeaps.size() == m_HeapPool.size(), "Not all descriptor heap pools are released");
+            ASSERT(m_AvailableHeaps.size() == m_HeapPool.size());
             UINT32 TotalDescriptors = 0;
             for (auto& Heap : m_HeapPool)
             {
-                ASSERT(Heap.GetNumAvailableDescriptors() == Heap.GetMaxDescriptors(),
-                       "Not all descriptors in the descriptor pool are released");
+                ASSERT(Heap.GetNumAvailableDescriptors() == Heap.GetMaxDescriptors());
                 TotalDescriptors += Heap.GetMaxDescriptors();
             }
 
@@ -691,8 +689,7 @@ namespace RHI
 
         ~DynamicSuballocationsManager()
         {
-            ASSERT(m_Suballocations.empty() && m_CurrDescriptorCount == 0 && m_CurrSuballocationsTotalSize == 0,
-                   "All dynamic suballocations must be released!");
+            ASSERT(m_Suballocations.empty() && m_CurrDescriptorCount == 0 && m_CurrSuballocationsTotalSize == 0);
         }
 
         /*

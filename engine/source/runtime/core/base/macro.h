@@ -29,6 +29,6 @@
 #ifdef NDEBUG
 #define ASSERT(statement, log)
 #else
-//#define ASSERT(statement, log) assert(statement)
-#define ASSERT(...)
+#define ASSERT(statement) assert(statement)
+//#define ASSERT(...)
 #endif

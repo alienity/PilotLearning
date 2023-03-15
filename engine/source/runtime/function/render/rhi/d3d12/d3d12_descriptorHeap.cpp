@@ -10,7 +10,7 @@ namespace RHI
                                                                                         OffsetType Alignment)
     {
         ASSERT(Size > 0);
-        ASSERT(Pilot::IsPowerOfTwo(Alignment), "Alignment (", Alignment, ") must be power of 2");
+        ASSERT(Pilot::IsPowerOfTwo(Alignment));
         Size = Pilot::AlignUp(Size, Alignment);
         if (m_FreeSize < Size)
             return Allocation::InvalidAllocation();
@@ -212,7 +212,7 @@ namespace RHI
         {
             m_pAllocator->Free(std::move(*this));
             // Allocation must have been disposed by the allocator
-            ASSERT(IsNull(), "Non-null descriptor is being destroyed");
+            ASSERT(IsNull());
         }
         this->Reset();
     }
@@ -316,7 +316,7 @@ namespace RHI
 
         m_MaxAllocatedSize = std::max(m_MaxAllocatedSize, m_FreeBlockManager.GetUsedSize());
 
-        ASSERT(m_ThisManagerId < std::numeric_limits<UINT16>::max(), "ManagerID exceeds 16-bit range");
+        ASSERT(m_ThisManagerId < std::numeric_limits<UINT16>::max());
         return DescriptorHeapAllocation(m_ParentAllocator,
                                         m_pd3d12DescriptorHeap.Get(),
                                         CPUHandle,
@@ -327,7 +327,7 @@ namespace RHI
 
     void DescriptorHeapAllocationManager::FreeAllocation(DescriptorHeapAllocation&& Allocation)
     {
-        ASSERT(Allocation.GetAllocationManagerId() == m_ThisManagerId, "Invalid descriptor heap manager Id");
+        ASSERT(Allocation.GetAllocationManagerId() == m_ThisManagerId);
 
         if (Allocation.IsNull())
             return;
@@ -455,7 +455,7 @@ namespace RHI
 	void GPUDescriptorHeap::Free(DescriptorHeapAllocation&& Allocation)
     {
         auto MgrId = Allocation.GetAllocationManagerId();
-        ASSERT(MgrId == 0 || MgrId == 1, "Unexpected allocation manager ID");
+        ASSERT(MgrId == 0 || MgrId == 1);
 
         if (MgrId == 0)
         {
@@ -530,7 +530,7 @@ namespace RHI
         auto& CurrentSuballocation = m_Suballocations.back();
 
         auto ManagerId = CurrentSuballocation.GetAllocationManagerId();
-        ASSERT(ManagerId < std::numeric_limits<UINT16>::max(), "ManagerID exceed allowed limit");
+        ASSERT(ManagerId < std::numeric_limits<UINT16>::max());
         DescriptorHeapAllocation Allocation(this,
                                             CurrentSuballocation.GetDescriptorHeap(),
                                             CurrentSuballocation.GetCpuHandle(m_CurrentSuballocationOffset),
