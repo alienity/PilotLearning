@@ -14,6 +14,10 @@ namespace RHI
 		ReadWrites.insert(Resource);
         if (IgnoreBarrier)
             IgnoreReads.push_back(Resource);
+
+		std::queue<RgHandleOpPassIdx>& rgHandleOpQueue = ParentGraph->RgHandleOpMap[Resource];
+        rgHandleOpQueue.push({RgHandleOp::Read, this});
+
 		return *this;
 	}
 
@@ -22,44 +26,15 @@ namespace RHI
 		// Only allow buffers/textures
         ASSERT(Resource && Resource->IsValid());
         ASSERT(Resource.Type == RgResourceType::Buffer || Resource.Type == RgResourceType::Texture);
-
-		switch (Resource.Type)
-        {
-            case RgResourceType::Buffer:
-			{
-                auto& Container = ParentGraph->GetContainer<D3D12Buffer>();
-                for (size_t i = 0; i < Container.size(); i++)
-                {
-					if (Container[i].Handle == Resource)
-					{
-                        Container[i].Handle.Version += 1;
-                        Resource.Version = Container[i].Handle.Version;
-					}
-				}
-                break;
-			}
-            case RgResourceType::Texture:
-			{
-                auto& Container = ParentGraph->GetContainer<D3D12Texture>();
-                for (size_t i = 0; i < Container.size(); i++)
-                {
-					if (Container[i].Handle == Resource)
-					{
-                        Container[i].Handle.Version += 1;
-                        Resource.Version = Container[i].Handle.Version;
-					}
-				}
-                break;
-			}
-            default:
-                break;
-        }
-
 		//Resource->Version++;
 		Writes.insert(Resource);
 		ReadWrites.insert(Resource);
         if (IgnoreBarrier)
             IgnoreWrites.push_back(Resource);
+
+		std::queue<RgHandleOpPassIdx>& rgHandleOpQueue = ParentGraph->RgHandleOpMap[Resource];
+        rgHandleOpQueue.push({RgHandleOp::Write, this});
+
 		return *this;
 	}
 
@@ -192,6 +167,7 @@ namespace RHI
         ProloguePass->PassIndex = PassIndex++;
         EpiloguePass = Allocator.Construct<RenderPass>("Epilogue", this);
         RenderPasses.push_back(ProloguePass);
+        InGraphPass.push_back(ProloguePass);
     }
 
 	RenderGraph::~RenderGraph()
@@ -201,6 +177,9 @@ namespace RHI
 			Allocator.Destruct(RenderPass);
 		}
 		RenderPasses.clear();
+
+        InGraphResHandle.clear();
+        InGraphPass.clear();
 	}
 
 	RenderPass& RenderGraph::AddRenderPass(std::string_view Name)
@@ -208,6 +187,7 @@ namespace RHI
 		RenderPass* NewRenderPass = Allocator.Construct<RenderPass>(Name, this);
         NewRenderPass->PassIndex  = PassIndex++;
 		RenderPasses.emplace_back(NewRenderPass);
+        InGraphPass.push_back(NewRenderPass);
 		return *NewRenderPass;
 	}
 
@@ -230,6 +210,7 @@ namespace RHI
 	{
         EpiloguePass->PassIndex = PassIndex++;
 		RenderPasses.push_back(EpiloguePass);
+        InGraphPass.push_back(EpiloguePass);
 		Setup();
 		Registry.RealizeResources(this, Context->GetParentLinkedDevice()->GetParentDevice());
 
@@ -308,6 +289,132 @@ namespace RHI
 
 	void RenderGraph::Setup()
 	{
+        std::queue<RgResourceHandle> gRgResourceHandleQueue = {};
+        std::queue<RenderPass*>      gRenderPassQueue       = {};
+
+		std::vector<std::vector<RenderPass*>> gGlobalRenderPassBatch = {};
+
+		// 1. 找出初始只被读取的RgResourceHandle
+        for (size_t i = 0; i < InGraphResHandle.size(); i++)
+        {
+            RgResourceHandle& resHandle = InGraphResHandle[i];
+            std::queue<RgHandleOpPassIdx>& rgHandleOpQueue = RgHandleOpMap[resHandle];
+			if (!rgHandleOpQueue.empty())
+            {
+                RgHandleOpPassIdx& mHandleOpIdx = rgHandleOpQueue.front();
+				if (mHandleOpIdx.op == RgHandleOp::Read)
+				{
+                    gRgResourceHandleQueue.push(resHandle);
+				}
+			}
+		}
+
+		// 2. 找出初始没有读取ResourceHandle的Pass
+        for (size_t i = 0; i < InGraphPass.size(); i++)
+        {
+            RenderPass* passPtr = InGraphPass[i];
+            if (passPtr->Reads.empty())
+			{
+                gRenderPassQueue.push(passPtr);
+			}
+		}
+
+		// 3. 循环遍历找出所有并行执行的pass，并按顺序把他们排下来
+        while (!gRgResourceHandleQueue.empty())
+        {
+            // 遍历只被读取的RgResourceHandle
+            RHI::RgResourceHandle mRgResHandle = gRgResourceHandleQueue.front();
+            gRgResourceHandleQueue.pop();
+
+			std::queue<RgHandleOpPassIdx>& rgHandleOpQueue = RgHandleOpMap[mRgResHandle];
+            while (!rgHandleOpQueue.empty())
+            {
+                RgHandleOpPassIdx opidx = rgHandleOpQueue.front();
+                if (opidx.op == RgHandleOp::Read)
+				{
+                    gRenderPassQueue.push(opidx.passPtr);
+                    rgHandleOpQueue.pop();
+				}
+				else
+				{
+                    break;
+				}
+            }
+
+			std::vector<RenderPass*> mBatchLevel = {};
+            // 遍历只有写出的Pass
+            while (!gRenderPassQueue.empty())
+            {
+                RenderPass* rgPassPtr = gRenderPassQueue.front();
+                gRenderPassQueue.pop();
+				
+				for (auto it = rgPassPtr->Writes.begin(); it != rgPassPtr->Writes.end(); it++)
+                {
+                    gRgResourceHandleQueue.push(*it);
+				}
+                mBatchLevel.push_back(rgPassPtr);
+            }
+            gGlobalRenderPassBatch.push_back(mBatchLevel);
+        }
+
+		int test = 0;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+		/*
 		// https://levelup.gitconnected.com/organizing-gpu-work-with-directed-acyclic-graphs-f3fd5f2c2af3
 		// https://www.gdcvault.com/play/1024612/FrameGraph-Extensible-Rendering-Architecture-in
 		// https://media.contentapi.ea.com/content/dam/ea/seed/presentations/wihlidal-halcyonarchitecture-notes.pdf
@@ -323,7 +430,7 @@ namespace RHI
 				continue;
 			}
 
-            std::vector<IndiceAndDisPair>& Indices = AdjacencyLists[i];
+            std::vector<std::uint64_t>& Indices = AdjacencyLists[i];
 
 			// Reverse iterate the render passes here, because often or not, the adjacency list should be built upon
 			// the latest changes to the render passes since those pass are more likely to change the resource we are writing to from other passes
@@ -342,7 +449,7 @@ namespace RHI
 					if (Neighbor->ReadsFrom(Resource))
 					{
 						//Indices.push_back(j);
-                        Indices.push_back({j, Resource.Version});
+                        Indices.push_back(j);
 						break;
 					}
 				}
@@ -420,25 +527,27 @@ namespace RHI
                 DependencyLevels[l].AddRenderPass(curLevelRenderPass[j]);
 			}
 		}
+        */
 	}
-
+    /*
 	void RenderGraph::DepthFirstSearch(size_t n, std::vector<bool>& Visited, std::stack<size_t>& Stack)
 	{
 		Visited[n] = true;
 
 		for (auto i : AdjacencyLists[n])
 		{
-			if (!Visited[i.Index])
+			if (!Visited[i])
 			{
-				DepthFirstSearch(i.Index, Visited, Stack);
+				DepthFirstSearch(i, Visited, Stack);
 			}
 		}
 
 		Stack.push(n);
 	}
-
+    */
 	void RenderGraph::ExportDgml(DgmlBuilder& Builder) const
 	{
+        /*
 		for (size_t i = 0; i < AdjacencyLists.size(); ++i)
 		{
 			RenderPass* Node = RenderPasses[i];
@@ -446,7 +555,7 @@ namespace RHI
 
 			for (size_t j = 0; j < AdjacencyLists[i].size(); ++j)
 			{
-				RenderPass* Neighbor = RenderPasses[AdjacencyLists[i][j].Index];
+				RenderPass* Neighbor = RenderPasses[AdjacencyLists[i][j]];
 				for (auto Resource : Node->Writes)
 				{
 					if (Neighbor->ReadsFrom(Resource))
@@ -456,5 +565,6 @@ namespace RHI
 				}
 			}
 		}
+        */
 	}
 } // namespace RHI

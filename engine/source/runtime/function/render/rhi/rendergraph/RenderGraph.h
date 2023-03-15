@@ -1,6 +1,7 @@
 #pragma once
 #include <cassert>
 #include <stack>
+#include <queue>
 
 #include "DgmlBuilder.h"
 #include "RenderGraphRegistry.h"
@@ -12,10 +13,18 @@
 
 namespace RHI
 {
-    struct IndiceAndDisPair
+    class RenderPass;
+
+    enum RgHandleOp
     {
-        std::uint64_t Index;
-        std::uint64_t Distance;
+        Read,
+        Write
+    };
+
+    struct RgHandleOpPassIdx
+    {
+        RgHandleOp  op;
+        RenderPass* passPtr;
     };
 
     class RenderGraphAllocator
@@ -117,7 +126,6 @@ namespace RHI
 
         std::vector<RgResourceHandle> IgnoreReads;
         std::vector<RgResourceHandle> IgnoreWrites;
-        //std::vector<std::pair<RgResourceHandle, RgResourceHandle>> ResolveSrcDstPairs;
     };
 
     class RenderGraph
@@ -132,6 +140,7 @@ namespace RHI
             auto& ImportedContainer = GetImportedContainer<T>();
 
             RgResourceHandle Handle = {RgResourceTraits<T>::Enum, RG_RESOURCE_FLAG_IMPORTED, 0, ImportedContainer.size()};
+            InGraphResHandle.push_back(Handle);
 
             ImportedContainer.emplace_back(ToBeImported);
             return Handle;
@@ -144,6 +153,8 @@ namespace RHI
             auto& Container = GetContainer<T>();
 
             RgResourceHandle Handle = {RgResourceTraits<T>::Enum, RG_RESOURCE_FLAG_NONE, 0, Container.size()};
+
+            InGraphResHandle.push_back(Handle);
 
             auto& Resource  = Container.emplace_back();
             Resource.Handle = Handle;
@@ -169,7 +180,7 @@ namespace RHI
     private:
         void Setup();
 
-        void DepthFirstSearch(size_t n, std::vector<bool>& Visited, std::stack<size_t>& Stack);
+        //void DepthFirstSearch(size_t n, std::vector<bool>& Visited, std::stack<size_t>& Stack);
 
         [[nodiscard]] std::string_view GetResourceName(RgResourceHandle Handle) const
         {
@@ -228,8 +239,14 @@ namespace RHI
 
         size_t PassIndex;
 
-        std::vector<std::vector<IndiceAndDisPair>> AdjacencyLists;
-        std::vector<RenderPass*>                TopologicalSortedPasses;
+        
+        std::vector<RgResourceHandle> InGraphResHandle;
+        std::vector<RenderPass*>      InGraphPass;
+        // 按照加入graph的顺序记录所有RgResourceHandle被各种pass做出的操作
+        std::map<RgResourceHandle, std::queue<RgHandleOpPassIdx>> RgHandleOpMap;
+
+        //std::vector<std::vector<std::uint64_t>> AdjacencyLists;
+        //std::vector<RenderPass*>                TopologicalSortedPasses;
 
         std::vector<RenderGraphDependencyLevel> DependencyLevels;
     };
