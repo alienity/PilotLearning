@@ -127,36 +127,41 @@ namespace Pilot
                                     ShadowInputParameters&    passInput,
                                     ShadowOutputParameters&   passOutput)
     {
-        ShadowInputParameters*  drawPassInput  = &passInput;
-        ShadowOutputParameters* drawPassOutput = &passOutput;
+        //ShadowInputParameters  drawPassInput  = passInput;
+        //ShadowOutputParameters drawPassOutput = passOutput;
 
-        std::shared_ptr<RHI::D3D12Buffer> pPerframeBuffer = drawPassInput->pPerframeBuffer;
-        std::shared_ptr<RHI::D3D12Buffer> pMeshBuffer     = drawPassInput->pMeshBuffer;
-        std::shared_ptr<RHI::D3D12Buffer> pMaterialBuffer = drawPassInput->pMaterialBuffer;
+        std::shared_ptr<RHI::D3D12Buffer> pPerframeBuffer = passInput.pPerframeBuffer;
+        std::shared_ptr<RHI::D3D12Buffer> pMeshBuffer     = passInput.pMeshBuffer;
+        std::shared_ptr<RHI::D3D12Buffer> pMaterialBuffer = passInput.pMaterialBuffer;
 
-        std::shared_ptr<RHI::D3D12Buffer> pDirectionCommandBuffer = drawPassInput->p_DirectionalCommandBuffer;
-        std::vector<std::shared_ptr<RHI::D3D12Buffer>> pSpotCommandBuffers = drawPassInput->p_SpotCommandBuffer;
+        std::shared_ptr<RHI::D3D12Buffer>              pDirectionCommandBuffer = passInput.p_DirectionalCommandBuffer;
+        std::vector<std::shared_ptr<RHI::D3D12Buffer>> pSpotCommandBuffers     = passInput.p_SpotCommandBuffer;
+
+        RHI::RgResourceHandle              localDirShadowmapHandle   = {};        
+        std::vector<RHI::RgResourceHandle> localSpotShadowmapHandles = {};
 
         RHI::RenderPass& shadowpass = graph.AddRenderPass("IndirectShadowPass");
 
         if (directionalShadowmap.p_LightShadowmap != nullptr)
         {
             RHI::RgResourceHandle dirShadowMapHandle = graph.Import<RHI::D3D12Texture>(directionalShadowmap.p_LightShadowmap.get());
-
-            drawPassOutput->directionalShadowmapRGHandle = {dirShadowMapHandle};
+            passOutput.directionalShadowmapRGHandle = {dirShadowMapHandle};
 
             shadowpass.Write(dirShadowMapHandle);
+
+            localDirShadowmapHandle = dirShadowMapHandle;
         }
 
         for (size_t i = 0; i < spotShadowmaps.size(); i++)
         {
             RHI::RgResourceHandle spotShadowMapHandle = graph.Import<RHI::D3D12Texture>(spotShadowmaps[i].p_LightShadowmap.get());
 
-            drawPassOutput->spotShadowmapRGHandle.push_back({spotShadowMapHandle});
+            passOutput.spotShadowmapRGHandle.push_back({spotShadowMapHandle});
             
             shadowpass.Write(spotShadowMapHandle);
-        }
 
+            localSpotShadowmapHandles.push_back(spotShadowMapHandle);
+        }
 
         shadowpass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
 
@@ -165,8 +170,7 @@ namespace Pilot
             if (directionalShadowmap.m_gobject_id != k_invalid_gobject_id &&
                 directionalShadowmap.m_gcomponent_id != k_invalid_gcomponent_id)
             {
-                RHI::D3D12Texture* pShadowmapStencilTex =
-                    registry->GetD3D12Texture(drawPassOutput->directionalShadowmapRGHandle.shadowmapTextureHandle);
+                RHI::D3D12Texture* pShadowmapStencilTex = registry->GetD3D12Texture(localDirShadowmapHandle);
 
                 RHI::D3D12DepthStencilView* shadowmapStencilView = pShadowmapStencilTex->GetDefaultDSV().get();
 
@@ -196,8 +200,7 @@ namespace Pilot
 
             for (size_t i = 0; i < spotShadowmaps.size(); i++)
             {
-                RHI::D3D12Texture* pShadowmapDepthTex =
-                    registry->GetD3D12Texture(drawPassOutput->spotShadowmapRGHandle[i].shadowmapTextureHandle);
+                RHI::D3D12Texture* pShadowmapDepthTex = registry->GetD3D12Texture(localSpotShadowmapHandles[i]);
 
                 RHI::D3D12DepthStencilView* shadowmapStencilView = pShadowmapDepthTex->GetDefaultDSV().get();
 

@@ -1,7 +1,7 @@
 #pragma once
 #include <cassert>
 #include <stack>
-#include <queue>
+#include <deque>
 
 #include "DgmlBuilder.h"
 #include "RenderGraphRegistry.h"
@@ -117,6 +117,8 @@ namespace RHI
 
         void Execute(RenderGraph* RenderGraph, D3D12CommandContext* Context);
 
+        inline std::vector<RenderPass*>& GetRenderPasses() { return RenderPasses; }
+
     private:
         std::vector<RenderPass*> RenderPasses;
 
@@ -179,6 +181,12 @@ namespace RHI
 
     private:
         void Setup();
+
+        bool IsResourceReadAvailable(RgResourceHandle& resHandle, RenderPass* pPass);
+        bool IsResourceWriteAvailable(RgResourceHandle& resHandle, RenderPass* pPass);
+        bool IsResourceAvailable(RgResourceHandle& resHandle, RenderPass* pPass);
+        bool IsPassAvailable(RenderPass* pPass);
+        void RemovePassOpFromResHandleMap(RgResourceHandle& resHandle, RenderPass* pPass, std::map<RgResourceHandle, std::deque<RgHandleOpPassIdx>>& resOpIdxMap);
 
         //void DepthFirstSearch(size_t n, std::vector<bool>& Visited, std::stack<size_t>& Stack);
 
@@ -243,7 +251,7 @@ namespace RHI
         std::vector<RgResourceHandle> InGraphResHandle;
         std::vector<RenderPass*>      InGraphPass;
         // 按照加入graph的顺序记录所有RgResourceHandle被各种pass做出的操作
-        std::map<RgResourceHandle, std::queue<RgHandleOpPassIdx>> RgHandleOpMap;
+        std::map<RgResourceHandle, std::deque<RgHandleOpPassIdx>> RgHandleOpMap;
 
         //std::vector<std::vector<std::uint64_t>> AdjacencyLists;
         //std::vector<RenderPass*>                TopologicalSortedPasses;

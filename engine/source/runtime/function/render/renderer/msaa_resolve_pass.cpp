@@ -15,10 +15,11 @@ namespace Pilot
 
     void MSAAResolvePass::update(RHI::RenderGraph& graph, DrawInputParameters& passInput, DrawOutputParameters& passOutput)
     {
+
+        initializeResolveTarget(graph, &passOutput);
+
         DrawInputParameters  drawPassInput  = passInput;
         DrawOutputParameters drawPassOutput = passOutput;
-
-        initializeResolveTarget(graph, &drawPassOutput);
 
         RHI::RenderPass& resolvepass = graph.AddRenderPass("ResolveMSAA");
 

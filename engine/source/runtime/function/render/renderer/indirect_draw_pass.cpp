@@ -19,36 +19,40 @@ namespace Pilot
                                   DrawInputParameters&      passInput,
                                   DrawOutputParameters&     passOutput)
     {
-        DrawInputParameters*  drawPassInput  = &passInput;
-        DrawOutputParameters* drawPassOutput = &passOutput;
 
-        std::shared_ptr<RHI::D3D12Buffer> pPerframeBuffer = drawPassInput->pPerframeBuffer;
-        std::shared_ptr<RHI::D3D12Buffer> pMeshBuffer     = drawPassInput->pMeshBuffer;
-        std::shared_ptr<RHI::D3D12Buffer> pMaterialBuffer = drawPassInput->pMaterialBuffer;
+        bool needClearRenderTarget = initializeRenderTarget(graph, &passOutput);
 
-        std::shared_ptr<RHI::D3D12Buffer> pIndirectCommandBuffer = drawPassInput->pIndirectCommandBuffer;
+        //DrawInputParameters  drawPassInput  = passInput;
+        //DrawOutputParameters drawPassOutput = passOutput;
 
-        bool needClearRenderTarget = initializeRenderTarget(graph, drawPassOutput);
+        std::shared_ptr<RHI::D3D12Buffer> pPerframeBuffer = passInput.pPerframeBuffer;
+        std::shared_ptr<RHI::D3D12Buffer> pMeshBuffer     = passInput.pMeshBuffer;
+        std::shared_ptr<RHI::D3D12Buffer> pMaterialBuffer = passInput.pMaterialBuffer;
+
+        std::shared_ptr<RHI::D3D12Buffer> pIndirectCommandBuffer = passInput.pIndirectCommandBuffer;
+
+        RHI::RgResourceHandle renderTargetColorHandle = passOutput.renderTargetColorHandle;
+        RHI::RgResourceHandle renderTargetDepthHandle = passOutput.renderTargetDepthHandle;
 
         RHI::RenderPass& drawpass = graph.AddRenderPass("IndirectDrawOpaquePass");
 
-        if (drawPassInput->directionalShadowmapTexHandle.IsValid())
+        if (passInput.directionalShadowmapTexHandle.IsValid())
         {
-            drawpass.Read(drawPassInput->directionalShadowmapTexHandle);
+            drawpass.Read(passInput.directionalShadowmapTexHandle);
         }
-        for (size_t i = 0; i < drawPassInput->spotShadowmapTexHandles.size(); i++)
+        for (size_t i = 0; i < passInput.spotShadowmapTexHandles.size(); i++)
         {
-            drawpass.Read(drawPassInput->spotShadowmapTexHandles[i]);
+            drawpass.Read(passInput.spotShadowmapTexHandles[i]);
         }
-        drawpass.Write(drawPassOutput->renderTargetColorHandle);
-        drawpass.Write(drawPassOutput->renderTargetDepthHandle);
+        drawpass.Write(renderTargetColorHandle);
+        drawpass.Write(renderTargetDepthHandle);
 
         drawpass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
 
             RHI::D3D12GraphicsContext* graphicContext = context->GetGraphicsContext();
 
-            RHI::D3D12Texture* pRenderTargetColor = registry->GetD3D12Texture(drawPassOutput->renderTargetColorHandle);
-            RHI::D3D12Texture* pRenderTargetDepth = registry->GetD3D12Texture(drawPassOutput->renderTargetDepthHandle);
+            RHI::D3D12Texture* pRenderTargetColor = registry->GetD3D12Texture(renderTargetColorHandle);
+            RHI::D3D12Texture* pRenderTargetDepth = registry->GetD3D12Texture(renderTargetDepthHandle);
 
             RHI::D3D12RenderTargetView* renderTargetView = pRenderTargetColor->GetDefaultRTV().get();
             RHI::D3D12DepthStencilView* depthStencilView = pRenderTargetDepth->GetDefaultDSV().get();

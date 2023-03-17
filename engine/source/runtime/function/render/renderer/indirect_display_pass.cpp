@@ -15,20 +15,23 @@ namespace Pilot
                              DisplayInputParameters&   passInput,
                              DisplayOutputParameters&  passOutput)
     {
-        DisplayInputParameters*  drawPassInput  = &passInput;
-        DisplayOutputParameters* drawPassOutput = &passOutput;
+        //DisplayInputParameters*  drawPassInput  = &passInput;
+        //DisplayOutputParameters* drawPassOutput = &passOutput;
+
+        RHI::RgResourceHandle inputRTColorHandle = passInput.inputRTColorHandle;
+        RHI::RgResourceHandle renderTargetColorHandle = passOutput.renderTargetColorHandle;
 
         graph.AddRenderPass("DisplayDrawPass")
-            .Read(drawPassInput->inputRTColorHandle)
-            .Write(drawPassOutput->renderTargetColorHandle)
+            .Read(inputRTColorHandle)
+            .Write(renderTargetColorHandle)
             .Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
                 
                 RHI::D3D12GraphicsContext* graphicContext = context->GetGraphicsContext();
 
-                RHI::D3D12Texture* pInputRTColor = registry->GetD3D12Texture(drawPassInput->inputRTColorHandle);
+                RHI::D3D12Texture* pInputRTColor = registry->GetD3D12Texture(inputRTColorHandle);
                 RHI::D3D12ShaderResourceView* pInputRTColorSRV = pInputRTColor->GetDefaultSRV().get();
 
-                RHI::D3D12Texture* pRTColorTexture = registry->GetD3D12Texture(drawPassOutput->renderTargetColorHandle);
+                RHI::D3D12Texture* pRTColorTexture = registry->GetD3D12Texture(renderTargetColorHandle);
                 RHI::D3D12RenderTargetView* pRTColorRTV = pRTColorTexture->GetDefaultRTV().get();
 
                 CD3DX12_RESOURCE_DESC rtColorTextureDesc = pRTColorTexture->GetDesc();

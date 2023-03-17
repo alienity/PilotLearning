@@ -15,8 +15,8 @@ namespace RHI
         if (IgnoreBarrier)
             IgnoreReads.push_back(Resource);
 
-		std::queue<RgHandleOpPassIdx>& rgHandleOpQueue = ParentGraph->RgHandleOpMap[Resource];
-        rgHandleOpQueue.push({RgHandleOp::Read, this});
+		std::deque<RgHandleOpPassIdx>& rgHandleOpQueue = ParentGraph->RgHandleOpMap[Resource];
+        rgHandleOpQueue.push_back({RgHandleOp::Read, this});
 
 		return *this;
 	}
@@ -32,8 +32,8 @@ namespace RHI
         if (IgnoreBarrier)
             IgnoreWrites.push_back(Resource);
 
-		std::queue<RgHandleOpPassIdx>& rgHandleOpQueue = ParentGraph->RgHandleOpMap[Resource];
-        rgHandleOpQueue.push({RgHandleOp::Write, this});
+		std::deque<RgHandleOpPassIdx>& rgHandleOpQueue = ParentGraph->RgHandleOpMap[Resource];
+        rgHandleOpQueue.push_back({RgHandleOp::Write, this});
 
 		return *this;
 	}
@@ -287,147 +287,172 @@ namespace RHI
         return false;
 	}
 
+	bool RenderGraph::IsResourceReadAvailable(RgResourceHandle& resHandle, RenderPass* pPass)
+	{
+        std::deque<RgHandleOpPassIdx>& rgHandleOpQueue = RgHandleOpMap[resHandle];
+        ASSERT(!rgHandleOpQueue.empty());
+
+        bool isCurHandleInFirstReadGroup = false;
+        bool isWriteBeforeCurHandle      = false;
+        
+		for (size_t i = 0; i < rgHandleOpQueue.size(); i++)
+        {
+            RgHandleOpPassIdx curOpIdx = rgHandleOpQueue.at(i);
+            if (curOpIdx.passPtr != pPass)
+            {
+                if (curOpIdx.op == RgHandleOp::Write)
+                {
+                    isWriteBeforeCurHandle = true;
+                    break;
+                }
+				else
+				{
+					// 到目前为止都是Read
+				}
+            }
+            else
+            {
+                if (curOpIdx.op == RgHandleOp::Read)
+                {
+                    isCurHandleInFirstReadGroup = true;
+                }
+                break;
+            }
+		}
+
+		return !isWriteBeforeCurHandle && isCurHandleInFirstReadGroup;
+	}
+
+	bool RenderGraph::IsResourceWriteAvailable(RgResourceHandle& resHandle, RenderPass* pPass)
+	{
+        std::deque<RgHandleOpPassIdx>& rgHandleOpQueue = RgHandleOpMap[resHandle];
+        ASSERT(!rgHandleOpQueue.empty());
+		return rgHandleOpQueue.front().op == RgHandleOp::Write && rgHandleOpQueue.front().passPtr == pPass;
+	}
+
+	bool RenderGraph::IsResourceAvailable(RgResourceHandle& resHandle, RenderPass* pPass)
+	{
+        return IsResourceReadAvailable(resHandle, pPass) || IsResourceWriteAvailable(resHandle, pPass);
+	}
+
+	bool RenderGraph::IsPassAvailable(RenderPass* pPass)
+	{
+		bool isPassAvai = true;
+        for (auto it = pPass->Writes.begin(); it != pPass->Writes.end(); it++)
+        {
+            isPassAvai &= IsResourceWriteAvailable(*it, pPass);
+		}
+        for (auto it = pPass->Reads.begin(); it != pPass->Reads.end(); it++)
+        {
+            isPassAvai &= IsResourceReadAvailable(*it, pPass);
+        }
+        return isPassAvai;
+	}
+
+	void RenderGraph::RemovePassOpFromResHandleMap(RgResourceHandle& resHandle, RenderPass* pPass, std::map<RgResourceHandle, std::deque<RgHandleOpPassIdx>>& resOpIdxMap)
+	{
+        std::deque<RgHandleOpPassIdx>& rgHandleOpQueue = resOpIdxMap[resHandle];
+        ASSERT(!rgHandleOpQueue.empty());
+        int prevReadCount = 0;
+        int prevWriteCount = 0;
+        for (std::deque<RgHandleOpPassIdx>::iterator it = rgHandleOpQueue.begin(); it != rgHandleOpQueue.end();)
+        {
+            if (it->op == RgHandleOp::Read && it->passPtr != pPass)
+			{
+                prevReadCount += 1;
+			}
+            if (it->passPtr == pPass)
+			{
+				if (it->op == RgHandleOp::Write)
+				{
+                    ASSERT(prevReadCount == 0);
+				}
+                it = rgHandleOpQueue.erase(it);
+                break;
+			}
+			else
+			{
+                ++it;
+			}
+        }
+	}
+
 	void RenderGraph::Setup()
 	{
-        std::queue<RgResourceHandle> gRgResourceHandleQueue = {};
-        std::queue<RenderPass*>      gRenderPassQueue       = {};
-
-		std::vector<std::vector<RenderPass*>> gGlobalRenderPassBatch = {};
-
-		// 1. 找出初始只被读取的RgResourceHandle
-        for (size_t i = 0; i < InGraphResHandle.size(); i++)
+        std::set<RenderPass*> gRenderPassQueue = {};
+        do
         {
-            RgResourceHandle& resHandle = InGraphResHandle[i];
-            std::queue<RgHandleOpPassIdx>& rgHandleOpQueue = RgHandleOpMap[resHandle];
-			if (!rgHandleOpQueue.empty())
-            {
-                RgHandleOpPassIdx& mHandleOpIdx = rgHandleOpQueue.front();
-				if (mHandleOpIdx.op == RgHandleOp::Read)
-				{
-                    gRgResourceHandleQueue.push(resHandle);
-				}
-			}
-		}
-
-		// 2. 找出初始没有读取ResourceHandle的Pass
-        for (size_t i = 0; i < InGraphPass.size(); i++)
-        {
-            RenderPass* passPtr = InGraphPass[i];
-            if (passPtr->Reads.empty())
-			{
-                gRenderPassQueue.push(passPtr);
-			}
-		}
-
-		// 3. 循环遍历找出所有并行执行的pass，并按顺序把他们排下来
-        while (!gRgResourceHandleQueue.empty() || !gRenderPassQueue.empty())
-        {
-			if (!gRgResourceHandleQueue.empty())
-			{
-                // 遍历只被读取的RgResourceHandle
-                RHI::RgResourceHandle mRgResHandle = gRgResourceHandleQueue.front();
-                gRgResourceHandleQueue.pop();
-
-                std::queue<RgHandleOpPassIdx>& rgHandleOpQueue = RgHandleOpMap[mRgResHandle];
-                while (!rgHandleOpQueue.empty())
-                {
-                    RgHandleOpPassIdx opidx = rgHandleOpQueue.front();
-                    if (opidx.op == RgHandleOp::Read)
-                    {
-                        gRenderPassQueue.push(opidx.passPtr);
-                        rgHandleOpQueue.pop();
-                    }
-                    else
-                    {
-                        break;
-                    }
-                }
-			}
-
+			// 3. 循环遍历找出所有并行执行的pass，并按顺序把他们排下来
 			if (!gRenderPassQueue.empty())
 			{
-                std::vector<RenderPass*> mBatchLevel = {};
+                RenderGraphDependencyLevel dependencyLevel = {};
                 // 遍历只有写出的Pass
                 while (!gRenderPassQueue.empty())
                 {
-                    RenderPass* rgPassPtr = gRenderPassQueue.front();
-                    gRenderPassQueue.pop();
-
-                    for (auto it = rgPassPtr->Writes.begin(); it != rgPassPtr->Writes.end(); it++)
+                    RenderPass* rgPassPtr = *gRenderPassQueue.begin();
+                    gRenderPassQueue.erase(gRenderPassQueue.begin());
+                    
+					if (IsPassAvailable(rgPassPtr))
                     {
-                        gRgResourceHandleQueue.push(*it);
-
-                        std::queue<RgHandleOpPassIdx>& rgHandleOpQueue = RgHandleOpMap[*it];
-                        ASSERT(!rgHandleOpQueue.empty());
-                        ASSERT(rgHandleOpQueue.front().op == RgHandleOp::Write);
-                        if (rgHandleOpQueue.empty())
-						{
-                            int test = 0;
-						}
-                        rgHandleOpQueue.pop();
-                    }
-                    mBatchLevel.push_back(rgPassPtr);
+                        for (auto it = rgPassPtr->Reads.begin(); it != rgPassPtr->Reads.end(); it++)
+                        {
+                            RemovePassOpFromResHandleMap(*it, rgPassPtr, RgHandleOpMap);
+                        }
+                        for (auto it = rgPassPtr->Writes.begin(); it != rgPassPtr->Writes.end(); it++)
+                        {
+                            RemovePassOpFromResHandleMap(*it, rgPassPtr, RgHandleOpMap);
+                        }
+                        dependencyLevel.AddRenderPass(rgPassPtr);
+					}
                 }
-                gGlobalRenderPassBatch.push_back(mBatchLevel);
+                DependencyLevels.push_back(dependencyLevel);
+
+				std::vector<RenderPass*>& mBatchLevel = dependencyLevel.GetRenderPasses();
+                
+				for (size_t i = 0; i < mBatchLevel.size(); i++)
+                {
+                    for (auto it = InGraphPass.begin(); it != InGraphPass.end();)
+                    {
+                        if (mBatchLevel[i] == *it)
+						{
+                            it = InGraphPass.erase(it);
+						}
+						else
+						{
+                            ++it;
+						}
+					}
+				}
 			}
-        }
 
-		int test = 0;
+            // 1. 找出只有Read的Pass
+            for (size_t i = 0; i < InGraphResHandle.size(); i++)
+            {
+                RgResourceHandle& resHandle = InGraphResHandle[i];
+                std::deque<RgHandleOpPassIdx>& rgHandleOpQueue = RgHandleOpMap[resHandle];
+                for (auto it = rgHandleOpQueue.begin(); it != rgHandleOpQueue.end(); ++it)
+                {
+                    RgHandleOpPassIdx opidx = *it;
+                    if (opidx.op == RgHandleOp::Write)
+                        break;
+                    if (IsPassAvailable(opidx.passPtr))
+                    {
+                        gRenderPassQueue.insert(opidx.passPtr);
+                    }
+                }
+            }
+            
+			// 2. 找出没有Reader的Pass
+            for (size_t i = 0; i < InGraphPass.size(); i++)
+            {
+                RenderPass* passPtr = InGraphPass[i];
+                if (passPtr->Reads.empty())
+                {
+                    gRenderPassQueue.insert(passPtr);
+                }
+            }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+        } while (!gRenderPassQueue.empty());
 
 		/*
 		// https://levelup.gitconnected.com/organizing-gpu-work-with-directed-acyclic-graphs-f3fd5f2c2af3
@@ -544,6 +569,7 @@ namespace RHI
 		}
         */
 	}
+
     /*
 	void RenderGraph::DepthFirstSearch(size_t n, std::vector<bool>& Visited, std::stack<size_t>& Stack)
 	{
@@ -560,6 +586,7 @@ namespace RHI
 		Stack.push(n);
 	}
     */
+
 	void RenderGraph::ExportDgml(DgmlBuilder& Builder) const
 	{
         /*

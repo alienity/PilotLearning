@@ -287,9 +287,9 @@ namespace Pilot
                                       true);
         }
 
-        DgmlBuilder Builder("Render Graph");
-        graph.ExportDgml(Builder);
-        Builder.SaveAs(std::filesystem::current_path() / "RenderGraph.dgml");
+        //DgmlBuilder Builder("Render Graph");
+        //graph.ExportDgml(Builder);
+        //Builder.SaveAs(std::filesystem::current_path() / "RenderGraph.dgml");
 
     }
 

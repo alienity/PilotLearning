@@ -26,24 +26,28 @@ namespace Pilot
 
     void SkyBoxPass::update(RHI::RenderGraph& graph, DrawInputParameters& passInput, DrawOutputParameters& passOutput)
     {
-        DrawInputParameters*  drawPassInput  = &passInput;
-        DrawOutputParameters* drawPassOutput = &passOutput;
 
-        std::shared_ptr<RHI::D3D12Buffer> pPerframeBuffer = drawPassInput->pPerframeBuffer;
+        bool needClearRenderTarget = initializeRenderTarget(graph, &passOutput);
 
-        bool needClearRenderTarget = initializeRenderTarget(graph, drawPassOutput);
+        //DrawInputParameters*  drawPassInput  = &passInput;
+        //DrawOutputParameters* drawPassOutput = &passOutput;
+
+        std::shared_ptr<RHI::D3D12Buffer> pPerframeBuffer = passInput.pPerframeBuffer;
 
         RHI::RenderPass& drawpass = graph.AddRenderPass("SkyboxPass");
 
-        drawpass.Write(drawPassOutput->renderTargetColorHandle);
-        drawpass.Write(drawPassOutput->renderTargetDepthHandle);
+        RHI::RgResourceHandle localRenderTargetColorHandle = passOutput.renderTargetColorHandle;
+        RHI::RgResourceHandle localRenderTargetDepthHandle = passOutput.renderTargetDepthHandle;
+
+        drawpass.Write(passOutput.renderTargetColorHandle);
+        drawpass.Write(passOutput.renderTargetDepthHandle);
 
         drawpass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
 
             RHI::D3D12GraphicsContext* graphicContext = context->GetGraphicsContext();
 
-            RHI::D3D12Texture* pRenderTargetColor = registry->GetD3D12Texture(drawPassOutput->renderTargetColorHandle);
-            RHI::D3D12Texture* pRenderTargetDepth = registry->GetD3D12Texture(drawPassOutput->renderTargetDepthHandle);
+            RHI::D3D12Texture* pRenderTargetColor = registry->GetD3D12Texture(localRenderTargetColorHandle);
+            RHI::D3D12Texture* pRenderTargetDepth = registry->GetD3D12Texture(localRenderTargetDepthHandle);
 
             RHI::D3D12RenderTargetView* renderTargetView = pRenderTargetColor->GetDefaultRTV().get();
             RHI::D3D12DepthStencilView* depthStencilView = pRenderTargetDepth->GetDefaultDSV().get();
