@@ -5,7 +5,7 @@
 
 cbuffer RootConstants : register(b0, space0) { uint meshIndex; };
 
-ConstantBuffer<MeshPerframeStorageBufferObject> g_ConstantBufferParams : register(b1, space0);
+ConstantBuffer<MeshPerframeBuffer> g_ConstantBufferParams : register(b1, space0);
 
 StructuredBuffer<MeshInstance> g_MeshesInstance : register(t0, space0);
 
@@ -30,6 +30,16 @@ struct VertexOutput
     float3 normal : NORMAL;
     float4 tangent : TANGENT;
 };
+
+void PrepareMaterial(inout MaterialInputs material)
+{
+
+}
+
+float3 SurfaceShading(const MaterialInputs materialInputs, const ShadingData shadingData, const LightData lightData)
+{
+    return float3(0, 0, 0);
+}
 
 VertexOutput VSMain(VertexInput input)
 {
@@ -56,7 +66,7 @@ float4 PSMain(VertexOutput input) : SV_Target0
     MeshInstance     mesh     = g_MeshesInstance[meshIndex];
     MaterialInstance material = g_MaterialsInstance[mesh.materialIndex];
 
-    StructuredBuffer<PerMaterialUniformBufferObject> matBuffer = ResourceDescriptorHeap[material.uniformBufferIndex];
+    StructuredBuffer<PerMaterialUniformBuffer> matBuffer = ResourceDescriptorHeap[material.uniformBufferIndex];
 
     float4 baseColorFactor = matBuffer[0].baseColorFactor;
     float  normalStength    = matBuffer[0].normalScale;
@@ -275,7 +285,7 @@ float4 PSMain(VertexOutput input) : SV_Target0
     //float4 baseColorFactor = matFactorsBuffer.Load<float4>(0);
 
     // https://docs.microsoft.com/en-us/windows/win32/direct3d11/direct3d-11-advanced-stages-cs-resources
-    StructuredBuffer<PerMaterialUniformBufferObject> matFactors = ResourceDescriptorHeap[material.uniformBufferIndex];
+    StructuredBuffer<PerMaterialUniformBuffer> matFactors = ResourceDescriptorHeap[material.uniformBufferIndex];
     float4 baseColorFactor = matFactors[0].baseColorFactor;
 
     Texture2D<float4> baseColorTex = ResourceDescriptorHeap[material.baseColorIndex];

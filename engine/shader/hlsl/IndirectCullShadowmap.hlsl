@@ -11,7 +11,7 @@ struct CommandSignatureParams
     D3D12_DRAW_INDEXED_ARGUMENTS DrawIndexedArguments;
 };
 
-ConstantBuffer<MeshPerframeStorageBufferObject> g_ConstantBufferParams : register(b0, space0);
+ConstantBuffer<MeshPerframeBuffer> g_ConstantBufferParams : register(b0, space0);
 
 #if defined(SPOTSHADOW)
 cbuffer RootConstants : register(b1, space0) { uint spotIndex; };
@@ -32,7 +32,7 @@ void CSMain(CSParams Params) {
         MeshInstance mesh = g_MeshesInstance[index];
         MaterialInstance material = g_MaterialsInstance[mesh.materialIndex];
 
-        StructuredBuffer<PerMaterialUniformBufferObject> matBuffer =
+        StructuredBuffer<PerMaterialUniformBuffer> matBuffer =
             ResourceDescriptorHeap[material.uniformBufferIndex];
 
         BoundingBox aabb;

@@ -369,7 +369,7 @@ namespace Pilot
             {
                 startUploadBatch();
 
-                HLSL::MeshPerMaterialUniformBufferObject material_uniform_buffer_info;
+                HLSL::MeshPerMaterialUniformBuffer material_uniform_buffer_info;
                 material_uniform_buffer_info.is_blend          = material_data.m_blend;
                 material_uniform_buffer_info.is_double_sided   = material_data.m_double_sided;
                 material_uniform_buffer_info.baseColorFactor   = GLMUtil::fromVec4(material_data.m_base_color_factor);
@@ -379,7 +379,7 @@ namespace Pilot
                 material_uniform_buffer_info.occlusionStrength = material_data.m_occlusion_strength;
                 material_uniform_buffer_info.emissiveFactor    = GLMUtil::fromVec3(material_data.m_emissive_factor);
 
-                uint32_t buffer_size = sizeof(HLSL::MeshPerMaterialUniformBufferObject);
+                uint32_t buffer_size = sizeof(HLSL::MeshPerMaterialUniformBuffer);
                 auto uniform_buffer =
                     createStaticBuffer(&material_uniform_buffer_info, buffer_size, buffer_size, false, false);
                 now_material.material_uniform_buffer      = uniform_buffer;

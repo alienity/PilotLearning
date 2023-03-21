@@ -169,28 +169,31 @@ namespace HLSL
         D3D12_DRAW_INDEXED_ARGUMENTS DrawIndexedArguments;
     };
 
-    struct MeshPerMaterialUniformBufferObject
+    struct MeshPerMaterialUniformBuffer
     {
         glm::vec4 baseColorFactor {1.0f, 1.0f, 1.0f, 1.0f};
 
-        float metallicFactor    = 0.0f;
-        float roughnessFactor   = 1.0f;
-        float normalScale       = 1.0f;
-        float occlusionStrength = 1.0f;
+        float metallicFactor           = 0.0f;
+        float roughnessFactor          = 0.0f;
+        float reflectanceFactor        = 0.0f;
+        float clearCoatFactor          = 0.0f;
+        float clearCoatRoughnessFactor = 0.0f;
+        float anisotropyFactor         = 0.0f;
+
+        float normalScale              = 0.0f;
+        float occlusionStrength        = 0.0f;
 
         glm::vec3 emissiveFactor  = {1.0f, 1.0f, 1.0f};
         uint32_t  is_blend        = 0;
         uint32_t  is_double_sided = 0;
 
-        glm::uvec3 _padding_uniform;
+        uint32_t _padding_uniform_1;
+        uint32_t _padding_uniform_2;
+        uint32_t _padding_uniform_3;
     };
 
     const std::uint64_t totalCommandBufferSizeInBytes = HLSL::MeshLimit * sizeof(HLSL::CommandSignatureParams);
-    //const std::uint64_t commandBufferCounterOffset =
-    //    D3D12RHIUtils::AlignUp(totalCommandBufferSizeInBytes, D3D12_UAV_COUNTER_PLACEMENT_ALIGNMENT);
 
     const std::uint64_t totalIndexCommandBufferInBytes = HLSL::MeshLimit * sizeof(HLSL::BitonicSortCommandSigParams);
-    //const std::uint64_t indexCommandBufferCounterOffset =
-    //    D3D12RHIUtils::AlignUp(totalIndexCommandBufferInBytes, D3D12_UAV_COUNTER_PLACEMENT_ALIGNMENT);
 
 } // namespace HLSL

@@ -11,7 +11,7 @@ cbuffer RootConstants : register(b0, space0)
 #endif
 };
 
-ConstantBuffer<MeshPerframeStorageBufferObject> g_ConstantBufferParams : register(b1, space0);
+ConstantBuffer<MeshPerframeBuffer> g_ConstantBufferParams : register(b1, space0);
 
 StructuredBuffer<MeshInstance> g_MeshesInstance : register(t0, space0);
 

@@ -3,7 +3,7 @@
 #include "Math.hlsli"
 #include "SharedTypes.hlsli"
 
-ConstantBuffer<MeshPerframeStorageBufferObject> g_ConstantBufferParams : register(b1, space0);
+ConstantBuffer<MeshPerframeBuffer> g_ConstantBufferParams : register(b1, space0);
 
 struct VSOutput
 {

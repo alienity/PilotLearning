@@ -513,28 +513,6 @@ namespace Pilot
                 grabObject(pAsyncCompute, indirectIndexBufferPtr, indirectSortBufferPtr);
             }
 
-            /*
-            // Output Object Buffer
-            {
-                D3D12ScopedEvent(pAsyncCompute, "Grabs all objects to render");
-                pAsyncCompute->SetPipelineState(PipelineStates::pIndirectCull.get());
-                pAsyncCompute->SetRootSignature(RootSignatures::pIndirectCull.get());
-
-                pAsyncCompute->SetConstantBuffer(0, pPerframeBuffer->GetGpuVirtualAddress());
-                pAsyncCompute->SetBufferSRV(1, pMeshBuffer.get());
-                pAsyncCompute->SetBufferSRV(2, pMaterialBuffer.get());
-
-                pAsyncCompute->SetDescriptorTable(3, commandBufferForOpaqueDraw.p_IndirectSortCommandBuffer->GetDefaultUAV()->GetGpuHandle());
-                pAsyncCompute->SetDescriptorTable(4, commandBufferForTransparentDraw.p_IndirectSortCommandBuffer->GetDefaultUAV()->GetGpuHandle());
-
-                pAsyncCompute->Dispatch1D(numMeshes, 128);
-
-                // Transition to indirect argument state
-                pAsyncCompute->TransitionBarrier(commandBufferForOpaqueDraw.p_IndirectSortCommandBuffer.get(), D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT);
-                pAsyncCompute->TransitionBarrier(commandBufferForTransparentDraw.p_IndirectSortCommandBuffer.get(), D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT);
-            }
-            */
-
             // DirectionLight shadow cull
             if (dirShadowmapCommandBuffer.p_IndirectSortCommandBuffer != nullptr)
             {
