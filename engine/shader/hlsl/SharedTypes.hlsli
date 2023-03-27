@@ -1,5 +1,5 @@
 #pragma once
-#include "Math.hlsli"
+#include "CommonMath.hlsli"
 #include "d3d12.hlsli"
 
 #define m_max_point_light_count 16

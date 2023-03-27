@@ -1,4 +1,4 @@
-﻿#include "Math.hlsli"
+﻿#include "CommonMath.hlsli"
 #include "Shader.hlsli"
 #include "SharedTypes.hlsli"
 #include "d3d12.hlsli"

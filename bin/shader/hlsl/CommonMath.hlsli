@@ -1,6 +1,8 @@
 #pragma once
 
-static const float g_EPSILON = 1e-4f;
+//------------------------------------------------------------------------------
+// Common math
+//------------------------------------------------------------------------------
 
 static const float g_PI		 = 3.141592654f;
 static const float g_2PI	 = 6.283185307f;
@@ -10,7 +12,156 @@ static const float g_1DIV4PI = 0.079577471f;
 static const float g_PIDIV2	 = 1.570796327f;
 static const float g_PIDIV4	 = 0.785398163f;
 
+static const float FLT_EPS = 1e-5;
 static const float FLT_MAX = asfloat(0x7F7FFFFF);
+
+#define PI g_PI
+#define HALF_PI g_PIDIV2
+
+//------------------------------------------------------------------------------
+// Scalar operations
+//------------------------------------------------------------------------------
+
+float pow5(float x)
+{
+    float x2 = x * x;
+    return x2 * x2 * x;
+}
+
+//------------------------------------------------------------------------------
+// Vector operations
+//------------------------------------------------------------------------------
+
+float max3(const float3 v) { return max(v.x, max(v.y, v.z)); }
+
+float fmax(const float2 v) { return max(v.x, v.y); }
+
+float fmax(const float3 v) { return max(v.x, max(v.y, v.z)); }
+
+float fmax(const float4 v) { return max(max(v.x, v.y), max(v.y, v.z)); }
+
+float min3(const float3 v) { return min(v.x, min(v.y, v.z)); }
+
+float fmin(const float2 v) { return min(v.x, v.y); }
+
+float fmin(const float3 v) { return min(v.x, min(v.y, v.z)); }
+
+float fmin(const float4 v) { return min(min(v.x, v.y), min(v.y, v.z)); }
+
+//------------------------------------------------------------------------------
+// Trigonometry
+//------------------------------------------------------------------------------
+
+/**
+ * Approximates acos(x) with a max absolute error of 9.0x10^-3.
+ * Valid in the range -1..1.
+ */
+float acosFast(float x)
+{
+    // Lagarde 2014, "Inverse trigonometric functions GPU optimization for AMD GCN architecture"
+    // This is the approximation of degree 1, with a max absolute error of 9.0x10^-3
+    float y = abs(x);
+    float p = -0.1565827 * y + 1.570796;
+    p = p * sqrt(1.0 - y);
+    return x >= 0.0 ? p : PI - p;
+}
+
+/**
+ * Approximates acos(x) with a max absolute error of 9.0x10^-3.
+ * Valid only in the range 0..1.
+ */
+float acosFastPositive(float x)
+{
+    float p = -0.1565827 * x + 1.570796;
+    return p * sqrt(1.0 - x);
+}
+
+//------------------------------------------------------------------------------
+// Matrix and quaternion operations
+//------------------------------------------------------------------------------
+
+/**
+ * Multiplies the specified 3-component vector by the 4x4 matrix (m * v) in
+ * high precision.
+ *
+ * @public-api
+ */
+float4 mulMat4x4Float3(const float4x4 m, const float3 v)
+{
+    return v.x * m[0] + (v.y * m[1] + (v.z * m[2] + m[3]));
+}
+
+/**
+ * Multiplies the specified 3-component vector by the 3x3 matrix (m * v) in
+ * high precision.
+ *
+ * @public-api
+ */
+float3 mulMat3x3Float3(const float4x4 m, const float3 v)
+{
+    return v.x * m[0].xyz + (v.y * m[1].xyz + (v.z * m[2].xyz));
+}
+
+/**
+ * Extracts the normal vector of the tangent frame encoded in the specified quaternion.
+ */
+void toTangentFrame(const float4 q, out float3 n)
+{
+    n = float3(0.0, 0.0, 1.0) + float3(2.0, -2.0, -2.0) * q.x * q.zwx + float3(2.0, 2.0, -2.0) * q.y * q.wzy;
+}
+
+/**
+ * Extracts the normal and tangent vectors of the tangent frame encoded in the
+ * specified quaternion.
+ */
+void toTangentFrame(const float4 q, out float3 n, out float3 t)
+{
+    toTangentFrame(q, n);
+    t = float3(1.0, 0.0, 0.0) + float3(-2.0, 2.0, -2.0) * q.y * q.yxw + float3(-2.0, 2.0, 2.0) * q.z * q.zwx;
+}
+
+float3x3 cofactor(const float3x3 m)
+{
+    float a = m[0][0];
+    float b = m[1][0];
+    float c = m[2][0];
+    float d = m[0][1];
+    float e = m[1][1];
+    float f = m[2][1];
+    float g = m[0][2];
+    float h = m[1][2];
+    float i = m[2][2];
+
+    float3x3 cof;
+    cof[0][0] = e * i - f * h;
+    cof[0][1] = c * h - b * i;
+    cof[0][2] = b * f - c * e;
+    cof[1][0] = f * g - d * i;
+    cof[1][1] = a * i - c * g;
+    cof[1][2] = c * d - a * f;
+    cof[2][0] = d * h - e * g;
+    cof[2][1] = b * g - a * h;
+    cof[2][2] = a * e - b * d;
+    return cof;
+}
+
+//------------------------------------------------------------------------------
+// Random
+//------------------------------------------------------------------------------
+
+/*
+ * Random number between 0 and 1, using interleaved gradient noise.
+ * w must not be normalized (e.g. window coordinates)
+ */
+float interleavedGradientNoise(float2 w)
+{
+    const float3 m = float3(0.06711056, 0.00583715, 52.9829189);
+    return frac(m.z * frac(dot(w, m.xy)));
+}
+
+//------------------------------------------------------------------------------
+// Culling
+//------------------------------------------------------------------------------
 
 float3 Faceforward(float3 n, float3 v)
 {

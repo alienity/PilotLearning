@@ -1,4 +1,4 @@
-#pragma once
+#include "CommonMath.hlsli"
 
 //------------------------------------------------------------------------------
 // BRDF configuration
