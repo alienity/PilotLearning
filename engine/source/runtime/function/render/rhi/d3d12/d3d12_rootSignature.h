@@ -129,23 +129,42 @@ namespace RHI
         }
 
         template<UINT ShaderRegister, UINT RegisterSpace>
-        RootSignatureDesc& AddStaticSampler(D3D12_FILTER               Filter,
-                                            D3D12_TEXTURE_ADDRESS_MODE AddressUVW,
-                                            UINT                       MaxAnisotropy,
-                                            D3D12_COMPARISON_FUNC      ComparisonFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL,
-                                            D3D12_STATIC_BORDER_COLOR  BorderColor = D3D12_STATIC_BORDER_COLOR_OPAQUE_WHITE)
+        RootSignatureDesc& AddStaticSampler(CD3DX12_STATIC_SAMPLER_DESC staticSampler)
+        {
+            staticSampler.ShaderRegister = ShaderRegister;
+            staticSampler.RegisterSpace  = RegisterSpace;
+            StaticSamplers.push_back(staticSampler);
+            return *this;
+        }
+
+        template<UINT ShaderRegister, UINT RegisterSpace>
+        RootSignatureDesc&
+        AddStaticSampler(D3D12_FILTER               filter           = D3D12_FILTER_ANISOTROPIC,
+                         D3D12_TEXTURE_ADDRESS_MODE addressU         = D3D12_TEXTURE_ADDRESS_MODE_WRAP,
+                         D3D12_TEXTURE_ADDRESS_MODE addressV         = D3D12_TEXTURE_ADDRESS_MODE_WRAP,
+                         D3D12_TEXTURE_ADDRESS_MODE addressW         = D3D12_TEXTURE_ADDRESS_MODE_WRAP,
+                         FLOAT                      mipLODBias       = 0,
+                         UINT                       maxAnisotropy    = 16,
+                         D3D12_COMPARISON_FUNC      comparisonFunc   = D3D12_COMPARISON_FUNC_LESS_EQUAL,
+                         D3D12_STATIC_BORDER_COLOR  borderColor      = D3D12_STATIC_BORDER_COLOR_OPAQUE_WHITE,
+                         FLOAT                      minLOD           = 0.f,
+                         FLOAT                      maxLOD           = D3D12_FLOAT32_MAX,
+                         D3D12_SHADER_VISIBILITY    shaderVisibility = D3D12_SHADER_VISIBILITY_ALL)
         {
             CD3DX12_STATIC_SAMPLER_DESC& Desc = StaticSamplers.emplace_back();
             Desc.Init(ShaderRegister,
-                      Filter,
-                      AddressUVW,
-                      AddressUVW,
-                      AddressUVW,
-                      0.0f,
-                      MaxAnisotropy,
-                      ComparisonFunc,
-                      BorderColor);
-            Desc.RegisterSpace = RegisterSpace;
+                      filter,
+                      addressU,
+                      addressV,
+                      addressW,
+                      mipLODBias,
+                      maxAnisotropy,
+                      comparisonFunc,
+                      borderColor,
+                      minLOD,
+                      maxLOD,
+                      shaderVisibility,
+                      RegisterSpace);
             return *this;
         }
 

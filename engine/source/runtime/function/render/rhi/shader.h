@@ -23,8 +23,8 @@ public:
     Shader() noexcept = default;
     Shader(RHI_SHADER_TYPE                  ShaderType,
            DxcShaderHash                    ShaderHash,
-           Microsoft::WRL::ComPtr<IDxcBlob> Binary,
-           Microsoft::WRL::ComPtr<IDxcBlob> Pdb);
+           Microsoft::WRL::ComPtr<IDxcBlob> CompiledShaderBlob,
+           Microsoft::WRL::ComPtr<IDxcBlob> CompiledShaderPdb);
 
     [[nodiscard]] void*         GetPointer() const noexcept;
     [[nodiscard]] size_t        GetSize() const noexcept;
@@ -34,8 +34,8 @@ protected:
     RHI_SHADER_TYPE ShaderType;
     DxcShaderHash   ShaderHash = {};
 
-    Microsoft::WRL::ComPtr<IDxcBlob> Binary;
-    Microsoft::WRL::ComPtr<IDxcBlob> Pdb;
+    Microsoft::WRL::ComPtr<IDxcBlob> CompiledShaderBlob;
+    Microsoft::WRL::ComPtr<IDxcBlob> CompiledShaderPdb;
 };
 
 /*
@@ -48,7 +48,9 @@ class Library
 {
 public:
     Library() noexcept = default;
-    Library(DxcShaderHash ShaderHash, Microsoft::WRL::ComPtr<IDxcBlob> Binary, Microsoft::WRL::ComPtr<IDxcBlob> Pdb);
+    Library(DxcShaderHash                    ShaderHash,
+            Microsoft::WRL::ComPtr<IDxcBlob> CompiledLibraryBlob,
+            Microsoft::WRL::ComPtr<IDxcBlob> CompiledLibraryPdb);
 
     [[nodiscard]] void*         GetPointer() const noexcept;
     [[nodiscard]] size_t        GetSize() const noexcept;
@@ -56,6 +58,6 @@ public:
 
 private:
     DxcShaderHash                    ShaderHash = {};
-    Microsoft::WRL::ComPtr<IDxcBlob> Binary;
-    Microsoft::WRL::ComPtr<IDxcBlob> Pdb;
+    Microsoft::WRL::ComPtr<IDxcBlob> CompiledLibraryBlob;
+    Microsoft::WRL::ComPtr<IDxcBlob> CompiledLibraryPdb;
 };

@@ -2,16 +2,9 @@
 
 namespace Pilot
 {
-    void RenderCamera::setCurrentCameraType(RenderCameraType type)
+    void RenderCamera::setMainViewMatrix(const Matrix4x4& view_matrix)
     {
         std::lock_guard<std::mutex> lock_guard(m_view_matrix_mutex);
-        m_current_camera_type = type;
-    }
-
-    void RenderCamera::setMainViewMatrix(const Matrix4x4& view_matrix, RenderCameraType type)
-    {
-        std::lock_guard<std::mutex> lock_guard(m_view_matrix_mutex);
-        m_current_camera_type                   = type;
         m_view_matrices[MAIN_VIEW_MATRIX_INDEX] = view_matrix;
 
         Vector3 s  = Vector3(view_matrix[0][0], view_matrix[0][1], view_matrix[0][2]);
@@ -73,18 +66,7 @@ namespace Pilot
     Matrix4x4 RenderCamera::getViewMatrix()
     {
         std::lock_guard<std::mutex> lock_guard(m_view_matrix_mutex);
-        auto                        view_matrix = Matrix4x4::Identity;
-        switch (m_current_camera_type)
-        {
-            case RenderCameraType::Editor:
-                view_matrix = Math::makeLookAtMatrix(position(), position() + forward(), up());
-                break;
-            case RenderCameraType::Motor:
-                view_matrix = m_view_matrices[MAIN_VIEW_MATRIX_INDEX];
-                break;
-            default:
-                break;
-        }
+        auto view_matrix = Math::makeLookAtMatrix(position(), position() + forward(), up());
         return view_matrix;
     }
 

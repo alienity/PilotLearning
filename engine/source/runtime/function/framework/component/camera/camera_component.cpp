@@ -105,7 +105,6 @@ namespace Pilot
 
         RenderSwapContext& swap_context = g_runtime_global_context.m_render_system->getSwapContext();
         CameraSwapData     camera_swap_data;
-        camera_swap_data.m_camera_type                     = RenderCameraType::Motor;
         camera_swap_data.m_view_matrix                     = desired_mat; // ÐèÒª×ªÖÃ
         swap_context.getLogicSwapData().m_camera_swap_data = camera_swap_data;
 
@@ -147,7 +146,6 @@ namespace Pilot
 
         RenderSwapContext& swap_context = g_runtime_global_context.m_render_system->getSwapContext();
         CameraSwapData     camera_swap_data;
-        camera_swap_data.m_camera_type                     = RenderCameraType::Motor;
         camera_swap_data.m_view_matrix                     = desired_mat;
         swap_context.getLogicSwapData().m_camera_swap_data = camera_swap_data;
     }

@@ -63,7 +63,7 @@ Shader ShaderCompiler::CompileShader(RHI_SHADER_TYPE              ShaderType,
     }
 
     ShaderCompilationResult Result = Compile(Path, Options.EntryPoint, ProfileString.data(), Defines);
-    return {ShaderType, Result.ShaderHash, Result.Binary, Result.Pdb};
+    return {ShaderType, Result.ShaderHash, Result.CompiledShaderBlob, Result.CompiledShaderPdb};
 }
 
 Library ShaderCompiler::CompileLibrary(const std::filesystem::path& Path) const
@@ -71,7 +71,7 @@ Library ShaderCompiler::CompileLibrary(const std::filesystem::path& Path) const
     std::wstring ProfileString = LibraryProfileString();
 
     ShaderCompilationResult Result = Compile(Path, L"", ProfileString.data(), {});
-    return {Result.ShaderHash, Result.Binary, Result.Pdb};
+    return {Result.ShaderHash, Result.CompiledShaderBlob, Result.CompiledShaderPdb};
 }
 
 std::wstring ShaderCompiler::GetShaderModelString() const
@@ -129,7 +129,8 @@ std::wstring ShaderCompiler::LibraryProfileString() const { return L"lib_" + Get
 ShaderCompilationResult ShaderCompiler::Compile(const std::filesystem::path&  Path,
                                                 std::wstring_view             EntryPoint,
                                                 std::wstring_view             Profile,
-                                                const std::vector<DxcDefine>& ShaderDefines) const
+                                                const std::vector<DxcDefine>& ShaderDefines,
+                                                bool                          ExtractRootSignature) const
 {
     ShaderCompilationResult Result = {};
 
@@ -192,21 +193,21 @@ ShaderCompilationResult ShaderCompiler::Compile(const std::filesystem::path&  Pa
         }
     }
 
-    DxcResult->GetResult(&Result.Binary);
+    DxcResult->GetResult(&Result.CompiledShaderBlob);
 
     if (DxcResult->HasOutput(DXC_OUT_PDB))
     {
         Microsoft::WRL::ComPtr<IDxcBlobUtf16> Name;
-        DxcResult->GetOutput(DXC_OUT_PDB, IID_PPV_ARGS(&Result.Pdb), &Name);
+        DxcResult->GetOutput(DXC_OUT_PDB, IID_PPV_ARGS(&Result.CompiledShaderPdb), &Name);
         if (Name)
         {
-            Result.PdbName = Name->GetStringPointer();
+            Result.CompiledShaderPdb = Name->GetStringPointer();
         }
 
         // Save pdb
         Pilot::FileStream Stream(PdbPath, Pilot::FileMode::Create, Pilot::FileAccess::Write);
         Pilot::BinaryWriter Writer(Stream);
-        Writer.write(Result.Pdb->GetBufferPointer(), Result.Pdb->GetBufferSize());
+        Writer.write(Result.CompiledShaderPdb->GetBufferPointer(), Result.CompiledShaderPdb->GetBufferSize());
     }
 
     if (DxcResult->HasOutput(DXC_OUT_SHADER_HASH))
@@ -218,6 +219,20 @@ ShaderCompilationResult ShaderCompiler::Compile(const std::filesystem::path&  Pa
         {
             assert(ShaderHash->GetBufferSize() == sizeof(DxcShaderHash));
             Result.ShaderHash = *static_cast<DxcShaderHash*>(ShaderHash->GetBufferPointer());
+        }
+    }
+
+    if (ExtractRootSignature)
+    {
+        if (DxcResult->HasOutput(DXC_OUT_ROOT_SIGNATURE))
+        {
+            Microsoft::WRL::ComPtr<IDxcBlob> RootSignatureBlob;
+            Microsoft::WRL::ComPtr<IDxcBlobUtf16> OutputName;
+            DxcResult->GetOutput(DXC_OUT_ROOT_SIGNATURE, IID_PPV_ARGS(&RootSignatureBlob), &OutputName);
+            if (RootSignatureBlob)
+            {
+                Result.RootSignatureBlob = RootSignatureBlob;
+            }
         }
     }
 

@@ -6,17 +6,9 @@
 
 namespace Pilot
 {
-    enum class RenderCameraType : int
-    {
-        Editor,
-        Motor
-    };
-
     class RenderCamera
     {
     public:
-        RenderCameraType m_current_camera_type {RenderCameraType::Editor};
-
         static const Vector3 X, Y, Z;
 
         Vector3    m_position {0.0f, 0.0f, 0.0f};
@@ -32,8 +24,7 @@ namespace Pilot
 
         std::vector<Matrix4x4> m_view_matrices {Matrix4x4::Identity};
 
-        void setCurrentCameraType(RenderCameraType type);
-        void setMainViewMatrix(const Matrix4x4& view_matrix, RenderCameraType type = RenderCameraType::Editor);
+        void setMainViewMatrix(const Matrix4x4& view_matrix);
 
         void move(Vector3 delta);
         void rotate(Vector2 delta);

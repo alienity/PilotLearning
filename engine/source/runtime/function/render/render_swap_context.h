@@ -31,9 +31,8 @@ namespace Pilot
 
     struct CameraSwapData
     {
-        std::optional<float>            m_fov_y;
-        std::optional<RenderCameraType> m_camera_type;
-        std::optional<Matrix4x4>        m_view_matrix;
+        std::optional<float>     m_fov_y;
+        std::optional<Matrix4x4> m_view_matrix;
     };
 
     struct GameObjectResourceDesc

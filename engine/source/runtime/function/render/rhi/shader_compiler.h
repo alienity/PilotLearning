@@ -15,10 +15,11 @@ private:
 
 struct ShaderCompilationResult
 {
-    Microsoft::WRL::ComPtr<IDxcBlob> Binary;
-    std::wstring                     PdbName;
-    Microsoft::WRL::ComPtr<IDxcBlob> Pdb;
+    Microsoft::WRL::ComPtr<IDxcBlob> CompiledShaderBlob;
+    std::wstring                     CompiledShaderPdbName;
+    Microsoft::WRL::ComPtr<IDxcBlob> CompiledShaderPdb;
     DxcShaderHash                    ShaderHash;
+    Microsoft::WRL::ComPtr<IDxcBlob> RootSignatureBlob;
 };
 
 class ShaderCompiler
@@ -44,7 +45,8 @@ private:
     [[nodiscard]] ShaderCompilationResult Compile(const std::filesystem::path&  Path,
                                                   std::wstring_view             EntryPoint,
                                                   std::wstring_view             Profile,
-                                                  const std::vector<DxcDefine>& ShaderDefines) const;
+                                                  const std::vector<DxcDefine>& ShaderDefines,
+                                                  bool ExtractRootSignature = false) const;
 
 private:
     Microsoft::WRL::ComPtr<IDxcCompiler3>      Compiler3;

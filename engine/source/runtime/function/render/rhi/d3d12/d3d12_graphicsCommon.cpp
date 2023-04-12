@@ -64,12 +64,11 @@ namespace RHI
     D3D12CommandSignature* pDispatchIndirectCommandSignature;
     D3D12CommandSignature* pDrawIndirectCommandSignature;
 
+    D3D12RootSignature* g_pBindlessRS;
     D3D12RootSignature* g_pCommonRS;
 
     D3D12PipelineState* g_pGenerateMipsLinearPSO[4];
-    
     D3D12PipelineState* g_pGenerateMipsGammaPSO[4];
-    
     D3D12PipelineState* g_pDownsampleDepthPSO;
 
 
@@ -210,6 +209,83 @@ namespace RHI
         RHI::CommandSignatureDesc mDrawIndirectDesc(1);
         mDrawIndirectDesc.AddDraw();
         pDrawIndirectCommandSignature = new D3D12CommandSignature(pParent->GetParentDevice(), mDrawIndirectDesc);
+        
+        CD3DX12_STATIC_SAMPLER_DESC _s0Sampler = CD3DX12_STATIC_SAMPLER_DESC();
+        _s0Sampler.Filter   = D3D12_FILTER_MIN_MAG_MIP_POINT;
+        _s0Sampler.AddressU = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
+        _s0Sampler.AddressV = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
+        _s0Sampler.AddressW = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
+
+        CD3DX12_STATIC_SAMPLER_DESC _s1Sampler = CD3DX12_STATIC_SAMPLER_DESC();
+        _s1Sampler.Filter   = D3D12_FILTER_MIN_MAG_MIP_POINT;
+        _s1Sampler.AddressU = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+        _s1Sampler.AddressV = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+        _s1Sampler.AddressW = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+
+        CD3DX12_STATIC_SAMPLER_DESC _s2Sampler = CD3DX12_STATIC_SAMPLER_DESC();
+        _s2Sampler.Filter   = D3D12_FILTER_MIN_MAG_MIP_LINEAR;
+        _s2Sampler.AddressU = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+        _s2Sampler.AddressV = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+        _s2Sampler.AddressW = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+
+        CD3DX12_STATIC_SAMPLER_DESC _s3Sampler = CD3DX12_STATIC_SAMPLER_DESC();
+        _s3Sampler.Filter   = D3D12_FILTER_MIN_MAG_MIP_LINEAR;
+        _s3Sampler.AddressU = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
+        _s3Sampler.AddressV = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
+        _s3Sampler.AddressW = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+
+        CD3DX12_STATIC_SAMPLER_DESC _s4Sampler = CD3DX12_STATIC_SAMPLER_DESC();
+        _s4Sampler.Filter   = D3D12_FILTER_MIN_MAG_LINEAR_MIP_POINT;
+        _s4Sampler.AddressU = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
+        _s4Sampler.AddressV = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
+        _s4Sampler.AddressW = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
+
+        CD3DX12_STATIC_SAMPLER_DESC _s5Sampler = CD3DX12_STATIC_SAMPLER_DESC();
+        _s5Sampler.Filter   = D3D12_FILTER_MIN_MAG_LINEAR_MIP_POINT;
+        _s5Sampler.AddressU = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+        _s5Sampler.AddressV = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+        _s5Sampler.AddressW = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+
+        CD3DX12_STATIC_SAMPLER_DESC _s6Sampler = CD3DX12_STATIC_SAMPLER_DESC();
+        _s6Sampler.Filter   = D3D12_FILTER_MIN_MAG_POINT_MIP_LINEAR;
+        _s6Sampler.AddressU = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
+        _s6Sampler.AddressV = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
+        _s6Sampler.AddressW = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
+
+        CD3DX12_STATIC_SAMPLER_DESC _s7Sampler = CD3DX12_STATIC_SAMPLER_DESC();
+        _s7Sampler.Filter   = D3D12_FILTER_MIN_MAG_POINT_MIP_LINEAR;
+        _s7Sampler.AddressU = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+        _s7Sampler.AddressV = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+        _s7Sampler.AddressW = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+
+        CD3DX12_STATIC_SAMPLER_DESC _s8Sampler = CD3DX12_STATIC_SAMPLER_DESC();
+        _s8Sampler.Filter        = D3D12_FILTER_ANISOTROPIC;
+        _s8Sampler.MaxAnisotropy = 16;
+
+        CD3DX12_STATIC_SAMPLER_DESC _s9Sampler = CD3DX12_STATIC_SAMPLER_DESC();
+        _s9Sampler.Filter      = D3D12_FILTER_MIN_MAG_MIP_LINEAR;
+        _s9Sampler.AddressU    = D3D12_TEXTURE_ADDRESS_MODE_BORDER;
+        _s9Sampler.AddressV    = D3D12_TEXTURE_ADDRESS_MODE_BORDER;
+        _s9Sampler.AddressW    = D3D12_TEXTURE_ADDRESS_MODE_BORDER;
+        _s9Sampler.BorderColor = D3D12_STATIC_BORDER_COLOR_OPAQUE_BLACK;
+
+        RHI::RootSignatureDesc mBindlessRSDesc;
+        mBindlessRSDesc.AllowInputLayout();
+        mBindlessRSDesc.AllowResourceDescriptorHeapIndexing();
+        mBindlessRSDesc.AllowSampleDescriptorHeapIndexing();
+        mBindlessRSDesc.Add32BitConstants<0, 0>(64);
+        mBindlessRSDesc.AddStaticSampler<0, 0>(_s0Sampler);
+        mBindlessRSDesc.AddStaticSampler<1, 0>(_s1Sampler);
+        mBindlessRSDesc.AddStaticSampler<2, 0>(_s2Sampler);
+        mBindlessRSDesc.AddStaticSampler<3, 0>(_s3Sampler);
+        mBindlessRSDesc.AddStaticSampler<4, 0>(_s4Sampler);
+        mBindlessRSDesc.AddStaticSampler<5, 0>(_s5Sampler);
+        mBindlessRSDesc.AddStaticSampler<6, 0>(_s6Sampler);
+        mBindlessRSDesc.AddStaticSampler<7, 0>(_s7Sampler);
+        mBindlessRSDesc.AddStaticSampler<8, 0>(_s8Sampler);
+        mBindlessRSDesc.AddStaticSampler<9, 0>(_s9Sampler);
+
+        g_pBindlessRS = new D3D12RootSignature(pParent->GetParentDevice(), mBindlessRSDesc);
 
         RHI::RootSignatureDesc mCommonRSDesc;
         mCommonRSDesc.Add32BitConstants<0, 0>(4);

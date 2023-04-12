@@ -136,7 +136,7 @@ namespace Pilot
                sizeof(HLSL::MeshPerframeStorageBufferObject));
 
         std::vector<RenderMeshNode>* renderMeshNodes = m_visiable_nodes.p_all_mesh_nodes;
-
+        
         HLSL::MaterialInstance* pMaterialObj = pUploadMaterialBuffer->GetCpuVirtualAddress<HLSL::MaterialInstance>();
         HLSL::MeshInstance* pMeshesObj = pUploadMeshBuffer->GetCpuVirtualAddress<HLSL::MeshInstance>();
 
