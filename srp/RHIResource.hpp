@@ -1,3 +1,4 @@
+#include "RHICore.hpp"
 
 namespace RHI
 {
@@ -9,7 +10,7 @@ namespace RHI
 
     class RHIBuffer : public RHIResource
     {
-
+        
     };
 
     class RHITexture : public RHIResource

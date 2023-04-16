@@ -1,3 +1,4 @@
+#include "RHICore.hpp"
 
 namespace RHI
 {
