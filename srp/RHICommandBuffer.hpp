@@ -19,17 +19,6 @@ namespace RHI
         Compute,
     };
 
-    enum CubemapFace
-    {
-        Unknown = 0,
-        PositiveX,
-        NegativeX,
-        PositiveY,
-        NegativeY,
-        PositiveZ,
-        NegativeZ
-    };
-
     enum RTClearFlags
     {
         None,
@@ -145,16 +134,16 @@ namespace RHI
         void DrawIndexed(UINT indexCount, UINT startIndexLocation = 0, INT baseVertexLocation = 0);
         void DrawInstanced(UINT vertexCount, UINT instanceCount, UINT startVertexLocation, UINT startInstanceLocation);
         void DrawIndexedInstanced(UINT indexCount, UINT instanceCount, UINT startIndexLocation, INT baseVertexLocation, UINT startInstanceLocation);
-        void DrawIndirect(RHIResource* argumentBuffer, UINT64 argumentBufferOffset = 0);
+        void DrawIndirect(RHIBuffer* argumentBuffer, UINT64 argumentBufferOffset = 0);
 
         void Dispatch(UINT threadGroupCountX, UINT threadGroupCountY, UINT threadGroupCountZ);
         void Dispatch1D(UINT64 threadCountX, UINT64 groupSizeX = 64);
         void Dispatch2D(UINT64 threadCountX, UINT64 threadCountY, UINT64 groupSizeX = 8, UINT64 groupSizeY = 8);
         void Dispatch3D(UINT64 threadCountX, UINT64 threadCountY, UINT64 ThreadCountZ, UINT64 groupSizeX, UINT64 groupSizeY, UINT64 groupSizeZ);
-        void DispatchIndirect(RHIResource* argumentBuffer, UINT64 argumentBufferOffset = 0);
+        void DispatchIndirect(RHIBuffer* argumentBuffer, UINT64 argumentBufferOffset = 0);
 
-        void ExecuteIndirect(RHICommandSignature* commandSig, RHIResource* argumentBuffer, UINT64 argumentStartOffset = 0,
-            UINT maxCommands = 1, RHIResource* commandCounterBuffer = nullptr, UINT64 counterOffset = 0);
+        void ExecuteIndirect(RHICommandSignature* commandSig, RHIBuffer* argumentBuffer, UINT64 argumentStartOffset = 0,
+            UINT maxCommands = 1, RHIBuffer* commandCounterBuffer = nullptr, UINT64 counterOffset = 0);
 
         void DispatchMesh(UINT ThreadGroupCountX, UINT ThreadGroupCountY, UINT ThreadGroupCountZ);
 

@@ -11,7 +11,7 @@ namespace RHI
         void WaitForSyncHandle(const RHISyncHandle& SyncHandle);
         
         void Submit();
-    }
+    };
 
 
 }

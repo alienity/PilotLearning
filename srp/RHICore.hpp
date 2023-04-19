@@ -564,6 +564,143 @@ namespace RHI
     void RHIParsePipelineStream(const PipelineStateStreamDesc& Desc, IPipelineParserCallbacks* Callbacks);
 
 
+
+    //-------------------------------------------------------------------------
+
+    enum RHIBufferMode
+    {
+        RHIBufferModeImmutable = 0,
+        RHIBufferModeDynamic   = 1,
+        RHIBufferModeScratch   = 3, // do not use
+        RHIBufferModeCount
+    };
+
+    enum RHIBufferTarget
+    {
+        RHIBufferTargetNone                            = 0,
+        RHIBufferTargetVertex                          = (1 << 0),
+        RHIBufferTargetIndex                           = (1 << 1),
+        RHIBufferReadBack                              = (1 << 2),
+        RHIBufferRandomReadWrite                       = (1 << 3),
+        RHIBufferTargetStructured                      = (1 << 4),
+        RHIBufferTargetRaw                             = (1 << 5),
+        RHIBufferTargetAppend                          = (1 << 6),
+        RHIBufferTargetCounter                         = (1 << 7),
+        RHIBufferTargetIndirectArgs                    = (1 << 8),
+        RHIBufferTargetRayTracingAccelerationStructure = (1 << 10),
+        RHIBufferTargetRayTracingShaderTable           = (1 << 11),
+        RHIBufferTargetComputeNeeded = RHIBufferTargetStructured | RHIBufferTargetRaw | RHIBufferTargetAppend |
+                                       RHIBufferTargetCounter | RHIBufferTargetIndirectArgs |
+                                       RHIBufferTargetRayTracingAccelerationStructure,
+    };
+    DEFINE_RHI_ENUM_FLAG_OPERATORS(RHIBufferTarget);
+
+    struct RHIBufferDesc
+    {
+        bool operator==(const RHIBufferDesc& o) const
+        {
+            return size == o.size && number == o.number && stride == o.stride && target == o.target && mode == o.mode;
+        }
+        bool operator!=(const RHIBufferDesc& o) const { return !(*this == o); }
+
+        UINT            size   = 0;                    // buffer的字节数
+        UINT            number = 0;                    // element的数量
+        UINT32          stride = 0;                    // index/vertex/struct的大小
+        RHIBufferTarget target = RHIBufferTargetNone;  // buffer使用来干啥
+        RHIBufferMode   mode = RHIBufferModeImmutable; // 更新模式，是静态的，动态的，或者是可读回的
+    };
+
+    struct RHIBufferData
+    {
+        BYTE*  m_Data = nullptr;
+        UINT64 m_DataLen = 0;
+    };
+
+    enum RHISurfaceCreateFlags
+    {
+        RHISurfaceCreateFlagNone            = 0,
+        RHISurfaceCreateRenderTarget        = (1 << 0),
+        RHISurfaceCreateDepthStencil        = (1 << 1),
+        RHISurfaceCreateRandomWrite         = (1 << 3),
+        RHISurfaceCreateMipmap              = (1 << 4),
+        RHISurfaceCreateAutoGenMips         = (1 << 5),
+        RHISurfaceCreateSRGB                = (1 << 6),
+        RHISurfaceCreateShadowmap           = (1 << 7),
+        RHISurfaceCreateSampleOnly          = (1 << 8),
+        RHISurfaceRenderTextureAsBackBuffer = (1 << 9),
+        RHISurfaceCreateBindMS              = (1 << 10)
+    };
+    DEFINE_RHI_ENUM_FLAG_OPERATORS(RHISurfaceCreateFlags);
+
+    // 最大允许的mipmap数是12
+    #define MAXMIPLEVELS 12
+
+    enum RHITextureDimension
+    {
+        RHITexDimUnknown = -1, // unknown
+        RHITexDimNone    = 0,  // no texture
+        RHITexDim2D,
+        RHITexDim2DArray,
+        RHITexDim3D,
+        RHITexDimCube,
+        RHITexDimCubeArray,
+        RHITexDimCount
+    };
+
+    struct RHIDepthClearValue
+    {
+        FLOAT Depth;
+        UINT8 Stencil;
+    };
+
+    struct RHIClearValue
+    {
+        RHI_FORMAT Format;
+        union 
+        {
+            FLOAT Color[ 4 ];
+            RHIDepthClearValue DepthStencil;
+        };
+    };
+
+    struct RHIRenderSurfaceBaseDesc
+    {
+        bool operator==(const RHIRenderSurfaceBaseDesc& o) const
+        {
+            BOOL isSame = width == o.width;
+            isSame &= height == o.height;
+            isSame &= depthOrArray == o.depthOrArray;
+            isSame &= samples == o.samples;
+            isSame &= mipLevels == o.mipLevels;
+            isSame &= colorSurface == o.colorSurface;
+            isSame &= backBuffer == o.backBuffer;
+            isSame &= graphicsFormat == o.graphicsFormat;
+            isSame &= clearFormat == o.clearFormat;
+            isSame &= createFlags == o.createFlags;
+            isSame &= dimension == o.dimension;
+            isSame &= clearValue.Format == o.clearValue.Format;
+            isSame &= clearValue.Color[0] == o.clearValue.Color[0];
+            isSame &= clearValue.Color[1] == o.clearValue.Color[1];
+            isSame &= clearValue.Color[2] == o.clearValue.Color[2];
+            isSame &= clearValue.Color[3] == o.clearValue.Color[3];
+            return isSame;
+        }
+        bool operator!=(const RHIRenderSurfaceBaseDesc& o) const { return !(*this == o); }
+
+        UINT64                width;
+        UINT64                height;
+        UINT64                depthOrArray;
+        UINT32                samples;
+        INT32                 mipLevels;
+        BOOL                  colorSurface;
+        BOOL                  backBuffer;
+        RHI_FORMAT            graphicsFormat;
+        RHI_FORMAT            clearFormat;
+        RHISurfaceCreateFlags createFlags;
+        RHITextureDimension   dimension;
+        RHIClearValue         clearValue;
+    };
+
     //-------------------------------------------------------------------------
 
     typedef 
@@ -721,6 +858,57 @@ namespace RHI
             RHI_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR	= 0x95,
             RHI_FILTER_COMPARISON_ANISOTROPIC	= 0xd5
         } 	RHI_FILTER;
+
+    typedef 
+    enum RHI_TEXTURE_ADDRESS_MODE
+        {
+            RHI_TEXTURE_ADDRESS_MODE_WRAP	= 1,
+            RHI_TEXTURE_ADDRESS_MODE_MIRROR	= 2,
+            RHI_TEXTURE_ADDRESS_MODE_CLAMP	= 3,
+            RHI_TEXTURE_ADDRESS_MODE_BORDER	= 4,
+            RHI_TEXTURE_ADDRESS_MODE_MIRROR_ONCE	= 5
+        } 	RHI_TEXTURE_ADDRESS_MODE;
+
+    typedef struct RHI_SAMPLER_DESC
+        {
+        RHI_FILTER Filter;
+        RHI_TEXTURE_ADDRESS_MODE AddressU;
+        RHI_TEXTURE_ADDRESS_MODE AddressV;
+        RHI_TEXTURE_ADDRESS_MODE AddressW;
+        FLOAT MipLODBias;
+        UINT MaxAnisotropy;
+        RHI_COMPARISON_FUNC ComparisonFunc;
+        FLOAT BorderColor[ 4 ];
+        FLOAT MinLOD;
+        FLOAT MaxLOD;
+        } 	RHI_SAMPLER_DESC;
+
+    typedef 
+    enum RHI_SAMPLER_FLAGS
+        {
+            RHI_SAMPLER_FLAG_NONE	= 0,
+            RHI_SAMPLER_FLAG_UINT_BORDER_COLOR	= 0x1
+        } 	RHI_SAMPLER_FLAGS;
+
+    DEFINE_RHI_ENUM_FLAG_OPERATORS( RHI_SAMPLER_FLAGS );
+    typedef struct RHI_SAMPLER_DESC2
+        {
+        RHI_FILTER Filter;
+        RHI_TEXTURE_ADDRESS_MODE AddressU;
+        RHI_TEXTURE_ADDRESS_MODE AddressV;
+        RHI_TEXTURE_ADDRESS_MODE AddressW;
+        FLOAT MipLODBias;
+        UINT MaxAnisotropy;
+        RHI_COMPARISON_FUNC ComparisonFunc;
+        union 
+            {
+            FLOAT FloatBorderColor[ 4 ];
+            UINT UintBorderColor[ 4 ];
+            } 	;
+        FLOAT MinLOD;
+        FLOAT MaxLOD;
+        RHI_SAMPLER_FLAGS Flags;
+        } 	RHI_SAMPLER_DESC2;
 
     typedef 
     enum RHI_BUFFER_UAV_FLAGS
@@ -967,10 +1155,236 @@ namespace RHI
             } 	;
         } 	RHI_DEPTH_STENCIL_VIEW_DESC;
 
+    //-------------------------------------------------------------------------------------------------------
+    enum RHI_INDIRECT_ARGUMENT_TYPE
+        {
+            RHI_INDIRECT_ARGUMENT_TYPE_DRAW	= 0,
+            RHI_INDIRECT_ARGUMENT_TYPE_DRAW_INDEXED	= ( RHI_INDIRECT_ARGUMENT_TYPE_DRAW + 1 ) ,
+            RHI_INDIRECT_ARGUMENT_TYPE_DISPATCH	= ( RHI_INDIRECT_ARGUMENT_TYPE_DRAW_INDEXED + 1 ) ,
+            RHI_INDIRECT_ARGUMENT_TYPE_VERTEX_BUFFER_VIEW	= ( RHI_INDIRECT_ARGUMENT_TYPE_DISPATCH + 1 ) ,
+            RHI_INDIRECT_ARGUMENT_TYPE_INDEX_BUFFER_VIEW	= ( RHI_INDIRECT_ARGUMENT_TYPE_VERTEX_BUFFER_VIEW + 1 ) ,
+            RHI_INDIRECT_ARGUMENT_TYPE_CONSTANT	= ( RHI_INDIRECT_ARGUMENT_TYPE_INDEX_BUFFER_VIEW + 1 ) ,
+            RHI_INDIRECT_ARGUMENT_TYPE_CONSTANT_BUFFER_VIEW	= ( RHI_INDIRECT_ARGUMENT_TYPE_CONSTANT + 1 ) ,
+            RHI_INDIRECT_ARGUMENT_TYPE_SHADER_RESOURCE_VIEW	= ( RHI_INDIRECT_ARGUMENT_TYPE_CONSTANT_BUFFER_VIEW + 1 ) ,
+            RHI_INDIRECT_ARGUMENT_TYPE_UNORDERED_ACCESS_VIEW	= ( RHI_INDIRECT_ARGUMENT_TYPE_SHADER_RESOURCE_VIEW + 1 ) ,
+            RHI_INDIRECT_ARGUMENT_TYPE_DISPATCH_RAYS	= ( RHI_INDIRECT_ARGUMENT_TYPE_UNORDERED_ACCESS_VIEW + 1 ) ,
+            RHI_INDIRECT_ARGUMENT_TYPE_DISPATCH_MESH	= ( RHI_INDIRECT_ARGUMENT_TYPE_DISPATCH_RAYS + 1 ) 
+        };
 
+    typedef struct RHI_INDIRECT_ARGUMENT_DESC
+        {
+        RHI_INDIRECT_ARGUMENT_TYPE Type;
+        union 
+            {
+            struct 
+                {
+                UINT Slot;
+                } 	VertexBuffer;
+            struct 
+                {
+                UINT RootParameterIndex;
+                UINT DestOffsetIn32BitValues;
+                UINT Num32BitValuesToSet;
+                } 	Constant;
+            struct 
+                {
+                UINT RootParameterIndex;
+                } 	ConstantBufferView;
+            struct 
+                {
+                UINT RootParameterIndex;
+                } 	ShaderResourceView;
+            struct 
+                {
+                UINT RootParameterIndex;
+                } 	UnorderedAccessView;
+            } 	;
+        } 	RHI_INDIRECT_ARGUMENT_DESC;
 
+    typedef struct RHI_COMMAND_SIGNATURE_DESC
+        {
+        UINT ByteStride;
+        UINT NumArgumentDescs;
+        const RHI_INDIRECT_ARGUMENT_DESC *pArgumentDescs;
+        UINT NodeMask;
+        } 	RHI_COMMAND_SIGNATURE_DESC;
 
+    //----------------------------------------------------------------------------------------------
 
+    typedef 
+    enum RHI_DESCRIPTOR_HEAP_TYPE
+        {
+            RHI_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV	= 0,
+            RHI_DESCRIPTOR_HEAP_TYPE_SAMPLER	= ( RHI_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV + 1 ) ,
+            RHI_DESCRIPTOR_HEAP_TYPE_RTV	= ( RHI_DESCRIPTOR_HEAP_TYPE_SAMPLER + 1 ) ,
+            RHI_DESCRIPTOR_HEAP_TYPE_DSV	= ( RHI_DESCRIPTOR_HEAP_TYPE_RTV + 1 ) ,
+            RHI_DESCRIPTOR_HEAP_TYPE_NUM_TYPES	= ( RHI_DESCRIPTOR_HEAP_TYPE_DSV + 1 ) 
+        } 	RHI_DESCRIPTOR_HEAP_TYPE;
+
+    typedef 
+    enum RHI_DESCRIPTOR_HEAP_FLAGS
+        {
+            RHI_DESCRIPTOR_HEAP_FLAG_NONE	= 0,
+            RHI_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE	= 0x1
+        } 	RHI_DESCRIPTOR_HEAP_FLAGS;
+
+    DEFINE_RHI_ENUM_FLAG_OPERATORS( RHI_DESCRIPTOR_HEAP_FLAGS );
+    typedef struct RHI_DESCRIPTOR_HEAP_DESC
+        {
+        RHI_DESCRIPTOR_HEAP_TYPE Type;
+        UINT NumDescriptors;
+        RHI_DESCRIPTOR_HEAP_FLAGS Flags;
+        UINT NodeMask;
+        } 	RHI_DESCRIPTOR_HEAP_DESC;
+
+    typedef 
+    enum RHI_DESCRIPTOR_RANGE_TYPE
+        {
+            RHI_DESCRIPTOR_RANGE_TYPE_SRV	= 0,
+            RHI_DESCRIPTOR_RANGE_TYPE_UAV	= ( RHI_DESCRIPTOR_RANGE_TYPE_SRV + 1 ) ,
+            RHI_DESCRIPTOR_RANGE_TYPE_CBV	= ( RHI_DESCRIPTOR_RANGE_TYPE_UAV + 1 ) ,
+            RHI_DESCRIPTOR_RANGE_TYPE_SAMPLER	= ( RHI_DESCRIPTOR_RANGE_TYPE_CBV + 1 ) 
+        } 	RHI_DESCRIPTOR_RANGE_TYPE;
+
+    typedef struct RHI_DESCRIPTOR_RANGE
+        {
+        RHI_DESCRIPTOR_RANGE_TYPE RangeType;
+        UINT NumDescriptors;
+        UINT BaseShaderRegister;
+        UINT RegisterSpace;
+        UINT OffsetInDescriptorsFromTableStart;
+        } 	RHI_DESCRIPTOR_RANGE;
+
+    typedef struct RHI_ROOT_DESCRIPTOR_TABLE
+        {
+        UINT NumDescriptorRanges;
+        const RHI_DESCRIPTOR_RANGE *pDescriptorRanges;
+        } 	RHI_ROOT_DESCRIPTOR_TABLE;
+
+    typedef struct RHI_ROOT_CONSTANTS
+        {
+        UINT ShaderRegister;
+        UINT RegisterSpace;
+        UINT Num32BitValues;
+        } 	RHI_ROOT_CONSTANTS;
+
+    typedef struct RHI_ROOT_DESCRIPTOR
+        {
+        UINT ShaderRegister;
+        UINT RegisterSpace;
+        } 	RHI_ROOT_DESCRIPTOR;
+
+    typedef 
+    enum RHI_SHADER_VISIBILITY
+        {
+            RHI_SHADER_VISIBILITY_ALL	= 0,
+            RHI_SHADER_VISIBILITY_VERTEX	= 1,
+            RHI_SHADER_VISIBILITY_HULL	= 2,
+            RHI_SHADER_VISIBILITY_DOMAIN	= 3,
+            RHI_SHADER_VISIBILITY_GEOMETRY	= 4,
+            RHI_SHADER_VISIBILITY_PIXEL	= 5,
+            RHI_SHADER_VISIBILITY_AMPLIFICATION	= 6,
+            RHI_SHADER_VISIBILITY_MESH	= 7
+        } 	RHI_SHADER_VISIBILITY;
+
+    typedef 
+    enum RHI_ROOT_PARAMETER_TYPE
+        {
+            RHI_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE	= 0,
+            RHI_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS	= ( RHI_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE + 1 ) ,
+            RHI_ROOT_PARAMETER_TYPE_CBV	= ( RHI_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS + 1 ) ,
+            RHI_ROOT_PARAMETER_TYPE_SRV	= ( RHI_ROOT_PARAMETER_TYPE_CBV + 1 ) ,
+            RHI_ROOT_PARAMETER_TYPE_UAV	= ( RHI_ROOT_PARAMETER_TYPE_SRV + 1 ) 
+        } 	RHI_ROOT_PARAMETER_TYPE;
+
+    typedef struct RHI_ROOT_PARAMETER
+        {
+        RHI_ROOT_PARAMETER_TYPE ParameterType;
+        union 
+            {
+            RHI_ROOT_DESCRIPTOR_TABLE DescriptorTable;
+            RHI_ROOT_CONSTANTS Constants;
+            RHI_ROOT_DESCRIPTOR Descriptor;
+            } 	;
+        RHI_SHADER_VISIBILITY ShaderVisibility;
+        } 	RHI_ROOT_PARAMETER;
+
+    typedef 
+    enum RHI_ROOT_SIGNATURE_FLAGS
+        {
+            RHI_ROOT_SIGNATURE_FLAG_NONE	= 0,
+            RHI_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT	= 0x1,
+            RHI_ROOT_SIGNATURE_FLAG_DENY_VERTEX_SHADER_ROOT_ACCESS	= 0x2,
+            RHI_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS	= 0x4,
+            RHI_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS	= 0x8,
+            RHI_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS	= 0x10,
+            RHI_ROOT_SIGNATURE_FLAG_DENY_PIXEL_SHADER_ROOT_ACCESS	= 0x20,
+            RHI_ROOT_SIGNATURE_FLAG_ALLOW_STREAM_OUTPUT	= 0x40,
+            RHI_ROOT_SIGNATURE_FLAG_LOCAL_ROOT_SIGNATURE	= 0x80,
+            RHI_ROOT_SIGNATURE_FLAG_DENY_AMPLIFICATION_SHADER_ROOT_ACCESS	= 0x100,
+            RHI_ROOT_SIGNATURE_FLAG_DENY_MESH_SHADER_ROOT_ACCESS	= 0x200,
+            RHI_ROOT_SIGNATURE_FLAG_CBV_SRV_UAV_HEAP_DIRECTLY_INDEXED	= 0x400,
+            RHI_ROOT_SIGNATURE_FLAG_SAMPLER_HEAP_DIRECTLY_INDEXED	= 0x800
+        } 	RHI_ROOT_SIGNATURE_FLAGS;
+
+    DEFINE_RHI_ENUM_FLAG_OPERATORS( RHI_ROOT_SIGNATURE_FLAGS );
+    typedef 
+    enum RHI_STATIC_BORDER_COLOR
+        {
+            RHI_STATIC_BORDER_COLOR_TRANSPARENT_BLACK	= 0,
+            RHI_STATIC_BORDER_COLOR_OPAQUE_BLACK	= ( RHI_STATIC_BORDER_COLOR_TRANSPARENT_BLACK + 1 ) ,
+            RHI_STATIC_BORDER_COLOR_OPAQUE_WHITE	= ( RHI_STATIC_BORDER_COLOR_OPAQUE_BLACK + 1 ) ,
+            RHI_STATIC_BORDER_COLOR_OPAQUE_BLACK_UINT	= ( RHI_STATIC_BORDER_COLOR_OPAQUE_WHITE + 1 ) ,
+            RHI_STATIC_BORDER_COLOR_OPAQUE_WHITE_UINT	= ( RHI_STATIC_BORDER_COLOR_OPAQUE_BLACK_UINT + 1 ) 
+        } 	RHI_STATIC_BORDER_COLOR;
+
+    typedef struct RHI_STATIC_SAMPLER_DESC
+        {
+        RHI_FILTER Filter;
+        RHI_TEXTURE_ADDRESS_MODE AddressU;
+        RHI_TEXTURE_ADDRESS_MODE AddressV;
+        RHI_TEXTURE_ADDRESS_MODE AddressW;
+        FLOAT MipLODBias;
+        UINT MaxAnisotropy;
+        RHI_COMPARISON_FUNC ComparisonFunc;
+        RHI_STATIC_BORDER_COLOR BorderColor;
+        FLOAT MinLOD;
+        FLOAT MaxLOD;
+        UINT ShaderRegister;
+        UINT RegisterSpace;
+        RHI_SHADER_VISIBILITY ShaderVisibility;
+        } 	RHI_STATIC_SAMPLER_DESC;
+
+    typedef struct RHI_ROOT_SIGNATURE_DESC
+        {
+        UINT NumParameters;
+        const RHI_ROOT_PARAMETER *pParameters;
+        UINT NumStaticSamplers;
+        const RHI_STATIC_SAMPLER_DESC *pStaticSamplers;
+        RHI_ROOT_SIGNATURE_FLAGS Flags;
+        } 	RHI_ROOT_SIGNATURE_DESC;
+
+    typedef 
+    enum RHI_DESCRIPTOR_RANGE_FLAGS
+        {
+            RHI_DESCRIPTOR_RANGE_FLAG_NONE	= 0,
+            RHI_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE	= 0x1,
+            RHI_DESCRIPTOR_RANGE_FLAG_DATA_VOLATILE	= 0x2,
+            RHI_DESCRIPTOR_RANGE_FLAG_DATA_STATIC_WHILE_SET_AT_EXECUTE	= 0x4,
+            RHI_DESCRIPTOR_RANGE_FLAG_DATA_STATIC	= 0x8,
+            RHI_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_STATIC_KEEPING_BUFFER_BOUNDS_CHECKS	= 0x10000
+        } 	RHI_DESCRIPTOR_RANGE_FLAGS;
+
+    DEFINE_RHI_ENUM_FLAG_OPERATORS( RHI_DESCRIPTOR_RANGE_FLAGS );
+    typedef struct RHI_DESCRIPTOR_RANGE1
+        {
+        RHI_DESCRIPTOR_RANGE_TYPE RangeType;
+        UINT NumDescriptors;
+        UINT BaseShaderRegister;
+        UINT RegisterSpace;
+        RHI_DESCRIPTOR_RANGE_FLAGS Flags;
+        UINT OffsetInDescriptorsFromTableStart;
+        } 	RHI_DESCRIPTOR_RANGE1;
 
 
 
