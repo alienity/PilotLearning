@@ -23,24 +23,6 @@ namespace RHI
     class D3D12GraphicsContext;
     class D3D12ComputeContext;
 
-    struct DWParam
-    {
-        DWParam(FLOAT f) : Float(f) {}
-        DWParam(UINT u) : Uint(u) {}
-        DWParam(INT i) : Int(i) {}
-
-        void operator=(FLOAT f) { Float = f; }
-        void operator=(UINT u) { Uint = u; }
-        void operator=(INT i) { Int = i; }
-
-        union
-        {
-            FLOAT Float;
-            UINT  Uint;
-            INT   Int;
-        };
-    };
-
     class D3D12CommandAllocatorPool : public D3D12LinkedDeviceChild
     {
     public:
@@ -122,7 +104,7 @@ namespace RHI
         void SetPipelineState(D3D12PipelineState* PipelineState);
         void SetPipelineState(D3D12RaytracingPipelineState* RaytracingPipelineState);
 
-        void SetPredication(D3D12Resource* Buffer, UINT64 BufferOffset, D3D12_PREDICATION_OP Op);
+        void SetPredication(D3D12Buffer* Buffer, UINT64 BufferOffset, D3D12_PREDICATION_OP Op);
 
         void DispatchRays(const D3D12_DISPATCH_RAYS_DESC* pDesc);
 
@@ -244,9 +226,9 @@ namespace RHI
         void DrawIndexed(UINT IndexCount, UINT StartIndexLocation = 0, INT BaseVertexLocation = 0);
         void DrawInstanced(UINT VertexCount, UINT InstanceCount, UINT StartVertexLocation, UINT StartInstanceLocation);
         void DrawIndexedInstanced(UINT IndexCount, UINT InstanceCount, UINT StartIndexLocation, INT  BaseVertexLocation, UINT StartInstanceLocation);
-        void DrawIndirect(D3D12Resource* ArgumentBuffer, UINT64 ArgumentBufferOffset = 0);
-        void ExecuteIndirect(D3D12CommandSignature* CommandSig, D3D12Resource* ArgumentBuffer, UINT64 ArgumentStartOffset = 0,
-            UINT32 MaxCommands = 1, D3D12Resource* CommandCounterBuffer = nullptr, UINT64 CounterOffset = 0);
+        void DrawIndirect(D3D12Buffer* ArgumentBuffer, UINT64 ArgumentBufferOffset = 0);
+        void ExecuteIndirect(D3D12CommandSignature* CommandSig, D3D12Buffer* ArgumentBuffer, UINT64 ArgumentStartOffset = 0,
+            UINT32 MaxCommands = 1, D3D12Buffer* CommandCounterBuffer = nullptr, UINT64 CounterOffset = 0);
 
     private:
     };
@@ -286,9 +268,9 @@ namespace RHI
         void Dispatch1D(UINT64 ThreadCountX, UINT64 GroupSizeX = 64);
         void Dispatch2D(UINT64 ThreadCountX, UINT64 ThreadCountY, UINT64 GroupSizeX = 8, UINT64 GroupSizeY = 8);
         void Dispatch3D(UINT64 ThreadCountX, UINT64 ThreadCountY, UINT64 ThreadCountZ, UINT64 GroupSizeX, UINT64 GroupSizeY, UINT64 GroupSizeZ);
-        void DispatchIndirect(D3D12Resource* ArgumentBuffer, UINT64 ArgumentBufferOffset = 0);
-        void ExecuteIndirect(D3D12CommandSignature* CommandSig, D3D12Resource* ArgumentBuffer, UINT64 ArgumentStartOffset = 0,
-            UINT32 MaxCommands = 1, D3D12Resource* CommandCounterBuffer = nullptr, UINT64 CounterOffset = 0);
+        void DispatchIndirect(D3D12Buffer* ArgumentBuffer, UINT64 ArgumentBufferOffset = 0);
+        void ExecuteIndirect(D3D12CommandSignature* CommandSig, D3D12Buffer* ArgumentBuffer, UINT64 ArgumentStartOffset = 0,
+            UINT32 MaxCommands = 1, D3D12Buffer* CommandCounterBuffer = nullptr, UINT64 CounterOffset = 0);
 
     private:
         template<typename T>

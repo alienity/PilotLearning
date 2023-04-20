@@ -261,7 +261,7 @@ namespace RHI
         }
     }
 
-    void D3D12CommandContext::SetPredication(D3D12Resource* Buffer, UINT64 BufferOffset, D3D12_PREDICATION_OP Op)
+    void D3D12CommandContext::SetPredication(D3D12Buffer* Buffer, UINT64 BufferOffset, D3D12_PREDICATION_OP Op)
     {
         m_CommandListHandle->SetPredication(Buffer->GetResource(), BufferOffset, Op);
     }
@@ -761,16 +761,16 @@ namespace RHI
         m_CommandListHandle->DrawIndexedInstanced(IndexCountPerInstance, InstanceCount, StartIndexLocation, BaseVertexLocation, StartInstanceLocation);
     }
 
-    void D3D12GraphicsContext::DrawIndirect(D3D12Resource* ArgumentBuffer, UINT64 ArgumentBufferOffset)
+    void D3D12GraphicsContext::DrawIndirect(D3D12Buffer* ArgumentBuffer, UINT64 ArgumentBufferOffset)
     {
         ExecuteIndirect(RHI::pDrawIndirectCommandSignature, ArgumentBuffer, ArgumentBufferOffset);
     }
 
     void D3D12GraphicsContext::ExecuteIndirect(D3D12CommandSignature* CommandSig,
-                                               D3D12Resource*         ArgumentBuffer,
+                                               D3D12Buffer*           ArgumentBuffer,
                                                UINT64                 ArgumentStartOffset,
                                                UINT32                 MaxCommands,
-                                               D3D12Resource*         CommandCounterBuffer,
+                                               D3D12Buffer*           CommandCounterBuffer,
                                                UINT64                 CounterOffset)
     {
         FlushResourceBarriers();
@@ -956,16 +956,16 @@ namespace RHI
         Dispatch(ThreadGroupCountX, ThreadGroupCountY, ThreadGroupCountZ);
     }
 
-    void D3D12ComputeContext::DispatchIndirect(D3D12Resource* ArgumentBuffer, UINT64 ArgumentBufferOffset)
+    void D3D12ComputeContext::DispatchIndirect(D3D12Buffer* ArgumentBuffer, UINT64 ArgumentBufferOffset)
     {
         ExecuteIndirect(RHI::pDispatchIndirectCommandSignature, ArgumentBuffer, ArgumentBufferOffset);
     }
 
     void D3D12ComputeContext::ExecuteIndirect(D3D12CommandSignature* CommandSig,
-                                              D3D12Resource*         ArgumentBuffer,
+                                              D3D12Buffer*           ArgumentBuffer,
                                               UINT64                 ArgumentStartOffset,
                                               UINT32                 MaxCommands,
-                                              D3D12Resource*         CommandCounterBuffer,
+                                              D3D12Buffer*           CommandCounterBuffer,
                                               UINT64                 CounterOffset)
     {
         FlushResourceBarriers();

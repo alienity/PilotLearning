@@ -672,7 +672,24 @@ namespace D3D12RHIUtils
 
 namespace RHI
 {
-    typedef UINT64 RHIResourceID;
+
+    struct DWParam
+    {
+        DWParam(FLOAT f) : Float(f) {}
+        DWParam(UINT u) : Uint(u) {}
+        DWParam(INT i) : Int(i) {}
+
+        void operator=(FLOAT f) { Float = f; }
+        void operator=(UINT u) { Uint = u; }
+        void operator=(INT i) { Int = i; }
+
+        union
+        {
+            FLOAT Float;
+            UINT  Uint;
+            INT   Int;
+        };
+    };
     
     enum RHIIndexFormat
     {
