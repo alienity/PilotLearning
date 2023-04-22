@@ -11,6 +11,8 @@
 
 #include <glm/glm.hpp>
 
+#define ConstantBufferStruct struct alignas(D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT)
+
 // datas map to hlsl
 namespace HLSL
 {
@@ -78,7 +80,7 @@ namespace HLSL
         float     _padding_camera_position;
     };
 
-    struct MeshPerframeStorageBufferObject
+    ConstantBufferStruct MeshPerframeStorageBufferObject
     {
         CameraInstance        cameraInstance;
         glm::vec3             ambient_light;

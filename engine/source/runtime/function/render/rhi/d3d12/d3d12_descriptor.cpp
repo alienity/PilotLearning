@@ -436,17 +436,17 @@ namespace RHI
     D3D12RenderTargetView::D3D12RenderTargetView(D3D12LinkedDevice*                   Device,
                                                  const D3D12_RENDER_TARGET_VIEW_DESC& Desc,
                                                  D3D12Resource*                       Resource) :
-        D3D12View(Device, Desc, Resource, CViewSubresourceSubset::FromView(Desc, Resource))
+        D3D12View(Device, Desc, Resource, CViewSubresourceSubset::FromView(Desc, Resource), TRUE)
     {
         RecreateView();
     }
 
-    D3D12RenderTargetView::D3D12RenderTargetView(D3D12LinkedDevice*  Device,
-                                                 D3D12Texture*       Texture,
-                                                 bool                sRGB /*= false*/,
-                                                 std::optional<UINT> OptArraySlice /*= std::nullopt*/,
-                                                 std::optional<UINT> OptMipSlice /*= std::nullopt*/,
-                                                 std::optional<UINT> OptArraySize /*= std::nullopt*/) :
+    D3D12RenderTargetView::D3D12RenderTargetView(D3D12LinkedDevice* Device,
+                                                 D3D12Texture*      Texture,
+                                                 BOOL               sRGB,
+                                                 INT                OptArraySlice,
+                                                 INT                OptMipSlice,
+                                                 INT                OptArraySize) :
         D3D12RenderTargetView(Device, GetDesc(Texture, sRGB, OptArraySlice, OptMipSlice, OptArraySize), Texture)
     {}
 
@@ -460,20 +460,17 @@ namespace RHI
         Descriptor.CreateView(Desc, D3D12Resource);
     }
 
-    D3D12_RENDER_TARGET_VIEW_DESC D3D12RenderTargetView::GetDesc(D3D12Texture*       Texture,
-                                                                 bool                sRGB,
-                                                                 std::optional<UINT> OptArraySlice,
-                                                                 std::optional<UINT> OptMipSlice,
-                                                                 std::optional<UINT> OptArraySize)
+    D3D12_RENDER_TARGET_VIEW_DESC
+    D3D12RenderTargetView::GetDesc(D3D12Texture* Texture, bool sRGB, INT OptArraySlice, INT OptMipSlice, INT OptArraySize)
     {
         D3D12_RESOURCE_DESC Desc = Texture->GetDesc();
 
-        UINT ArraySlice = OptArraySlice.value_or(0);
-        UINT MipSlice   = OptMipSlice.value_or(0);
-        UINT ArraySize  = OptArraySize.value_or(Desc.DepthOrArraySize);
+        UINT ArraySlice = OptArraySlice == -1 ? 0 : OptArraySlice;
+        UINT MipSlice   = OptMipSlice == -1 ? 0 : OptMipSlice;
+        UINT ArraySize  = OptArraySize == -1 ? Desc.DepthOrArraySize : OptArraySize;
 
         D3D12_RENDER_TARGET_VIEW_DESC ViewDesc = {};
-        ViewDesc.Format                        = sRGB ? D3D12RHIUtils::MakeSRGB(Desc.Format) : Desc.Format;
+        ViewDesc.Format = sRGB ? D3D12RHIUtils::MakeSRGB(Desc.Format) : Desc.Format;
 
         // TODO: Add 1D/3D support
         switch (Desc.Dimension)
@@ -521,16 +518,16 @@ namespace RHI
     D3D12DepthStencilView::D3D12DepthStencilView(D3D12LinkedDevice*                   Device,
                                                  const D3D12_DEPTH_STENCIL_VIEW_DESC& Desc,
                                                  D3D12Resource*                       Resource) :
-        D3D12View(Device, Desc, Resource, CViewSubresourceSubset::FromView(Desc, Resource))
+        D3D12View(Device, Desc, Resource, CViewSubresourceSubset::FromView(Desc, Resource), TRUE)
     {
         RecreateView();
     }
 
-    D3D12DepthStencilView::D3D12DepthStencilView(D3D12LinkedDevice*  Device,
-                                                 D3D12Texture*       Texture,
-                                                 std::optional<UINT> OptArraySlice /*= std::nullopt*/,
-                                                 std::optional<UINT> OptMipSlice /*= std::nullopt*/,
-                                                 std::optional<UINT> OptArraySize /*= std::nullopt*/) :
+    D3D12DepthStencilView::D3D12DepthStencilView(D3D12LinkedDevice* Device,
+                                                 D3D12Texture*      Texture,
+                                                 INT                OptArraySlice,
+                                                 INT                OptMipSlice,
+                                                 INT                OptArraySize) :
         D3D12DepthStencilView(Device, GetDesc(Texture, OptArraySlice, OptMipSlice, OptArraySize), Texture)
     {}
 
@@ -544,16 +541,14 @@ namespace RHI
         Descriptor.CreateView(Desc, D3D12Resource);
     }
 
-    D3D12_DEPTH_STENCIL_VIEW_DESC D3D12DepthStencilView::GetDesc(D3D12Texture*       Texture,
-                                                                 std::optional<UINT> OptArraySlice /*= std::nullopt*/,
-                                                                 std::optional<UINT> OptMipSlice /*= std::nullopt*/,
-                                                                 std::optional<UINT> OptArraySize /*= std::nullopt*/)
+    D3D12_DEPTH_STENCIL_VIEW_DESC
+    D3D12DepthStencilView::GetDesc(D3D12Texture* Texture, INT OptArraySlice, INT OptMipSlice, INT OptArraySize)
     {
         D3D12_RESOURCE_DESC Desc = Texture->GetDesc();
 
-        UINT ArraySlice = OptArraySlice.value_or(0);
-        UINT MipSlice   = OptMipSlice.value_or(0);
-        UINT ArraySize  = OptArraySize.value_or(Desc.DepthOrArraySize);
+        UINT ArraySlice = OptArraySlice == -1 ? 0 : OptArraySlice;
+        UINT MipSlice   = OptMipSlice == -1 ? 0 : OptMipSlice;
+        UINT ArraySize  = OptArraySize == -1 ? Desc.DepthOrArraySize : OptArraySize;
 
         D3D12_DEPTH_STENCIL_VIEW_DESC ViewDesc = {};
         ViewDesc.Format                        = [](DXGI_FORMAT Format) {
@@ -611,397 +606,14 @@ namespace RHI
         return ViewDesc;
     }
 
-    D3D12NoneVisualCBV::D3D12NoneVisualCBV(D3D12LinkedDevice* Device, const D3D12_CONSTANT_BUFFER_VIEW_DESC& Desc, D3D12Resource* Resource) : 
-        D3D12View(Device, Desc, Resource, CViewSubresourceSubset())
+    D3D12ConstantBufferView::D3D12ConstantBufferView(D3D12LinkedDevice* Device, const D3D12_CONSTANT_BUFFER_VIEW_DESC& Desc, D3D12Resource* Resource, BOOL IsNonShaderVisible) :
+        D3D12View(Device, Desc, Resource, CViewSubresourceSubset(), IsNonShaderVisible)
     {
         RecreateView();
     }
 
-    D3D12NoneVisualCBV::D3D12NoneVisualCBV(D3D12LinkedDevice* Device, D3D12Buffer* Buffer, UINT32 Offset, UINT32 Size) :
-        D3D12NoneVisualCBV(Device, GetDesc(Buffer, Offset, Size), Buffer)
-    {}
-
-    void D3D12NoneVisualCBV::RecreateView()
-    {
-        Descriptor.CreateView(Desc);
-    }
-
-    D3D12_CONSTANT_BUFFER_VIEW_DESC D3D12NoneVisualCBV::GetDesc(D3D12Buffer* Buffer, UINT Offset, UINT Size)
-    {
-        D3D12_CONSTANT_BUFFER_VIEW_DESC CBVDesc;
-        CBVDesc.BufferLocation = Buffer->GetGpuVirtualAddress() + Offset;
-        CBVDesc.SizeInBytes    = Size;
-        return CBVDesc;
-    }
-
-    D3D12NoneVisualSRV::D3D12NoneVisualSRV(D3D12LinkedDevice*                     Device,
-                                           const D3D12_SHADER_RESOURCE_VIEW_DESC& Desc,
-                                           D3D12Resource*                         Resource) :
-        D3D12View(Device, Desc, Resource, CViewSubresourceSubset::FromView(Desc, Resource))
-    {
-        RecreateView();
-    }
-
-    D3D12NoneVisualSRV::D3D12NoneVisualSRV(D3D12LinkedDevice* Device, D3D12ASBuffer* ASBuffer) :
-        D3D12NoneVisualSRV(Device, GetDesc(ASBuffer), ASBuffer)
-    {}
-
-    D3D12NoneVisualSRV::D3D12NoneVisualSRV(D3D12LinkedDevice* Device,
-                                           D3D12Buffer*       Buffer,
-                                           bool               Raw,
-                                           UINT               FirstElement,
-                                           UINT               NumElements) :
-        D3D12NoneVisualSRV(Device, GetDesc(Buffer, Raw, FirstElement, NumElements), Buffer)
-    {}
-
-    D3D12NoneVisualSRV::D3D12NoneVisualSRV(D3D12LinkedDevice* Device,
-                                           D3D12Buffer*       Buffer,
-                                           UINT               FirstElement,
-                                           UINT               NumElements) :
-        D3D12NoneVisualSRV(Device, GetDesc(Buffer, false, FirstElement, NumElements), Buffer)
-    {}
-
-    D3D12NoneVisualSRV::D3D12NoneVisualSRV(D3D12LinkedDevice* Device, D3D12Buffer* Buffer) :
-        D3D12NoneVisualSRV(Device, GetDesc(Buffer, true, 0, 0), Buffer)
-    {}
-
-    D3D12NoneVisualSRV::D3D12NoneVisualSRV(D3D12LinkedDevice*  Device,
-                                           D3D12Texture*       Texture,
-                                           bool                sRGB,
-                                           std::optional<UINT> OptMostDetailedMip,
-                                           std::optional<UINT> OptMipLevels) :
-        D3D12NoneVisualSRV(Device, GetDesc(Texture, sRGB, OptMostDetailedMip, OptMipLevels), Texture)
-    {}
-
-    void D3D12NoneVisualSRV::RecreateView()
-    {
-        ID3D12Resource* D3D12Resource = nullptr;
-        if (Resource)
-        {
-            D3D12Resource = Resource->GetResource();
-            if (Desc.ViewDimension == D3D12_SRV_DIMENSION_RAYTRACING_ACCELERATION_STRUCTURE)
-            {
-                D3D12Resource = nullptr;
-            }
-        }
-        Descriptor.CreateView(Desc, D3D12Resource);
-    }
-
-    D3D12_SHADER_RESOURCE_VIEW_DESC D3D12NoneVisualSRV::GetDesc(D3D12ASBuffer* ASBuffer)
-    {
-        // When creating descriptor heap based acceleration structure SRVs, the
-        // resource parameter must be NULL, as the memory location comes as a GPUVA
-        // from the view description (D3D12_RAYTRACING_ACCELERATION_STRUCTURE_SRV)
-        // shown below. E.g. CreateShaderResourceView(NULL,pViewDesc).
-
-        D3D12_SHADER_RESOURCE_VIEW_DESC ViewDesc          = {};
-        ViewDesc.Format                                   = DXGI_FORMAT_UNKNOWN;
-        ViewDesc.Shader4ComponentMapping                  = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-        ViewDesc.ViewDimension                            = D3D12_SRV_DIMENSION_RAYTRACING_ACCELERATION_STRUCTURE;
-        ViewDesc.RaytracingAccelerationStructure.Location = NULL;
-        if (ASBuffer)
-        {
-            ViewDesc.RaytracingAccelerationStructure.Location = ASBuffer->GetGpuVirtualAddress();
-        }
-        return ViewDesc;
-    }
-
-    D3D12_SHADER_RESOURCE_VIEW_DESC
-    D3D12NoneVisualSRV::GetDesc(D3D12Buffer* Buffer, bool Raw, UINT FirstElement, UINT NumElements)
-    {
-        D3D12_SHADER_RESOURCE_VIEW_DESC ViewDesc = {};
-        if (!Raw)
-        {
-            ViewDesc.ViewDimension              = D3D12_SRV_DIMENSION_BUFFER;
-            ViewDesc.Format                     = DXGI_FORMAT_UNKNOWN;
-            ViewDesc.Shader4ComponentMapping    = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-            ViewDesc.Buffer.FirstElement        = FirstElement;
-            ViewDesc.Buffer.NumElements         = NumElements;
-            ViewDesc.Buffer.StructureByteStride = Buffer->GetStride();
-            ViewDesc.Buffer.Flags               = D3D12_BUFFER_SRV_FLAG_NONE;
-        }
-        else
-        {
-            uint32_t m_BufferSize = Buffer->GetSizeInBytes();
-
-            ViewDesc.ViewDimension              = D3D12_SRV_DIMENSION_BUFFER;
-            ViewDesc.Format                     = DXGI_FORMAT_R32_TYPELESS;
-            ViewDesc.Shader4ComponentMapping    = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-            ViewDesc.Buffer.FirstElement        = 0;
-            ViewDesc.Buffer.NumElements         = (UINT)m_BufferSize / 4;
-            ViewDesc.Buffer.StructureByteStride = 0;
-            ViewDesc.Buffer.Flags               = D3D12_BUFFER_SRV_FLAG_RAW;
-        }
-        return ViewDesc;
-    }
-
-    D3D12_SHADER_RESOURCE_VIEW_DESC D3D12NoneVisualSRV::GetDesc(D3D12Texture*       Texture,
-                                                                bool                sRGB,
-                                                                std::optional<UINT> OptMostDetailedMip,
-                                                                std::optional<UINT> OptMipLevels)
-    {
-        D3D12_RESOURCE_DESC Desc = Texture->GetDesc();
-
-        UINT MostDetailedMip = OptMostDetailedMip.value_or(0);
-        UINT MipLevels       = OptMipLevels.value_or(Desc.MipLevels);
-
-        D3D12_SHADER_RESOURCE_VIEW_DESC ViewDesc = {};
-        ViewDesc.Format                          = [](DXGI_FORMAT Format, bool sRGB) {
-            if (sRGB)
-            {
-                return D3D12RHIUtils::MakeSRGB(Format);
-            }
-            // TODO: Add more
-            switch (Format)
-            {
-                case DXGI_FORMAT_D32_FLOAT:
-                    return DXGI_FORMAT_R32_FLOAT;
-            }
-
-            return Format;
-        }(Desc.Format, sRGB);
-        ViewDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-
-        switch (Desc.Dimension)
-        {
-            case D3D12_RESOURCE_DIMENSION_TEXTURE2D: {
-                if (Desc.SampleDesc.Count != 1)
-                {
-                    if (Desc.DepthOrArraySize > 1)
-                    {
-                        ViewDesc.ViewDimension                    = D3D12_SRV_DIMENSION_TEXTURE2DMSARRAY;
-                        ViewDesc.Texture2DMSArray.FirstArraySlice = 0;
-                        ViewDesc.Texture2DMSArray.ArraySize       = Desc.DepthOrArraySize;
-                    }
-                    else
-                    {
-                        // Since a multi sampled 2D texture contains a single subresource,
-                        // there is actually nothing to specify in D3D12_TEX2DMS_SRV.
-                        ViewDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2DMS;
-                    }
-                }
-                else
-                {
-                    if (Desc.DepthOrArraySize > 1)
-                    {
-                        ViewDesc.ViewDimension                      = D3D12_SRV_DIMENSION_TEXTURE2DARRAY;
-                        ViewDesc.Texture2DArray.MostDetailedMip     = MostDetailedMip;
-                        ViewDesc.Texture2DArray.MipLevels           = MipLevels;
-                        ViewDesc.Texture2DArray.FirstArraySlice     = 0;
-                        ViewDesc.Texture2DArray.ArraySize           = Desc.DepthOrArraySize;
-                        ViewDesc.Texture2DArray.PlaneSlice          = 0;
-                        ViewDesc.Texture2DArray.ResourceMinLODClamp = 0.0f;
-                    }
-                    else
-                    {
-                        ViewDesc.ViewDimension                 = D3D12_SRV_DIMENSION_TEXTURE2D;
-                        ViewDesc.Texture2D.MostDetailedMip     = MostDetailedMip;
-                        ViewDesc.Texture2D.MipLevels           = MipLevels;
-                        ViewDesc.Texture2D.PlaneSlice          = 0;
-                        ViewDesc.Texture2D.ResourceMinLODClamp = 0.0f;
-                    }
-                }
-
-                if (Texture->IsCubemap())
-                {
-                    ASSERT(Desc.DepthOrArraySize % 6 == 0);
-                    if (Desc.DepthOrArraySize == 6)
-                    {
-                        ViewDesc.ViewDimension                   = D3D12_SRV_DIMENSION_TEXTURECUBE;
-                        ViewDesc.TextureCube.MostDetailedMip     = MostDetailedMip;
-                        ViewDesc.TextureCube.MipLevels           = MipLevels;
-                        ViewDesc.TextureCube.ResourceMinLODClamp = 0.0f;
-                    }
-                    else
-                    {
-                        ViewDesc.ViewDimension                        = D3D12_SRV_DIMENSION_TEXTURECUBEARRAY;
-                        ViewDesc.TextureCubeArray.MostDetailedMip     = MostDetailedMip;
-                        ViewDesc.TextureCubeArray.MipLevels           = MipLevels;
-                        ViewDesc.TextureCubeArray.First2DArrayFace    = 0;
-                        ViewDesc.TextureCubeArray.NumCubes            = Desc.DepthOrArraySize / 6;
-                        ViewDesc.TextureCubeArray.ResourceMinLODClamp = 0.0f;
-                    }
-                }
-            }
-            break;
-            case D3D12_RESOURCE_DIMENSION_TEXTURE3D: {
-                ViewDesc.ViewDimension                 = D3D12_SRV_DIMENSION_TEXTURE3D;
-                ViewDesc.Texture3D.MostDetailedMip     = MostDetailedMip;
-                ViewDesc.Texture3D.MipLevels           = MipLevels;
-                ViewDesc.Texture3D.ResourceMinLODClamp = 0.0f;
-            }
-            break;
-            default:
-                break;
-        }
-
-        return ViewDesc;
-    }
-
-    D3D12NoneVisualUAV::D3D12NoneVisualUAV(D3D12LinkedDevice*                      Device,
-                                           const D3D12_UNORDERED_ACCESS_VIEW_DESC& Desc,
-                                           D3D12Resource*                          Resource,
-                                           D3D12Resource*                          CounterResource /*= nullptr*/) :
-        D3D12View(Device, Desc, Resource, CViewSubresourceSubset::FromView(Desc, Resource)),
-        CounterResource((Desc.Buffer.Flags == D3D12_BUFFER_UAV_FLAG_RAW) ? nullptr : CounterResource)
-    {
-        assert(!(this->CounterResource != nullptr && Desc.Buffer.Flags == D3D12_BUFFER_UAV_FLAG_RAW) &&
-               "cannot create byteaddressbuffer with counter resource");
-        RecreateView();
-    }
-
-    D3D12NoneVisualUAV::D3D12NoneVisualUAV(D3D12LinkedDevice* Device,
-                                           D3D12Buffer*       Buffer,
-                                           bool               Raw,
-                                           UINT               FirstElement,
-                                           UINT               NumElements,
-                                           UINT64             CounterOffsetInBytes) :
-        D3D12NoneVisualUAV(Device,
-                           GetDesc(Buffer, Raw, FirstElement, NumElements, CounterOffsetInBytes),
-                           Buffer,
-                           Raw ? nullptr : Buffer)
-    {}
-
-    D3D12NoneVisualUAV::D3D12NoneVisualUAV(D3D12LinkedDevice* Device,
-                                           D3D12Buffer*       Buffer,
-                                           UINT               FirstElement,
-                                           UINT               NumElements,
-                                           UINT64             CounterOffsetInBytes) :
-        D3D12NoneVisualUAV(Device,
-                           GetDesc(Buffer, false, FirstElement, NumElements, CounterOffsetInBytes),
-                           Buffer,
-                           Buffer)
-    {}
-
-    D3D12NoneVisualUAV::D3D12NoneVisualUAV(D3D12LinkedDevice* Device, D3D12Buffer* Buffer) :
-        D3D12NoneVisualUAV(Device, GetDesc(Buffer, true, 0, 0, 0), Buffer, nullptr)
-    {}
-
-    D3D12NoneVisualUAV::D3D12NoneVisualUAV(D3D12LinkedDevice*  Device,
-                                           D3D12Texture*       Texture,
-                                           std::optional<UINT> OptArraySlice,
-                                           std::optional<UINT> OptMipSlice) :
-        D3D12NoneVisualUAV(Device, GetDesc(Texture, OptArraySlice, OptMipSlice), Texture, nullptr)
-    {}
-
-    void D3D12NoneVisualUAV::RecreateView()
-    {
-        Descriptor.CreateView(
-            Desc, Resource->GetResource(), CounterResource ? CounterResource->GetResource() : nullptr);
-    }
-
-    D3D12_UNORDERED_ACCESS_VIEW_DESC
-    D3D12NoneVisualUAV::GetDesc(D3D12Buffer* Buffer,
-                                bool         Raw,
-                                UINT         FirstElement,
-                                UINT         NumElements,
-                                UINT64       CounterOffsetInBytes)
-    {
-        D3D12_UNORDERED_ACCESS_VIEW_DESC UAVDesc = {};
-
-        if (!Raw)
-        {
-            UAVDesc.ViewDimension               = D3D12_UAV_DIMENSION_BUFFER;
-            UAVDesc.Format                      = DXGI_FORMAT_UNKNOWN;
-            UAVDesc.Buffer.FirstElement         = FirstElement;
-            UAVDesc.Buffer.NumElements          = NumElements;
-            UAVDesc.Buffer.StructureByteStride  = Buffer->GetStride();
-            UAVDesc.Buffer.CounterOffsetInBytes = CounterOffsetInBytes;
-            UAVDesc.Buffer.Flags                = D3D12_BUFFER_UAV_FLAG_NONE;
-        }
-        else
-        {
-            uint32_t m_BufferSize = Buffer->GetSizeInBytes();
-
-            UAVDesc.ViewDimension               = D3D12_UAV_DIMENSION_BUFFER;
-            UAVDesc.Format                      = DXGI_FORMAT_R32_TYPELESS;
-            UAVDesc.Buffer.FirstElement         = 0;
-            UAVDesc.Buffer.NumElements          = (UINT)m_BufferSize / 4;
-            UAVDesc.Buffer.StructureByteStride  = 0;
-            UAVDesc.Buffer.CounterOffsetInBytes = 0;
-            UAVDesc.Buffer.Flags                = D3D12_BUFFER_UAV_FLAG_RAW;
-        }
-
-        return UAVDesc;
-    }
-
-    D3D12_UNORDERED_ACCESS_VIEW_DESC D3D12NoneVisualUAV::GetDesc(D3D12Texture*       Texture,
-                                                                 std::optional<UINT> OptArraySlice,
-                                                                 std::optional<UINT> OptMipSlice)
-    {
-        D3D12_RESOURCE_DESC Desc = Texture->GetDesc();
-
-        UINT ArraySlice = OptArraySlice.value_or(0);
-        UINT MipSlice   = OptMipSlice.value_or(0);
-
-        D3D12_UNORDERED_ACCESS_VIEW_DESC ViewDesc = {};
-        ViewDesc.Format                           = Desc.Format;
-
-        switch (Desc.Dimension)
-        {
-            case D3D12_RESOURCE_DIMENSION_TEXTURE2D: {
-                if (Desc.SampleDesc.Count != 1)
-                {
-                    if (Desc.DepthOrArraySize > 1)
-                    {
-                        ViewDesc.ViewDimension                    = D3D12_UAV_DIMENSION_TEXTURE2DMSARRAY;
-                        ViewDesc.Texture2DMSArray.FirstArraySlice = ArraySlice;
-                        ViewDesc.Texture2DMSArray.ArraySize       = Desc.DepthOrArraySize;
-                    }
-                    else
-                    {
-                        ViewDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2DMS;
-                    }
-                }
-                else
-                {
-                    if (Desc.DepthOrArraySize > 1)
-                    {
-                        ViewDesc.ViewDimension                  = D3D12_UAV_DIMENSION_TEXTURE2DARRAY;
-                        ViewDesc.Texture2DArray.MipSlice        = MipSlice;
-                        ViewDesc.Texture2DArray.FirstArraySlice = ArraySlice;
-                        ViewDesc.Texture2DArray.ArraySize       = Desc.DepthOrArraySize;
-                        ViewDesc.Texture2DArray.PlaneSlice      = 0;
-                    }
-                    else
-                    {
-                        ViewDesc.ViewDimension        = D3D12_UAV_DIMENSION_TEXTURE2D;
-                        ViewDesc.Texture2D.MipSlice   = MipSlice;
-                        ViewDesc.Texture2D.PlaneSlice = 0;
-                    }
-                }
-                break;
-            }
-            case D3D12_RESOURCE_DIMENSION_TEXTURE3D: {
-                ViewDesc.ViewDimension         = D3D12_UAV_DIMENSION_TEXTURE3D;
-                ViewDesc.Texture3D.MipSlice    = MipSlice;
-                ViewDesc.Texture3D.FirstWSlice = 0;
-                ViewDesc.Texture3D.WSize       = ArraySlice;
-
-                break;
-            }
-            default:
-                break;
-        }
-
-        return ViewDesc;
-    }
-
-    //-----------------------------------------------------------------------------------------------------------------
-
-    D3D12ConstantBufferView::D3D12ConstantBufferView(D3D12LinkedDevice*                     Device,
-                                                     const D3D12_CONSTANT_BUFFER_VIEW_DESC& Desc,
-                                                     D3D12Resource*                         Resource) :
-        D3D12DynamicView(Device, Desc, Resource, CViewSubresourceSubset())
-    {
-        RecreateView();
-    }
-
-    D3D12ConstantBufferView::D3D12ConstantBufferView(D3D12LinkedDevice* Device,
-                                                     D3D12Buffer*       Buffer,
-                                                     UINT32             Offset,
-                                                     UINT32             Size) :
-        D3D12ConstantBufferView(Device, GetDesc(Buffer, Offset, Size), Buffer)
+    D3D12ConstantBufferView::D3D12ConstantBufferView(D3D12LinkedDevice* Device, D3D12Buffer* Buffer, UINT32 Offset, UINT32 Size, BOOL IsNonShaderVisible) :
+        D3D12ConstantBufferView(Device, GetDesc(Buffer, Offset, Size), Buffer, IsNonShaderVisible)
     {}
 
     void D3D12ConstantBufferView::RecreateView()
@@ -1019,41 +631,52 @@ namespace RHI
 
     D3D12ShaderResourceView::D3D12ShaderResourceView(D3D12LinkedDevice*                     Device,
                                                      const D3D12_SHADER_RESOURCE_VIEW_DESC& Desc,
-                                                     D3D12Resource*                         Resource) :
-        D3D12DynamicView(Device, Desc, Resource, CViewSubresourceSubset::FromView(Desc, Resource))
+                                                     D3D12Resource*                         Resource,
+                                                     BOOL                                   IsNonShaderVisible) :
+        D3D12View(Device, Desc, Resource, CViewSubresourceSubset::FromView(Desc, Resource), IsNonShaderVisible)
     {
         RecreateView();
     }
 
-    D3D12ShaderResourceView::D3D12ShaderResourceView(D3D12LinkedDevice* Device, D3D12ASBuffer* ASBuffer) :
-        D3D12ShaderResourceView(Device, GetDesc(ASBuffer), ASBuffer)
+    D3D12ShaderResourceView::D3D12ShaderResourceView(D3D12LinkedDevice* Device,
+                                                     D3D12ASBuffer*     ASBuffer,
+                                                     BOOL               IsNonShaderVisible) :
+        D3D12ShaderResourceView(Device, GetDesc(ASBuffer), ASBuffer, IsNonShaderVisible)
     {}
 
     D3D12ShaderResourceView::D3D12ShaderResourceView(D3D12LinkedDevice* Device,
                                                      D3D12Buffer*       Buffer,
                                                      bool               Raw,
                                                      UINT               FirstElement,
-                                                     UINT               NumElements) :
-        D3D12ShaderResourceView(Device, GetDesc(Buffer, Raw, FirstElement, NumElements), Buffer)
+                                                     UINT               NumElements,
+                                                     BOOL               IsNonShaderVisible) :
+        D3D12ShaderResourceView(Device, GetDesc(Buffer, Raw, FirstElement, NumElements), Buffer, IsNonShaderVisible)
     {}
 
     D3D12ShaderResourceView::D3D12ShaderResourceView(D3D12LinkedDevice* Device,
                                                      D3D12Buffer*       Buffer,
                                                      UINT               FirstElement,
-                                                     UINT               NumElements) :
-        D3D12ShaderResourceView(Device, GetDesc(Buffer, false, FirstElement, NumElements), Buffer)
+                                                     UINT               NumElements,
+                                                     BOOL               IsNonShaderVisible) :
+        D3D12ShaderResourceView(Device, GetDesc(Buffer, false, FirstElement, NumElements), Buffer, IsNonShaderVisible)
     {}
 
-    D3D12ShaderResourceView::D3D12ShaderResourceView(D3D12LinkedDevice* Device, D3D12Buffer* Buffer) :
-        D3D12ShaderResourceView(Device, GetDesc(Buffer, true, 0, 0), Buffer)
+    D3D12ShaderResourceView::D3D12ShaderResourceView(D3D12LinkedDevice* Device,
+                                                     D3D12Buffer*       Buffer,
+                                                     BOOL               IsNonShaderVisible) :
+        D3D12ShaderResourceView(Device, GetDesc(Buffer, true, 0, 0), Buffer, IsNonShaderVisible)
     {}
 
-    D3D12ShaderResourceView::D3D12ShaderResourceView(D3D12LinkedDevice*  Device,
-                                                     D3D12Texture*       Texture,
-                                                     bool                sRGB,
-                                                     std::optional<UINT> OptMostDetailedMip,
-                                                     std::optional<UINT> OptMipLevels) :
-        D3D12ShaderResourceView(Device, GetDesc(Texture, sRGB, OptMostDetailedMip, OptMipLevels), Texture)
+    D3D12ShaderResourceView::D3D12ShaderResourceView(D3D12LinkedDevice* Device,
+                                                     D3D12Texture*      Texture,
+                                                     bool               sRGB,
+                                                     INT                OptMostDetailedMip,
+                                                     INT                OptMipLevels,
+                                                     BOOL               IsNonShaderVisible) :
+        D3D12ShaderResourceView(Device,
+                                GetDesc(Texture, sRGB, OptMostDetailedMip, OptMipLevels),
+                                Texture,
+                                IsNonShaderVisible)
     {}
 
     void D3D12ShaderResourceView::RecreateView()
@@ -1118,15 +741,13 @@ namespace RHI
         return ViewDesc;
     }
 
-    D3D12_SHADER_RESOURCE_VIEW_DESC D3D12ShaderResourceView::GetDesc(D3D12Texture*       Texture,
-                                                                     bool                sRGB,
-                                                                     std::optional<UINT> OptMostDetailedMip,
-                                                                     std::optional<UINT> OptMipLevels)
+    D3D12_SHADER_RESOURCE_VIEW_DESC
+    D3D12ShaderResourceView::GetDesc(D3D12Texture* Texture, bool sRGB, INT OptMostDetailedMip, INT OptMipLevels)
     {
         D3D12_RESOURCE_DESC Desc = Texture->GetDesc();
 
-        UINT MostDetailedMip = OptMostDetailedMip.value_or(0);
-        UINT MipLevels       = OptMipLevels.value_or(Desc.MipLevels);
+        UINT MostDetailedMip = OptMostDetailedMip == -1 ? 0 : OptMostDetailedMip;
+        UINT MipLevels       = OptMipLevels == -1 ? Desc.MipLevels : OptMipLevels;
 
         D3D12_SHADER_RESOURCE_VIEW_DESC ViewDesc = {};
         ViewDesc.Format = [](DXGI_FORMAT Format, bool sRGB) {
@@ -1225,8 +846,9 @@ namespace RHI
     D3D12UnorderedAccessView::D3D12UnorderedAccessView(D3D12LinkedDevice*                      Device,
                                                        const D3D12_UNORDERED_ACCESS_VIEW_DESC& Desc,
                                                        D3D12Resource*                          Resource,
-                                                       D3D12Resource* CounterResource /*= nullptr*/) :
-        D3D12DynamicView(Device, Desc, Resource, CViewSubresourceSubset::FromView(Desc, Resource)),
+                                                       D3D12Resource* CounterResource /*= nullptr*/,
+                                                       BOOL           IsNonShaderVisible) :
+        D3D12View(Device, Desc, Resource, CViewSubresourceSubset::FromView(Desc, Resource), IsNonShaderVisible),
         CounterResource((Desc.Buffer.Flags == D3D12_BUFFER_UAV_FLAG_RAW) ? nullptr : CounterResource)
     {
         assert(!(this->CounterResource != nullptr && Desc.Buffer.Flags == D3D12_BUFFER_UAV_FLAG_RAW) &&
@@ -1239,33 +861,44 @@ namespace RHI
                                                        bool               Raw,
                                                        UINT               FirstElement,
                                                        UINT               NumElements,
-                                                       UINT64             CounterOffsetInBytes) :
+                                                       UINT64             CounterOffsetInBytes,
+                                                       BOOL               IsNonShaderVisible) :
         D3D12UnorderedAccessView(Device,
                                  GetDesc(Buffer, Raw, FirstElement, NumElements, CounterOffsetInBytes),
                                  Buffer,
-                                 Raw ? nullptr : Buffer)
+                                 Raw ? nullptr : Buffer,
+                                 IsNonShaderVisible)
     {}
 
     D3D12UnorderedAccessView::D3D12UnorderedAccessView(D3D12LinkedDevice* Device,
                                                        D3D12Buffer*       Buffer,
                                                        UINT               FirstElement,
                                                        UINT               NumElements,
-                                                       UINT64             CounterOffsetInBytes) :
+                                                       UINT64             CounterOffsetInBytes,
+                                                       BOOL               IsNonShaderVisible) :
         D3D12UnorderedAccessView(Device,
                                  GetDesc(Buffer, false, FirstElement, NumElements, CounterOffsetInBytes),
                                  Buffer,
-                                 Buffer)
+                                 Buffer,
+                                 IsNonShaderVisible)
     {}
 
-    D3D12UnorderedAccessView::D3D12UnorderedAccessView(D3D12LinkedDevice* Device, D3D12Buffer* Buffer) :
-        D3D12UnorderedAccessView(Device, GetDesc(Buffer, true, 0, 0, 0), Buffer, nullptr)
+    D3D12UnorderedAccessView::D3D12UnorderedAccessView(D3D12LinkedDevice* Device,
+                                                       D3D12Buffer*       Buffer,
+                                                       BOOL               IsNonShaderVisible) :
+        D3D12UnorderedAccessView(Device, GetDesc(Buffer, true, 0, 0, 0), Buffer, nullptr, IsNonShaderVisible)
     {}
 
-    D3D12UnorderedAccessView::D3D12UnorderedAccessView(D3D12LinkedDevice*  Device,
-                                                       D3D12Texture*       Texture,
-                                                       std::optional<UINT> OptArraySlice,
-                                                       std::optional<UINT> OptMipSlice) :
-        D3D12UnorderedAccessView(Device, GetDesc(Texture, OptArraySlice, OptMipSlice), Texture, nullptr)
+    D3D12UnorderedAccessView::D3D12UnorderedAccessView(D3D12LinkedDevice* Device,
+                                                       D3D12Texture*      Texture,
+                                                       INT                OptArraySlice,
+                                                       INT                OptMipSlice,
+                                                       BOOL               IsNonShaderVisible) :
+        D3D12UnorderedAccessView(Device,
+                                 GetDesc(Texture, OptArraySlice, OptMipSlice),
+                                 Texture,
+                                 nullptr,
+                                 IsNonShaderVisible)
     {}
 
     void D3D12UnorderedAccessView::RecreateView()
@@ -1305,14 +938,13 @@ namespace RHI
         return UAVDesc;
     }
 
-    D3D12_UNORDERED_ACCESS_VIEW_DESC D3D12UnorderedAccessView::GetDesc(D3D12Texture*       Texture,
-                                                                       std::optional<UINT> OptArraySlice,
-                                                                       std::optional<UINT> OptMipSlice)
+    D3D12_UNORDERED_ACCESS_VIEW_DESC
+    D3D12UnorderedAccessView::GetDesc(D3D12Texture* Texture, INT OptArraySlice, INT OptMipSlice)
     {
         D3D12_RESOURCE_DESC Desc = Texture->GetDesc();
 
-        UINT ArraySlice = OptArraySlice.value_or(0);
-        UINT MipSlice   = OptMipSlice.value_or(0);
+        UINT ArraySlice = OptArraySlice == -1 ? 0 : OptArraySlice;
+        UINT MipSlice   = OptMipSlice == -1 ? 0 : OptMipSlice;
 
         D3D12_UNORDERED_ACCESS_VIEW_DESC ViewDesc = {};
         ViewDesc.Format                           = Desc.Format;

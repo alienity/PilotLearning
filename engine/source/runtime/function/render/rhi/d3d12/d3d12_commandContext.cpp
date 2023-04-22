@@ -178,6 +178,16 @@ namespace RHI
         return m_GraphicsMemory->Allocate(SizeInBytes, Alignment);
     }
 
+    std::shared_ptr<D3D12Buffer> D3D12CommandContext::ReverveTmpBuffer(UINT64 SizeInBytes)
+    {
+
+    }
+
+    std::shared_ptr<D3D12Texture> D3D12CommandContext::ReverveTmpTexture(RHIRenderSurfaceBaseDesc SurfaceDesc)
+    {
+
+    }
+
     void D3D12CommandContext::WriteBuffer(D3D12Buffer* Dest, UINT64 DestOffset, const void* BufferData, UINT64 NumBytes)
     {
         ASSERT(BufferData != nullptr && Pilot::IsAligned(BufferData, 16));
@@ -791,7 +801,7 @@ namespace RHI
         FlushResourceBarriers();
 
         std::shared_ptr<D3D12UnorderedAccessView> uav = Target->GetDefaultUAV();
-        std::shared_ptr<D3D12NoneVisualUAV> cpu_uav = Target->GetDefaultNoneVisualUAV();
+        std::shared_ptr<D3D12UnorderedAccessView> cpu_uav = Target->GetDefaultUAV(TRUE);
         const UINT ClearColor[4] = {0, 0, 0, 0};
         m_CommandListHandle->ClearUnorderedAccessViewUint(
             uav->GetGpuHandle(), cpu_uav->GetCpuHandle(), Target->GetResource(), ClearColor, 0, nullptr);
@@ -802,7 +812,7 @@ namespace RHI
         FlushResourceBarriers();
 
         std::shared_ptr<D3D12UnorderedAccessView> uav = Target->GetDefaultUAV();
-        std::shared_ptr<D3D12NoneVisualUAV> cpu_uav = Target->GetDefaultNoneVisualUAV();
+        std::shared_ptr<D3D12UnorderedAccessView> cpu_uav = Target->GetDefaultUAV(TRUE);
         CD3DX12_RECT clearRect(0, 0, (LONG)Target->GetWidth(), (LONG)Target->GetHeight());
         D3D12_CLEAR_VALUE clearVal = Target->GetClearValue();
         m_CommandListHandle->ClearUnorderedAccessViewFloat(

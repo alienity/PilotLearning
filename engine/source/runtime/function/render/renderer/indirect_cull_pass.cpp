@@ -458,11 +458,31 @@ namespace Pilot
                 D3D12ScopedEvent(pAsyncCompute, "Gpu Frustum Culling for Sort");
                 pAsyncCompute->SetPipelineState(PipelineStates::pIndirectCullForSort.get());
                 pAsyncCompute->SetRootSignature(RootSignatures::pIndirectCullForSort.get());
-                pAsyncCompute->SetConstantBuffer(0, pPerframeBuffer->GetGpuVirtualAddress());
-                pAsyncCompute->SetBufferSRV(1, pMeshBuffer.get());
-                pAsyncCompute->SetBufferSRV(2, pMaterialBuffer.get());
-                pAsyncCompute->SetDescriptorTable(3, commandBufferForOpaqueDraw.p_IndirectIndexCommandBuffer->GetDefaultUAV()->GetGpuHandle());
-                pAsyncCompute->SetDescriptorTable(4, commandBufferForTransparentDraw.p_IndirectIndexCommandBuffer->GetDefaultUAV()->GetGpuHandle());
+
+                struct RootIndexBuffer
+                {
+                    UINT meshPerFrameBufferIndex;
+                    UINT meshInstanceBufferIndex;
+                    UINT materialIndexBufferIndex;
+                    UINT opaqueSortIndexDisBufferIndex;
+                    UINT transSortIndexDisBufferIndex;
+                };
+
+                RootIndexBuffer rootIndexBuffer = RootIndexBuffer {
+                    pPerframeBuffer->GetDefaultCBV()->GetIndex(),
+                    pMeshBuffer->GetDefaultSRV()->GetIndex(),
+                    pMaterialBuffer->GetDefaultSRV()->GetIndex(),
+                    commandBufferForOpaqueDraw.p_IndirectIndexCommandBuffer->GetDefaultUAV()->GetIndex(),
+                    commandBufferForTransparentDraw.p_IndirectIndexCommandBuffer->GetDefaultUAV()->GetIndex()
+                };
+
+                pAsyncCompute->SetConstantArray(0, sizeof(RootIndexBuffer) / sizeof(UINT), &rootIndexBuffer);
+
+                //pAsyncCompute->SetConstantBuffer(0, pPerframeBuffer->GetGpuVirtualAddress());
+                //pAsyncCompute->SetBufferSRV(1, pMeshBuffer.get());
+                //pAsyncCompute->SetBufferSRV(2, pMaterialBuffer.get());
+                //pAsyncCompute->SetDescriptorTable(3, commandBufferForOpaqueDraw.p_IndirectIndexCommandBuffer->GetDefaultUAV()->GetGpuHandle());
+                //pAsyncCompute->SetDescriptorTable(4, commandBufferForTransparentDraw.p_IndirectIndexCommandBuffer->GetDefaultUAV()->GetGpuHandle());
 
                 pAsyncCompute->Dispatch1D(numMeshes, 128);
             }

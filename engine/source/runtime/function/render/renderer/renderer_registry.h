@@ -173,6 +173,14 @@ struct RootSignatures
 
         {
             RHI::RootSignatureDesc rootSigDesc = RHI::RootSignatureDesc()
+                                                     .Add32BitConstants<0, 0>(64)
+                                                     .AllowResourceDescriptorHeapIndexing()
+                                                     .AllowSampleDescriptorHeapIndexing();
+
+            pIndirectCullForSort = std::make_shared<RHI::D3D12RootSignature>(pDevice, rootSigDesc);
+        }
+        {
+            RHI::RootSignatureDesc rootSigDesc = RHI::RootSignatureDesc()
                                                      .AddConstantBufferView<0, 0>()
                                                      .AddShaderResourceView<0, 0>()
                                                      .AddShaderResourceView<1, 0>()
@@ -181,8 +189,7 @@ struct RootSignatures
                                                      .AllowResourceDescriptorHeapIndexing()
                                                      .AllowSampleDescriptorHeapIndexing();
 
-            pIndirectCullForSort = std::make_shared<RHI::D3D12RootSignature>(pDevice, rootSigDesc);
-            pIndirectCull        = pIndirectCullForSort;
+            pIndirectCull = std::make_shared<RHI::D3D12RootSignature>(pDevice, rootSigDesc);
         }
 
         {

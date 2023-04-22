@@ -77,6 +77,9 @@ namespace RHI
         //uint32_t ReadbackTexture(ReadbackBuffer* DstBuffer, D3D12Texture* SrcBuffer);
 
         GraphicsResource ReserveUploadMemory(UINT64 SizeInBytes, UINT Alignment = D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT);
+        
+        std::shared_ptr<D3D12Buffer> ReverveTmpBuffer(UINT64 SizeInBytes);
+        std::shared_ptr<D3D12Texture> ReverveTmpTexture(RHIRenderSurfaceBaseDesc SurfaceDesc);
 
         static void InitializeTexture(D3D12LinkedDevice* Parent, D3D12Texture* Dest, std::vector<D3D12_SUBRESOURCE_DATA> Subresources);
         static void InitializeTexture(D3D12LinkedDevice* Parent, D3D12Texture* Dest, UINT FirstSubresource, std::vector<D3D12_SUBRESOURCE_DATA> Subresources);
@@ -127,6 +130,10 @@ namespace RHI
         // The allocations in heaps are discarded at the end of the frame.
         std::shared_ptr<RHI::DynamicDescriptorHeap> m_pDynamicViewDescriptorHeap;	// HEAP_TYPE_CBV_SRV_UAV
         std::shared_ptr<RHI::DynamicDescriptorHeap> m_pDynamicSamplerDescriptorHeap;	// HEAP_TYPE_SAMPLER
+
+        // Cached Resource
+        std::vector<std::shared_ptr<D3D12Buffer>> m_CachedBufferes;
+        std::vector<std::shared_ptr<D3D12Texture>> m_CachedTextures;
 
         // TODO: Finish cache
         // State Cache

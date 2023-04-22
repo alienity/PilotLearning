@@ -514,15 +514,98 @@ namespace RHI
         }
     }
 
-    std::shared_ptr<D3D12ConstantBufferView> D3D12Buffer::CreateCBV(D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc)
+    std::shared_ptr<D3D12ConstantBufferView> D3D12Buffer::CreateCBV(D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc, BOOL isNonShaderVisible)
+    {
+        if (isNonShaderVisible)
+        {
+            return CreateNoneShaderVisibleCBV(cbvDesc);
+        }
+        else
+        {
+            return CreateShaderVisibleCBV(cbvDesc);
+        }
+    }
+
+    std::shared_ptr<D3D12ShaderResourceView> D3D12Buffer::CreateSRV(D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc, BOOL isNonShaderVisible)
+    {
+        if (isNonShaderVisible)
+        {
+            return CreateNoneShaderVisibleSRV(srvDesc);
+        }
+        else
+        {
+            return CreateShaderVisibleSRV(srvDesc);
+        }
+    }
+
+    std::shared_ptr<D3D12UnorderedAccessView> D3D12Buffer::CreateUAV(D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc, BOOL isNonShaderVisible)
+    {
+        if (isNonShaderVisible)
+        {
+            return CreateNoneShaderVisibleUAV(uavDesc);
+        }
+        else
+        {
+            return CreateShaderVisibleUAV(uavDesc);
+        }
+    }
+
+    std::shared_ptr<D3D12UnorderedAccessView> D3D12Buffer::CreateUAV(D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc, D3D12Resource* pCounterRes, BOOL isNonShaderVisible)
+    {
+        if (isNonShaderVisible)
+        {
+            return CreateNoneShaderVisibleUAV(uavDesc, pCounterRes);
+        }
+        else
+        {
+            return CreateShaderVisibleUAV(uavDesc, pCounterRes);
+        }
+    }
+
+    std::shared_ptr<D3D12ConstantBufferView> D3D12Buffer::GetDefaultCBV(BOOL isNonShaderVisible)
+    {
+        return CreateCBV(D3D12ConstantBufferView::GetDesc(this, 0, m_Desc.size), isNonShaderVisible);
+    }
+
+    std::shared_ptr<D3D12ShaderResourceView> D3D12Buffer::GetDefaultSRV(BOOL isNonShaderVisible)
+    {
+        ASSERT(m_Desc.size % m_Desc.stride == 0);
+        return CreateSRV(D3D12ShaderResourceView::GetDesc(this, m_Desc.target & RHIBufferTargetRaw, 0, m_Desc.number),
+                         isNonShaderVisible);
+    }
+
+    std::shared_ptr<D3D12UnorderedAccessView> D3D12Buffer::GetDefaultUAV(BOOL isNonShaderVisible)
+    {
+        return CreateUAV(
+            D3D12UnorderedAccessView::GetDesc(this, m_Desc.target & RHIBufferTargetRaw, 0, m_Desc.number, 0),
+            isNonShaderVisible);
+    }
+
+    std::shared_ptr<D3D12UnorderedAccessView> D3D12Buffer::GetDefaultStructureUAV(bool hasCounter, BOOL isNonShaderVisible)
+    {
+        D3D12Resource* pCounterResource = hasCounter ? (p_CounterBufferD3D12 != nullptr ? p_CounterBufferD3D12.get() : nullptr) : nullptr;
+        D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc = D3D12UnorderedAccessView::GetDesc(this, false, 0, m_Desc.number, 0);
+        return CreateUAV(uavDesc, pCounterResource, isNonShaderVisible);
+    }
+
+    std::shared_ptr<D3D12UnorderedAccessView> D3D12Buffer::GetDefaultRawUAV(bool hasCounter, BOOL isNonShaderVisible)
+    {
+        D3D12Resource* pCounterResource = hasCounter ? (p_CounterBufferD3D12 != nullptr ? p_CounterBufferD3D12.get() : nullptr) : nullptr;
+        D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc = D3D12UnorderedAccessView::GetDesc(this, true, 0, m_Desc.number, 0);
+        return CreateUAV(uavDesc, pCounterResource, isNonShaderVisible);
+    }
+
+    RHIBufferDesc& D3D12Buffer::GetBufferDesc() { return m_Desc; }
+
+    std::shared_ptr<D3D12ConstantBufferView> D3D12Buffer::CreateShaderVisibleCBV(D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc)
     {
         UINT64 descHash = Utility::Hash64((const char*)&cbvDesc, sizeof(D3D12_CONSTANT_BUFFER_VIEW_DESC));
 
-        std::shared_ptr<D3D12ConstantBufferView> cbv = nullptr;
-        auto cbvHandleIter = m_CBVHandleMap.find(descHash);
+        std::shared_ptr<D3D12ConstantBufferView> cbv           = nullptr;
+        auto                                     cbvHandleIter = m_CBVHandleMap.find(descHash);
         if (cbvHandleIter == m_CBVHandleMap.end())
         {
-            cbv = std::make_shared<D3D12ConstantBufferView>(Parent, cbvDesc, this);
+            cbv                      = std::make_shared<D3D12ConstantBufferView>(Parent, cbvDesc, this, FALSE);
             m_CBVHandleMap[descHash] = cbv;
         }
         else
@@ -532,15 +615,15 @@ namespace RHI
         return cbv;
     }
 
-    std::shared_ptr<D3D12ShaderResourceView> D3D12Buffer::CreateSRV(D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc)
+    std::shared_ptr<D3D12ShaderResourceView> D3D12Buffer::CreateShaderVisibleSRV(D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc)
     {
         UINT64 descHash = Utility::Hash64((const char*)&srvDesc, sizeof(D3D12_SHADER_RESOURCE_VIEW_DESC));
 
-        std::shared_ptr<D3D12ShaderResourceView> srv = nullptr;
-        auto srvHandleIter = m_SRVHandleMap.find(descHash);
+        std::shared_ptr<D3D12ShaderResourceView> srv           = nullptr;
+        auto                                     srvHandleIter = m_SRVHandleMap.find(descHash);
         if (srvHandleIter == m_SRVHandleMap.end())
         {
-            srv = std::make_shared<D3D12ShaderResourceView>(Parent, srvDesc, this);
+            srv                      = std::make_shared<D3D12ShaderResourceView>(Parent, srvDesc, this, FALSE);
             m_SRVHandleMap[descHash] = srv;
         }
         else
@@ -550,24 +633,24 @@ namespace RHI
         return srv;
     }
 
-    std::shared_ptr<D3D12UnorderedAccessView> D3D12Buffer::CreateUAV(D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc)
+    std::shared_ptr<D3D12UnorderedAccessView> D3D12Buffer::CreateShaderVisibleUAV(D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc)
     {
         D3D12Resource* pCounterResource = p_CounterBufferD3D12 != nullptr ? p_CounterBufferD3D12.get() : nullptr;
-        return CreateUAV(uavDesc, pCounterResource);
+        return CreateShaderVisibleUAV(uavDesc, pCounterResource);
     }
 
-    std::shared_ptr<D3D12UnorderedAccessView> D3D12Buffer::CreateUAV(D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc, D3D12Resource* pCounterRes)
+    std::shared_ptr<D3D12UnorderedAccessView> D3D12Buffer::CreateShaderVisibleUAV(D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc, D3D12Resource* pCounterRes)
     {
         BUFFER_UNORDERED_ACCESS_VIEW_KEY uavKey = {uavDesc, pCounterRes};
 
         UINT64 descHash = Utility::Hash64((const char*)&uavKey, sizeof(BUFFER_UNORDERED_ACCESS_VIEW_KEY));
 
-        std::shared_ptr<D3D12UnorderedAccessView> uav = nullptr;
-        auto uavHandleIter = m_UAVHandleMap.find(descHash);
+        std::shared_ptr<D3D12UnorderedAccessView> uav           = nullptr;
+        auto                                      uavHandleIter = m_UAVHandleMap.find(descHash);
         if (uavHandleIter == m_UAVHandleMap.end())
         {
             uav = std::make_shared<D3D12UnorderedAccessView>(
-                Parent, uavDesc, (D3D12Resource*)this, (D3D12Resource*)pCounterRes);
+                Parent, uavDesc, (D3D12Resource*)this, (D3D12Resource*)pCounterRes, FALSE);
             m_UAVHandleMap[descHash] = uav;
         }
         else
@@ -577,15 +660,15 @@ namespace RHI
         return uav;
     }
 
-    std::shared_ptr<D3D12NoneVisualCBV> D3D12Buffer::CreateNoneVisualCBV(D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc)
+    std::shared_ptr<D3D12ConstantBufferView> D3D12Buffer::CreateNoneShaderVisibleCBV(D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc)
     {
         UINT64 descHash = Utility::Hash64((const char*)&cbvDesc, sizeof(D3D12_CONSTANT_BUFFER_VIEW_DESC));
 
-        std::shared_ptr<D3D12NoneVisualCBV> cbv = nullptr;
-        auto cbvHandleIter = m_NoneVisual_CBVHandleMap.find(descHash);
+        std::shared_ptr<D3D12ConstantBufferView> cbv           = nullptr;
+        auto                                     cbvHandleIter = m_NoneVisual_CBVHandleMap.find(descHash);
         if (cbvHandleIter == m_NoneVisual_CBVHandleMap.end())
         {
-            cbv = std::make_shared<D3D12NoneVisualCBV>(Parent, cbvDesc, this);
+            cbv = std::make_shared<D3D12ConstantBufferView>(Parent, cbvDesc, this, TRUE);
             m_NoneVisual_CBVHandleMap[descHash] = cbv;
         }
         else
@@ -595,15 +678,15 @@ namespace RHI
         return cbv;
     }
 
-    std::shared_ptr<D3D12NoneVisualSRV> D3D12Buffer::CreateNoneVisualSRV(D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc)
+    std::shared_ptr<D3D12ShaderResourceView> D3D12Buffer::CreateNoneShaderVisibleSRV(D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc)
     {
         UINT64 descHash = Utility::Hash64((const char*)&srvDesc, sizeof(D3D12_SHADER_RESOURCE_VIEW_DESC));
 
-        std::shared_ptr<D3D12NoneVisualSRV> srv = nullptr;
-        auto srvHandleIter = m_NoneVisual_SRVHandleMap.find(descHash);
+        std::shared_ptr<D3D12ShaderResourceView> srv           = nullptr;
+        auto                                     srvHandleIter = m_NoneVisual_SRVHandleMap.find(descHash);
         if (srvHandleIter == m_NoneVisual_SRVHandleMap.end())
         {
-            srv = std::make_shared<D3D12NoneVisualSRV>(Parent, srvDesc, this);
+            srv = std::make_shared<D3D12ShaderResourceView>(Parent, srvDesc, this, TRUE);
             m_NoneVisual_SRVHandleMap[descHash] = srv;
         }
         else
@@ -613,24 +696,24 @@ namespace RHI
         return srv;
     }
 
-    std::shared_ptr<D3D12NoneVisualUAV> D3D12Buffer::CreateNoneVisualUAV(D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc)
+    std::shared_ptr<D3D12UnorderedAccessView> D3D12Buffer::CreateNoneShaderVisibleUAV(D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc)
     {
         D3D12Resource* pCounterResource = p_CounterBufferD3D12 != nullptr ? p_CounterBufferD3D12.get() : nullptr;
-        return CreateNoneVisualUAV(uavDesc, pCounterResource);
+        return CreateNoneShaderVisibleUAV(uavDesc, pCounterResource);
     }
 
-    std::shared_ptr<D3D12NoneVisualUAV> D3D12Buffer::CreateNoneVisualUAV(D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc, D3D12Resource* pCounterRes)
+    std::shared_ptr<D3D12UnorderedAccessView> D3D12Buffer::CreateNoneShaderVisibleUAV(D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc, D3D12Resource* pCounterRes)
     {
         BUFFER_UNORDERED_ACCESS_VIEW_KEY uavKey = {uavDesc, pCounterRes};
 
         UINT64 descHash = Utility::Hash64((const char*)&uavKey, sizeof(BUFFER_UNORDERED_ACCESS_VIEW_KEY));
 
-        std::shared_ptr<D3D12NoneVisualUAV> uav = nullptr;
-        auto uavHandleIter = m_NoneVisual_UAVHandleMap.find(descHash);
+        std::shared_ptr<D3D12UnorderedAccessView> uav           = nullptr;
+        auto                                uavHandleIter = m_NoneVisual_UAVHandleMap.find(descHash);
         if (uavHandleIter == m_NoneVisual_UAVHandleMap.end())
         {
-            uav = std::make_shared<D3D12NoneVisualUAV>(
-                Parent, uavDesc, (D3D12Resource*)this, (D3D12Resource*)pCounterRes);
+            uav = std::make_shared<D3D12UnorderedAccessView>(
+                Parent, uavDesc, (D3D12Resource*)this, (D3D12Resource*)pCounterRes, TRUE);
             m_NoneVisual_UAVHandleMap[descHash] = uav;
         }
         else
@@ -639,54 +722,6 @@ namespace RHI
         }
         return uav;
     }
-
-    std::shared_ptr<D3D12ConstantBufferView> D3D12Buffer::GetDefaultCBV()
-    {
-        return CreateCBV(D3D12ConstantBufferView::GetDesc(this, 0, m_Desc.size));
-    }
-
-    std::shared_ptr<D3D12ShaderResourceView> D3D12Buffer::GetDefaultSRV()
-    {
-        ASSERT(m_Desc.size % m_Desc.stride == 0);
-        return CreateSRV(D3D12ShaderResourceView::GetDesc(this, m_Desc.target & RHIBufferTargetRaw, 0, m_Desc.number));
-    }
-
-    std::shared_ptr<D3D12UnorderedAccessView> D3D12Buffer::GetDefaultUAV()
-    {
-        return CreateUAV(D3D12UnorderedAccessView::GetDesc(this, m_Desc.target & RHIBufferTargetRaw, 0, m_Desc.number, 0));
-    }
-
-    std::shared_ptr<D3D12NoneVisualCBV> D3D12Buffer::GetDefaultNoneVisualCBV()
-    {
-        return CreateNoneVisualCBV(D3D12ConstantBufferView::GetDesc(this, 0, m_Desc.size));
-    }
-
-    std::shared_ptr<D3D12NoneVisualSRV> D3D12Buffer::GetDefaultNoneVisualSRV()
-    {
-        ASSERT(m_Desc.size % m_Desc.stride == 0);
-        return CreateNoneVisualSRV(D3D12ShaderResourceView::GetDesc(this, m_Desc.target & RHIBufferTargetRaw, 0, m_Desc.number));
-    }
-
-    std::shared_ptr<D3D12NoneVisualUAV> D3D12Buffer::GetDefaultNoneVisualUAV()
-    {
-        return CreateNoneVisualUAV(D3D12UnorderedAccessView::GetDesc(this, m_Desc.target & RHIBufferTargetRaw, 0, m_Desc.number, 0));
-    }
-
-    std::shared_ptr<D3D12UnorderedAccessView> D3D12Buffer::GetDefaultStructureUAV(bool hasCounter)
-    {
-        D3D12Resource* pCounterResource = hasCounter ? (p_CounterBufferD3D12 != nullptr ? p_CounterBufferD3D12.get() : nullptr) : nullptr;
-        D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc = D3D12UnorderedAccessView::GetDesc(this, false, 0, m_Desc.number, 0);
-        return CreateUAV(uavDesc, pCounterResource);
-    }
-
-    std::shared_ptr<D3D12UnorderedAccessView> D3D12Buffer::GetDefaultRawUAV(bool hasCounter)
-    {
-        D3D12Resource* pCounterResource = hasCounter ? (p_CounterBufferD3D12 != nullptr ? p_CounterBufferD3D12.get() : nullptr) : nullptr;
-        D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc = D3D12UnorderedAccessView::GetDesc(this, true, 0, m_Desc.number, 0);
-        return CreateUAV(uavDesc, pCounterResource);
-    }
-
-    RHIBufferDesc& D3D12Buffer::GetBufferDesc() { return m_Desc; }
 
     D3D12Texture::D3D12Texture(D3D12LinkedDevice*                       Parent,
                                Microsoft::WRL::ComPtr<ID3D12Resource>&& Resource,
@@ -700,8 +735,7 @@ namespace RHI
                                std::optional<CD3DX12_CLEAR_VALUE> ClearValue,
                                D3D12_RESOURCE_STATES              InitialResourceState,
                                bool                               Cubemap) :
-        D3D12Resource(Parent, HeapProperty, Desc, InitialResourceState, ClearValue),
-        m_IsCubemap(Cubemap)
+        D3D12Resource(Parent, HeapProperty, Desc, InitialResourceState, ClearValue)
     {}
 
     D3D12Texture::D3D12Texture(D3D12LinkedDevice*                 Parent,
@@ -713,8 +747,7 @@ namespace RHI
                       CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT, Parent->GetNodeMask(), Parent->GetNodeMask()),
                       Desc,
                       InitialResourceState,
-                      ClearValue),
-        m_IsCubemap(Cubemap)
+                      ClearValue)
     {}
 
     D3D12Texture::D3D12Texture(D3D12LinkedDevice*                 Parent,
@@ -725,8 +758,7 @@ namespace RHI
                       CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT, Parent->GetNodeMask(), Parent->GetNodeMask()),
                       Desc,
                       ResourceStateDeterminer(Desc, D3D12_HEAP_TYPE_DEFAULT).InferInitialState(),
-                      ClearValue),
-        m_IsCubemap(Cubemap)
+                      ClearValue)
     {
         // Textures can only be in device local heap (for discrete GPUs) UMA case is not handled
     }
@@ -747,14 +779,10 @@ namespace RHI
         m_UAVHandleMap.clear();
     }
 
-    UINT D3D12Texture::GetSubresourceIndex(std::optional<UINT> OptArraySlice /*= std::nullopt*/,
-                                           std::optional<UINT> OptMipSlice /*= std::nullopt*/,
-                                           std::optional<UINT> OptPlaneSlice /*= std::nullopt*/) const noexcept
+    UINT D3D12Texture::GetSubresourceIndex(UINT OptArraySlice, UINT OptMipSlice, UINT OptPlaneSlice) const noexcept
     {
-        UINT ArraySlice = OptArraySlice.value_or(0);
-        UINT MipSlice   = OptMipSlice.value_or(0);
-        UINT PlaneSlice = OptPlaneSlice.value_or(0);
-        return D3D12CalcSubresource(MipSlice, ArraySlice, PlaneSlice, m_ResourceDesc.MipLevels, m_ResourceDesc.DepthOrArraySize);
+        return D3D12CalcSubresource(
+            OptMipSlice, OptArraySlice, OptPlaneSlice, m_ResourceDesc.MipLevels, m_ResourceDesc.DepthOrArraySize);
     }
 
     void D3D12Texture::AssociateWithResource(D3D12LinkedDevice*                     Parent,
@@ -1061,41 +1089,28 @@ namespace RHI
         return true;
     }
 
-    std::shared_ptr<D3D12ShaderResourceView> D3D12Texture::CreateSRV(D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc)
+    std::shared_ptr<D3D12ShaderResourceView> D3D12Texture::CreateSRV(D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc, BOOL isNonShaderVisible)
     {
-        UINT64 descHash = Utility::Hash64((const char*)&srvDesc, sizeof(D3D12_SHADER_RESOURCE_VIEW_DESC));
-
-        std::shared_ptr<D3D12ShaderResourceView> srv = nullptr;
-        auto srvHandleIter = m_SRVHandleMap.find(descHash);
-        if (srvHandleIter == m_SRVHandleMap.end())
+        if (isNonShaderVisible)
         {
-            srv = std::make_shared<D3D12ShaderResourceView>(Parent, srvDesc, this);
-            m_SRVHandleMap[descHash] = srv;
+            return CreateNoneShaderVisibleSRV(srvDesc);
         }
         else
         {
-            srv = srvHandleIter->second;
+            return CreateShaderVisibleSRV(srvDesc);
         }
-        return srv;
     }
 
-    std::shared_ptr<D3D12UnorderedAccessView> D3D12Texture::CreateUAV(D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc)
+    std::shared_ptr<D3D12UnorderedAccessView> D3D12Texture::CreateUAV(D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc, BOOL isNonShaderVisible)
     {
-        UINT64 descHash = Utility::Hash64((const char*)&uavDesc, sizeof(D3D12_UNORDERED_ACCESS_VIEW_DESC));
-
-        std::shared_ptr<D3D12UnorderedAccessView> uav = nullptr;
-        auto uavHandleIter = m_UAVHandleMap.find(descHash);
-        if (uavHandleIter == m_UAVHandleMap.end())
+        if (isNonShaderVisible)
         {
-            uav = std::make_shared<D3D12UnorderedAccessView>(
-                Parent, uavDesc, (D3D12Resource*)this, (D3D12Resource*)nullptr);
-            m_UAVHandleMap[descHash] = uav;
+            return CreateNoneShaderVisibleUAV(uavDesc);
         }
         else
         {
-            uav = uavHandleIter->second;
+            return CreateShaderVisibleUAV(uavDesc);
         }
-        return uav;
     }
 
     std::shared_ptr<D3D12RenderTargetView> D3D12Texture::CreateRTV(D3D12_RENDER_TARGET_VIEW_DESC rtvDesc)
@@ -1134,52 +1149,16 @@ namespace RHI
         return dsv;
     }
 
-    std::shared_ptr<D3D12NoneVisualSRV> D3D12Texture::CreateNoneVisualSRV(D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc)
-    {
-        UINT64 descHash = Utility::Hash64((const char*)&srvDesc, sizeof(D3D12_SHADER_RESOURCE_VIEW_DESC));
-
-        std::shared_ptr<D3D12NoneVisualSRV> srv = nullptr;
-        auto srvHandleIter = m_NoneVisual_SRVHandleMap.find(descHash);
-        if (srvHandleIter == m_NoneVisual_SRVHandleMap.end())
-        {
-            srv = std::make_shared<D3D12NoneVisualSRV>(Parent, srvDesc, this);
-            m_NoneVisual_SRVHandleMap[descHash] = srv;
-        }
-        else
-        {
-            srv = srvHandleIter->second;
-        }
-        return srv;
-    }
-    std::shared_ptr<D3D12NoneVisualUAV> D3D12Texture::CreateNoneVisualUAV(D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc)
-    {
-        UINT64 descHash = Utility::Hash64((const char*)&uavDesc, sizeof(D3D12_UNORDERED_ACCESS_VIEW_DESC));
-
-        std::shared_ptr<D3D12NoneVisualUAV> uav = nullptr;
-        auto uavHandleIter = m_NoneVisual_UAVHandleMap.find(descHash);
-        if (uavHandleIter == m_NoneVisual_UAVHandleMap.end())
-        {
-            uav = std::make_shared<D3D12NoneVisualUAV>(
-                Parent, uavDesc, (D3D12Resource*)this, (D3D12Resource*)nullptr);
-            m_NoneVisual_UAVHandleMap[descHash] = uav;
-        }
-        else
-        {
-            uav = uavHandleIter->second;
-        }
-        return uav;
-    }
-
-    std::shared_ptr<D3D12ShaderResourceView> D3D12Texture::GetDefaultSRV()
+    std::shared_ptr<D3D12ShaderResourceView> D3D12Texture::GetDefaultSRV(BOOL isNonShaderVisible)
     {
         return CreateSRV(
-            D3D12ShaderResourceView::GetDesc(this, m_Desc.flags & RHISurfaceCreateSRGB, 0, m_Desc.mipCount));
+            D3D12ShaderResourceView::GetDesc(this, m_Desc.flags & RHISurfaceCreateSRGB, 0, m_Desc.mipCount),
+            isNonShaderVisible);
     }
 
-    std::shared_ptr<D3D12UnorderedAccessView> D3D12Texture::GetDefaultUAV()
+    std::shared_ptr<D3D12UnorderedAccessView> D3D12Texture::GetDefaultUAV(BOOL isNonShaderVisible)
     {
-        //return CreateUAV(D3D12UnorderedAccessView::GetDesc(this, m_Desc.depthOrArray, m_Desc.mipCount));
-        return CreateUAV(D3D12UnorderedAccessView::GetDesc(this, 0, 0));
+        return CreateUAV(D3D12UnorderedAccessView::GetDesc(this, 0, 0), isNonShaderVisible);
     }
 
     std::shared_ptr<D3D12RenderTargetView> D3D12Texture::GetDefaultRTV()
@@ -1192,17 +1171,6 @@ namespace RHI
     {
         ASSERT(m_Desc.flags & (RHISurfaceCreateDepthStencil | RHISurfaceCreateShadowmap));
         return CreateDSV(D3D12DepthStencilView::GetDesc(this));
-    }
-
-    std::shared_ptr<D3D12NoneVisualSRV> D3D12Texture::GetDefaultNoneVisualSRV()
-    {
-        return CreateNoneVisualSRV(
-            D3D12ShaderResourceView::GetDesc(this, m_Desc.flags & RHISurfaceCreateSRGB, 0, m_Desc.mipCount));
-    }
-
-    std::shared_ptr<D3D12NoneVisualUAV> D3D12Texture::GetDefaultNoneVisualUAV()
-    {
-        return CreateNoneVisualUAV(D3D12UnorderedAccessView::GetDesc(this, 0, 0));
     }
 
     void D3D12Texture::ExportToFile(const std::wstring& FilePath)
@@ -1234,6 +1202,80 @@ namespace RHI
             }
         }
         return mipLevels;
+    }
+
+    std::shared_ptr<D3D12ShaderResourceView> D3D12Texture::CreateShaderVisibleSRV(D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc)
+    {
+        UINT64 descHash = Utility::Hash64((const char*)&srvDesc, sizeof(D3D12_SHADER_RESOURCE_VIEW_DESC));
+
+        std::shared_ptr<D3D12ShaderResourceView> srv           = nullptr;
+        auto                                     srvHandleIter = m_SRVHandleMap.find(descHash);
+        if (srvHandleIter == m_SRVHandleMap.end())
+        {
+            srv                      = std::make_shared<D3D12ShaderResourceView>(Parent, srvDesc, this, FALSE);
+            m_SRVHandleMap[descHash] = srv;
+        }
+        else
+        {
+            srv = srvHandleIter->second;
+        }
+        return srv;
+    }
+
+    std::shared_ptr<D3D12UnorderedAccessView> D3D12Texture::CreateShaderVisibleUAV(D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc)
+    {
+        UINT64 descHash = Utility::Hash64((const char*)&uavDesc, sizeof(D3D12_UNORDERED_ACCESS_VIEW_DESC));
+
+        std::shared_ptr<D3D12UnorderedAccessView> uav           = nullptr;
+        auto                                      uavHandleIter = m_UAVHandleMap.find(descHash);
+        if (uavHandleIter == m_UAVHandleMap.end())
+        {
+            uav = std::make_shared<D3D12UnorderedAccessView>(
+                Parent, uavDesc, (D3D12Resource*)this, (D3D12Resource*)nullptr, FALSE);
+            m_UAVHandleMap[descHash] = uav;
+        }
+        else
+        {
+            uav = uavHandleIter->second;
+        }
+        return uav;
+    }
+
+    std::shared_ptr<D3D12ShaderResourceView> D3D12Texture::CreateNoneShaderVisibleSRV(D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc)
+    {
+        UINT64 descHash = Utility::Hash64((const char*)&srvDesc, sizeof(D3D12_SHADER_RESOURCE_VIEW_DESC));
+
+        std::shared_ptr<D3D12ShaderResourceView> srv           = nullptr;
+        auto                                srvHandleIter = m_NoneVisual_SRVHandleMap.find(descHash);
+        if (srvHandleIter == m_NoneVisual_SRVHandleMap.end())
+        {
+            srv                                 = std::make_shared<D3D12ShaderResourceView>(Parent, srvDesc, this, TRUE);
+            m_NoneVisual_SRVHandleMap[descHash] = srv;
+        }
+        else
+        {
+            srv = srvHandleIter->second;
+        }
+        return srv;
+    }
+
+    std::shared_ptr<D3D12UnorderedAccessView> D3D12Texture::CreateNoneShaderVisibleUAV(D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc)
+    {
+        UINT64 descHash = Utility::Hash64((const char*)&uavDesc, sizeof(D3D12_UNORDERED_ACCESS_VIEW_DESC));
+
+        std::shared_ptr<D3D12UnorderedAccessView> uav           = nullptr;
+        auto                                      uavHandleIter = m_NoneVisual_UAVHandleMap.find(descHash);
+        if (uavHandleIter == m_NoneVisual_UAVHandleMap.end())
+        {
+            uav = std::make_shared<D3D12UnorderedAccessView>(
+                Parent, uavDesc, (D3D12Resource*)this, (D3D12Resource*)nullptr, TRUE);
+            m_NoneVisual_UAVHandleMap[descHash] = uav;
+        }
+        else
+        {
+            uav = uavHandleIter->second;
+        }
+        return uav;
     }
 
 }

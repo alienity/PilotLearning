@@ -6,9 +6,6 @@ namespace RHI
 {
     class D3D12RenderTargetView;
     class D3D12DepthStencilView;
-    class D3D12NoneVisualCBV;
-    class D3D12NoneVisualSRV;
-    class D3D12NoneVisualUAV;
     class D3D12ConstantBufferView;
     class D3D12ShaderResourceView;
     class D3D12UnorderedAccessView;
@@ -244,30 +241,32 @@ namespace RHI
         bool InflateBuffer(BYTE* initialData, UINT dataLen);
         void ResetCounterBuffer(D3D12CommandContext* pCommandContext);
 
-        std::shared_ptr<D3D12ConstantBufferView>  CreateCBV(D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc);
-        std::shared_ptr<D3D12ShaderResourceView>  CreateSRV(D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc);
-        std::shared_ptr<D3D12UnorderedAccessView> CreateUAV(D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc);
-        std::shared_ptr<D3D12UnorderedAccessView> CreateUAV(D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc, D3D12Resource* pCounterRes);
+        std::shared_ptr<D3D12ConstantBufferView>  CreateCBV(D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc, BOOL isNonShaderVisible = FALSE);
+        std::shared_ptr<D3D12ShaderResourceView>  CreateSRV(D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc, BOOL isNonShaderVisible = FALSE);
+        std::shared_ptr<D3D12UnorderedAccessView> CreateUAV(D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc, BOOL isNonShaderVisible = FALSE);
+        std::shared_ptr<D3D12UnorderedAccessView> CreateUAV(D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc, D3D12Resource* pCounterRes, BOOL isNonShaderVisible = FALSE);
 
-        std::shared_ptr<D3D12NoneVisualCBV> CreateNoneVisualCBV(D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc);
-        std::shared_ptr<D3D12NoneVisualSRV> CreateNoneVisualSRV(D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc);
-        std::shared_ptr<D3D12NoneVisualUAV> CreateNoneVisualUAV(D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc);
-        std::shared_ptr<D3D12NoneVisualUAV> CreateNoneVisualUAV(D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc, D3D12Resource* pCounterRes);
-        
-        std::shared_ptr<D3D12ConstantBufferView>  GetDefaultCBV();
-        std::shared_ptr<D3D12ShaderResourceView>  GetDefaultSRV();
-        std::shared_ptr<D3D12UnorderedAccessView> GetDefaultUAV();
+        std::shared_ptr<D3D12ConstantBufferView>  GetDefaultCBV(BOOL isNonShaderVisible = FALSE);
+        std::shared_ptr<D3D12ShaderResourceView>  GetDefaultSRV(BOOL isNonShaderVisible = FALSE);
+        std::shared_ptr<D3D12UnorderedAccessView> GetDefaultUAV(BOOL isNonShaderVisible = FALSE);
 
-        std::shared_ptr<D3D12NoneVisualCBV> GetDefaultNoneVisualCBV();
-        std::shared_ptr<D3D12NoneVisualSRV> GetDefaultNoneVisualSRV();
-        std::shared_ptr<D3D12NoneVisualUAV> GetDefaultNoneVisualUAV();
-        
-        std::shared_ptr<D3D12UnorderedAccessView> GetDefaultStructureUAV(bool hasCounter = false);
-        std::shared_ptr<D3D12UnorderedAccessView> GetDefaultRawUAV(bool hasCounter = false);
+        std::shared_ptr<D3D12UnorderedAccessView> GetDefaultStructureUAV(bool hasCounter = false, BOOL isNonShaderVisible = FALSE);
+        std::shared_ptr<D3D12UnorderedAccessView> GetDefaultRawUAV(bool hasCounter = false, BOOL isNonShaderVisible = FALSE);
 
         RHIBufferDesc& GetBufferDesc();
 
     protected:
+
+        std::shared_ptr<D3D12ConstantBufferView> CreateShaderVisibleCBV(D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc);
+        std::shared_ptr<D3D12ShaderResourceView> CreateShaderVisibleSRV(D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc);
+        std::shared_ptr<D3D12UnorderedAccessView> CreateShaderVisibleUAV(D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc);
+        std::shared_ptr<D3D12UnorderedAccessView> CreateShaderVisibleUAV(D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc, D3D12Resource* pCounterRes);
+
+        std::shared_ptr<D3D12ConstantBufferView> CreateNoneShaderVisibleCBV(D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc);
+        std::shared_ptr<D3D12ShaderResourceView> CreateNoneShaderVisibleSRV(D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc);
+        std::shared_ptr<D3D12UnorderedAccessView> CreateNoneShaderVisibleUAV(D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc);
+        std::shared_ptr<D3D12UnorderedAccessView> CreateNoneShaderVisibleUAV(D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc, D3D12Resource* pCounterRes);
+
         RHIBufferDesc m_Desc;
         RHIBufferData m_Data;
         
@@ -279,9 +278,9 @@ namespace RHI
         robin_hood::unordered_map<UINT64, std::shared_ptr<D3D12ShaderResourceView>>  m_SRVHandleMap;
         robin_hood::unordered_map<UINT64, std::shared_ptr<D3D12UnorderedAccessView>> m_UAVHandleMap;
 
-        robin_hood::unordered_map<UINT64, std::shared_ptr<D3D12NoneVisualCBV>> m_NoneVisual_CBVHandleMap;
-        robin_hood::unordered_map<UINT64, std::shared_ptr<D3D12NoneVisualSRV>> m_NoneVisual_SRVHandleMap;
-        robin_hood::unordered_map<UINT64, std::shared_ptr<D3D12NoneVisualUAV>> m_NoneVisual_UAVHandleMap;
+        robin_hood::unordered_map<UINT64, std::shared_ptr<D3D12ConstantBufferView>>  m_NoneVisual_CBVHandleMap;
+        robin_hood::unordered_map<UINT64, std::shared_ptr<D3D12ShaderResourceView>>  m_NoneVisual_SRVHandleMap;
+        robin_hood::unordered_map<UINT64, std::shared_ptr<D3D12UnorderedAccessView>> m_NoneVisual_UAVHandleMap;
 
     private:
         D3D12_HEAP_TYPE           m_HeapType    = {};
@@ -319,11 +318,12 @@ namespace RHI
 
         virtual void Destroy() override;
 
-        [[nodiscard]] UINT GetSubresourceIndex(std::optional<UINT> OptArraySlice = std::nullopt,
-                                               std::optional<UINT> OptMipSlice   = std::nullopt,
-                                               std::optional<UINT> OptPlaneSlice = std::nullopt) const noexcept;
+        [[nodiscard]] UINT GetSubresourceIndex(UINT OptArraySlice = 0, UINT OptMipSlice = 0, UINT OptPlaneSlice = 0) const noexcept;
 
-        [[nodiscard]] bool IsCubemap() const noexcept { return m_IsCubemap; }
+        [[nodiscard]] bool IsTex2DArray() const noexcept { return m_Desc.dim == RHITextureDimension::RHITexDim2DArray; }
+        [[nodiscard]] bool IsCubemap() const noexcept { return m_Desc.dim == RHITextureDimension::RHITexDimCube; }
+        [[nodiscard]] bool IsCubemapArray() const noexcept { return m_Desc.dim == RHITextureDimension::RHITexDimCubeArray; }
+        [[nodiscard]] bool IsTex3D() const noexcept { return m_Desc.dim == RHITextureDimension::RHITexDim3D; }
 
     public:
 
@@ -354,46 +354,43 @@ namespace RHI
                                                       std::optional<CD3DX12_CLEAR_VALUE> clearValue = std::nullopt,
                                                       D3D12_SUBRESOURCE_DATA initData    = {});
 
-        static std::shared_ptr<D3D12Texture>
-        Create2DArray(D3D12LinkedDevice*                  Parent,
-                      UINT32                              width,
-                      UINT32                              height,
-                      UINT32                              arraySize,
-                      INT32                               numMips,
-                      DXGI_FORMAT                         format,
-                      RHISurfaceCreateFlags               flags,
-                      UINT32                              sampleCount = 1,
-                      const std::wstring                  name        = L"Texture2DArray",
-                      D3D12_RESOURCE_STATES               initState   = D3D12_RESOURCE_STATE_COMMON,
-                      std::optional<CD3DX12_CLEAR_VALUE>  clearValue  = std::nullopt,
-                      std::vector<D3D12_SUBRESOURCE_DATA> initDatas   = {});
+        static std::shared_ptr<D3D12Texture> Create2DArray(D3D12LinkedDevice*                  Parent,
+                                                           UINT32                              width,
+                                                           UINT32                              height,
+                                                           UINT32                              arraySize,
+                                                           INT32                               numMips,
+                                                           DXGI_FORMAT                         format,
+                                                           RHISurfaceCreateFlags               flags,
+                                                           UINT32                              sampleCount = 1,
+                                                           const std::wstring                  name        = L"Texture2DArray",
+                                                           D3D12_RESOURCE_STATES               initState   = D3D12_RESOURCE_STATE_COMMON,
+                                                           std::optional<CD3DX12_CLEAR_VALUE>  clearValue  = std::nullopt,
+                                                           std::vector<D3D12_SUBRESOURCE_DATA> initDatas   = {});
 
-        static std::shared_ptr<D3D12Texture>
-        CreateCubeMap(D3D12LinkedDevice*                  Parent,
-                      UINT32                              width,
-                      UINT32                              height,
-                      INT32                               numMips,
-                      DXGI_FORMAT                         format,
-                      RHISurfaceCreateFlags               flags,
-                      UINT32                              sampleCount = 1,
-                      const std::wstring                  name        = L"TextureCubeMap",
-                      D3D12_RESOURCE_STATES               initState   = D3D12_RESOURCE_STATE_COMMON,
-                      std::optional<CD3DX12_CLEAR_VALUE>  clearValue  = std::nullopt,
-                      std::vector<D3D12_SUBRESOURCE_DATA> initDatas   = {});
+        static std::shared_ptr<D3D12Texture> CreateCubeMap(D3D12LinkedDevice*                  Parent,
+                                                           UINT32                              width,
+                                                           UINT32                              height,
+                                                           INT32                               numMips,
+                                                           DXGI_FORMAT                         format,
+                                                           RHISurfaceCreateFlags               flags,
+                                                           UINT32                              sampleCount = 1,
+                                                           const std::wstring                  name        = L"TextureCubeMap",
+                                                           D3D12_RESOURCE_STATES               initState   = D3D12_RESOURCE_STATE_COMMON,
+                                                           std::optional<CD3DX12_CLEAR_VALUE>  clearValue  = std::nullopt,
+                                                           std::vector<D3D12_SUBRESOURCE_DATA> initDatas   = {});
 
-        static std::shared_ptr<D3D12Texture>
-        CreateCubeMapArray(D3D12LinkedDevice*                  Parent,
-                           UINT32                              width,
-                           UINT32                              height,
-                           UINT32                              arraySize,
-                           INT32                               numMips,
-                           DXGI_FORMAT                         format,
-                           RHISurfaceCreateFlags               flags,
-                           UINT32                              sampleCount = 1,
-                           const std::wstring                  name        = L"TextureCubeMapArray",
-                           D3D12_RESOURCE_STATES               initState   = D3D12_RESOURCE_STATE_COMMON,
-                           std::optional<CD3DX12_CLEAR_VALUE>  clearValue  = std::nullopt,
-                           std::vector<D3D12_SUBRESOURCE_DATA> initDatas   = {});
+        static std::shared_ptr<D3D12Texture> CreateCubeMapArray(D3D12LinkedDevice*                  Parent,
+                                                                UINT32                              width,
+                                                                UINT32                              height,
+                                                                UINT32                              arraySize,
+                                                                INT32                               numMips,
+                                                                DXGI_FORMAT                         format,
+                                                                RHISurfaceCreateFlags               flags,
+                                                                UINT32                              sampleCount = 1,
+                                                                const std::wstring                  name        = L"TextureCubeMapArray",
+                                                                D3D12_RESOURCE_STATES               initState   = D3D12_RESOURCE_STATE_COMMON,
+                                                                std::optional<CD3DX12_CLEAR_VALUE>  clearValue  = std::nullopt,
+                                                                std::vector<D3D12_SUBRESOURCE_DATA> initDatas   = {});
 
         static std::shared_ptr<D3D12Texture> Create3D(D3D12LinkedDevice*     Parent,
                                                       UINT32                 width,
@@ -408,29 +405,22 @@ namespace RHI
                                                       std::optional<CD3DX12_CLEAR_VALUE> clearValue = std::nullopt,
                                                       D3D12_SUBRESOURCE_DATA initData    = {});
 
-        static std::shared_ptr<D3D12Texture>
-        CreateFromSwapchain(D3D12LinkedDevice*                     Parent,
-                            Microsoft::WRL::ComPtr<ID3D12Resource> pResource,
-                            D3D12_RESOURCE_STATES                  initState = D3D12_RESOURCE_STATE_COMMON,
-                            std::wstring                           name      = L"Backbuffer");
+        static std::shared_ptr<D3D12Texture> CreateFromSwapchain(D3D12LinkedDevice*                     Parent,
+                                                                 Microsoft::WRL::ComPtr<ID3D12Resource> pResource,
+                                                                 D3D12_RESOURCE_STATES                  initState = D3D12_RESOURCE_STATE_COMMON,
+                                                                 std::wstring                           name      = L"Backbuffer");
 
         bool InflateTexture(std::vector<D3D12_SUBRESOURCE_DATA> initDatas);
 
-        std::shared_ptr<D3D12ShaderResourceView>  CreateSRV(D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc);
-        std::shared_ptr<D3D12UnorderedAccessView> CreateUAV(D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc);
-        
+        std::shared_ptr<D3D12ShaderResourceView>  CreateSRV(D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc, BOOL isNonShaderVisible = FALSE);
+        std::shared_ptr<D3D12UnorderedAccessView> CreateUAV(D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc, BOOL isNonShaderVisible = FALSE);
         std::shared_ptr<D3D12RenderTargetView>    CreateRTV(D3D12_RENDER_TARGET_VIEW_DESC rtvDesc);
         std::shared_ptr<D3D12DepthStencilView>    CreateDSV(D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc);
-        std::shared_ptr<D3D12NoneVisualSRV>       CreateNoneVisualSRV(D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc);
-        std::shared_ptr<D3D12NoneVisualUAV>       CreateNoneVisualUAV(D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc);
 
-        std::shared_ptr<D3D12ShaderResourceView>  GetDefaultSRV();
-        std::shared_ptr<D3D12UnorderedAccessView> GetDefaultUAV();
-
+        std::shared_ptr<D3D12ShaderResourceView>  GetDefaultSRV(BOOL isNonShaderVisible = FALSE);
+        std::shared_ptr<D3D12UnorderedAccessView> GetDefaultUAV(BOOL isNonShaderVisible = FALSE);
         std::shared_ptr<D3D12RenderTargetView>    GetDefaultRTV();
         std::shared_ptr<D3D12DepthStencilView>    GetDefaultDSV();
-        std::shared_ptr<D3D12NoneVisualSRV>       GetDefaultNoneVisualSRV();
-        std::shared_ptr<D3D12NoneVisualUAV>       GetDefaultNoneVisualUAV();
 
         // Write the raw pixel buffer contents to a file
         // Note that data is preceded by a 16-byte header:  { DXGI_FORMAT, Pitch (in pixels), Width (in pixels), Height
@@ -440,19 +430,22 @@ namespace RHI
     protected:
         static INT GetMipLevels(UINT width, UINT height, INT32 numMips, RHISurfaceCreateFlags flags);
 
+        std::shared_ptr<D3D12ShaderResourceView>  CreateShaderVisibleSRV(D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc);
+        std::shared_ptr<D3D12UnorderedAccessView> CreateShaderVisibleUAV(D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc);
+
+        std::shared_ptr<D3D12ShaderResourceView>  CreateNoneShaderVisibleSRV(D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc);
+        std::shared_ptr<D3D12UnorderedAccessView> CreateNoneShaderVisibleUAV(D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc);
+
     protected:
         RHIRenderSurfaceBaseDesc m_Desc;
         
-        robin_hood::unordered_map<UINT64, std::shared_ptr<D3D12RenderTargetView>> m_RTVHandleMap;
-        robin_hood::unordered_map<UINT64, std::shared_ptr<D3D12DepthStencilView>> m_DSVHandleMap;
-        robin_hood::unordered_map<UINT64, std::shared_ptr<D3D12NoneVisualSRV>>    m_NoneVisual_SRVHandleMap;
-        robin_hood::unordered_map<UINT64, std::shared_ptr<D3D12NoneVisualUAV>>    m_NoneVisual_UAVHandleMap;
+        robin_hood::unordered_map<UINT64, std::shared_ptr<D3D12RenderTargetView>>    m_RTVHandleMap;
+        robin_hood::unordered_map<UINT64, std::shared_ptr<D3D12DepthStencilView>>    m_DSVHandleMap;
+        robin_hood::unordered_map<UINT64, std::shared_ptr<D3D12ShaderResourceView>>  m_NoneVisual_SRVHandleMap;
+        robin_hood::unordered_map<UINT64, std::shared_ptr<D3D12UnorderedAccessView>> m_NoneVisual_UAVHandleMap;
 
-        robin_hood::unordered_map<UINT64, std::shared_ptr<D3D12ShaderResourceView>> m_SRVHandleMap;
+        robin_hood::unordered_map<UINT64, std::shared_ptr<D3D12ShaderResourceView>>  m_SRVHandleMap;
         robin_hood::unordered_map<UINT64, std::shared_ptr<D3D12UnorderedAccessView>> m_UAVHandleMap;
-
-    protected:
-        bool m_IsCubemap = false;
     };
 
 }
