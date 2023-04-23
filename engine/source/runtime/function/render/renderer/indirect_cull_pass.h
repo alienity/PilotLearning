@@ -9,13 +9,13 @@ namespace Pilot
 {
     struct DrawCallCommandBuffer
     {
-        std::shared_ptr<RHI::D3D12Buffer>              p_IndirectIndexCommandBuffer;
-        std::shared_ptr<RHI::D3D12Buffer>              p_IndirectSortCommandBuffer;
+        std::shared_ptr<RHI::D3D12Buffer> p_IndirectIndexCommandBuffer;
+        std::shared_ptr<RHI::D3D12Buffer> p_IndirectSortCommandBuffer;
 
         void ResetBuffer()
         {
-            p_IndirectIndexCommandBuffer    = nullptr;
-            p_IndirectSortCommandBuffer     = nullptr;
+            p_IndirectIndexCommandBuffer = nullptr;
+            p_IndirectSortCommandBuffer  = nullptr;
         }
     };
 
@@ -37,16 +37,22 @@ namespace Pilot
     class IndirectCullPass : public RenderPass
 	{
     public:
+        struct DrawCallCommandBufferHandle
+        {
+            RHI::RgResourceHandle indirectIndexBufferHandle;
+            RHI::RgResourceHandle indirectSortBufferHandle;
+        };
+
         struct IndirectCullOutput
         {
-            std::shared_ptr<RHI::D3D12Buffer> pPerframeBuffer;
-            std::shared_ptr<RHI::D3D12Buffer> pMaterialBuffer;
-            std::shared_ptr<RHI::D3D12Buffer> pMeshBuffer;
+            RHI::RgResourceHandle perframeBufferHandle;
+            RHI::RgResourceHandle materialBufferHandle;
+            RHI::RgResourceHandle meshBufferHandle;
 
-            std::shared_ptr<RHI::D3D12Buffer> p_OpaqueDrawCommandBuffer;
-            std::shared_ptr<RHI::D3D12Buffer> p_TransparentDrawCommandBuffer;
-            std::shared_ptr<RHI::D3D12Buffer> p_DirShadowmapCommandBuffer;
-            std::vector<std::shared_ptr<RHI::D3D12Buffer>> p_SpotShadowmapCommandBuffers;
+            DrawCallCommandBufferHandle opaqueDrawHandle;
+            DrawCallCommandBufferHandle transparentDrawHandle;
+            DrawCallCommandBufferHandle dirShadowmapHandle;
+            std::vector<DrawCallCommandBufferHandle> spotShadowmapHandles;
         };
 
     public:
@@ -54,7 +60,8 @@ namespace Pilot
 
         void initialize(const RenderPassInitInfo& init_info);
         void prepareMeshData(std::shared_ptr<RenderResourceBase> render_resource);
-        void cullMeshs(RHI::D3D12CommandContext* context, RHI::RenderGraphRegistry* registry, IndirectCullOutput& indirectCullOutput);
+        //void cullMeshs(RHI::D3D12CommandContext* context, RHI::RenderGraphRegistry* registry, IndirectCullOutput& indirectCullOutput);
+        void update(RHI::RenderGraph& cullingGraph, IndirectCullOutput& indirectCullOutput);
 
         void destroy() override final;
 
@@ -64,12 +71,14 @@ namespace Pilot
         void bitonicSort(RHI::D3D12ComputeContext*      context,
                          RHI::D3D12Buffer*              keyIndexList,
                          RHI::D3D12Buffer*              countBuffer,
+                         RHI::D3D12Buffer*              sortDispatchArgBuffer,
                          bool                           isPartiallyPreSorted,
                          bool                           sortAscending);
 
         void grabObject(RHI::D3D12ComputeContext* context,
                         RHI::D3D12Buffer*         indirectIndexBuffer,
-                        RHI::D3D12Buffer*         indirectSortBuffer);
+                        RHI::D3D12Buffer*         indirectSortBuffer,
+                        RHI::D3D12Buffer*         grabDispatchArgBuffer);
 
     private:
 

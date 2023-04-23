@@ -9,6 +9,20 @@
 
 namespace Pilot
 {
+#define GImport(b) graph.Import(b)
+#define PassRead(p, b) p.Read(b)
+#define PassWrite(p, b) p.Write(b)
+#define PassReadIg(p, b) p.Read(b, true)
+#define PassWriteIg(p, b) p.Write(b, true)
+#define RegGetBuf(h) registry->GetD3D12Buffer(h)
+#define RegGetBufCounter(h) registry->GetD3D12Buffer(h)->GetCounterBuffer().get()
+#define RegGetTex(h) registry->GetD3D12Texture(h)
+#define RegGetBufDefCBVIdx(h) registry->GetD3D12Buffer(h)->GetDefaultCBV()->GetIndex()
+#define RegGetBufDefSRVIdx(h) registry->GetD3D12Buffer(h)->GetDefaultSRV()->GetIndex()
+#define RegGetBufDefUAVIdx(h) registry->GetD3D12Buffer(h)->GetDefaultUAV()->GetIndex()
+
+
+
     void IndirectCullPass::initialize(const RenderPassInitInfo& init_info)
     {
         // create default buffer
@@ -281,6 +295,7 @@ namespace Pilot
     void IndirectCullPass::bitonicSort(RHI::D3D12ComputeContext* context,
                                        RHI::D3D12Buffer*         keyIndexList,
                                        RHI::D3D12Buffer*         countBuffer,
+                                       RHI::D3D12Buffer*         sortDispatchArgBuffer, // pSortDispatchArgs
                                        bool                      isPartiallyPreSorted,
                                        bool                      sortAscending)
     {
@@ -301,15 +316,15 @@ namespace Pilot
         // Generate execute indirect arguments
         context->SetPipelineState(PipelineStates::pBitonicIndirectArgsPSO.get());
         context->TransitionBarrier(countBuffer, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-        context->TransitionBarrier(pSortDispatchArgs.get(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+        context->TransitionBarrier(sortDispatchArgBuffer, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
         context->SetConstants(0, MaxIterations);
         context->SetDescriptorTable(1, countBuffer->GetDefaultSRV()->GetGpuHandle());
-        context->SetDescriptorTable(2, pSortDispatchArgs->GetDefaultUAV()->GetGpuHandle());
+        context->SetDescriptorTable(2, sortDispatchArgBuffer->GetDefaultUAV()->GetGpuHandle());
         context->Dispatch(1, 1, 1);
 
         // Pre-Sort the buffer up to k = 2048.  This also pads the list with invalid indices
         // that will drift to the end of the sorted list.
-        context->TransitionBarrier(pSortDispatchArgs.get(), D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT);
+        context->TransitionBarrier(sortDispatchArgBuffer, D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT);
         context->TransitionBarrier(keyIndexList, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
         context->InsertUAVBarrier(keyIndexList);
         context->FlushResourceBarriers();
@@ -322,7 +337,7 @@ namespace Pilot
             context->SetPipelineState(ElementSizeBytes == 4 ? PipelineStates::pBitonic32PreSortPSO.get() :
                                                               PipelineStates::pBitonic64PreSortPSO.get());
 
-            context->DispatchIndirect(pSortDispatchArgs.get(), 0);
+            context->DispatchIndirect(sortDispatchArgBuffer, 0);
             context->InsertUAVBarrier(keyIndexList);
         }
 
@@ -340,14 +355,14 @@ namespace Pilot
             for (uint32_t j = k / 2; j >= 2048; j /= 2)
             {
                 context->SetConstant(0, j, k);
-                context->DispatchIndirect(pSortDispatchArgs.get(), IndirectArgsOffset);
+                context->DispatchIndirect(sortDispatchArgBuffer, IndirectArgsOffset);
                 context->InsertUAVBarrier(keyIndexList);
                 IndirectArgsOffset += 12;
             }
 
             context->SetPipelineState(ElementSizeBytes == 4 ? PipelineStates::pBitonic32InnerSortPSO.get() :
                                                              PipelineStates::pBitonic64InnerSortPSO.get());
-            context->DispatchIndirect(pSortDispatchArgs.get(), IndirectArgsOffset);
+            context->DispatchIndirect(sortDispatchArgBuffer, IndirectArgsOffset);
             context->InsertUAVBarrier(keyIndexList);
             IndirectArgsOffset += 12;
         }
@@ -355,21 +370,22 @@ namespace Pilot
 
     void IndirectCullPass::grabObject(RHI::D3D12ComputeContext* context,
                                       RHI::D3D12Buffer*         indirectIndexBuffer,
-                                      RHI::D3D12Buffer*         indirectSortBuffer)
+                                      RHI::D3D12Buffer*         indirectSortBuffer,
+                                      RHI::D3D12Buffer*         grabDispatchArgBuffer)// pSortDispatchArgs
 
     {
         {
             context->TransitionBarrier(indirectIndexBuffer->GetCounterBuffer().get(),
                                              D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-            context->TransitionBarrier(pGrabDispatchArgs.get(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-            context->InsertUAVBarrier(pGrabDispatchArgs.get());
+            context->TransitionBarrier(grabDispatchArgBuffer, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+            context->InsertUAVBarrier(grabDispatchArgBuffer);
             context->FlushResourceBarriers();
 
             context->SetPipelineState(PipelineStates::pIndirectCullArgs.get());
             context->SetRootSignature(RootSignatures::pIndirectCullArgs.get());
 
             context->SetBufferSRV(0, indirectIndexBuffer->GetCounterBuffer().get());
-            context->SetBufferUAV(1, pGrabDispatchArgs.get());
+            context->SetBufferUAV(1, grabDispatchArgBuffer);
 
             context->Dispatch(1, 1, 1);
         }
@@ -377,7 +393,7 @@ namespace Pilot
             context->TransitionBarrier(indirectIndexBuffer->GetCounterBuffer().get(),
                                              D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
             context->TransitionBarrier(indirectIndexBuffer, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-            context->TransitionBarrier(pGrabDispatchArgs.get(), D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT);
+            context->TransitionBarrier(grabDispatchArgBuffer, D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT);
             context->FlushResourceBarriers();
 
             context->SetPipelineState(PipelineStates::pIndirectCullGrab.get());
@@ -388,13 +404,14 @@ namespace Pilot
             context->SetBufferSRV(2, indirectIndexBuffer);
             context->SetDescriptorTable(3, indirectSortBuffer->GetDefaultUAV()->GetGpuHandle());
 
-            context->DispatchIndirect(pGrabDispatchArgs.get(), 0);
+            context->DispatchIndirect(grabDispatchArgBuffer, 0);
 
             // Transition to indirect argument state
             context->TransitionBarrier(indirectSortBuffer, D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT);
         }
     }
 
+    /*
     void IndirectCullPass::cullMeshs(RHI::D3D12CommandContext* context,
                                      RHI::RenderGraphRegistry* registry,
                                      IndirectCullOutput&       indirectCullOutput)
@@ -576,6 +593,266 @@ namespace Pilot
 
         context->GetCommandQueue()->WaitForSyncHandle(ComputeSyncHandle);
 
+    }
+    */
+
+    void IndirectCullPass::update(RHI::RenderGraph& graph, IndirectCullOutput& cullOutput)
+    {
+        RHI::RgResourceHandle uploadPerframeBufferHandle = GImport(pUploadPerframeBuffer.get());
+        RHI::RgResourceHandle pploadMaterialBufferHandle = GImport(pUploadMaterialBuffer.get());
+        RHI::RgResourceHandle uploadMeshBufferHandle     = GImport(pUploadMeshBuffer.get());
+
+        RHI::RgResourceHandle sortDispatchArgsHandle = GImport(pSortDispatchArgs.get());
+        RHI::RgResourceHandle grabDispatchArgsHandle = GImport(pGrabDispatchArgs.get());
+
+        // import buffers
+        cullOutput.perframeBufferHandle = GImport(pPerframeBuffer.get());
+        cullOutput.materialBufferHandle = GImport(pMaterialBuffer.get());
+        cullOutput.meshBufferHandle     = GImport(pMeshBuffer.get());
+
+        cullOutput.opaqueDrawHandle = DrawCallCommandBufferHandle {
+            GImport(commandBufferForOpaqueDraw.p_IndirectIndexCommandBuffer.get()),
+            GImport(commandBufferForOpaqueDraw.p_IndirectSortCommandBuffer.get())};
+
+        cullOutput.transparentDrawHandle = DrawCallCommandBufferHandle {
+            GImport(commandBufferForTransparentDraw.p_IndirectIndexCommandBuffer.get()),
+            GImport(commandBufferForTransparentDraw.p_IndirectSortCommandBuffer.get())};
+
+        bool hasDirShadowmap = false;
+        if (dirShadowmapCommandBuffer.p_IndirectSortCommandBuffer != nullptr)
+        {
+            hasDirShadowmap = true;
+            cullOutput.dirShadowmapHandle = DrawCallCommandBufferHandle {
+                GImport(dirShadowmapCommandBuffer.p_IndirectIndexCommandBuffer.get()),
+                GImport(dirShadowmapCommandBuffer.p_IndirectSortCommandBuffer.get())};
+        }
+
+        bool hasSpotShadowmap = false;
+        if (spotShadowmapCommandBuffer.size() != 0)
+            hasSpotShadowmap = true;
+        for (size_t i = 0; i < spotShadowmapCommandBuffer.size(); i++)
+        {
+            DrawCallCommandBufferHandle bufferHandle = {
+                GImport(spotShadowmapCommandBuffer[i].p_IndirectIndexCommandBuffer.get()),
+                GImport(spotShadowmapCommandBuffer[i].p_IndirectSortCommandBuffer.get())};
+            cullOutput.spotShadowmapHandles.push_back(bufferHandle);
+        }
+
+
+        int numMeshes = m_visiable_nodes.p_all_mesh_nodes->size();
+
+        RHI::D3D12SyncHandle ComputeSyncHandle;
+        if (numMeshes > 0)
+        {
+            RHI::RenderPass& resetPass = graph.AddRenderPass("ResetPass");
+
+            PassReadIg(resetPass, uploadPerframeBufferHandle);
+            PassReadIg(resetPass, pploadMaterialBufferHandle);
+            PassReadIg(resetPass, uploadMeshBufferHandle);
+            PassWriteIg(resetPass, cullOutput.perframeBufferHandle);
+            PassWriteIg(resetPass, cullOutput.materialBufferHandle);
+            PassWriteIg(resetPass, cullOutput.meshBufferHandle);
+            PassWriteIg(resetPass, cullOutput.opaqueDrawHandle.indirectIndexBufferHandle);
+            PassWriteIg(resetPass, cullOutput.opaqueDrawHandle.indirectSortBufferHandle);
+            PassWriteIg(resetPass, cullOutput.transparentDrawHandle.indirectIndexBufferHandle);
+            PassWriteIg(resetPass, cullOutput.transparentDrawHandle.indirectSortBufferHandle);
+            if (hasDirShadowmap)
+            {
+                PassWriteIg(resetPass, cullOutput.dirShadowmapHandle.indirectIndexBufferHandle);
+                PassWriteIg(resetPass, cullOutput.dirShadowmapHandle.indirectSortBufferHandle);
+            }
+            for (size_t i = 0; i < spotShadowmapCommandBuffer.size(); i++)
+            {
+                PassWriteIg(resetPass, cullOutput.spotShadowmapHandles[i].indirectIndexBufferHandle);
+                PassWriteIg(resetPass, cullOutput.spotShadowmapHandles[i].indirectSortBufferHandle);
+            }
+
+            resetPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
+                RHI::D3D12ComputeContext* pCopyContext = context->GetComputeContext();
+
+                pCopyContext->ResetCounter(RegGetBuf(cullOutput.opaqueDrawHandle.indirectIndexBufferHandle));
+                pCopyContext->ResetCounter(RegGetBuf(cullOutput.opaqueDrawHandle.indirectSortBufferHandle));
+                pCopyContext->ResetCounter(RegGetBuf(cullOutput.transparentDrawHandle.indirectIndexBufferHandle));
+                pCopyContext->ResetCounter(RegGetBuf(cullOutput.transparentDrawHandle.indirectSortBufferHandle));
+
+                if (hasDirShadowmap)
+                {
+                    pCopyContext->ResetCounter(RegGetBufCounter(cullOutput.dirShadowmapHandle.indirectSortBufferHandle));
+                }
+
+                for (size_t i = 0; i < spotShadowmapCommandBuffer.size(); i++)
+                {
+                    pCopyContext->ResetCounter(RegGetBufCounter(cullOutput.spotShadowmapHandles[i].indirectSortBufferHandle));
+                }
+
+                pCopyContext->CopyBuffer(RegGetBuf(cullOutput.perframeBufferHandle), RegGetBuf(uploadPerframeBufferHandle));
+                pCopyContext->CopyBuffer(RegGetBuf(cullOutput.materialBufferHandle), RegGetBuf(pploadMaterialBufferHandle));
+                pCopyContext->CopyBuffer(RegGetBuf(cullOutput.meshBufferHandle), RegGetBuf(uploadMeshBufferHandle));
+
+                pCopyContext->TransitionBarrier(RegGetBuf(cullOutput.perframeBufferHandle), D3D12_RESOURCE_STATE_GENERIC_READ);
+                pCopyContext->TransitionBarrier(RegGetBuf(cullOutput.materialBufferHandle), D3D12_RESOURCE_STATE_GENERIC_READ);
+                pCopyContext->TransitionBarrier(RegGetBuf(cullOutput.meshBufferHandle), D3D12_RESOURCE_STATE_GENERIC_READ);
+            });
+
+
+            RHI::RenderPass& cullingPass = graph.AddRenderPass("OpaqueTransCullingPass");
+
+            PassReadIg(cullingPass, cullOutput.perframeBufferHandle);
+            PassReadIg(cullingPass, cullOutput.meshBufferHandle);
+            PassReadIg(cullingPass, cullOutput.materialBufferHandle);
+            PassWriteIg(cullingPass, cullOutput.opaqueDrawHandle.indirectIndexBufferHandle);
+            PassWriteIg(cullingPass, cullOutput.transparentDrawHandle.indirectIndexBufferHandle);
+
+            cullingPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
+                RHI::D3D12ComputeContext* pAsyncCompute = context->GetComputeContext();
+                
+                pAsyncCompute->TransitionBarrier(RegGetBuf(cullOutput.opaqueDrawHandle.indirectIndexBufferHandle), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+                pAsyncCompute->TransitionBarrier(RegGetBuf(cullOutput.transparentDrawHandle.indirectIndexBufferHandle), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+                
+                pAsyncCompute->SetRootSignature(RootSignatures::pIndirectCullForSort.get());
+                pAsyncCompute->SetPipelineState(PipelineStates::pIndirectCullForSort.get());
+
+                struct RootIndexBuffer
+                {
+                    UINT meshPerFrameBufferIndex;
+                    UINT meshInstanceBufferIndex;
+                    UINT materialIndexBufferIndex;
+                    UINT opaqueSortIndexDisBufferIndex;
+                    UINT transSortIndexDisBufferIndex;
+                };
+
+                RootIndexBuffer rootIndexBuffer =
+                    RootIndexBuffer {RegGetBufDefCBVIdx(cullOutput.perframeBufferHandle),
+                                     RegGetBufDefSRVIdx(cullOutput.meshBufferHandle),
+                                     RegGetBufDefSRVIdx(cullOutput.materialBufferHandle),
+                                     RegGetBufDefUAVIdx(cullOutput.opaqueDrawHandle.indirectIndexBufferHandle),
+                                     RegGetBufDefUAVIdx(cullOutput.transparentDrawHandle.indirectIndexBufferHandle)};
+
+                pAsyncCompute->SetConstantArray(0, sizeof(RootIndexBuffer) / sizeof(UINT), &rootIndexBuffer);
+                pAsyncCompute->Dispatch1D(numMeshes, 128);
+            });
+
+
+            RHI::RenderPass& opaqueSortPass = graph.AddRenderPass("OpaqueBitonicSortPass");
+
+            PassReadIg(opaqueSortPass, sortDispatchArgsHandle);
+            PassWriteIg(opaqueSortPass, cullOutput.opaqueDrawHandle.indirectIndexBufferHandle);
+            
+            opaqueSortPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
+                RHI::D3D12ComputeContext* pAsyncCompute = context->GetComputeContext();
+
+                RHI::D3D12Buffer* bufferPtr = RegGetBuf(cullOutput.opaqueDrawHandle.indirectIndexBufferHandle);
+                RHI::D3D12Buffer* bufferCouterPtr = bufferPtr->GetCounterBuffer().get();
+                RHI::D3D12Buffer* sortDispatchArgsPtr = RegGetBuf(sortDispatchArgsHandle);
+
+                bitonicSort(pAsyncCompute, bufferPtr, bufferCouterPtr, sortDispatchArgsPtr, false, true);
+            });
+
+
+            RHI::RenderPass& transSortPass = graph.AddRenderPass("TransparentBitonicSortPass");
+
+            PassWriteIg(transSortPass, sortDispatchArgsHandle);
+            PassWriteIg(transSortPass, cullOutput.transparentDrawHandle.indirectIndexBufferHandle);
+
+            transSortPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
+                RHI::D3D12ComputeContext* pAsyncCompute = context->GetComputeContext();
+
+                RHI::D3D12Buffer* bufferPtr       = RegGetBuf(cullOutput.transparentDrawHandle.indirectIndexBufferHandle);
+                RHI::D3D12Buffer* bufferCouterPtr = bufferPtr->GetCounterBuffer().get();
+                RHI::D3D12Buffer* sortDispatchArgsPtr = RegGetBuf(sortDispatchArgsHandle);
+
+                bitonicSort(pAsyncCompute, bufferPtr, bufferCouterPtr, sortDispatchArgsPtr, false, false);
+            });
+
+
+            RHI::RenderPass& grabOpaquePass = graph.AddRenderPass("GrabOpaquePass");
+
+            PassWriteIg(grabOpaquePass, grabDispatchArgsHandle);
+            PassWriteIg(grabOpaquePass, cullOutput.opaqueDrawHandle.indirectSortBufferHandle);
+
+            grabOpaquePass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
+                RHI::D3D12ComputeContext* pAsyncCompute = context->GetComputeContext();
+                
+                RHI::D3D12Buffer* indirectIndexBufferPtr = RegGetBuf(cullOutput.opaqueDrawHandle.indirectIndexBufferHandle);
+                RHI::D3D12Buffer* indirectSortBufferPtr = RegGetBuf(cullOutput.opaqueDrawHandle.indirectSortBufferHandle);
+                RHI::D3D12Buffer* grabDispatchArgsPtr = RegGetBuf(grabDispatchArgsHandle);
+
+                grabObject(pAsyncCompute, indirectIndexBufferPtr, indirectSortBufferPtr, grabDispatchArgsPtr);
+            });
+
+
+            RHI::RenderPass& grabTransPass = graph.AddRenderPass("GrabTransPass");
+
+            PassWriteIg(grabTransPass, grabDispatchArgsHandle);
+            PassWriteIg(grabTransPass, cullOutput.transparentDrawHandle.indirectSortBufferHandle);
+
+            grabTransPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
+                RHI::D3D12ComputeContext* pAsyncCompute = context->GetComputeContext();
+
+                RHI::D3D12Buffer* indirectIndexBufferPtr = RegGetBuf(cullOutput.transparentDrawHandle.indirectIndexBufferHandle);
+                RHI::D3D12Buffer* indirectSortBufferPtr = RegGetBuf(cullOutput.transparentDrawHandle.indirectSortBufferHandle);
+                RHI::D3D12Buffer* grabDispatchArgsPtr = RegGetBuf(grabDispatchArgsHandle);
+
+                grabObject(pAsyncCompute, indirectIndexBufferPtr, indirectSortBufferPtr, grabDispatchArgsPtr);
+            });
+
+
+            RHI::RenderPass& dirLightShadowCullPass = graph.AddRenderPass("DirectionLightShadowCullPass");
+
+            PassReadIg(dirLightShadowCullPass, cullOutput.perframeBufferHandle);
+            PassReadIg(dirLightShadowCullPass, cullOutput.meshBufferHandle);
+            PassReadIg(dirLightShadowCullPass, cullOutput.materialBufferHandle);
+            PassWriteIg(dirLightShadowCullPass, cullOutput.dirShadowmapHandle.indirectSortBufferHandle);
+
+            dirLightShadowCullPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
+                RHI::D3D12ComputeContext* pAsyncCompute = context->GetComputeContext();
+
+                pAsyncCompute->SetPipelineState(PipelineStates::pIndirectCullDirectionShadowmap.get());
+                pAsyncCompute->SetRootSignature(RootSignatures::pIndirectCullDirectionShadowmap.get());
+
+                RHI::D3D12Buffer* indirectSortBufferPtr = RegGetBuf(cullOutput.dirShadowmapHandle.indirectSortBufferHandle);
+
+                pAsyncCompute->SetConstantBuffer(0, RegGetBuf(cullOutput.perframeBufferHandle)->GetGpuVirtualAddress());
+                pAsyncCompute->SetBufferSRV(1, RegGetBuf(cullOutput.meshBufferHandle));
+                pAsyncCompute->SetBufferSRV(2, RegGetBuf(cullOutput.materialBufferHandle));
+                pAsyncCompute->SetDescriptorTable(3, indirectSortBufferPtr->GetDefaultUAV()->GetGpuHandle());
+                
+                pAsyncCompute->Dispatch1D(numMeshes, 128);
+
+                pAsyncCompute->TransitionBarrier(RegGetBuf(cullOutput.dirShadowmapHandle.indirectSortBufferHandle), D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT);
+            });
+
+
+            RHI::RenderPass& spotLightShadowCullPass = graph.AddRenderPass("SpotLightShadowCullPass");
+
+            PassReadIg(spotLightShadowCullPass, cullOutput.perframeBufferHandle);
+            PassReadIg(spotLightShadowCullPass, cullOutput.meshBufferHandle);
+            PassReadIg(spotLightShadowCullPass, cullOutput.materialBufferHandle);
+            for (size_t i = 0; i < cullOutput.spotShadowmapHandles.size(); i++)
+            {
+                PassWriteIg(spotLightShadowCullPass, cullOutput.spotShadowmapHandles[i].indirectSortBufferHandle);
+            }
+
+            spotLightShadowCullPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
+                RHI::D3D12ComputeContext* pAsyncCompute = context->GetComputeContext();
+
+                for (size_t i = 0; i < cullOutput.spotShadowmapHandles.size(); i++)
+                {
+                    pAsyncCompute->SetPipelineState(PipelineStates::pIndirectCullSpotShadowmap.get());
+                    pAsyncCompute->SetRootSignature(RootSignatures::pIndirectCullSpotShadowmap.get());
+
+                    pAsyncCompute->SetConstantBuffer(0, RegGetBuf(cullOutput.perframeBufferHandle)->GetGpuVirtualAddress());
+                    pAsyncCompute->SetConstant(1, 0, spotShadowmapCommandBuffer[i].m_lightIndex);
+                    pAsyncCompute->SetBufferSRV(2, RegGetBuf(cullOutput.meshBufferHandle));
+                    pAsyncCompute->SetBufferSRV(3, RegGetBuf(cullOutput.materialBufferHandle));
+                    pAsyncCompute->SetDescriptorTable(4, RegGetBuf(cullOutput.spotShadowmapHandles[i].indirectSortBufferHandle)->GetDefaultUAV()->GetGpuHandle());
+
+                    pAsyncCompute->Dispatch1D(numMeshes, 128);
+
+                    pAsyncCompute->TransitionBarrier(RegGetBuf(cullOutput.spotShadowmapHandles[i].indirectSortBufferHandle), D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT);
+                }
+            });
+        }
     }
 
     void IndirectCullPass::destroy()

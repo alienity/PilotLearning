@@ -178,27 +178,31 @@ namespace Pilot
 
     void DeferredRenderer::OnRender(RHI::D3D12CommandContext* context)
     {
-        IndirectCullPass::IndirectCullOutput indirectCullOutput;
-        mIndirectCullPass->cullMeshs(context, &renderGraphRegistry, indirectCullOutput);
+        //IndirectCullPass::IndirectCullOutput indirectCullOutput;
+        //mIndirectCullPass->cullMeshs(context, &renderGraphRegistry, indirectCullOutput);
 
         RHI::D3D12Texture* pBackBufferResource = pSwapChain->GetCurrentBackBufferResource();
 
         RHI::RenderGraph graph(renderGraphAllocator, renderGraphRegistry);
 
         // backbuffer output
-        RHI::RgResourceHandle backBufColorHandle    = graph.Import(pBackBufferResource);
+        RHI::RgResourceHandle backBufColorHandle = graph.Import(pBackBufferResource);
 
         // game view output
         RHI::RgResourceHandle renderTargetColorHandle = graph.Import(p_RenderTargetTex.get());
-        
+     
+        // 应该再给graph添加一个signal同步，目前先这样
+        IndirectCullPass::IndirectCullOutput indirectCullOutput;
+        mIndirectCullPass->update(graph, indirectCullOutput);
+
         // indirect draw shadow
         IndirectShadowPass::ShadowInputParameters  mShadowmapIntputParams;
         IndirectShadowPass::ShadowOutputParameters mShadowmapOutputParams;
 
-        mShadowmapIntputParams.pPerframeBuffer            = indirectCullOutput.pPerframeBuffer;
-        mShadowmapIntputParams.pMeshBuffer                = indirectCullOutput.pMeshBuffer;
-        mShadowmapIntputParams.pMaterialBuffer            = indirectCullOutput.pMaterialBuffer;
-        mShadowmapIntputParams.p_DirectionalCommandBuffer = indirectCullOutput.p_DirShadowmapCommandBuffer;
+        mShadowmapIntputParams.pPerframeBuffer            = indirectCullOutput.perframeBufferHandle;
+        mShadowmapIntputParams.pMeshBuffer                = indirectCullOutput.meshBufferHandle;
+        mShadowmapIntputParams.pMaterialBuffer            = indirectCullOutput.materialBufferHandle;
+        mShadowmapIntputParams.p_DirectionalCommandBuffer = indirectCullOutput.dirShadowmapHandle.indirectSortBufferHandle;
         mShadowmapIntputParams.p_SpotCommandBuffer        = indirectCullOutput.p_SpotShadowmapCommandBuffers;
         mIndirectShadowPass->update(graph, mShadowmapIntputParams, mShadowmapOutputParams);
 
