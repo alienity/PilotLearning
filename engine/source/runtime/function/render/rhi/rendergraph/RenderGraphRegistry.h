@@ -22,7 +22,7 @@ namespace RHI
 
 		[[nodiscard]] auto GetResource(RgResourceHandle Handle) -> T*
 		{
-			assert(Handle.Type == Type);
+			ASSERT(Handle.Type == Type);
 			return &Array[Handle.Id];
 		}
 
@@ -54,11 +54,11 @@ namespace RHI
 		template<typename T>
 		[[nodiscard]] auto Get(RgResourceHandle Handle) -> T*
 		{
-            assert(Handle.IsValid());
-            assert(Handle.Type == RgResourceTraits<T>::Enum);
-            assert(!Handle.IsImported());
+            ASSERT(Handle.IsValid());
+            ASSERT(Handle.Type == RgResourceTraits<T>::Enum);
+            ASSERT(!Handle.IsImported());
             auto& Container = GetContainer<T>();
-            assert(Handle.Id < Container.size());
+            ASSERT(Handle.Id < Container.size());
             return &Container[Handle.Id];
 		}
         */

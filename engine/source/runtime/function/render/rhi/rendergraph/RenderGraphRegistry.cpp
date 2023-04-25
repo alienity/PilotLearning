@@ -57,7 +57,7 @@ namespace RHI
 		{
 			auto&		 RgTexture = Graph->Textures[i];
 			RgResourceHandle Handle	   = RgTexture.Handle;
-			assert(!Handle.IsImported());
+			ASSERT(!Handle.IsImported());
 
 			bool TextureDirty = false;
             auto Iter         = TextureDescTable.find(Handle);
@@ -149,7 +149,7 @@ namespace RHI
         {
              auto&            RgBuffer = Graph->Buffers[i];
              RgResourceHandle Handle   = RgBuffer.Handle;
-             assert(!Handle.IsImported());
+             ASSERT(!Handle.IsImported());
 
              bool BufferDirty = false;
              auto Iter        = BufferDescTable.find(Handle);
@@ -186,36 +186,39 @@ namespace RHI
 
 	D3D12Buffer* RenderGraphRegistry::GetD3D12Buffer(RgResourceHandle Handle)
 	{
-        assert(Handle.IsValid());
-        assert(Handle.Type == RgResourceTraits<D3D12Buffer>::Enum);
+        ASSERT(Handle.IsValid());
+        //ASSERT(Handle.Type == RgResourceTraits<D3D12Buffer>::Enum);
+        ASSERT(Handle.Type == RgResourceType::Buffer || Handle.Type == RgResourceType::VertexAndConstantBuffer ||
+               Handle.Type == RgResourceType::IndirectArgBuffer);
 		if (!Handle.IsImported())
 		{
             auto& Container = GetContainer<D3D12Buffer>();
-            assert(Handle.Id < Container.size());
+            ASSERT(Handle.Id < Container.size());
             return Container[Handle.Id].get();
 		}
 		else
 		{
             auto& ImportedContainer = Graph->GetImportedContainer<D3D12Buffer>();
-            assert(Handle.Id < ImportedContainer.size());
+            ASSERT(Handle.Id < ImportedContainer.size());
             return ImportedContainer[Handle.Id];
 		}
 	}
 
 	D3D12Texture* RenderGraphRegistry::GetD3D12Texture(RgResourceHandle Handle)
 	{
-        assert(Handle.IsValid());
-        assert(Handle.Type == RgResourceTraits<D3D12Texture>::Enum);
+        ASSERT(Handle.IsValid());
+        //ASSERT(Handle.Type == RgResourceTraits<D3D12Texture>::Enum);
+        ASSERT(Handle.Type == RgResourceType::Texture);
         if (!Handle.IsImported())
         {
             auto& Container = GetContainer<D3D12Texture>();
-            assert(Handle.Id < Container.size());
+            ASSERT(Handle.Id < Container.size());
             return Container[Handle.Id].get();
         }
         else
         {
             auto& ImportedContainer = Graph->GetImportedContainer<D3D12Texture>();
-            assert(Handle.Id < ImportedContainer.size());
+            ASSERT(Handle.Id < ImportedContainer.size());
             return ImportedContainer[Handle.Id];
         }
 	}

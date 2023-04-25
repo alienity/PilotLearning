@@ -9,7 +9,9 @@ namespace RHI
 	{
 		// Only allow buffers/textures
         ASSERT(Resource.IsValid());
-        ASSERT(Resource.Type == RgResourceType::Buffer || Resource.Type == RgResourceType::Texture);
+        ASSERT(Resource.Type == RgResourceType::Buffer || Resource.Type == RgResourceType::Texture ||
+               Resource.Type == RgResourceType::VertexAndConstantBuffer ||
+               Resource.Type == RgResourceType::IndirectArgBuffer);
 		Reads.insert(Resource);
 		ReadWrites.insert(Resource);
         if (IgnoreBarrier)
@@ -86,21 +88,35 @@ namespace RHI
             if (isResolveSrc)
                 continue;
 
-			D3D12_RESOURCE_STATES ReadState = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
-            if (RenderGraph->AllowUnorderedAccess(Read))
-            {
-                ReadState |= D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
-            }
-			if (Read.Type == RgResourceType::Texture)
+			if (Read.Type == RgResourceType::Texture || Read.Type == RgResourceType::Buffer)
 			{
-                D3D12Texture* pTexture = RenderGraph->GetRegistry()->GetD3D12Texture(Read);
-                Context->TransitionBarrier(pTexture, ReadState);
+                D3D12_RESOURCE_STATES ReadState = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+                if (RenderGraph->AllowUnorderedAccess(Read))
+                {
+                    ReadState |= D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
+                }
+                if (Read.Type == RgResourceType::Texture)
+                {
+                    D3D12Texture* pTexture = RenderGraph->GetRegistry()->GetD3D12Texture(Read);
+                    Context->TransitionBarrier(pTexture, ReadState);
+                }
+                if (Read.Type == RgResourceType::Buffer)
+                {
+                    D3D12Buffer* pBuffer = RenderGraph->GetRegistry()->GetD3D12Buffer(Read);
+                    Context->TransitionBarrier(pBuffer, ReadState);
+                }
 			}
-			else
+            else if (Read.Type == RgResourceType::VertexAndConstantBuffer)
 			{
-                D3D12Buffer* pBuffer = RenderGraph->GetRegistry()->GetD3D12Buffer(Read);
-                Context->TransitionBarrier(pBuffer, ReadState);
+                D3D12Buffer* pCBuffer = RenderGraph->GetRegistry()->GetD3D12Buffer(Read);
+                Context->TransitionBarrier(pCBuffer, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
 			}
+            else if (Read.Type == RgResourceType::IndirectArgBuffer)
+			{
+                D3D12Buffer* pCBuffer = RenderGraph->GetRegistry()->GetD3D12Buffer(Read);
+                Context->TransitionBarrier(pCBuffer, D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT);
+			}
+
 		}
 		for (auto Write : Writes)
 		{

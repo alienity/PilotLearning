@@ -25,11 +25,17 @@ namespace Pilot
         //DrawInputParameters  drawPassInput  = passInput;
         //DrawOutputParameters drawPassOutput = passOutput;
 
-        std::shared_ptr<RHI::D3D12Buffer> pPerframeBuffer = passInput.pPerframeBuffer;
-        std::shared_ptr<RHI::D3D12Buffer> pMeshBuffer     = passInput.pMeshBuffer;
-        std::shared_ptr<RHI::D3D12Buffer> pMaterialBuffer = passInput.pMaterialBuffer;
+        RHI::RgResourceHandle perframeBufferHandle = RHI::ToRgResourceHandle(passInput.perframeBufferHandle, RHI::RgResourceType::VertexAndConstantBuffer);
 
-        std::shared_ptr<RHI::D3D12Buffer> pIndirectCommandBuffer = passInput.pIndirectCommandBuffer;
+        RHI::RgResourceHandle meshBufferHandle     = passInput.meshBufferHandle;
+        RHI::RgResourceHandle materialBufferHandle = passInput.materialBufferHandle;
+
+        RHI::RgResourceHandle opaqueDrawHandle = RHI::ToRgResourceHandle(passInput.opaqueDrawHandle, RHI::RgResourceType::IndirectArgBuffer);
+
+        //std::shared_ptr<RHI::D3D12Buffer> pPerframeBuffer = passInput.pPerframeBuffer;
+        //std::shared_ptr<RHI::D3D12Buffer> pMeshBuffer     = passInput.pMeshBuffer;
+        //std::shared_ptr<RHI::D3D12Buffer> pMaterialBuffer = passInput.pMaterialBuffer;
+        //std::shared_ptr<RHI::D3D12Buffer> pIndirectCommandBuffer = passInput.pIndirectCommandBuffer;
 
         RHI::RgResourceHandle renderTargetColorHandle = passOutput.renderTargetColorHandle;
         RHI::RgResourceHandle renderTargetDepthHandle = passOutput.renderTargetDepthHandle;
@@ -69,12 +75,18 @@ namespace Pilot
 
             graphicContext->SetRootSignature(RootSignatures::pIndirectDraw.get());
             graphicContext->SetPipelineState(PipelineStates::pIndirectDraw.get());
-            graphicContext->SetConstantBuffer(1, pPerframeBuffer->GetGpuVirtualAddress());
-            graphicContext->SetBufferSRV(2, pMeshBuffer.get());
-            graphicContext->SetBufferSRV(3, pMaterialBuffer.get());
+            graphicContext->SetConstantBuffer(1, registry->GetD3D12Buffer(perframeBufferHandle)->GetGpuVirtualAddress());
+            graphicContext->SetBufferSRV(2, registry->GetD3D12Buffer(meshBufferHandle));
+            graphicContext->SetBufferSRV(3, registry->GetD3D12Buffer(materialBufferHandle));
+
+            //graphicContext->SetConstantBuffer(1, pPerframeBuffer->GetGpuVirtualAddress());
+            //graphicContext->SetBufferSRV(2, pMeshBuffer.get());
+            //graphicContext->SetBufferSRV(3, pMaterialBuffer.get());
+
+            auto pIndirectCommandBuffer = registry->GetD3D12Buffer(opaqueDrawHandle);
 
             graphicContext->ExecuteIndirect(CommandSignatures::pIndirectDraw.get(),
-                                            pIndirectCommandBuffer.get(),
+                                            pIndirectCommandBuffer,
                                             0,
                                             HLSL::MeshLimit,
                                             pIndirectCommandBuffer->GetCounterBuffer().get(),

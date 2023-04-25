@@ -92,11 +92,14 @@ namespace Pilot
         std::shared_ptr<RHI::D3D12Buffer> pMaterialBuffer;
         std::shared_ptr<RHI::D3D12Buffer> pMeshBuffer;
 
+        /*
         // for sort
         std::shared_ptr<RHI::D3D12Buffer> pSortDispatchArgs;
-
         // for grab
         std::shared_ptr<RHI::D3D12Buffer> pGrabDispatchArgs;
+        */
+        RHI::RgBufferDesc sortDispatchArgsBufferDesc;
+        RHI::RgBufferDesc grabDispatchArgsBufferDesc;
 
         // used for later draw call
         DrawCallCommandBuffer commandBufferForOpaqueDraw;

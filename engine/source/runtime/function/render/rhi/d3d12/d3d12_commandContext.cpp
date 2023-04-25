@@ -180,12 +180,12 @@ namespace RHI
 
     std::shared_ptr<D3D12Buffer> D3D12CommandContext::ReverveTmpBuffer(UINT64 SizeInBytes)
     {
-
+        return nullptr;
     }
 
     std::shared_ptr<D3D12Texture> D3D12CommandContext::ReverveTmpTexture(RHIRenderSurfaceBaseDesc SurfaceDesc)
     {
-
+        return nullptr;
     }
 
     void D3D12CommandContext::WriteBuffer(D3D12Buffer* Dest, UINT64 DestOffset, const void* BufferData, UINT64 NumBytes)

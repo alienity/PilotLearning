@@ -38,7 +38,7 @@ namespace RHI
         void* Allocate(size_t SizeInBytes, size_t Alignment)
         {
             SizeInBytes = D3D12RHIUtils::AlignUp(SizeInBytes, Alignment);
-            assert(Ptr + SizeInBytes <= Sentinel);
+            ASSERT(Ptr + SizeInBytes <= Sentinel);
             std::byte* Result = Ptr;// +SizeInBytes;
 
             Ptr += SizeInBytes;

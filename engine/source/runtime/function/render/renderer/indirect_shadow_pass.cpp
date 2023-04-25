@@ -130,17 +130,29 @@ namespace Pilot
         //ShadowInputParameters  drawPassInput  = passInput;
         //ShadowOutputParameters drawPassOutput = passOutput;
 
-        std::shared_ptr<RHI::D3D12Buffer> pPerframeBuffer = passInput.pPerframeBuffer;
-        std::shared_ptr<RHI::D3D12Buffer> pMeshBuffer     = passInput.pMeshBuffer;
-        std::shared_ptr<RHI::D3D12Buffer> pMaterialBuffer = passInput.pMaterialBuffer;
+        RHI::RgResourceHandle perframeBufferHandle = RHI::ToRgResourceHandle(passInput.perframeBufferHandle, RHI::RgResourceType::VertexAndConstantBuffer);
 
-        std::shared_ptr<RHI::D3D12Buffer>              pDirectionCommandBuffer = passInput.p_DirectionalCommandBuffer;
-        std::vector<std::shared_ptr<RHI::D3D12Buffer>> pSpotCommandBuffers     = passInput.p_SpotCommandBuffer;
+        RHI::RgResourceHandle meshBufferHandle     = passInput.meshBufferHandle;
+        RHI::RgResourceHandle materialBufferHandle = passInput.materialBufferHandle;
+        
+        RHI::RgResourceHandle dirIndirectSortBufferHandle = RHI::ToRgResourceHandle(passInput.dirIndirectSortBufferHandle, RHI::RgResourceType::IndirectArgBuffer);
+
+        std::vector<RHI::RgResourceHandle> spotsIndirectSortBufferHandles = RHI::ToRgResourceHandle(passInput.spotsIndirectSortBufferHandles, RHI::RgResourceType::IndirectArgBuffer);
+
 
         RHI::RgResourceHandle              localDirShadowmapHandle   = {};        
         std::vector<RHI::RgResourceHandle> localSpotShadowmapHandles = {};
 
         RHI::RenderPass& shadowpass = graph.AddRenderPass("IndirectShadowPass");
+
+        shadowpass.Read(perframeBufferHandle);
+        shadowpass.Read(meshBufferHandle);
+        shadowpass.Read(materialBufferHandle);
+        shadowpass.Read(dirIndirectSortBufferHandle);
+        for (size_t i = 0; i < spotsIndirectSortBufferHandles.size(); i++)
+        {
+            shadowpass.Read(spotsIndirectSortBufferHandles[i]);
+        }
 
         if (directionalShadowmap.p_LightShadowmap != nullptr)
         {
@@ -183,15 +195,21 @@ namespace Pilot
                 graphicContext->SetViewport(RHIViewport {0.0f, 0.0f, (float)shadowmap_size.x, (float)shadowmap_size.y, 0.0f, 1.0f});
                 graphicContext->SetScissorRect(RHIRect {0, 0, (int)shadowmap_size.x, (int)shadowmap_size.y});
 
-                graphicContext->SetConstantBuffer(1, pPerframeBuffer->GetGpuVirtualAddress());
-                graphicContext->SetBufferSRV(2, pMeshBuffer.get());
-                graphicContext->SetBufferSRV(3, pMaterialBuffer.get());
+                graphicContext->SetConstantBuffer(1, registry->GetD3D12Buffer(perframeBufferHandle)->GetGpuVirtualAddress());
+                graphicContext->SetBufferSRV(2, registry->GetD3D12Buffer(meshBufferHandle));
+                graphicContext->SetBufferSRV(3, registry->GetD3D12Buffer(materialBufferHandle));
+
+                //graphicContext->SetConstantBuffer(1, pPerframeBuffer->GetGpuVirtualAddress());
+                //graphicContext->SetBufferSRV(2, pMeshBuffer.get());
+                //graphicContext->SetBufferSRV(3, pMaterialBuffer.get());
 
                 graphicContext->ClearRenderTarget(nullptr, shadowmapStencilView);
                 graphicContext->SetRenderTarget(nullptr, shadowmapStencilView);
 
+                auto pDirectionCommandBuffer = registry->GetD3D12Buffer(dirIndirectSortBufferHandle);
+
                 graphicContext->ExecuteIndirect(CommandSignatures::pIndirectDrawDirectionShadowmap.get(),
-                                                pDirectionCommandBuffer.get(),
+                                                pDirectionCommandBuffer,
                                                 0,
                                                 HLSL::MeshLimit,
                                                 pDirectionCommandBuffer->GetCounterBuffer().get(),
@@ -215,18 +233,20 @@ namespace Pilot
                 graphicContext->SetScissorRect(RHIRect {0, 0, (int)shadowmap_size.x, (int)shadowmap_size.y});
 
                 graphicContext->SetConstant(0, 1, spot_index);
-                graphicContext->SetConstantBuffer(1, pPerframeBuffer->GetGpuVirtualAddress());
-                graphicContext->SetBufferSRV(2, pMeshBuffer.get());
-                graphicContext->SetBufferSRV(3, pMaterialBuffer.get());
+                graphicContext->SetConstantBuffer(1, registry->GetD3D12Buffer(perframeBufferHandle)->GetGpuVirtualAddress());
+                graphicContext->SetBufferSRV(2, registry->GetD3D12Buffer(meshBufferHandle));
+                graphicContext->SetBufferSRV(3, registry->GetD3D12Buffer(materialBufferHandle));
 
                 graphicContext->ClearRenderTarget(nullptr, shadowmapStencilView);
                 graphicContext->SetRenderTarget(nullptr, shadowmapStencilView);
 
+                auto pSpotCommandBuffer = registry->GetD3D12Buffer(spotsIndirectSortBufferHandles[i]);
+
                 graphicContext->ExecuteIndirect(CommandSignatures::pIndirectDrawSpotShadowmap.get(),
-                                                pSpotCommandBuffers[i].get(),
+                                                pSpotCommandBuffer,
                                                 0,
                                                 HLSL::MeshLimit,
-                                                pSpotCommandBuffers[i]->GetCounterBuffer().get(),
+                                                pSpotCommandBuffer->GetCounterBuffer().get(),
                                                 0);
             }
 

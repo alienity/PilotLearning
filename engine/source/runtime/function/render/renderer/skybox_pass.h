@@ -18,12 +18,7 @@ namespace Pilot
 
         struct DrawInputParameters : public PassInput
         {
-            DrawInputParameters()
-            {
-                pPerframeBuffer = nullptr;
-            }
-
-            std::shared_ptr<RHI::D3D12Buffer> pPerframeBuffer;
+            RHI::RgResourceHandle perframeBufferHandle;
         };
 
         struct DrawOutputParameters : public PassOutput

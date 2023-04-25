@@ -10,6 +10,8 @@ namespace RHI
 	enum class RgResourceType : std::uint64_t
 	{
 		Unknown,
+		VertexAndConstantBuffer,
+		IndirectArgBuffer,
 		Buffer,
 		Texture,
 		RootSignature,
@@ -59,6 +61,25 @@ namespace RHI
     inline bool operator>=(const RgResourceHandle& lhs, const RgResourceHandle& rhs) { return !operator<(lhs, rhs); }
 
 	static_assert(sizeof(RgResourceHandle) == sizeof(std::uint64_t));
+
+	inline RgResourceHandle ToRgResourceHandle(RgResourceHandle& rgHandle, RgResourceType type)
+	{
+        RgResourceHandle rgResourceHandle = rgHandle;
+        rgResourceHandle.Type = type;
+        return rgResourceHandle;
+	}
+
+	inline std::vector<RgResourceHandle> ToRgResourceHandle(std::vector<RgResourceHandle>& rgHandles, RgResourceType type)
+    {
+        std::vector<RgResourceHandle> rgResourceHandles;
+        for (size_t i = 0; i < rgHandles.size(); i++)
+        {
+            RgResourceHandle rgResourceHandle = rgHandles[i];
+            rgResourceHandle.Type             = type;
+            rgResourceHandles.push_back(rgResourceHandle);
+		}
+        return rgResourceHandles;
+    }
 
 	enum class RgTextureType
 	{

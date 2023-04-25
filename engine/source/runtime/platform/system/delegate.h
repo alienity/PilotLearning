@@ -294,7 +294,7 @@ public:
 
     TRet operator()(TArgs... Args) const
     {
-        assert(static_cast<bool>(*this) && "Invalid proxy");
+        ASSERT(static_cast<bool>(*this) && "Invalid proxy");
         return Proxy(Object, std::forward<TArgs>(Args)...);
     }
 
@@ -357,7 +357,7 @@ public:
     {
         auto Lock = OptMutex ? std::unique_lock(*OptMutex) : std::unique_lock<std::mutex>();
 
-        assert(Handle.IsValid());
+        ASSERT(Handle.IsValid());
         for (size_t i = 0; i < Delegates.size(); ++i)
         {
             if (Delegates[i].Handle == Handle)

@@ -18,21 +18,10 @@ namespace Pilot
 
         struct DrawInputParameters : public PassInput
         {
-            DrawInputParameters()
-            {
-                pPerframeBuffer = nullptr;
-                pMeshBuffer     = nullptr;
-                pMaterialBuffer = nullptr;
-                pIndirectCommandBuffer = nullptr;
-                directionalShadowmapTexHandle.Invalidate();
-                spotShadowmapTexHandles.clear();
-            }
-
-            std::shared_ptr<RHI::D3D12Buffer> pPerframeBuffer;
-            std::shared_ptr<RHI::D3D12Buffer> pMeshBuffer;
-            std::shared_ptr<RHI::D3D12Buffer> pMaterialBuffer;
-
-            std::shared_ptr<RHI::D3D12Buffer> pIndirectCommandBuffer;
+            RHI::RgResourceHandle perframeBufferHandle;
+            RHI::RgResourceHandle meshBufferHandle;
+            RHI::RgResourceHandle materialBufferHandle;
+            RHI::RgResourceHandle opaqueDrawHandle;
 
             // shadowmap input
             RHI::RgResourceHandle directionalShadowmapTexHandle;

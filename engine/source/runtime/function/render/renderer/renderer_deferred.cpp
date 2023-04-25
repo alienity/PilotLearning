@@ -191,54 +191,72 @@ namespace Pilot
         // game view output
         RHI::RgResourceHandle renderTargetColorHandle = graph.Import(p_RenderTargetTex.get());
      
+        //=================================================================================
         // 应该再给graph添加一个signal同步，目前先这样
         IndirectCullPass::IndirectCullOutput indirectCullOutput;
         mIndirectCullPass->update(graph, indirectCullOutput);
+        //=================================================================================
 
+
+        //=================================================================================
         // indirect draw shadow
         IndirectShadowPass::ShadowInputParameters  mShadowmapIntputParams;
         IndirectShadowPass::ShadowOutputParameters mShadowmapOutputParams;
 
-        mShadowmapIntputParams.pPerframeBuffer            = indirectCullOutput.perframeBufferHandle;
-        mShadowmapIntputParams.pMeshBuffer                = indirectCullOutput.meshBufferHandle;
-        mShadowmapIntputParams.pMaterialBuffer            = indirectCullOutput.materialBufferHandle;
-        mShadowmapIntputParams.p_DirectionalCommandBuffer = indirectCullOutput.dirShadowmapHandle.indirectSortBufferHandle;
-        mShadowmapIntputParams.p_SpotCommandBuffer        = indirectCullOutput.p_SpotShadowmapCommandBuffers;
+        mShadowmapIntputParams.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
+        mShadowmapIntputParams.meshBufferHandle     = indirectCullOutput.meshBufferHandle;
+        mShadowmapIntputParams.materialBufferHandle = indirectCullOutput.materialBufferHandle;
+        mShadowmapIntputParams.dirIndirectSortBufferHandle =
+            indirectCullOutput.dirShadowmapHandle.indirectSortBufferHandle;
+        for (size_t i = 0; i < indirectCullOutput.spotShadowmapHandles.size(); i++)
+        {
+            mShadowmapIntputParams.spotsIndirectSortBufferHandles.push_back(
+                indirectCullOutput.spotShadowmapHandles[i].indirectSortBufferHandle);
+        }
+        
         mIndirectShadowPass->update(graph, mShadowmapIntputParams, mShadowmapOutputParams);
+        //=================================================================================
 
 
+        //=================================================================================
         // indirect opaque draw
         IndirectDrawPass::DrawInputParameters  mDrawIntputParams;
         IndirectDrawPass::DrawOutputParameters mDrawOutputParams;
 
-        mDrawIntputParams.pPerframeBuffer               = indirectCullOutput.pPerframeBuffer;
-        mDrawIntputParams.pMeshBuffer                   = indirectCullOutput.pMeshBuffer;
-        mDrawIntputParams.pMaterialBuffer               = indirectCullOutput.pMaterialBuffer;
-        mDrawIntputParams.pIndirectCommandBuffer        = indirectCullOutput.p_OpaqueDrawCommandBuffer;
+        mDrawIntputParams.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
+        mDrawIntputParams.meshBufferHandle     = indirectCullOutput.meshBufferHandle;
+        mDrawIntputParams.materialBufferHandle = indirectCullOutput.materialBufferHandle;
+        mDrawIntputParams.opaqueDrawHandle     = indirectCullOutput.opaqueDrawHandle.indirectSortBufferHandle;
         mDrawIntputParams.directionalShadowmapTexHandle = mShadowmapOutputParams.directionalShadowmapRGHandle.shadowmapTextureHandle;
         for (size_t i = 0; i < mShadowmapOutputParams.spotShadowmapRGHandle.size(); i++)
         {
             mDrawIntputParams.spotShadowmapTexHandles.push_back(mShadowmapOutputParams.spotShadowmapRGHandle[i].shadowmapTextureHandle);
         }
         mIndirectOpaqueDrawPass->update(graph, mDrawIntputParams, mDrawOutputParams);
-        
+        //=================================================================================
+
+
+        //=================================================================================
         // skybox draw
         SkyBoxPass::DrawInputParameters  mSkyboxIntputParams;
         SkyBoxPass::DrawOutputParameters mSkyboxOutputParams;
 
-        mSkyboxIntputParams.pPerframeBuffer         = indirectCullOutput.pPerframeBuffer;
+        mSkyboxIntputParams.perframeBufferHandle    = indirectCullOutput.perframeBufferHandle;
         mSkyboxOutputParams.renderTargetColorHandle = mDrawOutputParams.renderTargetColorHandle;
         mSkyboxOutputParams.renderTargetDepthHandle = mDrawOutputParams.renderTargetDepthHandle;
         mSkyBoxPass->update(graph, mSkyboxIntputParams, mSkyboxOutputParams);
+        //=================================================================================
 
+
+        //=================================================================================
         // indirect transparent draw
         IndirectDrawTransparentPass::DrawInputParameters  mDrawTransIntputParams;
         IndirectDrawTransparentPass::DrawOutputParameters mDrawTransOutputParams;
 
-        mDrawTransIntputParams.pPerframeBuffer   = indirectCullOutput.pPerframeBuffer;
-        mDrawTransIntputParams.pMeshBuffer       = indirectCullOutput.pMeshBuffer;
-        mDrawTransIntputParams.pMaterialBuffer   = indirectCullOutput.pMaterialBuffer;
-        mDrawTransIntputParams.pIndirectCommandBuffer = indirectCullOutput.p_TransparentDrawCommandBuffer;
+        mDrawTransIntputParams.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
+        mDrawTransIntputParams.meshBufferHandle     = indirectCullOutput.meshBufferHandle;
+        mDrawTransIntputParams.materialBufferHandle = indirectCullOutput.materialBufferHandle;
+        mDrawTransIntputParams.transparentDrawHandle = indirectCullOutput.transparentDrawHandle.indirectSortBufferHandle;
         mDrawTransIntputParams.directionalShadowmapTexHandle = mShadowmapOutputParams.directionalShadowmapRGHandle.shadowmapTextureHandle;
         for (size_t i = 0; i < mShadowmapOutputParams.spotShadowmapRGHandle.size(); i++)
         {
@@ -247,8 +265,11 @@ namespace Pilot
         mDrawTransOutputParams.renderTargetColorHandle = mDrawOutputParams.renderTargetColorHandle;
         mDrawTransOutputParams.renderTargetDepthHandle = mDrawOutputParams.renderTargetDepthHandle;
         mIndirectTransparentDrawPass->update(graph, mDrawTransIntputParams, mDrawTransOutputParams);
+        //=================================================================================
 
-        RHI::RgResourceHandle outputRTColorHandle = mDrawOutputParams.renderTargetColorHandle;
+
+        //=================================================================================
+        //RHI::RgResourceHandle outputRTColorHandle = mDrawOutputParams.renderTargetColorHandle;
 
         // postprocess rendertarget
         PostprocessPasses::PostprocessInputParameters  mPostprocessIntputParams;
@@ -258,17 +279,22 @@ namespace Pilot
 
         mPostprocessPasses->update(graph, mPostprocessIntputParams, mPostprocessOutputParams);
 
-        outputRTColorHandle = mPostprocessOutputParams.outputColorHandle;
+        //outputRTColorHandle = mPostprocessOutputParams.outputColorHandle;
+        //=================================================================================
 
+        //=================================================================================
         // display
         DisplayPass::DisplayInputParameters  mDisplayIntputParams;
         DisplayPass::DisplayOutputParameters mDisplayOutputParams;
 
-        mDisplayIntputParams.inputRTColorHandle      = outputRTColorHandle;
+        mDisplayIntputParams.inputRTColorHandle      = mPostprocessOutputParams.outputColorHandle;
         mDisplayOutputParams.renderTargetColorHandle = renderTargetColorHandle;
 
         mDisplayPass->update(graph, mDisplayIntputParams, mDisplayOutputParams);
+        //=================================================================================
 
+
+        //=================================================================================
         if (mUIPass != nullptr)
         {
             UIPass::UIInputParameters mUIIntputParams;
@@ -280,6 +306,7 @@ namespace Pilot
             
             mUIPass->update(graph, mUIIntputParams, mUIOutputParams);
         }
+        //=================================================================================
 
         graph.Execute(context);
 

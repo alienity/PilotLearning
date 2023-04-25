@@ -74,7 +74,7 @@ namespace Pilot
                                                      L"UploadMeshBuffer",
                                                      RHI::RHIBufferModeDynamic,
                                                      D3D12_RESOURCE_STATE_GENERIC_READ);
-
+        /*
         // for sort
         pSortDispatchArgs = RHI::D3D12Buffer::Create(m_Device->GetLinkedDevice(),
                                                      RHI::RHIBufferTargetIndirectArgs | RHI::RHIBufferRandomReadWrite | RHI::RHIBufferTargetRaw,
@@ -92,6 +92,29 @@ namespace Pilot
                                                      L"GrabDispatchArgs",
                                                      RHI::RHIBufferModeImmutable,
                                                      D3D12_RESOURCE_STATE_GENERIC_READ);
+        */
+
+#define CreateTex2DDesc(name, numElements, elementSize, rhiBufferMode, rhiBufferTarget) \
+    RHI::RgBufferDesc(name) \
+        .SetSize(numElements, elementSize) \
+        .SetRHIBufferMode(rhiBufferMode) \
+        .SetRHIBufferTarget(rhiBufferTarget)
+
+        RHI::RHIBufferTarget _ArgTarget = RHI::RHIBufferTarget::RHIBufferTargetIndirectArgs |
+                                          RHI::RHIBufferTarget::RHIBufferRandomReadWrite |
+                                          RHI::RHIBufferTarget::RHIBufferTargetRaw;
+
+        sortDispatchArgsBufferDesc = CreateTex2DDesc("SortDispatchArgs",
+                                                     22 * 23 / 2,
+                                                     sizeof(D3D12_DISPATCH_ARGUMENTS),
+                                                     RHI::RHIBufferMode::RHIBufferModeImmutable,
+                                                     _ArgTarget);
+        grabDispatchArgsBufferDesc = CreateTex2DDesc("GrabDispatchArgs",
+                                                     22 * 23 / 2,
+                                                     sizeof(D3D12_DISPATCH_ARGUMENTS),
+                                                     RHI::RHIBufferMode::RHIBufferModeImmutable,
+                                                     _ArgTarget);
+
 
         // buffer for opaque draw
         {
@@ -599,11 +622,14 @@ namespace Pilot
     void IndirectCullPass::update(RHI::RenderGraph& graph, IndirectCullOutput& cullOutput)
     {
         RHI::RgResourceHandle uploadPerframeBufferHandle = GImport(pUploadPerframeBuffer.get());
-        RHI::RgResourceHandle pploadMaterialBufferHandle = GImport(pUploadMaterialBuffer.get());
+        RHI::RgResourceHandle uploadMaterialBufferHandle = GImport(pUploadMaterialBuffer.get());
         RHI::RgResourceHandle uploadMeshBufferHandle     = GImport(pUploadMeshBuffer.get());
 
-        RHI::RgResourceHandle sortDispatchArgsHandle = GImport(pSortDispatchArgs.get());
-        RHI::RgResourceHandle grabDispatchArgsHandle = GImport(pGrabDispatchArgs.get());
+        RHI::RgResourceHandle sortDispatchArgsHandle = graph.Create<RHI::D3D12Buffer>(sortDispatchArgsBufferDesc);
+        RHI::RgResourceHandle grabDispatchArgsHandle = graph.Create<RHI::D3D12Buffer>(grabDispatchArgsBufferDesc);
+
+        //RHI::RgResourceHandle sortDispatchArgsHandle = GImport(pSortDispatchArgs.get());
+        //RHI::RgResourceHandle grabDispatchArgsHandle = GImport(pGrabDispatchArgs.get());
 
         // import buffers
         cullOutput.perframeBufferHandle = GImport(pPerframeBuffer.get());
@@ -647,7 +673,7 @@ namespace Pilot
             RHI::RenderPass& resetPass = graph.AddRenderPass("ResetPass");
 
             PassReadIg(resetPass, uploadPerframeBufferHandle);
-            PassReadIg(resetPass, pploadMaterialBufferHandle);
+            PassReadIg(resetPass, uploadMaterialBufferHandle);
             PassReadIg(resetPass, uploadMeshBufferHandle);
             PassWriteIg(resetPass, cullOutput.perframeBufferHandle);
             PassWriteIg(resetPass, cullOutput.materialBufferHandle);
@@ -686,7 +712,7 @@ namespace Pilot
                 }
 
                 pCopyContext->CopyBuffer(RegGetBuf(cullOutput.perframeBufferHandle), RegGetBuf(uploadPerframeBufferHandle));
-                pCopyContext->CopyBuffer(RegGetBuf(cullOutput.materialBufferHandle), RegGetBuf(pploadMaterialBufferHandle));
+                pCopyContext->CopyBuffer(RegGetBuf(cullOutput.materialBufferHandle), RegGetBuf(uploadMaterialBufferHandle));
                 pCopyContext->CopyBuffer(RegGetBuf(cullOutput.meshBufferHandle), RegGetBuf(uploadMeshBufferHandle));
 
                 pCopyContext->TransitionBarrier(RegGetBuf(cullOutput.perframeBufferHandle), D3D12_RESOURCE_STATE_GENERIC_READ);

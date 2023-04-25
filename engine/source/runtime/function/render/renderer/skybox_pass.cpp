@@ -32,7 +32,10 @@ namespace Pilot
         //DrawInputParameters*  drawPassInput  = &passInput;
         //DrawOutputParameters* drawPassOutput = &passOutput;
 
-        std::shared_ptr<RHI::D3D12Buffer> pPerframeBuffer = passInput.pPerframeBuffer;
+        RHI::RgResourceHandle perframeBufferHandle = passInput.perframeBufferHandle;
+        perframeBufferHandle.Type = RHI::RgResourceType::VertexAndConstantBuffer;
+
+        //std::shared_ptr<RHI::D3D12Buffer> pPerframeBuffer = passInput.pPerframeBuffer;
 
         RHI::RenderPass& drawpass = graph.AddRenderPass("SkyboxPass");
 
@@ -65,7 +68,8 @@ namespace Pilot
             graphicContext->SetRootSignature(RootSignatures::pSkyBoxRootSignature.get());
             graphicContext->SetPipelineState(PipelineStates::pSkyBoxPSO.get());
             graphicContext->SetConstants(0, specularIBLTexIndex, specularIBLTexLevel);
-            graphicContext->SetConstantBuffer(1, pPerframeBuffer->GetGpuVirtualAddress());
+            //graphicContext->SetConstantBuffer(1, pPerframeBuffer->GetGpuVirtualAddress());
+            graphicContext->SetConstantBuffer(1, registry->GetD3D12Buffer(perframeBufferHandle)->GetGpuVirtualAddress());
             
             graphicContext->Draw(3);
         });

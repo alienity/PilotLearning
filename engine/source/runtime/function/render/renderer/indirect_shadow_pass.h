@@ -55,12 +55,18 @@ namespace Pilot
 
         struct ShadowInputParameters : public PassInput
         {
-            std::shared_ptr<RHI::D3D12Buffer> pPerframeBuffer;
-            std::shared_ptr<RHI::D3D12Buffer> pMeshBuffer;
-            std::shared_ptr<RHI::D3D12Buffer> pMaterialBuffer;
+            //std::shared_ptr<RHI::D3D12Buffer> pPerframeBuffer;
+            //std::shared_ptr<RHI::D3D12Buffer> pMeshBuffer;
+            //std::shared_ptr<RHI::D3D12Buffer> pMaterialBuffer;
+            //std::shared_ptr<RHI::D3D12Buffer> p_DirectionalCommandBuffer;
+            //std::vector<std::shared_ptr<RHI::D3D12Buffer>> p_SpotCommandBuffer;
 
-            std::shared_ptr<RHI::D3D12Buffer> p_DirectionalCommandBuffer;
-            std::vector<std::shared_ptr<RHI::D3D12Buffer>> p_SpotCommandBuffer;
+            RHI::RgResourceHandle perframeBufferHandle;
+            RHI::RgResourceHandle meshBufferHandle;
+            RHI::RgResourceHandle materialBufferHandle;
+            RHI::RgResourceHandle dirIndirectSortBufferHandle;
+            std::vector<RHI::RgResourceHandle> spotsIndirectSortBufferHandles;
+
         };
 
         struct ShadowOutputParameters : public PassOutput
