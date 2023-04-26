@@ -32,8 +32,7 @@ namespace Pilot
         //DrawInputParameters*  drawPassInput  = &passInput;
         //DrawOutputParameters* drawPassOutput = &passOutput;
 
-        RHI::RgResourceHandle perframeBufferHandle = passInput.perframeBufferHandle;
-        perframeBufferHandle.Type = RHI::RgResourceType::VertexAndConstantBuffer;
+        RHI::RgResourceHandle perframeBufferHandle = RHI::ToRgResourceHandle(passInput.perframeBufferHandle, RHI::RgResourceSubType::VertexAndConstantBuffer);
 
         //std::shared_ptr<RHI::D3D12Buffer> pPerframeBuffer = passInput.pPerframeBuffer;
 

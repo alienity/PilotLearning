@@ -3,19 +3,23 @@
 
 namespace RHI
 {
+    bool AddHandleToVector(std::vector<RgResourceHandle>& handles, RgResourceHandle newHandle)
+	{
+
+	}
+
     RenderPass::RenderPass(std::string_view Name, RenderGraph* Graph) : Name(Name), ParentGraph(Graph) {}
 
 	RenderPass& RenderPass::Read(RgResourceHandle Resource, bool IgnoreBarrier)
 	{
 		// Only allow buffers/textures
         ASSERT(Resource.IsValid());
-        ASSERT(Resource.Type == RgResourceType::Buffer || Resource.Type == RgResourceType::Texture ||
-               Resource.Type == RgResourceType::VertexAndConstantBuffer ||
-               Resource.Type == RgResourceType::IndirectArgBuffer);
+        ASSERT(Resource.Type == RgResourceType::Buffer || Resource.Type == RgResourceType::Texture);
+
+		Resource = ToRgResourceHandle(Resource, IgnoreBarrier);
+
 		Reads.insert(Resource);
 		ReadWrites.insert(Resource);
-        if (IgnoreBarrier)
-            IgnoreReads.push_back(Resource);
 
 		std::deque<RgHandleOpPassIdx>& rgHandleOpQueue = ParentGraph->RgHandleOpMap[Resource];
         rgHandleOpQueue.push_back({RgHandleOp::Read, this});
@@ -28,11 +32,14 @@ namespace RHI
 		// Only allow buffers/textures
         ASSERT(Resource.IsValid());
         ASSERT(Resource.Type == RgResourceType::Buffer || Resource.Type == RgResourceType::Texture);
+
 		//Resource->Version++;
+        ParentGraph->Registry.IncreaseVersion(Resource);
+
+		Resource = ToRgResourceHandle(Resource, IgnoreBarrier);
+
 		Writes.insert(Resource);
 		ReadWrites.insert(Resource);
-        if (IgnoreBarrier)
-            IgnoreWrites.push_back(Resource);
 
 		std::deque<RgHandleOpPassIdx>& rgHandleOpQueue = ParentGraph->RgHandleOpMap[Resource];
         rgHandleOpQueue.push_back({RgHandleOp::Write, this});
@@ -65,9 +72,6 @@ namespace RHI
 		RenderPasses.push_back(RenderPass);
 		Reads.insert(RenderPass->Reads.begin(), RenderPass->Reads.end());
 		Writes.insert(RenderPass->Writes.begin(), RenderPass->Writes.end());
-
-		IgnoreReads.insert(IgnoreReads.begin(), RenderPass->IgnoreReads.begin(), RenderPass->IgnoreReads.end());
-        IgnoreWrites.insert(IgnoreWrites.begin(), RenderPass->IgnoreWrites.begin(), RenderPass->IgnoreWrites.end());
 	}
 
 	void RenderGraphDependencyLevel::Execute(RenderGraph* RenderGraph, D3D12CommandContext* Context)
@@ -76,61 +80,49 @@ namespace RHI
 		// Handle resource transitions for all registered resources
 		for (auto Read : Reads)
 		{
-            bool isResolveSrc = false;
-            for (size_t i = 0; i < IgnoreReads.size(); i++)
-            {
-                if (IgnoreReads[i] == Read)
-				{
-                    isResolveSrc = true;
-                    break;
-				}
-			}
-            if (isResolveSrc)
+			if (Read.BarrierFlag == RgBarrierFlag::None)
+			{
                 continue;
+			}
 
 			if (Read.Type == RgResourceType::Texture || Read.Type == RgResourceType::Buffer)
 			{
-                D3D12_RESOURCE_STATES ReadState = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
-                if (RenderGraph->AllowUnorderedAccess(Read))
-                {
-                    ReadState |= D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
-                }
-                if (Read.Type == RgResourceType::Texture)
-                {
-                    D3D12Texture* pTexture = RenderGraph->GetRegistry()->GetD3D12Texture(Read);
-                    Context->TransitionBarrier(pTexture, ReadState);
-                }
-                if (Read.Type == RgResourceType::Buffer)
-                {
-                    D3D12Buffer* pBuffer = RenderGraph->GetRegistry()->GetD3D12Buffer(Read);
-                    Context->TransitionBarrier(pBuffer, ReadState);
-                }
+				if (Read.SubType == RgResourceSubType::None)
+				{
+                    D3D12_RESOURCE_STATES ReadState = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+                    if (RenderGraph->AllowUnorderedAccess(Read))
+                    {
+                        ReadState |= D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
+                    }
+                    if (Read.Type == RgResourceType::Texture)
+                    {
+                        D3D12Texture* pTexture = RenderGraph->GetRegistry()->GetD3D12Texture(Read);
+                        Context->TransitionBarrier(pTexture, ReadState);
+                    }
+                    if (Read.Type == RgResourceType::Buffer)
+                    {
+                        D3D12Buffer* pBuffer = RenderGraph->GetRegistry()->GetD3D12Buffer(Read);
+                        Context->TransitionBarrier(pBuffer, ReadState);
+                    }
+				}
+                else if (Read.SubType == RgResourceSubType::VertexAndConstantBuffer)
+				{
+                    D3D12Buffer* pCBuffer = RenderGraph->GetRegistry()->GetD3D12Buffer(Read);
+                    Context->TransitionBarrier(pCBuffer, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
+				}
+                else if (Read.SubType == RgResourceSubType::IndirectArgBuffer)
+				{
+                    D3D12Buffer* pCBuffer = RenderGraph->GetRegistry()->GetD3D12Buffer(Read);
+                    Context->TransitionBarrier(pCBuffer, D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT);
+				}
 			}
-            else if (Read.Type == RgResourceType::VertexAndConstantBuffer)
-			{
-                D3D12Buffer* pCBuffer = RenderGraph->GetRegistry()->GetD3D12Buffer(Read);
-                Context->TransitionBarrier(pCBuffer, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
-			}
-            else if (Read.Type == RgResourceType::IndirectArgBuffer)
-			{
-                D3D12Buffer* pCBuffer = RenderGraph->GetRegistry()->GetD3D12Buffer(Read);
-                Context->TransitionBarrier(pCBuffer, D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT);
-			}
-
 		}
 		for (auto Write : Writes)
 		{
-            bool isResolveDst = false;
-            for (size_t i = 0; i < IgnoreWrites.size(); i++)
+            if (Write.BarrierFlag == RgBarrierFlag::None)
             {
-                if (IgnoreWrites[i] == Write)
-                {
-                    isResolveDst = true;
-                    break;
-                }
-            }
-            if (isResolveDst)
                 continue;
+            }
 
 			D3D12_RESOURCE_STATES WriteState = D3D12_RESOURCE_STATE_COMMON;
             if (Write.Type == RgResourceType::Texture)

@@ -25,12 +25,12 @@ namespace Pilot
         //DrawInputParameters  drawPassInput  = passInput;
         //DrawOutputParameters drawPassOutput = passOutput;
 
-        RHI::RgResourceHandle perframeBufferHandle = RHI::ToRgResourceHandle(passInput.perframeBufferHandle, RHI::RgResourceType::VertexAndConstantBuffer);
+        RHI::RgResourceHandle perframeBufferHandle = RHI::ToRgResourceHandle(passInput.perframeBufferHandle, RHI::RgResourceSubType::VertexAndConstantBuffer);
 
         RHI::RgResourceHandle meshBufferHandle     = passInput.meshBufferHandle;
         RHI::RgResourceHandle materialBufferHandle = passInput.materialBufferHandle;
 
-        RHI::RgResourceHandle opaqueDrawHandle = RHI::ToRgResourceHandle(passInput.opaqueDrawHandle, RHI::RgResourceType::IndirectArgBuffer);
+        RHI::RgResourceHandle opaqueDrawHandle = RHI::ToRgResourceHandle(passInput.opaqueDrawHandle, RHI::RgResourceSubType::IndirectArgBuffer);
 
         //std::shared_ptr<RHI::D3D12Buffer> pPerframeBuffer = passInput.pPerframeBuffer;
         //std::shared_ptr<RHI::D3D12Buffer> pMeshBuffer     = passInput.pMeshBuffer;

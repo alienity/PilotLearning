@@ -130,14 +130,14 @@ namespace Pilot
         //ShadowInputParameters  drawPassInput  = passInput;
         //ShadowOutputParameters drawPassOutput = passOutput;
 
-        RHI::RgResourceHandle perframeBufferHandle = RHI::ToRgResourceHandle(passInput.perframeBufferHandle, RHI::RgResourceType::VertexAndConstantBuffer);
+        RHI::RgResourceHandle perframeBufferHandle = RHI::ToRgResourceHandle(passInput.perframeBufferHandle, RHI::RgResourceSubType::VertexAndConstantBuffer);
 
         RHI::RgResourceHandle meshBufferHandle     = passInput.meshBufferHandle;
         RHI::RgResourceHandle materialBufferHandle = passInput.materialBufferHandle;
         
-        RHI::RgResourceHandle dirIndirectSortBufferHandle = RHI::ToRgResourceHandle(passInput.dirIndirectSortBufferHandle, RHI::RgResourceType::IndirectArgBuffer);
+        RHI::RgResourceHandle dirIndirectSortBufferHandle = RHI::ToRgResourceHandle(passInput.dirIndirectSortBufferHandle, RHI::RgResourceSubType::IndirectArgBuffer);
 
-        std::vector<RHI::RgResourceHandle> spotsIndirectSortBufferHandles = RHI::ToRgResourceHandle(passInput.spotsIndirectSortBufferHandles, RHI::RgResourceType::IndirectArgBuffer);
+        std::vector<RHI::RgResourceHandle> spotsIndirectSortBufferHandles = RHI::ToRgResourceHandle(passInput.spotsIndirectSortBufferHandles, RHI::RgResourceSubType::IndirectArgBuffer);
 
 
         RHI::RgResourceHandle              localDirShadowmapHandle   = {};        

@@ -10,8 +10,6 @@ namespace RHI
 	enum class RgResourceType : std::uint64_t
 	{
 		Unknown,
-		VertexAndConstantBuffer,
-		IndirectArgBuffer,
 		Buffer,
 		Texture,
 		RootSignature,
@@ -19,10 +17,23 @@ namespace RHI
 		RaytracingPipelineState,
 	};
 
+	enum class RgResourceSubType : std::uint64_t
+    {
+		None,
+        VertexAndConstantBuffer,
+        IndirectArgBuffer
+	};
+
 	enum RgResourceFlags : std::uint64_t
 	{
 		RG_RESOURCE_FLAG_NONE,
 		RG_RESOURCE_FLAG_IMPORTED
+	};
+
+	enum RgBarrierFlag : std::uint64_t
+    {
+		Auto,
+        None
 	};
 
 	// A virtual resource handle, the underlying realization of the resource type is done in RenderGraphRegistry
@@ -33,17 +44,20 @@ namespace RHI
 
         void Invalidate()
         {
-            Type    = RgResourceType::Unknown;
-            Flags   = RG_RESOURCE_FLAG_NONE;
-            Version = 0;
-            Id      = UINT_MAX;
+            Type        = RgResourceType::Unknown;
+            Flags       = RG_RESOURCE_FLAG_NONE;
+            SubType     = RgResourceSubType::None;
+            BarrierFlag = RgBarrierFlag::Auto;
+            Version     = 0;
+            Id          = UINT_MAX;
         }
 
-        RgResourceType Type : 15; // 14 bit to represent type, might remove some bits from this and give it to version
-        RgResourceFlags Flags : 1;
-        std::uint64_t   Version : 16; // 16 bits to represent version should be more than enough, we can always just
-                                      // increase bit used if is not enough
-        std::uint64_t   Id : 32;      // 32 bit unsigned int
+        RgResourceType    Type : 30; // 14 bit to represent type, might remove some bits from this and give it to version
+        RgResourceFlags   Flags : 2;
+        RgResourceSubType SubType : 30; // subtype can be different
+        RgBarrierFlag     BarrierFlag : 2; // whether to use auto barrier
+        std::uint64_t     Version : 32; // 16 bits to represent version should be more than enough, we can always just increase bit used if is not enough
+        std::uint64_t     Id : 32; // 32 bit unsigned int
     };
 
 	inline bool operator==(const RgResourceHandle& lhs, const RgResourceHandle& rhs)
@@ -60,26 +74,33 @@ namespace RHI
     inline bool operator<=(const RgResourceHandle& lhs, const RgResourceHandle& rhs) { return !operator>(lhs, rhs); }
     inline bool operator>=(const RgResourceHandle& lhs, const RgResourceHandle& rhs) { return !operator<(lhs, rhs); }
 
-	static_assert(sizeof(RgResourceHandle) == sizeof(std::uint64_t));
+	static_assert(sizeof(RgResourceHandle) == sizeof(std::uint64_t) * 2);
 
-	inline RgResourceHandle ToRgResourceHandle(RgResourceHandle& rgHandle, RgResourceType type)
+	inline RgResourceHandle ToRgResourceHandle(RgResourceHandle& rgHandle, RgResourceSubType subType)
 	{
         RgResourceHandle rgResourceHandle = rgHandle;
-        rgResourceHandle.Type = type;
+        rgResourceHandle.SubType = subType;
         return rgResourceHandle;
 	}
 
-	inline std::vector<RgResourceHandle> ToRgResourceHandle(std::vector<RgResourceHandle>& rgHandles, RgResourceType type)
+	inline std::vector<RgResourceHandle> ToRgResourceHandle(std::vector<RgResourceHandle>& rgHandles, RgResourceSubType subType)
     {
         std::vector<RgResourceHandle> rgResourceHandles;
         for (size_t i = 0; i < rgHandles.size(); i++)
         {
             RgResourceHandle rgResourceHandle = rgHandles[i];
-            rgResourceHandle.Type             = type;
+            rgResourceHandle.SubType = subType;
             rgResourceHandles.push_back(rgResourceHandle);
 		}
         return rgResourceHandles;
     }
+
+	inline RgResourceHandle ToRgResourceHandle(RgResourceHandle& rgHandle, bool ignoreBarrier)
+	{
+        RgResourceHandle rgResourceHandle = rgHandle;
+        rgResourceHandle.BarrierFlag = ignoreBarrier ? RgBarrierFlag::None : RgBarrierFlag::Auto;
+        return rgResourceHandle;
+	}
 
 	enum class RgTextureType
 	{
@@ -319,9 +340,7 @@ namespace RHI
 
 } // namespace RHI
 
-#define GetRealVal(realType, renderGraphRegister, rgHandle)\
-    
-
+/*
 template<>
 struct std::hash<RHI::RgResourceHandle>
 {
@@ -343,3 +362,4 @@ struct robin_hood::hash<RHI::RgResourceHandle>
         return Utility::Hash64(&tmpHandle, sizeof(tmpHandle));
 	}
 };
+*/

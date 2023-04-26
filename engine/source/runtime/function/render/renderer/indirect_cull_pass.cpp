@@ -21,148 +21,67 @@ namespace Pilot
 #define RegGetBufDefSRVIdx(h) registry->GetD3D12Buffer(h)->GetDefaultSRV()->GetIndex()
 #define RegGetBufDefUAVIdx(h) registry->GetD3D12Buffer(h)->GetDefaultUAV()->GetIndex()
 
+#define CreateCullingBuffer(numElement, elementSize, bufferName) \
+    RHI::D3D12Buffer::Create(m_Device->GetLinkedDevice(), \
+                             RHI::RHIBufferRandomReadWrite, \
+                             numElement, \
+                             elementSize, \
+                             bufferName, \
+                             RHI::RHIBufferModeImmutable, \
+                             D3D12_RESOURCE_STATE_GENERIC_READ)
 
+#define CreateUploadBuffer(numElement, elementSize, bufferName) \
+    RHI::D3D12Buffer::Create(m_Device->GetLinkedDevice(), \
+                             RHI::RHIBufferTargetNone, \
+                             numElement, \
+                             elementSize, \
+                             bufferName, \
+                             RHI::RHIBufferModeDynamic, \
+                             D3D12_RESOURCE_STATE_GENERIC_READ)
+
+#define CreateArgBufferDesc(name, numElements) \
+    RHI::RgBufferDesc(name) \
+        .SetSize(numElements, sizeof(D3D12_DISPATCH_ARGUMENTS)) \
+        .SetRHIBufferMode(RHI::RHIBufferMode::RHIBufferModeImmutable) \
+        .SetRHIBufferTarget(RHI::RHIBufferTarget::RHIBufferTargetIndirectArgs | RHI::RHIBufferTarget::RHIBufferRandomReadWrite | RHI::RHIBufferTarget::RHIBufferTargetRaw)
+
+#define CreateIndexBuffer(name) \
+    RHI::D3D12Buffer::Create(m_Device->GetLinkedDevice(), \
+                             RHI::RHIBufferRandomReadWrite | RHI::RHIBufferTargetStructured | RHI::RHIBufferTargetCounter, \
+                             HLSL::MeshLimit, \
+                             sizeof(HLSL::BitonicSortCommandSigParams), \
+                             name)
+
+#define CreateSortCommandBuffer(name) \
+    RHI::D3D12Buffer::Create(m_Device->GetLinkedDevice(), \
+                             RHI::RHIBufferRandomReadWrite | RHI::RHIBufferTargetStructured | RHI::RHIBufferTargetCounter, \
+                             HLSL::MeshLimit, \
+                             sizeof(HLSL::CommandSignatureParams), \
+                             name)
 
     void IndirectCullPass::initialize(const RenderPassInitInfo& init_info)
     {
         // create default buffer
-        pPerframeBuffer = RHI::D3D12Buffer::Create(m_Device->GetLinkedDevice(),
-                                                   RHI::RHIBufferRandomReadWrite,
-                                                   1,
-                                                   sizeof(HLSL::MeshPerframeStorageBufferObject),
-                                                   L"PerFrameBuffer",
-                                                   RHI::RHIBufferModeImmutable,
-                                                   D3D12_RESOURCE_STATE_GENERIC_READ);
-
-        pMaterialBuffer = RHI::D3D12Buffer::Create(m_Device->GetLinkedDevice(),
-                                                   RHI::RHIBufferRandomReadWrite,
-                                                   HLSL::MaterialLimit,
-                                                   sizeof(HLSL::MaterialInstance),
-                                                   L"MaterialBuffer",
-                                                   RHI::RHIBufferModeImmutable,
-                                                   D3D12_RESOURCE_STATE_GENERIC_READ);
-
-        pMeshBuffer = RHI::D3D12Buffer::Create(m_Device->GetLinkedDevice(),
-                                               RHI::RHIBufferRandomReadWrite,
-                                               HLSL::MeshLimit,
-                                               sizeof(HLSL::MeshInstance),
-                                               L"MeshBuffer",
-                                               RHI::RHIBufferModeImmutable,
-                                               D3D12_RESOURCE_STATE_GENERIC_READ);
+        pPerframeBuffer = CreateCullingBuffer(1, sizeof(HLSL::MeshPerframeStorageBufferObject), L"PerFrameBuffer");
+        pMaterialBuffer = CreateCullingBuffer(HLSL::MaterialLimit, sizeof(HLSL::MaterialInstance), L"MaterialBuffer");
+        pMeshBuffer     = CreateCullingBuffer(HLSL::MeshLimit, sizeof(HLSL::MeshInstance), L"MeshBuffer");
 
         // create upload buffer
-        pUploadPerframeBuffer = RHI::D3D12Buffer::Create(m_Device->GetLinkedDevice(),
-                                                         RHI::RHIBufferTargetNone,
-                                                         1,
-                                                         sizeof(HLSL::MeshPerframeStorageBufferObject),
-                                                         L"UploadPerFrameBuffer",
-                                                         RHI::RHIBufferModeDynamic,
-                                                         D3D12_RESOURCE_STATE_GENERIC_READ);
+        pUploadPerframeBuffer = CreateUploadBuffer(1, sizeof(HLSL::MeshPerframeStorageBufferObject), L"UploadPerFrameBuffer");
+        pUploadMaterialBuffer = CreateUploadBuffer(HLSL::MaterialLimit, sizeof(HLSL::MaterialInstance), L"MaterialBuffer");
+        pUploadMeshBuffer = CreateUploadBuffer(HLSL::MeshLimit, sizeof(HLSL::MeshInstance), L"MeshBuffer");
 
-        pUploadMaterialBuffer = RHI::D3D12Buffer::Create(m_Device->GetLinkedDevice(),
-                                                         RHI::RHIBufferTargetNone,
-                                                         HLSL::MaterialLimit,
-                                                         sizeof(HLSL::MaterialInstance),
-                                                         L"UploadMaterialBuffer",
-                                                         RHI::RHIBufferModeDynamic,
-                                                         D3D12_RESOURCE_STATE_GENERIC_READ);
-
-        pUploadMeshBuffer = RHI::D3D12Buffer::Create(m_Device->GetLinkedDevice(),
-                                                     RHI::RHIBufferTargetNone,
-                                                     HLSL::MeshLimit,
-                                                     sizeof(HLSL::MeshInstance),
-                                                     L"UploadMeshBuffer",
-                                                     RHI::RHIBufferModeDynamic,
-                                                     D3D12_RESOURCE_STATE_GENERIC_READ);
-        /*
-        // for sort
-        pSortDispatchArgs = RHI::D3D12Buffer::Create(m_Device->GetLinkedDevice(),
-                                                     RHI::RHIBufferTargetIndirectArgs | RHI::RHIBufferRandomReadWrite | RHI::RHIBufferTargetRaw,
-                                                     22 * 23 / 2,
-                                                     sizeof(D3D12_DISPATCH_ARGUMENTS),
-                                                     L"SortDispatchArgs",
-                                                     RHI::RHIBufferModeImmutable,
-                                                     D3D12_RESOURCE_STATE_GENERIC_READ);
-
-        // for grab
-        pGrabDispatchArgs = RHI::D3D12Buffer::Create(m_Device->GetLinkedDevice(),
-                                                     RHI::RHIBufferTargetIndirectArgs | RHI::RHIBufferRandomReadWrite | RHI::RHIBufferTargetRaw,
-                                                     22 * 23 / 2,
-                                                     sizeof(D3D12_DISPATCH_ARGUMENTS),
-                                                     L"GrabDispatchArgs",
-                                                     RHI::RHIBufferModeImmutable,
-                                                     D3D12_RESOURCE_STATE_GENERIC_READ);
-        */
-
-#define CreateTex2DDesc(name, numElements, elementSize, rhiBufferMode, rhiBufferTarget) \
-    RHI::RgBufferDesc(name) \
-        .SetSize(numElements, elementSize) \
-        .SetRHIBufferMode(rhiBufferMode) \
-        .SetRHIBufferTarget(rhiBufferTarget)
-
-        RHI::RHIBufferTarget _ArgTarget = RHI::RHIBufferTarget::RHIBufferTargetIndirectArgs |
-                                          RHI::RHIBufferTarget::RHIBufferRandomReadWrite |
-                                          RHI::RHIBufferTarget::RHIBufferTargetRaw;
-
-        sortDispatchArgsBufferDesc = CreateTex2DDesc("SortDispatchArgs",
-                                                     22 * 23 / 2,
-                                                     sizeof(D3D12_DISPATCH_ARGUMENTS),
-                                                     RHI::RHIBufferMode::RHIBufferModeImmutable,
-                                                     _ArgTarget);
-        grabDispatchArgsBufferDesc = CreateTex2DDesc("GrabDispatchArgs",
-                                                     22 * 23 / 2,
-                                                     sizeof(D3D12_DISPATCH_ARGUMENTS),
-                                                     RHI::RHIBufferMode::RHIBufferModeImmutable,
-                                                     _ArgTarget);
+        sortDispatchArgsBufferDesc = CreateArgBufferDesc("SortDispatchArgs", 22 * 23 / 2);
+        grabDispatchArgsBufferDesc = CreateArgBufferDesc("GrabDispatchArgs", 22 * 23 / 2);
 
 
         // buffer for opaque draw
-        {
-            RHI::RHIBufferTarget opaqueIndexTarget =
-                RHI::RHIBufferRandomReadWrite | RHI::RHIBufferTargetStructured | RHI::RHIBufferTargetCounter;
-
-            std::shared_ptr<RHI::D3D12Buffer> opaqueIndexBuffer =
-                RHI::D3D12Buffer::Create(m_Device->GetLinkedDevice(),
-                                         opaqueIndexTarget,
-                                         HLSL::MeshLimit,
-                                         sizeof(HLSL::BitonicSortCommandSigParams),
-                                         L"OpaqueIndexBuffer");
-
-            commandBufferForOpaqueDraw.p_IndirectIndexCommandBuffer = opaqueIndexBuffer;
-            
-            std::shared_ptr<RHI::D3D12Buffer> opaqueBuffer =
-                RHI::D3D12Buffer::Create(m_Device->GetLinkedDevice(),
-                                         opaqueIndexTarget,
-                                         HLSL::MeshLimit,
-                                         sizeof(HLSL::CommandSignatureParams),
-                                         L"OpaqueBuffer");
-
-            commandBufferForOpaqueDraw.p_IndirectSortCommandBuffer = opaqueBuffer;
-        }
+        commandBufferForOpaqueDraw.p_IndirectIndexCommandBuffer = CreateIndexBuffer(L"OpaqueIndexBuffer");
+        commandBufferForOpaqueDraw.p_IndirectSortCommandBuffer  = CreateSortCommandBuffer(L"OpaqueBuffer");
 
         // buffer for transparent draw
-        {
-            RHI::RHIBufferTarget transparentIndexTarget =
-                RHI::RHIBufferRandomReadWrite | RHI::RHIBufferTargetStructured | RHI::RHIBufferTargetCounter;
-
-            std::shared_ptr<RHI::D3D12Buffer> transparentIndexBuffer =
-                RHI::D3D12Buffer::Create(m_Device->GetLinkedDevice(),
-                                         transparentIndexTarget,
-                                         HLSL::MeshLimit,
-                                         sizeof(HLSL::BitonicSortCommandSigParams),
-                                         L"TransparentIndexBuffer");
-
-            commandBufferForTransparentDraw.p_IndirectIndexCommandBuffer = transparentIndexBuffer;
-            
-            std::shared_ptr<RHI::D3D12Buffer> transparentBuffer =
-                RHI::D3D12Buffer::Create(m_Device->GetLinkedDevice(),
-                                         transparentIndexTarget,
-                                         HLSL::MeshLimit,
-                                         sizeof(HLSL::CommandSignatureParams),
-                                         L"TransparentBuffer");
-            
-            commandBufferForTransparentDraw.p_IndirectSortCommandBuffer = transparentBuffer;
-        }
+        commandBufferForTransparentDraw.p_IndirectIndexCommandBuffer = CreateIndexBuffer(L"TransparentIndexBuffer");
+        commandBufferForTransparentDraw.p_IndirectSortCommandBuffer  = CreateSortCommandBuffer(L"TransparentIndexBuffer");
     }
 
     void IndirectCullPass::prepareMeshData(std::shared_ptr<RenderResourceBase> render_resource)
@@ -392,9 +311,10 @@ namespace Pilot
     }
 
     void IndirectCullPass::grabObject(RHI::D3D12ComputeContext* context,
+                                      RHI::D3D12Buffer*         meshBuffer,
                                       RHI::D3D12Buffer*         indirectIndexBuffer,
                                       RHI::D3D12Buffer*         indirectSortBuffer,
-                                      RHI::D3D12Buffer*         grabDispatchArgBuffer)// pSortDispatchArgs
+                                      RHI::D3D12Buffer*         grabDispatchArgBuffer) // pSortDispatchArgs
 
     {
         {
@@ -422,7 +342,7 @@ namespace Pilot
             context->SetPipelineState(PipelineStates::pIndirectCullGrab.get());
             context->SetRootSignature(RootSignatures::pIndirectCullGrab.get());
 
-            context->SetBufferSRV(0, pMeshBuffer.get());
+            context->SetBufferSRV(0, meshBuffer);
             context->SetBufferSRV(1, indirectIndexBuffer->GetCounterBuffer().get());
             context->SetBufferSRV(2, indirectIndexBuffer);
             context->SetDescriptorTable(3, indirectSortBuffer->GetDefaultUAV()->GetGpuHandle());
@@ -434,191 +354,6 @@ namespace Pilot
         }
     }
 
-    /*
-    void IndirectCullPass::cullMeshs(RHI::D3D12CommandContext* context,
-                                     RHI::RenderGraphRegistry* registry,
-                                     IndirectCullOutput&       indirectCullOutput)
-    {
-        indirectCullOutput.pPerframeBuffer = pPerframeBuffer;
-        indirectCullOutput.pMaterialBuffer = pMaterialBuffer;
-        indirectCullOutput.pMeshBuffer     = pMeshBuffer;
-        indirectCullOutput.p_OpaqueDrawCommandBuffer      = commandBufferForOpaqueDraw.p_IndirectSortCommandBuffer;
-        indirectCullOutput.p_TransparentDrawCommandBuffer = commandBufferForTransparentDraw.p_IndirectSortCommandBuffer;
-        indirectCullOutput.p_DirShadowmapCommandBuffer    = dirShadowmapCommandBuffer.p_IndirectSortCommandBuffer;
-        for (size_t i = 0; i < spotShadowmapCommandBuffer.size(); i++)
-        {
-            indirectCullOutput.p_SpotShadowmapCommandBuffers.push_back(
-                spotShadowmapCommandBuffer[i].p_IndirectSortCommandBuffer);
-        }
-
-        int numMeshes = m_visiable_nodes.p_all_mesh_nodes->size();
-
-        RHI::D3D12SyncHandle ComputeSyncHandle;
-        if (numMeshes > 0)
-        {
-            //RHI::D3D12CommandContext& copyContext = m_Device->GetLinkedDevice()->GetCopyContext1();
-            RHI::D3D12CommandContext* pCopyContext = m_Device->GetLinkedDevice()->GetCommandContext(1);
-            pCopyContext->Open();
-            {
-                pCopyContext->ResetCounter(commandBufferForOpaqueDraw.p_IndirectIndexCommandBuffer->GetCounterBuffer().get());
-                pCopyContext->ResetCounter(commandBufferForOpaqueDraw.p_IndirectSortCommandBuffer->GetCounterBuffer().get());
-                pCopyContext->ResetCounter(commandBufferForTransparentDraw.p_IndirectIndexCommandBuffer->GetCounterBuffer().get());
-                pCopyContext->ResetCounter(commandBufferForTransparentDraw.p_IndirectSortCommandBuffer->GetCounterBuffer().get());
-                if (dirShadowmapCommandBuffer.p_IndirectSortCommandBuffer != nullptr)
-                {
-                    pCopyContext->ResetCounter(dirShadowmapCommandBuffer.p_IndirectSortCommandBuffer->GetCounterBuffer().get());
-                }
-                for (size_t i = 0; i < spotShadowmapCommandBuffer.size(); i++)
-                {
-                    pCopyContext->ResetCounter(spotShadowmapCommandBuffer[i].p_IndirectSortCommandBuffer->GetCounterBuffer().get());
-                }
-                pCopyContext->CopyBuffer(pPerframeBuffer.get(), pUploadPerframeBuffer.get());
-                pCopyContext->CopyBuffer(pMaterialBuffer.get(), pUploadMaterialBuffer.get());
-                pCopyContext->CopyBuffer(pMeshBuffer.get(), pUploadMeshBuffer.get());
-
-                pCopyContext->TransitionBarrier(pPerframeBuffer.get(), D3D12_RESOURCE_STATE_GENERIC_READ);
-                pCopyContext->TransitionBarrier(pMaterialBuffer.get(), D3D12_RESOURCE_STATE_GENERIC_READ);
-                pCopyContext->TransitionBarrier(pMeshBuffer.get(), D3D12_RESOURCE_STATE_GENERIC_READ);
-            }
-            pCopyContext->Close();
-            RHI::D3D12SyncHandle copySyncHandle = pCopyContext->Execute(false);
-
-            //RHI::D3D12ComputeContext& asyncCompute = m_Device->GetLinkedDevice()->GetAsyncComputeCommandContext().GetComputeContext();
-            RHI::D3D12ComputeContext* pAsyncCompute = m_Device->GetLinkedDevice()->GetCommandContext(2)->GetComputeContext();
-            pAsyncCompute->GetCommandQueue()->WaitForSyncHandle(copySyncHandle);
-
-            pAsyncCompute->Open();
-            // Opaque and Transparent object cull
-            {
-                pAsyncCompute->TransitionBarrier(commandBufferForOpaqueDraw.p_IndirectIndexCommandBuffer.get(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-                pAsyncCompute->TransitionBarrier(commandBufferForTransparentDraw.p_IndirectIndexCommandBuffer.get(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-                //asyncCompute.InsertUAVBarrier(commandBufferForOpaqueDraw.p_IndirectIndexCommandBuffer.get());
-                //asyncCompute.InsertUAVBarrier(commandBufferForTransparentDraw.p_IndirectIndexCommandBuffer.get());
-
-                D3D12ScopedEvent(pAsyncCompute, "Gpu Frustum Culling for Sort");
-                pAsyncCompute->SetPipelineState(PipelineStates::pIndirectCullForSort.get());
-                pAsyncCompute->SetRootSignature(RootSignatures::pIndirectCullForSort.get());
-
-                struct RootIndexBuffer
-                {
-                    UINT meshPerFrameBufferIndex;
-                    UINT meshInstanceBufferIndex;
-                    UINT materialIndexBufferIndex;
-                    UINT opaqueSortIndexDisBufferIndex;
-                    UINT transSortIndexDisBufferIndex;
-                };
-
-                RootIndexBuffer rootIndexBuffer = RootIndexBuffer {
-                    pPerframeBuffer->GetDefaultCBV()->GetIndex(),
-                    pMeshBuffer->GetDefaultSRV()->GetIndex(),
-                    pMaterialBuffer->GetDefaultSRV()->GetIndex(),
-                    commandBufferForOpaqueDraw.p_IndirectIndexCommandBuffer->GetDefaultUAV()->GetIndex(),
-                    commandBufferForTransparentDraw.p_IndirectIndexCommandBuffer->GetDefaultUAV()->GetIndex()
-                };
-
-                pAsyncCompute->SetConstantArray(0, sizeof(RootIndexBuffer) / sizeof(UINT), &rootIndexBuffer);
-
-                //pAsyncCompute->SetConstantBuffer(0, pPerframeBuffer->GetGpuVirtualAddress());
-                //pAsyncCompute->SetBufferSRV(1, pMeshBuffer.get());
-                //pAsyncCompute->SetBufferSRV(2, pMaterialBuffer.get());
-                //pAsyncCompute->SetDescriptorTable(3, commandBufferForOpaqueDraw.p_IndirectIndexCommandBuffer->GetDefaultUAV()->GetGpuHandle());
-                //pAsyncCompute->SetDescriptorTable(4, commandBufferForTransparentDraw.p_IndirectIndexCommandBuffer->GetDefaultUAV()->GetGpuHandle());
-
-                pAsyncCompute->Dispatch1D(numMeshes, 128);
-            }
-            
-            //  Opaque object bitonic sort
-            {
-                D3D12ScopedEvent(pAsyncCompute, "Bitonic Sort for opaque");
-
-                RHI::D3D12Buffer* bufferPtr = commandBufferForOpaqueDraw.p_IndirectIndexCommandBuffer.get();
-
-                bitonicSort(pAsyncCompute,
-                            bufferPtr,
-                            bufferPtr->GetCounterBuffer().get(),
-                            false,
-                            true);
-            }
-
-            // Transparent object bitonic sort
-            {
-                D3D12ScopedEvent(pAsyncCompute, "Bitonic Sort for transparent");
-
-                RHI::D3D12Buffer* bufferPtr = commandBufferForTransparentDraw.p_IndirectIndexCommandBuffer.get();
-
-                bitonicSort(pAsyncCompute,
-                            bufferPtr,
-                            bufferPtr->GetCounterBuffer().get(),
-                            false,
-                            false);
-            }
-            
-            // Output sorted opaque object
-            {
-                D3D12ScopedEvent(pAsyncCompute, "Grabs opaque objects to render");
-
-                RHI::D3D12Buffer* indirectIndexBufferPtr = commandBufferForOpaqueDraw.p_IndirectIndexCommandBuffer.get();
-                RHI::D3D12Buffer* indirectSortBufferPtr = commandBufferForOpaqueDraw.p_IndirectSortCommandBuffer.get();
-
-                grabObject(pAsyncCompute, indirectIndexBufferPtr, indirectSortBufferPtr);
-            }
-
-            // Output sorted transparent object
-            {
-                D3D12ScopedEvent(pAsyncCompute, "Grabs transparent objects to render");
-
-                RHI::D3D12Buffer* indirectIndexBufferPtr = commandBufferForTransparentDraw.p_IndirectIndexCommandBuffer.get();
-                RHI::D3D12Buffer* indirectSortBufferPtr = commandBufferForTransparentDraw.p_IndirectSortCommandBuffer.get();
-
-                grabObject(pAsyncCompute, indirectIndexBufferPtr, indirectSortBufferPtr);
-            }
-
-            // DirectionLight shadow cull
-            if (dirShadowmapCommandBuffer.p_IndirectSortCommandBuffer != nullptr)
-            {
-                D3D12ScopedEvent(pAsyncCompute, "Gpu Frustum Culling direction light");
-                pAsyncCompute->SetPipelineState(PipelineStates::pIndirectCullDirectionShadowmap.get());
-                pAsyncCompute->SetRootSignature(RootSignatures::pIndirectCullDirectionShadowmap.get());
-                
-                pAsyncCompute->SetConstantBuffer(0, pPerframeBuffer->GetGpuVirtualAddress());
-                pAsyncCompute->SetBufferSRV(1, pMeshBuffer.get());
-                pAsyncCompute->SetBufferSRV(2, pMaterialBuffer.get());
-                pAsyncCompute->SetDescriptorTable(3, dirShadowmapCommandBuffer.p_IndirectSortCommandBuffer->GetDefaultUAV()->GetGpuHandle());
-
-                pAsyncCompute->Dispatch1D(numMeshes, 128);
-
-                pAsyncCompute->TransitionBarrier(dirShadowmapCommandBuffer.p_IndirectSortCommandBuffer.get(), D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT);
-            }
-
-            // SpotLight shadow cull
-            if (!spotShadowmapCommandBuffer.empty())
-            {
-                D3D12ScopedEvent(pAsyncCompute, "Gpu Frustum Culling spot light");
-                for (size_t i = 0; i < spotShadowmapCommandBuffer.size(); i++)
-                {
-                    pAsyncCompute->SetPipelineState(PipelineStates::pIndirectCullSpotShadowmap.get());
-                    pAsyncCompute->SetRootSignature(RootSignatures::pIndirectCullSpotShadowmap.get());
-
-                    pAsyncCompute->SetConstantBuffer(0, pPerframeBuffer->GetGpuVirtualAddress());
-                    pAsyncCompute->SetConstant(1, 0, spotShadowmapCommandBuffer[i].m_lightIndex);
-                    pAsyncCompute->SetBufferSRV(2, pMeshBuffer.get());
-                    pAsyncCompute->SetBufferSRV(3, pMaterialBuffer.get());
-                    pAsyncCompute->SetDescriptorTable(4, spotShadowmapCommandBuffer[i].p_IndirectSortCommandBuffer->GetDefaultUAV()->GetGpuHandle());
-
-                    pAsyncCompute->Dispatch1D(numMeshes, 128);
-
-                    pAsyncCompute->TransitionBarrier(spotShadowmapCommandBuffer[i].p_IndirectSortCommandBuffer.get(), D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT);
-                }
-            }
-            pAsyncCompute->Close();
-            ComputeSyncHandle = pAsyncCompute->Execute(false);
-        }
-
-        context->GetCommandQueue()->WaitForSyncHandle(ComputeSyncHandle);
-
-    }
-    */
-
     void IndirectCullPass::update(RHI::RenderGraph& graph, IndirectCullOutput& cullOutput)
     {
         RHI::RgResourceHandle uploadPerframeBufferHandle = GImport(pUploadPerframeBuffer.get());
@@ -627,9 +362,6 @@ namespace Pilot
 
         RHI::RgResourceHandle sortDispatchArgsHandle = graph.Create<RHI::D3D12Buffer>(sortDispatchArgsBufferDesc);
         RHI::RgResourceHandle grabDispatchArgsHandle = graph.Create<RHI::D3D12Buffer>(grabDispatchArgsBufferDesc);
-
-        //RHI::RgResourceHandle sortDispatchArgsHandle = GImport(pSortDispatchArgs.get());
-        //RHI::RgResourceHandle grabDispatchArgsHandle = GImport(pGrabDispatchArgs.get());
 
         // import buffers
         cullOutput.perframeBufferHandle = GImport(pPerframeBuffer.get());
@@ -761,7 +493,7 @@ namespace Pilot
 
             RHI::RenderPass& opaqueSortPass = graph.AddRenderPass("OpaqueBitonicSortPass");
 
-            PassReadIg(opaqueSortPass, sortDispatchArgsHandle);
+            PassWriteIg(opaqueSortPass, sortDispatchArgsHandle);
             PassWriteIg(opaqueSortPass, cullOutput.opaqueDrawHandle.indirectIndexBufferHandle);
             
             opaqueSortPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
@@ -793,33 +525,39 @@ namespace Pilot
 
             RHI::RenderPass& grabOpaquePass = graph.AddRenderPass("GrabOpaquePass");
 
+            PassReadIg(grabOpaquePass, cullOutput.meshBufferHandle);
+            PassReadIg(grabOpaquePass, cullOutput.opaqueDrawHandle.indirectIndexBufferHandle);
             PassWriteIg(grabOpaquePass, grabDispatchArgsHandle);
             PassWriteIg(grabOpaquePass, cullOutput.opaqueDrawHandle.indirectSortBufferHandle);
 
             grabOpaquePass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
                 RHI::D3D12ComputeContext* pAsyncCompute = context->GetComputeContext();
                 
+                RHI::D3D12Buffer* meshBufferPtr = RegGetBuf(cullOutput.meshBufferHandle);
                 RHI::D3D12Buffer* indirectIndexBufferPtr = RegGetBuf(cullOutput.opaqueDrawHandle.indirectIndexBufferHandle);
                 RHI::D3D12Buffer* indirectSortBufferPtr = RegGetBuf(cullOutput.opaqueDrawHandle.indirectSortBufferHandle);
                 RHI::D3D12Buffer* grabDispatchArgsPtr = RegGetBuf(grabDispatchArgsHandle);
 
-                grabObject(pAsyncCompute, indirectIndexBufferPtr, indirectSortBufferPtr, grabDispatchArgsPtr);
+                grabObject(pAsyncCompute, meshBufferPtr, indirectIndexBufferPtr, indirectSortBufferPtr, grabDispatchArgsPtr);
             });
 
 
             RHI::RenderPass& grabTransPass = graph.AddRenderPass("GrabTransPass");
 
+            PassReadIg(grabOpaquePass, cullOutput.meshBufferHandle);
+            PassReadIg(grabOpaquePass, cullOutput.transparentDrawHandle.indirectIndexBufferHandle);
             PassWriteIg(grabTransPass, grabDispatchArgsHandle);
             PassWriteIg(grabTransPass, cullOutput.transparentDrawHandle.indirectSortBufferHandle);
 
             grabTransPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
                 RHI::D3D12ComputeContext* pAsyncCompute = context->GetComputeContext();
 
+                RHI::D3D12Buffer* meshBufferPtr = RegGetBuf(cullOutput.meshBufferHandle);
                 RHI::D3D12Buffer* indirectIndexBufferPtr = RegGetBuf(cullOutput.transparentDrawHandle.indirectIndexBufferHandle);
                 RHI::D3D12Buffer* indirectSortBufferPtr = RegGetBuf(cullOutput.transparentDrawHandle.indirectSortBufferHandle);
                 RHI::D3D12Buffer* grabDispatchArgsPtr = RegGetBuf(grabDispatchArgsHandle);
 
-                grabObject(pAsyncCompute, indirectIndexBufferPtr, indirectSortBufferPtr, grabDispatchArgsPtr);
+                grabObject(pAsyncCompute, meshBufferPtr, indirectIndexBufferPtr, indirectSortBufferPtr, grabDispatchArgsPtr);
             });
 
 

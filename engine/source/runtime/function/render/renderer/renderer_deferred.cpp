@@ -206,12 +206,10 @@ namespace Pilot
         mShadowmapIntputParams.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
         mShadowmapIntputParams.meshBufferHandle     = indirectCullOutput.meshBufferHandle;
         mShadowmapIntputParams.materialBufferHandle = indirectCullOutput.materialBufferHandle;
-        mShadowmapIntputParams.dirIndirectSortBufferHandle =
-            indirectCullOutput.dirShadowmapHandle.indirectSortBufferHandle;
+        mShadowmapIntputParams.dirIndirectSortBufferHandle = indirectCullOutput.dirShadowmapHandle.indirectSortBufferHandle;
         for (size_t i = 0; i < indirectCullOutput.spotShadowmapHandles.size(); i++)
         {
-            mShadowmapIntputParams.spotsIndirectSortBufferHandles.push_back(
-                indirectCullOutput.spotShadowmapHandles[i].indirectSortBufferHandle);
+            mShadowmapIntputParams.spotsIndirectSortBufferHandles.push_back(indirectCullOutput.spotShadowmapHandles[i].indirectSortBufferHandle);
         }
         
         mIndirectShadowPass->update(graph, mShadowmapIntputParams, mShadowmapOutputParams);

@@ -66,6 +66,9 @@ namespace RHI
 		D3D12Buffer*  GetD3D12Buffer(RgResourceHandle Handle);
         D3D12Texture* GetD3D12Texture(RgResourceHandle Handle);
 
+		std::uint64_t GetVersion(RgResourceHandle Handle);
+        void IncreaseVersion(RgResourceHandle Handle);
+
 	private:
         template<typename T>
         [[nodiscard]] auto GetContainer() -> std::vector<std::shared_ptr<typename RgResourceTraits<T>::ApiType>>&
@@ -90,6 +93,8 @@ namespace RHI
 		// Cached desc table based on resource handle to prevent unnecessary recreation of resources
 		robin_hood::unordered_map<RgResourceHandle, RgBufferDesc>  BufferDescTable;
 		robin_hood::unordered_map<RgResourceHandle, RgTextureDesc> TextureDescTable;
+
+		robin_hood::unordered_map<RgResourceHandle, UINT> HandleIndexTable;
 
 		std::vector<std::shared_ptr<D3D12Buffer>>  pBuffers;
         std::vector<std::shared_ptr<D3D12Texture>> pTextures;

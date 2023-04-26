@@ -188,8 +188,7 @@ namespace RHI
 	{
         ASSERT(Handle.IsValid());
         //ASSERT(Handle.Type == RgResourceTraits<D3D12Buffer>::Enum);
-        ASSERT(Handle.Type == RgResourceType::Buffer || Handle.Type == RgResourceType::VertexAndConstantBuffer ||
-               Handle.Type == RgResourceType::IndirectArgBuffer);
+        ASSERT(Handle.Type == RgResourceType::Buffer);
 		if (!Handle.IsImported())
 		{
             auto& Container = GetContainer<D3D12Buffer>();
@@ -222,5 +221,34 @@ namespace RHI
             return ImportedContainer[Handle.Id];
         }
 	}
+
+    std::uint64_t RenderGraphRegistry::GetVersion(RgResourceHandle Handle)
+    {
+        std::uint64_t versionIndex = 0;
+        auto Iter = HandleIndexTable.find(Handle);
+        if (Iter == HandleIndexTable.end())
+        {
+            HandleIndexTable[Handle] = versionIndex;
+        }
+        else
+        {
+            versionIndex = HandleIndexTable[Handle];
+        }
+        return versionIndex;
+    }
+
+    void RenderGraphRegistry::IncreaseVersion(RgResourceHandle Handle)
+    {
+        auto Iter = HandleIndexTable.find(Handle);
+        if (Iter == HandleIndexTable.end())
+        {
+            HandleIndexTable[Handle] = 0;
+        }
+        else
+        {
+            std::uint64_t versionIndex = HandleIndexTable[Handle];
+            HandleIndexTable[Handle] = versionIndex + 1;
+        }
+    }
 
 } // namespace RHI

@@ -72,6 +72,8 @@ namespace RHI
         std::size_t                  CurrentMemoryUsage;
     };
 
+    bool AddHandleToVector(std::vector<RgResourceHandle>& handles, RgResourceHandle newHandle);
+
     class RenderPass
     {
     public:
@@ -100,12 +102,9 @@ namespace RHI
         size_t           TopologicalIndex = 0;
         size_t           PassIndex        = 0;
 
-        robin_hood::unordered_set<RgResourceHandle> Reads;
-        robin_hood::unordered_set<RgResourceHandle> Writes;
-        robin_hood::unordered_set<RgResourceHandle> ReadWrites;
-
-        std::vector<RgResourceHandle> IgnoreReads;
-        std::vector<RgResourceHandle> IgnoreWrites;
+        std::vector<RgResourceHandle> Reads;
+        std::vector<RgResourceHandle> Writes;
+        std::vector<RgResourceHandle> ReadWrites;
         
         ExecuteCallback Callback;
     };
@@ -123,11 +122,8 @@ namespace RHI
         std::vector<RenderPass*> RenderPasses;
 
         // Apply barriers at a dependency level to reduce redudant barriers
-        robin_hood::unordered_set<RgResourceHandle> Reads;
-        robin_hood::unordered_set<RgResourceHandle> Writes;
-
-        std::vector<RgResourceHandle> IgnoreReads;
-        std::vector<RgResourceHandle> IgnoreWrites;
+        std::vector<RgResourceHandle> Reads;
+        std::vector<RgResourceHandle> Writes;
     };
 
     class RenderGraph
@@ -141,7 +137,12 @@ namespace RHI
         {
             auto& ImportedContainer = GetImportedContainer<T>();
 
-            RgResourceHandle Handle = {RgResourceTraits<T>::Enum, RG_RESOURCE_FLAG_IMPORTED, 0, ImportedContainer.size()};
+            RgResourceHandle Handle = {RgResourceTraits<T>::Enum,
+                                       RgResourceFlags::RG_RESOURCE_FLAG_IMPORTED,
+                                       RgResourceSubType::None,
+                                       RgBarrierFlag::Auto,
+                                       0,
+                                       ImportedContainer.size()};
             InGraphResHandle.push_back(Handle);
 
             ImportedContainer.emplace_back(ToBeImported);
@@ -154,7 +155,12 @@ namespace RHI
         {
             auto& Container = GetContainer<T>();
 
-            RgResourceHandle Handle = {RgResourceTraits<T>::Enum, RG_RESOURCE_FLAG_NONE, 0, Container.size()};
+            RgResourceHandle Handle = {RgResourceTraits<T>::Enum,
+                                       RgResourceFlags::RG_RESOURCE_FLAG_NONE,
+                                       RgResourceSubType::None,
+                                       RgBarrierFlag::Auto,
+                                       0,
+                                       Container.size()};
 
             InGraphResHandle.push_back(Handle);
 
