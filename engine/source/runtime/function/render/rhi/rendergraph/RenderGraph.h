@@ -72,8 +72,6 @@ namespace RHI
         std::size_t                  CurrentMemoryUsage;
     };
 
-    bool AddHandleToVector(std::vector<RgResourceHandle>& handles, RgResourceHandle newHandle);
-
     class RenderPass
     {
     public:
@@ -102,9 +100,9 @@ namespace RHI
         size_t           TopologicalIndex = 0;
         size_t           PassIndex        = 0;
 
-        std::vector<RgResourceHandle> Reads;
-        std::vector<RgResourceHandle> Writes;
-        std::vector<RgResourceHandle> ReadWrites;
+        robin_hood::unordered_set<RgResourceHandle> Reads;
+        robin_hood::unordered_set<RgResourceHandle> Writes;
+        robin_hood::unordered_set<RgResourceHandle> ReadWrites;
         
         ExecuteCallback Callback;
     };
@@ -122,8 +120,8 @@ namespace RHI
         std::vector<RenderPass*> RenderPasses;
 
         // Apply barriers at a dependency level to reduce redudant barriers
-        std::vector<RgResourceHandle> Reads;
-        std::vector<RgResourceHandle> Writes;
+        robin_hood::unordered_set<RgResourceHandle> Reads;
+        robin_hood::unordered_set<RgResourceHandle> Writes;
     };
 
     class RenderGraph
@@ -258,9 +256,6 @@ namespace RHI
         std::vector<RenderPass*>      InGraphPass;
         // 按照加入graph的顺序记录所有RgResourceHandle被各种pass做出的操作
         std::map<RgResourceHandle, std::deque<RgHandleOpPassIdx>> RgHandleOpMap;
-
-        //std::vector<std::vector<std::uint64_t>> AdjacencyLists;
-        //std::vector<RenderPass*>                TopologicalSortedPasses;
 
         std::vector<RenderGraphDependencyLevel> DependencyLevels;
     };

@@ -340,26 +340,32 @@ namespace RHI
 
 } // namespace RHI
 
-/*
 template<>
 struct std::hash<RHI::RgResourceHandle>
 {
-	size_t operator()(const RHI::RgResourceHandle& RenderResourceHandle) const noexcept
-	{
-        RHI::RgResourceHandle tmpHandle = {
-            RenderResourceHandle.Type, RenderResourceHandle.Flags, 0, RenderResourceHandle.Id};
+    size_t operator()(const RHI::RgResourceHandle& RenderResourceHandle) const noexcept
+    {
+        RHI::RgResourceHandle tmpHandle = {RenderResourceHandle.Type,
+                                           RenderResourceHandle.Flags,
+                                           RHI::RgResourceSubType::None,
+                                           RHI::RgBarrierFlag::Auto,
+                                           0,
+                                           RenderResourceHandle.Id};
         return Utility::Hash64(&tmpHandle, sizeof(tmpHandle));
-	}
+    }
 };
 
 template<>
 struct robin_hood::hash<RHI::RgResourceHandle>
 {
-	size_t operator()(const RHI::RgResourceHandle& RenderResourceHandle) const noexcept
-	{
-        RHI::RgResourceHandle tmpHandle = {
-            RenderResourceHandle.Type, RenderResourceHandle.Flags, 0, RenderResourceHandle.Id};
+    size_t operator()(const RHI::RgResourceHandle& RenderResourceHandle) const noexcept
+    {
+        RHI::RgResourceHandle tmpHandle = {RenderResourceHandle.Type,
+                                           RenderResourceHandle.Flags,
+                                           RHI::RgResourceSubType::None,
+                                           RHI::RgBarrierFlag::Auto,
+                                           0,
+                                           RenderResourceHandle.Id};
         return Utility::Hash64(&tmpHandle, sizeof(tmpHandle));
-	}
+    }
 };
-*/

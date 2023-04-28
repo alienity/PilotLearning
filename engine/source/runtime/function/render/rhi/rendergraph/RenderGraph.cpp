@@ -3,10 +3,6 @@
 
 namespace RHI
 {
-    bool AddHandleToVector(std::vector<RgResourceHandle>& handles, RgResourceHandle newHandle)
-	{
-
-	}
 
     RenderPass::RenderPass(std::string_view Name, RenderGraph* Graph) : Name(Name), ParentGraph(Graph) {}
 
@@ -34,8 +30,7 @@ namespace RHI
         ASSERT(Resource.Type == RgResourceType::Buffer || Resource.Type == RgResourceType::Texture);
 
 		//Resource->Version++;
-        ParentGraph->Registry.IncreaseVersion(Resource);
-
+        
 		Resource = ToRgResourceHandle(Resource, IgnoreBarrier);
 
 		Writes.insert(Resource);

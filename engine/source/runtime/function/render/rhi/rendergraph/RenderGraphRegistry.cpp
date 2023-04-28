@@ -222,33 +222,4 @@ namespace RHI
         }
 	}
 
-    std::uint64_t RenderGraphRegistry::GetVersion(RgResourceHandle Handle)
-    {
-        std::uint64_t versionIndex = 0;
-        auto Iter = HandleIndexTable.find(Handle);
-        if (Iter == HandleIndexTable.end())
-        {
-            HandleIndexTable[Handle] = versionIndex;
-        }
-        else
-        {
-            versionIndex = HandleIndexTable[Handle];
-        }
-        return versionIndex;
-    }
-
-    void RenderGraphRegistry::IncreaseVersion(RgResourceHandle Handle)
-    {
-        auto Iter = HandleIndexTable.find(Handle);
-        if (Iter == HandleIndexTable.end())
-        {
-            HandleIndexTable[Handle] = 0;
-        }
-        else
-        {
-            std::uint64_t versionIndex = HandleIndexTable[Handle];
-            HandleIndexTable[Handle] = versionIndex + 1;
-        }
-    }
-
 } // namespace RHI
