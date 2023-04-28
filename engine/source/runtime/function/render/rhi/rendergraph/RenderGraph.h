@@ -14,18 +14,8 @@
 namespace RHI
 {
     class RenderPass;
-
-    enum RgHandleOp
-    {
-        Read,
-        Write
-    };
-
-    struct RgHandleOpPassIdx
-    {
-        RgHandleOp  op;
-        RenderPass* passPtr;
-    };
+    class RgResourceHandle;
+    class RgResourceHandleExt;
 
     class RenderGraphAllocator
     {
@@ -100,11 +90,17 @@ namespace RHI
         size_t           TopologicalIndex = 0;
         size_t           PassIndex        = 0;
 
-        robin_hood::unordered_set<RgResourceHandle> Reads;
-        robin_hood::unordered_set<RgResourceHandle> Writes;
-        robin_hood::unordered_set<RgResourceHandle> ReadWrites;
+        std::vector<RgResourceHandleExt> Reads;
+        std::vector<RgResourceHandleExt> Writes;
         
         ExecuteCallback Callback;
+
+    private:        
+        friend class RenderGraph;
+
+        std::vector<uint32_t> ReadsIdxInGraph;
+        std::vector<uint32_t> WritesIdxInGraph;
+
     };
 
     class RenderGraphDependencyLevel
@@ -117,11 +113,13 @@ namespace RHI
         inline std::vector<RenderPass*>& GetRenderPasses() { return RenderPasses; }
 
     private:
+        friend class RenderGraph;
+        
         std::vector<RenderPass*> RenderPasses;
 
         // Apply barriers at a dependency level to reduce redudant barriers
-        robin_hood::unordered_set<RgResourceHandle> Reads;
-        robin_hood::unordered_set<RgResourceHandle> Writes;
+        std::unordered_set<RgResourceHandleExt> Reads;
+        std::unordered_set<RgResourceHandleExt> Writes;
     };
 
     class RenderGraph
@@ -135,13 +133,11 @@ namespace RHI
         {
             auto& ImportedContainer = GetImportedContainer<T>();
 
-            RgResourceHandle Handle = {RgResourceTraits<T>::Enum,
-                                       RgResourceFlags::RG_RESOURCE_FLAG_IMPORTED,
-                                       RgResourceSubType::None,
-                                       RgBarrierFlag::Auto,
-                                       0,
-                                       ImportedContainer.size()};
+            RgResourceHandle Handle = {
+                RgResourceTraits<T>::Enum, RgResourceFlags::RG_RESOURCE_FLAG_IMPORTED, 0, ImportedContainer.size()};
             InGraphResHandle.push_back(Handle);
+
+            InGraphHandle2Idx[Handle] = InGraphResHandle.size() - 1;
 
             ImportedContainer.emplace_back(ToBeImported);
             return Handle;
@@ -153,14 +149,12 @@ namespace RHI
         {
             auto& Container = GetContainer<T>();
 
-            RgResourceHandle Handle = {RgResourceTraits<T>::Enum,
-                                       RgResourceFlags::RG_RESOURCE_FLAG_NONE,
-                                       RgResourceSubType::None,
-                                       RgBarrierFlag::Auto,
-                                       0,
-                                       Container.size()};
+            RgResourceHandle Handle = {
+                RgResourceTraits<T>::Enum, RgResourceFlags::RG_RESOURCE_FLAG_NONE, 0, Container.size()};
 
             InGraphResHandle.push_back(Handle);
+
+            InGraphHandle2Idx[Handle] = InGraphResHandle.size() - 1;
 
             auto& Resource  = Container.emplace_back();
             Resource.Handle = Handle;
@@ -186,13 +180,8 @@ namespace RHI
     private:
         void Setup();
 
-        bool IsResourceReadAvailable(RgResourceHandle& resHandle, RenderPass* pPass);
-        bool IsResourceWriteAvailable(RgResourceHandle& resHandle, RenderPass* pPass);
-        bool IsResourceAvailable(RgResourceHandle& resHandle, RenderPass* pPass);
-        bool IsPassAvailable(RenderPass* pPass);
-        void RemovePassOpFromResHandleMap(RgResourceHandle& resHandle, RenderPass* pPass, std::map<RgResourceHandle, std::deque<RgHandleOpPassIdx>>& resOpIdxMap);
+        bool IsPassAvailable(RenderPass* rgPass, std::map<uint32_t, std::set<uint32_t>>& InGraphHandle2PassWriterIdx);
 
-        //void DepthFirstSearch(size_t n, std::vector<bool>& Visited, std::stack<size_t>& Stack);
 
         [[nodiscard]] std::string_view GetResourceName(RgResourceHandle Handle) const
         {
@@ -251,12 +240,11 @@ namespace RHI
 
         size_t PassIndex;
 
-        
         std::vector<RgResourceHandle> InGraphResHandle;
         std::vector<RenderPass*>      InGraphPass;
-        // 按照加入graph的顺序记录所有RgResourceHandle被各种pass做出的操作
-        std::map<RgResourceHandle, std::deque<RgHandleOpPassIdx>> RgHandleOpMap;
 
+        std::unordered_map<RgResourceHandle, uint32_t> InGraphHandle2Idx;
+        
         std::vector<RenderGraphDependencyLevel> DependencyLevels;
     };
 } // namespace RHI

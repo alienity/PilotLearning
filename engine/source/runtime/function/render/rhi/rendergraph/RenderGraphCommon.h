@@ -23,11 +23,12 @@ namespace RHI
 		RaytracingPipelineState,
 	};
 
-	enum class RgResourceSubType : std::uint64_t
+	enum RgResourceSubType : std::uint64_t
     {
 		None,
         VertexAndConstantBuffer,
-        IndirectArgBuffer
+        IndirectArgBuffer,
+        
 	};
 
 	enum RgResourceFlags : std::uint64_t
@@ -52,17 +53,13 @@ namespace RHI
         {
             Type        = RgResourceType::Unknown;
             Flags       = RG_RESOURCE_FLAG_NONE;
-            SubType     = RgResourceSubType::None;
-            BarrierFlag = RgBarrierFlag::Auto;
             Version     = 0;
             Id          = UINT_MAX;
         }
 
-        RgResourceType    Type : 30; // 14 bit to represent type, might remove some bits from this and give it to version
+        RgResourceType    Type : 14; // 14 bit to represent type, might remove some bits from this and give it to version
         RgResourceFlags   Flags : 2;
-        RgResourceSubType SubType : 30; // subtype can be different
-        RgBarrierFlag     BarrierFlag : 2; // whether to use auto barrier
-        std::uint64_t     Version : 32; // 16 bits to represent version should be more than enough, we can always just increase bit used if is not enough
+        std::uint64_t     Version : 16; // 16 bits to represent version should be more than enough, we can always just increase bit used if is not enough
         std::uint64_t     Id : 32; // 32 bit unsigned int
     };
 
@@ -80,31 +77,56 @@ namespace RHI
     inline bool operator<=(const RgResourceHandle& lhs, const RgResourceHandle& rhs) { return !operator>(lhs, rhs); }
     inline bool operator>=(const RgResourceHandle& lhs, const RgResourceHandle& rhs) { return !operator<(lhs, rhs); }
 
-	static_assert(sizeof(RgResourceHandle) == sizeof(std::uint64_t) * 2);
+	static_assert(sizeof(RgResourceHandle) == sizeof(std::uint64_t));
 
-	inline RgResourceHandle ToRgResourceHandle(RgResourceHandle& rgHandle, RgResourceSubType subType)
+    struct RgResourceHandleExt
+    {
+        RgResourceHandle  rgHandle;
+        RgResourceSubType rgSubType : 32;
+        RgBarrierFlag     rgTransFlag : 32;
+    };
+    inline bool operator==(const RgResourceHandleExt& lhs, const RgResourceHandleExt& rhs)
+    {
+        return lhs.rgHandle == rhs.rgHandle && lhs.rgSubType == rhs.rgSubType && lhs.rgTransFlag == rhs.rgTransFlag;
+    }
+    inline bool operator!=(const RgResourceHandleExt& lhs, const RgResourceHandleExt& rhs) { return !operator==(lhs, rhs); }
+    inline bool operator<(const RgResourceHandleExt& lhs, const RgResourceHandleExt& rhs)
+    {
+        return lhs.rgHandle < rhs.rgHandle || (lhs.rgHandle == rhs.rgHandle && lhs.rgSubType < rhs.rgSubType) ||
+               (lhs.rgHandle == rhs.rgHandle && lhs.rgSubType == rhs.rgSubType && lhs.rgTransFlag < rhs.rgTransFlag);
+    }
+    inline bool operator>(const RgResourceHandleExt& lhs, const RgResourceHandleExt& rhs) { return operator<(rhs, lhs); }
+    inline bool operator<=(const RgResourceHandleExt& lhs, const RgResourceHandleExt& rhs) { return !operator>(lhs, rhs); }
+    inline bool operator>=(const RgResourceHandleExt& lhs, const RgResourceHandleExt& rhs) { return !operator<(lhs, rhs); }
+
+    static_assert(sizeof(RgResourceHandleExt) == sizeof(std::uint64_t) * 2);
+
+	inline RgResourceHandleExt ToRgResourceHandle(RgResourceHandle& rgHandle, RgResourceSubType subType)
 	{
-        RgResourceHandle rgResourceHandle = rgHandle;
-        rgResourceHandle.SubType = subType;
+        RgResourceHandleExt rgResourceHandle = {};
+        rgResourceHandle.rgHandle = rgHandle;
+        rgResourceHandle.rgSubType = subType;
         return rgResourceHandle;
 	}
 
-	inline std::vector<RgResourceHandle> ToRgResourceHandle(std::vector<RgResourceHandle>& rgHandles, RgResourceSubType subType)
+	inline std::vector<RgResourceHandleExt> ToRgResourceHandle(std::vector<RgResourceHandle>& rgHandles, RgResourceSubType subType)
     {
-        std::vector<RgResourceHandle> rgResourceHandles;
+        std::vector<RgResourceHandleExt> rgResourceHandles;
         for (size_t i = 0; i < rgHandles.size(); i++)
         {
-            RgResourceHandle rgResourceHandle = rgHandles[i];
-            rgResourceHandle.SubType = subType;
+            RgResourceHandleExt rgResourceHandle = {};
+            rgResourceHandle.rgHandle = rgHandles[i];
+            rgResourceHandle.rgSubType = subType;
             rgResourceHandles.push_back(rgResourceHandle);
 		}
         return rgResourceHandles;
     }
 
-	inline RgResourceHandle ToRgResourceHandle(RgResourceHandle& rgHandle, bool ignoreBarrier)
+	inline RgResourceHandleExt ToRgResourceHandle(RgResourceHandle& rgHandle, bool ignoreBarrier)
 	{
-        RgResourceHandle rgResourceHandle = rgHandle;
-        rgResourceHandle.BarrierFlag = ignoreBarrier ? RgBarrierFlag::None : RgBarrierFlag::Auto;
+        RgResourceHandleExt rgResourceHandle = {};
+        rgResourceHandle.rgHandle  = rgHandle;
+        rgResourceHandle.rgTransFlag = ignoreBarrier ? RgBarrierFlag::None : RgBarrierFlag::Auto;
         return rgResourceHandle;
 	}
 
@@ -351,12 +373,8 @@ struct std::hash<RHI::RgResourceHandle>
 {
     size_t operator()(const RHI::RgResourceHandle& RenderResourceHandle) const noexcept
     {
-        RHI::RgResourceHandle tmpHandle = {RenderResourceHandle.Type,
-                                           RenderResourceHandle.Flags,
-                                           RHI::RgResourceSubType::None,
-                                           RHI::RgBarrierFlag::Auto,
-                                           0,
-                                           RenderResourceHandle.Id};
+        RHI::RgResourceHandle tmpHandle = RenderResourceHandle;
+        tmpHandle.Version = 0;
         return Utility::Hash64(&tmpHandle, sizeof(tmpHandle));
     }
 };
@@ -366,12 +384,30 @@ struct robin_hood::hash<RHI::RgResourceHandle>
 {
     size_t operator()(const RHI::RgResourceHandle& RenderResourceHandle) const noexcept
     {
-        RHI::RgResourceHandle tmpHandle = {RenderResourceHandle.Type,
-                                           RenderResourceHandle.Flags,
-                                           RHI::RgResourceSubType::None,
-                                           RHI::RgBarrierFlag::Auto,
-                                           0,
-                                           RenderResourceHandle.Id};
+        RHI::RgResourceHandle tmpHandle = RenderResourceHandle;
+        tmpHandle.Version = 0;
         return Utility::Hash64(&tmpHandle, sizeof(tmpHandle));
+    }
+};
+
+template<>
+struct std::hash<RHI::RgResourceHandleExt>
+{
+    size_t operator()(const RHI::RgResourceHandleExt& RenderResourceHandleExt) const noexcept
+    {
+        RHI::RgResourceHandleExt tmpHandleExt = RenderResourceHandleExt;
+        tmpHandleExt.rgHandle.Version = 0;
+        return Utility::Hash64(&tmpHandleExt, sizeof(tmpHandleExt));
+    }
+};
+
+template<>
+struct robin_hood::hash<RHI::RgResourceHandleExt>
+{
+    size_t operator()(const RHI::RgResourceHandleExt& RenderResourceHandleExt) const noexcept
+    {
+        RHI::RgResourceHandleExt tmpHandleExt = RenderResourceHandleExt;
+        tmpHandleExt.rgHandle.Version = 0;
+        return Utility::Hash64(&tmpHandleExt, sizeof(tmpHandleExt));
     }
 };

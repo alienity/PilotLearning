@@ -12,13 +12,13 @@ namespace RHI
         ASSERT(Resource.IsValid());
         ASSERT(Resource.Type == RgResourceType::Buffer || Resource.Type == RgResourceType::Texture);
 
-		Resource = ToRgResourceHandle(Resource, IgnoreBarrier);
+        if (!ReadsFrom(Resource))
+        {
+            RgResourceHandleExt ResourceExt = ToRgResourceHandle(Resource, IgnoreBarrier);
+            Reads.push_back(ResourceExt);
 
-		Reads.insert(Resource);
-		ReadWrites.insert(Resource);
-
-		std::deque<RgHandleOpPassIdx>& rgHandleOpQueue = ParentGraph->RgHandleOpMap[Resource];
-        rgHandleOpQueue.push_back({RgHandleOp::Read, this});
+            ReadsIdxInGraph.push_back(ParentGraph->InGraphHandle2Idx[Resource]);
+        }
 
 		return *this;
 	}
@@ -31,35 +31,49 @@ namespace RHI
 
 		//Resource->Version++;
         
-		Resource = ToRgResourceHandle(Resource, IgnoreBarrier);
+        if (!WritesTo(Resource))
+        {
+            RgResourceHandleExt ResourceExt = ToRgResourceHandle(Resource, IgnoreBarrier);
+            Writes.push_back(ResourceExt);
 
-		Writes.insert(Resource);
-		ReadWrites.insert(Resource);
-
-		std::deque<RgHandleOpPassIdx>& rgHandleOpQueue = ParentGraph->RgHandleOpMap[Resource];
-        rgHandleOpQueue.push_back({RgHandleOp::Write, this});
+            WritesIdxInGraph.push_back(ParentGraph->InGraphHandle2Idx[Resource]);
+        }
 
 		return *this;
 	}
 
 	bool RenderPass::HasDependency(RgResourceHandle Resource) const
-	{
-		return ReadWrites.contains(Resource);
-	}
+    {
+        return ReadsFrom(Resource) || WritesTo(Resource);
+    }
 
 	bool RenderPass::WritesTo(RgResourceHandle Resource) const
 	{
-		return Writes.contains(Resource);
+        for (size_t i = 0; i < Writes.size(); i++)
+        {
+            if (Writes[i].rgHandle == Resource)
+            {
+                return true;
+            }
+        }
+        return false;
 	}
 
 	bool RenderPass::ReadsFrom(RgResourceHandle Resource) const
 	{
-		return Reads.contains(Resource);
+        for (size_t i = 0; i < Reads.size(); i++)
+        {
+            if (Reads[i].rgHandle == Resource)
+            {
+                return true;
+            }
+        }
+        return false;
 	}
 
 	bool RenderPass::HasAnyDependencies() const noexcept
 	{
-		return !ReadWrites.empty();
+		return !Reads.empty() || !Writes.empty();
 	}
 
 	void RenderGraphDependencyLevel::AddRenderPass(RenderPass* RenderPass)
@@ -73,77 +87,77 @@ namespace RHI
 	{
 		// Figure out all the barriers needed for each level
 		// Handle resource transitions for all registered resources
-		for (auto Read : Reads)
+		for (auto& Read : Reads)
 		{
-			if (Read.BarrierFlag == RgBarrierFlag::None)
+			if (Read.rgTransFlag == RgBarrierFlag::None)
 			{
                 continue;
 			}
 
-			if (Read.Type == RgResourceType::Texture || Read.Type == RgResourceType::Buffer)
+			if (Read.rgHandle.Type == RgResourceType::Texture || Read.rgHandle.Type == RgResourceType::Buffer)
 			{
-				if (Read.SubType == RgResourceSubType::None)
+				if (Read.rgSubType == RgResourceSubType::None)
 				{
                     D3D12_RESOURCE_STATES ReadState = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
-                    if (RenderGraph->AllowUnorderedAccess(Read))
+                    if (RenderGraph->AllowUnorderedAccess(Read.rgHandle))
                     {
                         ReadState |= D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
                     }
-                    if (Read.Type == RgResourceType::Texture)
+                    if (Read.rgHandle.Type == RgResourceType::Texture)
                     {
-                        D3D12Texture* pTexture = RenderGraph->GetRegistry()->GetD3D12Texture(Read);
+                        D3D12Texture* pTexture = RenderGraph->GetRegistry()->GetD3D12Texture(Read.rgHandle);
                         Context->TransitionBarrier(pTexture, ReadState);
                     }
-                    if (Read.Type == RgResourceType::Buffer)
+                    if (Read.rgHandle.Type == RgResourceType::Buffer)
                     {
-                        D3D12Buffer* pBuffer = RenderGraph->GetRegistry()->GetD3D12Buffer(Read);
+                        D3D12Buffer* pBuffer = RenderGraph->GetRegistry()->GetD3D12Buffer(Read.rgHandle);
                         Context->TransitionBarrier(pBuffer, ReadState);
                     }
 				}
-                else if (Read.SubType == RgResourceSubType::VertexAndConstantBuffer)
+                else if (Read.rgSubType == RgResourceSubType::VertexAndConstantBuffer)
 				{
-                    D3D12Buffer* pCBuffer = RenderGraph->GetRegistry()->GetD3D12Buffer(Read);
+                    D3D12Buffer* pCBuffer = RenderGraph->GetRegistry()->GetD3D12Buffer(Read.rgHandle);
                     Context->TransitionBarrier(pCBuffer, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
 				}
-                else if (Read.SubType == RgResourceSubType::IndirectArgBuffer)
+                else if (Read.rgSubType == RgResourceSubType::IndirectArgBuffer)
 				{
-                    D3D12Buffer* pCBuffer = RenderGraph->GetRegistry()->GetD3D12Buffer(Read);
+                    D3D12Buffer* pCBuffer = RenderGraph->GetRegistry()->GetD3D12Buffer(Read.rgHandle);
                     Context->TransitionBarrier(pCBuffer, D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT);
 				}
 			}
 		}
 		for (auto Write : Writes)
 		{
-            if (Write.BarrierFlag == RgBarrierFlag::None)
+            if (Write.rgTransFlag == RgBarrierFlag::None)
             {
                 continue;
             }
 
 			D3D12_RESOURCE_STATES WriteState = D3D12_RESOURCE_STATE_COMMON;
-            if (Write.Type == RgResourceType::Texture)
+            if (Write.rgHandle.Type == RgResourceType::Texture)
 			{
-                if (RenderGraph->AllowRenderTarget(Write))
+                if (RenderGraph->AllowRenderTarget(Write.rgHandle))
                 {
                     WriteState |= D3D12_RESOURCE_STATE_RENDER_TARGET;
                 }
-                if (RenderGraph->AllowDepthStencil(Write))
+                if (RenderGraph->AllowDepthStencil(Write.rgHandle))
                 {
                     WriteState |= D3D12_RESOURCE_STATE_DEPTH_WRITE;
                 }
-                if (RenderGraph->AllowUnorderedAccess(Write))
+                if (RenderGraph->AllowUnorderedAccess(Write.rgHandle))
                 {
                     WriteState |= D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
                 }
-                D3D12Texture* pTexture = RenderGraph->GetRegistry()->GetD3D12Texture(Write);
+                D3D12Texture* pTexture = RenderGraph->GetRegistry()->GetD3D12Texture(Write.rgHandle);
                 Context->TransitionBarrier(pTexture, WriteState);
 			}
 			else
 			{
-                if (RenderGraph->AllowUnorderedAccess(Write))
+                if (RenderGraph->AllowUnorderedAccess(Write.rgHandle))
                 {
                     WriteState |= D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
                 }
-                D3D12Buffer* pBuffer = RenderGraph->GetRegistry()->GetD3D12Buffer(Write);
+                D3D12Buffer* pBuffer = RenderGraph->GetRegistry()->GetD3D12Buffer(Write.rgHandle);
                 Context->TransitionBarrier(pBuffer, WriteState);
 			}
 		}
@@ -191,6 +205,7 @@ namespace RHI
         NewRenderPass->PassIndex  = PassIndex++;
 		RenderPasses.emplace_back(NewRenderPass);
         InGraphPass.push_back(NewRenderPass);
+
 		return *NewRenderPass;
 	}
 
@@ -290,106 +305,124 @@ namespace RHI
         return false;
 	}
 
-	bool RenderGraph::IsResourceReadAvailable(RgResourceHandle& resHandle, RenderPass* pPass)
-	{
-        std::deque<RgHandleOpPassIdx>& rgHandleOpQueue = RgHandleOpMap[resHandle];
-        ASSERT(!rgHandleOpQueue.empty());
-
-        bool isCurHandleInFirstReadGroup = false;
-        bool isWriteBeforeCurHandle      = false;
-        
-		for (size_t i = 0; i < rgHandleOpQueue.size(); i++)
+    bool RenderGraph::IsPassAvailable(RenderPass* rgPass, std::map<uint32_t, std::set<uint32_t>>& InGraphHandle2PassWriterIdx)
+    {
+        auto& mReadsIdxInGraph = rgPass->ReadsIdxInGraph;
+        for (size_t i = 0; i < mReadsIdxInGraph.size(); i++)
         {
-            RgHandleOpPassIdx curOpIdx = rgHandleOpQueue.at(i);
-            if (curOpIdx.passPtr != pPass)
-            {
-                if (curOpIdx.op == RgHandleOp::Write)
-                {
-                    isWriteBeforeCurHandle = true;
-                    break;
-                }
-				else
-				{
-					// µ½Ä¿Ç°ÎªÖ¹¶¼ÊÇRead
-				}
-            }
-            else
-            {
-                if (curOpIdx.op == RgHandleOp::Read)
-                {
-                    isCurHandleInFirstReadGroup = true;
-                }
-                break;
-            }
-		}
-
-		return !isWriteBeforeCurHandle && isCurHandleInFirstReadGroup;
-	}
-
-	bool RenderGraph::IsResourceWriteAvailable(RgResourceHandle& resHandle, RenderPass* pPass)
-	{
-        std::deque<RgHandleOpPassIdx>& rgHandleOpQueue = RgHandleOpMap[resHandle];
-        ASSERT(!rgHandleOpQueue.empty());
-		return rgHandleOpQueue.front().op == RgHandleOp::Write && rgHandleOpQueue.front().passPtr == pPass;
-	}
-
-	bool RenderGraph::IsResourceAvailable(RgResourceHandle& resHandle, RenderPass* pPass)
-	{
-        return IsResourceReadAvailable(resHandle, pPass) || IsResourceWriteAvailable(resHandle, pPass);
-	}
-
-	bool RenderGraph::IsPassAvailable(RenderPass* pPass)
-	{
-		bool isPassAvai = true;
-        for (auto it = pPass->Writes.begin(); it != pPass->Writes.end(); it++)
-        {
-            isPassAvai &= IsResourceWriteAvailable(*it, pPass);
-		}
-        for (auto it = pPass->Reads.begin(); it != pPass->Reads.end(); it++)
-        {
-            isPassAvai &= IsResourceReadAvailable(*it, pPass);
+            if (!InGraphHandle2PassWriterIdx[mReadsIdxInGraph[i]].empty())
+                return false;
         }
-        return isPassAvai;
-	}
-
-	void RenderGraph::RemovePassOpFromResHandleMap(RgResourceHandle& resHandle, RenderPass* pPass, std::map<RgResourceHandle, std::deque<RgHandleOpPassIdx>>& resOpIdxMap)
-	{
-        std::deque<RgHandleOpPassIdx>& rgHandleOpQueue = resOpIdxMap[resHandle];
-        ASSERT(!rgHandleOpQueue.empty());
-        int prevReadCount = 0;
-        int prevWriteCount = 0;
-        for (std::deque<RgHandleOpPassIdx>::iterator it = rgHandleOpQueue.begin(); it != rgHandleOpQueue.end();)
-        {
-            if (it->op == RgHandleOp::Read && it->passPtr != pPass)
-			{
-                prevReadCount += 1;
-			}
-            if (it->passPtr == pPass)
-			{
-				if (it->op == RgHandleOp::Write)
-				{
-                    ASSERT(prevReadCount == 0);
-				}
-                it = rgHandleOpQueue.erase(it);
-                break;
-			}
-			else
-			{
-                ++it;
-			}
-        }
-	}
+        return true;
+    }
 
 	void RenderGraph::Setup()
 	{
+		// å‡†å¤‡RgHandleçš„æ‰€æœ‰æ“ä½œæ•°æ®ï¼Œçœ‹çœ‹å¯ä»¥æŒ‰ç…§Readå’ŒWriteçš„é¡ºåºï¼Œå…ˆç»™æ‰€æœ‰çš„passæ’ä¸ªåºä¸
+        typedef uint32_t HandleIdx;
+        typedef uint32_t PassIdx;
+		
+		std::map<HandleIdx, std::set<PassIdx>> InGraphHandle2PassWriterIdx;
+        std::vector<PassIdx> InGraphPassIdx;
+        
+		for (size_t i = 0; i < InGraphPass.size(); i++)
+        {
+            RHI::RenderPass* pass = InGraphPass[i];
+            uint32_t passIdx = pass->PassIndex;
+            std::vector<uint32_t>& passReadsIdx = pass->ReadsIdxInGraph;
+            std::vector<uint32_t>& passWritesIdx = pass->WritesIdxInGraph;
+            
+            for (size_t j = 0; j < passReadsIdx.size(); j++)
+            {
+                auto& passIdxSet = InGraphHandle2PassWriterIdx[passReadsIdx[j]];
+                passIdxSet.insert(passIdx);
+            }
+            InGraphPassIdx.push_back(pass->PassIndex);
+        }
+
+        std::set<PassIdx> mPassIdxQueue = {};
+        do
+        {
+            if (!mPassIdxQueue.empty())
+            {
+                RenderGraphDependencyLevel dependencyLevel = {};
+                while (!mPassIdxQueue.empty())
+                {
+                    RenderPass* rgPassPtr = InGraphPass[*mPassIdxQueue.begin()];
+                    mPassIdxQueue.erase(mPassIdxQueue.begin());
+
+                    if (IsPassAvailable(rgPassPtr, InGraphHandle2PassWriterIdx))
+                    {
+                        for (size_t i = 0; i < rgPassPtr->Reads.size(); i++)
+                        {
+
+                        }
+
+
+
+
+
+
+
+                        for (auto it = rgPassPtr->Reads.begin(); it != rgPassPtr->Reads.end(); it++)
+                        {
+                            RemovePassOpFromResHandleMap(*it, rgPassPtr, RgHandleOpMap);
+                        }
+                        for (auto it = rgPassPtr->Writes.begin(); it != rgPassPtr->Writes.end(); it++)
+                        {
+                            RemovePassOpFromResHandleMap(*it, rgPassPtr, RgHandleOpMap);
+                        }
+                        dependencyLevel.AddRenderPass(rgPassPtr);
+                    }
+                }
+                DependencyLevels.push_back(dependencyLevel);
+
+                std::vector<RenderPass*>& mBatchLevel = dependencyLevel.GetRenderPasses();
+
+                for (size_t i = 0; i < mBatchLevel.size(); i++)
+                {
+                    for (auto it = InGraphPass.begin(); it != InGraphPass.end();)
+                    {
+                        if (mBatchLevel[i] == *it)
+                        {
+                            it = InGraphPass.erase(it);
+                        }
+                        else
+                        {
+                            ++it;
+                        }
+                    }
+                }
+            }
+
+
+        } while (!gRenderPassQueue.empty());
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        /*
         std::set<RenderPass*> gRenderPassQueue = {};
         do
         {
-			// 3. Ñ­»·±éÀúÕÒ³öËùÓĞ²¢ĞĞÖ´ĞĞµÄpass£¬²¢°´Ë³Ğò°ÑËûÃÇÅÅÏÂÀ´
+			// 3. Ñ­ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò³ï¿½ï¿½ï¿½ï¿½Ğ²ï¿½ï¿½ï¿½Ö´ï¿½Ğµï¿½passï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ë³ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 			if (!gRenderPassQueue.empty())
 			{
                 RenderGraphDependencyLevel dependencyLevel = {};
-                // ±éÀúÖ»ÓĞĞ´³öµÄPass
+                // ï¿½ï¿½ï¿½ï¿½Ö»ï¿½ï¿½Ğ´ï¿½ï¿½ï¿½ï¿½Pass
                 while (!gRenderPassQueue.empty())
                 {
                     RenderPass* rgPassPtr = *gRenderPassQueue.begin();
@@ -428,7 +461,7 @@ namespace RHI
 				}
 			}
 
-            // 1. ÕÒ³öÖ»ÓĞReadµÄPass
+            // 1. ï¿½Ò³ï¿½Ö»ï¿½ï¿½Readï¿½ï¿½Pass
             for (size_t i = 0; i < InGraphResHandle.size(); i++)
             {
                 RgResourceHandle& resHandle = InGraphResHandle[i];
@@ -445,7 +478,7 @@ namespace RHI
                 }
             }
             
-			// 2. ÕÒ³öÃ»ÓĞReaderµÄPass
+			// 2. ï¿½Ò³ï¿½Ã»ï¿½ï¿½Readerï¿½ï¿½Pass
             for (size_t i = 0; i < InGraphPass.size(); i++)
             {
                 RenderPass* passPtr = InGraphPass[i];
@@ -456,160 +489,11 @@ namespace RHI
             }
 
         } while (!gRenderPassQueue.empty());
-
-		/*
-		// https://levelup.gitconnected.com/organizing-gpu-work-with-directed-acyclic-graphs-f3fd5f2c2af3
-		// https://www.gdcvault.com/play/1024612/FrameGraph-Extensible-Rendering-Architecture-in
-		// https://media.contentapi.ea.com/content/dam/ea/seed/presentations/wihlidal-halcyonarchitecture-notes.pdf
-
-		// Adjacency lists
-		AdjacencyLists.resize(RenderPasses.size());
-
-		for (size_t i = 0; i < RenderPasses.size(); ++i)
-		{
-			RenderPass* Node = RenderPasses[i];
-			if (!Node->HasAnyDependencies())
-			{
-				continue;
-			}
-
-            std::vector<std::uint64_t>& Indices = AdjacencyLists[i];
-
-			// Reverse iterate the render passes here, because often or not, the adjacency list should be built upon
-			// the latest changes to the render passes since those pass are more likely to change the resource we are writing to from other passes
-			// if we were to iterate from 0 to RenderPasses.size(), it'd often break the algorithm and creates an incorrect adjacency list
-			for (size_t j = RenderPasses.size(); j-- != 0;)
-			{
-				if (i == j)
-				{
-					continue;
-				}
-
-				RenderPass* Neighbor = RenderPasses[j];
-				for (RHI::RgResourceHandle& Resource : Node->Writes)
-				{
-					// If the neighbor reads from a resource written to by the current pass, then it is a dependency, add it to the adjacency list
-					if (Neighbor->ReadsFrom(Resource))
-					{
-						//Indices.push_back(j);
-                        Indices.push_back(j);
-						break;
-					}
-				}
-			}
-		}
-
-		// Topological sort
-		std::stack<size_t> Stack;
-		std::vector<bool>  Visited(RenderPasses.size(), false);
-
-		for (size_t i = 0; i < RenderPasses.size(); i++)
-		{
-			if (!Visited[i])
-			{
-				DepthFirstSearch(i, Visited, Stack);
-			}
-		}
-
-		TopologicalSortedPasses.reserve(Stack.size());
-		while (!Stack.empty())
-		{
-			size_t i						  = Stack.top();
-			RenderPasses[i]->TopologicalIndex = i;
-			TopologicalSortedPasses.push_back(RenderPasses[i]);
-			Stack.pop();
-		}
-
-		// Longest path search
-		// Render passes in a dependency level share the same recursion depth,
-		// or rather maximum recursion depth AKA longest path in a DAG
-		std::vector<int> Distances(TopologicalSortedPasses.size(), 0);
-
-		for (auto& TopologicalSortedPass : TopologicalSortedPasses)
-		{
-			size_t u = TopologicalSortedPass->TopologicalIndex;
-			for (auto v : AdjacencyLists[u])
-			{
-				// ÒòÎªÄ¬ÈÏDistanceÊÇ0£¬ËùÒÔÕâÀï¼Ó1
-                int vDistance = v.Distance + 1;
-                if (Distances[v.Index] < Distances[u] + vDistance)
-				{
-                    Distances[v.Index] = Distances[u] + vDistance;
-				}
-			}
-		}
-
-		// DependencyLevels.resize(*std::ranges::max_element(Distances) + 1);
-        DependencyLevels.resize(*std::max_element(Distances.begin(), Distances.end()) + 1);
-
-		// sort renderpass according to PassIndex
-        std::vector<std::vector<RHI::RenderPass*>> sorttedRenderPassList(DependencyLevels.size());
-        for (size_t i = 0; i < TopologicalSortedPasses.size(); ++i)
-        {
-            int level = Distances[i];
-            std::vector<RHI::RenderPass*>& curLevelRenderPass = sorttedRenderPassList[level];
-            curLevelRenderPass.push_back(TopologicalSortedPasses[i]);
-            for (size_t j = curLevelRenderPass.size() - 1; j > 0; j--)
-            {
-                size_t curPassIndex = curLevelRenderPass[j]->PassIndex;
-                size_t prePassIndex = curLevelRenderPass[j - 1]->PassIndex;
-				if (curPassIndex < prePassIndex)
-				{
-                    RHI::RenderPass* tmpPass = curLevelRenderPass[j];
-                    curLevelRenderPass[j]    = curLevelRenderPass[j - 1];
-                    curLevelRenderPass[j - 1] = tmpPass;
-				}
-			}
-        }
-
-		for (size_t l = 0; l < sorttedRenderPassList.size(); ++l)
-		{
-            std::vector<RHI::RenderPass*>& curLevelRenderPass = sorttedRenderPassList[l];
-            for (size_t j = 0; j < curLevelRenderPass.size(); j++)
-            {
-                DependencyLevels[l].AddRenderPass(curLevelRenderPass[j]);
-			}
-		}
         */
 	}
-
-    /*
-	void RenderGraph::DepthFirstSearch(size_t n, std::vector<bool>& Visited, std::stack<size_t>& Stack)
-	{
-		Visited[n] = true;
-
-		for (auto i : AdjacencyLists[n])
-		{
-			if (!Visited[i])
-			{
-				DepthFirstSearch(i, Visited, Stack);
-			}
-		}
-
-		Stack.push(n);
-	}
-    */
 
 	void RenderGraph::ExportDgml(DgmlBuilder& Builder) const
 	{
-        /*
-		for (size_t i = 0; i < AdjacencyLists.size(); ++i)
-		{
-			RenderPass* Node = RenderPasses[i];
-			std::ignore		 = Builder.AddNode(Node->Name, Node->Name);
 
-			for (size_t j = 0; j < AdjacencyLists[i].size(); ++j)
-			{
-				RenderPass* Neighbor = RenderPasses[AdjacencyLists[i][j]];
-				for (auto Resource : Node->Writes)
-				{
-					if (Neighbor->ReadsFrom(Resource))
-					{
-						std::ignore = Builder.AddLink(Node->Name.data(), Neighbor->Name.data(), GetResourceName(Resource));
-					}
-				}
-			}
-		}
-        */
 	}
 } // namespace RHI

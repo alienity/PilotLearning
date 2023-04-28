@@ -49,10 +49,6 @@ namespace RHI
 		pBuffers.resize(Graph->Buffers.size());
         pTextures.resize(Graph->Textures.size());
 
-		// This is used to check to see if any view associated with the texture needs to be updated in case if texture is dirty
-		// The view does not check for this, so do it here manually
-		robin_hood::unordered_set<RgResourceHandle> TextureDirtyHandles;
-
 		for (size_t i = 0; i < Graph->Textures.size(); ++i)
 		{
 			auto&		 RgTexture = Graph->Textures[i];
@@ -76,7 +72,6 @@ namespace RHI
 				continue;
 			}
 
-			TextureDirtyHandles.insert(Handle);
 			RgTextureDesc& Desc = RgTexture.Desc;
 
 			RHITextureDimension textureDim;
@@ -143,8 +138,6 @@ namespace RHI
                 Device->GetLinkedDevice(), textureDesc, textureName, D3D12_RESOURCE_STATE_COMMON, pClearValue);
 		}
 
-		robin_hood::unordered_set<RgResourceHandle> BufferDirtyHandles;
-
 		for (size_t i = 0; i < Graph->Buffers.size(); ++i)
         {
              auto&            RgBuffer = Graph->Buffers[i];
@@ -168,7 +161,6 @@ namespace RHI
                 continue;
              }
 
-             BufferDirtyHandles.insert(Handle);
              RgBufferDesc& Desc = RgBuffer.Desc;
 
              std::wstring bufferName = std::wstring(RgBuffer.Desc.mName.begin(), RgBuffer.Desc.mName.end());
