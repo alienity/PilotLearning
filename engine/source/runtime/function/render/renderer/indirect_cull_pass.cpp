@@ -9,11 +9,6 @@
 
 namespace Pilot
 {
-#define GImport(b) graph.Import(b)
-#define PassRead(p, b) p.Read(b)
-#define PassWrite(p, b) p.Write(b)
-#define PassReadIg(p, b) p.Read(b, true)
-#define PassWriteIg(p, b) p.Write(b, true)
 #define RegGetBuf(h) registry->GetD3D12Buffer(h)
 #define RegGetBufCounter(h) registry->GetD3D12Buffer(h)->GetCounterBuffer().get()
 #define RegGetTex(h) registry->GetD3D12Texture(h)
@@ -356,33 +351,33 @@ namespace Pilot
 
     void IndirectCullPass::update(RHI::RenderGraph& graph, IndirectCullOutput& cullOutput)
     {
-        RHI::RgResourceHandle uploadPerframeBufferHandle = GImport(pUploadPerframeBuffer.get());
-        RHI::RgResourceHandle uploadMaterialBufferHandle = GImport(pUploadMaterialBuffer.get());
-        RHI::RgResourceHandle uploadMeshBufferHandle     = GImport(pUploadMeshBuffer.get());
+        RHI::RgResourceHandle uploadPerframeBufferHandle = GImport(graph, pUploadPerframeBuffer.get());
+        RHI::RgResourceHandle uploadMaterialBufferHandle = GImport(graph, pUploadMaterialBuffer.get());
+        RHI::RgResourceHandle uploadMeshBufferHandle     = GImport(graph, pUploadMeshBuffer.get());
 
         RHI::RgResourceHandle sortDispatchArgsHandle = graph.Create<RHI::D3D12Buffer>(sortDispatchArgsBufferDesc);
         RHI::RgResourceHandle grabDispatchArgsHandle = graph.Create<RHI::D3D12Buffer>(grabDispatchArgsBufferDesc);
 
         // import buffers
-        cullOutput.perframeBufferHandle = GImport(pPerframeBuffer.get());
-        cullOutput.materialBufferHandle = GImport(pMaterialBuffer.get());
-        cullOutput.meshBufferHandle     = GImport(pMeshBuffer.get());
+        cullOutput.perframeBufferHandle = GImport(graph, pPerframeBuffer.get());
+        cullOutput.materialBufferHandle = GImport(graph, pMaterialBuffer.get());
+        cullOutput.meshBufferHandle     = GImport(graph, pMeshBuffer.get());
 
         cullOutput.opaqueDrawHandle = DrawCallCommandBufferHandle {
-            GImport(commandBufferForOpaqueDraw.p_IndirectIndexCommandBuffer.get()),
-            GImport(commandBufferForOpaqueDraw.p_IndirectSortCommandBuffer.get())};
+            GImport(graph, commandBufferForOpaqueDraw.p_IndirectIndexCommandBuffer.get()),
+            GImport(graph, commandBufferForOpaqueDraw.p_IndirectSortCommandBuffer.get())};
 
         cullOutput.transparentDrawHandle = DrawCallCommandBufferHandle {
-            GImport(commandBufferForTransparentDraw.p_IndirectIndexCommandBuffer.get()),
-            GImport(commandBufferForTransparentDraw.p_IndirectSortCommandBuffer.get())};
+            GImport(graph, commandBufferForTransparentDraw.p_IndirectIndexCommandBuffer.get()),
+            GImport(graph, commandBufferForTransparentDraw.p_IndirectSortCommandBuffer.get())};
 
         bool hasDirShadowmap = false;
         if (dirShadowmapCommandBuffer.p_IndirectSortCommandBuffer != nullptr)
         {
             hasDirShadowmap = true;
             cullOutput.dirShadowmapHandle = DrawCallCommandBufferHandle {
-                GImport(dirShadowmapCommandBuffer.p_IndirectIndexCommandBuffer.get()),
-                GImport(dirShadowmapCommandBuffer.p_IndirectSortCommandBuffer.get())};
+                GImport(graph, dirShadowmapCommandBuffer.p_IndirectIndexCommandBuffer.get()),
+                GImport(graph, dirShadowmapCommandBuffer.p_IndirectSortCommandBuffer.get())};
         }
 
         bool hasSpotShadowmap = false;
@@ -391,8 +386,8 @@ namespace Pilot
         for (size_t i = 0; i < spotShadowmapCommandBuffer.size(); i++)
         {
             DrawCallCommandBufferHandle bufferHandle = {
-                GImport(spotShadowmapCommandBuffer[i].p_IndirectIndexCommandBuffer.get()),
-                GImport(spotShadowmapCommandBuffer[i].p_IndirectSortCommandBuffer.get())};
+                GImport(graph, spotShadowmapCommandBuffer[i].p_IndirectIndexCommandBuffer.get()),
+                GImport(graph, spotShadowmapCommandBuffer[i].p_IndirectSortCommandBuffer.get())};
             cullOutput.spotShadowmapHandles.push_back(bufferHandle);
         }
 
@@ -493,6 +488,7 @@ namespace Pilot
 
             RHI::RenderPass& opaqueSortPass = graph.AddRenderPass("OpaqueBitonicSortPass");
 
+            PassReadIg(opaqueSortPass, cullOutput.opaqueDrawHandle.indirectIndexBufferHandle);
             PassWriteIg(opaqueSortPass, sortDispatchArgsHandle);
             PassWriteIg(opaqueSortPass, cullOutput.opaqueDrawHandle.indirectIndexBufferHandle);
             
@@ -509,6 +505,7 @@ namespace Pilot
 
             RHI::RenderPass& transSortPass = graph.AddRenderPass("TransparentBitonicSortPass");
 
+            PassReadIg(opaqueSortPass, cullOutput.transparentDrawHandle.indirectIndexBufferHandle);
             PassWriteIg(transSortPass, sortDispatchArgsHandle);
             PassWriteIg(transSortPass, cullOutput.transparentDrawHandle.indirectIndexBufferHandle);
 

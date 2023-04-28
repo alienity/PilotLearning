@@ -7,6 +7,12 @@
 
 namespace RHI
 {
+#define GImport(g, b) g.Import(b)
+#define PassRead(p, b) p.Read(b)
+#define PassWrite(p, b) p.Write(b)
+#define PassReadIg(p, b) p.Read(b, true)
+#define PassWriteIg(p, b) p.Write(b, true)
+
 	enum class RgResourceType : std::uint64_t
 	{
 		Unknown,
