@@ -13,6 +13,12 @@
 
 namespace RHI
 {
+#define HandleIdx uint32_t
+#define PassIdx uint32_t
+
+    typedef std::map<PassIdx, std::pair<std::vector<HandleIdx>, std::vector<HandleIdx>>> InGraphPassIdx2ReadWriteIdx;
+    typedef std::map<HandleIdx, std::set<PassIdx>> InGraphReadHandle2PassIdx;
+
     class RenderPass;
     class RgResourceHandle;
     class RgResourceHandleExt;
@@ -70,7 +76,7 @@ namespace RHI
         RenderPass(std::string_view Name, RenderGraph* Graph);
 
         RenderPass& Read(RgResourceHandle Resource, bool IgnoreBarrier = false);
-        RenderPass& Write(RgResourceHandle Resource, bool IgnoreBarrier = false);
+        RenderPass& Write(RgResourceHandle& Resource, bool IgnoreBarrier = false);
         
         template<typename PFNRenderPassCallback>
         void Execute(PFNRenderPassCallback&& Callback)
@@ -78,9 +84,9 @@ namespace RHI
             this->Callback = std::move(Callback);
         }
 
-        [[nodiscard]] bool HasDependency(RgResourceHandle Resource) const;
-        [[nodiscard]] bool WritesTo(RgResourceHandle Resource) const;
-        [[nodiscard]] bool ReadsFrom(RgResourceHandle Resource) const;
+        [[nodiscard]] bool HasDependency(RgResourceHandle& Resource) const;
+        [[nodiscard]] bool WritesTo(RgResourceHandle& Resource) const;
+        [[nodiscard]] bool ReadsFrom(RgResourceHandle& Resource) const;
 
         [[nodiscard]] bool HasAnyDependencies() const noexcept;
 
@@ -94,13 +100,6 @@ namespace RHI
         std::vector<RgResourceHandleExt> Writes;
         
         ExecuteCallback Callback;
-
-    private:        
-        friend class RenderGraph;
-
-        std::vector<uint32_t> ReadsIdxInGraph;
-        std::vector<uint32_t> WritesIdxInGraph;
-
     };
 
     class RenderGraphDependencyLevel
@@ -180,8 +179,7 @@ namespace RHI
     private:
         void Setup();
 
-        bool IsPassAvailable(RenderPass* rgPass, std::map<uint32_t, std::set<uint32_t>>& InGraphHandle2PassWriterIdx);
-
+        bool IsPassAvailable(PassIdx passIdx, InGraphPassIdx2ReadWriteIdx& handle2PassWriterIdx, InGraphReadHandle2PassIdx& readHandle2PassIdx);
 
         [[nodiscard]] std::string_view GetResourceName(RgResourceHandle Handle) const
         {

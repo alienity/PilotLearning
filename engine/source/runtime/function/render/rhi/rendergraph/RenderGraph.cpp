@@ -16,38 +16,34 @@ namespace RHI
         {
             RgResourceHandleExt ResourceExt = ToRgResourceHandle(Resource, IgnoreBarrier);
             Reads.push_back(ResourceExt);
-
-            ReadsIdxInGraph.push_back(ParentGraph->InGraphHandle2Idx[Resource]);
         }
 
 		return *this;
 	}
 
-	RenderPass& RenderPass::Write(RgResourceHandle Resource, bool IgnoreBarrier)
+	RenderPass& RenderPass::Write(RgResourceHandle& Resource, bool IgnoreBarrier)
 	{
 		// Only allow buffers/textures
         ASSERT(Resource.IsValid());
         ASSERT(Resource.Type == RgResourceType::Buffer || Resource.Type == RgResourceType::Texture);
 
-		//Resource->Version++;
+		Resource.Version++;
         
         if (!WritesTo(Resource))
         {
             RgResourceHandleExt ResourceExt = ToRgResourceHandle(Resource, IgnoreBarrier);
             Writes.push_back(ResourceExt);
-
-            WritesIdxInGraph.push_back(ParentGraph->InGraphHandle2Idx[Resource]);
         }
 
 		return *this;
 	}
 
-	bool RenderPass::HasDependency(RgResourceHandle Resource) const
+	bool RenderPass::HasDependency(RgResourceHandle& Resource) const
     {
         return ReadsFrom(Resource) || WritesTo(Resource);
     }
 
-	bool RenderPass::WritesTo(RgResourceHandle Resource) const
+	bool RenderPass::WritesTo(RgResourceHandle& Resource) const
 	{
         for (size_t i = 0; i < Writes.size(); i++)
         {
@@ -59,7 +55,7 @@ namespace RHI
         return false;
 	}
 
-	bool RenderPass::ReadsFrom(RgResourceHandle Resource) const
+	bool RenderPass::ReadsFrom(RgResourceHandle& Resource) const
 	{
         for (size_t i = 0; i < Reads.size(); i++)
         {
@@ -305,12 +301,13 @@ namespace RHI
         return false;
 	}
 
-    bool RenderGraph::IsPassAvailable(RenderPass* rgPass, std::map<uint32_t, std::set<uint32_t>>& InGraphHandle2PassWriterIdx)
+    bool RenderGraph::IsPassAvailable(PassIdx passIdx, InGraphPassIdx2ReadWriteIdx& passIdx2ReadWriteIdx, InGraphReadHandle2PassIdx& readHandle2PassIdx)
     {
-        auto& mReadsIdxInGraph = rgPass->ReadsIdxInGraph;
-        for (size_t i = 0; i < mReadsIdxInGraph.size(); i++)
+        auto& mReadWriteIdx = passIdx2ReadWriteIdx[passIdx];
+
+        for (size_t i = 0; i < mReadWriteIdx.first.size(); i++)
         {
-            if (!InGraphHandle2PassWriterIdx[mReadsIdxInGraph[i]].empty())
+            if (!readHandle2PassIdx[mReadWriteIdx.first[i]].empty())
                 return false;
         }
         return true;
@@ -319,27 +316,38 @@ namespace RHI
 	void RenderGraph::Setup()
 	{
 		// 准备RgHandle的所有操作数据，看看可以按照Read和Write的顺序，先给所有的pass排个序不
-        typedef uint32_t HandleIdx;
-        typedef uint32_t PassIdx;
-		
-		std::map<HandleIdx, std::set<PassIdx>> InGraphHandle2PassWriterIdx;
+
+        InGraphPassIdx2ReadWriteIdx mPassIdx2ReadWriteIdx;
+        InGraphReadHandle2PassIdx   mHandle2PassWriterIdx;
         std::vector<PassIdx> InGraphPassIdx;
         
-		for (size_t i = 0; i < InGraphPass.size(); i++)
+        // 转换所有Pass的Reads和Writes到Idx
+        for (size_t i = 0; i < InGraphPass.size(); i++)
         {
             RHI::RenderPass* pass = InGraphPass[i];
-            uint32_t passIdx = pass->PassIndex;
-            std::vector<uint32_t>& passReadsIdx = pass->ReadsIdxInGraph;
-            std::vector<uint32_t>& passWritesIdx = pass->WritesIdxInGraph;
-            
-            for (size_t j = 0; j < passReadsIdx.size(); j++)
+            PassIdx passIdx = pass->PassIndex;
+
+            std::vector<HandleIdx> readsIdx(pass->Reads.size());
+            std::vector<HandleIdx> writesIdx(pass->Writes.size());
+
+            for (size_t j = 0; j < pass->Reads.size(); j++)
             {
-                auto& passIdxSet = InGraphHandle2PassWriterIdx[passReadsIdx[j]];
-                passIdxSet.insert(passIdx);
+                HandleIdx readIdx = InGraphHandle2Idx[pass->Reads[j].rgHandle];
+                readsIdx[j] = readIdx;
+                mHandle2PassWriterIdx[readIdx].insert(passIdx);
             }
-            InGraphPassIdx.push_back(pass->PassIndex);
+            for (size_t j = 0; j < pass->Writes.size(); j++)
+            {
+                HandleIdx writeIdx = InGraphHandle2Idx[pass->Writes[j].rgHandle];
+                writesIdx[j] = writeIdx;
+                mHandle2PassWriterIdx[writeIdx].insert(passIdx);
+            }
+
+            mPassIdx2ReadWriteIdx[passIdx] =
+                std::pair<std::vector<HandleIdx>, std::vector<HandleIdx>>(readsIdx, writesIdx);
         }
 
+        // 找有向无环图
         std::set<PassIdx> mPassIdxQueue = {};
         do
         {
@@ -351,7 +359,7 @@ namespace RHI
                     RenderPass* rgPassPtr = InGraphPass[*mPassIdxQueue.begin()];
                     mPassIdxQueue.erase(mPassIdxQueue.begin());
 
-                    if (IsPassAvailable(rgPassPtr, InGraphHandle2PassWriterIdx))
+                    if (IsPassAvailable(rgPassPtr->PassIndex, mPassIdx2ReadWriteIdx, mHandle2PassWriterIdx))
                     {
                         for (size_t i = 0; i < rgPassPtr->Reads.size(); i++)
                         {
