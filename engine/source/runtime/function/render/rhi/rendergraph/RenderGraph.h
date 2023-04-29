@@ -13,11 +13,10 @@
 
 namespace RHI
 {
-#define HandleIdx uint32_t
 #define PassIdx uint32_t
 
-    typedef std::map<PassIdx, std::pair<std::vector<HandleIdx>, std::vector<HandleIdx>>> InGraphPassIdx2ReadWriteIdx;
-    typedef std::map<HandleIdx, std::set<PassIdx>> InGraphReadHandle2PassIdx;
+    typedef std::map<PassIdx, std::pair<std::vector<RHI::RgResourceHandle>, std::vector<RHI::RgResourceHandle>>> InGraphPassIdx2ReadWriteHandle;
+    typedef std::map<RHI::RgResourceHandle, std::set<PassIdx>> InGraphHandle2ReadPassIdx, InGraphHandle2WritePassIdx;
 
     class RenderPass;
     class RgResourceHandle;
@@ -136,7 +135,7 @@ namespace RHI
                 RgResourceTraits<T>::Enum, RgResourceFlags::RG_RESOURCE_FLAG_IMPORTED, 0, ImportedContainer.size()};
             InGraphResHandle.push_back(Handle);
 
-            InGraphHandle2Idx[Handle] = InGraphResHandle.size() - 1;
+            //InGraphHandle2Idx[Handle] = InGraphResHandle.size() - 1;
 
             ImportedContainer.emplace_back(ToBeImported);
             return Handle;
@@ -153,7 +152,7 @@ namespace RHI
 
             InGraphResHandle.push_back(Handle);
 
-            InGraphHandle2Idx[Handle] = InGraphResHandle.size() - 1;
+            //InGraphHandle2Idx[Handle] = InGraphResHandle.size() - 1;
 
             auto& Resource  = Container.emplace_back();
             Resource.Handle = Handle;
@@ -179,7 +178,7 @@ namespace RHI
     private:
         void Setup();
 
-        bool IsPassAvailable(PassIdx passIdx, InGraphPassIdx2ReadWriteIdx& handle2PassWriterIdx, InGraphReadHandle2PassIdx& readHandle2PassIdx);
+        bool IsPassAvailable(PassIdx passIdx, InGraphPassIdx2ReadWriteHandle& pass2Handles, InGraphHandle2WritePassIdx& handle2WritePassIdx);
 
         [[nodiscard]] std::string_view GetResourceName(RgResourceHandle Handle) const
         {
@@ -241,7 +240,7 @@ namespace RHI
         std::vector<RgResourceHandle> InGraphResHandle;
         std::vector<RenderPass*>      InGraphPass;
 
-        std::unordered_map<RgResourceHandle, uint32_t> InGraphHandle2Idx;
+        //std::unordered_map<RgResourceHandle, uint32_t> InGraphHandle2Idx;
         
         std::vector<RenderGraphDependencyLevel> DependencyLevels;
     };

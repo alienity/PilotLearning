@@ -301,13 +301,13 @@ namespace RHI
         return false;
 	}
 
-    bool RenderGraph::IsPassAvailable(PassIdx passIdx, InGraphPassIdx2ReadWriteIdx& passIdx2ReadWriteIdx, InGraphReadHandle2PassIdx& readHandle2PassIdx)
+    bool RenderGraph::IsPassAvailable(PassIdx passIdx, InGraphPassIdx2ReadWriteHandle& pass2Handles, InGraphHandle2WritePassIdx& handle2WritePassIdx)
     {
-        auto& mReadWriteIdx = passIdx2ReadWriteIdx[passIdx];
+        auto& mReadWriteHandles = pass2Handles[passIdx];
 
-        for (size_t i = 0; i < mReadWriteIdx.first.size(); i++)
+        for (size_t i = 0; i < mReadWriteHandles.first.size(); i++)
         {
-            if (!readHandle2PassIdx[mReadWriteIdx.first[i]].empty())
+            if (!handle2WritePassIdx[mReadWriteHandles.first[i]].empty())
                 return false;
         }
         return true;
@@ -317,9 +317,12 @@ namespace RHI
 	{
 		// 准备RgHandle的所有操作数据，看看可以按照Read和Write的顺序，先给所有的pass排个序不
 
-        InGraphPassIdx2ReadWriteIdx mPassIdx2ReadWriteIdx;
-        InGraphReadHandle2PassIdx   mHandle2PassWriterIdx;
-        std::vector<PassIdx> InGraphPassIdx;
+        InGraphPassIdx2ReadWriteHandle mPassIdx2ReadWriteHandle;
+        //InGraphHandle2ReadPassIdx      mHandle2ReadPassIdx;
+        InGraphHandle2WritePassIdx     mHandle2WritePassIdx;
+
+        std::vector<PassIdx> mInGraphPassIdx;
+        mInGraphPassIdx.reserve(InGraphPass.size());
         
         // 转换所有Pass的Reads和Writes到Idx
         for (size_t i = 0; i < InGraphPass.size(); i++)
@@ -327,87 +330,92 @@ namespace RHI
             RHI::RenderPass* pass = InGraphPass[i];
             PassIdx passIdx = pass->PassIndex;
 
-            std::vector<HandleIdx> readsIdx(pass->Reads.size());
-            std::vector<HandleIdx> writesIdx(pass->Writes.size());
+            std::vector<RHI::RgResourceHandle> readHandles(pass->Reads.size());
+            std::vector<RHI::RgResourceHandle> writeHandles(pass->Writes.size());
 
             for (size_t j = 0; j < pass->Reads.size(); j++)
             {
-                HandleIdx readIdx = InGraphHandle2Idx[pass->Reads[j].rgHandle];
-                readsIdx[j] = readIdx;
-                mHandle2PassWriterIdx[readIdx].insert(passIdx);
+                RHI::RgResourceHandle readHandle = pass->Reads[j].rgHandle;
+                readHandles[j] = readHandle;
+                //mHandle2ReadPassIdx[readHandle].insert(passIdx);
             }
             for (size_t j = 0; j < pass->Writes.size(); j++)
             {
-                HandleIdx writeIdx = InGraphHandle2Idx[pass->Writes[j].rgHandle];
-                writesIdx[j] = writeIdx;
-                mHandle2PassWriterIdx[writeIdx].insert(passIdx);
+                RHI::RgResourceHandle writeHandle = pass->Writes[j].rgHandle;
+                writeHandles[j] = writeHandle;
+                mHandle2WritePassIdx[writeHandle].insert(passIdx);
             }
 
-            mPassIdx2ReadWriteIdx[passIdx] =
-                std::pair<std::vector<HandleIdx>, std::vector<HandleIdx>>(readsIdx, writesIdx);
+            mPassIdx2ReadWriteHandle[passIdx] = std::pair<std::vector<RHI::RgResourceHandle>, std::vector<RHI::RgResourceHandle>>(readHandles, writeHandles);
+
+            mInGraphPassIdx[i] = passIdx;
         }
 
-        // 找有向无环图
-        std::set<PassIdx> mPassIdxQueue = {};
-        do
+        RenderGraphDependencyLevel dependencyLevel = {};
+
+        // 直接遍历所有的pass，找出所有没有readHandle或者readHandle没有被Write的pass
+        while (!mInGraphPassIdx.empty())
         {
-            if (!mPassIdxQueue.empty())
+            std::vector<PassIdx> passInSameLevel;
+
+            std::vector<PassIdx>::iterator graphPassIter;
+            for (graphPassIter = mInGraphPassIdx.begin(); graphPassIter < mInGraphPassIdx.end();)
             {
-                RenderGraphDependencyLevel dependencyLevel = {};
-                while (!mPassIdxQueue.empty())
+                PassIdx mPassIdx = *graphPassIter;
+
+                auto& mPassReads = mPassIdx2ReadWriteHandle[mPassIdx].first;
+
+                // 1. 查找所有reads为空的pass
+                bool isPassReadsEmpty = mPassReads.empty();
+                if (isPassReadsEmpty)
                 {
-                    RenderPass* rgPassPtr = InGraphPass[*mPassIdxQueue.begin()];
-                    mPassIdxQueue.erase(mPassIdxQueue.begin());
+                    passInSameLevel.push_back(mPassIdx);
+                    mInGraphPassIdx.erase(graphPassIter);
+                    continue;
+                }
 
-                    if (IsPassAvailable(rgPassPtr->PassIndex, mPassIdx2ReadWriteIdx, mHandle2PassWriterIdx))
+                // 2. 查找所有reads没有被其他pass做Write的pass
+                bool isPassReadsClean = true;
+                for (size_t j = 0; j < mPassReads.size(); j++)
+                {
+                    if (!mHandle2WritePassIdx[mPassReads[j]].empty())
                     {
-                        for (size_t i = 0; i < rgPassPtr->Reads.size(); i++)
-                        {
-
-                        }
-
-
-
-
-
-
-
-                        for (auto it = rgPassPtr->Reads.begin(); it != rgPassPtr->Reads.end(); it++)
-                        {
-                            RemovePassOpFromResHandleMap(*it, rgPassPtr, RgHandleOpMap);
-                        }
-                        for (auto it = rgPassPtr->Writes.begin(); it != rgPassPtr->Writes.end(); it++)
-                        {
-                            RemovePassOpFromResHandleMap(*it, rgPassPtr, RgHandleOpMap);
-                        }
-                        dependencyLevel.AddRenderPass(rgPassPtr);
+                        isPassReadsClean = false;
+                        break;
                     }
                 }
-                DependencyLevels.push_back(dependencyLevel);
-
-                std::vector<RenderPass*>& mBatchLevel = dependencyLevel.GetRenderPasses();
-
-                for (size_t i = 0; i < mBatchLevel.size(); i++)
+                if (isPassReadsClean)
                 {
-                    for (auto it = InGraphPass.begin(); it != InGraphPass.end();)
-                    {
-                        if (mBatchLevel[i] == *it)
-                        {
-                            it = InGraphPass.erase(it);
-                        }
-                        else
-                        {
-                            ++it;
-                        }
-                    }
+                    passInSameLevel.push_back(mPassIdx);
+                    mInGraphPassIdx.erase(graphPassIter);
+                    continue;
                 }
+
+                graphPassIter++;
+            }
+
+            // 清理掉pass的writes的Handle的所有对当前Pass的索引状态
+            for (size_t i = 0; i < passInSameLevel.size(); i++)
+            {
+                PassIdx mPassIdx = passInSameLevel[i];
+
+                auto& mPassWrites = mPassIdx2ReadWriteHandle[mPassIdx].second;
+
+                std::vector<RHI::RgResourceHandle>::iterator passWriteIter;
+
+                for (passWriteIter = mPassWrites.begin(); passWriteIter < mPassWrites.end();)
+                {
+                    RHI::RgResourceHandle passWriteHandle = *passWriteIter;
+                    
+                    mHandle2WritePassIdx[passWriteHandle].erase(mPassIdx);
+                }
+
+                dependencyLevel.AddRenderPass(InGraphPass[mPassIdx]);
             }
 
 
-        } while (!gRenderPassQueue.empty());
-
-
-
+            DependencyLevels.push_back(dependencyLevel);
+        }
 
 
 
