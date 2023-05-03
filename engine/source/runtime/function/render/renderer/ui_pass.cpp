@@ -32,18 +32,13 @@ namespace Pilot
                             pD3D12SRVDescriptor->GetGpuHandle());
     }
 
-    void UIPass::update(RHI::RenderGraph&         graph,
-                        UIInputParameters&        passInput,
-                        UIOutputParameters&       passOutput)
+    void UIPass::update(RHI::RenderGraph& graph, UIInputParameters& passInput, UIOutputParameters& passOutput)
     {
-        UIInputParameters*  uiPassInput  = (UIInputParameters*)(&passInput);
-        UIOutputParameters* uiPassOutput = (UIOutputParameters*)(&passOutput);
-
-        RHI::RgResourceHandle backBufColorHandle    = uiPassOutput->backBufColorHandle;
+        RHI::RgResourceHandle backBufColorHandle = passOutput.backBufColorHandle;
         
         graph.AddRenderPass("UIPass")
-            .Read(uiPassInput->renderTargetColorHandle)
-            .Write(backBufColorHandle)
+            .Read(passInput.renderTargetColorHandle)
+            .Write(passOutput.backBufColorHandle)
             .Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
 
                 RHI::D3D12GraphicsContext* graphicsContext = context->GetGraphicsContext();

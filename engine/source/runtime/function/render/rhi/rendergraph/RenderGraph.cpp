@@ -38,6 +38,38 @@ namespace RHI
 		return *this;
 	}
 
+    RenderPass& RenderPass::Read(RgResourceHandleExt ResourceExt)
+    {
+        // Only allow buffers/textures
+        ASSERT(ResourceExt.rgHandle.IsValid());
+        ASSERT(ResourceExt.rgHandle.Type == RgResourceType::Buffer ||
+               ResourceExt.rgHandle.Type == RgResourceType::Texture);
+
+        if (!ReadsFrom(ResourceExt.rgHandle))
+        {
+            Reads.push_back(ResourceExt);
+        }
+
+        return *this;
+    }
+
+    RenderPass& RenderPass::Write(RgResourceHandleExt& ResourceExt)
+    {
+        // Only allow buffers/textures
+        ASSERT(ResourceExt.rgHandle.IsValid());
+        ASSERT(ResourceExt.rgHandle.Type == RgResourceType::Buffer ||
+               ResourceExt.rgHandle.Type == RgResourceType::Texture);
+
+        ResourceExt.rgHandle.Version++;
+
+        if (!WritesTo(ResourceExt.rgHandle))
+        {
+            Writes.push_back(ResourceExt);
+        }
+
+        return *this;
+    }
+
 	bool RenderPass::HasDependency(RgResourceHandle& Resource) const
     {
         return ReadsFrom(Resource) || WritesTo(Resource);
@@ -85,14 +117,14 @@ namespace RHI
 		// Handle resource transitions for all registered resources
 		for (auto& Read : Reads)
 		{
-			if (Read.rgTransFlag == RgBarrierFlag::None)
+			if (Read.rgTransFlag == RgBarrierFlag::NoneBarrier)
 			{
                 continue;
 			}
 
 			if (Read.rgHandle.Type == RgResourceType::Texture || Read.rgHandle.Type == RgResourceType::Buffer)
 			{
-				if (Read.rgSubType == RgResourceSubType::None)
+				if (Read.rgSubType == RgResourceSubType::NoneType)
 				{
                     D3D12_RESOURCE_STATES ReadState = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
                     if (RenderGraph->AllowUnorderedAccess(Read.rgHandle))
@@ -124,7 +156,7 @@ namespace RHI
 		}
 		for (auto Write : Writes)
 		{
-            if (Write.rgTransFlag == RgBarrierFlag::None)
+            if (Write.rgTransFlag == RgBarrierFlag::NoneBarrier)
             {
                 continue;
             }
@@ -321,8 +353,7 @@ namespace RHI
         //InGraphHandle2ReadPassIdx      mHandle2ReadPassIdx;
         InGraphHandle2WritePassIdx     mHandle2WritePassIdx;
 
-        std::vector<PassIdx> mInGraphPassIdx;
-        mInGraphPassIdx.reserve(InGraphPass.size());
+        std::vector<PassIdx> mInGraphPassIdx(InGraphPass.size());
         
         // 转换所有Pass的Reads和Writes到Idx
         for (size_t i = 0; i < InGraphPass.size(); i++)
@@ -351,11 +382,11 @@ namespace RHI
             mInGraphPassIdx[i] = passIdx;
         }
 
-        RenderGraphDependencyLevel dependencyLevel = {};
-
         // 直接遍历所有的pass，找出所有没有readHandle或者readHandle没有被Write的pass
         while (!mInGraphPassIdx.empty())
         {
+            RenderGraphDependencyLevel dependencyLevel = {};
+
             std::vector<PassIdx> passInSameLevel;
 
             std::vector<PassIdx>::iterator graphPassIter;
@@ -370,7 +401,7 @@ namespace RHI
                 if (isPassReadsEmpty)
                 {
                     passInSameLevel.push_back(mPassIdx);
-                    mInGraphPassIdx.erase(graphPassIter);
+                    graphPassIter = mInGraphPassIdx.erase(graphPassIter);
                     continue;
                 }
 
@@ -387,7 +418,7 @@ namespace RHI
                 if (isPassReadsClean)
                 {
                     passInSameLevel.push_back(mPassIdx);
-                    mInGraphPassIdx.erase(graphPassIter);
+                    graphPassIter = mInGraphPassIdx.erase(graphPassIter);
                     continue;
                 }
 
@@ -403,7 +434,7 @@ namespace RHI
 
                 std::vector<RHI::RgResourceHandle>::iterator passWriteIter;
 
-                for (passWriteIter = mPassWrites.begin(); passWriteIter < mPassWrites.end();)
+                for (passWriteIter = mPassWrites.begin(); passWriteIter < mPassWrites.end(); passWriteIter++)
                 {
                     RHI::RgResourceHandle passWriteHandle = *passWriteIter;
                     
@@ -413,99 +444,9 @@ namespace RHI
                 dependencyLevel.AddRenderPass(InGraphPass[mPassIdx]);
             }
 
-
             DependencyLevels.push_back(dependencyLevel);
         }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-        /*
-        std::set<RenderPass*> gRenderPassQueue = {};
-        do
-        {
-			// 3. ѭ�������ҳ����в���ִ�е�pass������˳�������������
-			if (!gRenderPassQueue.empty())
-			{
-                RenderGraphDependencyLevel dependencyLevel = {};
-                // ����ֻ��д����Pass
-                while (!gRenderPassQueue.empty())
-                {
-                    RenderPass* rgPassPtr = *gRenderPassQueue.begin();
-                    gRenderPassQueue.erase(gRenderPassQueue.begin());
-                    
-					if (IsPassAvailable(rgPassPtr))
-                    {
-                        for (auto it = rgPassPtr->Reads.begin(); it != rgPassPtr->Reads.end(); it++)
-                        {
-                            RemovePassOpFromResHandleMap(*it, rgPassPtr, RgHandleOpMap);
-                        }
-                        for (auto it = rgPassPtr->Writes.begin(); it != rgPassPtr->Writes.end(); it++)
-                        {
-                            RemovePassOpFromResHandleMap(*it, rgPassPtr, RgHandleOpMap);
-                        }
-                        dependencyLevel.AddRenderPass(rgPassPtr);
-					}
-                }
-                DependencyLevels.push_back(dependencyLevel);
-
-				std::vector<RenderPass*>& mBatchLevel = dependencyLevel.GetRenderPasses();
-                
-				for (size_t i = 0; i < mBatchLevel.size(); i++)
-                {
-                    for (auto it = InGraphPass.begin(); it != InGraphPass.end();)
-                    {
-                        if (mBatchLevel[i] == *it)
-						{
-                            it = InGraphPass.erase(it);
-						}
-						else
-						{
-                            ++it;
-						}
-					}
-				}
-			}
-
-            // 1. �ҳ�ֻ��Read��Pass
-            for (size_t i = 0; i < InGraphResHandle.size(); i++)
-            {
-                RgResourceHandle& resHandle = InGraphResHandle[i];
-                std::deque<RgHandleOpPassIdx>& rgHandleOpQueue = RgHandleOpMap[resHandle];
-                for (auto it = rgHandleOpQueue.begin(); it != rgHandleOpQueue.end(); ++it)
-                {
-                    RgHandleOpPassIdx opidx = *it;
-                    if (opidx.op == RgHandleOp::Write)
-                        break;
-                    if (IsPassAvailable(opidx.passPtr))
-                    {
-                        gRenderPassQueue.insert(opidx.passPtr);
-                    }
-                }
-            }
-            
-			// 2. �ҳ�û��Reader��Pass
-            for (size_t i = 0; i < InGraphPass.size(); i++)
-            {
-                RenderPass* passPtr = InGraphPass[i];
-                if (passPtr->Reads.empty())
-                {
-                    gRenderPassQueue.insert(passPtr);
-                }
-            }
-
-        } while (!gRenderPassQueue.empty());
-        */
 	}
 
 	void RenderGraph::ExportDgml(DgmlBuilder& Builder) const

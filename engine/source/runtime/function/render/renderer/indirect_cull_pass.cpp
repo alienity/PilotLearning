@@ -76,7 +76,7 @@ namespace Pilot
 
         // buffer for transparent draw
         commandBufferForTransparentDraw.p_IndirectIndexCommandBuffer = CreateIndexBuffer(L"TransparentIndexBuffer");
-        commandBufferForTransparentDraw.p_IndirectSortCommandBuffer  = CreateSortCommandBuffer(L"TransparentIndexBuffer");
+        commandBufferForTransparentDraw.p_IndirectSortCommandBuffer  = CreateSortCommandBuffer(L"TransparentBuffer");
     }
 
     void IndirectCullPass::prepareMeshData(std::shared_ptr<RenderResourceBase> render_resource)
@@ -380,9 +380,6 @@ namespace Pilot
                 GImport(graph, dirShadowmapCommandBuffer.p_IndirectSortCommandBuffer.get())};
         }
 
-        bool hasSpotShadowmap = false;
-        if (spotShadowmapCommandBuffer.size() != 0)
-            hasSpotShadowmap = true;
         for (size_t i = 0; i < spotShadowmapCommandBuffer.size(); i++)
         {
             DrawCallCommandBufferHandle bufferHandle = {
@@ -397,222 +394,280 @@ namespace Pilot
         RHI::D3D12SyncHandle ComputeSyncHandle;
         if (numMeshes > 0)
         {
-            RHI::RenderPass& resetPass = graph.AddRenderPass("ResetPass");
-
-            PassReadIg(resetPass, uploadPerframeBufferHandle);
-            PassReadIg(resetPass, uploadMaterialBufferHandle);
-            PassReadIg(resetPass, uploadMeshBufferHandle);
-            PassWriteIg(resetPass, cullOutput.perframeBufferHandle);
-            PassWriteIg(resetPass, cullOutput.materialBufferHandle);
-            PassWriteIg(resetPass, cullOutput.meshBufferHandle);
-            PassWriteIg(resetPass, cullOutput.opaqueDrawHandle.indirectIndexBufferHandle);
-            PassWriteIg(resetPass, cullOutput.opaqueDrawHandle.indirectSortBufferHandle);
-            PassWriteIg(resetPass, cullOutput.transparentDrawHandle.indirectIndexBufferHandle);
-            PassWriteIg(resetPass, cullOutput.transparentDrawHandle.indirectSortBufferHandle);
-            if (hasDirShadowmap)
             {
-                PassWriteIg(resetPass, cullOutput.dirShadowmapHandle.indirectIndexBufferHandle);
-                PassWriteIg(resetPass, cullOutput.dirShadowmapHandle.indirectSortBufferHandle);
-            }
-            for (size_t i = 0; i < spotShadowmapCommandBuffer.size(); i++)
-            {
-                PassWriteIg(resetPass, cullOutput.spotShadowmapHandles[i].indirectIndexBufferHandle);
-                PassWriteIg(resetPass, cullOutput.spotShadowmapHandles[i].indirectSortBufferHandle);
-            }
+                RHI::RenderPass& resetPass = graph.AddRenderPass("ResetPass");
 
-            resetPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
-                RHI::D3D12ComputeContext* pCopyContext = context->GetComputeContext();
-
-                pCopyContext->ResetCounter(RegGetBuf(cullOutput.opaqueDrawHandle.indirectIndexBufferHandle));
-                pCopyContext->ResetCounter(RegGetBuf(cullOutput.opaqueDrawHandle.indirectSortBufferHandle));
-                pCopyContext->ResetCounter(RegGetBuf(cullOutput.transparentDrawHandle.indirectIndexBufferHandle));
-                pCopyContext->ResetCounter(RegGetBuf(cullOutput.transparentDrawHandle.indirectSortBufferHandle));
-
+                PassReadIg(resetPass, uploadPerframeBufferHandle);
+                PassReadIg(resetPass, uploadMaterialBufferHandle);
+                PassReadIg(resetPass, uploadMeshBufferHandle);
+                
+                PassWriteIg(resetPass, cullOutput.perframeBufferHandle);
+                PassWriteIg(resetPass, cullOutput.materialBufferHandle);
+                PassWriteIg(resetPass, cullOutput.meshBufferHandle);
+                PassWriteIg(resetPass, cullOutput.opaqueDrawHandle.indirectIndexBufferHandle);
+                PassWriteIg(resetPass, cullOutput.opaqueDrawHandle.indirectSortBufferHandle);
+                PassWriteIg(resetPass, cullOutput.transparentDrawHandle.indirectIndexBufferHandle);
+                PassWriteIg(resetPass, cullOutput.transparentDrawHandle.indirectSortBufferHandle);
                 if (hasDirShadowmap)
                 {
-                    pCopyContext->ResetCounter(RegGetBufCounter(cullOutput.dirShadowmapHandle.indirectSortBufferHandle));
+                    PassWriteIg(resetPass, cullOutput.dirShadowmapHandle.indirectIndexBufferHandle);
+                    PassWriteIg(resetPass, cullOutput.dirShadowmapHandle.indirectSortBufferHandle);
                 }
-
-                for (size_t i = 0; i < spotShadowmapCommandBuffer.size(); i++)
-                {
-                    pCopyContext->ResetCounter(RegGetBufCounter(cullOutput.spotShadowmapHandles[i].indirectSortBufferHandle));
-                }
-
-                pCopyContext->CopyBuffer(RegGetBuf(cullOutput.perframeBufferHandle), RegGetBuf(uploadPerframeBufferHandle));
-                pCopyContext->CopyBuffer(RegGetBuf(cullOutput.materialBufferHandle), RegGetBuf(uploadMaterialBufferHandle));
-                pCopyContext->CopyBuffer(RegGetBuf(cullOutput.meshBufferHandle), RegGetBuf(uploadMeshBufferHandle));
-
-                pCopyContext->TransitionBarrier(RegGetBuf(cullOutput.perframeBufferHandle), D3D12_RESOURCE_STATE_GENERIC_READ);
-                pCopyContext->TransitionBarrier(RegGetBuf(cullOutput.materialBufferHandle), D3D12_RESOURCE_STATE_GENERIC_READ);
-                pCopyContext->TransitionBarrier(RegGetBuf(cullOutput.meshBufferHandle), D3D12_RESOURCE_STATE_GENERIC_READ);
-            });
-
-
-            RHI::RenderPass& cullingPass = graph.AddRenderPass("OpaqueTransCullingPass");
-
-            PassReadIg(cullingPass, cullOutput.perframeBufferHandle);
-            PassReadIg(cullingPass, cullOutput.meshBufferHandle);
-            PassReadIg(cullingPass, cullOutput.materialBufferHandle);
-            PassWriteIg(cullingPass, cullOutput.opaqueDrawHandle.indirectIndexBufferHandle);
-            PassWriteIg(cullingPass, cullOutput.transparentDrawHandle.indirectIndexBufferHandle);
-
-            cullingPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
-                RHI::D3D12ComputeContext* pAsyncCompute = context->GetComputeContext();
-                
-                pAsyncCompute->TransitionBarrier(RegGetBuf(cullOutput.opaqueDrawHandle.indirectIndexBufferHandle), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-                pAsyncCompute->TransitionBarrier(RegGetBuf(cullOutput.transparentDrawHandle.indirectIndexBufferHandle), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-                
-                pAsyncCompute->SetRootSignature(RootSignatures::pIndirectCullForSort.get());
-                pAsyncCompute->SetPipelineState(PipelineStates::pIndirectCullForSort.get());
-
-                struct RootIndexBuffer
-                {
-                    UINT meshPerFrameBufferIndex;
-                    UINT meshInstanceBufferIndex;
-                    UINT materialIndexBufferIndex;
-                    UINT opaqueSortIndexDisBufferIndex;
-                    UINT transSortIndexDisBufferIndex;
-                };
-
-                RootIndexBuffer rootIndexBuffer =
-                    RootIndexBuffer {RegGetBufDefCBVIdx(cullOutput.perframeBufferHandle),
-                                     RegGetBufDefSRVIdx(cullOutput.meshBufferHandle),
-                                     RegGetBufDefSRVIdx(cullOutput.materialBufferHandle),
-                                     RegGetBufDefUAVIdx(cullOutput.opaqueDrawHandle.indirectIndexBufferHandle),
-                                     RegGetBufDefUAVIdx(cullOutput.transparentDrawHandle.indirectIndexBufferHandle)};
-
-                pAsyncCompute->SetConstantArray(0, sizeof(RootIndexBuffer) / sizeof(UINT), &rootIndexBuffer);
-                pAsyncCompute->Dispatch1D(numMeshes, 128);
-            });
-
-
-            RHI::RenderPass& opaqueSortPass = graph.AddRenderPass("OpaqueBitonicSortPass");
-
-            PassReadIg(opaqueSortPass, cullOutput.opaqueDrawHandle.indirectIndexBufferHandle);
-            PassWriteIg(opaqueSortPass, sortDispatchArgsHandle);
-            PassWriteIg(opaqueSortPass, cullOutput.opaqueDrawHandle.indirectIndexBufferHandle);
-            
-            opaqueSortPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
-                RHI::D3D12ComputeContext* pAsyncCompute = context->GetComputeContext();
-
-                RHI::D3D12Buffer* bufferPtr = RegGetBuf(cullOutput.opaqueDrawHandle.indirectIndexBufferHandle);
-                RHI::D3D12Buffer* bufferCouterPtr = bufferPtr->GetCounterBuffer().get();
-                RHI::D3D12Buffer* sortDispatchArgsPtr = RegGetBuf(sortDispatchArgsHandle);
-
-                bitonicSort(pAsyncCompute, bufferPtr, bufferCouterPtr, sortDispatchArgsPtr, false, true);
-            });
-
-
-            RHI::RenderPass& transSortPass = graph.AddRenderPass("TransparentBitonicSortPass");
-
-            PassReadIg(opaqueSortPass, cullOutput.transparentDrawHandle.indirectIndexBufferHandle);
-            PassWriteIg(transSortPass, sortDispatchArgsHandle);
-            PassWriteIg(transSortPass, cullOutput.transparentDrawHandle.indirectIndexBufferHandle);
-
-            transSortPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
-                RHI::D3D12ComputeContext* pAsyncCompute = context->GetComputeContext();
-
-                RHI::D3D12Buffer* bufferPtr       = RegGetBuf(cullOutput.transparentDrawHandle.indirectIndexBufferHandle);
-                RHI::D3D12Buffer* bufferCouterPtr = bufferPtr->GetCounterBuffer().get();
-                RHI::D3D12Buffer* sortDispatchArgsPtr = RegGetBuf(sortDispatchArgsHandle);
-
-                bitonicSort(pAsyncCompute, bufferPtr, bufferCouterPtr, sortDispatchArgsPtr, false, false);
-            });
-
-
-            RHI::RenderPass& grabOpaquePass = graph.AddRenderPass("GrabOpaquePass");
-
-            PassReadIg(grabOpaquePass, cullOutput.meshBufferHandle);
-            PassReadIg(grabOpaquePass, cullOutput.opaqueDrawHandle.indirectIndexBufferHandle);
-            PassWriteIg(grabOpaquePass, grabDispatchArgsHandle);
-            PassWriteIg(grabOpaquePass, cullOutput.opaqueDrawHandle.indirectSortBufferHandle);
-
-            grabOpaquePass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
-                RHI::D3D12ComputeContext* pAsyncCompute = context->GetComputeContext();
-                
-                RHI::D3D12Buffer* meshBufferPtr = RegGetBuf(cullOutput.meshBufferHandle);
-                RHI::D3D12Buffer* indirectIndexBufferPtr = RegGetBuf(cullOutput.opaqueDrawHandle.indirectIndexBufferHandle);
-                RHI::D3D12Buffer* indirectSortBufferPtr = RegGetBuf(cullOutput.opaqueDrawHandle.indirectSortBufferHandle);
-                RHI::D3D12Buffer* grabDispatchArgsPtr = RegGetBuf(grabDispatchArgsHandle);
-
-                grabObject(pAsyncCompute, meshBufferPtr, indirectIndexBufferPtr, indirectSortBufferPtr, grabDispatchArgsPtr);
-            });
-
-
-            RHI::RenderPass& grabTransPass = graph.AddRenderPass("GrabTransPass");
-
-            PassReadIg(grabOpaquePass, cullOutput.meshBufferHandle);
-            PassReadIg(grabOpaquePass, cullOutput.transparentDrawHandle.indirectIndexBufferHandle);
-            PassWriteIg(grabTransPass, grabDispatchArgsHandle);
-            PassWriteIg(grabTransPass, cullOutput.transparentDrawHandle.indirectSortBufferHandle);
-
-            grabTransPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
-                RHI::D3D12ComputeContext* pAsyncCompute = context->GetComputeContext();
-
-                RHI::D3D12Buffer* meshBufferPtr = RegGetBuf(cullOutput.meshBufferHandle);
-                RHI::D3D12Buffer* indirectIndexBufferPtr = RegGetBuf(cullOutput.transparentDrawHandle.indirectIndexBufferHandle);
-                RHI::D3D12Buffer* indirectSortBufferPtr = RegGetBuf(cullOutput.transparentDrawHandle.indirectSortBufferHandle);
-                RHI::D3D12Buffer* grabDispatchArgsPtr = RegGetBuf(grabDispatchArgsHandle);
-
-                grabObject(pAsyncCompute, meshBufferPtr, indirectIndexBufferPtr, indirectSortBufferPtr, grabDispatchArgsPtr);
-            });
-
-
-            RHI::RenderPass& dirLightShadowCullPass = graph.AddRenderPass("DirectionLightShadowCullPass");
-
-            PassReadIg(dirLightShadowCullPass, cullOutput.perframeBufferHandle);
-            PassReadIg(dirLightShadowCullPass, cullOutput.meshBufferHandle);
-            PassReadIg(dirLightShadowCullPass, cullOutput.materialBufferHandle);
-            PassWriteIg(dirLightShadowCullPass, cullOutput.dirShadowmapHandle.indirectSortBufferHandle);
-
-            dirLightShadowCullPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
-                RHI::D3D12ComputeContext* pAsyncCompute = context->GetComputeContext();
-
-                pAsyncCompute->SetPipelineState(PipelineStates::pIndirectCullDirectionShadowmap.get());
-                pAsyncCompute->SetRootSignature(RootSignatures::pIndirectCullDirectionShadowmap.get());
-
-                RHI::D3D12Buffer* indirectSortBufferPtr = RegGetBuf(cullOutput.dirShadowmapHandle.indirectSortBufferHandle);
-
-                pAsyncCompute->SetConstantBuffer(0, RegGetBuf(cullOutput.perframeBufferHandle)->GetGpuVirtualAddress());
-                pAsyncCompute->SetBufferSRV(1, RegGetBuf(cullOutput.meshBufferHandle));
-                pAsyncCompute->SetBufferSRV(2, RegGetBuf(cullOutput.materialBufferHandle));
-                pAsyncCompute->SetDescriptorTable(3, indirectSortBufferPtr->GetDefaultUAV()->GetGpuHandle());
-                
-                pAsyncCompute->Dispatch1D(numMeshes, 128);
-
-                pAsyncCompute->TransitionBarrier(RegGetBuf(cullOutput.dirShadowmapHandle.indirectSortBufferHandle), D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT);
-            });
-
-
-            RHI::RenderPass& spotLightShadowCullPass = graph.AddRenderPass("SpotLightShadowCullPass");
-
-            PassReadIg(spotLightShadowCullPass, cullOutput.perframeBufferHandle);
-            PassReadIg(spotLightShadowCullPass, cullOutput.meshBufferHandle);
-            PassReadIg(spotLightShadowCullPass, cullOutput.materialBufferHandle);
-            for (size_t i = 0; i < cullOutput.spotShadowmapHandles.size(); i++)
-            {
-                PassWriteIg(spotLightShadowCullPass, cullOutput.spotShadowmapHandles[i].indirectSortBufferHandle);
-            }
-
-            spotLightShadowCullPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
-                RHI::D3D12ComputeContext* pAsyncCompute = context->GetComputeContext();
-
                 for (size_t i = 0; i < cullOutput.spotShadowmapHandles.size(); i++)
                 {
-                    pAsyncCompute->SetPipelineState(PipelineStates::pIndirectCullSpotShadowmap.get());
-                    pAsyncCompute->SetRootSignature(RootSignatures::pIndirectCullSpotShadowmap.get());
+                    PassWriteIg(resetPass, cullOutput.spotShadowmapHandles[i].indirectIndexBufferHandle);
+                    PassWriteIg(resetPass, cullOutput.spotShadowmapHandles[i].indirectSortBufferHandle);
+                }
 
-                    pAsyncCompute->SetConstantBuffer(0, RegGetBuf(cullOutput.perframeBufferHandle)->GetGpuVirtualAddress());
-                    pAsyncCompute->SetConstant(1, 0, spotShadowmapCommandBuffer[i].m_lightIndex);
-                    pAsyncCompute->SetBufferSRV(2, RegGetBuf(cullOutput.meshBufferHandle));
-                    pAsyncCompute->SetBufferSRV(3, RegGetBuf(cullOutput.materialBufferHandle));
-                    pAsyncCompute->SetDescriptorTable(4, RegGetBuf(cullOutput.spotShadowmapHandles[i].indirectSortBufferHandle)->GetDefaultUAV()->GetGpuHandle());
+                PassHandleDeclare(ResetPass, perframeBufferHandle, cullOutput.perframeBufferHandle);
+                PassHandleDeclare(ResetPass, materialBufferHandle, cullOutput.materialBufferHandle);
+                PassHandleDeclare(ResetPass, meshBufferHandle, cullOutput.meshBufferHandle);
+                PassHandleDeclare(ResetPass, opaqueDrawHandle, cullOutput.opaqueDrawHandle);
+                PassHandleDeclare(ResetPass, transparentDrawHandle, cullOutput.transparentDrawHandle);
+                PassHandleDeclare(ResetPass, dirShadowmapHandle, cullOutput.dirShadowmapHandle);
+                PassHandleDeclare(ResetPass, spotShadowmapHandles, cullOutput.spotShadowmapHandles);
 
+                resetPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
+                    RHI::D3D12ComputeContext* pCopyContext = context->GetComputeContext();
+
+                    pCopyContext->ResetCounter(RegGetBufCounter(PassHandle(ResetPass, opaqueDrawHandle).indirectIndexBufferHandle));
+                    pCopyContext->ResetCounter(RegGetBufCounter(PassHandle(ResetPass, opaqueDrawHandle).indirectSortBufferHandle));
+                    pCopyContext->ResetCounter(RegGetBufCounter(PassHandle(ResetPass, transparentDrawHandle).indirectIndexBufferHandle));
+                    pCopyContext->ResetCounter(RegGetBufCounter(PassHandle(ResetPass, transparentDrawHandle).indirectSortBufferHandle));
+
+                    if (hasDirShadowmap)
+                    {
+                        pCopyContext->ResetCounter(RegGetBufCounter(PassHandle(ResetPass, dirShadowmapHandle).indirectSortBufferHandle));
+                    }
+
+                    for (size_t i = 0; i < PassHandle(ResetPass, spotShadowmapHandles).size(); i++)
+                    {
+                        pCopyContext->ResetCounter(RegGetBufCounter(PassHandle(ResetPass, spotShadowmapHandles)[i].indirectSortBufferHandle));
+                    }
+
+                    pCopyContext->CopyBuffer(RegGetBuf(PassHandle(ResetPass, perframeBufferHandle)), RegGetBuf(uploadPerframeBufferHandle));
+                    pCopyContext->CopyBuffer(RegGetBuf(PassHandle(ResetPass, materialBufferHandle)), RegGetBuf(uploadMaterialBufferHandle));
+                    pCopyContext->CopyBuffer(RegGetBuf(PassHandle(ResetPass, meshBufferHandle)), RegGetBuf(uploadMeshBufferHandle));
+
+                    pCopyContext->TransitionBarrier(RegGetBuf(PassHandle(ResetPass, perframeBufferHandle)), D3D12_RESOURCE_STATE_GENERIC_READ);
+                    pCopyContext->TransitionBarrier(RegGetBuf(PassHandle(ResetPass, materialBufferHandle)), D3D12_RESOURCE_STATE_GENERIC_READ);
+                    pCopyContext->TransitionBarrier(RegGetBuf(PassHandle(ResetPass, meshBufferHandle)), D3D12_RESOURCE_STATE_GENERIC_READ);
+                });
+
+            }
+
+            {
+                RHI::RenderPass& cullingPass = graph.AddRenderPass("OpaqueTransCullingPass");
+
+                PassReadIg(cullingPass, cullOutput.perframeBufferHandle);
+                PassReadIg(cullingPass, cullOutput.meshBufferHandle);
+                PassReadIg(cullingPass, cullOutput.materialBufferHandle);
+
+                PassWriteIg(cullingPass, cullOutput.opaqueDrawHandle.indirectIndexBufferHandle);
+                PassWriteIg(cullingPass, cullOutput.transparentDrawHandle.indirectIndexBufferHandle);
+
+                PassHandleDeclare(OpaqueTransCullingPass, perframeBufferHandle, cullOutput.perframeBufferHandle);
+                PassHandleDeclare(OpaqueTransCullingPass, materialBufferHandle, cullOutput.materialBufferHandle);
+                PassHandleDeclare(OpaqueTransCullingPass, meshBufferHandle, cullOutput.meshBufferHandle);
+                PassHandleDeclare(OpaqueTransCullingPass, opaqueDrawHandle, cullOutput.opaqueDrawHandle);
+                PassHandleDeclare(OpaqueTransCullingPass, transparentDrawHandle, cullOutput.transparentDrawHandle);
+
+                cullingPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
+                    RHI::D3D12ComputeContext* pAsyncCompute = context->GetComputeContext();
+                
+                    pAsyncCompute->TransitionBarrier(RegGetBuf(PassHandle(OpaqueTransCullingPass, opaqueDrawHandle).indirectIndexBufferHandle), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+                    pAsyncCompute->TransitionBarrier(RegGetBuf(PassHandle(OpaqueTransCullingPass, transparentDrawHandle).indirectIndexBufferHandle), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+
+                    pAsyncCompute->SetRootSignature(RootSignatures::pIndirectCullForSort.get());
+                    pAsyncCompute->SetPipelineState(PipelineStates::pIndirectCullForSort.get());
+
+                    struct RootIndexBuffer
+                    {
+                        UINT meshPerFrameBufferIndex;
+                        UINT meshInstanceBufferIndex;
+                        UINT materialIndexBufferIndex;
+                        UINT opaqueSortIndexDisBufferIndex;
+                        UINT transSortIndexDisBufferIndex;
+                    };
+
+                    RootIndexBuffer rootIndexBuffer = RootIndexBuffer {
+                        RegGetBufDefCBVIdx(PassHandle(OpaqueTransCullingPass, perframeBufferHandle)),
+                        RegGetBufDefSRVIdx(PassHandle(OpaqueTransCullingPass, meshBufferHandle)),
+                        RegGetBufDefSRVIdx(PassHandle(OpaqueTransCullingPass, materialBufferHandle)),
+                        RegGetBufDefUAVIdx(PassHandle(OpaqueTransCullingPass, opaqueDrawHandle).indirectIndexBufferHandle),
+                        RegGetBufDefUAVIdx(PassHandle(OpaqueTransCullingPass, transparentDrawHandle).indirectIndexBufferHandle)};
+
+                    pAsyncCompute->SetConstantArray(0, sizeof(RootIndexBuffer) / sizeof(UINT), &rootIndexBuffer);
+                    pAsyncCompute->Dispatch1D(numMeshes, 128);
+                });
+            }
+
+            {
+                RHI::RenderPass& opaqueSortPass = graph.AddRenderPass("OpaqueBitonicSortPass");
+
+                PassReadIg(opaqueSortPass, cullOutput.opaqueDrawHandle.indirectIndexBufferHandle);
+
+                PassWriteIg(opaqueSortPass, sortDispatchArgsHandle);
+                PassWriteIg(opaqueSortPass, cullOutput.opaqueDrawHandle.indirectIndexBufferHandle);
+            
+                PassHandleDeclare(OpaqueBitonicSortPass, sortDispatchArgsHandle, sortDispatchArgsHandle);
+                PassHandleDeclare(OpaqueBitonicSortPass, opaqueDrawHandle, cullOutput.opaqueDrawHandle);
+
+                opaqueSortPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
+                    RHI::D3D12ComputeContext* pAsyncCompute = context->GetComputeContext();
+
+                    RHI::D3D12Buffer* bufferPtr = RegGetBuf(PassHandle(OpaqueBitonicSortPass, opaqueDrawHandle).indirectIndexBufferHandle);
+                    RHI::D3D12Buffer* bufferCouterPtr = bufferPtr->GetCounterBuffer().get();
+                    RHI::D3D12Buffer* sortDispatchArgsPtr = RegGetBuf(PassHandle(OpaqueBitonicSortPass, sortDispatchArgsHandle));
+
+                    bitonicSort(pAsyncCompute, bufferPtr, bufferCouterPtr, sortDispatchArgsPtr, false, true);
+                });
+            }
+
+            {
+                RHI::RenderPass& transSortPass = graph.AddRenderPass("TransparentBitonicSortPass");
+
+                PassReadIg(transSortPass, cullOutput.transparentDrawHandle.indirectIndexBufferHandle);
+
+                PassWriteIg(transSortPass, sortDispatchArgsHandle);
+                PassWriteIg(transSortPass, cullOutput.transparentDrawHandle.indirectIndexBufferHandle);
+
+                PassHandleDeclare(TransparentBitonicSortPass, sortDispatchArgsHandle, sortDispatchArgsHandle);
+                PassHandleDeclare(TransparentBitonicSortPass, transparentDrawHandle, cullOutput.transparentDrawHandle);
+
+                transSortPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
+                    RHI::D3D12ComputeContext* pAsyncCompute = context->GetComputeContext();
+
+                    RHI::D3D12Buffer* bufferPtr = RegGetBuf(PassHandle(TransparentBitonicSortPass, transparentDrawHandle).indirectIndexBufferHandle);
+                    RHI::D3D12Buffer* bufferCouterPtr = bufferPtr->GetCounterBuffer().get();
+                    RHI::D3D12Buffer* sortDispatchArgsPtr = RegGetBuf(PassHandle(TransparentBitonicSortPass, sortDispatchArgsHandle));
+
+                    bitonicSort(pAsyncCompute, bufferPtr, bufferCouterPtr, sortDispatchArgsPtr, false, false);
+                });
+            }
+
+            {
+                RHI::RenderPass& grabOpaquePass = graph.AddRenderPass("GrabOpaquePass");
+
+                PassReadIg(grabOpaquePass, cullOutput.meshBufferHandle);
+                PassReadIg(grabOpaquePass, cullOutput.opaqueDrawHandle.indirectIndexBufferHandle);
+
+                PassWriteIg(grabOpaquePass, grabDispatchArgsHandle);
+                PassWriteIg(grabOpaquePass, cullOutput.opaqueDrawHandle.indirectSortBufferHandle);
+
+                PassHandleDeclare(GrabOpaquePass, meshBufferHandle, cullOutput.meshBufferHandle);
+                PassHandleDeclare(GrabOpaquePass, grabDispatchArgsHandle, grabDispatchArgsHandle);
+                PassHandleDeclare(GrabOpaquePass, opaqueDrawHandle, cullOutput.opaqueDrawHandle);
+
+                grabOpaquePass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
+                    RHI::D3D12ComputeContext* pAsyncCompute = context->GetComputeContext();
+                
+                    RHI::D3D12Buffer* meshBufferPtr = RegGetBuf(PassHandle(GrabOpaquePass, meshBufferHandle));
+                    RHI::D3D12Buffer* indirectIndexBufferPtr = RegGetBuf(PassHandle(GrabOpaquePass, opaqueDrawHandle).indirectIndexBufferHandle);
+                    RHI::D3D12Buffer* indirectSortBufferPtr = RegGetBuf(PassHandle(GrabOpaquePass, opaqueDrawHandle).indirectSortBufferHandle);
+                    RHI::D3D12Buffer* grabDispatchArgsPtr = RegGetBuf(PassHandle(GrabOpaquePass, grabDispatchArgsHandle));
+
+                    grabObject(pAsyncCompute, meshBufferPtr, indirectIndexBufferPtr, indirectSortBufferPtr, grabDispatchArgsPtr);
+                });
+            }
+
+            {
+                RHI::RenderPass& grabTransPass = graph.AddRenderPass("GrabTransPass");
+
+                PassReadIg(grabTransPass, cullOutput.meshBufferHandle);
+                PassReadIg(grabTransPass, cullOutput.transparentDrawHandle.indirectIndexBufferHandle);
+
+                PassWriteIg(grabTransPass, grabDispatchArgsHandle);
+                PassWriteIg(grabTransPass, cullOutput.transparentDrawHandle.indirectSortBufferHandle);
+
+                PassHandleDeclare(GrabTransPass, meshBufferHandle, cullOutput.meshBufferHandle);
+                PassHandleDeclare(GrabTransPass, grabDispatchArgsHandle, grabDispatchArgsHandle);
+                PassHandleDeclare(GrabTransPass, transparentDrawHandle, cullOutput.transparentDrawHandle);
+
+                grabTransPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
+                    RHI::D3D12ComputeContext* pAsyncCompute = context->GetComputeContext();
+
+                    RHI::D3D12Buffer* meshBufferPtr = RegGetBuf(PassHandle(GrabTransPass, meshBufferHandle));
+                    RHI::D3D12Buffer* indirectIndexBufferPtr = RegGetBuf(PassHandle(GrabTransPass, transparentDrawHandle).indirectIndexBufferHandle);
+                    RHI::D3D12Buffer* indirectSortBufferPtr = RegGetBuf(PassHandle(GrabTransPass, transparentDrawHandle).indirectSortBufferHandle);
+                    RHI::D3D12Buffer* grabDispatchArgsPtr = RegGetBuf(PassHandle(GrabTransPass, grabDispatchArgsHandle));
+
+                    grabObject(pAsyncCompute, meshBufferPtr, indirectIndexBufferPtr, indirectSortBufferPtr, grabDispatchArgsPtr);
+                });
+            }
+
+            {
+                RHI::RenderPass& dirLightShadowCullPass = graph.AddRenderPass("DirectionLightShadowCullPass");
+
+                PassReadIg(dirLightShadowCullPass, cullOutput.perframeBufferHandle);
+                PassReadIg(dirLightShadowCullPass, cullOutput.meshBufferHandle);
+                PassReadIg(dirLightShadowCullPass, cullOutput.materialBufferHandle);
+
+                PassWriteIg(dirLightShadowCullPass, cullOutput.dirShadowmapHandle.indirectSortBufferHandle);
+
+                PassHandleDeclare(DirectionLightShadowCullPass, perframeBufferHandle, cullOutput.perframeBufferHandle);
+                PassHandleDeclare(DirectionLightShadowCullPass, meshBufferHandle, cullOutput.meshBufferHandle);
+                PassHandleDeclare(DirectionLightShadowCullPass, materialBufferHandle, cullOutput.materialBufferHandle);
+                PassHandleDeclare(DirectionLightShadowCullPass, dirShadowmapHandle, cullOutput.dirShadowmapHandle);
+
+                dirLightShadowCullPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
+                    RHI::D3D12ComputeContext* pAsyncCompute = context->GetComputeContext();
+
+                    pAsyncCompute->SetPipelineState(PipelineStates::pIndirectCullDirectionShadowmap.get());
+                    pAsyncCompute->SetRootSignature(RootSignatures::pIndirectCullDirectionShadowmap.get());
+
+                    RHI::D3D12Buffer* indirectSortBufferPtr = RegGetBuf(PassHandle(DirectionLightShadowCullPass, dirShadowmapHandle).indirectSortBufferHandle);
+
+                    pAsyncCompute->SetConstantBuffer(0, RegGetBuf(PassHandle(DirectionLightShadowCullPass, perframeBufferHandle))->GetGpuVirtualAddress());
+                    pAsyncCompute->SetBufferSRV(1, RegGetBuf(PassHandle(DirectionLightShadowCullPass, meshBufferHandle)));
+                    pAsyncCompute->SetBufferSRV(2, RegGetBuf(PassHandle(DirectionLightShadowCullPass, materialBufferHandle)));
+                    pAsyncCompute->SetDescriptorTable(3, indirectSortBufferPtr->GetDefaultUAV()->GetGpuHandle());
+                
                     pAsyncCompute->Dispatch1D(numMeshes, 128);
 
-                    pAsyncCompute->TransitionBarrier(RegGetBuf(cullOutput.spotShadowmapHandles[i].indirectSortBufferHandle), D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT);
+                    pAsyncCompute->TransitionBarrier(RegGetBuf(PassHandle(DirectionLightShadowCullPass, dirShadowmapHandle).indirectSortBufferHandle), D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT);
+                });
+            }
+
+            {
+                RHI::RenderPass& spotLightShadowCullPass = graph.AddRenderPass("SpotLightShadowCullPass");
+
+                PassReadIg(spotLightShadowCullPass, cullOutput.perframeBufferHandle);
+                PassReadIg(spotLightShadowCullPass, cullOutput.meshBufferHandle);
+                PassReadIg(spotLightShadowCullPass, cullOutput.materialBufferHandle);
+
+                std::vector<uint32_t> _spotlightIndex;
+                for (size_t i = 0; i < cullOutput.spotShadowmapHandles.size(); i++)
+                {
+                    PassWriteIg(spotLightShadowCullPass, cullOutput.spotShadowmapHandles[i].indirectSortBufferHandle);
+                    _spotlightIndex.push_back(spotShadowmapCommandBuffer[i].m_lightIndex);
                 }
-            });
+
+                PassHandleDeclare(SpotLightShadowCullPass, perframeBufferHandle, cullOutput.perframeBufferHandle);
+                PassHandleDeclare(SpotLightShadowCullPass, meshBufferHandle, cullOutput.meshBufferHandle);
+                PassHandleDeclare(SpotLightShadowCullPass, materialBufferHandle, cullOutput.materialBufferHandle);
+                PassHandleDeclare(SpotLightShadowCullPass, spotShadowmapHandles, cullOutput.spotShadowmapHandles);
+
+                spotLightShadowCullPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
+                    RHI::D3D12ComputeContext* pAsyncCompute = context->GetComputeContext();
+
+                    for (size_t i = 0; i < PassHandle(SpotLightShadowCullPass, spotShadowmapHandles).size(); i++)
+                    {
+                        pAsyncCompute->SetPipelineState(PipelineStates::pIndirectCullSpotShadowmap.get());
+                        pAsyncCompute->SetRootSignature(RootSignatures::pIndirectCullSpotShadowmap.get());
+
+                        pAsyncCompute->SetConstantBuffer(0, RegGetBuf(PassHandle(SpotLightShadowCullPass, perframeBufferHandle))->GetGpuVirtualAddress());
+                        pAsyncCompute->SetConstant(1, 0, _spotlightIndex[i]);
+                        pAsyncCompute->SetBufferSRV(2, RegGetBuf(PassHandle(SpotLightShadowCullPass, meshBufferHandle)));
+                        pAsyncCompute->SetBufferSRV(3, RegGetBuf(PassHandle(SpotLightShadowCullPass, materialBufferHandle)));
+                        pAsyncCompute->SetDescriptorTable(4, RegGetBuf(PassHandle(SpotLightShadowCullPass, spotShadowmapHandles)[i].indirectSortBufferHandle)->GetDefaultUAV()->GetGpuHandle());
+
+                        pAsyncCompute->Dispatch1D(numMeshes, 128);
+
+                        pAsyncCompute->TransitionBarrier(RegGetBuf(PassHandle(SpotLightShadowCullPass, spotShadowmapHandles)[i].indirectSortBufferHandle), D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT);
+                    }
+                });
+            }
         }
     }
 

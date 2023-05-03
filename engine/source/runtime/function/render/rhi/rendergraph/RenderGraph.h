@@ -76,6 +76,8 @@ namespace RHI
 
         RenderPass& Read(RgResourceHandle Resource, bool IgnoreBarrier = false);
         RenderPass& Write(RgResourceHandle& Resource, bool IgnoreBarrier = false);
+        RenderPass& Read(RgResourceHandleExt ResourceExt);
+        RenderPass& Write(RgResourceHandleExt& ResourceExt);
         
         template<typename PFNRenderPassCallback>
         void Execute(PFNRenderPassCallback&& Callback)
@@ -116,8 +118,8 @@ namespace RHI
         std::vector<RenderPass*> RenderPasses;
 
         // Apply barriers at a dependency level to reduce redudant barriers
-        std::unordered_set<RgResourceHandleExt> Reads;
-        std::unordered_set<RgResourceHandleExt> Writes;
+        robin_hood::unordered_set<RgResourceHandleExt> Reads;
+        robin_hood::unordered_set<RgResourceHandleExt> Writes;
     };
 
     class RenderGraph

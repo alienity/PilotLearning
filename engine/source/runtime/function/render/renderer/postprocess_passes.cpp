@@ -119,17 +119,20 @@ namespace Pilot
 
     void PostprocessPasses::update(RHI::RenderGraph& graph, PostprocessInputParameters& passInput, PostprocessOutputParameters& passOutput)
     {
-        PostprocessInputParameters*  drawPassInput  = &passInput;
-        PostprocessOutputParameters* drawPassOutput = &passOutput;
+        //PostprocessInputParameters*  drawPassInput  = &passInput;
+        //PostprocessOutputParameters* drawPassOutput = &passOutput;
 
-        RHI::RgResourceHandle inputSceneColorHandle = drawPassInput->inputSceneColorHandle;
+        RHI::RgResourceHandle inputSceneColorHandle = passInput.inputSceneColorHandle;
 
-        initializeResolveTarget(graph, drawPassOutput);
+        RHI::RgResourceHandle postTargetColorHandle0 = graph.Create<RHI::D3D12Texture>(colorTexDesc);
+        RHI::RgResourceHandle postTargetColorHandle1 = graph.Create<RHI::D3D12Texture>(colorTexDesc);
 
-        RHI::RgResourceHandle outputTargetHandle = inputSceneColorHandle;
+        //initializeResolveTarget(graph, drawPassOutput);
 
         RHI::RgResourceHandle exposureBufferHandle = graph.Import(m_ExposureBuffer.get());
         RHI::RgResourceHandle lumaBufferHandle     = graph.Import(m_LumaBuffer.get());
+
+        RHI::RgResourceHandle outputTargetHandle = inputSceneColorHandle;
 
         // resolve rendertarget
         if (EngineConfig::g_AntialiasingMode == EngineConfig::MSAA)
@@ -138,7 +141,7 @@ namespace Pilot
             MSAAResolvePass::DrawOutputParameters mMSAAResolveOutputParams;
 
             mMSAAResolveIntputParams.renderTargetColorHandle  = inputSceneColorHandle;
-            mMSAAResolveOutputParams.resolveTargetColorHandle = drawPassOutput->postTargetColorHandle0;
+            mMSAAResolveOutputParams.resolveTargetColorHandle = postTargetColorHandle0;
             
             mResolvePass->update(graph, mMSAAResolveIntputParams, mMSAAResolveOutputParams);
 
@@ -151,7 +154,7 @@ namespace Pilot
 
             mFXAAIntputParams.inputLumaColorHandle  = lumaBufferHandle;
             mFXAAIntputParams.inputSceneColorHandle = inputSceneColorHandle;
-            mFXAAOutputParams.outputColorHandle     = drawPassOutput->postTargetColorHandle0;
+            mFXAAOutputParams.outputColorHandle     = postTargetColorHandle0;
 
             mFXAAPass->update(graph, mFXAAIntputParams, mFXAAOutputParams);
 
@@ -159,11 +162,11 @@ namespace Pilot
         }
         else
         {
-            RHI::RgResourceHandle mTmpTargetColorHandle = drawPassOutput->postTargetColorHandle0;
+            //RHI::RgResourceHandle mTmpTargetColorHandle = drawPassOutput->postTargetColorHandle0;
 
-            Blit(graph, inputSceneColorHandle, mTmpTargetColorHandle);
+            Blit(graph, inputSceneColorHandle, postTargetColorHandle0);
 
-            outputTargetHandle = mTmpTargetColorHandle;
+            outputTargetHandle = postTargetColorHandle0;
         }
         
         {
@@ -206,7 +209,7 @@ namespace Pilot
             mToneMappingIntputParams.inputBloomHandle        = m_BllomHandle;
             mToneMappingIntputParams.inputExposureHandle     = exposureBufferHandle;
             mToneMappingIntputParams.inputSceneColorHandle   = outputTargetHandle;
-            mToneMappingOutputParams.outputPostEffectsHandle = drawPassOutput->postTargetColorHandle1;
+            mToneMappingOutputParams.outputPostEffectsHandle = postTargetColorHandle1;
 
             mHDRToneMappingPass->update(graph, mToneMappingIntputParams, mToneMappingOutputParams);
 
@@ -230,31 +233,34 @@ namespace Pilot
 
     void PostprocessPasses::destroy() {}
 
-    bool PostprocessPasses::initializeResolveTarget(RHI::RenderGraph& graph, PostprocessOutputParameters* drawPassOutput)
-    {
-        if (!drawPassOutput->postTargetColorHandle0.IsValid())
-        {
-            drawPassOutput->postTargetColorHandle0 = graph.Create<RHI::D3D12Texture>(colorTexDesc);
-        }
-        if (!drawPassOutput->postTargetColorHandle1.IsValid())
-        {
-            drawPassOutput->postTargetColorHandle1 = graph.Create<RHI::D3D12Texture>(colorTexDesc);
-        }
-        return true;
-    }
+    //bool PostprocessPasses::initializeResolveTarget(RHI::RenderGraph& graph, PostprocessOutputParameters* drawPassOutput)
+    //{
+    //    if (!drawPassOutput->postTargetColorHandle0.IsValid())
+    //    {
+    //        drawPassOutput->postTargetColorHandle0 = graph.Create<RHI::D3D12Texture>(colorTexDesc);
+    //    }
+    //    if (!drawPassOutput->postTargetColorHandle1.IsValid())
+    //    {
+    //        drawPassOutput->postTargetColorHandle1 = graph.Create<RHI::D3D12Texture>(colorTexDesc);
+    //    }
+    //    return true;
+    //}
 
-    void PostprocessPasses::Blit(RHI::RenderGraph& graph, RHI::RgResourceHandle inputHandle, RHI::RgResourceHandle outputHandle)
+    void PostprocessPasses::Blit(RHI::RenderGraph& graph, RHI::RgResourceHandle& inputHandle, RHI::RgResourceHandle& outputHandle)
     {
         RHI::RenderPass& blitPass = graph.AddRenderPass("BlitPass");
 
         blitPass.Read(inputHandle, true);
         blitPass.Write(outputHandle, true);
 
+        RHI::RgResourceHandle Blit_inputHandle = inputHandle;
+        RHI::RgResourceHandle Blit_outputHandle = outputHandle;
+
         blitPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
             // RHI::D3D12ComputeContext* computeContext = context->GetComputeContext();
 
-            RHI::D3D12Texture* pInputColor = registry->GetD3D12Texture(inputHandle);
-            RHI::D3D12Texture* pTempColor  = registry->GetD3D12Texture(outputHandle);
+            RHI::D3D12Texture* pInputColor = registry->GetD3D12Texture(Blit_inputHandle);
+            RHI::D3D12Texture* pTempColor  = registry->GetD3D12Texture(Blit_outputHandle);
 
             context->TransitionBarrier(pInputColor, D3D12_RESOURCE_STATE_COPY_SOURCE);
             context->TransitionBarrier(pTempColor, D3D12_RESOURCE_STATE_COPY_DEST);

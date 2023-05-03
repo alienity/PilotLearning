@@ -91,21 +91,24 @@ namespace Pilot
 
     void FXAAPass::update(RHI::RenderGraph& graph, DrawInputParameters& passInput, DrawOutputParameters& passOutput)
     {
-        DrawInputParameters  drawPassInput  = passInput;
-        DrawOutputParameters drawPassOutput = passOutput;
+        //DrawInputParameters  drawPassInput  = passInput;
+        //DrawOutputParameters drawPassOutput = passOutput;
 
         RHI::RgResourceHandle mTmpColorHandle = graph.Create<RHI::D3D12Texture>(mTmpColorTexDesc);
 
         RHI::RenderPass& fxaaToLuminancePass = graph.AddRenderPass("FXAAToLuminance");
 
-        fxaaToLuminancePass.Read(drawPassInput.inputLumaColorHandle);
-        fxaaToLuminancePass.Read(drawPassInput.inputSceneColorHandle);
+        fxaaToLuminancePass.Read(passInput.inputLumaColorHandle);
+        fxaaToLuminancePass.Read(passInput.inputSceneColorHandle);
         fxaaToLuminancePass.Write(mTmpColorHandle);
+
+        RHI::RgResourceHandle FXAAToLuminance_inputLumaColorHandle = passInput.inputLumaColorHandle;
+        RHI::RgResourceHandle FXAAToLuminance_inputSceneColorHandle = passInput.inputSceneColorHandle;
 
         fxaaToLuminancePass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
             RHI::D3D12ComputeContext* computeContext = context->GetComputeContext();
 
-            RHI::D3D12Texture* pInputSceneColor = registry->GetD3D12Texture(drawPassInput.inputSceneColorHandle);
+            RHI::D3D12Texture* pInputSceneColor = registry->GetD3D12Texture(FXAAToLuminance_inputSceneColorHandle);
             RHI::D3D12ShaderResourceView*  pSceneColorSRV = pInputSceneColor->GetDefaultSRV().get();
             RHI::D3D12Texture*             pTempColor     = registry->GetD3D12Texture(mTmpColorHandle);
             RHI::D3D12UnorderedAccessView* tmpColorUAV    = pTempColor->GetDefaultUAV().get();
@@ -121,20 +124,23 @@ namespace Pilot
 
         RHI::RenderPass& fxaapass = graph.AddRenderPass("FXAA");
 
-        fxaapass.Read(drawPassInput.inputSceneColorHandle);
+        fxaapass.Read(passInput.inputSceneColorHandle);
         fxaapass.Read(mTmpColorHandle);
-        fxaapass.Write(drawPassOutput.outputColorHandle);
+        fxaapass.Write(passOutput.outputColorHandle);
+
+        RHI::RgResourceHandle FXAA_inputSceneColorHandle = passInput.inputSceneColorHandle;
+        RHI::RgResourceHandle FXAA_outputColorHandle     = passOutput.outputColorHandle;
 
         fxaapass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
 
             RHI::D3D12ComputeContext* computeContext = context->GetComputeContext();
             
-            RHI::D3D12Texture* pInputSceneColor = registry->GetD3D12Texture(drawPassInput.inputSceneColorHandle);
-            RHI::D3D12ShaderResourceView* pSceneColorSRV = pInputSceneColor->GetDefaultSRV().get();
-            RHI::D3D12Texture* pTempColor = registry->GetD3D12Texture(mTmpColorHandle);
-            RHI::D3D12ShaderResourceView* tempColorSRV = pTempColor->GetDefaultSRV().get();
+            RHI::D3D12Texture*            pInputSceneColor = registry->GetD3D12Texture(FXAA_inputSceneColorHandle);
+            RHI::D3D12ShaderResourceView* pSceneColorSRV   = pInputSceneColor->GetDefaultSRV().get();
+            RHI::D3D12Texture*            pTempColor       = registry->GetD3D12Texture(mTmpColorHandle);
+            RHI::D3D12ShaderResourceView* tempColorSRV     = pTempColor->GetDefaultSRV().get();
 
-            RHI::D3D12Texture* pOutputColor = registry->GetD3D12Texture(drawPassOutput.outputColorHandle);
+            RHI::D3D12Texture*             pOutputColor    = registry->GetD3D12Texture(FXAA_outputColorHandle);
             RHI::D3D12UnorderedAccessView* rtOutputUAVView = pOutputColor->GetDefaultUAV().get();
 
             //computeContext->TransitionBarrier(pInputColor, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);

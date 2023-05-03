@@ -48,7 +48,7 @@ namespace Pilot
         void destroy() override final;
 
     protected:
-        bool initializeResolveTarget(RHI::RenderGraph& graph, DrawOutputParameters* drawPassOutput);
+        //bool initializeResolveTarget(RHI::RenderGraph& graph, DrawOutputParameters* drawPassOutput);
 
     private:
         RHI::RgTextureDesc colorTexDesc;

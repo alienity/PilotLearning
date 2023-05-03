@@ -225,10 +225,10 @@ namespace Pilot
         mDrawIntputParams.meshBufferHandle     = indirectCullOutput.meshBufferHandle;
         mDrawIntputParams.materialBufferHandle = indirectCullOutput.materialBufferHandle;
         mDrawIntputParams.opaqueDrawHandle     = indirectCullOutput.opaqueDrawHandle.indirectSortBufferHandle;
-        mDrawIntputParams.directionalShadowmapTexHandle = mShadowmapOutputParams.directionalShadowmapRGHandle.shadowmapTextureHandle;
-        for (size_t i = 0; i < mShadowmapOutputParams.spotShadowmapRGHandle.size(); i++)
+        mDrawIntputParams.directionalShadowmapTexHandle = mShadowmapOutputParams.directionalShadowmapHandle;
+        for (size_t i = 0; i < mShadowmapOutputParams.spotShadowmapHandle.size(); i++)
         {
-            mDrawIntputParams.spotShadowmapTexHandles.push_back(mShadowmapOutputParams.spotShadowmapRGHandle[i].shadowmapTextureHandle);
+            mDrawIntputParams.spotShadowmapTexHandles.push_back(mShadowmapOutputParams.spotShadowmapHandle[i]);
         }
         mIndirectOpaqueDrawPass->update(graph, mDrawIntputParams, mDrawOutputParams);
         //=================================================================================
@@ -255,13 +255,13 @@ namespace Pilot
         mDrawTransIntputParams.meshBufferHandle     = indirectCullOutput.meshBufferHandle;
         mDrawTransIntputParams.materialBufferHandle = indirectCullOutput.materialBufferHandle;
         mDrawTransIntputParams.transparentDrawHandle = indirectCullOutput.transparentDrawHandle.indirectSortBufferHandle;
-        mDrawTransIntputParams.directionalShadowmapTexHandle = mShadowmapOutputParams.directionalShadowmapRGHandle.shadowmapTextureHandle;
-        for (size_t i = 0; i < mShadowmapOutputParams.spotShadowmapRGHandle.size(); i++)
+        mDrawTransIntputParams.directionalShadowmapTexHandle = mShadowmapOutputParams.directionalShadowmapHandle;
+        for (size_t i = 0; i < mShadowmapOutputParams.spotShadowmapHandle.size(); i++)
         {
-            mDrawTransIntputParams.spotShadowmapTexHandles.push_back(mShadowmapOutputParams.spotShadowmapRGHandle[i].shadowmapTextureHandle);
+            mDrawTransIntputParams.spotShadowmapTexHandles.push_back(mShadowmapOutputParams.spotShadowmapHandle[i]);
         }
-        mDrawTransOutputParams.renderTargetColorHandle = mDrawOutputParams.renderTargetColorHandle;
-        mDrawTransOutputParams.renderTargetDepthHandle = mDrawOutputParams.renderTargetDepthHandle;
+        mDrawTransOutputParams.renderTargetColorHandle = mSkyboxOutputParams.renderTargetColorHandle;
+        mDrawTransOutputParams.renderTargetDepthHandle = mSkyboxOutputParams.renderTargetDepthHandle;
         mIndirectTransparentDrawPass->update(graph, mDrawTransIntputParams, mDrawTransOutputParams);
         //=================================================================================
 
@@ -299,7 +299,6 @@ namespace Pilot
             UIPass::UIOutputParameters mUIOutputParams;
 
             mUIIntputParams.renderTargetColorHandle = mDisplayOutputParams.renderTargetColorHandle;
-
             mUIOutputParams.backBufColorHandle = backBufColorHandle;
             
             mUIPass->update(graph, mUIIntputParams, mUIOutputParams);

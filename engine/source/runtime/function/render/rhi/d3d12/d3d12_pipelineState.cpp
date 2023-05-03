@@ -482,7 +482,7 @@ namespace RHI
         // Get all names from libraries
         // Get names associated to hit groups
         // Return list of libraries + hit group names - shaders in hit groups
-        std::unordered_set<std::wstring_view> Exports;
+        robin_hood::unordered_set<std::wstring_view> Exports;
 
         // Add all the symbols exported by the libraries
         for (const auto& Library : Libraries)
@@ -503,7 +503,7 @@ namespace RHI
 #ifdef _DEBUG
         // Sanity check in debug mode: verify that the hit groups do not reference an unknown shader name
         {
-            std::unordered_set<std::wstring_view> AllExports = Exports;
+            robin_hood::unordered_set<std::wstring_view> AllExports = Exports;
 
             for (const auto& HitGroup : HitGroups)
             {

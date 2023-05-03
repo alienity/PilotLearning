@@ -58,33 +58,39 @@ namespace Pilot
         RHI::RgResourceHandle mLumaBufferHandle = graph.Create<RHI::D3D12Texture>(m_LumaBufferDesc);
         passOutput.outputLumaBufferHandle = mLumaBufferHandle;
 
-        DrawInputParameters  drawPassInput  = passInput;
-        DrawOutputParameters drawPassOutput = passOutput;
+        //DrawInputParameters  drawPassInput  = passInput;
+        //DrawOutputParameters drawPassOutput = passOutput;
 
         RHI::RenderPass& tonemappingPass = graph.AddRenderPass("ToneMapping");
 
-        tonemappingPass.Read(drawPassInput.inputExposureHandle);
-        tonemappingPass.Read(drawPassInput.inputBloomHandle);
-        tonemappingPass.Read(drawPassInput.inputSceneColorHandle);
-        tonemappingPass.Write(drawPassOutput.outputLumaBufferHandle);
-        tonemappingPass.Write(drawPassOutput.outputPostEffectsHandle);
+        tonemappingPass.Read(passInput.inputExposureHandle);
+        tonemappingPass.Read(passInput.inputBloomHandle);
+        tonemappingPass.Read(passInput.inputSceneColorHandle);
+        tonemappingPass.Write(passOutput.outputLumaBufferHandle);
+        tonemappingPass.Write(passOutput.outputPostEffectsHandle);
+
+        auto inputExposureHandle     = passInput.inputExposureHandle;
+        auto inputBloomHandle        = passInput.inputBloomHandle;
+        auto inputSceneColorHandle   = passInput.inputSceneColorHandle;
+        auto outputPostEffectsHandle = passOutput.outputPostEffectsHandle;
+        auto outputLumaBufferHandle  = passOutput.outputLumaBufferHandle;
 
         tonemappingPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
             RHI::D3D12ComputeContext* computeContext = context->GetComputeContext();
 
-            RHI::D3D12Buffer* exposureStructure = registry->GetD3D12Buffer(drawPassInput.inputExposureHandle);
+            RHI::D3D12Buffer* exposureStructure = registry->GetD3D12Buffer(inputExposureHandle);
             RHI::D3D12ShaderResourceView* exposureStructureSRV = exposureStructure->GetDefaultSRV().get();
 
-            RHI::D3D12Texture* bloomColor = registry->GetD3D12Texture(drawPassInput.inputBloomHandle);
+            RHI::D3D12Texture* bloomColor = registry->GetD3D12Texture(inputBloomHandle);
             RHI::D3D12ShaderResourceView* bloomColorSRV = bloomColor->GetDefaultSRV().get();
 
-            RHI::D3D12Texture* sceneColor = registry->GetD3D12Texture(drawPassInput.inputSceneColorHandle);
+            RHI::D3D12Texture* sceneColor = registry->GetD3D12Texture(inputSceneColorHandle);
             RHI::D3D12ShaderResourceView* sceneColorSRV = sceneColor->GetDefaultSRV().get();
 
-            RHI::D3D12Texture* postEffectsColor = registry->GetD3D12Texture(drawPassOutput.outputPostEffectsHandle);
+            RHI::D3D12Texture* postEffectsColor = registry->GetD3D12Texture(outputPostEffectsHandle);
             RHI::D3D12UnorderedAccessView* postEffectsColorUAV = postEffectsColor->GetDefaultUAV().get();
             
-            RHI::D3D12Texture* lumaBuffer = registry->GetD3D12Texture(drawPassOutput.outputLumaBufferHandle);
+            RHI::D3D12Texture* lumaBuffer = registry->GetD3D12Texture(outputLumaBufferHandle);
             RHI::D3D12UnorderedAccessView* lumaBufferUAV = lumaBuffer->GetDefaultUAV().get();
 
             computeContext->SetRootSignature(pToneMapCSSignature.get());

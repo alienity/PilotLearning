@@ -7,11 +7,20 @@
 
 namespace RHI
 {
+#define PassHandle(pn, d) pn##_##d
 #define GImport(g, b) g.Import(b)
 #define PassRead(p, b) p.Read(b)
 #define PassWrite(p, b) p.Write(b)
 #define PassReadIg(p, b) p.Read(b, true)
 #define PassWriteIg(p, b) p.Write(b, true)
+#define PassHandleDeclare(p, d, b) auto p##_##d = b
+
+
+#define HandleOps(h)\
+    inline bool operator!=(const h& lhs, const h& rhs) { return !operator==(lhs, rhs); } \
+    inline bool operator>(const h& lhs, const h& rhs) { return operator<(rhs, lhs); } \
+    inline bool operator<=(const h& lhs, const h& rhs) { return !operator>(lhs, rhs); } \
+    inline bool operator>=(const h& lhs, const h& rhs) { return !operator<(lhs, rhs); } \
 
 	enum class RgResourceType : std::uint64_t
 	{
@@ -25,7 +34,7 @@ namespace RHI
 
 	enum RgResourceSubType : std::uint64_t
     {
-		None,
+		NoneType,
         VertexAndConstantBuffer,
         IndirectArgBuffer,
         
@@ -37,10 +46,10 @@ namespace RHI
 		RG_RESOURCE_FLAG_IMPORTED
 	};
 
-	enum RgBarrierFlag : std::uint64_t
+	enum class RgBarrierFlag : std::uint64_t
     {
-		Auto,
-        None
+		AutoBarrier,
+        NoneBarrier
 	};
 
 	// A virtual resource handle, the underlying realization of the resource type is done in RenderGraphRegistry
@@ -67,16 +76,13 @@ namespace RHI
     {
         return lhs.Type == rhs.Type && lhs.Flags == rhs.Flags && lhs.Version == rhs.Version && lhs.Id == rhs.Id;
     }
-    inline bool operator!=(const RgResourceHandle& lhs, const RgResourceHandle& rhs) { return !operator==(lhs, rhs); }
     inline bool operator<(const RgResourceHandle& lhs, const RgResourceHandle& rhs)
     {
         return lhs.Type < rhs.Type || (lhs.Type == rhs.Type && lhs.Flags < rhs.Flags) ||
                (lhs.Type == rhs.Type && lhs.Flags == rhs.Flags && lhs.Id < rhs.Id) ||
                (lhs.Type == rhs.Type && lhs.Flags == rhs.Flags && lhs.Id == rhs.Id && lhs.Version < rhs.Version);
     }
-    inline bool operator>(const RgResourceHandle& lhs, const RgResourceHandle& rhs) { return operator<(rhs, lhs); }
-    inline bool operator<=(const RgResourceHandle& lhs, const RgResourceHandle& rhs) { return !operator>(lhs, rhs); }
-    inline bool operator>=(const RgResourceHandle& lhs, const RgResourceHandle& rhs) { return !operator<(lhs, rhs); }
+    HandleOps(RgResourceHandle)
 
 	static_assert(sizeof(RgResourceHandle) == sizeof(std::uint64_t));
 
@@ -90,15 +96,12 @@ namespace RHI
     {
         return lhs.rgHandle == rhs.rgHandle && lhs.rgSubType == rhs.rgSubType && lhs.rgTransFlag == rhs.rgTransFlag;
     }
-    inline bool operator!=(const RgResourceHandleExt& lhs, const RgResourceHandleExt& rhs) { return !operator==(lhs, rhs); }
     inline bool operator<(const RgResourceHandleExt& lhs, const RgResourceHandleExt& rhs)
     {
         return lhs.rgHandle < rhs.rgHandle || (lhs.rgHandle == rhs.rgHandle && lhs.rgSubType < rhs.rgSubType) ||
                (lhs.rgHandle == rhs.rgHandle && lhs.rgSubType == rhs.rgSubType && lhs.rgTransFlag < rhs.rgTransFlag);
     }
-    inline bool operator>(const RgResourceHandleExt& lhs, const RgResourceHandleExt& rhs) { return operator<(rhs, lhs); }
-    inline bool operator<=(const RgResourceHandleExt& lhs, const RgResourceHandleExt& rhs) { return !operator>(lhs, rhs); }
-    inline bool operator>=(const RgResourceHandleExt& lhs, const RgResourceHandleExt& rhs) { return !operator<(lhs, rhs); }
+    HandleOps(RgResourceHandleExt)
 
     static_assert(sizeof(RgResourceHandleExt) == sizeof(std::uint64_t) * 2);
 
@@ -127,7 +130,7 @@ namespace RHI
 	{
         RgResourceHandleExt rgResourceHandle = {};
         rgResourceHandle.rgHandle  = rgHandle;
-        rgResourceHandle.rgTransFlag = ignoreBarrier ? RgBarrierFlag::None : RgBarrierFlag::Auto;
+        rgResourceHandle.rgTransFlag = ignoreBarrier ? RgBarrierFlag::NoneBarrier : RgBarrierFlag::AutoBarrier;
         return rgResourceHandle;
 	}
 

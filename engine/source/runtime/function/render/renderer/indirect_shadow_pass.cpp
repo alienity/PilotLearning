@@ -130,18 +130,13 @@ namespace Pilot
         //ShadowInputParameters  drawPassInput  = passInput;
         //ShadowOutputParameters drawPassOutput = passOutput;
 
-        RHI::RgResourceHandle perframeBufferHandle = RHI::ToRgResourceHandle(passInput.perframeBufferHandle, RHI::RgResourceSubType::VertexAndConstantBuffer);
-
         RHI::RgResourceHandle meshBufferHandle     = passInput.meshBufferHandle;
         RHI::RgResourceHandle materialBufferHandle = passInput.materialBufferHandle;
-        
-        RHI::RgResourceHandle dirIndirectSortBufferHandle = RHI::ToRgResourceHandle(passInput.dirIndirectSortBufferHandle, RHI::RgResourceSubType::IndirectArgBuffer);
 
-        std::vector<RHI::RgResourceHandle> spotsIndirectSortBufferHandles = RHI::ToRgResourceHandle(passInput.spotsIndirectSortBufferHandles, RHI::RgResourceSubType::IndirectArgBuffer);
+        RHI::RgResourceHandleExt perframeBufferHandle = RHI::ToRgResourceHandle(passInput.perframeBufferHandle, RHI::RgResourceSubType::VertexAndConstantBuffer);
+        RHI::RgResourceHandleExt dirIndirectSortBufferHandle = RHI::ToRgResourceHandle(passInput.dirIndirectSortBufferHandle, RHI::RgResourceSubType::IndirectArgBuffer);
 
-
-        RHI::RgResourceHandle              localDirShadowmapHandle   = {};        
-        std::vector<RHI::RgResourceHandle> localSpotShadowmapHandles = {};
+        std::vector<RHI::RgResourceHandleExt> spotsIndirectSortBufferHandles = RHI::ToRgResourceHandle(passInput.spotsIndirectSortBufferHandles, RHI::RgResourceSubType::IndirectArgBuffer);
 
         RHI::RenderPass& shadowpass = graph.AddRenderPass("IndirectShadowPass");
 
@@ -154,26 +149,22 @@ namespace Pilot
             shadowpass.Read(spotsIndirectSortBufferHandles[i]);
         }
 
+        RHI::RgResourceHandle directionalShadowmapHandle;
         if (directionalShadowmap.p_LightShadowmap != nullptr)
         {
-            RHI::RgResourceHandle dirShadowMapHandle = graph.Import<RHI::D3D12Texture>(directionalShadowmap.p_LightShadowmap.get());
-            passOutput.directionalShadowmapRGHandle = {dirShadowMapHandle};
-
-            shadowpass.Write(dirShadowMapHandle);
-
-            localDirShadowmapHandle = dirShadowMapHandle;
+            passOutput.directionalShadowmapHandle = graph.Import<RHI::D3D12Texture>(directionalShadowmap.p_LightShadowmap.get());
+            shadowpass.Write(passOutput.directionalShadowmapHandle);
+            directionalShadowmapHandle = passOutput.directionalShadowmapHandle;
         }
 
+        std::vector<RHI::RgResourceHandle> spotShadowmapHandles;
         for (size_t i = 0; i < spotShadowmaps.size(); i++)
         {
             RHI::RgResourceHandle spotShadowMapHandle = graph.Import<RHI::D3D12Texture>(spotShadowmaps[i].p_LightShadowmap.get());
-
-            passOutput.spotShadowmapRGHandle.push_back({spotShadowMapHandle});
-            
             shadowpass.Write(spotShadowMapHandle);
-
-            localSpotShadowmapHandles.push_back(spotShadowMapHandle);
+            passOutput.spotShadowmapHandle.push_back(spotShadowMapHandle);
         }
+        spotShadowmapHandles = passOutput.spotShadowmapHandle;
 
         shadowpass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
 
@@ -182,7 +173,7 @@ namespace Pilot
             if (directionalShadowmap.m_gobject_id != k_invalid_gobject_id &&
                 directionalShadowmap.m_gcomponent_id != k_invalid_gcomponent_id)
             {
-                RHI::D3D12Texture* pShadowmapStencilTex = registry->GetD3D12Texture(localDirShadowmapHandle);
+                RHI::D3D12Texture* pShadowmapStencilTex = registry->GetD3D12Texture(directionalShadowmapHandle);
 
                 RHI::D3D12DepthStencilView* shadowmapStencilView = pShadowmapStencilTex->GetDefaultDSV().get();
 
@@ -195,7 +186,7 @@ namespace Pilot
                 graphicContext->SetViewport(RHIViewport {0.0f, 0.0f, (float)shadowmap_size.x, (float)shadowmap_size.y, 0.0f, 1.0f});
                 graphicContext->SetScissorRect(RHIRect {0, 0, (int)shadowmap_size.x, (int)shadowmap_size.y});
 
-                graphicContext->SetConstantBuffer(1, registry->GetD3D12Buffer(perframeBufferHandle)->GetGpuVirtualAddress());
+                graphicContext->SetConstantBuffer(1, registry->GetD3D12Buffer(perframeBufferHandle.rgHandle)->GetGpuVirtualAddress());
                 graphicContext->SetBufferSRV(2, registry->GetD3D12Buffer(meshBufferHandle));
                 graphicContext->SetBufferSRV(3, registry->GetD3D12Buffer(materialBufferHandle));
 
@@ -206,7 +197,7 @@ namespace Pilot
                 graphicContext->ClearRenderTarget(nullptr, shadowmapStencilView);
                 graphicContext->SetRenderTarget(nullptr, shadowmapStencilView);
 
-                auto pDirectionCommandBuffer = registry->GetD3D12Buffer(dirIndirectSortBufferHandle);
+                auto pDirectionCommandBuffer = registry->GetD3D12Buffer(dirIndirectSortBufferHandle.rgHandle);
 
                 graphicContext->ExecuteIndirect(CommandSignatures::pIndirectDrawDirectionShadowmap.get(),
                                                 pDirectionCommandBuffer,
@@ -218,7 +209,7 @@ namespace Pilot
 
             for (size_t i = 0; i < spotShadowmaps.size(); i++)
             {
-                RHI::D3D12Texture* pShadowmapDepthTex = registry->GetD3D12Texture(localSpotShadowmapHandles[i]);
+                RHI::D3D12Texture* pShadowmapDepthTex = registry->GetD3D12Texture(spotShadowmapHandles[i]);
 
                 RHI::D3D12DepthStencilView* shadowmapStencilView = pShadowmapDepthTex->GetDefaultDSV().get();
 
@@ -233,14 +224,14 @@ namespace Pilot
                 graphicContext->SetScissorRect(RHIRect {0, 0, (int)shadowmap_size.x, (int)shadowmap_size.y});
 
                 graphicContext->SetConstant(0, 1, spot_index);
-                graphicContext->SetConstantBuffer(1, registry->GetD3D12Buffer(perframeBufferHandle)->GetGpuVirtualAddress());
+                graphicContext->SetConstantBuffer(1, registry->GetD3D12Buffer(perframeBufferHandle.rgHandle)->GetGpuVirtualAddress());
                 graphicContext->SetBufferSRV(2, registry->GetD3D12Buffer(meshBufferHandle));
                 graphicContext->SetBufferSRV(3, registry->GetD3D12Buffer(materialBufferHandle));
 
                 graphicContext->ClearRenderTarget(nullptr, shadowmapStencilView);
                 graphicContext->SetRenderTarget(nullptr, shadowmapStencilView);
 
-                auto pSpotCommandBuffer = registry->GetD3D12Buffer(spotsIndirectSortBufferHandles[i]);
+                auto pSpotCommandBuffer = registry->GetD3D12Buffer(spotsIndirectSortBufferHandles[i].rgHandle);
 
                 graphicContext->ExecuteIndirect(CommandSignatures::pIndirectDrawSpotShadowmap.get(),
                                                 pSpotCommandBuffer,

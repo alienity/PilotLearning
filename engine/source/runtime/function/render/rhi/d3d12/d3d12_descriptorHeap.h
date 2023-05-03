@@ -563,7 +563,7 @@ namespace RHI
         std::mutex                                   m_HeapPoolMutex;
         std::vector<DescriptorHeapAllocationManager> m_HeapPool;
         // Indices of available descriptor heap managers
-        std::unordered_set<size_t> m_AvailableHeaps;
+        robin_hood::unordered_set<size_t> m_AvailableHeaps;
 
         D3D12_DESCRIPTOR_HEAP_DESC m_HeapDesc;
         const UINT                 m_DescriptorSize = 0;

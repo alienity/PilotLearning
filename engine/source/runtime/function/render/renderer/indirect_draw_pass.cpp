@@ -25,20 +25,16 @@ namespace Pilot
         //DrawInputParameters  drawPassInput  = passInput;
         //DrawOutputParameters drawPassOutput = passOutput;
 
-        RHI::RgResourceHandle perframeBufferHandle = RHI::ToRgResourceHandle(passInput.perframeBufferHandle, RHI::RgResourceSubType::VertexAndConstantBuffer);
-
         RHI::RgResourceHandle meshBufferHandle     = passInput.meshBufferHandle;
         RHI::RgResourceHandle materialBufferHandle = passInput.materialBufferHandle;
 
-        RHI::RgResourceHandle opaqueDrawHandle = RHI::ToRgResourceHandle(passInput.opaqueDrawHandle, RHI::RgResourceSubType::IndirectArgBuffer);
+        RHI::RgResourceHandleExt perframeBufferHandle = RHI::ToRgResourceHandle(passInput.perframeBufferHandle, RHI::RgResourceSubType::VertexAndConstantBuffer);
+        RHI::RgResourceHandleExt opaqueDrawHandle = RHI::ToRgResourceHandle(passInput.opaqueDrawHandle, RHI::RgResourceSubType::IndirectArgBuffer);
 
         //std::shared_ptr<RHI::D3D12Buffer> pPerframeBuffer = passInput.pPerframeBuffer;
         //std::shared_ptr<RHI::D3D12Buffer> pMeshBuffer     = passInput.pMeshBuffer;
         //std::shared_ptr<RHI::D3D12Buffer> pMaterialBuffer = passInput.pMaterialBuffer;
         //std::shared_ptr<RHI::D3D12Buffer> pIndirectCommandBuffer = passInput.pIndirectCommandBuffer;
-
-        RHI::RgResourceHandle renderTargetColorHandle = passOutput.renderTargetColorHandle;
-        RHI::RgResourceHandle renderTargetDepthHandle = passOutput.renderTargetDepthHandle;
 
         RHI::RenderPass& drawpass = graph.AddRenderPass("IndirectDrawOpaquePass");
 
@@ -50,8 +46,15 @@ namespace Pilot
         {
             drawpass.Read(passInput.spotShadowmapTexHandles[i]);
         }
-        drawpass.Write(renderTargetColorHandle);
-        drawpass.Write(renderTargetDepthHandle);
+        drawpass.Read(meshBufferHandle);
+        drawpass.Read(materialBufferHandle);
+        drawpass.Read(perframeBufferHandle);
+        drawpass.Read(opaqueDrawHandle);
+        drawpass.Write(passOutput.renderTargetColorHandle);
+        drawpass.Write(passOutput.renderTargetDepthHandle);
+
+        RHI::RgResourceHandle renderTargetColorHandle = passOutput.renderTargetColorHandle;
+        RHI::RgResourceHandle renderTargetDepthHandle = passOutput.renderTargetDepthHandle;
 
         drawpass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
 
@@ -75,7 +78,7 @@ namespace Pilot
 
             graphicContext->SetRootSignature(RootSignatures::pIndirectDraw.get());
             graphicContext->SetPipelineState(PipelineStates::pIndirectDraw.get());
-            graphicContext->SetConstantBuffer(1, registry->GetD3D12Buffer(perframeBufferHandle)->GetGpuVirtualAddress());
+            graphicContext->SetConstantBuffer(1, registry->GetD3D12Buffer(perframeBufferHandle.rgHandle)->GetGpuVirtualAddress());
             graphicContext->SetBufferSRV(2, registry->GetD3D12Buffer(meshBufferHandle));
             graphicContext->SetBufferSRV(3, registry->GetD3D12Buffer(materialBufferHandle));
 
@@ -83,7 +86,7 @@ namespace Pilot
             //graphicContext->SetBufferSRV(2, pMeshBuffer.get());
             //graphicContext->SetBufferSRV(3, pMaterialBuffer.get());
 
-            auto pIndirectCommandBuffer = registry->GetD3D12Buffer(opaqueDrawHandle);
+            auto pIndirectCommandBuffer = registry->GetD3D12Buffer(opaqueDrawHandle.rgHandle);
 
             graphicContext->ExecuteIndirect(CommandSignatures::pIndirectDraw.get(),
                                             pIndirectCommandBuffer,

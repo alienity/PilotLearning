@@ -32,24 +32,30 @@ namespace Pilot
         //DrawInputParameters*  drawPassInput  = &passInput;
         //DrawOutputParameters* drawPassOutput = &passOutput;
 
-        RHI::RgResourceHandle perframeBufferHandle = RHI::ToRgResourceHandle(passInput.perframeBufferHandle, RHI::RgResourceSubType::VertexAndConstantBuffer);
+        RHI::RgResourceHandleExt perframeBufferHandle = RHI::ToRgResourceHandle(passInput.perframeBufferHandle, RHI::RgResourceSubType::VertexAndConstantBuffer);
 
         //std::shared_ptr<RHI::D3D12Buffer> pPerframeBuffer = passInput.pPerframeBuffer;
 
         RHI::RenderPass& drawpass = graph.AddRenderPass("SkyboxPass");
 
-        RHI::RgResourceHandle localRenderTargetColorHandle = passOutput.renderTargetColorHandle;
-        RHI::RgResourceHandle localRenderTargetDepthHandle = passOutput.renderTargetDepthHandle;
+        //RHI::RgResourceHandle localRenderTargetColorHandle = passOutput.renderTargetColorHandle;
+        //RHI::RgResourceHandle localRenderTargetDepthHandle = passOutput.renderTargetDepthHandle;
 
-        drawpass.Write(passOutput.renderTargetColorHandle);
-        drawpass.Write(passOutput.renderTargetDepthHandle);
+        PassRead(drawpass, perframeBufferHandle);
+        PassReadIg(drawpass, passOutput.renderTargetColorHandle);
+        PassReadIg(drawpass, passOutput.renderTargetDepthHandle);
+        PassWrite(drawpass, passOutput.renderTargetColorHandle);
+        PassWrite(drawpass, passOutput.renderTargetDepthHandle);
+        
+        PassHandleDeclare(SkyboxPass, renderTargetColorHandle, passOutput.renderTargetColorHandle);
+        PassHandleDeclare(SkyboxPass, renderTargetDepthHandle, passOutput.renderTargetDepthHandle);
 
         drawpass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
 
             RHI::D3D12GraphicsContext* graphicContext = context->GetGraphicsContext();
 
-            RHI::D3D12Texture* pRenderTargetColor = registry->GetD3D12Texture(localRenderTargetColorHandle);
-            RHI::D3D12Texture* pRenderTargetDepth = registry->GetD3D12Texture(localRenderTargetDepthHandle);
+            RHI::D3D12Texture* pRenderTargetColor = registry->GetD3D12Texture(PassHandle(SkyboxPass, renderTargetColorHandle));
+            RHI::D3D12Texture* pRenderTargetDepth = registry->GetD3D12Texture(PassHandle(SkyboxPass, renderTargetDepthHandle));
 
             RHI::D3D12RenderTargetView* renderTargetView = pRenderTargetColor->GetDefaultRTV().get();
             RHI::D3D12DepthStencilView* depthStencilView = pRenderTargetDepth->GetDefaultDSV().get();
@@ -68,7 +74,7 @@ namespace Pilot
             graphicContext->SetPipelineState(PipelineStates::pSkyBoxPSO.get());
             graphicContext->SetConstants(0, specularIBLTexIndex, specularIBLTexLevel);
             //graphicContext->SetConstantBuffer(1, pPerframeBuffer->GetGpuVirtualAddress());
-            graphicContext->SetConstantBuffer(1, registry->GetD3D12Buffer(perframeBufferHandle)->GetGpuVirtualAddress());
+            graphicContext->SetConstantBuffer(1, registry->GetD3D12Buffer(perframeBufferHandle.rgHandle)->GetGpuVirtualAddress());
             
             graphicContext->Draw(3);
         });

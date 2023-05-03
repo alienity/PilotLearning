@@ -73,7 +73,7 @@ namespace EngineConfig
 
     struct BloomConfig
     {
-        bool m_BloomEnable = true;
+        bool m_BloomEnable = false;
         // The threshold luminance above which a pixel will start to bloom
         float m_BloomThreshold = 4.0f; // 0.0f, 8.0f, 0.1f
         // A modulator controlling how much bloom is added back into the image

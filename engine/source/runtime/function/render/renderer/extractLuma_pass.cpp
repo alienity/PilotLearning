@@ -73,28 +73,31 @@ namespace Pilot
 
     void ExtractLumaPass::update(RHI::RenderGraph& graph, DrawInputParameters& passInput, DrawOutputParameters& passOutput)
     {
-        DrawInputParameters  drawPassInput  = passInput;
-        DrawOutputParameters drawPassOutput = passOutput;
+        //DrawInputParameters  drawPassInput  = passInput;
+        //DrawOutputParameters drawPassOutput = passOutput;
 
         int kBloomWidth  = m_LumaLRDesc.Width;
         int kBloomHeight = m_LumaLRDesc.Height;
 
         RHI::RgResourceHandle m_LumaLRHandle = graph.Create<RHI::D3D12Texture>(m_LumaLRDesc);
+
+        passOutput.outputLumaLRHandle = m_LumaLRHandle;
         
-        drawPassOutput.outputLumaLRHandle = m_LumaLRHandle;
+        RHI::RgResourceHandle inputSceneColorHandle = passInput.inputSceneColorHandle;
+        RHI::RgResourceHandle inputExposureHandle   = passInput.inputExposureHandle;
 
         RHI::RenderPass& generateBloomPass = graph.AddRenderPass("ExtractLumaPass");
 
-        generateBloomPass.Read(drawPassInput.inputSceneColorHandle);
-        generateBloomPass.Read(drawPassInput.inputExposureHandle);
-        generateBloomPass.Write(m_LumaLRHandle);
+        generateBloomPass.Read(passInput.inputSceneColorHandle);
+        generateBloomPass.Read(passInput.inputExposureHandle);
+        generateBloomPass.Write(passOutput.outputLumaLRHandle);
 
         generateBloomPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
             RHI::D3D12ComputeContext* computeContext = context->GetComputeContext();
 
-            RHI::D3D12Texture* pInputSceneColor = registry->GetD3D12Texture(drawPassInput.inputSceneColorHandle);
+            RHI::D3D12Texture*            pInputSceneColor = registry->GetD3D12Texture(inputSceneColorHandle);
             RHI::D3D12ShaderResourceView*  pInputSceneColorSRV = pInputSceneColor->GetDefaultSRV().get();
-            RHI::D3D12Buffer*              pInputExposure = registry->GetD3D12Buffer(drawPassInput.inputExposureHandle);
+            RHI::D3D12Buffer*              pInputExposure    = registry->GetD3D12Buffer(inputExposureHandle);
             RHI::D3D12ShaderResourceView*  pInputExposureSRV = pInputExposure->GetDefaultSRV().get();
             RHI::D3D12Texture*             pLumaLRHandle     = registry->GetD3D12Texture(m_LumaLRHandle);
             RHI::D3D12UnorderedAccessView* pOutputLumaLRUAV  = pLumaLRHandle->GetDefaultUAV().get();

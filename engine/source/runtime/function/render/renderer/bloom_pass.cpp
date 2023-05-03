@@ -190,15 +190,15 @@ namespace Pilot
         RHI::RgResourceHandle m_aBloomUAV5Handle[2] = {graph.Create<RHI::D3D12Texture>(m_aBloomUAV5Desc[0]),
                                                        graph.Create<RHI::D3D12Texture>(m_aBloomUAV5Desc[1])};
 
-        passOutput.outputLumaLRHandle = m_LumaLRHandle;
-        passOutput.outputBloomHandle  = m_aBloomUAV1Handle[1];
-
         RHI::RenderPass& generateBloomPass = graph.AddRenderPass("GenerateBloom");
 
         generateBloomPass.Read(drawPassInput.inputSceneColorHandle);
         generateBloomPass.Read(drawPassInput.inputExposureHandle);
         generateBloomPass.Write(m_aBloomUAV1Handle[0]);
         generateBloomPass.Write(m_LumaLRHandle);
+
+        passOutput.outputLumaLRHandle = m_LumaLRHandle;
+        passOutput.outputBloomHandle  = m_aBloomUAV1Handle[1];
 
         generateBloomPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
             RHI::D3D12ComputeContext* computeContext = context->GetComputeContext();

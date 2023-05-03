@@ -22,8 +22,8 @@ namespace Pilot
         RHI::RgResourceHandle renderTargetColorHandle = passOutput.renderTargetColorHandle;
 
         graph.AddRenderPass("DisplayDrawPass")
-            .Read(inputRTColorHandle)
-            .Write(renderTargetColorHandle)
+            .Read(passInput.inputRTColorHandle)
+            .Write(passOutput.renderTargetColorHandle)
             .Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
                 
                 RHI::D3D12GraphicsContext* graphicContext = context->GetGraphicsContext();

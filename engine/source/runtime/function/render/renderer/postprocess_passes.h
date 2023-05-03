@@ -39,14 +39,14 @@ namespace Pilot
         {
             PostprocessOutputParameters()
             {
-                postTargetColorHandle0.Invalidate();
-                postTargetColorHandle1.Invalidate();
+                //postTargetColorHandle0.Invalidate();
+                //postTargetColorHandle1.Invalidate();
 
                 outputColorHandle.Invalidate();
             }
 
-            RHI::RgResourceHandle postTargetColorHandle0;
-            RHI::RgResourceHandle postTargetColorHandle1;
+            //RHI::RgResourceHandle postTargetColorHandle0;
+            //RHI::RgResourceHandle postTargetColorHandle1;
 
             RHI::RgResourceHandle outputColorHandle;
         };
@@ -59,8 +59,8 @@ namespace Pilot
         void destroy() override final;
 
     protected:
-        bool initializeResolveTarget(RHI::RenderGraph& graph, PostprocessOutputParameters* drawPassOutput);
-        void Blit(RHI::RenderGraph& graph, RHI::RgResourceHandle inputHandle, RHI::RgResourceHandle outputHandle);
+        //bool initializeResolveTarget(RHI::RenderGraph& graph, PostprocessOutputParameters* drawPassOutput);
+        void Blit(RHI::RenderGraph& graph, RHI::RgResourceHandle& inputHandle, RHI::RgResourceHandle& outputHandle);
 
     private:
         RHI::RgTextureDesc colorTexDesc;

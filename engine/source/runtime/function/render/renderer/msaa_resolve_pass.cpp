@@ -16,26 +16,29 @@ namespace Pilot
     void MSAAResolvePass::update(RHI::RenderGraph& graph, DrawInputParameters& passInput, DrawOutputParameters& passOutput)
     {
 
-        initializeResolveTarget(graph, &passOutput);
+        //initializeResolveTarget(graph, &passOutput);
 
-        DrawInputParameters  drawPassInput  = passInput;
-        DrawOutputParameters drawPassOutput = passOutput;
+        //DrawInputParameters  drawPassInput  = passInput;
+        //DrawOutputParameters drawPassOutput = passOutput;
 
         RHI::RenderPass& resolvepass = graph.AddRenderPass("ResolveMSAA");
 
         //resolvepass.Resolve(drawPassInput.renderTargetColorHandle, drawPassOutput.resolveTargetColorHandle);
 
-        resolvepass.Read(drawPassInput.renderTargetColorHandle, true);
-        resolvepass.Write(drawPassOutput.resolveTargetColorHandle, true);
+        resolvepass.Read(passInput.renderTargetColorHandle, true);
+        resolvepass.Write(passOutput.resolveTargetColorHandle, true);
+
+        RHI::RgResourceHandle renderTargetColorHandle = passInput.renderTargetColorHandle;
+        RHI::RgResourceHandle resolveTargetColorHandle = passOutput.resolveTargetColorHandle;
         
         //resolvepass.Resolve(drawPassInput->renderTargetDepthHandle, drawPassOutput->resolveTargetDepthHandle);
 
         resolvepass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
 
-            RHI::D3D12Texture* pRenderTargetColor = registry->GetD3D12Texture(drawPassInput.renderTargetColorHandle);
+            RHI::D3D12Texture* pRenderTargetColor = registry->GetD3D12Texture(renderTargetColorHandle);
             //RHI::D3D12Texture* pRenderTargetDepth = registry->GetD3D12Texture(drawPassInput->renderTargetDepthHandle);
 
-            RHI::D3D12Texture* pResolveTargetColor = registry->GetD3D12Texture(drawPassOutput.resolveTargetColorHandle);
+            RHI::D3D12Texture* pResolveTargetColor = registry->GetD3D12Texture(resolveTargetColorHandle);
             //RHI::D3D12Texture* pResolveTargetDepth = registry->GetD3D12Texture(drawPassOutput->resolveTargetDepthHandle);
 
             context->TransitionBarrier(pRenderTargetColor, D3D12_RESOURCE_STATE_RESOLVE_SOURCE, 0);
@@ -61,17 +64,17 @@ namespace Pilot
 
     }
 
-    bool MSAAResolvePass::initializeResolveTarget(RHI::RenderGraph& graph, DrawOutputParameters* drawPassOutput)
-    {
-        if (!drawPassOutput->resolveTargetColorHandle.IsValid())
-        {
-            drawPassOutput->resolveTargetColorHandle = graph.Create<RHI::D3D12Texture>(colorTexDesc);
-        }
-        //if (!drawPassOutput->resolveTargetDepthHandle.IsValid())
-        //{
-        //    drawPassOutput->resolveTargetDepthHandle = graph.Create<RHI::D3D12Texture>(depthTexDesc);
-        //}
-        return true;
-    }
+    //bool MSAAResolvePass::initializeResolveTarget(RHI::RenderGraph& graph, DrawOutputParameters* drawPassOutput)
+    //{
+    //    if (!drawPassOutput->resolveTargetColorHandle.IsValid())
+    //    {
+    //        drawPassOutput->resolveTargetColorHandle = graph.Create<RHI::D3D12Texture>(colorTexDesc);
+    //    }
+    //    //if (!drawPassOutput->resolveTargetDepthHandle.IsValid())
+    //    //{
+    //    //    drawPassOutput->resolveTargetDepthHandle = graph.Create<RHI::D3D12Texture>(depthTexDesc);
+    //    //}
+    //    return true;
+    //}
 
 }

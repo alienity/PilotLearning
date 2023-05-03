@@ -45,11 +45,6 @@ namespace Pilot
     class IndirectShadowPass : public RenderPass
 	{
     public:
-        struct ShadowmapRGHandle
-        {
-            RHI::RgResourceHandle shadowmapTextureHandle;
-        };
-        
         struct ShadowPassInitInfo : public RenderPassInitInfo
         {};
 
@@ -71,8 +66,8 @@ namespace Pilot
 
         struct ShadowOutputParameters : public PassOutput
         {
-            ShadowmapRGHandle directionalShadowmapRGHandle;
-            std::vector<ShadowmapRGHandle> spotShadowmapRGHandle;
+            RHI::RgResourceHandle directionalShadowmapHandle;
+            std::vector<RHI::RgResourceHandle> spotShadowmapHandle;
         };
 
     public:
