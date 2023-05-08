@@ -196,10 +196,11 @@ namespace RHI
         {
             Microsoft::WRL::ComPtr<ID3D12Resource> Resource;
             VERIFY_D3D12_API(p_SwapChain4->GetBuffer(i, IID_PPV_ARGS(&Resource)));
+            std::wstring mSwapchainName = L"SwapChainBackBuffer" + std::to_wstring(i);
             p_BackBuffers[i] = D3D12Texture::CreateFromSwapchain(GetParentDevice()->GetLinkedDevice(),
                                                                  std::move(Resource),
                                                                  D3D12_RESOURCE_STATE_PRESENT,
-                                                                 L"SwapChainBackBuffer");
+                                                                 mSwapchainName);
         }
     }
 

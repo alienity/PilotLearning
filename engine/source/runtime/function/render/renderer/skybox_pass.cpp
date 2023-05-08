@@ -38,8 +38,8 @@ namespace Pilot
 
         RHI::RenderPass& drawpass = graph.AddRenderPass("SkyboxPass");
 
-        //RHI::RgResourceHandle localRenderTargetColorHandle = passOutput.renderTargetColorHandle;
-        //RHI::RgResourceHandle localRenderTargetDepthHandle = passOutput.renderTargetDepthHandle;
+        RHI::RgResourceHandle renderTargetColorHandle = passOutput.renderTargetColorHandle;
+        RHI::RgResourceHandle renderTargetDepthHandle = passOutput.renderTargetDepthHandle;
 
         PassRead(drawpass, perframeBufferHandle);
         PassReadIg(drawpass, passOutput.renderTargetColorHandle);
@@ -47,15 +47,12 @@ namespace Pilot
         PassWrite(drawpass, passOutput.renderTargetColorHandle);
         PassWrite(drawpass, passOutput.renderTargetDepthHandle);
         
-        PassHandleDeclare(SkyboxPass, renderTargetColorHandle, passOutput.renderTargetColorHandle);
-        PassHandleDeclare(SkyboxPass, renderTargetDepthHandle, passOutput.renderTargetDepthHandle);
-
         drawpass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
 
             RHI::D3D12GraphicsContext* graphicContext = context->GetGraphicsContext();
 
-            RHI::D3D12Texture* pRenderTargetColor = registry->GetD3D12Texture(PassHandle(SkyboxPass, renderTargetColorHandle));
-            RHI::D3D12Texture* pRenderTargetDepth = registry->GetD3D12Texture(PassHandle(SkyboxPass, renderTargetDepthHandle));
+            RHI::D3D12Texture* pRenderTargetColor = registry->GetD3D12Texture(renderTargetColorHandle);
+            RHI::D3D12Texture* pRenderTargetDepth = registry->GetD3D12Texture(renderTargetDepthHandle);
 
             RHI::D3D12RenderTargetView* renderTargetView = pRenderTargetColor->GetDefaultRTV().get();
             RHI::D3D12DepthStencilView* depthStencilView = pRenderTargetDepth->GetDefaultDSV().get();

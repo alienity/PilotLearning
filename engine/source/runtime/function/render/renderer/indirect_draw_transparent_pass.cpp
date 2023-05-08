@@ -36,6 +36,9 @@ namespace Pilot
         //std::shared_ptr<RHI::D3D12Buffer> pMaterialBuffer = passInput.pMaterialBuffer;
         //std::shared_ptr<RHI::D3D12Buffer> pIndirectCommandBuffer = passInput.pIndirectCommandBuffer;
 
+        RHI::RgResourceHandle renderTargetColorHandle = passOutput.renderTargetColorHandle;
+        RHI::RgResourceHandle renderTargetDepthHandle = passOutput.renderTargetDepthHandle;
+
         RHI::RenderPass& drawpass = graph.AddRenderPass("IndirectDrawTransparentPass");
 
         if (passInput.directionalShadowmapTexHandle.IsValid())
@@ -52,25 +55,19 @@ namespace Pilot
         PassReadIg(drawpass, passOutput.renderTargetColorHandle);
         PassReadIg(drawpass, passOutput.renderTargetDepthHandle);
 
-        //RHI::RgResourceHandle renderTargetColorHandle = passOutput.renderTargetColorHandle;
-        //RHI::RgResourceHandle renderTargetDepthHandle = passOutput.renderTargetDepthHandle;
-
         //drawpass.Write(renderTargetColorHandle);
         //drawpass.Write(renderTargetDepthHandle);
         PassWrite(drawpass, passOutput.renderTargetColorHandle);
         PassWrite(drawpass, passOutput.renderTargetDepthHandle);
 
-        PassHandleDeclare(IndirectDrawTransparentPass, renderTargetColorHandle, passOutput.renderTargetColorHandle);
-        PassHandleDeclare(IndirectDrawTransparentPass, renderTargetDepthHandle, passOutput.renderTargetDepthHandle);
-
         drawpass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
 
             RHI::D3D12GraphicsContext* graphicContext = context->GetGraphicsContext();
 
-            RHI::D3D12Texture* pRenderTargetColorTex = registry->GetD3D12Texture(PassHandle(IndirectDrawTransparentPass, renderTargetColorHandle));
+            RHI::D3D12Texture*          pRenderTargetColorTex = registry->GetD3D12Texture(renderTargetColorHandle);
             RHI::D3D12RenderTargetView* renderTargetView = pRenderTargetColorTex->GetDefaultRTV().get();
 
-            RHI::D3D12Texture* pDepthStencilTex = registry->GetD3D12Texture(PassHandle(IndirectDrawTransparentPass, renderTargetDepthHandle));
+            RHI::D3D12Texture*          pDepthStencilTex = registry->GetD3D12Texture(renderTargetDepthHandle);
             RHI::D3D12DepthStencilView* depthStencilView = pDepthStencilTex->GetDefaultDSV().get();
 
             graphicContext->SetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
