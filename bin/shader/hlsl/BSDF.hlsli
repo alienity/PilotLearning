@@ -30,15 +30,9 @@
 
 #define BRDF_DIFFUSE DIFFUSE_LAMBERT
 
-//#if FILAMENT_QUALITY < FILAMENT_QUALITY_HIGH
-//#define BRDF_SPECULAR_D SPECULAR_D_GGX
-//#define BRDF_SPECULAR_V SPECULAR_V_SMITH_GGX_FAST
-//#define BRDF_SPECULAR_F SPECULAR_F_SCHLICK
-//#else
 #define BRDF_SPECULAR_D SPECULAR_D_GGX
 #define BRDF_SPECULAR_V SPECULAR_V_SMITH_GGX
 #define BRDF_SPECULAR_F SPECULAR_F_SCHLICK
-//#endif
 
 #define BRDF_CLEAR_COAT_D SPECULAR_D_GGX
 #define BRDF_CLEAR_COAT_V SPECULAR_V_KELEMEN
@@ -68,12 +62,7 @@ float D_GGX(float roughness, float NoH, const float3 h)
     // This computes 1.0 - NoH^2 directly (which is close to zero in the highlights and has
     // enough precision).
     // Overall this yields better performance, keeping all computations in mediump
-#if defined(TARGET_MOBILE)
-    float3  NxH                = cross(shading_normal, h);
-    float oneMinusNoHSquared = dot(NxH, NxH);
-#else
     float oneMinusNoHSquared = 1.0 - NoH * NoH;
-#endif
 
     float a = NoH * roughness;
     float k = roughness / (oneMinusNoHSquared + a * a);
@@ -125,14 +114,7 @@ float V_SmithGGXCorrelated_Fast(float roughness, float NoV, float NoL)
     return saturate(v);
 }
 
-float V_SmithGGXCorrelated_Anisotropic(float at,
-                                       float ab,
-                                       float ToV,
-                                       float BoV,
-                                       float ToL,
-                                       float BoL,
-                                       float NoV,
-                                       float NoL)
+float V_SmithGGXCorrelated_Anisotropic(float at, float ab, float ToV, float BoV, float ToL, float BoL, float NoV, float NoL)
 {
     // Heitz 2014, "Understanding the Masking-Shadowing Function in Microfacet-Based BRDFs"
     // TODO: lambdaV can be pre-computed for all the lights, it should be moved out of this function
@@ -166,7 +148,10 @@ float3 F_Schlick(const float3 f0, float VoH)
     return f + f0 * (1.0 - f);
 }
 
-float F_Schlick(float f0, float f90, float VoH) { return f0 + (f90 - f0) * pow5(1.0 - VoH); }
+float F_Schlick(float f0, float f90, float VoH)
+{
+    return f0 + (f90 - f0) * pow5(1.0 - VoH);
+}
 
 //------------------------------------------------------------------------------
 // Specular BRDF dispatch
@@ -191,12 +176,8 @@ float visibility(float roughness, float NoV, float NoL)
 float3 fresnel(const float3 f0, float LoH)
 {
 #if BRDF_SPECULAR_F == SPECULAR_F_SCHLICK
-//#if FILAMENT_QUALITY == FILAMENT_QUALITY_LOW
-//    return F_Schlick(f0, LoH); // f90 = 1.0
-//#else
     float f90 = saturate(dot(f0, float3(50.0 * 0.33)));
     return F_Schlick(f0, f90, LoH);
-//#endif
 #endif
 }
 
@@ -207,15 +188,7 @@ float distributionAnisotropic(float at, float ab, float ToH, float BoH, float No
 #endif
 }
 
-float visibilityAnisotropic(float roughness,
-                            float at,
-                            float ab,
-                            float ToV,
-                            float BoV,
-                            float ToL,
-                            float BoL,
-                            float NoV,
-                            float NoL)
+float visibilityAnisotropic(float roughness, float at, float ab, float ToV, float BoV, float ToL, float BoL, float NoV, float NoL)
 {
 #if BRDF_ANISOTROPIC_V == SPECULAR_V_SMITH_GGX
     return V_SmithGGXCorrelated(roughness, NoV, NoL);
@@ -256,7 +229,10 @@ float visibilityCloth(float NoV, float NoL)
 // Diffuse BRDF implementations
 //------------------------------------------------------------------------------
 
-float Fd_Lambert() { return 1.0 / PI; }
+float Fd_Lambert()
+{
+    return 1.0 / PI;
+}
 
 float Fd_Burley(float roughness, float NoV, float NoL, float LoH)
 {
@@ -268,7 +244,10 @@ float Fd_Burley(float roughness, float NoV, float NoL, float LoH)
 }
 
 // Energy conserving wrap diffuse term, does *not* include the divide by pi
-float Fd_Wrap(float NoL, float w) { return saturate((NoL + w) / sq(1.0 + w)); }
+float Fd_Wrap(float NoL, float w)
+{
+    return saturate((NoL + w) / ((1.0 + w) * (1.0 + w)));
+}
 
 //------------------------------------------------------------------------------
 // Diffuse BRDF dispatch
