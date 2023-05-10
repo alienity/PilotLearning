@@ -173,8 +173,6 @@ namespace Pilot
 
 	void BloomPass::update(RHI::RenderGraph& graph, DrawInputParameters& passInput, DrawOutputParameters& passOutput)
 	{
-        DrawInputParameters  drawPassInput  = passInput;
-        
         int kBloomWidth  = m_LumaLRDesc.Width;
         int kBloomHeight = m_LumaLRDesc.Height;
 
@@ -190,22 +188,22 @@ namespace Pilot
         RHI::RgResourceHandle m_aBloomUAV5Handle[2] = {graph.Create<RHI::D3D12Texture>(m_aBloomUAV5Desc[0]),
                                                        graph.Create<RHI::D3D12Texture>(m_aBloomUAV5Desc[1])};
 
+        auto inputSceneColorHandle = passInput.inputSceneColorHandle;
+        auto inputExposureHandle   = passInput.inputExposureHandle;
+
         RHI::RenderPass& generateBloomPass = graph.AddRenderPass("GenerateBloom");
 
-        generateBloomPass.Read(drawPassInput.inputSceneColorHandle);
-        generateBloomPass.Read(drawPassInput.inputExposureHandle);
+        generateBloomPass.Read(passInput.inputSceneColorHandle);
+        generateBloomPass.Read(passInput.inputExposureHandle);
         generateBloomPass.Write(m_aBloomUAV1Handle[0]);
         generateBloomPass.Write(m_LumaLRHandle);
-
-        passOutput.outputLumaLRHandle = m_LumaLRHandle;
-        passOutput.outputBloomHandle  = m_aBloomUAV1Handle[1];
 
         generateBloomPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
             RHI::D3D12ComputeContext* computeContext = context->GetComputeContext();
 
-            RHI::D3D12Texture* pInputSceneColor = registry->GetD3D12Texture(drawPassInput.inputSceneColorHandle);
+            RHI::D3D12Texture* pInputSceneColor = registry->GetD3D12Texture(inputSceneColorHandle);
             RHI::D3D12ShaderResourceView*  pInputSceneColorSRV = pInputSceneColor->GetDefaultSRV().get();
-            RHI::D3D12Buffer*              pInputExposure = registry->GetD3D12Buffer(drawPassInput.inputExposureHandle);
+            RHI::D3D12Buffer*              pInputExposure = registry->GetD3D12Buffer(inputExposureHandle);
             RHI::D3D12ShaderResourceView*  pInputExposureSRV = pInputExposure->GetDefaultSRV().get();
             RHI::D3D12Texture*             pOutputBloom1     = registry->GetD3D12Texture(m_aBloomUAV1Handle[0]);
             RHI::D3D12UnorderedAccessView* pOutputBloom1UAV  = pOutputBloom1->GetDefaultUAV().get();
@@ -347,12 +345,11 @@ namespace Pilot
             BlurBuffer(graph, m_aBloomUAV1Handle, m_aBloomUAV3Handle[1], upsampleBlendFactor);
         }
         
+        passOutput.outputLumaLRHandle = m_LumaLRHandle;
+        passOutput.outputBloomHandle  = m_aBloomUAV1Handle[1];
 	}
 
-    void BloomPass::BlurBuffer(RHI::RenderGraph&     graph,
-                               RHI::RgResourceHandle buffer[2],
-                               RHI::RgResourceHandle lowerResBuf,
-                               float                 upsampleBlendFactor)
+    void BloomPass::BlurBuffer(RHI::RenderGraph& graph, RHI::RgResourceHandle buffer[2], RHI::RgResourceHandle& lowerResBuf, float upsampleBlendFactor)
     {
         RHI::RenderPass& upsampleBloomPass = graph.AddRenderPass("UpSample");
 
@@ -361,9 +358,9 @@ namespace Pilot
             RHI::RgResourceHandle srcHandle = buffer[0];
             RHI::RgResourceHandle dstHandle = buffer[1];
 
-            upsampleBloomPass.Read(srcHandle);
+            upsampleBloomPass.Read(buffer[0]);
             upsampleBloomPass.Read(lowerResBuf);
-            upsampleBloomPass.Write(dstHandle);
+            upsampleBloomPass.Write(buffer[1]);
 
             upsampleBloomPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
                 RHI::D3D12ComputeContext* computeContext = context->GetComputeContext();
@@ -404,8 +401,8 @@ namespace Pilot
             RHI::RgResourceHandle srcHandle = buffer[0];
             RHI::RgResourceHandle dstHandle = buffer[1];
 
-            upsampleBloomPass.Read(srcHandle);
-            upsampleBloomPass.Write(dstHandle);
+            upsampleBloomPass.Read(buffer[0]);
+            upsampleBloomPass.Write(buffer[1]);
 
             upsampleBloomPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
                 RHI::D3D12ComputeContext* computeContext = context->GetComputeContext();

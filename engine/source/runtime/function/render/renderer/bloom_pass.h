@@ -49,10 +49,7 @@ namespace Pilot
         void destroy() override final;
 
     private:
-        void BlurBuffer(RHI::RenderGraph&     graph,
-                        RHI::RgResourceHandle buffer[2],
-                        RHI::RgResourceHandle lowerResBuf,
-                        float                 upsampleBlendFactor);
+        void BlurBuffer(RHI::RenderGraph& graph, RHI::RgResourceHandle buffer[2], RHI::RgResourceHandle& lowerResBuf, float upsampleBlendFactor);
 
     private:
         Shader                                   BloomExtractAndDownsampleHdrCS;
