@@ -69,19 +69,11 @@ namespace Pilot
         RenderResource() = default;
 
         virtual void uploadGlobalRenderResource(LevelResourceDesc level_resource_desc) override final;
+        virtual void uploadGameObjectRenderResource(RenderEntity render_entity, RenderMeshData mesh_data, RenderMaterialData material_data) override final;
+        virtual void uploadGameObjectRenderResource(RenderEntity render_entity, RenderMeshData mesh_data) override final;
+        virtual void uploadGameObjectRenderResource(RenderEntity render_entity, RenderMaterialData material_data) override final;
 
-        virtual void uploadGameObjectRenderResource(RenderEntity       render_entity,
-                                                    RenderMeshData     mesh_data,
-                                                    RenderMaterialData material_data) override final;
-
-        virtual void uploadGameObjectRenderResource(RenderEntity   render_entity,
-                                                    RenderMeshData mesh_data) override final;
-
-        virtual void uploadGameObjectRenderResource(RenderEntity       render_entity,
-                                                    RenderMaterialData material_data) override final;
-
-        virtual void updatePerFrameBuffer(std::shared_ptr<RenderScene>  render_scene,
-                                          std::shared_ptr<RenderCamera> camera) override final;
+        virtual void updatePerFrameBuffer(std::shared_ptr<RenderScene>  render_scene, std::shared_ptr<RenderCamera> camera) override final;
 
         D3D12Mesh& getEntityMesh(RenderEntity entity);
 
