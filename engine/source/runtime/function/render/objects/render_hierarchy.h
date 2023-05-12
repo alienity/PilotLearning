@@ -11,6 +11,11 @@ namespace RHI
 {
     class D3D12Buffer;
     class D3D12Texture;
+
+    class RenderCamera;
+    class RenderLight;
+    class RenderScene;
+    class MeshRenderer;
 }
 
 namespace Hierarchy
@@ -38,20 +43,22 @@ namespace Hierarchy
     struct Primitive;
     struct MeshData;
     struct Mesh;
+    struct PrimitiveBuffer;
+    struct MeshBuffer;
     struct MatTexture;
     struct Material;
-    struct PrimitiveRenderer;
+    struct MeshRenderer;
     struct Skin;
     struct AnimationChannel;
     struct AnimationSampler;
     struct Animation;
-    
+
 
     struct Config
     {
-        std::vector<Texture*> textures;
-        std::vector<Buffer*>  buffers;
-        float                 configVal;
+        std::vector<Image*>  textures;
+        std::vector<Buffer*> buffers;
+        float                configVal;
     };
 
     struct Level
@@ -119,6 +126,8 @@ namespace Hierarchy
         SpotLight     spotLight;
         DirecionLight directionLight;
         AmbientLight  ambientLight;
+
+        RHI::RenderLight* renderLight = nullptr;
     };
 
     enum CameraType
@@ -148,11 +157,16 @@ namespace Hierarchy
         CameraType         type;
         PerspectiveCamera  pers;
         OrthographicCamera orthos;
+
+        RHI::RenderCamera* renderCamera = nullptr;
     };
 
     struct Buffer
     {
         std::string uri = ""; // "buffer01.bin"
+
+        BufferData* bufferData;
+        RHI::D3D12Buffer* d3d12Buffer;
     };
 
     struct BufferData
@@ -197,6 +211,9 @@ namespace Hierarchy
     struct Image
     {
         std::string uri = ""; // "image01.png"
+
+        ImageData* imageData;
+        RHI::D3D12Texture* d3d12Texture;
     };
 
     struct ImageData
@@ -211,6 +228,8 @@ namespace Hierarchy
     struct Scene
     {
         std::vector<Node*> nodes;
+
+        RHI::RenderScene* renderScene;
     };
 
     class Node
@@ -225,8 +244,9 @@ namespace Hierarchy
 
         Camera* camera = nullptr;
         Light*  light  = nullptr;
-        Mesh*   mesh   = nullptr;
         Skin*   skin   = nullptr;
+
+        MeshRenderer* meshRenderer = nullptr;
     };
 
     enum PrimitiveMode
@@ -258,7 +278,6 @@ namespace Hierarchy
 
     struct Primitive
     {
-        PrimitiveMode     mode;
         BufferData        indicesPtr;
         InputAtributeMask mask;
         BufferData        verticesPtr;
@@ -269,15 +288,33 @@ namespace Hierarchy
         std::vector<Primitive> primitives;
     };
 
+    struct PrimitiveBuffer
+    {
+        InputAtributeMask mask;
+        int mesh_index_count;
+        std::shared_ptr<RHI::D3D12Buffer> p_mesh_index_buffer;
+        int mesh_vertex_count;
+        std::shared_ptr<RHI::D3D12Buffer> p_mesh_vertex_buffer;
+    };
+
+    struct MeshBuffer
+    {
+        std::vector<PrimitiveBuffer> primitiveBuffers;
+    };
+
+    // 所有的Mesh默认加载进来的InputPlayer都要求是一样的
     struct Mesh
     {
-        std::string url = "";
+        std::string uri = "";
+
+        MeshData* meshData;
+        MeshBuffer* d3d12MeshBuffer;
     };
 
     struct MatTexture
     {
-        Texture* texture;
-        int      texCoordIndex; // 对应到TEXCCORD_<n>
+        Texture texture;
+        int     texCoordIndex; // 对应到TEXCCORD_<n>
     };
 
     struct Material
@@ -302,10 +339,13 @@ namespace Hierarchy
         Pilot::Vector3 emissiveFactor; //"0.4, 0.8, 0.6";
     };
 
-    struct PrimitiveRenderer
+    struct MeshRenderer
     {
-        Mesh     mesh;
-        Material materialPtr; // 需要检查材质请求的texcoord的合理性
+        PrimitiveMode mode;
+        Mesh          mesh;
+        Material      materialPtr; // 需要检查材质请求的texcoord的合理性
+
+        RHI::MeshRenderer* meshRenderer;
     };
 
     //*********************
@@ -355,25 +395,14 @@ namespace Hierarchy
 
     //*********************
 
-    
-    struct PrimitiveBuffer
-    {
-        PrimitiveMode mode;
-        InputAtributeMask mask;
-        int mesh_index_count;
-        std::shared_ptr<RHI::D3D12Buffer> p_mesh_index_buffer;
-        int mesh_vertex_count;
-        std::shared_ptr<RHI::D3D12Buffer> p_mesh_vertex_buffer;
-    };
 
+    extern std::unordered_map<std::string, std::shared_ptr<MeshData>>   uri2MeshData;
+    extern std::unordered_map<std::string, std::shared_ptr<MeshBuffer>> uri2MeshBuffer;
 
-    std::unordered_map<std::string, std::shared_ptr<MeshData>>        uri2MeshData;
-    std::unordered_map<std::string, std::shared_ptr<PrimitiveBuffer>> uri2MeshBuffer;
+    extern std::unordered_map<std::string, std::shared_ptr<BufferData>>       uri2BufferData;
+    extern std::unordered_map<std::string, std::shared_ptr<RHI::D3D12Buffer>> uri2Buffer;
 
-    std::unordered_map<std::string, std::shared_ptr<BufferData>>       uri2BufferData;
-    std::unordered_map<std::string, std::shared_ptr<RHI::D3D12Buffer>> uri2Buffer;
-
-    std::unordered_map<std::string, std::shared_ptr<ImageData>>         uri2ImageData;
-    std::unordered_map<std::string, std::shared_ptr<RHI::D3D12Texture>> uri2Texture;
+    extern std::unordered_map<std::string, std::shared_ptr<ImageData>>         uri2ImageData;
+    extern std::unordered_map<std::string, std::shared_ptr<RHI::D3D12Texture>> uri2Texture;
 
 } // namespace Hierarchy
