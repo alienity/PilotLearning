@@ -30,9 +30,15 @@
 
 #define BRDF_DIFFUSE DIFFUSE_LAMBERT
 
+#if FILAMENT_QUALITY < FILAMENT_QUALITY_HIGH
+#define BRDF_SPECULAR_D SPECULAR_D_GGX
+#define BRDF_SPECULAR_V SPECULAR_V_SMITH_GGX_FAST
+#define BRDF_SPECULAR_F SPECULAR_F_SCHLICK
+#else
 #define BRDF_SPECULAR_D SPECULAR_D_GGX
 #define BRDF_SPECULAR_V SPECULAR_V_SMITH_GGX
 #define BRDF_SPECULAR_F SPECULAR_F_SCHLICK
+#endif
 
 #define BRDF_CLEAR_COAT_D SPECULAR_D_GGX
 #define BRDF_CLEAR_COAT_V SPECULAR_V_KELEMEN
@@ -175,7 +181,9 @@ float visibility(float roughness, float NoV, float NoL)
 
 float3 fresnel(const float3 f0, float LoH)
 {
-#if BRDF_SPECULAR_F == SPECULAR_F_SCHLICK
+#if FILAMENT_QUALITY == FILAMENT_QUALITY_LOW
+    return F_Schlick(f0, LoH); // f90 = 1.0
+#else
     float f90 = saturate(dot(f0, float3(50.0 * 0.33)));
     return F_Schlick(f0, f90, LoH);
 #endif
@@ -188,7 +196,8 @@ float distributionAnisotropic(float at, float ab, float ToH, float BoH, float No
 #endif
 }
 
-float visibilityAnisotropic(float roughness, float at, float ab, float ToV, float BoV, float ToL, float BoL, float NoV, float NoL)
+float visibilityAnisotropic(float roughness, float at, float ab, 
+    float ToV, float BoV, float ToL, float BoL, float NoV, float NoL)
 {
 #if BRDF_ANISOTROPIC_V == SPECULAR_V_SMITH_GGX
     return V_SmithGGXCorrelated(roughness, NoV, NoL);

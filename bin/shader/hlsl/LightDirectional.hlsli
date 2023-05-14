@@ -35,12 +35,7 @@ Light getDirectionalLight(const CommonShadingParams params, const FrameUniforms 
     return light;
 }
 
-void evaluateDirectionalLight(const PerRenderableData   objectUniforms,
-                              const CommonShadingParams params,
-                              const FrameUniforms       frameUniforms,
-                              const MaterialInputs      material,
-                              const PixelParams         pixel,
-                              inout float3              color)
+void evaluateDirectionalLight(const PerRenderableData objectUniforms, const CommonShadingParams params, const FrameUniforms frameUniforms, const MaterialInputs material, const PixelParams pixel, inout float3 color)
 {
 
     Light light = getDirectionalLight(params, frameUniforms);

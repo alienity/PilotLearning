@@ -10,7 +10,7 @@
  *
  * @public-api
  */
-float luminance(const float3 linear) { return dot(linear, float3(0.2126, 0.7152, 0.0722)); }
+float luminance(const float3 mlinear) { return dot(mlinear, float3(0.2126, 0.7152, 0.0722)); }
 
 /**
  * Computes the pre-exposed intensity using the specified intensity and exposure.
@@ -31,22 +31,12 @@ void unpremultiply(inout float4 color) { color.rgb /= max(color.a, FLT_EPS); }
 float3 ycbcrToRgb(float luminance, float2 cbcr)
 {
     // Taken from https://developer.apple.com/documentation/arkit/arframe/2867984-capturedimage
-    const float4x4 ycbcrToRgbTransform = float4x4(1.0000,
-                                                  1.0000,
-                                                  1.0000,
-                                                  0.0000,
-                                                  0.0000,
-                                                  -0.3441,
-                                                  1.7720,
-                                                  0.0000,
-                                                  1.4020,
-                                                  -0.7141,
-                                                  0.0000,
-                                                  0.0000,
-                                                  -0.7010,
-                                                  0.5291,
-                                                  -0.8860,
-                                                  1.0000);
+    const float4x4 ycbcrToRgbTransform = float4x4(
+             1.0000,  1.0000,  1.0000,  0.0000,
+             0.0000, -0.3441,  1.7720,  0.0000,
+             1.4020, -0.7141,  0.0000,  0.0000,
+            -0.7010,  0.5291, -0.8860,  1.0000
+        );
     return (ycbcrToRgbTransform * float4(luminance, cbcr, 1.0)).rgb;
 }
 

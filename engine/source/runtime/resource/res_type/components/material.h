@@ -34,19 +34,31 @@ namespace Pilot
         std::string m_normal_texture_file;
         std::string m_occlusion_texture_file;
         std::string m_emissive_texture_file;
+
+        float _specularAntiAliasingVariance {0};
+        float _specularAntiAliasingThreshold {0};
     };
 
     inline bool operator==(const MaterialRes& lhs, const MaterialRes& rhs)
     {
-        return lhs.m_blend == rhs.m_blend && lhs.m_double_sided == rhs.m_double_sided &&
-               lhs.m_base_color_factor == rhs.m_base_color_factor && lhs.m_metallic_factor == rhs.m_metallic_factor &&
-               lhs.m_roughness_factor == rhs.m_roughness_factor && lhs.m_normal_scale == rhs.m_normal_scale &&
-               lhs.m_occlusion_strength == rhs.m_occlusion_strength && lhs.m_emissive_factor == rhs.m_emissive_factor &&
-               lhs.m_base_colour_texture_file == rhs.m_base_colour_texture_file &&
-               lhs.m_metallic_roughness_texture_file == rhs.m_metallic_roughness_texture_file &&
-               lhs.m_normal_texture_file == rhs.m_normal_texture_file &&
-               lhs.m_occlusion_texture_file == rhs.m_occlusion_texture_file &&
-               lhs.m_emissive_texture_file == rhs.m_emissive_texture_file;
+#define MatPropEqual(a) lhs.a == rhs.a
+
+
+        return MatPropEqual(m_blend) &&
+               MatPropEqual(m_double_sided) && 
+               MatPropEqual(m_base_color_factor) && 
+               MatPropEqual(m_metallic_factor) && 
+               MatPropEqual(m_roughness_factor) && 
+               MatPropEqual(m_normal_scale) && 
+               MatPropEqual(m_occlusion_strength) && 
+               MatPropEqual(m_emissive_factor) && 
+               MatPropEqual(m_base_colour_texture_file) && 
+               MatPropEqual(m_metallic_roughness_texture_file) && 
+               MatPropEqual(m_normal_texture_file) && 
+               MatPropEqual(m_occlusion_texture_file) && 
+               MatPropEqual(m_emissive_texture_file) && 
+               MatPropEqual(_specularAntiAliasingVariance) && 
+               MatPropEqual(_specularAntiAliasingThreshold);
     }
     inline bool operator!=(const MaterialRes& lhs, const MaterialRes& rhs) { return !(lhs == rhs); }
 

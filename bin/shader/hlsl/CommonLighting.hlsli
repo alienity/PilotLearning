@@ -102,12 +102,12 @@ float3 getReflectedVector(const PixelParams pixel, const float3 v, const float3 
     return r;
 }
 
-void getAnisotropyPixelParams(const MaterialInputs material, inout PixelParams pixel)
+void getAnisotropyPixelParams(const CommonShadingParams commonShadingParams,  const MaterialInputs material, inout PixelParams pixel)
 {
 #if defined(MATERIAL_HAS_ANISOTROPY)
     float3 direction   = material.anisotropyDirection;
     pixel.anisotropy   = material.anisotropy;
-    pixel.anisotropicT = normalize(shading_tangentToWorld * direction);
-    pixel.anisotropicB = normalize(cross(getWorldGeometricNormalVector(), pixel.anisotropicT));
+    pixel.anisotropicT = normalize(getWorldTangentFrame(commonShadingParams) * direction);
+    pixel.anisotropicB = normalize(cross(getWorldGeometricNormalVector(commonShadingParams), pixel.anisotropicT));
 #endif
 }

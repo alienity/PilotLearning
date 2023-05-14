@@ -38,10 +38,7 @@ float getTime(FrameUniforms frameUniforms) { return frameUniforms.time; }
 
 float4 getUserTime(FrameUniforms frameUniforms) { return frameUniforms.userTime; }
 
-float getUserTimeMod(FrameUniforms frameUniforms, float m)
-{
-    return fmod(fmod(frameUniforms.userTime.x, m) + fmod(frameUniforms.userTime.y, m), m);
-}
+float getUserTimeMod(FrameUniforms frameUniforms, float m) { return fmod(fmod(frameUniforms.userTime.x, m) + fmod(frameUniforms.userTime.y, m), m); }
 
 #define FILAMENT_OBJECT_SKINNING_ENABLED_BIT 0x100u
 #define FILAMENT_OBJECT_MORPHING_ENABLED_BIT 0x200u

@@ -31,16 +31,6 @@ struct VertexOutput
     float4 tangent : TANGENT;
 };
 
-void PrepareMaterial(inout MaterialInputs material)
-{
-
-}
-
-float3 SurfaceShading(const MaterialInputs materialInputs, const ShadingData shadingData, const LightData lightData)
-{
-    return float3(0, 0, 0);
-}
-
 VertexOutput VSMain(VertexInput input)
 {
     VertexOutput output;

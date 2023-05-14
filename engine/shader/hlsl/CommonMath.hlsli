@@ -22,16 +22,24 @@ static const float FLT_MAX = asfloat(0x7F7FFFFF);
 // Scalar operations
 //------------------------------------------------------------------------------
 
+// Computes x^5 using only multiply operations.
 float pow5(float x)
 {
     float x2 = x * x;
     return x2 * x2 * x;
 }
 
+// Computes x^2 as a single multiplication.
+float sq(float x)
+{
+    return x * x;
+}
+
 //------------------------------------------------------------------------------
 // Vector operations
 //------------------------------------------------------------------------------
 
+// Returns the maximum component of the specified vector.
 float max3(const float3 v) { return max(v.x, max(v.y, v.z)); }
 
 float fmax(const float2 v) { return max(v.x, v.y); }
@@ -40,6 +48,7 @@ float fmax(const float3 v) { return max(v.x, max(v.y, v.z)); }
 
 float fmax(const float4 v) { return max(max(v.x, v.y), max(v.y, v.z)); }
 
+// Returns the minimum component of the specified vector.
 float min3(const float3 v) { return min(v.x, min(v.y, v.z)); }
 
 float fmin(const float2 v) { return min(v.x, v.y); }

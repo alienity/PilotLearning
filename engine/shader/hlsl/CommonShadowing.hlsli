@@ -13,11 +13,8 @@
  * Normal bias is not used for VSM.
  */
 
-float4 computeLightSpacePosition(float3         p,
-                                 const float3   n,
-                                 const float3   dir,
-                                 const float    b,
-                                 const float4x4 lightFromWorldMatrix)
+float4 computeLightSpacePosition(float3 p, const float3 n, 
+    const float3 dir, const float b, const float4x4 lightFromWorldMatrix)
 {
 
 #if !defined(VARIANT_HAS_VSM)
