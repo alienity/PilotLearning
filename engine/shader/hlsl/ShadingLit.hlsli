@@ -147,7 +147,7 @@ void getCommonPixelParams(const MaterialParams materialParams, const MaterialInp
 #endif
 }
 
-void getSheenPixelParams(const CommonShadingParams params, const MaterialInputs material, inout PixelParams pixel) {
+void getSheenPixelParams(const CommonShadingStruct params, const MaterialInputs material, inout PixelParams pixel) {
 #if defined(MATERIAL_HAS_SHEEN_COLOR) && !defined(SHADING_MODEL_CLOTH) && !defined(SHADING_MODEL_SUBSURFACE)
     pixel.sheenColor = material.sheenColor;
 
@@ -164,7 +164,7 @@ void getSheenPixelParams(const CommonShadingParams params, const MaterialInputs 
 #endif
 }
 
-void getClearCoatPixelParams(const CommonShadingParams params, const MaterialInputs material, inout PixelParams pixel) {
+void getClearCoatPixelParams(const CommonShadingStruct params, const MaterialInputs material, inout PixelParams pixel) {
 #if defined(MATERIAL_HAS_CLEAR_COAT)
     pixel.clearCoat = material.clearCoat;
 
@@ -191,7 +191,7 @@ void getClearCoatPixelParams(const CommonShadingParams params, const MaterialInp
 #endif
 }
 
-void getRoughnessPixelParams(const CommonShadingParams params, const MaterialInputs material, inout PixelParams pixel) {
+void getRoughnessPixelParams(const CommonShadingStruct params, const MaterialInputs material, inout PixelParams pixel) {
 #if defined(SHADING_MODEL_SPECULAR_GLOSSINESS)
     float perceptualRoughness = computeRoughnessFromGlossiness(material.glossiness);
 #else
@@ -255,7 +255,7 @@ void getEnergyCompensationPixelParams(inout PixelParams pixel) {
  * This function is also responsible for discarding the fragment when alpha
  * testing fails.
  */
-void getPixelParams(const MaterialParams materialParams, const CommonShadingParams params, const MaterialInputs material, out PixelParams pixel) {
+void getPixelParams(const MaterialParams materialParams, const CommonShadingStruct params, const MaterialInputs material, out PixelParams pixel) {
     getCommonPixelParams(materialParams, material, pixel);
     getSheenPixelParams(params, material, pixel);
     getClearCoatPixelParams(params, material, pixel);
@@ -275,7 +275,7 @@ void getPixelParams(const MaterialParams materialParams, const CommonShadingPara
  *
  * Returns a pre-exposed HDR RGBA color in linear space.
  */
-float4 evaluateLights(const MaterialParams materialParams, const CommonShadingParams params, const MaterialInputs material) {
+float4 evaluateLights(const MaterialParams materialParams, const CommonShadingStruct params, const MaterialInputs material) {
     PixelParams pixel;
     getPixelParams(materialParams, params, material, pixel);
 
@@ -319,7 +319,7 @@ void addEmissive(const MaterialInputs material, inout float4 color) {
  *
  * Returns a pre-exposed HDR RGBA color in linear space.
  */
-float4 evaluateMaterial(const MaterialParams materialParams, const CommonShadingParams params, const MaterialInputs material) {
+float4 evaluateMaterial(const MaterialParams materialParams, const CommonShadingStruct params, const MaterialInputs material) {
     float4 color = evaluateLights(materialParams, params, material);
     addEmissive(material, color);
     return color;

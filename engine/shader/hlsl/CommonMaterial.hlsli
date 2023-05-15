@@ -1,10 +1,5 @@
 #pragma once
 
-struct MaterialParams
-{
-    float _maskThreshold;
-};
-
 #define MIN_PERCEPTUAL_ROUGHNESS 0.045
 #define MIN_ROUGHNESS 0.002025
 
@@ -26,15 +21,30 @@ float3 computeF0(const float4 baseColor, float metallic, float reflectance)
     return baseColor.rgb * metallic + (reflectance * (1.0 - metallic));
 }
 
-float computeDielectricF0(float reflectance) { return 0.16 * reflectance * reflectance; }
+float computeDielectricF0(float reflectance)
+{
+    return 0.16 * reflectance * reflectance;
+}
 
-float computeMetallicFromSpecularColor(const float3 specularColor) { return max3(specularColor); }
+float computeMetallicFromSpecularColor(const float3 specularColor)
+{
+    return max3(specularColor);
+}
 
-float computeRoughnessFromGlossiness(float glossiness) { return 1.0 - glossiness; }
+float computeRoughnessFromGlossiness(float glossiness)
+{
+    return 1.0 - glossiness;
+}
 
-float perceptualRoughnessToRoughness(float perceptualRoughness) { return perceptualRoughness * perceptualRoughness; }
+float perceptualRoughnessToRoughness(float perceptualRoughness)
+{
+    return perceptualRoughness * perceptualRoughness;
+}
 
-float roughnessToPerceptualRoughness(float roughness) { return sqrt(roughness); }
+float roughnessToPerceptualRoughness(float roughness)
+{ 
+    return sqrt(roughness);
+}
 
 float iorToF0(float transmittedIor, float incidentIor)
 {

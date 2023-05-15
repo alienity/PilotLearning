@@ -2,7 +2,7 @@
 
 // These variables should be in a struct but some GPU drivers ignore the
 // precision qualifier on individual struct members
-struct CommonShadingParams
+struct CommonShadingStruct
 {
     float3x3 shading_tangentToWorld;  // TBN matrix
     float3   shading_position;        // position of the fragment in world space
