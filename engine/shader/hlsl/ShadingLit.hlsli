@@ -275,9 +275,9 @@ void getPixelParams(const MaterialParams materialParams, const CommonShadingStru
  *
  * Returns a pre-exposed HDR RGBA color in linear space.
  */
-float4 evaluateLights(const MaterialParams materialParams, const CommonShadingStruct params, const MaterialInputs material) {
+float4 evaluateLights(const FramUniforms frameUniforms, const MaterialParams materialParams, const CommonShadingStruct commonShadingStruct, const MaterialInputs materialInputs) {
     PixelParams pixel;
-    getPixelParams(materialParams, params, material, pixel);
+    getPixelParams(materialParams, commonShadingStruct, materialInputs, pixel);
 
     // Ideally we would keep the diffuse and specular components separate
     // until the very end but it costs more ALUs on mobile. The gains are
@@ -305,10 +305,10 @@ float4 evaluateLights(const MaterialParams materialParams, const CommonShadingSt
     return float4(color, computeDiffuseAlpha(material.baseColor.a));
 }
 
-void addEmissive(const MaterialInputs material, inout float4 color) {
+void addEmissive(const FramUniforms frameUniforms, const MaterialInputs material, inout float4 color) {
 #if defined(MATERIAL_HAS_EMISSIVE)
     float4 emissive = material.emissive;
-    float attenuation = lerp(1.0, getExposure(), emissive.w);
+    float attenuation = lerp(1.0, getExposure(frameUniforms), emissive.w);
     color.rgb += emissive.rgb * (attenuation * color.a);
 #endif
 }
@@ -319,9 +319,9 @@ void addEmissive(const MaterialInputs material, inout float4 color) {
  *
  * Returns a pre-exposed HDR RGBA color in linear space.
  */
-float4 evaluateMaterial(const MaterialParams materialParams, const CommonShadingStruct params, const MaterialInputs material) {
-    float4 color = evaluateLights(materialParams, params, material);
-    addEmissive(material, color);
+float4 evaluateMaterial(const FramUniforms frameUniforms, const MaterialParams materialParams, const CommonShadingStruct commonShadingStruct, const MaterialInputs materialInputs) {
+    float4 color = evaluateLights(frameUniforms, materialParams, commonShadingStruct, materialInputs);
+    addEmissive(frameUniforms, material, color);
     return color;
 }
 

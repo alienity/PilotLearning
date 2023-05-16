@@ -31,7 +31,7 @@ float computeMaskedAlpha(float a, const MaterialParams materialParams)
  * This is mostly useful in AR to cast shadows on unlit transparent shadow
  * receiving planes.
  */
-float4 evaluateMaterial(const MaterialInputs material, const MaterialParams materialParams, const FrameUniforms frameUniforms)
+float4 evaluateMaterial(const FramUniforms frameUniforms, const MaterialInputs material, const MaterialParams materialParams, const FrameUniforms frameUniforms)
 {
     float4 color = material.baseColor;
 

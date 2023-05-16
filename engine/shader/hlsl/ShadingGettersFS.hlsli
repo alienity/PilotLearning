@@ -73,7 +73,7 @@ float3 getWorldNormalVector(const CommonShadingStruct params)
 
 float3 getWorldGeometricNormalVector(const CommonShadingStruct params)
 { 
-    return params.shading_geometricNormal; 
+    return params.shading_geometricNormal;
 }
 
 float3 getWorldReflectedVector(const CommonShadingStruct params)
