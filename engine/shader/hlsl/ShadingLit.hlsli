@@ -128,12 +128,12 @@ void getCommonPixelParams(const MaterialParams materialParams, const MaterialInp
 #endif
 #if defined(MATERIAL_HAS_ABSORPTION)
 #if defined(MATERIAL_HAS_THICKNESS) || defined(MATERIAL_HAS_MICRO_THICKNESS)
-    pixel.absorption = max(vec3(0.0), material.absorption);
+    pixel.absorption = max(float3(0.0), material.absorption);
 #else
     pixel.absorption = saturate(material.absorption);
 #endif
 #else
-    pixel.absorption   = vec3(0.0);
+    pixel.absorption   = float3(0.0);
 #endif
 #if defined(MATERIAL_HAS_THICKNESS)
     pixel.thickness = max(0.0, material.thickness);
@@ -147,7 +147,7 @@ void getCommonPixelParams(const MaterialParams materialParams, const MaterialInp
 #endif
 }
 
-void getSheenPixelParams(const CommonShadingStruct params, const MaterialInputs material, inout PixelParams pixel) {
+void getSheenPixelParams(const MaterialParams materialParams, const CommonShadingStruct commonShadingStruct, const MaterialInputs material, inout PixelParams pixel) {
 #if defined(MATERIAL_HAS_SHEEN_COLOR) && !defined(SHADING_MODEL_CLOTH) && !defined(SHADING_MODEL_SUBSURFACE)
     pixel.sheenColor = material.sheenColor;
 
@@ -156,7 +156,7 @@ void getSheenPixelParams(const CommonShadingStruct params, const MaterialInputs 
 
 #if defined(GEOMETRIC_SPECULAR_AA)
     sheenPerceptualRoughness =
-            normalFiltering(sheenPerceptualRoughness, getWorldGeometricNormalVector(params));
+        normalFiltering(sheenPerceptualRoughness, getWorldGeometricNormalVector(commonShadingStruct), materialParams);
 #endif
 
     pixel.sheenPerceptualRoughness = sheenPerceptualRoughness;
@@ -164,7 +164,7 @@ void getSheenPixelParams(const CommonShadingStruct params, const MaterialInputs 
 #endif
 }
 
-void getClearCoatPixelParams(const CommonShadingStruct params, const MaterialInputs material, inout PixelParams pixel) {
+void getClearCoatPixelParams(const MaterialParams materialParams, const CommonShadingStruct params, const MaterialInputs material, inout PixelParams pixel) {
 #if defined(MATERIAL_HAS_CLEAR_COAT)
     pixel.clearCoat = material.clearCoat;
 
@@ -175,7 +175,7 @@ void getClearCoatPixelParams(const CommonShadingStruct params, const MaterialInp
 
 #if defined(GEOMETRIC_SPECULAR_AA)
     clearCoatPerceptualRoughness =
-            normalFiltering(clearCoatPerceptualRoughness, getWorldGeometricNormalVector(params));
+        normalFiltering(clearCoatPerceptualRoughness, getWorldGeometricNormalVector(params), materialParams);
 #endif
 
     pixel.clearCoatPerceptualRoughness = clearCoatPerceptualRoughness;
@@ -191,7 +191,7 @@ void getClearCoatPixelParams(const CommonShadingStruct params, const MaterialInp
 #endif
 }
 
-void getRoughnessPixelParams(const CommonShadingStruct params, const MaterialInputs material, inout PixelParams pixel) {
+void getRoughnessPixelParams(const MaterialParams materialParams, const CommonShadingStruct params, const MaterialInputs material, inout PixelParams pixel) {
 #if defined(SHADING_MODEL_SPECULAR_GLOSSINESS)
     float perceptualRoughness = computeRoughnessFromGlossiness(material.glossiness);
 #else
@@ -202,7 +202,7 @@ void getRoughnessPixelParams(const CommonShadingStruct params, const MaterialInp
     pixel.perceptualRoughnessUnclamped = perceptualRoughness;
 
 #if defined(GEOMETRIC_SPECULAR_AA)
-    perceptualRoughness = normalFiltering(perceptualRoughness, getWorldGeometricNormalVector(params));
+    perceptualRoughness = normalFiltering(perceptualRoughness, getWorldGeometricNormalVector(params), materialParams);
 #endif
 
 #if defined(MATERIAL_HAS_CLEAR_COAT) && defined(MATERIAL_HAS_CLEAR_COAT_ROUGHNESS)
@@ -227,21 +227,21 @@ void getSubsurfacePixelParams(const MaterialInputs material, inout PixelParams p
 #endif
 }
 
-void getEnergyCompensationPixelParams(inout PixelParams pixel) {
+void getEnergyCompensationPixelParams(const CommonShadingStruct commonShadingStruct, inout PixelParams pixel) {
     // Pre-filtered DFG term used for image-based lighting
-    pixel.dfg = prefilteredDFG(pixel.perceptualRoughness, shading_NoV);
+    pixel.dfg = prefilteredDFG(pixel.perceptualRoughness, commonShadingStruct.shading_NoV);
 
 #if !defined(SHADING_MODEL_CLOTH)
     // Energy compensation for multiple scattering in a microfacet model
     // See "Multiple-Scattering Microfacet BSDFs with the Smith Model"
     pixel.energyCompensation = 1.0 + pixel.f0 * (1.0 / pixel.dfg.y - 1.0);
 #else
-    pixel.energyCompensation = vec3(1.0);
+    pixel.energyCompensation = float3(1.0);
 #endif
 
 #if !defined(SHADING_MODEL_CLOTH)
 #if defined(MATERIAL_HAS_SHEEN_COLOR)
-    pixel.sheenDFG = prefilteredDFG(pixel.sheenPerceptualRoughness, shading_NoV).z;
+    pixel.sheenDFG = prefilteredDFG(pixel.sheenPerceptualRoughness, commonShadingStruct.shading_NoV).z;
     pixel.sheenScaling = 1.0 - max3(pixel.sheenColor) * pixel.sheenDFG;
 #endif
 #endif
@@ -255,14 +255,14 @@ void getEnergyCompensationPixelParams(inout PixelParams pixel) {
  * This function is also responsible for discarding the fragment when alpha
  * testing fails.
  */
-void getPixelParams(const MaterialParams materialParams, const CommonShadingStruct params, const MaterialInputs material, out PixelParams pixel) {
-    getCommonPixelParams(materialParams, material, pixel);
-    getSheenPixelParams(params, material, pixel);
-    getClearCoatPixelParams(params, material, pixel);
-    getRoughnessPixelParams(params, material, pixel);
-    getSubsurfacePixelParams(material, pixel);
-    getAnisotropyPixelParams(material, pixel);
-    getEnergyCompensationPixelParams(pixel);
+void getPixelParams(const MaterialParams materialParams, const CommonShadingStruct commonShadingStruct, const MaterialInputs materialInputs, out PixelParams pixel) {
+    getCommonPixelParams(materialParams, materialInputs, pixel);
+    getSheenPixelParams(materialParams, commonShadingStruct, materialInputs, pixel);
+    getClearCoatPixelParams(materialParams, commonShadingStruct, materialInputs, pixel);
+    getRoughnessPixelParams(materialParams, commonShadingStruct, materialInputs, pixel);
+    getSubsurfacePixelParams(materialInputs, pixel);
+    getAnisotropyPixelParams(commonShadingStruct, materialInputs, pixel);
+    getEnergyCompensationPixelParams(commonShadingStruct, pixel);
 }
 
 /**
