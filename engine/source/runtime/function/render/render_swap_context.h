@@ -1,7 +1,7 @@
 #pragma once
 
 #include "runtime/function/render/render_camera.h"
-#include "runtime/function/render/render_object.h"
+#include "runtime/function/render/render_common.h"
 #include "runtime/resource/res_type/global/global_rendering.h"
 
 #include <cstdint>
@@ -40,10 +40,10 @@ namespace Pilot
     {
         std::deque<GameObjectDesc> m_game_object_descs;
 
-        void                       add(GameObjectDesc desc);
-        bool                       isEmpty() const;
-        GameObjectDesc             getNextProcessObject();
-        void                       popProcessObject();
+        void           add(GameObjectDesc desc);
+        bool           isEmpty() const;
+        GameObjectDesc getNextProcessObject();
+        void           popProcessObject();
     };
 
     struct RenderSwapData

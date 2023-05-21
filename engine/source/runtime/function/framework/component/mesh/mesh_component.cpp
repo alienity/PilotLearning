@@ -33,28 +33,24 @@ namespace Pilot
         m_material_desc.m_blend        = new_material_res.m_blend;
         m_material_desc.m_double_sided = new_material_res.m_double_sided;
 
-        m_material_desc.m_with_texture = !new_material_res.m_base_colour_texture_file.empty();
+        #define DescFromResProp(descPropName, resPropName) m_material_desc.descPropName = new_material_res.resPropName;
 
-        m_material_desc.m_base_color_factor  = new_material_res.m_base_color_factor;
-        m_material_desc.m_metallic_factor    = new_material_res.m_metallic_factor;
-        m_material_desc.m_roughness_factor   = new_material_res.m_roughness_factor;
-        m_material_desc.m_normal_scale       = new_material_res.m_normal_scale;
-        m_material_desc.m_occlusion_strength = new_material_res.m_occlusion_strength;
-        m_material_desc.m_emissive_factor    = new_material_res.m_emissive_factor;
+        DescFromResProp(m_base_color_factor, m_base_color_factor)
+        DescFromResProp(m_metallic_factor, m_metallic_factor)
+        DescFromResProp(m_roughness_factor, m_roughness_factor)
+        DescFromResProp(m_normal_scale, m_normal_scale)
+        DescFromResProp(m_occlusion_strength, m_occlusion_strength)
+        DescFromResProp(m_emissive_factor, m_emissive_factor)
 
-        if (m_material_desc.m_with_texture)
-        {
-            m_material_desc.m_base_color_texture_file =
-                asset_manager->getFullPath(new_material_res.m_base_colour_texture_file).generic_string();
-            m_material_desc.m_metallic_roughness_texture_file =
-                asset_manager->getFullPath(new_material_res.m_metallic_roughness_texture_file).generic_string();
-            m_material_desc.m_normal_texture_file =
-                asset_manager->getFullPath(new_material_res.m_normal_texture_file).generic_string();
-            m_material_desc.m_occlusion_texture_file =
-                asset_manager->getFullPath(new_material_res.m_occlusion_texture_file).generic_string();
-            m_material_desc.m_emissive_texture_file =
-                asset_manager->getFullPath(new_material_res.m_emissive_texture_file).generic_string();
-        }
+        #define DescFromResFile(descFileName, resFileName) \
+    if (!new_material_res.resFileName.empty()) \
+        m_material_desc.descFileName = asset_manager->getFullPath(new_material_res.resFileName).generic_string();
+
+        DescFromResFile(m_base_color_texture_file, m_base_color_texture_file)
+        DescFromResFile(m_metallic_roughness_texture_file, m_metallic_roughness_texture_file)
+        DescFromResFile(m_normal_texture_file, m_normal_texture_file)
+        DescFromResFile(m_occlusion_texture_file, m_occlusion_texture_file)
+        DescFromResFile(m_emissive_texture_file, m_emissive_texture_file)
 
         return m_material_desc;
     }

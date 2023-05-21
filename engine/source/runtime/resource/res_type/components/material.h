@@ -29,7 +29,7 @@ namespace Pilot
         float   m_occlusion_strength {1.0f};
         Vector3 m_emissive_factor {0.0f, 0.0f, 0.0f};
 
-        std::string m_base_colour_texture_file;
+        std::string m_base_color_texture_file;
         std::string m_metallic_roughness_texture_file;
         std::string m_normal_texture_file;
         std::string m_occlusion_texture_file;
@@ -52,7 +52,7 @@ namespace Pilot
                MatPropEqual(m_normal_scale) && 
                MatPropEqual(m_occlusion_strength) && 
                MatPropEqual(m_emissive_factor) && 
-               MatPropEqual(m_base_colour_texture_file) && 
+               MatPropEqual(m_base_color_texture_file) && 
                MatPropEqual(m_metallic_roughness_texture_file) && 
                MatPropEqual(m_normal_texture_file) && 
                MatPropEqual(m_occlusion_texture_file) && 

@@ -41,6 +41,13 @@ float getMaskThreshold(MaterialParams materialParams)
 }
 #endif
 
+#if defined(MATERIAL_HAS_DOUBLE_SIDED_CAPABILITY)
+bool isDoubleSided(MaterialParams materialParams) 
+{ 
+    return materialParams._doubleSided; 
+}
+#endif
+
 float3x3 getWorldTangentFrame(const CommonShadingStruct params) 
 { 
     return params.shading_tangentToWorld;
@@ -92,21 +99,6 @@ float3 getNormalizedPhysicalViewportCoord(const CommonShadingStruct params)
     return float3(params.shading_normalizedViewportCoord, SV_Position.z);
 }
 
-/**
- * Returns the normalized [0, 1] logical viewport coordinates with the origin at the viewport's
- * bottom-left. Z coordinate is in the [1, 0] range (reversed).
- *
- * @public-api
- */
-float3 getNormalizedViewportCoord(const CommonShadingStruct params, const FrameUniforms frameUniforms)
-{
-    // make sure to handle our reversed-z
-    float2 scale     = frameUniforms.logicalViewportScale;
-    float2 offset    = frameUniforms.logicalViewportOffset;
-    float2 logicalUv = params.shading_normalizedViewportCoord * scale + offset;
-    return float3(logicalUv, SV_Position.z);
-}
-
 #if defined(VARIANT_HAS_SHADOWING) && defined(VARIANT_HAS_DYNAMIC_LIGHTING)
 float4 getSpotLightSpacePosition(const ShadowUniforms shadowUniforms, const CommonShadingStruct params, uint index, float3 dir, float zLight)
 {
@@ -116,13 +108,6 @@ float4 getSpotLightSpacePosition(const ShadowUniforms shadowUniforms, const Comm
     float bias = shadowUniforms.shadows[index].normalBias * zLight;
 
     return computeLightSpacePosition(getWorldPosition(params), getWorldNormalVector(params), dir, bias, lightFromWorldMatrix);
-}
-#endif
-
-#if defined(MATERIAL_HAS_DOUBLE_SIDED_CAPABILITY)
-bool isDoubleSided(MaterialParams materialParams) 
-{ 
-    return materialParams._doubleSided; 
 }
 #endif
 

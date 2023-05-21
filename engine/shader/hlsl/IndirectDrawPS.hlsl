@@ -83,6 +83,7 @@ float4 VSMain(VaringStruct varingStruct) : SV_Target0
     FramUniforms   frameUniforms; 
     MaterialParams materialParams;
     MaterialInputs materialInput;
+    PerRenderableData perRenderableData;
 
     computeShadingParams(materialParams, varingStruct, commonShadingStruct);
 

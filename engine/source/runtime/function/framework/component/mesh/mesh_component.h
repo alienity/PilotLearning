@@ -5,7 +5,7 @@
 #include "runtime/resource/res_type/components/mesh.h"
 #include "runtime/resource/res_type/components/material.h"
 
-#include "runtime/function/render/render_object.h"
+#include "runtime/function/render/render_common.h"
 
 #include <vector>
 #include <map>
@@ -14,12 +14,12 @@ namespace Pilot
 {
     class RenderSwapContext;
 
-    REFLECTION_TYPE(MeshComponent)
-    CLASS(MeshComponent : public Component, WhiteListFields)
+    REFLECTION_TYPE(MeshRendererComponent)
+    CLASS(MeshRendererComponent : public Component, WhiteListFields)
     {
-        REFLECTION_BODY(MeshComponent)
+        REFLECTION_BODY(MeshRendererComponent)
     public:
-        MeshComponent() {};
+        MeshRendererComponent() {};
 
         void reset();
 

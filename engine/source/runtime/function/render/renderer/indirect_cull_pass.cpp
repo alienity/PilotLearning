@@ -147,7 +147,7 @@ namespace Pilot
 
     void IndirectCullPass::prepareBuffer()
     {
-        if (m_visiable_nodes.p_directional_light != nullptr && m_visiable_nodes.p_directional_light->m_is_active)
+        if (m_visiable_nodes.p_directional_light != nullptr)
         {
             if (dirShadowmapCommandBuffer.m_gobject_id != m_visiable_nodes.p_directional_light->m_gobject_id ||
                 dirShadowmapCommandBuffer.m_gcomponent_id != m_visiable_nodes.p_directional_light->m_gcomponent_id)
@@ -197,13 +197,13 @@ namespace Pilot
                     }
                 }
 
-                if (!curSpotLightDesc.m_is_active && curSpotLighBufferExist)
+                if (curSpotLighBufferExist)
                 {
                     spotShadowmapCommandBuffer[curBufferIndex].Reset();
                     spotShadowmapCommandBuffer.erase(spotShadowmapCommandBuffer.begin() + curBufferIndex);
                 }
 
-                if (curSpotLightDesc.m_is_active && !curSpotLighBufferExist)
+                if (!curSpotLighBufferExist)
                 {
                     ShadowmapCommandBuffer spotShadowCommandBuffer = {};
 

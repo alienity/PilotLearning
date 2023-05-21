@@ -3,7 +3,7 @@
 #include <atomic>
 #include <limits>
 
-namespace Pilot
+namespace MoYu
 {
 #define KRootId(ObjName) K_Root_##ObjName##_Id
 #define KInvalidId(ObjName) K_Invalid_##ObjName##_Id
@@ -20,9 +20,9 @@ namespace Pilot
         static std::atomic<G##ObjName##ID> m_next_id;\
     };\
 
-    DefineObjectIDAlloc(Internal)
+    //DefineObjectIDAlloc(Internal)
     DefineObjectIDAlloc(Object)
     DefineObjectIDAlloc(Component)
-    DefineObjectIDAlloc(Instance)
+    //DefineObjectIDAlloc(Instance)
 
-} // namespace Pilot
+} // namespace MoYu

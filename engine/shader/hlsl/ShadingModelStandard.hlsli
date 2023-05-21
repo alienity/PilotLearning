@@ -101,13 +101,13 @@ float3 diffuseLobe(const PixelParams pixel, float NoV, float NoL, float LoH)
  * on the Cook-Torrance microfacet model, it uses cheaper terms than the surface
  * BRDF's specular lobe (see brdf.fs).
  */
-float3 surfaceShading(const PixelParams pixel, const Light light, float occlusion)
+float3 surfaceShading(const CommonShadingStruct params, const PixelParams pixel, const Light light, float occlusion)
 {
-    float3 h = normalize(shading_view + light.l);
+    float3 h = normalize(params.shading_view + light.l);
 
-    float NoV = shading_NoV;
+    float NoV = params.shading_NoV;
     float NoL = saturate(light.NoL);
-    float NoH = saturate(dot(shading_normal, h));
+    float NoH = saturate(dot(params.shading_normal, h));
     float LoH = saturate(dot(light.l, h));
 
     float3 Fr = specularLobe(pixel, light, h, NoV, NoL, NoH, LoH);
@@ -137,7 +137,7 @@ float3 surfaceShading(const PixelParams pixel, const Light light, float occlusio
 
     // If the material has a normal map, we want to use the geometric normal
     // instead to avoid applying the normal map details to the clear coat layer
-    float clearCoatNoL = saturate(dot(shading_clearCoatNormal, light.l));
+    float clearCoatNoL = saturate(dot(params.shading_clearCoatNormal, light.l));
     color += clearCoat * clearCoatNoL;
 
     // Early exit to avoid the extra multiplication by NoL

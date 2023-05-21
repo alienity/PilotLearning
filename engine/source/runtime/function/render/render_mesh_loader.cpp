@@ -8,12 +8,13 @@
 #include <assimp/scene.h>           // Output data structure
 #include <assimp/postprocess.h>     // Post processing flags
 
+typedef Pilot::D3D12MeshVertexPositionNormalTangentTexture VertexDefine;
 
 struct ModelLoaderMesh
 {
-    Pilot::AxisAlignedBox                        bounding_box_;
-    std::vector<Pilot::MeshVertexDataDefinition> vertexs_;
-    std::vector<std::uint32_t>                   indices_;
+    Pilot::AxisAlignedBox      bounding_box_;
+    std::vector<VertexDefine>  vertexs_;
+    std::vector<std::uint32_t> indices_;
 };
 
 struct MeshLoaderNode
@@ -40,17 +41,14 @@ private:
 
     static void get_tex_coords(const SMikkTSpaceContext* context, float* outuv, int iFace, int iVert);
 
-    static void
-    set_tspace_basic(const SMikkTSpaceContext* context, const float* tangentu, float fSign, int iFace, int iVert);
+    static void set_tspace_basic(const SMikkTSpaceContext* context, const float* tangentu, float fSign, int iFace, int iVert);
 };
 
 void            ProcessNode(aiNode* node, const aiScene* scene, MeshLoaderNode& meshes_);
 ModelLoaderMesh ProcessMesh(aiMesh* mesh);
 void            LoadModelNormal(std::string filename, MeshLoaderNode& meshes_);
 
-void RecursiveLoad(MeshLoaderNode&                               meshes_,
-                   std::vector<Pilot::MeshVertexDataDefinition>& vertexs_,
-                   std::vector<std::uint32_t>&                   indices_)
+void RecursiveLoad(MeshLoaderNode& meshes_, std::vector<VertexDefine>& vertexs_, std::vector<std::uint32_t>& indices_)
 {
     for (size_t i = 0; i < meshes_.meshes_.size(); i++)
     {
@@ -69,13 +67,13 @@ Pilot::StaticMeshData LoadModel(std::string filename, Pilot::AxisAlignedBox& bou
     MeshLoaderNode meshes_ = {};
     LoadModelNormal(filename, meshes_);
     
-    std::vector<Pilot::MeshVertexDataDefinition> vertexs_;
-    std::vector<std::uint32_t>                   indices_;
+    std::vector<VertexDefine>  vertexs_;
+    std::vector<std::uint32_t> indices_;
     RecursiveLoad(meshes_, vertexs_, indices_);
 
     Pilot::StaticMeshData mesh_data;
     
-    std::uint32_t vertex_buffer_size = vertexs_.size() * sizeof(Pilot::MeshVertexDataDefinition);
+    std::uint32_t vertex_buffer_size = vertexs_.size() * sizeof(VertexDefine);
     std::uint32_t index_buffer_size  = indices_.size() * sizeof(std::uint32_t);
 
     mesh_data.m_vertex_buffer = std::make_shared<Pilot::BufferData>(vertexs_.data(), vertex_buffer_size);
@@ -110,34 +108,34 @@ void ProcessNode(aiNode* node, const aiScene* scene, MeshLoaderNode& meshes_)
 ModelLoaderMesh ProcessMesh(aiMesh* mesh)
 {
     // Data to fill
-    Pilot::AxisAlignedBox                        bounding_box;
-    std::vector<Pilot::MeshVertexDataDefinition> vertices;
-    std::vector<std::uint32_t>                   indices;
+    Pilot::AxisAlignedBox      bounding_box;
+    std::vector<VertexDefine>  vertices;
+    std::vector<std::uint32_t> indices;
 
     // Walk through each of the mesh's vertices
     for (UINT i = 0; i < mesh->mNumVertices; i++)
     {
-        Pilot::MeshVertexDataDefinition vertex;
+        VertexDefine vertex;
 
-        vertex.x = mesh->mVertices[i].x;
-        vertex.y = mesh->mVertices[i].y;
-        vertex.z = mesh->mVertices[i].z;
+        vertex.position.x = mesh->mVertices[i].x;
+        vertex.position.y = mesh->mVertices[i].y;
+        vertex.position.z = mesh->mVertices[i].z;
 
         if (mesh->mTextureCoords[0])
         {
-            vertex.u = mesh->mTextureCoords[0][i].x;
-            vertex.v = mesh->mTextureCoords[0][i].y;
+            vertex.texcoord.x = mesh->mTextureCoords[0][i].x;
+            vertex.texcoord.y = mesh->mTextureCoords[0][i].y;
         }
 
         if (mesh->HasNormals())
         {
-            vertex.nx = mesh->mNormals[i].x;
-            vertex.ny = mesh->mNormals[i].y;
-            vertex.nz = mesh->mNormals[i].z;
+            vertex.normal.x = mesh->mNormals[i].x;
+            vertex.normal.y = mesh->mNormals[i].y;
+            vertex.normal.z = mesh->mNormals[i].z;
         }
 
         vertices.push_back(vertex);
-        bounding_box.merge(Pilot::Vector3(vertex.x, vertex.y, vertex.z));
+        bounding_box.merge(Pilot::Vector3(vertex.position.x, vertex.position.y, vertex.position.z));
     }
 
     for (UINT i = 0; i < mesh->mNumFaces; i++)
@@ -199,65 +197,52 @@ int MittTangentsHelper::get_num_faces(const SMikkTSpaceContext* context)
 
 int MittTangentsHelper::get_num_vertices_of_face(const SMikkTSpaceContext* context, const int iFace) { return 3; }
 
-void MittTangentsHelper::get_position(const SMikkTSpaceContext* context,
-                                      float*                    outpos,
-                                      const int                 iFace,
-                                      const int                 iVert)
+void MittTangentsHelper::get_position(const SMikkTSpaceContext* context, float* outpos, const int iFace, const int iVert)
 {
     ModelLoaderMesh* working_mesh = static_cast<ModelLoaderMesh*>(context->m_pUserData);
 
     auto index  = get_vertex_index(context, iFace, iVert);
     auto vertex = working_mesh->vertexs_[index];
 
-    outpos[0] = vertex.x;
-    outpos[1] = vertex.y;
-    outpos[2] = vertex.z;
+    outpos[0] = vertex.position.x;
+    outpos[1] = vertex.position.y;
+    outpos[2] = vertex.position.z;
 }
 
-void MittTangentsHelper::get_normal(const SMikkTSpaceContext* context,
-                                    float*                    outnormal,
-                                    const int                 iFace,
-                                    const int                 iVert)
+void MittTangentsHelper::get_normal(const SMikkTSpaceContext* context, float* outnormal, const int iFace, const int iVert)
 {
     ModelLoaderMesh* working_mesh = static_cast<ModelLoaderMesh*>(context->m_pUserData);
 
     auto index  = get_vertex_index(context, iFace, iVert);
     auto vertex = working_mesh->vertexs_[index];
 
-    outnormal[0] = vertex.nx;
-    outnormal[1] = vertex.ny;
-    outnormal[2] = vertex.nz;
+    outnormal[0] = vertex.normal.x;
+    outnormal[1] = vertex.normal.y;
+    outnormal[2] = vertex.normal.z;
 }
 
-void MittTangentsHelper::get_tex_coords(const SMikkTSpaceContext* context,
-                                        float*                    outuv,
-                                        const int                 iFace,
-                                        const int                 iVert)
+void MittTangentsHelper::get_tex_coords(const SMikkTSpaceContext* context, float* outuv, const int iFace, const int iVert)
 {
     ModelLoaderMesh* working_mesh = static_cast<ModelLoaderMesh*>(context->m_pUserData);
 
     auto index  = get_vertex_index(context, iFace, iVert);
     auto vertex = working_mesh->vertexs_[index];
 
-    outuv[0] = vertex.u;
-    outuv[1] = vertex.v;
+    outuv[0] = vertex.texcoord.x;
+    outuv[1] = vertex.texcoord.y;
 }
 
-void MittTangentsHelper::set_tspace_basic(const SMikkTSpaceContext* context,
-                                    const float*              tangentu,
-                                    const float               fSign,
-                                    const int                 iFace,
-                                    const int                 iVert)
+void MittTangentsHelper::set_tspace_basic(const SMikkTSpaceContext* context, const float* tangentu, const float fSign, const int iFace, const int iVert)
 {
     ModelLoaderMesh* working_mesh = static_cast<ModelLoaderMesh*>(context->m_pUserData);
 
     auto  index  = get_vertex_index(context, iFace, iVert);
     auto* vertex = &working_mesh->vertexs_[index];
 
-    vertex->tx = tangentu[0];
-    vertex->ty = tangentu[1];
-    vertex->tz = tangentu[2];
-    vertex->tw = fSign;
+    vertex->tangent.x = tangentu[0];
+    vertex->tangent.y = tangentu[1];
+    vertex->tangent.z = tangentu[2];
+    vertex->tangent.w = fSign;
 }
 
 int MittTangentsHelper::get_vertex_index(const SMikkTSpaceContext* context, int iFace, int iVert)

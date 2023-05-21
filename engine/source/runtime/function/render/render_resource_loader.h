@@ -2,7 +2,7 @@
 
 #include "runtime/function/render/render_scene.h"
 #include "runtime/function/render/render_swap_context.h"
-#include "runtime/function/render/render_type.h"
+#include "runtime/function/render/render_common.h"
 
 #include "runtime/function/render/rhi/d3d12/d3d12_graphicsMemory.h"
 #include "runtime/function/render/rhi/d3d12/d3d12_resourceUploadBatch.h"

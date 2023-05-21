@@ -46,8 +46,8 @@ namespace Pilot
         {
             drawpass.Read(passInput.spotShadowmapTexHandles[i]);
         }
-        drawpass.Read(meshBufferHandle);
-        drawpass.Read(materialBufferHandle);
+        drawpass.Read(passInput.meshBufferHandle);
+        drawpass.Read(passInput.materialBufferHandle);
         drawpass.Read(perframeBufferHandle);
         drawpass.Read(opaqueDrawHandle);
         drawpass.Write(passOutput.renderTargetColorHandle);

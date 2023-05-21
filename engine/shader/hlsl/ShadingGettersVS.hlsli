@@ -1,29 +1,21 @@
-/*
-struct ObjectUniform
-{
-    float4x4 worldFromModelMatrix;
-    float4x4 worldFromModelNormalMatrix;
-    float    userData;
-
-};
 
 //------------------------------------------------------------------------------
 // Uniforms access
 //------------------------------------------------------------------------------
 
-float4x4 getWorldFromModelMatrix(const ObjectUniform object_uniforms)
+float4x4 getWorldFromModelMatrix(const PerRenderableData perRenderableDdata)
 {
-    return object_uniforms.worldFromModelMatrix;
+    return perRenderableDdata.worldFromModelMatrix;
 }
 
-float3x3 getWorldFromModelNormalMatrix(const ObjectUniform object_uniforms)
+float3x3 getWorldFromModelNormalMatrix(const PerRenderableData perRenderableDdata)
 {
-    return object_uniforms.worldFromModelNormalMatrix;
+    return perRenderableDdata.worldFromModelNormalMatrix;
 }
 
-float getObjectUserData(const ObjectUniform object_uniforms)
+float getObjectUserData(const PerRenderableData perRenderableDdata)
 {
-    return object_uniforms.userData;
+    return perRenderableDdata.userData;
 }
 
 //------------------------------------------------------------------------------
@@ -159,7 +151,7 @@ float4 getCustom6() { return mesh_custom6; }
 #if defined(HAS_ATTRIBUTE_CUSTOM7)
 float4 getCustom7() { return mesh_custom7; }
 #endif
-*/
+
 //------------------------------------------------------------------------------
 // Helpers
 //------------------------------------------------------------------------------
@@ -172,7 +164,7 @@ float4 getCustom7() { return mesh_custom7; }
  * NOTE: the "transform" and "position" temporaries are necessary to work around
  * an issue with Adreno drivers (b/110851741).
  */
-/*
+
 float4 computeWorldPosition()
 {
 #if defined(VERTEX_DOMAIN_OBJECT)
@@ -204,4 +196,3 @@ float4 computeWorldPosition()
 #error Unknown Vertex Domain
 #endif
 }
-*/

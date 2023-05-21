@@ -30,7 +30,7 @@ namespace Pilot
         bool m_tick_in_editor_mode {false};
 
     protected:
-        GComponentID m_id {k_invalid_gcomponent_id};
+        GComponentID m_id {K_Invalid_Component_Id};
     };
 
 } // namespace Pilot

@@ -27,8 +27,7 @@ namespace Pilot
     {
         m_parent_object = parent_object;
 
-        m_light_part_desc.m_component_id               = m_id;
-        m_light_part_desc.m_transform_desc.m_is_active = true;
+        m_light_part_desc.m_component_id = m_id;
     }
 
     void LightComponent::tick(float delta_time)
@@ -51,7 +50,6 @@ namespace Pilot
 
             m_light_part_desc = {};
 
-            m_light_part_desc.m_transform_desc.m_is_active = true;
             m_light_part_desc.m_transform_desc.m_transform_matrix = transform_matrix;
             m_light_part_desc.m_transform_desc.m_rotation         = std::get<0>(rts);
             m_light_part_desc.m_transform_desc.m_position         = std::get<1>(rts);
@@ -63,7 +61,6 @@ namespace Pilot
 
                 Matrix3x3 rotation_matrix = Matrix3x3::fromQuaternion(std::get<0>(rts));
 
-                m_light_part_desc.m_direction_light_desc.m_is_active      = true;
                 m_light_part_desc.m_direction_light_desc.m_position       = std::get<1>(rts);
                 m_light_part_desc.m_direction_light_desc.m_color          = m_directional_light_params->color;
                 m_light_part_desc.m_direction_light_desc.m_intensity      = m_directional_light_params->intensity;
@@ -103,7 +100,6 @@ namespace Pilot
             {
                 PointLightParameter* m_point_light_params = (PointLightParameter*)m_light_res.m_parameter;
 
-                m_light_part_desc.m_point_light_desc.m_is_active = true;
                 m_light_part_desc.m_point_light_desc.m_position  = std::get<1>(rts);
                 m_light_part_desc.m_point_light_desc.m_color     = m_point_light_params->color;
                 m_light_part_desc.m_point_light_desc.m_intensity = m_point_light_params->intensity;
@@ -117,7 +113,6 @@ namespace Pilot
 
                 Matrix3x3 rotation_matrix = Matrix3x3::fromQuaternion(std::get<0>(rts));
 
-                m_light_part_desc.m_spot_light_desc.m_is_active     = true;
                 m_light_part_desc.m_spot_light_desc.m_position      = std::get<1>(rts);
                 m_light_part_desc.m_spot_light_desc.m_direction     = -rotation_matrix.getColumn(2);
                 m_light_part_desc.m_spot_light_desc.m_color         = m_spot_light_params->color;

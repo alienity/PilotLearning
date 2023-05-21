@@ -89,7 +89,7 @@ void getCommonPixelParams(const MaterialParams materialParams, const MaterialInp
     float3  specularColor = material.specularColor;
     float metallic      = computeMetallicFromSpecularColor(specularColor);
 
-    pixel.diffuseColor = computeDiffuseColor(baseColor, metallic);
+    pixel.diffuseColor = computeDiffuseColor(baseColor, material.metallic);
     pixel.f0           = specularColor;
 #elif !defined(SHADING_MODEL_CLOTH)
     pixel.diffuseColor = computeDiffuseColor(baseColor, material.metallic);

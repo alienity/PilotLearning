@@ -35,7 +35,8 @@ Light getDirectionalLight(const CommonShadingStruct params, const FrameUniforms 
     return light;
 }
 
-void evaluateDirectionalLight(const PerRenderableData objectUniforms, const CommonShadingStruct params, const FrameUniforms frameUniforms, const MaterialInputs material, const PixelParams pixel, inout float3 color)
+void evaluateDirectionalLight(const PerRenderableData objectUniforms, const CommonShadingStruct params, 
+    const FrameUniforms frameUniforms, const MaterialInputs material, const PixelParams pixel, inout float3 color)
 {
 
     Light light = getDirectionalLight(params, frameUniforms);
@@ -59,7 +60,7 @@ void evaluateDirectionalLight(const PerRenderableData objectUniforms, const Comm
     {
         float ssContactShadowOcclusion = 0.0;
 
-        uint cascade                  = getShadowCascade();
+        uint cascade                  = getShadowCascade(params, frameUniforms);
         bool cascadeHasVisibleShadows = bool(frameUniforms.cascades & ((1u << cascade) << 8u));
         bool hasDirectionalShadows    = bool(frameUniforms.directionalShadows & 1u);
         if (hasDirectionalShadows && cascadeHasVisibleShadows)
@@ -90,8 +91,8 @@ void evaluateDirectionalLight(const PerRenderableData objectUniforms, const Comm
 #endif
 
 #if defined(MATERIAL_HAS_CUSTOM_SURFACE_SHADING)
-    color.rgb += customSurfaceShading(material, pixel, light, visibility);
+    color.rgb += customSurfaceShading(params, material, pixel, light, visibility);
 #else
-    color.rgb += surfaceShading(pixel, light, visibility);
+    color.rgb += surfaceShading(params, pixel, light, visibility);
 #endif
 }
