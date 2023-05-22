@@ -1,6 +1,6 @@
 #include "runtime/function/render/render_camera.h"
 
-namespace Pilot
+namespace MoYu
 {
     void RenderCamera::setCurrentCameraType(RenderCameraType type)
     {
@@ -103,4 +103,4 @@ namespace Pilot
         // 1 / tan(fovy * 0.5) = aspect / tan(fovx * 0.5)
         // tan(fovy * 0.5) = tan(fovx * 0.5) / aspect
     }
-} // namespace Pilot
+} // namespace MoYu

@@ -11,7 +11,7 @@
 #include <vector>
 #include <tuple>
 
-namespace Pilot
+namespace MoYu
 {
     class RenderCamera;
 
@@ -139,4 +139,4 @@ namespace Pilot
                                 D3D12Mesh&                                    now_mesh);
         void updateIndexBuffer(uint32_t index_buffer_size, void* index_buffer_data, D3D12Mesh& now_mesh);
     };
-} // namespace Pilot
+} // namespace MoYu

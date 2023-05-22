@@ -1,7 +1,7 @@
 #pragma once
 #include "runtime/platform/file_service/file_stream.h"
 
-namespace Pilot
+namespace MoYu
 {
     FileStream::FileStream(const std::filesystem::path& Path, FileMode Mode, FileAccess Access) :
         Path(Path), Mode(Mode), Access(Access), Handle(initializeHandle(Path, Mode, Access))
@@ -180,4 +180,4 @@ namespace Pilot
         return Handle;
     }
 
-} // namespace Pilot
+} // namespace MoYu

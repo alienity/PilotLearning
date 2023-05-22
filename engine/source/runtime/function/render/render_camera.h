@@ -4,7 +4,7 @@
 
 #include <mutex>
 
-namespace Pilot
+namespace MoYu
 {
     enum class RenderCameraType : int
     {
@@ -68,4 +68,4 @@ namespace Pilot
     inline const Vector3 RenderCamera::Y = {0.0f, 1.0f, 0.0f};
     inline const Vector3 RenderCamera::Z = {0.0f, 0.0f, 1.0f};
 
-} // namespace Pilot
+} // namespace MoYu

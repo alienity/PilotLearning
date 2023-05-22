@@ -2,7 +2,7 @@
 
 #include <unordered_map>
 
-namespace Pilot
+namespace MoYu
 {
     static const size_t k_invalid_guid = 0;
 

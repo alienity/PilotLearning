@@ -11,7 +11,7 @@
 #include "runtime/function/render/window_system.h"
 
 
-namespace Pilot
+namespace MoYu
 {
     bool                            g_is_editor_mode {false};
     std::unordered_set<std::string> g_editor_tick_component_types {};
@@ -114,4 +114,4 @@ namespace Pilot
 
         m_fps = static_cast<int>(1.f / m_average_duration);
     }
-} // namespace Pilot
+} // namespace MoYu

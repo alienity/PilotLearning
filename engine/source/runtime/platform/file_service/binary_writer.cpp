@@ -1,7 +1,7 @@
 #include "binary_writer.h"
 #include "file_stream.h"
 
-namespace Pilot
+namespace MoYu
 {
 
 	BinaryWriter::BinaryWriter(FileStream& Stream) : Stream(Stream) { assert(Stream.canWrite()); }

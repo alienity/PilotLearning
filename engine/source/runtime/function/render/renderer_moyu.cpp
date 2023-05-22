@@ -7,7 +7,7 @@
 
 #include "runtime/function/render/renderer/renderer_deferred.h"
 
-namespace Pilot
+namespace MoYu
 {
     RendererManager::RendererManager() {}
 
@@ -93,4 +93,4 @@ namespace Pilot
 
     void Renderer::OnRender(RHI::D3D12CommandContext* pContext) {}
 
-} // namespace Pilot
+} // namespace MoYu

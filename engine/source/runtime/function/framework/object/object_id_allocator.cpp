@@ -2,35 +2,22 @@
 
 #include "core/base/macro.h"
 
-namespace Pilot
+namespace MoYu
 {
-    std::atomic<GObjectID> ObjectIDAllocator::m_next_id {1};
+#define DefineObjectIDFuncs(ObjName)\
+    std::atomic<G##ObjName##ID> ObjName##IDAllocator::m_next_id {1};\
+    G##ObjName##ID ObjName##IDAllocator::alloc()\
+    {\
+        std::atomic<G##ObjName##ID> new_object_ret = m_next_id.load();\
+        m_next_id++;\
+        if (m_next_id >= KInvalidId(ObjName))\
+        {\
+            LOG_FATAL("gobject id overflow");\
+        }\
+        return new_object_ret;\
+    }\
 
-    GObjectID ObjectIDAllocator::alloc()
-    {
-        std::atomic<GObjectID> new_object_ret = m_next_id.load();
-        m_next_id++;
-        if (m_next_id >= k_invalid_gobject_id)
-        {
-            LOG_FATAL("gobject id overflow");
-        }
+    DefineObjectIDFuncs(Object)
+    DefineObjectIDFuncs(Component)
 
-        return new_object_ret;
-    }
-
-
-    std::atomic<GComponentID> ComponentIDAllocator::m_next_id {1};
-
-    GComponentID ComponentIDAllocator::alloc()
-    {
-        std::atomic<GComponentID> new_component_ret = m_next_id.load();
-        m_next_id++;
-        if (m_next_id >= k_invalid_gcomponent_id)
-        {
-            LOG_FATAL("gcomponent id overflow");
-        }
-
-        return new_component_ret;
-    }
-
-} // namespace Pilot
+} // namespace MoYu

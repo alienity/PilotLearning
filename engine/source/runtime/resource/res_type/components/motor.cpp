@@ -2,7 +2,7 @@
 
 #include "runtime/core/base/macro.h"
 
-namespace Pilot
+namespace MoYu
 {
     MotorComponentRes::~MotorComponentRes() {  }
-} // namespace Pilot
+} // namespace MoYu

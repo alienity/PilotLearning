@@ -190,9 +190,9 @@ namespace RHI
 
     void D3D12CommandContext::WriteBuffer(D3D12Buffer* Dest, UINT64 DestOffset, const void* BufferData, UINT64 NumBytes)
     {
-        ASSERT(BufferData != nullptr && Pilot::IsAligned(BufferData, 16));
+        ASSERT(BufferData != nullptr && MoYu::IsAligned(BufferData, 16));
         GraphicsResource TempSpace = m_GraphicsMemory->Allocate(NumBytes, 512);
-        SIMDMemCopy(TempSpace.Memory(), BufferData, Pilot::DivideByMultiple(NumBytes, 16));
+        SIMDMemCopy(TempSpace.Memory(), BufferData, MoYu::DivideByMultiple(NumBytes, 16));
         TransitionBarrier(Dest, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES, true);
         m_CommandListHandle->CopyBufferRegion(Dest->GetResource(), DestOffset, TempSpace.Resource(), TempSpace.ResourceOffset(), NumBytes);
     }
@@ -201,7 +201,7 @@ namespace RHI
     {
         GraphicsResource TempSpace   = m_GraphicsMemory->Allocate(NumBytes, 512);
         __m128   VectorValue = _mm_set1_ps(Value.Float);
-        SIMDMemFill(TempSpace.Memory(), VectorValue, Pilot::DivideByMultiple(NumBytes, 16));
+        SIMDMemFill(TempSpace.Memory(), VectorValue, MoYu::DivideByMultiple(NumBytes, 16));
         TransitionBarrier(Dest, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES, true);
         m_CommandListHandle->CopyBufferRegion(Dest->GetResource(), DestOffset, TempSpace.Resource(), TempSpace.ResourceOffset(), NumBytes);
     }
@@ -583,7 +583,7 @@ namespace RHI
 
     void D3D12GraphicsContext::SetStencilRef(UINT StencilRef) { m_CommandListHandle->OMSetStencilRef(StencilRef); }
 
-    void D3D12GraphicsContext::SetBlendFactor(Pilot::Color BlendFactor)
+    void D3D12GraphicsContext::SetBlendFactor(MoYu::Color BlendFactor)
     {
         m_CommandListHandle->OMSetBlendFactor((float*)&BlendFactor);
     }
@@ -636,7 +636,7 @@ namespace RHI
 
     void D3D12GraphicsContext::SetDynamicConstantBufferView(UINT RootIndex, UINT64 BufferSize, const void* BufferData)
     {
-        ASSERT(BufferData != nullptr && Pilot::IsAligned(BufferData, 16));
+        ASSERT(BufferData != nullptr && MoYu::IsAligned(BufferData, 16));
         GraphicsResource cb = m_GraphicsMemory->Allocate(BufferSize);
         // SIMDMemCopy(cb.DataPtr, BufferData, Math::AlignUp(BufferSize, 16) >> 4);
         memcpy(cb.Memory(), BufferData, BufferSize);
@@ -698,9 +698,9 @@ namespace RHI
 
     void D3D12GraphicsContext::SetDynamicVB(UINT Slot, UINT64 NumVertices, UINT64 VertexStride, const void* VertexData)
     {
-        ASSERT(VertexData != nullptr && Pilot::IsAligned(VertexData, 16));
+        ASSERT(VertexData != nullptr && MoYu::IsAligned(VertexData, 16));
 
-        size_t BufferSize = Pilot::AlignUp(NumVertices * VertexStride, 16);
+        size_t BufferSize = MoYu::AlignUp(NumVertices * VertexStride, 16);
         GraphicsResource vb = m_GraphicsMemory->Allocate(BufferSize);
 
         SIMDMemCopy(vb.Memory(), VertexData, BufferSize >> 4);
@@ -715,9 +715,9 @@ namespace RHI
 
     void D3D12GraphicsContext::SetDynamicIB(UINT64 IndexCount, const UINT16* IndexData)
     {
-        ASSERT(IndexData != nullptr && Pilot::IsAligned(IndexData, 16));
+        ASSERT(IndexData != nullptr && MoYu::IsAligned(IndexData, 16));
 
-        size_t BufferSize = Pilot::AlignUp(IndexCount * sizeof(uint16_t), 16);
+        size_t BufferSize = MoYu::AlignUp(IndexCount * sizeof(uint16_t), 16);
         GraphicsResource ib = m_GraphicsMemory->Allocate(BufferSize);
 
         SIMDMemCopy(ib.Memory(), IndexData, BufferSize >> 4);
@@ -732,9 +732,9 @@ namespace RHI
 
     void D3D12GraphicsContext::SetDynamicSRV(UINT RootIndex, UINT64 BufferSize, const void* BufferData)
     {
-        ASSERT(BufferData != nullptr && Pilot::IsAligned(BufferData, 16));
+        ASSERT(BufferData != nullptr && MoYu::IsAligned(BufferData, 16));
         GraphicsResource cb = m_GraphicsMemory->Allocate(BufferSize);
-        SIMDMemCopy(cb.Memory(), BufferData, Pilot::AlignUp(BufferSize, 16) >> 4);
+        SIMDMemCopy(cb.Memory(), BufferData, MoYu::AlignUp(BufferSize, 16) >> 4);
         m_CommandListHandle->SetGraphicsRootShaderResourceView(RootIndex, cb.GpuAddress());
     }
 
@@ -884,7 +884,7 @@ namespace RHI
 
     void D3D12ComputeContext::SetDynamicConstantBufferView(UINT RootIndex, UINT64 BufferSize, const void* BufferData)
     {
-        ASSERT(BufferData != nullptr && Pilot::IsAligned(BufferData, 16));
+        ASSERT(BufferData != nullptr && MoYu::IsAligned(BufferData, 16));
         GraphicsResource cb = m_GraphicsMemory->Allocate(BufferSize, 256);
         // SIMDMemCopy(cb.DataPtr, BufferData, Math::AlignUp(BufferSize, 16) >> 4);
         memcpy(cb.Memory(), BufferData, BufferSize);
@@ -893,9 +893,9 @@ namespace RHI
 
     void D3D12ComputeContext::SetDynamicSRV(UINT RootIndex, UINT64 BufferSize, const void* BufferData)
     {
-        ASSERT(BufferData != nullptr && Pilot::IsAligned(BufferData, 16));
+        ASSERT(BufferData != nullptr && MoYu::IsAligned(BufferData, 16));
         GraphicsResource cb = m_GraphicsMemory->Allocate(BufferSize, 256);
-        SIMDMemCopy(cb.Memory(), BufferData, Pilot::AlignUp(BufferSize, 16) >> 4);
+        SIMDMemCopy(cb.Memory(), BufferData, MoYu::AlignUp(BufferSize, 16) >> 4);
         m_CommandListHandle->SetComputeRootShaderResourceView(RootIndex, cb.GpuAddress());
     }
 
@@ -1074,7 +1074,7 @@ namespace RHI
         InitContext->Open();
 
         RHI::GraphicsResource mem = InitContext->ReserveUploadMemory(NumBytes);
-        SIMDMemCopy(mem.Memory(), Data, Pilot::DivideByMultiple(NumBytes, 16));
+        SIMDMemCopy(mem.Memory(), Data, MoYu::DivideByMultiple(NumBytes, 16));
 
         D3D12_RESOURCE_STATES originalState = Dest->GetResourceState().GetSubresourceState(0);
 
@@ -1101,7 +1101,7 @@ namespace RHI
         D3D12_RESOURCE_STATES originalState = Dest->GetResourceState().GetSubresourceState(0);
 
         SharedGraphicsResource mem = pGraphicsMemory->Allocate(NumBytes, 16);
-        SIMDMemCopy(mem.Memory(), Data, Pilot::DivideByMultiple(NumBytes, 16));
+        SIMDMemCopy(mem.Memory(), Data, MoYu::DivideByMultiple(NumBytes, 16));
 
         pUploadBatch->Transition(Dest->GetResource(), originalState, D3D12_RESOURCE_STATE_COPY_DEST);
         pUploadBatch->Upload(Dest->GetResource(), DestOffset, mem);

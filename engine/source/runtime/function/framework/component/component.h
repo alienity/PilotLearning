@@ -1,15 +1,12 @@
 #pragma once
-#include "runtime/core/meta/reflection/reflection.h"
 #include "runtime/function/framework/object/object_id_allocator.h"
 
-namespace Pilot
+namespace MoYu
 {
     class GObject;
     // Component
-    REFLECTION_TYPE(Component)
-    CLASS(Component, WhiteListFields)
+    class Component
     {
-        REFLECTION_BODY(Component)
     protected:
         std::weak_ptr<GObject> m_parent_object;
         bool     m_is_dirty {false};
@@ -27,10 +24,14 @@ namespace Pilot
 
         virtual void setDirtyFlag(bool is_dirty) { m_is_dirty = is_dirty; }
 
+        std::string getTypeName() { return m_component_name; }
+
         bool m_tick_in_editor_mode {false};
 
     protected:
         GComponentID m_id {K_Invalid_Component_Id};
+
+        std::string m_component_name;
     };
 
-} // namespace Pilot
+} // namespace MoYu

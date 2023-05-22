@@ -17,7 +17,7 @@
 #include <filesystem>
 #include <vector>
 
-namespace Pilot
+namespace MoYu
 {
     void RenderResourceBase::iniUploadBatch(RHI::D3D12Device* device)
     {
@@ -420,4 +420,4 @@ namespace Pilot
         return mesh_data;
     }
     */
-} // namespace Pilot
+} // namespace MoYu

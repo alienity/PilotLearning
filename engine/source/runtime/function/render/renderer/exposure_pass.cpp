@@ -6,7 +6,7 @@
 
 #include <cassert>
 
-namespace Pilot
+namespace MoYu
 {
 
 	void ExposurePass::initialize(const ExposureInitInfo& init_info)

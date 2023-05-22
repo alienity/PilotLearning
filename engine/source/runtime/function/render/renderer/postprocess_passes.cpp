@@ -3,7 +3,7 @@
 #include "runtime/resource/config_manager/config_manager.h"
 #include "runtime/function/render/rhi/rhi_core.h"
 
-namespace Pilot
+namespace MoYu
 {
 
 	void PostprocessPasses::initialize(const PostprocessInitInfo& init_info)

@@ -555,7 +555,7 @@ struct PipelineStates
             pIndirectCullSpotShadowmap = std::make_shared<RHI::D3D12PipelineState>(pDevice, L"IndirectCullSpotShadowmap", psoDesc);
         }
         {
-            RHI::D3D12InputLayout InputLayout = Pilot::MeshVertex::D3D12MeshVertexPositionNormalTangentTexture::InputLayout;
+            RHI::D3D12InputLayout InputLayout = MoYu::MeshVertex::D3D12MeshVertexPositionNormalTangentTexture::InputLayout;
             
             RHIDepthStencilState DepthStencilState;
             DepthStencilState.DepthEnable = true;
@@ -596,7 +596,7 @@ struct PipelineStates
         }
         {
             //IndirectDrawTransparent
-            RHI::D3D12InputLayout InputLayout = Pilot::MeshVertex::D3D12MeshVertexPositionNormalTangentTexture::InputLayout;
+            RHI::D3D12InputLayout InputLayout = MoYu::MeshVertex::D3D12MeshVertexPositionNormalTangentTexture::InputLayout;
 
             RHIDepthStencilState DepthStencilState;
             DepthStencilState.DepthEnable = true;
@@ -646,7 +646,7 @@ struct PipelineStates
             pIndirectDrawTransparent = std::make_shared<RHI::D3D12PipelineState>(pDevice, L"IndirectDrawTransparent", psoDesc);
         }
         {
-            RHI::D3D12InputLayout InputLayout = Pilot::MeshVertex::D3D12MeshVertexPositionNormalTangentTexture::InputLayout;
+            RHI::D3D12InputLayout InputLayout = MoYu::MeshVertex::D3D12MeshVertexPositionNormalTangentTexture::InputLayout;
 
             RHIDepthStencilState DepthStencilState;
             DepthStencilState.DepthEnable = true;
@@ -678,7 +678,7 @@ struct PipelineStates
             pIndirectDrawDirectionShadowmap = std::make_shared<RHI::D3D12PipelineState>(pDevice, L"IndirectDrawDirectionShadowmap", psoDesc);
         }
         {
-            RHI::D3D12InputLayout InputLayout = Pilot::MeshVertex::D3D12MeshVertexPositionNormalTangentTexture::InputLayout;
+            RHI::D3D12InputLayout InputLayout = MoYu::MeshVertex::D3D12MeshVertexPositionNormalTangentTexture::InputLayout;
 
             RHIDepthStencilState DepthStencilState;
             DepthStencilState.DepthEnable = true;

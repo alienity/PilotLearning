@@ -1,14 +1,10 @@
 #pragma once
-#include "runtime/core/meta/reflection/reflection.h"
 #include <string>
 #include <vector>
-namespace Pilot
+namespace MoYu
 {
-    REFLECTION_TYPE(WorldRes)
-    CLASS(WorldRes, Fields)
+    class WorldRes
     {
-        REFLECTION_BODY(WorldRes);
-
     public:
         // world name
         std::string              m_name;
@@ -19,4 +15,4 @@ namespace Pilot
         // the default level for this world, which should be first loading level
         std::string m_default_level_url;
     };
-} // namespace Pilot
+} // namespace MoYu

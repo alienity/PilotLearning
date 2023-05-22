@@ -10,7 +10,7 @@
 #include <vector>
 #include <unordered_map>
 
-namespace Pilot
+namespace MoYu
 {
     class AssetManager;
 
@@ -48,4 +48,4 @@ namespace Pilot
 
         std::shared_ptr<AssetManager> asset_manager;
     };
-} // namespace Pilot
+} // namespace MoYu

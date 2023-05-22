@@ -1,7 +1,7 @@
 #pragma once
 #include "runtime/platform/system/system_core.h"
 
-namespace Pilot
+namespace MoYu
 {
     class MemoryMappedView
     {
@@ -44,4 +44,4 @@ namespace Pilot
         std::byte* View     = nullptr;
         std::byte* Sentinel = nullptr;
     };
-} // namespace Pilot
+} // namespace MoYu

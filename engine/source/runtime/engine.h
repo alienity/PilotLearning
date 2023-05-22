@@ -6,7 +6,7 @@
 #include <string>
 #include <unordered_set>
 
-namespace Pilot
+namespace MoYu
 {
     extern bool                            g_is_editor_mode;
     extern std::unordered_set<std::string> g_editor_tick_component_types;
@@ -51,4 +51,4 @@ namespace Pilot
         int   m_fps {0};
     };
 
-} // namespace Pilot
+} // namespace MoYu

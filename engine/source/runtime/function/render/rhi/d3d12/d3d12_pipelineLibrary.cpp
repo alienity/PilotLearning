@@ -5,7 +5,7 @@
 namespace RHI
 {
     D3D12PipelineLibrary::D3D12PipelineLibrary(D3D12Device* Parent, const std::filesystem::path& Path) :
-        D3D12DeviceChild(Parent), Path(Path), Stream(Path, Pilot::FileMode::OpenOrCreate, Pilot::FileAccess::ReadWrite),
+        D3D12DeviceChild(Parent), Path(Path), Stream(Path, MoYu::FileMode::OpenOrCreate, MoYu::FileAccess::ReadWrite),
         MappedFile(Stream), MappedView(MappedFile.CreateView())
     {
         ID3D12Device1* Device1 = Parent->GetD3D12Device1();

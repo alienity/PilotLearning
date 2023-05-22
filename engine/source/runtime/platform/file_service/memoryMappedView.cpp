@@ -1,6 +1,6 @@
 #include "memoryMappedView.h"
 
-namespace Pilot
+namespace MoYu
 {
     MemoryMappedView::MemoryMappedView(std::byte* View, std::uint64_t SizeInBytes) :
         View(View), Sentinel(View + SizeInBytes)

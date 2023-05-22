@@ -4,9 +4,9 @@
 
 #include "runtime/function/render/render_resource.h"
 
-Pilot::VisiableNodes Pilot::RenderPass::m_visiable_nodes;
+MoYu::VisiableNodes MoYu::RenderPass::m_visiable_nodes;
 
-namespace Pilot
+namespace MoYu
 {
 
-} // namespace Pilot
+} // namespace MoYu

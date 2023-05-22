@@ -8,7 +8,7 @@
 
 #include "runtime/function/global/global_context.h"
 
-namespace Pilot
+namespace MoYu
 {
     /// helper function: split the input string with separator, and filter the substring
     std::vector<std::string>
@@ -169,4 +169,4 @@ namespace Pilot
     }
 
 
-} // namespace Pilot
+} // namespace MoYu

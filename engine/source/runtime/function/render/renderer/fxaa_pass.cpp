@@ -6,7 +6,7 @@
 
 #include <cassert>
 
-namespace Pilot
+namespace MoYu
 {
 
 	void FXAAPass::initialize(const FXAAInitInfo& init_info)

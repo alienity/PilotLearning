@@ -7,7 +7,7 @@
 
 #include <cassert>
 
-namespace Pilot
+namespace MoYu
 {
 #define RegGetBuf(h) registry->GetD3D12Buffer(h)
 #define RegGetBufCounter(h) registry->GetD3D12Buffer(h)->GetCounterBuffer().get()
@@ -182,7 +182,7 @@ namespace Pilot
             int spotLightCount = m_visiable_nodes.p_spot_light_list->size();
             for (size_t i = 0; i < spotLightCount; i++)
             {
-                Pilot::SpotLightDesc curSpotLightDesc = m_visiable_nodes.p_spot_light_list->at(i);
+                MoYu::SpotLightDesc curSpotLightDesc = m_visiable_nodes.p_spot_light_list->at(i);
 
                 bool curSpotLighBufferExist = false;
                 int  curBufferIndex         = -1;
@@ -238,8 +238,8 @@ namespace Pilot
     {
         const uint32_t ElementSizeBytes      = keyIndexList->GetStride();
         const uint32_t MaxNumElements        = 1024; //keyIndexList->GetSizeInBytes() / ElementSizeBytes;
-        const uint32_t AlignedMaxNumElements = Pilot::AlignPowerOfTwo(MaxNumElements);
-        const uint32_t MaxIterations         = Pilot::Log2(std::max(2048u, AlignedMaxNumElements)) - 10;
+        const uint32_t AlignedMaxNumElements = MoYu::AlignPowerOfTwo(MaxNumElements);
+        const uint32_t MaxIterations         = MoYu::Log2(std::max(2048u, AlignedMaxNumElements)) - 10;
 
         ASSERT(ElementSizeBytes == 4 || ElementSizeBytes == 8); // , "Invalid key-index list for bitonic sort"
 

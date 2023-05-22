@@ -1,7 +1,7 @@
 #include "memoryMappedFile.h"
 #include "file_Stream.h"
 
-namespace Pilot
+namespace MoYu
 {
     MemoryMappedFile::MemoryMappedFile(FileStream& Stream, std::uint64_t FileSize /*= DefaultFileSize*/) :
         Stream(Stream)

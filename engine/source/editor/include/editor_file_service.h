@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 
-namespace Pilot
+namespace MoYu
 {
     class EditorFileNode;
     using EditorFileNodeArray = std::vector<std::shared_ptr<EditorFileNode>>;
@@ -52,4 +52,4 @@ namespace Pilot
     private:
         std::shared_ptr<EditorFileNode> m_editor_node_ptr;
     };
-} // namespace Pilot
+} // namespace MoYu

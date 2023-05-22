@@ -8,7 +8,7 @@
 
 #include "runtime/function/render/render_object.h"
 
-namespace Pilot
+namespace MoYu
 {
     class RenderCamera;
 
@@ -32,4 +32,4 @@ namespace Pilot
 
         GameObjectComponentDesc m_light_part_desc;
     };
-} // namespace Pilot
+} // namespace MoYu

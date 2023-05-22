@@ -5,7 +5,7 @@
 #include "runtime/function/render/render_resource.h"
 #include "runtime/function/render/rhi/hlsl_data_types.h"
 
-namespace Pilot
+namespace MoYu
 {
     void RenderScene::updateAllObjects(std::shared_ptr<RenderResource> render_resource,
                                        std::shared_ptr<RenderCamera>   camera)

@@ -18,7 +18,7 @@
 #include "runtime/function/render/render_camera.h"
 #include "runtime/function/render/render_system.h"
 
-namespace Pilot
+namespace MoYu
 {
     void EditorSceneManager::initialize() {}
 
@@ -530,4 +530,4 @@ namespace Pilot
     {
         return g_editor_global_context.m_render_system->getGuidOfPickedMesh(picked_uv);
     }
-} // namespace Pilot
+} // namespace MoYu

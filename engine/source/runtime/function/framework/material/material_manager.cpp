@@ -6,7 +6,7 @@
 
 #include "_generated/serializer/all_serializer.h"
 
-namespace Pilot
+namespace MoYu
 {
     MaterialManager::~MaterialManager() { clear(); }
 
@@ -88,4 +88,4 @@ namespace Pilot
     }
 
 
-} // namespace Pilot
+} // namespace MoYu

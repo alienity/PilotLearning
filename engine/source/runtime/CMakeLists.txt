@@ -130,4 +130,4 @@ string(TOLOWER ${TARGET_NAME}/version.h VERSION_HEADER_LOCATION)
 
 ### precompile
 # set global vari used by precompile
-set(PILOT_RUNTIME_HEADS "${HEADER_FILES}" PARENT_SCOPE)
+# set(PILOT_RUNTIME_HEADS "${HEADER_FILES}" PARENT_SCOPE)

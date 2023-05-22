@@ -20,9 +20,9 @@ namespace RHI
 
     private:
         std::filesystem::path                          Path;
-        Pilot::FileStream                              Stream;
-        Pilot::MemoryMappedFile                        MappedFile;
-        Pilot::MemoryMappedView                        MappedView;
+        MoYu::FileStream                              Stream;
+        MoYu::MemoryMappedFile                        MappedFile;
+        MoYu::MemoryMappedView                        MappedView;
         Microsoft::WRL::ComPtr<ID3D12PipelineLibrary1> PipelineLibrary1;
         BOOL                                           ShouldInvalidateDiskCache = FALSE;
     };

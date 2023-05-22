@@ -15,7 +15,7 @@
 //#include "runtime/function/render/render_swap_context.h"
 #include "runtime/function/render/render_system.h"
 
-namespace Pilot
+namespace MoYu
 {
     void CameraComponent::reset()
     {
@@ -151,4 +151,4 @@ namespace Pilot
         camera_swap_data.m_view_matrix                     = desired_mat;
         swap_context.getLogicSwapData().m_camera_swap_data = camera_swap_data;
     }
-} // namespace Pilot
+} // namespace MoYu

@@ -2,7 +2,7 @@
 #include "runtime/core/math/moyu_math.h"
 #include "runtime/core/meta/reflection/reflection.h"
 
-namespace Pilot
+namespace MoYu
 {
     REFLECTION_TYPE(MaterialBase)
     CLASS(MaterialBase, Fields)
@@ -62,4 +62,4 @@ namespace Pilot
     }
     inline bool operator!=(const MaterialRes& lhs, const MaterialRes& rhs) { return !(lhs == rhs); }
 
-} // namespace Pilot
+} // namespace MoYu

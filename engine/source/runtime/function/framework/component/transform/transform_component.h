@@ -5,13 +5,10 @@
 #include "runtime/function/framework/component/component.h"
 #include "runtime/function/framework/object/object.h"
 
-namespace Pilot
+namespace MoYu
 {
-    REFLECTION_TYPE(TransformComponent)
-    CLASS(TransformComponent : public Component, WhiteListFields)
+    class TransformComponent : public Component
     {
-        REFLECTION_BODY(TransformComponent)
-
     public:
         TransformComponent() = default;
 
@@ -43,11 +40,10 @@ namespace Pilot
         Matrix4x4 m_matrix_world;
 
     protected:
-        META(Enable)
         Transform m_transform;
 
         Transform m_transform_buffer[2];
         size_t    m_current_index {0};
         size_t    m_next_index {1};
     };
-} // namespace Pilot
+} // namespace MoYu

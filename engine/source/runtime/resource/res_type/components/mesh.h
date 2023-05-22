@@ -5,7 +5,7 @@
 
 #include "runtime/resource/res_type/components/material.h"
 
-namespace Pilot
+namespace MoYu
 {
     REFLECTION_TYPE(SubMeshRes)
     CLASS(SubMeshRes, Fields)
@@ -26,4 +26,4 @@ namespace Pilot
     public:
         std::vector<SubMeshRes> m_sub_meshes;
     };
-} // namespace Pilot
+} // namespace MoYu

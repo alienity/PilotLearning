@@ -14,7 +14,7 @@
 
 #include <glm/glm.hpp>
 
-namespace Pilot
+namespace MoYu
 {
     //************************************************************
     // InputLayout类型相关
@@ -405,4 +405,4 @@ namespace Pilot
     extern robin_hood::unordered_map<std::string, BufferData>  mPath2BufferData;
     extern robin_hood::unordered_map<std::string, TextureData> mPath2TextureData;
 
-} // namespace Pilot
+} // namespace MoYu

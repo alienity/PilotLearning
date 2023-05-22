@@ -12,7 +12,7 @@
 #include "runtime/function/global/global_context.h"
 #include "runtime/function/input/input_system.h"
 
-namespace Pilot
+namespace MoYu
 {
     void MotorComponent::postLoadResource(std::weak_ptr<GObject> parent_object)
     {
@@ -176,7 +176,7 @@ namespace Pilot
                 break;
         }
 
-        // Pilot-hack: motor level simulating jump, character always above z-plane
+        // MoYu-hack: motor level simulating jump, character always above z-plane
         if (m_jump_state == JumpState::falling && m_target_position.z <= 0.f)
         {
             final_position.z = 0.f;
@@ -187,4 +187,4 @@ namespace Pilot
         m_target_position = final_position;
     }
 
-} // namespace Pilot
+} // namespace MoYu

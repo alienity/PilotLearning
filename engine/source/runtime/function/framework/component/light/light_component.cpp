@@ -12,7 +12,7 @@
 #include "runtime/function/render/glm_wrapper.h"
 #include <glm/gtx/quaternion.hpp>
 
-namespace Pilot
+namespace MoYu
 {
     void LightComponent::reset()
     {
@@ -137,7 +137,7 @@ namespace Pilot
                     float shadow_near = m_light_part_desc.m_spot_light_desc.m_shadow_near_plane;
                     float shadow_far  = m_light_part_desc.m_spot_light_desc.m_shadow_far_plane;
 
-                    Pilot::Radian fovy = Pilot::Radian(m_light_part_desc.m_spot_light_desc.m_outer_radians);
+                    MoYu::Radian fovy = MoYu::Radian(m_light_part_desc.m_spot_light_desc.m_outer_radians);
                     float aspect = 1.0f;
 
                     Matrix4x4 light_proj_matrix = Math::makePerspectiveMatrix(fovy, aspect, shadow_near, shadow_far);
@@ -151,4 +151,4 @@ namespace Pilot
         }
     }
 
-} // namespace Pilot
+} // namespace MoYu

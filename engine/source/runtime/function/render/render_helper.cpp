@@ -3,7 +3,7 @@
 #include "runtime/function/render/render_camera.h"
 #include "runtime/function/render/render_scene.h"
 
-namespace Pilot
+namespace MoYu
 {
     ClusterFrustum CreateClusterFrustumFromMatrix(glm::mat4 mat,
                                                   float     x_left,

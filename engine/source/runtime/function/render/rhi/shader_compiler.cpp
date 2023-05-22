@@ -204,8 +204,8 @@ ShaderCompilationResult ShaderCompiler::Compile(const std::filesystem::path&  Pa
         }
 
         // Save pdb
-        Pilot::FileStream Stream(PdbPath, Pilot::FileMode::Create, Pilot::FileAccess::Write);
-        Pilot::BinaryWriter Writer(Stream);
+        MoYu::FileStream Stream(PdbPath, MoYu::FileMode::Create, MoYu::FileAccess::Write);
+        MoYu::BinaryWriter Writer(Stream);
         Writer.write(Result.Pdb->GetBufferPointer(), Result.Pdb->GetBufferSize());
     }
 

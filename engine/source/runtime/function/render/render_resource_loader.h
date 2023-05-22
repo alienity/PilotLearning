@@ -11,7 +11,7 @@
 #include <string>
 #include <unordered_map>
 
-namespace Pilot
+namespace MoYu
 {
     class RenderScene;
     class RenderCamera;
@@ -64,4 +64,4 @@ namespace Pilot
 
         std::unordered_map<MeshSourceDesc, AxisAlignedBox> m_bounding_box_cache_map;
     };
-} // namespace Pilot
+} // namespace MoYu

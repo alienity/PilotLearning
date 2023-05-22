@@ -7,7 +7,7 @@
 
 #include <memory>
 
-namespace Pilot
+namespace MoYu
 {
     class PilotEditor;
     class RenderCamera;
@@ -72,4 +72,4 @@ namespace Pilot
 
         bool m_is_show_axis = true;
     };
-} // namespace Pilot
+} // namespace MoYu

@@ -8,18 +8,18 @@
 #include <assimp/scene.h>           // Output data structure
 #include <assimp/postprocess.h>     // Post processing flags
 
-typedef Pilot::D3D12MeshVertexPositionNormalTangentTexture VertexDefine;
+typedef MoYu::D3D12MeshVertexPositionNormalTangentTexture VertexDefine;
 
 struct ModelLoaderMesh
 {
-    Pilot::AxisAlignedBox      bounding_box_;
+    MoYu::AxisAlignedBox      bounding_box_;
     std::vector<VertexDefine>  vertexs_;
     std::vector<std::uint32_t> indices_;
 };
 
 struct MeshLoaderNode
 {
-    Pilot::AxisAlignedBox        bounding_box_;
+    MoYu::AxisAlignedBox        bounding_box_;
     std::vector<ModelLoaderMesh> meshes_;
     std::vector<MeshLoaderNode>  children_;
 };
@@ -62,7 +62,7 @@ void RecursiveLoad(MeshLoaderNode& meshes_, std::vector<VertexDefine>& vertexs_,
     }
 }
 
-Pilot::StaticMeshData LoadModel(std::string filename, Pilot::AxisAlignedBox& bounding_box)
+MoYu::StaticMeshData LoadModel(std::string filename, MoYu::AxisAlignedBox& bounding_box)
 {
     MeshLoaderNode meshes_ = {};
     LoadModelNormal(filename, meshes_);
@@ -71,13 +71,13 @@ Pilot::StaticMeshData LoadModel(std::string filename, Pilot::AxisAlignedBox& bou
     std::vector<std::uint32_t> indices_;
     RecursiveLoad(meshes_, vertexs_, indices_);
 
-    Pilot::StaticMeshData mesh_data;
+    MoYu::StaticMeshData mesh_data;
     
     std::uint32_t vertex_buffer_size = vertexs_.size() * sizeof(VertexDefine);
     std::uint32_t index_buffer_size  = indices_.size() * sizeof(std::uint32_t);
 
-    mesh_data.m_vertex_buffer = std::make_shared<Pilot::BufferData>(vertexs_.data(), vertex_buffer_size);
-    mesh_data.m_index_buffer  = std::make_shared<Pilot::BufferData>(indices_.data(), index_buffer_size);
+    mesh_data.m_vertex_buffer = std::make_shared<MoYu::BufferData>(vertexs_.data(), vertex_buffer_size);
+    mesh_data.m_index_buffer  = std::make_shared<MoYu::BufferData>(indices_.data(), index_buffer_size);
 
     bounding_box = meshes_.bounding_box_;
 
@@ -108,7 +108,7 @@ void ProcessNode(aiNode* node, const aiScene* scene, MeshLoaderNode& meshes_)
 ModelLoaderMesh ProcessMesh(aiMesh* mesh)
 {
     // Data to fill
-    Pilot::AxisAlignedBox      bounding_box;
+    MoYu::AxisAlignedBox      bounding_box;
     std::vector<VertexDefine>  vertices;
     std::vector<std::uint32_t> indices;
 
@@ -135,7 +135,7 @@ ModelLoaderMesh ProcessMesh(aiMesh* mesh)
         }
 
         vertices.push_back(vertex);
-        bounding_box.merge(Pilot::Vector3(vertex.position.x, vertex.position.y, vertex.position.z));
+        bounding_box.merge(MoYu::Vector3(vertex.position.x, vertex.position.y, vertex.position.z));
     }
 
     for (UINT i = 0; i < mesh->mNumFaces; i++)

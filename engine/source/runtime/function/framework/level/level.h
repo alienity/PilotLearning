@@ -1,19 +1,18 @@
 #pragma once
 
 #include "runtime/function/framework/object/object_id_allocator.h"
+#include "runtime/core/base/robin_hood.h"
 
 #include <memory>
 #include <string>
 #include <unordered_map>
 #include <optional>
 
-#include "runtime/core/base/robin_hood.h"
-
-namespace Pilot
+namespace MoYu
 {
     class Character;
     class GObject;
-    class ObjectInstanceRes;
+    //class ObjectInstanceRes;
     class PhysicsScene;
 
     using LevelObjectsMap = robin_hood::unordered_map<GObjectID, std::shared_ptr<GObject>>;
@@ -37,17 +36,16 @@ namespace Pilot
 
         const LevelObjectsMap& getAllGObjects() const { return m_gobjects; }
 
-        std::weak_ptr<GObject>   getGObjectByID(GObjectID go_id) const;
-        std::weak_ptr<Character> getCurrentActiveCharacter() const { return m_current_active_character; }
-
-        std::weak_ptr<GObject> createGObject(std::string nodeName, GObjectID parentID = k_root_gobject_id);
-        std::weak_ptr<GObject> createGObject(std::string nodeName, GObjectID objectID, GObjectID parentID);
-        std::weak_ptr<GObject> instantiateGObject(ObjectInstanceRes& object_instance_res);
+        std::shared_ptr<GObject> getGObjectByID(GObjectID go_id) const;
+        
+        std::shared_ptr<GObject> createGObject(std::string nodeName, GObjectID parentID = K_Root_Object_Id);
+        std::shared_ptr<GObject> createGObject(std::string nodeName, GObjectID objectID, GObjectID parentID);
+        //std::shared_ptr<GObject> instantiateGObject(ObjectInstanceRes& object_instance_res);
 
         void deleteGObject(GObjectID go_id);
         void changeParent(GObjectID from_id, GObjectID to_parent_id, std::optional<std::uint32_t> sibling_index = std::nullopt);
 
-        std::weak_ptr<GObject> getRootNode() { return m_root_object; }
+        std::shared_ptr<GObject> getRootNode() { return m_root_object; }
 
     protected:
         void init();
@@ -60,8 +58,6 @@ namespace Pilot
         // all game objects in this level, key: object id, value: object instance
         LevelObjectsMap m_gobjects;
 
-        std::weak_ptr<GObject> m_root_object;
-
-        std::shared_ptr<Character> m_current_active_character;
+        std::shared_ptr<GObject> m_root_object;
     };
-} // namespace Pilot
+} // namespace MoYu

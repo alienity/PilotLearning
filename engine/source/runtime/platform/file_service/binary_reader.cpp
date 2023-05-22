@@ -1,7 +1,7 @@
 #include "binary_reader.h"
 #include "file_stream.h"
 
-namespace Pilot
+namespace MoYu
 {
 
 	BinaryReader::BinaryReader(FileStream& Stream) : Stream(Stream)

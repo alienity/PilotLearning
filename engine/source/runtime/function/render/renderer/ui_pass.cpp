@@ -10,7 +10,7 @@
 
 #include <cassert>
 
-namespace Pilot
+namespace MoYu
 {
     void UIPass::initialize(const UIPassInitInfo& init_info)
     {

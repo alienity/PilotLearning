@@ -6,7 +6,7 @@
 
 #include <vector>
 
-namespace Pilot
+namespace MoYu
 {
     class PilotEditor;
 
@@ -65,4 +65,4 @@ namespace Pilot
         size_t       m_cursor_on_axis {3};
         unsigned int m_editor_command {0};
     };
-} // namespace Pilot
+} // namespace MoYu

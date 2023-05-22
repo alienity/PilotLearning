@@ -1,7 +1,7 @@
 #pragma once
 #include "runtime/platform/system/system_core.h"
 
-namespace Pilot
+namespace MoYu
 {
 	class FileStream;
 

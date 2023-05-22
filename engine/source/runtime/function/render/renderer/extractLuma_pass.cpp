@@ -4,7 +4,7 @@
 
 #include <cassert>
 
-namespace Pilot
+namespace MoYu
 {
     void ExtractLumaPass::initialize(const ExtractLumaInitInfo& init_info)
     {

@@ -10,7 +10,7 @@
 #include <vector>
 #include <map>
 
-namespace Pilot
+namespace MoYu
 {
     class RenderSwapContext;
 
@@ -39,4 +39,4 @@ namespace Pilot
 
         std::vector<GameObjectComponentDesc> m_raw_meshes;
     };
-} // namespace Pilot
+} // namespace MoYu

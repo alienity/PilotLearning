@@ -9,7 +9,7 @@
 #include "runtime/function/render/render_resource_base.h"
 #include "runtime/function/ui/window_ui.h"
 
-namespace Pilot
+namespace MoYu
 {
     class WindowSystem;
     class RendererPresent;

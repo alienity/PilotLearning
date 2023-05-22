@@ -6,7 +6,7 @@
 #include "runtime/function/render/rhi/rendergraph/RenderGraph.h"
 #include "runtime/function/render/rhi/rendergraph/RenderGraphRegistry.h"
 
-namespace Pilot
+namespace MoYu
 {
     void RenderPassBase::setCommonInfo(RenderPassCommonInfo common_info)
     {
@@ -15,4 +15,4 @@ namespace Pilot
         m_Device               = common_info.device;
         m_WindowSystem         = common_info.windowsSystem;
     }
-} // namespace Pilot
+} // namespace MoYu

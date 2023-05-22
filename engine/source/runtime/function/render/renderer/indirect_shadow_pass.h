@@ -5,11 +5,11 @@
 #include "runtime/function/global/global_context.h"
 #include "runtime/resource/config_manager/config_manager.h"
 
-namespace Pilot
+namespace MoYu
 {
     struct DirectionShadowmapStruct
     {
-        GObjectID    m_gobject_id {k_invalid_gobject_id};
+        GObjectID    m_gobject_id {K_Invalid_Object_Id};
         GComponentID m_gcomponent_id {k_invalid_gcomponent_id};
 
         Vector2 m_shadowmap_size;
@@ -18,7 +18,7 @@ namespace Pilot
 
         void Reset() 
         {
-            m_gobject_id = k_invalid_gobject_id;
+            m_gobject_id = K_Invalid_Object_Id;
             m_gcomponent_id = k_invalid_gcomponent_id;
             p_LightShadowmap = nullptr;
         }
@@ -26,7 +26,7 @@ namespace Pilot
 
     struct SpotShadowmapStruct
     {
-        GObjectID    m_gobject_id {k_invalid_gobject_id};
+        GObjectID    m_gobject_id {K_Invalid_Object_Id};
         GComponentID m_gcomponent_id {k_invalid_gcomponent_id};
 
         uint32_t m_spot_index;
@@ -36,7 +36,7 @@ namespace Pilot
         
         void Reset()
         {
-            m_gobject_id     = k_invalid_gobject_id;
+            m_gobject_id     = K_Invalid_Object_Id;
             m_gcomponent_id  = k_invalid_gcomponent_id;
             p_LightShadowmap = nullptr;
         }

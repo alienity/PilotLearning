@@ -4,7 +4,7 @@
 
 #include <cassert>
 
-namespace Pilot
+namespace MoYu
 {
 
 	void BloomPass::initialize(const BloomInitInfo& init_info)

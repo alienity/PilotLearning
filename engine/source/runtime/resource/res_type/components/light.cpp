@@ -2,7 +2,7 @@
 
 #include "runtime/core/base/macro.h"
 
-namespace Pilot
+namespace MoYu
 {
     LightComponentRes::LightComponentRes(const LightComponentRes& res)
     {
@@ -29,4 +29,4 @@ namespace Pilot
     }
 
     LightComponentRes::~LightComponentRes() { PILOT_REFLECTION_DELETE(m_parameter); }
-} // namespace Pilot
+} // namespace MoYu

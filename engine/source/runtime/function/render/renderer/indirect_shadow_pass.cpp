@@ -4,7 +4,7 @@
 
 #include "runtime/function/render/rhi/rhi_core.h"
 
-namespace Pilot
+namespace MoYu
 {
 
     void IndirectShadowPass::initialize(const ShadowPassInitInfo& init_info)
@@ -59,7 +59,7 @@ namespace Pilot
             int spotLightCount = m_visiable_nodes.p_spot_light_list->size();
             for (size_t i = 0; i < spotLightCount; i++)
             {
-                Pilot::SpotLightDesc curSpotLightDesc = m_visiable_nodes.p_spot_light_list->at(i);
+                MoYu::SpotLightDesc curSpotLightDesc = m_visiable_nodes.p_spot_light_list->at(i);
                 
                 bool curSpotLighShaodwmaptExist = false;
                 int  curShadowmapIndex          = -1;
@@ -170,7 +170,7 @@ namespace Pilot
 
             RHI::D3D12GraphicsContext* graphicContext = context->GetGraphicsContext();
 
-            if (directionalShadowmap.m_gobject_id != k_invalid_gobject_id &&
+            if (directionalShadowmap.m_gobject_id != K_Invalid_Object_Id &&
                 directionalShadowmap.m_gcomponent_id != k_invalid_gcomponent_id)
             {
                 RHI::D3D12Texture* pShadowmapStencilTex = registry->GetD3D12Texture(directionalShadowmapHandle);

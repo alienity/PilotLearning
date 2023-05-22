@@ -6,7 +6,7 @@
 
 #include "runtime/function/framework/component/component.h"
 
-namespace Pilot
+namespace MoYu
 {
     class RenderCamera;
 
@@ -46,4 +46,4 @@ namespace Pilot
         Vector3 m_up {Vector3::Up};
         Vector3 m_left{Vector3::Left};
     };
-} // namespace Pilot
+} // namespace MoYu

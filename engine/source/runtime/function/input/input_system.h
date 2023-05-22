@@ -2,7 +2,7 @@
 
 #include "runtime/core/math/moyu_math.h"
 
-namespace Pilot
+namespace MoYu
 {
     enum class GameCommand : unsigned int
     {
@@ -49,4 +49,4 @@ namespace Pilot
         int m_last_cursor_x {0};
         int m_last_cursor_y {0};
     };
-} // namespace Pilot
+} // namespace MoYu

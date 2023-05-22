@@ -15,8 +15,8 @@ std::uint64_t Utility::Hash64(const void* Object, size_t SizeInBytes)
 // A faster version of memcopy that uses SSE instructions.  TODO:  Write an ARM variant if necessary.
 void SIMDMemCopy(void* __restrict _Dest, const void* __restrict _Source, size_t NumQuadwords)
 {
-    ASSERT(Pilot::IsAligned(_Dest, 16));
-    ASSERT(Pilot::IsAligned(_Source, 16));
+    ASSERT(MoYu::IsAligned(_Dest, 16));
+    ASSERT(MoYu::IsAligned(_Source, 16));
 
     __m128i* __restrict Dest         = (__m128i* __restrict)_Dest;
     const __m128i* __restrict Source = (const __m128i* __restrict)_Source;
@@ -110,7 +110,7 @@ void SIMDMemCopy(void* __restrict _Dest, const void* __restrict _Source, size_t 
 
 void SIMDMemFill(void* __restrict _Dest, __m128 FillVector, size_t NumQuadwords)
 {
-    ASSERT(Pilot::IsAligned(_Dest, 16));
+    ASSERT(MoYu::IsAligned(_Dest, 16));
 
     const __m128i Source = _mm_castps_si128(FillVector);
     __m128i* __restrict Dest      = (__m128i* __restrict)_Dest;

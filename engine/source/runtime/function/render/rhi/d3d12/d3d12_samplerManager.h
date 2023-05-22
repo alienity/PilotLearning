@@ -35,7 +35,7 @@ namespace RHI
             AddressW = AddressMode;
         }
 
-        void SetBorderColor(Pilot::Color Border)
+        void SetBorderColor(MoYu::Color Border)
         {
             BorderColor[0] = Border.R();
             BorderColor[1] = Border.G();

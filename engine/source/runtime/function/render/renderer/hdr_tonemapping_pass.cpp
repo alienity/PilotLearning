@@ -4,7 +4,7 @@
 
 #include <cassert>
 
-namespace Pilot
+namespace MoYu
 {
 
 	void HDRToneMappingPass::initialize(const HDRToneMappingInitInfo& init_info)

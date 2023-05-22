@@ -5,7 +5,7 @@
 
 #include <cassert>
 
-namespace Pilot
+namespace MoYu
 {
 
 	void SkyBoxPass::initialize(const SkyBoxInitInfo& init_info)

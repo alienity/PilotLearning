@@ -10,8 +10,6 @@
 
 #pragma once
 
-#include "runtime/core/meta/reflection/reflection.h"
-
 #include <intrin.h>
 #include <algorithm>
 #include <cassert>
@@ -33,7 +31,7 @@
 
 #define INLINE __forceinline
 
-namespace Pilot
+namespace MoYu
 {
     template<typename T>
     __forceinline T AlignUpWithMask(T value, size_t mask)
@@ -103,7 +101,7 @@ namespace Pilot
     }
 }
 
-namespace Pilot
+namespace MoYu
 {
     static const float Math_POS_INFINITY = std::numeric_limits<float>::infinity();
     static const float Math_NEG_INFINITY = -std::numeric_limits<float>::infinity();
@@ -383,10 +381,8 @@ namespace Pilot
 
     //---------------------------------------------------------------------------------------------
 
-    REFLECTION_TYPE(Vector2)
-    STRUCT(Vector2, Fields)
+    struct Vector2
     {
-        REFLECTION_BODY(Vector2);
     public:
         float x {0.f}, y {0.f};
 
@@ -536,10 +532,8 @@ namespace Pilot
         static const Vector2 UnitY;
     };
 
-    REFLECTION_TYPE(Vector3)
-    STRUCT(Vector3, Fields)
+    struct Vector3
     {
-        REFLECTION_BODY(Vector3);
     public:
         float x {0.f}, y {0.f}, z {0.f};
 
@@ -697,10 +691,8 @@ namespace Pilot
         static const Vector3 Backward;
     };
 
-    REFLECTION_TYPE(Vector4)
-    STRUCT(Vector4, Fields)
+    struct Vector4
     {
-        REFLECTION_BODY(Vector4);
     public:
         float x {0.f}, y {0.f}, z {0.f}, w {0.f};
 
@@ -921,31 +913,6 @@ namespace Pilot
         static const Matrix3x3 Identity;
     };
 
-    REFLECTION_TYPE(Matrix4x4_)
-    CLASS(Matrix4x4_, Fields)
-    {
-        REFLECTION_BODY(Matrix4x4_);
-
-    public:
-        Matrix4x4_() {}
-        float v0 {1.f};
-        float v1 {0};
-        float v2 {0};
-        float v3 {0};
-        float v4 {0};
-        float v5 {1.f};
-        float v6 {0};
-        float v7 {0};
-        float v8 {0};
-        float v9 {0};
-        float v10 {1.f};
-        float v11 {0};
-        float v12 {0};
-        float v13 {0};
-        float v14 {0};
-        float v15 {1.f};
-    };
-
     // https://www.geometrictools.com/Documentation/EulerAngles.pdf
     // row-major notation, row-major storage
     struct Matrix4x4
@@ -954,49 +921,6 @@ namespace Pilot
         float m[4][4];
 
     public:
-        Matrix4x4(const Matrix4x4_& mat)
-        {
-            m[0][0] = mat.v0;
-            m[0][1] = mat.v1;
-            m[0][2] = mat.v2;
-            m[0][3] = mat.v3;
-            m[1][0] = mat.v4;
-            m[1][1] = mat.v5;
-            m[1][2] = mat.v6;
-            m[1][3] = mat.v7;
-            m[2][0] = mat.v8;
-            m[2][1] = mat.v9;
-            m[2][2] = mat.v10;
-            m[2][3] = mat.v11;
-            m[3][0] = mat.v12;
-            m[3][1] = mat.v13;
-            m[3][2] = mat.v14;
-            m[3][3] = mat.v15;
-        }
-
-        Matrix4x4_ toMatrix4x4_()
-        {
-            Matrix4x4_ res;
-
-            res.v0  = m[0][0];
-            res.v1  = m[0][1];
-            res.v2  = m[0][2];
-            res.v3  = m[0][3];
-            res.v4  = m[1][0];
-            res.v5  = m[1][1];
-            res.v6  = m[1][2];
-            res.v7  = m[1][3];
-            res.v8  = m[2][0];
-            res.v9  = m[2][1];
-            res.v10 = m[2][2];
-            res.v11 = m[2][3];
-            res.v12 = m[3][0];
-            res.v13 = m[3][1];
-            res.v14 = m[3][2];
-            res.v15 = m[3][3];
-            return res;
-        }
-
         Matrix4x4() { operator=(Identity); }
 
         explicit Matrix4x4(float arr[4][4]);
@@ -1176,10 +1100,8 @@ namespace Pilot
 
     // https://en.wikipedia.org/wiki/Quaternions_and_spatial_rotation
     // {\displaystyle \mathbf {p'} =\mathbf {q} \mathbf {p} \mathbf {q} ^{-1}}
-    REFLECTION_TYPE(Quaternion)
-    STRUCT(Quaternion, Fields)
+    struct Quaternion
     {
-        REFLECTION_BODY(Quaternion);
     public:
         float x {0.f}, y {0.f}, z {0.f}, w {1.f};
 
@@ -1269,10 +1191,8 @@ namespace Pilot
         static const Quaternion Identity;
     };
 
-    REFLECTION_TYPE(Transform)
-    STRUCT(Transform, Fields)
+    struct Transform
     {
-        REFLECTION_BODY(Transform);
     public:
         Vector3    m_position {Vector3::Zero};
         Vector3    m_scale {Vector3::One};
@@ -1292,10 +1212,8 @@ namespace Pilot
 
     //---------------------------------------------------------------------------------------------
 
-    REFLECTION_TYPE(AxisAlignedBox)
-    STRUCT(AxisAlignedBox, Fields)
+    struct AxisAlignedBox
     {
-        REFLECTION_BODY(AxisAlignedBox)
     public:
         AxisAlignedBox() {}
         AxisAlignedBox(const Vector3& center, const Vector3& half_extent);
@@ -1319,6 +1237,73 @@ namespace Pilot
         Vector3 m_max_corner {-std::numeric_limits<float>::max(),
                               -std::numeric_limits<float>::max(),
                               -std::numeric_limits<float>::max()};
+    };
+
+    struct Color
+    {
+        float r, g, b, a;
+
+    public:
+        Color() = default;
+        Color(float r, float g, float b) : r(r), g(g), b(b), a(1) {}
+        Color(float r, float g, float b, float a) : r(r), g(g), b(b), a(a) {}
+        Color(Vector3 color) : r(color[0]), g(color[1]), b(color[2]), a(1) {}
+        Color(Vector4 color) : r(color[0]), g(color[1]), b(color[2]), a(color[2]) {}
+
+        float operator[](size_t i) const
+        {
+            assert(i < 4);
+            return *(&r + i);
+        }
+        float& operator[](size_t i)
+        {
+            assert(i < 4);
+            return *(&r + i);
+        }
+
+        float R() const { return (&r)[0]; }
+        float G() const { return (&r)[1]; }
+        float B() const { return (&r)[2]; }
+        float A() const { return (&r)[3]; }
+
+        // Comparison operators
+        bool operator==(const Color& rhs) const { return (r == rhs.r && g == rhs.g && b == rhs.b && a == rhs.a); }
+        bool operator!=(const Color& rhs) const { return (r != rhs.r || g != rhs.g || b != rhs.b || a != rhs.a); }
+
+        void SetR(float r) { (&r)[0] = r; }
+        void SetG(float g) { (&r)[1] = g; }
+        void SetB(float b) { (&r)[2] = b; }
+        void SetA(float a) { (&r)[3] = a; }
+
+        void SetRGB(float r, float g, float b)
+        {
+            (&r)[0] = r;
+            (&r)[1] = g;
+            (&r)[2] = b;
+        }
+
+        Color ToSRGB() const;
+        Color FromSRGB() const;
+        Color ToREC709() const;
+        Color FromREC709() const;
+
+        // Probably want to convert to sRGB or Rec709 first
+        uint32_t R10G10B10A2() const;
+        uint32_t R8G8B8A8() const;
+
+        // Pack an HDR color into 32-bits
+        uint32_t R11G11B10F(bool RoundToEven = false) const;
+        uint32_t R9G9B9E5() const;
+
+        Vector4 toVector4() const { return Vector4(r, g, b, a); }
+        Vector3 toVector3() const { return Vector3(r, g, b); }
+
+    public:
+        static const Color White;
+        static const Color Black;
+        static const Color Red;
+        static const Color Green;
+        static const Color Blue;
     };
 
     //---------------------------------------------------------------------------------------------
@@ -1413,4 +1398,4 @@ namespace Pilot
 
     using DefaultRNG = RandomNumberGenerator<std::mt19937>;
 
-} // namespace MoYuMath
+} // namespace MoYu

@@ -4,7 +4,7 @@
 
 #include "runtime/function/render/rhi/rhi_core.h"
 
-namespace Pilot
+namespace MoYu
 {
 
 	void MSAAResolvePass::initialize(const MSAAResolveInitInfo& init_info)

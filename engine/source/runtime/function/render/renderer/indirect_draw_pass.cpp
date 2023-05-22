@@ -6,7 +6,7 @@
 
 #include <cassert>
 
-namespace Pilot
+namespace MoYu
 {
 
 	void IndirectDrawPass::initialize(const DrawPassInitInfo& init_info)

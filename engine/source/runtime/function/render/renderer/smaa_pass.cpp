@@ -6,7 +6,7 @@
 
 #include <cassert>
 
-namespace Pilot
+namespace MoYu
 {
 
 	void SMAAPass::initialize(const SMAAInitInfo& init_info)

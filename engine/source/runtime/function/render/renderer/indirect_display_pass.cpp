@@ -6,7 +6,7 @@
 
 #include <cassert>
 
-namespace Pilot
+namespace MoYu
 {
 
 	void DisplayPass::initialize(const DisplayPassInitInfo& init_info) {}

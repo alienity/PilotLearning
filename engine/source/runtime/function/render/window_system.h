@@ -10,7 +10,7 @@
 #include <functional>
 #include <vector>
 
-namespace Pilot
+namespace MoYu
 {
     struct WindowCreateInfo
     {
@@ -216,4 +216,4 @@ namespace Pilot
 
 
     };
-} // namespace Pilot
+} // namespace MoYu

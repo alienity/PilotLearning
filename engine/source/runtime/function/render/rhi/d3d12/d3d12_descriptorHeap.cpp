@@ -10,8 +10,8 @@ namespace RHI
                                                                                         OffsetType Alignment)
     {
         ASSERT(Size > 0);
-        ASSERT(Pilot::IsPowerOfTwo(Alignment));
-        Size = Pilot::AlignUp(Size, Alignment);
+        ASSERT(MoYu::IsPowerOfTwo(Alignment));
+        Size = MoYu::AlignUp(Size, Alignment);
         if (m_FreeSize < Size)
             return Allocation::InvalidAllocation();
 
@@ -36,7 +36,7 @@ namespace RHI
         //
         auto Offset = SmallestBlockIt->first;
         ASSERT(Offset % m_CurrAlignment == 0);
-        auto AlignedOffset = Pilot::AlignUp(Offset, Alignment);
+        auto AlignedOffset = MoYu::AlignUp(Offset, Alignment);
         auto AdjustedSize  = Size + (AlignedOffset - Offset);
         ASSERT(AdjustedSize <= Size + AlignmentReserve);
         auto NewOffset = Offset + AdjustedSize;
@@ -53,7 +53,7 @@ namespace RHI
 
         if ((Size & (m_CurrAlignment - 1)) != 0)
         {
-            if (Pilot::IsPowerOfTwo(Size))
+            if (MoYu::IsPowerOfTwo(Size))
             {
                 ASSERT(Size >= Alignment && Size < m_CurrAlignment);
                 m_CurrAlignment = Size;

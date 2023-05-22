@@ -2,7 +2,7 @@
 
 #include "runtime/engine.h"
 
-namespace Pilot
+namespace MoYu
 {
     void TransformComponent::postLoadResource(std::weak_ptr<GObject> parent_gobject)
     {
@@ -103,4 +103,4 @@ namespace Pilot
     }
 
 
-} // namespace Pilot
+} // namespace MoYu

@@ -8,9 +8,7 @@
 #include "runtime/function/framework/level/level.h"
 #include "runtime/function/global/global_context.h"
 
-#include "_generated/serializer/all_serializer.h"
-
-namespace Pilot
+namespace MoYu
 {
     WorldManager::~WorldManager() { clear(); }
 
@@ -140,4 +138,4 @@ namespace Pilot
 
         active_level->save();
     }
-} // namespace Pilot
+} // namespace MoYu

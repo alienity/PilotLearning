@@ -200,7 +200,7 @@ namespace RHI
         void SetViewportAndScissorRect(const RHIViewport& vp, const RHIRect& rect);
         void SetViewportAndScissorRect(UINT x, UINT y, UINT w, UINT h);
         void SetStencilRef(UINT StencilRef);
-        void SetBlendFactor(Pilot::Color BlendFactor);
+        void SetBlendFactor(MoYu::Color BlendFactor);
         void SetPrimitiveTopology(D3D12_PRIMITIVE_TOPOLOGY Topology);
 
         void SetConstantArray(UINT RootIndex, UINT NumConstants, const void* pConstants);

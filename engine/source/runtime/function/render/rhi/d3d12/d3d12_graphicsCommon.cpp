@@ -102,12 +102,12 @@ namespace RHI
 
         SamplerLinearBorderDesc.Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR;
         SamplerLinearBorderDesc.SetTextureAddressMode(D3D12_TEXTURE_ADDRESS_MODE_BORDER);
-        SamplerLinearBorderDesc.SetBorderColor(Pilot::Color(0.0f, 0.0f, 0.0f, 0.0f));
+        SamplerLinearBorderDesc.SetBorderColor(MoYu::Color(0.0f, 0.0f, 0.0f, 0.0f));
         SamplerLinearBorder = SamplerLinearBorderDesc.CreateDescriptor(pParent);
 
         SamplerPointBorderDesc.Filter = D3D12_FILTER_MIN_MAG_MIP_POINT;
         SamplerPointBorderDesc.SetTextureAddressMode(D3D12_TEXTURE_ADDRESS_MODE_BORDER);
-        SamplerPointBorderDesc.SetBorderColor(Pilot::Color(0.0f, 0.0f, 0.0f, 0.0f));
+        SamplerPointBorderDesc.SetBorderColor(MoYu::Color(0.0f, 0.0f, 0.0f, 0.0f));
         SamplerPointBorder = SamplerPointBorderDesc.CreateDescriptor(pParent);
 
         // Default rasterizer states

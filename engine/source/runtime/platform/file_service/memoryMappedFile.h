@@ -2,7 +2,7 @@
 #include "runtime/platform/system/system_core.h"
 #include "memoryMappedView.h"
 
-namespace Pilot
+namespace MoYu
 {
     class FileStream;
 

@@ -15,7 +15,7 @@
 
 #include <stdexcept>
 
-namespace Pilot
+namespace MoYu
 {
     void RenderResource::uploadGlobalRenderResource(LevelResourceDesc level_resource_desc)
     {
@@ -1044,4 +1044,4 @@ namespace Pilot
     }
 
 
-} // namespace Pilot
+} // namespace MoYu

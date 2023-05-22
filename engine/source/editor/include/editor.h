@@ -4,7 +4,7 @@
 
 #include <memory>
 
-namespace Pilot
+namespace MoYu
 {
     class EditorUI;
     class PilotEngine;
@@ -26,4 +26,4 @@ namespace Pilot
         std::shared_ptr<EditorUI> m_editor_ui;
         PilotEngine*              m_engine_runtime {nullptr};
     };
-} // namespace Pilot
+} // namespace MoYu

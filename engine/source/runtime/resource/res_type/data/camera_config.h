@@ -3,7 +3,7 @@
 
 #include "runtime/core/math/moyu_math.h"
 
-namespace Pilot
+namespace MoYu
 {
     REFLECTION_TYPE(CameraPose)
     CLASS(CameraPose, Fields)
@@ -27,4 +27,4 @@ namespace Pilot
         float      m_z_far;
         float      m_z_near;
     };
-} // namespace Pilot
+} // namespace MoYu

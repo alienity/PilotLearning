@@ -3,7 +3,7 @@
 #include "runtime/core/color/color.h"
 #include "runtime/core/meta/reflection/reflection.h"
 
-namespace Pilot
+namespace MoYu
 {
     REFLECTION_TYPE(LightParameter)
     CLASS(LightParameter, Fields)
@@ -69,4 +69,4 @@ namespace Pilot
 
         ~LightComponentRes();
     };
-} // namespace Pilot
+} // namespace MoYu

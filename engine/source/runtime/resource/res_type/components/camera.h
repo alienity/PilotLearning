@@ -2,7 +2,7 @@
 #include "runtime/core/math/moyu_math.h"
 #include "runtime/core/meta/reflection/reflection.h"
 
-namespace Pilot
+namespace MoYu
 {
     REFLECTION_TYPE(CameraParameter)
     CLASS(CameraParameter, Fields)
@@ -60,4 +60,4 @@ namespace Pilot
 
         ~CameraComponentRes();
     };
-} // namespace Pilot
+} // namespace MoYu

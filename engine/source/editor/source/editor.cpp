@@ -10,7 +10,7 @@
 #include "editor/include/editor_scene_manager.h"
 #include "editor/include/editor_ui.h"
 
-namespace Pilot
+namespace MoYu
 {
     void registerEdtorTickComponent(std::string component_type_name)
     {
@@ -63,4 +63,4 @@ namespace Pilot
                 return;
         }
     }
-} // namespace Pilot
+} // namespace MoYu

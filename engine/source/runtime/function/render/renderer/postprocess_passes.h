@@ -12,7 +12,7 @@
 #include "runtime/function/render/renderer/hdr_tonemapping_pass.h"
 #include "runtime/function/render/renderer/exposure_pass.h"
 
-namespace Pilot
+namespace MoYu
 {
     class PostprocessPasses : public RenderPass
 	{

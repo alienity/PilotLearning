@@ -4,7 +4,7 @@
 
 #include <string>
 #include <vector>
-namespace Pilot
+namespace MoYu
 {
 
     REFLECTION_TYPE(Vertex)
@@ -52,4 +52,4 @@ namespace Pilot
         std::vector<SkeletonBinding> bind;
     };
 
-} // namespace Pilot
+} // namespace MoYu

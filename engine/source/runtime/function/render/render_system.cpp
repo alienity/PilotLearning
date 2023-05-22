@@ -12,7 +12,7 @@
 
 #include "runtime/function/render/renderer_moyu.h"
 
-namespace Pilot
+namespace MoYu
 {
     RenderSystem::~RenderSystem() 
     {
@@ -419,4 +419,4 @@ namespace Pilot
     }
 
 
-} // namespace Pilot
+} // namespace MoYu

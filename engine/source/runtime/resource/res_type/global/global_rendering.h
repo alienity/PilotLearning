@@ -1,12 +1,8 @@
 #pragma once
-#include "runtime/core/meta/reflection/reflection.h"
-
-#include "runtime/core/color/color.h"
 #include "runtime/core/math/moyu_math.h"
-
 #include "runtime/resource/res_type/data/camera_config.h"
 
-namespace Pilot
+namespace MoYu
 {
     REFLECTION_TYPE(SkyBoxIrradianceMap)
     CLASS(SkyBoxIrradianceMap, Fields)

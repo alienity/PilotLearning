@@ -1,6 +1,6 @@
 #pragma once
 
-namespace Pilot
+namespace MoYu
 {
     struct EditorGlobalContextInitInfo
     {
@@ -24,4 +24,4 @@ namespace Pilot
     };
 
     extern EditorGlobalContext g_editor_global_context;
-} // namespace Pilot
+} // namespace MoYu

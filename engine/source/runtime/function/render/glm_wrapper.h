@@ -16,7 +16,7 @@
 
 #include <tuple>
 
-namespace Pilot
+namespace MoYu
 {
     class GLMUtil
     {
@@ -95,4 +95,4 @@ namespace Pilot
         return std::tuple<Quaternion, Vector3, Vector3> {r, t, s};
     }
 
-} // namespace Pilot
+} // namespace MoYu

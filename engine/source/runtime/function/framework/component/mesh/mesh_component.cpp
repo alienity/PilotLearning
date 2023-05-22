@@ -13,7 +13,7 @@
 #include "runtime/function/render/render_system.h"
 #include "runtime/function/render/glm_wrapper.h"
 
-namespace Pilot
+namespace MoYu
 {
     void MeshComponent::reset()
     {

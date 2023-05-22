@@ -9,7 +9,7 @@
 #include <memory>
 #include <optional>
 
-namespace Pilot
+namespace MoYu
 {
     class WindowSystem;
     class RenderResourceBase;
@@ -57,4 +57,4 @@ namespace Pilot
 
         void processSwapData();
     };
-} // namespace Pilot
+} // namespace MoYu
