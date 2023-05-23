@@ -1,18 +1,12 @@
 #pragma once
-#include "runtime/core/meta/reflection/reflection.h"
 #include "runtime/core/math/moyu_math.h"
 
 #include <string>
 #include <vector>
 namespace MoYu
 {
-
-    REFLECTION_TYPE(Vertex)
-    CLASS(Vertex, Fields)
+    struct Vertex
     {
-        REFLECTION_BODY(Vertex);
-
-    public:
         float px;
         float py;
         float pz;
@@ -26,12 +20,8 @@ namespace MoYu
         float v;
     };
 
-    REFLECTION_TYPE(SkeletonBinding)
-    CLASS(SkeletonBinding, Fields)
+    struct SkeletonBinding
     {
-        REFLECTION_BODY(SkeletonBinding);
-
-    public:
         int   index0;
         int   index1;
         int   index2;
@@ -41,12 +31,9 @@ namespace MoYu
         float weight2;
         float weight3;
     };
-    REFLECTION_TYPE(MeshData)
-    CLASS(MeshData, Fields)
-    {
-        REFLECTION_BODY(MeshData);
 
-    public:
+    struct MeshData
+    {
         std::vector<Vertex>          vertex_buffer;
         std::vector<int>             index_buffer;
         std::vector<SkeletonBinding> bind;
