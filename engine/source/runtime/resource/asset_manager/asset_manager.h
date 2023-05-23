@@ -1,7 +1,7 @@
 #pragma once
 
 #include "runtime/core/base/macro.h"
-#include "runtime/core/meta/serializer/serializer.h"
+#include "runtime/core/meta/json.h"
 
 #include <filesystem>
 #include <fstream>
@@ -31,15 +31,23 @@ namespace MoYu
             std::string asset_json_text(buffer.str());
 
             // parse to json object and read to runtime res object
+
+            json j_asset = json::parse(asset_json_text);
+
+            out_asset = j_asset.get<AssetType>();
+
+            /*
             std::string error;
-            auto&&      asset_json = PJson::parse(asset_json_text, error);
+            auto&&      asset_json = json::parse(asset_json_text, error);
             if (!error.empty())
             {
                 LOG_ERROR("parse json file {} failed!", asset_url);
                 return false;
             }
+            */
 
-            PSerializer::read(asset_json, out_asset);
+            //PSerializer::read(asset_json, out_asset);
+
             return true;
         }
 

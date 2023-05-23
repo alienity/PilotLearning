@@ -5,11 +5,6 @@ set(TARGET_NAME PilotRuntime)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-set(json_inlcude ${THIRD_PARTY_DIR}/json11)
-set(json_lib_dir ${THIRD_PARTY_DIR}/lib/json11)
-
-add_library(json11 ${json_inlcude}/json11.cpp)
-set_target_properties(json11 PROPERTIES FOLDER "ThirdParty/json11" )
 # ---- Add source files ----
 
 # Note: globbing sources is considered bad practice as CMake's generators may not detect new files
@@ -98,9 +93,10 @@ target_include_directories(
 
 
 
+set(JSON_Install OFF CACHE INTERNAL "")
 target_include_directories(
   ${TARGET_NAME} 
-  PUBLIC $<BUILD_INTERFACE:${json_inlcude}>
+  PUBLIC $<BUILD_INTERFACE:${THIRD_PARTY_DIR}/nlohmann_json/single_include>
 )
 
 # target_include_directories(

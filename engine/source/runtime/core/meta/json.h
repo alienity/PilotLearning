@@ -1,3 +1,5 @@
 #pragma once
-#include "json11.hpp"
-using PJson = json11::Json;
+
+#include <fstream>
+#include <nlohmann/json.hpp>
+using json = nlohmann::json;
