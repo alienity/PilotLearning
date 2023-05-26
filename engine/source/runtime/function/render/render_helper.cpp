@@ -349,4 +349,4 @@ namespace MoYu
         glm::mat4 light_proj_view = (light_proj * light_view);
         return light_proj_view;
     }
-} // namespace Piccolo
+} // namespace MoYu

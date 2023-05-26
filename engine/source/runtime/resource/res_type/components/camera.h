@@ -1,63 +1,48 @@
 #pragma once
-#include "runtime/core/math/moyu_math.h"
-#include "runtime/core/meta/reflection/reflection.h"
+#include "runtime/resource/res_type/common_serializer.h"
 
 namespace MoYu
 {
-    REFLECTION_TYPE(CameraParameter)
-    CLASS(CameraParameter, Fields)
-    {
-        REFLECTION_BODY(CameraParameter);
 
-    public:
+    struct FirstPersonCameraParameter
+    {
         float m_fov {50.f};
-
-        virtual ~CameraParameter() {}
-    };
-
-    REFLECTION_TYPE(FirstPersonCameraParameter)
-    CLASS(FirstPersonCameraParameter : public CameraParameter, Fields)
-    {
-        REFLECTION_BODY(FirstPersonCameraParameter);
-
-    public:
         float m_vertical_offset {0.6f};
     };
+    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(FirstPersonCameraParameter, m_fov, m_vertical_offset)
 
-    REFLECTION_TYPE(ThirdPersonCameraParameter)
-    CLASS(ThirdPersonCameraParameter : public CameraParameter, WhiteListFields)
+    struct ThirdPersonCameraParameter
     {
-        REFLECTION_BODY(ThirdPersonCameraParameter);
-
-    public:
-        META(Enable)
-        float m_horizontal_offset {3.f};
-        META(Enable)
+        float      m_fov {50.f};
+        float      m_horizontal_offset {3.f};
         float      m_vertical_offset {2.5f};
-        Quaternion m_cursor_pitch;
-        Quaternion m_cursor_yaw;
+        Quaternion m_cursor_pitch {Quaternion::Identity};
+        Quaternion m_cursor_yaw {Quaternion::Identity};
     };
+    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(ThirdPersonCameraParameter,
+                                       m_fov,
+                                       m_horizontal_offset,
+                                       m_vertical_offset,
+                                       m_cursor_pitch,
+                                       m_cursor_yaw)
 
-    REFLECTION_TYPE(FreeCameraParameter)
-    CLASS(FreeCameraParameter : public CameraParameter, Fields)
+    struct FreeCameraParameter
     {
-        REFLECTION_BODY(FreeCameraParameter);
-
-    public:
+        float m_fov {50.f};
         float m_speed {1.f};
     };
+    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(FreeCameraParameter, m_fov, m_speed)
 
-    REFLECTION_TYPE(CameraComponentRes)
-    CLASS(CameraComponentRes, Fields)
+    struct CameraComponentRes
     {
-        REFLECTION_BODY(CameraComponentRes);
-
-    public:
-        Reflection::ReflectionPtr<CameraParameter> m_parameter;
-
-        CameraComponentRes() = default;
-        CameraComponentRes(const CameraComponentRes& res);
-
-        ~CameraComponentRes();
+        std::string                m_CamParamName;
+        FirstPersonCameraParameter m_FirstPersonCamParam;
+        ThirdPersonCameraParameter m_ThirdPersonCamParam;
+        FreeCameraParameter        m_FreeCamParam;
     };
+    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(CameraComponentRes,
+                                       m_CamParamName,
+                                       m_FirstPersonCamParam,
+                                       m_ThirdPersonCamParam,
+                                       m_FreeCamParam)
 } // namespace MoYu

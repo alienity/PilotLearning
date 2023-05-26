@@ -59,6 +59,11 @@ if(NOT TARGET stb)
     set_target_properties(stb PROPERTIES FOLDER ${third_party_folder}/stb)
 endif()
 
+if(NOT TARGET tinyexr)
+    include(tinyexr.cmake)
+    set_target_properties(tinyexr PROPERTIES FOLDER ${third_party_folder}/tinyexr-1.0.2)
+endif()
+
 if(NOT TARGET tinyobjloader)
     add_subdirectory(tinyobjloader)
     set_target_properties(tinyobjloader PROPERTIES FOLDER ${third_party_folder}/tinyobjloader)

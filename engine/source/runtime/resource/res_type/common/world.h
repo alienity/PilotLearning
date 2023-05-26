@@ -1,9 +1,6 @@
 #pragma once
 
-#include "runtime/core/meta/json.h"
-
-#include <string>
-#include <vector>
+#include "runtime/resource/res_type/common_serializer.h"
 
 namespace MoYu
 {

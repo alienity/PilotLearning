@@ -19,12 +19,26 @@ namespace MoYu
     //************************************************************
     // InputLayout类型相关
     //************************************************************
+
+    enum InputDefinition
+    {
+        POSITION = 0,
+        NORMAL   = 1 << 0,
+        TANGENT  = 1 << 1,
+        TEXCOORD = 1 << 2,
+        INDICES  = 1 << 3,
+        WEIGHTS  = 1 << 4
+    };
+    DEFINE_MOYU_ENUM_FLAG_OPERATORS(InputDefinition)
+
     // Vertex struct holding position information.
     struct D3D12MeshVertexPosition
     {
         glm::vec3 position;
 
         static const RHI::D3D12InputLayout InputLayout;
+
+        static const InputDefinition InputElementDefinition = InputDefinition::POSITION;
 
     private:
         static constexpr unsigned int         InputElementCount = 1;
@@ -38,6 +52,8 @@ namespace MoYu
         glm::vec2 texcoord;
 
         static const RHI::D3D12InputLayout InputLayout;
+
+        static const InputDefinition InputElementDefinition = InputDefinition::POSITION | InputDefinition::TEXCOORD;
 
     private:
         static constexpr unsigned int         InputElementCount = 2;
@@ -55,6 +71,9 @@ namespace MoYu
 
         static const RHI::D3D12InputLayout InputLayout;
 
+        static const InputDefinition InputElementDefinition =
+            InputDefinition::POSITION | InputDefinition::NORMAL | InputDefinition::TANGENT | InputDefinition::TEXCOORD;
+
     private:
         static constexpr unsigned int         InputElementCount = 4;
         static const D3D12_INPUT_ELEMENT_DESC InputElements[InputElementCount];
@@ -71,6 +90,10 @@ namespace MoYu
 
         static const RHI::D3D12InputLayout InputLayout;
 
+        static const InputDefinition InputElementDefinition = InputDefinition::POSITION | InputDefinition::NORMAL |
+                                                              InputDefinition::TANGENT | InputDefinition::TEXCOORD |
+                                                              InputDefinition::INDICES | InputDefinition::WEIGHTS;
+
     private:
         static constexpr unsigned int         InputElementCount = 6;
         static const D3D12_INPUT_ELEMENT_DESC InputElements[InputElementCount];
@@ -84,7 +107,6 @@ namespace MoYu
     {
         GObjectID    m_object_id {K_Invalid_Object_Id};
         GComponentID m_component_id {K_Invalid_Component_Id};
-        GInstanceID  m_instance_id {K_Invalid_Instance_Id};
     };
 
     struct InternalMesh
@@ -211,6 +233,14 @@ namespace MoYu
         std::string m_mesh_file;
     };
 
+    struct SceneImage
+    {
+        bool m_is_srgb;
+        bool m_auto_mips;
+        int m_mip_levels;
+        std::string m_image_file;
+    };
+
     struct ScenePBRMaterial
     {
         bool m_blend {false};
@@ -223,11 +253,11 @@ namespace MoYu
         float   m_occlusion_strength {1.0f};
         Vector3 m_emissive_factor {0.0f, 0.0f, 0.0f};
 
-        std::string m_base_color_texture_file;
-        std::string m_metallic_roughness_texture_file;
-        std::string m_normal_texture_file;
-        std::string m_occlusion_texture_file;
-        std::string m_emissive_texture_file;
+        SceneImage m_base_color_texture_file;
+        SceneImage m_metallic_roughness_texture_file;
+        SceneImage m_normal_texture_file;
+        SceneImage m_occlusion_texture_file;
+        SceneImage m_emissive_texture_file;
     };
 
     struct SceneMeshRenderer
@@ -334,15 +364,14 @@ namespace MoYu
     struct TextureData
     {
     public:
-        uint32_t m_width {0};
-        uint32_t m_height {0};
+        uint32_t m_width {1};
+        uint32_t m_height {1};
         uint32_t m_depth {0};
         uint32_t m_mip_levels {0};
         uint32_t m_array_layers {0};
-        bool     m_is_srgb {false};
+        uint32_t m_channels {4};
+        bool     m_is_hdr {false};
         void*    m_pixels {nullptr};
-
-        DXGI_FORMAT m_format {DXGI_FORMAT::DXGI_FORMAT_R8G8B8A8_UNORM};
 
         TextureData() = default;
         ~TextureData()
@@ -370,39 +399,15 @@ namespace MoYu
 
     struct StaticMeshData
     {
+        InputDefinition m_InputElementDefinition;
         std::shared_ptr<BufferData> m_vertex_buffer;
         std::shared_ptr<BufferData> m_index_buffer;
     };
 
     struct RenderMeshData
     {
-        StaticMeshData              m_static_mesh_data;
+        StaticMeshData m_static_mesh_data;
         std::shared_ptr<BufferData> m_skeleton_binding_buffer;
     };
-
-    /*
-    struct RenderMaterialData
-    {
-        bool m_blend;
-        bool m_double_sided;
-
-        Vector4 m_base_color_factor;
-        float   m_metallic_factor;
-        float   m_roughness_factor;
-        float   m_normal_scale;
-        float   m_occlusion_strength;
-        Vector3 m_emissive_factor;
-
-        std::shared_ptr<TextureData> m_base_color_texture;
-        std::shared_ptr<TextureData> m_metallic_roughness_texture;
-        std::shared_ptr<TextureData> m_normal_texture;
-        std::shared_ptr<TextureData> m_occlusion_texture;
-        std::shared_ptr<TextureData> m_emissive_texture;
-    };
-    */
-
-
-    extern robin_hood::unordered_map<std::string, BufferData>  mPath2BufferData;
-    extern robin_hood::unordered_map<std::string, TextureData> mPath2TextureData;
 
 } // namespace MoYu

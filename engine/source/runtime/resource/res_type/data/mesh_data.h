@@ -1,8 +1,6 @@
 #pragma once
-#include "runtime/core/math/moyu_math.h"
+#include "runtime/resource/res_type/common_serializer.h"
 
-#include <string>
-#include <vector>
 namespace MoYu
 {
     struct Vertex
@@ -19,6 +17,7 @@ namespace MoYu
         float u;
         float v;
     };
+    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Vertex, px, py, pz, nx, ny, nz, tx, ty, tz, u, v)
 
     struct SkeletonBinding
     {
@@ -31,12 +30,14 @@ namespace MoYu
         float weight2;
         float weight3;
     };
+    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(SkeletonBinding, index0, index1, index2, index3, weight0, weight1, weight2, weight3)
 
     struct MeshData
     {
         std::vector<Vertex>          vertex_buffer;
         std::vector<int>             index_buffer;
-        std::vector<SkeletonBinding> bind;
+        std::vector<SkeletonBinding> skeleton_bind;
     };
+    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(MeshData, vertex_buffer, index_buffer, skeleton_bind)
 
 } // namespace MoYu

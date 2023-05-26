@@ -1,47 +1,25 @@
 #pragma once
-#include "runtime/core/math/moyu_math.h"
-#include "runtime/core/meta/reflection/reflection.h"
+#include "runtime/resource/res_type/common_serializer.h"
 
 namespace MoYu
 {
-    REFLECTION_TYPE(Geometry)
-    CLASS(Geometry, Fields)
+    struct Box
     {
-        REFLECTION_BODY(Geometry);
-
-    public:
-        virtual ~Geometry() {}
-    };
-
-    REFLECTION_TYPE(Box)
-    CLASS(Box : public Geometry, Fields)
-    {
-        REFLECTION_BODY(Box);
-
-    public:
-        ~Box() override {}
-
         Vector3 m_half_extents {0.5f, 0.5f, 0.5f};
     };
+    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Box, m_half_extents)
 
-    REFLECTION_TYPE(Sphere)
-    CLASS(Sphere : public Geometry, Fields)
+    struct Sphere
     {
-        REFLECTION_BODY(Sphere);
-
-    public:
-        ~Sphere() override {}
         float m_radius {0.5f};
     };
+    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Sphere, m_radius)
 
-    REFLECTION_TYPE(Capsule)
-    CLASS(Capsule : public Geometry, Fields)
+    struct Capsule
     {
-        REFLECTION_BODY(Capsule);
-
-    public:
-        ~Capsule() override {}
         float m_radius {0.3f};
         float m_half_height {0.7f};
     };
+    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Capsule, m_radius, m_half_height)
+
 } // namespace MoYu

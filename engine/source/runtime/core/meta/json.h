@@ -2,4 +2,4 @@
 
 #include <fstream>
 #include <nlohmann/json.hpp>
-using json = nlohmann::json;
+using NJson = nlohmann::json;

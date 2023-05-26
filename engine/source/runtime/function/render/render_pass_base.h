@@ -47,4 +47,4 @@ namespace MoYu
         WindowSystem*              m_WindowSystem;
 
     };
-} // namespace Piccolo
+} // namespace MoYu

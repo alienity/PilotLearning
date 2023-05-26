@@ -1,8 +1,6 @@
 #pragma once
 
-#include "runtime/function/render/render_resource_base.h"
-#include "runtime/function/render/render_type.h"
-
+#include "runtime/function/render/render_resource_loader.h"
 #include "runtime/function/render/render_common.h"
 
 #include <array>
@@ -56,12 +54,6 @@ namespace MoYu
         IBLResource          _ibl_resource;
         ColorGradingResource _color_grading_resource;
     };
-
-    //struct DefaultResource
-    //{
-    //    std::shared_ptr<RHI::D3D12Texture> _white_texture2d_image;
-    //    std::shared_ptr<RHI::D3D12Texture> _black_texture2d_image;
-    //};
 
     class RenderResource : public RenderResourceBase
     {

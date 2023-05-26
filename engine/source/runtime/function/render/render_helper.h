@@ -10,8 +10,6 @@
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE 1
 #endif
 
-
-
 #include <glm/glm.hpp>
 
 namespace MoYu

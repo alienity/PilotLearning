@@ -56,4 +56,4 @@ namespace MoYu
         GuidAllocator<ScenePBRMaterial> m_material_asset_id_allocator;
         
     };
-} // namespace Piccolo
+} // namespace MoYu

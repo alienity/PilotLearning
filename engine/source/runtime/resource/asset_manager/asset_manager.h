@@ -32,21 +32,9 @@ namespace MoYu
 
             // parse to json object and read to runtime res object
 
-            json j_asset = json::parse(asset_json_text);
+            NJson j_asset = NJson::parse(asset_json_text);
 
             out_asset = j_asset.get<AssetType>();
-
-            /*
-            std::string error;
-            auto&&      asset_json = json::parse(asset_json_text, error);
-            if (!error.empty())
-            {
-                LOG_ERROR("parse json file {} failed!", asset_url);
-                return false;
-            }
-            */
-
-            //PSerializer::read(asset_json, out_asset);
 
             return true;
         }
@@ -62,8 +50,8 @@ namespace MoYu
             }
 
             // write to json object and dump to string
-            auto&&        asset_json      = PSerializer::write(out_asset);
-            std::string&& asset_json_text = asset_json.dump();
+            NJson asset_json = out_asset;
+            std::string asset_json_text = asset_json;
 
             // write to file
             asset_json_file << asset_json_text;
