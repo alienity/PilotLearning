@@ -73,7 +73,7 @@ namespace MoYu
     public:
         ~IndirectShadowPass() { destroy(); }
 
-        void prepareShadowmaps(std::shared_ptr<RenderResourceBase> render_resource);
+        void prepareShadowmaps(std::shared_ptr<RenderResource> render_resource);
 
         void initialize(const ShadowPassInitInfo& init_info);
         void update(RHI::RenderGraph&         graph,

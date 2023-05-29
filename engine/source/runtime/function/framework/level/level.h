@@ -13,7 +13,7 @@ namespace MoYu
     class Character;
     class GObject;
     //class ObjectInstanceRes;
-    class PhysicsScene;
+    //class PhysicsScene;
 
     using LevelObjectsMap = robin_hood::unordered_map<GObjectID, std::shared_ptr<GObject>>;
 
@@ -40,7 +40,8 @@ namespace MoYu
         
         std::shared_ptr<GObject> createGObject(std::string nodeName, GObjectID parentID = K_Root_Object_Id);
         std::shared_ptr<GObject> createGObject(std::string nodeName, GObjectID objectID, GObjectID parentID);
-        //std::shared_ptr<GObject> instantiateGObject(ObjectInstanceRes& object_instance_res);
+
+        std::shared_ptr<GObject> instantiateGObject(ObjectInstanceRes& object_instance_res);
 
         void deleteGObject(GObjectID go_id);
         void changeParent(GObjectID from_id, GObjectID to_parent_id, std::optional<std::uint32_t> sibling_index = std::nullopt);

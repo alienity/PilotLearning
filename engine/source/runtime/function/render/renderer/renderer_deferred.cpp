@@ -152,7 +152,7 @@ namespace MoYu
         window_ui->setGameView(p_RenderTargetTex->GetDefaultSRV()->GetGpuHandle(), backBufferWidth, backBufferHeight);
     }
 
-    void DeferredRenderer::PreparePassData(std::shared_ptr<RenderResourceBase> render_resource)
+    void DeferredRenderer::PreparePassData(std::shared_ptr<RenderResource> render_resource)
     {
         mIndirectCullPass->prepareMeshData(render_resource);
         mIndirectShadowPass->prepareShadowmaps(render_resource);

@@ -11,24 +11,6 @@
 
 namespace MoYu
 {
-    struct LevelIBLResourceDesc
-    {
-        SkyBoxIrradianceMap m_skybox_irradiance_map;
-        SkyBoxSpecularMap   m_skybox_specular_map;
-        std::string         m_brdf_map;
-    };
-
-    struct LevelColorGradingResourceDesc
-    {
-        std::string m_color_grading_map;
-    };
-
-    struct LevelResourceDesc
-    {
-        LevelIBLResourceDesc          m_ibl_resource_desc;
-        LevelColorGradingResourceDesc m_color_grading_resource_desc;
-    };
-
     struct CameraSwapData
     {
         std::optional<float>            m_fov_y;
@@ -48,7 +30,6 @@ namespace MoYu
 
     struct RenderSwapData
     {
-        std::optional<LevelResourceDesc>      m_level_resource_desc;
         std::optional<GameObjectResourceDesc> m_game_object_resource_desc;
         std::optional<GameObjectResourceDesc> m_game_object_to_delete;
         std::optional<CameraSwapData>         m_camera_swap_data;
@@ -70,7 +51,6 @@ namespace MoYu
         RenderSwapData& getLogicSwapData();
         RenderSwapData& getRenderSwapData();
         void            swapLogicRenderData();
-        void            resetLevelRsourceSwapData();
         void            resetGameObjectResourceSwapData();
         void            resetGameObjectToDelete();
         void            resetCameraSwapData();

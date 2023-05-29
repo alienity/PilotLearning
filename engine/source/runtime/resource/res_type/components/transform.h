@@ -1,18 +1,13 @@
 #pragma once
 #include "runtime/resource/res_type/common_serializer.h"
-#include "runtime/resource/res_type/components/material.h"
 
 namespace MoYu
 {
-    struct MeshRendererComponentRes
+    struct TransformRes
     {
-        bool        m_is_mesh_data {false};
-        std::string m_sub_mesh_file {""};
-        std::string m_mesh_data_path {""};
-
-        std::string m_material_file {""};
-        bool        m_is_material_init {false};
-        MaterialRes m_material_data {};
+        Vector3    m_position {Vector3::Zero};
+        Vector3    m_scale {Vector3::One};
+        Quaternion m_rotation {Quaternion::Identity};
     };
-    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(MeshRendererComponentRes, m_sub_mesh_file, m_material_file)
+    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(TransformRes, m_position, m_scale, m_rotation)
 } // namespace MoYu

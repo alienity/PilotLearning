@@ -6,14 +6,14 @@
 #include "runtime/function/render/rhi/d3d12/d3d12_swapChain.h"
 #include "runtime/function/render/rhi/shader_compiler.h"
 #include "runtime/function/render/rhi/rendergraph/RenderGraph.h"
-#include "runtime/function/render/render_resource_base.h"
+#include "runtime/function/render/render_resource.h"
 #include "runtime/function/ui/window_ui.h"
 
 namespace MoYu
 {
     class WindowSystem;
     class RendererPresent;
-    class RenderResourceBase;
+    class RenderResource;
     class Renderer;
 
     struct EngineContentViewport
@@ -39,7 +39,7 @@ namespace MoYu
         void Initialize(RendererManagerInitInfo initialize_info);
         void InitRenderer();
         void InitUIRenderer(WindowUI* window_ui);
-        void PreparePassData(std::shared_ptr<RenderResourceBase> render_resource);
+        void PreparePassData(std::shared_ptr<RenderResource> render_resource);
         void Tick();
 
         RHI::D3D12Device* GetDevice();
@@ -79,7 +79,7 @@ namespace MoYu
 
         virtual void Initialize();
         virtual void InitializeUIRenderBackend(WindowUI* window_ui);
-        virtual void PreparePassData(std::shared_ptr<RenderResourceBase> render_resource);
+        virtual void PreparePassData(std::shared_ptr<RenderResource> render_resource);
 
         virtual ~Renderer();
 

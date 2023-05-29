@@ -1,7 +1,6 @@
 #pragma once
 
 #include "runtime/core/math/moyu_math.h"
-
 #include "runtime/function/framework/component/component.h"
 #include "runtime/function/framework/object/object.h"
 
@@ -12,7 +11,7 @@ namespace MoYu
     public:
         TransformComponent() = default;
 
-        void postLoadResource(std::weak_ptr<GObject> parent_object) override;
+        void postLoadResource(std::weak_ptr<GObject> object, void* data) override;
 
         Vector3    getPosition() const { return m_transform_buffer[m_current_index].m_position; }
         Vector3    getScale() const { return m_transform_buffer[m_current_index].m_scale; }
@@ -43,7 +42,7 @@ namespace MoYu
         Transform m_transform;
 
         Transform m_transform_buffer[2];
-        size_t    m_current_index {0};
-        size_t    m_next_index {1};
+        uint32_t  m_current_index {0};
+        uint32_t  m_next_index {1};
     };
 } // namespace MoYu

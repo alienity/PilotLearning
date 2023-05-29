@@ -25,7 +25,7 @@ namespace MoYu
         void         InitGlobalBuffer();
         void         InitPass();
         virtual void InitializeUIRenderBackend(WindowUI* window_ui);
-        virtual void PreparePassData(std::shared_ptr<RenderResourceBase> render_resource);
+        virtual void PreparePassData(std::shared_ptr<RenderResource> render_resource);
 
 		virtual ~DeferredRenderer();
 

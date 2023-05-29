@@ -1,9 +1,8 @@
 #pragma once
 
-#include "runtime/function/render/render_entity.h"
+#include "runtime/function/render/render_common.h"
 #include "runtime/function/render/render_guid_allocator.h"
 #include "runtime/function/render/render_swap_context.h"
-#include "runtime/function/render/render_type.h"
 
 #include <array>
 #include <memory>
@@ -12,7 +11,7 @@
 namespace MoYu
 {
     class WindowSystem;
-    class RenderResourceBase;
+    class RenderResource;
     class RendererManager;
     class RenderScene;
     class RenderCamera;
@@ -38,12 +37,9 @@ namespace MoYu
         RenderSwapContext&            getSwapContext();
         std::shared_ptr<RenderCamera> getRenderCamera() const;
 
-        void      initializeUIRenderBackend(WindowUI* window_ui);
-        uint32_t  getGuidOfPickedMesh(const Vector2& picked_uv);
+        void initializeUIRenderBackend(WindowUI* window_ui);
         
         EngineContentViewport getEngineContentViewport() const;
-
-        GuidAllocator<MeshSourceDesc>&   getMeshAssetIdAllocator();
 
         void clearForLevelReloading();
 
@@ -52,7 +48,7 @@ namespace MoYu
 
         std::shared_ptr<RenderCamera>       m_render_camera;
         std::shared_ptr<RenderScene>        m_render_scene;
-        std::shared_ptr<RenderResourceBase> m_render_resource;
+        std::shared_ptr<RenderResource> m_render_resource;
         std::shared_ptr<RendererManager>    m_renderer_manager;
 
         void processSwapData();

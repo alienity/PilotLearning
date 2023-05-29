@@ -84,7 +84,7 @@ namespace MoYu
     {
         std::shared_ptr<Level> level = std::make_shared<Level>();
         // set current level temporary
-        m_current_active_level       = level;
+        m_current_active_level = level;
 
         const bool is_level_load_success = level->load(level_url);
         if (is_level_load_success == false)

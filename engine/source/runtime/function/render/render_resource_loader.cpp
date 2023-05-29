@@ -112,8 +112,6 @@ namespace MoYu
 
     std::shared_ptr<TextureData> RenderResourceBase::loadTexture(std::string file)
     {
-        std::size_t tex_hash = std::hash<std::string> {}(file);
-
         std::shared_ptr<TextureData> texture = _TextureData_Caches[file];
 
         if (texture == nullptr)
@@ -149,34 +147,47 @@ namespace MoYu
 
     RenderMeshData RenderResourceBase::loadMeshData(std::string mesh_file)
     {
-        std::shared_ptr<AssetManager> asset_manager = g_runtime_global_context.m_asset_manager;
-        ASSERT(asset_manager);
-
-        RenderMeshData ret {};
-
-        if (std::filesystem::path(mesh_file).extension() == ".json")
+        if (_MeshData_Caches.find(mesh_file) == _MeshData_Caches.end())
         {
-            std::shared_ptr<MeshData> bind_data = std::make_shared<MeshData>();
-            asset_manager->loadAsset<MeshData>(mesh_file, *bind_data);
+            std::shared_ptr<AssetManager> asset_manager = g_runtime_global_context.m_asset_manager;
+            ASSERT(asset_manager);
 
-            // vertex buffer
-            size_t vertex_size = bind_data->vertex_buffer.size() * sizeof(Vertex);
-            ret.m_static_mesh_data.m_vertex_buffer = std::make_shared<BufferData>(vertex_size);
+            RenderMeshData ret {};
 
-            // index buffer
-            size_t index_size = bind_data->index_buffer.size() * sizeof(int);
-            ret.m_static_mesh_data.m_index_buffer = std::make_shared<BufferData>(index_size);
+            if (std::filesystem::path(mesh_file).extension() == ".json")
+            {
+                std::shared_ptr<MeshData> bind_data = std::make_shared<MeshData>();
+                asset_manager->loadAsset<MeshData>(mesh_file, *bind_data);
 
-            // skeleton binding buffer
-            // TODO...
+                // vertex buffer
+                size_t vertex_size = bind_data->vertex_buffer.size() * sizeof(Vertex);
+                ret.m_static_mesh_data.m_vertex_buffer = std::make_shared<BufferData>(vertex_size);
+                memcpy(ret.m_static_mesh_data.m_vertex_buffer.get(), bind_data->vertex_buffer.data(), vertex_size);
+
+                // index buffer
+                size_t index_size = bind_data->index_buffer.size() * sizeof(int);
+                ret.m_static_mesh_data.m_index_buffer = std::make_shared<BufferData>(index_size);
+                memcpy(ret.m_static_mesh_data.m_index_buffer.get(), bind_data->index_buffer.data(), index_size);
+
+                // skeleton binding buffer
+                size_t skeleton_size = bind_data->skeleton_bind.size() * sizeof(SkeletonBinding);
+                ret.m_skeleton_binding_buffer = std::make_shared<BufferData>(skeleton_size);
+                memcpy(ret.m_skeleton_binding_buffer.get(), bind_data->skeleton_bind.data(), skeleton_size);
+            }
+            else
+            {
+                MoYu::AxisAlignedBox bounding_box;
+                ret.m_static_mesh_data = LoadModel(mesh_file, bounding_box);
+            }
+
+            _MeshData_Caches[mesh_file] = ret;
+
+            return ret;
         }
         else
         {
-            MoYu::AxisAlignedBox bounding_box;
-            ret.m_static_mesh_data = LoadModel(mesh_file, bounding_box);
+            return _MeshData_Caches[mesh_file];
         }
-
-        return ret;
     }
 
 } // namespace MoYu

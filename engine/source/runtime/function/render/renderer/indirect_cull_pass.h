@@ -59,7 +59,7 @@ namespace MoYu
         ~IndirectCullPass() { destroy(); }
 
         void initialize(const RenderPassInitInfo& init_info);
-        void prepareMeshData(std::shared_ptr<RenderResourceBase> render_resource);
+        void prepareMeshData(std::shared_ptr<RenderResource> render_resource);
         //void cullMeshs(RHI::D3D12CommandContext* context, RHI::RenderGraphRegistry* registry, IndirectCullOutput& indirectCullOutput);
         void update(RHI::RenderGraph& cullingGraph, IndirectCullOutput& indirectCullOutput);
 

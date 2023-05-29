@@ -36,15 +36,9 @@ namespace MoYu
 
     bool RenderSwapContext::isReadyToSwap() const
     {
-        return !(m_swap_data[m_render_swap_data_index].m_level_resource_desc.has_value() ||
-                 m_swap_data[m_render_swap_data_index].m_game_object_resource_desc.has_value() ||
+        return !(m_swap_data[m_render_swap_data_index].m_game_object_resource_desc.has_value() ||
                  m_swap_data[m_render_swap_data_index].m_game_object_to_delete.has_value() ||
                  m_swap_data[m_render_swap_data_index].m_camera_swap_data.has_value());
-    }
-
-    void RenderSwapContext::resetLevelRsourceSwapData()
-    {
-        m_swap_data[m_render_swap_data_index].m_level_resource_desc.reset();
     }
 
     void RenderSwapContext::resetGameObjectResourceSwapData()
@@ -61,7 +55,6 @@ namespace MoYu
 
     void RenderSwapContext::swap()
     {
-        resetLevelRsourceSwapData();
         resetGameObjectResourceSwapData();
         resetGameObjectToDelete();
         resetCameraSwapData();

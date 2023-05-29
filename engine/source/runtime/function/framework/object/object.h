@@ -9,7 +9,6 @@
 
 #include <memory>
 #include <string>
-#include <unordered_set>
 #include <vector>
 #include <optional>
 #include <memory>
@@ -32,8 +31,8 @@ namespace MoYu
 
         bool isRootNode() const { return m_id == K_Root_Object_Id; }
 
-        //bool load(const ObjectInstanceRes& object_instance_res);
-        //void save(ObjectInstanceRes& out_object_instance_res);
+        bool load(const ObjectInstanceRes& object_instance_res);
+        void save(ObjectInstanceRes& out_object_instance_res);
 
         void      setID(GObjectID id) { m_id = id; }
         GObjectID getID() const { return m_id; }
@@ -69,7 +68,7 @@ namespace MoYu
             }
             m_components.push_back(newComponent);
 
-            if (newComponent->getTypeName() == "TransformComponent")
+            if (newComponent->getTypeName() == "TransformComponent" && !m_transform_component_ptr.expired())
             {
                 m_transform_component_ptr = (std::shared_ptr<TransformComponent>)newComponent;
             }
@@ -118,12 +117,12 @@ namespace MoYu
         std::shared_ptr<Level> m_current_level;
 
         std::string m_name;
-        std::string m_definition_url;
+        //std::string m_definition_url;
 
         // we have to use the ReflectionPtr due to that the components need to be reflected 
         // in editor, and it's polymorphism
         std::vector<std::shared_ptr<Component>> m_components;
 
-        std::shared_ptr<TransformComponent> m_transform_component_ptr;
+        std::weak_ptr<TransformComponent> m_transform_component_ptr;
     };
 } // namespace MoYu

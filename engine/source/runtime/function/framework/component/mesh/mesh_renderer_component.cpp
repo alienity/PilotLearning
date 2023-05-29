@@ -1,4 +1,4 @@
-#include "runtime/function/framework/component/mesh/mesh_component.h"
+#include "runtime/function/framework/component/mesh/mesh_renderer_component.h"
 
 #include "runtime/resource/asset_manager/asset_manager.h"
 #include "runtime/function/framework/world/world_manager.h"
@@ -15,10 +15,24 @@
 
 namespace MoYu
 {
-    void MeshComponent::reset()
+    std::string MeshRendererComponent::m_component_name = "MeshRendererComponent";
+
+    void MeshRendererComponent::postLoadResource(std::weak_ptr<GObject> object, void* data)
     {
-        m_raw_meshes.clear();
-        m_mesh_res = {};
+        m_object = object;
+
+        MeshRendererComponentRes* mesh_renderer_res = (MeshRendererComponentRes*)data;
+
+        m_mesh_component_res     = mesh_renderer_res->m_mesh_res;
+        m_material_component_res = mesh_renderer_res->m_material_res;
+
+        m_is_dirty = true;
+    }
+
+    void MeshRendererComponent::reset()
+    {
+        m_mesh_component_res = {};
+        m_material_component_res = {};
     }
 
     GameObjectMaterialDesc SetMaterialDesc(std::string material_path)
@@ -55,7 +69,7 @@ namespace MoYu
         return m_material_desc;
     }
 
-    void MeshComponent::postLoadResource(std::weak_ptr<GObject> parent_object)
+    void MeshRendererComponent::postLoadResource(std::weak_ptr<GObject> parent_object)
     {
         m_parent_object = parent_object;
 
@@ -88,14 +102,14 @@ namespace MoYu
         }
     }
 
-    void MeshComponent::tick(float delta_time)
+    void MeshRendererComponent::tick(float delta_time)
     {
-        if (!m_parent_object.lock())
+        if (!m_object.lock())
             return;
 
         std::vector<GameObjectComponentDesc> dirty_mesh_parts;
 
-        TransformComponent* m_transform_component_ptr = m_parent_object.lock()->getTransformComponent();
+        TransformComponent* m_transform_component_ptr = m_object.lock()->getTransformComponent();
 
         bool is_transform_dirty = m_transform_component_ptr->isDirty();
 
@@ -141,7 +155,7 @@ namespace MoYu
 
     }
 
-    bool MeshComponent::addNewMeshRes(std::string mesh_file_path)
+    bool MeshRendererComponent::addNewMeshRes(std::string mesh_file_path)
     {
         SubMeshRes newSubMeshRes = {};
         newSubMeshRes.m_obj_file_ref = mesh_file_path;
@@ -157,7 +171,7 @@ namespace MoYu
         return true;
     }
 
-    void MeshComponent::updateMaterial(std::string mesh_file_path, std::string material_path)
+    void MeshRendererComponent::updateMaterial(std::string mesh_file_path, std::string material_path)
     {
         for (size_t i = 0; i < m_mesh_res.m_sub_meshes.size(); i++)
         {

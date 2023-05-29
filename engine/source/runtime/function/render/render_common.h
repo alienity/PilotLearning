@@ -114,6 +114,7 @@ namespace MoYu
         bool enable_vertex_blending;
         int mesh_vertex_count;
         int mesh_index_count;
+        InputDefinition m_InputElementDefinition;
         std::shared_ptr<RHI::D3D12Buffer> p_mesh_vertex_buffer;
         std::shared_ptr<RHI::D3D12Buffer> p_mesh_index_buffer;
     };
@@ -228,6 +229,15 @@ namespace MoYu
     // Render Desc
     //========================================================================
 
+    enum ComponentType
+    {
+        C_Transform    = 0,
+        C_MeshRenderer = 1,
+        C_Light        = 1 << 1,
+        C_Camera       = 1 << 2
+    };
+    DEFINE_MOYU_ENUM_FLAG_OPERATORS(ComponentType)
+
     struct SceneMesh
     {
         std::string m_mesh_file;
@@ -262,7 +272,10 @@ namespace MoYu
 
     struct SceneMeshRenderer
     {
+        static const ComponentType m_component_type {ComponentType::C_MeshRenderer};
+
         SceneCommonIdentifier m_identifier;
+
         SceneMesh m_scene_mesh;
         ScenePBRMaterial m_material;
 
@@ -271,28 +284,41 @@ namespace MoYu
         AxisAlignedBox m_bounding_box;
     };
 
-    struct SceneAmbientLight : public BaseAmbientLight
+    enum LightType
     {
-        SceneCommonIdentifier m_identifier;
+        AmbientLight,
+        DirectionLight,
+        PointLight,
+        SpotLight
     };
 
-    struct SceneDirectionLight : public BaseDirectionLight
+    struct SceneLight
     {
+        static const ComponentType m_component_type {ComponentType::C_Light};
+
         SceneCommonIdentifier m_identifier;
+
+        LightType m_light_type;
+
+        BaseAmbientLight   ambient_light;
+        BaseDirectionLight direction_light;
+        BasePointLight     point_light;
+        BaseSpotLight      spot_light;
     };
 
-    struct ScenePointLight : public BasePointLight
+    struct SceneCamera
     {
+        static const ComponentType m_component_type {ComponentType::C_Camera};
+        
         SceneCommonIdentifier m_identifier;
-    };
 
-    struct SceneSpotLight : public BaseSpotLight
-    {
-        SceneCommonIdentifier m_identifier;
+
     };
 
     struct SceneTransform
     {
+        static const ComponentType m_component_type {ComponentType::C_Transform};
+
         SceneCommonIdentifier m_identifier;
 
         Matrix4x4  m_transform_matrix {Matrix4x4::Identity};
@@ -303,14 +329,14 @@ namespace MoYu
 
     struct GameObjectComponentDesc
     {
-        SceneCommonIdentifier m_identifier;
+        ComponentType m_component_type {ComponentType::C_Transform};
 
-        SceneTransform      m_transform_desc;
-        SceneMeshRenderer   m_mesh_renderer_desc;
-        SceneAmbientLight   m_ambeint_light_desc;
-        SceneDirectionLight m_direction_light_desc;
-        ScenePointLight     m_point_light_desc;
-        SceneSpotLight      m_spot_light_desc;
+        //SceneCommonIdentifier m_identifier {};
+
+        SceneTransform    m_transform_desc {};
+        SceneMeshRenderer m_mesh_renderer_desc {};
+        SceneLight        m_scene_light {};
+        SceneCamera       m_scene_camera {};
     };
 
     class GameObjectDesc

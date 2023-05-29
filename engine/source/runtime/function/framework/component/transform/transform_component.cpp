@@ -1,15 +1,25 @@
 #include "runtime/function/framework/component/transform/transform_component.h"
-
+#include "runtime/resource/res_type/components/transform.h"
 #include "runtime/engine.h"
 
 namespace MoYu
 {
-    void TransformComponent::postLoadResource(std::weak_ptr<GObject> parent_gobject)
+    std::string TransformComponent::m_component_name = "TransformComponent";
+
+    void TransformComponent::postLoadResource(std::weak_ptr<GObject> object, void* data)
     {
-        m_parent_object       = parent_gobject;
+        m_object = object;
+
+        TransformRes* transform_res = (TransformRes*)data;
+
+        m_transform.m_position = transform_res->m_position;
+        m_transform.m_scale    = transform_res->m_scale;
+        m_transform.m_rotation = transform_res->m_rotation;
+
         m_transform_buffer[0] = m_transform;
         m_transform_buffer[1] = m_transform;
-        m_is_dirty            = true;
+
+        m_is_dirty = true;
     }
 
     void TransformComponent::setPosition(const Vector3& new_translation)
@@ -56,6 +66,8 @@ namespace MoYu
         {
             m_transform_buffer[m_next_index] = m_transform;
         }
+
+        m_is_dirty = false;
     }
 
     // check all parent object to see if they are some object dirty
@@ -70,13 +82,13 @@ namespace MoYu
             return Matrix4x4::Identity;
 
         Matrix4x4 matrix_world = trans->getMatrix();
-        if (!trans->m_parent_object.expired())
+        if (!trans->m_object.expired())
         {
-            auto m_object_ptr    = trans->m_parent_object.lock();
+            auto m_object_ptr    = trans->m_object.lock();
             auto m_object_parent = m_object_ptr->getParent();
-            if (!m_object_parent.expired())
+            if (!m_object_parent)
             {
-                TransformComponent* m_parent_trans = m_object_parent.lock()->getTransformComponent();
+                TransformComponent* m_parent_trans = m_object_parent->getTransformComponent().get();
                 matrix_world = getMatrixWorldRecursively(m_parent_trans) * matrix_world;
             }
         }
@@ -89,13 +101,13 @@ namespace MoYu
             return false;
 
         bool is_dirty = trans->m_is_dirty;
-        if (!trans->m_parent_object.expired())
+        if (!trans->m_object.expired())
         {
-            auto m_object_ptr = trans->m_parent_object.lock();
+            auto m_object_ptr    = trans->m_object.lock();
             auto m_object_parent = m_object_ptr->getParent();
-            if (!m_object_parent.expired())
+            if (!m_object_parent)
             {
-                TransformComponent* m_parent_trans = m_object_parent.lock()->getTransformComponent();
+                TransformComponent* m_parent_trans = m_object_parent->getTransformComponent().get();
                 is_dirty |= isDirtyRecursively(m_parent_trans);
             }
         }

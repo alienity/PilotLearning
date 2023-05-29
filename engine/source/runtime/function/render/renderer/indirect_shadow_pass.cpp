@@ -19,7 +19,7 @@ namespace MoYu
 
     }
 
-    void IndirectShadowPass::prepareShadowmaps(std::shared_ptr<RenderResourceBase> render_resource)
+    void IndirectShadowPass::prepareShadowmaps(std::shared_ptr<RenderResource> render_resource)
     {
         RenderResource* real_resource = (RenderResource*)render_resource.get();
 

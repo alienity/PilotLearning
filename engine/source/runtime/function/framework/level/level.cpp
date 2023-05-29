@@ -55,8 +55,7 @@ namespace MoYu
             return objectPtr;
         }
 
-        ASSERT(((objectID == K_Root_Object_Id) && (parentID == K_Invalid_Object_Id)) ||
-               (parentID != K_Invalid_Object_Id));
+        ASSERT(((objectID == K_Root_Object_Id) && (parentID == K_Invalid_Object_Id)) || (parentID != K_Invalid_Object_Id));
 
         std::shared_ptr<GObject> gobject = std::make_shared<GObject>(objectID, shared_from_this());
 
@@ -83,7 +82,7 @@ namespace MoYu
 
         return gobject;
     }
-    /*
+    
     std::shared_ptr<GObject> Level::instantiateGObject(ObjectInstanceRes& object_instance_res)
     {
         ASSERT(m_gobjects.find(object_instance_res.m_id) == m_gobjects.end());
@@ -93,16 +92,16 @@ namespace MoYu
         
         m_gobjects.emplace(object_instance_res.m_id, gobject);
 
-        return std::shared_ptr<GObject>(gobject);
+        return gobject;
     }
-    */
+    
     bool Level::load(const std::string& level_res_url)
     {
         LOG_INFO("loading level: {}", level_res_url);
 
         m_level_res_url = level_res_url;
 
-        LevelRes   level_res;
+        LevelRes level_res;
         const bool is_load_success = g_runtime_global_context.m_asset_manager->loadAsset(level_res_url, level_res);
         if (is_load_success == false)
         {
@@ -183,11 +182,6 @@ namespace MoYu
                 id_object_pair.second->tick(delta_time);
             }
         }
-        if (m_current_active_character && g_is_editor_mode == false)
-        {
-            m_current_active_character->tick(delta_time);
-        }
-
     }
 
     std::shared_ptr<GObject> Level::getGObjectByID(GObjectID go_id) const

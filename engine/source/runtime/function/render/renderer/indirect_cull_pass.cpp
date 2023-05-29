@@ -79,7 +79,7 @@ namespace MoYu
         commandBufferForTransparentDraw.p_IndirectSortCommandBuffer  = CreateSortCommandBuffer(L"TransparentBuffer");
     }
 
-    void IndirectCullPass::prepareMeshData(std::shared_ptr<RenderResourceBase> render_resource)
+    void IndirectCullPass::prepareMeshData(std::shared_ptr<RenderResource> render_resource)
     {
         RenderResource* real_resource = (RenderResource*)render_resource.get();
         memcpy(pUploadPerframeBuffer->GetCpuVirtualAddress<HLSL::MeshPerframeStorageBufferObject>(),

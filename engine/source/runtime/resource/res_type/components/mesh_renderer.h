@@ -1,6 +1,6 @@
 #pragma once
 #include "runtime/resource/res_type/common_serializer.h"
-#include "runtime/resource/res_type/components/material.h"
+#include <vector>
 
 namespace MoYu
 {
@@ -16,7 +16,7 @@ namespace MoYu
     {
         std::string m_material_file {""};
         bool m_is_material_init {false};
-        int m_material_serialized_data[2048] = {0}; // the real data should be serialized from it with sizeof(Material)
+        std::vector<uint64_t> m_material_serialized_data;
     };
     NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(MaterialComponentRes,
                                        m_material_file,

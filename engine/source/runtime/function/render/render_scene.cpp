@@ -7,9 +7,13 @@
 
 namespace MoYu
 {
-    void RenderScene::updateAllObjects(std::shared_ptr<RenderResource> render_resource,
-                                       std::shared_ptr<RenderCamera>   camera)
+    void RenderScene::updateAllObjects(std::shared_ptr<RenderResource> render_resource, std::shared_ptr<RenderCamera> camera)
     {
+
+
+
+
+
         m_all_mesh_nodes.clear();
 
         for (const RenderEntity& entity : m_render_entities)

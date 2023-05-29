@@ -2,7 +2,6 @@
 
 #include "runtime/core/base/macro.h"
 #include "runtime/core/math/moyu_math.h"
-#include "runtime/core/color/color.h"
 
 #include "runtime/function/framework/component/transform/transform_component.h"
 #include "runtime/function/framework/object/object.h"
@@ -10,51 +9,132 @@
 
 #include "runtime/function/render/render_system.h"
 #include "runtime/function/render/glm_wrapper.h"
-#include <glm/gtx/quaternion.hpp>
+
+#include "runtime/resource/res_type/components/light.h"
 
 namespace MoYu
 {
+    std::string LightComponent::m_component_name = "LightComponent";
+    
     void LightComponent::reset()
     {
-        if (!m_light_res.m_parameter)
-        {
-            PILOT_REFLECTION_DELETE(m_light_res.m_parameter)
-        }
-        m_light_res.m_parameter = PILOT_REFLECTION_NEW(PointLightParameter)
+        
     }
 
-    void LightComponent::postLoadResource(std::weak_ptr<GObject> parent_object)
+    void LightComponent::postLoadResource(std::weak_ptr<GObject> object, void* data)
     {
-        m_parent_object = parent_object;
+        m_object = object;
 
-        m_light_part_desc.m_component_id = m_id;
+        LightComponentRes* light_res = (LightComponentRes*)data;
+
+        m_light_res = *light_res;
+
+        m_light_res_buffer[m_current_index] = {};
+        m_light_res_buffer[m_next_index] = m_light_res;
+
+        m_is_dirty = true;
     }
 
     void LightComponent::tick(float delta_time)
     {
-        if (!m_parent_object.lock())
+        if (!m_object.expired())
             return;
 
-        TransformComponent* m_transform_component_ptr = m_parent_object.lock()->getTransformComponent();
+        m_light_res_buffer[m_next_index] = m_light_res;
+
+        RenderSwapContext& render_swap_context = g_runtime_global_context.m_render_system->getSwapContext();
+        RenderSwapData& logic_swap_data = render_swap_context.getLogicSwapData();
+
+        TransformComponent* m_transform_component_ptr = m_object.lock()->getTransformComponent().get();
+
+        if (m_light_res_buffer[m_current_index].m_LightParamName == "" &&
+            m_light_res_buffer[m_next_index].m_LightParamName != "")
+        {
+            MoYu::GObjectID game_object_id = m_object.lock()->getID();
+
+            MoYu::GComponentID transform_component_id = m_transform_component_ptr->getComponentId();
+
+            SceneTransform scene_transform = {};
+            scene_transform.m_identifier = SceneCommonIdentifier {game_object_id, transform_component_id};
+            scene_transform.m_position = m_transform_component_ptr->getPosition();
+            scene_transform.m_rotation = m_transform_component_ptr->getRotation();
+            scene_transform.m_scale = m_transform_component_ptr->getScale();
+            scene_transform.m_transform_matrix = Math::makeViewMatrix(scene_transform.m_position, scene_transform.m_rotation);
+
+            MoYu::GComponentID light_component_id = this->getComponentId();
+
+            SceneLight scene_light = {};
+            scene_light.m_identifier = SceneCommonIdentifier {game_object_id, light_component_id};
+
+            if (m_light_res.m_LightParamName == "DirectionLightParameter")
+            {
+                Matrix3x3 rotation_matrix = Matrix3x3::fromQuaternion(scene_transform.m_rotation);
+
+                MoYu::LightComponentRes& tmp_light_res = m_light_res_buffer[m_next_index];
+
+                BaseDirectionLight direction_light = {};
+
+                direction_light.m_color = tmp_light_res.m_DirectionLightParam.color;
+                direction_light.m_intensity = tmp_light_res.m_DirectionLightParam.intensity;
+                direction_light.m_direction = -rotation_matrix.getColumn(2);
+
+
+                scene_light.m_light_type = LightType::DirectionLight;
+                scene_light.direction_light = direction_light;
+
+            }
+            else if (m_light_res.m_LightParamName == "PointLightParameter")
+            {
+                scene_light.m_light_type = LightType::PointLight;
+            }
+            else if (m_light_res.m_LightParamName == "SpotLightParameter")
+            {
+                scene_light.m_light_type = LightType::SpotLight;
+            }
+
+
+
+            GameObjectComponentDesc light_component_desc = {};
+            light_component_desc.m_component_type = ComponentType::C_Transform | ComponentType::C_Light;
+            light_component_desc.m_transform_desc = scene_transform;
+            light_component_desc.m_scene_light = scene_light;
+
+            std::vector<GameObjectComponentDesc> dirty_light_part_descs = {light_component_desc};
+
+            GameObjectDesc game_object_desc = {game_object_id, dirty_light_part_descs};
+
+            logic_swap_data.addDirtyGameObject(game_object_desc);
+        }
+        else if (m_light_res_buffer[m_next_index].m_LightParamName == "" &&
+                 m_light_res_buffer[m_current_index].m_LightParamName != "")
+        {
+            
+        }
+        else
+        {
+
+        }
+
+
 
         if (m_transform_component_ptr->isDirty() || isDirty())
         {
-            RenderSwapContext& render_swap_context = g_runtime_global_context.m_render_system->getSwapContext();
-            RenderSwapData&    logic_swap_data     = render_swap_context.getLogicSwapData();
-
-            //std::vector<GameObjectComponentDesc> delte_light_part_descs = {m_light_part_desc};
-            //logic_swap_data.addDeleteGameObject(GameObjectDesc {m_parent_object.lock()->getID(), delte_light_part_descs});
 
             Matrix4x4 transform_matrix = m_transform_component_ptr->getMatrixWorld();
             std::tuple<Quaternion, Vector3, Vector3> rts = GLMUtil::decomposeMat4x4(transform_matrix);
 
-            m_light_part_desc = {};
+            Quaternion m_rotation = std::get<0>(rts);
+            Vector3    m_position = std::get<1>(rts);
+            Vector3    m_scale    = std::get<2>(rts);
 
-            m_light_part_desc.m_transform_desc.m_transform_matrix = transform_matrix;
-            m_light_part_desc.m_transform_desc.m_rotation         = std::get<0>(rts);
-            m_light_part_desc.m_transform_desc.m_position         = std::get<1>(rts);
-            m_light_part_desc.m_transform_desc.m_scale            = std::get<2>(rts);
 
+
+
+
+
+
+
+            /*
             if (m_light_res.m_parameter.getTypeName() == "DirectionalLightParameter")
             {
                 DirectionalLightParameter* m_directional_light_params = (DirectionalLightParameter*)m_light_res.m_parameter;
@@ -148,7 +228,13 @@ namespace MoYu
 
             std::vector<GameObjectComponentDesc> dirty_light_part_descs = {m_light_part_desc};
             logic_swap_data.addDirtyGameObject(GameObjectDesc {m_parent_object.lock()->getID(), dirty_light_part_descs});
+            */
+
         }
+
+        std::swap(m_current_index, m_next_index);
+
+        m_is_dirty = false;
     }
 
 } // namespace MoYu

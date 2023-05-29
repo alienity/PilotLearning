@@ -52,7 +52,7 @@ namespace MoYu
         p_MoYuRenderer->InitializeUIRenderBackend(window_ui);
     }
 
-    void RendererManager::PreparePassData(std::shared_ptr<RenderResourceBase> render_resource)
+    void RendererManager::PreparePassData(std::shared_ptr<RenderResource> render_resource)
     {
         p_MoYuRenderer->PreparePassData(render_resource);
     }
@@ -87,7 +87,7 @@ namespace MoYu
 
     void Renderer::Initialize() {}
     void Renderer::InitializeUIRenderBackend(WindowUI* window_ui) {}
-    void Renderer::PreparePassData(std::shared_ptr<RenderResourceBase> render_resource) {}
+    void Renderer::PreparePassData(std::shared_ptr<RenderResource> render_resource) {}
 
     Renderer::~Renderer() {}
 

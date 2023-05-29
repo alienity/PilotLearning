@@ -37,7 +37,7 @@ namespace MoYu
         ~SkyBoxPass() { destroy(); }
 
         void initialize(const SkyBoxInitInfo& init_info);
-        void prepareMeshData(std::shared_ptr<RenderResourceBase> render_resource);
+        void prepareMeshData(std::shared_ptr<RenderResource> render_resource);
         void update(RHI::RenderGraph& graph, DrawInputParameters& passInput, DrawOutputParameters& passOutput);
         void destroy() override final;
 

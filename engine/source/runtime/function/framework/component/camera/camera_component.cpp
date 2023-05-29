@@ -3,7 +3,6 @@
 #include "runtime/core/base/macro.h"
 #include "runtime/core/math/moyu_math.h"
 
-#include "runtime/function/character/character.h"
 #include "runtime/function/framework/component/transform/transform_component.h"
 #include "runtime/function/framework/level/level.h"
 #include "runtime/function/framework/object/object.h"
@@ -11,12 +10,22 @@
 #include "runtime/function/global/global_context.h"
 #include "runtime/function/input/input_system.h"
 
-//#include "runtime/function/render/render_camera.h"
-//#include "runtime/function/render/render_swap_context.h"
 #include "runtime/function/render/render_system.h"
+
+#include "runtime/resource/res_type/components/camera.h"
 
 namespace MoYu
 {
+    std::string CameraComponent::m_component_name = "CameraComponent";
+
+    void CameraComponent::postLoadResource(std::weak_ptr<GObject> object, void* data)
+    {
+        m_object = object;
+
+        CameraComponentRes* camera_res = (CameraComponentRes*)data;
+        m_camera_res  = *camera_res;
+    }
+
     void CameraComponent::reset()
     {
         if (!m_camera_res.m_parameter)

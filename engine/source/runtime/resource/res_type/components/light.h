@@ -3,7 +3,7 @@
 
 namespace MoYu
 {
-    struct DirectionalLightParameter
+    struct DirectionLightParameter
     {
         Color color = Color::White;
         float intensity {1.0f};
@@ -14,7 +14,7 @@ namespace MoYu
         float   shadow_far_plane {500.0f};
         Vector2 shadowmap_size {512, 512};
     };
-    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(DirectionalLightParameter,
+    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(DirectionLightParameter,
                                        color,
                                        intensity,
                                        shadows,
@@ -61,10 +61,10 @@ namespace MoYu
 
     struct LightComponentRes
     {
-        std::string               m_LightParamName {""};
-        DirectionalLightParameter m_DirectionLightParam {};
-        PointLightParameter       m_PointLightParam {};
-        SpotLightParameter        m_SpotLightParam {};
+        std::string             m_LightParamName {""};
+        DirectionLightParameter m_DirectionLightParam {};
+        PointLightParameter     m_PointLightParam {};
+        SpotLightParameter      m_SpotLightParam {};
     };
     NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(LightComponentRes,
                                        m_LightParamName,
