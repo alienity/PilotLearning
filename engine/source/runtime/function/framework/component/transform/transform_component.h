@@ -13,6 +13,8 @@ namespace MoYu
 
         void postLoadResource(std::weak_ptr<GObject> object, void* data) override;
 
+        void markToErase() override {};
+
         Vector3    getPosition() const { return m_transform_buffer[m_current_index].m_position; }
         Vector3    getScale() const { return m_transform_buffer[m_current_index].m_scale; }
         Quaternion getRotation() const { return m_transform_buffer[m_current_index].m_rotation; }

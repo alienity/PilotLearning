@@ -9,6 +9,7 @@
 
 #include "runtime/core/base/utility.h"
 #include "runtime/core/base/macro.h"
+#include "runtime/core/math/moyu_math.h"
 
 namespace RHI
 {

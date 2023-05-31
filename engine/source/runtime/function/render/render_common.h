@@ -141,6 +141,12 @@ namespace MoYu
         std::shared_ptr<RHI::D3D12Buffer>  material_uniform_buffer;
     };
 
+    struct InternalMaterial
+    {
+        std::string m_shader_name;
+        InternalPBRMaterial m_intenral_pbr_mat;
+    };
+
     struct InternalMeshRenderer
     {
         SceneCommonIdentifier m_identifier;
@@ -151,8 +157,8 @@ namespace MoYu
         Matrix4x4 model_matrix_inverse;
         AxisAlignedBox m_bounding_box;
 
-        std::shared_ptr<InternalMesh>        ref_mesh;
-        std::shared_ptr<InternalPBRMaterial> ref_material;
+        std::shared_ptr<InternalMesh>     ref_mesh;
+        std::shared_ptr<InternalMaterial> ref_material;
     };
 
     struct BaseAmbientLight
@@ -165,6 +171,7 @@ namespace MoYu
         Color   m_color;
         float   m_intensity {1.0f};
         Vector3 m_direction;
+
         bool    m_shadowmap {false};
         Vector2 m_shadow_bounds;
         float   m_shadow_near_plane {0.1f};
@@ -240,7 +247,9 @@ namespace MoYu
 
     struct SceneMesh
     {
-        std::string m_mesh_file;
+        bool m_is_mesh_data {false};
+        std::string m_sub_mesh_file {""};
+        std::string m_mesh_data_path {""};
     };
 
     struct SceneImage
@@ -270,6 +279,12 @@ namespace MoYu
         SceneImage m_emissive_texture_file;
     };
 
+    struct SceneMaterial
+    {
+        std::string m_shader_name;
+        ScenePBRMaterial m_mat_data;
+    };
+
     struct SceneMeshRenderer
     {
         static const ComponentType m_component_type {ComponentType::C_MeshRenderer};
@@ -277,7 +292,7 @@ namespace MoYu
         SceneCommonIdentifier m_identifier;
 
         SceneMesh m_scene_mesh;
-        ScenePBRMaterial m_material;
+        SceneMaterial m_material;
 
         Matrix4x4 model_matrix;
         Matrix4x4 model_matrix_inverse;

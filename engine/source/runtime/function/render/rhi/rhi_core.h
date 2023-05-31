@@ -21,6 +21,7 @@
 #include "directx/d3d12.h"
 
 #include "runtime/core/base/macro.h"
+#include "runtime/core/math/moyu_math.h"
 #include "runtime/platform/system/system_core.h"
 
 enum class RHI_VENDOR

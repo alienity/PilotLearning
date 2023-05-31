@@ -1,8 +1,11 @@
 #pragma once
 #include "runtime/resource/res_type/common_serializer.h"
+#include "runtime/function/render/render_common.h"
 
 namespace MoYu
 {
+    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(SceneImage, m_is_srgb, m_auto_mips, m_mip_levels, m_image_file)
+
     struct MaterialRes
     {
         std::string shader_name {""};
@@ -17,11 +20,11 @@ namespace MoYu
         float   m_occlusion_strength {1.0f};
         Vector3 m_emissive_factor {0.0f, 0.0f, 0.0f};
 
-        std::string m_base_color_texture_file {""};
-        std::string m_metallic_roughness_texture_file {""};
-        std::string m_normal_texture_file {""};
-        std::string m_occlusion_texture_file {""};
-        std::string m_emissive_texture_file {""};
+        SceneImage m_base_color_texture_file {};
+        SceneImage m_metallic_roughness_texture_file {};
+        SceneImage m_normal_texture_file {};
+        SceneImage m_occlusion_texture_file {};
+        SceneImage m_emissive_texture_file {};
 
         float _specularAntiAliasingVariance {0};
         float _specularAntiAliasingThreshold {0};

@@ -29,6 +29,8 @@ namespace MoYu
 
         virtual void tick(float delta_time);
 
+        virtual void lateTick(float delta_time);
+
         bool isRootNode() const { return m_id == K_Root_Object_Id; }
 
         bool load(const ObjectInstanceRes& object_instance_res);
@@ -46,10 +48,12 @@ namespace MoYu
         void setParent(GObjectID parentID, std::optional<std::uint32_t> sibling_index = std::nullopt);
         void removeChild(GObjectID childID);
 
+        bool isReadyToErase() const { return m_is_ready_erase; }
+
         void               setName(std::string name) { m_name = name; }
         const std::string& getName() const { return m_name; }
 
-        std::shared_ptr<TransformComponent> getTransformComponent();
+        std::weak_ptr<TransformComponent> getTransformComponent();
 
         bool hasComponent(const std::string& compenent_type_name) const;
 
@@ -97,7 +101,7 @@ namespace MoYu
             {
                 if (component->getTypeName() == compenent_type_name)
                 {
-                    return component;
+                    return (std::shared_ptr<TComponent>)component;
                 }
             }
 
@@ -108,6 +112,8 @@ namespace MoYu
 
     protected:
         friend class Level;
+
+        bool m_is_ready_erase {false};
 
         GObjectID              m_id {K_Invalid_Object_Id};
         GObjectID              m_parent_id {K_Root_Object_Id};

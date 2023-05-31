@@ -1,10 +1,6 @@
 #include "runtime/function/framework/material/material_manager.h"
-
 #include "runtime/core/base/macro.h"
-
 #include "runtime/resource/asset_manager/asset_manager.h"
-
-#include "_generated/serializer/all_serializer.h"
 
 namespace MoYu
 {
@@ -60,11 +56,8 @@ namespace MoYu
         auto iter = m_matpath_matinfo_map.find(material_path);
         if (iter != m_matpath_matinfo_map.end())
         {
-            if (m_matpath_matinfo_map[material_path].m_mat_res != matres)
-            {
-                m_matpath_matinfo_map[material_path] = {true, matres};
-                asset_manager->saveAsset(matres, material_path);
-            }
+            m_matpath_matinfo_map[material_path] = {true, matres};
+            asset_manager->saveAsset(matres, material_path);
         }
     }
 

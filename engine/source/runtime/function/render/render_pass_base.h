@@ -1,6 +1,6 @@
 #pragma once
 
-#include "runtime/function/render/render_resource_base.h"
+#include "runtime/function/render/render_resource_loader.h"
 #include "runtime/function/render/window_system.h"
 #include "runtime/function/render/rhi/rendergraph/RenderGraph.h"
 #include "runtime/function/render/rhi/d3d12/d3d12_commandContext.h"

@@ -307,13 +307,10 @@ namespace MoYu
             scene_bounding_box.min_bound = Vector3(FLT_MAX, FLT_MAX, FLT_MAX);
             scene_bounding_box.max_bound = Vector3(FLT_MIN, FLT_MIN, FLT_MIN);
 
-            for (const RenderEntity& entity : scene.m_render_entities)
+            for (const InternalMeshRenderer& entity : scene.m_mesh_renderers)
             {
-                BoundingBox mesh_asset_bounding_box {entity.m_bounding_box.getMinCorner(),
-                                                     entity.m_bounding_box.getMaxCorner()};
-
-                BoundingBox mesh_bounding_box_world =
-                    BoundingBoxTransform(mesh_asset_bounding_box, GLMUtil::fromMat4x4(entity.m_model_matrix));
+                BoundingBox mesh_asset_bounding_box {entity.m_bounding_box.getMinCorner(), entity.m_bounding_box.getMaxCorner()};
+                BoundingBox mesh_bounding_box_world = BoundingBoxTransform(mesh_asset_bounding_box, GLMUtil::fromMat4x4(entity.model_matrix));
                 scene_bounding_box.merge(mesh_bounding_box_world);
             }
         }

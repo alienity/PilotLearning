@@ -40,8 +40,15 @@ namespace MoYu
         }
 
         // mark transform component clean
-        std::shared_ptr<TransformComponent> trans_ptr = getTransformComponent();
-        trans_ptr->setDirtyFlag(false);
+        if (!m_transform_component_ptr.expired())
+        {
+            m_transform_component_ptr.lock()->setDirtyFlag(false);
+        }
+    }
+
+    void GObject::lateTick(float delta_time)
+    {
+
     }
 
     void GObject::setParent(GObjectID parentID, std::optional<std::uint32_t> sibling_index)
@@ -60,9 +67,9 @@ namespace MoYu
         }
     }
 
-    std::shared_ptr<TransformComponent> GObject::getTransformComponent()
+    std::weak_ptr<TransformComponent> GObject::getTransformComponent()
     {
-        if (!m_transform_component_ptr)
+        if (!m_transform_component_ptr.expired())
         {
             m_transform_component_ptr = tryGetComponent(TransformComponent);
         }

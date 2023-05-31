@@ -88,7 +88,7 @@ namespace MoYu
             auto m_object_parent = m_object_ptr->getParent();
             if (!m_object_parent)
             {
-                TransformComponent* m_parent_trans = m_object_parent->getTransformComponent().get();
+                TransformComponent* m_parent_trans = m_object_parent->getTransformComponent().lock().get();
                 matrix_world = getMatrixWorldRecursively(m_parent_trans) * matrix_world;
             }
         }
@@ -107,7 +107,7 @@ namespace MoYu
             auto m_object_parent = m_object_ptr->getParent();
             if (!m_object_parent)
             {
-                TransformComponent* m_parent_trans = m_object_parent->getTransformComponent().get();
+                TransformComponent* m_parent_trans = m_object_parent->getTransformComponent().lock().get();
                 is_dirty |= isDirtyRecursively(m_parent_trans);
             }
         }

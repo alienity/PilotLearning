@@ -10,10 +10,6 @@ namespace MoYu
 
     class Component
     {
-    protected:
-        std::weak_ptr<GObject> m_object;
-        bool m_is_dirty {false};
-
     public:
         inline Component() { m_id = ComponentIDAllocator::alloc(); };
         virtual ~Component() {}
@@ -25,6 +21,10 @@ namespace MoYu
 
         virtual bool isDirty() const { return m_is_dirty; }
 
+        virtual bool isReadyToErase() const { return m_is_ready_erase; }
+
+        virtual void markToErase() { m_is_ready_erase = true; }
+
         virtual void setDirtyFlag(bool is_dirty) { m_is_dirty = is_dirty; }
 
         GComponentID getComponentId() { return m_id; }
@@ -34,9 +34,14 @@ namespace MoYu
         bool m_tick_in_editor_mode {false};
 
     protected:
+        static std::string m_component_name;
+
+        std::weak_ptr<GObject> m_object;
+
         GComponentID m_id {K_Invalid_Component_Id};
 
-        static std::string m_component_name;
+        bool m_is_dirty {false};
+        bool m_is_ready_erase {false};
     };
 
 } // namespace MoYu

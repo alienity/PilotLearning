@@ -21,7 +21,7 @@ namespace MoYu
     };\
 
     // DefineObjectIDAlloc(Internal)
-    // DefineObjectIDAlloc(Instance)
+    DefineObjectIDAlloc(Instance)
     DefineObjectIDAlloc(Object)
     DefineObjectIDAlloc(Component)
 

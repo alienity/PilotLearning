@@ -1,7 +1,7 @@
 #pragma once
 #include "d3d12_core.h"
 #include "d3d12_linkedDevice.h"
-#include "runtime/core/color/color.h"
+#include "core/math/moyu_math.h"
 
 namespace RHI
 {

@@ -26,6 +26,37 @@ namespace MoYu
         m_mesh_component_res     = mesh_renderer_res->m_mesh_res;
         m_material_component_res = mesh_renderer_res->m_material_res;
 
+        m_scene_mesh = {m_mesh_component_res.m_is_mesh_data,
+                        m_mesh_component_res.m_sub_mesh_file,
+                        m_mesh_component_res.m_mesh_data_path};
+
+        MaterialManager* m_mat_manager_ptr = g_runtime_global_context.m_material_manager.get();
+
+        MaterialRes m_mat_res = m_mat_manager_ptr->loadMaterialRes(m_material_component_res.m_material_file);
+
+        if (m_material_component_res.m_is_material_init)
+        {
+            MaterialRes* mat_res_data = (MaterialRes*)m_material_component_res.m_material_serialized_data.data();
+            memcpy(&m_mat_res, mat_res_data, sizeof(MaterialRes));
+        }
+
+        ScenePBRMaterial m_mat_data = {m_mat_res.m_blend,
+                                       m_mat_res.m_double_sided,
+                                       m_mat_res.m_base_color_factor,
+                                       m_mat_res.m_metallic_factor,
+                                       m_mat_res.m_roughness_factor,
+                                       m_mat_res.m_normal_scale,
+                                       m_mat_res.m_occlusion_strength,
+                                       m_mat_res.m_emissive_factor,
+                                       m_mat_res.m_base_color_texture_file,
+                                       m_mat_res.m_metallic_roughness_texture_file,
+                                       m_mat_res.m_normal_texture_file,
+                                       m_mat_res.m_occlusion_texture_file,
+                                       m_mat_res.m_emissive_texture_file};
+
+        m_material.m_shader_name = m_mat_res.shader_name;
+        m_material.m_mat_data = m_mat_data;
+
         m_is_dirty = true;
     }
 
@@ -33,8 +64,12 @@ namespace MoYu
     {
         m_mesh_component_res = {};
         m_material_component_res = {};
+
+        m_scene_mesh = {};
+        m_material = {};
     }
 
+    /*
     GameObjectMaterialDesc SetMaterialDesc(std::string material_path)
     {
         std::shared_ptr<AssetManager> asset_manager = g_runtime_global_context.m_asset_manager;
@@ -68,7 +103,8 @@ namespace MoYu
 
         return m_material_desc;
     }
-
+    */
+    /*
     void MeshRendererComponent::postLoadResource(std::weak_ptr<GObject> parent_object)
     {
         m_parent_object = parent_object;
@@ -101,60 +137,92 @@ namespace MoYu
             ++raw_mesh_count;
         }
     }
+    */
+
+    GameObjectComponentDesc component2SwapData(MoYu::GObjectID     game_object_id,
+                                               MoYu::GComponentID  transform_component_id,
+                                               TransformComponent* m_transform_component_ptr,
+                                               MoYu::GComponentID  mesh_renderer_component_id,
+                                               SceneMesh*          m_scene_mesh_ptr,
+                                               SceneMaterial*      m_scene_mat_ptr)
+    {
+        Matrix4x4 transform_matrix = m_transform_component_ptr->getMatrixWorld();
+
+        std::tuple<Quaternion, Vector3, Vector3> rts = GLMUtil::decomposeMat4x4(transform_matrix);
+
+        Quaternion m_rotation = std::get<0>(rts);
+        Vector3    m_position = std::get<1>(rts);
+        Vector3    m_scale    = std::get<2>(rts);
+
+        SceneTransform scene_transform     = {};
+        scene_transform.m_identifier       = SceneCommonIdentifier {game_object_id, transform_component_id};
+        scene_transform.m_position         = m_position;
+        scene_transform.m_rotation         = m_rotation;
+        scene_transform.m_scale            = m_scale;
+        scene_transform.m_transform_matrix = transform_matrix;
+
+        SceneMeshRenderer scene_mesh_renderer = {};
+        scene_mesh_renderer.m_identifier      = SceneCommonIdentifier {game_object_id, mesh_renderer_component_id};
+        scene_mesh_renderer.m_scene_mesh      = *m_scene_mesh_ptr;
+        scene_mesh_renderer.m_material        = *m_scene_mat_ptr;
+
+        GameObjectComponentDesc light_component_desc = {};
+        light_component_desc.m_component_type        = ComponentType::C_Transform | ComponentType::C_MeshRenderer;
+        light_component_desc.m_transform_desc        = scene_transform;
+        light_component_desc.m_mesh_renderer_desc    = scene_mesh_renderer;
+
+        return light_component_desc;
+    }
 
     void MeshRendererComponent::tick(float delta_time)
     {
         if (!m_object.lock())
             return;
 
-        std::vector<GameObjectComponentDesc> dirty_mesh_parts;
+        RenderSwapContext& render_swap_context = g_runtime_global_context.m_render_system->getSwapContext();
+        RenderSwapData& logic_swap_data = render_swap_context.getLogicSwapData();
 
-        TransformComponent* m_transform_component_ptr = m_object.lock()->getTransformComponent();
+        TransformComponent* m_transform_component_ptr = m_object.lock()->getTransformComponent().lock().get();
 
-        bool is_transform_dirty = m_transform_component_ptr->isDirty();
+        MoYu::GObjectID game_object_id = m_object.lock()->getID();
+        MoYu::GComponentID transform_component_id = m_transform_component_ptr->getComponentId();
+        MoYu::GComponentID mesh_renderer_component_id = this->getComponentId();
 
-        for (size_t i = 0; i < m_mesh_res.m_sub_meshes.size(); i++)
+        if (m_is_ready_erase) // Editor±ê¼ÇÉ¾³ý¸ÃComponent
         {
-            GameObjectComponentDesc& mesh_component = m_raw_meshes[i];
+            GameObjectComponentDesc mesh_renderer_desc = component2SwapData(game_object_id,
+                                                                            transform_component_id,
+                                                                            m_transform_component_ptr,
+                                                                            mesh_renderer_component_id,
+                                                                            &m_scene_mesh,
+                                                                            &m_material);
 
-            if (is_transform_dirty)
-            {
-                Matrix4x4 transform_matrix = m_transform_component_ptr->getMatrixWorld();
-
-                std::tuple<Quaternion, Vector3, Vector3> rts = GLMUtil::decomposeMat4x4(transform_matrix);
-
-                mesh_component.m_transform_desc.m_is_active   = true;
-                mesh_component.m_transform_desc.m_transform_matrix = transform_matrix;
-                mesh_component.m_transform_desc.m_rotation         = std::get<0>(rts);
-                mesh_component.m_transform_desc.m_position         = std::get<1>(rts);
-                mesh_component.m_transform_desc.m_scale            = std::get<2>(rts);
-            }
-
-            SubMeshRes& sub_mesh = m_mesh_res.m_sub_meshes[i];
-
-            bool is_material_dirty = g_runtime_global_context.m_material_manager->isMaterialDirty(sub_mesh.m_material);
-
-            if (is_material_dirty)
-            {
-                mesh_component.m_mesh_desc.m_material_desc = SetMaterialDesc(sub_mesh.m_material);
-            }
-
-            if (is_transform_dirty || is_material_dirty)
-            {
-                dirty_mesh_parts.push_back(mesh_component);
-            }
+            logic_swap_data.addDeleteGameObject({game_object_id, {mesh_renderer_desc}});
         }
-
-        if (!dirty_mesh_parts.empty())
+        else if (m_transform_component_ptr->isDirty() || isDirty())
         {
-            RenderSwapContext& render_swap_context = g_runtime_global_context.m_render_system->getSwapContext();
-            RenderSwapData&    logic_swap_data     = render_swap_context.getLogicSwapData();
+            GameObjectComponentDesc mesh_renderer_desc = component2SwapData(game_object_id,
+                                                                            transform_component_id,
+                                                                            m_transform_component_ptr,
+                                                                            mesh_renderer_component_id,
+                                                                            &m_scene_mesh,
+                                                                            &m_material);
 
-            logic_swap_data.addDirtyGameObject(GameObjectDesc {m_parent_object.lock()->getID(), dirty_mesh_parts});
+            logic_swap_data.addDirtyGameObject({game_object_id, {mesh_renderer_desc}});
         }
+    }
+
+    void MeshRendererComponent::updateMeshRes(std::string mesh_file_path)
+    {
 
     }
 
+    void MeshRendererComponent::updateMaterial(std::string material_path)
+    {
+
+    }
+
+    /*
     bool MeshRendererComponent::addNewMeshRes(std::string mesh_file_path)
     {
         SubMeshRes newSubMeshRes = {};
@@ -184,5 +252,5 @@ namespace MoYu
             }
         }
     }
-
+    */
 } // namespace MoYu

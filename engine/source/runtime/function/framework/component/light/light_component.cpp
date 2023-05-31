@@ -35,6 +35,86 @@ namespace MoYu
         m_is_dirty = true;
     }
 
+    GameObjectComponentDesc component2SwapData(MoYu::GObjectID     game_object_id,
+                                               MoYu::GComponentID  transform_component_id,
+                                               TransformComponent* m_transform_component_ptr,
+                                               MoYu::GComponentID  light_component_id,
+                                               LightComponentRes*  m_light_res_ptr)
+    {
+        Matrix4x4 transform_matrix = m_transform_component_ptr->getMatrixWorld();
+
+        std::tuple<Quaternion, Vector3, Vector3> rts = GLMUtil::decomposeMat4x4(transform_matrix);
+
+        Quaternion m_rotation = std::get<0>(rts);
+        Vector3    m_position = std::get<1>(rts);
+        Vector3    m_scale    = std::get<2>(rts);
+
+        SceneTransform scene_transform     = {};
+        scene_transform.m_identifier       = SceneCommonIdentifier {game_object_id, transform_component_id};
+        scene_transform.m_position         = m_position;
+        scene_transform.m_rotation         = m_rotation;
+        scene_transform.m_scale            = m_scale;
+        scene_transform.m_transform_matrix = transform_matrix;
+
+        SceneLight scene_light   = {};
+        scene_light.m_identifier = SceneCommonIdentifier {game_object_id, light_component_id};
+
+        if (m_light_res_ptr->m_LightParamName == "DirectionLightParameter")
+        {
+            Matrix3x3 rotation_matrix = Matrix3x3::fromQuaternion(scene_transform.m_rotation);
+
+            BaseDirectionLight direction_light = {};
+
+            direction_light.m_color             = m_light_res_ptr->m_DirectionLightParam.color;
+            direction_light.m_intensity         = m_light_res_ptr->m_DirectionLightParam.intensity;
+            direction_light.m_direction         = -rotation_matrix.getColumn(2);
+            direction_light.m_shadowmap         = m_light_res_ptr->m_DirectionLightParam.shadows;
+            direction_light.m_shadow_bounds     = m_light_res_ptr->m_DirectionLightParam.shadow_bounds;
+            direction_light.m_shadow_near_plane = m_light_res_ptr->m_DirectionLightParam.shadow_near_plane;
+            direction_light.m_shadow_far_plane  = m_light_res_ptr->m_DirectionLightParam.shadow_far_plane;
+            direction_light.m_shadowmap_size    = m_light_res_ptr->m_DirectionLightParam.shadowmap_size;
+
+            scene_light.direction_light = direction_light;
+            scene_light.m_light_type    = LightType::DirectionLight;
+        }
+        else if (m_light_res_ptr->m_LightParamName == "PointLightParameter")
+        {
+            BasePointLight point_light = {};
+
+            point_light.m_color     = m_light_res_ptr->m_PointLightParam.color;
+            point_light.m_intensity = m_light_res_ptr->m_PointLightParam.intensity;
+            point_light.m_radius    = m_light_res_ptr->m_PointLightParam.falloff_radius;
+
+            scene_light.point_light  = point_light;
+            scene_light.m_light_type = LightType::PointLight;
+        }
+        else if (m_light_res_ptr->m_LightParamName == "SpotLightParameter")
+        {
+            BaseSpotLight spot_light = {};
+
+            spot_light.m_color             = m_light_res_ptr->m_SpotLightParam.color;
+            spot_light.m_intensity         = m_light_res_ptr->m_SpotLightParam.intensity;
+            spot_light.m_radius            = m_light_res_ptr->m_SpotLightParam.falloff_radius;
+            spot_light.m_inner_radians     = m_light_res_ptr->m_SpotLightParam.inner_angle;
+            spot_light.m_outer_radians     = m_light_res_ptr->m_SpotLightParam.outer_angle;
+            spot_light.m_shadowmap         = m_light_res_ptr->m_SpotLightParam.shadows;
+            spot_light.m_shadow_bounds     = m_light_res_ptr->m_SpotLightParam.shadow_bounds;
+            spot_light.m_shadow_near_plane = m_light_res_ptr->m_SpotLightParam.shadow_near_plane;
+            spot_light.m_shadow_far_plane  = m_light_res_ptr->m_SpotLightParam.shadow_far_plane;
+            spot_light.m_shadowmap_size    = m_light_res_ptr->m_SpotLightParam.shadowmap_size;
+
+            scene_light.spot_light   = spot_light;
+            scene_light.m_light_type = LightType::SpotLight;
+        }
+
+        GameObjectComponentDesc light_component_desc = {};
+        light_component_desc.m_component_type        = ComponentType::C_Transform | ComponentType::C_Light;
+        light_component_desc.m_transform_desc        = scene_transform;
+        light_component_desc.m_scene_light           = scene_light;
+
+        return light_component_desc;
+    }
+
     void LightComponent::tick(float delta_time)
     {
         if (!m_object.expired())
@@ -45,191 +125,52 @@ namespace MoYu
         RenderSwapContext& render_swap_context = g_runtime_global_context.m_render_system->getSwapContext();
         RenderSwapData& logic_swap_data = render_swap_context.getLogicSwapData();
 
-        TransformComponent* m_transform_component_ptr = m_object.lock()->getTransformComponent().get();
+        TransformComponent* m_transform_component_ptr = m_object.lock()->getTransformComponent().lock().get();
 
-        if (m_light_res_buffer[m_current_index].m_LightParamName == "" &&
-            m_light_res_buffer[m_next_index].m_LightParamName != "")
+        MoYu::GObjectID    game_object_id         = m_object.lock()->getID();
+        MoYu::GComponentID transform_component_id = m_transform_component_ptr->getComponentId();
+        MoYu::GComponentID light_component_id     = this->getComponentId();
+
+        std::string currentLightName = m_light_res_buffer[m_current_index].m_LightParamName;
+        std::string nextLightName    = m_light_res_buffer[m_next_index].m_LightParamName;
+
+        if (m_is_ready_erase || (currentLightName != "" && nextLightName == ""))
         {
-            MoYu::GObjectID game_object_id = m_object.lock()->getID();
+            GameObjectComponentDesc light_component_desc = component2SwapData(game_object_id,
+                                                                              transform_component_id,
+                                                                              m_transform_component_ptr,
+                                                                              light_component_id,
+                                                                              &m_light_res_buffer[m_current_index]);
 
-            MoYu::GComponentID transform_component_id = m_transform_component_ptr->getComponentId();
-
-            SceneTransform scene_transform = {};
-            scene_transform.m_identifier = SceneCommonIdentifier {game_object_id, transform_component_id};
-            scene_transform.m_position = m_transform_component_ptr->getPosition();
-            scene_transform.m_rotation = m_transform_component_ptr->getRotation();
-            scene_transform.m_scale = m_transform_component_ptr->getScale();
-            scene_transform.m_transform_matrix = Math::makeViewMatrix(scene_transform.m_position, scene_transform.m_rotation);
-
-            MoYu::GComponentID light_component_id = this->getComponentId();
-
-            SceneLight scene_light = {};
-            scene_light.m_identifier = SceneCommonIdentifier {game_object_id, light_component_id};
-
-            if (m_light_res.m_LightParamName == "DirectionLightParameter")
-            {
-                Matrix3x3 rotation_matrix = Matrix3x3::fromQuaternion(scene_transform.m_rotation);
-
-                MoYu::LightComponentRes& tmp_light_res = m_light_res_buffer[m_next_index];
-
-                BaseDirectionLight direction_light = {};
-
-                direction_light.m_color = tmp_light_res.m_DirectionLightParam.color;
-                direction_light.m_intensity = tmp_light_res.m_DirectionLightParam.intensity;
-                direction_light.m_direction = -rotation_matrix.getColumn(2);
-
-
-                scene_light.m_light_type = LightType::DirectionLight;
-                scene_light.direction_light = direction_light;
-
-            }
-            else if (m_light_res.m_LightParamName == "PointLightParameter")
-            {
-                scene_light.m_light_type = LightType::PointLight;
-            }
-            else if (m_light_res.m_LightParamName == "SpotLightParameter")
-            {
-                scene_light.m_light_type = LightType::SpotLight;
-            }
-
-
-
-            GameObjectComponentDesc light_component_desc = {};
-            light_component_desc.m_component_type = ComponentType::C_Transform | ComponentType::C_Light;
-            light_component_desc.m_transform_desc = scene_transform;
-            light_component_desc.m_scene_light = scene_light;
-
-            std::vector<GameObjectComponentDesc> dirty_light_part_descs = {light_component_desc};
-
-            GameObjectDesc game_object_desc = {game_object_id, dirty_light_part_descs};
-
-            logic_swap_data.addDirtyGameObject(game_object_desc);
+            logic_swap_data.addDeleteGameObject({game_object_id, {light_component_desc}});
         }
-        else if (m_light_res_buffer[m_next_index].m_LightParamName == "" &&
-                 m_light_res_buffer[m_current_index].m_LightParamName != "")
+        else if ((currentLightName == "" && nextLightName != "") ||
+            (currentLightName == nextLightName && nextLightName != "" && (m_transform_component_ptr->isDirty() || isDirty())))
         {
-            
+            GameObjectComponentDesc light_component_desc = component2SwapData(game_object_id,
+                                                                              transform_component_id,
+                                                                              m_transform_component_ptr,
+                                                                              light_component_id,
+                                                                              &m_light_res_buffer[m_next_index]);
+
+            logic_swap_data.addDirtyGameObject({game_object_id, {light_component_desc}});
         }
-        else
+        else if (currentLightName != "" && nextLightName != "" && (currentLightName != nextLightName))
         {
+            //GameObjectComponentDesc light_component_desc_cur = component2SwapData(game_object_id,
+            //                                                                      transform_component_id,
+            //                                                                      m_transform_component_ptr,
+            //                                                                      light_component_id,
+            //                                                                      &m_light_res_buffer[m_current_index]);
 
-        }
+            GameObjectComponentDesc light_component_desc_next = component2SwapData(game_object_id,
+                                                                                   transform_component_id,
+                                                                                   m_transform_component_ptr,
+                                                                                   light_component_id,
+                                                                                   &m_light_res_buffer[m_next_index]);
 
-
-
-        if (m_transform_component_ptr->isDirty() || isDirty())
-        {
-
-            Matrix4x4 transform_matrix = m_transform_component_ptr->getMatrixWorld();
-            std::tuple<Quaternion, Vector3, Vector3> rts = GLMUtil::decomposeMat4x4(transform_matrix);
-
-            Quaternion m_rotation = std::get<0>(rts);
-            Vector3    m_position = std::get<1>(rts);
-            Vector3    m_scale    = std::get<2>(rts);
-
-
-
-
-
-
-
-
-            /*
-            if (m_light_res.m_parameter.getTypeName() == "DirectionalLightParameter")
-            {
-                DirectionalLightParameter* m_directional_light_params = (DirectionalLightParameter*)m_light_res.m_parameter;
-
-                Matrix3x3 rotation_matrix = Matrix3x3::fromQuaternion(std::get<0>(rts));
-
-                m_light_part_desc.m_direction_light_desc.m_position       = std::get<1>(rts);
-                m_light_part_desc.m_direction_light_desc.m_color          = m_directional_light_params->color;
-                m_light_part_desc.m_direction_light_desc.m_intensity      = m_directional_light_params->intensity;
-
-                m_light_part_desc.m_direction_light_desc.m_shadowmap      = m_directional_light_params->shadows;
-                m_light_part_desc.m_direction_light_desc.m_shadow_bounds  = m_directional_light_params->shadow_bounds;
-                m_light_part_desc.m_direction_light_desc.m_shadow_near_plane  = m_directional_light_params->shadow_near_plane;
-                m_light_part_desc.m_direction_light_desc.m_shadow_far_plane  = m_directional_light_params->shadow_far_plane;
-                m_light_part_desc.m_direction_light_desc.m_shadowmap_size = m_directional_light_params->shadowmap_size;
-                m_light_part_desc.m_direction_light_desc.m_direction      = -rotation_matrix.getColumn(2);
-                if (m_light_part_desc.m_direction_light_desc.m_shadowmap)
-                {
-                    //Matrix4x4 light_view_matrix = Math::makeViewMatrix(
-                    //    m_light_part_desc.m_transform_desc.m_position, m_light_part_desc.m_transform_desc.m_rotation);
-                    Vector3 eye_position = m_light_part_desc.m_transform_desc.m_position;
-                    Vector3 target_position = eye_position + m_light_part_desc.m_direction_light_desc.m_direction;
-                    Vector3 up_dir          = rotation_matrix.getColumn(1);
-
-                    Matrix4x4 light_view_matrix = Math::makeLookAtMatrix(eye_position, target_position, up_dir);
-
-                    Vector2 shadow_bounds = m_light_part_desc.m_direction_light_desc.m_shadow_bounds;
-                    float shadow_near = m_light_part_desc.m_direction_light_desc.m_shadow_near_plane;
-                    float shadow_far  = m_light_part_desc.m_direction_light_desc.m_shadow_far_plane;
-
-                    Matrix4x4 light_proj_matrix = Math::makeOrthographicProjectionMatrix(-shadow_bounds.x * 0.5f,
-                                                                                         shadow_bounds.x * 0.5f,
-                                                                                         -shadow_bounds.y * 0.5f,
-                                                                                         shadow_bounds.y * 0.5f,
-                                                                                         shadow_near,
-                                                                                         shadow_far);
-
-                    m_light_part_desc.m_direction_light_desc.m_shadow_view_proj_mat = light_proj_matrix * light_view_matrix;
-                }
-
-            }
-            else if (m_light_res.m_parameter.getTypeName() == "PointLightParameter")
-            {
-                PointLightParameter* m_point_light_params = (PointLightParameter*)m_light_res.m_parameter;
-
-                m_light_part_desc.m_point_light_desc.m_position  = std::get<1>(rts);
-                m_light_part_desc.m_point_light_desc.m_color     = m_point_light_params->color;
-                m_light_part_desc.m_point_light_desc.m_intensity = m_point_light_params->intensity;
-                m_light_part_desc.m_point_light_desc.m_radius    = m_point_light_params->falloff_radius;
-            }
-            else if (m_light_res.m_parameter.getTypeName() == "SpotLightParameter")
-            {
-                SpotLightParameter* m_spot_light_params = (SpotLightParameter*)m_light_res.m_parameter;
-
-                DirectionalLightParameter* m_directional_light_params = (DirectionalLightParameter*)m_light_res.m_parameter;
-
-                Matrix3x3 rotation_matrix = Matrix3x3::fromQuaternion(std::get<0>(rts));
-
-                m_light_part_desc.m_spot_light_desc.m_position      = std::get<1>(rts);
-                m_light_part_desc.m_spot_light_desc.m_direction     = -rotation_matrix.getColumn(2);
-                m_light_part_desc.m_spot_light_desc.m_color         = m_spot_light_params->color;
-                m_light_part_desc.m_spot_light_desc.m_intensity     = m_spot_light_params->intensity;
-                m_light_part_desc.m_spot_light_desc.m_radius        = m_spot_light_params->falloff_radius;
-                m_light_part_desc.m_spot_light_desc.m_inner_radians = Math::degreesToRadians(m_spot_light_params->inner_angle);
-                m_light_part_desc.m_spot_light_desc.m_outer_radians = Math::degreesToRadians(m_spot_light_params->outer_angle);
-
-                m_light_part_desc.m_spot_light_desc.m_shadowmap         = m_spot_light_params->shadows;
-                m_light_part_desc.m_spot_light_desc.m_shadow_bounds     = m_spot_light_params->shadow_bounds;
-                m_light_part_desc.m_spot_light_desc.m_shadow_near_plane = m_spot_light_params->shadow_near_plane;
-                m_light_part_desc.m_spot_light_desc.m_shadow_far_plane  = m_spot_light_params->falloff_radius + 10.0f;
-                m_light_part_desc.m_spot_light_desc.m_shadowmap_size    = m_spot_light_params->shadowmap_size;
-                if (m_light_part_desc.m_spot_light_desc.m_shadowmap)
-                {
-                    Vector3 eye_position    = m_light_part_desc.m_transform_desc.m_position;
-                    Vector3 target_position = eye_position + m_light_part_desc.m_spot_light_desc.m_direction;
-                    Vector3 up_dir          = rotation_matrix.getColumn(1);
-
-                    Matrix4x4 light_view_matrix = Math::makeLookAtMatrix(eye_position, target_position, up_dir);
-
-                    float shadow_near = m_light_part_desc.m_spot_light_desc.m_shadow_near_plane;
-                    float shadow_far  = m_light_part_desc.m_spot_light_desc.m_shadow_far_plane;
-
-                    MoYu::Radian fovy = MoYu::Radian(m_light_part_desc.m_spot_light_desc.m_outer_radians);
-                    float aspect = 1.0f;
-
-                    Matrix4x4 light_proj_matrix = Math::makePerspectiveMatrix(fovy, aspect, shadow_near, shadow_far);
-
-                    m_light_part_desc.m_spot_light_desc.m_shadow_view_proj_mat = light_proj_matrix * light_view_matrix;
-                }
-            }
-
-            std::vector<GameObjectComponentDesc> dirty_light_part_descs = {m_light_part_desc};
-            logic_swap_data.addDirtyGameObject(GameObjectDesc {m_parent_object.lock()->getID(), dirty_light_part_descs});
-            */
-
+            //logic_swap_data.addDeleteGameObject({game_object_id, {light_component_desc_cur}});
+            logic_swap_data.addDirtyGameObject({game_object_id, {light_component_desc_next}});
         }
 
         std::swap(m_current_index, m_next_index);

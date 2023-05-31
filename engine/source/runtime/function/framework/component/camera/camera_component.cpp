@@ -18,28 +18,19 @@ namespace MoYu
 {
     std::string CameraComponent::m_component_name = "CameraComponent";
 
+    void CameraComponent::reset()
+    {
+        m_camera_res = {};
+    }
+
     void CameraComponent::postLoadResource(std::weak_ptr<GObject> object, void* data)
     {
         m_object = object;
 
         CameraComponentRes* camera_res = (CameraComponentRes*)data;
-        m_camera_res  = *camera_res;
-    }
+        m_camera_res = *camera_res;
 
-    void CameraComponent::reset()
-    {
-        if (!m_camera_res.m_parameter)
-        {
-            PILOT_REFLECTION_DELETE(m_camera_res.m_parameter)
-        }
-        m_camera_res.m_parameter = PILOT_REFLECTION_NEW(FreeCameraParameter)
-    }
-
-    void CameraComponent::postLoadResource(std::weak_ptr<GObject> parent_object)
-    {
-        m_parent_object = parent_object;
-
-        const std::string& camera_type_name = m_camera_res.m_parameter.getTypeName();
+        const std::string& camera_type_name = m_camera_res.m_CamParamName;
         if (camera_type_name == "FirstPersonCameraParameter")
         {
             m_camera_mode = CameraMode::first_person;
@@ -58,23 +49,23 @@ namespace MoYu
         }
 
         RenderSwapContext& swap_context = g_runtime_global_context.m_render_system->getSwapContext();
-        CameraSwapData     camera_swap_data;
-        camera_swap_data.m_fov_y                           = m_camera_res.m_parameter->m_fov;
+        CameraSwapData camera_swap_data;
+        camera_swap_data.m_fov_y = m_camera_res.m_FreeCamParam.m_fov;
         swap_context.getLogicSwapData().m_camera_swap_data = camera_swap_data;
     }
 
     void CameraComponent::tick(float delta_time)
     {
-        if (!m_parent_object.lock())
+        if (!m_object.lock())
             return;
 
         std::shared_ptr<Level> current_level = g_runtime_global_context.m_world_manager->getCurrentActiveLevel().lock();
-        std::shared_ptr<Character> current_character = current_level->getCurrentActiveCharacter().lock();
-        if (current_character == nullptr)
-            return;
+        //std::shared_ptr<Character> current_character = current_level->getCurrentActiveCharacter().lock();
+        //if (current_character == nullptr)
+        //    return;
 
-        if (current_character->getObjectID() != m_parent_object.lock()->getID())
-            return;
+        //if (current_character->getObjectID() != m_parent_object.lock()->getID())
+        //    return;
 
         switch (m_camera_mode)
         {
@@ -91,8 +82,14 @@ namespace MoYu
         }
     }
 
+    void CameraComponent::markToErase()
+    {
+        m_is_ready_erase = true;
+    }
+
     void CameraComponent::tickFirstPersonCamera(float delta_time)
     {
+        /*
         std::shared_ptr<Level> current_level = g_runtime_global_context.m_world_manager->getCurrentActiveLevel().lock();
         std::shared_ptr<Character> current_character = current_level->getCurrentActiveCharacter().lock();
         if (current_character == nullptr)
@@ -122,10 +119,12 @@ namespace MoYu
         Vector3    object_left   = Vector3::Up.cross(object_facing);
         Quaternion object_rotation = Quaternion::fromAxes(-object_left, Vector3::Up, -object_facing);
         current_character->setRotation(object_rotation);
+        */
     }
 
     void CameraComponent::tickThirdPersonCamera(float delta_time)
     {
+        /*
         std::shared_ptr<Level> current_level = g_runtime_global_context.m_world_manager->getCurrentActiveLevel().lock();
         std::shared_ptr<Character> current_character = current_level->getCurrentActiveCharacter().lock();
         if (current_character == nullptr)
@@ -159,5 +158,12 @@ namespace MoYu
         camera_swap_data.m_camera_type                     = RenderCameraType::Motor;
         camera_swap_data.m_view_matrix                     = desired_mat;
         swap_context.getLogicSwapData().m_camera_swap_data = camera_swap_data;
+        */
     }
+
+    void CameraComponent::tickFreeCamera(float delta_time)
+    {
+
+    }
+
 } // namespace MoYu

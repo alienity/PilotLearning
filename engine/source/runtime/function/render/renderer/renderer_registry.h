@@ -5,7 +5,6 @@
 #include "runtime/function/render/rhi/rendergraph/RenderGraphCommon.h"
 #include "runtime/function/render/rhi/rendergraph/RenderGraphRegistry.h"
 #include "runtime/function/render/rhi/rendergraph/RenderGraph.h"
-#include "runtime/function/render/render_mesh.h"
 #include "runtime/function/render/renderer/renderer_config.h"
 
 // clang-format off
@@ -555,7 +554,7 @@ struct PipelineStates
             pIndirectCullSpotShadowmap = std::make_shared<RHI::D3D12PipelineState>(pDevice, L"IndirectCullSpotShadowmap", psoDesc);
         }
         {
-            RHI::D3D12InputLayout InputLayout = MoYu::MeshVertex::D3D12MeshVertexPositionNormalTangentTexture::InputLayout;
+            RHI::D3D12InputLayout InputLayout = MoYu::D3D12MeshVertexPositionNormalTangentTexture::InputLayout;
             
             RHIDepthStencilState DepthStencilState;
             DepthStencilState.DepthEnable = true;
@@ -596,7 +595,7 @@ struct PipelineStates
         }
         {
             //IndirectDrawTransparent
-            RHI::D3D12InputLayout InputLayout = MoYu::MeshVertex::D3D12MeshVertexPositionNormalTangentTexture::InputLayout;
+            RHI::D3D12InputLayout InputLayout = MoYu::D3D12MeshVertexPositionNormalTangentTexture::InputLayout;
 
             RHIDepthStencilState DepthStencilState;
             DepthStencilState.DepthEnable = true;
@@ -646,7 +645,7 @@ struct PipelineStates
             pIndirectDrawTransparent = std::make_shared<RHI::D3D12PipelineState>(pDevice, L"IndirectDrawTransparent", psoDesc);
         }
         {
-            RHI::D3D12InputLayout InputLayout = MoYu::MeshVertex::D3D12MeshVertexPositionNormalTangentTexture::InputLayout;
+            RHI::D3D12InputLayout InputLayout = MoYu::D3D12MeshVertexPositionNormalTangentTexture::InputLayout;
 
             RHIDepthStencilState DepthStencilState;
             DepthStencilState.DepthEnable = true;
@@ -678,7 +677,7 @@ struct PipelineStates
             pIndirectDrawDirectionShadowmap = std::make_shared<RHI::D3D12PipelineState>(pDevice, L"IndirectDrawDirectionShadowmap", psoDesc);
         }
         {
-            RHI::D3D12InputLayout InputLayout = MoYu::MeshVertex::D3D12MeshVertexPositionNormalTangentTexture::InputLayout;
+            RHI::D3D12InputLayout InputLayout = MoYu::D3D12MeshVertexPositionNormalTangentTexture::InputLayout;
 
             RHIDepthStencilState DepthStencilState;
             DepthStencilState.DepthEnable = true;

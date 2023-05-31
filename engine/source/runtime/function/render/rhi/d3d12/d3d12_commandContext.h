@@ -10,8 +10,6 @@
 #include "d3d12_pipelineState.h"
 #include "d3d12_profiler.h"
 
-#include "core/color/color.h"
-
 namespace RHI
 {
     class D3D12CommandQueue;

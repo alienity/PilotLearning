@@ -1,7 +1,6 @@
 ﻿#include "runtime/engine.h"
 
 #include "runtime/core/base/macro.h"
-#include "runtime/core/meta/reflection/reflection_register.h"
 
 #include "runtime/function/framework/world/world_manager.h"
 #include "runtime/function/framework/material/material_manager.h"
@@ -18,8 +17,6 @@ namespace MoYu
 
     void PilotEngine::startEngine(const std::string& config_file_path)
     {
-        Reflection::TypeMetaRegister::Register();
-
         g_runtime_global_context.startSystems(config_file_path);
 
         LOG_INFO("engine start");
@@ -30,8 +27,6 @@ namespace MoYu
         LOG_INFO("engine shutdown");
 
         g_runtime_global_context.shutdownSystems();
-
-        Reflection::TypeMetaRegister::Unregister();
     }
 
     void PilotEngine::initialize() {}
