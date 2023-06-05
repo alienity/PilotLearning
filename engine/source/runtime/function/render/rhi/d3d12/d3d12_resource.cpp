@@ -597,6 +597,33 @@ namespace RHI
 
     RHIBufferDesc& D3D12Buffer::GetBufferDesc() { return m_Desc; }
 
+    bool D3D12Buffer::NeedUpdateData(RHIBufferData data)
+    {
+        bool doNotNeedUpdate =
+            this->m_Data.m_DataLen == data.m_DataLen && !memcmp(this->m_Data.m_Data, data.m_Data, data.m_DataLen);
+        return !doNotNeedUpdate;
+    }
+
+    void D3D12Buffer::UpdateCachedData(RHIBufferData data)
+    {
+        if (this->m_Data.m_Data != nullptr)
+        {
+            if (!NeedUpdateData(data))
+                return;
+
+            free(this->m_Data.m_Data);
+            this->m_Data.m_Data    = nullptr;
+            this->m_Data.m_DataLen = 0;
+        }
+
+        if (data.m_Data == nullptr || data.m_DataLen == 0)
+            return;
+
+        this->m_Data.m_Data    = (BYTE*)malloc(data.m_DataLen);
+        this->m_Data.m_DataLen = data.m_DataLen;
+        memcpy(this->m_Data.m_Data, data.m_Data, data.m_DataLen);
+    }
+
     std::shared_ptr<D3D12ConstantBufferView> D3D12Buffer::CreateShaderVisibleCBV(D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc)
     {
         UINT64 descHash = Utility::Hash64((const char*)&cbvDesc, sizeof(D3D12_CONSTANT_BUFFER_VIEW_DESC));

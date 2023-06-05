@@ -14,6 +14,12 @@ namespace MoYu
     class RenderCamera;
     class RenderSystem;
 
+    struct CachedMeshRenderer
+    {
+        SceneMeshRenderer cachedSceneMeshrenderer;
+        InternalMeshRenderer internalMeshRenderer;
+    };
+
     class RenderScene
     {
     public:
@@ -24,7 +30,7 @@ namespace MoYu
         std::vector<InternalSpotLight>  m_spot_light_list;
 
         // render entities
-        std::vector<InternalMeshRenderer> m_mesh_renderers;
+        std::vector<CachedMeshRenderer> m_mesh_renderers;
 
     public:
 

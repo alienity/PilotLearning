@@ -109,14 +109,25 @@ namespace MoYu
         GComponentID m_component_id {K_Invalid_Component_Id};
     };
 
+    struct InternalVertexBuffer
+    {
+        InputDefinition input_element_definition;
+        uint32_t vertex_count;
+        std::shared_ptr<RHI::D3D12Buffer> vertex_buffer;
+    };
+
+    struct InternalIndexBuffer
+    {
+        uint32_t index_stride;
+        uint32_t index_count;
+        std::shared_ptr<RHI::D3D12Buffer> index_buffer;
+    };
+
     struct InternalMesh
     {
         bool enable_vertex_blending;
-        int mesh_vertex_count;
-        int mesh_index_count;
-        InputDefinition m_InputElementDefinition;
-        std::shared_ptr<RHI::D3D12Buffer> p_mesh_vertex_buffer;
-        std::shared_ptr<RHI::D3D12Buffer> p_mesh_index_buffer;
+        InternalIndexBuffer index_buffer;
+        InternalVertexBuffer vertex_buffer;
     };
 
     struct InternalPBRMaterial
@@ -125,13 +136,15 @@ namespace MoYu
         bool m_blend;
         bool m_double_sided;
 
+        // 所有的值都设置在的uniformbuffer中
+        /*
         Vector4 m_base_color_factor;
         float   m_metallic_factor;
         float   m_roughness_factor;
         float   m_normal_scale;
         float   m_occlusion_strength;
         Vector3 m_emissive_factor;
-
+        */
         // Textures
         std::shared_ptr<RHI::D3D12Texture> base_color_texture_image;
         std::shared_ptr<RHI::D3D12Texture> metallic_roughness_texture_image;
@@ -157,8 +170,8 @@ namespace MoYu
         Matrix4x4 model_matrix_inverse;
         AxisAlignedBox m_bounding_box;
 
-        std::shared_ptr<InternalMesh>     ref_mesh;
-        std::shared_ptr<InternalMaterial> ref_material;
+        InternalMesh ref_mesh;
+        InternalMaterial ref_material;
     };
 
     struct BaseAmbientLight
@@ -447,6 +460,7 @@ namespace MoYu
 
     struct RenderMeshData
     {
+        AxisAlignedBox m_axis_aligned_box;
         StaticMeshData m_static_mesh_data;
         std::shared_ptr<BufferData> m_skeleton_binding_buffer;
     };

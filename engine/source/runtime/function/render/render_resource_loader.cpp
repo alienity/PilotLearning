@@ -159,6 +159,9 @@ namespace MoYu
                 std::shared_ptr<MeshData> bind_data = std::make_shared<MeshData>();
                 asset_manager->loadAsset<MeshData>(mesh_file, *bind_data);
 
+                ret.m_static_mesh_data.m_InputElementDefinition =
+                    D3D12MeshVertexPositionNormalTangentTextureJointBinding::InputElementDefinition;
+
                 // vertex buffer
                 size_t vertex_size = bind_data->vertex_buffer.size() * sizeof(Vertex);
                 ret.m_static_mesh_data.m_vertex_buffer = std::make_shared<BufferData>(vertex_size);
@@ -173,11 +176,20 @@ namespace MoYu
                 size_t skeleton_size = bind_data->skeleton_bind.size() * sizeof(SkeletonBinding);
                 ret.m_skeleton_binding_buffer = std::make_shared<BufferData>(skeleton_size);
                 memcpy(ret.m_skeleton_binding_buffer.get(), bind_data->skeleton_bind.data(), skeleton_size);
+
+                MoYu::AxisAlignedBox bounding_box;
+                for (size_t i = 0; i < bind_data->vertex_buffer.size(); i++)
+                {
+                    Vertex v = bind_data->vertex_buffer[i];
+                    bounding_box.merge(Vector3(v.px, v.py, v.pz));
+                }
+                ret.m_axis_aligned_box = bounding_box;
             }
             else
             {
                 MoYu::AxisAlignedBox bounding_box;
                 ret.m_static_mesh_data = LoadModel(mesh_file, bounding_box);
+                ret.m_axis_aligned_box = bounding_box;
             }
 
             _MeshData_Caches[mesh_file] = ret;

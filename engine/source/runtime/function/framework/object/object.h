@@ -101,7 +101,8 @@ namespace MoYu
             {
                 if (component->getTypeName() == compenent_type_name)
                 {
-                    return (std::shared_ptr<TComponent>)component;
+                    return std::static_pointer_cast<TComponent>(component);
+                    //return (std::shared_ptr<TComponent>)component;
                 }
             }
 

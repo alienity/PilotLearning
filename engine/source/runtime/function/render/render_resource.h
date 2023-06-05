@@ -11,6 +11,8 @@
 
 namespace MoYu
 {
+
+
     class RenderCamera;
 
     class RenderResource : public RenderResourceBase
@@ -18,15 +20,11 @@ namespace MoYu
     public:
         RenderResource() = default;
 
-        void uploadGlobalRenderResource(LevelResourceDesc level_resource_desc);
-
-        void uploadGameObjectRenderResource(RenderEntity render_entity, RenderMeshData mesh_data, RenderMaterialData material_data);
-
-        void uploadGameObjectRenderResource(RenderEntity render_entity, RenderMeshData mesh_data);
-
-        void uploadGameObjectRenderResource(RenderEntity render_entity, RenderMaterialData material_data);
-
         void updatePerFrameBuffer(std::shared_ptr<RenderScene> render_scene, std::shared_ptr<RenderCamera> camera);
+        
+        bool updateInternalMaterial(SceneMaterial scene_material, SceneMaterial& cached_material, InternalMaterial& internal_material);
+        bool updateInternalMesh(SceneMesh scene_mesh, SceneMesh& cached_mesh, InternalMesh& internal_mesh);
+        bool updateInternalMeshRenderer(SceneMeshRenderer scene_mesh_renderer, SceneMeshRenderer& cached_mesh_renderer, InternalMeshRenderer& internal_mesh_renderer);
 
         // bindless objects
         HLSL::MeshPerframeStorageBufferObject                 m_mesh_perframe_storage_buffer_object;
@@ -43,26 +41,13 @@ namespace MoYu
         std::shared_ptr<RHI::D3D12Buffer> createStaticBuffer(std::shared_ptr<BufferData>& buffer_data, bool raw, bool batch = false);
 
         std::shared_ptr<RHI::D3D12Texture> createTex2D(uint32_t width, uint32_t height, void* pixels, DXGI_FORMAT format, bool is_srgb, bool genMips = false, bool batch = false);
-        std::shared_ptr<RHI::D3D12Texture> createTex2D(std::shared_ptr<TextureData>& tex2d_data, bool genMips = false, bool batch = false);
+        std::shared_ptr<RHI::D3D12Texture> createTex2D(std::shared_ptr<TextureData>& tex2d_data, DXGI_FORMAT format, bool is_srgb, bool genMips = false, bool batch = false);
 
-        std::shared_ptr<RHI::D3D12Texture> createCubeMap(std::array<std::shared_ptr<TextureData>, 6>& cube_maps, bool genMips = false, bool batch = false);
+        std::shared_ptr<RHI::D3D12Texture> createCubeMap(std::array<std::shared_ptr<TextureData>, 6>& cube_maps, DXGI_FORMAT format, bool is_srgb, bool genMips = false, bool batch = false);
 
-        /*
-        void updateMeshData(bool                                          enable_vertex_blending,
-                            uint32_t                                      index_buffer_size,
-                            void*                                         index_buffer_data,
-                            uint32_t                                      vertex_buffer_size,
-                            struct MeshVertexDataDefinition const*        vertex_buffer_data,
-                            uint32_t                                      joint_binding_buffer_size,
-                            struct MeshVertexBindingDataDefinition const* joint_binding_buffer_data,
-                            D3D12Mesh&                                    now_mesh);
-        void updateVertexBuffer(bool                                          enable_vertex_blending,
-                                uint32_t                                      vertex_buffer_size,
-                                struct MeshVertexDataDefinition const*        vertex_buffer_data,
-                                uint32_t                                      joint_binding_buffer_size,
-                                struct MeshVertexBindingDataDefinition const* joint_binding_buffer_data,
-                                D3D12Mesh&                                    now_mesh);
-        void updateIndexBuffer(uint32_t index_buffer_size, void* index_buffer_data, D3D12Mesh& now_mesh);
-        */
+        InternalMesh createInternalMesh(SceneMesh scene_mesh);
+        InternalMesh createInternalMesh(RenderMeshData mesh_data);
+        InternalVertexBuffer createVertexBuffer(InputDefinition input_definition, std::shared_ptr<BufferData> vertex_buffer);
+        InternalIndexBuffer createIndexBuffer(std::shared_ptr<BufferData> index_buffer);
     };
 } // namespace MoYu

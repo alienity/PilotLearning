@@ -10,22 +10,12 @@
 
 namespace MoYu
 {
-    
-    struct VisiableNodes
-    {
-        std::vector<RenderMeshNode>* p_all_mesh_nodes {nullptr};
-        AmbientLightDesc*            p_ambient_light {nullptr};
-        DirectionLightDesc*          p_directional_light {nullptr};
-        std::vector<PointLightDesc>* p_point_light_list {nullptr};
-        std::vector<SpotLightDesc>*  p_spot_light_list {nullptr};
-    };
+    class RenderScene;
 
     class RenderPass : public RenderPassBase
     {
     public:
-        GlobalRenderResource* m_global_render_resource {nullptr};
-
-        static VisiableNodes m_visiable_nodes;
+        static RenderScene* m_render_scene;
 
     private:
     };

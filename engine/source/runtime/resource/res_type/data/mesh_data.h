@@ -8,16 +8,20 @@ namespace MoYu
         float px;
         float py;
         float pz;
+
         float nx;
         float ny;
         float nz;
+        
         float tx;
         float ty;
         float tz;
+        float tw;
+
         float u;
         float v;
     };
-    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Vertex, px, py, pz, nx, ny, nz, tx, ty, tz, u, v)
+    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Vertex, px, py, pz, nx, ny, nz, tx, ty, tz, tw, u, v)
 
     struct SkeletonBinding
     {
@@ -25,6 +29,7 @@ namespace MoYu
         int   index1;
         int   index2;
         int   index3;
+
         float weight0;
         float weight1;
         float weight2;
@@ -35,7 +40,7 @@ namespace MoYu
     struct MeshData
     {
         std::vector<Vertex>          vertex_buffer;
-        std::vector<int>             index_buffer;
+        std::vector<uint32_t>        index_buffer;
         std::vector<SkeletonBinding> skeleton_bind;
     };
     NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(MeshData, vertex_buffer, index_buffer, skeleton_bind)

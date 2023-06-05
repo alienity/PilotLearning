@@ -17,6 +17,7 @@
 
 namespace MoYu
 {
+    /*
     void RenderResource::uploadGlobalRenderResource(LevelResourceDesc level_resource_desc)
     {
         // sky box irradiance
@@ -98,9 +99,8 @@ namespace MoYu
     {
         getOrCreateD3D12Material(render_entity, material_data);
     }
-
-    void RenderResource::updatePerFrameBuffer(std::shared_ptr<RenderScene>  render_scene,
-                                              std::shared_ptr<RenderCamera> camera)
+    */
+    void RenderResource::updatePerFrameBuffer(std::shared_ptr<RenderScene> render_scene, std::shared_ptr<RenderCamera> camera)
     {
         Matrix4x4 view_matrix      = camera->getViewMatrix();
         Matrix4x4 proj_matrix      = camera->getPersProjMatrix();
@@ -183,432 +183,218 @@ namespace MoYu
         }
     }
 
-    D3D12Mesh& RenderResource::getOrCreateD3D12Mesh(RenderEntity entity, RenderMeshData mesh_data)
+    bool RenderResource::updateInternalMeshRenderer(SceneMeshRenderer scene_mesh_renderer, SceneMeshRenderer& cached_mesh_renderer, InternalMeshRenderer& internal_mesh_renderer)
     {
-        size_t assetid = entity.m_mesh_asset_id;
+        bool is_same_component = scene_mesh_renderer.m_identifier.m_object_id == cached_mesh_renderer.m_identifier.m_object_id;
+        is_same_component &= scene_mesh_renderer.m_identifier.m_component_id == cached_mesh_renderer.m_identifier.m_component_id;
 
-        auto it = m_d3d12_meshes.find(assetid);
-        if (it != m_d3d12_meshes.end())
+        if (is_same_component)
         {
-            return it->second;
+            updateInternalMesh(scene_mesh_renderer.m_scene_mesh, cached_mesh_renderer.m_scene_mesh, internal_mesh_renderer.ref_mesh);
+            updateInternalMaterial(scene_mesh_renderer.m_material, cached_mesh_renderer.m_material, internal_mesh_renderer.ref_material);
         }
-        else
-        {
-            D3D12Mesh temp;
-            auto      res = m_d3d12_meshes.insert(std::make_pair(assetid, std::move(temp)));
-            assert(res.second);
 
-            uint32_t index_buffer_size = static_cast<uint32_t>(mesh_data.m_static_mesh_data.m_index_buffer->m_size);
-            void*    index_buffer_data = mesh_data.m_static_mesh_data.m_index_buffer->m_data;
-
-            uint32_t vertex_buffer_size = static_cast<uint32_t>(mesh_data.m_static_mesh_data.m_vertex_buffer->m_size);
-            MeshVertexDataDefinition* vertex_buffer_data =
-                reinterpret_cast<MeshVertexDataDefinition*>(mesh_data.m_static_mesh_data.m_vertex_buffer->m_data);
-
-            D3D12Mesh& now_mesh = res.first->second;
-
-            if (mesh_data.m_skeleton_binding_buffer)
-            {
-                uint32_t joint_binding_buffer_size = (uint32_t)mesh_data.m_skeleton_binding_buffer->m_size;
-                MeshVertexBindingDataDefinition* joint_binding_buffer_data =
-                    reinterpret_cast<MeshVertexBindingDataDefinition*>(mesh_data.m_skeleton_binding_buffer->m_data);
-                updateMeshData(true,
-                               index_buffer_size,
-                               index_buffer_data,
-                               vertex_buffer_size,
-                               vertex_buffer_data,
-                               joint_binding_buffer_size,
-                               joint_binding_buffer_data,
-                               now_mesh);
-            }
-            else
-            {
-                updateMeshData(false,
-                               index_buffer_size,
-                               index_buffer_data,
-                               vertex_buffer_size,
-                               vertex_buffer_data,
-                               0,
-                               nullptr,
-                               now_mesh);
-            }
-
-            return now_mesh;
-        }
+        return true;
     }
 
-    D3D12PBRMaterial& RenderResource::getOrCreateD3D12Material(RenderEntity entity, RenderMaterialData material_data)
+    std::shared_ptr<TextureData> createEmptyTextureData(float* empty_image)
     {
-        size_t assetid = entity.m_material_asset_id;
+        std::shared_ptr<TextureData> empty_color_texture_data = std::make_shared<TextureData>();
+        empty_color_texture_data->m_width        = 1;
+        empty_color_texture_data->m_height       = 1;
+        empty_color_texture_data->m_depth        = 0;
+        empty_color_texture_data->m_mip_levels   = 0;
+        empty_color_texture_data->m_array_layers = 0;
+        empty_color_texture_data->m_channels     = 4;
+        empty_color_texture_data->m_pixels       = empty_image;
+        return empty_color_texture_data;
+    }
 
-        auto it = m_d3d12_pbr_materials.find(assetid);
-        if (it != m_d3d12_pbr_materials.end())
+    bool RenderResource::updateInternalMaterial(SceneMaterial scene_material, SceneMaterial& cached_material, InternalMaterial& internal_material)
+    {
+#define IsImageSame(tex_file_name) \
+    m_mat_data.tex_file_name.m_is_srgb == m_cached_mat_data.tex_file_name.m_is_srgb \
+    && m_mat_data.tex_file_name.m_auto_mips == m_cached_mat_data.tex_file_name.m_auto_mips \
+    && m_mat_data.tex_file_name.m_mip_levels == m_cached_mat_data.tex_file_name.m_mip_levels \
+    && m_mat_data.tex_file_name.m_image_file == m_cached_mat_data.tex_file_name.m_image_file
+
+        internal_material.m_shader_name = scene_material.m_shader_name;
+
+        ScenePBRMaterial m_mat_data = scene_material.m_mat_data;
+        ScenePBRMaterial m_cached_mat_data = cached_material.m_mat_data;
+
+        float empty_image[] = {0.5f, 0.5f, 0.5f, 0.5f};
+
+        this->startUploadBatch();
+
+        InternalPBRMaterial now_material;
         {
-            return it->second;
+            now_material.m_blend        = m_mat_data.m_blend;
+            now_material.m_double_sided = m_mat_data.m_double_sided;
         }
-        else
         {
-            D3D12PBRMaterial temp;
-            auto res = m_d3d12_pbr_materials.insert(std::make_pair(assetid, std::move(temp)));
-            assert(res.second);
+            bool is_uniform_same = m_mat_data.m_blend == m_cached_mat_data.m_blend;
+            is_uniform_same &= m_mat_data.m_double_sided == m_cached_mat_data.m_double_sided;
+            is_uniform_same &= m_mat_data.m_base_color_factor == m_cached_mat_data.m_base_color_factor;
+            is_uniform_same &= m_mat_data.m_metallic_factor == m_cached_mat_data.m_metallic_factor;
+            is_uniform_same &= m_mat_data.m_roughness_factor == m_cached_mat_data.m_roughness_factor;
+            is_uniform_same &= m_mat_data.m_normal_scale == m_cached_mat_data.m_normal_scale;
+            is_uniform_same &= m_mat_data.m_occlusion_strength == m_cached_mat_data.m_occlusion_strength;
+            is_uniform_same &= m_mat_data.m_emissive_factor == m_cached_mat_data.m_emissive_factor;
 
-            float empty_image[] = {0.5f, 0.5f, 0.5f, 0.5f};
-
-            void* base_color_image_pixels = empty_image;
-            
-            std::shared_ptr<TextureData> base_color_texture_data = material_data.m_base_color_texture;
-            if (base_color_texture_data == nullptr)
+            if (!is_uniform_same)
             {
-                base_color_texture_data                 = std::make_shared<TextureData>();
-                base_color_texture_data->m_width        = 1;
-                base_color_texture_data->m_height       = 1;
-                base_color_texture_data->m_depth        = 0;
-                base_color_texture_data->m_mip_levels   = 0;
-                base_color_texture_data->m_array_layers = 0;
-                base_color_texture_data->m_is_srgb      = true;
-                base_color_texture_data->m_format       = DXGI_FORMAT::DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
-                base_color_texture_data->m_pixels       = empty_image;
-            }
-
-            std::shared_ptr<TextureData> metallic_roughness_texture_data = material_data.m_metallic_roughness_texture;
-            if (metallic_roughness_texture_data == nullptr)
-            {
-                metallic_roughness_texture_data                 = std::make_shared<TextureData>();
-                metallic_roughness_texture_data->m_width        = 1;
-                metallic_roughness_texture_data->m_height       = 1;
-                metallic_roughness_texture_data->m_depth        = 0;
-                metallic_roughness_texture_data->m_mip_levels   = 0;
-                metallic_roughness_texture_data->m_array_layers = 0;
-                metallic_roughness_texture_data->m_is_srgb      = false;
-                metallic_roughness_texture_data->m_format       = DXGI_FORMAT::DXGI_FORMAT_R8G8B8A8_UNORM;
-                metallic_roughness_texture_data->m_pixels       = empty_image;
-            }
-
-            std::shared_ptr<TextureData> normal_texture_data = material_data.m_normal_texture;
-            if (normal_texture_data == nullptr)
-            {
-                normal_texture_data                 = std::make_shared<TextureData>();
-                normal_texture_data->m_width        = 1;
-                normal_texture_data->m_height       = 1;
-                normal_texture_data->m_depth        = 0;
-                normal_texture_data->m_mip_levels   = 0;
-                normal_texture_data->m_array_layers = 0;
-                normal_texture_data->m_is_srgb      = false;
-                normal_texture_data->m_format       = DXGI_FORMAT::DXGI_FORMAT_R8G8B8A8_UNORM;
-                normal_texture_data->m_pixels       = empty_image;
-            }
-
-            std::shared_ptr<TextureData> occlusion_texture_data = material_data.m_occlusion_texture;
-            if (occlusion_texture_data == nullptr)
-            {
-                occlusion_texture_data                 = std::make_shared<TextureData>();
-                occlusion_texture_data->m_width        = 1;
-                occlusion_texture_data->m_height       = 1;
-                occlusion_texture_data->m_depth        = 0;
-                occlusion_texture_data->m_mip_levels   = 0;
-                occlusion_texture_data->m_array_layers = 0;
-                occlusion_texture_data->m_is_srgb      = false;
-                occlusion_texture_data->m_format       = DXGI_FORMAT::DXGI_FORMAT_R8G8B8A8_UNORM;
-                occlusion_texture_data->m_pixels       = empty_image;
-            }
-
-            std::shared_ptr<TextureData> emission_texture_data = material_data.m_emissive_texture;
-            if (emission_texture_data == nullptr)
-            {
-                emission_texture_data                  = std::make_shared<TextureData>();
-                emission_texture_data->m_width         = 1;
-                emission_texture_data->m_height        = 1;
-                emission_texture_data->m_depth         = 0;
-                emission_texture_data->m_mip_levels    = 0;
-                emission_texture_data->m_array_layers  = 0;
-                emission_texture_data->m_is_srgb       = false;
-                emission_texture_data->m_format        = DXGI_FORMAT::DXGI_FORMAT_R8G8B8A8_UNORM;
-                emission_texture_data->m_pixels        = empty_image;
-            }
-
-            D3D12PBRMaterial& now_material = res.first->second;
-            {
-                now_material.m_blend        = material_data.m_blend;
-                now_material.m_double_sided = material_data.m_double_sided;
-
-                now_material.m_base_color_factor  = material_data.m_base_color_factor;
-                now_material.m_metallic_factor    = material_data.m_metallic_factor;
-                now_material.m_roughness_factor   = material_data.m_roughness_factor;
-                now_material.m_normal_scale       = material_data.m_normal_scale;
-                now_material.m_occlusion_strength = material_data.m_occlusion_strength;
-                now_material.m_emissive_factor    = material_data.m_emissive_factor;
-            }
-            {
-                startUploadBatch();
-
                 HLSL::MeshPerMaterialUniformBuffer material_uniform_buffer_info;
-                material_uniform_buffer_info.is_blend          = material_data.m_blend;
-                material_uniform_buffer_info.is_double_sided   = material_data.m_double_sided;
-                material_uniform_buffer_info.baseColorFactor   = GLMUtil::fromVec4(material_data.m_base_color_factor);
-                material_uniform_buffer_info.metallicFactor    = material_data.m_metallic_factor;
-                material_uniform_buffer_info.roughnessFactor   = material_data.m_roughness_factor;
-                material_uniform_buffer_info.normalScale       = material_data.m_normal_scale;
-                material_uniform_buffer_info.occlusionStrength = material_data.m_occlusion_strength;
-                material_uniform_buffer_info.emissiveFactor    = GLMUtil::fromVec3(material_data.m_emissive_factor);
+                material_uniform_buffer_info.is_blend          = m_mat_data.m_blend;
+                material_uniform_buffer_info.is_double_sided   = m_mat_data.m_double_sided;
+                material_uniform_buffer_info.baseColorFactor   = GLMUtil::fromVec4(m_mat_data.m_base_color_factor);
+                material_uniform_buffer_info.metallicFactor    = m_mat_data.m_metallic_factor;
+                material_uniform_buffer_info.roughnessFactor   = m_mat_data.m_roughness_factor;
+                material_uniform_buffer_info.normalScale       = m_mat_data.m_normal_scale;
+                material_uniform_buffer_info.occlusionStrength = m_mat_data.m_occlusion_strength;
+                material_uniform_buffer_info.emissiveFactor    = GLMUtil::fromVec3(m_mat_data.m_emissive_factor);
 
-                uint32_t buffer_size = sizeof(HLSL::MeshPerMaterialUniformBuffer);
-                auto uniform_buffer =
-                    createStaticBuffer(&material_uniform_buffer_info, buffer_size, buffer_size, false, false);
-                now_material.material_uniform_buffer      = uniform_buffer;
-
-                auto base_color_tex = createTex2D(base_color_texture_data->m_width,
-                                                   base_color_texture_data->m_height,
-                                                   base_color_texture_data->m_pixels,
-                                                   base_color_texture_data->m_format,
-                                                   true,
-                                                   true,
-                                                   false);
-                now_material.base_color_texture_image = base_color_tex;
-
-                auto metal_rough_tex = createTex2D(metallic_roughness_texture_data->m_width,
-                                                    metallic_roughness_texture_data->m_height,
-                                                    metallic_roughness_texture_data->m_pixels,
-                                                    metallic_roughness_texture_data->m_format,
-                                                    false,
-                                                    true,
-                                                    false);
-                now_material.metallic_roughness_texture_image = metal_rough_tex;
-
-                auto normal_rough_tex = createTex2D(normal_texture_data->m_width,
-                                                     normal_texture_data->m_height,
-                                                     normal_texture_data->m_pixels,
-                                                     normal_texture_data->m_format,
-                                                     false,
-                                                     true,
-                                                     false);
-                now_material.normal_texture_image = normal_rough_tex;
-
-                auto occlusion_tex = createTex2D(occlusion_texture_data->m_width,
-                                                       occlusion_texture_data->m_height,
-                                                       occlusion_texture_data->m_pixels,
-                                                       occlusion_texture_data->m_format,
-                                                       false,
-                                                       true,
-                                                       false);
-                now_material.occlusion_texture_image = occlusion_tex;
-
-                auto emissive_tex = createTex2D(emission_texture_data->m_width,
-                                                      emission_texture_data->m_height,
-                                                      emission_texture_data->m_pixels,
-                                                      emission_texture_data->m_format,
-                                                      false,
-                                                      true,
-                                                      false);
-                now_material.emissive_texture_image = emissive_tex;
-
-                endUploadBatch();
-            }
-
-            return now_material;
-        }
-    }
-
-    void RenderResource::updateMeshData(bool                                   enable_vertex_blending,
-                                        uint32_t                               index_buffer_size,
-                                        void*                                  index_buffer_data,
-                                        uint32_t                               vertex_buffer_size,
-                                        MeshVertexDataDefinition const*        vertex_buffer_data,
-                                        uint32_t                               joint_binding_buffer_size,
-                                        MeshVertexBindingDataDefinition const* joint_binding_buffer_data,
-                                        D3D12Mesh&                             now_mesh)
-    {
-        now_mesh.enable_vertex_blending = enable_vertex_blending;
-        assert(0 == (vertex_buffer_size % sizeof(MeshVertexDataDefinition)));
-        now_mesh.mesh_vertex_count = vertex_buffer_size / sizeof(MeshVertexDataDefinition);
-        updateVertexBuffer(enable_vertex_blending,
-                           vertex_buffer_size,
-                           vertex_buffer_data,
-                           joint_binding_buffer_size,
-                           joint_binding_buffer_data,
-                           now_mesh);
-        assert(0 == (index_buffer_size % sizeof(uint32_t)));
-        now_mesh.mesh_index_count = index_buffer_size / sizeof(uint32_t);
-        updateIndexBuffer(index_buffer_size, index_buffer_data, now_mesh);
-    }
-
-    void RenderResource::updateVertexBuffer(bool                                   enable_vertex_blending,
-                                            uint32_t                               vertex_buffer_size,
-                                            MeshVertexDataDefinition const*        vertex_buffer_data,
-                                            uint32_t                               joint_binding_buffer_size,
-                                            MeshVertexBindingDataDefinition const* joint_binding_buffer_data,
-                                            D3D12Mesh&                             now_mesh)
-    {
-        if (enable_vertex_blending)
-        {
-            assert(0 == (vertex_buffer_size % sizeof(MeshVertexDataDefinition)));
-            uint32_t vertex_count = vertex_buffer_size / sizeof(MeshVertexDataDefinition);
-            
-            uint32_t vertex_buffer_size =
-                sizeof(MeshVertex::D3D12MeshVertexPositionNormalTangentTexture) * vertex_count;
-
-            uint32_t vertex_buffer_offset = 0;
-
-        }
-        else
-        {
-            assert(0 == (vertex_buffer_size % sizeof(MeshVertexDataDefinition)));
-            uint32_t vertex_count = vertex_buffer_size / sizeof(MeshVertexDataDefinition);
-
-            uint32_t inputLayoutStride = sizeof(MeshVertex::D3D12MeshVertexPositionNormalTangentTexture);
-            uint32_t vertex_buffer_size = inputLayoutStride * vertex_count;
-
-            uint32_t vertex_buffer_offset = 0;
-            
-            // temporary staging buffer
-            uint32_t inefficient_staging_buffer_size = vertex_buffer_size;
-
-            RHI::SharedGraphicsResource inefficient_staging_buffer =
-                m_GraphicsMemory->Allocate(inefficient_staging_buffer_size);
-            void* inefficient_staging_buffer_data = inefficient_staging_buffer.Memory();
-
-            MeshVertex::D3D12MeshVertexPositionNormalTangentTexture* mesh_vertexs =
-                reinterpret_cast<MeshVertex::D3D12MeshVertexPositionNormalTangentTexture*>(
-                    reinterpret_cast<uint8_t*>(inefficient_staging_buffer_data) + vertex_buffer_offset);
-            
-            for (uint32_t vertex_index = 0; vertex_index < vertex_count; ++vertex_index)
-            {
-                glm::vec3 normal  = glm::vec3(vertex_buffer_data[vertex_index].nx,
-                                             vertex_buffer_data[vertex_index].ny,
-                                             vertex_buffer_data[vertex_index].nz);
-                glm::vec4 tangent = glm::vec4(vertex_buffer_data[vertex_index].tx,
-                                              vertex_buffer_data[vertex_index].ty,
-                                              vertex_buffer_data[vertex_index].tz,
-                                              vertex_buffer_data[vertex_index].tw);
-
-                mesh_vertexs[vertex_index].position = glm::vec3(vertex_buffer_data[vertex_index].x,
-                                                                vertex_buffer_data[vertex_index].y,
-                                                                vertex_buffer_data[vertex_index].z);
-
-                mesh_vertexs[vertex_index].normal  = normal;
-                mesh_vertexs[vertex_index].tangent = tangent;
-
-                mesh_vertexs[vertex_index].texcoord =
-                    glm::vec2(vertex_buffer_data[vertex_index].u, vertex_buffer_data[vertex_index].v);
-            }
-
-            now_mesh.p_mesh_vertex_buffer =
-                RHI::D3D12Buffer::Create(m_Device->GetLinkedDevice(),
-                                         RHI::RHIBufferTargetVertex,
-                                         vertex_count,
-                                         sizeof(MeshVertexDataDefinition),
-                                         L"MeshVertexBuffer",
-                                         RHI::RHIBufferModeImmutable,
-                                         D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
-            {
-                startUploadBatch();
-
+                if (now_material.material_uniform_buffer == nullptr)
                 {
-                    D3D12_RESOURCE_STATES buf_ori_state =
-                        now_mesh.p_mesh_vertex_buffer->GetResourceState().GetSubresourceState(0);
-
-                    m_ResourceUpload->Transition(now_mesh.p_mesh_vertex_buffer->GetResource(),
-                                                 buf_ori_state,
-                                                 D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_DEST);
-
-                    m_ResourceUpload->Upload(now_mesh.p_mesh_vertex_buffer->GetResource(), 0, inefficient_staging_buffer);
-
-                    m_ResourceUpload->Transition(now_mesh.p_mesh_vertex_buffer->GetResource(),
-                                                 D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_DEST,
-                                                 buf_ori_state);
+                    uint32_t buffer_size = sizeof(HLSL::MeshPerMaterialUniformBuffer);
+                    auto uniform_buffer = createStaticBuffer(&material_uniform_buffer_info, buffer_size, buffer_size, false, false);
+                    now_material.material_uniform_buffer = uniform_buffer;
                 }
-
-                endUploadBatch();
+                else
+                {
+                    now_material.material_uniform_buffer->InflateBuffer((BYTE*)&material_uniform_buffer_info, sizeof(HLSL::MeshPerMaterialUniformBuffer));
+                }
             }
-
         }
-    }
-
-    void RenderResource::updateIndexBuffer(uint32_t index_buffer_size, void* index_buffer_data, D3D12Mesh& now_mesh)
-    {
-        uint32_t buffer_size = index_buffer_size;
-
-        uint32_t index_count = index_buffer_size / sizeof(uint32_t);
-
-        RHI::SharedGraphicsResource inefficient_staging_buffer = m_GraphicsMemory->Allocate(buffer_size);
-
-        void* staging_buffer_data = inefficient_staging_buffer.Memory();
-
-        memcpy(staging_buffer_data, index_buffer_data, (size_t)buffer_size);
-
-        now_mesh.p_mesh_index_buffer =
-            RHI::D3D12Buffer::Create(m_Device->GetLinkedDevice(),
-                                     RHI::RHIBufferTargetIndex,
-                                     index_count,
-                                     sizeof(uint32_t),
-                                     L"MeshIndexBuffer",
-                                     RHI::RHIBufferModeImmutable,
-                                     D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_INDEX_BUFFER);
-
         {
-            startUploadBatch();
-
+            if (!IsImageSame(m_base_color_texture_file))
             {
-                D3D12_RESOURCE_STATES buf_ori_state =
-                    now_mesh.p_mesh_index_buffer->GetResourceState().GetSubresourceState(0);
+                SceneImage base_color_image = m_mat_data.m_base_color_texture_file;
 
-                m_ResourceUpload->Transition(now_mesh.p_mesh_index_buffer->GetResource(),
-                                             buf_ori_state,
-                                             D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_DEST);
+                std::shared_ptr<TextureData> base_color_tex_data = loadTexture(base_color_image.m_image_file);
+                if (base_color_tex_data == nullptr)
+                {
+                    base_color_tex_data = createEmptyTextureData(empty_image);
+                }
+                uint32_t    m_width    = base_color_tex_data->m_width;
+                uint32_t    m_height   = base_color_tex_data->m_height;
+                void*       m_pixels   = base_color_tex_data->m_pixels;
+                DXGI_FORMAT m_format   = DXGI_FORMAT::DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
+                bool        m_is_srgb  = true;
+                bool        m_gen_mips = true;
 
-                m_ResourceUpload->Upload(now_mesh.p_mesh_index_buffer->GetResource(), 0, inefficient_staging_buffer);
-
-                m_ResourceUpload->Transition(now_mesh.p_mesh_index_buffer->GetResource(),
-                                             D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_DEST,
-                                             buf_ori_state);
+                auto base_color_tex = createTex2D(m_width, m_height, m_pixels, m_format, m_is_srgb, m_gen_mips, false);
+                now_material.base_color_texture_image = base_color_tex;
             }
+        }
+        {
+            if (!IsImageSame(m_metallic_roughness_texture_file))
+            {
+                SceneImage metallic_roughness_image = m_mat_data.m_metallic_roughness_texture_file;
 
-            endUploadBatch();
+                std::shared_ptr<TextureData> metallic_roughness_texture_data = loadTexture(metallic_roughness_image.m_image_file);
+                if (metallic_roughness_texture_data == nullptr)
+                {
+                    metallic_roughness_texture_data = createEmptyTextureData(empty_image);
+                }
+                uint32_t    m_width    = metallic_roughness_texture_data->m_width;
+                uint32_t    m_height   = metallic_roughness_texture_data->m_height;
+                void*       m_pixels   = metallic_roughness_texture_data->m_pixels;
+                DXGI_FORMAT m_format   = DXGI_FORMAT::DXGI_FORMAT_R8G8B8A8_UNORM;
+                bool        m_is_srgb  = false;
+                bool        m_gen_mips = true;
+
+                auto metal_rough_tex = createTex2D(m_width, m_height, m_pixels, m_format, m_is_srgb, m_gen_mips, false);
+                now_material.metallic_roughness_texture_image = metal_rough_tex;
+            }
+        }
+        {
+            if (!IsImageSame(m_normal_texture_file))
+            {
+                SceneImage normal_image = m_mat_data.m_normal_texture_file;
+
+                std::shared_ptr<TextureData> normal_image_texture_data = loadTexture(normal_image.m_image_file);
+                if (normal_image_texture_data == nullptr)
+                {
+                    normal_image_texture_data = createEmptyTextureData(empty_image);
+                }
+                uint32_t    m_width    = normal_image_texture_data->m_width;
+                uint32_t    m_height   = normal_image_texture_data->m_height;
+                void*       m_pixels   = normal_image_texture_data->m_pixels;
+                DXGI_FORMAT m_format   = DXGI_FORMAT::DXGI_FORMAT_R8G8B8A8_UNORM;
+                bool        m_is_srgb  = false;
+                bool        m_gen_mips = true;
+
+                auto normal_rough_tex = createTex2D(m_width, m_height, m_pixels, m_format, m_is_srgb, m_gen_mips, false);
+                now_material.normal_texture_image = normal_rough_tex;
+            }
+        }
+        {
+            if (!IsImageSame(m_occlusion_texture_file))
+            {
+                SceneImage occlusion_image = m_mat_data.m_occlusion_texture_file;
+
+                std::shared_ptr<TextureData> occlusion_image_texture_data = loadTexture(occlusion_image.m_image_file);
+                if (occlusion_image_texture_data == nullptr)
+                {
+                    occlusion_image_texture_data = createEmptyTextureData(empty_image);
+                }
+                uint32_t    m_width    = occlusion_image_texture_data->m_width;
+                uint32_t    m_height   = occlusion_image_texture_data->m_height;
+                void*       m_pixels   = occlusion_image_texture_data->m_pixels;
+                DXGI_FORMAT m_format   = DXGI_FORMAT::DXGI_FORMAT_R8G8B8A8_UNORM;
+                bool        m_is_srgb  = false;
+                bool        m_gen_mips = true;
+
+                auto occlusion_tex = createTex2D(m_width, m_height, m_pixels, m_format, m_is_srgb, m_gen_mips, false);
+                now_material.occlusion_texture_image = occlusion_tex;
+            }
+        }
+        {
+            if (!IsImageSame(m_emissive_texture_file))
+            {
+                SceneImage emissive_image = m_mat_data.m_emissive_texture_file;
+
+                std::shared_ptr<TextureData> emissive_image_texture_data = loadTexture(emissive_image.m_image_file);
+                if (emissive_image_texture_data == nullptr)
+                {
+                    emissive_image_texture_data = createEmptyTextureData(empty_image);
+                }
+                uint32_t    m_width    = emissive_image_texture_data->m_width;
+                uint32_t    m_height   = emissive_image_texture_data->m_height;
+                void*       m_pixels   = emissive_image_texture_data->m_pixels;
+                DXGI_FORMAT m_format   = DXGI_FORMAT::DXGI_FORMAT_R8G8B8A8_UNORM;
+                bool        m_is_srgb  = false;
+                bool        m_gen_mips = true;
+
+                auto emissive_tex = createTex2D(m_width, m_height, m_pixels, m_format, m_is_srgb, m_gen_mips, false);
+                now_material.emissive_texture_image = emissive_tex;
+            }
         }
 
+        this->endUploadBatch();
+
+        internal_material.m_intenral_pbr_mat = now_material;
+
+        cached_material = scene_material;
+
+        return true;
     }
 
-    D3D12Mesh& RenderResource::getEntityMesh(RenderEntity entity)
+    bool RenderResource::updateInternalMesh(SceneMesh scene_mesh, SceneMesh& cached_mesh, InternalMesh& internal_mesh)
     {
-        size_t assetid = entity.m_mesh_asset_id;
+        bool is_scene_mesh_same = scene_mesh.m_is_mesh_data == cached_mesh.m_is_mesh_data;
+        is_scene_mesh_same &= scene_mesh.m_sub_mesh_file == cached_mesh.m_sub_mesh_file;
+        is_scene_mesh_same &= scene_mesh.m_mesh_data_path == cached_mesh.m_mesh_data_path;
 
-        auto it = m_d3d12_meshes.find(assetid);
-        if (it != m_d3d12_meshes.end())
+        if (!is_scene_mesh_same)
         {
-            return it->second;
+            internal_mesh = createInternalMesh(scene_mesh);
         }
-        else
-        {
-            throw std::runtime_error("failed to get entity mesh");
-        }
-    }
 
-    D3D12PBRMaterial& RenderResource::getEntityMaterial(RenderEntity entity)
-    {
-        size_t assetid = entity.m_material_asset_id;
+        cached_mesh = scene_mesh;
 
-        auto it = m_d3d12_pbr_materials.find(assetid);
-        if (it != m_d3d12_pbr_materials.end())
-        {
-            return it->second;
-        }
-        else
-        {
-            throw std::runtime_error("failed to get entity material");
-        }
-    }
-
-    std::size_t RenderResource::hashTexture2D(uint32_t    width,
-                                              uint32_t    height,
-                                              uint32_t    mip_levels,
-                                              void*       pixels_ptr,
-                                              DXGI_FORMAT format)
-    {
-        std::size_t h0 = std::hash<uint32_t> {}(width);
-        h0 = (h0 ^ (std::hash<uint32_t> {}(height) << 1));
-        h0 = (h0 ^ (std::hash<uint32_t> {}(mip_levels) << 1));
-        h0 = (h0 ^ (std::hash<void*> {}(pixels_ptr) << 1));
-        h0 = (h0 ^ (std::hash<uint32_t> {}(format) << 1));
-        return h0;
+        return true;
     }
 
     //-------------------------------------------------------------------------------------------
@@ -683,74 +469,59 @@ namespace MoYu
             tex2d_miplevels = static_cast<uint32_t>(std::floor(std::log2(std::max(width, height)))) + 1;
         }
 
-        std::size_t tex_hash = hashTexture2D(width, height, tex2d_miplevels, pixels, format);
-        auto tex_iter = _Texture_Caches.find(tex_hash);
-        if (tex_iter != _Texture_Caches.end())
+        if (batch)
+            this->startUploadBatch();
+
+        RHI::RHISurfaceCreateFlags texflags = RHI::RHISurfaceCreateFlagNone;
+        if (genMips)
+            texflags |= RHI::RHISurfaceCreateMipmap;
+        if (is_srgb)
+            texflags |= RHI::RHISurfaceCreateSRGB;
+
+        std::shared_ptr<RHI::D3D12Texture> tex2d =
+            RHI::D3D12Texture::Create2D(m_Device->GetLinkedDevice(), width, height, tex2d_miplevels, format, texflags);
+
+        D3D12_SUBRESOURCE_DATA resourceInitData;
+        resourceInitData.pData      = pixels;
+        resourceInitData.RowPitch   = width * D3D12RHIUtils::BytesPerPixel(format);
+        resourceInitData.SlicePitch = resourceInitData.RowPitch * height;
+
+        D3D12_RESOURCE_STATES tex2d_ori_state = tex2d->GetResourceState().GetSubresourceState(0);
+
+        if (tex2d_ori_state != D3D12_RESOURCE_STATE_COPY_DEST)
         {
-            return tex_iter->second;
+            m_ResourceUpload->Transition(tex2d->GetResource(), tex2d_ori_state, D3D12_RESOURCE_STATE_COPY_DEST);
         }
-        else
+
+        m_ResourceUpload->Upload(tex2d->GetResource(), 0, &resourceInitData, 1);
+
+        D3D12_RESOURCE_STATES currentState = D3D12_RESOURCE_STATE_COPY_DEST;
+
+        if (genMips)
         {
-            if (batch)
-                this->startUploadBatch();
-
-            RHI::RHISurfaceCreateFlags texflags = RHI::RHISurfaceCreateFlagNone;
-            if (genMips)
-                texflags |= RHI::RHISurfaceCreateMipmap;
-            if (is_srgb)
-                texflags |= RHI::RHISurfaceCreateSRGB;
-
-            std::shared_ptr<RHI::D3D12Texture> tex2d = RHI::D3D12Texture::Create2D(
-                m_Device->GetLinkedDevice(), width, height, tex2d_miplevels, format, texflags);
-
-            D3D12_SUBRESOURCE_DATA resourceInitData;
-            resourceInitData.pData      = pixels;
-            resourceInitData.RowPitch   = width * D3D12RHIUtils::BytesPerPixel(format);
-            resourceInitData.SlicePitch = resourceInitData.RowPitch * height;
-
-            D3D12_RESOURCE_STATES tex2d_ori_state = tex2d->GetResourceState().GetSubresourceState(0);
-
-            if (tex2d_ori_state != D3D12_RESOURCE_STATE_COPY_DEST)
-            {
-                m_ResourceUpload->Transition(tex2d->GetResource(), tex2d_ori_state, D3D12_RESOURCE_STATE_COPY_DEST);
-            }
-
-            m_ResourceUpload->Upload(tex2d->GetResource(), 0, &resourceInitData, 1);
-
-            D3D12_RESOURCE_STATES currentState = D3D12_RESOURCE_STATE_COPY_DEST;
-
-            if (genMips)
-            {
-                currentState = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
-                m_ResourceUpload->Transition(
-                    tex2d->GetResource(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-                m_ResourceUpload->GenerateMips(tex2d->GetResource());
-            }
-
-            if (currentState != tex2d_ori_state)
-            {
-                m_ResourceUpload->Transition(tex2d->GetResource(), currentState, tex2d_ori_state);
-            }
-
-            if (batch)
-                this->endUploadBatch();
-
-            return tex2d;
+            currentState = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+            m_ResourceUpload->Transition(
+                tex2d->GetResource(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+            m_ResourceUpload->GenerateMips(tex2d->GetResource());
         }
+
+        if (currentState != tex2d_ori_state)
+        {
+            m_ResourceUpload->Transition(tex2d->GetResource(), currentState, tex2d_ori_state);
+        }
+
+        if (batch)
+            this->endUploadBatch();
+
+        return tex2d;
     }
 
-    std::shared_ptr<RHI::D3D12Texture> RenderResource::createTex2D(std::shared_ptr<TextureData>& tex2d_data, bool genMips, bool batch)
+    std::shared_ptr<RHI::D3D12Texture> RenderResource::createTex2D(std::shared_ptr<TextureData>& tex2d_data, DXGI_FORMAT format, bool is_srgb, bool genMips, bool batch)
     {
-        return createTex2D(tex2d_data->m_width,
-                           tex2d_data->m_height,
-                           tex2d_data->m_pixels,
-                           tex2d_data->m_format,
-                           tex2d_data->m_is_srgb,
-                           genMips,
-                           batch);
+        return createTex2D(tex2d_data->m_width, tex2d_data->m_height, tex2d_data->m_pixels, format, is_srgb, genMips, batch);
     }
     
-    std::shared_ptr<RHI::D3D12Texture> RenderResource::createCubeMap(std::array<std::shared_ptr<TextureData>, 6>& cube_maps, bool genMips, bool batch)
+    std::shared_ptr<RHI::D3D12Texture> RenderResource::createCubeMap(std::array<std::shared_ptr<TextureData>, 6>& cube_maps, DXGI_FORMAT format, bool is_srgb, bool genMips, bool batch)
     {
         if (batch)
             this->startUploadBatch();
@@ -760,15 +531,14 @@ namespace MoYu
         if (genMips)
             cubemap_miplevels = static_cast<uint32_t>(std::floor(std::log2(std::max(cube_maps[0]->m_width, cube_maps[0]->m_height)))) + 1;
 
-        UINT        width  = cube_maps[0]->m_width;
-        UINT        height = cube_maps[0]->m_height;
-        DXGI_FORMAT format = cube_maps[0]->m_format;
-
+        UINT width  = cube_maps[0]->m_width;
+        UINT height = cube_maps[0]->m_height;
+        
         RHI::RHISurfaceCreateFlags texflags = RHI::RHISurfaceCreateFlagNone | RHI::RHISurfaceCreateRandomWrite;
         if (genMips)
             texflags |= RHI::RHISurfaceCreateMipmap;
-        //if (is_srgb)
-        //    texflags |= RHI::RHISurfaceCreateSRGB;
+        if (is_srgb)
+            texflags |= RHI::RHISurfaceCreateSRGB;
 
         std::shared_ptr<RHI::D3D12Texture> cube_tex = RHI::D3D12Texture::CreateCubeMap(
             m_Device->GetLinkedDevice(), width, height, cubemap_miplevels, format, texflags);
@@ -798,6 +568,120 @@ namespace MoYu
             this->endUploadBatch();
 
         return cube_tex;
+    }
+
+    InternalMesh RenderResource::createInternalMesh(SceneMesh scene_mesh)
+    {
+        RenderMeshData render_mesh_data;
+        if (scene_mesh.m_is_mesh_data)
+            render_mesh_data = loadMeshData(scene_mesh.m_mesh_data_path);
+        else
+            render_mesh_data = loadMeshData(scene_mesh.m_sub_mesh_file);
+
+        return createInternalMesh(render_mesh_data);
+    }
+
+    InternalMesh RenderResource::createInternalMesh(RenderMeshData mesh_data)
+    {
+        InternalVertexBuffer vertex_buffer = createVertexBuffer(mesh_data.m_static_mesh_data.m_InputElementDefinition,
+                                                                mesh_data.m_static_mesh_data.m_vertex_buffer);
+
+        InternalIndexBuffer index_buffer = createIndexBuffer(mesh_data.m_static_mesh_data.m_index_buffer);
+
+        return InternalMesh {false, index_buffer, vertex_buffer};
+    }
+
+    InternalVertexBuffer RenderResource::createVertexBuffer(InputDefinition input_definition, std::shared_ptr<BufferData> vertex_buffer)
+    {
+        typedef D3D12MeshVertexPositionNormalTangentTexture MeshVertexDataDefinition;
+
+        ASSERT(input_definition == MeshVertexDataDefinition::InputElementDefinition);
+        uint32_t vertex_buffer_size = vertex_buffer->m_size;
+        MeshVertexDataDefinition* vertex_buffer_data = static_cast<MeshVertexDataDefinition*>(vertex_buffer->m_data);
+        uint32_t inputLayoutStride = sizeof(MeshVertexDataDefinition);
+        ASSERT(0 == (vertex_buffer_size % inputLayoutStride));
+        uint32_t vertex_count = vertex_buffer_size / inputLayoutStride;
+        uint32_t vertex_buffer_size = inputLayoutStride * vertex_count;
+
+        uint32_t vertex_buffer_offset = 0;
+
+        // temporary staging buffer
+        uint32_t inefficient_staging_buffer_size = vertex_buffer_size;
+
+        RHI::SharedGraphicsResource inefficient_staging_buffer =
+            m_GraphicsMemory->Allocate(inefficient_staging_buffer_size);
+        void* inefficient_staging_buffer_data = inefficient_staging_buffer.Memory();
+
+        MeshVertexDataDefinition* mesh_vertexs = reinterpret_cast<MeshVertexDataDefinition*>(
+            reinterpret_cast<uint8_t*>(inefficient_staging_buffer_data) + vertex_buffer_offset);
+
+        for (uint32_t vertex_index = 0; vertex_index < vertex_count; ++vertex_index)
+        {
+            mesh_vertexs[vertex_index].position = vertex_buffer_data[vertex_index].position;
+            mesh_vertexs[vertex_index].normal   = vertex_buffer_data[vertex_index].normal;
+            mesh_vertexs[vertex_index].tangent  = vertex_buffer_data[vertex_index].tangent;
+            mesh_vertexs[vertex_index].texcoord = vertex_buffer_data[vertex_index].texcoord;
+        }
+
+        std::shared_ptr<RHI::D3D12Buffer> p_mesh_vertex_buffer =
+            RHI::D3D12Buffer::Create(m_Device->GetLinkedDevice(),
+                                     RHI::RHIBufferTargetVertex,
+                                     vertex_count,
+                                     sizeof(MeshVertexDataDefinition),
+                                     L"MeshVertexBuffer",
+                                     RHI::RHIBufferModeImmutable,
+                                     D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
+        {
+            startUploadBatch();
+
+            {
+                D3D12_RESOURCE_STATES buf_ori_state = p_mesh_vertex_buffer->GetResourceState().GetSubresourceState(0);
+                m_ResourceUpload->Transition(p_mesh_vertex_buffer->GetResource(), buf_ori_state, D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_DEST);
+                m_ResourceUpload->Upload(p_mesh_vertex_buffer->GetResource(), 0, inefficient_staging_buffer);
+                m_ResourceUpload->Transition(p_mesh_vertex_buffer->GetResource(), D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_DEST, buf_ori_state);
+            }
+
+            endUploadBatch();
+        }
+
+        return InternalVertexBuffer {input_definition, vertex_count, p_mesh_vertex_buffer};
+    }
+
+    InternalIndexBuffer RenderResource::createIndexBuffer(std::shared_ptr<BufferData> index_buffer)
+    {
+        uint32_t index_buffer_size = index_buffer->m_size;
+
+        uint32_t index_count = index_buffer_size / sizeof(uint32_t);
+
+        RHI::SharedGraphicsResource inefficient_staging_buffer = m_GraphicsMemory->Allocate(index_buffer_size);
+
+        void* staging_buffer_data = inefficient_staging_buffer.Memory();
+
+        memcpy(staging_buffer_data, index_buffer->m_data, (size_t)index_buffer_size);
+
+        std::shared_ptr<RHI::D3D12Buffer> p_mesh_index_buffer =
+            RHI::D3D12Buffer::Create(m_Device->GetLinkedDevice(),
+                                     RHI::RHIBufferTargetIndex,
+                                     index_count,
+                                     sizeof(uint32_t),
+                                     L"MeshIndexBuffer",
+                                     RHI::RHIBufferModeImmutable,
+                                     D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_INDEX_BUFFER);
+
+        {
+            startUploadBatch();
+
+            {
+                D3D12_RESOURCE_STATES buf_ori_state = p_mesh_index_buffer->GetResourceState().GetSubresourceState(0);
+                m_ResourceUpload->Transition(p_mesh_index_buffer->GetResource(), buf_ori_state, D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_DEST);
+                m_ResourceUpload->Upload(p_mesh_index_buffer->GetResource(), 0, inefficient_staging_buffer);
+                m_ResourceUpload->Transition(p_mesh_index_buffer->GetResource(), D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_DEST, buf_ori_state);
+            }
+
+            endUploadBatch();
+        }
+
+        return InternalIndexBuffer {sizeof(uint32_t), index_count, p_mesh_index_buffer};
     }
 
 

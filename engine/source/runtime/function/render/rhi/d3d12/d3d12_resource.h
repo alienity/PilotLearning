@@ -255,6 +255,9 @@ namespace RHI
 
         RHIBufferDesc& GetBufferDesc();
 
+        bool NeedUpdateData(RHIBufferData data);
+        void UpdateCachedData(RHIBufferData data);
+
     protected:
 
         std::shared_ptr<D3D12ConstantBufferView> CreateShaderVisibleCBV(D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc);
