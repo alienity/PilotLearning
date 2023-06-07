@@ -83,13 +83,14 @@ namespace MoYu
         template<typename TComponent>
         bool tryRemoveComponent(std::shared_ptr<TComponent> toDelComponent)
         {
-            for (auto& component : m_components)
+            auto it = m_components.begin();
+            while (it->get() != m_components.end())
             {
-                if (component == toDelComponent)
+                if (it->get() == toDelComponent)
                 {
-                    m_components.erase(toDelComponent);
+                    m_components.erase(it);
                     return true;
-                }
+                }                
             }
             return false;
         }

@@ -260,7 +260,7 @@ namespace MoYu
 
         return true;
     }
-
+    /*
     glm::mat4 CalculateDirectionalLightCamera(RenderScene& scene, RenderCamera& camera)
     {
         Matrix4x4 proj_view_matrix;
@@ -346,4 +346,5 @@ namespace MoYu
         glm::mat4 light_proj_view = (light_proj * light_view);
         return light_proj_view;
     }
+    */
 } // namespace MoYu

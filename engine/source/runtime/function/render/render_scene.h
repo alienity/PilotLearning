@@ -10,10 +10,6 @@
 
 namespace MoYu
 {
-    class RenderResource;
-    class RenderCamera;
-    class RenderSystem;
-
     struct CachedMeshRenderer
     {
         SceneMeshRenderer cachedSceneMeshrenderer;
@@ -31,25 +27,5 @@ namespace MoYu
 
         // render entities
         std::vector<CachedMeshRenderer> m_mesh_renderers;
-
-    public:
-
-        // update all objects for indirect cull in each frame
-        void updateAllObjects(std::shared_ptr<RenderResource> render_resource, std::shared_ptr<RenderCamera> camera);
-
-        // set visible nodes ptr in render pass
-        void setVisibleNodesReference();
-
-        void deleteMeshRendererByGObjectID(GObjectID go_id, GComponentID com_id);
-
-        void deleteLightByGObjectID(GObjectID go_id, GComponentID com_id);
-
-        void clearForLevelReloading();
-    private:
-        friend class RenderSystem;
-
-        //GuidAllocator<SceneMesh> m_mesh_asset_id_allocator;
-        //GuidAllocator<ScenePBRMaterial> m_material_asset_id_allocator;
-        
     };
 } // namespace MoYu

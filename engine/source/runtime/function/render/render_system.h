@@ -46,10 +46,10 @@ namespace MoYu
     private:
         RenderSwapContext m_swap_context;
 
-        std::shared_ptr<RenderCamera>       m_render_camera;
-        std::shared_ptr<RenderScene>        m_render_scene;
-        std::shared_ptr<RenderResource> m_render_resource;
-        std::shared_ptr<RendererManager>    m_renderer_manager;
+        std::shared_ptr<RenderCamera>    m_render_camera;
+        std::shared_ptr<RenderScene>     m_render_scene;
+        std::shared_ptr<RenderResource>  m_render_resource;
+        std::shared_ptr<RendererManager> m_renderer_manager;
 
         void processSwapData();
     };

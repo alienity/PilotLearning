@@ -79,26 +79,6 @@ namespace MoYu
         
         endUploadBatch();
     }
-
-    void RenderResource::uploadGameObjectRenderResource(RenderEntity       render_entity,
-                                                        RenderMeshData     mesh_data,
-                                                        RenderMaterialData material_data)
-    {
-        getOrCreateD3D12Mesh(render_entity, mesh_data);
-        getOrCreateD3D12Material(render_entity, material_data);
-    }
-
-    void RenderResource::uploadGameObjectRenderResource(RenderEntity         render_entity,
-                                                        RenderMeshData       mesh_data)
-    {
-        getOrCreateD3D12Mesh(render_entity, mesh_data);
-    }
-
-    void RenderResource::uploadGameObjectRenderResource(RenderEntity         render_entity,
-                                                        RenderMaterialData   material_data)
-    {
-        getOrCreateD3D12Material(render_entity, material_data);
-    }
     */
     void RenderResource::updatePerFrameBuffer(std::shared_ptr<RenderScene> render_scene, std::shared_ptr<RenderCamera> camera)
     {
@@ -193,6 +173,18 @@ namespace MoYu
             updateInternalMesh(scene_mesh_renderer.m_scene_mesh, cached_mesh_renderer.m_scene_mesh, internal_mesh_renderer.ref_mesh);
             updateInternalMaterial(scene_mesh_renderer.m_material, cached_mesh_renderer.m_material, internal_mesh_renderer.ref_material);
         }
+
+        bool is_same_transform = scene_mesh_renderer.model_matrix == cached_mesh_renderer.model_matrix;
+        is_same_transform &= scene_mesh_renderer.model_matrix_inverse == cached_mesh_renderer.model_matrix_inverse;
+        
+        if (is_same_transform)
+        {
+            internal_mesh_renderer.model_matrix = scene_mesh_renderer.model_matrix;
+            internal_mesh_renderer.model_matrix_inverse = scene_mesh_renderer.model_matrix_inverse;
+            internal_mesh_renderer.m_bounding_box = scene_mesh_renderer.m_bounding_box;
+        }
+
+        cached_mesh_renderer = scene_mesh_renderer;
 
         return true;
     }

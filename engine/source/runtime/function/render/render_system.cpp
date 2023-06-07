@@ -33,15 +33,14 @@ namespace MoYu
         GlobalRenderingRes global_rendering_res;
         const std::string& global_rendering_res_url = config_manager->getGlobalRenderingResUrl();
         asset_manager->loadAsset(global_rendering_res_url, global_rendering_res);
-
+        /*
         // upload ibl, color grading textures
         LevelResourceDesc level_resource_desc;
         level_resource_desc.m_ibl_resource_desc.m_skybox_irradiance_map = global_rendering_res.m_skybox_irradiance_map;
         level_resource_desc.m_ibl_resource_desc.m_skybox_specular_map   = global_rendering_res.m_skybox_specular_map;
         level_resource_desc.m_ibl_resource_desc.m_brdf_map              = global_rendering_res.m_brdf_map;
-        level_resource_desc.m_color_grading_resource_desc.m_color_grading_map =
-            global_rendering_res.m_color_grading_map;
-
+        level_resource_desc.m_color_grading_resource_desc.m_color_grading_map = global_rendering_res.m_color_grading_map;
+        */
         // initialize render manager
         RHI::DeviceOptions deviceOptions              = {};
         deviceOptions.FeatureLevel                    = D3D_FEATURE_LEVEL::D3D_FEATURE_LEVEL_11_0;
@@ -58,7 +57,7 @@ namespace MoYu
         // initial global resources
         m_render_resource = std::make_shared<RenderResource>();
         m_render_resource->iniUploadBatch(m_renderer_manager->GetDevice());
-        m_render_resource->uploadGlobalRenderResource(level_resource_desc);
+        //m_render_resource->uploadGlobalRenderResource(level_resource_desc);
 
         // setup render camera
         const CameraPose& camera_pose = global_rendering_res.m_camera_config.m_pose;
@@ -72,11 +71,7 @@ namespace MoYu
 
         // setup render scene
         m_render_scene = std::make_shared<RenderScene>();
-
-        m_render_scene->m_ambient_light.m_is_active = true;
-        m_render_scene->m_ambient_light.m_color     = global_rendering_res.m_ambient_light;
-
-        m_render_scene->setVisibleNodesReference();
+        m_render_scene->m_ambient_light.m_color = global_rendering_res.m_ambient_light;
 
         // initialize renderer
         m_renderer_manager->InitRenderer();
@@ -91,8 +86,8 @@ namespace MoYu
         // update per-frame buffer
         m_render_resource->updatePerFrameBuffer(m_render_scene, m_render_camera);
 
-        // update per-frame visible objects
-        m_render_scene->updateAllObjects(std::static_pointer_cast<RenderResource>(m_render_resource), m_render_camera);
+        //// update per-frame visible objects
+        //m_render_scene->updateAllObjects(std::static_pointer_cast<RenderResource>(m_render_resource), m_render_camera);
 
         //// update per-frame visible objects
         //m_render_scene->updateVisibleObjects(std::static_pointer_cast<RenderResource>(m_render_resource),
@@ -116,35 +111,18 @@ namespace MoYu
 
     void RenderSystem::initializeUIRenderBackend(WindowUI* window_ui)
     {
-        // TODO:初始化UI相关的绘制
         m_renderer_manager->InitUIRenderer(window_ui);
     }
 
-    /*
-    void RenderSystem::updateEngineContentViewport(float offset_x, float offset_y, float width, float height)
-    {
-        m_renderer_manager->MoYuRenderer->SetViewPort(offset_x, offset_y, width, height);
-        m_render_camera->setAspect(width / height);
-    }
-    */
-    
     EngineContentViewport RenderSystem::getEngineContentViewport() const
     {
         return m_renderer_manager->p_MoYuRenderer->GetViewPort();
     }
 
-    uint32_t RenderSystem::getGuidOfPickedMesh(const Vector2& picked_uv)
+    void RenderSystem::clearForLevelReloading()
     {
-        return 0;
-        //return m_render_pipeline->getGuidOfPickedMesh(picked_uv);
+        //m_render_scene->clearForLevelReloading();
     }
-
-    GuidAllocator<MeshSourceDesc>& RenderSystem::getMeshAssetIdAllocator()
-    {
-        return m_render_scene->getMeshAssetIdAllocator();
-    }
-
-    void RenderSystem::clearForLevelReloading() { m_render_scene->clearForLevelReloading(); }
 
     void RenderSystem::processSwapData()
     {
@@ -153,15 +131,76 @@ namespace MoYu
         std::shared_ptr<AssetManager> asset_manager = g_runtime_global_context.m_asset_manager;
         ASSERT(asset_manager);
 
-        // TODO: update global resources if needed
-        if (swap_data.m_level_resource_desc.has_value())
+        // update game object if needed
+        if (swap_data.m_game_object_resource_desc.has_value())
         {
-            m_render_resource->uploadGlobalRenderResource(*swap_data.m_level_resource_desc);
+            while (!swap_data.m_game_object_resource_desc->m_game_object_descs.empty())
+            {
+                GameObjectDesc gameObjDesc = swap_data.m_game_object_resource_desc->m_game_object_descs.front();
+                swap_data.m_game_object_resource_desc->m_game_object_descs.pop_front();
 
-            // reset level resource swap data to a clean state
-            m_swap_context.resetLevelRsourceSwapData();
+                auto& objParts = gameObjDesc.getObjectParts();
+                for (size_t i = 0; i < objParts.size(); i++)
+                {
+                    objParts[i].m_component_type
+
+
+                }
+
+            }
+
         }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        /*
         // update game object if needed
         if (swap_data.m_game_object_resource_desc.has_value())
         {
@@ -416,6 +455,7 @@ namespace MoYu
 
             m_swap_context.resetCameraSwapData();
         }
+        */
     }
 
 

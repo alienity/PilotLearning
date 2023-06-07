@@ -11,9 +11,8 @@
 
 namespace MoYu
 {
-
-
     class RenderCamera;
+    class RenderScene;
 
     class RenderResource : public RenderResourceBase
     {

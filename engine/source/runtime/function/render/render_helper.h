@@ -90,5 +90,5 @@ namespace MoYu
 
     bool BoxIntersectsWithSphere(BoundingBox const& b, BoundingSphere const& s);
 
-    glm::mat4 CalculateDirectionalLightCamera(RenderScene& scene, RenderCamera& camera);
+    //glm::mat4 CalculateDirectionalLightCamera(RenderScene& scene, RenderCamera& camera);
 } // namespace MoYu

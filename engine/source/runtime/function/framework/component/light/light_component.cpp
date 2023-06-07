@@ -157,11 +157,11 @@ namespace MoYu
         }
         else if (currentLightName != "" && nextLightName != "" && (currentLightName != nextLightName))
         {
-            //GameObjectComponentDesc light_component_desc_cur = component2SwapData(game_object_id,
-            //                                                                      transform_component_id,
-            //                                                                      m_transform_component_ptr,
-            //                                                                      light_component_id,
-            //                                                                      &m_light_res_buffer[m_current_index]);
+            GameObjectComponentDesc light_component_desc_cur = component2SwapData(game_object_id,
+                                                                                  transform_component_id,
+                                                                                  m_transform_component_ptr,
+                                                                                  light_component_id,
+                                                                                  &m_light_res_buffer[m_current_index]);
 
             GameObjectComponentDesc light_component_desc_next = component2SwapData(game_object_id,
                                                                                    transform_component_id,
@@ -169,7 +169,7 @@ namespace MoYu
                                                                                    light_component_id,
                                                                                    &m_light_res_buffer[m_next_index]);
 
-            //logic_swap_data.addDeleteGameObject({game_object_id, {light_component_desc_cur}});
+            logic_swap_data.addDeleteGameObject({game_object_id, {light_component_desc_cur}});
             logic_swap_data.addDirtyGameObject({game_object_id, {light_component_desc_next}});
         }
 

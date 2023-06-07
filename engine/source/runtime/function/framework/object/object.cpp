@@ -48,7 +48,18 @@ namespace MoYu
 
     void GObject::lateTick(float delta_time)
     {
-
+        auto it = m_components.begin();
+        while (it != m_components.end())
+        {
+            if (it->get()->isReadyToErase())
+            {
+                it = m_components.erase(it);
+            }
+            else
+            {
+                ++it;
+            }
+        }
     }
 
     void GObject::setParent(GObjectID parentID, std::optional<std::uint32_t> sibling_index)

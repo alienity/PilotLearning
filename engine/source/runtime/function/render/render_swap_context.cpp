@@ -51,7 +51,10 @@ namespace MoYu
         m_swap_data[m_render_swap_data_index].m_game_object_to_delete.reset();
     }
 
-    void RenderSwapContext::resetCameraSwapData() { m_swap_data[m_render_swap_data_index].m_camera_swap_data.reset(); }
+    void RenderSwapContext::resetCameraSwapData()
+    {
+        m_swap_data[m_render_swap_data_index].m_camera_swap_data.reset();
+    }
 
     void RenderSwapContext::swap()
     {
