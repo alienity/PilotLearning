@@ -9,8 +9,8 @@
 #include "runtime/function/render/render_resource.h"
 #include "runtime/function/render/window_system.h"
 #include "runtime/function/render/render_resource.h"
-
 #include "runtime/function/render/renderer_moyu.h"
+#include "runtime/function/render/glm_wrapper.h"
 
 namespace MoYu
 {
@@ -81,17 +81,7 @@ namespace MoYu
     void RenderSystem::tick()
     {
         // process swap data between logic and render contexts
-        processSwapData();
-
-        // update per-frame buffer
-        m_render_resource->updatePerFrameBuffer(m_render_scene, m_render_camera);
-
-        //// update per-frame visible objects
-        //m_render_scene->updateAllObjects(std::static_pointer_cast<RenderResource>(m_render_resource), m_render_camera);
-
-        //// update per-frame visible objects
-        //m_render_scene->updateVisibleObjects(std::static_pointer_cast<RenderResource>(m_render_resource),
-        //                                     m_render_camera);
+        this->processSwapData();
 
         // prepare pipeline's render passes data
         m_renderer_manager->PreparePassData(m_render_resource);
@@ -140,17 +130,58 @@ namespace MoYu
                 swap_data.m_game_object_resource_desc->m_game_object_descs.pop_front();
 
                 auto& objParts = gameObjDesc.getObjectParts();
-                for (size_t i = 0; i < objParts.size(); i++)
+                for (int i = 0; i < objParts.size(); i++)
                 {
-                    objParts[i].m_component_type
+                    MoYu::SceneTransform meshTransform = objParts[i].m_transform_desc;
 
-
+                    if (objParts[i].m_component_type & ComponentType::C_MeshRenderer)
+                    {
+                        MoYu::SceneMeshRenderer meshRenderer = objParts[i].m_mesh_renderer_desc;
+                        m_render_scene->updateMeshRenderer(meshRenderer, meshTransform, m_render_resource);
+                    }
+                    else if (objParts[i].m_component_type & ComponentType::C_Light)
+                    {
+                        MoYu::SceneLight sceneLight = objParts[i].m_scene_light;
+                        m_render_scene->updateLight(sceneLight, meshTransform);
+                    }
+                    else if (objParts[i].m_component_type & ComponentType::C_Camera)
+                    {
+                        MoYu::SceneCamera sceneCamera = objParts[i].m_scene_camera;
+                        m_render_scene->updateCamera(sceneCamera, meshTransform);
+                    }
                 }
-
             }
-
         }
 
+        // remove game object
+        if (swap_data.m_game_object_to_delete.has_value())
+        {
+            while (!swap_data.m_game_object_to_delete->m_game_object_descs.empty())
+            {
+                GameObjectDesc gameObjDesc = swap_data.m_game_object_to_delete->m_game_object_descs.front();
+                swap_data.m_game_object_to_delete->m_game_object_descs.pop_front();
+
+                auto& objParts = gameObjDesc.getObjectParts();
+                for (int i = 0; i < objParts.size(); i++)
+                {
+                    if (objParts[i].m_component_type & ComponentType::C_MeshRenderer)
+                    {
+                        MoYu::SceneMeshRenderer meshRenderer = objParts[i].m_mesh_renderer_desc;
+                        m_render_scene->removeMeshRenderer(meshRenderer);
+                    }
+                    else if (objParts[i].m_component_type & ComponentType::C_Light)
+                    {
+                        MoYu::SceneLight sceneLight = objParts[i].m_scene_light;
+                        m_render_scene->removeLight(sceneLight);
+                    }
+                    else if (objParts[i].m_component_type & ComponentType::C_Camera)
+                    {
+                        MoYu::SceneCamera sceneCamera = objParts[i].m_scene_camera;
+                        m_render_scene->removeCamera(sceneCamera);
+                    }
+                }
+            }
+        }
 
 
 

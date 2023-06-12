@@ -29,8 +29,6 @@ namespace MoYu
 
         virtual void tick(float delta_time);
 
-        virtual void lateTick(float delta_time);
-
         bool isRootNode() const { return m_id == K_Root_Object_Id; }
 
         bool load(const ObjectInstanceRes& object_instance_res);
@@ -48,6 +46,7 @@ namespace MoYu
         void setParent(GObjectID parentID, std::optional<std::uint32_t> sibling_index = std::nullopt);
         void removeChild(GObjectID childID);
 
+        void markToErase() { m_is_ready_erase = true; }
         bool isReadyToErase() const { return m_is_ready_erase; }
 
         void               setName(std::string name) { m_name = name; }

@@ -1057,19 +1057,20 @@ namespace MoYu
 
         static Matrix4x4 fromAxisAngle(const Vector3& axis, float angle);
 
-        static Matrix4x4 createPerspectiveFieldOfView(float fov, float aspectRatio, float nearPlane, float farPlane);
-        static Matrix4x4 createPerspective(float width, float height, float nearPlane, float farPlane);
-        static Matrix4x4
-        createPerspectiveOffCenter(float left, float right, float bottom, float top, float nearPlane, float farPlane);
-        static Matrix4x4 createOrthographic(float width, float height, float zNearPlane, float zFarPlane);
-        static Matrix4x4 createOrthographicOffCenter(float left,
-                                                     float right,
-                                                     float bottom,
-                                                     float top,
-                                                     float zNearPlane,
-                                                     float zFarPlane);
+        // 注意区分：在OpenGL中计算投影矩阵的时候，一般都用zNear和zFar绝对值，但是我们这里还是使用位于右手坐标中的值
 
-        static Matrix4x4 lookAt(const Vector3& eye, const Vector3& center, const Vector3& up);
+        // 使用右手坐标系，相机朝向-z方向，参考 Fundamentals of Computer Graphics
+        // 其中 zNearPlane > zFarPlane，且都是负值
+        // 输出 canonical view volume 是xy区间是[-1,1]，z的区间是[0,1]
+        // 参考 http://www.songho.ca/opengl/gl_projectionmatrix.html
+        static Matrix4x4 createPerspectiveFieldOfView(float fov, float aspectRatio, float zNearPlane, float zFarPlane);
+        static Matrix4x4 createPerspective(float width, float height, float zNearPlane, float zFarPlane);
+        static Matrix4x4 createPerspectiveOffCenter(float left, float right, float bottom, float top, float zNearPlane, float zFarPlane);
+        static Matrix4x4 createOrthographic(float width, float height, float zNearPlane, float zFarPlane);
+        static Matrix4x4 createOrthographicOffCenter(float left, float right, float bottom, float top, float zNearPlane, float zFarPlane);
+
+        // eye是相机位置，gaze是相机向前朝向，up是相机向上朝向
+        static Matrix4x4 lookAt(const Vector3& eye, const Vector3& gaze, const Vector3& up);
         static Matrix4x4 createView(const Vector3& position, const Quaternion& orientation);
         static Matrix4x4 createWorld(const Vector3& position, const Vector3& forward, const Vector3& up);
 
@@ -1090,8 +1091,7 @@ namespace MoYu
         As makeTransform except it build the inverse given the same data as makeTransform, so
         performing -translation, -rotate, 1/scale in that order.
         */
-        static Matrix4x4
-        makeInverseTransform(const Vector3& position, const Vector3& scale, const Quaternion& orientation);
+        static Matrix4x4 makeInverseTransform(const Vector3& position, const Vector3& scale, const Quaternion& orientation);
 
         // Constants
         static const Matrix4x4 Zero;

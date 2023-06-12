@@ -9,8 +9,6 @@
 #include "editor/include/editor.h"
 
 // https://gcc.gnu.org/onlinedocs/cpp/Stringizing.html
-#define PILOT_XSTR(s) PILOT_STR(s)
-#define PILOT_STR(s) #s
 
 int main(int argc, char** argv)
 {

@@ -81,7 +81,9 @@ namespace MoYu
 
     void IndirectCullPass::prepareMeshData(std::shared_ptr<RenderResource> render_resource)
     {
-        RenderResource* real_resource = (RenderResource*)render_resource.get();
+        // update per-frame buffer
+        render_resource->updatePerFrameBuffer(m_render_scene, m_render_camera);
+
         memcpy(pUploadPerframeBuffer->GetCpuVirtualAddress<HLSL::MeshPerframeStorageBufferObject>(),
                &real_resource->m_mesh_perframe_storage_buffer_object,
                sizeof(HLSL::MeshPerframeStorageBufferObject));

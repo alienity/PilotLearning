@@ -22,7 +22,6 @@ namespace MoYu
         virtual bool isDirty() const { return m_is_dirty; }
 
         virtual bool isReadyToErase() const { return m_is_ready_erase; }
-
         virtual void markToErase() { m_is_ready_erase = true; }
 
         virtual void setDirtyFlag(bool is_dirty) { m_is_dirty = is_dirty; }

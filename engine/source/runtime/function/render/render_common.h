@@ -103,10 +103,25 @@ namespace MoYu
     // 场景对应到的渲染对象
     //************************************************************
 
+    enum CameraProjType
+    {
+        Perspective,
+        Orthogonal
+    };
+
     struct SceneCommonIdentifier
     {
         GObjectID    m_object_id {K_Invalid_Object_Id};
         GComponentID m_component_id {K_Invalid_Component_Id};
+
+        bool operator==(const SceneCommonIdentifier& id) const
+        {
+            return m_object_id == id.m_object_id && m_component_id == id.m_component_id;
+        }
+        bool operator!=(const SceneCommonIdentifier& id) const
+        {
+            return m_object_id != id.m_object_id || m_component_id != id.m_component_id;
+        }
     };
 
     struct InternalVertexBuffer
@@ -126,6 +141,7 @@ namespace MoYu
     struct InternalMesh
     {
         bool enable_vertex_blending;
+        AxisAlignedBox axis_aligned_box;
         InternalIndexBuffer index_buffer;
         InternalVertexBuffer vertex_buffer;
     };
@@ -168,7 +184,6 @@ namespace MoYu
 
         Matrix4x4 model_matrix;
         Matrix4x4 model_matrix_inverse;
-        AxisAlignedBox m_bounding_box;
 
         InternalMesh ref_mesh;
         InternalMaterial ref_material;
@@ -183,7 +198,6 @@ namespace MoYu
     {
         Color   m_color;
         float   m_intensity {1.0f};
-        Vector3 m_direction;
 
         bool    m_shadowmap {false};
         Vector2 m_shadow_bounds;
@@ -226,6 +240,7 @@ namespace MoYu
         SceneCommonIdentifier m_identifier;
 
         Vector3   m_position;
+        Vector3   m_direction;
         Matrix4x4 m_shadow_view_proj_mat;
     };
 
@@ -243,6 +258,32 @@ namespace MoYu
         Vector3   m_position;
         Vector3   m_direction;
         Matrix4x4 m_shadow_view_proj_mat;
+    };
+
+    struct InternalCamera
+    {
+        SceneCommonIdentifier m_identifier;
+
+        CameraProjType m_projType;
+
+        Vector3    m_position;
+        Quaternion m_rotation;
+
+        float m_width;
+        float m_height;
+        float m_znear;
+        float m_zfar;
+        float m_aspect;
+        float m_fovY;
+
+        Matrix4x4 m_ViewMatrix;
+        Matrix4x4 m_ViewMatrixInv;
+
+        Matrix4x4 m_ProjMatrix;
+        Matrix4x4 m_ProjMatrixInv;
+
+        Matrix4x4 m_ViewProjMatrix;
+        Matrix4x4 m_ViewProjMatrixInv;
     };
 
     //========================================================================
@@ -306,10 +347,6 @@ namespace MoYu
 
         SceneMesh m_scene_mesh;
         SceneMaterial m_material;
-
-        Matrix4x4 model_matrix;
-        Matrix4x4 model_matrix_inverse;
-        AxisAlignedBox m_bounding_box;
     };
 
     enum LightType
@@ -340,7 +377,13 @@ namespace MoYu
         
         SceneCommonIdentifier m_identifier;
 
+        CameraProjType m_projType;
 
+        float m_width;
+        float m_height;
+        float m_znear;
+        float m_zfar;
+        float m_fovY;
     };
 
     struct SceneTransform

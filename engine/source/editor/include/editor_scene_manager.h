@@ -3,7 +3,6 @@
 #include "editor/include/axis.h"
 
 #include "runtime/function/framework/object/object.h"
-#include "runtime/function/render/render_object.h"
 
 #include <memory>
 
@@ -11,7 +10,6 @@ namespace MoYu
 {
     class PilotEditor;
     class RenderCamera;
-    class RenderEntity;
 
     enum class EditorAxisMode : int
     {
@@ -28,10 +26,10 @@ namespace MoYu
         void tick(float delta_time);
 
     public:
-        size_t                 updateCursorOnAxis(Vector2 cursor_uv, Vector2 game_engine_window_size);
-        void                   drawSelectedEntityAxis();
+        //size_t                 updateCursorOnAxis(Vector2 cursor_uv, Vector2 game_engine_window_size);
+        //void                   drawSelectedEntityAxis();
         std::weak_ptr<GObject> getSelectedGObject() const;
-        RenderEntity*          getAxisMeshByType(EditorAxisMode axis_mode);
+        //RenderEntity*          getAxisMeshByType(EditorAxisMode axis_mode);
         void                   onGObjectSelected(GObjectID selected_gobject_id);
         void                   onDeleteSelectedGObject();
         void                   moveEntity(float     new_mouse_pos_x,
@@ -62,7 +60,7 @@ namespace MoYu
         EditorRotationAxis    m_rotation_axis;
         EditorScaleAxis       m_scale_aixs;
 
-        GObjectID m_selected_gobject_id {k_invalid_gobject_id};
+        GObjectID m_selected_gobject_id {K_Invalid_Object_Id};
         Matrix4x4 m_selected_object_matrix {Matrix4x4::Identity};
 
         EditorAxisMode                m_axis_mode {EditorAxisMode::TranslateMode};

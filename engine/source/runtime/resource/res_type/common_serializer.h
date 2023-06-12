@@ -8,6 +8,11 @@
 
 namespace MoYu
 {
+#define TransformComponentName "TransformComponent"
+#define MeshComponentName "MeshComponent"
+#define LightComponentName "LightComponent"
+#define CameraComponentName "CameraComponent"
+
     NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Vector2, x, y)
     NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Vector3, x, y, z)
     NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Vector4, x, y, z, w)

@@ -1268,40 +1268,34 @@ namespace MoYu
         return out;
     }
 
-    Matrix4x4 Matrix4x4::createPerspectiveFieldOfView(float fov, float aspectRatio, float nearPlane, float farPlane)
+    Matrix4x4 Matrix4x4::createPerspectiveFieldOfView(float fov, float aspectRatio, float zNearPlane, float zFarPlane)
     {
         Matrix4x4 m = Zero;
 
         m[0][0] = 1.0f / (aspectRatio * std::tan(fov * 0.5f));
         m[1][1] = 1.0f / std::tan(fov * 0.5f);
-        m[2][2] = nearPlane / (farPlane - nearPlane);
-        m[2][3] = farPlane * nearPlane / (farPlane - nearPlane);
+        m[2][2] = -zNearPlane / (zNearPlane - zFarPlane);
+        m[2][3] = zFarPlane * zNearPlane / (zNearPlane - zFarPlane);
         m[3][2] = -1;
 
         return m;
     }
 
-    Matrix4x4 Matrix4x4::createPerspective(float width, float height, float nearPlane, float farPlane)
+    Matrix4x4 Matrix4x4::createPerspective(float width, float height, float zNearPlane, float zFarPlane)
     {
-        return createPerspectiveOffCenter(
-            -width * 0.5f, width * 0.5f, -height * 0.5f, height * 0.5f, nearPlane, farPlane);
+        return createPerspectiveOffCenter(-width * 0.5f, width * 0.5f, -height * 0.5f, height * 0.5f, zNearPlane, zFarPlane);
     }
 
-    Matrix4x4 Matrix4x4::createPerspectiveOffCenter(float left,
-                                                    float right,
-                                                    float bottom,
-                                                    float top,
-                                                    float nearPlane,
-                                                    float farPlane)
+    Matrix4x4 Matrix4x4::createPerspectiveOffCenter(float left, float right, float bottom, float top, float zNearPlane, float zFarPlane)
     {
         Matrix4x4 m = Zero;
 
-        m[0][0] = 2 * nearPlane / (right - left);
+        m[0][0] = -2 * zNearPlane / (right - left);
         m[0][2] = (right + left) / (right - left);
-        m[1][1] = 2 * nearPlane / (top - bottom);
+        m[1][1] = -2 * zNearPlane / (top - bottom);
         m[1][2] = (top + bottom) / (top - bottom);
-        m[2][2] = nearPlane / (farPlane - nearPlane);
-        m[2][3] = farPlane * nearPlane / (farPlane - nearPlane);
+        m[2][2] = -zNearPlane / (zNearPlane - zFarPlane);
+        m[2][3] = zFarPlane * zNearPlane / (zNearPlane - zFarPlane);
         m[3][2] = -1;
 
         return m;
@@ -1309,35 +1303,29 @@ namespace MoYu
 
     Matrix4x4 Matrix4x4::createOrthographic(float width, float height, float zNearPlane, float zFarPlane)
     {
-        return createOrthographicOffCenter(
-            -width * 0.5f, width * 0.5f, -height * 0.5f, height * 0.5f, zNearPlane, zFarPlane);
+        return createOrthographicOffCenter(-width * 0.5f, width * 0.5f, -height * 0.5f, height * 0.5f, zNearPlane, zFarPlane);
     }
 
-    Matrix4x4 Matrix4x4::createOrthographicOffCenter(float left,
-                                                     float right,
-                                                     float bottom,
-                                                     float top,
-                                                     float zNearPlane,
-                                                     float zFarPlane)
+    Matrix4x4 Matrix4x4::createOrthographicOffCenter(float left, float right, float bottom, float top, float zNearPlane, float zFarPlane)
     {
         Matrix4x4 m = Zero;
 
         m[0][0] = 2 / (right - left);
-        m[0][3] = (right + left) / (right - left);
+        m[0][3] = -(right + left) / (right - left);
         m[1][1] = 2 / (top - bottom);
-        m[1][3] = (top + bottom) / (top - bottom);
+        m[1][3] = -(top + bottom) / (top - bottom);
         m[2][2] = 1 / (zFarPlane - zNearPlane);
-        m[2][3] = zFarPlane / (zFarPlane - zNearPlane);
+        m[2][3] = -zNearPlane / (zFarPlane - zNearPlane);
         m[3][3] = 1;
 
         return m;
     }
 
-    Matrix4x4 Matrix4x4::lookAt(const Vector3& eye, const Vector3& center, const Vector3& up)
+    Matrix4x4 Matrix4x4::lookAt(const Vector3& eye, const Vector3& gaze, const Vector3& up)
     {
-        Vector3 f = Vector3::normalize(center - eye);
-        Vector3 s = Vector3::normalize(Vector3::cross(f, up));
-        Vector3 u = Vector3::cross(s, f);
+        Vector3 f = -Vector3::normalize(gaze);
+        Vector3 s = Vector3::normalize(Vector3::cross(up, f));
+        Vector3 u = Vector3::cross(f, s);
 
         Matrix4x4 m = Identity;
 
@@ -1347,12 +1335,12 @@ namespace MoYu
         m[1][0] = u.x;
         m[1][1] = u.y;
         m[1][2] = u.z;
-        m[2][0] = -f.x;
-        m[2][1] = -f.y;
-        m[2][2] = -f.z;
+        m[2][0] = f.x;
+        m[2][1] = f.y;
+        m[2][2] = f.z;
         m[0][3] = -s.dot(eye);
         m[1][3] = -u.dot(eye);
-        m[2][3] = f.dot(eye);
+        m[2][3] = -f.dot(eye);
 
         return m;
     }
@@ -1391,22 +1379,10 @@ namespace MoYu
         Vector3 zaxis = Vector3::normalize(-forward);
         Vector3 yaxis = Vector3::normalize(up);
         Vector3 xaxis = Vector3::cross(yaxis, zaxis);
-        return Matrix4x4(xaxis.x,
-                         yaxis.x,
-                         zaxis.x,
-                         position.x,
-                         xaxis.y,
-                         yaxis.y,
-                         zaxis.y,
-                         position.y,
-                         xaxis.z,
-                         yaxis.z,
-                         zaxis.z,
-                         position.z,
-                         0,
-                         0,
-                         0,
-                         1.f);
+        return Matrix4x4(xaxis.x, yaxis.x, zaxis.x, position.x,
+                         xaxis.y, yaxis.y, zaxis.y, position.y,
+                         xaxis.z, yaxis.z, zaxis.z, position.z,
+                               0,        0,      0,        1.f);
     }
 
     Matrix4x4 Matrix4x4::fromQuaternion(const Quaternion& quat) { return Matrix3x3::fromQuaternion(quat); }

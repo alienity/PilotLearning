@@ -44,10 +44,7 @@ namespace MoYu
         {
             m_transform_component_ptr.lock()->setDirtyFlag(false);
         }
-    }
 
-    void GObject::lateTick(float delta_time)
-    {
         auto it = m_components.begin();
         while (it != m_components.end())
         {

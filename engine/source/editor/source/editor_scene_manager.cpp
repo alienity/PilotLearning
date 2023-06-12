@@ -27,7 +27,7 @@ namespace MoYu
         std::shared_ptr<GObject> selected_gobject = getSelectedGObject().lock();
         if (selected_gobject)
         {
-            TransformComponent* transform_component = selected_gobject->tryGetComponent(TransformComponent);
+            std::shared_ptr<TransformComponent> transform_component = selected_gobject->tryGetComponent(TransformComponent);
             if (transform_component)
             {
                 transform_component->setDirtyFlag(true);
@@ -45,7 +45,7 @@ namespace MoYu
 
         return -(glm::dot(normal, origin) + d) / deno;
     }
-
+    /*
     size_t EditorSceneManager::updateCursorOnAxis(Vector2 cursor_uv, Vector2 game_engine_window_size)
     {
 
@@ -56,7 +56,7 @@ namespace MoYu
         Vector3 camera_right    = m_camera->right();
         Vector3 camera_position = m_camera->position();
 
-        if (m_selected_gobject_id == k_invalid_gobject_id)
+        if (m_selected_gobject_id == K_Invalid_Object_Id)
         {
             return m_selected_axis;
         }
@@ -186,7 +186,8 @@ namespace MoYu
 
         return m_selected_axis;
     }
-
+    */
+    /*
     RenderEntity* EditorSceneManager::getAxisMeshByType(EditorAxisMode axis_mode)
     {
         RenderEntity* axis_mesh = nullptr;
@@ -206,7 +207,8 @@ namespace MoYu
         }
         return axis_mesh;
     }
-
+    */
+    /*
     void EditorSceneManager::drawSelectedEntityAxis()
     {
         std::shared_ptr<GObject> selected_object = getSelectedGObject().lock();
@@ -237,11 +239,11 @@ namespace MoYu
 
         }
     }
-
+    */
     std::weak_ptr<GObject> EditorSceneManager::getSelectedGObject() const
     {
         std::weak_ptr<GObject> selected_object;
-        if (m_selected_gobject_id != k_invalid_gobject_id)
+        if (m_selected_gobject_id != K_Invalid_Object_Id)
         {
             std::shared_ptr<Level> level = g_runtime_global_context.m_world_manager->getCurrentActiveLevel().lock();
             if (level != nullptr)
@@ -262,13 +264,13 @@ namespace MoYu
         std::shared_ptr<GObject> selected_gobject = getSelectedGObject().lock();
         if (selected_gobject)
         {
-            const TransformComponent* transform_component = selected_gobject->tryGetComponentConst(TransformComponent);
-            m_selected_object_matrix                      = transform_component->getMatrix();
+            std::shared_ptr<TransformComponent> transform_component = selected_gobject->tryGetComponent(TransformComponent);
+            m_selected_object_matrix = transform_component->getMatrix();
         }
 
-        drawSelectedEntityAxis();
+        //drawSelectedEntityAxis();
 
-        if (m_selected_gobject_id != k_invalid_gobject_id)
+        if (m_selected_gobject_id != K_Invalid_Object_Id)
         {
             LOG_INFO("select game object " + std::to_string(m_selected_gobject_id));
         }
@@ -291,10 +293,10 @@ namespace MoYu
 
             current_active_level->deleteGObject(m_selected_gobject_id);
 
-            RenderSwapContext& swap_context = g_editor_global_context.m_render_system->getSwapContext();
-            swap_context.getLogicSwapData().addDeleteGameObject(GameObjectDesc {selected_object->getID(), {}});
+            //RenderSwapContext& swap_context = g_editor_global_context.m_render_system->getSwapContext();
+            //swap_context.getLogicSwapData().addDeleteGameObject(GameObjectDesc {selected_object->getID(), {}});
         }
-        onGObjectSelected(k_invalid_gobject_id);
+        onGObjectSelected(K_Invalid_Object_Id);
     }
 
     void EditorSceneManager::moveEntity(float     new_mouse_pos_x,
@@ -367,7 +369,7 @@ namespace MoYu
         Vector2 axis_z_clip_uv((axis_z_clip_position.x + 1) / 2.0f, (axis_z_clip_position.y + 1) / 2.0f);
         Vector2 axis_z_direction_uv = Vector2::normalize(axis_z_clip_uv - model_origin_clip_uv);
 
-        TransformComponent* transform_component = selected_object->tryGetComponent(TransformComponent);
+        std::shared_ptr<TransformComponent> transform_component = selected_object->tryGetComponent(TransformComponent);
 
         Matrix4x4 new_model_matrix(Matrix4x4::Identity);
         if (m_axis_mode == EditorAxisMode::TranslateMode) // translate

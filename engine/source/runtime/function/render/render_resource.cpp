@@ -165,24 +165,8 @@ namespace MoYu
 
     bool RenderResource::updateInternalMeshRenderer(SceneMeshRenderer scene_mesh_renderer, SceneMeshRenderer& cached_mesh_renderer, InternalMeshRenderer& internal_mesh_renderer)
     {
-        bool is_same_component = scene_mesh_renderer.m_identifier.m_object_id == cached_mesh_renderer.m_identifier.m_object_id;
-        is_same_component &= scene_mesh_renderer.m_identifier.m_component_id == cached_mesh_renderer.m_identifier.m_component_id;
-
-        if (is_same_component)
-        {
-            updateInternalMesh(scene_mesh_renderer.m_scene_mesh, cached_mesh_renderer.m_scene_mesh, internal_mesh_renderer.ref_mesh);
-            updateInternalMaterial(scene_mesh_renderer.m_material, cached_mesh_renderer.m_material, internal_mesh_renderer.ref_material);
-        }
-
-        bool is_same_transform = scene_mesh_renderer.model_matrix == cached_mesh_renderer.model_matrix;
-        is_same_transform &= scene_mesh_renderer.model_matrix_inverse == cached_mesh_renderer.model_matrix_inverse;
-        
-        if (is_same_transform)
-        {
-            internal_mesh_renderer.model_matrix = scene_mesh_renderer.model_matrix;
-            internal_mesh_renderer.model_matrix_inverse = scene_mesh_renderer.model_matrix_inverse;
-            internal_mesh_renderer.m_bounding_box = scene_mesh_renderer.m_bounding_box;
-        }
+        updateInternalMesh(scene_mesh_renderer.m_scene_mesh, cached_mesh_renderer.m_scene_mesh, internal_mesh_renderer.ref_mesh);
+        updateInternalMaterial(scene_mesh_renderer.m_material, cached_mesh_renderer.m_material, internal_mesh_renderer.ref_material);
 
         cached_mesh_renderer = scene_mesh_renderer;
 
@@ -580,7 +564,7 @@ namespace MoYu
 
         InternalIndexBuffer index_buffer = createIndexBuffer(mesh_data.m_static_mesh_data.m_index_buffer);
 
-        return InternalMesh {false, index_buffer, vertex_buffer};
+        return InternalMesh {false, mesh_data.m_axis_aligned_box, index_buffer, vertex_buffer};
     }
 
     InternalVertexBuffer RenderResource::createVertexBuffer(InputDefinition input_definition, std::shared_ptr<BufferData> vertex_buffer)

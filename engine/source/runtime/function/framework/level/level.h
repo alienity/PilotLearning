@@ -31,7 +31,7 @@ namespace MoYu
         bool save();
 
         void tick(float delta_time);
-
+        
         const std::string& getLevelResUrl() const { return m_level_res_url; }
 
         const LevelObjectsMap& getAllGObjects() const { return m_gobjects; }

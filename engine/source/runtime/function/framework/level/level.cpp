@@ -182,6 +182,20 @@ namespace MoYu
                 id_object_pair.second->tick(delta_time);
             }
         }
+
+        std::vector<GObjectID> objectsIdToErase;
+        for (const auto& id_object_pair : m_gobjects)
+        {
+            assert(id_object_pair.second);
+            if (id_object_pair.second->isReadyToErase())
+            {
+                objectsIdToErase.push_back(id_object_pair.second->getID());
+            }
+        }
+        for (size_t i = 0; i < objectsIdToErase.size(); i++)
+        {
+            deleteGObject(objectsIdToErase[i]);
+        }
     }
 
     std::shared_ptr<GObject> Level::getGObjectByID(GObjectID go_id) const
@@ -200,20 +214,20 @@ namespace MoYu
         if (go_id == K_Root_Object_Id || go_id == K_Invalid_Object_Id)
             return;
 
-        //auto iter = m_gobjects.find(go_id);
-        //ASSERT(iter != m_gobjects.end());
-        //std::shared_ptr<GObject> current_object = iter->second;
-        std::shared_ptr<GObject> current_object = m_gobjects[go_id];
+        auto iter = m_gobjects.find(go_id);
+        ASSERT(iter != m_gobjects.end());
+        std::shared_ptr<GObject> current_object = iter->second;
+        //std::shared_ptr<GObject> current_object = m_gobjects[go_id];
 
         // resursive delete child
         std::vector<GObjectID> cur_obj_children_id = current_object->m_chilren_id;
         for (size_t i = 0; i < cur_obj_children_id.size(); i++)
             deleteGObject(cur_obj_children_id[i]);
 
-        //auto parentIter = m_gobjects.find(current_object->m_parent_id);
-        //ASSERT(parentIter != m_gobjects.end());
-        //std::shared_ptr<GObject> parentObject = parentIter->second;
-        std::shared_ptr<GObject> parentObject = m_gobjects[current_object->m_parent_id];
+        auto parentIter = m_gobjects.find(current_object->m_parent_id);
+        ASSERT(parentIter != m_gobjects.end());
+        std::shared_ptr<GObject> parentObject = parentIter->second;
+        //std::shared_ptr<GObject> parentObject = m_gobjects[current_object->m_parent_id];
 
         std::vector<std::uint32_t>& parent_children_id = parentObject->m_chilren_id;
         
@@ -224,6 +238,9 @@ namespace MoYu
         m_gobjects.erase(go_id);
 
         resortChildrenSiblingIndex(parentObject->m_id);
+
+        RenderSwapContext& swap_context = g_editor_global_context.m_render_system->getSwapContext();
+        swap_context.getLogicSwapData().addDeleteGameObject(GameObjectDesc {go_id, {}});
     }
 
     void Level::changeParent(GObjectID from_id, GObjectID to_parent_id, std::optional<std::uint32_t> sibling_index)

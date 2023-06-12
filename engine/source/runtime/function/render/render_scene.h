@@ -5,11 +5,12 @@
 #include "runtime/function/render/render_common.h"
 #include "runtime/function/render/render_guid_allocator.h"
 
-#include <optional>
 #include <vector>
 
 namespace MoYu
 {
+    class RenderResource;
+
     struct CachedMeshRenderer
     {
         SceneMeshRenderer cachedSceneMeshrenderer;
@@ -27,5 +28,18 @@ namespace MoYu
 
         // render entities
         std::vector<CachedMeshRenderer> m_mesh_renderers;
+
+        // camera
+        InternalCamera m_camera;
+
+        // update functions
+        void updateLight(SceneLight sceneLight, SceneTransform sceneTransform);
+        void updateMeshRenderer(SceneMeshRenderer sceneMeshRenderer, SceneTransform sceneTransform, std::shared_ptr<RenderResource> m_render_resource);
+        void updateCamera(SceneCamera sceneCamera, SceneTransform sceneTransform);
+
+        // remove component
+        void removeLight(SceneLight sceneLight);
+        void removeMeshRenderer(SceneMeshRenderer sceneMeshRenderer);
+        void removeCamera(SceneCamera sceneCamera);
     };
 } // namespace MoYu
