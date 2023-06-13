@@ -407,9 +407,9 @@ namespace MoYu
             Matrix4x4 scale_matrix       = Matrix4x4::scale(1.f, 1.f, 1.f);
             Matrix4x4 axis_model_matrix  = translation_matrix * scale_matrix;
 
-            m_translation_axis.m_model_matrix = axis_model_matrix;
-            m_rotation_axis.m_model_matrix    = axis_model_matrix;
-            m_scale_aixs.m_model_matrix       = axis_model_matrix;
+            //m_translation_axis.m_model_matrix = axis_model_matrix;
+            //m_rotation_axis.m_model_matrix    = axis_model_matrix;
+            //m_scale_aixs.m_model_matrix       = axis_model_matrix;
 
             transform_component->setPosition(new_translation);
             transform_component->setRotation(new_rotation);
@@ -477,7 +477,7 @@ namespace MoYu
             transform_component->setPosition(new_translation);
             transform_component->setRotation(new_rotation);
             transform_component->setScale(new_scale);
-            m_scale_aixs.m_model_matrix = new_model_matrix;
+            //m_scale_aixs.m_model_matrix = new_model_matrix;
         }
         else if (m_axis_mode == EditorAxisMode::ScaleMode) // scale
         {
@@ -528,8 +528,8 @@ namespace MoYu
         setSelectedObjectMatrix(new_model_matrix);
     }
 
-    size_t EditorSceneManager::getGuidOfPickedMesh(const Vector2& picked_uv) const
-    {
-        return g_editor_global_context.m_render_system->getGuidOfPickedMesh(picked_uv);
-    }
+    //size_t EditorSceneManager::getGuidOfPickedMesh(const Vector2& picked_uv) const
+    //{
+    //    return g_editor_global_context.m_render_system->getGuidOfPickedMesh(picked_uv);
+    //}
 } // namespace MoYu

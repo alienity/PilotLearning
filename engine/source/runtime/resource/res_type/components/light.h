@@ -3,6 +3,10 @@
 
 namespace MoYu
 {
+#define DirectionLightParameterName "DirectionLightParameter"
+#define PointLightParameterName "PointLightParameter"
+#define SpotLightParameterName "SpotLightParameter"
+
     struct DirectionLightParameter
     {
         Color color = Color::White;
@@ -61,7 +65,7 @@ namespace MoYu
 
     struct LightComponentRes
     {
-        std::string             m_LightParamName {""};
+        std::string             m_LightParamName {PointLightParameterName};
         DirectionLightParameter m_DirectionLightParam {};
         PointLightParameter     m_PointLightParam {};
         SpotLightParameter      m_SpotLightParam {};

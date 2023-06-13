@@ -27,9 +27,9 @@ namespace MoYu
     private:
         //void        onFileContentItemClicked(EditorFileNode* node);
         void        buildEditorFileAssetsUITree(std::shared_ptr<EditorFileNode> node);
-        void        drawAxisToggleButton(const char* string_id, bool check_state, int axis_mode);
-        void        createComponentUI(Reflection::ReflectionInstance& instance);
-        void        createLeafNodeUI(Reflection::ReflectionInstance& instance);
+        //void        drawAxisToggleButton(const char* string_id, bool check_state, int axis_mode);
+        //void        createComponentUI(Reflection::ReflectionInstance& instance);
+        //void        createLeafNodeUI(Reflection::ReflectionInstance& instance);
         std::string getLeafUINodeParentLabel();
 
         void showEditorUI();
@@ -51,10 +51,10 @@ namespace MoYu
         virtual void setGameView(D3D12_GPU_DESCRIPTOR_HANDLE handle, uint32_t width, uint32_t height) override final;
 
     private:
-        std::unordered_map<std::string, std::function<void(std::string, void*)>> m_editor_ui_creator;
-        std::unordered_map<std::string, unsigned int>                            m_new_object_index_map;
-        EditorFileService                                                        m_editor_file_service;
-        std::chrono::time_point<std::chrono::steady_clock>                       m_last_file_tree_update;
+        std::unordered_map<std::string, std::function<void(std::string, bool&, void*)>> m_editor_ui_creator;
+        std::unordered_map<std::string, unsigned int>                                   m_new_object_index_map;
+        EditorFileService                                                               m_editor_file_service;
+        std::chrono::time_point<std::chrono::steady_clock>                              m_last_file_tree_update;
 
         std::vector<Component*> m_editor_component_stack;
 

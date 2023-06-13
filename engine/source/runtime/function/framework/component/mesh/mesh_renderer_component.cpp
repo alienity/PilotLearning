@@ -23,20 +23,20 @@ namespace MoYu
 
         MeshRendererComponentRes* mesh_renderer_res = (MeshRendererComponentRes*)data;
 
-        m_mesh_component_res     = mesh_renderer_res->m_mesh_res;
-        m_material_component_res = mesh_renderer_res->m_material_res;
+        m_mesh_renderer_res.m_mesh_res = mesh_renderer_res->m_mesh_res;
+        m_mesh_renderer_res.m_material_res = mesh_renderer_res->m_material_res;
 
-        m_scene_mesh = {m_mesh_component_res.m_is_mesh_data,
-                        m_mesh_component_res.m_sub_mesh_file,
-                        m_mesh_component_res.m_mesh_data_path};
+        m_scene_mesh = {m_mesh_renderer_res.m_mesh_res.m_is_mesh_data,
+                        m_mesh_renderer_res.m_mesh_res.m_sub_mesh_file,
+                        m_mesh_renderer_res.m_mesh_res.m_mesh_data_path};
 
         MaterialManager* m_mat_manager_ptr = g_runtime_global_context.m_material_manager.get();
 
-        MaterialRes m_mat_res = m_mat_manager_ptr->loadMaterialRes(m_material_component_res.m_material_file);
+        MaterialRes m_mat_res = m_mat_manager_ptr->loadMaterialRes(m_mesh_renderer_res.m_material_res.m_material_file);
 
-        if (m_material_component_res.m_is_material_init)
+        if (m_mesh_renderer_res.m_material_res.m_is_material_init)
         {
-            MaterialRes* mat_res_data = (MaterialRes*)m_material_component_res.m_material_serialized_data.data();
+            MaterialRes* mat_res_data = (MaterialRes*)m_mesh_renderer_res.m_material_res.m_material_serialized_data.data();
             memcpy(&m_mat_res, mat_res_data, sizeof(MaterialRes));
         }
 
@@ -62,8 +62,7 @@ namespace MoYu
 
     void MeshRendererComponent::reset()
     {
-        m_mesh_component_res = {};
-        m_material_component_res = {};
+        m_mesh_renderer_res = {};
 
         m_scene_mesh = {};
         m_material = {};
@@ -150,7 +149,7 @@ namespace MoYu
     void MeshRendererComponent::updateMaterial(std::string material_path)
     {
         MaterialManager* m_mat_manager_ptr = g_runtime_global_context.m_material_manager.get();
-        MaterialRes m_mat_res = m_mat_manager_ptr->loadMaterialRes(m_material_component_res.m_material_file);
+        MaterialRes m_mat_res = m_mat_manager_ptr->loadMaterialRes(m_mesh_renderer_res.m_material_res.m_material_file);
 
         ScenePBRMaterial m_mat_data = {m_mat_res.m_blend,
                                        m_mat_res.m_double_sided,

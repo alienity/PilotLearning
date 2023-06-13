@@ -5,7 +5,6 @@
 #include "editor/include/editor_scene_manager.h"
 
 #include "runtime/core/base/macro.h"
-#include "runtime/core/meta/reflection/reflection.h"
 
 #include "runtime/platform/path/path.h"
 
@@ -14,7 +13,7 @@
 
 #include "runtime/engine.h"
 
-#include "runtime/function/framework/component/mesh/mesh_component.h"
+#include "runtime/function/framework/component/mesh/mesh_renderer_component.h"
 #include "runtime/function/framework/component/transform/transform_component.h"
 #include "runtime/function/framework/component/camera/camera_component.h"
 #include "runtime/function/framework/component/light/light_component.h"
@@ -42,22 +41,15 @@ namespace MoYu
     std::vector<std::pair<std::string, bool>> g_editor_node_state_array;
     int g_node_depth = -1;
 
-    bool DrawVecControl(const std::string& label,
-                        MoYu::Vector3&    values,
-                        float              resetValue  = 0.0f,
-                        float              columnWidth = 100.0f);
-
-    bool DrawVecControl(const std::string& label,
-                        MoYu::Quaternion& values,
-                        float              resetValue  = 0.0f,
-                        float              columnWidth = 100.0f);
+    bool DrawVecControl(const std::string& label, MoYu::Vector3& values, float resetValue = 0.0f, float columnWidth = 100.0f);
+    bool DrawVecControl(const std::string& label, MoYu::Quaternion& values, float resetValue = 0.0f, float columnWidth = 100.0f);
 
     EditorUI::EditorUI()
     {
-        const auto& asset_folder            = g_runtime_global_context.m_config_manager->getAssetFolder();
-        m_editor_ui_creator["TreeNodePush"] = [this](const std::string& name, void* value_ptr) -> void {
-            static ImGuiTableFlags flags      = ImGuiTableFlags_Resizable | ImGuiTableFlags_NoSavedSettings;
-            bool                   node_state = false;
+        const auto& asset_folder = g_runtime_global_context.m_config_manager->getAssetFolder();
+        m_editor_ui_creator["TreeNodePush"] = [this](const std::string& name, bool& is_dirty, void* value_ptr) -> void {
+            static ImGuiTableFlags flags = ImGuiTableFlags_Resizable | ImGuiTableFlags_NoSavedSettings;
+            bool node_state = false;
             g_node_depth++;
             if (g_node_depth > 0)
             {
@@ -83,7 +75,7 @@ namespace MoYu
                 m_editor_component_stack.push_back(p_component);
             }
         };
-        m_editor_ui_creator["TreeNodePop"] = [this](const std::string& name, void* value_ptr) -> void {
+        m_editor_ui_creator["TreeNodePop"] = [this](const std::string& name, bool& is_dirty, void* value_ptr) -> void {
             if (g_editor_node_state_array[g_node_depth].second)
             {
                 ImGui::TreePop();
@@ -96,15 +88,14 @@ namespace MoYu
                 m_editor_component_stack.pop_back();
             }
         };
-        m_editor_ui_creator["Transform"] = [this](const std::string& name, void* value_ptr) -> void {
+        m_editor_ui_creator["Transform"] = [this](const std::string& name, bool& is_dirty, void* value_ptr) -> void {
             if (g_editor_node_state_array[g_node_depth].second)
             {
                 Transform* trans_ptr = static_cast<Transform*>(value_ptr);
 
-                Vector3 degrees_val;
-
                 MoYu::Vector3 euler = trans_ptr->m_rotation.toTaitBryanAngles();
 
+                Vector3 degrees_val = {};
                 degrees_val.x = MoYu::Radian(euler.x).valueDegrees();
                 degrees_val.y = MoYu::Radian(euler.y).valueDegrees();
                 degrees_val.z = MoYu::Radian(euler.z).valueDegrees();
@@ -115,24 +106,28 @@ namespace MoYu
                 isDirty |= DrawVecControl("Rotation", degrees_val);
                 isDirty |= DrawVecControl("Scale", trans_ptr->m_scale);
 
-                MoYu::Vector3 newEuler = Vector3(Math::degreesToRadians(degrees_val.x),
-                                                  Math::degreesToRadians(degrees_val.y),
-                                                  Math::degreesToRadians(degrees_val.z));
-                trans_ptr->m_rotation   = MoYu::Quaternion::fromTaitBryanAngles(newEuler);
+                MoYu::Vector3 newEuler = {};
+                newEuler.x = Math::degreesToRadians(degrees_val.x);
+                newEuler.y = Math::degreesToRadians(degrees_val.y);
+                newEuler.z = Math::degreesToRadians(degrees_val.z);
 
-                g_editor_global_context.m_scene_manager->drawSelectedEntityAxis();
+                trans_ptr->m_rotation = MoYu::Quaternion::fromTaitBryanAngles(newEuler);
 
-            if (isDirty)
-                {
-                    if (!m_editor_component_stack.empty())
-                    {
-                        Component* m_component_ptr = m_editor_component_stack.back();
-                        m_component_ptr->setDirtyFlag(isDirty);
-                    }
-                }
+                is_dirty |= isDirty;
+
+                //g_editor_global_context.m_scene_manager->drawSelectedEntityAxis();
+
+                //if (isDirty)
+                //{
+                //    if (!m_editor_component_stack.empty())
+                //    {
+                //        Component* m_component_ptr = m_editor_component_stack.back();
+                //        m_component_ptr->setDirtyFlag(isDirty);
+                //    }
+                //}
             }
         };
-        m_editor_ui_creator["int"] = [this](const std::string& name, void* value_ptr) -> void {
+        m_editor_ui_creator["int"] = [this](const std::string& name, bool& is_dirty, void* value_ptr) -> void {
             bool isDirty = false;
 
             if (g_node_depth == -1)
@@ -152,16 +147,9 @@ namespace MoYu
                 }
             }
 
-            if (isDirty)
-            {
-                if (!m_editor_component_stack.empty())
-                {
-                    Component* m_component_ptr = m_editor_component_stack.back();
-                    m_component_ptr->setDirtyFlag(isDirty);
-                }
-            }
+            is_dirty |= isDirty;
         };
-        m_editor_ui_creator["float"] = [this](const std::string& name, void* value_ptr) -> void {
+        m_editor_ui_creator["float"] = [this](const std::string& name, bool& is_dirty, void* value_ptr) -> void {
             bool isDirty = false;
 
             if (g_node_depth == -1)
@@ -181,16 +169,9 @@ namespace MoYu
                 }
             }
 
-            if (isDirty)
-            {
-                if (!m_editor_component_stack.empty())
-                {
-                    Component* m_component_ptr = m_editor_component_stack.back();
-                    m_component_ptr->setDirtyFlag(isDirty);
-                }
-            }
+            is_dirty |= isDirty;
         };
-        m_editor_ui_creator["bool"] = [this](const std::string& name, void* value_ptr) -> void {
+        m_editor_ui_creator["bool"] = [this](const std::string& name, bool& is_dirty, void* value_ptr) -> void {
             bool isDirty = false;
 
             if (g_node_depth == -1)
@@ -211,16 +192,9 @@ namespace MoYu
                 }
             }
 
-            if (isDirty)
-            {
-                if (!m_editor_component_stack.empty())
-                {
-                    Component* m_component_ptr = m_editor_component_stack.back();
-                    m_component_ptr->setDirtyFlag(isDirty);
-                }
-            }
+            is_dirty |= isDirty;
         };
-        m_editor_ui_creator["Vector2"] = [this](const std::string& name, void* value_ptr) -> void {
+        m_editor_ui_creator["Vector2"] = [this](const std::string& name, bool& is_dirty, void* value_ptr) -> void {
             bool isDirty = false;
 
             Vector2* vec_ptr = static_cast<Vector2*>(value_ptr);
@@ -244,16 +218,9 @@ namespace MoYu
             vec_ptr->x = val[0];
             vec_ptr->y = val[1];
 
-            if (isDirty)
-            {
-                if (!m_editor_component_stack.empty())
-                {
-                    Component* m_component_ptr = m_editor_component_stack.back();
-                    m_component_ptr->setDirtyFlag(isDirty);
-                }
-            }
+            is_dirty |= isDirty;
         };
-        m_editor_ui_creator["Vector3"] = [this](const std::string& name, void* value_ptr) -> void {
+        m_editor_ui_creator["Vector3"] = [this](const std::string& name, bool& is_dirty, void* value_ptr) -> void {
             bool isDirty = false;
 
             Vector3* vec_ptr = static_cast<Vector3*>(value_ptr);
@@ -278,18 +245,11 @@ namespace MoYu
             vec_ptr->y = val[1];
             vec_ptr->z = val[2];
 
-            if (isDirty)
-            {
-                if (!m_editor_component_stack.empty())
-                {
-                    Component* m_component_ptr = m_editor_component_stack.back();
-                    m_component_ptr->setDirtyFlag(isDirty);
-                }
-            }
+            is_dirty |= isDirty;
         };
-        m_editor_ui_creator["Vector4"] = [this](const std::string& name, void* value_ptr) -> void {
+        m_editor_ui_creator["Vector4"] = [this](const std::string& name, bool& is_dirty, void* value_ptr) -> void {
             bool isDirty = false;
-
+            
             Vector4* vec_ptr = static_cast<Vector4*>(value_ptr);
             float    val[4]  = {vec_ptr->x, vec_ptr->y, vec_ptr->z, vec_ptr->w};
             if (g_node_depth == -1)
@@ -313,16 +273,9 @@ namespace MoYu
             vec_ptr->z = val[2];
             vec_ptr->w = val[3];
 
-            if (isDirty)
-            {
-                if (!m_editor_component_stack.empty())
-                {
-                    Component* m_component_ptr = m_editor_component_stack.back();
-                    m_component_ptr->setDirtyFlag(isDirty);
-                }
-            }
+            is_dirty |= isDirty;
         };
-        m_editor_ui_creator["Quaternion"] = [this](const std::string& name, void* value_ptr) -> void {
+        m_editor_ui_creator["Quaternion"] = [this](const std::string& name, bool& is_dirty, void* value_ptr) -> void {
             bool isDirty = false;
 
             Quaternion* qua_ptr = static_cast<Quaternion*>(value_ptr);
@@ -348,354 +301,298 @@ namespace MoYu
             qua_ptr->z = val[2];
             qua_ptr->w = val[3];
 
-            if (isDirty)
-            {
-                if (!m_editor_component_stack.empty())
-                {
-                    Component* m_component_ptr = m_editor_component_stack.back();
-                    m_component_ptr->setDirtyFlag(isDirty);
-                }
-            }
+            is_dirty |= isDirty;
         };
-        m_editor_ui_creator["Color"] = [this](const std::string& name, void* value_ptr) -> void {
-            bool isDirty = false;
-
+        m_editor_ui_creator["Color"] = [this](const std::string& name, bool& is_dirty, void* value_ptr) -> void {
             Color* color_ptr = static_cast<Color*>(value_ptr);
             float  col[4]   = {color_ptr->r, color_ptr->g, color_ptr->g, color_ptr->a};
 
-            isDirty = ImGui::ColorEdit4("Color", col);
+            is_dirty |= ImGui::ColorEdit4("Color", col);
 
             color_ptr->r = col[0];
             color_ptr->g = col[1];
             color_ptr->b = col[2];
             color_ptr->a = col[3];
-
-            if (isDirty)
-            {
-                if (!m_editor_component_stack.empty())
-                {
-                    Component* m_component_ptr = m_editor_component_stack.back();
-                    m_component_ptr->setDirtyFlag(isDirty);
-                }
-            }
         };
-        m_editor_ui_creator["std::string"] = [this, &asset_folder](const std::string& name, void* value_ptr) -> void {
-            if (g_node_depth == -1)
-            {
-                std::string label = "##" + name;
-                ImGui::Text("%s", name.c_str());
-                ImGui::SameLine();
-                ImGui::Text("%s", (*static_cast<std::string*>(value_ptr)).c_str());
-            }
-            else
-            {
-                if (g_editor_node_state_array[g_node_depth].second)
-                {
-                    std::string full_label = "##" + getLeafUINodeParentLabel() + name;
-                    ImGui::Text("%s", (name + ":").c_str());
-                    std::string value_str = *static_cast<std::string*>(value_ptr);
-                    if (value_str.find_first_of('/') != std::string::npos)
-                    {
-                        std::filesystem::path value_path(value_str);
-                        if (value_path.is_absolute())
-                        {
-                            value_path = Path::getRelativePath(asset_folder, value_path);
-                        }
-                        value_str = value_path.generic_string();
-                        if (value_str.size() >= 2 && value_str[0] == '.' && value_str[1] == '.')
-                        {
-                            value_str.clear();
-                        }
-                    }
-                    ImGui::Text("%s", value_str.c_str());
-                }
-            }
-        };
-        m_editor_ui_creator["CameraComponentRes"] = [this, &asset_folder](const std::string& name, void* value_ptr) -> void {
-            if (g_editor_node_state_array[g_node_depth].second)
-            {
-                CameraComponentRes* ccres_ptr = static_cast<CameraComponentRes*>(value_ptr);
-
-                int item_current_idx = -1;
-
-                const char* parameter_items[] = {
-                    "FirstPersonCameraParameter", "ThirdPersonCameraParameter", "FreeCameraParameter"};
-
-                std::string type_name = ccres_ptr->m_parameter.getTypeName();
-                for (size_t i = 0; i < IM_ARRAYSIZE(parameter_items); i++)
-                {
-                    if (strcmp(parameter_items[i], type_name.c_str()) == 0)
-                    {
-                        item_current_idx = i;
-                        break;
-                    }
-                }
-
-                int item_prev_idx = item_current_idx;
-
-                const char* combo_preview_value = parameter_items[item_current_idx];
-                if (ImGui::BeginCombo("CameraType", combo_preview_value))
-                {
-                    for (int n = 0; n < IM_ARRAYSIZE(parameter_items); n++)
-                    {
-                        const bool is_selected = (item_current_idx == n);
-                        if (ImGui::Selectable(parameter_items[n], is_selected))
-                            item_current_idx = n;
-
-                        // Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
-                        if (is_selected)
-                            ImGui::SetItemDefaultFocus();
-                    }
-                    ImGui::EndCombo();
-                }
-
-                if (item_current_idx != item_prev_idx)
-                {
-                    PILOT_REFLECTION_DELETE(ccres_ptr->m_parameter);
-                    if (item_current_idx == 0)
-                    {
-                        ccres_ptr->m_parameter = PILOT_REFLECTION_NEW(FirstPersonCameraParameter);
-                    }
-                    else if (item_current_idx == 1)
-                    {
-                        ccres_ptr->m_parameter = PILOT_REFLECTION_NEW(ThirdPersonCameraParameter);
-                    }
-                    else if (item_current_idx == 2)
-                    {
-                        ccres_ptr->m_parameter = PILOT_REFLECTION_NEW(FreeCameraParameter);
-                    }
-                }
-
-                auto object_instance = Reflection::ReflectionInstance(
-                    MoYu::Reflection::TypeMeta::newMetaFromName(ccres_ptr->m_parameter.getTypeName().c_str()),
-                    ccres_ptr->m_parameter.operator->());
-                createComponentUI(object_instance);
-            }
-        };
-        m_editor_ui_creator["LightComponentRes"] = [this, &asset_folder](const std::string& name, void* value_ptr) -> void {
+        m_editor_ui_creator["FirstPersonCameraParameter"] = [this, &asset_folder](const std::string& name, bool& is_dirty, void* value_ptr) -> void {
             bool isDirty = false;
 
-            if (g_editor_node_state_array[g_node_depth].second)
-            {
-                LightComponentRes* l_res_ptr = static_cast<LightComponentRes*>(value_ptr);
+            FirstPersonCameraParameter* cam_ptr = static_cast<FirstPersonCameraParameter*>(value_ptr);
 
-                int item_current_idx = -1;
+            m_editor_ui_creator["float"]("m_fovY", isDirty, &cam_ptr->m_fovY);
+            m_editor_ui_creator["float"]("m_vertical_offset", isDirty, &cam_ptr->m_vertical_offset);
+            m_editor_ui_creator["int"]("m_width", isDirty, &cam_ptr->m_width);
+            m_editor_ui_creator["int"]("m_height", isDirty, &cam_ptr->m_height);
+            m_editor_ui_creator["float"]("m_nearZ", isDirty, &cam_ptr->m_nearZ);
+            m_editor_ui_creator["float"]("m_farZ", isDirty, &cam_ptr->m_farZ);
 
-                const char* parameter_items[] = {
-                    "DirectionalLightParameter", "PointLightParameter", "SpotLightParameter"};
-
-                std::string type_name = l_res_ptr->m_parameter.getTypeName();
-                for (size_t i = 0; i < IM_ARRAYSIZE(parameter_items); i++)
-                {
-                    if (strcmp(parameter_items[i], type_name.c_str()) == 0)
-                    {
-                        item_current_idx = i;
-                        break;
-                    }
-                }
-
-                int item_prev_idx = item_current_idx;
-
-                const char* combo_preview_value = parameter_items[item_current_idx];
-                if (ImGui::BeginCombo("LightType", combo_preview_value))
-                {
-                    for (int n = 0; n < IM_ARRAYSIZE(parameter_items); n++)
-                    {
-                        const bool is_selected = (item_current_idx == n);
-                        if (ImGui::Selectable(parameter_items[n], is_selected))
-                            item_current_idx = n;
-
-                        // Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
-                        if (is_selected)
-                            ImGui::SetItemDefaultFocus();
-                    }
-                    ImGui::EndCombo();
-                }
-
-                if (item_current_idx != item_prev_idx)
-                {
-                    isDirty = true;
-
-                    PILOT_REFLECTION_DELETE(l_res_ptr->m_parameter);
-                    if (item_current_idx == 0)
-                    {
-                        l_res_ptr->m_parameter = PILOT_REFLECTION_NEW(DirectionalLightParameter);
-                    }
-                    else if (item_current_idx == 1)
-                    {
-                        l_res_ptr->m_parameter = PILOT_REFLECTION_NEW(PointLightParameter);
-                    }
-                    else if (item_current_idx == 2)
-                    {
-                        l_res_ptr->m_parameter = PILOT_REFLECTION_NEW(SpotLightParameter)
-                    }
-
-                    if (isDirty)
-                    {
-                        if (!m_editor_component_stack.empty())
-                        {
-                            Component* m_component_ptr = m_editor_component_stack.back();
-                            m_component_ptr->setDirtyFlag(isDirty);
-                        }
-                    }
-                }
-
-                auto object_instance = Reflection::ReflectionInstance(
-                    MoYu::Reflection::TypeMeta::newMetaFromName(l_res_ptr->m_parameter.getTypeName().c_str()),
-                    l_res_ptr->m_parameter.operator->());
-                createComponentUI(object_instance);
-            }
+            is_dirty |= isDirty;
         };
-        m_editor_ui_creator["MeshComponentRes"] = [this, &asset_folder](const std::string& name, void* value_ptr) -> void {
+        m_editor_ui_creator["ThirdPersonCameraParameter"] = [this, &asset_folder](const std::string& name, bool& is_dirty, void* value_ptr) -> void {
+            bool isDirty = false;
+
+            ThirdPersonCameraParameter* cam_ptr = static_cast<ThirdPersonCameraParameter*>(value_ptr);
+
+            m_editor_ui_creator["float"]("m_fovY", isDirty, &cam_ptr->m_fovY);
+            m_editor_ui_creator["float"]("m_horizontal_offset", isDirty, &cam_ptr->m_horizontal_offset);
+            m_editor_ui_creator["float"]("m_vertical_offset", isDirty, &cam_ptr->m_vertical_offset);
+            m_editor_ui_creator["Quaternion"]("m_cursor_pitch", isDirty, &cam_ptr->m_cursor_pitch);
+            m_editor_ui_creator["Quaternion"]("m_cursor_yaw", isDirty, &cam_ptr->m_cursor_yaw);
+            m_editor_ui_creator["int"]("m_width", isDirty, &cam_ptr->m_width);
+            m_editor_ui_creator["int"]("m_height", isDirty, &cam_ptr->m_height);
+            m_editor_ui_creator["float"]("m_nearZ", isDirty, &cam_ptr->m_nearZ);
+            m_editor_ui_creator["float"]("m_farZ", isDirty, &cam_ptr->m_farZ);
+
+            is_dirty |= isDirty;
+        };
+        m_editor_ui_creator["FreeCameraParameter"] = [this, &asset_folder](const std::string& name, bool& is_dirty, void* value_ptr) -> void {
+            bool isDirty = false;
+
+            FreeCameraParameter* cam_ptr = static_cast<FreeCameraParameter*>(value_ptr);
+
+            m_editor_ui_creator["bool"]("m_perspective", isDirty, &cam_ptr->m_perspective);
+            m_editor_ui_creator["float"]("m_fovY", isDirty, &cam_ptr->m_fovY);
+            m_editor_ui_creator["m_speed"]("m_speed", isDirty, &cam_ptr->m_speed);
+            m_editor_ui_creator["int"]("m_width", isDirty, &cam_ptr->m_width);
+            m_editor_ui_creator["int"]("m_height", isDirty, &cam_ptr->m_height);
+            m_editor_ui_creator["float"]("m_nearZ", isDirty, &cam_ptr->m_nearZ);
+            m_editor_ui_creator["float"]("m_farZ", isDirty, &cam_ptr->m_farZ);
+
+            is_dirty |= isDirty;
+        };
+        m_editor_ui_creator["CameraComponentRes"] = [this, &asset_folder](const std::string& name, bool& is_dirty, void* value_ptr) -> void {
+            bool isDirty = false;
+
+            CameraComponentRes* ccres_ptr = static_cast<CameraComponentRes*>(value_ptr);
+
+            int item_current_idx = -1;
+
+            const char* parameter_items[] = {FirstPersonCameraParameterName, ThirdPersonCameraParameterName, FreeCameraParameterName};
+
+            std::string type_name = ccres_ptr->m_CamParamName;
+            for (size_t i = 0; i < IM_ARRAYSIZE(parameter_items); i++)
+            {
+                if (strcmp(parameter_items[i], type_name.c_str()) == 0)
+                {
+                    item_current_idx = i;
+                    break;
+                }
+            }
+
+            if (item_current_idx == -1)
+            {
+                item_current_idx = 0;
+                isDirty = true;
+            }
+
+            int item_prev_idx = item_current_idx;
+
+            const char* combo_preview_value = parameter_items[item_current_idx];
+            if (ImGui::BeginCombo("CameraType", combo_preview_value))
+            {
+                for (int n = 0; n < IM_ARRAYSIZE(parameter_items); n++)
+                {
+                    const bool is_selected = (item_current_idx == n);
+                    if (ImGui::Selectable(parameter_items[n], is_selected))
+                        item_current_idx = n;
+
+                    // Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
+                    if (is_selected)
+                        ImGui::SetItemDefaultFocus();
+                }
+                ImGui::EndCombo();
+            }
+
+            if (item_current_idx != item_prev_idx)
+            {
+                isDirty = true;
+
+                ccres_ptr->m_CamParamName = parameter_items[item_current_idx];
+                if (item_current_idx == 0)
+                {
+                    ccres_ptr->m_FirstPersonCamParam = FirstPersonCameraParameter {};
+                }
+                else if (item_current_idx == 1)
+                {
+                    ccres_ptr->m_ThirdPersonCamParam = ThirdPersonCameraParameter {};
+                }
+                else if (item_current_idx == 2)
+                {
+                    ccres_ptr->m_FreeCamParam = FreeCameraParameter {};
+                }
+            }
+
+            if (item_current_idx == 0)
+            {
+                m_editor_ui_creator["FirstPersonCameraParameter"](FirstPersonCameraParameterName, isDirty, &ccres_ptr->m_FirstPersonCamParam);
+            }
+            else if (item_current_idx == 1)
+            {
+                m_editor_ui_creator["ThirdPersonCameraParameter"](ThirdPersonCameraParameterName, isDirty, &ccres_ptr->m_ThirdPersonCamParam);
+            }
+            else if (item_current_idx == 2)
+            {
+                m_editor_ui_creator["FreeCameraParameter"](FreeCameraParameterName, isDirty, &ccres_ptr->m_FreeCamParam);
+            }
+
+            is_dirty |= isDirty;
+        };
+        m_editor_ui_creator["DirectionLightParameter"] = [this, &asset_folder](const std::string& name, bool& is_dirty, void* value_ptr) -> void {
+            bool isDirty = false;
+
+            DirectionLightParameter* light_ptr = static_cast<DirectionLightParameter*>(value_ptr);
+
+            m_editor_ui_creator["Color"]("color", isDirty, &light_ptr->color);
+            m_editor_ui_creator["float"]("intensity", isDirty, &light_ptr->intensity);
+            m_editor_ui_creator["bool"]("shadows", isDirty, &light_ptr->shadows);
+            m_editor_ui_creator["Vector2"]("shadow_bounds", isDirty, &light_ptr->shadow_bounds);
+            m_editor_ui_creator["float"]("shadow_near_plane", isDirty, &light_ptr->shadow_near_plane);
+            m_editor_ui_creator["float"]("shadow_far_plane", isDirty, &light_ptr->shadow_far_plane);
+            m_editor_ui_creator["Vector2"]("shadowmap_size", isDirty, &light_ptr->shadowmap_size);
+
+            is_dirty |= isDirty;
+        };
+        m_editor_ui_creator["PointLightParameter"] = [this, &asset_folder](const std::string& name, bool& is_dirty, void* value_ptr) -> void {
+            bool isDirty = false;
+
+            PointLightParameter* light_ptr = static_cast<PointLightParameter*>(value_ptr);
+
+            m_editor_ui_creator["Color"]("color", isDirty, &light_ptr->color);
+            m_editor_ui_creator["float"]("intensity", isDirty, &light_ptr->intensity);
+            m_editor_ui_creator["float"]("falloff_radius", isDirty, &light_ptr->falloff_radius);
+
+            is_dirty |= isDirty;
+        };
+        m_editor_ui_creator["SpotLightParameter"] = [this, &asset_folder](const std::string& name, bool& is_dirty, void* value_ptr) -> void {
+            bool isDirty = false;
+
+            SpotLightParameter* light_ptr = static_cast<SpotLightParameter*>(value_ptr);
+
+            m_editor_ui_creator["Color"]("color", isDirty, &light_ptr->color);
+            m_editor_ui_creator["float"]("intensity", isDirty, &light_ptr->intensity);
+            m_editor_ui_creator["float"]("falloff_radius", isDirty, &light_ptr->falloff_radius);
+            m_editor_ui_creator["float"]("inner_angle", isDirty, &light_ptr->inner_angle);
+            m_editor_ui_creator["float"]("outer_angle", isDirty, &light_ptr->outer_angle);
+            m_editor_ui_creator["bool"]("shadows", isDirty, &light_ptr->shadows);
+            m_editor_ui_creator["Vector2"]("shadow_bounds", isDirty, &light_ptr->shadow_bounds);
+            m_editor_ui_creator["float"]("shadow_near_plane", isDirty, &light_ptr->shadow_near_plane);
+            m_editor_ui_creator["float"]("shadow_far_plane", isDirty, &light_ptr->shadow_far_plane);
+            m_editor_ui_creator["Vector2"]("shadowmap_size", isDirty, &light_ptr->shadowmap_size);
+
+            is_dirty |= isDirty;
+        };  
+        m_editor_ui_creator["LightComponentRes"] = [this, &asset_folder](const std::string& name, bool& is_dirty, void* value_ptr) -> void {
+            bool isDirty = false;
+
+            LightComponentRes* l_res_ptr = static_cast<LightComponentRes*>(value_ptr);
+
+            int item_current_idx = -1;
+
+            const char* parameter_items[] = {DirectionLightParameterName, PointLightParameterName, SpotLightParameterName};
+
+            std::string type_name = l_res_ptr->m_LightParamName;
+            for (size_t i = 0; i < IM_ARRAYSIZE(parameter_items); i++)
+            {
+                if (strcmp(parameter_items[i], type_name.c_str()) == 0)
+                {
+                    item_current_idx = i;
+                    break;
+                }
+            }
+
+            int item_prev_idx = item_current_idx;
+
+            const char* combo_preview_value = parameter_items[item_current_idx];
+            if (ImGui::BeginCombo("LightType", combo_preview_value))
+            {
+                for (int n = 0; n < IM_ARRAYSIZE(parameter_items); n++)
+                {
+                    const bool is_selected = (item_current_idx == n);
+                    if (ImGui::Selectable(parameter_items[n], is_selected))
+                        item_current_idx = n;
+
+                    // Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
+                    if (is_selected)
+                        ImGui::SetItemDefaultFocus();
+                }
+                ImGui::EndCombo();
+            }
+
+            if (item_current_idx != item_prev_idx)
+            {
+                isDirty = true;
+
+                l_res_ptr->m_LightParamName = parameter_items[item_current_idx];
+                if (item_current_idx == 0)
+                {
+                    l_res_ptr->m_DirectionLightParam = DirectionLightParameter {};
+                }
+                else if (item_current_idx == 1)
+                {
+                    l_res_ptr->m_PointLightParam = PointLightParameter {};
+                }
+                else if (item_current_idx == 2)
+                {
+                    l_res_ptr->m_SpotLightParam = SpotLightParameter {};
+                }
+            }
+
+            if (item_current_idx == 0)
+            {
+                m_editor_ui_creator["DirectionLightParameter"](DirectionLightParameterName, isDirty, &l_res_ptr->m_DirectionLightParam);
+            }
+            else if (item_current_idx == 1)
+            {
+                m_editor_ui_creator["PointLightParameter"](PointLightParameterName, isDirty, &l_res_ptr->m_PointLightParam);
+            }
+            else if (item_current_idx == 2)
+            {
+                m_editor_ui_creator["SpotLightParameter"](SpotLightParameterName, isDirty, &l_res_ptr->m_SpotLightParam);
+            }
+
+            is_dirty |= isDirty;
+        };
+        m_editor_ui_creator["MeshRendererComponent"] = [this, &asset_folder](const std::string& name, bool& is_dirty, void* value_ptr) -> void {
+            
+        };
+        m_editor_ui_creator["SceneMesh"] = [this, &asset_folder](const std::string& name, bool& is_dirty, void* value_ptr) -> void {
+
+        };
+        m_editor_ui_creator["SceneMaterial"] = [this, &asset_folder](const std::string& name, bool& is_dirty, void* value_ptr) -> void {
+
+        };
+        m_editor_ui_creator["ScenePBRMaterial"] = [this, &asset_folder](const std::string& name, bool& is_dirty, void* value_ptr) -> void {
+            bool isDirty = false;
+
+            MaterialRes* mat_res_ptr = static_cast<MaterialRes*>(value_ptr);
+
+            ImGui::Checkbox("IsBlend", &mat_res_ptr->m_blend);
+            ImGui::Checkbox("IsDoubleSide", &mat_res_ptr->m_double_sided);
+            ImGui::ColorEdit4("BaseColorFactor", mat_res_ptr->m_base_color_factor.ptr());
+            ImGui::DragFloat("MetallicFactor", &mat_res_ptr->m_metallic_factor, 0.02f, 0.0f, 1.0f);
+            ImGui::DragFloat("RoughnessFactor", &mat_res_ptr->m_roughness_factor, 0.02f, 0.0f, 1.0f);
+            ImGui::DragFloat("NormalScale", &mat_res_ptr->m_normal_scale, 0.02f, 0.0f, 1.0f);
+            ImGui::DragFloat("OcclusionStrength", &mat_res_ptr->m_occlusion_strength, 0.02f, 0.0f, 1.0f);
+            ImGui::DragFloat3("OcclusionStrength", mat_res_ptr->m_emissive_factor.ptr(), 0.02f, 0.0f, 1.0f);
+
+            m_editor_ui_creator["SceneImage"]("BaseColorTextureFile", isDirty, &mat_res_ptr->m_base_color_texture_file);
+            m_editor_ui_creator["SceneImage"]("MetallicRoughnessTextureFile", isDirty, &mat_res_ptr->m_metallic_roughness_texture_file);
+            m_editor_ui_creator["SceneImage"]("NormalTextureFile", isDirty, &mat_res_ptr->m_normal_texture_file);
+            m_editor_ui_creator["SceneImage"]("OcclusionTextureFile", isDirty, &mat_res_ptr->m_occlusion_texture_file);
+            m_editor_ui_creator["SceneImage"]("EmissiveTextureFile", isDirty, &mat_res_ptr->m_emissive_texture_file);
+
+            is_dirty |= isDirty;
+        };
+        m_editor_ui_creator["SceneImage"] = [this, &asset_folder](const std::string& name, bool& is_dirty, void* value_ptr) -> void {
             if (g_editor_node_state_array[g_node_depth].second)
             {
+                SceneImage* scene_image_ptr = static_cast<SceneImage*>(value_ptr);
 
-                MeshComponentRes* mesh_res_ptr = static_cast<MeshComponentRes*>(value_ptr);
-
-                std::string drag_file_path;
                 
-                ImGui::TextColored(ImVec4(1.0f, 0.0f, 1.0f, 1.0f), "Drag mesh file to here <_<");
-                if (ImGui::BeginDragDropTarget())
-                {
-                    if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("MESH_FILE_PATH"))
-                    {
-                        IM_ASSERT(payload->DataSize == sizeof(std::string));
-                        std::string payload_filepath = *(std::string*)payload->Data;
-                        drag_file_path = payload_filepath;
-                    }
-                    ImGui::EndDragDropTarget();
-                }
 
-                for (size_t i = 0; i < mesh_res_ptr->m_sub_meshes.size(); i++)
-                {
-                    Reflection::TypeMeta field_meta = Reflection::TypeMeta::newMetaFromName("SubMeshRes");
-                    //auto child_instance = Reflection::ReflectionInstance(field_meta, (void*)&mesh_res_ptr->m_sub_meshes[i]);
-                    m_editor_ui_creator["TreeNodePush"](field_meta.getTypeName(), nullptr);
-
-                    //createLeafNodeUI(child_instance);
-                    m_editor_ui_creator[field_meta.getTypeName()](std::string("SubMeshRes[%d]", i), (void*)&mesh_res_ptr->m_sub_meshes[i]);
-
-                    m_editor_ui_creator["TreeNodePop"](field_meta.getTypeName(), nullptr);
-                }
-
-                if (!drag_file_path.empty())
-                {
-                    std::shared_ptr<GObject> selected_object = g_editor_global_context.m_scene_manager->getSelectedGObject().lock();
-                    MeshComponent* curSelectedMeshComponent = selected_object->tryGetComponent<MeshComponent>("MeshComponent");
-                    if (curSelectedMeshComponent != nullptr)
-                    {
-                        std::string relative_path = "asset/" + drag_file_path;
-                        curSelectedMeshComponent->addNewMeshRes(relative_path);
-                        
-                        if (!m_editor_component_stack.empty())
-                        {
-                            Component* m_component_ptr = m_editor_component_stack.back();
-                            m_component_ptr->setDirtyFlag(true);
-                        }
-                    }
-                }
-            }
-        };
-        m_editor_ui_creator["SubMeshRes"] = [this, &asset_folder](const std::string& name, void* value_ptr) -> void {
-            if (g_editor_node_state_array[g_node_depth].second)
-            {
-                SubMeshRes* sub_mesh_res_ptr = static_cast<SubMeshRes*>(value_ptr);
-                if (sub_mesh_res_ptr != nullptr)
-                {
-                    m_editor_ui_creator["std::string"](std::string("mesh_file_path"), (void*)&sub_mesh_res_ptr->m_obj_file_ref);
-                    m_editor_ui_creator["Transform"](std::string("sub_mesh_transform"), (void*)&sub_mesh_res_ptr->m_transform);
-
-                    {
-                        ImGui::TextColored(ImVec4(1.0f, 0.0f, 1.0f, 1.0f), "MaterialRes : ");
-                        //ImGui::SameLine();
-                        ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), sub_mesh_res_ptr->m_material.c_str());
-
-                        std::string m_new_material_path;
-
-                        if (ImGui::BeginDragDropTarget())
-                        {
-                            if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("MATERIAL_FILE_PATH"))
-                            {
-                                IM_ASSERT(payload->DataSize == sizeof(std::string));
-                                std::string payload_filepath = *(std::string*)payload->Data;
-                                std::string material_file_path = "asset/" + payload_filepath;
-
-                                m_new_material_path = material_file_path;
-                            }
-                            ImGui::EndDragDropTarget();
-                        }
-
-                        std::shared_ptr<GObject> selected_object = g_editor_global_context.m_scene_manager->getSelectedGObject().lock();
-                        MeshComponent* curSelectedMeshComponent = selected_object->tryGetComponent<MeshComponent>("MeshComponent");
-
-                        if (!m_new_material_path.empty())
-                        {
-                            curSelectedMeshComponent->updateMaterial(sub_mesh_res_ptr->m_obj_file_ref, m_new_material_path);
-                            g_runtime_global_context.m_material_manager->setMaterialDirty(m_new_material_path, true);
-                        }
-                        
-                        bool isDefaultMat = sub_mesh_res_ptr->m_material == _default_gold_material_path;
-
-                        m_editor_ui_creator["TreeNodePush"]("MaterialRes", nullptr);
-                        {
-                            if (isDefaultMat)
-                                ImGui::BeginDisabled(true);
-
-                            MaterialRes material_res = g_runtime_global_context.m_material_manager->loadMaterialRes(sub_mesh_res_ptr->m_material);
-                            MaterialRes old_material_res = material_res;
-                            m_editor_ui_creator["MaterialRes"]("MaterialRes", &material_res);
-                            /*
-                            Reflection::TypeMeta field_meta = Reflection::TypeMeta::newMetaFromName("MaterialRes");
-                            auto material_instance = Reflection::ReflectionInstance(field_meta, (void*)&material_res);
-                            createComponentUI(material_instance);
-                            */
-                            if (old_material_res != material_res)
-                            {
-                                g_runtime_global_context.m_material_manager->saveMaterialRes(sub_mesh_res_ptr->m_material, material_res);
-                                g_runtime_global_context.m_material_manager->setMaterialDirty(sub_mesh_res_ptr->m_material);
-                            }
-
-                            if (isDefaultMat)
-                                ImGui::EndDisabled();
-                        }
-
-                        m_editor_ui_creator["TreeNodePop"]("MaterialRes", nullptr);
-                    }
-                }
-            }
-        };
-        m_editor_ui_creator["MaterialRes"] = [this, &asset_folder](const std::string& name, void* value_ptr) -> void {
-            if (g_editor_node_state_array[g_node_depth].second)
-            {
-                MaterialRes* mat_res_ptr = static_cast<MaterialRes*>(value_ptr);
-
-                ImGui::Checkbox("IsBlend", &mat_res_ptr->m_blend);
-                ImGui::Checkbox("IsDoubleSide", &mat_res_ptr->m_double_sided);
-                ImGui::ColorEdit4("BaseColorFactor", mat_res_ptr->m_base_color_factor.ptr());
-                ImGui::DragFloat("MetallicFactor", &mat_res_ptr->m_metallic_factor, 0.02f, 0.0f, 1.0f);
-                ImGui::DragFloat("RoughnessFactor", &mat_res_ptr->m_roughness_factor, 0.02f, 0.0f, 1.0f);
-                ImGui::DragFloat("NormalScale", &mat_res_ptr->m_normal_scale, 0.02f, 0.0f, 1.0f);
-                ImGui::DragFloat("OcclusionStrength", &mat_res_ptr->m_occlusion_strength, 0.02f, 0.0f, 1.0f);
-                ImGui::DragFloat3("OcclusionStrength", mat_res_ptr->m_emissive_factor.ptr(), 0.02f, 0.0f, 1.0f);
-
-                m_editor_ui_creator["TextureFilePath"]("BaseColorTextureFile", &mat_res_ptr->m_base_colour_texture_file);
-                m_editor_ui_creator["TextureFilePath"]("MetallicRoughnessTextureFile", &mat_res_ptr->m_metallic_roughness_texture_file);
-                m_editor_ui_creator["TextureFilePath"]("NormalTextureFile", &mat_res_ptr->m_normal_texture_file);
-                m_editor_ui_creator["TextureFilePath"]("OcclusionTextureFile", &mat_res_ptr->m_occlusion_texture_file);
-                m_editor_ui_creator["TextureFilePath"]("EmissiveTextureFile", &mat_res_ptr->m_emissive_texture_file);
-            }
-        };
-
-        m_editor_ui_creator["TextureFilePath"] = [this, &asset_folder](const std::string& name, void* value_ptr) -> void {
-            if (g_editor_node_state_array[g_node_depth].second)
-            {
-                std::string* texture_path = static_cast<std::string*>(value_ptr);
-
-                //ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), name.c_str());
-                //ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), texture_path->c_str());
                 static char str1[128];
                 memset(str1, 0, 128);
-                memcpy(str1, texture_path->c_str(), texture_path->size());
+                memcpy(str1, scene_image_ptr->m_image_file.c_str(), scene_image_ptr->m_image_file.size());
                 ImGui::InputText(name.c_str(), str1, IM_ARRAYSIZE(str1), ImGuiInputTextFlags_ReadOnly);
                 if (ImGui::BeginDragDropTarget())
                 {
@@ -705,7 +602,7 @@ namespace MoYu
                         std::string payload_filepath  = *(std::string*)payload->Data;
                         std::string texture_file_path = "asset/" + payload_filepath;
 
-                        *texture_path = texture_file_path;
+                        scene_image_ptr->m_image_file = texture_file_path;
                     }
                     ImGui::EndDragDropTarget();
                 }
@@ -790,7 +687,7 @@ namespace MoYu
                 {
                     g_runtime_global_context.m_world_manager->reloadCurrentLevel();
                     g_runtime_global_context.m_render_system->clearForLevelReloading();
-                    g_editor_global_context.m_scene_manager->onGObjectSelected(k_invalid_gobject_id);
+                    g_editor_global_context.m_scene_manager->onGObjectSelected(K_Invalid_Object_Id);
                 }
                 if (ImGui::MenuItem("Save Current Level"))
                 {
@@ -870,7 +767,7 @@ namespace MoYu
         if (!root_node_weak_ptr.expired())
         {
             std::shared_ptr<GObject> root_node_shared_ptr = root_node_weak_ptr.lock();
-            std::vector<std::weak_ptr<GObject>> root_children = root_node_shared_ptr->getChildren();
+            std::vector<std::shared_ptr<GObject>> root_children = root_node_shared_ptr->getChildren();
             for (size_t i = 0; i < root_children.size(); i++)
             {
                 std::weak_ptr<GObject> root_child = root_children[i];
@@ -883,7 +780,7 @@ namespace MoYu
             GObjectID selectedId = g_editor_global_context.m_scene_manager->getSelectedObjectID();
             if (ImGui::MenuItem(" Create Node "))
             {
-                GObjectID newParentID = selectedId == k_invalid_gobject_id ? K_Root_Object_Id : selectedId;
+                GObjectID newParentID = selectedId == K_Invalid_Object_Id ? K_Root_Object_Id : selectedId;
                 current_active_level->createGObject("New Node", newParentID);
             }
             if (ImGui::MenuItem(" Delete Node "))
@@ -923,7 +820,7 @@ namespace MoYu
             }
             else
             {
-                g_editor_global_context.m_scene_manager->onGObjectSelected(k_invalid_gobject_id);
+                g_editor_global_context.m_scene_manager->onGObjectSelected(K_Invalid_Object_Id);
             }
         }
 
@@ -938,7 +835,7 @@ namespace MoYu
         }
 
     }
-
+    /*
     void EditorUI::createComponentUI(Reflection::ReflectionInstance& instance)
     {
         Reflection::ReflectionInstance* reflection_instance;
@@ -952,7 +849,8 @@ namespace MoYu
         if (count > 0)
             delete[] reflection_instance;
     }
-
+    */
+    /*
     void EditorUI::createLeafNodeUI(Reflection::ReflectionInstance& instance)
     {
         Reflection::FieldAccessor* fields;
@@ -1029,7 +927,7 @@ namespace MoYu
         }
         delete[] fields;
     }
-
+    */
     void EditorUI::showEditorDetailWindow(bool* p_open)
     {
         ImGuiWindowFlags window_flags = ImGuiWindowFlags_None;
@@ -1064,15 +962,15 @@ namespace MoYu
 
         static ImGuiTableFlags flags = ImGuiTableFlags_Resizable | ImGuiTableFlags_NoSavedSettings;
         auto&& selected_object_components = selected_object->getComponents();
-        for (auto component_ptr : selected_object_components)
-        {
-            m_editor_ui_creator["TreeNodePush"](("<" + component_ptr.getTypeName() + ">").c_str(), component_ptr.getPtr());
-            auto object_instance = Reflection::ReflectionInstance(
-                MoYu::Reflection::TypeMeta::newMetaFromName(component_ptr.getTypeName().c_str()),
-                component_ptr.operator->());
-            createComponentUI(object_instance);
-            m_editor_ui_creator["TreeNodePop"](("<" + component_ptr.getTypeName() + ">").c_str(), component_ptr.getPtr());
-        }
+        //for (auto component_ptr : selected_object_components)
+        //{
+        //    m_editor_ui_creator["TreeNodePush"](("<" + component_ptr.getTypeName() + ">").c_str(), component_ptr.getPtr());
+        //    auto object_instance = Reflection::ReflectionInstance(
+        //        MoYu::Reflection::TypeMeta::newMetaFromName(component_ptr.getTypeName().c_str()),
+        //        component_ptr.operator->());
+        //    createComponentUI(object_instance);
+        //    m_editor_ui_creator["TreeNodePop"](("<" + component_ptr.getTypeName() + ">").c_str(), component_ptr.getPtr());
+        //}
 
         ImGui::NewLine();
 
@@ -1083,54 +981,51 @@ namespace MoYu
         {
             if (ImGui::MenuItem("Camera Component"))
             {
-                if (selected_object->tryGetComponentConst<const CameraComponent>("CameraComponent"))
+                if (selected_object->tryGetComponent<CameraComponent>("CameraComponent"))
                 {
                     LOG_INFO("object {} already has Camera Component", selected_object->getName());
                 }
                 else
                 {
-                    auto camera_component = PILOT_REFLECTION_NEW(CameraComponent);
-                    camera_component->reset();
-                    camera_component->postLoadResource(selected_object);
+                    std::shared_ptr<CameraComponent> camera_component = std::make_shared<CameraComponent>();
                     selected_object->tryAddComponent(camera_component);
-
                     LOG_INFO("Add New Camera Component");
                 }
             }
 
-            if (ImGui::MenuItem("Light Component"))
-            {
-                if (selected_object->tryGetComponentConst<const LightComponent>("LightComponent"))
-                {
-                    LOG_INFO("object {} already has Light Component", selected_object->getName());
-                }
-                else
-                {
-                    auto light_component = PILOT_REFLECTION_NEW(LightComponent);
-                    light_component->reset();
-                    light_component->postLoadResource(selected_object);
-                    selected_object->tryAddComponent(light_component);
+            //if (ImGui::MenuItem("Light Component"))
+            //{
+            //    if (selected_object->tryGetComponentConst<const LightComponent>("LightComponent"))
+            //    {
+            //        LOG_INFO("object {} already has Light Component", selected_object->getName());
+            //    }
+            //    else
+            //    {
+            //        auto light_component = PILOT_REFLECTION_NEW(LightComponent);
+            //        light_component->reset();
+            //        light_component->postLoadResource(selected_object);
+            //        selected_object->tryAddComponent(light_component);
 
-                    LOG_INFO("Add New Light Component");
-                }
-            }
+            //        LOG_INFO("Add New Light Component");
+            //    }
+            //}
 
-            if (ImGui::MenuItem("Mesh Component"))
-            {
-                if (selected_object->tryGetComponentConst<const MeshComponent>("MeshComponent"))
-                {
-                    LOG_INFO("object {} already has Mesh Component", selected_object->getName());
-                }
-                else
-                {
-                    auto mesh_component = PILOT_REFLECTION_NEW(MeshComponent);
-                    mesh_component->reset();
-                    mesh_component->postLoadResource(selected_object);
-                    selected_object->tryAddComponent(mesh_component);
+            //if (ImGui::MenuItem("Mesh Component"))
+            //{
+            //    if (selected_object->tryGetComponentConst<const MeshComponent>("MeshComponent"))
+            //    {
+            //        LOG_INFO("object {} already has Mesh Component", selected_object->getName());
+            //    }
+            //    else
+            //    {
+            //        auto mesh_component = PILOT_REFLECTION_NEW(MeshComponent);
+            //        mesh_component->reset();
+            //        mesh_component->postLoadResource(selected_object);
+            //        selected_object->tryAddComponent(mesh_component);
 
-                    LOG_INFO("Add New Mesh Component");
-                }
-            }
+            //        LOG_INFO("Add New Mesh Component");
+            //    }
+            //}
 
 
             ImGui::EndPopup();
@@ -1225,17 +1120,17 @@ namespace MoYu
 
         if (ImGui::BeginMenuBar())
         {
-            ImGui::Indent(10.f);
-            drawAxisToggleButton("Trans", trans_button_ckecked, (int)EditorAxisMode::TranslateMode);
-            ImGui::Unindent();
+            //ImGui::Indent(10.f);
+            //drawAxisToggleButton("Trans", trans_button_ckecked, (int)EditorAxisMode::TranslateMode);
+            //ImGui::Unindent();
 
-            ImGui::SameLine();
+            //ImGui::SameLine();
 
-            drawAxisToggleButton("Rotate", rotate_button_ckecked, (int)EditorAxisMode::RotateMode);
+            //drawAxisToggleButton("Rotate", rotate_button_ckecked, (int)EditorAxisMode::RotateMode);
 
-            ImGui::SameLine();
+            //ImGui::SameLine();
 
-            drawAxisToggleButton("Scale", scale_button_ckecked, (int)EditorAxisMode::ScaleMode);
+            //drawAxisToggleButton("Scale", scale_button_ckecked, (int)EditorAxisMode::ScaleMode);
 
             ImGui::SameLine();
 
@@ -1255,7 +1150,7 @@ namespace MoYu
                 if (ImGui::Button("Editor Mode"))
                 {
                     g_is_editor_mode = false;
-                    g_editor_global_context.m_scene_manager->drawSelectedEntityAxis();
+                    //g_editor_global_context.m_scene_manager->drawSelectedEntityAxis();
                     g_editor_global_context.m_input_manager->resetEditorCommand();
                     g_editor_global_context.m_window_system->setFocusMode(true);
                 }
@@ -1266,7 +1161,7 @@ namespace MoYu
                 if (ImGui::Button("Game Mode"))
                 {
                     g_is_editor_mode = true;
-                    g_editor_global_context.m_scene_manager->drawSelectedEntityAxis();
+                    //g_editor_global_context.m_scene_manager->drawSelectedEntityAxis();
                     g_runtime_global_context.m_input_system->resetGameCommand();
                     g_editor_global_context.m_render_system->getRenderCamera()->setMainViewMatrix(
                         g_editor_global_context.m_scene_manager->getEditorCamera()->getViewMatrix());
@@ -1350,8 +1245,8 @@ namespace MoYu
                     ImGui::Image((ImTextureID)handleOfGameView.ptr, ImVec2(displayWidth, displayHeight));
                 }
 
-                std::shared_ptr<GObject> selected_object =
-                    g_editor_global_context.m_scene_manager->getSelectedGObject().lock();
+                /*
+                std::shared_ptr<GObject> selected_object = g_editor_global_context.m_scene_manager->getSelectedGObject().lock();
                 if (selected_object != nullptr)
                 {
                     TransformComponent* trans_component_ptr = selected_object->getTransformComponent();
@@ -1373,13 +1268,14 @@ namespace MoYu
                     }
                     ImGuizmo::Manipulate((float*)&_cameraView, (const float*)&_projMatrix, op_type, ImGuizmo::MODE::LOCAL, (float*)&_worldMatrix);
                 }
+                */
             }
             ImGui::EndChild();
         }
 
         ImGui::End();
     }
-
+    /*
     void EditorUI::drawAxisToggleButton(const char* string_id, bool check_state, int axis_mode)
     {
         if (check_state)
@@ -1404,7 +1300,7 @@ namespace MoYu
             }
         }
     }
-
+    */
     void EditorUI::fileDragHelper(std::shared_ptr<EditorFileNode> node)
     {
         if (strcmp(node->m_file_type.c_str(), "obj") == 0)
@@ -1486,9 +1382,9 @@ namespace MoYu
                         ASSERT(asset_manager);
 
                         MaterialRes default_material_res = {};
-                        default_material_res.m_base_colour_texture_file = _default_color_texture_path;
-                        default_material_res.m_metallic_roughness_texture_file = _default_metallic_roughness_texture_path;
-                        default_material_res.m_normal_texture_file = _default_normal_texture_path;
+                        //default_material_res.m_base_color_texture_file = _default_color_texture_path;
+                        //default_material_res.m_metallic_roughness_texture_file = _default_metallic_roughness_texture_path;
+                        //default_material_res.m_normal_texture_file = _default_normal_texture_path;
 
                         std::string material_path = "asset/" + node->m_relative_path + "/" + std::string(cname);
                         asset_manager->saveAsset(default_material_res, material_path);

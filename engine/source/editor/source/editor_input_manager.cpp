@@ -41,11 +41,11 @@ namespace MoYu
 
     void EditorInputManager::updateCursorOnAxis(Vector2 cursor_uv)
     {
-        if (g_editor_global_context.m_scene_manager->getEditorCamera())
-        {
-            Vector2 window_size(m_engine_window_size.x, m_engine_window_size.y);
-            m_cursor_on_axis = g_editor_global_context.m_scene_manager->updateCursorOnAxis(cursor_uv, window_size);
-        }
+        //if (g_editor_global_context.m_scene_manager->getEditorCamera())
+        //{
+        //    Vector2 window_size(m_engine_window_size.x, m_engine_window_size.y);
+        //    m_cursor_on_axis = g_editor_global_context.m_scene_manager->updateCursorOnAxis(cursor_uv, window_size);
+        //}
     }
 
     void EditorInputManager::processEditorCommand()

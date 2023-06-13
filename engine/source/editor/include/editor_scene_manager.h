@@ -42,7 +42,7 @@ namespace MoYu
                                           Matrix4x4 model_matrix);
 
         void   setEditorCamera(std::shared_ptr<RenderCamera> camera) { m_camera = camera; }
-        size_t getGuidOfPickedMesh(const Vector2& picked_uv) const;
+        //size_t getGuidOfPickedMesh(const Vector2& picked_uv) const;
 
     public:
         std::shared_ptr<RenderCamera> getEditorCamera() { return m_camera; };
@@ -56,9 +56,9 @@ namespace MoYu
         void setEditorAxisMode(EditorAxisMode new_axis_mode) { m_axis_mode = new_axis_mode; }
 
     private:
-        EditorTranslationAxis m_translation_axis;
-        EditorRotationAxis    m_rotation_axis;
-        EditorScaleAxis       m_scale_aixs;
+        //EditorTranslationAxis m_translation_axis;
+        //EditorRotationAxis    m_rotation_axis;
+        //EditorScaleAxis       m_scale_aixs;
 
         GObjectID m_selected_gobject_id {K_Invalid_Object_Id};
         Matrix4x4 m_selected_object_matrix {Matrix4x4::Identity};
