@@ -298,7 +298,7 @@ namespace MoYu
         }
         onGObjectSelected(K_Invalid_Object_Id);
     }
-
+    /*
     void EditorSceneManager::moveEntity(float     new_mouse_pos_x,
                                         float     new_mouse_pos_y,
                                         float     last_mouse_pos_x,
@@ -527,7 +527,7 @@ namespace MoYu
         }
         setSelectedObjectMatrix(new_model_matrix);
     }
-
+    */
     //size_t EditorSceneManager::getGuidOfPickedMesh(const Vector2& picked_uv) const
     //{
     //    return g_editor_global_context.m_render_system->getGuidOfPickedMesh(picked_uv);

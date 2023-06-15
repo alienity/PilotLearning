@@ -28,9 +28,9 @@ namespace MoYu
         //void        onFileContentItemClicked(EditorFileNode* node);
         void        buildEditorFileAssetsUITree(std::shared_ptr<EditorFileNode> node);
         //void        drawAxisToggleButton(const char* string_id, bool check_state, int axis_mode);
-        //void        createComponentUI(Reflection::ReflectionInstance& instance);
+        void createComponentUI(MoYu::Component* component);
         //void        createLeafNodeUI(Reflection::ReflectionInstance& instance);
-        std::string getLeafUINodeParentLabel();
+        //std::string getLeafUINodeParentLabel();
 
         void showEditorUI();
         void showEditorMenu(bool* p_open);
@@ -52,7 +52,7 @@ namespace MoYu
 
     private:
         std::unordered_map<std::string, std::function<void(std::string, bool&, void*)>> m_editor_ui_creator;
-        std::unordered_map<std::string, unsigned int>                                   m_new_object_index_map;
+        //std::unordered_map<std::string, unsigned int>                                   m_new_object_index_map;
         EditorFileService                                                               m_editor_file_service;
         std::chrono::time_point<std::chrono::steady_clock>                              m_last_file_tree_update;
 

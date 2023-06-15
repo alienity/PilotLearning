@@ -50,7 +50,7 @@ namespace MoYu
 
         RenderSwapContext& swap_context = g_runtime_global_context.m_render_system->getSwapContext();
         CameraSwapData camera_swap_data;
-        camera_swap_data.m_fov_y = m_camera_res.m_FreeCamParam.m_fov;
+        camera_swap_data.m_fov_y = m_camera_res.m_FreeCamParam.m_fovY;
         swap_context.getLogicSwapData().m_camera_swap_data = camera_swap_data;
     }
 

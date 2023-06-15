@@ -25,7 +25,7 @@ namespace MoYu
 
         void updateMaterial(std::string material_path);
 
-    private:
+    //private:
         MeshRendererComponentRes m_mesh_renderer_res;
 
         SceneMesh m_scene_mesh;

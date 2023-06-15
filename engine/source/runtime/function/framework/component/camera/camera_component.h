@@ -27,7 +27,7 @@ namespace MoYu
 
         void markToErase();
 
-    private:
+    //private:
         void tickFirstPersonCamera(float delta_time);
         void tickThirdPersonCamera(float delta_time);
         void tickFreeCamera(float delta_time);

@@ -34,13 +34,13 @@ namespace MoYu
 
         bool isDirty() const override;
 
-    protected:
+    //protected:
         static Matrix4x4 getMatrixWorldRecursively(const TransformComponent* trans);
         static bool isDirtyRecursively(const TransformComponent* trans);
 
         Matrix4x4 m_matrix_world;
 
-    protected:
+    //protected:
         Transform m_transform;
 
         Transform m_transform_buffer[2];

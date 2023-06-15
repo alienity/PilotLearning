@@ -19,7 +19,7 @@ namespace MoYu
 
         void tick(float delta_time) override;
 
-    private:
+    //private:
         // Editor直接编辑这个，作为当前帧的修改对象，修改后一定要设置SetDirtyFlag
         LightComponentRes m_light_res;
 

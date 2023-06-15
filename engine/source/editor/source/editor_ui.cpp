@@ -89,108 +89,57 @@ namespace MoYu
             }
         };
         m_editor_ui_creator["Transform"] = [this](const std::string& name, bool& is_dirty, void* value_ptr) -> void {
-            if (g_editor_node_state_array[g_node_depth].second)
-            {
-                Transform* trans_ptr = static_cast<Transform*>(value_ptr);
+            Transform* trans_ptr = static_cast<Transform*>(value_ptr);
 
-                MoYu::Vector3 euler = trans_ptr->m_rotation.toTaitBryanAngles();
+            MoYu::Vector3 euler = trans_ptr->m_rotation.toTaitBryanAngles();
 
-                Vector3 degrees_val = {};
-                degrees_val.x = MoYu::Radian(euler.x).valueDegrees();
-                degrees_val.y = MoYu::Radian(euler.y).valueDegrees();
-                degrees_val.z = MoYu::Radian(euler.z).valueDegrees();
+            Vector3 degrees_val = {};
+            degrees_val.x = MoYu::Radian(euler.x).valueDegrees();
+            degrees_val.y = MoYu::Radian(euler.y).valueDegrees();
+            degrees_val.z = MoYu::Radian(euler.z).valueDegrees();
 
-                bool isDirty = false;
+            bool isDirty = false;
 
-                isDirty |= DrawVecControl("Position", trans_ptr->m_position);
-                isDirty |= DrawVecControl("Rotation", degrees_val);
-                isDirty |= DrawVecControl("Scale", trans_ptr->m_scale);
+            isDirty |= DrawVecControl("Position", trans_ptr->m_position);
+            isDirty |= DrawVecControl("Rotation", degrees_val);
+            isDirty |= DrawVecControl("Scale", trans_ptr->m_scale);
 
-                MoYu::Vector3 newEuler = {};
-                newEuler.x = Math::degreesToRadians(degrees_val.x);
-                newEuler.y = Math::degreesToRadians(degrees_val.y);
-                newEuler.z = Math::degreesToRadians(degrees_val.z);
+            MoYu::Vector3 newEuler = {};
+            newEuler.x = Math::degreesToRadians(degrees_val.x);
+            newEuler.y = Math::degreesToRadians(degrees_val.y);
+            newEuler.z = Math::degreesToRadians(degrees_val.z);
 
-                trans_ptr->m_rotation = MoYu::Quaternion::fromTaitBryanAngles(newEuler);
+            trans_ptr->m_rotation = MoYu::Quaternion::fromTaitBryanAngles(newEuler);
 
-                is_dirty |= isDirty;
-
-                //g_editor_global_context.m_scene_manager->drawSelectedEntityAxis();
-
-                //if (isDirty)
-                //{
-                //    if (!m_editor_component_stack.empty())
-                //    {
-                //        Component* m_component_ptr = m_editor_component_stack.back();
-                //        m_component_ptr->setDirtyFlag(isDirty);
-                //    }
-                //}
-            }
+            is_dirty |= isDirty;
         };
         m_editor_ui_creator["int"] = [this](const std::string& name, bool& is_dirty, void* value_ptr) -> void {
             bool isDirty = false;
 
-            if (g_node_depth == -1)
-            {
-                std::string label = "##" + name;
-                ImGui::Text("%s", name.c_str());
-                ImGui::SameLine();
-                isDirty = ImGui::InputInt(label.c_str(), static_cast<int*>(value_ptr));
-            }
-            else
-            {
-                if (g_editor_node_state_array[g_node_depth].second)
-                {
-                    std::string full_label = "##" + getLeafUINodeParentLabel() + name;
-                    ImGui::Text("%s", (name + ":").c_str());
-                    isDirty = ImGui::InputInt(full_label.c_str(), static_cast<int*>(value_ptr));
-                }
-            }
+            std::string label = "##" + name;
+            ImGui::Text("%s", name.c_str());
+            ImGui::SameLine();
+            isDirty = ImGui::InputInt(label.c_str(), static_cast<int*>(value_ptr));
 
             is_dirty |= isDirty;
         };
         m_editor_ui_creator["float"] = [this](const std::string& name, bool& is_dirty, void* value_ptr) -> void {
             bool isDirty = false;
 
-            if (g_node_depth == -1)
-            {
-                std::string label = "##" + name;
-                ImGui::Text("%s", name.c_str());
-                ImGui::SameLine();
-                isDirty = ImGui::InputFloat(label.c_str(), static_cast<float*>(value_ptr));
-            }
-            else
-            {
-                if (g_editor_node_state_array[g_node_depth].second)
-                {
-                    std::string full_label = "##" + getLeafUINodeParentLabel() + name;
-                    ImGui::Text("%s", (name + ":").c_str());
-                    isDirty = ImGui::InputFloat(full_label.c_str(), static_cast<float*>(value_ptr));
-                }
-            }
+            std::string label = "##" + name;
+            ImGui::Text("%s", name.c_str());
+            ImGui::SameLine();
+            isDirty = ImGui::InputFloat(label.c_str(), static_cast<float*>(value_ptr));
 
             is_dirty |= isDirty;
         };
         m_editor_ui_creator["bool"] = [this](const std::string& name, bool& is_dirty, void* value_ptr) -> void {
             bool isDirty = false;
 
-            if (g_node_depth == -1)
-            {
-                std::string label = "##" + name;
-                ImGui::Text("%s", name.c_str());
-                ImGui::SameLine();
-                isDirty = ImGui::Checkbox(label.c_str(), static_cast<bool*>(value_ptr));
-            }
-            else
-            {
-                if (g_editor_node_state_array[g_node_depth].second)
-                {
-                    std::string full_label = "##" + getLeafUINodeParentLabel() + name;
-                    ImGui::Text("%s", (name + ":").c_str());
-                    ImGui::SameLine();
-                    isDirty = ImGui::Checkbox(full_label.c_str(), static_cast<bool*>(value_ptr));
-                }
-            }
+            std::string label = "##" + name;
+            ImGui::Text("%s", name.c_str());
+            ImGui::SameLine();
+            isDirty = ImGui::Checkbox(label.c_str(), static_cast<bool*>(value_ptr));
 
             is_dirty |= isDirty;
         };
@@ -198,23 +147,13 @@ namespace MoYu
             bool isDirty = false;
 
             Vector2* vec_ptr = static_cast<Vector2*>(value_ptr);
-            float    val[2]  = {vec_ptr->x, vec_ptr->y};
-            if (g_node_depth == -1)
-            {
-                std::string label = "##" + name;
-                ImGui::Text("%s", name.c_str());
-                ImGui::SameLine();
-                isDirty = ImGui::DragFloat2(label.c_str(), val);
-            }
-            else
-            {
-                if (g_editor_node_state_array[g_node_depth].second)
-                {
-                    std::string full_label = "##" + getLeafUINodeParentLabel() + name;
-                    ImGui::Text("%s", (name + ":").c_str());
-                    isDirty = ImGui::DragFloat2(full_label.c_str(), val);
-                }
-            }
+            float val[2] = {vec_ptr->x, vec_ptr->y};
+            
+            std::string label   = "##" + name;
+            ImGui::Text("%s", name.c_str());
+            ImGui::SameLine();
+            isDirty    = ImGui::DragFloat2(label.c_str(), val);
+
             vec_ptr->x = val[0];
             vec_ptr->y = val[1];
 
@@ -225,22 +164,12 @@ namespace MoYu
 
             Vector3* vec_ptr = static_cast<Vector3*>(value_ptr);
             float    val[3]  = {vec_ptr->x, vec_ptr->y, vec_ptr->z};
-            if (g_node_depth == -1)
-            {
-                std::string label = "##" + name;
-                ImGui::Text("%s", name.c_str());
-                ImGui::SameLine();
-                isDirty = ImGui::DragFloat3(label.c_str(), val);
-            }
-            else
-            {
-                if (g_editor_node_state_array[g_node_depth].second)
-                {
-                    std::string full_label = "##" + getLeafUINodeParentLabel() + name;
-                    ImGui::Text("%s", (name + ":").c_str());
-                    isDirty = ImGui::DragFloat3(full_label.c_str(), val);
-                }
-            }
+
+            std::string label = "##" + name;
+            ImGui::Text("%s", name.c_str());
+            ImGui::SameLine();
+            isDirty = ImGui::DragFloat3(label.c_str(), val);
+
             vec_ptr->x = val[0];
             vec_ptr->y = val[1];
             vec_ptr->z = val[2];
@@ -251,23 +180,13 @@ namespace MoYu
             bool isDirty = false;
             
             Vector4* vec_ptr = static_cast<Vector4*>(value_ptr);
-            float    val[4]  = {vec_ptr->x, vec_ptr->y, vec_ptr->z, vec_ptr->w};
-            if (g_node_depth == -1)
-            {
-                std::string label = "##" + name;
-                ImGui::Text("%s", name.c_str());
-                ImGui::SameLine();
-                isDirty = ImGui::DragFloat4(label.c_str(), val);
-            }
-            else
-            {
-                if (g_editor_node_state_array[g_node_depth].second)
-                {
-                    std::string full_label = "##" + getLeafUINodeParentLabel() + name;
-                    ImGui::Text("%s", (name + ":").c_str());
-                    isDirty = ImGui::DragFloat4(full_label.c_str(), val);
-                }
-            }
+            float val[4] = {vec_ptr->x, vec_ptr->y, vec_ptr->z, vec_ptr->w};
+            
+            std::string label = "##" + name;
+            ImGui::Text("%s", name.c_str());
+            ImGui::SameLine();
+            isDirty = ImGui::DragFloat4(label.c_str(), val);
+
             vec_ptr->x = val[0];
             vec_ptr->y = val[1];
             vec_ptr->z = val[2];
@@ -279,23 +198,13 @@ namespace MoYu
             bool isDirty = false;
 
             Quaternion* qua_ptr = static_cast<Quaternion*>(value_ptr);
-            float       val[4]  = {qua_ptr->x, qua_ptr->y, qua_ptr->z, qua_ptr->w};
-            if (g_node_depth == -1)
-            {
-                std::string label = "##" + name;
-                ImGui::Text("%s", name.c_str());
-                ImGui::SameLine();
-                isDirty = ImGui::DragFloat4(label.c_str(), val);
-            }
-            else
-            {
-                if (g_editor_node_state_array[g_node_depth].second)
-                {
-                    std::string full_label = "##" + getLeafUINodeParentLabel() + name;
-                    ImGui::Text("%s", (name + ":").c_str());
-                    isDirty = ImGui::DragFloat4(full_label.c_str(), val);
-                }
-            }
+            float val[4] = {qua_ptr->x, qua_ptr->y, qua_ptr->z, qua_ptr->w};
+
+            std::string label = "##" + name;
+            ImGui::Text("%s", name.c_str());
+            ImGui::SameLine();
+            isDirty = ImGui::DragFloat4(label.c_str(), val);
+
             qua_ptr->x = val[0];
             qua_ptr->y = val[1];
             qua_ptr->z = val[2];
@@ -552,14 +461,27 @@ namespace MoYu
 
             is_dirty |= isDirty;
         };
-        m_editor_ui_creator["MeshRendererComponent"] = [this, &asset_folder](const std::string& name, bool& is_dirty, void* value_ptr) -> void {
-            
-        };
         m_editor_ui_creator["SceneMesh"] = [this, &asset_folder](const std::string& name, bool& is_dirty, void* value_ptr) -> void {
+            bool isDirty = false;
 
+            SceneMesh* mesh_ptr = static_cast<SceneMesh*>(value_ptr);
+            
+            m_editor_ui_creator["bool"]("m_is_mesh_data", isDirty, &mesh_ptr->m_is_mesh_data);
+            ImGui::Text(mesh_ptr->m_sub_mesh_file.c_str());
+            ImGui::Text(mesh_ptr->m_mesh_data_path.c_str());
+
+            is_dirty |= isDirty;
         };
         m_editor_ui_creator["SceneMaterial"] = [this, &asset_folder](const std::string& name, bool& is_dirty, void* value_ptr) -> void {
+            bool isDirty = false;
 
+            SceneMaterial* res_ptr = static_cast<SceneMaterial*>(value_ptr);
+
+            ImGui::Text(res_ptr->m_shader_name.c_str());
+
+            m_editor_ui_creator["ScenePBRMaterial"]("m_mat_data", isDirty, &res_ptr->m_mat_data);
+
+            is_dirty |= isDirty;
         };
         m_editor_ui_creator["ScenePBRMaterial"] = [this, &asset_folder](const std::string& name, bool& is_dirty, void* value_ptr) -> void {
             bool isDirty = false;
@@ -584,32 +506,77 @@ namespace MoYu
             is_dirty |= isDirty;
         };
         m_editor_ui_creator["SceneImage"] = [this, &asset_folder](const std::string& name, bool& is_dirty, void* value_ptr) -> void {
-            if (g_editor_node_state_array[g_node_depth].second)
+            bool isDirty = false;
+
+            SceneImage* scene_image_ptr = static_cast<SceneImage*>(value_ptr);
+
+            ImGui::Text(name.c_str());
+
+            ImGui::Indent();
+
+            m_editor_ui_creator["bool"]("m_is_srgb", isDirty, &scene_image_ptr->m_is_srgb);
+            m_editor_ui_creator["bool"]("m_auto_mips", isDirty, &scene_image_ptr->m_auto_mips);
+            m_editor_ui_creator["int"]("m_mip_levels", isDirty, &scene_image_ptr->m_mip_levels);
+
+            static char str1[128];
+            memset(str1, 0, 128);
+            memcpy(str1, scene_image_ptr->m_image_file.c_str(), scene_image_ptr->m_image_file.size());
+            ImGui::InputText(name.c_str(), str1, IM_ARRAYSIZE(str1), ImGuiInputTextFlags_ReadOnly);
+            if (ImGui::BeginDragDropTarget())
             {
-                SceneImage* scene_image_ptr = static_cast<SceneImage*>(value_ptr);
-
-                
-
-                static char str1[128];
-                memset(str1, 0, 128);
-                memcpy(str1, scene_image_ptr->m_image_file.c_str(), scene_image_ptr->m_image_file.size());
-                ImGui::InputText(name.c_str(), str1, IM_ARRAYSIZE(str1), ImGuiInputTextFlags_ReadOnly);
-                if (ImGui::BeginDragDropTarget())
+                if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("TEXTURE_FILE_PATH"))
                 {
-                    if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("TEXTURE_FILE_PATH"))
-                    {
-                        IM_ASSERT(payload->DataSize == sizeof(std::string));
-                        std::string payload_filepath  = *(std::string*)payload->Data;
-                        std::string texture_file_path = "asset/" + payload_filepath;
-
-                        scene_image_ptr->m_image_file = texture_file_path;
-                    }
-                    ImGui::EndDragDropTarget();
+                    IM_ASSERT(payload->DataSize == sizeof(std::string));
+                    std::string payload_filepath  = *(std::string*)payload->Data;
+                    std::string texture_file_path = "asset/" + payload_filepath;
+                    scene_image_ptr->m_image_file = texture_file_path;
                 }
+                ImGui::EndDragDropTarget();
             }
+
+            ImGui::Unindent();
+
+            is_dirty |= isDirty;
+        };
+        m_editor_ui_creator["MeshRendererComponent"] = [this, &asset_folder](const std::string& name, bool& is_dirty, void* value_ptr) -> void {
+            bool isDirty = false;
+
+            MeshRendererComponent* mesh_renderer_ptr = static_cast<MeshRendererComponent*>(value_ptr);
+
+            m_editor_ui_creator["SceneMesh"]("m_scene_mesh", isDirty, &mesh_renderer_ptr->m_scene_mesh);
+            m_editor_ui_creator["SceneMaterial"]("m_material", isDirty, &mesh_renderer_ptr->m_material);
+
+            is_dirty |= isDirty;
+        };
+        m_editor_ui_creator["LightComponent"] = [this, &asset_folder](const std::string& name, bool& is_dirty, void* value_ptr) -> void {
+            bool isDirty = false;
+
+            LightComponent* light_ptr = static_cast<LightComponent*>(value_ptr);
+
+            m_editor_ui_creator["LightComponentRes"]("m_light_res", isDirty, &light_ptr->m_light_res);
+
+            is_dirty |= isDirty;
+        };
+        m_editor_ui_creator["CameraComponent"] = [this, &asset_folder](const std::string& name, bool& is_dirty, void* value_ptr) -> void {
+            bool isDirty = false;
+
+            CameraComponent* camera_ptr = static_cast<CameraComponent*>(value_ptr);
+
+            m_editor_ui_creator["CameraComponentRes"]("m_camera_res", isDirty, &camera_ptr->m_camera_res);
+
+            is_dirty |= isDirty;
+        };
+        m_editor_ui_creator["TransformComponent"] = [this, &asset_folder](const std::string& name, bool& is_dirty, void* value_ptr) -> void {
+            bool isDirty = false;
+
+            TransformComponent* transform_ptr = static_cast<TransformComponent*>(value_ptr);
+
+            m_editor_ui_creator["Transform"]("m_transform", isDirty, &transform_ptr->m_transform);
+
+            is_dirty |= isDirty;
         };
     }
-
+    /*
     std::string EditorUI::getLeafUINodeParentLabel()
     {
         std::string parent_label;
@@ -620,7 +587,7 @@ namespace MoYu
         }
         return parent_label;
     }
-
+    */
     void EditorUI::showEditorUI()
     {
         showEditorMenu(&m_editor_menu_window_open);
@@ -737,32 +704,6 @@ namespace MoYu
             return;
         }
 
-        /*
-        const LevelObjectsMap& all_gobjects = current_active_level->getAllGObjects();
-        for (auto& id_object_pair : all_gobjects)
-        {
-            const GObjectID          object_id = id_object_pair.first;
-            std::shared_ptr<GObject> object    = id_object_pair.second;
-            const std::string        name      = object->getName();
-            if (name.size() > 0)
-            {
-                if (ImGui::Selectable(name.c_str(),
-                                      g_editor_global_context.m_scene_manager->getSelectedObjectID() == object_id))
-                {
-                    if (g_editor_global_context.m_scene_manager->getSelectedObjectID() != object_id)
-                    {
-                        g_editor_global_context.m_scene_manager->onGObjectSelected(object_id);
-                    }
-                    else
-                    {
-                        g_editor_global_context.m_scene_manager->onGObjectSelected(k_invalid_gobject_id);
-                    }
-                    break;
-                }
-            }
-        }
-        */
-
         std::weak_ptr<GObject> root_node_weak_ptr = current_active_level->getRootNode();
         if (!root_node_weak_ptr.expired())
         {
@@ -835,9 +776,18 @@ namespace MoYu
         }
 
     }
-    /*
-    void EditorUI::createComponentUI(Reflection::ReflectionInstance& instance)
+    
+    void EditorUI::createComponentUI(MoYu::Component* component)
     {
+        bool _isDirty = false;
+
+        std::string _typeName = component->getTypeName();
+
+        m_editor_ui_creator[_typeName](_typeName, _isDirty, component);
+
+        component->setDirtyFlag(_isDirty);
+
+        /*
         Reflection::ReflectionInstance* reflection_instance;
         int count = instance.m_meta.getBaseClassReflectionInstanceList(reflection_instance, instance.m_instance);
         for (int index = 0; index < count; index++)
@@ -848,8 +798,9 @@ namespace MoYu
 
         if (count > 0)
             delete[] reflection_instance;
+        */
     }
-    */
+    /**/
     /*
     void EditorUI::createLeafNodeUI(Reflection::ReflectionInstance& instance)
     {
@@ -962,15 +913,24 @@ namespace MoYu
 
         static ImGuiTableFlags flags = ImGuiTableFlags_Resizable | ImGuiTableFlags_NoSavedSettings;
         auto&& selected_object_components = selected_object->getComponents();
-        //for (auto component_ptr : selected_object_components)
-        //{
-        //    m_editor_ui_creator["TreeNodePush"](("<" + component_ptr.getTypeName() + ">").c_str(), component_ptr.getPtr());
-        //    auto object_instance = Reflection::ReflectionInstance(
-        //        MoYu::Reflection::TypeMeta::newMetaFromName(component_ptr.getTypeName().c_str()),
-        //        component_ptr.operator->());
-        //    createComponentUI(object_instance);
-        //    m_editor_ui_creator["TreeNodePop"](("<" + component_ptr.getTypeName() + ">").c_str(), component_ptr.getPtr());
-        //}
+
+        for (auto component_ptr : selected_object_components)
+        {
+            m_editor_ui_creator["TreeNodePush"](("<" + component_ptr->getTypeName() + ">").c_str(), is_dirty, component_ptr.get());
+
+            createComponentUI(component_ptr.get());
+
+            m_editor_ui_creator["TreeNodePop"](("<" + component_ptr->getTypeName() + ">").c_str(), is_dirty, component_ptr.get());
+
+            /*
+            m_editor_ui_creator["TreeNodePush"](("<" + component_ptr->getTypeName() + ">").c_str(), component_ptr.getPtr());
+            auto object_instance = Reflection::ReflectionInstance(
+                MoYu::Reflection::TypeMeta::newMetaFromName(component_ptr.getTypeName().c_str()),
+                component_ptr.operator->());
+            createComponentUI(object_instance);
+            m_editor_ui_creator["TreeNodePop"](("<" + component_ptr.getTypeName() + ">").c_str(), component_ptr.getPtr());
+            */
+        }
 
         ImGui::NewLine();
 
@@ -1092,7 +1052,7 @@ namespace MoYu
             ImGui::End();
             return;
         }
-
+        /*
         static bool trans_button_ckecked  = false;
         static bool rotate_button_ckecked = false;
         static bool scale_button_ckecked  = false;
@@ -1117,7 +1077,7 @@ namespace MoYu
             default:
                 break;
         }
-
+        */
         if (ImGui::BeginMenuBar())
         {
             //ImGui::Indent(10.f);
