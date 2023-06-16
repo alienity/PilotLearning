@@ -67,7 +67,6 @@ namespace MoYu
 
             direction_light.m_color             = m_light_res_ptr->m_DirectionLightParam.color;
             direction_light.m_intensity         = m_light_res_ptr->m_DirectionLightParam.intensity;
-            direction_light.m_direction         = -rotation_matrix.getColumn(2);
             direction_light.m_shadowmap         = m_light_res_ptr->m_DirectionLightParam.shadows;
             direction_light.m_shadow_bounds     = m_light_res_ptr->m_DirectionLightParam.shadow_bounds;
             direction_light.m_shadow_near_plane = m_light_res_ptr->m_DirectionLightParam.shadow_near_plane;

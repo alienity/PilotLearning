@@ -10,7 +10,7 @@ namespace MoYu
     struct DirectionShadowmapStruct
     {
         GObjectID    m_gobject_id {K_Invalid_Object_Id};
-        GComponentID m_gcomponent_id {k_invalid_gcomponent_id};
+        GComponentID m_gcomponent_id {K_Invalid_Component_Id};
 
         Vector2 m_shadowmap_size;
 
@@ -19,7 +19,7 @@ namespace MoYu
         void Reset() 
         {
             m_gobject_id = K_Invalid_Object_Id;
-            m_gcomponent_id = k_invalid_gcomponent_id;
+            m_gcomponent_id = K_Invalid_Component_Id;
             p_LightShadowmap = nullptr;
         }
     };
@@ -27,7 +27,7 @@ namespace MoYu
     struct SpotShadowmapStruct
     {
         GObjectID    m_gobject_id {K_Invalid_Object_Id};
-        GComponentID m_gcomponent_id {k_invalid_gcomponent_id};
+        GComponentID m_gcomponent_id {K_Invalid_Component_Id};
 
         uint32_t m_spot_index;
         Vector2  m_shadowmap_size;
@@ -37,7 +37,7 @@ namespace MoYu
         void Reset()
         {
             m_gobject_id     = K_Invalid_Object_Id;
-            m_gcomponent_id  = k_invalid_gcomponent_id;
+            m_gcomponent_id  = K_Invalid_Component_Id;
             p_LightShadowmap = nullptr;
         }
     };

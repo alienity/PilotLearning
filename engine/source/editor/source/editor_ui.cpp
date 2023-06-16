@@ -916,6 +916,7 @@ namespace MoYu
 
         for (auto component_ptr : selected_object_components)
         {
+            bool is_dirty = false;
             m_editor_ui_creator["TreeNodePush"](("<" + component_ptr->getTypeName() + ">").c_str(), is_dirty, component_ptr.get());
 
             createComponentUI(component_ptr.get());

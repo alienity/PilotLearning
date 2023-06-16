@@ -171,7 +171,7 @@ namespace MoYu
             RHI::D3D12GraphicsContext* graphicContext = context->GetGraphicsContext();
 
             if (directionalShadowmap.m_gobject_id != K_Invalid_Object_Id &&
-                directionalShadowmap.m_gcomponent_id != k_invalid_gcomponent_id)
+                directionalShadowmap.m_gcomponent_id != K_Invalid_Component_Id)
             {
                 RHI::D3D12Texture* pShadowmapStencilTex = registry->GetD3D12Texture(directionalShadowmapHandle);
 

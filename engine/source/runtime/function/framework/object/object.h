@@ -82,30 +82,36 @@ namespace MoYu
         template<typename TComponent>
         bool tryRemoveComponent(std::shared_ptr<TComponent> toDelComponent)
         {
-            auto it = m_components.begin();
-            while (it->get() != m_components.end())
+            int index_finded = -1;
+            for (size_t i = 0; i < m_components.size(); i++)
             {
-                if (it->get() == toDelComponent)
+                if (m_components[i]->getComponentId() == toDelComponent->getComponentId())
                 {
-                    m_components.erase(it);
-                    return true;
-                }                
+                    index_finded = i;
+                    break;
+                }
             }
-            return false;
+            if (index_finded != -1)
+            {
+                m_components.erase(m_components.begin() + index_finded);
+                return true;
+            }
+            else
+            {
+                return false;
+            }
         }
 
         template<typename TComponent>
         std::shared_ptr<TComponent> tryGetComponent(const std::string& compenent_type_name)
         {
-            for (auto& component : m_components)
+            for (size_t i = 0; i < m_components.size(); i++)
             {
-                if (component->getTypeName() == compenent_type_name)
+                if (m_components[i]->getTypeName() == compenent_type_name)
                 {
-                    return std::static_pointer_cast<TComponent>(component);
-                    //return (std::shared_ptr<TComponent>)component;
+                    return std::static_pointer_cast<TComponent>(m_components[i]);
                 }
             }
-
             return nullptr;
         }
 

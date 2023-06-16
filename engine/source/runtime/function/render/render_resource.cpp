@@ -577,7 +577,7 @@ namespace MoYu
         uint32_t inputLayoutStride = sizeof(MeshVertexDataDefinition);
         ASSERT(0 == (vertex_buffer_size % inputLayoutStride));
         uint32_t vertex_count = vertex_buffer_size / inputLayoutStride;
-        uint32_t vertex_buffer_size = inputLayoutStride * vertex_count;
+        //uint32_t vertex_buffer_size = inputLayoutStride * vertex_count;
 
         uint32_t vertex_buffer_offset = 0;
 
