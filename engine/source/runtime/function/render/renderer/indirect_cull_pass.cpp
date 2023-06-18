@@ -81,6 +81,7 @@ namespace MoYu
 
     void IndirectCullPass::prepareMeshData(std::shared_ptr<RenderResource> render_resource)
     {
+        /*
         // update per-frame buffer
         render_resource->updatePerFrameBuffer(m_render_scene, m_render_camera);
 
@@ -145,10 +146,12 @@ namespace MoYu
         }
 
         prepareBuffer();
+        */
     }
 
     void IndirectCullPass::prepareBuffer()
     {
+        /*
         if (m_visiable_nodes.p_directional_light != nullptr)
         {
             if (dirShadowmapCommandBuffer.m_gobject_id != m_visiable_nodes.p_directional_light->m_gobject_id ||
@@ -229,6 +232,7 @@ namespace MoYu
 
             }
         }
+        */
     }
 
     void IndirectCullPass::bitonicSort(RHI::D3D12ComputeContext* context,
@@ -392,7 +396,8 @@ namespace MoYu
         }
 
 
-        int numMeshes = m_visiable_nodes.p_all_mesh_nodes->size();
+        //int numMeshes = m_visiable_nodes.p_all_mesh_nodes->size();
+        int numMeshes = 0;
 
         RHI::D3D12SyncHandle ComputeSyncHandle;
         if (numMeshes > 0)

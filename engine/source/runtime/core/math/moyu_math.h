@@ -22,10 +22,10 @@
 #define MOYU_MIN3(x, y, z) MOYU_MIN(MOYU_MIN(x, y), z)
 #define MOYU_MAX(x, y) (((x) > (y)) ? (x) : (y))
 #define MOYU_MAX3(x, y, z) MOYU_MAX(MOYU_MAX(x, y), z)
-#define MOYU_PIN(a, min_value, max_value) MOYU_MIN(max_value, PILOT_MAX(a, min_value))
+#define MOYU_CLAMP(a, min_value, max_value) MOYU_MIN(max_value, MOYU_MAX(a, min_value))
 
 #define MOYU_VALID_INDEX(idx, range) (((idx) >= 0) && ((idx) < (range)))
-#define MOYU_PIN_INDEX(idx, range) PILOT_PIN(idx, 0, (range)-1)
+#define MOYU_CLAMP_INDEX(idx, range) MOYU_CLAMP(idx, 0, (range)-1)
 
 #define MOYU_SIGN(x) ((((x) > 0.0f) ? 1.0f : 0.0f) + (((x) < 0.0f) ? -1.0f : 0.0f))
 
@@ -326,10 +326,10 @@ namespace MoYu
         static float sqrt(float fValue) { return std::sqrt(fValue); }
         static float invSqrt(float value) { return 1.f / sqrt(value); }
         static bool  realEqual(float a, float b, float tolerance = std::numeric_limits<float>::epsilon());
-        static float clamp(float v, float min, float max) { return std::clamp(v, min, max); }
-        static float saturate(float f) { return std::max(std::min(f, 1.0f), 0.0f); }
-        static float max(float a, float b) { return std::max(a, b); }
-        static float min(float a, float b) { return std::min(a, b); }
+        static float clamp(float v, float min, float max) { return MOYU_CLAMP(v, min, max); }
+        static float saturate(float f) { return MOYU_MAX(MOYU_MIN(f, 1.0f), 0.0f); }
+        static float _max(float a, float b) { return MOYU_MAX(a, b); }
+        static float _min(float a, float b) { return MOYU_MIN(a, b); }
 
         static float degreesToRadians(float degrees);
         static float radiansToDegrees(float radians);
@@ -486,11 +486,11 @@ namespace MoYu
         bool isNaN() const { return Math::isNan(x) || Math::isNan(y); }
 
         // Static functions
-        static Vector2 min(const Vector2& lhs, const Vector2& rhs)
+        static Vector2 _min(const Vector2& lhs, const Vector2& rhs)
         {
             return Vector2(std::fminf(lhs.x, rhs.x), std::fminf(lhs.y, rhs.y));
         }
-        static Vector2 max(const Vector2& lhs, const Vector2& rhs)
+        static Vector2 _max(const Vector2& lhs, const Vector2& rhs)
         {
             return Vector2(std::fmaxf(lhs.x, rhs.x), std::fmaxf(lhs.y, rhs.y));
         }
@@ -623,7 +623,7 @@ namespace MoYu
         friend Vector3 operator*(float s, const Vector3& rhs) { return Vector3(s * rhs.x, s * rhs.y, s * rhs.z); }
 
         // Vector operations
-        float length() const { return std::hypot(x, y, z); }
+        float length() const { return std::sqrt(x * x + y * y + z * z); }
         float squaredLength() const { return x * x + y * y + z * z; }
 
         float   dot(const Vector3& rhs) const { return dot(*this, rhs); }
@@ -634,11 +634,11 @@ namespace MoYu
         bool isNaN() const { return Math::isNan(x) || Math::isNan(y) || Math::isNan(z); }
 
         // Static functions
-        static Vector3 min(const Vector3& lhs, const Vector3& rhs)
+        static Vector3 _min(const Vector3& lhs, const Vector3& rhs)
         {
             return Vector3(std::fminf(lhs.x, rhs.x), std::fminf(lhs.y, rhs.y), std::fminf(lhs.z, rhs.z));
         }
-        static Vector3 max(const Vector3& lhs, const Vector3& rhs)
+        static Vector3 _max(const Vector3& lhs, const Vector3& rhs)
         {
             return Vector3(std::fmaxf(lhs.x, rhs.x), std::fmaxf(lhs.y, rhs.y), std::fmaxf(lhs.z, rhs.z));
         }
@@ -658,7 +658,7 @@ namespace MoYu
         static Vector3 normalize(const Vector3& v)
         {
             Vector3 out   = Vector3(v.x, v.y, v.z);
-            float   lengh = std::hypot(out.x, out.y, out.z);
+            float   lengh = std::sqrt(out.x * out.x + out.y * out.y + out.z * out.z);
             if (lengh > 0.0f)
             {
                 float inv_length = 1.0f / lengh;
@@ -1231,12 +1231,8 @@ namespace MoYu
         Vector3 m_center {Vector3::Zero};
         Vector3 m_half_extent {Vector3::Zero};
 
-        Vector3 m_min_corner {std::numeric_limits<float>::max(),
-                              std::numeric_limits<float>::max(),
-                              std::numeric_limits<float>::max()};
-        Vector3 m_max_corner {-std::numeric_limits<float>::max(),
-                              -std::numeric_limits<float>::max(),
-                              -std::numeric_limits<float>::max()};
+        Vector3 m_min_corner {FLT_MAX, FLT_MAX, FLT_MAX};
+        Vector3 m_max_corner {-FLT_MAX, -FLT_MAX, -FLT_MAX};
     };
 
     struct Color

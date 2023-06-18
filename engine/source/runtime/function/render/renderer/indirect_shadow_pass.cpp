@@ -21,6 +21,7 @@ namespace MoYu
 
     void IndirectShadowPass::prepareShadowmaps(std::shared_ptr<RenderResource> render_resource)
     {
+        /*
         RenderResource* real_resource = (RenderResource*)render_resource.get();
 
         if (m_visiable_nodes.p_directional_light != nullptr && m_visiable_nodes.p_directional_light->m_shadowmap)
@@ -120,7 +121,7 @@ namespace MoYu
             }
             spotShadowmaps.clear();
         }
-
+        */
     }
 
     void IndirectShadowPass::update(RHI::RenderGraph&         graph,

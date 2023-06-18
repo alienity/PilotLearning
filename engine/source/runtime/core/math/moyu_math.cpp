@@ -1741,8 +1741,8 @@ namespace MoYu
 
     void AxisAlignedBox::merge(const Vector3& new_point)
     {
-        m_min_corner = Vector3::min(m_min_corner, new_point);
-        m_max_corner = Vector3::max(m_max_corner, new_point);
+        m_min_corner = Vector3::_min(m_min_corner, new_point);
+        m_max_corner = Vector3::_max(m_max_corner, new_point);
 
         m_center      = 0.5f * (m_min_corner + m_max_corner);
         m_half_extent = m_center - m_min_corner;
@@ -1878,7 +1878,7 @@ namespace MoYu
         float _b = Math::clamp(b, 0.0f, kMaxVal);
 
         // Compute the maximum channel, no less than 1.0*2^-15
-        float MaxChannel = Math::max(Math::max(_r, _g), Math::max(_b, kMinVal));
+        float MaxChannel = Math::_max(Math::_max(_r, _g), Math::_max(_b, kMinVal));
 
         // Take the exponent of the maximum channel (rounding up the 9th bit) and
         // add 15 to it.  When added to the channels, it causes the implicit '1.0'

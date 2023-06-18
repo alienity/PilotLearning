@@ -3,6 +3,10 @@
 #include "city.h"
 #include "runtime/core/math/moyu_math.h"
 
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif // !NOMINMAX
+
 #include <Windows.h>
 #include <locale>
 #include <stringapiset.h>

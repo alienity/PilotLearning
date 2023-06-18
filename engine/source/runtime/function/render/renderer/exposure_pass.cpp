@@ -178,7 +178,7 @@ namespace MoYu
                                EngineConfig::g_HDRConfig.m_AdaptationRate,
                                EngineConfig::g_HDRConfig.m_MinExposure,
                                EngineConfig::g_HDRConfig.m_MaxExposure,
-                               m_LumaLRColor->GetWidth() * m_LumaLRColor->GetHeight()};
+                               (uint32_t)m_LumaLRColor->GetWidth() * (uint32_t)m_LumaLRColor->GetHeight()};
                 
                 //computeContext->SetDynamicConstantBufferView(0, sizeof(constants), &constants);
                 computeContext->SetConstantArray(0, 5, &constants);

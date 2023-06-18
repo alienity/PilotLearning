@@ -48,14 +48,14 @@ namespace MoYu
 
         void merge(const BoundingBox& rhs)
         {
-            min_bound = Vector3::min(min_bound, rhs.min_bound);
-            max_bound = Vector3::max(max_bound, rhs.max_bound);
+            min_bound = Vector3::_min(min_bound, rhs.min_bound);
+            max_bound = Vector3::_max(max_bound, rhs.max_bound);
         }
 
         void merge(const Vector3& point)
         {
-            min_bound = Vector3::min(min_bound, point);
-            max_bound = Vector3::max(max_bound, point);
+            min_bound = Vector3::_min(min_bound, point);
+            max_bound = Vector3::_max(max_bound, point);
         }
     };
 

@@ -61,7 +61,8 @@ endif()
 
 if(NOT TARGET tinyexr)
     include(tinyexr.cmake)
-    set_target_properties(tinyexr PROPERTIES FOLDER ${third_party_folder}/tinyexr-1.0.2)
+    set_target_properties(tinyexr PROPERTIES FOLDER ${third_party_folder}/tinyexr-1.0.5)
+    set_target_properties(miniz PROPERTIES FOLDER ${third_party_folder}/tinyexr-1.0.5/deps)
 endif()
 
 if(NOT TARGET tinyobjloader)

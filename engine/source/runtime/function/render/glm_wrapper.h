@@ -127,7 +127,7 @@ namespace MoYu
         return projMat;
     }
 
-    Matrix4x4 GLMUtil::orthographicProj(float left, float right, float bottom, float top, float zNear, float zFar)
+    inline Matrix4x4 GLMUtil::orthographicProj(float left, float right, float bottom, float top, float zNear, float zFar)
     {
         glm::mat4 _orthoProj = glm::orthoRH_ZO(left, right, bottom, right, zNear, zFar);
         Matrix4x4 projMat = GLMUtil::toMat4x4(_orthoProj);
