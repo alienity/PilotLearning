@@ -14,8 +14,6 @@
 
 namespace MoYu
 {
-    std::string LightComponent::m_component_name = "LightComponent";
-    
     void LightComponent::reset()
     {
         

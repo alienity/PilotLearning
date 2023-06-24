@@ -34,7 +34,14 @@ namespace MoYu
 
             NJson j_asset = NJson::parse(asset_json_text);
 
-            out_asset = j_asset.get<AssetType>();
+            try
+            {
+                out_asset = j_asset.get<AssetType>();
+            }
+            catch (const std::exception&)
+            {
+                out_asset = {};
+            }
 
             return true;
         }

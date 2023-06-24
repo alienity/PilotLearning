@@ -103,7 +103,7 @@ float getSquareFalloffAttenuation(float distanceSquare, float falloff) {
     return smoothFactor * smoothFactor;
 }
 
-float getDistanceAttenuation(const CommonShadingParams params. const FrameUniforms frameUniforms, const float3 posToLight, float falloff)
+float getDistanceAttenuation(const CommonShadingStruct params. const FrameUniforms frameUniforms, const float3 posToLight, float falloff)
 {
     float distanceSquare = dot(posToLight, posToLight);
     float attenuation = getSquareFalloffAttenuation(distanceSquare, falloff);
@@ -130,7 +130,7 @@ float getAngleAttenuation(const float3 lightDir, const float3 l, const float2 sc
  * lightsUniforms uniform buffer.
  */
 
-Light getLight(const CommonShadingParams params. const FrameUniforms frameUniforms, const LightsUniforms lightsUniforms, const uint lightIndex)
+Light getLight(const CommonShadingStruct params. const FrameUniforms frameUniforms, const LightsUniforms lightsUniforms, const uint lightIndex)
 {
     // retrieve the light data from the UBO
 

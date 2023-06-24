@@ -33,7 +33,7 @@ namespace MoYu
         bool m_tick_in_editor_mode {false};
 
     protected:
-        static std::string m_component_name;
+        std::string m_component_name;
 
         std::weak_ptr<GObject> m_object;
 

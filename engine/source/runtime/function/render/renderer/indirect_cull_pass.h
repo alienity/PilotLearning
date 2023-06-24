@@ -21,15 +21,12 @@ namespace MoYu
 
     struct ShadowmapCommandBuffer : public DrawCallCommandBuffer
     {
-        GObjectID    m_gobject_id {K_Invalid_Object_Id};
-        GComponentID m_gcomponent_id {K_Invalid_Component_Id};
-        uint32_t     m_lightIndex;
+        SceneCommonIdentifier m_identifier;
+        uint32_t m_lightIndex;
 
         void Reset()
         {
-            m_gobject_id    = K_Invalid_Component_Id;
-            m_gcomponent_id = K_Invalid_Component_Id;
-
+            m_identifier = SceneCommonIdentifier();
             ResetBuffer();
         }
     };

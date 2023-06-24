@@ -4,6 +4,7 @@
 #include "runtime/function/render/rhi/rhi_core.h"
 #include "runtime/core/math/moyu_math.h"
 #include "runtime/function/render/rhi/d3d12/d3d12_graphicsCommon.h"
+#include "runtime/function/render/glm_wrapper.h"
 
 #include <cassert>
 
@@ -81,24 +82,26 @@ namespace MoYu
 
     void IndirectCullPass::prepareMeshData(std::shared_ptr<RenderResource> render_resource)
     {
-        /*
         // update per-frame buffer
         render_resource->updatePerFrameBuffer(m_render_scene, m_render_camera);
 
         memcpy(pUploadPerframeBuffer->GetCpuVirtualAddress<HLSL::MeshPerframeStorageBufferObject>(),
-               &real_resource->m_mesh_perframe_storage_buffer_object,
+               &render_resource->m_mesh_perframe_storage_buffer_object,
                sizeof(HLSL::MeshPerframeStorageBufferObject));
 
-        std::vector<RenderMeshNode>* renderMeshNodes = m_visiable_nodes.p_all_mesh_nodes;
+        std::vector<CachedMeshRenderer>& _mesh_renderers = m_render_scene->m_mesh_renderers;
 
         HLSL::MaterialInstance* pMaterialObj = pUploadMaterialBuffer->GetCpuVirtualAddress<HLSL::MaterialInstance>();
         HLSL::MeshInstance* pMeshesObj = pUploadMeshBuffer->GetCpuVirtualAddress<HLSL::MeshInstance>();
 
-        uint32_t numMeshes = renderMeshNodes->size();
+        uint32_t numMeshes = _mesh_renderers.size();
         ASSERT(numMeshes < HLSL::MeshLimit);
         for (size_t i = 0; i < numMeshes; i++)
         {
-            RenderMeshNode& temp_node = renderMeshNodes->at(i);
+            InternalMeshRenderer& temp_mesh_renderer = _mesh_renderers[i].internalMeshRenderer;
+
+            InternalMesh& temp_ref_mesh = temp_mesh_renderer.ref_mesh;
+            InternalMaterial& temp_ref_material = temp_mesh_renderer.ref_material;
 
             //std::shared_ptr<RHI::D3D12ShaderResourceView> defaultWhiteView = real_resource->m_default_resource._white_texture2d_image->GetDefaultSRV();
             //std::shared_ptr<RHI::D3D12ShaderResourceView> defaultBlackView = real_resource->m_default_resource._black_texture2d_image->GetDefaultSRV();
@@ -106,11 +109,11 @@ namespace MoYu
             std::shared_ptr<RHI::D3D12ShaderResourceView> defaultWhiteView = RHI::GetDefaultTexture(RHI::eDefaultTexture::kWhiteOpaque2D)->GetDefaultSRV();
             std::shared_ptr<RHI::D3D12ShaderResourceView> defaultBlackView = RHI::GetDefaultTexture(RHI::eDefaultTexture::kBlackOpaque2D)->GetDefaultSRV();
 
-            std::shared_ptr<RHI::D3D12ShaderResourceView> uniformBufferView = temp_node.ref_material->material_uniform_buffer->GetDefaultSRV();
-            std::shared_ptr<RHI::D3D12ShaderResourceView> baseColorView = temp_node.ref_material->base_color_texture_image->GetDefaultSRV();
-            std::shared_ptr<RHI::D3D12ShaderResourceView> metallicRoughnessView = temp_node.ref_material->metallic_roughness_texture_image->GetDefaultSRV();
-            std::shared_ptr<RHI::D3D12ShaderResourceView> normalView   = temp_node.ref_material->normal_texture_image->GetDefaultSRV();
-            std::shared_ptr<RHI::D3D12ShaderResourceView> emissionView = temp_node.ref_material->emissive_texture_image->GetDefaultSRV();
+            std::shared_ptr<RHI::D3D12ShaderResourceView> uniformBufferView = temp_ref_material.m_intenral_pbr_mat.material_uniform_buffer->GetDefaultSRV();
+            std::shared_ptr<RHI::D3D12ShaderResourceView> baseColorView = temp_ref_material.m_intenral_pbr_mat.base_color_texture_image->GetDefaultSRV();
+            std::shared_ptr<RHI::D3D12ShaderResourceView> metallicRoughnessView = temp_ref_material.m_intenral_pbr_mat.metallic_roughness_texture_image->GetDefaultSRV();
+            std::shared_ptr<RHI::D3D12ShaderResourceView> normalView   = temp_ref_material.m_intenral_pbr_mat.normal_texture_image->GetDefaultSRV();
+            std::shared_ptr<RHI::D3D12ShaderResourceView> emissionView = temp_ref_material.m_intenral_pbr_mat.emissive_texture_image->GetDefaultSRV();
 
             HLSL::MaterialInstance curMatInstance = {};
             curMatInstance.uniformBufferViewIndex = uniformBufferView->GetIndex();
@@ -122,22 +125,22 @@ namespace MoYu
             pMaterialObj[i] = curMatInstance;
 
             D3D12_DRAW_INDEXED_ARGUMENTS drawIndexedArguments = {};
-            drawIndexedArguments.IndexCountPerInstance        = temp_node.ref_mesh->mesh_index_count;
+            drawIndexedArguments.IndexCountPerInstance        = temp_ref_mesh.index_buffer.index_count; // temp_node.ref_mesh->mesh_index_count;
             drawIndexedArguments.InstanceCount                = 1;
             drawIndexedArguments.StartIndexLocation           = 0;
             drawIndexedArguments.BaseVertexLocation           = 0;
             drawIndexedArguments.StartInstanceLocation        = 0;
 
             HLSL::BoundingBox boundingBox = {};
-            boundingBox.center            = temp_node.bounding_box.center;
-            boundingBox.extents           = temp_node.bounding_box.extent;
+            boundingBox.center = GLMUtil::fromVec3(temp_ref_mesh.axis_aligned_box.getCenter()); // temp_node.bounding_box.center;
+            boundingBox.extents = GLMUtil::fromVec3(temp_ref_mesh.axis_aligned_box.getHalfExtent());//temp_node.bounding_box.extent;
 
             HLSL::MeshInstance curMeshInstance     = {};
-            curMeshInstance.enable_vertex_blending = temp_node.enable_vertex_blending;
-            curMeshInstance.model_matrix           = temp_node.model_matrix;
-            curMeshInstance.model_matrix_inverse   = temp_node.model_matrix_inverse;
-            curMeshInstance.vertexBuffer           = temp_node.ref_mesh->p_mesh_vertex_buffer->GetVertexBufferView();
-            curMeshInstance.indexBuffer            = temp_node.ref_mesh->p_mesh_index_buffer->GetIndexBufferView();
+            curMeshInstance.enable_vertex_blending = temp_ref_mesh.enable_vertex_blending; // temp_node.enable_vertex_blending;
+            curMeshInstance.model_matrix           = GLMUtil::fromMat4x4(temp_mesh_renderer.model_matrix); // temp_node.model_matrix;
+            curMeshInstance.model_matrix_inverse   = GLMUtil::fromMat4x4(temp_mesh_renderer.model_matrix_inverse);//temp_node.model_matrix_inverse;
+            curMeshInstance.vertexBuffer           = temp_ref_mesh.vertex_buffer.vertex_buffer->GetVertexBufferView();//temp_node.ref_mesh->p_mesh_vertex_buffer->GetVertexBufferView();
+            curMeshInstance.indexBuffer            = temp_ref_mesh.index_buffer.index_buffer->GetIndexBufferView();//temp_node.ref_mesh->p_mesh_index_buffer->GetIndexBufferView();
             curMeshInstance.drawIndexedArguments   = drawIndexedArguments;
             curMeshInstance.boundingBox            = boundingBox;
             curMeshInstance.materialIndex          = i;
@@ -146,24 +149,20 @@ namespace MoYu
         }
 
         prepareBuffer();
-        */
     }
 
     void IndirectCullPass::prepareBuffer()
     {
-        /*
-        if (m_visiable_nodes.p_directional_light != nullptr)
+        if (m_render_scene->m_directional_light.m_identifier != SceneCommonIdentifier())
         {
-            if (dirShadowmapCommandBuffer.m_gobject_id != m_visiable_nodes.p_directional_light->m_gobject_id ||
-                dirShadowmapCommandBuffer.m_gcomponent_id != m_visiable_nodes.p_directional_light->m_gcomponent_id)
+            if (dirShadowmapCommandBuffer.m_identifier != m_render_scene->m_directional_light.m_identifier)
             {
                 dirShadowmapCommandBuffer.Reset();
             }
 
             if (dirShadowmapCommandBuffer.p_IndirectSortCommandBuffer == nullptr)
             {
-                RHI::RHIBufferTarget indirectCommandTarget =
-                    RHI::RHIBufferRandomReadWrite | RHI::RHIBufferTargetStructured | RHI::RHIBufferTargetCounter;
+                RHI::RHIBufferTarget indirectCommandTarget = RHI::RHIBufferRandomReadWrite | RHI::RHIBufferTargetStructured | RHI::RHIBufferTargetCounter;
 
                 std::shared_ptr<RHI::D3D12Buffer> p_IndirectCommandBuffer =
                     RHI::D3D12Buffer::Create(m_Device->GetLinkedDevice(),
@@ -172,8 +171,7 @@ namespace MoYu
                                              sizeof(HLSL::CommandSignatureParams),
                                              L"DirectionIndirectSortCommandBuffer");
 
-                dirShadowmapCommandBuffer.m_gobject_id    = m_visiable_nodes.p_directional_light->m_gobject_id;
-                dirShadowmapCommandBuffer.m_gcomponent_id = m_visiable_nodes.p_directional_light->m_gcomponent_id;
+                dirShadowmapCommandBuffer.m_identifier = m_render_scene->m_directional_light.m_identifier;
                 dirShadowmapCommandBuffer.p_IndirectSortCommandBuffer = p_IndirectCommandBuffer;
             }
         }
@@ -182,19 +180,18 @@ namespace MoYu
             dirShadowmapCommandBuffer.Reset();
         }
 
-        if (m_visiable_nodes.p_spot_light_list != nullptr)
+        if (!m_render_scene->m_spot_light_list.empty())
         {
-            int spotLightCount = m_visiable_nodes.p_spot_light_list->size();
+            int spotLightCount = m_render_scene->m_spot_light_list.size();
             for (size_t i = 0; i < spotLightCount; i++)
             {
-                MoYu::SpotLightDesc curSpotLightDesc = m_visiable_nodes.p_spot_light_list->at(i);
+                MoYu::InternalSpotLight& curSpotLightDesc = m_render_scene->m_spot_light_list[i];
 
                 bool curSpotLighBufferExist = false;
                 int  curBufferIndex         = -1;
                 for (size_t j = 0; j < spotShadowmapCommandBuffer.size(); j++)
                 {
-                    if (spotShadowmapCommandBuffer[j].m_gobject_id == curSpotLightDesc.m_gobject_id &&
-                        spotShadowmapCommandBuffer[j].m_gcomponent_id == curSpotLightDesc.m_gcomponent_id)
+                    if (spotShadowmapCommandBuffer[j].m_identifier == curSpotLightDesc.m_identifier)
                     {
                         curBufferIndex         = j;
                         curSpotLighBufferExist = true;
@@ -223,8 +220,7 @@ namespace MoYu
                                                  std::wstring(L"SpotIndirectSortCommandBuffer_" + i));
 
                     spotShadowCommandBuffer.m_lightIndex                = i;
-                    spotShadowCommandBuffer.m_gobject_id                = curSpotLightDesc.m_gobject_id;
-                    spotShadowCommandBuffer.m_gcomponent_id             = curSpotLightDesc.m_gcomponent_id;
+                    spotShadowCommandBuffer.m_identifier                = curSpotLightDesc.m_identifier;
                     spotShadowCommandBuffer.p_IndirectSortCommandBuffer = p_IndirectCommandBuffer;
                     
                     spotShadowmapCommandBuffer.push_back(spotShadowCommandBuffer);
@@ -232,7 +228,6 @@ namespace MoYu
 
             }
         }
-        */
     }
 
     void IndirectCullPass::bitonicSort(RHI::D3D12ComputeContext* context,

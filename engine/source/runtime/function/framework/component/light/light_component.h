@@ -11,7 +11,7 @@ namespace MoYu
     class LightComponent : public Component
     {
     public:
-        LightComponent() = default;
+        LightComponent() { m_component_name = "LightComponent"; };
 
         void reset();
 

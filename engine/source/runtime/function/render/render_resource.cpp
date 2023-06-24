@@ -80,7 +80,7 @@ namespace MoYu
         endUploadBatch();
     }
     */
-    void RenderResource::updatePerFrameBuffer(std::shared_ptr<RenderScene> render_scene, std::shared_ptr<RenderCamera> camera)
+    void RenderResource::updatePerFrameBuffer(RenderScene* render_scene, RenderCamera* camera)
     {
         Matrix4x4 view_matrix      = camera->getViewMatrix();
         Matrix4x4 proj_matrix      = camera->getPersProjMatrix();
@@ -137,10 +137,11 @@ namespace MoYu
             Vector3 spot_light_direction = render_scene->m_spot_light_list[i].m_direction;
             float   spot_light_intensity = render_scene->m_spot_light_list[i].m_intensity;
 
+            float radius = render_scene->m_spot_light_list[i].m_radius;
             Color color  = render_scene->m_spot_light_list[i].m_color;
 
             m_mesh_perframe_storage_buffer_object.scene_spot_lights[i].position = GLMUtil::fromVec3(spot_light_position);
-            m_mesh_perframe_storage_buffer_object.scene_spot_lights[i].radius = render_scene->m_spot_light_list[i].m_radius;
+            m_mesh_perframe_storage_buffer_object.scene_spot_lights[i].radius = radius;
             m_mesh_perframe_storage_buffer_object.scene_spot_lights[i].color = GLMUtil::fromVec3(Vector3(color.r, color.g, color.b));
             m_mesh_perframe_storage_buffer_object.scene_spot_lights[i].intensity = spot_light_intensity;
             m_mesh_perframe_storage_buffer_object.scene_spot_lights[i].direction = GLMUtil::fromVec3(spot_light_direction);
@@ -150,6 +151,9 @@ namespace MoYu
             m_mesh_perframe_storage_buffer_object.scene_spot_lights[i].shadowmap = render_scene->m_spot_light_list[i].m_shadowmap;
             m_mesh_perframe_storage_buffer_object.scene_spot_lights[i].shadowmap_width = render_scene->m_spot_light_list[i].m_shadowmap_size.x;
             m_mesh_perframe_storage_buffer_object.scene_spot_lights[i].spot_light_proj_view = GLMUtil::fromMat4x4(render_scene->m_spot_light_list[i].m_shadow_view_proj_mat);
+
+            m_mesh_spot_light_shadow_perframe_storage_buffer_object.spot_lights_position_and_radius[i] =
+                glm::vec4(spot_light_position.x, spot_light_position.y, spot_light_position.z, radius);
         }
 
         {

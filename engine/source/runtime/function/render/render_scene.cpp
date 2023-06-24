@@ -140,10 +140,10 @@ namespace MoYu
         const Matrix4x4 model_matrix_inverse = GLMUtil::inverseMat4x4(model_matrix);
 
         int mesh_finded = -1;
-        std::vector<CachedMeshRenderer>& m_mesh_renderers = m_mesh_renderers;
-        for (int j = 0; j < m_mesh_renderers.size(); j++)
+        std::vector<CachedMeshRenderer>& _mesh_renderers = m_mesh_renderers;
+        for (int j = 0; j < _mesh_renderers.size(); j++)
         {
-            if (m_mesh_renderers[j].cachedSceneMeshrenderer.m_identifier == sceneMeshRenderer.m_identifier)
+            if (_mesh_renderers[j].cachedSceneMeshrenderer.m_identifier == sceneMeshRenderer.m_identifier)
             {
                 mesh_finded = j;
                 break;
@@ -157,15 +157,15 @@ namespace MoYu
             cachedMeshRenderer.internalMeshRenderer.model_matrix         = model_matrix;
             cachedMeshRenderer.internalMeshRenderer.model_matrix_inverse = model_matrix_inverse;
 
-            m_mesh_renderers.push_back(cachedMeshRenderer);
+            _mesh_renderers.push_back(cachedMeshRenderer);
         }
         else
         {
             m_render_resource->updateInternalMeshRenderer(sceneMeshRenderer,
-                                                          m_mesh_renderers[mesh_finded].cachedSceneMeshrenderer,
-                                                          m_mesh_renderers[mesh_finded].internalMeshRenderer);
-            m_mesh_renderers[mesh_finded].internalMeshRenderer.model_matrix         = model_matrix;
-            m_mesh_renderers[mesh_finded].internalMeshRenderer.model_matrix_inverse = model_matrix_inverse;
+                                                          _mesh_renderers[mesh_finded].cachedSceneMeshrenderer,
+                                                          _mesh_renderers[mesh_finded].internalMeshRenderer);
+            _mesh_renderers[mesh_finded].internalMeshRenderer.model_matrix         = model_matrix;
+            _mesh_renderers[mesh_finded].internalMeshRenderer.model_matrix_inverse = model_matrix_inverse;
         }
     }
 
@@ -254,12 +254,12 @@ namespace MoYu
 
     void RenderScene::removeMeshRenderer(SceneMeshRenderer sceneMeshRenderer)
     {
-        std::vector<CachedMeshRenderer>& m_mesh_renderers = m_mesh_renderers;
-        for (int j = 0; j < m_mesh_renderers.size(); j++)
+        std::vector<CachedMeshRenderer>& _mesh_renderers = m_mesh_renderers;
+        for (int j = 0; j < _mesh_renderers.size(); j++)
         {
-            if (m_mesh_renderers[j].cachedSceneMeshrenderer.m_identifier == sceneMeshRenderer.m_identifier)
+            if (_mesh_renderers[j].cachedSceneMeshrenderer.m_identifier == sceneMeshRenderer.m_identifier)
             {
-                m_mesh_renderers.erase(m_mesh_renderers.begin() + j);
+                _mesh_renderers.erase(_mesh_renderers.begin() + j);
                 break;
             }
         }

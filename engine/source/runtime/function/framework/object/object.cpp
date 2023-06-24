@@ -9,6 +9,7 @@
 #include "runtime/function/framework/component/transform/transform_component.h"
 #include "runtime/function/framework/component/light/light_component.h"
 #include "runtime/function/framework/component/mesh/mesh_renderer_component.h"
+#include "runtime/function/framework/component/camera/camera_component.h"
 
 namespace MoYu
 {
@@ -48,7 +49,7 @@ namespace MoYu
         auto it = m_components.begin();
         while (it != m_components.end())
         {
-            if (it->get()->isReadyToErase())
+            if ((*it)->isReadyToErase())
             {
                 it = m_components.erase(it);
             }
@@ -114,27 +115,27 @@ namespace MoYu
             std::string type_name = component_define_res.m_type_name;
             std::vector<uint64_t>& component_data = component_define_res.m_component_data;
 
-            if (type_name == "transform")
+            if (type_name == "TransformComponent")
             {
                 std::shared_ptr<TransformComponent> m_component = std::make_shared<TransformComponent>();
                 m_component->postLoadResource(weak_from_this(), component_data.data());
                 m_components.push_back(m_component);
             }
-            else if (type_name == "mesh_renderer")
+            else if (type_name == "MeshRendererComponent")
             {
                 std::shared_ptr<MeshRendererComponent> m_component = std::make_shared<MeshRendererComponent>();
                 m_component->postLoadResource(weak_from_this(), component_data.data());
                 m_components.push_back(m_component);
             }
-            else if (type_name == "light")
+            else if (type_name == "LightComponent")
             {
                 std::shared_ptr<LightComponent> m_component = std::make_shared<LightComponent>();
                 m_component->postLoadResource(weak_from_this(), component_data.data());
                 m_components.push_back(m_component);
             }
-            else if (type_name == "camera")
+            else if (type_name == "CameraComponent")
             {
-                std::shared_ptr<LightComponent> m_component = std::make_shared<LightComponent>();
+                std::shared_ptr<CameraComponent> m_component = std::make_shared<CameraComponent>();
                 m_component->postLoadResource(weak_from_this(), component_data.data());
                 m_components.push_back(m_component);
             }
@@ -181,7 +182,10 @@ namespace MoYu
             {
                 GObjectID m_childID = m_chilren_id[i];
                 std::shared_ptr<GObject> m_child_obj = m_current_level->getGObjectByID(m_childID);
-                m_children.push_back(m_child_obj);
+                if (m_child_obj != nullptr)
+                {
+                    m_children.push_back(m_child_obj);
+                }
             }
         }
         return m_children;

@@ -2,6 +2,7 @@
 
 namespace MoYu
 {
+    /*
     EditorTranslationAxis::EditorTranslationAxis()
     {
         // create translation axis render mesh
@@ -651,5 +652,5 @@ namespace MoYu
         index_data[start_index + 11 * 3 + 1] = (uint16_t)(start_vertex_index + 6);
         index_data[start_index + 11 * 3 + 2] = (uint16_t)(start_vertex_index + 2);
     }
-
+    */
 } // namespace MoYu

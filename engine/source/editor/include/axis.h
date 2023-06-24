@@ -1,10 +1,8 @@
 #pragma once
 
-#include "runtime/function/render/render_entity.h"
-#include "runtime/function/render/render_type.h"
-
 namespace MoYu
 {
+    /*
     class EditorTranslationAxis : public RenderEntity
     {
     public:
@@ -25,4 +23,5 @@ namespace MoYu
         EditorScaleAxis();
         RenderMeshData m_mesh_data;
     };
+    */
 } // namespace MoYu

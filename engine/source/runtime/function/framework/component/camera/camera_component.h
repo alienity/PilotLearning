@@ -17,7 +17,7 @@ namespace MoYu
     class CameraComponent : public Component
     {
     public:
-        CameraComponent() = default;
+        CameraComponent() { m_component_name = "CameraComponent"; };
 
         void reset();
 

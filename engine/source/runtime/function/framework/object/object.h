@@ -71,10 +71,10 @@ namespace MoYu
             }
             m_components.push_back(newComponent);
 
-            if (newComponent->getTypeName() == "TransformComponent" && !m_transform_component_ptr.expired())
-            {
-                m_transform_component_ptr = (std::shared_ptr<TransformComponent>)newComponent;
-            }
+            //if (newComponent->getTypeName() == "TransformComponent" && !m_transform_component_ptr.expired())
+            //{
+            //    m_transform_component_ptr = std::static_pointer_cast<TransformComponent>(newComponent);
+            //}
 
             return newComponent;
         }

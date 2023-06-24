@@ -4,22 +4,6 @@
 // Uniforms access
 //------------------------------------------------------------------------------
 
-struct FrameUniforms
-{
-    float4x4 viewFromWorldMatrix;
-    float4x4 worldFromViewMatrix;
-    float4x4 clipFromViewMatrix;
-    float4x4 viewFromClipMatrix;
-    float4x4 clipFromWorldMatrix;
-    float4x4 worldFromClipMatrix;
-    float4x4 userWorldFromWorldMatrix;
-    float4   resolution;
-    float4   userTime;
-    float    time;
-    float    exposure;
-    float    ev100;
-};
-
 float4x4 getViewFromWorldMatrix(FrameUniforms frameUniforms) { return frameUniforms.viewFromWorldMatrix; }
 
 float4x4 getWorldFromViewMatrix(FrameUniforms frameUniforms) { return frameUniforms.worldFromViewMatrix; }
@@ -46,7 +30,7 @@ float getUserTimeMod(FrameUniforms frameUniforms, float m) { return fmod(fmod(fr
 
 float4 getResolution(FrameUniforms frameUniforms) { return frameUniforms.resolution; }
 
-float3 getWorldCameraPosition(FrameUniforms frameUniforms) { return frameUniforms.worldFromViewMatrix[3].xyz; }
+float3 getWorldCameraPosition(FrameUniforms frameUniforms) { return transpose(frameUniforms.worldFromViewMatrix)[3].xyz; }
 
 float getExposure(FrameUniforms frameUniforms) { return frameUniforms.exposure; }
 

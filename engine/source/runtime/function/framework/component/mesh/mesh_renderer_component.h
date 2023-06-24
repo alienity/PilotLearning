@@ -13,7 +13,7 @@ namespace MoYu
     class MeshRendererComponent : public Component
     {
     public:
-        MeshRendererComponent() {};
+        MeshRendererComponent() { m_component_name = "MeshRendererComponent"; };
 
         void reset();
 

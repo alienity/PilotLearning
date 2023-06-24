@@ -15,8 +15,6 @@
 
 namespace MoYu
 {
-    std::string MeshRendererComponent::m_component_name = "MeshRendererComponent";
-
     void MeshRendererComponent::postLoadResource(std::weak_ptr<GObject> object, void* data)
     {
         m_object = object;

@@ -205,7 +205,7 @@ namespace MoYu
             return iter->second;
         }
 
-        return std::shared_ptr<GObject>();
+        return nullptr;
     }
 
     void Level::deleteGObject(GObjectID go_id)

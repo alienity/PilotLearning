@@ -206,6 +206,7 @@ namespace MoYu
                 }
                 else if (g_editor_global_context.m_window_system->isMouseButtonDown(GLFW_MOUSE_BUTTON_LEFT))
                 {
+                    /*
                     g_editor_global_context.m_scene_manager->moveEntity(
                         xpos,
                         ypos,
@@ -217,6 +218,7 @@ namespace MoYu
                         g_editor_global_context.m_scene_manager->getSelectedObjectMatrix());
                     glfwSetInputMode(
                         g_editor_global_context.m_window_system->getWindow(), GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+                    */
                 }
                 else
                 {

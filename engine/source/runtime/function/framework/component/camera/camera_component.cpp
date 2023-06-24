@@ -16,8 +16,6 @@
 
 namespace MoYu
 {
-    std::string CameraComponent::m_component_name = "CameraComponent";
-
     void CameraComponent::reset()
     {
         m_camera_res = {};

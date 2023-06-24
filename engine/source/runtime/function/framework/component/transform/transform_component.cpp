@@ -4,8 +4,6 @@
 
 namespace MoYu
 {
-    std::string TransformComponent::m_component_name = "TransformComponent";
-
     void TransformComponent::postLoadResource(std::weak_ptr<GObject> object, void* data)
     {
         m_object = object;

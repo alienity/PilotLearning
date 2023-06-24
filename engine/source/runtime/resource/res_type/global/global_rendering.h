@@ -17,8 +17,9 @@ namespace MoYu
         Vector2    m_aspect;
         float      m_z_far;
         float      m_z_near;
+        float      m_fovY;
     };
-    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(CameraConfig, m_pose, m_aspect, m_z_far, m_z_near)
+    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(CameraConfig, m_pose, m_aspect, m_z_far, m_z_near, m_fovY)
 
     struct CubeMap
     {

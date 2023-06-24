@@ -1,6 +1,7 @@
 #pragma once
 
-float3 customSurfaceShading(const MaterialInputs materialInputs, const PixelParams pixel, const Light light, float visibility)
+float3 customSurfaceShading(const PerRenderableData objectUniforms, 
+    const MaterialInputs materialInputs, const PixelParams pixel, const Light light, float visibility)
 {
 
     LightData lightData;

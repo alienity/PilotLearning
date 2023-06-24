@@ -19,7 +19,7 @@ namespace MoYu
     public:
         RenderResource() = default;
 
-        void updatePerFrameBuffer(std::shared_ptr<RenderScene> render_scene, std::shared_ptr<RenderCamera> camera);
+        void updatePerFrameBuffer(RenderScene* render_scene, RenderCamera* camera);
         
         bool updateInternalMaterial(SceneMaterial scene_material, SceneMaterial& cached_material, InternalMaterial& internal_material);
         bool updateInternalMesh(SceneMesh scene_mesh, SceneMesh& cached_mesh, InternalMesh& internal_mesh);

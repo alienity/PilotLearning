@@ -9,7 +9,7 @@ namespace MoYu
     class TransformComponent : public Component
     {
     public:
-        TransformComponent() = default;
+        TransformComponent() { m_component_name = "TransformComponent"; };
 
         void postLoadResource(std::weak_ptr<GObject> object, void* data) override;
 
