@@ -56,7 +56,7 @@ namespace MoYu
         EditorFileService                                                               m_editor_file_service;
         std::chrono::time_point<std::chrono::steady_clock>                              m_last_file_tree_update;
 
-        std::vector<Component*> m_editor_component_stack;
+        //std::vector<Component*> m_editor_component_stack;
 
         float handleWidth;
         float handleHeight;

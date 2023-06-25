@@ -190,7 +190,8 @@ namespace MoYu
 
         // game view output
         RHI::RgResourceHandle renderTargetColorHandle = graph.Import(p_RenderTargetTex.get());
-     
+        
+        /*
         //=================================================================================
         // 应该再给graph添加一个signal同步，目前先这样
         IndirectCullPass::IndirectCullOutput indirectCullOutput;
@@ -290,7 +291,7 @@ namespace MoYu
 
         mDisplayPass->update(graph, mDisplayIntputParams, mDisplayOutputParams);
         //=================================================================================
-
+        */
 
         //=================================================================================
         if (mUIPass != nullptr)
@@ -298,7 +299,8 @@ namespace MoYu
             UIPass::UIInputParameters mUIIntputParams;
             UIPass::UIOutputParameters mUIOutputParams;
 
-            mUIIntputParams.renderTargetColorHandle = mDisplayOutputParams.renderTargetColorHandle;
+            mUIIntputParams.renderTargetColorHandle = renderTargetColorHandle;
+            //mUIIntputParams.renderTargetColorHandle = mDisplayOutputParams.renderTargetColorHandle;
             mUIOutputParams.backBufColorHandle = backBufColorHandle;
             
             mUIPass->update(graph, mUIIntputParams, mUIOutputParams);

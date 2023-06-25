@@ -69,11 +69,11 @@ namespace MoYu
             }
             g_editor_node_state_array.emplace_back(std::pair(name.c_str(), node_state));
 
-            if (value_ptr != nullptr)
-            {
-                Component* p_component = static_cast<Component*>(value_ptr);
-                m_editor_component_stack.push_back(p_component);
-            }
+            //if (value_ptr != nullptr)
+            //{
+            //    Component* p_component = static_cast<Component*>(value_ptr);
+            //    m_editor_component_stack.push_back(p_component);
+            //}
         };
         m_editor_ui_creator["TreeNodePop"] = [this](const std::string& name, bool& is_dirty, void* value_ptr) -> void {
             if (g_editor_node_state_array[g_node_depth].second)
@@ -83,10 +83,10 @@ namespace MoYu
             g_editor_node_state_array.pop_back();
             g_node_depth--;
 
-            if (value_ptr != nullptr)
-            {
-                m_editor_component_stack.pop_back();
-            }
+            //if (value_ptr != nullptr)
+            //{
+            //    m_editor_component_stack.pop_back();
+            //}
         };
         m_editor_ui_creator["Transform"] = [this](const std::string& name, bool& is_dirty, void* value_ptr) -> void {
             Transform* trans_ptr = static_cast<Transform*>(value_ptr);
@@ -571,6 +571,8 @@ namespace MoYu
 
             TransformComponent* transform_ptr = static_cast<TransformComponent*>(value_ptr);
 
+            //m_editor_ui_creator["TreeNodePush"]("Transform", isDirty, nullptr);
+
             m_editor_ui_creator["Transform"]("m_transform", isDirty, &transform_ptr->m_transform);
 
             is_dirty |= isDirty;
@@ -954,40 +956,33 @@ namespace MoYu
                 }
             }
 
-            //if (ImGui::MenuItem("Light Component"))
-            //{
-            //    if (selected_object->tryGetComponentConst<const LightComponent>("LightComponent"))
-            //    {
-            //        LOG_INFO("object {} already has Light Component", selected_object->getName());
-            //    }
-            //    else
-            //    {
-            //        auto light_component = PILOT_REFLECTION_NEW(LightComponent);
-            //        light_component->reset();
-            //        light_component->postLoadResource(selected_object);
-            //        selected_object->tryAddComponent(light_component);
+            if (ImGui::MenuItem("Light Component"))
+            {
+                if (selected_object->tryGetComponent<LightComponent>("LightComponent"))
+                {
+                    LOG_INFO("object {} already has Light Component", selected_object->getName());
+                }
+                else
+                {
+                    std::shared_ptr<LightComponent> light_component = std::make_shared<LightComponent>();
+                    selected_object->tryAddComponent(light_component);
+                    LOG_INFO("Add New Light Component");
+                }
+            }
 
-            //        LOG_INFO("Add New Light Component");
-            //    }
-            //}
-
-            //if (ImGui::MenuItem("Mesh Component"))
-            //{
-            //    if (selected_object->tryGetComponentConst<const MeshComponent>("MeshComponent"))
-            //    {
-            //        LOG_INFO("object {} already has Mesh Component", selected_object->getName());
-            //    }
-            //    else
-            //    {
-            //        auto mesh_component = PILOT_REFLECTION_NEW(MeshComponent);
-            //        mesh_component->reset();
-            //        mesh_component->postLoadResource(selected_object);
-            //        selected_object->tryAddComponent(mesh_component);
-
-            //        LOG_INFO("Add New Mesh Component");
-            //    }
-            //}
-
+            if (ImGui::MenuItem("Mesh Renderer Component"))
+            {
+                if (selected_object->tryGetComponent<MeshRendererComponent>("MeshRendererComponent"))
+                {
+                    LOG_INFO("object {} already has Mesh Component", selected_object->getName());
+                }
+                else
+                {
+                    std::shared_ptr<MeshRendererComponent> mesh_renderer_component = std::make_shared<MeshRendererComponent>();
+                    selected_object->tryAddComponent(mesh_renderer_component);
+                    LOG_INFO("Add New Mesh Renderer Component");
+                }
+            }
 
             ImGui::EndPopup();
         }
