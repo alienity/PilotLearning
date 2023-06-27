@@ -103,15 +103,17 @@ namespace MoYu
 
     void MeshRendererComponent::tick(float delta_time)
     {
-        if (!m_object.lock())
+        if (m_object.expired())
             return;
+
+        std::shared_ptr<MoYu::GObject> m_obj_ptr = m_object.lock();
 
         RenderSwapContext& render_swap_context = g_runtime_global_context.m_render_system->getSwapContext();
         RenderSwapData& logic_swap_data = render_swap_context.getLogicSwapData();
 
-        TransformComponent* m_transform_component_ptr = m_object.lock()->getTransformComponent().lock().get();
+        TransformComponent* m_transform_component_ptr = m_obj_ptr->getTransformComponent().lock().get();
 
-        MoYu::GObjectID game_object_id = m_object.lock()->getID();
+        MoYu::GObjectID game_object_id = m_obj_ptr->getID();
         MoYu::GComponentID transform_component_id = m_transform_component_ptr->getComponentId();
         MoYu::GComponentID mesh_renderer_component_id = this->getComponentId();
 

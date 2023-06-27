@@ -14,34 +14,40 @@ namespace MoYu
         m_transform.m_scale    = transform_res->m_scale;
         m_transform.m_rotation = transform_res->m_rotation;
 
-        m_transform_buffer[0] = m_transform;
-        m_transform_buffer[1] = m_transform;
+        m_transform_buffer[m_current_index] = m_transform;
+        m_transform_buffer[m_next_index]    = m_transform;
 
-        m_is_dirty = true;
+        markDirty();
     }
 
     void TransformComponent::setPosition(const Vector3& new_translation)
     {
+        m_transform.m_position = new_translation;
+
         m_transform_buffer[m_next_index].m_position = new_translation;
-        m_transform.m_position                      = new_translation;
-        m_is_dirty                                  = true;
+
+        markDirty();
     }
 
     void TransformComponent::setScale(const Vector3& new_scale)
     {
+        m_transform.m_scale = new_scale;
+
         m_transform_buffer[m_next_index].m_scale = new_scale;
-        m_transform.m_scale                      = new_scale;
-        m_is_dirty                               = true;
+        
+        markDirty();
     }
 
     void TransformComponent::setRotation(const Quaternion& new_rotation)
     {
+        m_transform.m_rotation = new_rotation;
+
         m_transform_buffer[m_next_index].m_rotation = new_rotation;
-        m_transform.m_rotation                      = new_rotation;
-        m_is_dirty                                  = true;
+
+        markDirty();
     }
 
-    Matrix4x4 TransformComponent::getMatrixWorld()
+    const Matrix4x4 TransformComponent::getMatrixWorld()
     {
         if (TransformComponent::isDirtyRecursively(this))
         {
@@ -52,28 +58,24 @@ namespace MoYu
 
     void TransformComponent::tick(float delta_time)
     {
+        m_transform_buffer[m_current_index] = m_transform_buffer[m_next_index];
+
         std::swap(m_current_index, m_next_index);
 
-        if (m_is_dirty)
-        {
-            // update transform component, dirty flag will be reset in mesh component
-            //tryUpdateRigidBodyComponent();
-        }
+        //if (TransformComponent::isDirtyRecursively(this))
+        //{
+        //    // update transform component, dirty flag will be reset in mesh component
+        //    //tryUpdateRigidBodyComponent();
+        //}
 
-        if (g_is_editor_mode)
-        {
-            m_transform_buffer[m_next_index] = m_transform;
-        }
+        //if (g_is_editor_mode)
+        //{
+        //    m_transform_buffer[m_next_index] = m_transform;
+        //}
 
-        m_is_dirty = false;
+        //markIdle();
     }
-
-    // check all parent object to see if they are some object dirty
-    bool TransformComponent::isDirty() const
-    {
-        return TransformComponent::isDirtyRecursively(this);
-    }
-
+    
     Matrix4x4 TransformComponent::getMatrixWorldRecursively(const TransformComponent* trans)
     {
         if (trans == nullptr)
@@ -88,17 +90,19 @@ namespace MoYu
             {
                 TransformComponent* m_parent_trans = m_object_parent->getTransformComponent().lock().get();
                 matrix_world = getMatrixWorldRecursively(m_parent_trans) * matrix_world;
+                m_parent_trans->markIdle();
             }
         }
         return matrix_world;
     }
 
+    // check all parent object to see if they are some object dirty
     bool TransformComponent::isDirtyRecursively(const TransformComponent* trans)
     {
         if (trans == nullptr)
             return false;
 
-        bool is_dirty = trans->m_is_dirty;
+        bool is_dirty = trans->isDirty();
         if (!trans->m_object.expired())
         {
             auto m_object_ptr    = trans->m_object.lock();

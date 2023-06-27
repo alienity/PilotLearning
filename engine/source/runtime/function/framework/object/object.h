@@ -69,6 +69,7 @@ namespace MoYu
                     return nullptr;
                 }
             }
+            newComponent->setParentNode(shared_from_this());
             m_components.push_back(newComponent);
 
             //if (newComponent->getTypeName() == "TransformComponent" && !m_transform_component_ptr.expired())

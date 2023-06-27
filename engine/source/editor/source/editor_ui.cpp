@@ -28,66 +28,25 @@
 #include "runtime/function/render/window_system.h"
 #include "runtime/function/render/glm_wrapper.h"
 
-#include <imgui.h>
-#include <imgui_internal.h>
-#include <backends/imgui_impl_dx12.h>
-#include <backends/imgui_impl_glfw.h>
-#include <stb_image.h>
+#include "imgui.h"
+#include "imgui_widgets.cpp"
+#include "imgui_internal.h"
+#include "backends/imgui_impl_dx12.h"
+#include "backends/imgui_impl_glfw.h"
+
+#include "stb_image.h"
 
 #include "ImGuizmo.h"
 
 namespace MoYu
 {
-    std::vector<std::pair<std::string, bool>> g_editor_node_state_array;
-    int g_node_depth = -1;
-
     bool DrawVecControl(const std::string& label, MoYu::Vector3& values, float resetValue = 0.0f, float columnWidth = 100.0f);
     bool DrawVecControl(const std::string& label, MoYu::Quaternion& values, float resetValue = 0.0f, float columnWidth = 100.0f);
 
     EditorUI::EditorUI()
     {
         const auto& asset_folder = g_runtime_global_context.m_config_manager->getAssetFolder();
-        m_editor_ui_creator["TreeNodePush"] = [this](const std::string& name, bool& is_dirty, void* value_ptr) -> void {
-            static ImGuiTableFlags flags = ImGuiTableFlags_Resizable | ImGuiTableFlags_NoSavedSettings;
-            bool node_state = false;
-            g_node_depth++;
-            if (g_node_depth > 0)
-            {
-                if (g_editor_node_state_array[g_node_depth - 1].second)
-                {
-                    node_state = ImGui::TreeNodeEx(name.c_str(), ImGuiTreeNodeFlags_SpanFullWidth);
-                }
-                else
-                {
-                    g_editor_node_state_array.emplace_back(std::pair(name.c_str(), node_state));
-                    return;
-                }
-            }
-            else
-            {
-                node_state = ImGui::TreeNodeEx(name.c_str(), ImGuiTreeNodeFlags_SpanFullWidth);
-            }
-            g_editor_node_state_array.emplace_back(std::pair(name.c_str(), node_state));
 
-            //if (value_ptr != nullptr)
-            //{
-            //    Component* p_component = static_cast<Component*>(value_ptr);
-            //    m_editor_component_stack.push_back(p_component);
-            //}
-        };
-        m_editor_ui_creator["TreeNodePop"] = [this](const std::string& name, bool& is_dirty, void* value_ptr) -> void {
-            if (g_editor_node_state_array[g_node_depth].second)
-            {
-                ImGui::TreePop();
-            }
-            g_editor_node_state_array.pop_back();
-            g_node_depth--;
-
-            //if (value_ptr != nullptr)
-            //{
-            //    m_editor_component_stack.pop_back();
-            //}
-        };
         m_editor_ui_creator["Transform"] = [this](const std::string& name, bool& is_dirty, void* value_ptr) -> void {
             Transform* trans_ptr = static_cast<Transform*>(value_ptr);
 
@@ -393,6 +352,8 @@ namespace MoYu
         m_editor_ui_creator["LightComponentRes"] = [this, &asset_folder](const std::string& name, bool& is_dirty, void* value_ptr) -> void {
             bool isDirty = false;
 
+            ImGui::Indent();
+
             LightComponentRes* l_res_ptr = static_cast<LightComponentRes*>(value_ptr);
 
             int item_current_idx = -1;
@@ -458,6 +419,8 @@ namespace MoYu
             {
                 m_editor_ui_creator["SpotLightParameter"](SpotLightParameterName, isDirty, &l_res_ptr->m_SpotLightParam);
             }
+
+            ImGui::Unindent();
 
             is_dirty |= isDirty;
         };
@@ -541,39 +504,57 @@ namespace MoYu
         m_editor_ui_creator["MeshRendererComponent"] = [this, &asset_folder](const std::string& name, bool& is_dirty, void* value_ptr) -> void {
             bool isDirty = false;
 
-            MeshRendererComponent* mesh_renderer_ptr = static_cast<MeshRendererComponent*>(value_ptr);
+            if (ImGui::TreeNode(name.c_str()))
+            {
+                ImGui::Indent();
 
-            m_editor_ui_creator["SceneMesh"]("m_scene_mesh", isDirty, &mesh_renderer_ptr->m_scene_mesh);
-            m_editor_ui_creator["SceneMaterial"]("m_material", isDirty, &mesh_renderer_ptr->m_material);
+                MeshRendererComponent* mesh_renderer_ptr = static_cast<MeshRendererComponent*>(value_ptr);
+                m_editor_ui_creator["SceneMesh"]("m_scene_mesh", isDirty, &mesh_renderer_ptr->m_scene_mesh);
+                m_editor_ui_creator["SceneMaterial"]("m_material", isDirty, &mesh_renderer_ptr->m_material);
+                
+                ImGui::Unindent();
+                ImGui::TreePop();
+            }
 
             is_dirty |= isDirty;
         };
         m_editor_ui_creator["LightComponent"] = [this, &asset_folder](const std::string& name, bool& is_dirty, void* value_ptr) -> void {
             bool isDirty = false;
 
-            LightComponent* light_ptr = static_cast<LightComponent*>(value_ptr);
+            if (ImGui::TreeNode(name.c_str()))
+            {
+                LightComponent* light_ptr = static_cast<LightComponent*>(value_ptr);
+                m_editor_ui_creator["LightComponentRes"]("m_light_res", isDirty, &light_ptr->m_light_res);
 
-            m_editor_ui_creator["LightComponentRes"]("m_light_res", isDirty, &light_ptr->m_light_res);
-
+                ImGui::TreePop();
+            }
+            
             is_dirty |= isDirty;
         };
         m_editor_ui_creator["CameraComponent"] = [this, &asset_folder](const std::string& name, bool& is_dirty, void* value_ptr) -> void {
             bool isDirty = false;
 
-            CameraComponent* camera_ptr = static_cast<CameraComponent*>(value_ptr);
+            if (ImGui::TreeNode(name.c_str()))
+            {
+                CameraComponent* camera_ptr = static_cast<CameraComponent*>(value_ptr);
+                m_editor_ui_creator["CameraComponentRes"]("m_camera_res", isDirty, &camera_ptr->m_camera_res);
 
-            m_editor_ui_creator["CameraComponentRes"]("m_camera_res", isDirty, &camera_ptr->m_camera_res);
+                ImGui::TreePop();
+            }
 
             is_dirty |= isDirty;
         };
         m_editor_ui_creator["TransformComponent"] = [this, &asset_folder](const std::string& name, bool& is_dirty, void* value_ptr) -> void {
             bool isDirty = false;
 
-            TransformComponent* transform_ptr = static_cast<TransformComponent*>(value_ptr);
+            if (ImGui::TreeNode(name.c_str()))
+            {
+                TransformComponent* transform_ptr = static_cast<TransformComponent*>(value_ptr);
+                Transform& _transform =  transform_ptr->getTransform();
+                m_editor_ui_creator["Transform"]("m_transform", isDirty, &_transform);
 
-            //m_editor_ui_creator["TreeNodePush"]("Transform", isDirty, nullptr);
-
-            m_editor_ui_creator["Transform"]("m_transform", isDirty, &transform_ptr->m_transform);
+                ImGui::TreePop();
+            }
 
             is_dirty |= isDirty;
         };
@@ -918,13 +899,7 @@ namespace MoYu
 
         for (auto component_ptr : selected_object_components)
         {
-            bool is_dirty = false;
-            m_editor_ui_creator["TreeNodePush"](("<" + component_ptr->getTypeName() + ">").c_str(), is_dirty, component_ptr.get());
-
             createComponentUI(component_ptr.get());
-
-            m_editor_ui_creator["TreeNodePop"](("<" + component_ptr->getTypeName() + ">").c_str(), is_dirty, component_ptr.get());
-
             /*
             m_editor_ui_creator["TreeNodePush"](("<" + component_ptr->getTypeName() + ">").c_str(), component_ptr.getPtr());
             auto object_instance = Reflection::ReflectionInstance(
@@ -956,7 +931,7 @@ namespace MoYu
                 }
             }
 
-            if (ImGui::MenuItem("Light Component"))
+            if (ImGui::BeginMenu("Light Component"))
             {
                 if (selected_object->tryGetComponent<LightComponent>("LightComponent"))
                 {
@@ -964,10 +939,26 @@ namespace MoYu
                 }
                 else
                 {
-                    std::shared_ptr<LightComponent> light_component = std::make_shared<LightComponent>();
-                    selected_object->tryAddComponent(light_component);
-                    LOG_INFO("Add New Light Component");
+                    static const char* param_names[] = {DirectionLightParameterName, PointLightParameterName, SpotLightParameterName};
+
+                    for (int i = 0; i < IM_ARRAYSIZE(param_names); i++)
+                    {
+                        bool _param_toggle = false;
+                        if (ImGui::MenuItem(param_names[i], "", &_param_toggle))
+                        {
+                            if (_param_toggle)
+                            {
+                                std::shared_ptr<LightComponent> light_component = std::make_shared<LightComponent>();
+                                light_component->m_light_res.m_LightParamName   = param_names[i];
+                                light_component->markDirty();
+                                selected_object->tryAddComponent(light_component);
+
+                                LOG_INFO(("Add New Light Component " + std::string(param_names[i])).c_str());
+                            }
+                        }
+                    }
                 }
+                ImGui::EndMenu();
             }
 
             if (ImGui::MenuItem("Mesh Renderer Component"))

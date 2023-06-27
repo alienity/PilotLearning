@@ -8,10 +8,19 @@ namespace MoYu
 {
     class GObject;
 
+    enum ComponentStatus
+    {
+        Init,
+        Dirty,
+        Idle,
+        Erase,
+        None
+    };
+
     class Component
     {
     public:
-        inline Component() { m_id = ComponentIDAllocator::alloc(); };
+        inline Component() : m_id(ComponentIDAllocator::alloc()), m_status(ComponentStatus::Init) {}
         virtual ~Component() {}
 
         // Instantiating the component after definition loaded
@@ -19,12 +28,18 @@ namespace MoYu
 
         virtual void tick(float delta_time) {};
 
-        virtual bool isDirty() const { return m_is_dirty; }
+        virtual bool isInit() const { return m_status == ComponentStatus::Init; }
+        virtual bool isDirty() const { return m_status == ComponentStatus::Init || m_status == ComponentStatus::Dirty; }
+        virtual bool isToErase() const { return m_status == ComponentStatus::Erase; }
+        virtual bool isIdle() const { return m_status == ComponentStatus::Idle; }
+        virtual bool isNone() const { return m_status == ComponentStatus::None; }
 
-        virtual bool isReadyToErase() const { return m_is_ready_erase; }
-        virtual void markToErase() { m_is_ready_erase = true; }
-
-        virtual void setDirtyFlag(bool is_dirty) { m_is_dirty = is_dirty; }
+        virtual void markDirty() { m_status = ComponentStatus::Dirty; }
+        virtual void markToErase() { m_status = ComponentStatus::Erase; }
+        virtual void markIdle() { m_status = ComponentStatus::Idle; }
+        virtual void markNone() { m_status = ComponentStatus::None; }
+        
+        void setParentNode(std::weak_ptr<GObject> pobj) { m_object = pobj; }
 
         GComponentID getComponentId() { return m_id; }
 
@@ -39,8 +54,7 @@ namespace MoYu
 
         GComponentID m_id {K_Invalid_Component_Id};
 
-        bool m_is_dirty {false};
-        bool m_is_ready_erase {false};
+        ComponentStatus m_status {ComponentStatus::Init};
     };
 
 } // namespace MoYu

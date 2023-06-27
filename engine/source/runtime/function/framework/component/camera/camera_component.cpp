@@ -54,7 +54,7 @@ namespace MoYu
 
     void CameraComponent::tick(float delta_time)
     {
-        if (!m_object.lock())
+        if (m_object.expired())
             return;
 
         //std::shared_ptr<Level> current_level = g_runtime_global_context.m_world_manager->getCurrentActiveLevel().lock();

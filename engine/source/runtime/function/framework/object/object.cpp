@@ -78,7 +78,7 @@ namespace MoYu
 
     std::weak_ptr<TransformComponent> GObject::getTransformComponent()
     {
-        if (!m_transform_component_ptr.expired())
+        if (m_transform_component_ptr.expired())
         {
             m_transform_component_ptr = tryGetComponent(TransformComponent);
         }
