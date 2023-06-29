@@ -40,16 +40,16 @@ namespace MoYu
             }
         }
 
-        // mark transform component clean
-        if (!m_transform_component_ptr.expired())
-        {
-            m_transform_component_ptr.lock()->setDirtyFlag(false);
-        }
+        //// mark transform component clean
+        //if (!m_transform_component_ptr.expired())
+        //{
+        //    m_transform_component_ptr.lock()->setDirtyFlag(false);
+        //}
 
         auto it = m_components.begin();
         while (it != m_components.end())
         {
-            if ((*it)->isReadyToErase())
+            if ((*it)->isToErase())
             {
                 it = m_components.erase(it);
             }

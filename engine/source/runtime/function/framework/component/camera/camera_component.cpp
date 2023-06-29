@@ -80,11 +80,6 @@ namespace MoYu
         }
     }
 
-    void CameraComponent::markToErase()
-    {
-        m_is_ready_erase = true;
-    }
-
     void CameraComponent::tickFirstPersonCamera(float delta_time)
     {
         /*

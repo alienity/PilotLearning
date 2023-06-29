@@ -10,6 +10,8 @@ namespace MoYu
 
         TransformRes* transform_res = (TransformRes*)data;
 
+        Transform m_transform = {};
+
         m_transform.m_position = transform_res->m_position;
         m_transform.m_scale    = transform_res->m_scale;
         m_transform.m_rotation = transform_res->m_rotation;
@@ -17,12 +19,12 @@ namespace MoYu
         m_transform_buffer[m_current_index] = m_transform;
         m_transform_buffer[m_next_index]    = m_transform;
 
-        markDirty();
+        markInit();
     }
 
     void TransformComponent::setPosition(const Vector3& new_translation)
     {
-        m_transform.m_position = new_translation;
+        //m_transform.m_position = new_translation;
 
         m_transform_buffer[m_next_index].m_position = new_translation;
 
@@ -31,7 +33,7 @@ namespace MoYu
 
     void TransformComponent::setScale(const Vector3& new_scale)
     {
-        m_transform.m_scale = new_scale;
+        //m_transform.m_scale = new_scale;
 
         m_transform_buffer[m_next_index].m_scale = new_scale;
         
@@ -40,7 +42,7 @@ namespace MoYu
 
     void TransformComponent::setRotation(const Quaternion& new_rotation)
     {
-        m_transform.m_rotation = new_rotation;
+        //m_transform.m_rotation = new_rotation;
 
         m_transform_buffer[m_next_index].m_rotation = new_rotation;
 
@@ -58,6 +60,9 @@ namespace MoYu
 
     void TransformComponent::tick(float delta_time)
     {
+        if (m_object.expired() || this->isNone())
+            return;
+
         m_transform_buffer[m_current_index] = m_transform_buffer[m_next_index];
 
         std::swap(m_current_index, m_next_index);
@@ -90,7 +95,6 @@ namespace MoYu
             {
                 TransformComponent* m_parent_trans = m_object_parent->getTransformComponent().lock().get();
                 matrix_world = getMatrixWorldRecursively(m_parent_trans) * matrix_world;
-                m_parent_trans->markIdle();
             }
         }
         return matrix_world;

@@ -24,7 +24,9 @@ namespace MoYu
         void setRotation(const Quaternion& new_rotation);
 
         const Transform& getTransformConst() const { return m_transform_buffer[m_current_index]; }
-        Transform&       getTransform() { return m_transform_buffer[m_next_index]; }
+
+        // for editor
+        Transform& getTransform() { return m_transform_buffer[m_next_index]; }
 
         const Matrix4x4 getMatrix() const { return m_transform_buffer[m_current_index].getMatrix(); }
 
@@ -35,10 +37,10 @@ namespace MoYu
         static Matrix4x4 getMatrixWorldRecursively(const TransformComponent* trans);
         static bool isDirtyRecursively(const TransformComponent* trans);
 
-    protected:
+    private:
         Matrix4x4 m_matrix_world;
 
-        Transform m_transform;
+        //Transform m_transform;
 
         Transform m_transform_buffer[2];
         uint32_t  m_current_index {0};

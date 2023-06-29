@@ -34,6 +34,7 @@ namespace MoYu
         virtual bool isIdle() const { return m_status == ComponentStatus::Idle; }
         virtual bool isNone() const { return m_status == ComponentStatus::None; }
 
+        virtual void markInit() { m_status = ComponentStatus::Init; }
         virtual void markDirty() { m_status = ComponentStatus::Dirty; }
         virtual void markToErase() { m_status = ComponentStatus::Erase; }
         virtual void markIdle() { m_status = ComponentStatus::Idle; }

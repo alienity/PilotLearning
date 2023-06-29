@@ -25,12 +25,12 @@ namespace MoYu
 
         LightComponentRes* light_res = (LightComponentRes*)data;
 
-        m_light_res = *light_res;
+        LightComponentRes m_light_res = *light_res;
 
-        m_light_res_buffer[m_current_index] = {};
+        m_light_res_buffer[m_current_index] = m_light_res;
         m_light_res_buffer[m_next_index] = m_light_res;
 
-        markDirty();
+        markInit();
     }
 
     GameObjectComponentDesc component2SwapData(MoYu::GObjectID     game_object_id,
@@ -57,9 +57,9 @@ namespace MoYu
         SceneLight scene_light   = {};
         scene_light.m_identifier = SceneCommonIdentifier {game_object_id, light_component_id};
 
-        if (m_light_res_ptr->m_LightParamName == "DirectionLightParameter")
+        if (m_light_res_ptr->m_LightParamName == DirectionLightParameterName)
         {
-            Matrix3x3 rotation_matrix = Matrix3x3::fromQuaternion(scene_transform.m_rotation);
+            //Matrix3x3 rotation_matrix = Matrix3x3::fromQuaternion(scene_transform.m_rotation);
 
             BaseDirectionLight direction_light = {};
 
@@ -74,7 +74,7 @@ namespace MoYu
             scene_light.direction_light = direction_light;
             scene_light.m_light_type    = LightType::DirectionLight;
         }
-        else if (m_light_res_ptr->m_LightParamName == "PointLightParameter")
+        else if (m_light_res_ptr->m_LightParamName == PointLightParameterName)
         {
             BasePointLight point_light = {};
 
@@ -85,7 +85,7 @@ namespace MoYu
             scene_light.point_light  = point_light;
             scene_light.m_light_type = LightType::PointLight;
         }
-        else if (m_light_res_ptr->m_LightParamName == "SpotLightParameter")
+        else if (m_light_res_ptr->m_LightParamName == SpotLightParameterName)
         {
             BaseSpotLight spot_light = {};
 
@@ -114,12 +114,12 @@ namespace MoYu
 
     void LightComponent::tick(float delta_time)
     {
-        if (m_object.expired())
+        if (m_object.expired() || this->isNone())
             return;
 
-        std::shared_ptr<MoYu::GObject> m_obj_ptr = m_object.lock();
+        m_light_res_buffer[m_current_index] = m_light_res_buffer[m_next_index];
 
-        m_light_res_buffer[m_next_index] = m_light_res;
+        std::shared_ptr<MoYu::GObject> m_obj_ptr = m_object.lock();
 
         RenderSwapContext& render_swap_context = g_runtime_global_context.m_render_system->getSwapContext();
         RenderSwapData& logic_swap_data = render_swap_context.getLogicSwapData();
@@ -133,7 +133,7 @@ namespace MoYu
         std::string currentLightName = m_light_res_buffer[m_current_index].m_LightParamName;
         std::string nextLightName    = m_light_res_buffer[m_next_index].m_LightParamName;
 
-        if (m_is_ready_erase || (currentLightName != "" && nextLightName == ""))
+        if (this->isToErase())
         {
             GameObjectComponentDesc light_component_desc = component2SwapData(game_object_id,
                                                                               transform_component_id,
@@ -142,9 +142,10 @@ namespace MoYu
                                                                               &m_light_res_buffer[m_current_index]);
 
             logic_swap_data.addDeleteGameObject({game_object_id, {light_component_desc}});
+
+            markNone();
         }
-        else if ((currentLightName == "" && nextLightName != "") ||
-            (currentLightName == nextLightName && nextLightName != "" && (m_transform_component_ptr->isDirty() || isDirty())))
+        else if (m_transform_component_ptr->isDirty() || this->isDirty())
         {
             GameObjectComponentDesc light_component_desc = component2SwapData(game_object_id,
                                                                               transform_component_id,
@@ -153,28 +154,11 @@ namespace MoYu
                                                                               &m_light_res_buffer[m_next_index]);
 
             logic_swap_data.addDirtyGameObject({game_object_id, {light_component_desc}});
-        }
-        else if (currentLightName != "" && nextLightName != "" && (currentLightName != nextLightName))
-        {
-            GameObjectComponentDesc light_component_desc_cur = component2SwapData(game_object_id,
-                                                                                  transform_component_id,
-                                                                                  m_transform_component_ptr,
-                                                                                  light_component_id,
-                                                                                  &m_light_res_buffer[m_current_index]);
 
-            GameObjectComponentDesc light_component_desc_next = component2SwapData(game_object_id,
-                                                                                   transform_component_id,
-                                                                                   m_transform_component_ptr,
-                                                                                   light_component_id,
-                                                                                   &m_light_res_buffer[m_next_index]);
-
-            logic_swap_data.addDeleteGameObject({game_object_id, {light_component_desc_cur}});
-            logic_swap_data.addDirtyGameObject({game_object_id, {light_component_desc_next}});
+            markIdle();
         }
 
         std::swap(m_current_index, m_next_index);
-
-        m_is_dirty = false;
     }
 
 } // namespace MoYu

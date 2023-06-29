@@ -409,15 +409,15 @@ namespace MoYu
 
             if (item_current_idx == 0)
             {
-                m_editor_ui_creator["DirectionLightParameter"](DirectionLightParameterName, isDirty, &l_res_ptr->m_DirectionLightParam);
+                m_editor_ui_creator[DirectionLightParameterName](DirectionLightParameterName, isDirty, &l_res_ptr->m_DirectionLightParam);
             }
             else if (item_current_idx == 1)
             {
-                m_editor_ui_creator["PointLightParameter"](PointLightParameterName, isDirty, &l_res_ptr->m_PointLightParam);
+                m_editor_ui_creator[PointLightParameterName](PointLightParameterName, isDirty, &l_res_ptr->m_PointLightParam);
             }
             else if (item_current_idx == 2)
             {
-                m_editor_ui_creator["SpotLightParameter"](SpotLightParameterName, isDirty, &l_res_ptr->m_SpotLightParam);
+                m_editor_ui_creator[SpotLightParameterName](SpotLightParameterName, isDirty, &l_res_ptr->m_SpotLightParam);
             }
 
             ImGui::Unindent();
@@ -509,8 +509,12 @@ namespace MoYu
                 ImGui::Indent();
 
                 MeshRendererComponent* mesh_renderer_ptr = static_cast<MeshRendererComponent*>(value_ptr);
-                m_editor_ui_creator["SceneMesh"]("m_scene_mesh", isDirty, &mesh_renderer_ptr->m_scene_mesh);
-                m_editor_ui_creator["SceneMaterial"]("m_material", isDirty, &mesh_renderer_ptr->m_material);
+
+                SceneMesh& _sceneMesh = mesh_renderer_ptr->getSceneMesh();
+                SceneMaterial& _sceneMaterial = mesh_renderer_ptr->getSceneMaterial();
+
+                m_editor_ui_creator["SceneMesh"]("m_scene_mesh", isDirty, &_sceneMesh);
+                m_editor_ui_creator["SceneMaterial"]("m_material", isDirty, &_sceneMaterial);
                 
                 ImGui::Unindent();
                 ImGui::TreePop();
@@ -524,7 +528,10 @@ namespace MoYu
             if (ImGui::TreeNode(name.c_str()))
             {
                 LightComponent* light_ptr = static_cast<LightComponent*>(value_ptr);
-                m_editor_ui_creator["LightComponentRes"]("m_light_res", isDirty, &light_ptr->m_light_res);
+
+                LightComponentRes& _lightComponentRes = light_ptr->getLightComponent();
+
+                m_editor_ui_creator["LightComponentRes"]("m_light_res", isDirty, &_lightComponentRes);
 
                 ImGui::TreePop();
             }
@@ -537,7 +544,10 @@ namespace MoYu
             if (ImGui::TreeNode(name.c_str()))
             {
                 CameraComponent* camera_ptr = static_cast<CameraComponent*>(value_ptr);
-                m_editor_ui_creator["CameraComponentRes"]("m_camera_res", isDirty, &camera_ptr->m_camera_res);
+
+                CameraComponentRes& _cameraComponentRes = camera_ptr->getCameraComponent();
+
+                m_editor_ui_creator["CameraComponentRes"]("m_camera_res", isDirty, &_cameraComponentRes);
 
                 ImGui::TreePop();
             }
@@ -768,7 +778,8 @@ namespace MoYu
 
         m_editor_ui_creator[_typeName](_typeName, _isDirty, component);
 
-        component->setDirtyFlag(_isDirty);
+        if (_isDirty)
+            component->markDirty();
 
         /*
         Reflection::ReflectionInstance* reflection_instance;
@@ -949,7 +960,7 @@ namespace MoYu
                             if (_param_toggle)
                             {
                                 std::shared_ptr<LightComponent> light_component = std::make_shared<LightComponent>();
-                                light_component->m_light_res.m_LightParamName   = param_names[i];
+                                light_component->getLightComponent().m_LightParamName = param_names[i];
                                 light_component->markDirty();
                                 selected_object->tryAddComponent(light_component);
 

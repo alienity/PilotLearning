@@ -25,9 +25,10 @@ namespace MoYu
 
         void tick(float delta_time) override;
 
-        void markToErase();
+        // for editor
+        CameraComponentRes& getCameraComponent() { return m_camera_res; }
 
-    //private:
+    private:
         void tickFirstPersonCamera(float delta_time);
         void tickThirdPersonCamera(float delta_time);
         void tickFreeCamera(float delta_time);

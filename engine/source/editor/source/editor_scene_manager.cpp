@@ -30,7 +30,7 @@ namespace MoYu
             std::shared_ptr<TransformComponent> transform_component = selected_gobject->tryGetComponent(TransformComponent);
             if (transform_component)
             {
-                transform_component->setDirtyFlag(true);
+                transform_component->markDirty();
             }
         }
     }

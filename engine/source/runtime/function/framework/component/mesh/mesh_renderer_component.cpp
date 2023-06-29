@@ -55,7 +55,7 @@ namespace MoYu
         m_material.m_shader_name = m_mat_res.shader_name;
         m_material.m_mat_data = m_mat_data;
 
-        m_is_dirty = true;
+        markInit();
     }
 
     void MeshRendererComponent::reset()
@@ -103,7 +103,7 @@ namespace MoYu
 
     void MeshRendererComponent::tick(float delta_time)
     {
-        if (m_object.expired())
+        if (m_object.expired() || this->isNone())
             return;
 
         std::shared_ptr<MoYu::GObject> m_obj_ptr = m_object.lock();
@@ -117,7 +117,7 @@ namespace MoYu
         MoYu::GComponentID transform_component_id = m_transform_component_ptr->getComponentId();
         MoYu::GComponentID mesh_renderer_component_id = this->getComponentId();
 
-        if (m_is_ready_erase) // Editor±ê¼ÇÉ¾³ý¸ÃComponent
+        if (this->isToErase())
         {
             GameObjectComponentDesc mesh_renderer_desc = component2SwapData(game_object_id,
                                                                             transform_component_id,
@@ -127,8 +127,10 @@ namespace MoYu
                                                                             &m_material);
 
             logic_swap_data.addDeleteGameObject({game_object_id, {mesh_renderer_desc}});
+
+            this->markNone();
         }
-        else if (m_transform_component_ptr->isDirty() || isDirty())
+        else if (m_transform_component_ptr->isDirty() || this->isDirty())
         {
             GameObjectComponentDesc mesh_renderer_desc = component2SwapData(game_object_id,
                                                                             transform_component_id,
@@ -138,6 +140,8 @@ namespace MoYu
                                                                             &m_material);
 
             logic_swap_data.addDirtyGameObject({game_object_id, {mesh_renderer_desc}});
+
+            this->markIdle();
         }
     }
 
