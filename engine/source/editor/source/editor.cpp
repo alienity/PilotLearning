@@ -20,7 +20,7 @@ namespace MoYu
     PilotEditor::PilotEditor()
     {
         registerEdtorTickComponent("TransformComponent");
-        registerEdtorTickComponent("MeshComponent");
+        registerEdtorTickComponent("MeshRendererComponent");
         registerEdtorTickComponent("LightComponent");
     }
 

@@ -32,13 +32,19 @@ namespace MoYu
 
         const Matrix4x4 getMatrixWorld();
 
+        const bool isMatrixDirty() const;
+
+        void preTick(float delta_time) override;
         void tick(float delta_time) override;
+        void lateTick(float delta_time) override;
 
         static Matrix4x4 getMatrixWorldRecursively(const TransformComponent* trans);
         static bool isDirtyRecursively(const TransformComponent* trans);
+        static void UpdateWorldMatrixRecursively(TransformComponent* trans);
 
     private:
-        Matrix4x4 m_matrix_world;
+        Matrix4x4 m_matrix_world_prev {Matrix4x4::Zero};
+        Matrix4x4 m_matrix_world {Matrix4x4::Identity};
 
         //Transform m_transform;
 

@@ -10,6 +10,19 @@
 
 namespace MoYu
 {
+    enum DefaultMeshType
+    {
+        Capsule,
+        Cone,
+        Convexmesh,
+        Cube,
+        Cylinder,
+        Sphere
+    };
+
+    std::string              DefaultMeshTypeToName(DefaultMeshType type);
+    MeshRendererComponentRes DefaultMeshTypeToComponentRes(DefaultMeshType type);
+
     class MeshRendererComponent : public Component
     {
     public:
@@ -21,9 +34,9 @@ namespace MoYu
 
         void tick(float delta_time) override;
 
+        void updateMeshRendererRes(const MeshRendererComponentRes& res);
         void updateMeshRes(std::string mesh_file_path);
-
-        void updateMaterial(std::string material_path);
+        void updateMaterial(std::string material_path, std::vector<uint64_t> serialized_data = {});
 
         // for editor
         SceneMesh& getSceneMesh() { return m_scene_mesh; }

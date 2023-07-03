@@ -156,6 +156,7 @@ namespace MoYu
                     }
                 }
             }
+            swap_data.m_game_object_resource_desc.reset();
         }
 
         // remove game object
@@ -186,6 +187,7 @@ namespace MoYu
                     }
                 }
             }
+            swap_data.m_game_object_to_delete.reset();
         }
 
         // process camera swap data
@@ -205,6 +207,7 @@ namespace MoYu
             {
                 m_render_camera->setCurrentCameraType(*swap_data.m_camera_swap_data->m_camera_type);
             }
+            swap_data.m_camera_swap_data.reset();
         }
     }
 

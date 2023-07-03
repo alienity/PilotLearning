@@ -25,6 +25,8 @@ namespace MoYu
         //// Editor直接编辑这个，作为当前帧的修改对象，修改后一定要设置SetDirtyFlag
         //LightComponentRes m_light_res;
         
+        bool isLightTypeInit();
+
         // 假设1是当前帧，2是下一帧
         // 1是空，2是有Light的，添加光源
         // 1是有Light的，2是空，删除光源

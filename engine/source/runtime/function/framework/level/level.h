@@ -52,6 +52,7 @@ namespace MoYu
         void init();
         void clear();
         void resortChildrenSiblingIndex(GObjectID objectID);
+        void removeGObject(GObjectID go_id);
 
         bool        m_is_loaded {false};
         std::string m_level_res_url;

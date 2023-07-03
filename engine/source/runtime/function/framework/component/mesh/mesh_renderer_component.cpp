@@ -15,45 +15,65 @@
 
 namespace MoYu
 {
+    MeshComponentRes _capsule_mesh    = {false, "asset/objects/basic/capsule.obj", ""};
+    MeshComponentRes _cone_mesh       = {false, "asset/objects/basic/cone.obj", ""};
+    MeshComponentRes _convexmesh_mesh = {false, "asset/objects/basic/convexmesh.obj", ""};
+    MeshComponentRes _cube_mesh       = {false, "asset/objects/basic/cube.obj", ""};
+    MeshComponentRes _cylinder_mesh   = {false, "asset/objects/basic/cylinder.obj", ""};
+    MeshComponentRes _sphere_mesh     = {false, "asset/objects/basic/sphere.obj", ""};
+
+    MaterialComponentRes _pbr_mat = {"asset/objects/environment/_material/temp.material.json", false, {}};
+
+    MeshRendererComponentRes _capsule_mesh_mat    = {_capsule_mesh, _pbr_mat};
+    MeshRendererComponentRes _cone_mesh_mat       = {_cone_mesh, _pbr_mat};
+    MeshRendererComponentRes _convexmesh_mesh_mat = {_convexmesh_mesh, _pbr_mat};
+    MeshRendererComponentRes _cube_mesh_mat       = {_cube_mesh, _pbr_mat};
+    MeshRendererComponentRes _cylinder_mesh_mat   = {_cylinder_mesh, _pbr_mat};
+    MeshRendererComponentRes _sphere_mesh_mat     = {_sphere_mesh, _pbr_mat};
+
+    std::string DefaultMeshTypeToName(DefaultMeshType type)
+    {
+        if (type == MoYu::Capsule)
+            return "Capsule";
+        else if (type == MoYu::Cone)
+            return "Cone";
+        else if (type == MoYu::Convexmesh)
+            return "Convexmesh";
+        else if (type == MoYu::Cube)
+            return "Cube";
+        else if (type == MoYu::Cylinder)
+            return "Cylinder";
+        else if (type == MoYu::Sphere)
+            return "Sphere";
+        else
+            return "Capsule";
+    }
+
+    MeshRendererComponentRes DefaultMeshTypeToComponentRes(DefaultMeshType type)
+    {
+        if (type == MoYu::Capsule)
+            return _capsule_mesh_mat;
+        else if (type == MoYu::Cone)
+            return _cone_mesh_mat;
+        else if (type == MoYu::Convexmesh)
+            return _convexmesh_mesh_mat;
+        else if (type == MoYu::Cube)
+            return _cube_mesh_mat;
+        else if (type == MoYu::Cylinder)
+            return _cylinder_mesh_mat;
+        else if (type == MoYu::Sphere)
+            return _sphere_mesh_mat;
+        else
+            return _capsule_mesh_mat;
+    }
+
     void MeshRendererComponent::postLoadResource(std::weak_ptr<GObject> object, void* data)
     {
         m_object = object;
 
         MeshRendererComponentRes* mesh_renderer_res = (MeshRendererComponentRes*)data;
 
-        m_mesh_renderer_res.m_mesh_res = mesh_renderer_res->m_mesh_res;
-        m_mesh_renderer_res.m_material_res = mesh_renderer_res->m_material_res;
-
-        m_scene_mesh = {m_mesh_renderer_res.m_mesh_res.m_is_mesh_data,
-                        m_mesh_renderer_res.m_mesh_res.m_sub_mesh_file,
-                        m_mesh_renderer_res.m_mesh_res.m_mesh_data_path};
-
-        MaterialManager* m_mat_manager_ptr = g_runtime_global_context.m_material_manager.get();
-
-        MaterialRes m_mat_res = m_mat_manager_ptr->loadMaterialRes(m_mesh_renderer_res.m_material_res.m_material_file);
-
-        if (m_mesh_renderer_res.m_material_res.m_is_material_init)
-        {
-            MaterialRes* mat_res_data = (MaterialRes*)m_mesh_renderer_res.m_material_res.m_material_serialized_data.data();
-            memcpy(&m_mat_res, mat_res_data, sizeof(MaterialRes));
-        }
-
-        ScenePBRMaterial m_mat_data = {m_mat_res.m_blend,
-                                       m_mat_res.m_double_sided,
-                                       m_mat_res.m_base_color_factor,
-                                       m_mat_res.m_metallic_factor,
-                                       m_mat_res.m_roughness_factor,
-                                       m_mat_res.m_normal_scale,
-                                       m_mat_res.m_occlusion_strength,
-                                       m_mat_res.m_emissive_factor,
-                                       m_mat_res.m_base_color_texture_file,
-                                       m_mat_res.m_metallic_roughness_texture_file,
-                                       m_mat_res.m_normal_texture_file,
-                                       m_mat_res.m_occlusion_texture_file,
-                                       m_mat_res.m_emissive_texture_file};
-
-        m_material.m_shader_name = m_mat_res.shader_name;
-        m_material.m_mat_data = m_mat_data;
+        updateMeshRendererRes(*mesh_renderer_res);
 
         markInit();
     }
@@ -130,7 +150,7 @@ namespace MoYu
 
             this->markNone();
         }
-        else if (m_transform_component_ptr->isDirty() || this->isDirty())
+        else if (m_transform_component_ptr->isMatrixDirty() || this->isDirty())
         {
             GameObjectComponentDesc mesh_renderer_desc = component2SwapData(game_object_id,
                                                                             transform_component_id,
@@ -145,13 +165,63 @@ namespace MoYu
         }
     }
 
-    void MeshRendererComponent::updateMeshRes(std::string mesh_file_path)
+    void MeshRendererComponent::updateMeshRendererRes(const MeshRendererComponentRes& res)
     {
-        m_scene_mesh.m_sub_mesh_file = mesh_file_path;
+        m_mesh_renderer_res.m_mesh_res     = res.m_mesh_res;
+        m_mesh_renderer_res.m_material_res = res.m_material_res;
+
+        m_scene_mesh = {m_mesh_renderer_res.m_mesh_res.m_is_mesh_data,
+                        m_mesh_renderer_res.m_mesh_res.m_sub_mesh_file,
+                        m_mesh_renderer_res.m_mesh_res.m_mesh_data_path};
+
+        MaterialManager* m_mat_manager_ptr = g_runtime_global_context.m_material_manager.get();
+
+        MaterialRes m_mat_res = m_mat_manager_ptr->loadMaterialRes(m_mesh_renderer_res.m_material_res.m_material_file);
+
+        if (m_mesh_renderer_res.m_material_res.m_is_material_init)
+        {
+            MaterialRes* mat_res_data =
+                (MaterialRes*)m_mesh_renderer_res.m_material_res.m_material_serialized_data.data();
+            memcpy(&m_mat_res, mat_res_data, sizeof(MaterialRes));
+        }
+
+        ScenePBRMaterial m_mat_data = {m_mat_res.m_blend,
+                                       m_mat_res.m_double_sided,
+                                       m_mat_res.m_base_color_factor,
+                                       m_mat_res.m_metallic_factor,
+                                       m_mat_res.m_roughness_factor,
+                                       m_mat_res.m_normal_scale,
+                                       m_mat_res.m_occlusion_strength,
+                                       m_mat_res.m_emissive_factor,
+                                       m_mat_res.m_base_color_texture_file,
+                                       m_mat_res.m_metallic_roughness_texture_file,
+                                       m_mat_res.m_normal_texture_file,
+                                       m_mat_res.m_occlusion_texture_file,
+                                       m_mat_res.m_emissive_texture_file};
+
+        m_material.m_shader_name = m_mat_res.shader_name;
+        m_material.m_mat_data    = m_mat_data;
+
+        markDirty();
     }
 
-    void MeshRendererComponent::updateMaterial(std::string material_path)
+    void MeshRendererComponent::updateMeshRes(std::string mesh_file_path)
     {
+        MeshComponentRes m_mesh_res = {false, mesh_file_path, ""};
+        m_mesh_renderer_res.m_mesh_res = m_mesh_res;
+
+        m_scene_mesh.m_is_mesh_data   = m_mesh_renderer_res.m_mesh_res.m_is_mesh_data;
+        m_scene_mesh.m_sub_mesh_file  = m_mesh_renderer_res.m_mesh_res.m_sub_mesh_file;
+        m_scene_mesh.m_mesh_data_path = m_mesh_renderer_res.m_mesh_res.m_mesh_data_path;
+
+        markDirty();
+    }
+
+    void MeshRendererComponent::updateMaterial(std::string material_path, std::vector<uint64_t> serialized_data)
+    {
+        MaterialComponentRes m_material_res = {material_path, serialized_data.empty() ? true : false, serialized_data};
+        m_mesh_renderer_res.m_material_res = m_material_res;
+
         MaterialManager* m_mat_manager_ptr = g_runtime_global_context.m_material_manager.get();
         MaterialRes m_mat_res = m_mat_manager_ptr->loadMaterialRes(m_mesh_renderer_res.m_material_res.m_material_file);
 
@@ -171,6 +241,8 @@ namespace MoYu
 
         m_material.m_shader_name = m_mat_res.shader_name;
         m_material.m_mat_data    = m_mat_data;
+
+        markDirty();
     }
 
 } // namespace MoYu

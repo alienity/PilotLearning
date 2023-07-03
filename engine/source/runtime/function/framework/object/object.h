@@ -18,6 +18,15 @@ namespace MoYu
     class Level;
     class TransformComponent;
 
+    enum GObjectStatus
+    {
+        GO_Init,
+        GO_Dirty,
+        GO_Idle,
+        GO_Erase,
+        GO_None
+    };
+
     /// GObject : Game Object base class
     class GObject : public std::enable_shared_from_this<GObject>
     {
@@ -27,7 +36,9 @@ namespace MoYu
         GObject(GObjectID id, std::shared_ptr<Level> level) : m_id(id), m_current_level(level) {}
         virtual ~GObject();
 
+        virtual void preTick(float delta_time);
         virtual void tick(float delta_time);
+        virtual void lateTick(float delta_time);
 
         bool isRootNode() const { return m_id == K_Root_Object_Id; }
 
@@ -46,10 +57,19 @@ namespace MoYu
         void setParent(GObjectID parentID, std::optional<std::uint32_t> sibling_index = std::nullopt);
         void removeChild(GObjectID childID);
 
-        void markToErase() { m_is_ready_erase = true; }
-        bool isReadyToErase() const { return m_is_ready_erase; }
+        //virtual bool isInit() const { return m_status == GObjectStatus::GO_Init; }
+        //virtual bool isDirty() const { return m_status == GObjectStatus::GO_Init || m_status == GObjectStatus::GO_Dirty; }
+        virtual bool isToErase() const { return m_status == GObjectStatus::GO_Erase; }
+        //virtual bool isIdle() const { return m_status == GObjectStatus::GO_Idle; }
+        virtual bool isNone() const { return m_status == GObjectStatus::GO_None; }
 
-        void               setName(std::string name) { m_name = name; }
+        //virtual void markInit() { m_status = GObjectStatus::GO_Init; }
+        //virtual void markDirty() { m_status = GObjectStatus::GO_Dirty; }
+        virtual void markToErase();
+        //virtual void markIdle() { m_status = GObjectStatus::GO_Idle; }
+        virtual void markNone() { m_status = GObjectStatus::GO_None; }
+
+        void setName(std::string name) { m_name = name; }
         const std::string& getName() const { return m_name; }
 
         std::weak_ptr<TransformComponent> getTransformComponent();
@@ -121,7 +141,7 @@ namespace MoYu
     protected:
         friend class Level;
 
-        bool m_is_ready_erase {false};
+        GObjectStatus m_status {GObjectStatus::GO_Init};
 
         GObjectID              m_id {K_Invalid_Object_Id};
         GObjectID              m_parent_id {K_Root_Object_Id};

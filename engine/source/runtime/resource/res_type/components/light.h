@@ -65,7 +65,7 @@ namespace MoYu
 
     struct LightComponentRes
     {
-        std::string             m_LightParamName {PointLightParameterName};
+        std::string             m_LightParamName {};
         DirectionLightParameter m_DirectionLightParam {};
         PointLightParameter     m_PointLightParam {};
         SpotLightParameter      m_SpotLightParam {};

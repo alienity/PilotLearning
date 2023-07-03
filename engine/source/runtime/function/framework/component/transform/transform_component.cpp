@@ -58,14 +58,45 @@ namespace MoYu
         return m_matrix_world;
     }
 
+    const bool TransformComponent::isMatrixDirty() const
+    {
+        return m_matrix_world_prev != m_matrix_world;
+    }
+
+    void TransformComponent::preTick(float delta_time)
+    {
+        if (m_object.expired() || this->isNone())
+            return;
+
+        m_matrix_world_prev = m_matrix_world;
+
+        if (TransformComponent::isDirtyRecursively(this))
+        {
+            // update transform component, dirty flag will be reset in mesh component
+            UpdateWorldMatrixRecursively(this);
+        }
+
+        m_transform_buffer[m_current_index] = m_transform_buffer[m_next_index];
+
+        std::swap(m_current_index, m_next_index);
+    }
+
     void TransformComponent::tick(float delta_time)
     {
         if (m_object.expired() || this->isNone())
             return;
 
-        m_transform_buffer[m_current_index] = m_transform_buffer[m_next_index];
+        //m_matrix_world_prev = m_matrix_world;
 
-        std::swap(m_current_index, m_next_index);
+        //if (TransformComponent::isDirtyRecursively(this))
+        //{
+        //    // update transform component, dirty flag will be reset in mesh component
+        //    UpdateWorldMatrixRecursively(this);
+        //}
+
+        //m_transform_buffer[m_current_index] = m_transform_buffer[m_next_index];
+
+        //std::swap(m_current_index, m_next_index);
 
         //if (TransformComponent::isDirtyRecursively(this))
         //{
@@ -81,6 +112,14 @@ namespace MoYu
         //markIdle();
     }
     
+    void TransformComponent::lateTick(float delta_time)
+    {
+        if (m_object.expired() || this->isNone())
+            return;
+
+        markIdle();
+    }
+
     Matrix4x4 TransformComponent::getMatrixWorldRecursively(const TransformComponent* trans)
     {
         if (trans == nullptr)
@@ -91,7 +130,7 @@ namespace MoYu
         {
             auto m_object_ptr    = trans->m_object.lock();
             auto m_object_parent = m_object_ptr->getParent();
-            if (!m_object_parent)
+            if (m_object_parent)
             {
                 TransformComponent* m_parent_trans = m_object_parent->getTransformComponent().lock().get();
                 matrix_world = getMatrixWorldRecursively(m_parent_trans) * matrix_world;
@@ -111,7 +150,7 @@ namespace MoYu
         {
             auto m_object_ptr    = trans->m_object.lock();
             auto m_object_parent = m_object_ptr->getParent();
-            if (!m_object_parent)
+            if (m_object_parent)
             {
                 TransformComponent* m_parent_trans = m_object_parent->getTransformComponent().lock().get();
                 is_dirty |= isDirtyRecursively(m_parent_trans);
@@ -120,5 +159,13 @@ namespace MoYu
         return is_dirty;
     }
 
+    void TransformComponent::UpdateWorldMatrixRecursively(TransformComponent* trans)
+    {
+        if (TransformComponent::isDirtyRecursively(trans))
+        {
+            trans->m_matrix_world = getMatrixWorldRecursively(trans);
+            trans->markIdle();
+        }
+    }
 
 } // namespace MoYu

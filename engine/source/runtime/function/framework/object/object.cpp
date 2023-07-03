@@ -30,21 +30,35 @@ namespace MoYu
         m_components.clear();
     }
 
+    void GObject::preTick(float delta_time)
+    {
+        auto _transform_weak_ptr = this->getTransformComponent();
+        ASSERT(!_transform_weak_ptr.expired());
+        _transform_weak_ptr.lock()->preTick(delta_time);
+    }
+
     void GObject::tick(float delta_time)
     {
+        auto _transform_weak_ptr = this->getTransformComponent();
+        ASSERT(!_transform_weak_ptr.expired());
+        auto _transform_ptr = _transform_weak_ptr.lock();
+        
         for (auto& component : m_components)
         {
+            if (_transform_ptr->getComponentId() == component->getComponentId())
+                continue;
             if (shouldComponentTick(component->getTypeName()))
             {
                 component->tick(delta_time);
             }
         }
+    }
 
-        //// mark transform component clean
-        //if (!m_transform_component_ptr.expired())
-        //{
-        //    m_transform_component_ptr.lock()->setDirtyFlag(false);
-        //}
+    void GObject::lateTick(float delta_time)
+    {
+        auto _transform_weak_ptr = this->getTransformComponent();
+        ASSERT(!_transform_weak_ptr.expired());
+        _transform_weak_ptr.lock()->lateTick(delta_time);
 
         auto it = m_components.begin();
         while (it != m_components.end())
@@ -73,6 +87,19 @@ namespace MoYu
         if (m_current_level != nullptr)
         {
             m_current_level->deleteGObject(childID);
+        }
+    }
+
+    void GObject::markToErase()
+    {
+         m_status = GObjectStatus::GO_Erase;
+
+        for (auto& component : m_components)
+        {
+            if (component->getTypeName() != "TransformComponent")
+            {
+                component->markToErase();
+            }
         }
     }
 

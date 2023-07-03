@@ -430,8 +430,27 @@ namespace MoYu
             SceneMesh* mesh_ptr = static_cast<SceneMesh*>(value_ptr);
             
             m_editor_ui_creator["bool"]("m_is_mesh_data", isDirty, &mesh_ptr->m_is_mesh_data);
-            ImGui::Text(mesh_ptr->m_sub_mesh_file.c_str());
-            ImGui::Text(mesh_ptr->m_mesh_data_path.c_str());
+
+            //ImGui::Text(mesh_ptr->m_sub_mesh_file.c_str());
+            static char str1[128];
+            memset(str1, 0, 128);
+            memcpy(str1, mesh_ptr->m_sub_mesh_file.c_str(), mesh_ptr->m_sub_mesh_file.size());
+            ImGui::InputText(name.c_str(), str1, IM_ARRAYSIZE(str1), ImGuiInputTextFlags_ReadOnly);
+            if (ImGui::BeginDragDropTarget())
+            {
+                if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("MESH_FILE_PATH"))
+                {
+                    IM_ASSERT(payload->DataSize == sizeof(std::string));
+                    std::string payload_filepath = *(std::string*)payload->Data;
+                    std::string mesh_file_path   = "asset/" + payload_filepath;
+                    mesh_ptr->m_sub_mesh_file    = mesh_file_path;
+
+                    isDirty = true;
+                }
+                ImGui::EndDragDropTarget();
+            }
+
+            //ImGui::Text(mesh_ptr->m_mesh_data_path.c_str());
 
             is_dirty |= isDirty;
         };
@@ -449,16 +468,24 @@ namespace MoYu
         m_editor_ui_creator["ScenePBRMaterial"] = [this, &asset_folder](const std::string& name, bool& is_dirty, void* value_ptr) -> void {
             bool isDirty = false;
 
-            MaterialRes* mat_res_ptr = static_cast<MaterialRes*>(value_ptr);
+            ScenePBRMaterial* mat_res_ptr = static_cast<ScenePBRMaterial*>(value_ptr);
 
-            ImGui::Checkbox("IsBlend", &mat_res_ptr->m_blend);
-            ImGui::Checkbox("IsDoubleSide", &mat_res_ptr->m_double_sided);
-            ImGui::ColorEdit4("BaseColorFactor", mat_res_ptr->m_base_color_factor.ptr());
-            ImGui::DragFloat("MetallicFactor", &mat_res_ptr->m_metallic_factor, 0.02f, 0.0f, 1.0f);
-            ImGui::DragFloat("RoughnessFactor", &mat_res_ptr->m_roughness_factor, 0.02f, 0.0f, 1.0f);
-            ImGui::DragFloat("NormalScale", &mat_res_ptr->m_normal_scale, 0.02f, 0.0f, 1.0f);
-            ImGui::DragFloat("OcclusionStrength", &mat_res_ptr->m_occlusion_strength, 0.02f, 0.0f, 1.0f);
-            ImGui::DragFloat3("OcclusionStrength", mat_res_ptr->m_emissive_factor.ptr(), 0.02f, 0.0f, 1.0f);
+            if (ImGui::Checkbox("IsBlend", &mat_res_ptr->m_blend))
+                isDirty = true;
+            if (ImGui::Checkbox("IsDoubleSide", &mat_res_ptr->m_double_sided))
+                isDirty = true;
+            if (ImGui::ColorEdit4("BaseColorFactor", mat_res_ptr->m_base_color_factor.ptr()))
+                isDirty = true;
+            if (ImGui::DragFloat("MetallicFactor", &mat_res_ptr->m_metallic_factor, 0.02f, 0.0f, 1.0f))
+                isDirty = true;
+            if (ImGui::DragFloat("RoughnessFactor", &mat_res_ptr->m_roughness_factor, 0.02f, 0.0f, 1.0f))
+                isDirty = true;
+            if (ImGui::DragFloat("NormalScale", &mat_res_ptr->m_normal_scale, 0.02f, 0.0f, 1.0f))
+                isDirty = true;
+            if (ImGui::DragFloat("OcclusionStrength", &mat_res_ptr->m_occlusion_strength, 0.02f, 0.0f, 1.0f))
+                isDirty = true;
+            if (ImGui::DragFloat3("OcclusionStrength", mat_res_ptr->m_emissive_factor.ptr(), 0.02f, 0.0f, 1.0f))
+                isDirty = true;
 
             m_editor_ui_creator["SceneImage"]("BaseColorTextureFile", isDirty, &mat_res_ptr->m_base_color_texture_file);
             m_editor_ui_creator["SceneImage"]("MetallicRoughnessTextureFile", isDirty, &mat_res_ptr->m_metallic_roughness_texture_file);
@@ -493,6 +520,8 @@ namespace MoYu
                     std::string payload_filepath  = *(std::string*)payload->Data;
                     std::string texture_file_path = "asset/" + payload_filepath;
                     scene_image_ptr->m_image_file = texture_file_path;
+
+                    isDirty = true;
                 }
                 ImGui::EndDragDropTarget();
             }
@@ -793,6 +822,7 @@ namespace MoYu
         if (count > 0)
             delete[] reflection_instance;
         */
+
     }
     /**/
     /*
@@ -873,6 +903,7 @@ namespace MoYu
         delete[] fields;
     }
     */
+
     void EditorUI::showEditorDetailWindow(bool* p_open)
     {
         ImGuiWindowFlags window_flags = ImGuiWindowFlags_None;
@@ -972,18 +1003,40 @@ namespace MoYu
                 ImGui::EndMenu();
             }
 
-            if (ImGui::MenuItem("Mesh Renderer Component"))
+            if (ImGui::BeginMenu("Mesh Renderer Component"))
             {
                 if (selected_object->tryGetComponent<MeshRendererComponent>("MeshRendererComponent"))
                 {
-                    LOG_INFO("object {} already has Mesh Component", selected_object->getName());
+                    LOG_INFO("object {} already has Mesh Renderer Component", selected_object->getName());
                 }
                 else
                 {
-                    std::shared_ptr<MeshRendererComponent> mesh_renderer_component = std::make_shared<MeshRendererComponent>();
-                    selected_object->tryAddComponent(mesh_renderer_component);
-                    LOG_INFO("Add New Mesh Renderer Component");
+                    static const DefaultMeshType param_types[] = {DefaultMeshType::Capsule,
+                                                                  DefaultMeshType::Cone,
+                                                                  DefaultMeshType::Convexmesh,
+                                                                  DefaultMeshType::Cube,
+                                                                  DefaultMeshType::Cylinder,
+                                                                  DefaultMeshType::Sphere};
+
+                    for (int i = 0; i < IM_ARRAYSIZE(param_types); i++)
+                    {
+                        std::string param_name = DefaultMeshTypeToName(param_types[i]);
+                        bool _param_toggle = false;
+                        if (ImGui::MenuItem(param_name.c_str(), "", &_param_toggle))
+                        {
+                            if (_param_toggle)
+                            {
+                                std::shared_ptr<MeshRendererComponent> mesh_renderer_component = std::make_shared<MeshRendererComponent>();
+                                mesh_renderer_component->updateMeshRendererRes(DefaultMeshTypeToComponentRes(param_types[i]));
+                                mesh_renderer_component->markDirty();
+                                selected_object->tryAddComponent(mesh_renderer_component);
+
+                                LOG_INFO(("Add New Mesh Renderer Component " + param_name).c_str());
+                            }
+                        }
+                    }
                 }
+                ImGui::EndMenu();
             }
 
             ImGui::EndPopup();
@@ -1508,6 +1561,7 @@ namespace MoYu
 
     void EditorUI::setUIColorStyle()
     {
+        /*
         ImGuiStyle* style  = &ImGui::GetStyle();
         ImVec4*     colors = style->Colors;
 
@@ -1566,6 +1620,7 @@ namespace MoYu
         colors[ImGuiCol_NavWindowingHighlight] = ImVec4(1.00f, 1.00f, 1.00f, 0.70f);
         colors[ImGuiCol_NavWindowingDimBg]     = ImVec4(0.80f, 0.80f, 0.80f, 0.20f);
         colors[ImGuiCol_ModalWindowDimBg]      = ImVec4(0.80f, 0.80f, 0.80f, 0.35f);
+        */
     }
 
     void EditorUI::preRender()

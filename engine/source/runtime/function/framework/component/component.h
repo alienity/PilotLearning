@@ -26,7 +26,9 @@ namespace MoYu
         // Instantiating the component after definition loaded
         virtual void postLoadResource(std::weak_ptr<GObject> object, void* data) { m_object = object; }
 
+        virtual void preTick(float delta_time) {};
         virtual void tick(float delta_time) {};
+        virtual void lateTick(float delta_time) {};
 
         virtual bool isInit() const { return m_status == ComponentStatus::Init; }
         virtual bool isDirty() const { return m_status == ComponentStatus::Init || m_status == ComponentStatus::Dirty; }
