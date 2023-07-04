@@ -22,19 +22,19 @@ namespace MoYu
                 std::string value = config_line.substr(seperate_pos + 1, config_line.length() - seperate_pos - 1);
                 if (name == "BinaryRootFolder")
                 {
-                    m_root_folder = config_file_path.parent_path() / value;
+                    m_root_folder = std::filesystem::absolute(config_file_path.parent_path() / value);
                 }
                 else if (name == "AssetFolder")
                 {
-                    m_asset_folder = m_root_folder / value;
+                    m_asset_folder = std::filesystem::absolute(m_root_folder / value);
                 }
                 else if (name == "ShaderFolder")
                 {
-                    m_shader_folder = config_file_path.parent_path() / value;
+                    m_shader_folder = std::filesystem::absolute(m_root_folder / value);
                 }
                 else if (name == "SchemaFolder")
                 {
-                    m_schema_folder = m_root_folder / value;
+                    m_schema_folder = std::filesystem::absolute(m_root_folder / value);
                 }
                 else if (name == "DefaultWorld")
                 {
@@ -42,15 +42,15 @@ namespace MoYu
                 }
                 else if (name == "BigIconFile")
                 {
-                    m_editor_big_icon_path = m_root_folder / value;
+                    m_editor_big_icon_path = std::filesystem::absolute(m_root_folder / value);
                 }
                 else if (name == "SmallIconFile")
                 {
-                    m_editor_small_icon_path = m_root_folder / value;
+                    m_editor_small_icon_path = std::filesystem::absolute(m_root_folder / value);
                 }
                 else if (name == "FontFile")
                 {
-                    m_editor_font_path = m_root_folder / value;
+                    m_editor_font_path = std::filesystem::absolute(m_root_folder / value);
                 }
                 else if (name == "GlobalRenderingRes")
                 {
@@ -59,7 +59,7 @@ namespace MoYu
 #ifdef ENABLE_PHYSICS_DEBUG_RENDERER
                 else if (name == "JoltAssetFolder")
                 {
-                    m_jolt_physics_asset_folder = m_root_folder / value;
+                    m_jolt_physics_asset_folder = std::filesystem::absolute(m_root_folder / value);
                 }
 #endif
             }

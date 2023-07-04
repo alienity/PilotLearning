@@ -138,6 +138,7 @@ namespace MoYu
             texture->m_array_layers = 0;
 
             texture->m_is_hdr = false;
+            texture->m_need_free = true;
 
             _TextureData_Caches[file] = texture;
         }

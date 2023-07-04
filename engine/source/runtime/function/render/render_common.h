@@ -293,9 +293,11 @@ namespace MoYu
     enum ComponentType
     {
         C_Transform    = 0,
-        C_MeshRenderer = 1,
-        C_Light        = 1 << 1,
-        C_Camera       = 1 << 2
+        C_Light        = 1,
+        C_Camera       = 1 << 1,
+        C_Mesh         = 1 << 2,
+        C_Material     = 1 << 3,
+        C_MeshRenderer = C_Mesh | C_Material
     };
     DEFINE_MOYU_ENUM_FLAG_OPERATORS(ComponentType)
 
@@ -332,6 +334,8 @@ namespace MoYu
         SceneImage m_occlusion_texture_file;
         SceneImage m_emissive_texture_file;
     };
+
+    extern ScenePBRMaterial _DefaultScenePBRMaterial;
 
     struct SceneMaterial
     {
@@ -468,12 +472,13 @@ namespace MoYu
         uint32_t m_array_layers {0};
         uint32_t m_channels {4};
         bool     m_is_hdr {false};
+        bool     m_need_free {true};
         void*    m_pixels {nullptr};
 
         TextureData() = default;
         ~TextureData()
         {
-            if (m_pixels)
+            if (m_pixels && m_need_free)
             {
                 free(m_pixels);
             }

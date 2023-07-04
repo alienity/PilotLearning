@@ -199,6 +199,8 @@ namespace MoYu
                                        m_mat_res.m_occlusion_texture_file,
                                        m_mat_res.m_emissive_texture_file};
 
+
+
         m_material.m_shader_name = m_mat_res.shader_name;
         m_material.m_mat_data    = m_mat_data;
 

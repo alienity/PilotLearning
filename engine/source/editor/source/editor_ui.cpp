@@ -429,7 +429,7 @@ namespace MoYu
 
             SceneMesh* mesh_ptr = static_cast<SceneMesh*>(value_ptr);
             
-            m_editor_ui_creator["bool"]("m_is_mesh_data", isDirty, &mesh_ptr->m_is_mesh_data);
+            //m_editor_ui_creator["bool"]("m_is_mesh_data", isDirty, &mesh_ptr->m_is_mesh_data);
 
             //ImGui::Text(mesh_ptr->m_sub_mesh_file.c_str());
             static char str1[128];

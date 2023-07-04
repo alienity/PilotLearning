@@ -10,8 +10,12 @@
 #include "runtime/function/render/rhi/d3d12/d3d12_graphicsMemory.h"
 
 #include "runtime/function/render/rhi/hlsl_data_types.h"
-
 #include "runtime/core/base/macro.h"
+
+#include "runtime/platform/path/path.h"
+#include "runtime/function/global/global_context.h"
+#include "runtime/resource/asset_manager/asset_manager.h"
+#include "runtime/resource/config_manager/config_manager.h"
 
 #include <stdexcept>
 
@@ -186,6 +190,7 @@ namespace MoYu
         empty_color_texture_data->m_mip_levels   = 0;
         empty_color_texture_data->m_array_layers = 0;
         empty_color_texture_data->m_channels     = 4;
+        empty_color_texture_data->m_need_free    = false;
         empty_color_texture_data->m_pixels       = empty_image;
         return empty_color_texture_data;
     }
@@ -197,6 +202,8 @@ namespace MoYu
     && m_mat_data.tex_file_name.m_auto_mips == m_cached_mat_data.tex_file_name.m_auto_mips \
     && m_mat_data.tex_file_name.m_mip_levels == m_cached_mat_data.tex_file_name.m_mip_levels \
     && m_mat_data.tex_file_name.m_image_file == m_cached_mat_data.tex_file_name.m_image_file
+
+#define IsImageNull(tex_file_name) m_mat_data.tex_file_name.m_image_file == ""
 
         internal_material.m_shader_name = scene_material.m_shader_name;
 
@@ -222,7 +229,7 @@ namespace MoYu
             is_uniform_same &= m_mat_data.m_occlusion_strength == m_cached_mat_data.m_occlusion_strength;
             is_uniform_same &= m_mat_data.m_emissive_factor == m_cached_mat_data.m_emissive_factor;
 
-            if (!is_uniform_same)
+            if (!is_uniform_same || now_material.material_uniform_buffer == nullptr)
             {
                 HLSL::MeshPerMaterialUniformBuffer material_uniform_buffer_info;
                 material_uniform_buffer_info.is_blend          = m_mat_data.m_blend;
@@ -247,15 +254,20 @@ namespace MoYu
             }
         }
         {
-            if (!IsImageSame(m_base_color_texture_file))
+            if (!IsImageSame(m_base_color_texture_file) || IsImageNull(m_base_color_texture_file))
             {
                 SceneImage base_color_image = m_mat_data.m_base_color_texture_file;
 
-                std::shared_ptr<TextureData> base_color_tex_data = loadTexture(base_color_image.m_image_file);
-                if (base_color_tex_data == nullptr)
+                std::shared_ptr<TextureData> base_color_tex_data = nullptr;
+                if (base_color_image.m_image_file != "")
+                {
+                    base_color_tex_data = loadTexture(base_color_image.m_image_file);
+                }
+                else
                 {
                     base_color_tex_data = createEmptyTextureData(empty_image);
                 }
+
                 uint32_t    m_width    = base_color_tex_data->m_width;
                 uint32_t    m_height   = base_color_tex_data->m_height;
                 void*       m_pixels   = base_color_tex_data->m_pixels;
@@ -268,15 +280,20 @@ namespace MoYu
             }
         }
         {
-            if (!IsImageSame(m_metallic_roughness_texture_file))
+            if (!IsImageSame(m_metallic_roughness_texture_file) || IsImageNull(m_base_color_texture_file))
             {
                 SceneImage metallic_roughness_image = m_mat_data.m_metallic_roughness_texture_file;
 
                 std::shared_ptr<TextureData> metallic_roughness_texture_data = loadTexture(metallic_roughness_image.m_image_file);
-                if (metallic_roughness_texture_data == nullptr)
+                if (metallic_roughness_image.m_image_file != "")
+                {
+                    metallic_roughness_texture_data = loadTexture(metallic_roughness_image.m_image_file);
+                }
+                else
                 {
                     metallic_roughness_texture_data = createEmptyTextureData(empty_image);
                 }
+
                 uint32_t    m_width    = metallic_roughness_texture_data->m_width;
                 uint32_t    m_height   = metallic_roughness_texture_data->m_height;
                 void*       m_pixels   = metallic_roughness_texture_data->m_pixels;
@@ -294,10 +311,15 @@ namespace MoYu
                 SceneImage normal_image = m_mat_data.m_normal_texture_file;
 
                 std::shared_ptr<TextureData> normal_image_texture_data = loadTexture(normal_image.m_image_file);
-                if (normal_image_texture_data == nullptr)
+                if (normal_image.m_image_file != "")
+                {
+                    normal_image_texture_data = loadTexture(normal_image.m_image_file);
+                }
+                else
                 {
                     normal_image_texture_data = createEmptyTextureData(empty_image);
                 }
+
                 uint32_t    m_width    = normal_image_texture_data->m_width;
                 uint32_t    m_height   = normal_image_texture_data->m_height;
                 void*       m_pixels   = normal_image_texture_data->m_pixels;
@@ -315,10 +337,15 @@ namespace MoYu
                 SceneImage occlusion_image = m_mat_data.m_occlusion_texture_file;
 
                 std::shared_ptr<TextureData> occlusion_image_texture_data = loadTexture(occlusion_image.m_image_file);
-                if (occlusion_image_texture_data == nullptr)
+                if (occlusion_image.m_image_file != "")
+                {
+                    occlusion_image_texture_data = loadTexture(occlusion_image.m_image_file);
+                }
+                else
                 {
                     occlusion_image_texture_data = createEmptyTextureData(empty_image);
                 }
+
                 uint32_t    m_width    = occlusion_image_texture_data->m_width;
                 uint32_t    m_height   = occlusion_image_texture_data->m_height;
                 void*       m_pixels   = occlusion_image_texture_data->m_pixels;
@@ -336,10 +363,15 @@ namespace MoYu
                 SceneImage emissive_image = m_mat_data.m_emissive_texture_file;
 
                 std::shared_ptr<TextureData> emissive_image_texture_data = loadTexture(emissive_image.m_image_file);
-                if (emissive_image_texture_data == nullptr)
+                if (emissive_image.m_image_file != "")
+                {
+                    emissive_image_texture_data = loadTexture(emissive_image.m_image_file);
+                }
+                else
                 {
                     emissive_image_texture_data = createEmptyTextureData(empty_image);
                 }
+
                 uint32_t    m_width    = emissive_image_texture_data->m_width;
                 uint32_t    m_height   = emissive_image_texture_data->m_height;
                 void*       m_pixels   = emissive_image_texture_data->m_pixels;
@@ -552,11 +584,19 @@ namespace MoYu
 
     InternalMesh RenderResource::createInternalMesh(SceneMesh scene_mesh)
     {
-        RenderMeshData render_mesh_data;
+        std::filesystem::path root_folder = g_runtime_global_context.m_config_manager->getRootFolder();
+
+        RenderMeshData render_mesh_data = {};
         if (scene_mesh.m_is_mesh_data)
-            render_mesh_data = loadMeshData(scene_mesh.m_mesh_data_path);
+        {
+            const std::filesystem::path& relative_path = std::filesystem::absolute(root_folder / scene_mesh.m_mesh_data_path);
+            render_mesh_data = loadMeshData(relative_path.string());
+        }
         else
-            render_mesh_data = loadMeshData(scene_mesh.m_sub_mesh_file);
+        {
+            const std::filesystem::path& relative_path = std::filesystem::absolute(root_folder / scene_mesh.m_sub_mesh_file);
+            render_mesh_data = loadMeshData(relative_path.string());
+        }
 
         return createInternalMesh(render_mesh_data);
     }
