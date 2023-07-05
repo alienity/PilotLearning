@@ -152,8 +152,10 @@ namespace MoYu
         if (mesh_finded == -1)
         {
             CachedMeshRenderer cachedMeshRenderer;
-            m_render_resource->updateInternalMeshRenderer(
-                sceneMeshRenderer, cachedMeshRenderer.cachedSceneMeshrenderer, cachedMeshRenderer.internalMeshRenderer);
+            m_render_resource->updateInternalMeshRenderer(sceneMeshRenderer,
+                                                          cachedMeshRenderer.cachedSceneMeshrenderer,
+                                                          cachedMeshRenderer.internalMeshRenderer,
+                                                          false);
             cachedMeshRenderer.internalMeshRenderer.model_matrix         = model_matrix;
             cachedMeshRenderer.internalMeshRenderer.model_matrix_inverse = model_matrix_inverse;
 
@@ -163,7 +165,8 @@ namespace MoYu
         {
             m_render_resource->updateInternalMeshRenderer(sceneMeshRenderer,
                                                           _mesh_renderers[mesh_finded].cachedSceneMeshrenderer,
-                                                          _mesh_renderers[mesh_finded].internalMeshRenderer);
+                                                          _mesh_renderers[mesh_finded].internalMeshRenderer,
+                                                          true);
             _mesh_renderers[mesh_finded].internalMeshRenderer.model_matrix         = model_matrix;
             _mesh_renderers[mesh_finded].internalMeshRenderer.model_matrix_inverse = model_matrix_inverse;
         }

@@ -504,9 +504,12 @@ namespace MoYu
 
             ImGui::Indent();
 
-            m_editor_ui_creator["bool"]("m_is_srgb", isDirty, &scene_image_ptr->m_is_srgb);
-            m_editor_ui_creator["bool"]("m_auto_mips", isDirty, &scene_image_ptr->m_auto_mips);
-            m_editor_ui_creator["int"]("m_mip_levels", isDirty, &scene_image_ptr->m_mip_levels);
+            if (ImGui::Checkbox("m_is_srgb", &scene_image_ptr->m_is_srgb))
+                isDirty = true;
+            if (ImGui::Checkbox("m_auto_mips", &scene_image_ptr->m_auto_mips))
+                isDirty = true;
+            if (ImGui::InputInt("m_mip_levels", &scene_image_ptr->m_mip_levels, 0, 12))
+                isDirty = true;
 
             static char str1[128];
             memset(str1, 0, 128);

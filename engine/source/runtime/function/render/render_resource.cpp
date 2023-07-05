@@ -171,10 +171,10 @@ namespace MoYu
         }
     }
 
-    bool RenderResource::updateInternalMeshRenderer(SceneMeshRenderer scene_mesh_renderer, SceneMeshRenderer& cached_mesh_renderer, InternalMeshRenderer& internal_mesh_renderer)
+    bool RenderResource::updateInternalMeshRenderer(SceneMeshRenderer scene_mesh_renderer, SceneMeshRenderer& cached_mesh_renderer, InternalMeshRenderer& internal_mesh_renderer, bool has_initialized)
     {
-        updateInternalMesh(scene_mesh_renderer.m_scene_mesh, cached_mesh_renderer.m_scene_mesh, internal_mesh_renderer.ref_mesh);
-        updateInternalMaterial(scene_mesh_renderer.m_material, cached_mesh_renderer.m_material, internal_mesh_renderer.ref_material);
+        updateInternalMesh(scene_mesh_renderer.m_scene_mesh, cached_mesh_renderer.m_scene_mesh, internal_mesh_renderer.ref_mesh, has_initialized);
+        updateInternalMaterial(scene_mesh_renderer.m_material, cached_mesh_renderer.m_material, internal_mesh_renderer.ref_material, has_initialized);
 
         cached_mesh_renderer = scene_mesh_renderer;
 
@@ -195,7 +195,7 @@ namespace MoYu
         return empty_color_texture_data;
     }
 
-    bool RenderResource::updateInternalMaterial(SceneMaterial scene_material, SceneMaterial& cached_material, InternalMaterial& internal_material)
+    bool RenderResource::updateInternalMaterial(SceneMaterial scene_material, SceneMaterial& cached_material, InternalMaterial& internal_material, bool has_initialized)
     {
 #define IsImageSame(tex_file_name) \
     m_mat_data.tex_file_name.m_is_srgb == m_cached_mat_data.tex_file_name.m_is_srgb \
@@ -214,7 +214,7 @@ namespace MoYu
 
         this->startUploadBatch();
 
-        InternalPBRMaterial now_material;
+        InternalPBRMaterial& now_material = internal_material.m_intenral_pbr_mat;
         {
             now_material.m_blend        = m_mat_data.m_blend;
             now_material.m_double_sided = m_mat_data.m_double_sided;
@@ -229,7 +229,7 @@ namespace MoYu
             is_uniform_same &= m_mat_data.m_occlusion_strength == m_cached_mat_data.m_occlusion_strength;
             is_uniform_same &= m_mat_data.m_emissive_factor == m_cached_mat_data.m_emissive_factor;
 
-            if (!is_uniform_same || now_material.material_uniform_buffer == nullptr)
+            if (!is_uniform_same || !has_initialized)
             {
                 HLSL::MeshPerMaterialUniformBuffer material_uniform_buffer_info;
                 material_uniform_buffer_info.is_blend          = m_mat_data.m_blend;
@@ -254,7 +254,7 @@ namespace MoYu
             }
         }
         {
-            if (!IsImageSame(m_base_color_texture_file) || IsImageNull(m_base_color_texture_file))
+            if (!IsImageSame(m_base_color_texture_file) || !has_initialized)
             {
                 SceneImage base_color_image = m_mat_data.m_base_color_texture_file;
 
@@ -280,7 +280,7 @@ namespace MoYu
             }
         }
         {
-            if (!IsImageSame(m_metallic_roughness_texture_file) || IsImageNull(m_base_color_texture_file))
+            if (!IsImageSame(m_metallic_roughness_texture_file) || !has_initialized)
             {
                 SceneImage metallic_roughness_image = m_mat_data.m_metallic_roughness_texture_file;
 
@@ -306,7 +306,7 @@ namespace MoYu
             }
         }
         {
-            if (!IsImageSame(m_normal_texture_file))
+            if (!IsImageSame(m_normal_texture_file) || !has_initialized)
             {
                 SceneImage normal_image = m_mat_data.m_normal_texture_file;
 
@@ -332,7 +332,7 @@ namespace MoYu
             }
         }
         {
-            if (!IsImageSame(m_occlusion_texture_file))
+            if (!IsImageSame(m_occlusion_texture_file) || !has_initialized)
             {
                 SceneImage occlusion_image = m_mat_data.m_occlusion_texture_file;
 
@@ -358,7 +358,7 @@ namespace MoYu
             }
         }
         {
-            if (!IsImageSame(m_emissive_texture_file))
+            if (!IsImageSame(m_emissive_texture_file) || !has_initialized)
             {
                 SceneImage emissive_image = m_mat_data.m_emissive_texture_file;
 
@@ -393,13 +393,13 @@ namespace MoYu
         return true;
     }
 
-    bool RenderResource::updateInternalMesh(SceneMesh scene_mesh, SceneMesh& cached_mesh, InternalMesh& internal_mesh)
+    bool RenderResource::updateInternalMesh(SceneMesh scene_mesh, SceneMesh& cached_mesh, InternalMesh& internal_mesh, bool has_initialized)
     {
         bool is_scene_mesh_same = scene_mesh.m_is_mesh_data == cached_mesh.m_is_mesh_data;
         is_scene_mesh_same &= scene_mesh.m_sub_mesh_file == cached_mesh.m_sub_mesh_file;
         is_scene_mesh_same &= scene_mesh.m_mesh_data_path == cached_mesh.m_mesh_data_path;
 
-        if (!is_scene_mesh_same)
+        if (!is_scene_mesh_same || !has_initialized)
         {
             internal_mesh = createInternalMesh(scene_mesh);
         }
