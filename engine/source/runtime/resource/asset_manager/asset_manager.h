@@ -58,7 +58,7 @@ namespace MoYu
 
             // write to json object and dump to string
             NJson asset_json = out_asset;
-            std::string asset_json_text = asset_json;
+            std::string asset_json_text = asset_json.dump(4);
 
             // write to file
             asset_json_file << asset_json_text;

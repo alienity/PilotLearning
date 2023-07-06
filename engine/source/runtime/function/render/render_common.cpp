@@ -2,6 +2,7 @@
 
 namespace MoYu
 {
+    SceneCommonIdentifier _UndefCommonIdentifier {K_Invalid_Object_Id, K_Invalid_Component_Id};
 
     ScenePBRMaterial _DefaultScenePBRMaterial = {
         false,

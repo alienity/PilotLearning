@@ -18,7 +18,7 @@ namespace MoYu
         float   shadow_far_plane {500.0f};
         Vector2 shadowmap_size {512, 512};
     };
-    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(DirectionLightParameter,
+    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(DirectionLightParameter,
                                        color,
                                        intensity,
                                        shadows,
@@ -34,7 +34,7 @@ namespace MoYu
 
         float falloff_radius {5.0f};
     };
-    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(PointLightParameter, color, intensity, falloff_radius)
+    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(PointLightParameter, color, intensity, falloff_radius)
 
     struct SpotLightParameter
     {
@@ -51,7 +51,7 @@ namespace MoYu
         float   shadow_far_plane {32.0f};
         Vector2 shadowmap_size {256, 256};
     };
-    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(SpotLightParameter,
+    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(SpotLightParameter,
                                        color,
                                        intensity,
                                        falloff_radius,
@@ -70,7 +70,7 @@ namespace MoYu
         PointLightParameter     m_PointLightParam {};
         SpotLightParameter      m_SpotLightParam {};
     };
-    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(LightComponentRes,
+    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(LightComponentRes,
                                        m_LightParamName,
                                        m_DirectionLightParam,
                                        m_PointLightParam,

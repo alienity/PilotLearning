@@ -124,6 +124,9 @@ namespace MoYu
         }
     };
 
+    extern SceneCommonIdentifier _UndefCommonIdentifier;
+    #define UndefCommonIdentifier _UndefCommonIdentifier
+
     struct InternalVertexBuffer
     {
         InputDefinition input_element_definition;

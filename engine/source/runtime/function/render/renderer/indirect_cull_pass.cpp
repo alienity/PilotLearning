@@ -164,7 +164,7 @@ namespace MoYu
 
     void IndirectCullPass::prepareBuffer()
     {
-        if (m_render_scene->m_directional_light.m_identifier != SceneCommonIdentifier())
+        if (m_render_scene->m_directional_light.m_identifier != UndefCommonIdentifier)
         {
             if (dirShadowmapCommandBuffer.m_identifier != m_render_scene->m_directional_light.m_identifier)
             {

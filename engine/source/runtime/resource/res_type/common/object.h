@@ -11,7 +11,7 @@ namespace MoYu
         std::string m_component_name;
         std::vector<uint64_t> m_component_data;
     };
-    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(ComponentDefinitionRes, m_type_name, m_component_name, m_component_data)
+    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(ComponentDefinitionRes, m_type_name, m_component_name, m_component_data)
 
     struct ObjectInstanceRes
     {
@@ -24,7 +24,7 @@ namespace MoYu
 
         std::vector<ComponentDefinitionRes> m_instanced_components;
     };
-    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(ObjectInstanceRes,
+    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(ObjectInstanceRes,
                                        m_name,
                                        m_id,
                                        m_parent_id,

@@ -11,5 +11,5 @@ namespace MoYu
 
         std::vector<ObjectInstanceRes> m_objects;
     };
-    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(LevelRes, m_gravity, m_objects)
+    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(LevelRes, m_gravity, m_objects)
 } // namespace MoYu

@@ -16,7 +16,7 @@ namespace MoYu
         float m_nearZ {0.1f};
         float m_farZ {100.0f};
     };
-    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(FirstPersonCameraParameter,
+    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(FirstPersonCameraParameter,
                                        m_fovY,
                                        m_vertical_offset,
                                        m_width,
@@ -36,7 +36,7 @@ namespace MoYu
         float      m_nearZ {0.1f};
         float      m_farZ {100.0f};
     };
-    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(ThirdPersonCameraParameter,
+    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(ThirdPersonCameraParameter,
                                        m_fovY,
                                        m_horizontal_offset,
                                        m_vertical_offset,
@@ -57,7 +57,7 @@ namespace MoYu
         float m_nearZ {0.1f};
         float m_farZ {100.0f};
     };
-    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(FreeCameraParameter, m_perspective, m_fovY, m_speed, m_width, m_height, m_nearZ, m_farZ)
+    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(FreeCameraParameter, m_perspective, m_fovY, m_speed, m_width, m_height, m_nearZ, m_farZ)
 
     struct CameraComponentRes
     {
@@ -66,7 +66,7 @@ namespace MoYu
         ThirdPersonCameraParameter m_ThirdPersonCamParam {};
         FreeCameraParameter        m_FreeCamParam {};
     };
-    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(CameraComponentRes,
+    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(CameraComponentRes,
                                        m_CamParamName,
                                        m_FirstPersonCamParam,
                                        m_ThirdPersonCamParam,

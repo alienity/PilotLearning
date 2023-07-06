@@ -1,64 +1,68 @@
 {
-  "skybox_irradiance_map": {
-    "negative_x_map": "asset/texture/sky/skybox_irradiance_X-.hdr",
-    "positive_x_map": "asset/texture/sky/skybox_irradiance_X+.hdr",
-    "negative_y_map": "asset/texture/sky/skybox_irradiance_Y-.hdr",
-    "positive_y_map": "asset/texture/sky/skybox_irradiance_Y+.hdr",
-    "negative_z_map": "asset/texture/sky/skybox_irradiance_Z-.hdr",
-    "positive_z_map": "asset/texture/sky/skybox_irradiance_Z+.hdr"
+  "m_enable_fxaa": false,
+  "m_skybox_irradiance_map": {
+    "m_negative_x_map": "asset/texture/sky/skybox_irradiance_X-.hdr",
+    "m_positive_x_map": "asset/texture/sky/skybox_irradiance_X+.hdr",
+    "m_negative_y_map": "asset/texture/sky/skybox_irradiance_Y-.hdr",
+    "m_positive_y_map": "asset/texture/sky/skybox_irradiance_Y+.hdr",
+    "m_negative_z_map": "asset/texture/sky/skybox_irradiance_Z-.hdr",
+    "m_positive_z_map": "asset/texture/sky/skybox_irradiance_Z+.hdr"
   },
-  "skybox_specular_map": {
-    "negative_x_map": "asset/texture/sky/skybox_specular_X-.hdr",
-    "positive_x_map": "asset/texture/sky/skybox_specular_X+.hdr",
-    "negative_y_map": "asset/texture/sky/skybox_specular_Y-.hdr",
-    "positive_y_map": "asset/texture/sky/skybox_specular_Y+.hdr",
-    "negative_z_map": "asset/texture/sky/skybox_specular_Z-.hdr",
-    "positive_z_map": "asset/texture/sky/skybox_specular_Z+.hdr"
+  "m_skybox_specular_map": {
+    "m_negative_x_map": "asset/texture/sky/skybox_specular_X-.hdr",
+    "m_positive_x_map": "asset/texture/sky/skybox_specular_X+.hdr",
+    "m_negative_y_map": "asset/texture/sky/skybox_specular_Y-.hdr",
+    "m_positive_y_map": "asset/texture/sky/skybox_specular_Y+.hdr",
+    "m_negative_z_map": "asset/texture/sky/skybox_specular_Z-.hdr",
+    "m_positive_z_map": "asset/texture/sky/skybox_specular_Z+.hdr"
   },
-  "brdf_map": "asset/texture/global/brdf_schilk.hdr",
-  "color_grading_map": "asset/texture/lut/color_grading_lut_01.png",
-  "sky_color": {
+  "m_brdf_map": "asset/texture/global/brdf_schilk.hdr",
+  "m_color_grading_map": "asset/texture/lut/color_grading_lut_01.png",
+  "m_sky_color": {
     "r": 0.53,
     "g": 0.81,
-    "b": 0.98
+    "b": 0.98,
+    "a": 1.0
   },
-  "ambient_light": {
+  "m_ambient_light": {
     "r": 0.03,
     "g": 0.03,
-    "b": 0.03
+    "b": 0.03,
+    "a": 1.0
   },
-  "camera_config": {
-    "pose": {
-      "position": {
+  "m_camera_config": {
+    "m_pose": {
+      "m_position": {
         "x": 0.0,
         "y": 1.0,
         "z": 3.0
       },
-      "target": {
+      "m_target": {
         "x": 0.0,
         "y": 0.0,
         "z": -1.0
       },
-      "up": {
+      "m_up": {
         "x": 0.0,
         "y": 1.0,
         "z": 0.0
       }
     },
-    "z_far": 1000.0,
-    "z_near": 0.1,
-    "aspect": {
+    "m_aspect": {
       "x": 1280.0,
       "y": 768.0
-    }
+    },
+    "m_z_far": 1000.0,
+    "m_z_near": 0.1,
+    "m_fovY": 0.53
   },
-  "directional_light": {
-    "direction": {
+  "m_directional_light": {
+    "m_direction": {
       "x": 0.5,
       "y": -0.5,
       "z": 0.5
     },
-    "color": {
+    "m_color": {
       "r": 1.0,
       "g": 1.0,
       "b": 1.0

@@ -9,5 +9,5 @@ namespace MoYu
         Vector3    m_scale {Vector3::One};
         Quaternion m_rotation {Quaternion::Identity};
     };
-    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(TransformRes, m_position, m_scale, m_rotation)
+    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(TransformRes, m_position, m_scale, m_rotation)
 } // namespace MoYu

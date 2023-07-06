@@ -38,6 +38,12 @@ namespace MoYu
         {
             RHI::RgResourceHandle indirectIndexBufferHandle;
             RHI::RgResourceHandle indirectSortBufferHandle;
+
+            inline void Init()
+            {
+                indirectIndexBufferHandle.Invalidate();
+                indirectSortBufferHandle.Invalidate();
+            }
         };
 
         struct IndirectCullOutput
@@ -50,6 +56,17 @@ namespace MoYu
             DrawCallCommandBufferHandle transparentDrawHandle;
             DrawCallCommandBufferHandle dirShadowmapHandle;
             std::vector<DrawCallCommandBufferHandle> spotShadowmapHandles;
+
+            inline void Init()
+            {
+                perframeBufferHandle.Invalidate();
+                materialBufferHandle.Invalidate();
+                meshBufferHandle.Invalidate();
+                opaqueDrawHandle.Init();
+                transparentDrawHandle.Init();
+                dirShadowmapHandle.Init();
+                spotShadowmapHandles = {};
+            }
         };
 
     public:

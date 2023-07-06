@@ -4,7 +4,7 @@
 
 namespace MoYu
 {
-    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(SceneImage, m_is_srgb, m_auto_mips, m_mip_levels, m_image_file)
+    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(SceneImage, m_is_srgb, m_auto_mips, m_mip_levels, m_image_file)
 
     struct MaterialRes
     {
@@ -29,7 +29,7 @@ namespace MoYu
         float _specularAntiAliasingVariance {0};
         float _specularAntiAliasingThreshold {0};
     };
-    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(MaterialRes,
+    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(MaterialRes,
                                        shader_name,
                                        m_blend,
                                        m_double_sided,

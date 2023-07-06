@@ -15,5 +15,5 @@ namespace MoYu
         // the default level for this world, which should be first loading level
         std::string m_default_level_url;
     };
-    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(WorldRes, m_name, m_level_urls, m_default_level_url)
+    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(WorldRes, m_name, m_level_urls, m_default_level_url)
 } // namespace MoYu

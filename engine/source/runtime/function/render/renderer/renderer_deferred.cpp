@@ -195,6 +195,7 @@ namespace MoYu
         //=================================================================================
         // 应该再给graph添加一个signal同步，目前先这样
         IndirectCullPass::IndirectCullOutput indirectCullOutput;
+        indirectCullOutput.Init();
         mIndirectCullPass->update(graph, indirectCullOutput);
         //=================================================================================
 
@@ -202,7 +203,9 @@ namespace MoYu
         //=================================================================================
         // indirect draw shadow
         IndirectShadowPass::ShadowInputParameters  mShadowmapIntputParams;
+        mShadowmapIntputParams.Init();
         IndirectShadowPass::ShadowOutputParameters mShadowmapOutputParams;
+        mShadowmapOutputParams.Init();
 
         mShadowmapIntputParams.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
         mShadowmapIntputParams.meshBufferHandle     = indirectCullOutput.meshBufferHandle;
