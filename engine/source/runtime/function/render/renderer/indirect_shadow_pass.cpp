@@ -124,9 +124,7 @@ namespace MoYu
         */
     }
 
-    void IndirectShadowPass::update(RHI::RenderGraph&         graph,
-                                    ShadowInputParameters&    passInput,
-                                    ShadowOutputParameters&   passOutput)
+    void IndirectShadowPass::update(RHI::RenderGraph& graph, ShadowInputParameters& passInput, ShadowOutputParameters& passOutput)
     {
         //ShadowInputParameters  drawPassInput  = passInput;
         //ShadowOutputParameters drawPassOutput = passOutput;
@@ -144,13 +142,16 @@ namespace MoYu
         shadowpass.Read(perframeBufferHandle);
         shadowpass.Read(meshBufferHandle);
         shadowpass.Read(materialBufferHandle);
-        shadowpass.Read(dirIndirectSortBufferHandle);
+        if (dirIndirectSortBufferHandle.rgHandle.IsValid())
+        {
+            shadowpass.Read(dirIndirectSortBufferHandle);
+        }
         for (size_t i = 0; i < spotsIndirectSortBufferHandles.size(); i++)
         {
             shadowpass.Read(spotsIndirectSortBufferHandles[i]);
         }
 
-        RHI::RgResourceHandle directionalShadowmapHandle;
+        RHI::RgResourceHandle directionalShadowmapHandle = RHI::_DefaultRgResourceHandle;
         if (directionalShadowmap.p_LightShadowmap != nullptr)
         {
             passOutput.directionalShadowmapHandle = graph.Import<RHI::D3D12Texture>(directionalShadowmap.p_LightShadowmap.get());
@@ -171,8 +172,7 @@ namespace MoYu
 
             RHI::D3D12GraphicsContext* graphicContext = context->GetGraphicsContext();
 
-            if (directionalShadowmap.m_gobject_id != K_Invalid_Object_Id &&
-                directionalShadowmap.m_gcomponent_id != K_Invalid_Component_Id)
+            if (directionalShadowmap.m_gobject_id != K_Invalid_Object_Id && directionalShadowmap.m_gcomponent_id != K_Invalid_Component_Id)
             {
                 RHI::D3D12Texture* pShadowmapStencilTex = registry->GetD3D12Texture(directionalShadowmapHandle);
 

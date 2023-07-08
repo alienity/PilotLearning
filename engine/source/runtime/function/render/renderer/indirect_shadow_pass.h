@@ -5,6 +5,8 @@
 #include "runtime/function/global/global_context.h"
 #include "runtime/resource/config_manager/config_manager.h"
 
+#include "runtime/function/render/rhi/rendergraph/RenderGraphCommon.h"
+
 namespace MoYu
 {
     struct DirectionShadowmapStruct
@@ -50,32 +52,19 @@ namespace MoYu
 
         struct ShadowInputParameters : public PassInput
         {
-            RHI::RgResourceHandle perframeBufferHandle;
-            RHI::RgResourceHandle meshBufferHandle;
-            RHI::RgResourceHandle materialBufferHandle;
-            RHI::RgResourceHandle dirIndirectSortBufferHandle;
-            std::vector<RHI::RgResourceHandle> spotsIndirectSortBufferHandles;
+            RHI::RgResourceHandle perframeBufferHandle        = RHI::_DefaultRgResourceHandle;
+            RHI::RgResourceHandle meshBufferHandle            = RHI::_DefaultRgResourceHandle;
+            RHI::RgResourceHandle materialBufferHandle        = RHI::_DefaultRgResourceHandle;
+            RHI::RgResourceHandle dirIndirectSortBufferHandle = RHI::_DefaultRgResourceHandle;
 
-            inline void Init()
-            {
-                perframeBufferHandle.Invalidate();
-                meshBufferHandle.Invalidate();
-                materialBufferHandle.Invalidate();
-                dirIndirectSortBufferHandle.Invalidate();
-                spotsIndirectSortBufferHandles = {};
-            }
+            std::vector<RHI::RgResourceHandle> spotsIndirectSortBufferHandles;
         };
 
         struct ShadowOutputParameters : public PassOutput
         {
-            RHI::RgResourceHandle directionalShadowmapHandle;
-            std::vector<RHI::RgResourceHandle> spotShadowmapHandle;
+            RHI::RgResourceHandle directionalShadowmapHandle = RHI::_DefaultRgResourceHandle;
 
-            inline void Init()
-            {
-                directionalShadowmapHandle.Invalidate();
-                spotShadowmapHandle = {};
-            }
+            std::vector<RHI::RgResourceHandle> spotShadowmapHandle;
         };
 
     public:

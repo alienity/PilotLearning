@@ -5,6 +5,8 @@
 #include "runtime/function/global/global_context.h"
 #include "runtime/resource/config_manager/config_manager.h"
 
+#include "runtime/function/render/rhi/rendergraph/RenderGraphCommon.h"
+
 namespace MoYu
 {
     struct DrawCallCommandBuffer
@@ -36,37 +38,20 @@ namespace MoYu
     public:
         struct DrawCallCommandBufferHandle
         {
-            RHI::RgResourceHandle indirectIndexBufferHandle;
-            RHI::RgResourceHandle indirectSortBufferHandle;
-
-            inline void Init()
-            {
-                indirectIndexBufferHandle.Invalidate();
-                indirectSortBufferHandle.Invalidate();
-            }
+            RHI::RgResourceHandle indirectIndexBufferHandle = RHI::_DefaultRgResourceHandle;
+            RHI::RgResourceHandle indirectSortBufferHandle  = RHI::_DefaultRgResourceHandle;
         };
 
         struct IndirectCullOutput
         {
-            RHI::RgResourceHandle perframeBufferHandle;
-            RHI::RgResourceHandle materialBufferHandle;
-            RHI::RgResourceHandle meshBufferHandle;
+            RHI::RgResourceHandle perframeBufferHandle = RHI::_DefaultRgResourceHandle;
+            RHI::RgResourceHandle materialBufferHandle = RHI::_DefaultRgResourceHandle;
+            RHI::RgResourceHandle meshBufferHandle     = RHI::_DefaultRgResourceHandle;
 
             DrawCallCommandBufferHandle opaqueDrawHandle;
             DrawCallCommandBufferHandle transparentDrawHandle;
             DrawCallCommandBufferHandle dirShadowmapHandle;
             std::vector<DrawCallCommandBufferHandle> spotShadowmapHandles;
-
-            inline void Init()
-            {
-                perframeBufferHandle.Invalidate();
-                materialBufferHandle.Invalidate();
-                meshBufferHandle.Invalidate();
-                opaqueDrawHandle.Init();
-                transparentDrawHandle.Init();
-                dirShadowmapHandle.Init();
-                spotShadowmapHandles = {};
-            }
         };
 
     public:

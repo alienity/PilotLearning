@@ -86,6 +86,9 @@ namespace RHI
 
 	static_assert(sizeof(RgResourceHandle) == sizeof(std::uint64_t));
 
+    extern RgResourceHandle _DefaultRgResourceHandle;
+    #define DefaultRgResourceHandle _DefaultRgResourceHandle
+
     struct RgResourceHandleExt
     {
         RgResourceHandle  rgHandle;
@@ -104,6 +107,9 @@ namespace RHI
     HandleOps(RgResourceHandleExt)
 
     static_assert(sizeof(RgResourceHandleExt) == sizeof(std::uint64_t) * 2);
+
+    extern RgResourceHandleExt _DefaultRgResourceHandleExt;
+    #define DefaultRgResourceHandleExt _DefaultRgResourceHandleExt
 
 	inline RgResourceHandleExt ToRgResourceHandle(RgResourceHandle& rgHandle, RgResourceSubType subType)
 	{

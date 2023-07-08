@@ -15,9 +15,7 @@ namespace MoYu
         depthTexDesc = init_info.depthTexDesc;
 	}
 
-    void IndirectDrawPass::update(RHI::RenderGraph&         graph,
-                                  DrawInputParameters&      passInput,
-                                  DrawOutputParameters&     passOutput)
+    void IndirectDrawPass::update(RHI::RenderGraph& graph, DrawInputParameters& passInput, DrawOutputParameters& passOutput)
     {
 
         bool needClearRenderTarget = initializeRenderTarget(graph, &passOutput);
