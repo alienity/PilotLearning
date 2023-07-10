@@ -289,6 +289,12 @@ namespace MoYu
         Matrix4x4 m_ViewProjMatrixInv;
     };
 
+    struct SkyboxConfigs
+    {
+        std::shared_ptr<RHI::D3D12Texture> m_skybox_irradiance_map;
+        std::shared_ptr<RHI::D3D12Texture> m_skybox_specular_map;
+    };
+
     //========================================================================
     // Render Desc
     //========================================================================

@@ -20,6 +20,9 @@ namespace MoYu
     class RenderScene
     {
     public:
+        // skybox
+        SkyboxConfigs m_skybox_map;
+
         // all light
         InternalAmbientLight            m_ambient_light;
         InternalDirectionLight          m_directional_light;

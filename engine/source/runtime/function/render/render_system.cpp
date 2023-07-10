@@ -81,6 +81,7 @@ namespace MoYu
         level_resource_desc.m_ibl_resource_desc.m_brdf_map              = global_rendering_res.m_brdf_map;
         level_resource_desc.m_color_grading_resource_desc.m_color_grading_map = global_rendering_res.m_color_grading_map;
         */
+
         // initialize render manager
         RHI::DeviceOptions deviceOptions              = {};
         deviceOptions.FeatureLevel                    = D3D_FEATURE_LEVEL::D3D_FEATURE_LEVEL_11_0;
@@ -112,6 +113,10 @@ namespace MoYu
         // setup render scene
         m_render_scene = std::make_shared<RenderScene>();
         m_render_scene->m_ambient_light.m_color = global_rendering_res.m_ambient_light;
+        m_render_scene->m_directional_light.m_direction = global_rendering_res.m_directional_light.m_direction;
+        m_render_scene->m_directional_light.m_color = global_rendering_res.m_directional_light.m_color;
+
+        m_render_scene->m_skybox_map.m_skybox_irradiance_map = m_render_resource->loadTexture();
 
         // set pass data
         RenderPass::m_render_scene = m_render_scene.get();
