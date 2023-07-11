@@ -98,8 +98,7 @@ namespace MoYu
         // initial global resources
         m_render_resource = std::make_shared<RenderResource>();
         m_render_resource->iniUploadBatch(m_renderer_manager->GetDevice());
-        //m_render_resource->uploadGlobalRenderResource(level_resource_desc);
-
+        
         // setup render camera
         const CameraPose& camera_pose = global_rendering_res.m_camera_config.m_pose;
         m_render_camera               = std::make_shared<RenderCamera>();
@@ -112,11 +111,9 @@ namespace MoYu
 
         // setup render scene
         m_render_scene = std::make_shared<RenderScene>();
-        m_render_scene->m_ambient_light.m_color = global_rendering_res.m_ambient_light;
-        m_render_scene->m_directional_light.m_direction = global_rendering_res.m_directional_light.m_direction;
-        m_render_scene->m_directional_light.m_color = global_rendering_res.m_directional_light.m_color;
-
-        m_render_scene->m_skybox_map.m_skybox_irradiance_map = m_render_resource->loadTexture();
+        
+        // update global resources
+        m_render_resource->updateGlobalRenderResource(m_render_scene.get(), global_rendering_res);
 
         // set pass data
         RenderPass::m_render_scene = m_render_scene.get();

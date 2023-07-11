@@ -16,14 +16,10 @@ namespace MoYu
 
     void SkyBoxPass::prepareMeshData(std::shared_ptr<RenderResource> render_resource)
     {
-        /*
-        RenderResource* real_resource = (RenderResource*)render_resource.get();
+        std::shared_ptr<RHI::D3D12Texture> pSpecularTex = m_render_scene->m_skybox_map.m_skybox_specular_map;
 
-        std::shared_ptr<RHI::D3D12Texture> specularTex =
-            real_resource->m_global_render_resource._ibl_resource._specular_texture_image;
-        specularIBLTexIndex = specularTex->GetDefaultSRV()->GetIndex();
+        specularIBLTexIndex = pSpecularTex->GetDefaultSRV()->GetIndex();
         specularIBLTexLevel = 0.0f;
-        */
     }
 
     void SkyBoxPass::update(RHI::RenderGraph& graph, DrawInputParameters& passInput, DrawOutputParameters& passOutput)

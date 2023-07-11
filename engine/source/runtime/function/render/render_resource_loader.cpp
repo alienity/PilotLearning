@@ -69,6 +69,7 @@ namespace MoYu
             texture = std::make_shared<TextureData>();
 
             int iw, ih, in;
+            in = 4;
             if (is_hdr)
             {
                 texture->m_pixels = stbi_loadf(fileFullPath.c_str(), &iw, &ih, &in, 0);

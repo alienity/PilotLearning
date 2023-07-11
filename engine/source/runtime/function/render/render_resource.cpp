@@ -84,6 +84,62 @@ namespace MoYu
         endUploadBatch();
     }
     */
+    bool RenderResource::updateGlobalRenderResource(RenderScene* m_render_scene, GlobalRenderingRes level_resource_desc)
+    {
+        // ambient light
+        m_render_scene->m_ambient_light.m_color = level_resource_desc.m_ambient_light;
+
+        // direction light
+        m_render_scene->m_directional_light.m_direction = level_resource_desc.m_directional_light.m_direction;
+        m_render_scene->m_directional_light.m_color     = level_resource_desc.m_directional_light.m_color;
+
+        // sky box irradiance
+        MoYu::CubeMap skybox_irradiance_map = level_resource_desc.m_skybox_irradiance_map;
+        std::shared_ptr<TextureData> irradiace_pos_x_map = loadTextureHDR(skybox_irradiance_map.m_positive_x_map);
+        std::shared_ptr<TextureData> irradiace_neg_x_map = loadTextureHDR(skybox_irradiance_map.m_negative_x_map);
+        std::shared_ptr<TextureData> irradiace_pos_y_map = loadTextureHDR(skybox_irradiance_map.m_positive_y_map);
+        std::shared_ptr<TextureData> irradiace_neg_y_map = loadTextureHDR(skybox_irradiance_map.m_negative_y_map);
+        std::shared_ptr<TextureData> irradiace_pos_z_map = loadTextureHDR(skybox_irradiance_map.m_positive_z_map);
+        std::shared_ptr<TextureData> irradiace_neg_z_map = loadTextureHDR(skybox_irradiance_map.m_negative_z_map);
+
+        // sky box specular
+        MoYu::CubeMap skybox_specular_map = level_resource_desc.m_skybox_specular_map;
+        std::shared_ptr<TextureData> specular_pos_x_map = loadTextureHDR(skybox_specular_map.m_positive_x_map);
+        std::shared_ptr<TextureData> specular_neg_x_map = loadTextureHDR(skybox_specular_map.m_negative_x_map);
+        std::shared_ptr<TextureData> specular_pos_y_map = loadTextureHDR(skybox_specular_map.m_positive_y_map);
+        std::shared_ptr<TextureData> specular_neg_y_map = loadTextureHDR(skybox_specular_map.m_negative_y_map);
+        std::shared_ptr<TextureData> specular_pos_z_map = loadTextureHDR(skybox_specular_map.m_positive_z_map);
+        std::shared_ptr<TextureData> specular_neg_z_map = loadTextureHDR(skybox_specular_map.m_negative_z_map);
+
+        // create IBL textures, take care of the texture order
+        std::array<std::shared_ptr<TextureData>, 6> irradiance_maps = {irradiace_pos_x_map,
+                                                                       irradiace_neg_x_map,
+                                                                       irradiace_pos_z_map,
+                                                                       irradiace_neg_z_map,
+                                                                       irradiace_pos_y_map,
+                                                                       irradiace_neg_y_map};
+        std::array<std::shared_ptr<TextureData>, 6> specular_maps   = {specular_pos_x_map,
+                                                                       specular_neg_x_map,
+                                                                       specular_pos_z_map,
+                                                                       specular_neg_z_map,
+                                                                       specular_pos_y_map,
+                                                                       specular_neg_y_map};
+
+        startUploadBatch();
+        {
+            // create irradiance cubemap
+            auto irridiance_tex = createCubeMap(irradiance_maps, DXGI_FORMAT::DXGI_FORMAT_R32G32B32A32_FLOAT, true, false, false);
+            m_render_scene->m_skybox_map.m_skybox_irradiance_map = irridiance_tex;
+
+            // create specular cubemap
+            auto specular_tex = createCubeMap(specular_maps, DXGI_FORMAT::DXGI_FORMAT_R32G32B32A32_FLOAT, false, false, false);
+            m_render_scene->m_skybox_map.m_skybox_specular_map = specular_tex;
+        }
+        endUploadBatch();
+
+        return true;
+    }
+
     void RenderResource::updatePerFrameBuffer(RenderScene* render_scene, RenderCamera* camera)
     {
         Matrix4x4 view_matrix      = camera->getViewMatrix();

@@ -21,7 +21,5 @@ float4 PSMain(VSOutput vsOutput) : SV_Target0
 {
     TextureCube<float3> radianceIBLTexture = ResourceDescriptorHeap[RadianceIBLTexIndex];
 
-    //return float4(1,0,0,1);
-
     return float4(radianceIBLTexture.SampleLevel(cubeMapSampler, vsOutput.viewDir, 0), 1);
 }

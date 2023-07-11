@@ -21,6 +21,8 @@ namespace MoYu
 
         void updatePerFrameBuffer(RenderScene* render_scene, RenderCamera* camera);
         
+        bool updateGlobalRenderResource(RenderScene* m_render_scene, GlobalRenderingRes level_resource_desc);
+
         bool updateInternalMaterial(SceneMaterial scene_material, SceneMaterial& cached_material, InternalMaterial& internal_material, bool has_initialized = false);
         bool updateInternalMesh(SceneMesh scene_mesh, SceneMesh& cached_mesh, InternalMesh& internal_mesh, bool has_initialized = false);
         bool updateInternalMeshRenderer(SceneMeshRenderer scene_mesh_renderer, SceneMeshRenderer& cached_mesh_renderer, InternalMeshRenderer& internal_mesh_renderer, bool has_initialized = false);
