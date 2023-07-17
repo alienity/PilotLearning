@@ -54,7 +54,7 @@
     },
     "m_z_far": 1000.0,
     "m_z_near": 0.1,
-    "m_fovY": 0.53
+    "m_fovY": 90
   },
   "m_directional_light": {
     "m_direction": {

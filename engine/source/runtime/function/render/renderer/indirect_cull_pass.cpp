@@ -401,75 +401,71 @@ namespace MoYu
             cullOutput.spotShadowmapHandles.push_back(bufferHandle);
         }
 
+        // reset pass
+        auto mPerframeBufferHandle  = cullOutput.perframeBufferHandle;
+        auto mMaterialBufferHandle  = cullOutput.materialBufferHandle;
+        auto mMeshBufferHandle      = cullOutput.meshBufferHandle;
+        auto mOpaqueDrawHandle      = cullOutput.opaqueDrawHandle;
+        auto mTransparentDrawHandle = cullOutput.transparentDrawHandle;
+        auto mDirShadowmapHandle    = cullOutput.dirShadowmapHandle;
+        auto mSpotShadowmapHandles  = cullOutput.spotShadowmapHandles;
 
-        //int numMeshes = m_visiable_nodes.p_all_mesh_nodes->size();
-        int numMeshes = 0;
-
-        RHI::D3D12SyncHandle ComputeSyncHandle;
-        if (numMeshes > 0)
         {
-            auto mPerframeBufferHandle  = cullOutput.perframeBufferHandle;
-            auto mMaterialBufferHandle  = cullOutput.materialBufferHandle;
-            auto mMeshBufferHandle      = cullOutput.meshBufferHandle;
-            auto mOpaqueDrawHandle      = cullOutput.opaqueDrawHandle;
-            auto mTransparentDrawHandle = cullOutput.transparentDrawHandle;
-            auto mDirShadowmapHandle    = cullOutput.dirShadowmapHandle;
-            auto mSpotShadowmapHandles  = cullOutput.spotShadowmapHandles;
+            RHI::RenderPass& resetPass = graph.AddRenderPass("ResetPass");
 
+            PassReadIg(resetPass, uploadPerframeBufferHandle);
+            PassReadIg(resetPass, uploadMaterialBufferHandle);
+            PassReadIg(resetPass, uploadMeshBufferHandle);
+
+            PassWriteIg(resetPass, cullOutput.perframeBufferHandle);
+            PassWriteIg(resetPass, cullOutput.materialBufferHandle);
+            PassWriteIg(resetPass, cullOutput.meshBufferHandle);
+            PassWriteIg(resetPass, cullOutput.opaqueDrawHandle.indirectIndexBufferHandle);
+            PassWriteIg(resetPass, cullOutput.opaqueDrawHandle.indirectSortBufferHandle);
+            PassWriteIg(resetPass, cullOutput.transparentDrawHandle.indirectIndexBufferHandle);
+            PassWriteIg(resetPass, cullOutput.transparentDrawHandle.indirectSortBufferHandle);
+            if (hasDirShadowmap)
             {
-                RHI::RenderPass& resetPass = graph.AddRenderPass("ResetPass");
-
-                PassReadIg(resetPass, uploadPerframeBufferHandle);
-                PassReadIg(resetPass, uploadMaterialBufferHandle);
-                PassReadIg(resetPass, uploadMeshBufferHandle);
-                
-                PassWriteIg(resetPass, cullOutput.perframeBufferHandle);
-                PassWriteIg(resetPass, cullOutput.materialBufferHandle);
-                PassWriteIg(resetPass, cullOutput.meshBufferHandle);
-                PassWriteIg(resetPass, cullOutput.opaqueDrawHandle.indirectIndexBufferHandle);
-                PassWriteIg(resetPass, cullOutput.opaqueDrawHandle.indirectSortBufferHandle);
-                PassWriteIg(resetPass, cullOutput.transparentDrawHandle.indirectIndexBufferHandle);
-                PassWriteIg(resetPass, cullOutput.transparentDrawHandle.indirectSortBufferHandle);
-                if (hasDirShadowmap)
-                {
-                    PassWriteIg(resetPass, cullOutput.dirShadowmapHandle.indirectIndexBufferHandle);
-                    PassWriteIg(resetPass, cullOutput.dirShadowmapHandle.indirectSortBufferHandle);
-                }
-                for (size_t i = 0; i < cullOutput.spotShadowmapHandles.size(); i++)
-                {
-                    PassWriteIg(resetPass, cullOutput.spotShadowmapHandles[i].indirectIndexBufferHandle);
-                    PassWriteIg(resetPass, cullOutput.spotShadowmapHandles[i].indirectSortBufferHandle);
-                }
-
-                resetPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
-                    RHI::D3D12ComputeContext* pCopyContext = context->GetComputeContext();
-
-                    pCopyContext->ResetCounter(RegGetBufCounter(mOpaqueDrawHandle.indirectIndexBufferHandle));
-                    pCopyContext->ResetCounter(RegGetBufCounter(mOpaqueDrawHandle.indirectSortBufferHandle));
-                    pCopyContext->ResetCounter(RegGetBufCounter(mTransparentDrawHandle.indirectIndexBufferHandle));
-                    pCopyContext->ResetCounter(RegGetBufCounter(mTransparentDrawHandle.indirectSortBufferHandle));
-
-                    if (hasDirShadowmap)
-                    {
-                        pCopyContext->ResetCounter(RegGetBufCounter(mDirShadowmapHandle.indirectSortBufferHandle));
-                    }
-
-                    for (size_t i = 0; i < mSpotShadowmapHandles.size(); i++)
-                    {
-                        pCopyContext->ResetCounter(RegGetBufCounter(mSpotShadowmapHandles[i].indirectSortBufferHandle));
-                    }
-
-                    pCopyContext->CopyBuffer(RegGetBuf(mPerframeBufferHandle), RegGetBuf(uploadPerframeBufferHandle));
-                    pCopyContext->CopyBuffer(RegGetBuf(mMaterialBufferHandle), RegGetBuf(uploadMaterialBufferHandle));
-                    pCopyContext->CopyBuffer(RegGetBuf(mMeshBufferHandle), RegGetBuf(uploadMeshBufferHandle));
-
-                    pCopyContext->TransitionBarrier(RegGetBuf(mPerframeBufferHandle), D3D12_RESOURCE_STATE_GENERIC_READ);
-                    pCopyContext->TransitionBarrier(RegGetBuf(mMaterialBufferHandle), D3D12_RESOURCE_STATE_GENERIC_READ);
-                    pCopyContext->TransitionBarrier(RegGetBuf(mMeshBufferHandle), D3D12_RESOURCE_STATE_GENERIC_READ);
-                });
-
+                PassWriteIg(resetPass, cullOutput.dirShadowmapHandle.indirectIndexBufferHandle);
+                PassWriteIg(resetPass, cullOutput.dirShadowmapHandle.indirectSortBufferHandle);
+            }
+            for (size_t i = 0; i < cullOutput.spotShadowmapHandles.size(); i++)
+            {
+                PassWriteIg(resetPass, cullOutput.spotShadowmapHandles[i].indirectIndexBufferHandle);
+                PassWriteIg(resetPass, cullOutput.spotShadowmapHandles[i].indirectSortBufferHandle);
             }
 
+            resetPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
+                RHI::D3D12ComputeContext* pCopyContext = context->GetComputeContext();
+
+                pCopyContext->ResetCounter(RegGetBufCounter(mOpaqueDrawHandle.indirectIndexBufferHandle));
+                pCopyContext->ResetCounter(RegGetBufCounter(mOpaqueDrawHandle.indirectSortBufferHandle));
+                pCopyContext->ResetCounter(RegGetBufCounter(mTransparentDrawHandle.indirectIndexBufferHandle));
+                pCopyContext->ResetCounter(RegGetBufCounter(mTransparentDrawHandle.indirectSortBufferHandle));
+
+                if (hasDirShadowmap)
+                {
+                    pCopyContext->ResetCounter(RegGetBufCounter(mDirShadowmapHandle.indirectSortBufferHandle));
+                }
+
+                for (size_t i = 0; i < mSpotShadowmapHandles.size(); i++)
+                {
+                    pCopyContext->ResetCounter(RegGetBufCounter(mSpotShadowmapHandles[i].indirectSortBufferHandle));
+                }
+
+                pCopyContext->CopyBuffer(RegGetBuf(mPerframeBufferHandle), RegGetBuf(uploadPerframeBufferHandle));
+                pCopyContext->CopyBuffer(RegGetBuf(mMaterialBufferHandle), RegGetBuf(uploadMaterialBufferHandle));
+                pCopyContext->CopyBuffer(RegGetBuf(mMeshBufferHandle), RegGetBuf(uploadMeshBufferHandle));
+
+                pCopyContext->TransitionBarrier(RegGetBuf(mPerframeBufferHandle), D3D12_RESOURCE_STATE_GENERIC_READ);
+                pCopyContext->TransitionBarrier(RegGetBuf(mMaterialBufferHandle), D3D12_RESOURCE_STATE_GENERIC_READ);
+                pCopyContext->TransitionBarrier(RegGetBuf(mMeshBufferHandle), D3D12_RESOURCE_STATE_GENERIC_READ);
+            });
+        }
+
+        int numMeshes = m_render_scene->m_mesh_renderers.size();
+        if (numMeshes > 0)
+        {
             {
                 RHI::RenderPass& cullingPass = graph.AddRenderPass("OpaqueTransCullingPass");
 

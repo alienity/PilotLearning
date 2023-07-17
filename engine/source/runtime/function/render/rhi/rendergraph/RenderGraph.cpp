@@ -107,12 +107,57 @@ namespace RHI
 	void RenderGraphDependencyLevel::AddRenderPass(RenderPass* RenderPass)
 	{
 		RenderPasses.push_back(RenderPass);
+        /*
+        for (size_t i = 0; i < RenderPass->Reads.size(); i++)
+        {
+            RHI::RgResourceHandleExt& _toAdd = RenderPass->Reads[i];
+
+            bool _findSame = false;
+            for (size_t j = 0; j < Reads.size(); j++)
+            {
+                RHI::RgResourceHandleExt& _OldOne = Reads[j];
+                if (_OldOne == _toAdd)
+                {
+                    this->Reads[j] = _toAdd;
+
+                    _findSame = true;
+                }
+            }
+            if (!_findSame)
+            {
+                Reads.push_back(_toAdd);
+            }
+        }
+
+        for (size_t i = 0; i < RenderPass->Writes.size(); i++)
+        {
+            RHI::RgResourceHandleExt& _toAdd = RenderPass->Writes[i];
+
+            bool _findSame = false;
+            for (size_t j = 0; j < Writes.size(); j++)
+            {
+                RHI::RgResourceHandleExt& _OldOne = Writes[j];
+                if (_OldOne == _toAdd)
+                {
+                    this->Writes[j] = _toAdd;
+
+                    _findSame = true;
+                }
+            }
+            if (!_findSame)
+            {
+                Writes.push_back(_toAdd);
+            }
+        }
+        */
 		Reads.insert(RenderPass->Reads.begin(), RenderPass->Reads.end());
 		Writes.insert(RenderPass->Writes.begin(), RenderPass->Writes.end());
 	}
 
 	void RenderGraphDependencyLevel::Execute(RenderGraph* RenderGraph, D3D12CommandContext* Context)
 	{
+        Context->FlushResourceBarriers();
+
 		// Figure out all the barriers needed for each level
 		// Handle resource transitions for all registered resources
 		for (auto& Read : Reads)

@@ -120,6 +120,8 @@ namespace RHI
         // Apply barriers at a dependency level to reduce redudant barriers
         robin_hood::unordered_set<RgResourceHandleExt> Reads;
         robin_hood::unordered_set<RgResourceHandleExt> Writes;
+        //std::vector<RgResourceHandleExt> Reads;
+        //std::vector<RgResourceHandleExt> Writes;
     };
 
     class RenderGraph
