@@ -14,7 +14,7 @@ float4 PSMain(VertexAttributes input) : SV_Target0
 {
     Texture2D<float4> baseColorTex = ResourceDescriptorHeap[texIndex];
 
-    float4 linearRGB = baseColorTex[(int2)input.position.xy];
+    float4 linearRGB = baseColorTex.Sample(defaultSampler, float2(input.texcoord.x, 1 - input.texcoord.y));
 
     return float4(ApplyDisplayProfile(linearRGB.rgb, DISPLAY_PLANE_FORMAT), 1.0f);
 }

@@ -14,6 +14,8 @@
 #include "runtime/function/render/render_system.h"
 #include "runtime/function/render/window_system.h"
 
+#include <sstream>
+
 namespace MoYu
 {
     void EditorInputManager::initialize() { registerInput(); }
@@ -202,7 +204,8 @@ namespace MoYu
                     glfwSetInputMode(
                         g_editor_global_context.m_window_system->getWindow(), GLFW_CURSOR, GLFW_CURSOR_NORMAL);
                     g_editor_global_context.m_scene_manager->getEditorCamera()->rotate(
-                        Vector2(ypos - m_mouse_y, xpos - m_mouse_x) * angularVelocity);
+                        Vector2(ypos - m_mouse_y, m_mouse_x - xpos) * angularVelocity);
+
                 }
                 else if (g_editor_global_context.m_window_system->isMouseButtonDown(GLFW_MOUSE_BUTTON_LEFT))
                 {
