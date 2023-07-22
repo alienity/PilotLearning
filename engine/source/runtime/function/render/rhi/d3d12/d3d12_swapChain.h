@@ -47,7 +47,7 @@ namespace RHI
                                                                         DXGI_FORMAT_R16G16B16A16_FLOAT};
 
         D3D12SwapChain() noexcept = default;
-        explicit D3D12SwapChain(D3D12Device* Parent, HWND HWnd);
+        explicit D3D12SwapChain(D3D12Device* Parent, HWND HWnd, int Width, int Height);
         ~D3D12SwapChain();
 
         D3D12SwapChain(D3D12SwapChain&&) noexcept = default;
@@ -77,7 +77,7 @@ namespace RHI
         void Present(bool VSync, IPresent& Present);
 
     private:
-        Microsoft::WRL::ComPtr<IDXGISwapChain4> InitializeSwapChain();
+        Microsoft::WRL::ComPtr<IDXGISwapChain4> InitializeSwapChain(int Width, int Height);
 
     private:
         HWND WindowHandle   = nullptr;

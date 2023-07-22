@@ -220,7 +220,7 @@ namespace MoYu
 
             m_editor_ui_creator["bool"]("m_perspective", isDirty, &cam_ptr->m_perspective);
             m_editor_ui_creator["float"]("m_fovY", isDirty, &cam_ptr->m_fovY);
-            m_editor_ui_creator["m_speed"]("m_speed", isDirty, &cam_ptr->m_speed);
+            m_editor_ui_creator["float"]("m_speed", isDirty, &cam_ptr->m_speed);
             m_editor_ui_creator["int"]("m_width", isDirty, &cam_ptr->m_width);
             m_editor_ui_creator["int"]("m_height", isDirty, &cam_ptr->m_height);
             m_editor_ui_creator["float"]("m_nearZ", isDirty, &cam_ptr->m_nearZ);

@@ -36,16 +36,11 @@ AppendStructuredBuffer<uint2> g_TransSortIndexDisBuffer : register(u1, space0);
 void CSMain(CSParams Params) {
     // Each thread processes one mesh instance
     // Compute index and ensure is within bounds
-    ConstantBuffer<MeshPerframeBuffer> mMeshPerframeBuffer =
-        ResourceDescriptorHeap[g_RootIndexBuffer.meshPerFrameBufferIndex];
-    StructuredBuffer<MeshInstance> meshesInstanceBuffer =
-        ResourceDescriptorHeap[g_RootIndexBuffer.meshInstanceBufferIndex];
-    StructuredBuffer<MaterialInstance> materialsInstance =
-        ResourceDescriptorHeap[g_RootIndexBuffer.materialIndexBufferIndex];
-    AppendStructuredBuffer<uint2> opaqueSortIndexDisBuffer =
-        ResourceDescriptorHeap[g_RootIndexBuffer.opaqueSortIndexDisBufferIndex];
-    AppendStructuredBuffer<uint2> transSortIndexDisBuffer =
-        ResourceDescriptorHeap[g_RootIndexBuffer.transSortIndexDisBufferIndex];
+    ConstantBuffer<MeshPerframeBuffer> mMeshPerframeBuffer = ResourceDescriptorHeap[g_RootIndexBuffer.meshPerFrameBufferIndex];
+    StructuredBuffer<MeshInstance> meshesInstanceBuffer = ResourceDescriptorHeap[g_RootIndexBuffer.meshInstanceBufferIndex];
+    StructuredBuffer<MaterialInstance> materialsInstance = ResourceDescriptorHeap[g_RootIndexBuffer.materialIndexBufferIndex];
+    AppendStructuredBuffer<uint2> opaqueSortIndexDisBuffer = ResourceDescriptorHeap[g_RootIndexBuffer.opaqueSortIndexDisBufferIndex];
+    AppendStructuredBuffer<uint2> transSortIndexDisBuffer = ResourceDescriptorHeap[g_RootIndexBuffer.transSortIndexDisBufferIndex];
 
     uint index = (Params.GroupID.x * 128) + Params.GroupIndex;
     if (index < mMeshPerframeBuffer.total_mesh_num)
@@ -53,8 +48,7 @@ void CSMain(CSParams Params) {
         MeshInstance mesh = meshesInstanceBuffer[index];
         MaterialInstance material = materialsInstance[mesh.materialIndex];
 
-        StructuredBuffer<PerMaterialUniformBuffer> matBuffer =
-            ResourceDescriptorHeap[material.uniformBufferIndex];
+        StructuredBuffer<PerMaterialUniformBuffer> matBuffer = ResourceDescriptorHeap[material.uniformBufferIndex];
 
         BoundingBox aabb;
         mesh.boundingBox.Transform(mesh.localToWorldMatrix, aabb);

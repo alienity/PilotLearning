@@ -78,7 +78,7 @@ namespace MoYu
         {
             case RenderCameraType::Editor:
                 {
-                    view_matrix = Math::makeLookAtMatrix(position(), position() + forward() * 10, up());
+                    view_matrix = Math::makeLookAtMatrix(position(), position() + forward(), up());
                 }
                 break;
             case RenderCameraType::Motor:

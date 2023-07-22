@@ -19,7 +19,6 @@ namespace RHI
         bool EnableGpuBasedValidation;
         bool EnableAutoDebugName;
 
-        D3D_FEATURE_LEVEL     FeatureLevel;
         bool                  WaveIntrinsics;
         bool                  Raytracing;
         bool                  DynamicResources;
@@ -115,8 +114,9 @@ namespace RHI
             return Interface;
         }
 
+        DWORD dxgiFactoryFlags = 0;
+
         void                                 InternalCreateDxgiFactory(bool Debug);
-        void                                 InitializeDxgiObjects();
         Microsoft::WRL::ComPtr<ID3D12Device> InitializeDevice(const DeviceOptions& Options);
         CD3DX12FeatureSupport                InitializeFeatureSupport(const DeviceOptions& Options);
         TDescriptorSizeCache                 InitializeDescriptorSizeCache();

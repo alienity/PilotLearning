@@ -9,7 +9,7 @@ namespace MoYu
 
     struct FirstPersonCameraParameter
     {
-        float m_fovY {50.f};
+        float m_fovY {100.0f};
         float m_vertical_offset {0.6f};
         int   m_width {1366};
         int   m_height {768};
@@ -26,7 +26,7 @@ namespace MoYu
 
     struct ThirdPersonCameraParameter
     {
-        float      m_fovY {50.f};
+        float      m_fovY {100.f};
         float      m_horizontal_offset {3.f};
         float      m_vertical_offset {2.5f};
         Quaternion m_cursor_pitch {Quaternion::Identity};
@@ -50,7 +50,7 @@ namespace MoYu
     struct FreeCameraParameter
     {
         bool  m_perspective {true};
-        float m_fovY {50.f};
+        float m_fovY {100.f};
         float m_speed {1.f};
         int   m_width {1366};
         int   m_height {768};

@@ -829,11 +829,7 @@ namespace RHI
         this->m_ResourceState   = CResourceState(m_NumSubresources, CurrentState);
         this->m_ResourceName    = Name;
 
-#ifndef RELEASE
-        m_pResource->SetName(Name.c_str());
-#else
-        (Name);
-#endif
+        this->m_pResource->SetName(m_ResourceName.c_str());
     }
 
     void D3D12Texture::GenerateMipMaps(D3D12CommandContext* context, D3D12Texture* pTexture)

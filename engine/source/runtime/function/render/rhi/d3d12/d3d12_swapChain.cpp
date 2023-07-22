@@ -9,10 +9,10 @@
 namespace RHI
 {
     // clang-format off
-    D3D12SwapChain::D3D12SwapChain(D3D12Device* Parent, HWND HWnd)
+    D3D12SwapChain::D3D12SwapChain(D3D12Device* Parent, HWND HWnd, int Width, int Height)
         : D3D12DeviceChild(Parent)
         , WindowHandle(HWnd)
-        , p_SwapChain4(InitializeSwapChain())
+        , p_SwapChain4(InitializeSwapChain(Width, Height))
         , m_Fence(std::make_shared<D3D12Fence>(Parent, 0, D3D12_FENCE_FLAG_NONE))
     {
         // Check display HDR support and initialize ST.2084 support to match the display's support.
@@ -197,10 +197,8 @@ namespace RHI
             Microsoft::WRL::ComPtr<ID3D12Resource> Resource;
             VERIFY_D3D12_API(p_SwapChain4->GetBuffer(i, IID_PPV_ARGS(&Resource)));
             std::wstring mSwapchainName = L"SwapChainBackBuffer" + std::to_wstring(i);
-            p_BackBuffers[i] = D3D12Texture::CreateFromSwapchain(GetParentDevice()->GetLinkedDevice(),
-                                                                 std::move(Resource),
-                                                                 D3D12_RESOURCE_STATE_PRESENT,
-                                                                 mSwapchainName);
+            p_BackBuffers[i] = D3D12Texture::CreateFromSwapchain(
+                GetParentDevice()->GetLinkedDevice(), Resource, D3D12_RESOURCE_STATE_PRESENT, mSwapchainName);
         }
     }
 
@@ -220,42 +218,44 @@ namespace RHI
         m_CurrentBackBufferIndex = (m_CurrentBackBufferIndex + 1) % BackBufferCount;
     }
 
-    Microsoft::WRL::ComPtr<IDXGISwapChain4> D3D12SwapChain::InitializeSwapChain()
+    Microsoft::WRL::ComPtr<IDXGISwapChain4> D3D12SwapChain::InitializeSwapChain(int Width, int Height)
     {
         IDXGIFactory6*      Factory      = GetParentDevice()->GetDxgiFactory6();
         ID3D12CommandQueue* CommandQueue = GetParentDevice()->GetLinkedDevice()->GetGraphicsQueue()->GetCommandQueue();
 
         // Check tearing support
         BOOL AllowTearing = FALSE;
-        if (FAILED(
-                Factory->CheckFeatureSupport(DXGI_FEATURE_PRESENT_ALLOW_TEARING, &AllowTearing, sizeof(AllowTearing))))
+        if (FAILED(Factory->CheckFeatureSupport(DXGI_FEATURE_PRESENT_ALLOW_TEARING, &AllowTearing, sizeof(AllowTearing))))
         {
             AllowTearing = FALSE;
         }
         TearingSupport = AllowTearing == TRUE;
 
-        // Width/Height can be set to 0
-        DXGI_SWAP_CHAIN_DESC1 Desc = {0,
-                                      0,
-                                      Format,
-                                      FALSE,
-                                      DXGI_SAMPLE_DESC {1, 0},
-                                      DXGI_USAGE_RENDER_TARGET_OUTPUT,
-                                      BackBufferCount,
-                                      DXGI_SCALING_NONE,
-                                      DXGI_SWAP_EFFECT_FLIP_DISCARD,
-                                      DXGI_ALPHA_MODE_UNSPECIFIED,
-                                      TearingSupport ? DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING : 0u};
+        DXGI_SWAP_CHAIN_DESC1 swapChainDesc = {};
+        swapChainDesc.Width                 = Width;
+        swapChainDesc.Height                = Height;
+        swapChainDesc.Format                = Format;
+        swapChainDesc.BufferUsage           = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+        swapChainDesc.BufferCount           = BackBufferCount;
+        swapChainDesc.SampleDesc.Count      = 1;
+        swapChainDesc.SampleDesc.Quality    = 0;
+        swapChainDesc.Scaling               = DXGI_SCALING_NONE;
+        swapChainDesc.SwapEffect            = DXGI_SWAP_EFFECT_FLIP_DISCARD;
+        swapChainDesc.AlphaMode             = DXGI_ALPHA_MODE_IGNORE;
+        swapChainDesc.Flags                 = TearingSupport ? DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING : DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
 
-        Microsoft::WRL::ComPtr<IDXGISwapChain1> SwapChain1;
-        Microsoft::WRL::ComPtr<IDXGISwapChain4> SwapChain4;
+        DXGI_SWAP_CHAIN_FULLSCREEN_DESC fsSwapChainDesc = {};
+        fsSwapChainDesc.Windowed                        = TRUE;
+
+        Microsoft::WRL::ComPtr<IDXGISwapChain1> s_SwapChain1;
+        Microsoft::WRL::ComPtr<IDXGISwapChain4> s_SwapChain4;
         VERIFY_D3D12_API(Factory->CreateSwapChainForHwnd(
-            CommandQueue, WindowHandle, &Desc, nullptr, nullptr, SwapChain1.GetAddressOf()));
+            CommandQueue, WindowHandle, &swapChainDesc, &fsSwapChainDesc, nullptr, &s_SwapChain1));
         // No full screen via alt + enter
         VERIFY_D3D12_API(Factory->MakeWindowAssociation(WindowHandle, DXGI_MWA_NO_ALT_ENTER));
-        VERIFY_D3D12_API(SwapChain1->QueryInterface(IID_PPV_ARGS(SwapChain4.ReleaseAndGetAddressOf())));
+        VERIFY_D3D12_API(s_SwapChain1->QueryInterface(IID_PPV_ARGS(s_SwapChain4.ReleaseAndGetAddressOf())));
 
-        return SwapChain4;
+        return s_SwapChain4;
     }
 }
 

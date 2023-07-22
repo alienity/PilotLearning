@@ -81,7 +81,7 @@ namespace MoYu
 
     Matrix4x4 Math::makeLookAtMatrix(const Vector3& eye_position, const Vector3& target_position, const Vector3& up_dir)
     {
-        return Matrix4x4::lookAt(eye_position, target_position, up_dir);
+        return Matrix4x4::lookAt(eye_position, target_position - eye_position, up_dir);
     }
 
     Matrix4x4 Math::makePerspectiveMatrix(Radian fovy, float aspect, float znear, float zfar)

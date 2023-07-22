@@ -168,7 +168,11 @@ namespace MoYu
         m_mesh_perframe_storage_buffer_object.point_light_num  = point_light_num;
         m_mesh_perframe_storage_buffer_object.spot_light_num   = spot_light_num;
 
-        m_mesh_point_light_shadow_perframe_storage_buffer_object.point_light_num = point_light_num;
+        // set mesh number
+        m_mesh_perframe_storage_buffer_object.total_mesh_num = render_scene->m_mesh_renderers.size();
+
+        //// set point light number
+        //m_mesh_point_light_shadow_perframe_storage_buffer_object.point_light_num = point_light_num;
 
         // point lights
         for (uint32_t i = 0; i < point_light_num; i++)
@@ -179,16 +183,18 @@ namespace MoYu
             float radius = render_scene->m_point_light_list[i].m_radius;
             Color color  = render_scene->m_point_light_list[i].m_color;
 
+
             m_mesh_perframe_storage_buffer_object.scene_point_lights[i].position = GLMUtil::fromVec3(point_light_position);
             m_mesh_perframe_storage_buffer_object.scene_point_lights[i].radius = radius;
             m_mesh_perframe_storage_buffer_object.scene_point_lights[i].color = GLMUtil::fromVec3(Vector3(color.r, color.g, color.b));
             m_mesh_perframe_storage_buffer_object.scene_point_lights[i].intensity = point_light_intensity;
 
-            m_mesh_point_light_shadow_perframe_storage_buffer_object.point_lights_position_and_radius[i] = 
-                glm::vec4(point_light_position.x, point_light_position.y, point_light_position.z, radius);
+            //m_mesh_point_light_shadow_perframe_storage_buffer_object.point_lights_position_and_radius[i] = 
+            //    glm::vec4(point_light_position.x, point_light_position.y, point_light_position.z, radius);
         }
 
-        m_mesh_spot_light_shadow_perframe_storage_buffer_object.spot_light_num = spot_light_num;
+        //// set spot light number
+        //m_mesh_spot_light_shadow_perframe_storage_buffer_object.spot_light_num = spot_light_num;
 
         // spot lights
         for (uint32_t i = 0; i < spot_light_num; i++)
@@ -212,8 +218,8 @@ namespace MoYu
             m_mesh_perframe_storage_buffer_object.scene_spot_lights[i].shadowmap_width = render_scene->m_spot_light_list[i].m_shadowmap_size.x;
             m_mesh_perframe_storage_buffer_object.scene_spot_lights[i].spot_light_proj_view = GLMUtil::fromMat4x4(render_scene->m_spot_light_list[i].m_shadow_view_proj_mat);
 
-            m_mesh_spot_light_shadow_perframe_storage_buffer_object.spot_lights_position_and_radius[i] =
-                glm::vec4(spot_light_position.x, spot_light_position.y, spot_light_position.z, radius);
+            //m_mesh_spot_light_shadow_perframe_storage_buffer_object.spot_lights_position_and_radius[i] =
+            //    glm::vec4(spot_light_position.x, spot_light_position.y, spot_light_position.z, radius);
         }
 
         {

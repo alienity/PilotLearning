@@ -281,60 +281,53 @@ namespace RHI
         VERIFY_D3D12_API(CreateDXGIFactory2(FactoryFlags, IID_PPV_ARGS(&m_Factory6)));
     }
 
-    void D3D12Device::InitializeDxgiObjects()
-    {
-        CreateDxgiFactory();
-
-        // Enumerate hardware for an adapter that supports D3D12
-        Microsoft::WRL::ComPtr<IDXGIAdapter3> AdapterIterator;
-        UINT                                  AdapterId = 0;
-        while (SUCCEEDED(m_Factory6->EnumAdapterByGpuPreference(
-            AdapterId, DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE, IID_PPV_ARGS(AdapterIterator.ReleaseAndGetAddressOf()))))
-        {
-            if (SUCCEEDED(
-                    D3D12CreateDevice(AdapterIterator.Get(), D3D_FEATURE_LEVEL_11_0, __uuidof(ID3D12Device), nullptr)))
-            {
-                m_Adapter3 = std::move(AdapterIterator);
-                if (SUCCEEDED(m_Adapter3->GetDesc2(&m_AdapterDesc)))
-                {
-                    LOG_INFO("Adapter Vendor: {}", GetRHIVendorString(static_cast<RHI_VENDOR>(m_AdapterDesc.VendorId)));
-                    LOG_INFO(L"Adapter: {}", m_AdapterDesc.Description);
-                }
-                break;
-            }
-
-            ++AdapterId;
-        }
-    }
-
     Microsoft::WRL::ComPtr<ID3D12Device> D3D12Device::InitializeDevice(const DeviceOptions& Options)
     {
-        InitializeDxgiObjects();
-
         // Enable the D3D12 debug layer
-        if (Options.EnableDebugLayer || Options.EnableGpuBasedValidation)
+        if (Options.EnableDebugLayer)
         {
             // NOTE: Enabling the debug layer after creating the ID3D12Device will cause the DX runtime to remove the
             // device.
-            Microsoft::WRL::ComPtr<ID3D12Debug> Debug;
-            if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&Debug))))
+            Microsoft::WRL::ComPtr<ID3D12Debug> debugInterface;
+            if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&debugInterface))))
             {
-                if (Options.EnableDebugLayer)
+                debugInterface->EnableDebugLayer();
+                if (Options.EnableGpuBasedValidation)
                 {
-                    Debug->EnableDebugLayer();
+                    Microsoft::WRL::ComPtr<ID3D12Debug1> debugInterface1;
+                    if (SUCCEEDED((debugInterface->QueryInterface(IID_PPV_ARGS(&debugInterface1)))))
+                    {
+                        debugInterface1->SetEnableGPUBasedValidation(true);
+                    }
                 }
             }
-
-            Microsoft::WRL::ComPtr<ID3D12Debug3> Debug3;
-            if (SUCCEEDED(Debug->QueryInterface(IID_PPV_ARGS(&Debug3))))
+            else
             {
-                Debug3->SetEnableGPUBasedValidation(Options.EnableGpuBasedValidation);
+                LOG_WARN("WARNING:  Unable to enable D3D12 debug validation layer\n");
             }
 
-            Microsoft::WRL::ComPtr<ID3D12Debug5> Debug5;
-            if (SUCCEEDED(Debug->QueryInterface(IID_PPV_ARGS(&Debug5))))
+            Microsoft::WRL::ComPtr<IDXGIInfoQueue> dxgiInfoQueue;
+            if (SUCCEEDED(DXGIGetDebugInterface1(0, IID_PPV_ARGS(dxgiInfoQueue.GetAddressOf()))))
             {
-                Debug5->SetEnableAutoName(Options.EnableAutoDebugName);
+                dxgiFactoryFlags = DXGI_CREATE_FACTORY_DEBUG;
+
+                dxgiInfoQueue->SetBreakOnSeverity(DXGI_DEBUG_ALL, DXGI_INFO_QUEUE_MESSAGE_SEVERITY_ERROR, true);
+                dxgiInfoQueue->SetBreakOnSeverity(DXGI_DEBUG_ALL, DXGI_INFO_QUEUE_MESSAGE_SEVERITY_CORRUPTION, true);
+
+                DXGI_INFO_QUEUE_MESSAGE_ID hide[] =
+                {
+                    80 /* IDXGISwapChain::GetContainingOutput: The swapchain's adapter does not control the output on which the swapchain's window resides. */,
+                };
+                DXGI_INFO_QUEUE_FILTER filter = {};
+                filter.DenyList.NumIDs = _countof(hide);
+                filter.DenyList.pIDList = hide;
+                dxgiInfoQueue->AddStorageFilterEntries(DXGI_DEBUG_DXGI, &filter);
+            }
+
+            Microsoft::WRL::ComPtr<ID3D12Debug5> debug5Interface;
+            if (SUCCEEDED(debugInterface->QueryInterface(IID_PPV_ARGS(&debug5Interface))))
+            {
+                debug5Interface->SetEnableAutoName(Options.EnableAutoDebugName);
             }
         }
 
@@ -354,8 +347,33 @@ namespace RHI
             LOG_INFO("DRED Disabled");
         }
 
+        // Obtain the DXGI factory
+        VERIFY_D3D12_API(CreateDXGIFactory2(dxgiFactoryFlags, IID_PPV_ARGS(&m_Factory6)));
+
+        // Temporary workaround because SetStablePowerState() is crashing
+        D3D12EnableExperimentalFeatures(0, nullptr, nullptr, nullptr);
+
+        // Enumerate hardware for an adapter that supports D3D12
         Microsoft::WRL::ComPtr<ID3D12Device> Device;
-        VERIFY_D3D12_API(D3D12CreateDevice(m_Adapter3.Get(), Options.FeatureLevel, IID_PPV_ARGS(&Device)));
+        Microsoft::WRL::ComPtr<IDXGIAdapter3> AdapterIterator;
+        UINT                                  AdapterId = 0;
+        while (SUCCEEDED(m_Factory6->EnumAdapterByGpuPreference(
+            AdapterId, DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE, IID_PPV_ARGS(AdapterIterator.ReleaseAndGetAddressOf()))))
+        {
+            if (SUCCEEDED(D3D12CreateDevice(AdapterIterator.Get(), D3D_FEATURE_LEVEL_12_1, IID_PPV_ARGS(&Device))))
+            {
+                m_Adapter3 = std::move(AdapterIterator);
+                if (SUCCEEDED(m_Adapter3->GetDesc2(&m_AdapterDesc)))
+                {
+                    LOG_INFO("Adapter Vendor: {}", GetRHIVendorString(static_cast<RHI_VENDOR>(m_AdapterDesc.VendorId)));
+                    LOG_INFO(L"Adapter: {}", m_AdapterDesc.Description);
+                }
+                break;
+            }
+
+            ++AdapterId;
+        }
+
         return Device;
     }
 

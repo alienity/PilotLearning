@@ -34,8 +34,10 @@ namespace MoYu
 
         p_WinSystem = initialize_info.Window_system;
 
+        auto wh = p_WinSystem->getWindowSize();
+
         HWND win32handle = glfwGetWin32Window(p_WinSystem->getWindow());
-        p_SwapChain      = std::make_unique<RHI::D3D12SwapChain>(p_Device.get(), win32handle);
+        p_SwapChain      = std::make_unique<RHI::D3D12SwapChain>(p_Device.get(), win32handle, wh[0], wh[1]);
     }
 
     void RendererManager::InitRenderer()

@@ -34,13 +34,13 @@
     "m_pose": {
       "m_position": {
         "x": 0.0,
-        "y": 1.0,
-        "z": 3.0
+        "y": 0.1,
+        "z": 2.0
       },
       "m_target": {
         "x": 0.0,
         "y": 0.0,
-        "z": -1.0
+        "z": 0.0
       },
       "m_up": {
         "x": 0.0,
@@ -54,7 +54,7 @@
     },
     "m_z_far": 1000.0,
     "m_z_near": 0.1,
-    "m_fovY": 90
+    "m_fovY": 60
   },
   "m_directional_light": {
     "m_direction": {

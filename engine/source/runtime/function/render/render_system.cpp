@@ -84,7 +84,6 @@ namespace MoYu
 
         // initialize render manager
         RHI::DeviceOptions deviceOptions              = {};
-        deviceOptions.FeatureLevel                    = D3D_FEATURE_LEVEL::D3D_FEATURE_LEVEL_11_0;
 #ifdef _DEBUG
         deviceOptions.EnableDebugLayer                = true;
         deviceOptions.EnableAutoDebugName             = true;
