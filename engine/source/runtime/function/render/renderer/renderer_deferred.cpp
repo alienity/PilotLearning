@@ -191,6 +191,7 @@ namespace MoYu
         // game view output
         RHI::RgResourceHandle renderTargetColorHandle = graph.Import(p_RenderTargetTex.get());
         
+
         /**/
         //=================================================================================
         // 应该再给graph添加一个signal同步，目前先这样
@@ -212,7 +213,6 @@ namespace MoYu
         {
             mShadowmapIntputParams.spotsIndirectSortBufferHandles.push_back(indirectCullOutput.spotShadowmapHandles[i].indirectSortBufferHandle);
         }
-        
         mIndirectShadowPass->update(graph, mShadowmapIntputParams, mShadowmapOutputParams);
         //=================================================================================
 
@@ -275,7 +275,6 @@ namespace MoYu
         PostprocessPasses::PostprocessOutputParameters mPostprocessOutputParams;
 
         mPostprocessIntputParams.inputSceneColorHandle = mDrawTransOutputParams.renderTargetColorHandle;
-
         mPostprocessPasses->update(graph, mPostprocessIntputParams, mPostprocessOutputParams);
 
         //outputRTColorHandle = mPostprocessOutputParams.outputColorHandle;
@@ -288,7 +287,6 @@ namespace MoYu
 
         mDisplayIntputParams.inputRTColorHandle      = mPostprocessOutputParams.outputColorHandle;
         mDisplayOutputParams.renderTargetColorHandle = renderTargetColorHandle;
-
         mDisplayPass->update(graph, mDisplayIntputParams, mDisplayOutputParams);
         //=================================================================================
         

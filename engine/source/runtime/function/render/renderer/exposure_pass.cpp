@@ -125,11 +125,11 @@ namespace MoYu
                 RHI::D3D12Buffer* m_HistogramBuffer = registry->GetD3D12Buffer(histogramHandle);
                 RHI::D3D12UnorderedAccessView* m_HistogramBufferUAV = m_HistogramBuffer->GetDefaultUAV().get();
 
-                //computeContext->TransitionBarrier(m_HistogramBuffer, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, true);
-                //computeContext->ClearUAV(m_HistogramBuffer);
-                //computeContext->TransitionBarrier(m_LumaLRColor, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-
+                computeContext->TransitionBarrier(m_HistogramBuffer, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, true);
                 computeContext->ClearUAV(m_HistogramBuffer);
+                computeContext->TransitionBarrier(m_LumaLRColor, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+
+                //computeContext->ClearUAV(m_HistogramBuffer);
 
                 computeContext->SetRootSignature(pGenerateHistogramCSSignature.get());
                 computeContext->SetPipelineState(pGenerateHistogramCSPSO.get());

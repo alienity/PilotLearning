@@ -204,7 +204,7 @@ namespace MoYu
                     glfwSetInputMode(
                         g_editor_global_context.m_window_system->getWindow(), GLFW_CURSOR, GLFW_CURSOR_NORMAL);
                     g_editor_global_context.m_scene_manager->getEditorCamera()->rotate(
-                        Vector2(ypos - m_mouse_y, m_mouse_x - xpos) * angularVelocity);
+                        Vector2(m_mouse_y - ypos, m_mouse_x - xpos) * angularVelocity);
 
                 }
                 else if (g_editor_global_context.m_window_system->isMouseButtonDown(GLFW_MOUSE_BUTTON_LEFT))

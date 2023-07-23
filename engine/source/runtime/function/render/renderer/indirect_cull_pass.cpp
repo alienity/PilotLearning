@@ -460,6 +460,8 @@ namespace MoYu
                 pCopyContext->TransitionBarrier(RegGetBuf(mPerframeBufferHandle), D3D12_RESOURCE_STATE_GENERIC_READ);
                 pCopyContext->TransitionBarrier(RegGetBuf(mMaterialBufferHandle), D3D12_RESOURCE_STATE_GENERIC_READ);
                 pCopyContext->TransitionBarrier(RegGetBuf(mMeshBufferHandle), D3D12_RESOURCE_STATE_GENERIC_READ);
+
+                pCopyContext->FlushResourceBarriers();
             });
         }
 
@@ -479,12 +481,13 @@ namespace MoYu
                 cullingPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
                     RHI::D3D12ComputeContext* pAsyncCompute = context->GetComputeContext();
 
-                    pAsyncCompute->TransitionBarrier(RegGetBuf(mPerframeBufferHandle), D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
-                    pAsyncCompute->TransitionBarrier(RegGetBuf(mMeshBufferHandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-                    pAsyncCompute->TransitionBarrier(RegGetBuf(mMaterialBufferHandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+                    //pAsyncCompute->TransitionBarrier(RegGetBuf(mPerframeBufferHandle), D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
+                    //pAsyncCompute->TransitionBarrier(RegGetBuf(mMeshBufferHandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+                    //pAsyncCompute->TransitionBarrier(RegGetBuf(mMaterialBufferHandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
                     pAsyncCompute->TransitionBarrier(RegGetBuf(mOpaqueDrawHandle.indirectIndexBufferHandle), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
                     pAsyncCompute->TransitionBarrier(RegGetBuf(mTransparentDrawHandle.indirectIndexBufferHandle), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 
+                    /**/
                     pAsyncCompute->SetRootSignature(RootSignatures::pIndirectCullForSort.get());
                     pAsyncCompute->SetPipelineState(PipelineStates::pIndirectCullForSort.get());
 
@@ -504,8 +507,10 @@ namespace MoYu
                                          RegGetBufDefUAVIdx(mOpaqueDrawHandle.indirectIndexBufferHandle),
                                          RegGetBufDefUAVIdx(mTransparentDrawHandle.indirectIndexBufferHandle)};
 
-                    //pAsyncCompute->SetConstantArray(0, sizeof(RootIndexBuffer) / sizeof(UINT), &rootIndexBuffer);
+                    pAsyncCompute->SetConstantArray(0, sizeof(RootIndexBuffer) / sizeof(UINT), &rootIndexBuffer);
+                    
 
+                    /*
                     pAsyncCompute->SetRootSignature(RootSignatures::pIndirectCull.get());
                     pAsyncCompute->SetPipelineState(PipelineStates::pIndirectCull.get());
 
@@ -514,7 +519,7 @@ namespace MoYu
                     pAsyncCompute->SetBufferSRV(2, RegGetBuf(mMaterialBufferHandle));
                     pAsyncCompute->SetDescriptorTable(3, RegGetBuf(mOpaqueDrawHandle.indirectIndexBufferHandle)->GetDefaultUAV()->GetGpuHandle());
                     pAsyncCompute->SetDescriptorTable(4, RegGetBuf(mTransparentDrawHandle.indirectIndexBufferHandle)->GetDefaultUAV()->GetGpuHandle());
-                    
+                    */
 
                     pAsyncCompute->Dispatch1D(numMeshes, 128);
                 });

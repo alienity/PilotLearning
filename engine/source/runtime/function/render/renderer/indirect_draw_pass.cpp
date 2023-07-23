@@ -68,11 +68,11 @@ namespace MoYu
             graphicContext->SetViewport(RHIViewport {0.0f, 0.0f, (float)colorTexDesc.Width, (float)colorTexDesc.Height, 0.0f, 1.0f});
             graphicContext->SetScissorRect(RHIRect {0, 0, (int)colorTexDesc.Width, (int)colorTexDesc.Height});
 
+            graphicContext->SetRenderTarget(renderTargetView, depthStencilView);
             if (needClearRenderTarget)
             {
                 graphicContext->ClearRenderTarget(renderTargetView, depthStencilView);
             }
-            graphicContext->SetRenderTarget(renderTargetView, depthStencilView);
 
             graphicContext->SetRootSignature(RootSignatures::pIndirectDraw.get());
             graphicContext->SetPipelineState(PipelineStates::pIndirectDraw.get());

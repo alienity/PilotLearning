@@ -92,7 +92,7 @@ namespace MoYu
 
     Matrix4x4 RenderCamera::getPersProjMatrix() const
     {
-        Matrix4x4 proj_mat = Math::makePerspectiveMatrix(Radian(Degree(m_fovy)), m_aspect, m_znear, m_zfar);
+        Matrix4x4 proj_mat = Math::makePerspectiveMatrix(Radian(Degree(m_fovy)), m_aspect, -m_znear, -m_zfar);
 
         return proj_mat;
     }

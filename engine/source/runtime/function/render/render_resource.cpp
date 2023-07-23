@@ -145,13 +145,14 @@ namespace MoYu
         Matrix4x4 view_matrix      = camera->getViewMatrix();
         Matrix4x4 proj_matrix      = camera->getPersProjMatrix();
         Vector3   camera_position  = camera->position();
-        glm::mat4 proj_view_matrix = GLMUtil::fromMat4x4(proj_matrix * view_matrix);
+        //glm::mat4 proj_view_matrix = GLMUtil::fromMat4x4(proj_matrix * view_matrix);
+
 
         // camera instance
         HLSL::CameraInstance cameraInstance;
         cameraInstance.view_matrix              = GLMUtil::fromMat4x4(view_matrix);
         cameraInstance.proj_matrix              = GLMUtil::fromMat4x4(proj_matrix);
-        cameraInstance.proj_view_matrix         = proj_view_matrix;
+        cameraInstance.proj_view_matrix         = GLMUtil::fromMat4x4(proj_matrix * view_matrix);
         cameraInstance.view_matrix_inverse      = glm::inverse(cameraInstance.view_matrix);
         cameraInstance.proj_matrix_inverse      = glm::inverse(cameraInstance.proj_matrix);
         cameraInstance.proj_view_matrix_inverse = glm::inverse(cameraInstance.proj_view_matrix);
