@@ -39,7 +39,7 @@ namespace MoYu
         }
     }
 
-    MaterialRes& MaterialManager::loadMaterialRes(std::string material_path)
+    MaterialRes MaterialManager::loadMaterialRes(std::string material_path)
     {
         auto iter = m_matpath_matinfo_map.find(material_path);
         if (iter == m_matpath_matinfo_map.end())

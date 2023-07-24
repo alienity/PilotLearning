@@ -53,9 +53,6 @@ VertexOutput VSMain(VertexInput input)
 
 float4 PSMain(VertexOutput input) : SV_Target0
 {
-    return float4(1, 0, 0, 1);
-
-    /*
     MeshInstance     mesh     = g_MeshesInstance[meshIndex];
     MaterialInstance material = g_MaterialsInstance[mesh.materialIndex];
 
@@ -261,7 +258,6 @@ float4 PSMain(VertexOutput input) : SV_Target0
     outColor = outColor * baseColor.rgb;
 
     return float4(outColor.rgb, baseColor.a);
-    */
 }
 
 

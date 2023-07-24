@@ -11,7 +11,9 @@ namespace MoYu
     public:
         TransformComponent() { m_component_name = "TransformComponent"; };
 
-        void postLoadResource(std::weak_ptr<GObject> object, void* data) override;
+        void postLoadResource(std::weak_ptr<GObject> object, const std::string json_data) override;
+
+        void save(ComponentDefinitionRes& out_component_res) override;
 
         void markToErase() override {};
 

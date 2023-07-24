@@ -30,13 +30,15 @@ namespace MoYu
 
         void reset();
 
-        void postLoadResource(std::weak_ptr<GObject> object, void* data) override;
+        void postLoadResource(std::weak_ptr<GObject> object, const std::string json_data) override;
+
+        void save(ComponentDefinitionRes& out_component_res) override;
 
         void tick(float delta_time) override;
 
         void updateMeshRendererRes(const MeshRendererComponentRes& res);
         void updateMeshRes(std::string mesh_file_path);
-        void updateMaterial(std::string material_path, std::vector<uint64_t> serialized_data = {});
+        void updateMaterial(std::string material_path, std::string serialized_json_str = "");
 
         // for editor
         SceneMesh& getSceneMesh() { return m_scene_mesh; }

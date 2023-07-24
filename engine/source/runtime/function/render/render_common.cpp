@@ -1,4 +1,5 @@
 #include "render_common.h"
+#include "runtime/resource/res_type/components/material.h"
 
 namespace MoYu
 {
@@ -19,6 +20,43 @@ namespace MoYu
         {false, true, 0, ""},
         {false, true, 0, ""},
     };
+
+    MaterialRes ToMaterialRes(const ScenePBRMaterial& pbrMaterial, const std::string shaderName)
+    {
+        MaterialRes m_mat_data = {shaderName,
+                                  pbrMaterial.m_blend,
+                                  pbrMaterial.m_double_sided,
+                                  pbrMaterial.m_base_color_factor,
+                                  pbrMaterial.m_metallic_factor,
+                                  pbrMaterial.m_roughness_factor,
+                                  pbrMaterial.m_normal_scale,
+                                  pbrMaterial.m_occlusion_strength,
+                                  pbrMaterial.m_emissive_factor,
+                                  pbrMaterial.m_base_color_texture_file,
+                                  pbrMaterial.m_metallic_roughness_texture_file,
+                                  pbrMaterial.m_normal_texture_file,
+                                  pbrMaterial.m_occlusion_texture_file,
+                                  pbrMaterial.m_emissive_texture_file};
+        return m_mat_data;
+    }
+
+    ScenePBRMaterial ToPBRMaterial(const MaterialRes& materialRes)
+    {
+        ScenePBRMaterial m_mat_data = {materialRes.m_blend,
+                                       materialRes.m_double_sided,
+                                       materialRes.m_base_color_factor,
+                                       materialRes.m_metallic_factor,
+                                       materialRes.m_roughness_factor,
+                                       materialRes.m_normal_scale,
+                                       materialRes.m_occlusion_strength,
+                                       materialRes.m_emissive_factor,
+                                       materialRes.m_base_color_texture_file,
+                                       materialRes.m_metallic_roughness_texture_file,
+                                       materialRes.m_normal_texture_file,
+                                       materialRes.m_occlusion_texture_file,
+                                       materialRes.m_emissive_texture_file};
+        return m_mat_data;
+    }
 
     // clang-format off
 

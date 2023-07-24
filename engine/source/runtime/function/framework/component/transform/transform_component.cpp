@@ -1,25 +1,38 @@
 #include "runtime/function/framework/component/transform/transform_component.h"
 #include "runtime/resource/res_type/components/transform.h"
+#include "runtime/resource/asset_manager/asset_manager.h"
 #include "runtime/engine.h"
 
 namespace MoYu
 {
-    void TransformComponent::postLoadResource(std::weak_ptr<GObject> object, void* data)
+    void TransformComponent::postLoadResource(std::weak_ptr<GObject> object, const std::string json_data)
     {
         m_object = object;
 
-        TransformRes* transform_res = (TransformRes*)data;
+        TransformRes transform_res = AssetManager::loadJson<TransformRes>(json_data);
 
         Transform m_transform = {};
 
-        m_transform.m_position = transform_res->m_position;
-        m_transform.m_scale    = transform_res->m_scale;
-        m_transform.m_rotation = transform_res->m_rotation;
+        m_transform.m_position = (&transform_res)->m_position;
+        m_transform.m_scale    = (&transform_res)->m_scale;
+        m_transform.m_rotation = (&transform_res)->m_rotation;
 
         m_transform_buffer[m_current_index] = m_transform;
         m_transform_buffer[m_next_index]    = m_transform;
 
         markInit();
+    }
+
+    void TransformComponent::save(ComponentDefinitionRes& out_component_res)
+    {
+        TransformRes transform_res = {};
+        (&transform_res)->m_position = m_transform_buffer[m_next_index].m_position;
+        (&transform_res)->m_scale    = m_transform_buffer[m_next_index].m_scale;
+        (&transform_res)->m_rotation = m_transform_buffer[m_next_index].m_rotation;
+
+        out_component_res.m_type_name = "TransformComponent";
+        out_component_res.m_component_name = this->m_component_name;
+        out_component_res.m_component_json_data = AssetManager::saveJson(transform_res);
     }
 
     void TransformComponent::setPosition(const Vector3& new_translation)

@@ -3,6 +3,8 @@
 #include "runtime/core/base/macro.h"
 #include "runtime/core/math/moyu_math.h"
 
+#include "runtime/resource/asset_manager/asset_manager.h"
+
 #include "runtime/function/framework/component/transform/transform_component.h"
 #include "runtime/function/framework/level/level.h"
 #include "runtime/function/framework/object/object.h"
@@ -21,12 +23,12 @@ namespace MoYu
         m_camera_res = {};
     }
 
-    void CameraComponent::postLoadResource(std::weak_ptr<GObject> object, void* data)
+    void CameraComponent::postLoadResource(std::weak_ptr<GObject> object, const std::string json_data)
     {
         m_object = object;
 
-        CameraComponentRes* camera_res = (CameraComponentRes*)data;
-        m_camera_res = *camera_res;
+        CameraComponentRes camera_res = AssetManager::loadJson<CameraComponentRes>(json_data);
+        m_camera_res = camera_res;
 
         const std::string& camera_type_name = m_camera_res.m_CamParamName;
         if (camera_type_name == "FirstPersonCameraParameter")
@@ -50,6 +52,19 @@ namespace MoYu
         CameraSwapData camera_swap_data;
         camera_swap_data.m_fov_y = m_camera_res.m_FreeCamParam.m_fovY;
         swap_context.getLogicSwapData().m_camera_swap_data = camera_swap_data;
+    }
+
+    void CameraComponent::save(ComponentDefinitionRes& out_component_res)
+    {
+        CameraComponentRes camera_res {};
+        (&camera_res)->m_CamParamName        = m_camera_res.m_CamParamName;
+        (&camera_res)->m_FirstPersonCamParam = m_camera_res.m_FirstPersonCamParam;
+        (&camera_res)->m_ThirdPersonCamParam = m_camera_res.m_ThirdPersonCamParam;
+        (&camera_res)->m_FreeCamParam        = m_camera_res.m_FreeCamParam;
+
+        out_component_res.m_type_name           = "CameraComponent";
+        out_component_res.m_component_name      = this->m_component_name;
+        out_component_res.m_component_json_data = AssetManager::saveJson(camera_res);
     }
 
     void CameraComponent::tick(float delta_time)

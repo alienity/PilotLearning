@@ -9,9 +9,12 @@ namespace MoYu
     {
         std::string m_type_name;
         std::string m_component_name;
-        std::vector<uint64_t> m_component_data;
+        std::string m_component_json_data;
     };
-    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(ComponentDefinitionRes, m_type_name, m_component_name, m_component_data)
+    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(ComponentDefinitionRes,
+                                                    m_type_name,
+                                                    m_component_name,
+                                                    m_component_json_data)
 
     struct ObjectInstanceRes
     {

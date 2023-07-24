@@ -7,6 +7,7 @@
 namespace MoYu
 {
     class GObject;
+    struct ComponentDefinitionRes;
 
     enum ComponentStatus
     {
@@ -24,7 +25,9 @@ namespace MoYu
         virtual ~Component() {}
 
         // Instantiating the component after definition loaded
-        virtual void postLoadResource(std::weak_ptr<GObject> object, void* data) { m_object = object; }
+        virtual void postLoadResource(std::weak_ptr<GObject> object, const std::string json_data) { m_object = object; }
+
+        virtual void save(ComponentDefinitionRes& out_component_res) {};
 
         virtual void preTick(float delta_time) {};
         virtual void tick(float delta_time) {};

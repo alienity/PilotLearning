@@ -217,7 +217,16 @@ namespace MoYu
             }\
         }
 
-        ComponentTick(preTick)
+        for (const auto& id_object_pair : m_gobjects)
+        {
+            assert(id_object_pair.second);
+            if (id_object_pair.second)
+            {
+                id_object_pair.second->preTick(delta_time);
+            }
+        }
+
+        //ComponentTick(preTick)
         ComponentTick(tick)
         ComponentTick(lateTick)
 

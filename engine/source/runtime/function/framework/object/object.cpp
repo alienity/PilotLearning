@@ -140,30 +140,30 @@ namespace MoYu
             MoYu::ComponentDefinitionRes component_define_res = object_instance_res.m_instanced_components[i];
 
             std::string type_name = component_define_res.m_type_name;
-            std::vector<uint64_t>& component_data = component_define_res.m_component_data;
+            const std::string component_json_data = component_define_res.m_component_json_data;
 
             if (type_name == "TransformComponent")
             {
                 std::shared_ptr<TransformComponent> m_component = std::make_shared<TransformComponent>();
-                m_component->postLoadResource(weak_from_this(), component_data.data());
+                m_component->postLoadResource(weak_from_this(), component_json_data);
                 m_components.push_back(m_component);
             }
             else if (type_name == "MeshRendererComponent")
             {
                 std::shared_ptr<MeshRendererComponent> m_component = std::make_shared<MeshRendererComponent>();
-                m_component->postLoadResource(weak_from_this(), component_data.data());
+                m_component->postLoadResource(weak_from_this(), component_json_data);
                 m_components.push_back(m_component);
             }
             else if (type_name == "LightComponent")
             {
                 std::shared_ptr<LightComponent> m_component = std::make_shared<LightComponent>();
-                m_component->postLoadResource(weak_from_this(), component_data.data());
+                m_component->postLoadResource(weak_from_this(), component_json_data);
                 m_components.push_back(m_component);
             }
             else if (type_name == "CameraComponent")
             {
                 std::shared_ptr<CameraComponent> m_component = std::make_shared<CameraComponent>();
-                m_component->postLoadResource(weak_from_this(), component_data.data());
+                m_component->postLoadResource(weak_from_this(), component_json_data);
                 m_components.push_back(m_component);
             }
         }
@@ -182,6 +182,14 @@ namespace MoYu
 
         // TODO: ÃÌº”±£¥ÊLevel
         //out_object_instance_res.m_instanced_components = m_components;
+        for (size_t i = 0; i < m_components.size(); i++)
+        {
+            ComponentDefinitionRes m_comp_res = {};
+
+            m_components[i]->save(m_comp_res);
+
+            out_object_instance_res.m_instanced_components.push_back(m_comp_res);
+        }
     }
 
     std::shared_ptr<GObject> GObject::getParent() const

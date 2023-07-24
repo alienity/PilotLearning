@@ -16,12 +16,12 @@ namespace MoYu
     {
         std::string m_material_file {""};
         bool m_is_material_init {false};
-        std::vector<uint64_t> m_material_serialized_data;
+        std::string m_material_serialized_json_data {""};
     };
     NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(MaterialComponentRes,
-                                       m_material_file,
-                                       m_is_material_init,
-                                       m_material_serialized_data)
+                                                    m_material_file,
+                                                    m_is_material_init,
+                                                    m_material_serialized_json_data)
 
     struct MeshRendererComponentRes
     {

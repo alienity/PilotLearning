@@ -12,6 +12,7 @@
 #include "runtime/function/render/render_swap_context.h"
 #include "runtime/function/render/render_system.h"
 #include "runtime/function/render/glm_wrapper.h"
+#include "runtime/function/render/render_common.h"
 
 namespace MoYu
 {
@@ -67,15 +68,37 @@ namespace MoYu
             return _capsule_mesh_mat;
     }
 
-    void MeshRendererComponent::postLoadResource(std::weak_ptr<GObject> object, void* data)
+    void MeshRendererComponent::postLoadResource(std::weak_ptr<GObject> object, const std::string json_data)
     {
         m_object = object;
 
-        MeshRendererComponentRes* mesh_renderer_res = (MeshRendererComponentRes*)data;
-
-        updateMeshRendererRes(*mesh_renderer_res);
+        MeshRendererComponentRes mesh_renderer_res = AssetManager::loadJson<MeshRendererComponentRes>(json_data);
+        updateMeshRendererRes(mesh_renderer_res);
 
         markInit();
+    }
+
+    void MeshRendererComponent::save(ComponentDefinitionRes& out_component_res)
+    {
+        MeshComponentRes mesh_res {};
+        (&mesh_res)->m_is_mesh_data   = m_scene_mesh.m_is_mesh_data;
+        (&mesh_res)->m_mesh_data_path = m_scene_mesh.m_mesh_data_path;
+        (&mesh_res)->m_sub_mesh_file  = m_scene_mesh.m_sub_mesh_file;
+
+        MaterialComponentRes material_res {};
+        (&material_res)->m_material_file    = m_mesh_renderer_res.m_material_res.m_material_file;
+        (&material_res)->m_is_material_init = true;
+
+        MaterialRes mat_res_data = ToMaterialRes(m_material.m_mat_data, m_material.m_shader_name);
+        (&material_res)->m_material_serialized_json_data = AssetManager::saveJson(mat_res_data);
+
+        MeshRendererComponentRes mesh_renderer_res {};
+        (&mesh_renderer_res)->m_mesh_res     = mesh_res;
+        (&mesh_renderer_res)->m_material_res = material_res;
+
+        out_component_res.m_type_name           = "MeshRendererComponent";
+        out_component_res.m_component_name      = this->m_component_name;
+        out_component_res.m_component_json_data = AssetManager::saveJson(mesh_renderer_res);
     }
 
     void MeshRendererComponent::reset()
@@ -180,26 +203,12 @@ namespace MoYu
 
         if (m_mesh_renderer_res.m_material_res.m_is_material_init)
         {
-            MaterialRes* mat_res_data =
-                (MaterialRes*)m_mesh_renderer_res.m_material_res.m_material_serialized_data.data();
-            memcpy(&m_mat_res, mat_res_data, sizeof(MaterialRes));
+            std::string m_material_serialized_json = m_mesh_renderer_res.m_material_res.m_material_serialized_json_data;
+            MaterialRes mat_res_data = AssetManager::loadJson<MaterialRes>(m_material_serialized_json);
+            m_mat_res = mat_res_data;
         }
 
-        ScenePBRMaterial m_mat_data = {m_mat_res.m_blend,
-                                       m_mat_res.m_double_sided,
-                                       m_mat_res.m_base_color_factor,
-                                       m_mat_res.m_metallic_factor,
-                                       m_mat_res.m_roughness_factor,
-                                       m_mat_res.m_normal_scale,
-                                       m_mat_res.m_occlusion_strength,
-                                       m_mat_res.m_emissive_factor,
-                                       m_mat_res.m_base_color_texture_file,
-                                       m_mat_res.m_metallic_roughness_texture_file,
-                                       m_mat_res.m_normal_texture_file,
-                                       m_mat_res.m_occlusion_texture_file,
-                                       m_mat_res.m_emissive_texture_file};
-
-
+        ScenePBRMaterial m_mat_data = ToPBRMaterial(m_mat_res);
 
         m_material.m_shader_name = m_mat_res.shader_name;
         m_material.m_mat_data    = m_mat_data;
@@ -219,27 +228,16 @@ namespace MoYu
         markDirty();
     }
 
-    void MeshRendererComponent::updateMaterial(std::string material_path, std::vector<uint64_t> serialized_data)
+    void MeshRendererComponent::updateMaterial(std::string material_path, std::string serialized_json_str)
     {
-        MaterialComponentRes m_material_res = {material_path, serialized_data.empty() ? true : false, serialized_data};
+        MaterialComponentRes m_material_res = {
+            material_path, serialized_json_str.empty() ? true : false, serialized_json_str};
         m_mesh_renderer_res.m_material_res = m_material_res;
 
         MaterialManager* m_mat_manager_ptr = g_runtime_global_context.m_material_manager.get();
         MaterialRes m_mat_res = m_mat_manager_ptr->loadMaterialRes(m_mesh_renderer_res.m_material_res.m_material_file);
 
-        ScenePBRMaterial m_mat_data = {m_mat_res.m_blend,
-                                       m_mat_res.m_double_sided,
-                                       m_mat_res.m_base_color_factor,
-                                       m_mat_res.m_metallic_factor,
-                                       m_mat_res.m_roughness_factor,
-                                       m_mat_res.m_normal_scale,
-                                       m_mat_res.m_occlusion_strength,
-                                       m_mat_res.m_emissive_factor,
-                                       m_mat_res.m_base_color_texture_file,
-                                       m_mat_res.m_metallic_roughness_texture_file,
-                                       m_mat_res.m_normal_texture_file,
-                                       m_mat_res.m_occlusion_texture_file,
-                                       m_mat_res.m_emissive_texture_file};
+        ScenePBRMaterial m_mat_data = ToPBRMaterial(m_mat_res);
 
         m_material.m_shader_name = m_mat_res.shader_name;
         m_material.m_mat_data    = m_mat_data;

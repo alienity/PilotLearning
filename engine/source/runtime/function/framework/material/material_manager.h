@@ -32,7 +32,7 @@ namespace MoYu
 
         void flushMaterial();
 
-        MaterialRes& loadMaterialRes(std::string material_path);
+        MaterialRes loadMaterialRes(std::string material_path);
         void saveMaterialRes(std::string material_path, MaterialRes& matres);
 
         bool isMaterialDirty(std::string material_path);

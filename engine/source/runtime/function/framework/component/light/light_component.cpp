@@ -3,6 +3,8 @@
 #include "runtime/core/base/macro.h"
 #include "runtime/core/math/moyu_math.h"
 
+#include "runtime/resource/asset_manager/asset_manager.h"
+
 #include "runtime/function/framework/component/transform/transform_component.h"
 #include "runtime/function/framework/object/object.h"
 #include "runtime/function/global/global_context.h"
@@ -21,18 +23,29 @@ namespace MoYu
         
     }
 
-    void LightComponent::postLoadResource(std::weak_ptr<GObject> object, void* data)
+    void LightComponent::postLoadResource(std::weak_ptr<GObject> object, const std::string json_data)
     {
         m_object = object;
 
-        LightComponentRes* light_res = (LightComponentRes*)data;
-
-        LightComponentRes m_light_res = *light_res;
+        LightComponentRes light_res = AssetManager::loadJson<LightComponentRes>(json_data);
 
         m_light_res_buffer[m_current_index] = {};
-        m_light_res_buffer[m_next_index] = m_light_res;
+        m_light_res_buffer[m_next_index]    = light_res;
 
         markInit();
+    }
+
+    void LightComponent::save(ComponentDefinitionRes& out_component_res)
+    {
+        LightComponentRes light_res {};
+        (&light_res)->m_LightParamName = m_light_res_buffer[m_next_index].m_LightParamName;
+        (&light_res)->m_DirectionLightParam = m_light_res_buffer[m_next_index].m_DirectionLightParam;
+        (&light_res)->m_PointLightParam     = m_light_res_buffer[m_next_index].m_PointLightParam;
+        (&light_res)->m_SpotLightParam      = m_light_res_buffer[m_next_index].m_SpotLightParam;
+
+        out_component_res.m_type_name           = "LightComponent";
+        out_component_res.m_component_name      = this->m_component_name;
+        out_component_res.m_component_json_data = AssetManager::saveJson(light_res);
     }
 
     GameObjectComponentDesc component2SwapData(MoYu::GObjectID     game_object_id,

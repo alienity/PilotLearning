@@ -69,5 +69,37 @@ namespace MoYu
 
         std::filesystem::path getFullPath(const std::string& relative_path) const;
 
+        template<typename AssetType>
+        static AssetType loadJson(const std::string& json_str)
+        {
+            std::string asset_json_text(json_str);
+
+            // parse to json object and read to runtime res object
+
+            NJson j_asset = NJson::parse(asset_json_text);
+
+            AssetType out_asset {};
+            try
+            {
+                out_asset = j_asset.get<AssetType>();
+            }
+            catch (const std::exception&)
+            {
+                out_asset = {};
+            }
+
+            return out_asset;
+        }
+
+        template<typename AssetType>
+        static const std::string saveJson(AssetType& out_asset)
+        {
+            // write to json object and dump to string
+            NJson asset_json = out_asset;
+            std::string asset_json_text = asset_json.dump(4);
+
+            return asset_json_text;
+        }
+
     };
 } // namespace MoYu

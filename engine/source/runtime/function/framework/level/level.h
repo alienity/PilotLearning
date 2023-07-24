@@ -10,7 +10,7 @@
 
 namespace MoYu
 {
-    class Character;
+    //class Character;
     class GObject;
     class ObjectInstanceRes;
     //class PhysicsScene;

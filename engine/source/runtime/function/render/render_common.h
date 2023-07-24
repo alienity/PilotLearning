@@ -319,10 +319,10 @@ namespace MoYu
 
     struct SceneImage
     {
-        bool m_is_srgb;
-        bool m_auto_mips;
-        int m_mip_levels;
-        std::string m_image_file;
+        bool m_is_srgb {false};
+        bool m_auto_mips {false};
+        int  m_mip_levels {1};
+        std::string m_image_file {""};
     };
 
     struct ScenePBRMaterial
@@ -337,12 +337,18 @@ namespace MoYu
         float   m_occlusion_strength {1.0f};
         Vector3 m_emissive_factor {0.0f, 0.0f, 0.0f};
 
-        SceneImage m_base_color_texture_file;
-        SceneImage m_metallic_roughness_texture_file;
-        SceneImage m_normal_texture_file;
-        SceneImage m_occlusion_texture_file;
-        SceneImage m_emissive_texture_file;
+        SceneImage m_base_color_texture_file {};
+        SceneImage m_metallic_roughness_texture_file {};
+        SceneImage m_normal_texture_file {};
+        SceneImage m_occlusion_texture_file {};
+        SceneImage m_emissive_texture_file {};
     };
+
+    struct MaterialRes;
+
+    // MaterialRes是可以存所有材质的对象，而ScenePBRMaterial是PBR材质属性
+    MaterialRes ToMaterialRes(const ScenePBRMaterial& pbrMaterial, const std::string shaderName);
+    ScenePBRMaterial ToPBRMaterial(const MaterialRes& materialRes);
 
     extern ScenePBRMaterial _DefaultScenePBRMaterial;
 
