@@ -260,13 +260,9 @@ namespace MoYu
 
     bool RenderResource::updateInternalMaterial(SceneMaterial scene_material, SceneMaterial& cached_material, InternalMaterial& internal_material, bool has_initialized)
     {
-#define IsImageSame(tex_file_name) \
-    m_mat_data.tex_file_name.m_is_srgb == m_cached_mat_data.tex_file_name.m_is_srgb \
-    && m_mat_data.tex_file_name.m_auto_mips == m_cached_mat_data.tex_file_name.m_auto_mips \
-    && m_mat_data.tex_file_name.m_mip_levels == m_cached_mat_data.tex_file_name.m_mip_levels \
-    && m_mat_data.tex_file_name.m_image_file == m_cached_mat_data.tex_file_name.m_image_file
+#define IsImageSame(tex_file_name) (m_mat_data.tex_file_name == m_cached_mat_data.tex_file_name)
 
-#define IsImageNull(tex_file_name) m_mat_data.tex_file_name.m_image_file == ""
+#define IsImageNull(tex_file_name) (m_mat_data.tex_file_name.m_image_file == "")
 
         internal_material.m_shader_name = scene_material.m_shader_name;
 
@@ -324,7 +320,7 @@ namespace MoYu
                 std::shared_ptr<TextureData> base_color_tex_data = nullptr;
                 if (base_color_image.m_image_file != "")
                 {
-                    base_color_tex_data = loadTexture(base_color_image.m_image_file);
+                    base_color_tex_data = loadTexture(base_color_image.m_image_file, 4);
                 }
                 else
                 {

@@ -21,19 +21,19 @@ namespace MoYu
 
     void IndirectShadowPass::prepareShadowmaps(std::shared_ptr<RenderResource> render_resource)
     {
-        /*
+        /**/
         RenderResource* real_resource = (RenderResource*)render_resource.get();
 
-        if (m_visiable_nodes.p_directional_light != nullptr && m_visiable_nodes.p_directional_light->m_shadowmap)
+        if (m_render_scene->m_directional_light.m_identifier != UndefCommonIdentifier &&
+            m_render_scene->m_directional_light.m_shadowmap)
         {
-            directionalShadowmap.m_gobject_id = m_visiable_nodes.p_directional_light->m_gobject_id;
-            directionalShadowmap.m_gcomponent_id = m_visiable_nodes.p_directional_light->m_gcomponent_id;
-            directionalShadowmap.m_shadowmap_size = m_visiable_nodes.p_directional_light->m_shadowmap_size;
-            if (directionalShadowmap.p_LightShadowmap == nullptr)
+            m_DirectionalShadowmap.m_identifier = m_render_scene->m_directional_light.m_identifier;
+            m_DirectionalShadowmap.m_shadowmap_size = m_render_scene->m_directional_light.m_shadowmap_size;
+            if (m_DirectionalShadowmap.p_LightShadowmap == nullptr)
             {
-                Vector2 shadowmap_size = m_visiable_nodes.p_directional_light->m_shadowmap_size;
+                Vector2 shadowmap_size = m_render_scene->m_directional_light.m_shadowmap_size;
 
-                directionalShadowmap.p_LightShadowmap =
+                m_DirectionalShadowmap.p_LightShadowmap =
                     RHI::D3D12Texture::Create2D(m_Device->GetLinkedDevice(),
                                                 shadowmap_size.x,
                                                 shadowmap_size.y,
@@ -48,26 +48,25 @@ namespace MoYu
             }
 
             real_resource->m_mesh_perframe_storage_buffer_object.scene_directional_light.shadowmap_srv_index =
-                directionalShadowmap.p_LightShadowmap->GetDefaultSRV()->GetIndex();
+                m_DirectionalShadowmap.p_LightShadowmap->GetDefaultSRV()->GetIndex();
         }
         else
         {
-            directionalShadowmap.Reset();
+            m_DirectionalShadowmap.Reset();
         }
 
-        if (m_visiable_nodes.p_spot_light_list != nullptr)
+        if (m_render_scene->m_spot_light_list.size() != 0)
         {
-            int spotLightCount = m_visiable_nodes.p_spot_light_list->size();
+            int spotLightCount = m_render_scene->m_spot_light_list.size();
             for (size_t i = 0; i < spotLightCount; i++)
             {
-                MoYu::SpotLightDesc curSpotLightDesc = m_visiable_nodes.p_spot_light_list->at(i);
+                auto& curSpotLightDesc = m_render_scene->m_spot_light_list[i];
                 
                 bool curSpotLighShaodwmaptExist = false;
                 int  curShadowmapIndex          = -1;
-                for (size_t j = 0; j < spotShadowmaps.size(); j++)
+                for (size_t j = 0; j < m_SpotShadowmaps.size(); j++)
                 {
-                    if (spotShadowmaps[i].m_gobject_id == curSpotLightDesc.m_gobject_id &&
-                        spotShadowmaps[i].m_gcomponent_id == curSpotLightDesc.m_gcomponent_id)
+                    if (m_SpotShadowmaps[i].m_identifier == curSpotLightDesc.m_identifier)
                     {
                         curShadowmapIndex          = i;
                         curSpotLighShaodwmaptExist = true;
@@ -75,15 +74,8 @@ namespace MoYu
                     }
                 }
                 
-                // if shadowmap exist but spotlight has disappered
-                if (!curSpotLightDesc.m_is_active && curSpotLighShaodwmaptExist)
-                {
-                    spotShadowmaps[curShadowmapIndex].Reset();
-                    spotShadowmaps.erase(spotShadowmaps.begin() + curShadowmapIndex);
-                }
-
                 // if shadowmap does not exist
-                if (curSpotLightDesc.m_is_active && !curSpotLighShaodwmaptExist)
+                if (!curSpotLighShaodwmaptExist)
                 {
                     Vector2 shadowmap_size = curSpotLightDesc.m_shadowmap_size;
                     
@@ -100,13 +92,12 @@ namespace MoYu
                                                     CD3DX12_CLEAR_VALUE(DXGI_FORMAT_D32_FLOAT, 0, 1));
 
                     SpotShadowmapStruct spotShadow = {};
-                    spotShadow.m_gobject_id        = curSpotLightDesc.m_gobject_id;
-                    spotShadow.m_gcomponent_id     = curSpotLightDesc.m_gcomponent_id;
+                    spotShadow.m_identifier        = curSpotLightDesc.m_identifier;
                     spotShadow.m_spot_index        = i;
                     spotShadow.m_shadowmap_size    = shadowmap_size;
                     spotShadow.p_LightShadowmap    = p_SpotLightShadowmap;
 
-                    spotShadowmaps.push_back(spotShadow);
+                    m_SpotShadowmaps.push_back(spotShadow);
 
                     real_resource->m_mesh_perframe_storage_buffer_object.scene_spot_lights[i].shadowmap_srv_index =
                         p_SpotLightShadowmap->GetDefaultSRV()->GetIndex();
@@ -115,13 +106,13 @@ namespace MoYu
         }
         else
         {
-            for (size_t i = 0; i < spotShadowmaps.size(); i++)
+            for (size_t i = 0; i < m_SpotShadowmaps.size(); i++)
             {
-                spotShadowmaps[i].Reset();
+                m_SpotShadowmaps[i].Reset();
             }
-            spotShadowmaps.clear();
+            m_SpotShadowmaps.clear();
         }
-        */
+
     }
 
     void IndirectShadowPass::update(RHI::RenderGraph& graph, ShadowInputParameters& passInput, ShadowOutputParameters& passOutput)
@@ -152,17 +143,19 @@ namespace MoYu
         }
 
         RHI::RgResourceHandle directionalShadowmapHandle = RHI::_DefaultRgResourceHandle;
-        if (directionalShadowmap.p_LightShadowmap != nullptr)
+        if (m_DirectionalShadowmap.p_LightShadowmap != nullptr)
         {
-            passOutput.directionalShadowmapHandle = graph.Import<RHI::D3D12Texture>(directionalShadowmap.p_LightShadowmap.get());
+            passOutput.directionalShadowmapHandle =
+                graph.Import<RHI::D3D12Texture>(m_DirectionalShadowmap.p_LightShadowmap.get());
             shadowpass.Write(passOutput.directionalShadowmapHandle);
             directionalShadowmapHandle = passOutput.directionalShadowmapHandle;
         }
 
         std::vector<RHI::RgResourceHandle> spotShadowmapHandles;
-        for (size_t i = 0; i < spotShadowmaps.size(); i++)
+        for (size_t i = 0; i < m_SpotShadowmaps.size(); i++)
         {
-            RHI::RgResourceHandle spotShadowMapHandle = graph.Import<RHI::D3D12Texture>(spotShadowmaps[i].p_LightShadowmap.get());
+            RHI::RgResourceHandle spotShadowMapHandle =
+                graph.Import<RHI::D3D12Texture>(m_SpotShadowmaps[i].p_LightShadowmap.get());
             shadowpass.Write(spotShadowMapHandle);
             passOutput.spotShadowmapHandle.push_back(spotShadowMapHandle);
         }
@@ -172,7 +165,7 @@ namespace MoYu
 
             RHI::D3D12GraphicsContext* graphicContext = context->GetGraphicsContext();
 
-            if (directionalShadowmap.m_gobject_id != K_Invalid_Object_Id && directionalShadowmap.m_gcomponent_id != K_Invalid_Component_Id)
+            if (m_DirectionalShadowmap.m_identifier != UndefCommonIdentifier)
             {
                 RHI::D3D12Texture* pShadowmapStencilTex = registry->GetD3D12Texture(directionalShadowmapHandle);
 
@@ -180,7 +173,7 @@ namespace MoYu
 
                 graphicContext->SetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-                Vector2 shadowmap_size = directionalShadowmap.m_shadowmap_size;
+                Vector2 shadowmap_size = m_DirectionalShadowmap.m_shadowmap_size;
 
                 graphicContext->SetRootSignature(RootSignatures::pIndirectDrawDirectionShadowmap.get());
                 graphicContext->SetPipelineState(PipelineStates::pIndirectDrawDirectionShadowmap.get());
@@ -208,7 +201,7 @@ namespace MoYu
                                                 0);
             }
 
-            for (size_t i = 0; i < spotShadowmaps.size(); i++)
+            for (size_t i = 0; i < m_SpotShadowmaps.size(); i++)
             {
                 RHI::D3D12Texture* pShadowmapDepthTex = registry->GetD3D12Texture(spotShadowmapHandles[i]);
 
@@ -216,8 +209,8 @@ namespace MoYu
 
                 graphicContext->SetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-                Vector2  shadowmap_size = spotShadowmaps[i].m_shadowmap_size;
-                uint32_t spot_index     = spotShadowmaps[i].m_spot_index;
+                Vector2  shadowmap_size = m_SpotShadowmaps[i].m_shadowmap_size;
+                uint32_t spot_index     = m_SpotShadowmaps[i].m_spot_index;
 
                 graphicContext->SetRootSignature(RootSignatures::pIndirectDrawSpotShadowmap.get());
                 graphicContext->SetPipelineState(PipelineStates::pIndirectDrawSpotShadowmap.get());

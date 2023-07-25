@@ -11,35 +11,28 @@ namespace MoYu
 {
     struct DirectionShadowmapStruct
     {
-        GObjectID    m_gobject_id {K_Invalid_Object_Id};
-        GComponentID m_gcomponent_id {K_Invalid_Component_Id};
-
+        SceneCommonIdentifier m_identifier {UndefCommonIdentifier};
         Vector2 m_shadowmap_size;
 
         std::shared_ptr<RHI::D3D12Texture> p_LightShadowmap;
 
         void Reset() 
         {
-            m_gobject_id = K_Invalid_Object_Id;
-            m_gcomponent_id = K_Invalid_Component_Id;
+            m_identifier     = UndefCommonIdentifier;
             p_LightShadowmap = nullptr;
         }
     };
 
     struct SpotShadowmapStruct
     {
-        GObjectID    m_gobject_id {K_Invalid_Object_Id};
-        GComponentID m_gcomponent_id {K_Invalid_Component_Id};
-
+        SceneCommonIdentifier m_identifier {UndefCommonIdentifier};
         uint32_t m_spot_index;
         Vector2  m_shadowmap_size;
-
         std::shared_ptr<RHI::D3D12Texture> p_LightShadowmap;
         
         void Reset()
         {
-            m_gobject_id     = K_Invalid_Object_Id;
-            m_gcomponent_id  = K_Invalid_Component_Id;
+            m_identifier     = UndefCommonIdentifier;
             p_LightShadowmap = nullptr;
         }
     };
@@ -79,8 +72,8 @@ namespace MoYu
         void destroy() override final;
 
     private:
-        DirectionShadowmapStruct         directionalShadowmap;
-        std::vector<SpotShadowmapStruct> spotShadowmaps;
+        DirectionShadowmapStruct m_DirectionalShadowmap;
+        std::vector<SpotShadowmapStruct> m_SpotShadowmaps;
 	};
 }
 

@@ -35,53 +35,6 @@ namespace MoYu
         const std::string& global_rendering_res_url = config_manager->getGlobalRenderingResUrl();
         asset_manager->loadAsset(global_rendering_res_url, global_rendering_res);
 
-        //***********************
-        /*
-        global_rendering_res.m_enable_fxaa = false;
-        
-        global_rendering_res.m_skybox_irradiance_map = {"asset/texture/sky/skybox_irradiance_X-.hdr",
-                                                        "asset/texture/sky/skybox_irradiance_X+.hdr",
-                                                        "asset/texture/sky/skybox_irradiance_Y-.hdr",
-                                                        "asset/texture/sky/skybox_irradiance_Y+.hdr",
-                                                        "asset/texture/sky/skybox_irradiance_Z-.hdr",
-                                                        "asset/texture/sky/skybox_irradiance_Z+.hdr"};
-
-        global_rendering_res.m_skybox_specular_map = {"asset/texture/sky/skybox_specular_X-.hdr",
-                                                      "asset/texture/sky/skybox_specular_X+.hdr",
-                                                      "asset/texture/sky/skybox_specular_Y-.hdr",
-                                                      "asset/texture/sky/skybox_specular_Y+.hdr",
-                                                      "asset/texture/sky/skybox_specular_Z-.hdr",
-                                                      "asset/texture/sky/skybox_specular_Z+.hdr"};
-
-        global_rendering_res.m_brdf_map = "asset/texture/global/brdf_schilk.hdr";
-
-        global_rendering_res.m_color_grading_map = "asset/texture/lut/color_grading_lut_01.png";
-
-        global_rendering_res.m_sky_color     = Color(0.53, 0.81, 0.98);
-        global_rendering_res.m_ambient_light = Color(0.03, 0.03, 0.03);
-
-        global_rendering_res.m_camera_config = {
-            CameraPose {Vector3(0.0, 1.0, 3.0), Vector3(0.0, 1.0, 3.0), Vector3(0.0, 1.0, 3.0)},
-            Vector2(1280.0, 768.0),
-            1000.0,
-            0.1,
-            0.53};
-
-        global_rendering_res.m_directional_light = {Vector3(0.5, -0.5, 0.5), Vector3(1.0, 1.0, 1.0)};
-
-        asset_manager->saveAsset(global_rendering_res, global_rendering_res_url);
-        */
-        //***********************
-
-        /*
-        // upload ibl, color grading textures
-        LevelResourceDesc level_resource_desc;
-        level_resource_desc.m_ibl_resource_desc.m_skybox_irradiance_map = global_rendering_res.m_skybox_irradiance_map;
-        level_resource_desc.m_ibl_resource_desc.m_skybox_specular_map   = global_rendering_res.m_skybox_specular_map;
-        level_resource_desc.m_ibl_resource_desc.m_brdf_map              = global_rendering_res.m_brdf_map;
-        level_resource_desc.m_color_grading_resource_desc.m_color_grading_map = global_rendering_res.m_color_grading_map;
-        */
-
         // initialize render manager
         RHI::DeviceOptions deviceOptions              = {};
 #ifdef _DEBUG
@@ -162,9 +115,6 @@ namespace MoYu
     void RenderSystem::processSwapData()
     {
         RenderSwapData& swap_data = m_swap_context.getRenderSwapData();
-
-        //std::shared_ptr<AssetManager> asset_manager = g_runtime_global_context.m_asset_manager;
-        //ASSERT(asset_manager);
 
         // update game object if needed
         if (swap_data.m_game_object_resource_desc.has_value())

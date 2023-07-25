@@ -111,7 +111,7 @@ namespace MoYu
         return texture;
     }
 
-    std::shared_ptr<TextureData> RenderResourceBase::loadTexture(std::string file)
+    std::shared_ptr<TextureData> RenderResourceBase::loadTexture(std::string file, int force_channel)
     {
         std::shared_ptr<TextureData> texture = _TextureData_Caches[file];
 
@@ -125,7 +125,7 @@ namespace MoYu
             std::string fileFullPath = asset_manager->getFullPath(file).generic_string();
 
             int iw, ih, in;
-            texture->m_pixels = stbi_load(fileFullPath.c_str(), &iw, &ih, &in, 0);
+            texture->m_pixels = stbi_load(fileFullPath.c_str(), &iw, &ih, &in, force_channel);
 
             if (!texture->m_pixels)
                 return nullptr;

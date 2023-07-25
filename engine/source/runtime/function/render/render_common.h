@@ -317,6 +317,12 @@ namespace MoYu
         std::string m_mesh_data_path {""};
     };
 
+    inline bool operator==(const SceneMesh& lhs, const SceneMesh& rhs)
+    {
+        return lhs.m_is_mesh_data == rhs.m_is_mesh_data && lhs.m_sub_mesh_file == rhs.m_sub_mesh_file &&
+               lhs.m_mesh_data_path == rhs.m_mesh_data_path;
+    }
+
     struct SceneImage
     {
         bool m_is_srgb {false};
@@ -324,6 +330,12 @@ namespace MoYu
         int  m_mip_levels {1};
         std::string m_image_file {""};
     };
+
+    inline bool operator==(const SceneImage& lhs, const SceneImage& rhs)
+    {
+        return lhs.m_is_srgb == rhs.m_is_srgb && lhs.m_auto_mips == rhs.m_auto_mips &&
+               lhs.m_mip_levels == rhs.m_mip_levels && lhs.m_image_file == rhs.m_image_file;
+    }
 
     struct ScenePBRMaterial
     {
@@ -343,6 +355,18 @@ namespace MoYu
         SceneImage m_occlusion_texture_file {};
         SceneImage m_emissive_texture_file {};
     };
+
+    inline bool operator==(const ScenePBRMaterial& lhs, const ScenePBRMaterial& rhs)
+    {
+#define CompareVal(Val) lhs.Val == rhs.Val
+
+        return CompareVal(m_blend) && CompareVal(m_double_sided) && CompareVal(m_base_color_factor) &&
+               CompareVal(m_metallic_factor) && CompareVal(m_roughness_factor) && CompareVal(m_normal_scale) &&
+               CompareVal(m_occlusion_strength) && CompareVal(m_emissive_factor) &&
+               CompareVal(m_base_color_texture_file) && CompareVal(m_metallic_roughness_texture_file) &&
+               CompareVal(m_normal_texture_file) && CompareVal(m_occlusion_texture_file) &&
+               CompareVal(m_emissive_texture_file);
+    }
 
     struct MaterialRes;
 
