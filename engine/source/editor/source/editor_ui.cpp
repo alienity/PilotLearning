@@ -502,14 +502,22 @@ namespace MoYu
 
             ImGui::Text(name.c_str());
 
-            ImGui::Indent();
+            //ImGui::Indent();
+            ImGui::PushID(name.c_str());
 
             if (ImGui::Checkbox("m_is_srgb", &scene_image_ptr->m_is_srgb))
                 isDirty = true;
             if (ImGui::Checkbox("m_auto_mips", &scene_image_ptr->m_auto_mips))
                 isDirty = true;
-            if (ImGui::InputInt("m_mip_levels", &scene_image_ptr->m_mip_levels, 0, 12))
-                isDirty = true;
+            if (ImGui::InputInt("m_mip_levels", &scene_image_ptr->m_mip_levels, 1))
+            {
+                int _mipLevel = MoYu::Math::clamp(scene_image_ptr->m_mip_levels, 0, 12);
+                if (scene_image_ptr->m_mip_levels != _mipLevel)
+                {
+                    scene_image_ptr->m_mip_levels = _mipLevel;
+                    isDirty = true;
+                }
+            }
 
             static char str1[128];
             memset(str1, 0, 128);
@@ -529,7 +537,8 @@ namespace MoYu
                 ImGui::EndDragDropTarget();
             }
 
-            ImGui::Unindent();
+            ImGui::PopID();
+            //ImGui::Unindent();
 
             is_dirty |= isDirty;
         };

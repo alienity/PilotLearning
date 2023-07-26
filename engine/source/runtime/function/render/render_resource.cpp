@@ -244,18 +244,24 @@ namespace MoYu
         return true;
     }
 
-    std::shared_ptr<TextureData> createEmptyTextureData(float* empty_image)
+    std::shared_ptr<RHI::D3D12Texture> RenderResource::SceneImageToTexture(const SceneImage& _sceneimage)
     {
-        std::shared_ptr<TextureData> empty_color_texture_data = std::make_shared<TextureData>();
-        empty_color_texture_data->m_width        = 1;
-        empty_color_texture_data->m_height       = 1;
-        empty_color_texture_data->m_depth        = 0;
-        empty_color_texture_data->m_mip_levels   = 0;
-        empty_color_texture_data->m_array_layers = 0;
-        empty_color_texture_data->m_channels     = 4;
-        empty_color_texture_data->m_need_free    = false;
-        empty_color_texture_data->m_pixels       = empty_image;
-        return empty_color_texture_data;
+        uint32_t    m_width    = 1;
+        uint32_t    m_height   = 1;
+        void*       m_pixels   = empty_image;
+        DXGI_FORMAT m_format   = _sceneimage.m_is_srgb ? DXGI_FORMAT::DXGI_FORMAT_R8G8B8A8_UNORM_SRGB : DXGI_FORMAT::DXGI_FORMAT_R8G8B8A8_UNORM;
+        bool        m_is_srgb  = _sceneimage.m_is_srgb;
+        bool        m_gen_mips = _sceneimage.m_auto_mips;
+
+        if (_sceneimage.m_image_file != "")
+        {
+            std::shared_ptr<TextureData> _image_data = loadTexture(_sceneimage.m_image_file, 4);
+            m_width  = _image_data->m_width;
+            m_height = _image_data->m_height;
+            m_pixels = _image_data->m_pixels;
+        }
+
+        return createTex2D(m_width, m_height, m_pixels, m_format, m_is_srgb, m_gen_mips, false);
     }
 
     bool RenderResource::updateInternalMaterial(SceneMaterial scene_material, SceneMaterial& cached_material, InternalMaterial& internal_material, bool has_initialized)
@@ -268,8 +274,6 @@ namespace MoYu
 
         ScenePBRMaterial m_mat_data = scene_material.m_mat_data;
         ScenePBRMaterial m_cached_mat_data = cached_material.m_mat_data;
-
-        float empty_image[] = {0.5f, 0.5f, 0.5f, 0.5f};
 
         this->startUploadBatch();
 
@@ -316,130 +320,45 @@ namespace MoYu
             if (!IsImageSame(m_base_color_texture_file) || !has_initialized)
             {
                 SceneImage base_color_image = m_mat_data.m_base_color_texture_file;
-
-                std::shared_ptr<TextureData> base_color_tex_data = nullptr;
-                if (base_color_image.m_image_file != "")
-                {
-                    base_color_tex_data = loadTexture(base_color_image.m_image_file, 4);
-                }
-                else
-                {
-                    base_color_tex_data = createEmptyTextureData(empty_image);
-                }
-
-                uint32_t    m_width    = base_color_tex_data->m_width;
-                uint32_t    m_height   = base_color_tex_data->m_height;
-                void*       m_pixels   = base_color_tex_data->m_pixels;
-                DXGI_FORMAT m_format   = DXGI_FORMAT::DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
-                bool        m_is_srgb  = true;
-                bool        m_gen_mips = true;
-
-                auto base_color_tex = createTex2D(m_width, m_height, m_pixels, m_format, m_is_srgb, m_gen_mips, false);
-                now_material.base_color_texture_image = base_color_tex;
+                if (now_material.base_color_texture_image != nullptr)
+                    now_material.base_color_texture_image = nullptr;
+                now_material.base_color_texture_image = SceneImageToTexture(base_color_image);
             }
         }
         {
             if (!IsImageSame(m_metallic_roughness_texture_file) || !has_initialized)
             {
                 SceneImage metallic_roughness_image = m_mat_data.m_metallic_roughness_texture_file;
-
-                std::shared_ptr<TextureData> metallic_roughness_texture_data = loadTexture(metallic_roughness_image.m_image_file);
-                if (metallic_roughness_image.m_image_file != "")
-                {
-                    metallic_roughness_texture_data = loadTexture(metallic_roughness_image.m_image_file);
-                }
-                else
-                {
-                    metallic_roughness_texture_data = createEmptyTextureData(empty_image);
-                }
-
-                uint32_t    m_width    = metallic_roughness_texture_data->m_width;
-                uint32_t    m_height   = metallic_roughness_texture_data->m_height;
-                void*       m_pixels   = metallic_roughness_texture_data->m_pixels;
-                DXGI_FORMAT m_format   = DXGI_FORMAT::DXGI_FORMAT_R8G8B8A8_UNORM;
-                bool        m_is_srgb  = false;
-                bool        m_gen_mips = true;
-
-                auto metal_rough_tex = createTex2D(m_width, m_height, m_pixels, m_format, m_is_srgb, m_gen_mips, false);
-                now_material.metallic_roughness_texture_image = metal_rough_tex;
+                if (now_material.metallic_roughness_texture_image != nullptr)
+                    now_material.metallic_roughness_texture_image = nullptr;
+                now_material.metallic_roughness_texture_image = SceneImageToTexture(metallic_roughness_image);
             }
         }
         {
             if (!IsImageSame(m_normal_texture_file) || !has_initialized)
             {
                 SceneImage normal_image = m_mat_data.m_normal_texture_file;
-
-                std::shared_ptr<TextureData> normal_image_texture_data = loadTexture(normal_image.m_image_file);
-                if (normal_image.m_image_file != "")
-                {
-                    normal_image_texture_data = loadTexture(normal_image.m_image_file);
-                }
-                else
-                {
-                    normal_image_texture_data = createEmptyTextureData(empty_image);
-                }
-
-                uint32_t    m_width    = normal_image_texture_data->m_width;
-                uint32_t    m_height   = normal_image_texture_data->m_height;
-                void*       m_pixels   = normal_image_texture_data->m_pixels;
-                DXGI_FORMAT m_format   = DXGI_FORMAT::DXGI_FORMAT_R8G8B8A8_UNORM;
-                bool        m_is_srgb  = false;
-                bool        m_gen_mips = true;
-
-                auto normal_rough_tex = createTex2D(m_width, m_height, m_pixels, m_format, m_is_srgb, m_gen_mips, false);
-                now_material.normal_texture_image = normal_rough_tex;
+                if (now_material.normal_texture_image != nullptr)
+                    now_material.normal_texture_image = nullptr;
+                now_material.normal_texture_image = SceneImageToTexture(normal_image);
             }
         }
         {
             if (!IsImageSame(m_occlusion_texture_file) || !has_initialized)
             {
                 SceneImage occlusion_image = m_mat_data.m_occlusion_texture_file;
-
-                std::shared_ptr<TextureData> occlusion_image_texture_data = loadTexture(occlusion_image.m_image_file);
-                if (occlusion_image.m_image_file != "")
-                {
-                    occlusion_image_texture_data = loadTexture(occlusion_image.m_image_file);
-                }
-                else
-                {
-                    occlusion_image_texture_data = createEmptyTextureData(empty_image);
-                }
-
-                uint32_t    m_width    = occlusion_image_texture_data->m_width;
-                uint32_t    m_height   = occlusion_image_texture_data->m_height;
-                void*       m_pixels   = occlusion_image_texture_data->m_pixels;
-                DXGI_FORMAT m_format   = DXGI_FORMAT::DXGI_FORMAT_R8G8B8A8_UNORM;
-                bool        m_is_srgb  = false;
-                bool        m_gen_mips = true;
-
-                auto occlusion_tex = createTex2D(m_width, m_height, m_pixels, m_format, m_is_srgb, m_gen_mips, false);
-                now_material.occlusion_texture_image = occlusion_tex;
+                if (now_material.occlusion_texture_image != nullptr)
+                    now_material.occlusion_texture_image = nullptr;
+                now_material.occlusion_texture_image = SceneImageToTexture(occlusion_image);
             }
         }
         {
             if (!IsImageSame(m_emissive_texture_file) || !has_initialized)
             {
                 SceneImage emissive_image = m_mat_data.m_emissive_texture_file;
-
-                std::shared_ptr<TextureData> emissive_image_texture_data = loadTexture(emissive_image.m_image_file);
-                if (emissive_image.m_image_file != "")
-                {
-                    emissive_image_texture_data = loadTexture(emissive_image.m_image_file);
-                }
-                else
-                {
-                    emissive_image_texture_data = createEmptyTextureData(empty_image);
-                }
-
-                uint32_t    m_width    = emissive_image_texture_data->m_width;
-                uint32_t    m_height   = emissive_image_texture_data->m_height;
-                void*       m_pixels   = emissive_image_texture_data->m_pixels;
-                DXGI_FORMAT m_format   = DXGI_FORMAT::DXGI_FORMAT_R8G8B8A8_UNORM;
-                bool        m_is_srgb  = false;
-                bool        m_gen_mips = true;
-
-                auto emissive_tex = createTex2D(m_width, m_height, m_pixels, m_format, m_is_srgb, m_gen_mips, false);
-                now_material.emissive_texture_image = emissive_tex;
+                if (now_material.emissive_texture_image != nullptr)
+                    now_material.emissive_texture_image = nullptr;
+                now_material.emissive_texture_image = SceneImageToTexture(emissive_image);
             }
         }
 
