@@ -157,15 +157,15 @@ namespace MoYu
         }
         else if (m_transform_component_ptr->isMatrixDirty() || this->isDirty())
         {
-            if (!this->isLightTypeInit())
-            {
-                GameObjectComponentDesc _light_to_erase = component2SwapData(game_object_id,
-                                                                             transform_component_id,
-                                                                             m_transform_component_ptr,
-                                                                             light_component_id,
-                                                                             &m_light_res_buffer[m_current_index]);
-                logic_swap_data.addDeleteGameObject({game_object_id, {_light_to_erase}});
-            }
+            //if (!this->isLightTypeInit())
+            //{
+            //    GameObjectComponentDesc _light_to_erase = component2SwapData(game_object_id,
+            //                                                                 transform_component_id,
+            //                                                                 m_transform_component_ptr,
+            //                                                                 light_component_id,
+            //                                                                 &m_light_res_buffer[m_current_index]);
+            //    logic_swap_data.addDeleteGameObject({game_object_id, {_light_to_erase}});
+            //}
             {
                 GameObjectComponentDesc light_component_desc = component2SwapData(game_object_id,
                                                                                   transform_component_id,

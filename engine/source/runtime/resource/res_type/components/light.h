@@ -13,19 +13,21 @@ namespace MoYu
         float intensity {1.0f};
         
         bool    shadows {false};
+        int     cascade {4};
         Vector2 shadow_bounds {512, 512};
         float   shadow_near_plane {0.1f};
-        float   shadow_far_plane {500.0f};
+        float   shadow_far_plane {200.0f};
         Vector2 shadowmap_size {512, 512};
     };
     NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(DirectionLightParameter,
-                                       color,
-                                       intensity,
-                                       shadows,
-                                       shadow_bounds,
-                                       shadow_near_plane,
-                                       shadow_far_plane,
-                                       shadowmap_size)
+                                                    color,
+                                                    intensity,
+                                                    shadows,
+                                                    cascade,
+                                                    shadow_bounds,
+                                                    shadow_near_plane,
+                                                    shadow_far_plane,
+                                                    shadowmap_size)
 
     struct PointLightParameter
     {

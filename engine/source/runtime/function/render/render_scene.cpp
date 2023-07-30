@@ -6,6 +6,42 @@ namespace MoYu
 {
     void RenderScene::updateLight(SceneLight sceneLight, SceneTransform sceneTransform)
     {
+        // remove old light
+        if (sceneLight.m_identifier == m_ambient_light.m_identifier && sceneLight.m_light_type != LightType::AmbientLight)
+        {
+            m_ambient_light.m_identifier = _UndefCommonIdentifier;
+        }
+        if (sceneLight.m_identifier == m_directional_light.m_identifier && sceneLight.m_light_type != LightType::DirectionLight)
+        {
+            m_directional_light.m_identifier = _UndefCommonIdentifier;
+        }
+        for (auto iter = m_spot_light_list.begin(); iter != m_spot_light_list.end();)
+        {
+            if (iter->m_identifier == sceneLight.m_identifier)
+            {
+                iter = m_spot_light_list.erase(iter);
+                break;
+            }
+            else
+            {
+                ++iter;
+            }
+        }
+        for (auto iter = m_point_light_list.begin(); iter != m_point_light_list.end();)
+        {
+            if (iter->m_identifier == sceneLight.m_identifier)
+            {
+                iter = m_point_light_list.erase(iter);
+                break;
+            }
+            else
+            {
+                ++iter;
+            }
+        }
+
+
+        // add new light
         Matrix4x4 model_matrix = sceneTransform.m_transform_matrix;
         
         Vector3    scale;
@@ -33,6 +69,7 @@ namespace MoYu
 
             m_directional_light.m_identifier           = sceneLight.m_identifier;
             m_directional_light.m_position             = translation;
+            m_directional_light.m_direction            = direction;
             m_directional_light.m_shadow_view_proj_mat = dirLightViewProjMat;
             m_directional_light.m_color                = sceneLight.direction_light.m_color;
             m_directional_light.m_intensity            = sceneLight.direction_light.m_intensity;

@@ -27,8 +27,8 @@ namespace MoYu
     private:
         //void        onFileContentItemClicked(EditorFileNode* node);
         void        buildEditorFileAssetsUITree(std::shared_ptr<EditorFileNode> node);
-        //void        drawAxisToggleButton(const char* string_id, bool check_state, int axis_mode);
-        void createComponentUI(MoYu::Component* component);
+        void        drawAxisToggleButton(const char* string_id, bool check_state, int axis_mode);
+        void        createComponentUI(MoYu::Component* component);
         //void        createLeafNodeUI(Reflection::ReflectionInstance& instance);
         //std::string getLeafUINodeParentLabel();
 

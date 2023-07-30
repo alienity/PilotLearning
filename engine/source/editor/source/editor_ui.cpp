@@ -1115,7 +1115,7 @@ namespace MoYu
             ImGui::End();
             return;
         }
-        /*
+        /**/
         static bool trans_button_ckecked  = false;
         static bool rotate_button_ckecked = false;
         static bool scale_button_ckecked  = false;
@@ -1140,20 +1140,20 @@ namespace MoYu
             default:
                 break;
         }
-        */
+        
         if (ImGui::BeginMenuBar())
         {
-            //ImGui::Indent(10.f);
-            //drawAxisToggleButton("Trans", trans_button_ckecked, (int)EditorAxisMode::TranslateMode);
-            //ImGui::Unindent();
+            ImGui::Indent(10.f);
+            drawAxisToggleButton("Trans", trans_button_ckecked, (int)EditorAxisMode::TranslateMode);
+            ImGui::Unindent();
 
-            //ImGui::SameLine();
+            ImGui::SameLine();
 
-            //drawAxisToggleButton("Rotate", rotate_button_ckecked, (int)EditorAxisMode::RotateMode);
+            drawAxisToggleButton("Rotate", rotate_button_ckecked, (int)EditorAxisMode::RotateMode);
 
-            //ImGui::SameLine();
+            ImGui::SameLine();
 
-            //drawAxisToggleButton("Scale", scale_button_ckecked, (int)EditorAxisMode::ScaleMode);
+            drawAxisToggleButton("Scale", scale_button_ckecked, (int)EditorAxisMode::ScaleMode);
 
             ImGui::SameLine();
 
@@ -1268,11 +1268,10 @@ namespace MoYu
                     ImGui::Image((ImTextureID)handleOfGameView.ptr, ImVec2(displayWidth, displayHeight));
                 }
 
-                /*
                 std::shared_ptr<GObject> selected_object = g_editor_global_context.m_scene_manager->getSelectedGObject().lock();
                 if (selected_object != nullptr)
                 {
-                    TransformComponent* trans_component_ptr = selected_object->getTransformComponent();
+                    TransformComponent* trans_component_ptr = selected_object->getTransformComponent().lock().get();
                     Matrix4x4 worldMatrix = trans_component_ptr->getMatrixWorld();
                     glm::mat4 _worldMatrix = GLMUtil::fromMat4x4(worldMatrix);
 
@@ -1291,22 +1290,21 @@ namespace MoYu
                     }
                     ImGuizmo::Manipulate((float*)&_cameraView, (const float*)&_projMatrix, op_type, ImGuizmo::MODE::LOCAL, (float*)&_worldMatrix);
                 }
-                */
+                
             }
             ImGui::EndChild();
         }
 
         ImGui::End();
     }
-    /*
+    
     void EditorUI::drawAxisToggleButton(const char* string_id, bool check_state, int axis_mode)
     {
         if (check_state)
         {
             ImGui::PushID(string_id);
             ImVec4 check_button_color = ImVec4(93.0f / 255.0f, 10.0f / 255.0f, 66.0f / 255.0f, 1.00f);
-            ImGui::PushStyleColor(ImGuiCol_Button,
-                                  ImVec4(check_button_color.x, check_button_color.y, check_button_color.z, 0.40f));
+            ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(check_button_color.x, check_button_color.y, check_button_color.z, 0.40f));
             ImGui::PushStyleColor(ImGuiCol_ButtonHovered, check_button_color);
             ImGui::PushStyleColor(ImGuiCol_ButtonActive, check_button_color);
             ImGui::Button(string_id);
@@ -1319,11 +1317,11 @@ namespace MoYu
             {
                 check_state = true;
                 g_editor_global_context.m_scene_manager->setEditorAxisMode((EditorAxisMode)axis_mode);
-                g_editor_global_context.m_scene_manager->drawSelectedEntityAxis();
+                //g_editor_global_context.m_scene_manager->drawSelectedEntityAxis();
             }
         }
     }
-    */
+    
     void EditorUI::fileDragHelper(std::shared_ptr<EditorFileNode> node)
     {
         if (strcmp(node->m_file_type.c_str(), "obj") == 0)

@@ -27,14 +27,14 @@ namespace MoYu
         std::shared_ptr<GObject> selected_gobject = getSelectedGObject().lock();
         if (selected_gobject)
         {
-            std::shared_ptr<TransformComponent> transform_component = selected_gobject->tryGetComponent(TransformComponent);
-            if (transform_component)
-            {
-                transform_component->markDirty();
-            }
+            //std::shared_ptr<TransformComponent> transform_component = selected_gobject->tryGetComponent(TransformComponent);
+            //if (transform_component)
+            //{
+            //    transform_component->markDirty();
+            //}
         }
     }
-
+    /*
     float intersectPlaneRay(glm::vec3 normal, float d, glm::vec3 origin, glm::vec3 dir)
     {
         float deno = glm::dot(normal, dir);
@@ -45,6 +45,7 @@ namespace MoYu
 
         return -(glm::dot(normal, origin) + d) / deno;
     }
+    */
     /*
     size_t EditorSceneManager::updateCursorOnAxis(Vector2 cursor_uv, Vector2 game_engine_window_size)
     {
