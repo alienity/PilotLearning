@@ -199,14 +199,15 @@ namespace MoYu
 
     struct BaseDirectionLight
     {
-        Color   m_color;
+        Color   m_color {1.0f, 1.0f, 1.0f, 1.0f};
         float   m_intensity {1.0f};
 
         bool    m_shadowmap {false};
-        Vector2 m_shadow_bounds;
+        int     m_cascade {4};
+        Vector2 m_shadow_bounds {32, 32}; // cascade level 0
         float   m_shadow_near_plane {0.1f};
-        float   m_shadow_far_plane {500.0f};
-        Vector2 m_shadowmap_size {512, 512};
+        float   m_shadow_far_plane {200.0f};
+        Vector2 m_shadowmap_size {1024, 1024};
     };
 
     struct BasePointLight
@@ -225,9 +226,9 @@ namespace MoYu
         float m_outer_radians;
 
         bool    m_shadowmap {false};
-        Vector2 m_shadow_bounds;
+        Vector2 m_shadow_bounds {128, 128};
         float   m_shadow_near_plane {0.1f};
-        float   m_shadow_far_plane {500.0f};
+        float   m_shadow_far_plane {200.0f};
         Vector2 m_shadowmap_size {512, 512};
     };
 
@@ -244,7 +245,7 @@ namespace MoYu
 
         Vector3   m_position;
         Vector3   m_direction;
-        Matrix4x4 m_shadow_view_proj_mat;
+        Matrix4x4 m_shadow_view_proj_mats[4];
     };
 
     struct InternalPointLight : public BasePointLight

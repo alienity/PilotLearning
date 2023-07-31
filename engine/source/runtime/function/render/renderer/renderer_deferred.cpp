@@ -208,7 +208,10 @@ namespace MoYu
         mShadowmapIntputParams.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
         mShadowmapIntputParams.meshBufferHandle     = indirectCullOutput.meshBufferHandle;
         mShadowmapIntputParams.materialBufferHandle = indirectCullOutput.materialBufferHandle;
-        mShadowmapIntputParams.dirIndirectSortBufferHandle = indirectCullOutput.dirShadowmapHandle.indirectSortBufferHandle;
+        for (size_t i = 0; i < indirectCullOutput.directionShadowmapHandles.size(); i++)
+        {
+            mShadowmapIntputParams.dirIndirectSortBufferHandles.push_back(indirectCullOutput.directionShadowmapHandles[i].indirectSortBufferHandle);
+        }
         for (size_t i = 0; i < indirectCullOutput.spotShadowmapHandles.size(); i++)
         {
             mShadowmapIntputParams.spotsIndirectSortBufferHandles.push_back(indirectCullOutput.spotShadowmapHandles[i].indirectSortBufferHandle);

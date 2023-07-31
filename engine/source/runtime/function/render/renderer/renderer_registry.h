@@ -215,6 +215,7 @@ struct RootSignatures
 
         {
             RHI::RootSignatureDesc rootSigDesc = RHI::RootSignatureDesc()
+                                                     .Add32BitConstants<0,0>(1)
                                                      .AddConstantBufferView<0, 0>()
                                                      .AddShaderResourceView<0, 0>()
                                                      .AddShaderResourceView<1, 0>()

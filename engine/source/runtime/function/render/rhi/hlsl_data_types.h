@@ -31,14 +31,16 @@ namespace HLSL
     struct SceneDirectionalLight
     {
         glm::vec3 direction;
-        float     _padding_direction;
+        float     _padding_0;
         glm::vec3 color;
         float     intensity;
         uint32_t  shadowmap; // 1 - use shadowmap, 0 - do not use shadowmap
-        uint32_t  shadowmap_srv_index; // shadowmap srv in descriptorheap index
-        float     shadowmap_width;
-        float     _padding_shadowmap;
-        glm::mat4 directional_light_proj_view;
+        uint32_t  cascade; // how many cascade level, default 4
+        float     shadowmap_width; // shadowmap size
+        float     _padding_1;
+        uint32_t  shadow_bounds[4]; // shadow bounds for each cascade level
+        uint32_t  shadowmap_srv_index[4]; // shadowmap srv in descriptorheap index
+        glm::mat4 directional_light_proj_views[4];
     };
 
     struct ScenePointLight

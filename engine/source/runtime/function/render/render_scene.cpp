@@ -60,20 +60,31 @@ namespace MoYu
         }
         else if (sceneLight.m_light_type == LightType::DirectionLight)
         {
-            Matrix4x4 dirLightViewMat     = Matrix4x4::lookAt(translation, direction, Vector3::Up);
-            Matrix4x4 dirLightProjMat     = Matrix4x4::createOrthographic(sceneLight.direction_light.m_shadow_bounds.x,
-                                                                      sceneLight.direction_light.m_shadow_bounds.y,
-                                                                      -sceneLight.direction_light.m_shadow_near_plane,
-                                                                      -sceneLight.direction_light.m_shadow_far_plane);
-            Matrix4x4 dirLightViewProjMat = dirLightProjMat * dirLightViewMat;
+            Matrix4x4 dirLightViewMat = Matrix4x4::lookAt(translation, direction, Vector3::Up);
 
+            int   shadow_bounds_width  = sceneLight.direction_light.m_shadow_bounds.x;
+            int   shadow_bounds_height = sceneLight.direction_light.m_shadow_bounds.y;
+            float shadow_near_plane    = -sceneLight.direction_light.m_shadow_near_plane;
+            float shadow_far_plane     = -sceneLight.direction_light.m_shadow_far_plane;
+
+            for (size_t i = 0; i < sceneLight.direction_light.m_cascade; i++)
+            {
+                shadow_bounds_width  = shadow_bounds_width >> i;
+                shadow_bounds_height = shadow_bounds_height >> i;
+
+                Matrix4x4 dirLightProjMat = Matrix4x4::createOrthographic(
+                    shadow_bounds_width, shadow_bounds_height, shadow_near_plane, shadow_far_plane);
+                Matrix4x4 dirLightViewProjMat = dirLightProjMat * dirLightViewMat;
+
+                m_directional_light.m_shadow_view_proj_mats[i] = dirLightViewProjMat;
+            }
             m_directional_light.m_identifier           = sceneLight.m_identifier;
             m_directional_light.m_position             = translation;
             m_directional_light.m_direction            = direction;
-            m_directional_light.m_shadow_view_proj_mat = dirLightViewProjMat;
             m_directional_light.m_color                = sceneLight.direction_light.m_color;
             m_directional_light.m_intensity            = sceneLight.direction_light.m_intensity;
             m_directional_light.m_shadowmap            = sceneLight.direction_light.m_shadowmap;
+            m_directional_light.m_cascade              = sceneLight.direction_light.m_cascade;
             m_directional_light.m_shadow_bounds        = sceneLight.direction_light.m_shadow_bounds;
             m_directional_light.m_shadow_near_plane    = sceneLight.direction_light.m_shadow_near_plane;
             m_directional_light.m_shadow_far_plane     = sceneLight.direction_light.m_shadow_far_plane;

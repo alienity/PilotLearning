@@ -48,7 +48,8 @@ namespace MoYu
             RHI::RgResourceHandle perframeBufferHandle        = RHI::_DefaultRgResourceHandle;
             RHI::RgResourceHandle meshBufferHandle            = RHI::_DefaultRgResourceHandle;
             RHI::RgResourceHandle materialBufferHandle        = RHI::_DefaultRgResourceHandle;
-            RHI::RgResourceHandle dirIndirectSortBufferHandle = RHI::_DefaultRgResourceHandle;
+
+            std::vector<RHI::RgResourceHandle> dirIndirectSortBufferHandles;
 
             std::vector<RHI::RgResourceHandle> spotsIndirectSortBufferHandles;
         };

@@ -166,29 +166,36 @@ namespace MoYu
     {
         if (m_render_scene->m_directional_light.m_identifier != UndefCommonIdentifier)
         {
-            if (dirShadowmapCommandBuffer.m_identifier != m_render_scene->m_directional_light.m_identifier)
+            if (dirShadowmapCommandBuffers.m_identifier != m_render_scene->m_directional_light.m_identifier)
             {
-                dirShadowmapCommandBuffer.Reset();
+                dirShadowmapCommandBuffers.Reset();
             }
 
-            if (dirShadowmapCommandBuffer.p_IndirectSortCommandBuffer == nullptr)
+            if (dirShadowmapCommandBuffers.m_DrawCallCommandBuffer.size() != m_render_scene->m_directional_light.m_cascade)
             {
+                dirShadowmapCommandBuffers.m_identifier = m_render_scene->m_directional_light.m_identifier;
+
                 RHI::RHIBufferTarget indirectCommandTarget = RHI::RHIBufferRandomReadWrite | RHI::RHIBufferTargetStructured | RHI::RHIBufferTargetCounter;
 
-                std::shared_ptr<RHI::D3D12Buffer> p_IndirectCommandBuffer =
-                    RHI::D3D12Buffer::Create(m_Device->GetLinkedDevice(),
-                                             indirectCommandTarget,
-                                             HLSL::MeshLimit,
-                                             sizeof(HLSL::CommandSignatureParams),
-                                             L"DirectionIndirectSortCommandBuffer");
+                for (size_t i = 0; i < m_render_scene->m_directional_light.m_cascade; i++)
+                {
+                    std::shared_ptr<RHI::D3D12Buffer> p_IndirectCommandBuffer =
+                        RHI::D3D12Buffer::Create(m_Device->GetLinkedDevice(),
+                                                 indirectCommandTarget,
+                                                 HLSL::MeshLimit,
+                                                 sizeof(HLSL::CommandSignatureParams),
+                                                 L"DirectionIndirectSortCommandBuffer_Cascade_" + i);
+                
+                    DrawCallCommandBuffer _CommandBuffer = {};
+                    _CommandBuffer.p_IndirectIndexCommandBuffer = p_IndirectCommandBuffer;
 
-                dirShadowmapCommandBuffer.m_identifier = m_render_scene->m_directional_light.m_identifier;
-                dirShadowmapCommandBuffer.p_IndirectSortCommandBuffer = p_IndirectCommandBuffer;
+                    dirShadowmapCommandBuffers.m_DrawCallCommandBuffer.push_back(_CommandBuffer);
+                }
             }
         }
         else
         {
-            dirShadowmapCommandBuffer.Reset();
+            dirShadowmapCommandBuffers.Reset();
         }
 
         if (!m_render_scene->m_spot_light_list.empty())
@@ -218,7 +225,7 @@ namespace MoYu
 
                 if (!curSpotLighBufferExist)
                 {
-                    ShadowmapCommandBuffer spotShadowCommandBuffer = {};
+                    SpotShadowmapCommandBuffer spotShadowCommandBuffer = {};
 
                     RHI::RHIBufferTarget indirectCommandTarget =
                         RHI::RHIBufferRandomReadWrite | RHI::RHIBufferTargetStructured | RHI::RHIBufferTargetCounter;
@@ -230,9 +237,9 @@ namespace MoYu
                                                  sizeof(HLSL::CommandSignatureParams),
                                                  std::wstring(L"SpotIndirectSortCommandBuffer_" + i));
 
-                    spotShadowCommandBuffer.m_lightIndex                = i;
-                    spotShadowCommandBuffer.m_identifier                = curSpotLightDesc.m_identifier;
-                    spotShadowCommandBuffer.p_IndirectSortCommandBuffer = p_IndirectCommandBuffer;
+                    spotShadowCommandBuffer.m_lightIndex = i;
+                    spotShadowCommandBuffer.m_identifier = curSpotLightDesc.m_identifier;
+                    spotShadowCommandBuffer.m_DrawCallCommandBuffer.p_IndirectIndexCommandBuffer = p_IndirectCommandBuffer;
                     
                     spotShadowmapCommandBuffer.push_back(spotShadowCommandBuffer);
                 }
@@ -384,20 +391,19 @@ namespace MoYu
             GImport(graph, commandBufferForTransparentDraw.p_IndirectIndexCommandBuffer.get()),
             GImport(graph, commandBufferForTransparentDraw.p_IndirectSortCommandBuffer.get())};
 
-        bool hasDirShadowmap = false;
-        if (dirShadowmapCommandBuffer.p_IndirectSortCommandBuffer != nullptr)
+        for (size_t i = 0; i < dirShadowmapCommandBuffers.m_DrawCallCommandBuffer.size(); i++)
         {
-            hasDirShadowmap = true;
-            cullOutput.dirShadowmapHandle = DrawCallCommandBufferHandle {
-                GImport(graph, dirShadowmapCommandBuffer.p_IndirectIndexCommandBuffer.get()),
-                GImport(graph, dirShadowmapCommandBuffer.p_IndirectSortCommandBuffer.get())};
+            DrawCallCommandBufferHandle bufferHandle = {
+                GImport(graph, dirShadowmapCommandBuffers.m_DrawCallCommandBuffer[i].p_IndirectIndexCommandBuffer.get()),
+                GImport(graph, dirShadowmapCommandBuffers.m_DrawCallCommandBuffer[i].p_IndirectSortCommandBuffer.get())};
+            cullOutput.spotShadowmapHandles.push_back(bufferHandle);
         }
 
         for (size_t i = 0; i < spotShadowmapCommandBuffer.size(); i++)
         {
             DrawCallCommandBufferHandle bufferHandle = {
-                GImport(graph, spotShadowmapCommandBuffer[i].p_IndirectIndexCommandBuffer.get()),
-                GImport(graph, spotShadowmapCommandBuffer[i].p_IndirectSortCommandBuffer.get())};
+                GImport(graph, spotShadowmapCommandBuffer[i].m_DrawCallCommandBuffer.p_IndirectIndexCommandBuffer.get()),
+                GImport(graph, spotShadowmapCommandBuffer[i].m_DrawCallCommandBuffer.p_IndirectSortCommandBuffer.get())};
             cullOutput.spotShadowmapHandles.push_back(bufferHandle);
         }
 
@@ -407,7 +413,7 @@ namespace MoYu
         auto mMeshBufferHandle      = cullOutput.meshBufferHandle;
         auto mOpaqueDrawHandle      = cullOutput.opaqueDrawHandle;
         auto mTransparentDrawHandle = cullOutput.transparentDrawHandle;
-        auto mDirShadowmapHandle    = cullOutput.dirShadowmapHandle;
+        auto mDirShadowmapHandles   = cullOutput.directionShadowmapHandles;
         auto mSpotShadowmapHandles  = cullOutput.spotShadowmapHandles;
 
         {
@@ -424,10 +430,10 @@ namespace MoYu
             PassWriteIg(resetPass, cullOutput.opaqueDrawHandle.indirectSortBufferHandle);
             PassWriteIg(resetPass, cullOutput.transparentDrawHandle.indirectIndexBufferHandle);
             PassWriteIg(resetPass, cullOutput.transparentDrawHandle.indirectSortBufferHandle);
-            if (hasDirShadowmap)
+            for (size_t i = 0; i < cullOutput.directionShadowmapHandles.size(); i++)
             {
-                PassWriteIg(resetPass, cullOutput.dirShadowmapHandle.indirectIndexBufferHandle);
-                PassWriteIg(resetPass, cullOutput.dirShadowmapHandle.indirectSortBufferHandle);
+                PassWriteIg(resetPass, cullOutput.directionShadowmapHandles[0].indirectIndexBufferHandle);
+                PassWriteIg(resetPass, cullOutput.directionShadowmapHandles[0].indirectSortBufferHandle);
             }
             for (size_t i = 0; i < cullOutput.spotShadowmapHandles.size(); i++)
             {
@@ -443,9 +449,9 @@ namespace MoYu
                 pCopyContext->ResetCounter(RegGetBufCounter(mTransparentDrawHandle.indirectIndexBufferHandle));
                 pCopyContext->ResetCounter(RegGetBufCounter(mTransparentDrawHandle.indirectSortBufferHandle));
 
-                if (hasDirShadowmap)
+                for (size_t i = 0; i < mDirShadowmapHandles.size(); i++)
                 {
-                    pCopyContext->ResetCounter(RegGetBufCounter(mDirShadowmapHandle.indirectSortBufferHandle));
+                    pCopyContext->ResetCounter(RegGetBufCounter(mDirShadowmapHandles[i].indirectSortBufferHandle));
                 }
 
                 for (size_t i = 0; i < mSpotShadowmapHandles.size(); i++)
@@ -616,7 +622,7 @@ namespace MoYu
             }
         }
 
-        if (hasDirShadowmap)
+        if (mDirShadowmapHandles.size() != 0)
         {
             RHI::RenderPass& dirLightShadowCullPass = graph.AddRenderPass("DirectionLightShadowCullPass");
 
@@ -624,7 +630,10 @@ namespace MoYu
             PassReadIg(dirLightShadowCullPass, cullOutput.meshBufferHandle);
             PassReadIg(dirLightShadowCullPass, cullOutput.materialBufferHandle);
 
-            PassWriteIg(dirLightShadowCullPass, cullOutput.dirShadowmapHandle.indirectSortBufferHandle);
+            for (size_t i = 0; i < cullOutput.directionShadowmapHandles.size(); i++)
+            {
+                PassWriteIg(dirLightShadowCullPass, cullOutput.directionShadowmapHandles[i].indirectSortBufferHandle);
+            }
 
             dirLightShadowCullPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
                 RHI::D3D12ComputeContext* pAsyncCompute = context->GetComputeContext();
@@ -632,21 +641,28 @@ namespace MoYu
                 pAsyncCompute->TransitionBarrier(RegGetBuf(mPerframeBufferHandle), D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
                 pAsyncCompute->TransitionBarrier(RegGetBuf(mMeshBufferHandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
                 pAsyncCompute->TransitionBarrier(RegGetBuf(mMaterialBufferHandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-                pAsyncCompute->TransitionBarrier(RegGetBuf(mDirShadowmapHandle.indirectSortBufferHandle), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-                pAsyncCompute->InsertUAVBarrier(RegGetBuf(mDirShadowmapHandle.indirectSortBufferHandle));
+                for (size_t i = 0; i < mDirShadowmapHandles.size(); i++)
+                {
+                    pAsyncCompute->TransitionBarrier(RegGetBuf(mDirShadowmapHandles[i].indirectSortBufferHandle), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+                    pAsyncCompute->InsertUAVBarrier(RegGetBuf(mDirShadowmapHandles[i].indirectSortBufferHandle));
+                }
                 pAsyncCompute->FlushResourceBarriers();
 
-                pAsyncCompute->SetPipelineState(PipelineStates::pIndirectCullDirectionShadowmap.get());
-                pAsyncCompute->SetRootSignature(RootSignatures::pIndirectCullDirectionShadowmap.get());
+                for (int i = 0; i < mDirShadowmapHandles.size(); i++)
+                {
+                    pAsyncCompute->SetPipelineState(PipelineStates::pIndirectCullDirectionShadowmap.get());
+                    pAsyncCompute->SetRootSignature(RootSignatures::pIndirectCullDirectionShadowmap.get());
 
-                pAsyncCompute->SetConstantBuffer(0, RegGetBuf(mPerframeBufferHandle)->GetGpuVirtualAddress());
-                pAsyncCompute->SetBufferSRV(1, RegGetBuf(mMeshBufferHandle));
-                pAsyncCompute->SetBufferSRV(2, RegGetBuf(mMaterialBufferHandle));
-                pAsyncCompute->SetDescriptorTable(3, RegGetBuf(mDirShadowmapHandle.indirectSortBufferHandle)->GetDefaultUAV()->GetGpuHandle());
+                    pAsyncCompute->SetConstant(0, 0, RHI::DWParam(i));
+                    pAsyncCompute->SetConstantBuffer(1, RegGetBuf(mPerframeBufferHandle)->GetGpuVirtualAddress());
+                    pAsyncCompute->SetBufferSRV(2, RegGetBuf(mMeshBufferHandle));
+                    pAsyncCompute->SetBufferSRV(3, RegGetBuf(mMaterialBufferHandle));
+                    pAsyncCompute->SetDescriptorTable(4, RegGetBuf(mDirShadowmapHandles[i].indirectSortBufferHandle)->GetDefaultUAV()->GetGpuHandle());
                 
-                pAsyncCompute->Dispatch1D(numMeshes, 128);
+                    pAsyncCompute->Dispatch1D(numMeshes, 128);
 
-                pAsyncCompute->TransitionBarrier(RegGetBuf(mDirShadowmapHandle.indirectSortBufferHandle), D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT);
+                    pAsyncCompute->TransitionBarrier(RegGetBuf(mDirShadowmapHandles[i].indirectSortBufferHandle), D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT);
+                }
             });
         }
 
@@ -709,7 +725,7 @@ namespace MoYu
 
         commandBufferForOpaqueDraw.ResetBuffer();
         commandBufferForTransparentDraw.ResetBuffer();
-        dirShadowmapCommandBuffer.Reset();
+        dirShadowmapCommandBuffers.Reset();
         for (size_t i = 0; i < spotShadowmapCommandBuffer.size(); i++)
             spotShadowmapCommandBuffer[i].Reset();
         spotShadowmapCommandBuffer.clear();

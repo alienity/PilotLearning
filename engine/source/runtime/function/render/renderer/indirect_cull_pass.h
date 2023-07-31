@@ -21,15 +21,33 @@ namespace MoYu
         }
     };
 
-    struct ShadowmapCommandBuffer : public DrawCallCommandBuffer
+    struct SpotShadowmapCommandBuffer
     {
+        DrawCallCommandBuffer m_DrawCallCommandBuffer;
         SceneCommonIdentifier m_identifier;
         uint32_t m_lightIndex;
 
         void Reset()
         {
             m_identifier = SceneCommonIdentifier();
-            ResetBuffer();
+            m_lightIndex = 0;
+            m_DrawCallCommandBuffer.ResetBuffer();
+        }
+    };
+
+    struct DirShadowmapCommandBuffer
+    {
+        std::vector<DrawCallCommandBuffer> m_DrawCallCommandBuffer;
+        SceneCommonIdentifier m_identifier;
+        
+        void Reset()
+        {
+            m_identifier = SceneCommonIdentifier();
+            for (size_t i = 0; i < m_DrawCallCommandBuffer.size(); i++)
+            {
+                m_DrawCallCommandBuffer[i].ResetBuffer();
+            }
+            m_DrawCallCommandBuffer.clear();
         }
     };
 
@@ -50,7 +68,8 @@ namespace MoYu
 
             DrawCallCommandBufferHandle opaqueDrawHandle;
             DrawCallCommandBufferHandle transparentDrawHandle;
-            DrawCallCommandBufferHandle dirShadowmapHandle;
+            
+            std::vector<DrawCallCommandBufferHandle> directionShadowmapHandles;
             std::vector<DrawCallCommandBufferHandle> spotShadowmapHandles;
         };
 
@@ -106,8 +125,8 @@ namespace MoYu
         DrawCallCommandBuffer commandBufferForTransparentDraw;
 
         // used for shadowmap drawing
-        ShadowmapCommandBuffer dirShadowmapCommandBuffer;
-        std::vector<ShadowmapCommandBuffer> spotShadowmapCommandBuffer;
+        DirShadowmapCommandBuffer dirShadowmapCommandBuffers;
+        std::vector<SpotShadowmapCommandBuffer> spotShadowmapCommandBuffer;
 	};
 }
 

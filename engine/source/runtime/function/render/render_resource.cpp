@@ -225,12 +225,28 @@ namespace MoYu
 
         {
             // directional light
-            m_mesh_perframe_storage_buffer_object.scene_directional_light.direction = GLMUtil::fromVec3(Vector3::normalize(render_scene->m_directional_light.m_direction));
-            m_mesh_perframe_storage_buffer_object.scene_directional_light.color = GLMUtil::fromVec3(render_scene->m_directional_light.m_color.toVector3());
-            m_mesh_perframe_storage_buffer_object.scene_directional_light.intensity = render_scene->m_directional_light.m_intensity;
-            m_mesh_perframe_storage_buffer_object.scene_directional_light.shadowmap = render_scene->m_directional_light.m_shadowmap ? 1 : 0;
-            m_mesh_perframe_storage_buffer_object.scene_directional_light.shadowmap_width = render_scene->m_directional_light.m_shadowmap_size.x;
-            m_mesh_perframe_storage_buffer_object.scene_directional_light.directional_light_proj_view = GLMUtil::fromMat4x4(render_scene->m_directional_light.m_shadow_view_proj_mat);
+            HLSL::SceneDirectionalLight scene_directional_light {};
+            scene_directional_light.direction = GLMUtil::fromVec3(Vector3::normalize(render_scene->m_directional_light.m_direction));
+            scene_directional_light.color = GLMUtil::fromVec3(render_scene->m_directional_light.m_color.toVector3());
+            scene_directional_light.intensity = render_scene->m_directional_light.m_intensity;
+            scene_directional_light.shadowmap = render_scene->m_directional_light.m_shadowmap ? 1 : 0;
+            scene_directional_light.cascade = render_scene->m_directional_light.m_cascade;
+            scene_directional_light.shadowmap_width = render_scene->m_directional_light.m_shadowmap_size.x;
+            for (size_t i = 0; i < scene_directional_light.cascade; i++)
+            {
+                if (i == 0)
+                {
+                    scene_directional_light.shadow_bounds[i] = render_scene->m_directional_light.m_shadow_bounds.x;
+                }
+                else
+                {
+                    scene_directional_light.shadow_bounds[i] = scene_directional_light.shadow_bounds[i - 1] >> 2;
+                }
+                scene_directional_light.directional_light_proj_views[i] =
+                    GLMUtil::fromMat4x4(render_scene->m_directional_light.m_shadow_view_proj_mats[i]);
+            }
+
+            m_mesh_perframe_storage_buffer_object.scene_directional_light = scene_directional_light;
         }
     }
 

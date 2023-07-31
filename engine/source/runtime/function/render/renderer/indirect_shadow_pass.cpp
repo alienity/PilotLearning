@@ -124,7 +124,8 @@ namespace MoYu
         RHI::RgResourceHandle materialBufferHandle = passInput.materialBufferHandle;
 
         RHI::RgResourceHandleExt perframeBufferHandle = RHI::ToRgResourceHandle(passInput.perframeBufferHandle, RHI::RgResourceSubType::VertexAndConstantBuffer);
-        RHI::RgResourceHandleExt dirIndirectSortBufferHandle = RHI::ToRgResourceHandle(passInput.dirIndirectSortBufferHandle, RHI::RgResourceSubType::IndirectArgBuffer);
+
+        std::vector<RHI::RgResourceHandleExt> dirIndirectSortBufferHandles = RHI::ToRgResourceHandle(passInput.dirIndirectSortBufferHandles, RHI::RgResourceSubType::IndirectArgBuffer);
 
         std::vector<RHI::RgResourceHandleExt> spotsIndirectSortBufferHandles = RHI::ToRgResourceHandle(passInput.spotsIndirectSortBufferHandles, RHI::RgResourceSubType::IndirectArgBuffer);
 
@@ -133,9 +134,10 @@ namespace MoYu
         shadowpass.Read(perframeBufferHandle);
         shadowpass.Read(meshBufferHandle);
         shadowpass.Read(materialBufferHandle);
-        if (dirIndirectSortBufferHandle.rgHandle.IsValid())
+
+        for (size_t i = 0; i < dirIndirectSortBufferHandles.size(); i++)
         {
-            shadowpass.Read(dirIndirectSortBufferHandle);
+            shadowpass.Read(dirIndirectSortBufferHandles[i]);
         }
         for (size_t i = 0; i < spotsIndirectSortBufferHandles.size(); i++)
         {
