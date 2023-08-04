@@ -37,10 +37,11 @@ namespace HLSL
         uint32_t  shadowmap; // 1 - use shadowmap, 0 - do not use shadowmap
         uint32_t  cascade; // how many cascade level, default 4
         float     shadowmap_width; // shadowmap size
-        float     _padding_1;
+        uint32_t  shadowmap_srv_index; // shadowmap srv in descriptorheap index
         uint32_t  shadow_bounds[4]; // shadow bounds for each cascade level
-        uint32_t  shadowmap_srv_index[4]; // shadowmap srv in descriptorheap index
-        glm::mat4 directional_light_proj_views[4];
+        glm::mat4 direction_light_view_matrix;
+        glm::mat4 direction_light_projs[4];
+        glm::mat4 direction_light_proj_views[4];
     };
 
     struct ScenePointLight

@@ -245,6 +245,8 @@ namespace MoYu
 
         Vector3   m_position;
         Vector3   m_direction;
+        Matrix4x4 m_shadow_view_mat;
+        Matrix4x4 m_shadow_proj_mats[4];
         Matrix4x4 m_shadow_view_proj_mats[4];
     };
 

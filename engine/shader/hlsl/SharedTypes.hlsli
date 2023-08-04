@@ -124,17 +124,18 @@ struct SceneSpotLight
 
 struct SceneDirectionalLight
 {
-    float3    direction;
-    float     _padding_0;
-    float3    color;
-    float     intensity;
-    uint      shadowmap;           // 1 - use shadowmap, 0 - do not use shadowmap
-    uint      cascade;             // how many cascade level, default 4
-    float     shadowmap_width;     // shadowmap width and height
-    float     _padding_1;
-    uint      shadow_bounds[4];       // shadow bounds for each cascade level
-    uint      shadowmap_srv_index[4]; // shadowmap srv in descriptorheap index
-    float4x4  light_proj_view[4];
+    float3   direction;
+    float    _padding_0;
+    float3   color;
+    float    intensity;
+    uint     shadowmap;           // 1 - use shadowmap, 0 - do not use shadowmap
+    uint     cascade;             // how many cascade level, default 4
+    float    shadowmap_width;     // shadowmap width and height
+    uint     shadowmap_srv_index; // shadowmap srv in descriptorheap index
+    uint4    shadow_bounds;       // shadow bounds for each cascade level
+    float4x4 light_view_matrix;   // direction light view matrix
+    float4x4 light_proj[4];
+    float4x4 light_proj_view[4];
 };
 
 // ==================== Mesh ====================

@@ -216,7 +216,7 @@ struct RootSignatures
         {
             RHI::RootSignatureDesc rootSigDesc = RHI::RootSignatureDesc()
                                                      .Add32BitConstants<0,0>(1)
-                                                     .AddConstantBufferView<0, 0>()
+                                                     .AddConstantBufferView<1, 0>()
                                                      .AddShaderResourceView<0, 0>()
                                                      .AddShaderResourceView<1, 0>()
                                                      .AddUnorderedAccessViewWithCounter<0, 0>()
@@ -228,8 +228,8 @@ struct RootSignatures
 
         {
             RHI::RootSignatureDesc rootSigDesc = RHI::RootSignatureDesc()
-                                                     .AddConstantBufferView<0, 0>()
-                                                     .Add32BitConstants<1, 0>(1)
+                                                     .Add32BitConstants<0, 0>(1)
+                                                     .AddConstantBufferView<1, 0>()
                                                      .AddShaderResourceView<0, 0>()
                                                      .AddShaderResourceView<1, 0>()
                                                      .AddUnorderedAccessViewWithCounter<0, 0>()
@@ -262,7 +262,7 @@ struct RootSignatures
         {
             RHI::RootSignatureDesc rootSigDesc =
                 RHI::RootSignatureDesc()
-                    .Add32BitConstants<0, 0>(1)
+                    .Add32BitConstants<0, 0>(2)
                     .AddConstantBufferView<1, 0>()
                     .AddShaderResourceView<0, 0>()
                     .AddShaderResourceView<1, 0>()

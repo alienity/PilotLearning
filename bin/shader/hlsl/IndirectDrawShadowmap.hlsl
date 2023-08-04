@@ -6,7 +6,9 @@
 cbuffer RootConstants : register(b0, space0) 
 { 
     uint meshIndex;
-#if defined(SPOTSHADOW)
+#if defined(DIRECTIONSHADOW)
+    uint cascadeLevel;
+#elif defined(SPOTSHADOW)
     uint spotIndex;
 #endif
 };
@@ -43,7 +45,7 @@ VertexOutput VSMain(VertexInput input)
     MeshInstance mesh = g_MeshesInstance[meshIndex];
 
 	#if defined(DIRECTIONSHADOW)
-    float4x4 view_proj_mat = g_ConstantBufferParams.scene_directional_light.light_proj_view;
+    float4x4 view_proj_mat = g_ConstantBufferParams.scene_directional_light.light_proj_view[cascadeLevel];
     #elif defined(SPOTSHADOW)
     float4x4 view_proj_mat = g_ConstantBufferParams.scene_spot_lights[spotIndex].light_proj_view;
     #else

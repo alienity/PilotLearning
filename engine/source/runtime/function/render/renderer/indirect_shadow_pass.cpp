@@ -21,17 +21,17 @@ namespace MoYu
 
     void IndirectShadowPass::prepareShadowmaps(std::shared_ptr<RenderResource> render_resource)
     {
-        /**/
         RenderResource* real_resource = (RenderResource*)render_resource.get();
 
-        if (m_render_scene->m_directional_light.m_identifier != UndefCommonIdentifier &&
-            m_render_scene->m_directional_light.m_shadowmap)
+        if (m_render_scene->m_directional_light.m_identifier != UndefCommonIdentifier && m_render_scene->m_directional_light.m_shadowmap)
         {
             m_DirectionalShadowmap.m_identifier = m_render_scene->m_directional_light.m_identifier;
             m_DirectionalShadowmap.m_shadowmap_size = m_render_scene->m_directional_light.m_shadowmap_size;
+            m_DirectionalShadowmap.m_casccade = m_render_scene->m_directional_light.m_cascade;
             if (m_DirectionalShadowmap.p_LightShadowmap == nullptr)
             {
                 Vector2 shadowmap_size = m_render_scene->m_directional_light.m_shadowmap_size;
+                //Vector2 cascade_shadowmap_size = shadowmap_size * 2;
 
                 m_DirectionalShadowmap.p_LightShadowmap =
                     RHI::D3D12Texture::Create2D(m_Device->GetLinkedDevice(),
@@ -41,7 +41,7 @@ namespace MoYu
                                                 DXGI_FORMAT_D32_FLOAT,
                                                 RHI::RHISurfaceCreateShadowmap,
                                                 1,
-                                                L"DirectionShadowmap",
+                                                L"DirectionShadowmapCascade4",
                                                 D3D12_RESOURCE_STATE_COMMON,
                                                 CD3DX12_CLEAR_VALUE(DXGI_FORMAT_D32_FLOAT, 0, 1));
 
@@ -175,32 +175,63 @@ namespace MoYu
 
                 graphicContext->SetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-                Vector2 shadowmap_size = m_DirectionalShadowmap.m_shadowmap_size;
+                graphicContext->ClearRenderTarget(nullptr, shadowmapStencilView);
+                graphicContext->SetRenderTarget(nullptr, shadowmapStencilView);
 
                 graphicContext->SetRootSignature(RootSignatures::pIndirectDrawDirectionShadowmap.get());
                 graphicContext->SetPipelineState(PipelineStates::pIndirectDrawDirectionShadowmap.get());
-                graphicContext->SetViewport(RHIViewport {0.0f, 0.0f, (float)shadowmap_size.x, (float)shadowmap_size.y, 0.0f, 1.0f});
-                graphicContext->SetScissorRect(RHIRect {0, 0, (int)shadowmap_size.x, (int)shadowmap_size.y});
+
+                Vector2 shadowmap_size = m_DirectionalShadowmap.m_shadowmap_size;
 
                 graphicContext->SetConstantBuffer(1, registry->GetD3D12Buffer(perframeBufferHandle.rgHandle)->GetGpuVirtualAddress());
                 graphicContext->SetBufferSRV(2, registry->GetD3D12Buffer(meshBufferHandle));
                 graphicContext->SetBufferSRV(3, registry->GetD3D12Buffer(materialBufferHandle));
 
-                //graphicContext->SetConstantBuffer(1, pPerframeBuffer->GetGpuVirtualAddress());
-                //graphicContext->SetBufferSRV(2, pMeshBuffer.get());
-                //graphicContext->SetBufferSRV(3, pMaterialBuffer.get());
+                for (uint32_t i = 0; i < m_DirectionalShadowmap.m_casccade; i++)
+                {
+                     RHIViewport _viewport = {};
 
-                graphicContext->ClearRenderTarget(nullptr, shadowmapStencilView);
-                graphicContext->SetRenderTarget(nullptr, shadowmapStencilView);
+                    _viewport.MinDepth = 0.0f;
+                    _viewport.MaxDepth = 1.0f;
+                    _viewport.Width    = 0.5 * shadowmap_size.x;
+                    _viewport.Height   = 0.5 * shadowmap_size.y;
 
-                auto pDirectionCommandBuffer = registry->GetD3D12Buffer(dirIndirectSortBufferHandle.rgHandle);
+                     if (i == 0)
+                    {
+                         _viewport.TopLeftX = 0;
+                         _viewport.TopLeftY = 0;
+                     }
+                     else if (i == 1)
+                    {
+                         _viewport.TopLeftX = 0.5 * shadowmap_size.x;
+                         _viewport.TopLeftY = 0;
+                     }
+                     else if (i == 2)
+                    {
+                         _viewport.TopLeftX = 0;
+                         _viewport.TopLeftY = 0.5 * shadowmap_size.y;
+                     }
+                     else if (i == 3)
+                    {
+                         _viewport.TopLeftX = 0.5 * shadowmap_size.x;
+                         _viewport.TopLeftY = 0.5 * shadowmap_size.y;
+                     }
 
-                graphicContext->ExecuteIndirect(CommandSignatures::pIndirectDrawDirectionShadowmap.get(),
-                                                pDirectionCommandBuffer,
-                                                0,
-                                                HLSL::MeshLimit,
-                                                pDirectionCommandBuffer->GetCounterBuffer().get(),
-                                                0);
+                    //graphicContext->SetViewport(RHIViewport {0.0f, 0.0f, (float)shadowmap_size.x, (float)shadowmap_size.y, 0.0f, 1.0f});
+                    //graphicContext->SetScissorRect(RHIRect {0, 0, (int)shadowmap_size.x, (int)shadowmap_size.y});
+                    graphicContext->SetViewport(RHIViewport {_viewport.TopLeftX, _viewport.TopLeftY, (float)_viewport.Width, (float)_viewport.Height, _viewport.MinDepth, _viewport.MaxDepth});
+                    graphicContext->SetScissorRect(RHIRect {0, 0, (int)shadowmap_size.x, (int)shadowmap_size.y});
+
+                    graphicContext->SetConstant(0, 1, i);
+
+                    auto pDirectionCommandBuffer = registry->GetD3D12Buffer(dirIndirectSortBufferHandles[i].rgHandle);
+                    graphicContext->ExecuteIndirect(CommandSignatures::pIndirectDrawDirectionShadowmap.get(),
+                                                        pDirectionCommandBuffer,
+                                                        0,
+                                                        HLSL::MeshLimit,
+                                                        pDirectionCommandBuffer->GetCounterBuffer().get(),
+                                                        0);
+                }
             }
 
             for (size_t i = 0; i < m_SpotShadowmaps.size(); i++)

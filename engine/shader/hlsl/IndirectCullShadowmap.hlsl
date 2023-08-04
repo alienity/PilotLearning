@@ -11,13 +11,13 @@ struct CommandSignatureParams
     D3D12_DRAW_INDEXED_ARGUMENTS DrawIndexedArguments;
 };
 
-ConstantBuffer<MeshPerframeBuffer> g_ConstantBufferParams : register(b0, space0);
-
 #if defined(SPOTSHADOW)
-cbuffer RootConstants : register(b1, space0) { uint spotIndex; };
+cbuffer RootConstants : register(b0, space0) { uint spotIndex; };
 #elif defined(DIRECTIONSHADOW)
-cbuffer RootConstants : register(b1, space0) { uint dirCascadeIndex; };
+cbuffer RootConstants : register(b0, space0) { uint cascadeLevel; };
 #endif
+
+ConstantBuffer<MeshPerframeBuffer> g_ConstantBufferParams : register(b1, space0);
 
 StructuredBuffer<MeshInstance> g_MeshesInstance : register(t0, space0);
 StructuredBuffer<MaterialInstance> g_MaterialsInstance : register(t1, space0);
@@ -41,7 +41,7 @@ void CSMain(CSParams Params) {
         mesh.boundingBox.Transform(mesh.localToWorldMatrix, aabb);
 
 #if defined(DIRECTIONSHADOW)
-        Frustum frustum = ExtractPlanesDX(g_ConstantBufferParams.scene_directional_light.light_proj_view[dirCascadeIndex]);
+        Frustum frustum = ExtractPlanesDX(g_ConstantBufferParams.scene_directional_light.light_proj_view[cascadeLevel]);
 #elif defined(SPOTSHADOW)
         Frustum frustum = ExtractPlanesDX(g_ConstantBufferParams.scene_spot_lights[spotIndex].light_proj_view);
 #else

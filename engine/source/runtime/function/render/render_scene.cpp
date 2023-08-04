@@ -43,11 +43,12 @@ namespace MoYu
 
         // add new light
         Matrix4x4 model_matrix = sceneTransform.m_transform_matrix;
-        
-        Vector3    scale;
-        Quaternion rotation;
-        Vector3    translation;
-        model_matrix.decompose(scale, rotation, translation);
+
+        std::tuple<Quaternion, Vector3, Vector3> rts = GLMUtil::decomposeMat4x4(model_matrix);
+
+        Quaternion rotation    = std::get<0>(rts);
+        Vector3    translation = std::get<1>(rts);
+        Vector3    scale       = std::get<2>(rts);
 
         Vector3 direction = rotation * Vector3::Forward;
 
@@ -62,6 +63,8 @@ namespace MoYu
         {
             Matrix4x4 dirLightViewMat = Matrix4x4::lookAt(translation, direction, Vector3::Up);
 
+            m_directional_light.m_shadow_view_mat = dirLightViewMat;
+
             int   shadow_bounds_width  = sceneLight.direction_light.m_shadow_bounds.x;
             int   shadow_bounds_height = sceneLight.direction_light.m_shadow_bounds.y;
             float shadow_near_plane    = -sceneLight.direction_light.m_shadow_near_plane;
@@ -69,13 +72,14 @@ namespace MoYu
 
             for (size_t i = 0; i < sceneLight.direction_light.m_cascade; i++)
             {
-                shadow_bounds_width  = shadow_bounds_width >> i;
-                shadow_bounds_height = shadow_bounds_height >> i;
+                int shadow_bounds_width_scale  = shadow_bounds_width << i;
+                int shadow_bounds_height_scale = shadow_bounds_height << i;
 
                 Matrix4x4 dirLightProjMat = Matrix4x4::createOrthographic(
-                    shadow_bounds_width, shadow_bounds_height, shadow_near_plane, shadow_far_plane);
+                    shadow_bounds_width_scale, shadow_bounds_height_scale, shadow_near_plane, shadow_far_plane);
                 Matrix4x4 dirLightViewProjMat = dirLightProjMat * dirLightViewMat;
 
+                m_directional_light.m_shadow_proj_mats[i] = dirLightProjMat;
                 m_directional_light.m_shadow_view_proj_mats[i] = dirLightViewProjMat;
             }
             m_directional_light.m_identifier           = sceneLight.m_identifier;

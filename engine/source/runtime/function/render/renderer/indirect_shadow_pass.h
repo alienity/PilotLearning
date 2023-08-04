@@ -12,14 +12,19 @@ namespace MoYu
     struct DirectionShadowmapStruct
     {
         SceneCommonIdentifier m_identifier {UndefCommonIdentifier};
+        Vector2 m_shadowmap_bounds;
         Vector2 m_shadowmap_size;
+        uint32_t m_casccade;
 
         std::shared_ptr<RHI::D3D12Texture> p_LightShadowmap;
 
         void Reset() 
         {
-            m_identifier     = UndefCommonIdentifier;
-            p_LightShadowmap = nullptr;
+            m_identifier       = UndefCommonIdentifier;
+            p_LightShadowmap   = nullptr;
+            m_shadowmap_bounds = Vector2::One;
+            m_shadowmap_size   = Vector2::One;
+            m_casccade         = 4;
         }
     };
 
