@@ -161,7 +161,7 @@ float4 PSMain(VertexOutput input) : SV_Target0
             //float shadow_bias = 0.0004f;
             float shadow_bias = max(0.001f * (1.0 - dot(vNormal, lightDir)), 0.0003f);  
 
-            float shadowTexelSize = 1.0f / g_ConstantBufferParams.scene_directional_light.shadowmap_width;
+            float shadowTexelSize = 1.0f / (g_ConstantBufferParams.scene_directional_light.shadowmap_width * 0.5f);
 
             // PCF
             float pcfDepth = projCoords.z;
