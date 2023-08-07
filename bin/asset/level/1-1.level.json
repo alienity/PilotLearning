@@ -7,7 +7,13 @@
                 2,
                 3,
                 4,
-                5
+                5,
+                6,
+                7,
+                8,
+                9,
+                10,
+                11
             ],
             "m_id": 0,
             "m_instanced_components": [
@@ -23,29 +29,10 @@
         },
         {
             "m_chilren_id": [],
-            "m_id": 1,
-            "m_instanced_components": [
-                {
-                    "m_component_json_data": "{\n    \"m_position\": {\n        \"x\": -0.800000011920929,\n        \"y\": 0.8999999761581421,\n        \"z\": 1.5\n    },\n    \"m_rotation\": {\n        \"w\": 1.0,\n        \"x\": 0.0,\n        \"y\": 0.0,\n        \"z\": 0.0\n    },\n    \"m_scale\": {\n        \"x\": 1.0,\n        \"y\": 1.0,\n        \"z\": 1.0\n    }\n}",
-                    "m_component_name": "TransformComponent",
-                    "m_type_name": "TransformComponent"
-                },
-                {
-                    "m_component_json_data": "{\n    \"m_material_res\": {\n        \"m_is_material_init\": true,\n        \"m_material_file\": \"asset/objects/environment/_material/temp.material.json\",\n        \"m_material_serialized_json_data\": \"{\\n    \\\"_specularAntiAliasingThreshold\\\": 0.0,\\n    \\\"_specularAntiAliasingVariance\\\": 0.0,\\n    \\\"m_base_color_factor\\\": {\\n        \\\"w\\\": 1.0,\\n        \\\"x\\\": 1.0,\\n        \\\"y\\\": 1.0,\\n        \\\"z\\\": 1.0\\n    },\\n    \\\"m_base_color_texture_file\\\": {\\n        \\\"m_image\\\": {\\n            \\\"m_auto_mips\\\": false,\\n            \\\"m_image_file\\\": \\\"asset/objects/_textures/gold.tga\\\",\\n            \\\"m_is_srgb\\\": true,\\n            \\\"m_mip_levels\\\": 1\\n        },\\n        \\\"m_tilling\\\": {\\n            \\\"x\\\": 1.0,\\n            \\\"y\\\": 1.0\\n        }\\n    },\\n    \\\"m_blend\\\": false,\\n    \\\"m_double_sided\\\": false,\\n    \\\"m_emissive_factor\\\": {\\n        \\\"x\\\": 0.0,\\n        \\\"y\\\": 0.0,\\n        \\\"z\\\": 0.0\\n    },\\n    \\\"m_emissive_texture_file\\\": {\\n        \\\"m_image\\\": {\\n            \\\"m_auto_mips\\\": false,\\n            \\\"m_image_file\\\": \\\"\\\",\\n            \\\"m_is_srgb\\\": false,\\n            \\\"m_mip_levels\\\": 1\\n        },\\n        \\\"m_tilling\\\": {\\n            \\\"x\\\": 1.0,\\n            \\\"y\\\": 1.0\\n        }\\n    },\\n    \\\"m_metallic_factor\\\": 1.0,\\n    \\\"m_metallic_roughness_texture_file\\\": {\\n        \\\"m_image\\\": {\\n            \\\"m_auto_mips\\\": false,\\n            \\\"m_image_file\\\": \\\"asset/objects/_textures/mr.tga\\\",\\n            \\\"m_is_srgb\\\": false,\\n            \\\"m_mip_levels\\\": 1\\n        },\\n        \\\"m_tilling\\\": {\\n            \\\"x\\\": 1.0,\\n            \\\"y\\\": 1.0\\n        }\\n    },\\n    \\\"m_normal_scale\\\": 1.0,\\n    \\\"m_normal_texture_file\\\": {\\n        \\\"m_image\\\": {\\n            \\\"m_auto_mips\\\": false,\\n            \\\"m_image_file\\\": \\\"asset/objects/_textures/n.tga\\\",\\n            \\\"m_is_srgb\\\": false,\\n            \\\"m_mip_levels\\\": 1\\n        },\\n        \\\"m_tilling\\\": {\\n            \\\"x\\\": 1.0,\\n            \\\"y\\\": 1.0\\n        }\\n    },\\n    \\\"m_occlusion_strength\\\": 1.0,\\n    \\\"m_occlusion_texture_file\\\": {\\n        \\\"m_image\\\": {\\n            \\\"m_auto_mips\\\": false,\\n            \\\"m_image_file\\\": \\\"\\\",\\n            \\\"m_is_srgb\\\": false,\\n            \\\"m_mip_levels\\\": 1\\n        },\\n        \\\"m_tilling\\\": {\\n            \\\"x\\\": 1.0,\\n            \\\"y\\\": 1.0\\n        }\\n    },\\n    \\\"m_roughness_factor\\\": 1.0,\\n    \\\"shader_name\\\": \\\"\\\"\\n}\"\n    },\n    \"m_mesh_res\": {\n        \"m_is_mesh_data\": false,\n        \"m_mesh_data_path\": \"\",\n        \"m_sub_mesh_file\": \"asset/objects/basic/convexmesh.obj\"\n    }\n}",
-                    "m_component_name": "MeshRendererComponent",
-                    "m_type_name": "MeshRendererComponent"
-                }
-            ],
-            "m_name": "Convex Mesh Node",
-            "m_parent_id": 0,
-            "m_sibling_index": 0
-        },
-        {
-            "m_chilren_id": [],
             "m_id": 4,
             "m_instanced_components": [
                 {
-                    "m_component_json_data": "{\n    \"m_position\": {\n        \"x\": -0.10000000149011612,\n        \"y\": 1.2999999523162842,\n        \"z\": 0.10000000149011612\n    },\n    \"m_rotation\": {\n        \"w\": 1.0,\n        \"x\": 0.0,\n        \"y\": 0.0,\n        \"z\": 0.0\n    },\n    \"m_scale\": {\n        \"x\": 1.0,\n        \"y\": 1.0,\n        \"z\": 1.0\n    }\n}",
+                    "m_component_json_data": "{\n    \"m_position\": {\n        \"x\": -0.10000000149011612,\n        \"y\": 1.399999976158142,\n        \"z\": 0.10000000149011612\n    },\n    \"m_rotation\": {\n        \"w\": 1.0,\n        \"x\": 0.0,\n        \"y\": 0.0,\n        \"z\": 0.0\n    },\n    \"m_scale\": {\n        \"x\": 1.0,\n        \"y\": 1.0,\n        \"z\": 1.0\n    }\n}",
                     "m_component_name": "TransformComponent",
                     "m_type_name": "TransformComponent"
                 },
@@ -58,6 +45,101 @@
             "m_name": "Cube Node",
             "m_parent_id": 0,
             "m_sibling_index": 3
+        },
+        {
+            "m_chilren_id": [],
+            "m_id": 8,
+            "m_instanced_components": [
+                {
+                    "m_component_json_data": "{\n    \"m_position\": {\n        \"x\": -25.399999618530273,\n        \"y\": 0.8999999761581421,\n        \"z\": 3.0\n    },\n    \"m_rotation\": {\n        \"w\": 0.7071079015731812,\n        \"x\": -0.7071056365966797,\n        \"y\": 0.0,\n        \"z\": 0.0\n    },\n    \"m_scale\": {\n        \"x\": 1.0,\n        \"y\": 1.0,\n        \"z\": 1.0\n    }\n}",
+                    "m_component_name": "TransformComponent",
+                    "m_type_name": "TransformComponent"
+                },
+                {
+                    "m_component_json_data": "{\n    \"m_material_res\": {\n        \"m_is_material_init\": true,\n        \"m_material_file\": \"asset/objects/environment/_material/temp.material.json\",\n        \"m_material_serialized_json_data\": \"{\\n    \\\"_specularAntiAliasingThreshold\\\": 0.0,\\n    \\\"_specularAntiAliasingVariance\\\": 0.0,\\n    \\\"m_base_color_factor\\\": {\\n        \\\"w\\\": 1.0,\\n        \\\"x\\\": 1.0,\\n        \\\"y\\\": 1.0,\\n        \\\"z\\\": 1.0\\n    },\\n    \\\"m_base_color_texture_file\\\": {\\n        \\\"m_image\\\": {\\n            \\\"m_auto_mips\\\": false,\\n            \\\"m_image_file\\\": \\\"asset/objects/_textures/gold.tga\\\",\\n            \\\"m_is_srgb\\\": true,\\n            \\\"m_mip_levels\\\": 1\\n        },\\n        \\\"m_tilling\\\": {\\n            \\\"x\\\": 1.0,\\n            \\\"y\\\": 1.0\\n        }\\n    },\\n    \\\"m_blend\\\": false,\\n    \\\"m_double_sided\\\": false,\\n    \\\"m_emissive_factor\\\": {\\n        \\\"x\\\": 0.0,\\n        \\\"y\\\": 0.0,\\n        \\\"z\\\": 0.0\\n    },\\n    \\\"m_emissive_texture_file\\\": {\\n        \\\"m_image\\\": {\\n            \\\"m_auto_mips\\\": false,\\n            \\\"m_image_file\\\": \\\"\\\",\\n            \\\"m_is_srgb\\\": false,\\n            \\\"m_mip_levels\\\": 1\\n        },\\n        \\\"m_tilling\\\": {\\n            \\\"x\\\": 1.0,\\n            \\\"y\\\": 1.0\\n        }\\n    },\\n    \\\"m_metallic_factor\\\": 1.0,\\n    \\\"m_metallic_roughness_texture_file\\\": {\\n        \\\"m_image\\\": {\\n            \\\"m_auto_mips\\\": false,\\n            \\\"m_image_file\\\": \\\"asset/objects/_textures/mr.tga\\\",\\n            \\\"m_is_srgb\\\": false,\\n            \\\"m_mip_levels\\\": 1\\n        },\\n        \\\"m_tilling\\\": {\\n            \\\"x\\\": 1.0,\\n            \\\"y\\\": 1.0\\n        }\\n    },\\n    \\\"m_normal_scale\\\": 1.0,\\n    \\\"m_normal_texture_file\\\": {\\n        \\\"m_image\\\": {\\n            \\\"m_auto_mips\\\": false,\\n            \\\"m_image_file\\\": \\\"asset/objects/_textures/n.tga\\\",\\n            \\\"m_is_srgb\\\": false,\\n            \\\"m_mip_levels\\\": 1\\n        },\\n        \\\"m_tilling\\\": {\\n            \\\"x\\\": 1.0,\\n            \\\"y\\\": 1.0\\n        }\\n    },\\n    \\\"m_occlusion_strength\\\": 1.0,\\n    \\\"m_occlusion_texture_file\\\": {\\n        \\\"m_image\\\": {\\n            \\\"m_auto_mips\\\": false,\\n            \\\"m_image_file\\\": \\\"\\\",\\n            \\\"m_is_srgb\\\": false,\\n            \\\"m_mip_levels\\\": 1\\n        },\\n        \\\"m_tilling\\\": {\\n            \\\"x\\\": 1.0,\\n            \\\"y\\\": 1.0\\n        }\\n    },\\n    \\\"m_roughness_factor\\\": 1.0,\\n    \\\"shader_name\\\": \\\"\\\"\\n}\"\n    },\n    \"m_mesh_res\": {\n        \"m_is_mesh_data\": false,\n        \"m_mesh_data_path\": \"\",\n        \"m_sub_mesh_file\": \"asset/objects/environment/wall/components/mesh/wall.obj\"\n    }\n}",
+                    "m_component_name": "MeshRendererComponent",
+                    "m_type_name": "MeshRendererComponent"
+                }
+            ],
+            "m_name": "Wall Node",
+            "m_parent_id": 0,
+            "m_sibling_index": 7
+        },
+        {
+            "m_chilren_id": [],
+            "m_id": 3,
+            "m_instanced_components": [
+                {
+                    "m_component_json_data": "{\n    \"m_position\": {\n        \"x\": 0.6000000238418579,\n        \"y\": 3.799999952316284,\n        \"z\": 2.0\n    },\n    \"m_rotation\": {\n        \"w\": 1.0,\n        \"x\": 0.0,\n        \"y\": 0.0,\n        \"z\": 0.0\n    },\n    \"m_scale\": {\n        \"x\": 1.0,\n        \"y\": 1.0,\n        \"z\": 1.0\n    }\n}",
+                    "m_component_name": "TransformComponent",
+                    "m_type_name": "TransformComponent"
+                },
+                {
+                    "m_component_json_data": "{\n    \"m_material_res\": {\n        \"m_is_material_init\": true,\n        \"m_material_file\": \"asset/objects/environment/_material/temp.material.json\",\n        \"m_material_serialized_json_data\": \"{\\n    \\\"_specularAntiAliasingThreshold\\\": 0.0,\\n    \\\"_specularAntiAliasingVariance\\\": 0.0,\\n    \\\"m_base_color_factor\\\": {\\n        \\\"w\\\": 0.24705882370471954,\\n        \\\"x\\\": 1.0,\\n        \\\"y\\\": 1.0,\\n        \\\"z\\\": 1.0\\n    },\\n    \\\"m_base_color_texture_file\\\": {\\n        \\\"m_image\\\": {\\n            \\\"m_auto_mips\\\": false,\\n            \\\"m_image_file\\\": \\\"asset/objects/_textures/gold.tga\\\",\\n            \\\"m_is_srgb\\\": true,\\n            \\\"m_mip_levels\\\": 1\\n        },\\n        \\\"m_tilling\\\": {\\n            \\\"x\\\": 1.0,\\n            \\\"y\\\": 1.0\\n        }\\n    },\\n    \\\"m_blend\\\": true,\\n    \\\"m_double_sided\\\": false,\\n    \\\"m_emissive_factor\\\": {\\n        \\\"x\\\": 0.0,\\n        \\\"y\\\": 0.0,\\n        \\\"z\\\": 0.0\\n    },\\n    \\\"m_emissive_texture_file\\\": {\\n        \\\"m_image\\\": {\\n            \\\"m_auto_mips\\\": false,\\n            \\\"m_image_file\\\": \\\"\\\",\\n            \\\"m_is_srgb\\\": false,\\n            \\\"m_mip_levels\\\": 1\\n        },\\n        \\\"m_tilling\\\": {\\n            \\\"x\\\": 1.0,\\n            \\\"y\\\": 1.0\\n        }\\n    },\\n    \\\"m_metallic_factor\\\": 1.0,\\n    \\\"m_metallic_roughness_texture_file\\\": {\\n        \\\"m_image\\\": {\\n            \\\"m_auto_mips\\\": false,\\n            \\\"m_image_file\\\": \\\"asset/objects/_textures/mr.tga\\\",\\n            \\\"m_is_srgb\\\": false,\\n            \\\"m_mip_levels\\\": 1\\n        },\\n        \\\"m_tilling\\\": {\\n            \\\"x\\\": 1.0,\\n            \\\"y\\\": 1.0\\n        }\\n    },\\n    \\\"m_normal_scale\\\": 1.0,\\n    \\\"m_normal_texture_file\\\": {\\n        \\\"m_image\\\": {\\n            \\\"m_auto_mips\\\": false,\\n            \\\"m_image_file\\\": \\\"asset/objects/_textures/n.tga\\\",\\n            \\\"m_is_srgb\\\": false,\\n            \\\"m_mip_levels\\\": 1\\n        },\\n        \\\"m_tilling\\\": {\\n            \\\"x\\\": 1.0,\\n            \\\"y\\\": 1.0\\n        }\\n    },\\n    \\\"m_occlusion_strength\\\": 1.0,\\n    \\\"m_occlusion_texture_file\\\": {\\n        \\\"m_image\\\": {\\n            \\\"m_auto_mips\\\": false,\\n            \\\"m_image_file\\\": \\\"\\\",\\n            \\\"m_is_srgb\\\": false,\\n            \\\"m_mip_levels\\\": 1\\n        },\\n        \\\"m_tilling\\\": {\\n            \\\"x\\\": 1.0,\\n            \\\"y\\\": 1.0\\n        }\\n    },\\n    \\\"m_roughness_factor\\\": 1.0,\\n    \\\"shader_name\\\": \\\"\\\"\\n}\"\n    },\n    \"m_mesh_res\": {\n        \"m_is_mesh_data\": false,\n        \"m_mesh_data_path\": \"\",\n        \"m_sub_mesh_file\": \"asset/objects/basic/sphere.obj\"\n    }\n}",
+                    "m_component_name": "MeshRendererComponent",
+                    "m_type_name": "MeshRendererComponent"
+                }
+            ],
+            "m_name": "Sphere Mesh Node",
+            "m_parent_id": 0,
+            "m_sibling_index": 2
+        },
+        {
+            "m_chilren_id": [],
+            "m_id": 11,
+            "m_instanced_components": [
+                {
+                    "m_component_json_data": "{\n    \"m_position\": {\n        \"x\": -18.799999237060547,\n        \"y\": 1.0,\n        \"z\": -5.599999904632568\n    },\n    \"m_rotation\": {\n        \"w\": 0.7071079015731812,\n        \"x\": -0.7071056365966797,\n        \"y\": 0.0,\n        \"z\": 0.0\n    },\n    \"m_scale\": {\n        \"x\": 1.0,\n        \"y\": 1.0,\n        \"z\": 1.0\n    }\n}",
+                    "m_component_name": "TransformComponent",
+                    "m_type_name": "TransformComponent"
+                },
+                {
+                    "m_component_json_data": "{\n    \"m_material_res\": {\n        \"m_is_material_init\": true,\n        \"m_material_file\": \"asset/objects/environment/_material/temp.material.json\",\n        \"m_material_serialized_json_data\": \"{\\n    \\\"_specularAntiAliasingThreshold\\\": 0.0,\\n    \\\"_specularAntiAliasingVariance\\\": 0.0,\\n    \\\"m_base_color_factor\\\": {\\n        \\\"w\\\": 1.0,\\n        \\\"x\\\": 1.0,\\n        \\\"y\\\": 1.0,\\n        \\\"z\\\": 1.0\\n    },\\n    \\\"m_base_color_texture_file\\\": {\\n        \\\"m_image\\\": {\\n            \\\"m_auto_mips\\\": false,\\n            \\\"m_image_file\\\": \\\"asset/objects/_textures/gold.tga\\\",\\n            \\\"m_is_srgb\\\": true,\\n            \\\"m_mip_levels\\\": 1\\n        },\\n        \\\"m_tilling\\\": {\\n            \\\"x\\\": 1.0,\\n            \\\"y\\\": 1.0\\n        }\\n    },\\n    \\\"m_blend\\\": false,\\n    \\\"m_double_sided\\\": false,\\n    \\\"m_emissive_factor\\\": {\\n        \\\"x\\\": 0.0,\\n        \\\"y\\\": 0.0,\\n        \\\"z\\\": 0.0\\n    },\\n    \\\"m_emissive_texture_file\\\": {\\n        \\\"m_image\\\": {\\n            \\\"m_auto_mips\\\": false,\\n            \\\"m_image_file\\\": \\\"\\\",\\n            \\\"m_is_srgb\\\": false,\\n            \\\"m_mip_levels\\\": 1\\n        },\\n        \\\"m_tilling\\\": {\\n            \\\"x\\\": 1.0,\\n            \\\"y\\\": 1.0\\n        }\\n    },\\n    \\\"m_metallic_factor\\\": 1.0,\\n    \\\"m_metallic_roughness_texture_file\\\": {\\n        \\\"m_image\\\": {\\n            \\\"m_auto_mips\\\": false,\\n            \\\"m_image_file\\\": \\\"asset/objects/_textures/mr.tga\\\",\\n            \\\"m_is_srgb\\\": false,\\n            \\\"m_mip_levels\\\": 1\\n        },\\n        \\\"m_tilling\\\": {\\n            \\\"x\\\": 1.0,\\n            \\\"y\\\": 1.0\\n        }\\n    },\\n    \\\"m_normal_scale\\\": 1.0,\\n    \\\"m_normal_texture_file\\\": {\\n        \\\"m_image\\\": {\\n            \\\"m_auto_mips\\\": false,\\n            \\\"m_image_file\\\": \\\"asset/objects/_textures/n.tga\\\",\\n            \\\"m_is_srgb\\\": false,\\n            \\\"m_mip_levels\\\": 1\\n        },\\n        \\\"m_tilling\\\": {\\n            \\\"x\\\": 1.0,\\n            \\\"y\\\": 1.0\\n        }\\n    },\\n    \\\"m_occlusion_strength\\\": 1.0,\\n    \\\"m_occlusion_texture_file\\\": {\\n        \\\"m_image\\\": {\\n            \\\"m_auto_mips\\\": false,\\n            \\\"m_image_file\\\": \\\"\\\",\\n            \\\"m_is_srgb\\\": false,\\n            \\\"m_mip_levels\\\": 1\\n        },\\n        \\\"m_tilling\\\": {\\n            \\\"x\\\": 1.0,\\n            \\\"y\\\": 1.0\\n        }\\n    },\\n    \\\"m_roughness_factor\\\": 1.0,\\n    \\\"shader_name\\\": \\\"\\\"\\n}\"\n    },\n    \"m_mesh_res\": {\n        \"m_is_mesh_data\": false,\n        \"m_mesh_data_path\": \"\",\n        \"m_sub_mesh_file\": \"asset/objects/environment/wall/components/mesh/wall_with_window.obj\"\n    }\n}",
+                    "m_component_name": "MeshRendererComponent",
+                    "m_type_name": "MeshRendererComponent"
+                }
+            ],
+            "m_name": "Wall With Windows Node",
+            "m_parent_id": 0,
+            "m_sibling_index": 10
+        },
+        {
+            "m_chilren_id": [],
+            "m_id": 10,
+            "m_instanced_components": [
+                {
+                    "m_component_json_data": "{\n    \"m_position\": {\n        \"x\": -12.100000381469727,\n        \"y\": 0.699999988079071,\n        \"z\": 0.0\n    },\n    \"m_rotation\": {\n        \"w\": 0.7071079015731812,\n        \"x\": -0.7071056365966797,\n        \"y\": 0.0,\n        \"z\": 0.0\n    },\n    \"m_scale\": {\n        \"x\": 1.0,\n        \"y\": 1.0,\n        \"z\": 1.0\n    }\n}",
+                    "m_component_name": "TransformComponent",
+                    "m_type_name": "TransformComponent"
+                },
+                {
+                    "m_component_json_data": "{\n    \"m_material_res\": {\n        \"m_is_material_init\": true,\n        \"m_material_file\": \"asset/objects/environment/_material/temp.material.json\",\n        \"m_material_serialized_json_data\": \"{\\n    \\\"_specularAntiAliasingThreshold\\\": 0.0,\\n    \\\"_specularAntiAliasingVariance\\\": 0.0,\\n    \\\"m_base_color_factor\\\": {\\n        \\\"w\\\": 1.0,\\n        \\\"x\\\": 1.0,\\n        \\\"y\\\": 1.0,\\n        \\\"z\\\": 1.0\\n    },\\n    \\\"m_base_color_texture_file\\\": {\\n        \\\"m_image\\\": {\\n            \\\"m_auto_mips\\\": false,\\n            \\\"m_image_file\\\": \\\"asset/objects/_textures/gold.tga\\\",\\n            \\\"m_is_srgb\\\": true,\\n            \\\"m_mip_levels\\\": 1\\n        },\\n        \\\"m_tilling\\\": {\\n            \\\"x\\\": 1.0,\\n            \\\"y\\\": 1.0\\n        }\\n    },\\n    \\\"m_blend\\\": false,\\n    \\\"m_double_sided\\\": false,\\n    \\\"m_emissive_factor\\\": {\\n        \\\"x\\\": 0.0,\\n        \\\"y\\\": 0.0,\\n        \\\"z\\\": 0.0\\n    },\\n    \\\"m_emissive_texture_file\\\": {\\n        \\\"m_image\\\": {\\n            \\\"m_auto_mips\\\": false,\\n            \\\"m_image_file\\\": \\\"\\\",\\n            \\\"m_is_srgb\\\": false,\\n            \\\"m_mip_levels\\\": 1\\n        },\\n        \\\"m_tilling\\\": {\\n            \\\"x\\\": 1.0,\\n            \\\"y\\\": 1.0\\n        }\\n    },\\n    \\\"m_metallic_factor\\\": 1.0,\\n    \\\"m_metallic_roughness_texture_file\\\": {\\n        \\\"m_image\\\": {\\n            \\\"m_auto_mips\\\": false,\\n            \\\"m_image_file\\\": \\\"asset/objects/_textures/mr.tga\\\",\\n            \\\"m_is_srgb\\\": false,\\n            \\\"m_mip_levels\\\": 1\\n        },\\n        \\\"m_tilling\\\": {\\n            \\\"x\\\": 1.0,\\n            \\\"y\\\": 1.0\\n        }\\n    },\\n    \\\"m_normal_scale\\\": 1.0,\\n    \\\"m_normal_texture_file\\\": {\\n        \\\"m_image\\\": {\\n            \\\"m_auto_mips\\\": false,\\n            \\\"m_image_file\\\": \\\"asset/objects/_textures/n.tga\\\",\\n            \\\"m_is_srgb\\\": false,\\n            \\\"m_mip_levels\\\": 1\\n        },\\n        \\\"m_tilling\\\": {\\n            \\\"x\\\": 1.0,\\n            \\\"y\\\": 1.0\\n        }\\n    },\\n    \\\"m_occlusion_strength\\\": 1.0,\\n    \\\"m_occlusion_texture_file\\\": {\\n        \\\"m_image\\\": {\\n            \\\"m_auto_mips\\\": false,\\n            \\\"m_image_file\\\": \\\"\\\",\\n            \\\"m_is_srgb\\\": false,\\n            \\\"m_mip_levels\\\": 1\\n        },\\n        \\\"m_tilling\\\": {\\n            \\\"x\\\": 1.0,\\n            \\\"y\\\": 1.0\\n        }\\n    },\\n    \\\"m_roughness_factor\\\": 1.0,\\n    \\\"shader_name\\\": \\\"\\\"\\n}\"\n    },\n    \"m_mesh_res\": {\n        \"m_is_mesh_data\": false,\n        \"m_mesh_data_path\": \"\",\n        \"m_sub_mesh_file\": \"asset/objects/environment/wall/components/mesh/wall_with_door.obj\"\n    }\n}",
+                    "m_component_name": "MeshRendererComponent",
+                    "m_type_name": "MeshRendererComponent"
+                }
+            ],
+            "m_name": "Wall With Door Node",
+            "m_parent_id": 0,
+            "m_sibling_index": 9
+        },
+        {
+            "m_chilren_id": [],
+            "m_id": 1,
+            "m_instanced_components": [
+                {
+                    "m_component_json_data": "{\n    \"m_position\": {\n        \"x\": -2.4000000953674316,\n        \"y\": 3.5999999046325684,\n        \"z\": 1.5\n    },\n    \"m_rotation\": {\n        \"w\": 1.0,\n        \"x\": 0.0,\n        \"y\": 0.0,\n        \"z\": 0.0\n    },\n    \"m_scale\": {\n        \"x\": 1.0,\n        \"y\": 1.0,\n        \"z\": 1.0\n    }\n}",
+                    "m_component_name": "TransformComponent",
+                    "m_type_name": "TransformComponent"
+                },
+                {
+                    "m_component_json_data": "{\n    \"m_material_res\": {\n        \"m_is_material_init\": true,\n        \"m_material_file\": \"asset/objects/environment/_material/temp.material.json\",\n        \"m_material_serialized_json_data\": \"{\\n    \\\"_specularAntiAliasingThreshold\\\": 0.0,\\n    \\\"_specularAntiAliasingVariance\\\": 0.0,\\n    \\\"m_base_color_factor\\\": {\\n        \\\"w\\\": 1.0,\\n        \\\"x\\\": 1.0,\\n        \\\"y\\\": 1.0,\\n        \\\"z\\\": 1.0\\n    },\\n    \\\"m_base_color_texture_file\\\": {\\n        \\\"m_image\\\": {\\n            \\\"m_auto_mips\\\": false,\\n            \\\"m_image_file\\\": \\\"asset/objects/_textures/gold.tga\\\",\\n            \\\"m_is_srgb\\\": true,\\n            \\\"m_mip_levels\\\": 1\\n        },\\n        \\\"m_tilling\\\": {\\n            \\\"x\\\": 1.0,\\n            \\\"y\\\": 1.0\\n        }\\n    },\\n    \\\"m_blend\\\": false,\\n    \\\"m_double_sided\\\": false,\\n    \\\"m_emissive_factor\\\": {\\n        \\\"x\\\": 0.0,\\n        \\\"y\\\": 0.0,\\n        \\\"z\\\": 0.0\\n    },\\n    \\\"m_emissive_texture_file\\\": {\\n        \\\"m_image\\\": {\\n            \\\"m_auto_mips\\\": false,\\n            \\\"m_image_file\\\": \\\"\\\",\\n            \\\"m_is_srgb\\\": false,\\n            \\\"m_mip_levels\\\": 1\\n        },\\n        \\\"m_tilling\\\": {\\n            \\\"x\\\": 1.0,\\n            \\\"y\\\": 1.0\\n        }\\n    },\\n    \\\"m_metallic_factor\\\": 1.0,\\n    \\\"m_metallic_roughness_texture_file\\\": {\\n        \\\"m_image\\\": {\\n            \\\"m_auto_mips\\\": false,\\n            \\\"m_image_file\\\": \\\"asset/objects/_textures/mr.tga\\\",\\n            \\\"m_is_srgb\\\": false,\\n            \\\"m_mip_levels\\\": 1\\n        },\\n        \\\"m_tilling\\\": {\\n            \\\"x\\\": 1.0,\\n            \\\"y\\\": 1.0\\n        }\\n    },\\n    \\\"m_normal_scale\\\": 1.0,\\n    \\\"m_normal_texture_file\\\": {\\n        \\\"m_image\\\": {\\n            \\\"m_auto_mips\\\": false,\\n            \\\"m_image_file\\\": \\\"asset/objects/_textures/n.tga\\\",\\n            \\\"m_is_srgb\\\": false,\\n            \\\"m_mip_levels\\\": 1\\n        },\\n        \\\"m_tilling\\\": {\\n            \\\"x\\\": 1.0,\\n            \\\"y\\\": 1.0\\n        }\\n    },\\n    \\\"m_occlusion_strength\\\": 1.0,\\n    \\\"m_occlusion_texture_file\\\": {\\n        \\\"m_image\\\": {\\n            \\\"m_auto_mips\\\": false,\\n            \\\"m_image_file\\\": \\\"\\\",\\n            \\\"m_is_srgb\\\": false,\\n            \\\"m_mip_levels\\\": 1\\n        },\\n        \\\"m_tilling\\\": {\\n            \\\"x\\\": 1.0,\\n            \\\"y\\\": 1.0\\n        }\\n    },\\n    \\\"m_roughness_factor\\\": 1.0,\\n    \\\"shader_name\\\": \\\"\\\"\\n}\"\n    },\n    \"m_mesh_res\": {\n        \"m_is_mesh_data\": false,\n        \"m_mesh_data_path\": \"\",\n        \"m_sub_mesh_file\": \"asset/objects/basic/convexmesh.obj\"\n    }\n}",
+                    "m_component_name": "MeshRendererComponent",
+                    "m_type_name": "MeshRendererComponent"
+                }
+            ],
+            "m_name": "Convex Mesh Node",
+            "m_parent_id": 0,
+            "m_sibling_index": 0
         },
         {
             "m_chilren_id": [],
@@ -80,34 +162,72 @@
         },
         {
             "m_chilren_id": [],
-            "m_id": 3,
+            "m_id": 6,
             "m_instanced_components": [
                 {
-                    "m_component_json_data": "{\n    \"m_position\": {\n        \"x\": 0.6000000238418579,\n        \"y\": 0.0,\n        \"z\": 2.0\n    },\n    \"m_rotation\": {\n        \"w\": 1.0,\n        \"x\": 0.0,\n        \"y\": 0.0,\n        \"z\": 0.0\n    },\n    \"m_scale\": {\n        \"x\": 1.0,\n        \"y\": 1.0,\n        \"z\": 1.0\n    }\n}",
+                    "m_component_json_data": "{\n    \"m_position\": {\n        \"x\": 0.0,\n        \"y\": 12.0,\n        \"z\": 0.0\n    },\n    \"m_rotation\": {\n        \"w\": 0.7071079015731812,\n        \"x\": 0.7071056365966797,\n        \"y\": 0.0,\n        \"z\": 0.0\n    },\n    \"m_scale\": {\n        \"x\": 1.0,\n        \"y\": 1.0,\n        \"z\": 1.0\n    }\n}",
                     "m_component_name": "TransformComponent",
                     "m_type_name": "TransformComponent"
                 },
                 {
-                    "m_component_json_data": "{\n    \"m_material_res\": {\n        \"m_is_material_init\": true,\n        \"m_material_file\": \"asset/objects/environment/_material/temp.material.json\",\n        \"m_material_serialized_json_data\": \"{\\n    \\\"_specularAntiAliasingThreshold\\\": 0.0,\\n    \\\"_specularAntiAliasingVariance\\\": 0.0,\\n    \\\"m_base_color_factor\\\": {\\n        \\\"w\\\": 0.24705882370471954,\\n        \\\"x\\\": 1.0,\\n        \\\"y\\\": 1.0,\\n        \\\"z\\\": 1.0\\n    },\\n    \\\"m_base_color_texture_file\\\": {\\n        \\\"m_image\\\": {\\n            \\\"m_auto_mips\\\": false,\\n            \\\"m_image_file\\\": \\\"asset/objects/_textures/gold.tga\\\",\\n            \\\"m_is_srgb\\\": true,\\n            \\\"m_mip_levels\\\": 1\\n        },\\n        \\\"m_tilling\\\": {\\n            \\\"x\\\": 1.0,\\n            \\\"y\\\": 1.0\\n        }\\n    },\\n    \\\"m_blend\\\": true,\\n    \\\"m_double_sided\\\": false,\\n    \\\"m_emissive_factor\\\": {\\n        \\\"x\\\": 0.0,\\n        \\\"y\\\": 0.0,\\n        \\\"z\\\": 0.0\\n    },\\n    \\\"m_emissive_texture_file\\\": {\\n        \\\"m_image\\\": {\\n            \\\"m_auto_mips\\\": false,\\n            \\\"m_image_file\\\": \\\"\\\",\\n            \\\"m_is_srgb\\\": false,\\n            \\\"m_mip_levels\\\": 1\\n        },\\n        \\\"m_tilling\\\": {\\n            \\\"x\\\": 1.0,\\n            \\\"y\\\": 1.0\\n        }\\n    },\\n    \\\"m_metallic_factor\\\": 1.0,\\n    \\\"m_metallic_roughness_texture_file\\\": {\\n        \\\"m_image\\\": {\\n            \\\"m_auto_mips\\\": false,\\n            \\\"m_image_file\\\": \\\"asset/objects/_textures/mr.tga\\\",\\n            \\\"m_is_srgb\\\": false,\\n            \\\"m_mip_levels\\\": 1\\n        },\\n        \\\"m_tilling\\\": {\\n            \\\"x\\\": 1.0,\\n            \\\"y\\\": 1.0\\n        }\\n    },\\n    \\\"m_normal_scale\\\": 1.0,\\n    \\\"m_normal_texture_file\\\": {\\n        \\\"m_image\\\": {\\n            \\\"m_auto_mips\\\": false,\\n            \\\"m_image_file\\\": \\\"asset/objects/_textures/n.tga\\\",\\n            \\\"m_is_srgb\\\": false,\\n            \\\"m_mip_levels\\\": 1\\n        },\\n        \\\"m_tilling\\\": {\\n            \\\"x\\\": 1.0,\\n            \\\"y\\\": 1.0\\n        }\\n    },\\n    \\\"m_occlusion_strength\\\": 1.0,\\n    \\\"m_occlusion_texture_file\\\": {\\n        \\\"m_image\\\": {\\n            \\\"m_auto_mips\\\": false,\\n            \\\"m_image_file\\\": \\\"\\\",\\n            \\\"m_is_srgb\\\": false,\\n            \\\"m_mip_levels\\\": 1\\n        },\\n        \\\"m_tilling\\\": {\\n            \\\"x\\\": 1.0,\\n            \\\"y\\\": 1.0\\n        }\\n    },\\n    \\\"m_roughness_factor\\\": 1.0,\\n    \\\"shader_name\\\": \\\"\\\"\\n}\"\n    },\n    \"m_mesh_res\": {\n        \"m_is_mesh_data\": false,\n        \"m_mesh_data_path\": \"\",\n        \"m_sub_mesh_file\": \"asset/objects/basic/sphere.obj\"\n    }\n}",
+                    "m_component_json_data": "{\n    \"m_material_res\": {\n        \"m_is_material_init\": true,\n        \"m_material_file\": \"asset/objects/environment/_material/temp.material.json\",\n        \"m_material_serialized_json_data\": \"{\\n    \\\"_specularAntiAliasingThreshold\\\": 0.0,\\n    \\\"_specularAntiAliasingVariance\\\": 0.0,\\n    \\\"m_base_color_factor\\\": {\\n        \\\"w\\\": 1.0,\\n        \\\"x\\\": 1.0,\\n        \\\"y\\\": 1.0,\\n        \\\"z\\\": 1.0\\n    },\\n    \\\"m_base_color_texture_file\\\": {\\n        \\\"m_image\\\": {\\n            \\\"m_auto_mips\\\": false,\\n            \\\"m_image_file\\\": \\\"asset/objects/_textures/gold.tga\\\",\\n            \\\"m_is_srgb\\\": true,\\n            \\\"m_mip_levels\\\": 1\\n        },\\n        \\\"m_tilling\\\": {\\n            \\\"x\\\": 1.0,\\n            \\\"y\\\": 1.0\\n        }\\n    },\\n    \\\"m_blend\\\": false,\\n    \\\"m_double_sided\\\": false,\\n    \\\"m_emissive_factor\\\": {\\n        \\\"x\\\": 0.0,\\n        \\\"y\\\": 0.0,\\n        \\\"z\\\": 0.0\\n    },\\n    \\\"m_emissive_texture_file\\\": {\\n        \\\"m_image\\\": {\\n            \\\"m_auto_mips\\\": false,\\n            \\\"m_image_file\\\": \\\"\\\",\\n            \\\"m_is_srgb\\\": false,\\n            \\\"m_mip_levels\\\": 1\\n        },\\n        \\\"m_tilling\\\": {\\n            \\\"x\\\": 1.0,\\n            \\\"y\\\": 1.0\\n        }\\n    },\\n    \\\"m_metallic_factor\\\": 1.0,\\n    \\\"m_metallic_roughness_texture_file\\\": {\\n        \\\"m_image\\\": {\\n            \\\"m_auto_mips\\\": false,\\n            \\\"m_image_file\\\": \\\"asset/objects/_textures/mr.tga\\\",\\n            \\\"m_is_srgb\\\": false,\\n            \\\"m_mip_levels\\\": 1\\n        },\\n        \\\"m_tilling\\\": {\\n            \\\"x\\\": 1.0,\\n            \\\"y\\\": 1.0\\n        }\\n    },\\n    \\\"m_normal_scale\\\": 1.0,\\n    \\\"m_normal_texture_file\\\": {\\n        \\\"m_image\\\": {\\n            \\\"m_auto_mips\\\": false,\\n            \\\"m_image_file\\\": \\\"asset/objects/_textures/n.tga\\\",\\n            \\\"m_is_srgb\\\": false,\\n            \\\"m_mip_levels\\\": 1\\n        },\\n        \\\"m_tilling\\\": {\\n            \\\"x\\\": 1.0,\\n            \\\"y\\\": 1.0\\n        }\\n    },\\n    \\\"m_occlusion_strength\\\": 1.0,\\n    \\\"m_occlusion_texture_file\\\": {\\n        \\\"m_image\\\": {\\n            \\\"m_auto_mips\\\": false,\\n            \\\"m_image_file\\\": \\\"\\\",\\n            \\\"m_is_srgb\\\": false,\\n            \\\"m_mip_levels\\\": 1\\n        },\\n        \\\"m_tilling\\\": {\\n            \\\"x\\\": 1.0,\\n            \\\"y\\\": 1.0\\n        }\\n    },\\n    \\\"m_roughness_factor\\\": 1.0,\\n    \\\"shader_name\\\": \\\"\\\"\\n}\"\n    },\n    \"m_mesh_res\": {\n        \"m_is_mesh_data\": false,\n        \"m_mesh_data_path\": \"\",\n        \"m_sub_mesh_file\": \"asset/objects/environment/fence/components/mesh/fence.obj\"\n    }\n}",
                     "m_component_name": "MeshRendererComponent",
                     "m_type_name": "MeshRendererComponent"
                 }
             ],
-            "m_name": "Sphere Mesh Node",
+            "m_name": "Fence Node",
             "m_parent_id": 0,
-            "m_sibling_index": 2
+            "m_sibling_index": 5
+        },
+        {
+            "m_chilren_id": [],
+            "m_id": 7,
+            "m_instanced_components": [
+                {
+                    "m_component_json_data": "{\n    \"m_position\": {\n        \"x\": -3.5999999046325684,\n        \"y\": 0.8999999761581421,\n        \"z\": 0.0\n    },\n    \"m_rotation\": {\n        \"w\": 0.7071079015731812,\n        \"x\": -0.7071056365966797,\n        \"y\": 0.0,\n        \"z\": 0.0\n    },\n    \"m_scale\": {\n        \"x\": 1.0,\n        \"y\": 1.0,\n        \"z\": 1.0\n    }\n}",
+                    "m_component_name": "TransformComponent",
+                    "m_type_name": "TransformComponent"
+                },
+                {
+                    "m_component_json_data": "{\n    \"m_material_res\": {\n        \"m_is_material_init\": true,\n        \"m_material_file\": \"asset/objects/environment/_material/temp.material.json\",\n        \"m_material_serialized_json_data\": \"{\\n    \\\"_specularAntiAliasingThreshold\\\": 0.0,\\n    \\\"_specularAntiAliasingVariance\\\": 0.0,\\n    \\\"m_base_color_factor\\\": {\\n        \\\"w\\\": 1.0,\\n        \\\"x\\\": 1.0,\\n        \\\"y\\\": 1.0,\\n        \\\"z\\\": 1.0\\n    },\\n    \\\"m_base_color_texture_file\\\": {\\n        \\\"m_image\\\": {\\n            \\\"m_auto_mips\\\": false,\\n            \\\"m_image_file\\\": \\\"asset/objects/_textures/gold.tga\\\",\\n            \\\"m_is_srgb\\\": true,\\n            \\\"m_mip_levels\\\": 1\\n        },\\n        \\\"m_tilling\\\": {\\n            \\\"x\\\": 1.0,\\n            \\\"y\\\": 1.0\\n        }\\n    },\\n    \\\"m_blend\\\": false,\\n    \\\"m_double_sided\\\": false,\\n    \\\"m_emissive_factor\\\": {\\n        \\\"x\\\": 0.0,\\n        \\\"y\\\": 0.0,\\n        \\\"z\\\": 0.0\\n    },\\n    \\\"m_emissive_texture_file\\\": {\\n        \\\"m_image\\\": {\\n            \\\"m_auto_mips\\\": false,\\n            \\\"m_image_file\\\": \\\"\\\",\\n            \\\"m_is_srgb\\\": false,\\n            \\\"m_mip_levels\\\": 1\\n        },\\n        \\\"m_tilling\\\": {\\n            \\\"x\\\": 1.0,\\n            \\\"y\\\": 1.0\\n        }\\n    },\\n    \\\"m_metallic_factor\\\": 1.0,\\n    \\\"m_metallic_roughness_texture_file\\\": {\\n        \\\"m_image\\\": {\\n            \\\"m_auto_mips\\\": false,\\n            \\\"m_image_file\\\": \\\"asset/objects/_textures/mr.tga\\\",\\n            \\\"m_is_srgb\\\": false,\\n            \\\"m_mip_levels\\\": 1\\n        },\\n        \\\"m_tilling\\\": {\\n            \\\"x\\\": 1.0,\\n            \\\"y\\\": 1.0\\n        }\\n    },\\n    \\\"m_normal_scale\\\": 1.0,\\n    \\\"m_normal_texture_file\\\": {\\n        \\\"m_image\\\": {\\n            \\\"m_auto_mips\\\": false,\\n            \\\"m_image_file\\\": \\\"asset/objects/_textures/n.tga\\\",\\n            \\\"m_is_srgb\\\": false,\\n            \\\"m_mip_levels\\\": 1\\n        },\\n        \\\"m_tilling\\\": {\\n            \\\"x\\\": 1.0,\\n            \\\"y\\\": 1.0\\n        }\\n    },\\n    \\\"m_occlusion_strength\\\": 1.0,\\n    \\\"m_occlusion_texture_file\\\": {\\n        \\\"m_image\\\": {\\n            \\\"m_auto_mips\\\": false,\\n            \\\"m_image_file\\\": \\\"\\\",\\n            \\\"m_is_srgb\\\": false,\\n            \\\"m_mip_levels\\\": 1\\n        },\\n        \\\"m_tilling\\\": {\\n            \\\"x\\\": 1.0,\\n            \\\"y\\\": 1.0\\n        }\\n    },\\n    \\\"m_roughness_factor\\\": 1.0,\\n    \\\"shader_name\\\": \\\"\\\"\\n}\"\n    },\n    \"m_mesh_res\": {\n        \"m_is_mesh_data\": false,\n        \"m_mesh_data_path\": \"\",\n        \"m_sub_mesh_file\": \"asset/objects/environment/stairs/components/mesh/stairs.obj\"\n    }\n}",
+                    "m_component_name": "MeshRendererComponent",
+                    "m_type_name": "MeshRendererComponent"
+                }
+            ],
+            "m_name": "Stairs Node",
+            "m_parent_id": 0,
+            "m_sibling_index": 6
+        },
+        {
+            "m_chilren_id": [],
+            "m_id": 9,
+            "m_instanced_components": [
+                {
+                    "m_component_json_data": "{\n    \"m_position\": {\n        \"x\": -9.899999618530273,\n        \"y\": 1.899999976158142,\n        \"z\": -10.899999618530273\n    },\n    \"m_rotation\": {\n        \"w\": 1.0,\n        \"x\": 0.0,\n        \"y\": 0.0,\n        \"z\": 0.0\n    },\n    \"m_scale\": {\n        \"x\": 1.0,\n        \"y\": 1.0,\n        \"z\": 1.0\n    }\n}",
+                    "m_component_name": "TransformComponent",
+                    "m_type_name": "TransformComponent"
+                },
+                {
+                    "m_component_json_data": "{\n    \"m_material_res\": {\n        \"m_is_material_init\": true,\n        \"m_material_file\": \"asset/objects/environment/_material/temp.material.json\",\n        \"m_material_serialized_json_data\": \"{\\n    \\\"_specularAntiAliasingThreshold\\\": 0.0,\\n    \\\"_specularAntiAliasingVariance\\\": 0.0,\\n    \\\"m_base_color_factor\\\": {\\n        \\\"w\\\": 1.0,\\n        \\\"x\\\": 1.0,\\n        \\\"y\\\": 1.0,\\n        \\\"z\\\": 1.0\\n    },\\n    \\\"m_base_color_texture_file\\\": {\\n        \\\"m_image\\\": {\\n            \\\"m_auto_mips\\\": false,\\n            \\\"m_image_file\\\": \\\"asset/objects/_textures/gold.tga\\\",\\n            \\\"m_is_srgb\\\": true,\\n            \\\"m_mip_levels\\\": 1\\n        },\\n        \\\"m_tilling\\\": {\\n            \\\"x\\\": 1.0,\\n            \\\"y\\\": 1.0\\n        }\\n    },\\n    \\\"m_blend\\\": false,\\n    \\\"m_double_sided\\\": false,\\n    \\\"m_emissive_factor\\\": {\\n        \\\"x\\\": 0.0,\\n        \\\"y\\\": 0.0,\\n        \\\"z\\\": 0.0\\n    },\\n    \\\"m_emissive_texture_file\\\": {\\n        \\\"m_image\\\": {\\n            \\\"m_auto_mips\\\": false,\\n            \\\"m_image_file\\\": \\\"\\\",\\n            \\\"m_is_srgb\\\": false,\\n            \\\"m_mip_levels\\\": 1\\n        },\\n        \\\"m_tilling\\\": {\\n            \\\"x\\\": 1.0,\\n            \\\"y\\\": 1.0\\n        }\\n    },\\n    \\\"m_metallic_factor\\\": 1.0,\\n    \\\"m_metallic_roughness_texture_file\\\": {\\n        \\\"m_image\\\": {\\n            \\\"m_auto_mips\\\": false,\\n            \\\"m_image_file\\\": \\\"asset/objects/_textures/mr.tga\\\",\\n            \\\"m_is_srgb\\\": false,\\n            \\\"m_mip_levels\\\": 1\\n        },\\n        \\\"m_tilling\\\": {\\n            \\\"x\\\": 1.0,\\n            \\\"y\\\": 1.0\\n        }\\n    },\\n    \\\"m_normal_scale\\\": 1.0,\\n    \\\"m_normal_texture_file\\\": {\\n        \\\"m_image\\\": {\\n            \\\"m_auto_mips\\\": false,\\n            \\\"m_image_file\\\": \\\"asset/objects/_textures/n.tga\\\",\\n            \\\"m_is_srgb\\\": false,\\n            \\\"m_mip_levels\\\": 1\\n        },\\n        \\\"m_tilling\\\": {\\n            \\\"x\\\": 1.0,\\n            \\\"y\\\": 1.0\\n        }\\n    },\\n    \\\"m_occlusion_strength\\\": 1.0,\\n    \\\"m_occlusion_texture_file\\\": {\\n        \\\"m_image\\\": {\\n            \\\"m_auto_mips\\\": false,\\n            \\\"m_image_file\\\": \\\"\\\",\\n            \\\"m_is_srgb\\\": false,\\n            \\\"m_mip_levels\\\": 1\\n        },\\n        \\\"m_tilling\\\": {\\n            \\\"x\\\": 1.0,\\n            \\\"y\\\": 1.0\\n        }\\n    },\\n    \\\"m_roughness_factor\\\": 1.0,\\n    \\\"shader_name\\\": \\\"\\\"\\n}\"\n    },\n    \"m_mesh_res\": {\n        \"m_is_mesh_data\": false,\n        \"m_mesh_data_path\": \"\",\n        \"m_sub_mesh_file\": \"asset/objects/environment/wall/components/mesh/wall_block.obj\"\n    }\n}",
+                    "m_component_name": "MeshRendererComponent",
+                    "m_type_name": "MeshRendererComponent"
+                }
+            ],
+            "m_name": "Wall Block Node",
+            "m_parent_id": 0,
+            "m_sibling_index": 8
         },
         {
             "m_chilren_id": [],
             "m_id": 2,
             "m_instanced_components": [
                 {
-                    "m_component_json_data": "{\n    \"m_position\": {\n        \"x\": -6.5,\n        \"y\": 7.199999809265137,\n        \"z\": 10.300000190734863\n    },\n    \"m_rotation\": {\n        \"w\": 0.9296479225158691,\n        \"x\": -0.2129177451133728,\n        \"y\": -0.29311105608940125,\n        \"z\": -0.06713125854730606\n    },\n    \"m_scale\": {\n        \"x\": 1.0,\n        \"y\": 1.0,\n        \"z\": 1.0\n    }\n}",
+                    "m_component_json_data": "{\n    \"m_position\": {\n        \"x\": -31.700000762939453,\n        \"y\": 41.599998474121094,\n        \"z\": 38.79999923706055\n    },\n    \"m_rotation\": {\n        \"w\": 0.8888742923736572,\n        \"x\": -0.34566420316696167,\n        \"y\": -0.280252069234848,\n        \"z\": -0.10898403078317642\n    },\n    \"m_scale\": {\n        \"x\": 1.0,\n        \"y\": 1.0,\n        \"z\": 1.0\n    }\n}",
                     "m_component_name": "TransformComponent",
                     "m_type_name": "TransformComponent"
                 },
                 {
-                    "m_component_json_data": "{\n    \"m_DirectionLightParam\": {\n        \"cascade\": 4,\n        \"color\": {\n            \"a\": 1.0,\n            \"b\": 1.0,\n            \"g\": 1.0,\n            \"r\": 1.0\n        },\n        \"intensity\": 1.0,\n        \"shadow_bounds\": {\n            \"x\": 4.0,\n            \"y\": 4.0\n        },\n        \"shadow_far_plane\": 100.0,\n        \"shadow_near_plane\": 0.10000000149011612,\n        \"shadowmap_size\": {\n            \"x\": 512.0,\n            \"y\": 512.0\n        },\n        \"shadows\": true\n    },\n    \"m_LightParamName\": \"DirectionLightParameter\",\n    \"m_PointLightParam\": {\n        \"color\": {\n            \"a\": 1.0,\n            \"b\": 1.0,\n            \"g\": 1.0,\n            \"r\": 1.0\n        },\n        \"falloff_radius\": 5.0,\n        \"intensity\": 1.0\n    },\n    \"m_SpotLightParam\": {\n        \"color\": {\n            \"a\": 1.0,\n            \"b\": 1.0,\n            \"g\": 1.0,\n            \"r\": 1.0\n        },\n        \"falloff_radius\": 5.0,\n        \"inner_angle\": 45.0,\n        \"intensity\": 1.0,\n        \"outer_angle\": 60.0,\n        \"shadow_bounds\": {\n            \"x\": 32.0,\n            \"y\": 32.0\n        },\n        \"shadow_far_plane\": 32.0,\n        \"shadow_near_plane\": 0.10000000149011612,\n        \"shadowmap_size\": {\n            \"x\": 256.0,\n            \"y\": 256.0\n        },\n        \"shadows\": false\n    }\n}",
+                    "m_component_json_data": "{\n    \"m_DirectionLightParam\": {\n        \"cascade\": 4,\n        \"color\": {\n            \"a\": 1.0,\n            \"b\": 1.0,\n            \"g\": 1.0,\n            \"r\": 1.0\n        },\n        \"intensity\": 1.0,\n        \"shadow_bounds\": {\n            \"x\": 16.0,\n            \"y\": 16.0\n        },\n        \"shadow_far_plane\": 200.0,\n        \"shadow_near_plane\": 0.10000000149011612,\n        \"shadowmap_size\": {\n            \"x\": 1024.0,\n            \"y\": 1024.0\n        },\n        \"shadows\": true\n    },\n    \"m_LightParamName\": \"DirectionLightParameter\",\n    \"m_PointLightParam\": {\n        \"color\": {\n            \"a\": 1.0,\n            \"b\": 1.0,\n            \"g\": 1.0,\n            \"r\": 1.0\n        },\n        \"falloff_radius\": 5.0,\n        \"intensity\": 1.0\n    },\n    \"m_SpotLightParam\": {\n        \"color\": {\n            \"a\": 1.0,\n            \"b\": 1.0,\n            \"g\": 1.0,\n            \"r\": 1.0\n        },\n        \"falloff_radius\": 5.0,\n        \"inner_angle\": 45.0,\n        \"intensity\": 1.0,\n        \"outer_angle\": 60.0,\n        \"shadow_bounds\": {\n            \"x\": 32.0,\n            \"y\": 32.0\n        },\n        \"shadow_far_plane\": 32.0,\n        \"shadow_near_plane\": 0.10000000149011612,\n        \"shadowmap_size\": {\n            \"x\": 256.0,\n            \"y\": 256.0\n        },\n        \"shadows\": false\n    }\n}",
                     "m_component_name": "LightComponent",
                     "m_type_name": "LightComponent"
                 }

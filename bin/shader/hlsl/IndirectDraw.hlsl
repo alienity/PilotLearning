@@ -123,6 +123,8 @@ float4 PSMain(VertexOutput input) : SV_Target0
             float shadow_bound_2 = g_ConstantBufferParams.scene_directional_light.shadow_bounds.z * 0.9f * 0.5f;
             float shadow_bound_3 = g_ConstantBufferParams.scene_directional_light.shadow_bounds.w * 0.9f * 0.5f;
 
+            float3 _test_color = float3(0, 0, 0);
+
             int shadow_bound_index = -1;
             float2 shadow_bound_offset = float2(0, 0);
 
@@ -130,21 +132,25 @@ float4 PSMain(VertexOutput input) : SV_Target0
             {
                 shadow_bound_index = 0;
                 shadow_bound_offset = float2(0, 0);
+                _test_color = float3(1,0,0);
             }
             else if (posInLightSpaceX < shadow_bound_1 && posInLightSpaceY < shadow_bound_1)
             {
                 shadow_bound_index = 1;
                 shadow_bound_offset = float2(0.5, 0);
+                _test_color = float3(0,1,0);
             }
             else if (posInLightSpaceX < shadow_bound_2 && posInLightSpaceY < shadow_bound_2)
             {
                 shadow_bound_index = 2;
                 shadow_bound_offset = float2(0, 0.5);
+                _test_color = float3(0,0,1);
             }
             else if (posInLightSpaceX < shadow_bound_3 && posInLightSpaceY < shadow_bound_3)
             {
                 shadow_bound_index = 3;
                 shadow_bound_offset = float2(0.5, 0.5);
+                _test_color = float3(0,1,1);
             }
 
             if (shadow_bound_index != -1)
@@ -164,7 +170,7 @@ float4 PSMain(VertexOutput input) : SV_Target0
                 Texture2D<float> shadowMap = ResourceDescriptorHeap[g_ConstantBufferParams.scene_directional_light.shadowmap_srv_index];
 
                 //float shadow_bias = 0.0004f;
-                float shadow_bias = max(0.001f * (1.0 - dot(vNormal, lightDir)), 0.0003f);  
+                float shadow_bias = max(0.0015f * exp2(shadow_bound_index) * (1.0 - dot(vNormal, lightDir)), 0.0003f);  
 
                 float shadowTexelSize = 1.0f / (g_ConstantBufferParams.scene_directional_light.shadowmap_width * 0.5f);
                 
@@ -185,6 +191,7 @@ float4 PSMain(VertexOutput input) : SV_Target0
 
                 directionLightColor *= fShadow;
             }
+            directionLightColor = directionLightColor + _test_color * 0.1f;
         }
         outColor = outColor + directionLightColor;
     }
