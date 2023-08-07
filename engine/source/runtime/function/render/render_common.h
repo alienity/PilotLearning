@@ -340,6 +340,17 @@ namespace MoYu
                lhs.m_mip_levels == rhs.m_mip_levels && lhs.m_image_file == rhs.m_image_file;
     }
 
+    struct MaterialImage
+    {
+        SceneImage m_image {};
+        Vector2    m_tilling {1.0f, 1.0f};
+    };
+
+    inline bool operator==(const MaterialImage& lhs, const MaterialImage& rhs)
+    {
+        return lhs.m_tilling == rhs.m_tilling && lhs.m_image == rhs.m_image;
+    }
+
     struct ScenePBRMaterial
     {
         bool m_blend {false};
@@ -352,11 +363,11 @@ namespace MoYu
         float   m_occlusion_strength {1.0f};
         Vector3 m_emissive_factor {0.0f, 0.0f, 0.0f};
 
-        SceneImage m_base_color_texture_file {};
-        SceneImage m_metallic_roughness_texture_file {};
-        SceneImage m_normal_texture_file {};
-        SceneImage m_occlusion_texture_file {};
-        SceneImage m_emissive_texture_file {};
+        MaterialImage m_base_color_texture_file {};
+        MaterialImage m_metallic_roughness_texture_file {};
+        MaterialImage m_normal_texture_file {};
+        MaterialImage m_occlusion_texture_file {};
+        MaterialImage m_emissive_texture_file {};
     };
 
     inline bool operator==(const ScenePBRMaterial& lhs, const ScenePBRMaterial& rhs)

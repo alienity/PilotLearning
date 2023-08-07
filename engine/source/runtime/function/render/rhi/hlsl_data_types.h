@@ -188,6 +188,15 @@ namespace HLSL
         float normalScale              = 0.0f;
         float occlusionStrength        = 0.0f;
 
+        glm::vec2 base_color_tilling         = {1.0f, 1.0f};
+        glm::vec2 metallic_roughness_tilling = {1.0f, 1.0f};
+        glm::vec2 normal_tilling             = {1.0f, 1.0f};
+        glm::vec2 occlusion_tilling          = {1.0f, 1.0f};
+        glm::vec2 emissive_tilling           = {1.0f, 1.0f};
+
+        uint32_t _padding_uniform_00;
+        uint32_t _padding_uniform_01;
+
         glm::vec3 emissiveFactor  = {1.0f, 1.0f, 1.0f};
         uint32_t  is_blend        = 0;
         uint32_t  is_double_sided = 0;

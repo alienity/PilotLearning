@@ -73,13 +73,19 @@ struct PerMaterialUniformBuffer
     float normalScale;
     float occlusionStrength;
 
+    float2 base_color_tilling;
+    float2 metallic_roughness_tilling;
+    float2 normal_tilling;
+    float2 occlusion_tilling;
+    float2 emissive_tilling;
+
+    float2 _padding_uniform_01;
+
     float3 emissiveFactor;
     uint   is_blend;
     uint   is_double_sided;
 
-    uint _padding_uniform_1;
-    uint _padding_uniform_2;
-    uint _padding_uniform_3;
+    uint3 _padding_uniform_02;
 };
 
 struct MaterialInstance

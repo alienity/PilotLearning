@@ -33,8 +33,8 @@ void CSMain(CSParams Params) {
 
         Frustum frustum = ExtractPlanesDX(mMeshPerframeBuffer.cameraInstance.projViewMatrix);
 
-        //bool visible = FrustumContainsBoundingBox(frustum, aabb) != CONTAINMENT_DISJOINT;
-        //if (visible)
+        bool visible = FrustumContainsBoundingBox(frustum, aabb) != CONTAINMENT_DISJOINT;
+        if (visible)
         {
             float3 cameraPos  = mMeshPerframeBuffer.cameraInstance.cameraPosition;
             float3 aabbCenter = aabb.Center;

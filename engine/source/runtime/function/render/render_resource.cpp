@@ -235,14 +235,7 @@ namespace MoYu
             scene_directional_light.direction_light_view_matrix = GLMUtil::fromMat4x4(render_scene->m_directional_light.m_shadow_view_mat);
             for (size_t i = 0; i < scene_directional_light.cascade; i++)
             {
-                if (i == 0)
-                {
-                    scene_directional_light.shadow_bounds[i] = render_scene->m_directional_light.m_shadow_bounds.x;
-                }
-                else
-                {
-                    scene_directional_light.shadow_bounds[i] = scene_directional_light.shadow_bounds[i - 1] << 2;
-                }
+                scene_directional_light.shadow_bounds[i] = (int)render_scene->m_directional_light.m_shadow_bounds.x << i;
                 scene_directional_light.direction_light_projs[i] = GLMUtil::fromMat4x4(render_scene->m_directional_light.m_shadow_proj_mats[i]);
                 scene_directional_light.direction_light_proj_views[i] = GLMUtil::fromMat4x4(render_scene->m_directional_light.m_shadow_view_proj_mats[i]);
             }
@@ -283,10 +276,6 @@ namespace MoYu
 
     bool RenderResource::updateInternalMaterial(SceneMaterial scene_material, SceneMaterial& cached_material, InternalMaterial& internal_material, bool has_initialized)
     {
-#define IsImageSame(tex_file_name) (m_mat_data.tex_file_name == m_cached_mat_data.tex_file_name)
-
-#define IsImageNull(tex_file_name) (m_mat_data.tex_file_name.m_image_file == "")
-
         internal_material.m_shader_name = scene_material.m_shader_name;
 
         ScenePBRMaterial m_mat_data = scene_material.m_mat_data;
@@ -308,6 +297,11 @@ namespace MoYu
             is_uniform_same &= m_mat_data.m_normal_scale == m_cached_mat_data.m_normal_scale;
             is_uniform_same &= m_mat_data.m_occlusion_strength == m_cached_mat_data.m_occlusion_strength;
             is_uniform_same &= m_mat_data.m_emissive_factor == m_cached_mat_data.m_emissive_factor;
+            is_uniform_same &= m_mat_data.m_base_color_texture_file.m_tilling == m_cached_mat_data.m_base_color_texture_file.m_tilling;
+            is_uniform_same &= m_mat_data.m_metallic_roughness_texture_file.m_tilling == m_cached_mat_data.m_metallic_roughness_texture_file.m_tilling;
+            is_uniform_same &= m_mat_data.m_normal_texture_file.m_tilling == m_cached_mat_data.m_normal_texture_file.m_tilling;
+            is_uniform_same &= m_mat_data.m_occlusion_texture_file.m_tilling == m_cached_mat_data.m_occlusion_texture_file.m_tilling;
+            is_uniform_same &= m_mat_data.m_emissive_texture_file.m_tilling == m_cached_mat_data.m_emissive_texture_file.m_tilling;
 
             if (!is_uniform_same || !has_initialized)
             {
@@ -320,6 +314,12 @@ namespace MoYu
                 material_uniform_buffer_info.normalScale       = m_mat_data.m_normal_scale;
                 material_uniform_buffer_info.occlusionStrength = m_mat_data.m_occlusion_strength;
                 material_uniform_buffer_info.emissiveFactor    = GLMUtil::fromVec3(m_mat_data.m_emissive_factor);
+
+                material_uniform_buffer_info.base_color_tilling = GLMUtil::fromVec2(m_mat_data.m_base_color_texture_file.m_tilling);
+                material_uniform_buffer_info.metallic_roughness_tilling = GLMUtil::fromVec2(m_mat_data.m_metallic_roughness_texture_file.m_tilling);
+                material_uniform_buffer_info.normal_tilling     = GLMUtil::fromVec2(m_mat_data.m_normal_texture_file.m_tilling);
+                material_uniform_buffer_info.occlusion_tilling  = GLMUtil::fromVec2(m_mat_data.m_occlusion_texture_file.m_tilling);
+                material_uniform_buffer_info.emissive_tilling   = GLMUtil::fromVec2(m_mat_data.m_emissive_texture_file.m_tilling);
 
                 if (now_material.material_uniform_buffer == nullptr)
                 {
@@ -334,45 +334,46 @@ namespace MoYu
             }
         }
         {
-            if (!IsImageSame(m_base_color_texture_file) || !has_initialized)
+            //if (!IsImageSame(m_base_color_texture_file) || !has_initialized)
+            if (!(m_mat_data.m_base_color_texture_file.m_image == m_cached_mat_data.m_base_color_texture_file.m_image) || !has_initialized)
             {
-                SceneImage base_color_image = m_mat_data.m_base_color_texture_file;
+                SceneImage base_color_image = m_mat_data.m_base_color_texture_file.m_image;
                 if (now_material.base_color_texture_image != nullptr)
                     now_material.base_color_texture_image = nullptr;
                 now_material.base_color_texture_image = SceneImageToTexture(base_color_image);
             }
         }
         {
-            if (!IsImageSame(m_metallic_roughness_texture_file) || !has_initialized)
+            if (!(m_mat_data.m_metallic_roughness_texture_file.m_image == m_cached_mat_data.m_metallic_roughness_texture_file.m_image) || !has_initialized)
             {
-                SceneImage metallic_roughness_image = m_mat_data.m_metallic_roughness_texture_file;
+                SceneImage metallic_roughness_image = m_mat_data.m_metallic_roughness_texture_file.m_image;
                 if (now_material.metallic_roughness_texture_image != nullptr)
                     now_material.metallic_roughness_texture_image = nullptr;
                 now_material.metallic_roughness_texture_image = SceneImageToTexture(metallic_roughness_image);
             }
         }
         {
-            if (!IsImageSame(m_normal_texture_file) || !has_initialized)
+            if (!(m_mat_data.m_normal_texture_file.m_image == m_cached_mat_data.m_normal_texture_file.m_image) || !has_initialized)
             {
-                SceneImage normal_image = m_mat_data.m_normal_texture_file;
+                SceneImage normal_image = m_mat_data.m_normal_texture_file.m_image;
                 if (now_material.normal_texture_image != nullptr)
                     now_material.normal_texture_image = nullptr;
                 now_material.normal_texture_image = SceneImageToTexture(normal_image);
             }
         }
         {
-            if (!IsImageSame(m_occlusion_texture_file) || !has_initialized)
+            if (!(m_mat_data.m_occlusion_texture_file.m_image == m_cached_mat_data.m_occlusion_texture_file.m_image) || !has_initialized)
             {
-                SceneImage occlusion_image = m_mat_data.m_occlusion_texture_file;
+                SceneImage occlusion_image = m_mat_data.m_occlusion_texture_file.m_image;
                 if (now_material.occlusion_texture_image != nullptr)
                     now_material.occlusion_texture_image = nullptr;
                 now_material.occlusion_texture_image = SceneImageToTexture(occlusion_image);
             }
         }
         {
-            if (!IsImageSame(m_emissive_texture_file) || !has_initialized)
+            if (!(m_mat_data.m_emissive_texture_file.m_image == m_cached_mat_data.m_emissive_texture_file.m_image) || !has_initialized)
             {
-                SceneImage emissive_image = m_mat_data.m_emissive_texture_file;
+                SceneImage emissive_image = m_mat_data.m_emissive_texture_file.m_image;
                 if (now_material.emissive_texture_image != nullptr)
                     now_material.emissive_texture_image = nullptr;
                 now_material.emissive_texture_image = SceneImageToTexture(emissive_image);

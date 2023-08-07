@@ -14,11 +14,11 @@ namespace MoYu
         {1.0f},
         {1.0f},
         {0.0f, 0.0f, 0.0f},
-        {true, true, 0, "asset/objects/_textures/white.tga"},
-        {false, true, 0, "asset/objects/_textures/mr.tga"},
-        {false, true, 0, "asset/objects/_textures/n.tga"},
-        {false, true, 0, ""},
-        {false, true, 0, ""},
+        {{true, true, 0, "asset/objects/_textures/white.tga"}, Vector2::One},
+        {{false, true, 0, "asset/objects/_textures/mr.tga"}, Vector2::One},
+        {{false, true, 0, "asset/objects/_textures/n.tga"}, Vector2::One},
+        {{false, true, 0, ""}, Vector2::One},
+        {{false, true, 0, ""}, Vector2::One},
     };
 
     MaterialRes ToMaterialRes(const ScenePBRMaterial& pbrMaterial, const std::string shaderName)

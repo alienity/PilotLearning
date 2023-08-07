@@ -5,6 +5,7 @@
 namespace MoYu
 {
     NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(SceneImage, m_is_srgb, m_auto_mips, m_mip_levels, m_image_file)
+    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(MaterialImage, m_tilling, m_image)
 
     struct MaterialRes
     {
@@ -20,11 +21,11 @@ namespace MoYu
         float   m_occlusion_strength {1.0f};
         Vector3 m_emissive_factor {0.0f, 0.0f, 0.0f};
 
-        SceneImage m_base_color_texture_file {};
-        SceneImage m_metallic_roughness_texture_file {};
-        SceneImage m_normal_texture_file {};
-        SceneImage m_occlusion_texture_file {};
-        SceneImage m_emissive_texture_file {};
+        MaterialImage m_base_color_texture_file {};
+        MaterialImage m_metallic_roughness_texture_file {};
+        MaterialImage m_normal_texture_file {};
+        MaterialImage m_occlusion_texture_file {};
+        MaterialImage m_emissive_texture_file {};
 
         float _specularAntiAliasingVariance {0};
         float _specularAntiAliasingThreshold {0};

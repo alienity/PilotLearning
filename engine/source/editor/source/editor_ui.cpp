@@ -487,12 +487,30 @@ namespace MoYu
             if (ImGui::DragFloat3("OcclusionStrength", mat_res_ptr->m_emissive_factor.ptr(), 0.02f, 0.0f, 1.0f))
                 isDirty = true;
 
-            m_editor_ui_creator["SceneImage"]("BaseColorTextureFile", isDirty, &mat_res_ptr->m_base_color_texture_file);
-            m_editor_ui_creator["SceneImage"]("MetallicRoughnessTextureFile", isDirty, &mat_res_ptr->m_metallic_roughness_texture_file);
-            m_editor_ui_creator["SceneImage"]("NormalTextureFile", isDirty, &mat_res_ptr->m_normal_texture_file);
-            m_editor_ui_creator["SceneImage"]("OcclusionTextureFile", isDirty, &mat_res_ptr->m_occlusion_texture_file);
-            m_editor_ui_creator["SceneImage"]("EmissiveTextureFile", isDirty, &mat_res_ptr->m_emissive_texture_file);
+            m_editor_ui_creator["MaterialImage"]("BaseColorTextureFile", isDirty, &mat_res_ptr->m_base_color_texture_file);
+            m_editor_ui_creator["MaterialImage"]("MetallicRoughnessTextureFile", isDirty, &mat_res_ptr->m_metallic_roughness_texture_file);
+            m_editor_ui_creator["MaterialImage"]("NormalTextureFile", isDirty, &mat_res_ptr->m_normal_texture_file);
+            m_editor_ui_creator["MaterialImage"]("OcclusionTextureFile", isDirty, &mat_res_ptr->m_occlusion_texture_file);
+            m_editor_ui_creator["MaterialImage"]("EmissiveTextureFile", isDirty, &mat_res_ptr->m_emissive_texture_file);
 
+            is_dirty |= isDirty;
+        };
+        m_editor_ui_creator["MaterialImage"] = [this, &asset_folder](const std::string& name, bool& is_dirty, void* value_ptr) -> void {
+            bool isDirty = false;
+
+            ImGui::Text(name.c_str());
+
+            ImGui::PushID(name.c_str());
+
+            MaterialImage* material_image_ptr = static_cast<MaterialImage*>(value_ptr);
+
+            m_editor_ui_creator["SceneImage"]("m_Image", isDirty, &material_image_ptr->m_image);
+
+            if (ImGui::DragFloat2("m_tilling", (float*)&material_image_ptr->m_tilling, 0.1f, 0.0001f))
+                isDirty = true;
+
+            ImGui::PopID();
+            
             is_dirty |= isDirty;
         };
         m_editor_ui_creator["SceneImage"] = [this, &asset_folder](const std::string& name, bool& is_dirty, void* value_ptr) -> void {
@@ -500,10 +518,8 @@ namespace MoYu
 
             SceneImage* scene_image_ptr = static_cast<SceneImage*>(value_ptr);
 
-            ImGui::Text(name.c_str());
-
             //ImGui::Indent();
-            ImGui::PushID(name.c_str());
+            //ImGui::PushID(name.c_str());
 
             if (ImGui::Checkbox("m_is_srgb", &scene_image_ptr->m_is_srgb))
                 isDirty = true;
@@ -537,7 +553,7 @@ namespace MoYu
                 ImGui::EndDragDropTarget();
             }
 
-            ImGui::PopID();
+            //ImGui::PopID();
             //ImGui::Unindent();
 
             is_dirty |= isDirty;

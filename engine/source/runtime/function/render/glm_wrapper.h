@@ -23,6 +23,9 @@ namespace MoYu
     class GLMUtil
     {
     public:
+        static Vector2   toVec2(glm::vec2 v) { return Vector2(v.x, v.y); }
+        static glm::vec2 fromVec2(Vector2 v) { return glm::vec2(v.x, v.y); }
+
         static Vector3   toVec3(glm::vec3 v) { return Vector3(v.x, v.y, v.z); }
         static glm::vec3 fromVec3(Vector3 v) { return glm::vec3(v.x, v.y, v.z); }
 
