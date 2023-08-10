@@ -1268,12 +1268,12 @@ namespace MoYu
         return out;
     }
 
-    Matrix4x4 Matrix4x4::createPerspectiveFieldOfView(float fov, float aspectRatio, float zNearPlane, float zFarPlane)
+    Matrix4x4 Matrix4x4::createPerspectiveFieldOfView(float fovY, float aspectRatio, float zNearPlane, float zFarPlane)
     {
         Matrix4x4 m = Zero;
 
-        m[0][0] = 1.0f / (aspectRatio * std::tan(fov * 0.5f));
-        m[1][1] = 1.0f / std::tan(fov * 0.5f);
+        m[0][0] = 1.0f / (aspectRatio * std::tan(fovY * 0.5f));
+        m[1][1] = 1.0f / std::tan(fovY * 0.5f);
         m[2][2] = -zNearPlane / (zNearPlane - zFarPlane);
         m[2][3] = zFarPlane * zNearPlane / (zNearPlane - zFarPlane);
         m[3][2] = -1;

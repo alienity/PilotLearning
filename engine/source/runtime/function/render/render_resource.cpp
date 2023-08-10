@@ -212,8 +212,8 @@ namespace MoYu
             m_mesh_perframe_storage_buffer_object.scene_spot_lights[i].color = GLMUtil::fromVec3(Vector3(color.r, color.g, color.b));
             m_mesh_perframe_storage_buffer_object.scene_spot_lights[i].intensity = spot_light_intensity;
             m_mesh_perframe_storage_buffer_object.scene_spot_lights[i].direction = GLMUtil::fromVec3(spot_light_direction);
-            m_mesh_perframe_storage_buffer_object.scene_spot_lights[i].inner_radians = render_scene->m_spot_light_list[i].m_inner_radians;
-            m_mesh_perframe_storage_buffer_object.scene_spot_lights[i].outer_radians = render_scene->m_spot_light_list[i].m_outer_radians;
+            m_mesh_perframe_storage_buffer_object.scene_spot_lights[i].inner_radians = Math::degreesToRadians(render_scene->m_spot_light_list[i].m_inner_degree);
+            m_mesh_perframe_storage_buffer_object.scene_spot_lights[i].outer_radians = Math::degreesToRadians(render_scene->m_spot_light_list[i].m_outer_degree);
 
             m_mesh_perframe_storage_buffer_object.scene_spot_lights[i].shadowmap = render_scene->m_spot_light_list[i].m_shadowmap;
             m_mesh_perframe_storage_buffer_object.scene_spot_lights[i].shadowmap_width = render_scene->m_spot_light_list[i].m_shadowmap_size.x;

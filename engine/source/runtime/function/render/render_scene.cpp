@@ -136,11 +136,12 @@ namespace MoYu
                 }
             }
 
-            Matrix4x4 spotLightViewMat    = Matrix4x4::lookAt(translation, direction, Vector3::Up);
-            Matrix4x4 spotLightProjMat    = Matrix4x4::createPerspective(sceneLight.spot_light.m_shadow_bounds.x,
-                                                                      sceneLight.spot_light.m_shadow_bounds.y,
-                                                                      -sceneLight.spot_light.m_shadow_near_plane,
-                                                                      -sceneLight.spot_light.m_shadow_far_plane);
+            float _spotOutRadians = Math::degreesToRadians(sceneLight.spot_light.m_outer_degree);
+            float _spotNearPlane  = -sceneLight.spot_light.m_shadow_near_plane;
+            float _spotFarPlane   = -sceneLight.spot_light.m_shadow_far_plane;
+
+            Matrix4x4 spotLightViewMat = Matrix4x4::lookAt(translation, direction, Vector3::Up);
+            Matrix4x4 spotLightProjMat = Matrix4x4::createPerspectiveFieldOfView(_spotOutRadians, 1, _spotNearPlane, _spotFarPlane);
             Matrix4x4 spotLightViewProjMat = spotLightProjMat * spotLightViewMat;
 
             if (index_finded == -1)
@@ -154,8 +155,8 @@ namespace MoYu
                 internalSpotLight.m_color                = sceneLight.spot_light.m_color;
                 internalSpotLight.m_intensity            = sceneLight.spot_light.m_intensity;
                 internalSpotLight.m_radius               = sceneLight.spot_light.m_radius;
-                internalSpotLight.m_inner_radians        = sceneLight.spot_light.m_inner_radians;
-                internalSpotLight.m_outer_radians        = sceneLight.spot_light.m_outer_radians;
+                internalSpotLight.m_inner_degree         = sceneLight.spot_light.m_inner_degree;
+                internalSpotLight.m_outer_degree         = sceneLight.spot_light.m_outer_degree;
                 internalSpotLight.m_shadowmap            = sceneLight.spot_light.m_shadowmap;
                 internalSpotLight.m_shadow_bounds        = sceneLight.spot_light.m_shadow_bounds;
                 internalSpotLight.m_shadow_near_plane    = sceneLight.spot_light.m_shadow_near_plane;
@@ -175,8 +176,8 @@ namespace MoYu
                 m_spot_light_list[index_finded].m_color                = sceneLight.spot_light.m_color;
                 m_spot_light_list[index_finded].m_intensity            = sceneLight.spot_light.m_intensity;
                 m_spot_light_list[index_finded].m_radius               = sceneLight.spot_light.m_radius;
-                m_spot_light_list[index_finded].m_inner_radians        = sceneLight.spot_light.m_inner_radians;
-                m_spot_light_list[index_finded].m_outer_radians        = sceneLight.spot_light.m_outer_radians;
+                m_spot_light_list[index_finded].m_inner_degree         = sceneLight.spot_light.m_inner_degree;
+                m_spot_light_list[index_finded].m_outer_degree         = sceneLight.spot_light.m_outer_degree;
                 m_spot_light_list[index_finded].m_shadowmap            = sceneLight.spot_light.m_shadowmap;
                 m_spot_light_list[index_finded].m_shadow_bounds        = sceneLight.spot_light.m_shadow_bounds;
                 m_spot_light_list[index_finded].m_shadow_near_plane    = sceneLight.spot_light.m_shadow_near_plane;

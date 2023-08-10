@@ -222,8 +222,8 @@ namespace MoYu
         Color m_color;
         float m_intensity;
         float m_radius;
-        float m_inner_radians;
-        float m_outer_radians;
+        float m_inner_degree;
+        float m_outer_degree;
 
         bool    m_shadowmap {false};
         Vector2 m_shadow_bounds {128, 128};

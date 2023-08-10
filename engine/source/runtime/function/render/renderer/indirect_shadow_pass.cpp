@@ -19,6 +19,7 @@ namespace MoYu
 
     }
 
+
     void IndirectShadowPass::prepareShadowmaps(std::shared_ptr<RenderResource> render_resource)
     {
         RenderResource* real_resource = (RenderResource*)render_resource.get();
@@ -57,25 +58,30 @@ namespace MoYu
 
         if (m_render_scene->m_spot_light_list.size() != 0)
         {
-            int spotLightCount = m_render_scene->m_spot_light_list.size();
-            for (size_t i = 0; i < spotLightCount; i++)
+            for (size_t i = 0; i < m_render_scene->m_spot_light_list.size(); i++)
             {
                 auto& curSpotLightDesc = m_render_scene->m_spot_light_list[i];
                 
                 bool curSpotLighShaodwmaptExist = false;
-                int  curShadowmapIndex          = -1;
+                int  curShadowmapIndex  = -1;
                 for (size_t j = 0; j < m_SpotShadowmaps.size(); j++)
                 {
-                    if (m_SpotShadowmaps[i].m_identifier == curSpotLightDesc.m_identifier)
+                    if (m_SpotShadowmaps[j].m_identifier == curSpotLightDesc.m_identifier)
                     {
-                        curShadowmapIndex          = i;
+                        curShadowmapIndex = j;
                         curSpotLighShaodwmaptExist = true;
                         break;
                     }
                 }
                 
-                // if shadowmap does not exist
-                if (!curSpotLighShaodwmaptExist)
+                // if current light does not have shadowmap, but shadowmap exist
+                if (!curSpotLightDesc.m_shadowmap && curSpotLighShaodwmaptExist)
+                {
+                    m_SpotShadowmaps.erase(m_SpotShadowmaps.begin() + curShadowmapIndex);
+                }
+
+                // if shadowmap does not exist, but current light has shadowmap
+                if (curSpotLightDesc.m_shadowmap && !curSpotLighShaodwmaptExist)
                 {
                     Vector2 shadowmap_size = curSpotLightDesc.m_shadowmap_size;
                     
@@ -153,7 +159,6 @@ namespace MoYu
             directionalShadowmapHandle = passOutput.directionalShadowmapHandle;
         }
 
-        std::vector<RHI::RgResourceHandle> spotShadowmapHandles;
         for (size_t i = 0; i < m_SpotShadowmaps.size(); i++)
         {
             RHI::RgResourceHandle spotShadowMapHandle =
@@ -161,7 +166,7 @@ namespace MoYu
             shadowpass.Write(spotShadowMapHandle);
             passOutput.spotShadowmapHandle.push_back(spotShadowMapHandle);
         }
-        spotShadowmapHandles = passOutput.spotShadowmapHandle;
+        std::vector<RHI::RgResourceHandle> spotShadowmapHandles = passOutput.spotShadowmapHandle;
 
         shadowpass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
 

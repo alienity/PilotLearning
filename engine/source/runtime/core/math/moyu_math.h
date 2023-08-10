@@ -1063,7 +1063,7 @@ namespace MoYu
         // 其中 zNearPlane > zFarPlane，且都是负值
         // 输出 canonical view volume 是xy区间是[-1,1]，z的区间是[0,1]
         // 参考 http://www.songho.ca/opengl/gl_projectionmatrix.html
-        static Matrix4x4 createPerspectiveFieldOfView(float fov, float aspectRatio, float zNearPlane, float zFarPlane);
+        static Matrix4x4 createPerspectiveFieldOfView(float fovY, float aspectRatio, float zNearPlane, float zFarPlane);
         static Matrix4x4 createPerspective(float width, float height, float zNearPlane, float zFarPlane);
         static Matrix4x4 createPerspectiveOffCenter(float left, float right, float bottom, float top, float zNearPlane, float zFarPlane);
         static Matrix4x4 createOrthographic(float width, float height, float zNearPlane, float zFarPlane);

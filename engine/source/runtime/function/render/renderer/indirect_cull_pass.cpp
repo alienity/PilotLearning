@@ -195,46 +195,44 @@ namespace MoYu
             dirShadowmapCommandBuffers.Reset();
         }
 
-        if (!m_render_scene->m_spot_light_list.empty())
         {
-            int spotLightCount = m_render_scene->m_spot_light_list.size();
-            for (size_t i = 0; i < spotLightCount; i++)
+            std::vector<SpotShadowmapCommandBuffer> _SpotLightToGPU = {};
+
+            for (size_t i = 0; i < m_render_scene->m_spot_light_list.size(); i++)
             {
-                MoYu::InternalSpotLight& curSpotLightDesc = m_render_scene->m_spot_light_list[i];
-
-                bool curSpotLighBufferExist = false;
-                int  curBufferIndex         = -1;
-                for (size_t j = 0; j < spotShadowmapCommandBuffer.size(); j++)
-                {
-                    if (spotShadowmapCommandBuffer[j].m_identifier == curSpotLightDesc.m_identifier)
-                    {
-                        curBufferIndex         = j;
-                        curSpotLighBufferExist = true;
-                        break;
-                    }
-                }
-
-                if (curSpotLighBufferExist)
-                {
-                    spotShadowmapCommandBuffer[curBufferIndex].Reset();
-                    spotShadowmapCommandBuffer.erase(spotShadowmapCommandBuffer.begin() + curBufferIndex);
-                }
-
-                if (!curSpotLighBufferExist)
+                InternalSpotLight& _internalSpotLight = m_render_scene->m_spot_light_list[i];
+                if (_internalSpotLight.m_shadowmap)
                 {
                     std::wstring _name = std::wstring(L"SpotIndirectSortCommandBuffer_" + i);
 
-                    SpotShadowmapCommandBuffer spotShadowCommandBuffer = {};
-
-                    spotShadowCommandBuffer.m_lightIndex = i;
-                    spotShadowCommandBuffer.m_identifier = curSpotLightDesc.m_identifier;
-                    spotShadowCommandBuffer.m_DrawCallCommandBuffer.p_IndirectIndexCommandBuffer = CreateIndexBuffer(_name);
-                    spotShadowCommandBuffer.m_DrawCallCommandBuffer.p_IndirectSortCommandBuffer = CreateSortCommandBuffer(_name);
-                    
-                    spotShadowmapCommandBuffer.push_back(spotShadowCommandBuffer);
+                    bool isFindInOldCommandBuffer = false;
+                    for (size_t j = 0; j < spotShadowmapCommandBuffer.size(); j++)
+                    {
+                        if (_internalSpotLight.m_identifier == spotShadowmapCommandBuffer[j].m_identifier)
+                        {
+                            SpotShadowmapCommandBuffer _SpotShadowCommandBuffer = spotShadowmapCommandBuffer[j];
+                            _SpotShadowCommandBuffer.m_lightIndex = i;
+                            _SpotShadowCommandBuffer.m_DrawCallCommandBuffer.p_IndirectIndexCommandBuffer->SetResourceName(_name);
+                            _SpotShadowCommandBuffer.m_DrawCallCommandBuffer.p_IndirectSortCommandBuffer->SetResourceName(_name);
+                            _SpotLightToGPU.push_back(_SpotShadowCommandBuffer);
+                            spotShadowmapCommandBuffer.erase(spotShadowmapCommandBuffer.begin() + j);
+                            isFindInOldCommandBuffer = true;
+                            break;
+                        }
+                    }
+                    if (!isFindInOldCommandBuffer)
+                    {
+                        SpotShadowmapCommandBuffer _SpotShadowCommandBuffer = {};
+                        _SpotShadowCommandBuffer.m_lightIndex = i;
+                        _SpotShadowCommandBuffer.m_identifier = _internalSpotLight.m_identifier;
+                        _SpotShadowCommandBuffer.m_DrawCallCommandBuffer.p_IndirectIndexCommandBuffer = CreateIndexBuffer(_name);
+                        _SpotShadowCommandBuffer.m_DrawCallCommandBuffer.p_IndirectSortCommandBuffer = CreateSortCommandBuffer(_name);
+                        _SpotLightToGPU.push_back(_SpotShadowCommandBuffer);
+                    }
                 }
-
             }
+            spotShadowmapCommandBuffer.clear();
+            spotShadowmapCommandBuffer = _SpotLightToGPU;
         }
     }
 
