@@ -1,3 +1,11 @@
+
+#ifndef __SHADING_MODEL_STANDARD_HLSLI__
+#define __SHADING_MODEL_STANDARD_HLSLI__
+
+#include "CommonShading.hlsli"
+#include "CommonLighting.hlsli"
+#include "BSDF.hlsli"
+
 #if defined(MATERIAL_HAS_SHEEN_COLOR)
 float3 sheenLobe(const PixelParams pixel, float NoV, float NoL, float NoH)
 {
@@ -150,3 +158,5 @@ float3 surfaceShading(const CommonShadingStruct params, const PixelParams pixel,
 
     return (color * light.colorIntensity.rgb) * (light.colorIntensity.w * light.attenuation * NoL * occlusion);
 }
+
+#endif // __SHADING_MODEL_STANDARD_HLSLI__

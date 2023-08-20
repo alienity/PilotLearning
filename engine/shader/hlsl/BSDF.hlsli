@@ -1,4 +1,8 @@
-#pragma once
+
+#ifndef __BSDF_HLSLI__
+#define __BSDF_HLSLI__
+
+#include "CommonMath.hlsli"
 
 //------------------------------------------------------------------------------
 // BRDF configuration
@@ -30,15 +34,9 @@
 
 #define BRDF_DIFFUSE DIFFUSE_LAMBERT
 
-#if FILAMENT_QUALITY < FILAMENT_QUALITY_HIGH
 #define BRDF_SPECULAR_D SPECULAR_D_GGX
 #define BRDF_SPECULAR_V SPECULAR_V_SMITH_GGX_FAST
 #define BRDF_SPECULAR_F SPECULAR_F_SCHLICK
-#else
-#define BRDF_SPECULAR_D SPECULAR_D_GGX
-#define BRDF_SPECULAR_V SPECULAR_V_SMITH_GGX
-#define BRDF_SPECULAR_F SPECULAR_F_SCHLICK
-#endif
 
 #define BRDF_CLEAR_COAT_D SPECULAR_D_GGX
 #define BRDF_CLEAR_COAT_V SPECULAR_V_KELEMEN
@@ -163,6 +161,8 @@ float F_Schlick(float f0, float f90, float VoH)
 // Specular BRDF dispatch
 //------------------------------------------------------------------------------
 
+// https://learn.microsoft.com/zh-cn/windows/win32/direct3dhlsl/dx-graphics-hlsl-appendix-pre-if
+
 float distribution(float roughness, float NoH, const float3 h)
 {
 #if BRDF_SPECULAR_D == SPECULAR_D_GGX
@@ -181,12 +181,7 @@ float visibility(float roughness, float NoV, float NoL)
 
 float3 fresnel(const float3 f0, float LoH)
 {
-#if FILAMENT_QUALITY == FILAMENT_QUALITY_LOW
     return F_Schlick(f0, LoH); // f90 = 1.0
-#else
-    float f90 = saturate(dot(f0, float3(50.0 * 0.33)));
-    return F_Schlick(f0, f90, LoH);
-#endif
 }
 
 float distributionAnisotropic(float at, float ab, float ToH, float BoH, float NoH)
@@ -270,3 +265,5 @@ float diffuse(float roughness, float NoV, float NoL, float LoH)
     return Fd_Burley(roughness, NoV, NoL, LoH);
 #endif
 }
+
+#endif // __BSDF_HLSLI__

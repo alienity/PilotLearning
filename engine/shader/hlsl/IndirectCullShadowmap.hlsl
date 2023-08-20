@@ -1,6 +1,6 @@
 ﻿#include "CommonMath.hlsli"
 #include "Shader.hlsli"
-#include "SharedTypes.hlsli"
+#include "InputTypes.hlsli"
 #include "d3d12.hlsli"
 
 struct CommandSignatureParams

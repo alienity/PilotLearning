@@ -1,7 +1,7 @@
 #include "d3d12.hlsli"
 #include "Shader.hlsli"
 #include "CommonMath.hlsli"
-#include "SharedTypes.hlsli"
+#include "InputTypes.hlsli"
 
 ConstantBuffer<MeshPerframeBuffer> g_ConstantBufferParams : register(b1, space0);
 

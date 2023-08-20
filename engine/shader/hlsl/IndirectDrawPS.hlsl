@@ -1,13 +1,18 @@
+#define HAS_ATTRIBUTE_TANGENTS
+#define MATERIAL_NEEDS_TBN
+#define HAS_ATTRIBUTE_UV0
+#define VARIANT_HAS_DIRECTIONAL_LIGHTING
+#define VARIANT_HAS_DYNAMIC_LIGHTING
+
 #include "d3d12.hlsli"
 #include "Shader.hlsli"
 #include "CommonMath.hlsli"
-#include "SharedTypes.hlsli"
-#include "Varings.hlsli"
+#include "InputTypes.hlsli"
 #include "ShadingLit.hlsli"
 
 cbuffer RootConstants : register(b0, space0) { uint meshIndex; };
 
-ConstantBuffer<MeshPerframeBuffer> g_ConstantBufferParams : register(b1, space0);
+ConstantBuffer<FramUniforms> g_FramUniforms : register(b1, space0);
 
 StructuredBuffer<MeshInstance> g_MeshesInstance : register(t0, space0);
 
@@ -24,54 +29,26 @@ struct VertexInput
     float2 texcoord : TEXCOORD;
 };
 
-/*
-struct VaringStruct
+VaringStruct VSMain(VertexInput input)
 {
-    float4 vertex_worldPosition;
-
-#if defined(HAS_ATTRIBUTE_TANGENTS)
-    float3 vertex_worldNormal;
-#if defined(MATERIAL_NEEDS_TBN)
-    float4 vertex_worldTangent;
-#endif
-#endif
-
-    float4 vertex_position;
-
-    int instance_index;
-
-#if defined(HAS_ATTRIBUTE_COLOR)
-    float4 vertex_color;
-#endif
-
-#if defined(HAS_ATTRIBUTE_UV0) && !defined(HAS_ATTRIBUTE_UV1)
-    float2 vertex_uv01;
-#elif defined(HAS_ATTRIBUTE_UV1)
-    float4 vertex_uv01;
-#endif
-
-#if defined(VARIANT_HAS_SHADOWING) && defined(VARIANT_HAS_DIRECTIONAL_LIGHTING)
-    float4 vertex_lightSpacePosition;
-#endif
-};
-*/
-
-VertexOutput VSMain(VertexInput input)
-{
-    VertexOutput output;
+    VaringStruct output;
 
     MeshInstance mesh = g_MeshesInstance[meshIndex];
 
-    output.positionWS = mul(mesh.localToWorldMatrix, float4(input.position, 1.0f)).xyz;
-    output.position   = mul(g_ConstantBufferParams.cameraInstance.projViewMatrix, float4(output.positionWS, 1.0f));
+    float4x4 localToWorldMatrix = mesh.localToWorldMatrix;
+    float4x4 localToWorldMatrixInv = mesh.localToWorldMatrixInverse;
+    float4x4 projectionMatrix = g_ConstantBufferParams.cameraInstance.projViewMatrix;
 
-    output.texcoord = input.texcoord;
+    output.vertex_worldPosition = mul(localToWorldMatrix, float4(input.position, 1.0f));
+    output.vertex_position = mul(projectionMatrix, output.vertex_worldPosition);
 
-    float3x3 normalMat = transpose((float3x3)mesh.localToWorldMatrixInverse);
+    output.vertex_uv01 = input.texcoord;
 
-    output.normal      = normalize(mul(normalMat, input.normal));
-    output.tangent.xyz = normalize(mul(normalMat, input.tangent.xyz));
-    output.tangent.w   = input.tangent.w;
+    float3x3 normalMat = transpose((float3x3)localToWorldMatrixInv);
+
+    output.vertex_worldNormal      = normalize(mul(normalMat, input.normal));
+    output.vertex_worldTangent.xyz = normalize(mul(normalMat, input.tangent.xyz));
+    output.vertex_worldTangent.w   = input.tangent.w;
 
     return output;
 }
@@ -79,20 +56,14 @@ VertexOutput VSMain(VertexInput input)
 float4 VSMain(VaringStruct varingStruct) : SV_Target0
 {
     CommonShadingStruct commonShadingStruct;
-    
-    FramUniforms   frameUniforms; 
-    MaterialParams materialParams;
-    MaterialInputs materialInput;
-    PerRenderableData perRenderableData;
+    computeShadingParams(g_FramUniforms, varingStruct, commonShadingStruct);
 
-    computeShadingParams(materialParams, varingStruct, commonShadingStruct);
+    MaterialInputs materialInputs;
 
-    // Моід materialInput
-    materialInput.baseColor = float4(1, 1, 1, 1);
 
-    prepareMaterial(materialInput, commonShadingStruct);
+    prepareMaterial(materialInputs, commonShadingStruct);
 
-    float4 fragColor = evaluateMaterial(frameUniforms, materialParams, commonShadingStruct, materialInput);
+    float4 fragColor = evaluateMaterial(g_FramUniforms, commonShadingStruct, materialInputs);
 
     return fragColor;
 }
