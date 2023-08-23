@@ -194,16 +194,13 @@ namespace HLSL
         glm::vec2 occlusion_tilling          = {1.0f, 1.0f};
         glm::vec2 emissive_tilling           = {1.0f, 1.0f};
 
-        uint32_t _padding_uniform_00;
-        uint32_t _padding_uniform_01;
+        glm::vec2 _padding_uniform_00;
 
-        glm::vec3 emissiveFactor  = {1.0f, 1.0f, 1.0f};
+        float     emissiveFactor  = 1.0f;
         uint32_t  is_blend        = 0;
         uint32_t  is_double_sided = 0;
 
         uint32_t _padding_uniform_1;
-        uint32_t _padding_uniform_2;
-        uint32_t _padding_uniform_3;
     };
 
     const std::uint64_t totalCommandBufferSizeInBytes = HLSL::MeshLimit * sizeof(HLSL::CommandSignatureParams);

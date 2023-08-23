@@ -2,7 +2,6 @@
 #ifndef __SHADING_LIT_HLSLI__
 #define __SHADING_LIT_HLSLI__
 
-#include "MaterialInputFS.hlsli"
 #include "ShadingParameters.hlsli"
 #include "ShadingModelStandard.hlsli"
 #include "LightDirectional.hlsli"
@@ -24,36 +23,15 @@ void getCommonPixelParams(const MaterialInputs material, inout PixelParams pixel
 {
     float4 baseColor = material.baseColor;
 
-#if defined(BLEND_MODE_FADE) && !defined(SHADING_MODEL_UNLIT)
     // Since we work in premultiplied alpha mode, we need to un-premultiply
     // in fade mode so we can apply alpha to both the specular and diffuse
     // components at the end
     unpremultiply(baseColor);
-#endif
-
-#if defined(SHADING_MODEL_SPECULAR_GLOSSINESS)
-    // This is from KHR_materials_pbrSpecularGlossiness.
-    float3  specularColor = material.specularColor;
-    float metallic      = computeMetallicFromSpecularColor(specularColor);
 
     pixel.diffuseColor = computeDiffuseColor(baseColor, material.metallic);
-    pixel.f0           = specularColor;
-#elif !defined(SHADING_MODEL_CLOTH)
-    pixel.diffuseColor = computeDiffuseColor(baseColor, material.metallic);
-#if !defined(SHADING_MODEL_SUBSURFACE) && (!defined(MATERIAL_HAS_REFLECTANCE) && defined(MATERIAL_HAS_IOR))
-    float reflectance  = iorToF0(max(1.0, material.ior), 1.0);
-#else
     // Assumes an interface from air to an IOR of 1.5 for dielectrics
     float reflectance = computeDielectricF0(material.reflectance);
-#endif
     pixel.f0           = computeF0(baseColor, material.metallic, reflectance);
-#else
-    pixel.diffuseColor    = baseColor.rgb;
-    pixel.f0              = material.sheenColor;
-#if defined(MATERIAL_HAS_SUBSURFACE_COLOR)
-    pixel.subsurfaceColor = material.subsurfaceColor;
-#endif
-#endif
 
 #if !defined(SHADING_MODEL_CLOTH) && !defined(SHADING_MODEL_SUBSURFACE)
 #if defined(MATERIAL_HAS_REFRACTION)
@@ -229,31 +207,23 @@ float4 evaluateLights(const FramUniforms frameUniforms, const CommonShadingStruc
 
     //// We always evaluate the IBL as not having one is going to be uncommon,
     //// it also saves 1 shader variant
-    //evaluateIBL(material, pixel, color);
+    //evaluateIBL(materialInputs, pixel, color);
 
-#if defined(VARIANT_HAS_DIRECTIONAL_LIGHTING)
-    evaluateDirectionalLight(material, pixel, color);
-#endif
+    evaluateDirectionalLight(materialInputs, pixel, color);
 
-#if defined(VARIANT_HAS_DYNAMIC_LIGHTING)
-    evaluatePunctualLights(material, pixel, color);
-#endif
+    //evaluatePunctualLights(material, pixel, color);
 
-#if defined(BLEND_MODE_FADE) && !defined(SHADING_MODEL_UNLIT)
     // In fade mode we un-premultiply baseColor early on, so we need to
     // premultiply again at the end (affects diffuse and specular lighting)
     color *= material.baseColor.a;
-#endif
 
     return float4(color, computeDiffuseAlpha(material.baseColor.a));
 }
 
 void addEmissive(const FramUniforms frameUniforms, const MaterialInputs material, inout float4 color) {
-#if defined(MATERIAL_HAS_EMISSIVE)
     float4 emissive = material.emissive;
-    float attenuation = lerp(1.0, getExposure(frameUniforms), emissive.w);
+    float attenuation = lerp(1.0, frameUniforms.exposure, emissive.w);
     color.rgb += emissive.rgb * (attenuation * color.a);
-#endif
 }
 
 /**
@@ -264,7 +234,7 @@ void addEmissive(const FramUniforms frameUniforms, const MaterialInputs material
  */
 float4 evaluateMaterial(const FramUniforms frameUniforms, const CommonShadingStruct commonShadingStruct, const MaterialInputs materialInputs) {
     float4 color = evaluateLights(frameUniforms, commonShadingStruct, materialInputs);
-    addEmissive(frameUniforms, material, color);
+    addEmissive(frameUniforms, materialInputs, color);
     return color;
 }
 

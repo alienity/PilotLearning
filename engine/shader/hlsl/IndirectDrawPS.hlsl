@@ -5,18 +5,15 @@
 #define VARIANT_HAS_DYNAMIC_LIGHTING
 
 #include "d3d12.hlsli"
-#include "Shader.hlsli"
+//#include "Shader.hlsli"
 #include "CommonMath.hlsli"
 #include "InputTypes.hlsli"
-#include "ShadingLit.hlsli"
+#include "ShadingParameters.hlsli"
 
 cbuffer RootConstants : register(b0, space0) { uint meshIndex; };
-
-ConstantBuffer<FramUniforms> g_FramUniforms : register(b1, space0);
-
-StructuredBuffer<MeshInstance> g_MeshesInstance : register(t0, space0);
-
-StructuredBuffer<MaterialInstance> g_MaterialsInstance : register(t1, space0);
+ConstantBuffer<FrameUniforms> g_FramUniforms : register(b1, space0);
+StructuredBuffer<PerhRenderableMeshData> g_RenderableMeshDatas : register(t0, space0);
+StructuredBuffer<PerMaterialViewIndexBuffer> g_MaterialViewIndexBuffers : register(t1, space0);
 
 SamplerState           defaultSampler : register(s10);
 SamplerComparisonState shadowmapSampler : register(s11);
@@ -24,8 +21,8 @@ SamplerComparisonState shadowmapSampler : register(s11);
 struct VertexInput
 {
     float3 position : POSITION;
-    float3 normal : NORMAL;
-    float4 tangent : TANGENT;
+    float3 normal   : NORMAL;
+    float4 tangent  : TANGENT;
     float2 texcoord : TEXCOORD;
 };
 
@@ -33,11 +30,11 @@ VaringStruct VSMain(VertexInput input)
 {
     VaringStruct output;
 
-    MeshInstance mesh = g_MeshesInstance[meshIndex];
+    PerhRenderableMeshData renderableMeshData = g_RenderableMeshDatas[meshIndex];
 
-    float4x4 localToWorldMatrix = mesh.localToWorldMatrix;
-    float4x4 localToWorldMatrixInv = mesh.localToWorldMatrixInverse;
-    float4x4 projectionMatrix = g_ConstantBufferParams.cameraInstance.projViewMatrix;
+    float4x4 localToWorldMatrix    = renderableMeshData.localToWorldMatrix;
+    float4x4 localToWorldMatrixInv = renderableMeshData.localToWorldMatrixInverse;
+    float4x4 projectionMatrix      = g_FramUniforms.cameraInstance.projViewMatrix;
 
     output.vertex_worldPosition = mul(localToWorldMatrix, float4(input.position, 1.0f));
     output.vertex_position = mul(projectionMatrix, output.vertex_worldPosition);
@@ -55,12 +52,14 @@ VaringStruct VSMain(VertexInput input)
 
 float4 VSMain(VaringStruct varingStruct) : SV_Target0
 {
-    CommonShadingStruct commonShadingStruct;
-    computeShadingParams(g_FramUniforms, varingStruct, commonShadingStruct);
+    PerhRenderableMeshData renderableMeshData = g_RenderableMeshDatas[meshIndex];
+    PerMaterialViewIndexBuffer materialViewIndexBuffer = g_MaterialViewIndexBuffers[renderableMeshData.materialIndex];
 
     MaterialInputs materialInputs;
+    inflateMaterial(varingStruct, materialViewIndexBuffer, defaultSampler, materialInputs);
 
-
+    CommonShadingStruct commonShadingStruct;
+    computeShadingParams(g_FramUniforms, varingStruct, commonShadingStruct);
     prepareMaterial(materialInputs, commonShadingStruct);
 
     float4 fragColor = evaluateMaterial(g_FramUniforms, commonShadingStruct, materialInputs);

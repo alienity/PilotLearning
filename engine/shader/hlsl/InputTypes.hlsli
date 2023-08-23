@@ -81,16 +81,16 @@ struct PerMaterialParametersBuffer
 
     float2 _padding_uniform_01;
 
-    float3 emissiveFactor;
+    float emissiveFactor;
     uint   is_blend;
     uint   is_double_sided;
 
-    uint3 _padding_uniform_02;
+    uint _padding_uniform_02;
 };
 
 struct PerMaterialViewIndexBuffer
 {
-    uint uniformBufferIndex;
+    uint parametersBufferIndex;
     uint baseColorIndex;
     uint metallicRoughnessIndex;
     uint normalIndex;
@@ -108,9 +108,9 @@ struct PerhRenderableMeshData
     float3 _padding_enable_vertex_blending;
     
 	// 64
-	float4x4 localToWorldMatrix;
+    float4x4 worldFromModelMatrix;
     // 64
-    float4x4 localToWorldMatrixInverse;
+    float4x4 modelFromWorldMatrix;
 	
 	// 16
 	D3D12_VERTEX_BUFFER_VIEW vertexBuffer;
