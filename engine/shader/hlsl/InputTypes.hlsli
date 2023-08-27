@@ -1,4 +1,6 @@
-#pragma once
+#ifndef __INPUT_TYPE_HLSLI__
+#define __INPUT_TYPE_HLSLI__
+
 #include "CommonMath.hlsli"
 #include "d3d12.hlsli"
 
@@ -35,8 +37,8 @@ struct Material
 /*
 > BASE COLOR/SRGB
     Defines the perceived color of an object (sometimes called albedo). More precisely:
-    ¡ú the diffuse color of a non-metallic object
-    ¡ú the specular color of a metallic object
+    ï¿½ï¿½ the diffuse color of a non-metallic object
+    ï¿½ï¿½ the specular color of a metallic object
 > METALLIC/GRAYSCALE
     Defines whether a surface is dielectric (0.0, non-metal) or conductor (1.0, metal).
     Pure, unweathered surfaces are rare and will be either 0.0 or 1.0.
@@ -101,7 +103,7 @@ struct PerMaterialViewIndexBuffer
 };
 
 // ==================== Mesh ====================
-struct PerhRenderableMeshData
+struct PerRenderableMeshData
 {
 	// 16
     float enableVertexBlending;
@@ -147,6 +149,8 @@ struct CameraUniform
     float4x4 clipFromWorldMatrix; // clip <- view <- world
     float4x4 worldFromClipMatrix; // clip -> view -> world
     float4 clipTransform; // [sx, sy, tx, ty] only used by VERTEX_DOMAIN_DEVICE
+    float3 cameraPosition; // camera position
+    float _baseReserved0;
     
     float4 resolution; // physical viewport width, height, 1/width, 1/height
     float2 logicalViewportScale; // scale-factor to go from physical to logical viewport
@@ -259,7 +263,7 @@ struct SpotLightUniform
 {
     uint spotLightCounts;
     float3 _padding_0;
-    SpotLightStruct scene_spot_lights[m_max_spot_light_count];
+    SpotLightStruct spotLightStructs[m_max_spot_light_count];
 };
 
 struct MeshUniform
@@ -274,30 +278,11 @@ struct FrameUniforms
     BaseUniform baseUniform;
     MeshUniform meshUniform;
     AOUniform aoUniform;
-    IBLUniform iblUniform;    
+    IBLUniform iblUniform;
     SSRUniform ssrUniform;
     DirectionalLightStruct directionalLight;
     PointLightUniform pointLightUniform;
     SpotLightUniform spotLightUniform;
 };
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+#endif

@@ -13,6 +13,8 @@
 #include "runtime/function/render/glm_wrapper.h"
 #include "runtime/function/render/render_pass.h"
 
+#include "runtime/platform/system/systemtime.h"
+
 namespace MoYu
 {
     RenderSystem::~RenderSystem() 
@@ -53,13 +55,14 @@ namespace MoYu
         
         // setup render camera
         const CameraPose& camera_pose = global_rendering_res.m_camera_config.m_pose;
-        m_render_camera               = std::make_shared<RenderCamera>();
+        m_render_camera = std::make_shared<RenderCamera>();
         m_render_camera->lookAt(camera_pose.m_position, camera_pose.m_target, camera_pose.m_up);
-        m_render_camera->m_zfar  = global_rendering_res.m_camera_config.m_z_far;
-        m_render_camera->m_znear = global_rendering_res.m_camera_config.m_z_near;
-        m_render_camera->setAspect(global_rendering_res.m_camera_config.m_aspect.x /
-                                   global_rendering_res.m_camera_config.m_aspect.y);
-        m_render_camera->setFOVy(global_rendering_res.m_camera_config.m_fovY);
+        m_render_camera->perspectiveProjection(global_rendering_res.m_camera_config.m_aspect.x,
+                                               global_rendering_res.m_camera_config.m_aspect.y,
+                                               global_rendering_res.m_camera_config.m_z_near,
+                                               global_rendering_res.m_camera_config.m_z_far,
+                                               global_rendering_res.m_camera_config.m_fovY);
+        m_render_camera->m_isPerspective = true;
 
         // setup render scene
         m_render_scene = std::make_shared<RenderScene>();
@@ -78,8 +81,11 @@ namespace MoYu
 
     void RenderSystem::tick()
     {
+        // tick time
+        double deltaTimeMilisec = g_SystemTime.Tick();
+
         // process swap data between logic and render contexts
-        this->processSwapData();
+        this->processSwapData(deltaTimeMilisec);
 
         // prepare pipeline's render passes data
         m_renderer_manager->PreparePassData(m_render_resource);
@@ -88,7 +94,7 @@ namespace MoYu
         m_render_resource->commitUploadBatch();
 
         // render one frame
-        m_renderer_manager->Tick();
+        m_renderer_manager->Tick(deltaTimeMilisec);
     }
 
     void RenderSystem::swapLogicRenderData() { m_swap_context.swapLogicRenderData(); }
@@ -112,7 +118,7 @@ namespace MoYu
         //m_render_scene->clearForLevelReloading();
     }
 
-    void RenderSystem::processSwapData()
+    void RenderSystem::processSwapData(float deltaTimeMs)
     {
         RenderSwapData& swap_data = m_swap_context.getRenderSwapData();
 
@@ -183,20 +189,15 @@ namespace MoYu
         // process camera swap data
         if (swap_data.m_camera_swap_data.has_value())
         {
-            if (swap_data.m_camera_swap_data->m_fov_y.has_value())
-            {
-                m_render_camera->setFOVy(*swap_data.m_camera_swap_data->m_fov_y);
-            }
+            m_render_camera->m_isPerspective = swap_data.m_camera_swap_data->m_is_perspective;
+            m_render_camera->setMainViewMatrix(swap_data.m_camera_swap_data->m_view_matrix,
+                                               swap_data.m_camera_swap_data->m_camera_type);
+            m_render_camera->perspectiveProjection(swap_data.m_camera_swap_data->m_width,
+                                                   swap_data.m_camera_swap_data->m_height,
+                                                   swap_data.m_camera_swap_data->m_nearZ,
+                                                   swap_data.m_camera_swap_data->m_farZ,
+                                                   swap_data.m_camera_swap_data->m_fov_y);
 
-            if (swap_data.m_camera_swap_data->m_view_matrix.has_value())
-            {
-                m_render_camera->setMainViewMatrix(*swap_data.m_camera_swap_data->m_view_matrix);
-            }
-
-            if (swap_data.m_camera_swap_data->m_camera_type.has_value())
-            {
-                m_render_camera->setCurrentCameraType(*swap_data.m_camera_swap_data->m_camera_type);
-            }
             swap_data.m_camera_swap_data.reset();
         }
     }

@@ -11,7 +11,7 @@
 
 #include <glm/glm.hpp>
 
-#define ConstantBufferStruct struct alignas(D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT)
+#define ConstantBufferStruct struct alignas(alignof(float))
 
 // datas map to hlsl
 namespace HLSL
@@ -28,181 +28,253 @@ namespace HLSL
     static uint32_t const m_max_point_light_count                = 16;
     static uint32_t const m_max_spot_light_count                 = 16;
 
-    struct SceneDirectionalLight
-    {
-        glm::vec3 direction;
-        float     _padding_0;
-        glm::vec3 color;
-        float     intensity;
-        uint32_t  shadowmap; // 1 - use shadowmap, 0 - do not use shadowmap
-        uint32_t  cascade; // how many cascade level, default 4
-        float     shadowmap_width; // shadowmap size
-        uint32_t  shadowmap_srv_index; // shadowmap srv in descriptorheap index
-        uint32_t  shadow_bounds[4]; // shadow bounds for each cascade level
-        glm::mat4 direction_light_view_matrix;
-        glm::mat4 direction_light_projs[4];
-        glm::mat4 direction_light_proj_views[4];
-    };
-
-    struct ScenePointLight
-    {
-        glm::vec3 position;
-        float     radius;
-        glm::vec3 color;
-        float     intensity;
-    };
-
-    struct SceneSpotLight
-    {
-        glm::vec3 position;
-        float     radius;
-        glm::vec3 color;
-        float     intensity;
-        glm::vec3 direction;
-        float     _padding_direction;
-        float     inner_radians;
-        float     outer_radians;
-        glm::vec2 _padding_radians;
-
-        uint32_t  shadowmap;           // 1 - use shadowmap, 0 - do not use shadowmap
-        uint32_t  shadowmap_srv_index; // shadowmap srv in descriptorheap index
-        float     shadowmap_width;
-        float     _padding_shadowmap;
-        glm::mat4 spot_light_proj_view;
-    };
-
-    struct CameraInstance
-    {
-        glm::mat4 view_matrix;
-        glm::mat4 proj_matrix;
-        glm::mat4 proj_view_matrix;
-        glm::mat4 view_matrix_inverse;
-        glm::mat4 proj_matrix_inverse;
-        glm::mat4 proj_view_matrix_inverse;
-        glm::vec3 camera_position;
-        float     _padding_camera_position;
-    };
-
-    ConstantBufferStruct MeshPerframeStorageBufferObject
-    {
-        CameraInstance        cameraInstance;
-        glm::vec3             ambient_light;
-        float                 _padding_ambient_light;
-        uint32_t              point_light_num;
-        uint32_t              spot_light_num;
-        uint32_t              total_mesh_num;
-        uint32_t              _padding_point_light_num_3;
-        ScenePointLight       scene_point_lights[m_max_point_light_count];
-        SceneSpotLight        scene_spot_lights[m_max_spot_light_count];
-        SceneDirectionalLight scene_directional_light;
-    };
+    typedef glm::mat4x4 float4x4;
+    typedef glm::vec4 float4;
+    typedef glm::vec3 float3;
+    typedef glm::vec2 float2;
+    typedef glm::uvec4 uint4;
+    typedef glm::uvec3 uint3;
+    typedef glm::uvec2 uint2;
+    typedef unsigned int uint;
 
     struct BoundingBox
     {
-        glm::vec3 center;
-        float     _padding_center;
-        glm::vec3 extents;
-        float     _padding_extents;
+        float3 center;
+        float  _Padding_Center;
+        float3 extents;
+        float  _Padding_Extents;
     };
 
-    struct MeshInstance
+
+    struct PerMaterialParametersBuffer
     {
-        float     enable_vertex_blending;
-        glm::vec3 _padding_enable_vertex_blending;
+        float4 baseColorFactor {1.0f, 1.0f, 1.0f, 1.0f};
 
-        glm::mat4 model_matrix;
-        glm::mat4 model_matrix_inverse;
+        float metallicFactor {1.0f};
+        float roughnessFactor {1.0f};
+        float reflectanceFactor {1.0f};
+        float clearCoatFactor {1.0f};
+        float clearCoatRoughnessFactor {1.0f};
+        float anisotropyFactor {1.0f};
+        float normalScale {1.0f};
+        float occlusionStrength {1.0f};
 
+        float2 base_color_tilling {1.0f, 1.0f};
+        float2 metallic_roughness_tilling {1.0f, 1.0f};
+        float2 normal_tilling {1.0f, 1.0f};
+        float2 occlusion_tilling {1.0f, 1.0f};
+        float2 emissive_tilling {1.0f, 1.0f};
+
+        float2 _padding_uniform_01;
+
+        float emissiveFactor {1.0f};
+        uint  is_blend {0};
+        uint  is_double_sided {0};
+
+        uint _padding_uniform_02;
+    };
+
+    struct PerMaterialViewIndexBuffer
+    {
+        uint parametersBufferIndex;
+        uint baseColorIndex;
+        uint metallicRoughnessIndex;
+        uint normalIndex;
+        uint occlusionIndex;
+        uint emissionIndex;
+
+        uint2 _padding_material_0;
+    };
+
+    struct PerRenderableMeshData
+    {
+        // 16
+        float  enableVertexBlending;
+        float3 _padding_enable_vertex_blending;
+
+        // 64
+        float4x4 worldFromModelMatrix;
+        // 64
+        float4x4 modelFromWorldMatrix;
+
+        // 16
         D3D12_VERTEX_BUFFER_VIEW vertexBuffer;
-        D3D12_INDEX_BUFFER_VIEW  indexBuffer;
+        // 16
+        D3D12_INDEX_BUFFER_VIEW indexBuffer;
 
+        // 20
         D3D12_DRAW_INDEXED_ARGUMENTS drawIndexedArguments;
-        glm::vec3 _padding_drawArguments;
 
+        // 12
+        float3 _padding_drawArguments;
+
+        // 32
         BoundingBox boundingBox;
 
-        uint32_t materialIndex;
-        glm::uvec3 _padding_material_index;
+        // 16
+        uint  perMaterialViewIndexBufferIndex;
+        uint3 _padding_materialIndex2;
     };
 
-    struct MaterialInstance
+    struct CameraUniform
     {
-        uint32_t uniformBufferViewIndex;
-        uint32_t baseColorViewIndex;
-        uint32_t metallicRoughnessViewIndex;
-        uint32_t normalViewIndex;
-        uint32_t occlusionViewIndex;
-        uint32_t emissionViewIndex;
+        float4x4 viewFromWorldMatrix; // clip    view <- world    : view matrix
+        float4x4 worldFromViewMatrix; // clip    view -> world    : model matrix
+        float4x4 clipFromViewMatrix;  // clip <- view    world    : projection matrix
+        float4x4 viewFromClipMatrix;  // clip -> view    world    : inverse projection matrix
+        float4x4 clipFromWorldMatrix; // clip <- view <- world
+        float4x4 worldFromClipMatrix; // clip -> view -> world
+        float4   clipTransform;       // [sx, sy, tx, ty] only used by VERTEX_DOMAIN_DEVICE
+        float3   cameraPosition;
+        float    _baseReserved0;
 
-        glm::uvec2 _padding_material;
+        float4 resolution;            // physical viewport width, height, 1/width, 1/height
+        float2 logicalViewportScale;  // scale-factor to go from physical to logical viewport
+        float2 logicalViewportOffset; // offset to go from physical to logical viewport
+
+        // camera position in view space (when camera_at_origin is enabled), i.e. it's (0,0,0).
+        float cameraNear;
+        float cameraFar; // camera *culling* far-plane distance, always positive (projection far is at +inf)
+        float exposure;
+        float ev100;
     };
 
-    struct MeshPointLightShadowPerframeStorageBufferObject
+    struct BaseUniform
     {
-        uint32_t   point_light_num;
-        glm::uvec3 _padding_point_light_num;
-        glm::vec4  point_lights_position_and_radius[m_max_point_light_count];
+        float2 clipControl;   // clip control
+        float  time;          // time in seconds, with a 1-second period
+        float  temporalNoise; // noise [0,1] when TAA is used, 0 otherwise
+        float4 userTime;      // time(s), (double)time - (float)time, 0, 0
+        float  needsAlphaChannel;
+        float  lodBias; // load bias to apply to user materials
+        float  refractionLodOffset;
+        float  baseReserved0;
     };
 
-    struct MeshSpotLightShadowPerframeStorageBufferObject
+    struct AOUniform
     {
-        uint32_t   spot_light_num;
-        glm::uvec3 _padding_spot_light_num;
-        glm::vec4  spot_lights_position_and_radius[m_max_spot_light_count];
+        float aoSamplingQualityAndEdgeDistance; // <0: no AO, 0: bilinear, !0: bilateral edge distance
+        float aoBentNormals;                    // 0: no AO bent normal, >0.0 AO bent normals
+        float aoReserved0;
+        float aoReserved1;
     };
 
-    struct MeshDirectionalLightShadowPerframeStorageBufferObject
+    struct IBLUniform
     {
-        glm::mat4 light_proj_view;
-        uint32_t  shadow_width;
-        uint32_t  shadow_height;
-        uint32_t  shadow_depth;
-        uint32_t  _padding_shadow;
+        float4 iblSH[9]; // actually float3 entries (std140 requires float4 alignment)
+        float  iblLuminance;
+        float  iblRoughnessOneLevel; // level for roughness == 1
+        float  iblReserved0;
+        float  iblReserved1;
+    };
+
+    struct SSRUniform
+    {
+        float4x4 ssrReprojection;
+        float4x4 ssrUvFromViewMatrix;
+        float    ssrThickness; // ssr thickness, in world units
+        float    ssrBias;      // ssr bias, in world units
+        float    ssrDistance;  // ssr world raycast distance, 0 when ssr is off
+        float    ssrStride;    // ssr texel stride, >= 1.0
+    };
+
+    struct DirectionalLightShadowmap
+    {
+        uint     shadowmap_srv_index; // shadowmap srv in descriptorheap index
+        uint     cascade;             // how many cascade level, default 4
+        float    shadowmap_width;     // shadowmap width
+        float    shadowmap_height;    // shadowmap height
+        uint4    shadow_bounds;       // shadow bounds for each cascade level
+        float4x4 light_view_matrix;   // direction light view matrix
+        float4x4 light_proj[4];
+        float4x4 light_proj_view[4];
+    };
+
+    struct DirectionalLightStruct
+    {
+        float4 lightColorIntensity; // directional light rgb - color, a - intensity
+        float3 lightDirection;      // directional light direction
+        uint   useShadowmap;        // 1 use shadowmap
+
+        DirectionalLightShadowmap directionalLightShadowmap;
+    };
+
+    struct PointLightStruct
+    {
+        float3 lightPosition;
+        float  lightRadius;
+        float4 lightIntensity; // point light rgb - color, a - intensity
+    };
+
+    struct PointLightUniform
+    {
+        uint             pointLightCounts;
+        float3           _padding_0;
+        PointLightStruct pointLightStructs[m_max_point_light_count];
+    };
+
+    struct SpotLightSgadowmap
+    {
+        uint     shadowmap_srv_index; // shadowmap srv in descriptorheap index
+        float    shadowmap_width;
+        float2   _padding_shadowmap;
+        float4x4 light_proj_view;
+    };
+
+    struct SpotLightStruct
+    {
+        float3 lightPosition;
+        float  lightRadius;
+        float4 lightIntensity; // spot light rgb - color, a - intensity
+        float3 lightDirection;
+        float  inner_radians;
+        float  outer_radians;
+        uint   useShadowmap;
+        float2 _padding_0;
+
+        SpotLightSgadowmap spotLightShadowmap;
+    };
+
+    struct SpotLightUniform
+    {
+        uint            spotLightCounts;
+        float3          _padding_0;
+        SpotLightStruct scene_spot_lights[m_max_spot_light_count];
+    };
+
+    struct MeshUniform
+    {
+        uint   totalMeshCount;
+        float3 _padding_0;
+    };
+
+    struct FrameUniforms
+    {
+        CameraUniform          cameraUniform;
+        BaseUniform            baseUniform;
+        MeshUniform            meshUniform;
+        AOUniform              aoUniform;
+        IBLUniform             iblUniform;
+        SSRUniform             ssrUniform;
+        DirectionalLightStruct directionalLight;
+        PointLightUniform      pointLightUniform;
+        SpotLightUniform       spotLightUniform;
     };
 
     struct BitonicSortCommandSigParams
     {
-        uint32_t MeshIndex;
-        float    MeshToCamDis;
+        uint  MeshIndex;
+        float MeshToCamDis;
     };
 
     struct CommandSignatureParams
     {
-        uint32_t                     MeshIndex;
+        uint                         MeshIndex;
         D3D12_VERTEX_BUFFER_VIEW     VertexBuffer;
         D3D12_INDEX_BUFFER_VIEW      IndexBuffer;
         D3D12_DRAW_INDEXED_ARGUMENTS DrawIndexedArguments;
     };
-
-    struct MeshPerMaterialUniformBuffer
-    {
-        glm::vec4 baseColorFactor {1.0f, 1.0f, 1.0f, 1.0f};
-
-        float metallicFactor           = 0.0f;
-        float roughnessFactor          = 0.0f;
-        float reflectanceFactor        = 0.0f;
-        float clearCoatFactor          = 0.0f;
-        float clearCoatRoughnessFactor = 0.0f;
-        float anisotropyFactor         = 0.0f;
-
-        float normalScale              = 0.0f;
-        float occlusionStrength        = 0.0f;
-
-        glm::vec2 base_color_tilling         = {1.0f, 1.0f};
-        glm::vec2 metallic_roughness_tilling = {1.0f, 1.0f};
-        glm::vec2 normal_tilling             = {1.0f, 1.0f};
-        glm::vec2 occlusion_tilling          = {1.0f, 1.0f};
-        glm::vec2 emissive_tilling           = {1.0f, 1.0f};
-
-        glm::vec2 _padding_uniform_00;
-
-        float     emissiveFactor  = 1.0f;
-        uint32_t  is_blend        = 0;
-        uint32_t  is_double_sided = 0;
-
-        uint32_t _padding_uniform_1;
-    };
-
+    
     const std::uint64_t totalCommandBufferSizeInBytes = HLSL::MeshLimit * sizeof(HLSL::CommandSignatureParams);
 
     const std::uint64_t totalIndexCommandBufferInBytes = HLSL::MeshLimit * sizeof(HLSL::BitonicSortCommandSigParams);

@@ -58,14 +58,14 @@ namespace MoYu
     void IndirectCullPass::initialize(const RenderPassInitInfo& init_info)
     {
         // create default buffer
-        pPerframeBuffer = CreateCullingBuffer(1, sizeof(HLSL::MeshPerframeStorageBufferObject), L"PerFrameBuffer");
-        pMaterialBuffer = CreateCullingBuffer(HLSL::MaterialLimit, sizeof(HLSL::MaterialInstance), L"MaterialBuffer");
-        pMeshBuffer     = CreateCullingBuffer(HLSL::MeshLimit, sizeof(HLSL::MeshInstance), L"MeshBuffer");
+        pFrameUniformBuffer = CreateCullingBuffer(1, sizeof(HLSL::FrameUniforms), L"FrameUniformBuffer");
+        pMaterialViewIndexBuffer = CreateCullingBuffer(HLSL::MaterialLimit, sizeof(HLSL::PerMaterialViewIndexBuffer), L"MaterialViewIndexBuffer");
+        pRenderableMeshBuffer = CreateCullingBuffer(HLSL::MeshLimit, sizeof(HLSL::PerRenderableMeshData), L"PerRenderableMeshBuffer");
 
         // create upload buffer
-        pUploadPerframeBuffer = CreateUploadBuffer(1, sizeof(HLSL::MeshPerframeStorageBufferObject), L"UploadPerFrameBuffer");
-        pUploadMaterialBuffer = CreateUploadBuffer(HLSL::MaterialLimit, sizeof(HLSL::MaterialInstance), L"MaterialBuffer");
-        pUploadMeshBuffer = CreateUploadBuffer(HLSL::MeshLimit, sizeof(HLSL::MeshInstance), L"MeshBuffer");
+        pUploadFrameUniformBuffer = CreateUploadBuffer(1, sizeof(HLSL::FrameUniforms), L"UploadFrameUniformBuffer");
+        pUploadMaterialViewIndexBuffer = CreateUploadBuffer(HLSL::MaterialLimit, sizeof(HLSL::PerMaterialViewIndexBuffer), L"UploadMaterialViewIndexBuffer");
+        pUploadRenderableMeshBuffer = CreateUploadBuffer(HLSL::MeshLimit, sizeof(HLSL::PerRenderableMeshData), L"UploadPerRenderableMeshBuffer");
 
         sortDispatchArgsBufferDesc = CreateArgBufferDesc("SortDispatchArgs", 22 * 23 / 2);
         grabDispatchArgsBufferDesc = CreateArgBufferDesc("GrabDispatchArgs", 22 * 23 / 2);
@@ -85,17 +85,17 @@ namespace MoYu
         //// update per-frame buffer
         //render_resource->updatePerFrameBuffer(m_render_scene, m_render_camera);
 
-        memcpy(pUploadPerframeBuffer->GetCpuVirtualAddress<HLSL::MeshPerframeStorageBufferObject>(),
-               &render_resource->m_mesh_perframe_storage_buffer_object,
-               sizeof(HLSL::MeshPerframeStorageBufferObject));
+        memcpy(pUploadFrameUniformBuffer->GetCpuVirtualAddress<HLSL::FrameUniforms>(),
+               &render_resource->m_FrameUniforms,
+               sizeof(HLSL::FrameUniforms));
     }
 
     void IndirectCullPass::prepareMeshData(std::shared_ptr<RenderResource> render_resource)
     {
         std::vector<CachedMeshRenderer>& _mesh_renderers = m_render_scene->m_mesh_renderers;
 
-        HLSL::MaterialInstance* pMaterialObj = pUploadMaterialBuffer->GetCpuVirtualAddress<HLSL::MaterialInstance>();
-        HLSL::MeshInstance* pMeshesObj = pUploadMeshBuffer->GetCpuVirtualAddress<HLSL::MeshInstance>();
+        HLSL::PerMaterialViewIndexBuffer* pMaterialViewIndexBuffer = pUploadMaterialViewIndexBuffer->GetCpuVirtualAddress<HLSL::PerMaterialViewIndexBuffer>();
+        HLSL::PerRenderableMeshData* pRenderableMeshBuffer = pUploadRenderableMeshBuffer->GetCpuVirtualAddress<HLSL::PerRenderableMeshData>();
 
         uint32_t numMeshes = _mesh_renderers.size();
         ASSERT(numMeshes < HLSL::MeshLimit);
@@ -124,19 +124,20 @@ namespace MoYu
             else\
                 toIndex = fromTex->GetDefaultSRV()->GetIndex();\
 
-            HLSL::MaterialInstance curMatInstance = {};
-            curMatInstance.uniformBufferViewIndex = uniformBufferView->GetIndex();            
-            Tex2ViewIndex(curMatInstance.baseColorViewIndex, temp_ref_material.m_intenral_pbr_mat.base_color_texture_image)
-            Tex2ViewIndex(curMatInstance.metallicRoughnessViewIndex, temp_ref_material.m_intenral_pbr_mat.metallic_roughness_texture_image)
-            Tex2ViewIndex(curMatInstance.normalViewIndex, temp_ref_material.m_intenral_pbr_mat.normal_texture_image)
-            Tex2ViewIndex(curMatInstance.emissionViewIndex, temp_ref_material.m_intenral_pbr_mat.emissive_texture_image)
+            HLSL::PerMaterialViewIndexBuffer curMatViewIndexBuffer = {};
+            curMatViewIndexBuffer.parametersBufferIndex = uniformBufferView->GetIndex();            
+            Tex2ViewIndex(curMatViewIndexBuffer.baseColorIndex, temp_ref_material.m_intenral_pbr_mat.base_color_texture_image)
+            Tex2ViewIndex(curMatViewIndexBuffer.metallicRoughnessIndex, temp_ref_material.m_intenral_pbr_mat.metallic_roughness_texture_image)
+            Tex2ViewIndex(curMatViewIndexBuffer.normalIndex, temp_ref_material.m_intenral_pbr_mat.normal_texture_image)
+            Tex2ViewIndex(curMatViewIndexBuffer.occlusionIndex, temp_ref_material.m_intenral_pbr_mat.occlusion_texture_image)
+            Tex2ViewIndex(curMatViewIndexBuffer.emissionIndex, temp_ref_material.m_intenral_pbr_mat.emissive_texture_image)
 
             //curMatInstance.baseColorViewIndex = baseColorView->IsValid() ? baseColorView->GetIndex() : defaultWhiteView->GetIndex();
             //curMatInstance.metallicRoughnessViewIndex = metallicRoughnessView->IsValid() ? metallicRoughnessView->GetIndex() : defaultBlackView->GetIndex();
             //curMatInstance.normalViewIndex = normalView->IsValid() ? normalView->GetIndex() : defaultWhiteView->GetIndex();
             //curMatInstance.emissionViewIndex = emissionView->IsValid() ? emissionView->GetIndex() : defaultBlackView->GetIndex();
 
-            pMaterialObj[i] = curMatInstance;
+            pMaterialViewIndexBuffer[i] = curMatViewIndexBuffer;
 
             D3D12_DRAW_INDEXED_ARGUMENTS drawIndexedArguments = {};
             drawIndexedArguments.IndexCountPerInstance        = temp_ref_mesh.index_buffer.index_count; // temp_node.ref_mesh->mesh_index_count;
@@ -149,17 +150,17 @@ namespace MoYu
             boundingBox.center = GLMUtil::fromVec3(temp_ref_mesh.axis_aligned_box.getCenter()); // temp_node.bounding_box.center;
             boundingBox.extents = GLMUtil::fromVec3(temp_ref_mesh.axis_aligned_box.getHalfExtent());//temp_node.bounding_box.extent;
 
-            HLSL::MeshInstance curMeshInstance     = {};
-            curMeshInstance.enable_vertex_blending = temp_ref_mesh.enable_vertex_blending; // temp_node.enable_vertex_blending;
-            curMeshInstance.model_matrix           = GLMUtil::fromMat4x4(temp_mesh_renderer.model_matrix); // temp_node.model_matrix;
-            curMeshInstance.model_matrix_inverse   = GLMUtil::fromMat4x4(temp_mesh_renderer.model_matrix_inverse);//temp_node.model_matrix_inverse;
-            curMeshInstance.vertexBuffer           = temp_ref_mesh.vertex_buffer.vertex_buffer->GetVertexBufferView();//temp_node.ref_mesh->p_mesh_vertex_buffer->GetVertexBufferView();
-            curMeshInstance.indexBuffer            = temp_ref_mesh.index_buffer.index_buffer->GetIndexBufferView();//temp_node.ref_mesh->p_mesh_index_buffer->GetIndexBufferView();
-            curMeshInstance.drawIndexedArguments   = drawIndexedArguments;
-            curMeshInstance.boundingBox            = boundingBox;
-            curMeshInstance.materialIndex          = i;
+            HLSL::PerRenderableMeshData curRenderableMeshData = {};
+            curRenderableMeshData.enableVertexBlending = temp_ref_mesh.enable_vertex_blending; // temp_node.enable_vertex_blending;
+            curRenderableMeshData.worldFromModelMatrix = GLMUtil::fromMat4x4(temp_mesh_renderer.model_matrix); // temp_node.model_matrix;
+            curRenderableMeshData.modelFromWorldMatrix = GLMUtil::fromMat4x4(temp_mesh_renderer.model_matrix_inverse);//temp_node.model_matrix_inverse;
+            curRenderableMeshData.vertexBuffer         = temp_ref_mesh.vertex_buffer.vertex_buffer->GetVertexBufferView();//temp_node.ref_mesh->p_mesh_vertex_buffer->GetVertexBufferView();
+            curRenderableMeshData.indexBuffer          = temp_ref_mesh.index_buffer.index_buffer->GetIndexBufferView();//temp_node.ref_mesh->p_mesh_index_buffer->GetIndexBufferView();
+            curRenderableMeshData.drawIndexedArguments = drawIndexedArguments;
+            curRenderableMeshData.boundingBox          = boundingBox;
+            curRenderableMeshData.perMaterialViewIndexBufferIndex = i;
 
-            pMeshesObj[i] = curMeshInstance;
+            pRenderableMeshBuffer[i] = curRenderableMeshData;
         }
 
         prepareBuffer();
@@ -359,17 +360,17 @@ namespace MoYu
 
     void IndirectCullPass::update(RHI::RenderGraph& graph, IndirectCullOutput& cullOutput)
     {
-        RHI::RgResourceHandle uploadPerframeBufferHandle = GImport(graph, pUploadPerframeBuffer.get());
-        RHI::RgResourceHandle uploadMaterialBufferHandle = GImport(graph, pUploadMaterialBuffer.get());
-        RHI::RgResourceHandle uploadMeshBufferHandle     = GImport(graph, pUploadMeshBuffer.get());
+        RHI::RgResourceHandle uploadFrameUniformHandle = GImport(graph, pUploadFrameUniformBuffer.get());
+        RHI::RgResourceHandle uploadMaterialViewIndexHandle = GImport(graph, pUploadMaterialViewIndexBuffer.get());
+        RHI::RgResourceHandle uploadMeshBufferHandle     = GImport(graph, pUploadRenderableMeshBuffer.get());
 
         RHI::RgResourceHandle sortDispatchArgsHandle = graph.Create<RHI::D3D12Buffer>(sortDispatchArgsBufferDesc);
         RHI::RgResourceHandle grabDispatchArgsHandle = graph.Create<RHI::D3D12Buffer>(grabDispatchArgsBufferDesc);
 
         // import buffers
-        cullOutput.perframeBufferHandle = GImport(graph, pPerframeBuffer.get());
-        cullOutput.materialBufferHandle = GImport(graph, pMaterialBuffer.get());
-        cullOutput.meshBufferHandle     = GImport(graph, pMeshBuffer.get());
+        cullOutput.perframeBufferHandle = GImport(graph, pFrameUniformBuffer.get());
+        cullOutput.materialBufferHandle = GImport(graph, pMaterialViewIndexBuffer.get());
+        cullOutput.meshBufferHandle     = GImport(graph, pRenderableMeshBuffer.get());
 
         cullOutput.opaqueDrawHandle = DrawCallCommandBufferHandle {
             GImport(graph, commandBufferForOpaqueDraw.p_IndirectIndexCommandBuffer.get()),
@@ -407,8 +408,8 @@ namespace MoYu
         {
             RHI::RenderPass& resetPass = graph.AddRenderPass("ResetPass");
 
-            PassReadIg(resetPass, uploadPerframeBufferHandle);
-            PassReadIg(resetPass, uploadMaterialBufferHandle);
+            PassReadIg(resetPass, uploadFrameUniformHandle);
+            PassReadIg(resetPass, uploadMaterialViewIndexHandle);
             PassReadIg(resetPass, uploadMeshBufferHandle);
 
             PassWriteIg(resetPass, cullOutput.perframeBufferHandle);
@@ -447,8 +448,8 @@ namespace MoYu
                     pCopyContext->ResetCounter(RegGetBufCounter(mSpotShadowmapHandles[i].indirectSortBufferHandle));
                 }
 
-                pCopyContext->CopyBuffer(RegGetBuf(mPerframeBufferHandle), RegGetBuf(uploadPerframeBufferHandle));
-                pCopyContext->CopyBuffer(RegGetBuf(mMaterialBufferHandle), RegGetBuf(uploadMaterialBufferHandle));
+                pCopyContext->CopyBuffer(RegGetBuf(mPerframeBufferHandle), RegGetBuf(uploadFrameUniformHandle));
+                pCopyContext->CopyBuffer(RegGetBuf(mMaterialBufferHandle), RegGetBuf(uploadMaterialViewIndexHandle));
                 pCopyContext->CopyBuffer(RegGetBuf(mMeshBufferHandle), RegGetBuf(uploadMeshBufferHandle));
 
                 pCopyContext->TransitionBarrier(RegGetBuf(mPerframeBufferHandle), D3D12_RESOURCE_STATE_GENERIC_READ);
@@ -704,17 +705,17 @@ namespace MoYu
 
     void IndirectCullPass::destroy()
     {
-        pUploadPerframeBuffer = nullptr;
-        pUploadMaterialBuffer = nullptr;
-        pUploadMeshBuffer     = nullptr;
+        pUploadFrameUniformBuffer      = nullptr;
+        pUploadMaterialViewIndexBuffer = nullptr;
+        pUploadRenderableMeshBuffer    = nullptr;
 
-        pPerframeBuffer = nullptr;
-        pMaterialBuffer = nullptr;
-        pMeshBuffer     = nullptr;
+        pFrameUniformBuffer      = nullptr;
+        pMaterialViewIndexBuffer = nullptr;
+        pRenderableMeshBuffer    = nullptr;
 
         commandBufferForOpaqueDraw.ResetBuffer();
         commandBufferForTransparentDraw.ResetBuffer();
-        dirShadowmapCommandBuffers.Reset();
+        dirShadowmapCommandBuffers.Reset(); 
         for (size_t i = 0; i < spotShadowmapCommandBuffer.size(); i++)
             spotShadowmapCommandBuffer[i].Reset();
         spotShadowmapCommandBuffer.clear();

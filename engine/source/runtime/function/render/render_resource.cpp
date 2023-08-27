@@ -13,6 +13,7 @@
 #include "runtime/core/base/macro.h"
 
 #include "runtime/platform/path/path.h"
+#include "runtime/platform/system/systemtime.h"
 #include "runtime/function/global/global_context.h"
 #include "runtime/resource/asset_manager/asset_manager.h"
 #include "runtime/resource/config_manager/config_manager.h"
@@ -140,65 +141,102 @@ namespace MoYu
         return true;
     }
 
-    void RenderResource::updatePerFrameBuffer(RenderScene* render_scene, RenderCamera* camera)
+    void RenderResource::updateFrameUniforms(RenderScene* render_scene, RenderCamera* camera)
     {
-        Matrix4x4 view_matrix      = camera->getViewMatrix();
-        Matrix4x4 proj_matrix      = camera->getPersProjMatrix();
-        Vector3   camera_position  = camera->position();
-        //glm::mat4 proj_view_matrix = GLMUtil::fromMat4x4(proj_matrix * view_matrix);
+        Matrix4x4 view_matrix     = camera->getViewMatrix();
+        Matrix4x4 proj_matrix     = camera->getPersProjMatrix();
+        Vector3   camera_position = camera->position();
+        
+        // FrameUniforms
+        HLSL::FrameUniforms* _frameUniforms = &m_FrameUniforms;
+
+        // Camera Uniform
+        HLSL::CameraUniform _cameraUniform;
+        _cameraUniform.viewFromWorldMatrix = GLMUtil::fromMat4x4(view_matrix);
+        _cameraUniform.worldFromViewMatrix = glm::inverse(_cameraUniform.viewFromWorldMatrix);
+        _cameraUniform.clipFromViewMatrix  = GLMUtil::fromMat4x4(proj_matrix);
+        _cameraUniform.viewFromClipMatrix  = glm::inverse(_cameraUniform.clipFromViewMatrix);
+        _cameraUniform.clipFromWorldMatrix = GLMUtil::fromMat4x4(proj_matrix * view_matrix);
+        _cameraUniform.worldFromClipMatrix = glm::inverse(_cameraUniform.clipFromWorldMatrix);
+        _cameraUniform.clipTransform       = HLSL::float4(1, 1, 1, 1);
+        _cameraUniform.cameraPosition      = GLMUtil::fromVec3(camera_position);
+
+        _cameraUniform.resolution = HLSL::float4(camera->m_width, camera->m_height, 1.0f / camera->m_width, 1.0f / camera->m_height);
+        _cameraUniform.logicalViewportScale = HLSL::float2(1.0f, 1.0f);
+        _cameraUniform.logicalViewportOffset = HLSL::float2(0.0f, 0.0f);
+
+        _cameraUniform.cameraNear = camera->m_znear;
+        _cameraUniform.cameraFar = camera->m_zfar;
+
+        _cameraUniform.exposure = 1.0f;
+        _cameraUniform.ev100 = 1.0f;
+
+        _frameUniforms->cameraUniform = _cameraUniform;
 
 
-        // camera instance
-        HLSL::CameraInstance cameraInstance;
-        cameraInstance.view_matrix              = GLMUtil::fromMat4x4(view_matrix);
-        cameraInstance.proj_matrix              = GLMUtil::fromMat4x4(proj_matrix);
-        cameraInstance.proj_view_matrix         = GLMUtil::fromMat4x4(proj_matrix * view_matrix);
-        cameraInstance.view_matrix_inverse      = glm::inverse(cameraInstance.view_matrix);
-        cameraInstance.proj_matrix_inverse      = glm::inverse(cameraInstance.proj_matrix);
-        cameraInstance.proj_view_matrix_inverse = glm::inverse(cameraInstance.proj_view_matrix);
-        cameraInstance.camera_position          = GLMUtil::fromVec3(camera_position);
+        // Base Uniform
+        HLSL::BaseUniform _baseUniform;
+        _baseUniform.time     = g_SystemTime.GetTimeSecs();
+        _baseUniform.userTime = HLSL::float4(g_SystemTime.GetDeltaTimeSecs(), 0, 0, 0);
+        _baseUniform.lodBias  = 0;
 
-        // ambient light
-        Vector3  ambient_light   = render_scene->m_ambient_light.m_color.toVector3();
-        uint32_t point_light_num = static_cast<uint32_t>(render_scene->m_point_light_list.size());
-        uint32_t spot_light_num  = static_cast<uint32_t>(render_scene->m_spot_light_list.size());
+        _frameUniforms->baseUniform = _baseUniform;
 
-        // set ubo data
-        m_mesh_perframe_storage_buffer_object.cameraInstance   = cameraInstance;
-        m_mesh_perframe_storage_buffer_object.ambient_light    = GLMUtil::fromVec3(ambient_light);
-        m_mesh_perframe_storage_buffer_object.point_light_num  = point_light_num;
-        m_mesh_perframe_storage_buffer_object.spot_light_num   = spot_light_num;
 
-        // set mesh number
-        m_mesh_perframe_storage_buffer_object.total_mesh_num = render_scene->m_mesh_renderers.size();
+        HLSL::MeshUniform _meshUniform;
+        _meshUniform.totalMeshCount = render_scene->m_mesh_renderers.size();
 
-        //// set point light number
-        //m_mesh_point_light_shadow_perframe_storage_buffer_object.point_light_num = point_light_num;
+        _frameUniforms->meshUniform = _meshUniform;
 
-        // point lights
-        for (uint32_t i = 0; i < point_light_num; i++)
+        HLSL::DirectionalLightStruct _directionalLightStruct;
+        _directionalLightStruct.lightColorIntensity =
+            HLSL::float4(GLMUtil::fromVec3(render_scene->m_directional_light.m_color.toVector3()), render_scene->m_directional_light.m_intensity);
+        _directionalLightStruct.lightDirection =
+            GLMUtil::fromVec3(Vector3::normalize(render_scene->m_directional_light.m_direction));
+        _directionalLightStruct.useShadowmap = render_scene->m_directional_light.m_shadowmap ? 1 : 0;
+
+        HLSL::DirectionalLightShadowmap _directionalLightShadowmap;
+        _directionalLightShadowmap.cascade = render_scene->m_directional_light.m_cascade;
+        _directionalLightShadowmap.shadowmap_width = render_scene->m_directional_light.m_shadowmap_size.x;
+        _directionalLightShadowmap.light_view_matrix =
+            GLMUtil::fromMat4x4(render_scene->m_directional_light.m_shadow_view_mat);
+        for (size_t i = 0; i < render_scene->m_directional_light.m_cascade; i++)
         {
-            Vector3 point_light_position = render_scene->m_point_light_list[i].m_position;
-            float point_light_intensity = render_scene->m_point_light_list[i].m_intensity;
+            _directionalLightShadowmap.shadow_bounds[i] = (int)render_scene->m_directional_light.m_shadow_bounds.x << i;
+            _directionalLightShadowmap.light_proj[i] =
+                GLMUtil::fromMat4x4(render_scene->m_directional_light.m_shadow_proj_mats[i]);
+            _directionalLightShadowmap.light_proj_view[i] =
+                GLMUtil::fromMat4x4(render_scene->m_directional_light.m_shadow_view_proj_mats[i]);
+        }
+        _directionalLightStruct.directionalLightShadowmap = _directionalLightShadowmap;
+
+        _frameUniforms->directionalLight = _directionalLightStruct;
+
+
+        HLSL::PointLightUniform _pointLightUniform;
+        _pointLightUniform.pointLightCounts = render_scene->m_point_light_list.size();
+        for (uint32_t i = 0; i < render_scene->m_point_light_list.size(); i++)
+        {
+            Vector3 point_light_position  = render_scene->m_point_light_list[i].m_position;
+            float   point_light_intensity = render_scene->m_point_light_list[i].m_intensity;
 
             float radius = render_scene->m_point_light_list[i].m_radius;
             Color color  = render_scene->m_point_light_list[i].m_color;
 
+            HLSL::PointLightStruct _pointLightStruct;
+            _pointLightStruct.lightPosition = GLMUtil::fromVec3(point_light_position);
+            _pointLightStruct.lightRadius = radius;
+            _pointLightStruct.lightIntensity =
+                HLSL::float4(GLMUtil::fromVec3(Vector3(color.r, color.g, color.b)), point_light_intensity);
 
-            m_mesh_perframe_storage_buffer_object.scene_point_lights[i].position = GLMUtil::fromVec3(point_light_position);
-            m_mesh_perframe_storage_buffer_object.scene_point_lights[i].radius = radius;
-            m_mesh_perframe_storage_buffer_object.scene_point_lights[i].color = GLMUtil::fromVec3(Vector3(color.r, color.g, color.b));
-            m_mesh_perframe_storage_buffer_object.scene_point_lights[i].intensity = point_light_intensity;
-
-            //m_mesh_point_light_shadow_perframe_storage_buffer_object.point_lights_position_and_radius[i] = 
-            //    glm::vec4(point_light_position.x, point_light_position.y, point_light_position.z, radius);
+            _pointLightUniform.pointLightStructs[i] = _pointLightStruct;
         }
+        _frameUniforms->pointLightUniform = _pointLightUniform;
 
-        //// set spot light number
-        //m_mesh_spot_light_shadow_perframe_storage_buffer_object.spot_light_num = spot_light_num;
 
-        // spot lights
-        for (uint32_t i = 0; i < spot_light_num; i++)
+        HLSL::SpotLightUniform _spotLightUniform;
+        _spotLightUniform.spotLightCounts = render_scene->m_spot_light_list.size();
+        for (uint32_t i = 0; i < render_scene->m_spot_light_list.size(); i++)
         {
             Vector3 spot_light_position  = render_scene->m_spot_light_list[i].m_position;
             Vector3 spot_light_direction = render_scene->m_spot_light_list[i].m_direction;
@@ -207,41 +245,26 @@ namespace MoYu
             float radius = render_scene->m_spot_light_list[i].m_radius;
             Color color  = render_scene->m_spot_light_list[i].m_color;
 
-            m_mesh_perframe_storage_buffer_object.scene_spot_lights[i].position = GLMUtil::fromVec3(spot_light_position);
-            m_mesh_perframe_storage_buffer_object.scene_spot_lights[i].radius = radius;
-            m_mesh_perframe_storage_buffer_object.scene_spot_lights[i].color = GLMUtil::fromVec3(Vector3(color.r, color.g, color.b));
-            m_mesh_perframe_storage_buffer_object.scene_spot_lights[i].intensity = spot_light_intensity;
-            m_mesh_perframe_storage_buffer_object.scene_spot_lights[i].direction = GLMUtil::fromVec3(spot_light_direction);
-            m_mesh_perframe_storage_buffer_object.scene_spot_lights[i].inner_radians = Math::degreesToRadians(render_scene->m_spot_light_list[i].m_inner_degree);
-            m_mesh_perframe_storage_buffer_object.scene_spot_lights[i].outer_radians = Math::degreesToRadians(render_scene->m_spot_light_list[i].m_outer_degree);
+            HLSL::SpotLightStruct _spotLightStruct;
+            _spotLightStruct.lightPosition = GLMUtil::fromVec3(spot_light_position);
+            _spotLightStruct.lightRadius   = radius;
+            _spotLightStruct.lightIntensity =
+                HLSL::float4(GLMUtil::fromVec3(Vector3(color.r, color.g, color.b)), spot_light_intensity);
+            _spotLightStruct.lightDirection = GLMUtil::fromVec3(spot_light_direction);
+            _spotLightStruct.inner_radians  = Math::degreesToRadians(render_scene->m_spot_light_list[i].m_inner_degree);
+            _spotLightStruct.outer_radians  = Math::degreesToRadians(render_scene->m_spot_light_list[i].m_outer_degree);
+            _spotLightStruct.useShadowmap   = render_scene->m_spot_light_list[i].m_shadowmap;
 
-            m_mesh_perframe_storage_buffer_object.scene_spot_lights[i].shadowmap = render_scene->m_spot_light_list[i].m_shadowmap;
-            m_mesh_perframe_storage_buffer_object.scene_spot_lights[i].shadowmap_width = render_scene->m_spot_light_list[i].m_shadowmap_size.x;
-            m_mesh_perframe_storage_buffer_object.scene_spot_lights[i].spot_light_proj_view = GLMUtil::fromMat4x4(render_scene->m_spot_light_list[i].m_shadow_view_proj_mat);
+            HLSL::SpotLightSgadowmap _spotLightSgadowmap;
+            _spotLightSgadowmap.shadowmap_width = render_scene->m_spot_light_list[i].m_shadowmap_size.x;
+            _spotLightSgadowmap.light_proj_view =
+                GLMUtil::fromMat4x4(render_scene->m_spot_light_list[i].m_shadow_view_proj_mat);
 
-            //m_mesh_spot_light_shadow_perframe_storage_buffer_object.spot_lights_position_and_radius[i] =
-            //    glm::vec4(spot_light_position.x, spot_light_position.y, spot_light_position.z, radius);
+            _spotLightStruct.spotLightShadowmap = _spotLightSgadowmap;
+
+            _spotLightUniform.scene_spot_lights[i] = _spotLightStruct;
         }
-
-        {
-            // directional light
-            HLSL::SceneDirectionalLight scene_directional_light {};
-            scene_directional_light.direction = GLMUtil::fromVec3(Vector3::normalize(render_scene->m_directional_light.m_direction));
-            scene_directional_light.color = GLMUtil::fromVec3(render_scene->m_directional_light.m_color.toVector3());
-            scene_directional_light.intensity = render_scene->m_directional_light.m_intensity;
-            scene_directional_light.shadowmap = render_scene->m_directional_light.m_shadowmap ? 1 : 0;
-            scene_directional_light.cascade = render_scene->m_directional_light.m_cascade;
-            scene_directional_light.shadowmap_width = render_scene->m_directional_light.m_shadowmap_size.x;
-            scene_directional_light.direction_light_view_matrix = GLMUtil::fromMat4x4(render_scene->m_directional_light.m_shadow_view_mat);
-            for (size_t i = 0; i < scene_directional_light.cascade; i++)
-            {
-                scene_directional_light.shadow_bounds[i] = (int)render_scene->m_directional_light.m_shadow_bounds.x << i;
-                scene_directional_light.direction_light_projs[i] = GLMUtil::fromMat4x4(render_scene->m_directional_light.m_shadow_proj_mats[i]);
-                scene_directional_light.direction_light_proj_views[i] = GLMUtil::fromMat4x4(render_scene->m_directional_light.m_shadow_view_proj_mats[i]);
-            }
-
-            m_mesh_perframe_storage_buffer_object.scene_directional_light = scene_directional_light;
-        }
+        _frameUniforms->spotLightUniform = _spotLightUniform;
     }
 
     bool RenderResource::updateInternalMeshRenderer(SceneMeshRenderer scene_mesh_renderer, SceneMeshRenderer& cached_mesh_renderer, InternalMeshRenderer& internal_mesh_renderer, bool has_initialized)
@@ -305,15 +328,17 @@ namespace MoYu
 
             if (!is_uniform_same || !has_initialized)
             {
-                HLSL::MeshPerMaterialUniformBuffer material_uniform_buffer_info;
+                HLSL::PerMaterialParametersBuffer material_uniform_buffer_info;
                 material_uniform_buffer_info.is_blend          = m_mat_data.m_blend;
                 material_uniform_buffer_info.is_double_sided   = m_mat_data.m_double_sided;
                 material_uniform_buffer_info.baseColorFactor   = GLMUtil::fromVec4(m_mat_data.m_base_color_factor);
                 material_uniform_buffer_info.metallicFactor    = m_mat_data.m_metallic_factor;
                 material_uniform_buffer_info.roughnessFactor   = m_mat_data.m_roughness_factor;
+                material_uniform_buffer_info.reflectanceFactor = 1.0f;
+
                 material_uniform_buffer_info.normalScale       = m_mat_data.m_normal_scale;
                 material_uniform_buffer_info.occlusionStrength = m_mat_data.m_occlusion_strength;
-                material_uniform_buffer_info.emissiveFactor    = GLMUtil::fromVec3(m_mat_data.m_emissive_factor);
+                material_uniform_buffer_info.emissiveFactor    = m_mat_data.m_emissive_factor.x;
 
                 material_uniform_buffer_info.base_color_tilling = GLMUtil::fromVec2(m_mat_data.m_base_color_texture_file.m_tilling);
                 material_uniform_buffer_info.metallic_roughness_tilling = GLMUtil::fromVec2(m_mat_data.m_metallic_roughness_texture_file.m_tilling);
@@ -323,13 +348,13 @@ namespace MoYu
 
                 if (now_material.material_uniform_buffer == nullptr)
                 {
-                    uint32_t buffer_size = sizeof(HLSL::MeshPerMaterialUniformBuffer);
+                    uint32_t buffer_size = sizeof(HLSL::PerMaterialParametersBuffer);
                     auto uniform_buffer = createStaticBuffer(&material_uniform_buffer_info, buffer_size, buffer_size, false, false);
                     now_material.material_uniform_buffer = uniform_buffer;
                 }
                 else
                 {
-                    now_material.material_uniform_buffer->InflateBuffer((BYTE*)&material_uniform_buffer_info, sizeof(HLSL::MeshPerMaterialUniformBuffer));
+                    now_material.material_uniform_buffer->InflateBuffer((BYTE*)&material_uniform_buffer_info, sizeof(HLSL::PerMaterialParametersBuffer));
                 }
             }
         }

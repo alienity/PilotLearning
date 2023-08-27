@@ -19,7 +19,7 @@ namespace MoYu
     public:
         RenderResource() = default;
 
-        void updatePerFrameBuffer(RenderScene* render_scene, RenderCamera* camera);
+        void updateFrameUniforms(RenderScene* render_scene, RenderCamera* camera);
         
         bool updateGlobalRenderResource(RenderScene* m_render_scene, GlobalRenderingRes level_resource_desc);
 
@@ -28,7 +28,7 @@ namespace MoYu
         bool updateInternalMeshRenderer(SceneMeshRenderer scene_mesh_renderer, SceneMeshRenderer& cached_mesh_renderer, InternalMeshRenderer& internal_mesh_renderer, bool has_initialized = false);
 
         // bindless objects
-        HLSL::MeshPerframeStorageBufferObject m_mesh_perframe_storage_buffer_object;
+        HLSL::FrameUniforms m_FrameUniforms;
         //HLSL::MeshPointLightShadowPerframeStorageBufferObject m_mesh_point_light_shadow_perframe_storage_buffer_object;
         //HLSL::MeshSpotLightShadowPerframeStorageBufferObject  m_mesh_spot_light_shadow_perframe_storage_buffer_object;
         //HLSL::MeshDirectionalLightShadowPerframeStorageBufferObject m_mesh_directional_light_shadow_perframe_storage_buffer_object;

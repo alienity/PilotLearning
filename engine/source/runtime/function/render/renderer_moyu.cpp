@@ -59,7 +59,8 @@ namespace MoYu
         p_MoYuRenderer->PreparePassData(render_resource);
     }
 
-    void RendererManager::Tick()
+
+    void RendererManager::Tick(double deltaTime)
     {
         RHI::D3D12CommandContext* pContext = p_Device->GetLinkedDevice()->GetCommandContext();
 

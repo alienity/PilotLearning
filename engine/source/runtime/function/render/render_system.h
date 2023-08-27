@@ -51,6 +51,6 @@ namespace MoYu
         std::shared_ptr<RenderResource>  m_render_resource;
         std::shared_ptr<RendererManager> m_renderer_manager;
 
-        void processSwapData();
+        void processSwapData(float deltaTimeMs);
     };
 } // namespace MoYu

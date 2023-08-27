@@ -1,23 +1,23 @@
 #include "runtime/function/render/render_camera.h"
+#include "glm_wrapper.h"
 
 namespace MoYu
 {
-    void RenderCamera::setCurrentCameraType(RenderCameraType type)
-    {
-        std::lock_guard<std::mutex> lock_guard(m_view_matrix_mutex);
-        m_current_camera_type = type;
-    }
 
     void RenderCamera::setMainViewMatrix(const Matrix4x4& view_matrix, RenderCameraType type)
     {
         std::lock_guard<std::mutex> lock_guard(m_view_matrix_mutex);
-        m_current_camera_type                   = type;
-        m_view_matrices[MAIN_VIEW_MATRIX_INDEX] = view_matrix;
+
+        m_current_camera_type = type;
+        m_view_matrix = view_matrix;
 
         Vector3 s  = Vector3(view_matrix[0][0], view_matrix[0][1], view_matrix[0][2]);
         Vector3 u  = Vector3(view_matrix[1][0], view_matrix[1][1], view_matrix[1][2]);
         Vector3 f  = Vector3(-view_matrix[2][0], -view_matrix[2][1], -view_matrix[2][2]);
         m_position = s * (-view_matrix[0][3]) + u * (-view_matrix[1][3]) + f * view_matrix[2][3];
+        
+        m_rotation = Quaternion::fromRotationMatrix(view_matrix);
+        m_invRotation = Quaternion::conjugate(m_rotation);
     }
 
     void RenderCamera::move(Vector3 delta) { m_position += delta; }
@@ -37,14 +37,13 @@ namespace MoYu
         Quaternion yaw   = Quaternion::fromAxisAngle(Y, Radian(delta.y).valueRadians());
 
         m_rotation = pitch * m_rotation * yaw;
-
         m_invRotation = Quaternion::conjugate(m_rotation);
     }
 
     void RenderCamera::zoom(float offset)
     {
         // > 0 = zoom in (decrease FOV by <offset> angles)
-        m_fovy = Math::clamp(m_fovy - offset, MIN_FOV, MAX_FOV);
+        m_fovy = Math::clamp(m_fovy - offset, MIN_FOVY, MAX_FOVY);
     }
 
     void RenderCamera::lookAt(const Vector3& position, const Vector3& target, const Vector3& up)
@@ -70,6 +69,18 @@ namespace MoYu
         m_invRotation = Quaternion::conjugate(m_rotation);
     }
 
+    void RenderCamera::perspectiveProjection(int width, int height, float znear, float zfar, float fovy)
+    {
+        m_width  = width;
+        m_height = height;
+        m_aspect = width / (float)height; 
+        m_znear  = znear;
+        m_zfar   = zfar;
+        m_fovy   = fovy;
+
+        m_project_matrix = Math::makePerspectiveMatrix(Radian(Degree(m_fovy)), m_aspect, -m_znear, -m_zfar);
+    }
+
     Matrix4x4 RenderCamera::getViewMatrix()
     {
         std::lock_guard<std::mutex> lock_guard(m_view_matrix_mutex);
@@ -82,7 +93,7 @@ namespace MoYu
                 }
                 break;
             case RenderCameraType::Motor:
-                view_matrix = m_view_matrices[MAIN_VIEW_MATRIX_INDEX];
+                    view_matrix = m_view_matrix;
                 break;
             default:
                 break;
@@ -97,12 +108,4 @@ namespace MoYu
         return proj_mat;
     }
 
-    void RenderCamera::setAspect(float aspect)
-    {
-        m_aspect = aspect;
-
-        // 1 / tan(fovy * 0.5) / aspect = 1 / tan(fovx * 0.5)
-        // 1 / tan(fovy * 0.5) = aspect / tan(fovx * 0.5)
-        // tan(fovy * 0.5) = tan(fovx * 0.5) / aspect
-    }
 } // namespace MoYu

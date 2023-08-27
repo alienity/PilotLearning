@@ -154,7 +154,7 @@ namespace MoYu
 
     void DeferredRenderer::PreparePassData(std::shared_ptr<RenderResource> render_resource)
     {
-        render_resource->updatePerFrameBuffer(RenderPass::m_render_scene, RenderPass::m_render_camera);
+        render_resource->updateFrameUniforms(RenderPass::m_render_scene, RenderPass::m_render_camera);
 
         mIndirectCullPass->prepareMeshData(render_resource);
         mIndirectShadowPass->prepareShadowmaps(render_resource);

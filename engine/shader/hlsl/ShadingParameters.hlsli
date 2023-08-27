@@ -270,7 +270,7 @@ Light getDirectionalLight(const CommonShadingStruct params, const FrameUniforms 
 
 void evaluateDirectionalLight(
     const FrameUniforms frameUniforms, 
-    const PerhRenderableMeshData perMeshData, 
+    const PerRenderableMeshData perMeshData, 
     const CommonShadingStruct params,
     const MaterialInputs material, 
     const PixelParams pixel, inout float3 color)
@@ -321,7 +321,7 @@ void evaluateDirectionalLight(
  *
  * Returns a pre-exposed HDR RGBA color in linear space.
  */
-float4 evaluateLights(const FrameUniforms frameUniforms, const PerhRenderableMeshData perMeshData, const CommonShadingStruct commonShadingStruct, const MaterialInputs materialInputs)
+float4 evaluateLights(const FrameUniforms frameUniforms, const PerRenderableMeshData perMeshData, const CommonShadingStruct commonShadingStruct, const MaterialInputs materialInputs)
 {
     PixelParams pixel;
     getPixelParams(commonShadingStruct, materialInputs, pixel);
@@ -359,7 +359,7 @@ void addEmissive(const FrameUniforms frameUniforms, const MaterialInputs materia
  *
  * Returns a pre-exposed HDR RGBA color in linear space.
  */
-float4 evaluateMaterial(const FrameUniforms frameUniforms, const PerhRenderableMeshData perMeshData, const CommonShadingStruct commonShadingStruct, const MaterialInputs materialInputs)
+float4 evaluateMaterial(const FrameUniforms frameUniforms, const PerRenderableMeshData perMeshData, const CommonShadingStruct commonShadingStruct, const MaterialInputs materialInputs)
 {
     float4 color = evaluateLights(frameUniforms, perMeshData, commonShadingStruct, materialInputs);
     addEmissive(frameUniforms, materialInputs, color);

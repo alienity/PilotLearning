@@ -13,9 +13,14 @@ namespace MoYu
 {
     struct CameraSwapData
     {
-        std::optional<float>            m_fov_y;
-        std::optional<RenderCameraType> m_camera_type;
-        std::optional<Matrix4x4>        m_view_matrix;
+        RenderCameraType m_camera_type;
+        bool m_is_perspective;
+        Matrix4x4 m_view_matrix;
+        int   m_width;
+        int   m_height;
+        float m_nearZ;
+        float m_farZ;
+        float m_fov_y;
     };
 
     struct GameObjectResourceDesc

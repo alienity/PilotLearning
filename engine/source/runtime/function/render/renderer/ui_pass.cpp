@@ -25,7 +25,7 @@ namespace MoYu
         // Setup Platform/Renderer backends
         ImGui_ImplGlfw_InitForOther(m_WindowSystem->getWindow(), true);
         ImGui_ImplDX12_Init(m_Device->GetD3D12Device(),
-                            RHI::D3D12SwapChain::BackBufferCount,
+                            SWAP_CHAIN_BUFFER_COUNT,
                             RHI::D3D12SwapChain::Format,
                             pDescriptorHeap,
                             pD3D12SRVDescriptor->GetCpuHandle(),

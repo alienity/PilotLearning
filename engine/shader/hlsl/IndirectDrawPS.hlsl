@@ -5,14 +5,13 @@
 #define VARIANT_HAS_DYNAMIC_LIGHTING
 
 #include "d3d12.hlsli"
-//#include "Shader.hlsli"
 #include "CommonMath.hlsli"
 #include "InputTypes.hlsli"
 #include "ShadingParameters.hlsli"
 
 cbuffer RootConstants : register(b0, space0) { uint meshIndex; };
 ConstantBuffer<FrameUniforms> g_FramUniforms : register(b1, space0);
-StructuredBuffer<PerhRenderableMeshData> g_RenderableMeshDatas : register(t0, space0);
+StructuredBuffer<PerRenderableMeshData> g_RenderableMeshDatas : register(t0, space0);
 StructuredBuffer<PerMaterialViewIndexBuffer> g_MaterialViewIndexBuffers : register(t1, space0);
 
 SamplerState           defaultSampler : register(s10);
@@ -30,14 +29,14 @@ VaringStruct VSMain(VertexInput input)
 {
     VaringStruct output;
 
-    PerhRenderableMeshData renderableMeshData = g_RenderableMeshDatas[meshIndex];
+    PerRenderableMeshData renderableMeshData = g_RenderableMeshDatas[meshIndex];
 
-    float4x4 localToWorldMatrix    = renderableMeshData.localToWorldMatrix;
-    float4x4 localToWorldMatrixInv = renderableMeshData.localToWorldMatrixInverse;
-    float4x4 projectionMatrix      = g_FramUniforms.cameraInstance.projViewMatrix;
+    float4x4 localToWorldMatrix    = renderableMeshData.worldFromModelMatrix;
+    float4x4 localToWorldMatrixInv = renderableMeshData.modelFromWorldMatrix;
+    float4x4 projectionViewMatrix  = g_FramUniforms.cameraUniform.clipFromWorldMatrix;
 
     output.vertex_worldPosition = mul(localToWorldMatrix, float4(input.position, 1.0f));
-    output.vertex_position = mul(projectionMatrix, output.vertex_worldPosition);
+    output.vertex_position = mul(projectionViewMatrix, output.vertex_worldPosition);
 
     output.vertex_uv01 = input.texcoord;
 
@@ -52,8 +51,8 @@ VaringStruct VSMain(VertexInput input)
 
 float4 VSMain(VaringStruct varingStruct) : SV_Target0
 {
-    PerhRenderableMeshData renderableMeshData = g_RenderableMeshDatas[meshIndex];
-    PerMaterialViewIndexBuffer materialViewIndexBuffer = g_MaterialViewIndexBuffers[renderableMeshData.materialIndex];
+    PerRenderableMeshData renderableMeshData = g_RenderableMeshDatas[meshIndex];
+    PerMaterialViewIndexBuffer materialViewIndexBuffer = g_MaterialViewIndexBuffers[renderableMeshData.perMaterialViewIndexBufferIndex];
 
     MaterialInputs materialInputs;
     inflateMaterial(varingStruct, materialViewIndexBuffer, defaultSampler, materialInputs);
@@ -62,7 +61,7 @@ float4 VSMain(VaringStruct varingStruct) : SV_Target0
     computeShadingParams(g_FramUniforms, varingStruct, commonShadingStruct);
     prepareMaterial(materialInputs, commonShadingStruct);
 
-    float4 fragColor = evaluateMaterial(g_FramUniforms, commonShadingStruct, materialInputs);
+    float4 fragColor = evaluateMaterial(g_FramUniforms, renderableMeshData, commonShadingStruct, materialInputs);
 
     return fragColor;
 }

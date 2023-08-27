@@ -103,14 +103,14 @@ namespace MoYu
     private:
 
         // for upload
-        std::shared_ptr<RHI::D3D12Buffer> pUploadPerframeBuffer;
-        std::shared_ptr<RHI::D3D12Buffer> pUploadMaterialBuffer;
-        std::shared_ptr<RHI::D3D12Buffer> pUploadMeshBuffer;
+        std::shared_ptr<RHI::D3D12Buffer> pUploadFrameUniformBuffer;
+        std::shared_ptr<RHI::D3D12Buffer> pUploadMaterialViewIndexBuffer;
+        std::shared_ptr<RHI::D3D12Buffer> pUploadRenderableMeshBuffer;
 
         // used for later pass computation
-        std::shared_ptr<RHI::D3D12Buffer> pPerframeBuffer;
-        std::shared_ptr<RHI::D3D12Buffer> pMaterialBuffer;
-        std::shared_ptr<RHI::D3D12Buffer> pMeshBuffer;
+        std::shared_ptr<RHI::D3D12Buffer> pFrameUniformBuffer;
+        std::shared_ptr<RHI::D3D12Buffer> pMaterialViewIndexBuffer;
+        std::shared_ptr<RHI::D3D12Buffer> pRenderableMeshBuffer;
 
         /*
         // for sort

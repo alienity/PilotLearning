@@ -40,7 +40,7 @@ namespace MoYu
         void InitRenderer();
         void InitUIRenderer(WindowUI* window_ui);
         void PreparePassData(std::shared_ptr<RenderResource> render_resource);
-        void Tick();
+        void Tick(double deltaTime);
 
         RHI::D3D12Device* GetDevice();
         

@@ -1,5 +1,5 @@
 ﻿#include "d3d12.hlsli"
-#include "Shader.hlsli"
+// #include "Shader.hlsli"
 #include "CommonMath.hlsli"
 #include "InputTypes.hlsli"
 
@@ -13,11 +13,9 @@ cbuffer RootConstants : register(b0, space0)
 #endif
 };
 
-ConstantBuffer<MeshPerframeBuffer> g_ConstantBufferParams : register(b1, space0);
-
-StructuredBuffer<MeshInstance> g_MeshesInstance : register(t0, space0);
-
-StructuredBuffer<MaterialInstance> g_MaterialsInstance : register(t1, space0);
+ConstantBuffer<FrameUniforms> g_FramUniforms : register(b1, space0);
+StructuredBuffer<PerRenderableMeshData> g_RenderableMeshDatas : register(t0, space0);
+StructuredBuffer<PerMaterialViewIndexBuffer> g_MaterialViewIndexBuffers : register(t1, space0);
 
 SamplerState defaultSampler : register(s10);
 
@@ -42,22 +40,22 @@ VertexOutput VSMain(VertexInput input)
 {
     VertexOutput output;
 
-    MeshInstance mesh = g_MeshesInstance[meshIndex];
+    PerRenderableMeshData mesh = g_RenderableMeshDatas[meshIndex];
 
 	#if defined(DIRECTIONSHADOW)
-    float4x4 view_proj_mat = g_ConstantBufferParams.scene_directional_light.light_proj_view[cascadeLevel];
+    float4x4 view_proj_mat = g_FramUniforms.directionalLight.directionalLightShadowmap.light_proj_view[cascadeLevel];
     #elif defined(SPOTSHADOW)
-    float4x4 view_proj_mat = g_ConstantBufferParams.scene_spot_lights[spotIndex].light_proj_view;
+    float4x4 view_proj_mat = g_FramUniforms.spotLightUniform.spotLightStructs[spotIndex].spotLightShadowmap.light_proj_view;
     #else
-    float4x4 view_proj_mat = g_ConstantBufferParams.cameraInstance.projViewMatrix;
+    float4x4 view_proj_mat = g_FramUniforms.cameraUniform.clipFromWorldMatrix;
     #endif
 
-    output.positionWS = mul(mesh.localToWorldMatrix, float4(input.position, 1.0f)).xyz;
+    output.positionWS = mul(mesh.worldFromModelMatrix, float4(input.position, 1.0f)).xyz;
     output.position   = mul(view_proj_mat, float4(output.positionWS, 1.0f));
 
     output.texcoord    = input.texcoord;
 
-    float3x3 normalMat = transpose((float3x3)mesh.localToWorldMatrixInverse);
+    float3x3 normalMat = transpose((float3x3)mesh.modelFromWorldMatrix);
 
     output.normal      = normalize(mul(normalMat, input.normal));
     output.tangent.xyz = normalize(mul(normalMat, input.tangent.xyz));
@@ -68,8 +66,8 @@ VertexOutput VSMain(VertexInput input)
 
 float4 PSMain(VertexOutput input) : SV_Target0
 {
-    MeshInstance     mesh     = g_MeshesInstance[meshIndex];
-    MaterialInstance material = g_MaterialsInstance[mesh.materialIndex];
+    PerRenderableMeshData mesh = g_RenderableMeshDatas[meshIndex];
+    PerMaterialViewIndexBuffer material = g_MaterialViewIndexBuffers[mesh.perMaterialViewIndexBufferIndex];
 
     Texture2D<float4> baseColorTex = ResourceDescriptorHeap[material.baseColorIndex];
 

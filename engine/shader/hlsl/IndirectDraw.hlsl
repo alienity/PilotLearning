@@ -5,11 +5,11 @@
 
 cbuffer RootConstants : register(b0, space0) { uint meshIndex; };
 
-ConstantBuffer<MeshPerframeBuffer> g_ConstantBufferParams : register(b1, space0);
+ConstantBuffer<FrameUniforms> g_FrameUniform : register(b1, space0);
 
-StructuredBuffer<MeshInstance> g_MeshesInstance : register(t0, space0);
+StructuredBuffer<PerRenderableMeshData> g_MeshesInstance : register(t0, space0);
 
-StructuredBuffer<MaterialInstance> g_MaterialsInstance : register(t1, space0);
+StructuredBuffer<PerMaterialViewIndexBuffer> g_MaterialsInstance : register(t1, space0);
 
 SamplerState defaultSampler : register(s10);
 SamplerComparisonState shadowmapSampler : register(s11);
@@ -35,14 +35,14 @@ VertexOutput VSMain(VertexInput input)
 {
     VertexOutput output;
 
-    MeshInstance mesh = g_MeshesInstance[meshIndex];
+    PerRenderableMeshData mesh = g_MeshesInstance[meshIndex];
 
-    output.positionWS = mul(mesh.localToWorldMatrix, float4(input.position, 1.0f)).xyz;
-    output.position   = mul(g_ConstantBufferParams.cameraInstance.projViewMatrix, float4(output.positionWS, 1.0f));
+    output.positionWS = mul(mesh.worldFromModelMatrix, float4(input.position, 1.0f)).xyz;
+    output.position   = mul(g_FrameUniform.cameraUniform.clipFromWorldMatrix, float4(output.positionWS, 1.0f));
 
     output.texcoord    = input.texcoord;
 
-    float3x3 normalMat = transpose((float3x3)mesh.localToWorldMatrixInverse);
+    float3x3 normalMat = transpose((float3x3)mesh.modelFromWorldMatrix);
 
     output.normal      = normalize(mul(normalMat, input.normal));
     output.tangent.xyz = normalize(mul(normalMat, input.tangent.xyz));
@@ -53,16 +53,16 @@ VertexOutput VSMain(VertexInput input)
 
 float4 PSMain(VertexOutput input) : SV_Target0
 {
-    MeshInstance     mesh     = g_MeshesInstance[meshIndex];
-    MaterialInstance material = g_MaterialsInstance[mesh.materialIndex];
+    PerRenderableMeshData mesh = g_MeshesInstance[meshIndex];
+    PerMaterialViewIndexBuffer material = g_MaterialsInstance[mesh.perMaterialViewIndexBufferIndex];
 
-    StructuredBuffer<PerMaterialUniformBuffer> matBuffer = ResourceDescriptorHeap[material.uniformBufferIndex];
+    StructuredBuffer<PerMaterialParametersBuffer> matParamsBuffer = ResourceDescriptorHeap[material.parametersBufferIndex];
 
-    float4 baseColorFactor = matBuffer[0].baseColorFactor;
-    float  normalStength    = matBuffer[0].normalScale;
+    float4 baseColorFactor = matParamsBuffer[0].baseColorFactor;
+    float  normalStength    = matParamsBuffer[0].normalScale;
 
-    float2 baseColorTilling = matBuffer[0].base_color_tilling;
-    float2 normalTexTilling = matBuffer[0].normal_tilling;
+    float2 baseColorTilling = matParamsBuffer[0].base_color_tilling;
+    float2 normalTexTilling = matParamsBuffer[0].normal_tilling;
 
     Texture2D<float4> baseColorTex = ResourceDescriptorHeap[material.baseColorIndex];
     Texture2D<float3> normalTex    = ResourceDescriptorHeap[material.normalIndex];
@@ -81,18 +81,16 @@ float4 PSMain(VertexOutput input) : SV_Target0
     vNout = vNout * normalStength;
 
     float3 positionWS = input.positionWS;
-    float3 viewPos    = g_ConstantBufferParams.cameraInstance.cameraPosition;
+    float3 viewPos    = g_FrameUniform.cameraUniform.cameraPosition;
 
-    float3 ambientColor = g_ConstantBufferParams.ambient_light * 0.1f;
-
-    float3 outColor = ambientColor;
+    float3 outColor = float3(0, 0, 0);
 
     // direction light
     {
-        float3 lightForward   = g_ConstantBufferParams.scene_directional_light.direction;
-        float3 lightColor     = g_ConstantBufferParams.scene_directional_light.color;
-        float  lightStrength  = g_ConstantBufferParams.scene_directional_light.intensity;
-        uint   shadowmap      = g_ConstantBufferParams.scene_directional_light.shadowmap;
+        float3 lightForward   = g_FrameUniform.directionalLight.lightDirection;
+        float3 lightColor     = g_FrameUniform.directionalLight.lightColorIntensity.rgb;
+        float  lightStrength  = g_FrameUniform.directionalLight.lightColorIntensity.a;
+        uint   shadowmap      = g_FrameUniform.directionalLight.useShadowmap;
 
         lightColor = lightColor * lightStrength;
 
@@ -111,17 +109,17 @@ float4 PSMain(VertexOutput input) : SV_Target0
 
         if (shadowmap == 1)
         {
-            float4x4 lightViewMat = g_ConstantBufferParams.scene_directional_light.light_view_matrix;
+            float4x4 lightViewMat = g_FrameUniform.directionalLight.directionalLightShadowmap.light_view_matrix;
 
             float4 positionInLightSpace = mul(lightViewMat, float4(positionWS.xyz, 1.0f));
 
             float posInLightSpaceX = abs(positionInLightSpace.x);
             float posInLightSpaceY = abs(positionInLightSpace.y);
 
-            float shadow_bound_0 = g_ConstantBufferParams.scene_directional_light.shadow_bounds.x * 0.9f * 0.5f;
-            float shadow_bound_1 = g_ConstantBufferParams.scene_directional_light.shadow_bounds.y * 0.9f * 0.5f;
-            float shadow_bound_2 = g_ConstantBufferParams.scene_directional_light.shadow_bounds.z * 0.9f * 0.5f;
-            float shadow_bound_3 = g_ConstantBufferParams.scene_directional_light.shadow_bounds.w * 0.9f * 0.5f;
+            float shadow_bound_0 = g_FrameUniform.directionalLight.directionalLightShadowmap.shadow_bounds.x * 0.9f * 0.5f;
+            float shadow_bound_1 = g_FrameUniform.directionalLight.directionalLightShadowmap.shadow_bounds.y * 0.9f * 0.5f;
+            float shadow_bound_2 = g_FrameUniform.directionalLight.directionalLightShadowmap.shadow_bounds.z * 0.9f * 0.5f;
+            float shadow_bound_3 = g_FrameUniform.directionalLight.directionalLightShadowmap.shadow_bounds.w * 0.9f * 0.5f;
 
             int shadow_bound_index = -1;
             float2 shadow_bound_offset = float2(0, 0);
@@ -149,7 +147,7 @@ float4 PSMain(VertexOutput input) : SV_Target0
 
             if (shadow_bound_index != -1)
             {
-                float4x4 lightViewProjMat = g_ConstantBufferParams.scene_directional_light.light_proj_view[shadow_bound_index];
+                float4x4 lightViewProjMat = g_FrameUniform.directionalLight.directionalLightShadowmap.light_proj_view[shadow_bound_index];
 
                 float4 fragPosLightSpace = mul(lightViewProjMat, float4(positionWS, 1.0f));
 
@@ -161,12 +159,12 @@ float4 PSMain(VertexOutput input) : SV_Target0
                 float2 shadowmap_uv = float2(projCoords.x, 1 - projCoords.y) * 0.5 + shadow_bound_offset;
 
                 // get closest depth value from light's perspective (using [0,1] range fragPosLight as coords)
-                Texture2D<float> shadowMap = ResourceDescriptorHeap[g_ConstantBufferParams.scene_directional_light.shadowmap_srv_index];
+                Texture2D<float> shadowMap = ResourceDescriptorHeap[g_FrameUniform.directionalLight.directionalLightShadowmap.shadowmap_srv_index];
 
                 //float shadow_bias = 0.0004f;
                 float shadow_bias = max(0.0015f * exp2(shadow_bound_index) * (1.0 - dot(vNormal, lightDir)), 0.0003f);  
 
-                float shadowTexelSize = 1.0f / (g_ConstantBufferParams.scene_directional_light.shadowmap_width * 0.5f);
+                float shadowTexelSize = 1.0f / (g_FrameUniform.directionalLight.directionalLightShadowmap.shadowmap_width * 0.5f);
                 
                 // PCF
                 float pcfDepth = projCoords.z;
@@ -189,14 +187,14 @@ float4 PSMain(VertexOutput input) : SV_Target0
         outColor = outColor + directionLightColor;
     }
 
-    uint point_light_num = g_ConstantBufferParams.point_light_num;
+    uint point_light_num = g_FrameUniform.pointLightUniform.pointLightCounts;
     uint i = 0;
     for (i = 0; i < point_light_num; i++)
     {
-        float3 lightPos      = g_ConstantBufferParams.scene_point_lights[i].position;
-        float3 lightColor    = g_ConstantBufferParams.scene_point_lights[i].color;
-        float  lightStrength = g_ConstantBufferParams.scene_point_lights[i].intensity;
-        float  lightRadius   = g_ConstantBufferParams.scene_point_lights[i].radius;
+        float3 lightPos      = g_FrameUniform.pointLightUniform.pointLightStructs[i].lightPosition;
+        float3 lightColor    = g_FrameUniform.pointLightUniform.pointLightStructs[i].lightIntensity.rgb;
+        float  lightStrength = g_FrameUniform.pointLightUniform.pointLightStructs[i].lightIntensity.a;
+        float  lightRadius   = g_FrameUniform.pointLightUniform.pointLightStructs[i].lightRadius;
 
         lightColor = lightColor * lightStrength;
 
@@ -217,17 +215,17 @@ float4 PSMain(VertexOutput input) : SV_Target0
         outColor = outColor + diffuse + specular;
     }
 
-    uint spot_light_num = g_ConstantBufferParams.spot_light_num;
+    uint spot_light_num = g_FrameUniform.spotLightUniform.spotLightCounts;
     for (i = 0; i < spot_light_num; i++)
     {
-        float3 lightPos          = g_ConstantBufferParams.scene_spot_lights[i].position;
-        float3 lightForward      = g_ConstantBufferParams.scene_spot_lights[i].direction;
-        float3 lightColor        = g_ConstantBufferParams.scene_spot_lights[i].color;
-        float  lightStrength     = g_ConstantBufferParams.scene_spot_lights[i].intensity;
-        float  lightRadius       = g_ConstantBufferParams.scene_spot_lights[i].radius;
-        float  lightInnerRadians = g_ConstantBufferParams.scene_spot_lights[i].inner_radians;
-        float  lightOuterRadians = g_ConstantBufferParams.scene_spot_lights[i].outer_radians;
-        uint   shadowmap         = g_ConstantBufferParams.scene_spot_lights[i].shadowmap;
+        float3 lightPos          = g_FrameUniform.spotLightUniform.spotLightStructs[i].lightPosition;
+        float3 lightForward      = g_FrameUniform.spotLightUniform.spotLightStructs[i].lightDirection;
+        float3 lightColor        = g_FrameUniform.spotLightUniform.spotLightStructs[i].lightIntensity.rgb;
+        float  lightStrength     = g_FrameUniform.spotLightUniform.spotLightStructs[i].lightIntensity.a;
+        float  lightRadius       = g_FrameUniform.spotLightUniform.spotLightStructs[i].lightRadius;
+        float  lightInnerRadians = g_FrameUniform.spotLightUniform.spotLightStructs[i].inner_radians;
+        float  lightOuterRadians = g_FrameUniform.spotLightUniform.spotLightStructs[i].outer_radians;
+        uint   shadowmap         = g_FrameUniform.spotLightUniform.spotLightStructs[i].useShadowmap;
 
         float lightInnerCutoff = cos(lightInnerRadians * 0.5f);
         float lightOuterCutoff = cos(lightOuterRadians * 0.5f);
@@ -261,7 +259,7 @@ float4 PSMain(VertexOutput input) : SV_Target0
 
         if (shadowmap == 1)
         {
-            float4x4 lightViewProjMat = g_ConstantBufferParams.scene_spot_lights[i].light_proj_view;
+            float4x4 lightViewProjMat = g_FrameUniform.spotLightUniform.spotLightStructs[i].spotLightShadowmap.light_proj_view;
 
             float4 fragPosLightSpace = mul(lightViewProjMat, float4(positionWS, 1.0f));
 
@@ -271,12 +269,12 @@ float4 PSMain(VertexOutput input) : SV_Target0
             projCoords.xy = projCoords.xy * 0.5 + 0.5;
 
             // get closest depth value from light's perspective (using [0,1] range fragPosLight as coords)
-            Texture2D<float> shadowMap = ResourceDescriptorHeap[g_ConstantBufferParams.scene_spot_lights[i].shadowmap_srv_index];
+            Texture2D<float> shadowMap = ResourceDescriptorHeap[g_FrameUniform.spotLightUniform.spotLightStructs[i].spotLightShadowmap.shadowmap_srv_index];
 
             // float shadow_bias = 0.0004f;
             float shadow_bias = max(0.001f * (1.0 - dot(vNormal, lightDir)), 0.0003f);
 
-            float shadowTexelSize = 1.0f / g_ConstantBufferParams.scene_spot_lights[i].shadowmap_width;
+            float shadowTexelSize = 1.0f / g_FrameUniform.spotLightUniform.spotLightStructs[i].spotLightShadowmap.shadowmap_width;
 
             // PCF
             float pcfDepth = projCoords.z;

@@ -33,7 +33,7 @@ namespace RHI
         }
         p_SwapChain4->SetFullscreenState(FALSE, nullptr);
         p_SwapChain4 = nullptr;
-        for (size_t i = 0; i < BackBufferCount; i++)
+        for (size_t i = 0; i < SWAP_CHAIN_BUFFER_COUNT; i++)
             p_BackBuffers[i] = nullptr;
     }
 
@@ -192,7 +192,7 @@ namespace RHI
 
         EnsureSwapChainColorSpace(CurrentBitDepth, EnableST2084);
 
-        for (UINT i = 0; i < BackBufferCount; ++i)
+        for (UINT i = 0; i < SWAP_CHAIN_BUFFER_COUNT; ++i)
         {
             Microsoft::WRL::ComPtr<ID3D12Resource> Resource;
             VERIFY_D3D12_API(p_SwapChain4->GetBuffer(i, IID_PPV_ARGS(&Resource)));
@@ -215,7 +215,7 @@ namespace RHI
         UINT64 ValueToWaitFor = m_Fence->Signal(GetParentDevice()->GetLinkedDevice()->GetGraphicsQueue());
         m_SyncHandle          = D3D12SyncHandle(m_Fence.get(), ValueToWaitFor);
 
-        m_CurrentBackBufferIndex = (m_CurrentBackBufferIndex + 1) % BackBufferCount;
+        m_CurrentBackBufferIndex = (m_CurrentBackBufferIndex + 1) % SWAP_CHAIN_BUFFER_COUNT;
     }
 
     Microsoft::WRL::ComPtr<IDXGISwapChain4> D3D12SwapChain::InitializeSwapChain(int Width, int Height)
@@ -236,7 +236,7 @@ namespace RHI
         swapChainDesc.Height                = Height;
         swapChainDesc.Format                = Format;
         swapChainDesc.BufferUsage           = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-        swapChainDesc.BufferCount           = BackBufferCount;
+        swapChainDesc.BufferCount           = SWAP_CHAIN_BUFFER_COUNT;
         swapChainDesc.SampleDesc.Count      = 1;
         swapChainDesc.SampleDesc.Quality    = 0;
         swapChainDesc.Scaling               = DXGI_SCALING_NONE;

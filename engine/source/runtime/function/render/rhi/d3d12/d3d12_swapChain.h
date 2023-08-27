@@ -38,7 +38,7 @@ namespace RHI
             None      // The display expects a linear signal.
         };
 
-        static constexpr UINT BackBufferCount = 3;
+        #define SWAP_CHAIN_BUFFER_COUNT 3
 
         static constexpr DXGI_FORMAT Format                          = DXGI_FORMAT_R8G8B8A8_UNORM;
         static constexpr DXGI_FORMAT Format_sRGB                     = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
@@ -89,7 +89,7 @@ namespace RHI
         UINT m_CurrentBackBufferIndex = 0;
 
         Microsoft::WRL::ComPtr<IDXGISwapChain4> p_SwapChain4;
-        std::shared_ptr<D3D12Texture>           p_BackBuffers[BackBufferCount];
+        std::shared_ptr<D3D12Texture> p_BackBuffers[SWAP_CHAIN_BUFFER_COUNT];
         
         bool                  HDRSupport        = false;
         bool                  EnableST2084      = false;

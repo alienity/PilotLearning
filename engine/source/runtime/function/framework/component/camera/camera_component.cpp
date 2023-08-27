@@ -49,8 +49,15 @@ namespace MoYu
         }
 
         RenderSwapContext& swap_context = g_runtime_global_context.m_render_system->getSwapContext();
+
         CameraSwapData camera_swap_data;
-        camera_swap_data.m_fov_y = m_camera_res.m_FreeCamParam.m_fovY;
+        camera_swap_data.m_width  = m_camera_res.m_FreeCamParam.m_width;
+        camera_swap_data.m_height = m_camera_res.m_FreeCamParam.m_height;
+        camera_swap_data.m_nearZ  = m_camera_res.m_FreeCamParam.m_nearZ;
+        camera_swap_data.m_farZ   = m_camera_res.m_FreeCamParam.m_farZ;
+        camera_swap_data.m_fov_y  = m_camera_res.m_FreeCamParam.m_fovY;
+        camera_swap_data.m_is_perspective = m_camera_res.m_FreeCamParam.m_perspective;
+
         swap_context.getLogicSwapData().m_camera_swap_data = camera_swap_data;
     }
 

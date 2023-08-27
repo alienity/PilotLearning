@@ -11,7 +11,7 @@ struct CommandSignatureParams
     D3D12_DRAW_INDEXED_ARGUMENTS DrawIndexedArguments;
 };
 
-StructuredBuffer<MeshInstance> g_MeshesInstance : register(t0, space0);
+StructuredBuffer<PerRenderableMeshData> g_MeshesInstance : register(t0, space0);
 
 ByteAddressBuffer g_CounterBuffer : register(t1, space0);
 
@@ -28,7 +28,7 @@ void CSMain(CSParams Params) {
     {
         uint meshIndex = g_SortIndexDisBuffer.Load(index * 8);
 
-        MeshInstance mesh = g_MeshesInstance[meshIndex];
+        PerRenderableMeshData mesh = g_MeshesInstance[meshIndex];
         
         CommandSignatureParams command;
         command.MeshIndex            = meshIndex;

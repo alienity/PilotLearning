@@ -48,7 +48,7 @@ namespace MoYu
 
             }
 
-            real_resource->m_mesh_perframe_storage_buffer_object.scene_directional_light.shadowmap_srv_index =
+            real_resource->m_FrameUniforms.directionalLight.directionalLightShadowmap.shadowmap_srv_index =
                 m_DirectionalShadowmap.p_LightShadowmap->GetDefaultSRV()->GetIndex();
         }
         else
@@ -105,8 +105,8 @@ namespace MoYu
 
                     m_SpotShadowmaps.push_back(spotShadow);
 
-                    real_resource->m_mesh_perframe_storage_buffer_object.scene_spot_lights[i].shadowmap_srv_index =
-                        p_SpotLightShadowmap->GetDefaultSRV()->GetIndex();
+                    real_resource->m_FrameUniforms.spotLightUniform.scene_spot_lights[i]
+                        .spotLightShadowmap.shadowmap_srv_index = p_SpotLightShadowmap->GetDefaultSRV()->GetIndex();
                 }
             }
         }
