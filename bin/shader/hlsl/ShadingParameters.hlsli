@@ -66,12 +66,14 @@ void inflateMaterial(
     const PerMaterialViewIndexBuffer materialViewIndexBuffer, 
     SamplerState materialSampler, inout MaterialInputs material)
 {
-    const PerMaterialParametersBuffer materialParameterBuffer = ResourceDescriptorHeap[materialViewIndexBuffer.parametersBufferIndex];
-    
+    StructuredBuffer<PerMaterialParametersBuffer> _materialParameterBuffers = ResourceDescriptorHeap[materialViewIndexBuffer.parametersBufferIndex];
+
+    const PerMaterialParametersBuffer materialParameterBuffer = _materialParameterBuffers[0];
+
     const float2 uv = varingStruct.vertex_uv01;
     
     float4 baseColorFactor = materialParameterBuffer.baseColorFactor;
-    float4 metallicFactor = materialParameterBuffer.metallicFactor;
+    float metallicFactor = materialParameterBuffer.metallicFactor;
     float roughnessFactor = materialParameterBuffer.roughnessFactor;
     float reflectanceFactor = materialParameterBuffer.reflectanceFactor;
     float clearCoatFactor = materialParameterBuffer.clearCoatFactor;
@@ -80,7 +82,7 @@ void inflateMaterial(
     float normalScale = materialParameterBuffer.normalScale;
     float occlusionStrength = materialParameterBuffer.occlusionStrength;
     
-    float3 emissiveFactor = materialParameterBuffer.emissiveFactor;
+    float emissiveFactor = materialParameterBuffer.emissiveFactor;
 
     float2 base_color_tilling = materialParameterBuffer.base_color_tilling;
     float2 metallic_roughness_tilling = materialParameterBuffer.metallic_roughness_tilling;
@@ -96,8 +98,8 @@ void inflateMaterial(
     
     material.baseColor = baseColorTexture.Sample(materialSampler, uv * base_color_tilling) * baseColorFactor;
     float2 metallicRoughness = metallicRoughnessTexture.Sample(materialSampler, uv * metallic_roughness_tilling).rg;
-    material.roughness = metallicRoughness.r * roughnessFactor;
-    material.metallic = metallicRoughness.g * metallicFactor;
+    material.metallic = metallicRoughness.r * metallicFactor;
+    material.roughness = metallicRoughness.g * roughnessFactor;
     material.reflectance = reflectanceFactor;
     material.ambientOcclusion = occlusionTexture.Sample(materialSampler, uv * occlusion_tilling).r * occlusionStrength;
     material.emissive = emissionTexture.Sample(materialSampler, uv * base_color_tilling);
@@ -116,14 +118,15 @@ void inflateMaterial(
  */
 void computeShadingParams(const FrameUniforms frameUniforms, const VaringStruct varing, inout CommonShadingStruct commonShadingStruct)
 {
+    // http://www.mikktspace.com/
     float3 n = varing.vertex_worldNormal;
     float3 t = varing.vertex_worldTangent.xyz;
-    float3 b = cross(n, t) * sign(varing.vertex_worldTangent.w);
+    float3 b = cross(n, t) * varing.vertex_worldTangent.w;
     
     commonShadingStruct.shading_geometricNormal = normalize(n);
 
     // We use unnormalized post-interpolation values, assuming mikktspace tangents
-    commonShadingStruct.shading_tangentToWorld = float3x3(t, b, n);
+    commonShadingStruct.shading_tangentToWorld = transpose(float3x3(t, b, n));
 
     commonShadingStruct.shading_position = varing.vertex_worldPosition.xyz;
 
@@ -183,6 +186,8 @@ void getRoughnessPixelParams(const CommonShadingStruct params, const MaterialInp
     pixel.perceptualRoughness = clamp(perceptualRoughness, MIN_PERCEPTUAL_ROUGHNESS, 1.0);
     // Remaps the roughness to a perceptually linear roughness (roughness^2)
     pixel.roughness = perceptualRoughnessToRoughness(pixel.perceptualRoughness);
+
+    pixel.energyCompensation = 1.0f;
 }
 
 /**
@@ -262,7 +267,7 @@ Light getDirectionalLight(const CommonShadingStruct params, const FrameUniforms 
     Light light;
     // note: lightColorIntensity.w is always premultiplied by the exposure
     light.colorIntensity = frameUniforms.directionalLight.lightColorIntensity;
-    light.l = frameUniforms.directionalLight.lightDirection;
+    light.l = normalize(-frameUniforms.directionalLight.lightDirection);
     light.attenuation = 1.0;
     light.NoL = saturate(dot(params.shading_normal, light.l));
     return light;
@@ -329,7 +334,7 @@ float4 evaluateLights(const FrameUniforms frameUniforms, const PerRenderableMesh
     // Ideally we would keep the diffuse and specular components separate
     // until the very end but it costs more ALUs on mobile. The gains are
     // currently not worth the extra operations
-    float3 color = float3(0.0);
+    float3 color = float3(0.0, 0.0, 0.0);
 
     //// We always evaluate the IBL as not having one is going to be uncommon,
     //// it also saves 1 shader variant
@@ -339,11 +344,13 @@ float4 evaluateLights(const FrameUniforms frameUniforms, const PerRenderableMesh
 
     //evaluatePunctualLights(material, pixel, color);
 
-    // In fade mode we un-premultiply baseColor early on, so we need to
-    // premultiply again at the end (affects diffuse and specular lighting)
-    color *= materialInputs.baseColor.a;
+    // // In fade mode we un-premultiply baseColor early on, so we need to
+    // // premultiply again at the end (affects diffuse and specular lighting)
+    // color *= materialInputs.baseColor.a;
 
-    return color;
+    // return color;
+
+    return float4(color.rgb, materialInputs.baseColor.a);
 }
 
 void addEmissive(const FrameUniforms frameUniforms, const MaterialInputs material, inout float4 color)

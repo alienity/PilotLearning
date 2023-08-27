@@ -76,6 +76,7 @@ namespace MoYu
 
             graphicContext->SetRootSignature(RootSignatures::pIndirectDraw.get());
             graphicContext->SetPipelineState(PipelineStates::pIndirectDraw.get());
+            //graphicContext->SetPipelineState(PipelineStates::pIndirectDraw_BRDF.get());
             graphicContext->SetConstantBuffer(1, registry->GetD3D12Buffer(perframeBufferHandle.rgHandle)->GetGpuVirtualAddress());
             graphicContext->SetBufferSRV(2, registry->GetD3D12Buffer(meshBufferHandle));
             graphicContext->SetBufferSRV(3, registry->GetD3D12Buffer(materialBufferHandle));

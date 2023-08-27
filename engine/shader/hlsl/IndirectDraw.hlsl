@@ -4,11 +4,8 @@
 #include "InputTypes.hlsli"
 
 cbuffer RootConstants : register(b0, space0) { uint meshIndex; };
-
 ConstantBuffer<FrameUniforms> g_FrameUniform : register(b1, space0);
-
 StructuredBuffer<PerRenderableMeshData> g_MeshesInstance : register(t0, space0);
-
 StructuredBuffer<PerMaterialViewIndexBuffer> g_MaterialsInstance : register(t1, space0);
 
 SamplerState defaultSampler : register(s10);
