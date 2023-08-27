@@ -10,7 +10,7 @@
  * fill the uniform values and get the interface block names. It is also used by filabridge to
  * get the interface block names.
  *
- * 在c++测也要定义跟这里一样的结构体用于对Shading的统一输入
+ * 锟斤拷c++锟斤拷也要锟斤拷锟斤拷锟斤拷锟斤拷锟揭伙拷锟斤拷慕峁癸拷锟斤拷锟斤拷诙锟絊hading锟斤拷统一锟斤拷锟斤拷
  */
 
 struct FrameUniforms

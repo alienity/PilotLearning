@@ -1,6 +1,6 @@
 ﻿#include "CommonMath.hlsli"
 #include "Shader.hlsli"
-#include "SharedTypes.hlsli"
+#include "InputTypes.hlsli"
 #include "d3d12.hlsli"
 
 struct CommandSignatureParams
@@ -17,10 +17,10 @@ cbuffer RootConstants : register(b0, space0) { uint spotIndex; };
 cbuffer RootConstants : register(b0, space0) { uint cascadeLevel; };
 #endif
 
-ConstantBuffer<MeshPerframeBuffer> g_ConstantBufferParams : register(b1, space0);
+ConstantBuffer<FrameUniforms> g_FrameUniforms : register(b1, space0);
 
-StructuredBuffer<MeshInstance> g_MeshesInstance : register(t0, space0);
-StructuredBuffer<MaterialInstance> g_MaterialsInstance : register(t1, space0);
+StructuredBuffer<PerRenderableMeshData> g_MeshesInstance : register(t0, space0);
+StructuredBuffer<PerMaterialViewIndexBuffer> g_MaterialsInstance : register(t1, space0);
 
 AppendStructuredBuffer<CommandSignatureParams> g_DrawSceneCommandBuffer : register(u0, space0);
 
@@ -29,23 +29,23 @@ void CSMain(CSParams Params) {
     // Each thread processes one mesh instance
     // Compute index and ensure is within bounds
     uint index = (Params.GroupID.x * 128) + Params.GroupIndex;
-    if (index < g_ConstantBufferParams.total_mesh_num)
+    if (index < g_FrameUniforms.meshUniform.totalMeshCount)
     {
-        MeshInstance mesh = g_MeshesInstance[index];
-        MaterialInstance material = g_MaterialsInstance[mesh.materialIndex];
+        PerRenderableMeshData mesh = g_MeshesInstance[index];
+        PerMaterialViewIndexBuffer material = g_MaterialsInstance[mesh.perMaterialViewIndexBufferIndex];
 
-        StructuredBuffer<PerMaterialUniformBuffer> matBuffer =
-            ResourceDescriptorHeap[material.uniformBufferIndex];
+        StructuredBuffer<PerMaterialParametersBuffer> matBuffer =
+            ResourceDescriptorHeap[material.parametersBufferIndex];
 
         BoundingBox aabb;
-        mesh.boundingBox.Transform(mesh.localToWorldMatrix, aabb);
+        mesh.boundingBox.Transform(mesh.worldFromModelMatrix, aabb);
 
 #if defined(DIRECTIONSHADOW)
-        Frustum frustum = ExtractPlanesDX(g_ConstantBufferParams.scene_directional_light.light_proj_view[cascadeLevel]);
+        Frustum frustum = ExtractPlanesDX(g_FrameUniforms.directionalLight.directionalLightShadowmap.light_proj_view[cascadeLevel]);
 #elif defined(SPOTSHADOW)
-        Frustum frustum = ExtractPlanesDX(g_ConstantBufferParams.scene_spot_lights[spotIndex].light_proj_view);
+        Frustum frustum = ExtractPlanesDX(g_FrameUniforms.spotLightUniform.spotLightStructs[spotIndex].spotLightShadowmap.light_proj_view);
 #else
-        Frustum frustum = ExtractPlanesDX(g_ConstantBufferParams.cameraInstance.projViewMatrix);
+        Frustum frustum = ExtractPlanesDX(g_FrameUniforms.cameraUniform.clipFromWorldMatrix);
 #endif
 
         bool visible = FrustumContainsBoundingBox(frustum, aabb) != CONTAINMENT_DISJOINT;

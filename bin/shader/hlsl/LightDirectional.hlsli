@@ -1,12 +1,13 @@
-#pragma once
+#ifndef __LIGHT_DIRECTION_HLSLI__
+#define __LIGHT_DIRECTION_HLSLI__
+
+#include "ShadingModelStandard.hlsli"
 
 //------------------------------------------------------------------------------
 // Directional light evaluation
 //------------------------------------------------------------------------------
 
-#if FILAMENT_QUALITY >= FILAMENT_QUALITY_HIGH
-#define SUN_AS_AREA_LIGHT
-#endif
+//#define SUN_AS_AREA_LIGHT
 
 float3 sampleSunAreaLight(const CommonShadingStruct params, const FrameUniforms frameUniforms, const float3 lightDirection)
 {
@@ -96,3 +97,5 @@ void evaluateDirectionalLight(const PerRenderableData objectUniforms, const Comm
     color.rgb += surfaceShading(params, pixel, light, visibility);
 #endif
 }
+
+#endif // __LIGHT_DIRECTION_HLSLI__

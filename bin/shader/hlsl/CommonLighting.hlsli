@@ -1,4 +1,6 @@
-#pragma once
+
+#ifndef __COMMON_LIGHTING_HLSLI__
+#define __COMMON_LIGHTING_HLSLI__
 
 struct Light
 {
@@ -102,12 +104,4 @@ float3 getReflectedVector(const PixelParams pixel, const float3 v, const float3 
     return r;
 }
 
-void getAnisotropyPixelParams(const CommonShadingStruct commonShadingStruct,  const MaterialInputs material, inout PixelParams pixel)
-{
-#if defined(MATERIAL_HAS_ANISOTROPY)
-    float3 direction   = material.anisotropyDirection;
-    pixel.anisotropy   = material.anisotropy;
-    pixel.anisotropicT = normalize(getWorldTangentFrame(commonShadingStruct) * direction);
-    pixel.anisotropicB = normalize(cross(getWorldGeometricNormalVector(commonShadingStruct), pixel.anisotropicT));
-#endif
-}
+#endif // __COMMON_LIGHTING_HLSLI__

@@ -1,7 +1,7 @@
 #include "d3d12.hlsli"
 #include "Shader.hlsli"
 #include "CommonMath.hlsli"
-#include "SharedTypes.hlsli"
+#include "InputTypes.hlsli"
 
 cbuffer PSConstants : register(b0)
 {

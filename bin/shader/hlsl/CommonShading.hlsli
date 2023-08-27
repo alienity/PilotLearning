@@ -1,4 +1,7 @@
-#pragma once
+
+#ifndef __COMMON_SHADING_HLSLI__
+#define __COMMON_SHADING_HLSLI__
+
 
 // These variables should be in a struct but some GPU drivers ignore the
 // precision qualifier on individual struct members
@@ -22,3 +25,5 @@ struct CommonShadingStruct
 
     float2 shading_normalizedViewportCoord;
 };
+
+#endif // __COMMON_SHADING_HLSLI__

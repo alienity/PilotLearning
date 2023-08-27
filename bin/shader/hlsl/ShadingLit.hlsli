@@ -1,36 +1,14 @@
-#pragma once
+
+#ifndef __SHADING_LIT_HLSLI__
+#define __SHADING_LIT_HLSLI__
+
+#include "ShadingParameters.hlsli"
+#include "ShadingModelStandard.hlsli"
+#include "LightDirectional.hlsli"
 
 //------------------------------------------------------------------------------
 // Lighting
 //------------------------------------------------------------------------------
-
-#if defined(BLEND_MODE_MASKED)
-
-float computeMaskedAlpha(float a, const MaterialParams materialParams)
-{
-    // Use derivatives to smooth alpha tested edges
-    return (a - materialParams._maskThreshold) / max(fwidth(a), 1e-3) + 0.5;
-}
-
-float computeDiffuseAlpha(float a, const FrameUniforms frameUniforms)
-{
-    // If we reach this point in the code, we already know that the fragment is not discarded due
-    // to the threshold factor. Therefore we can just output 1.0, which prevents a "punch through"
-    // effect from occuring. We do this only for TRANSLUCENT views in order to prevent breakage
-    // of ALPHA_TO_COVERAGE.
-    return (frameUniforms.needsAlphaChannel == 1.0) ? 1.0 : a;
-}
-
-void applyAlphaMask(inout float4 baseColor, const MaterialParams materialParams)
-{
-    baseColor.a = computeMaskedAlpha(baseColor.a, materialParams);
-    if (baseColor.a <= 0.0)
-    {
-        discard;
-    }
-}
-
-#else
 
 float computeDiffuseAlpha(float a, const FrameUniforms frameUniforms)
 {
@@ -41,72 +19,19 @@ float computeDiffuseAlpha(float a, const FrameUniforms frameUniforms)
 #endif
 }
 
-void applyAlphaMask(inout float4 baseColor, const MaterialParams materialParams) {}
-
-#endif
-
-#if defined(GEOMETRIC_SPECULAR_AA)
-float normalFiltering(float perceptualRoughness, const float3 worldNormal, const MaterialParams materialParams)
-{
-    // Kaplanyan 2016, "Stable specular highlights"
-    // Tokuyoshi 2017, "Error Reduction and Simplification for Shading Anti-Aliasing"
-    // Tokuyoshi and Kaplanyan 2019, "Improved Geometric Specular Antialiasing"
-
-    // This implementation is meant for deferred rendering in the original paper but
-    // we use it in forward rendering as well (as discussed in Tokuyoshi and Kaplanyan
-    // 2019). The main reason is that the forward version requires an expensive transform
-    // of the half vector by the tangent frame for every light. This is therefore an
-    // approximation but it works well enough for our needs and provides an improvement
-    // over our original implementation based on Vlachos 2015, "Advanced VR Rendering".
-
-    float3 du = ddx(worldNormal);
-    float3 dv = ddy(worldNormal);
-
-    float variance = materialParams._specularAntiAliasingVariance * (dot(du, du) + dot(dv, dv));
-
-    float roughness       = perceptualRoughnessToRoughness(perceptualRoughness);
-    float kernelRoughness = min(2.0 * variance, materialParams._specularAntiAliasingThreshold);
-    float squareRoughness = saturate(roughness * roughness + kernelRoughness);
-
-    return roughnessToPerceptualRoughness(sqrt(squareRoughness));
-}
-#endif
-
-void getCommonPixelParams(const MaterialParams materialParams, const MaterialInputs material, inout PixelParams pixel)
+void getCommonPixelParams(const MaterialInputs material, inout PixelParams pixel)
 {
     float4 baseColor = material.baseColor;
-    applyAlphaMask(baseColor, materialParams);
 
-#if defined(BLEND_MODE_FADE) && !defined(SHADING_MODEL_UNLIT)
     // Since we work in premultiplied alpha mode, we need to un-premultiply
     // in fade mode so we can apply alpha to both the specular and diffuse
     // components at the end
     unpremultiply(baseColor);
-#endif
-
-#if defined(SHADING_MODEL_SPECULAR_GLOSSINESS)
-    // This is from KHR_materials_pbrSpecularGlossiness.
-    float3  specularColor = material.specularColor;
-    float metallic      = computeMetallicFromSpecularColor(specularColor);
 
     pixel.diffuseColor = computeDiffuseColor(baseColor, material.metallic);
-    pixel.f0           = specularColor;
-#elif !defined(SHADING_MODEL_CLOTH)
-    pixel.diffuseColor = computeDiffuseColor(baseColor, material.metallic);
-#if !defined(SHADING_MODEL_SUBSURFACE) && (!defined(MATERIAL_HAS_REFLECTANCE) && defined(MATERIAL_HAS_IOR))
-    float reflectance  = iorToF0(max(1.0, material.ior), 1.0);
-#else
     // Assumes an interface from air to an IOR of 1.5 for dielectrics
     float reflectance = computeDielectricF0(material.reflectance);
-#endif
     pixel.f0           = computeF0(baseColor, material.metallic, reflectance);
-#else
-    pixel.diffuseColor    = baseColor.rgb;
-    pixel.f0              = material.sheenColor;
-#if defined(MATERIAL_HAS_SUBSURFACE_COLOR)
-    pixel.subsurfaceColor = material.subsurfaceColor;
-#endif
-#endif
 
 #if !defined(SHADING_MODEL_CLOTH) && !defined(SHADING_MODEL_SUBSURFACE)
 #if defined(MATERIAL_HAS_REFRACTION)
@@ -147,24 +72,19 @@ void getCommonPixelParams(const MaterialParams materialParams, const MaterialInp
 #endif
 }
 
-void getSheenPixelParams(const MaterialParams materialParams, const CommonShadingStruct commonShadingStruct, const MaterialInputs material, inout PixelParams pixel) {
+void getSheenPixelParams(const CommonShadingStruct commonShadingStruct, const MaterialInputs material, inout PixelParams pixel) {
 #if defined(MATERIAL_HAS_SHEEN_COLOR) && !defined(SHADING_MODEL_CLOTH) && !defined(SHADING_MODEL_SUBSURFACE)
     pixel.sheenColor = material.sheenColor;
 
     float sheenPerceptualRoughness = material.sheenRoughness;
     sheenPerceptualRoughness = clamp(sheenPerceptualRoughness, MIN_PERCEPTUAL_ROUGHNESS, 1.0);
-
-#if defined(GEOMETRIC_SPECULAR_AA)
-    sheenPerceptualRoughness =
-        normalFiltering(sheenPerceptualRoughness, getWorldGeometricNormalVector(commonShadingStruct), materialParams);
-#endif
-
+    
     pixel.sheenPerceptualRoughness = sheenPerceptualRoughness;
     pixel.sheenRoughness = perceptualRoughnessToRoughness(sheenPerceptualRoughness);
 #endif
 }
 
-void getClearCoatPixelParams(const MaterialParams materialParams, const CommonShadingStruct params, const MaterialInputs material, inout PixelParams pixel) {
+void getClearCoatPixelParams(const CommonShadingStruct params, const MaterialInputs material, inout PixelParams pixel) {
 #if defined(MATERIAL_HAS_CLEAR_COAT)
     pixel.clearCoat = material.clearCoat;
 
@@ -172,12 +92,7 @@ void getClearCoatPixelParams(const MaterialParams materialParams, const CommonSh
     float clearCoatPerceptualRoughness = material.clearCoatRoughness;
     clearCoatPerceptualRoughness =
             clamp(clearCoatPerceptualRoughness, MIN_PERCEPTUAL_ROUGHNESS, 1.0);
-
-#if defined(GEOMETRIC_SPECULAR_AA)
-    clearCoatPerceptualRoughness =
-        normalFiltering(clearCoatPerceptualRoughness, getWorldGeometricNormalVector(params), materialParams);
-#endif
-
+    
     pixel.clearCoatPerceptualRoughness = clearCoatPerceptualRoughness;
     pixel.clearCoatRoughness = perceptualRoughnessToRoughness(clearCoatPerceptualRoughness);
 
@@ -191,7 +106,7 @@ void getClearCoatPixelParams(const MaterialParams materialParams, const CommonSh
 #endif
 }
 
-void getRoughnessPixelParams(const MaterialParams materialParams, const CommonShadingStruct params, const MaterialInputs material, inout PixelParams pixel) {
+void getRoughnessPixelParams(const CommonShadingStruct params, const MaterialInputs material, inout PixelParams pixel) {
 #if defined(SHADING_MODEL_SPECULAR_GLOSSINESS)
     float perceptualRoughness = computeRoughnessFromGlossiness(material.glossiness);
 #else
@@ -200,11 +115,7 @@ void getRoughnessPixelParams(const MaterialParams materialParams, const CommonSh
 
     // This is used by the refraction code and must be saved before we apply specular AA
     pixel.perceptualRoughnessUnclamped = perceptualRoughness;
-
-#if defined(GEOMETRIC_SPECULAR_AA)
-    perceptualRoughness = normalFiltering(perceptualRoughness, getWorldGeometricNormalVector(params), materialParams);
-#endif
-
+    
 #if defined(MATERIAL_HAS_CLEAR_COAT) && defined(MATERIAL_HAS_CLEAR_COAT_ROUGHNESS)
     // This is a hack but it will do: the base layer must be at least as rough
     // as the clear coat layer to take into account possible diffusion by the
@@ -227,6 +138,16 @@ void getSubsurfacePixelParams(const MaterialInputs material, inout PixelParams p
 #endif
 }
 
+void getAnisotropyPixelParams(const CommonShadingStruct commonShadingStruct, const MaterialInputs material, inout PixelParams pixel)
+{
+#if defined(MATERIAL_HAS_ANISOTROPY)
+    float3 direction   = material.anisotropyDirection;
+    pixel.anisotropy   = material.anisotropy;
+    pixel.anisotropicT = normalize(getWorldTangentFrame(commonShadingStruct) * direction);
+    pixel.anisotropicB = normalize(cross(getWorldGeometricNormalVector(commonShadingStruct), pixel.anisotropicT));
+#endif
+}
+/*
 void getEnergyCompensationPixelParams(const CommonShadingStruct commonShadingStruct, inout PixelParams pixel) {
     // Pre-filtered DFG term used for image-based lighting
     pixel.dfg = prefilteredDFG(pixel.perceptualRoughness, commonShadingStruct.shading_NoV);
@@ -246,7 +167,7 @@ void getEnergyCompensationPixelParams(const CommonShadingStruct commonShadingStr
 #endif
 #endif
 }
-
+*/
 /**
  * Computes all the parameters required to shade the current pixel/fragment.
  * These parameters are derived from the MaterialInputs structure computed
@@ -255,14 +176,14 @@ void getEnergyCompensationPixelParams(const CommonShadingStruct commonShadingStr
  * This function is also responsible for discarding the fragment when alpha
  * testing fails.
  */
-void getPixelParams(const MaterialParams materialParams, const CommonShadingStruct commonShadingStruct, const MaterialInputs materialInputs, out PixelParams pixel) {
-    getCommonPixelParams(materialParams, materialInputs, pixel);
-    getSheenPixelParams(materialParams, commonShadingStruct, materialInputs, pixel);
-    getClearCoatPixelParams(materialParams, commonShadingStruct, materialInputs, pixel);
-    getRoughnessPixelParams(materialParams, commonShadingStruct, materialInputs, pixel);
+void getPixelParams(const CommonShadingStruct commonShadingStruct, const MaterialInputs materialInputs, out PixelParams pixel) {
+    getCommonPixelParams(materialInputs, pixel);
+    getSheenPixelParams(commonShadingStruct, materialInputs, pixel);
+    getClearCoatPixelParams(commonShadingStruct, materialInputs, pixel);
+    getRoughnessPixelParams(commonShadingStruct, materialInputs, pixel);
     getSubsurfacePixelParams(materialInputs, pixel);
     getAnisotropyPixelParams(commonShadingStruct, materialInputs, pixel);
-    getEnergyCompensationPixelParams(commonShadingStruct, pixel);
+    //getEnergyCompensationPixelParams(commonShadingStruct, pixel);
 }
 
 /**
@@ -275,42 +196,34 @@ void getPixelParams(const MaterialParams materialParams, const CommonShadingStru
  *
  * Returns a pre-exposed HDR RGBA color in linear space.
  */
-float4 evaluateLights(const FramUniforms frameUniforms, const MaterialParams materialParams, const CommonShadingStruct commonShadingStruct, const MaterialInputs materialInputs) {
+float4 evaluateLights(const FramUniforms frameUniforms, const CommonShadingStruct commonShadingStruct, const MaterialInputs materialInputs) {
     PixelParams pixel;
-    getPixelParams(materialParams, commonShadingStruct, materialInputs, pixel);
+    getPixelParams(commonShadingStruct, materialInputs, pixel);
 
     // Ideally we would keep the diffuse and specular components separate
     // until the very end but it costs more ALUs on mobile. The gains are
     // currently not worth the extra operations
     float3 color = float3(0.0);
 
-    // We always evaluate the IBL as not having one is going to be uncommon,
-    // it also saves 1 shader variant
-    evaluateIBL(material, pixel, color);
+    //// We always evaluate the IBL as not having one is going to be uncommon,
+    //// it also saves 1 shader variant
+    //evaluateIBL(materialInputs, pixel, color);
 
-#if defined(VARIANT_HAS_DIRECTIONAL_LIGHTING)
-    evaluateDirectionalLight(material, pixel, color);
-#endif
+    evaluateDirectionalLight(materialInputs, pixel, color);
 
-#if defined(VARIANT_HAS_DYNAMIC_LIGHTING)
-    evaluatePunctualLights(material, pixel, color);
-#endif
+    //evaluatePunctualLights(material, pixel, color);
 
-#if defined(BLEND_MODE_FADE) && !defined(SHADING_MODEL_UNLIT)
     // In fade mode we un-premultiply baseColor early on, so we need to
     // premultiply again at the end (affects diffuse and specular lighting)
     color *= material.baseColor.a;
-#endif
 
     return float4(color, computeDiffuseAlpha(material.baseColor.a));
 }
 
 void addEmissive(const FramUniforms frameUniforms, const MaterialInputs material, inout float4 color) {
-#if defined(MATERIAL_HAS_EMISSIVE)
     float4 emissive = material.emissive;
-    float attenuation = lerp(1.0, getExposure(frameUniforms), emissive.w);
+    float attenuation = lerp(1.0, frameUniforms.exposure, emissive.w);
     color.rgb += emissive.rgb * (attenuation * color.a);
-#endif
 }
 
 /**
@@ -319,16 +232,10 @@ void addEmissive(const FramUniforms frameUniforms, const MaterialInputs material
  *
  * Returns a pre-exposed HDR RGBA color in linear space.
  */
-float4 evaluateMaterial(const FramUniforms frameUniforms, const MaterialParams materialParams, const CommonShadingStruct commonShadingStruct, const MaterialInputs materialInputs) {
-    float4 color = evaluateLights(frameUniforms, materialParams, commonShadingStruct, materialInputs);
-    addEmissive(frameUniforms, material, color);
+float4 evaluateMaterial(const FramUniforms frameUniforms, const CommonShadingStruct commonShadingStruct, const MaterialInputs materialInputs) {
+    float4 color = evaluateLights(frameUniforms, commonShadingStruct, materialInputs);
+    addEmissive(frameUniforms, materialInputs, color);
     return color;
 }
 
-
-
-
-
-
-
-
+#endif // __SHADING_LIT_HLSLI__
