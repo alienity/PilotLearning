@@ -181,18 +181,20 @@ namespace HLSL
     struct DirectionalLightShadowmap
     {
         uint     shadowmap_srv_index; // shadowmap srv in descriptorheap index
-        uint     cascade;             // how many cascade level, default 4
+        uint     cascadeCount;        // how many cascade level, default 4
         float    shadowmap_width;     // shadowmap width
         float    shadowmap_height;    // shadowmap height
         uint4    shadow_bounds;       // shadow bounds for each cascade level
         float4x4 light_view_matrix;   // direction light view matrix
-        float4x4 light_proj[4];
-        float4x4 light_proj_view[4];
+        float4x4 light_proj_matrix[4];
+        float4x4 light_proj_view_matrix[4];
     };
 
     struct DirectionalLightStruct
     {
         float4 lightColorIntensity; // directional light rgb - color, a - intensity
+        float3 lightPosition;       // directional light position
+        float  lightRadius;         // sun radius
         float3 lightDirection;      // directional light direction
         uint   useShadowmap;        // 1 use shadowmap
 

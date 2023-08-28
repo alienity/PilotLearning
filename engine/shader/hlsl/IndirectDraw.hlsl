@@ -110,6 +110,60 @@ float4 PSMain(VertexOutput input) : SV_Target0
 
             float4 positionInLightSpace = mul(lightViewMat, float4(positionWS.xyz, 1.0f));
 
+            float posWidthInLightSpace = max(abs(positionInLightSpace.x), abs(positionInLightSpace.y));
+
+            float4 shadow_bounds = g_FrameUniform.directionalLight.directionalLightShadowmap.shadow_bounds * 0.9f * 0.5f;
+
+            uint4 greaterZ = uint4(step(shadow_bounds, float4(posWidthInLightSpace, posWidthInLightSpace, posWidthInLightSpace, posWidthInLightSpace)));
+
+            int shadow_bound_index = greaterZ.x + greaterZ.y + greaterZ.z + greaterZ.w;
+
+            float2 shadow_bound_offset = float2(0, 0);
+
+            shadow_bound_offset = float2(step(1, shadow_bound_index & 0x1), step(1, shadow_bound_index & 0x2)) * 0.5;
+
+            if(shadow_bound_index != 4)
+            {
+                float4x4 lightViewProjMat = g_FrameUniform.directionalLight.directionalLightShadowmap.light_proj_view[shadow_bound_index];
+
+                float4 fragPosLightSpace = mul(lightViewProjMat, float4(positionWS, 1.0f));
+
+                // perform perspective divide
+                float3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
+                // transform to [0,1] range
+                projCoords.xy = projCoords.xy * 0.5 + 0.5;
+
+                float2 shadowmap_uv = float2(projCoords.x, 1 - projCoords.y) * 0.5 + shadow_bound_offset;
+
+                // get closest depth value from light's perspective (using [0,1] range fragPosLight as coords)
+                Texture2D<float> shadowMap = ResourceDescriptorHeap[g_FrameUniform.directionalLight.directionalLightShadowmap.shadowmap_srv_index];
+
+                //float shadow_bias = 0.0004f;
+                float shadow_bias = max(0.0015f * exp2(shadow_bound_index) * (1.0 - dot(vNormal, lightDir)), 0.0003f);  
+
+                float shadowTexelSize = 1.0f / (g_FrameUniform.directionalLight.directionalLightShadowmap.shadowmap_width * 0.5f);
+                
+                // PCF
+                float pcfDepth = projCoords.z;
+
+                float fShadow = 0.0f;
+                for (int x = -1; x <= 1; x++)
+                {
+                    for (int y = -1; y <= 1; y++)
+                    {
+                        float2 tempShadowTexCoord = float2(shadowmap_uv.x, shadowmap_uv.y) + float2(x, y) * shadowTexelSize;
+                        float tempfShadow = shadowMap.SampleCmpLevelZero(shadowmapSampler, tempShadowTexCoord, pcfDepth + shadow_bias);
+                        fShadow += tempfShadow;
+                    }
+                }
+                fShadow /= 9.0f;
+
+                directionLightColor *= fShadow;
+            }
+
+
+
+            /*
             float posInLightSpaceX = abs(positionInLightSpace.x);
             float posInLightSpaceY = abs(positionInLightSpace.y);
 
@@ -120,6 +174,10 @@ float4 PSMain(VertexOutput input) : SV_Target0
 
             int shadow_bound_index = -1;
             float2 shadow_bound_offset = float2(0, 0);
+
+            float x = abs(mulMat4x4Float3(viewFromWorldMatrix, worldPosition).x);
+            uint4 greaterZ = uint4(step(shadow_bounds, float4(x * 0.5)));
+            return clamp(greaterZ.x + greaterZ.y + greaterZ.z + greaterZ.w, 0u, cascadeCount - 1u);
 
             if (posInLightSpaceX < shadow_bound_0 && posInLightSpaceY < shadow_bound_0)
             {
@@ -180,6 +238,7 @@ float4 PSMain(VertexOutput input) : SV_Target0
 
                 directionLightColor *= fShadow;
             }
+            */
         }
         outColor = outColor + directionLightColor;
     }

@@ -201,26 +201,8 @@ namespace MoYu
                     _viewport.Width    = 0.5 * shadowmap_size.x;
                     _viewport.Height   = 0.5 * shadowmap_size.y;
 
-                     if (i == 0)
-                    {
-                         _viewport.TopLeftX = 0;
-                         _viewport.TopLeftY = 0;
-                     }
-                     else if (i == 1)
-                    {
-                         _viewport.TopLeftX = 0.5 * shadowmap_size.x;
-                         _viewport.TopLeftY = 0;
-                     }
-                     else if (i == 2)
-                    {
-                         _viewport.TopLeftX = 0;
-                         _viewport.TopLeftY = 0.5 * shadowmap_size.y;
-                     }
-                     else if (i == 3)
-                    {
-                         _viewport.TopLeftX = 0.5 * shadowmap_size.x;
-                         _viewport.TopLeftY = 0.5 * shadowmap_size.y;
-                     }
+                    _viewport.TopLeftX = 0.5 * shadowmap_size.x * ((i & 0x1) != 0 ? 1 : 0);
+                    _viewport.TopLeftY = 0.5 * shadowmap_size.y * ((i & 0x2) != 0 ? 1 : 0);
 
                     //graphicContext->SetViewport(RHIViewport {0.0f, 0.0f, (float)shadowmap_size.x, (float)shadowmap_size.y, 0.0f, 1.0f});
                     //graphicContext->SetScissorRect(RHIRect {0, 0, (int)shadowmap_size.x, (int)shadowmap_size.y});

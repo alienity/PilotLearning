@@ -99,7 +99,8 @@ float acosFastPositive(float x)
  */
 float4 mulMat4x4Float3(const float4x4 m, const float3 v)
 {
-    return v.x * m[0] + (v.y * m[1] + (v.z * m[2] + m[3]));
+	const float4x4 _m_trans = transpose(m);
+    return v.x * _m_trans[0] + (v.y * _m_trans[1] + (v.z * _m_trans[2] + _m_trans[3]));
 }
 
 /**
@@ -110,7 +111,8 @@ float4 mulMat4x4Float3(const float4x4 m, const float3 v)
  */
 float3 mulMat3x3Float3(const float4x4 m, const float3 v)
 {
-    return v.x * m[0].xyz + (v.y * m[1].xyz + (v.z * m[2].xyz));
+	const float4x4 _m_trans = transpose(m);
+    return v.x * _m_trans[0].xyz + (v.y * _m_trans[1].xyz + (v.z * _m_trans[2].xyz));
 }
 
 /**

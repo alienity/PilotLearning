@@ -163,6 +163,27 @@ void prepareMaterial(const MaterialInputs material, inout CommonShadingStruct co
     commonShadingStruct.shading_reflected = reflect(-commonShadingStruct.shading_view, commonShadingStruct.shading_normal);
 }
 
+//------------------------------------------------------------------------------
+// shadow calculation
+//------------------------------------------------------------------------------
+
+/**
+ * Returns the cascade index for this fragment (between 0 and CONFIG_MAX_SHADOW_CASCADES - 1).
+ */
+uint getShadowCascade(float4x4 viewFromWorldMatrix, float3 worldPosition, uint4 shadow_bounds, uint cascadeCount) {
+    float x = abs(mulMat4x4Float3(viewFromWorldMatrix, worldPosition).x);
+    uint4 greaterZ = uint4(step(shadow_bounds, float4(x * 0.5, x * 0.5, x * 0.5, x * 0.5)));
+    return clamp(greaterZ.x + greaterZ.y + greaterZ.z + greaterZ.w, 0u, cascadeCount - 1u);
+}
+
+
+
+
+
+//------------------------------------------------------------------------------
+// brdf calculation
+//------------------------------------------------------------------------------
+
 void getCommonPixelParams(const MaterialInputs material, inout PixelParams pixel)
 {
     float4 baseColor = material.baseColor;
@@ -293,6 +314,7 @@ void evaluateDirectionalLight(
         float ssContactShadowOcclusion = 0.0;
 
         uint cascade                  = getShadowCascade(params, frameUniforms);
+
         bool cascadeHasVisibleShadows = bool(frameUniforms.cascades & ((1u << cascade) << 8u));
         bool hasDirectionalShadows    = bool(frameUniforms.directionalShadows & 1u);
         if (hasDirectionalShadows && cascadeHasVisibleShadows)

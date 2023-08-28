@@ -191,21 +191,24 @@ namespace MoYu
         HLSL::DirectionalLightStruct _directionalLightStruct;
         _directionalLightStruct.lightColorIntensity =
             HLSL::float4(GLMUtil::fromVec3(render_scene->m_directional_light.m_color.toVector3()), render_scene->m_directional_light.m_intensity);
+        _directionalLightStruct.lightPosition = GLMUtil::fromVec3(render_scene->m_directional_light.m_position);
+        _directionalLightStruct.lightRadius = 1.0f;
         _directionalLightStruct.lightDirection =
             GLMUtil::fromVec3(Vector3::normalize(render_scene->m_directional_light.m_direction));
         _directionalLightStruct.useShadowmap = render_scene->m_directional_light.m_shadowmap ? 1 : 0;
 
         HLSL::DirectionalLightShadowmap _directionalLightShadowmap;
-        _directionalLightShadowmap.cascade = render_scene->m_directional_light.m_cascade;
+        _directionalLightShadowmap.cascadeCount = render_scene->m_directional_light.m_cascade;
         _directionalLightShadowmap.shadowmap_width = render_scene->m_directional_light.m_shadowmap_size.x;
+        _directionalLightShadowmap.shadowmap_height = render_scene->m_directional_light.m_shadowmap_size.x;
         _directionalLightShadowmap.light_view_matrix =
             GLMUtil::fromMat4x4(render_scene->m_directional_light.m_shadow_view_mat);
         for (size_t i = 0; i < render_scene->m_directional_light.m_cascade; i++)
         {
             _directionalLightShadowmap.shadow_bounds[i] = (int)render_scene->m_directional_light.m_shadow_bounds.x << i;
-            _directionalLightShadowmap.light_proj[i] =
+            _directionalLightShadowmap.light_proj_matrix[i] =
                 GLMUtil::fromMat4x4(render_scene->m_directional_light.m_shadow_proj_mats[i]);
-            _directionalLightShadowmap.light_proj_view[i] =
+            _directionalLightShadowmap.light_proj_view_matrix[i] =
                 GLMUtil::fromMat4x4(render_scene->m_directional_light.m_shadow_view_proj_mats[i]);
         }
         _directionalLightStruct.directionalLightShadowmap = _directionalLightShadowmap;
