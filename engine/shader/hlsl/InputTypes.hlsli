@@ -287,4 +287,16 @@ struct FrameUniforms
     SpotLightUniform spotLightUniform;
 };
 
+
+// =======================================
+// Samplers
+// =======================================
+
+struct SamplerStruct
+{
+    SamplerState defSampler;
+    SamplerComparisonState sdSampler;
+};
+
+
 #endif
