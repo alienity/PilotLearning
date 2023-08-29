@@ -196,6 +196,7 @@ namespace MoYu
         _directionalLightStruct.lightDirection =
             GLMUtil::fromVec3(Vector3::normalize(render_scene->m_directional_light.m_direction));
         _directionalLightStruct.useShadowmap = render_scene->m_directional_light.m_shadowmap ? 1 : 0;
+        _directionalLightStruct.lightFarAttenuationParams = HLSL::float2(1, 0);
 
         HLSL::DirectionalLightShadowmap _directionalLightShadowmap;
         _directionalLightShadowmap.cascadeCount = render_scene->m_directional_light.m_cascade;

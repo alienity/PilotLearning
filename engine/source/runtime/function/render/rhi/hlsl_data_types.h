@@ -197,6 +197,8 @@ namespace HLSL
         float  lightRadius;         // sun radius
         float3 lightDirection;      // directional light direction
         uint   useShadowmap;        // 1 use shadowmap
+        float2 lightFarAttenuationParams; // a, a/far (a=1/pct-of-far)
+        float2 _padding_0;
 
         DirectionalLightShadowmap directionalLightShadowmap;
     };
