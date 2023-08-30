@@ -195,13 +195,13 @@ namespace MoYu
         _directionalLightStruct.lightRadius = 1.0f;
         _directionalLightStruct.lightDirection =
             GLMUtil::fromVec3(Vector3::normalize(render_scene->m_directional_light.m_direction));
-        _directionalLightStruct.useShadowmap = render_scene->m_directional_light.m_shadowmap ? 1 : 0;
-        _directionalLightStruct.lightFarAttenuationParams = HLSL::float2(1, 0);
+        _directionalLightStruct.shadowType = render_scene->m_directional_light.m_shadowmap ? 1 : 0;
+        _directionalLightStruct.lightFarAttenuationParams = HLSL::float2(100, 0.0001);
 
         HLSL::DirectionalLightShadowmap _directionalLightShadowmap;
         _directionalLightShadowmap.cascadeCount = render_scene->m_directional_light.m_cascade;
-        _directionalLightShadowmap.shadowmap_width = render_scene->m_directional_light.m_shadowmap_size.x;
-        _directionalLightShadowmap.shadowmap_height = render_scene->m_directional_light.m_shadowmap_size.x;
+        _directionalLightShadowmap.shadowmap_size = HLSL::uint2(render_scene->m_directional_light.m_shadowmap_size.x,
+                                                                render_scene->m_directional_light.m_shadowmap_size.y);
         _directionalLightShadowmap.light_view_matrix =
             GLMUtil::fromMat4x4(render_scene->m_directional_light.m_shadow_view_mat);
         for (size_t i = 0; i < render_scene->m_directional_light.m_cascade; i++)
@@ -215,7 +215,6 @@ namespace MoYu
         _directionalLightStruct.directionalLightShadowmap = _directionalLightShadowmap;
 
         _frameUniforms->directionalLight = _directionalLightStruct;
-
 
         HLSL::PointLightUniform _pointLightUniform;
         _pointLightUniform.pointLightCounts = render_scene->m_point_light_list.size();
@@ -232,11 +231,14 @@ namespace MoYu
             _pointLightStruct.lightRadius = radius;
             _pointLightStruct.lightIntensity =
                 HLSL::float4(GLMUtil::fromVec3(Vector3(color.r, color.g, color.b)), point_light_intensity);
+            _pointLightStruct.shadowType = 0;
+            _pointLightStruct.falloff    = 1.0f / radius;
+
+            _pointLightStruct.pointLightShadowmap = HLSL::PointLightShadowmap {};
 
             _pointLightUniform.pointLightStructs[i] = _pointLightStruct;
         }
         _frameUniforms->pointLightUniform = _pointLightUniform;
-
 
         HLSL::SpotLightUniform _spotLightUniform;
         _spotLightUniform.spotLightCounts = render_scene->m_spot_light_list.size();
@@ -257,10 +259,12 @@ namespace MoYu
             _spotLightStruct.lightDirection = GLMUtil::fromVec3(spot_light_direction);
             _spotLightStruct.inner_radians  = Math::degreesToRadians(render_scene->m_spot_light_list[i].m_inner_degree);
             _spotLightStruct.outer_radians  = Math::degreesToRadians(render_scene->m_spot_light_list[i].m_outer_degree);
-            _spotLightStruct.useShadowmap   = render_scene->m_spot_light_list[i].m_shadowmap;
+            _spotLightStruct.shadowType   = render_scene->m_spot_light_list[i].m_shadowmap;
+            _spotLightStruct.falloff        = 1.0f / radius;
 
-            HLSL::SpotLightSgadowmap _spotLightSgadowmap;
-            _spotLightSgadowmap.shadowmap_width = render_scene->m_spot_light_list[i].m_shadowmap_size.x;
+            HLSL::SpotLightShadowmap _spotLightSgadowmap;
+            _spotLightSgadowmap.shadowmap_size = HLSL::uint2(render_scene->m_spot_light_list[i].m_shadowmap_size.x,
+                                                             render_scene->m_spot_light_list[i].m_shadowmap_size.y);
             _spotLightSgadowmap.light_proj_view =
                 GLMUtil::fromMat4x4(render_scene->m_spot_light_list[i].m_shadow_view_proj_mat);
 

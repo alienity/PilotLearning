@@ -69,7 +69,7 @@ float sampleDepth(
 
 float shadowSample_PCF_Low(
     const Texture2D<float> shadowmap, SamplerComparisonState shadowmapSampler, 
-    const float4x4 light_proj_view, uint shadowmap_size, float2 shadow_bound_offset, const float3 positionWS, const float depthBias)
+    const float4x4 light_proj_view, uint2 shadowmap_size, float2 shadow_bound_offset, const float3 positionWS, const float depthBias)
 {
     float4 fragPosLightSpace = mul(light_proj_view, float4(positionWS, 1.0f));
 
@@ -110,7 +110,7 @@ float shadowSample_PCF_Low(
 float shadowSample_PCF(
     const Texture2D<float> shadowmap, SamplerComparisonState shadowmapSampler, 
     const float4x4 light_view_matrix, const float4x4 light_proj_view[4], 
-    const float4 shadow_bounds, uint shadowmap_size, uint cascadeCount, const float3 positionWS, const float ndotl)
+    const float4 shadow_bounds, uint2 shadowmap_size, uint cascadeCount, const float3 positionWS, const float ndotl)
 {
     uint cascadeLevel;
     float2 shadow_bound_offset;
@@ -164,7 +164,7 @@ float4 PSMain(VertexOutput input) : SV_Target0
         float3 lightForward   = g_FrameUniform.directionalLight.lightDirection;
         float3 lightColor     = g_FrameUniform.directionalLight.lightColorIntensity.rgb;
         float  lightStrength  = g_FrameUniform.directionalLight.lightColorIntensity.a;
-        uint   shadowmap      = g_FrameUniform.directionalLight.useShadowmap;
+        uint   shadowmap      = g_FrameUniform.directionalLight.shadowType;
 
         lightColor = lightColor * lightStrength;
 
@@ -187,7 +187,7 @@ float4 PSMain(VertexOutput input) : SV_Target0
             float4x4 lightProjViews[4] = g_FrameUniform.directionalLight.directionalLightShadowmap.light_proj_view;
             Texture2D<float> shadowMap = ResourceDescriptorHeap[g_FrameUniform.directionalLight.directionalLightShadowmap.shadowmap_srv_index];
             float4 shadow_bounds = g_FrameUniform.directionalLight.directionalLightShadowmap.shadow_bounds;
-            float shadowmap_size = g_FrameUniform.directionalLight.directionalLightShadowmap.shadowmap_width;
+            uint2 shadowmap_size = g_FrameUniform.directionalLight.directionalLightShadowmap.shadowmap_size;
             uint cascadeCount = g_FrameUniform.directionalLight.directionalLightShadowmap.cascadeCount;
             float ndotl = dot(vNout, lightDir);
             float fShadow = shadowSample_PCF(shadowMap, shadowmapSampler, lightViewMat, lightProjViews, shadow_bounds, shadowmap_size, cascadeCount, positionWS, ndotl);
@@ -368,7 +368,7 @@ float4 PSMain(VertexOutput input) : SV_Target0
         float  lightRadius       = g_FrameUniform.spotLightUniform.spotLightStructs[i].lightRadius;
         float  lightInnerRadians = g_FrameUniform.spotLightUniform.spotLightStructs[i].inner_radians;
         float  lightOuterRadians = g_FrameUniform.spotLightUniform.spotLightStructs[i].outer_radians;
-        uint   shadowmap         = g_FrameUniform.spotLightUniform.spotLightStructs[i].useShadowmap;
+        uint   shadowmap         = g_FrameUniform.spotLightUniform.spotLightStructs[i].shadowType;
 
         float lightInnerCutoff = cos(lightInnerRadians * 0.5f);
         float lightOuterCutoff = cos(lightOuterRadians * 0.5f);
@@ -417,7 +417,7 @@ float4 PSMain(VertexOutput input) : SV_Target0
             // float shadow_bias = 0.0004f;
             float shadow_bias = max(0.001f * (1.0 - dot(vNormal, lightDir)), 0.0003f);
 
-            float shadowTexelSize = 1.0f / g_FrameUniform.spotLightUniform.spotLightStructs[i].spotLightShadowmap.shadowmap_width;
+            float shadowTexelSize = 1.0f / g_FrameUniform.spotLightUniform.spotLightStructs[i].spotLightShadowmap.shadowmap_size.x;
 
             // PCF
             float pcfDepth = projCoords.z;

@@ -78,35 +78,46 @@ namespace MoYu
                 if (!curSpotLightDesc.m_shadowmap && curSpotLighShaodwmaptExist)
                 {
                     m_SpotShadowmaps.erase(m_SpotShadowmaps.begin() + curShadowmapIndex);
+                    curShadowmapIndex = -1;
                 }
 
                 // if shadowmap does not exist, but current light has shadowmap
-                if (curSpotLightDesc.m_shadowmap && !curSpotLighShaodwmaptExist)
+                if (curSpotLightDesc.m_shadowmap)
                 {
-                    Vector2 shadowmap_size = curSpotLightDesc.m_shadowmap_size;
+                    if (!curSpotLighShaodwmaptExist)
+                    {
+                        Vector2 shadowmap_size = curSpotLightDesc.m_shadowmap_size;
                     
-                    std::shared_ptr<RHI::D3D12Texture> p_SpotLightShadowmap =
-                        RHI::D3D12Texture::Create2D(m_Device->GetLinkedDevice(),
-                                                    shadowmap_size.x,
-                                                    shadowmap_size.y,
-                                                    1,
-                                                    DXGI_FORMAT_D32_FLOAT,
-                                                    RHI::RHISurfaceCreateShadowmap,
-                                                    1,
-                                                    L"SpotLightShadowmap",
-                                                    D3D12_RESOURCE_STATE_COMMON,
-                                                    CD3DX12_CLEAR_VALUE(DXGI_FORMAT_D32_FLOAT, 0, 1));
+                        std::shared_ptr<RHI::D3D12Texture> p_SpotLightShadowmap =
+                            RHI::D3D12Texture::Create2D(m_Device->GetLinkedDevice(),
+                                                        shadowmap_size.x,
+                                                        shadowmap_size.y,
+                                                        1,
+                                                        DXGI_FORMAT_D32_FLOAT,
+                                                        RHI::RHISurfaceCreateShadowmap,
+                                                        1,
+                                                        L"SpotLightShadowmap",
+                                                        D3D12_RESOURCE_STATE_COMMON,
+                                                        CD3DX12_CLEAR_VALUE(DXGI_FORMAT_D32_FLOAT, 0, 1));
 
-                    SpotShadowmapStruct spotShadow = {};
-                    spotShadow.m_identifier        = curSpotLightDesc.m_identifier;
-                    spotShadow.m_spot_index        = i;
-                    spotShadow.m_shadowmap_size    = shadowmap_size;
-                    spotShadow.p_LightShadowmap    = p_SpotLightShadowmap;
+                        SpotShadowmapStruct spotShadow = {};
+                        spotShadow.m_identifier        = curSpotLightDesc.m_identifier;
+                        spotShadow.m_spot_index        = i;
+                        spotShadow.m_shadowmap_size    = shadowmap_size;
+                        spotShadow.p_LightShadowmap    = p_SpotLightShadowmap;
 
-                    m_SpotShadowmaps.push_back(spotShadow);
+                        m_SpotShadowmaps.push_back(spotShadow);
 
-                    real_resource->m_FrameUniforms.spotLightUniform.scene_spot_lights[i]
-                        .spotLightShadowmap.shadowmap_srv_index = p_SpotLightShadowmap->GetDefaultSRV()->GetIndex();
+                        curShadowmapIndex = m_SpotShadowmaps.size() - 1;
+                    }
+
+                    if (curShadowmapIndex != -1)
+                    {
+                        real_resource->m_FrameUniforms.spotLightUniform.scene_spot_lights[i]
+                            .spotLightShadowmap.shadowmap_srv_index =
+                            m_SpotShadowmaps[curShadowmapIndex].p_LightShadowmap->GetDefaultSRV()->GetIndex();
+                    }
+
                 }
             }
         }

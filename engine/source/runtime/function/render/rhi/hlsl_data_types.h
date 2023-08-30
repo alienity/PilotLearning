@@ -182,8 +182,7 @@ namespace HLSL
     {
         uint     shadowmap_srv_index; // shadowmap srv in descriptorheap index
         uint     cascadeCount;        // how many cascade level, default 4
-        float    shadowmap_width;     // shadowmap width
-        float    shadowmap_height;    // shadowmap height
+        uint2    shadowmap_size;     // shadowmap size
         uint4    shadow_bounds;       // shadow bounds for each cascade level
         float4x4 light_view_matrix;   // direction light view matrix
         float4x4 light_proj_matrix[4];
@@ -196,11 +195,19 @@ namespace HLSL
         float3 lightPosition;       // directional light position
         float  lightRadius;         // sun radius
         float3 lightDirection;      // directional light direction
-        uint   useShadowmap;        // 1 use shadowmap
+        uint   shadowType;        // 1 use shadowmap
         float2 lightFarAttenuationParams; // a, a/far (a=1/pct-of-far)
         float2 _padding_0;
 
         DirectionalLightShadowmap directionalLightShadowmap;
+    };
+
+    struct PointLightShadowmap
+    {
+        uint     shadowmap_srv_index; // shadowmap srv in descriptorheap index
+        uint2    shadowmap_size;
+        float    _padding_shadowmap;
+        float4x4 light_proj_view[6];
     };
 
     struct PointLightStruct
@@ -208,6 +215,11 @@ namespace HLSL
         float3 lightPosition;
         float  lightRadius;
         float4 lightIntensity; // point light rgb - color, a - intensity
+        uint   shadowType;
+        float  falloff;
+        uint2  _padding_0;
+
+        PointLightShadowmap pointLightShadowmap;
     };
 
     struct PointLightUniform
@@ -217,11 +229,11 @@ namespace HLSL
         PointLightStruct pointLightStructs[m_max_point_light_count];
     };
 
-    struct SpotLightSgadowmap
+    struct SpotLightShadowmap
     {
         uint     shadowmap_srv_index; // shadowmap srv in descriptorheap index
-        float    shadowmap_width;
-        float2   _padding_shadowmap;
+        uint2    shadowmap_size;
+        float    _padding_shadowmap;
         float4x4 light_proj_view;
     };
 
@@ -233,10 +245,11 @@ namespace HLSL
         float3 lightDirection;
         float  inner_radians;
         float  outer_radians;
-        uint   useShadowmap;
-        float2 _padding_0;
+        uint   shadowType;
+        float  falloff;
+        uint   _padding_0;
 
-        SpotLightSgadowmap spotLightShadowmap;
+        SpotLightShadowmap spotLightShadowmap;
     };
 
     struct SpotLightUniform

@@ -191,7 +191,8 @@ float sampleDepth(
 
 float shadowSample_PCF_Low(
     const Texture2D<float> shadowmap, SamplerComparisonState shadowmapSampler, 
-    const float4x4 light_proj_view, uint shadowmap_size, float2 shadow_bound_offset, const float3 positionWS, const float depthBias)
+    const float4x4 light_proj_view, uint2 shadowmap_size, float2 uv_offset, const float uv_scale,
+    const float3 positionWS, const float depthBias)
 {
     float4 fragPosLightSpace = mul(light_proj_view, float4(positionWS, 1.0f));
 
@@ -221,10 +222,10 @@ float shadowSample_PCF_Low(
     v *= texelSize.y;
 
     float sum = 0.0;
-    sum += uw.x * vw.x * sampleDepth(shadowmap, shadowmapSampler, (base + float2(u.x, v.x)) * 0.5 + shadow_bound_offset, depth);
-    sum += uw.y * vw.x * sampleDepth(shadowmap, shadowmapSampler, (base + float2(u.y, v.x)) * 0.5 + shadow_bound_offset, depth);
-    sum += uw.x * vw.y * sampleDepth(shadowmap, shadowmapSampler, (base + float2(u.x, v.y)) * 0.5 + shadow_bound_offset, depth);
-    sum += uw.y * vw.y * sampleDepth(shadowmap, shadowmapSampler, (base + float2(u.y, v.y)) * 0.5 + shadow_bound_offset, depth);
+    sum += uw.x * vw.x * sampleDepth(shadowmap, shadowmapSampler, (base + float2(u.x, v.x)) * uv_scale + uv_offset, depth);
+    sum += uw.y * vw.x * sampleDepth(shadowmap, shadowmapSampler, (base + float2(u.y, v.x)) * uv_scale + uv_offset, depth);
+    sum += uw.x * vw.y * sampleDepth(shadowmap, shadowmapSampler, (base + float2(u.x, v.y)) * uv_scale + uv_offset, depth);
+    sum += uw.y * vw.y * sampleDepth(shadowmap, shadowmapSampler, (base + float2(u.y, v.y)) * uv_scale + uv_offset, depth);
     return sum * (1.0 / 16.0);
 }
 
@@ -232,7 +233,7 @@ float shadowSample_PCF_Low(
 float shadowSample_PCF(
     const Texture2D<float> shadowmap, SamplerComparisonState shadowmapSampler, 
     const float4x4 light_view_matrix, const float4x4 light_proj_view[4], 
-    const float4 shadow_bounds, uint shadowmap_size, uint cascadeCount, const float3 positionWS, const float ndotl)
+    const float4 shadow_bounds, uint2 shadowmap_size, uint cascadeCount, const float3 positionWS, const float ndotl)
 {
     uint cascadeLevel;
     float2 shadow_bound_offset;
@@ -242,9 +243,10 @@ float shadowSample_PCF(
         return 1.0f;
     
     float shadow_bias = max(0.0015f * exp2(cascadeLevel) * (1.0 - ndotl), 0.0003f);  
+    float uv_scale = 1.0f / log2(cascadeCount);
 
     return shadowSample_PCF_Low(shadowmap, shadowmapSampler, 
-        light_proj_view[cascadeLevel], shadowmap_size, shadow_bound_offset, positionWS, shadow_bias);
+        light_proj_view[cascadeLevel], shadowmap_size, shadow_bound_offset, uv_scale, positionWS, shadow_bias);
 }
 
 //------------------------------------------------------------------------------
@@ -383,7 +385,7 @@ void evaluateDirectionalLight(
 
     float visibility = 1.0f;
 
-    if(frameUniforms.directionalLight.useShadowmap)
+    if(frameUniforms.directionalLight.shadowType != 0)
     {
         Texture2D<float> shadowMap = ResourceDescriptorHeap[_dirShadowmap.shadowmap_srv_index];
         visibility = shadowSample_PCF(
@@ -392,7 +394,7 @@ void evaluateDirectionalLight(
             _dirShadowmap.light_view_matrix, 
             _dirShadowmap.light_proj_view, 
             _dirShadowmap.shadow_bounds, 
-            _dirShadowmap.shadowmap_width, 
+            _dirShadowmap.shadowmap_size, 
             _dirShadowmap.cascadeCount, 
             params.shading_position, 
             light.NoL);
@@ -427,9 +429,10 @@ float getDistanceAttenuation(const CommonShadingStruct params, const FrameUnifor
     return attenuation / max(distanceSquare, 1e-4);
 }
 
-float getAngleAttenuation(const float3 lightDir, const float3 l, const float2 scaleOffset) {
+float getAngleAttenuation(const float3 lightDir, const float3 l, const float2 inoutRadians) {
     float cd = dot(lightDir, l);
-    float attenuation = saturate(cd * scaleOffset.x + scaleOffset.y);
+    float arcd = acos(cd);
+    float attenuation = saturate((arcd - inoutRadians.y) / (inoutRadians.x - inoutRadians.y));
     return attenuation * attenuation;
 }
 
@@ -442,51 +445,62 @@ float getAngleAttenuation(const float3 lightDir, const float3 l, const float2 sc
  * lightsUniforms uniform buffer.
  */
 
-Light getLight(const CommonShadingStruct params, const FrameUniforms frameUniforms, const LightsUniforms lightsUniforms, const uint lightIndex)
+Light getPointLight(const CommonShadingStruct params, const FrameUniforms frameUniforms, const PointLightStruct pointLightStruct)
 {
-    // retrieve the light data from the UBO
-
-    float4x4 data = lightsUniforms.lights[lightIndex];
-
-    float4 positionFalloff = data[0];
-    float3 direction = data[1].xyz;
-    float4 colorIES = float4(
-        unpackHalf2x16(floatBitsToUint(data[2][0])),
-        unpackHalf2x16(floatBitsToUint(data[2][1]))
-    );
-    float2 scaleOffset = data[2].zw;
-    float intensity = data[3][1];
-    uint typeShadow = floatBitsToUint(data[3][2]);
-    uint channels = floatBitsToUint(data[3][3]);
+    float3 colorIES = pointLightStruct.lightIntensity.rgb;
+    float intensity = pointLightStruct.lightIntensity.a;
+    float3 positionFalloff = pointLightStruct.lightPosition;
+    float falloff = pointLightStruct.falloff;
 
     // poition-to-light vector
-    float3 worldPosition = getWorldPosition(params);
+    float3 worldPosition = params.shading_position;
     float3 posToLight = positionFalloff.xyz - worldPosition;
 
     // and populate the Light structure
     Light light;
     light.colorIntensity.rgb = colorIES.rgb;
-    light.colorIntensity.w = computePreExposedIntensity(intensity, frameUniforms.exposure);
+    light.colorIntensity.w = intensity;
     light.l = normalize(posToLight);
-    light.attenuation = getDistanceAttenuation(params, frameUniforms, posToLight, positionFalloff.w);
-    light.direction = direction;
+    light.attenuation = getDistanceAttenuation(params, frameUniforms, posToLight, falloff);
     light.NoL = saturate(dot(params.shading_normal, light.l));
     light.worldPosition = positionFalloff.xyz;
-    light.channels = channels;
-    light.contactShadows = bool(typeShadow & 0x10u);
-#if defined(VARIANT_HAS_DYNAMIC_LIGHTING)
-    light.type = (typeShadow & 0x1u);
-#if defined(VARIANT_HAS_SHADOWING)
-    light.shadowIndex = (typeShadow >>  8u) & 0xFFu;
-    light.castsShadows   = bool(channels & 0x10000u);
-    if (light.type == LIGHT_TYPE_SPOT) {
-        light.zLight = dot(shadowUniforms.shadows[light.shadowIndex].lightFromWorldZ, float4(worldPosition, 1.0));
-    }
-#endif
-    if (light.type == LIGHT_TYPE_SPOT) {
-        light.attenuation *= getAngleAttenuation(-direction, light.l, scaleOffset);
-    }
-#endif
+    light.contactShadows = 0;
+    light.type = (pointLightStruct.shadowType & 0x1u);
+    light.shadowIndex = 0xFFFFFFFF;
+    light.castsShadows = 0;
+
+    return light;
+}
+
+Light getSpotLight(const CommonShadingStruct params, const FrameUniforms frameUniforms, const SpotLightStruct spotLightStruct)
+{
+    float3 colorIES = spotLightStruct.lightIntensity.rgb;
+    float intensity = spotLightStruct.lightIntensity.a;
+    float3 positionFalloff = spotLightStruct.lightPosition;
+    float3 direction = spotLightStruct.lightDirection;
+    float2 inoutRadians = max(float2(spotLightStruct.inner_radians, spotLightStruct.outer_radians), 0.01f);
+    float falloff = spotLightStruct.falloff;
+
+    // poition-to-light vector
+    float3 worldPosition = params.shading_position;
+    float3 posToLight = positionFalloff.xyz - worldPosition;
+
+    // and populate the Light structure
+    Light light;
+    light.colorIntensity.rgb = colorIES.rgb;
+    light.colorIntensity.w = intensity;
+    light.l = normalize(posToLight);
+    light.attenuation = getDistanceAttenuation(params, frameUniforms, posToLight, falloff);
+    light.NoL = saturate(dot(params.shading_normal, light.l));
+    light.worldPosition = positionFalloff.xyz;
+    light.contactShadows = 0;
+    light.type = (spotLightStruct.shadowType & 0x1u);
+    light.shadowIndex = spotLightStruct.spotLightShadowmap.shadowmap_srv_index;
+    light.castsShadows = 0;
+
+    light.direction = direction;
+    light.attenuation *= getAngleAttenuation(direction, -light.l, inoutRadians);
+
     return light;
 }
 
@@ -495,6 +509,88 @@ Light getLight(const CommonShadingStruct params, const FrameUniforms frameUnifor
  * The result of the lighting computations is accumulated in the color
  * parameter, as linear HDR RGB.
  */
+void evaluatePointLights(
+    const FrameUniforms frameUniforms, 
+    const PerRenderableMeshData perMeshData, 
+    const CommonShadingStruct params,
+    const MaterialInputs material, 
+    const PixelParams pixel,
+    const SamplerStruct samplerStruct, 
+    inout float3 color)
+{
+    PointLightUniform pointLightUniform = frameUniforms.pointLightUniform;
+
+    uint index = 0;
+    uint end = pointLightUniform.pointLightCounts;
+
+    for ( ; index < end; index++)
+    {
+        Light light = getPointLight(params, frameUniforms, pointLightUniform.pointLightStructs[index]);
+
+        float visibility = 1.0f;
+        /*
+        if(frameUniforms.directionalLight.shadowType != 0)
+        {
+            DirectionalLightShadowmap _dirShadowmap = frameUniforms.directionalLight.directionalLightShadowmap;
+            Texture2D<float> shadowMap = ResourceDescriptorHeap[_dirShadowmap.shadowmap_srv_index];
+            visibility = shadowSample_PCF(
+                shadowMap, 
+                samplerStruct.sdSampler, 
+                _dirShadowmap.light_view_matrix, 
+                _dirShadowmap.light_proj_view, 
+                _dirShadowmap.shadow_bounds, 
+                _dirShadowmap.shadowmap_width, 
+                _dirShadowmap.cascadeCount, 
+                params.shading_position, 
+                light.NoL);
+        }
+        */
+        color.rgb += surfaceShading(params, pixel, light, visibility);
+    }
+}
+
+void evaluateSpotLights(
+    const FrameUniforms frameUniforms, 
+    const PerRenderableMeshData perMeshData, 
+    const CommonShadingStruct params,
+    const MaterialInputs material, 
+    const PixelParams pixel,
+    const SamplerStruct samplerStruct, 
+    inout float3 color)
+{
+    SpotLightUniform spotLightUniform = frameUniforms.spotLightUniform;
+
+    uint index = 0;
+    uint end = spotLightUniform.spotLightCounts;
+
+    for ( ; index < end; index++)
+    {
+        SpotLightStruct _spotLightStr = spotLightUniform.spotLightStructs[index];
+        Light light = getSpotLight(params, frameUniforms, _spotLightStr);
+        float visibility = 1.0f;
+
+        if(frameUniforms.directionalLight.shadowType != 0)
+        {
+            SpotLightShadowmap _spotLightShadowmap = _spotLightStr.spotLightShadowmap;
+            Texture2D<float> shadowMap = ResourceDescriptorHeap[_spotLightShadowmap.shadowmap_srv_index];
+
+            float shadow_bias = max(0.0015f * (1.0 - light.NoL), 0.0003f);  
+
+            visibility = shadowSample_PCF_Low(
+                shadowMap, 
+                samplerStruct.sdSampler, 
+                _spotLightShadowmap.light_proj_view, 
+                _spotLightShadowmap.shadowmap_size, 
+                float2(0, 0), 
+                1.0f, 
+                params.shading_position, 
+                0);
+        }
+
+        color.rgb += surfaceShading(params, pixel, light, visibility);
+    }
+}
+
 void evaluatePunctualLights(
     const FrameUniforms frameUniforms, 
     const PerRenderableMeshData perMeshData, 
@@ -502,74 +598,11 @@ void evaluatePunctualLights(
     const MaterialInputs material, 
     const PixelParams pixel,
     const SamplerStruct samplerStruct, 
-    inout float3 color) {
-
-    // Fetch the light information stored in the froxel that contains the
-    // current fragment
-    FroxelParams froxel = getFroxelParams(getFroxelIndex(getNormalizedPhysicalViewportCoord()));
-
-    // Each froxel contains how many lights can influence
-    // the current fragment. A froxel also contains a record offset that
-    // tells us where the indices of those lights are in the records
-    // buffer. The records buffer contains the indices of the actual
-    // light data in the lightsUniforms UBO.
-
-    uint index = froxel.recordOffset;
-    uint end = index + froxel.count;
-    uint channels = object_uniforms.flagsChannels & 0xFFu;
-
-    // Iterate point lights
-    for ( ; index < end; index++) {
-        uint lightIndex = getLightIndex(index);
-        Light light = getLight(lightIndex);
-        if ((light.channels & channels) == 0u) {
-            continue;
-        }
-
-#if defined(MATERIAL_CAN_SKIP_LIGHTING)
-        if (light.NoL <= 0.0 || light.attenuation <= 0.0) {
-            continue;
-        }
-#endif
-
-        float visibility = 1.0;
-#if defined(VARIANT_HAS_SHADOWING)
-        if (light.NoL > 0.0) {
-            if (light.castsShadows) {
-                uint shadowIndex = light.shadowIndex;
-                if (light.type == LIGHT_TYPE_POINT) {
-                    // point-light shadows are sampled from a direction
-                    float3 r = getWorldPosition() - light.worldPosition;
-                    uint face = getPointLightFace(r);
-                    shadowIndex += face;
-                    light.zLight = dot(shadowUniforms.shadows[shadowIndex].lightFromWorldZ,
-                            float4(getWorldPosition(), 1.0));
-                }
-                float4 shadowPosition = getShadowPosition(shadowIndex, light.direction, light.zLight);
-                visibility = shadow(false, light_shadowMap, shadowIndex,
-                        shadowPosition, light.zLight);
-            }
-            if (light.contactShadows && visibility > 0.0) {
-                if ((object_uniforms.flagsChannels & FILAMENT_OBJECT_CONTACT_SHADOWS_BIT) != 0u) {
-                    visibility *= 1.0 - screenSpaceContactShadow(light.l);
-                }
-            }
-#if defined(MATERIAL_CAN_SKIP_LIGHTING)
-            if (visibility <= 0.0) {
-                continue;
-            }
-#endif
-        }
-#endif
-
-#if defined(MATERIAL_HAS_CUSTOM_SURFACE_SHADING)
-        color.rgb += customSurfaceShading(material, pixel, light, visibility);
-#else
-        color.rgb += surfaceShading(pixel, light, visibility);
-#endif
-    }
+    inout float3 color)
+{
+    evaluatePointLights(frameUniforms, perMeshData, params, material, pixel, samplerStruct, color);
+    evaluateSpotLights(frameUniforms, perMeshData, params, material, pixel, samplerStruct, color);
 }
-
 
 
 
