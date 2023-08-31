@@ -199,6 +199,9 @@ float shadowSample_PCF_Low(
     // perform perspective divide
     float3 shadowPosition = fragPosLightSpace.xyz / fragPosLightSpace.w;
 
+    if(max(abs(shadowPosition.x), abs(shadowPosition.y)) > 1)
+        return 0.0f;
+
     shadowPosition.xy = shadowPosition.xy * 0.5 + 0.5;
     shadowPosition.y = 1 - shadowPosition.y;
 
@@ -431,8 +434,10 @@ float getDistanceAttenuation(const CommonShadingStruct params, const FrameUnifor
 
 float getAngleAttenuation(const float3 lightDir, const float3 l, const float2 inoutRadians) {
     float cd = dot(lightDir, l);
-    float arcd = acos(cd);
-    float attenuation = saturate((arcd - inoutRadians.y) / (inoutRadians.x - inoutRadians.y));
+    float acd = acos(cd);
+    float inRadians = inoutRadians.x * 0.5f;
+    float outRadians = inoutRadians.y * 0.5f;
+    float attenuation = saturate((acd - outRadians)/(inRadians - outRadians));
     return attenuation * attenuation;
 }
 
@@ -478,7 +483,7 @@ Light getSpotLight(const CommonShadingStruct params, const FrameUniforms frameUn
     float intensity = spotLightStruct.lightIntensity.a;
     float3 positionFalloff = spotLightStruct.lightPosition;
     float3 direction = spotLightStruct.lightDirection;
-    float2 inoutRadians = max(float2(spotLightStruct.inner_radians, spotLightStruct.outer_radians), 0.01f);
+    float2 inoutRadians = max(float2(spotLightStruct.inner_radians, spotLightStruct.outer_radians), float2(0.001f, 0.001f));
     float falloff = spotLightStruct.falloff;
 
     // poition-to-light vector
@@ -574,7 +579,7 @@ void evaluateSpotLights(
             SpotLightShadowmap _spotLightShadowmap = _spotLightStr.spotLightShadowmap;
             Texture2D<float> shadowMap = ResourceDescriptorHeap[_spotLightShadowmap.shadowmap_srv_index];
 
-            float shadow_bias = max(0.0015f * (1.0 - light.NoL), 0.0003f);  
+            float shadow_bias = max(0.005f * (1.0 - light.NoL), 0.005f);  
 
             visibility = shadowSample_PCF_Low(
                 shadowMap, 
@@ -584,7 +589,7 @@ void evaluateSpotLights(
                 float2(0, 0), 
                 1.0f, 
                 params.shading_position, 
-                0);
+                shadow_bias);
         }
 
         color.rgb += surfaceShading(params, pixel, light, visibility);
