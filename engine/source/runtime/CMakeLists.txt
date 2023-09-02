@@ -56,6 +56,7 @@ target_link_libraries(${TARGET_NAME} PUBLIC cityhash)
 target_link_libraries(${TARGET_NAME} PUBLIC DirectStorage)
 # target_link_libraries(${TARGET_NAME} PUBLIC DirectXTK12)
 target_link_libraries(${TARGET_NAME} PUBLIC d3d12.lib)
+target_link_libraries(${TARGET_NAME} PUBLIC DirectXTex)
 
 add_definitions(-DUNICODE -D_UNICODE)
 
@@ -115,6 +116,11 @@ target_include_directories(
   ${TARGET_NAME} 
   PUBLIC $<BUILD_INTERFACE:${ENGINE_ROOT_DIR}/source/runtime/function/render/include>
   $<INSTALL_INTERFACE:include/${TARGET_NAME}-${PROJECT_VERSION}>
+)
+
+target_include_directories(
+  ${TARGET_NAME} 
+  PUBLIC $<BUILD_INTERFACE:${THIRD_PARTY_DIR}/DirectXTex/DirectXTex>
 )
 
 # ---- Create an installable target ----

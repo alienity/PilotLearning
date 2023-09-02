@@ -132,3 +132,8 @@ if(NOT TARGET cityhash)
     include(cityhash.cmake)
     set_target_properties(cityhash PROPERTIES FOLDER ${third_party_folder}/cityhash)
 endif()
+
+if(NOT TARGET DirectXTex)
+    add_subdirectory(DirectXTex)
+    set_target_properties(DirectXTex PROPERTIES FOLDER ${third_party_folder}/DirectXTex)
+endif()
