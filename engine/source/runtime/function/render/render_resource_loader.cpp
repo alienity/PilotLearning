@@ -53,9 +53,9 @@ namespace MoYu
         m_GraphicsMemory->Commit(syncHandle);
     }
 
-    std::shared_ptr<TextureData> RenderResourceBase::loadTextureHDR(std::string file)
+    std::shared_ptr<MoYuScratchImage> RenderResourceBase::loadTextureHDR(std::string file)
     {
-        std::shared_ptr<TextureData> texture = _TextureData_Caches[file];
+        std::shared_ptr<MoYuScratchImage> texture = _TextureData_Caches[file];
 
         if (texture == nullptr)
         {
@@ -111,7 +111,7 @@ namespace MoYu
         return texture;
     }
 
-    std::shared_ptr<TextureData> RenderResourceBase::loadTexture(std::string file, int force_channel)
+    std::shared_ptr<MoYuScratchImage> RenderResourceBase::loadTexture(std::string file, int force_channel)
     {
         std::shared_ptr<TextureData> texture = _TextureData_Caches[file];
 

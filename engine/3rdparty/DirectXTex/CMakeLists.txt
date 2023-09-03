@@ -38,7 +38,7 @@ option(ENABLE_CODE_ANALYSIS "Use Static Code Analysis on build" OFF)
 option(USE_PREBUILT_SHADERS "Use externally built HLSL shaders" OFF)
 
 # Includes the functions for loading/saving OpenEXR files at runtime
-option(ENABLE_OPENEXR_SUPPORT "Build with OpenEXR support" OFF)
+option(ENABLE_OPENEXR_SUPPORT "Build with OpenEXR support" ON)
 
 option(BUILD_TESTING "Build Testing" OFF)
 
@@ -126,6 +126,16 @@ if(BUILD_DX12)
 endif()
 
 if(ENABLE_OPENEXR_SUPPORT)
+   set(OPENEXR_DIR ${CMAKE_CURRENT_SOURCE_DIR}/openexr-msvc-x64.2.3.0.8788)
+   set(ZLIB_DIR ${CMAKE_CURRENT_SOURCE_DIR}/zlib-msvc-x64.1.2.11.8900)
+
+   file(GLOB openexr_sources CONFIGURE_DEPENDS  "${OPENEXR_DIR}/build/native/include/OpenEXR/*.h")
+   file(GLOB zlib_sources CONFIGURE_DEPENDS  "${ZLIB_DIR}/build/native/include/*.h")
+
+   set(LIBRARY_HEADERS ${LIBRARY_HEADERS}
+       ${openexr_sources}
+       ${zlib_sources})
+
    set(LIBRARY_HEADERS ${LIBRARY_HEADERS}
        Auxiliary/DirectXTexEXR.h)
 
@@ -183,8 +193,31 @@ if(BC_USE_OPENMP)
 endif()
 
 if(ENABLE_OPENEXR_SUPPORT)
-  find_package(OpenEXR REQUIRED)
-  target_link_libraries(${PROJECT_NAME} PUBLIC OpenEXR::OpenEXR)
+  # find_package(OpenEXR REQUIRED)
+  target_include_directories(${PROJECT_NAME} PUBLIC
+  $<BUILD_INTERFACE:${OPENEXR_DIR}/build/native/include/OpenEXR>
+  $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
+
+  target_include_directories(${PROJECT_NAME} PUBLIC
+  $<BUILD_INTERFACE:${ZLIB_DIR}/build/native/include>
+  $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
+
+  # target_link_libraries(${PROJECT_NAME} PUBLIC OpenEXR::OpenEXR)
+  target_link_libraries(${PROJECT_NAME} PUBLIC 
+    ${OPENEXR_DIR}/build/native/lib_release/Half-2_3_s.lib
+    ${OPENEXR_DIR}/build/native/lib_release/Iex-2_3_s.lib
+    ${OPENEXR_DIR}/build/native/lib_release/IexMath-2_3_s.lib
+    ${OPENEXR_DIR}/build/native/lib_release/IlmImf-2_3_s.lib
+    ${OPENEXR_DIR}/build/native/lib_release/IlmImfUtil-2_3_s.lib
+    ${OPENEXR_DIR}/build/native/lib_release/IlmThread-2_3_s.lib
+    ${OPENEXR_DIR}/build/native/lib_release/Imath-2_3_s.lib
+  )
+
+  target_link_libraries(${PROJECT_NAME} PUBLIC 
+    ${ZLIB_DIR}/build/native/lib_release/zlib.lib
+    ${ZLIB_DIR}/build/native/lib_release/zlibstatic.lib
+  )
+  # ZLIB_DIR
 endif()
 
 if(NOT MINGW)

@@ -1,4 +1,3 @@
-build/
 cpm_modules/
 CPM_modules/
 CPM_*.cmake

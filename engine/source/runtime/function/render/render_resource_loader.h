@@ -19,8 +19,8 @@ namespace MoYu
     class RenderResourceBase
     {
     public:
-        std::unordered_map<std::string, std::shared_ptr<TextureData>> _TextureData_Caches;
-        std::unordered_map<std::string, std::shared_ptr<BufferData>>  _BufferData_Caches;
+        std::unordered_map<std::string, std::shared_ptr<MoYuScratchImage>> _TextureData_Caches;
+        std::unordered_map<std::string, std::shared_ptr<MoYuScratchBuffer>> _BufferData_Caches;
 
         std::unordered_map<std::string, RenderMeshData> _MeshData_Caches;
 
@@ -35,8 +35,8 @@ namespace MoYu
         void endUploadBatch();
         void commitUploadBatch();
 
-        std::shared_ptr<TextureData> loadTextureHDR(std::string file);
-        std::shared_ptr<TextureData> loadTexture(std::string file, int force_channel = 0);
+        std::shared_ptr<MoYuScratchImage> loadTextureHDR(std::string file);
+        std::shared_ptr<MoYuScratchImage> loadTexture(std::string file, int force_channel = 0);
 
         RenderMeshData loadMeshData(std::string mesh_file);
 

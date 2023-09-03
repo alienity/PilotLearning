@@ -50,274 +50,31 @@ namespace D3D12RHIUtils
     //--------------------------------------------------------------------------------------
     // Return the BPP for a particular format
     //--------------------------------------------------------------------------------------
-    inline size_t BitsPerPixel(_In_ DXGI_FORMAT fmt) noexcept
-    {
-        switch (fmt)
-        {
-            case DXGI_FORMAT_R32G32B32A32_TYPELESS:
-            case DXGI_FORMAT_R32G32B32A32_FLOAT:
-            case DXGI_FORMAT_R32G32B32A32_UINT:
-            case DXGI_FORMAT_R32G32B32A32_SINT:
-                return 128;
+    constexpr bool IsValid(_In_ DXGI_FORMAT fmt) noexcept;
+    bool IsCompressed(DXGI_FORMAT fmt) noexcept;
+    bool IsPacked(_In_ DXGI_FORMAT fmt) noexcept;
+    bool IsPlanar(_In_ DXGI_FORMAT fmt) noexcept;
+    bool IsPalettized(_In_ DXGI_FORMAT fmt) noexcept;
+    bool IsDepthStencil(_In_ DXGI_FORMAT fmt) noexcept;
+    bool IsSRGB(_In_ DXGI_FORMAT fmt) noexcept;
+    bool IsBGR(_In_ DXGI_FORMAT fmt) noexcept;
+    bool IsTypeless(_In_ DXGI_FORMAT fmt, _In_ bool partialTypeless = true) noexcept;
 
-            case DXGI_FORMAT_R32G32B32_TYPELESS:
-            case DXGI_FORMAT_R32G32B32_FLOAT:
-            case DXGI_FORMAT_R32G32B32_UINT:
-            case DXGI_FORMAT_R32G32B32_SINT:
-                return 96;
+    bool HasAlpha(_In_ DXGI_FORMAT fmt) noexcept;
 
-            case DXGI_FORMAT_R16G16B16A16_TYPELESS:
-            case DXGI_FORMAT_R16G16B16A16_FLOAT:
-            case DXGI_FORMAT_R16G16B16A16_UNORM:
-            case DXGI_FORMAT_R16G16B16A16_UINT:
-            case DXGI_FORMAT_R16G16B16A16_SNORM:
-            case DXGI_FORMAT_R16G16B16A16_SINT:
-            case DXGI_FORMAT_R32G32_TYPELESS:
-            case DXGI_FORMAT_R32G32_FLOAT:
-            case DXGI_FORMAT_R32G32_UINT:
-            case DXGI_FORMAT_R32G32_SINT:
-            case DXGI_FORMAT_R32G8X24_TYPELESS:
-            case DXGI_FORMAT_D32_FLOAT_S8X24_UINT:
-            case DXGI_FORMAT_R32_FLOAT_X8X24_TYPELESS:
-            case DXGI_FORMAT_X32_TYPELESS_G8X24_UINT:
-            case DXGI_FORMAT_Y416:
-            case DXGI_FORMAT_Y210:
-            case DXGI_FORMAT_Y216:
-                return 64;
+    size_t BitsPerPixel(_In_ DXGI_FORMAT fmt) noexcept;
+    inline size_t BytesPerPixel(DXGI_FORMAT Format) { return BitsPerPixel(Format) / 8; };
 
-            case DXGI_FORMAT_R10G10B10A2_TYPELESS:
-            case DXGI_FORMAT_R10G10B10A2_UNORM:
-            case DXGI_FORMAT_R10G10B10A2_UINT:
-            case DXGI_FORMAT_R11G11B10_FLOAT:
-            case DXGI_FORMAT_R8G8B8A8_TYPELESS:
-            case DXGI_FORMAT_R8G8B8A8_UNORM:
-            case DXGI_FORMAT_R8G8B8A8_UNORM_SRGB:
-            case DXGI_FORMAT_R8G8B8A8_UINT:
-            case DXGI_FORMAT_R8G8B8A8_SNORM:
-            case DXGI_FORMAT_R8G8B8A8_SINT:
-            case DXGI_FORMAT_R16G16_TYPELESS:
-            case DXGI_FORMAT_R16G16_FLOAT:
-            case DXGI_FORMAT_R16G16_UNORM:
-            case DXGI_FORMAT_R16G16_UINT:
-            case DXGI_FORMAT_R16G16_SNORM:
-            case DXGI_FORMAT_R16G16_SINT:
-            case DXGI_FORMAT_R32_TYPELESS:
-            case DXGI_FORMAT_D32_FLOAT:
-            case DXGI_FORMAT_R32_FLOAT:
-            case DXGI_FORMAT_R32_UINT:
-            case DXGI_FORMAT_R32_SINT:
-            case DXGI_FORMAT_R24G8_TYPELESS:
-            case DXGI_FORMAT_D24_UNORM_S8_UINT:
-            case DXGI_FORMAT_R24_UNORM_X8_TYPELESS:
-            case DXGI_FORMAT_X24_TYPELESS_G8_UINT:
-            case DXGI_FORMAT_R9G9B9E5_SHAREDEXP:
-            case DXGI_FORMAT_R8G8_B8G8_UNORM:
-            case DXGI_FORMAT_G8R8_G8B8_UNORM:
-            case DXGI_FORMAT_B8G8R8A8_UNORM:
-            case DXGI_FORMAT_B8G8R8X8_UNORM:
-            case DXGI_FORMAT_R10G10B10_XR_BIAS_A2_UNORM:
-            case DXGI_FORMAT_B8G8R8A8_TYPELESS:
-            case DXGI_FORMAT_B8G8R8A8_UNORM_SRGB:
-            case DXGI_FORMAT_B8G8R8X8_TYPELESS:
-            case DXGI_FORMAT_B8G8R8X8_UNORM_SRGB:
-            case DXGI_FORMAT_AYUV:
-            case DXGI_FORMAT_Y410:
-            case DXGI_FORMAT_YUY2:
-                return 32;
-
-            case DXGI_FORMAT_P010:
-            case DXGI_FORMAT_P016:
-#if (_WIN32_WINNT >= _WIN32_WINNT_WIN10)
-            case DXGI_FORMAT_V408:
-#endif
-                return 24;
-
-            case DXGI_FORMAT_R8G8_TYPELESS:
-            case DXGI_FORMAT_R8G8_UNORM:
-            case DXGI_FORMAT_R8G8_UINT:
-            case DXGI_FORMAT_R8G8_SNORM:
-            case DXGI_FORMAT_R8G8_SINT:
-            case DXGI_FORMAT_R16_TYPELESS:
-            case DXGI_FORMAT_R16_FLOAT:
-            case DXGI_FORMAT_D16_UNORM:
-            case DXGI_FORMAT_R16_UNORM:
-            case DXGI_FORMAT_R16_UINT:
-            case DXGI_FORMAT_R16_SNORM:
-            case DXGI_FORMAT_R16_SINT:
-            case DXGI_FORMAT_B5G6R5_UNORM:
-            case DXGI_FORMAT_B5G5R5A1_UNORM:
-            case DXGI_FORMAT_A8P8:
-            case DXGI_FORMAT_B4G4R4A4_UNORM:
-#if (_WIN32_WINNT >= _WIN32_WINNT_WIN10)
-            case DXGI_FORMAT_P208:
-            case DXGI_FORMAT_V208:
-#endif
-                return 16;
-
-            case DXGI_FORMAT_NV12:
-            case DXGI_FORMAT_420_OPAQUE:
-            case DXGI_FORMAT_NV11:
-                return 12;
-
-            case DXGI_FORMAT_R8_TYPELESS:
-            case DXGI_FORMAT_R8_UNORM:
-            case DXGI_FORMAT_R8_UINT:
-            case DXGI_FORMAT_R8_SNORM:
-            case DXGI_FORMAT_R8_SINT:
-            case DXGI_FORMAT_A8_UNORM:
-            case DXGI_FORMAT_BC2_TYPELESS:
-            case DXGI_FORMAT_BC2_UNORM:
-            case DXGI_FORMAT_BC2_UNORM_SRGB:
-            case DXGI_FORMAT_BC3_TYPELESS:
-            case DXGI_FORMAT_BC3_UNORM:
-            case DXGI_FORMAT_BC3_UNORM_SRGB:
-            case DXGI_FORMAT_BC5_TYPELESS:
-            case DXGI_FORMAT_BC5_UNORM:
-            case DXGI_FORMAT_BC5_SNORM:
-            case DXGI_FORMAT_BC6H_TYPELESS:
-            case DXGI_FORMAT_BC6H_UF16:
-            case DXGI_FORMAT_BC6H_SF16:
-            case DXGI_FORMAT_BC7_TYPELESS:
-            case DXGI_FORMAT_BC7_UNORM:
-            case DXGI_FORMAT_BC7_UNORM_SRGB:
-            case DXGI_FORMAT_AI44:
-            case DXGI_FORMAT_IA44:
-            case DXGI_FORMAT_P8:
-                return 8;
-
-            case DXGI_FORMAT_R1_UNORM:
-                return 1;
-
-            case DXGI_FORMAT_BC1_TYPELESS:
-            case DXGI_FORMAT_BC1_UNORM:
-            case DXGI_FORMAT_BC1_UNORM_SRGB:
-            case DXGI_FORMAT_BC4_TYPELESS:
-            case DXGI_FORMAT_BC4_UNORM:
-            case DXGI_FORMAT_BC4_SNORM:
-                return 4;
-
-            case DXGI_FORMAT_UNKNOWN:
-            case DXGI_FORMAT_FORCE_UINT:
-            default:
-                return 0;
-        }
-    }
-
-    static UINT BytesPerPixel(DXGI_FORMAT Format) { return (UINT)BitsPerPixel(Format) / 8; };
+    size_t BitsPerColor(_In_ DXGI_FORMAT fmt) noexcept;
+    
+    DXGI_FORMAT MakeSRGB(DXGI_FORMAT fmt) noexcept;
+    DXGI_FORMAT MakeLinear(DXGI_FORMAT fmt) noexcept;
+    DXGI_FORMAT MakeTypeless(DXGI_FORMAT fmt) noexcept;
+    DXGI_FORMAT MakeTypelessUNORM(DXGI_FORMAT fmt) noexcept;
+    DXGI_FORMAT MakeTypelessFLOAT(DXGI_FORMAT fmt) noexcept;
 
     //--------------------------------------------------------------------------------------
-    inline DXGI_FORMAT MakeSRGB(_In_ DXGI_FORMAT format) noexcept
-    {
-        switch (format)
-        {
-            case DXGI_FORMAT_R8G8B8A8_UNORM:
-                return DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
-
-            case DXGI_FORMAT_BC1_UNORM:
-                return DXGI_FORMAT_BC1_UNORM_SRGB;
-
-            case DXGI_FORMAT_BC2_UNORM:
-                return DXGI_FORMAT_BC2_UNORM_SRGB;
-
-            case DXGI_FORMAT_BC3_UNORM:
-                return DXGI_FORMAT_BC3_UNORM_SRGB;
-
-            case DXGI_FORMAT_B8G8R8A8_UNORM:
-                return DXGI_FORMAT_B8G8R8A8_UNORM_SRGB;
-
-            case DXGI_FORMAT_B8G8R8X8_UNORM:
-                return DXGI_FORMAT_B8G8R8X8_UNORM_SRGB;
-
-            case DXGI_FORMAT_BC7_UNORM:
-                return DXGI_FORMAT_BC7_UNORM_SRGB;
-
-            default:
-                return format;
-        }
-    }
-
-    //--------------------------------------------------------------------------------------
-    inline bool IsCompressed(_In_ DXGI_FORMAT fmt) noexcept
-    {
-        switch (fmt)
-        {
-            case DXGI_FORMAT_BC1_TYPELESS:
-            case DXGI_FORMAT_BC1_UNORM:
-            case DXGI_FORMAT_BC1_UNORM_SRGB:
-            case DXGI_FORMAT_BC2_TYPELESS:
-            case DXGI_FORMAT_BC2_UNORM:
-            case DXGI_FORMAT_BC2_UNORM_SRGB:
-            case DXGI_FORMAT_BC3_TYPELESS:
-            case DXGI_FORMAT_BC3_UNORM:
-            case DXGI_FORMAT_BC3_UNORM_SRGB:
-            case DXGI_FORMAT_BC4_TYPELESS:
-            case DXGI_FORMAT_BC4_UNORM:
-            case DXGI_FORMAT_BC4_SNORM:
-            case DXGI_FORMAT_BC5_TYPELESS:
-            case DXGI_FORMAT_BC5_UNORM:
-            case DXGI_FORMAT_BC5_SNORM:
-            case DXGI_FORMAT_BC6H_TYPELESS:
-            case DXGI_FORMAT_BC6H_UF16:
-            case DXGI_FORMAT_BC6H_SF16:
-            case DXGI_FORMAT_BC7_TYPELESS:
-            case DXGI_FORMAT_BC7_UNORM:
-            case DXGI_FORMAT_BC7_UNORM_SRGB:
-                return true;
-
-            default:
-                return false;
-        }
-    }
-
-    //--------------------------------------------------------------------------------------
-    inline DXGI_FORMAT EnsureNotTypeless(DXGI_FORMAT fmt) noexcept
-    {
-        // Assumes UNORM or FLOAT; doesn't use UINT or SINT
-        switch (fmt)
-        {
-            case DXGI_FORMAT_R32G32B32A32_TYPELESS:
-                return DXGI_FORMAT_R32G32B32A32_FLOAT;
-            case DXGI_FORMAT_R32G32B32_TYPELESS:
-                return DXGI_FORMAT_R32G32B32_FLOAT;
-            case DXGI_FORMAT_R16G16B16A16_TYPELESS:
-                return DXGI_FORMAT_R16G16B16A16_UNORM;
-            case DXGI_FORMAT_R32G32_TYPELESS:
-                return DXGI_FORMAT_R32G32_FLOAT;
-            case DXGI_FORMAT_R10G10B10A2_TYPELESS:
-                return DXGI_FORMAT_R10G10B10A2_UNORM;
-            case DXGI_FORMAT_R8G8B8A8_TYPELESS:
-                return DXGI_FORMAT_R8G8B8A8_UNORM;
-            case DXGI_FORMAT_R16G16_TYPELESS:
-                return DXGI_FORMAT_R16G16_UNORM;
-            case DXGI_FORMAT_R32_TYPELESS:
-                return DXGI_FORMAT_R32_FLOAT;
-            case DXGI_FORMAT_R8G8_TYPELESS:
-                return DXGI_FORMAT_R8G8_UNORM;
-            case DXGI_FORMAT_R16_TYPELESS:
-                return DXGI_FORMAT_R16_UNORM;
-            case DXGI_FORMAT_R8_TYPELESS:
-                return DXGI_FORMAT_R8_UNORM;
-            case DXGI_FORMAT_BC1_TYPELESS:
-                return DXGI_FORMAT_BC1_UNORM;
-            case DXGI_FORMAT_BC2_TYPELESS:
-                return DXGI_FORMAT_BC2_UNORM;
-            case DXGI_FORMAT_BC3_TYPELESS:
-                return DXGI_FORMAT_BC3_UNORM;
-            case DXGI_FORMAT_BC4_TYPELESS:
-                return DXGI_FORMAT_BC4_UNORM;
-            case DXGI_FORMAT_BC5_TYPELESS:
-                return DXGI_FORMAT_BC5_UNORM;
-            case DXGI_FORMAT_B8G8R8A8_TYPELESS:
-                return DXGI_FORMAT_B8G8R8A8_UNORM;
-            case DXGI_FORMAT_B8G8R8X8_TYPELESS:
-                return DXGI_FORMAT_B8G8R8X8_UNORM;
-            case DXGI_FORMAT_BC7_TYPELESS:
-                return DXGI_FORMAT_BC7_UNORM;
-            default:
-                return fmt;
-        }
-    }
-
+    
     //--------------------------------------------------------------------------------------
     inline DXGI_FORMAT GetBaseFormat(DXGI_FORMAT defaultFormat)
     {
@@ -401,14 +158,14 @@ namespace D3D12RHIUtils
             case DXGI_FORMAT_X24_TYPELESS_G8_UINT:
             case DXGI_FORMAT_D16_UNORM:
 
-                ASSERT(false);//, "Requested a UAV Format for a depth stencil Format.");
+                ASSERT(false); //, "Requested a UAV Format for a depth stencil Format.");
 #endif
 
             default:
                 return defaultFormat;
         }
     }
-
+    
     inline DXGI_FORMAT GetDSVFormat(DXGI_FORMAT defaultFormat)
     {
         switch (defaultFormat)
@@ -569,33 +326,6 @@ namespace D3D12RHIUtils
                 }
                 return false;
 
-            default:
-                return false;
-        }
-    }
-
-    inline bool FormatIsBGR(DXGI_FORMAT format) noexcept
-    {
-        switch (format)
-        {
-            case DXGI_FORMAT_B8G8R8A8_UNORM:
-            case DXGI_FORMAT_B8G8R8X8_UNORM:
-            case DXGI_FORMAT_B8G8R8A8_UNORM_SRGB:
-            case DXGI_FORMAT_B8G8R8X8_UNORM_SRGB:
-                return true;
-            default:
-                return false;
-        }
-    }
-
-    inline bool FormatIsSRGB(DXGI_FORMAT format) noexcept
-    {
-        switch (format)
-        {
-            case DXGI_FORMAT_R8G8B8A8_UNORM_SRGB:
-            case DXGI_FORMAT_B8G8R8A8_UNORM_SRGB:
-            case DXGI_FORMAT_B8G8R8X8_UNORM_SRGB:
-                return true;
             default:
                 return false;
         }

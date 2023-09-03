@@ -3,6 +3,7 @@
 #include "runtime/core/base/macro.h"
 #include "runtime/function/render/renderer_moyu.h"
 #include "runtime/function/render/render_scene.h"
+#include "runtime/function/render/renderer/tool_pass.h"
 #include "runtime/function/render/renderer/ui_pass.h"
 #include "runtime/function/render/renderer/indirect_cull_pass.h"
 #include "runtime/function/render/renderer/indirect_shadow_pass.h"
@@ -39,6 +40,8 @@ namespace MoYu
 
         DXGI_FORMAT pipleineColorFormat;
         DXGI_FORMAT pipleineDepthFormat;
+
+        std::shared_ptr<ToolPass> mToolPass;
 
         std::shared_ptr<UIPass>                      mUIPass;
         std::shared_ptr<IndirectCullPass>            mIndirectCullPass;

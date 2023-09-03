@@ -137,3 +137,8 @@ if(NOT TARGET DirectXTex)
     add_subdirectory(DirectXTex)
     set_target_properties(DirectXTex PROPERTIES FOLDER ${third_party_folder}/DirectXTex)
 endif()
+
+# if(NOT TARGET directxtex)
+#     include(directxtex.cmake)
+#     set_target_properties(directxtex PROPERTIES FOLDER ${third_party_folder}/directxtex_desktop_win10.2023.6.14.1)
+# endif()

@@ -74,6 +74,13 @@ namespace MoYu
                                               .SetSampleCount(sampleCount)
                                               .SetClearValue(RHI::RgClearValue(0.0f, 0xff));
 
+        // Tool pass
+        {
+            mToolPass = std::make_shared<ToolPass>();
+            mToolPass->initialize({});
+
+        }
+
         // Cull pass
         {
             mIndirectCullPass = std::make_shared<IndirectCullPass>();
@@ -182,20 +189,29 @@ namespace MoYu
 
     void DeferredRenderer::OnRender(RHI::D3D12CommandContext* context)
     {
+
+        //=================================================================================
+        // 生成specular LD和DFG，生成diffuse radiance
+        RHI::RenderGraph graph_4_tool(renderGraphAllocator, renderGraphRegistry);
+
+
+
+        graph_4_tool.Execute(context);
+        //=================================================================================
+
+
+
+
         //IndirectCullPass::IndirectCullOutput indirectCullOutput;
         //mIndirectCullPass->cullMeshs(context, &renderGraphRegistry, indirectCullOutput);
 
-        RHI::D3D12Texture* pBackBufferResource = pSwapChain->GetCurrentBackBufferResource();
-
         RHI::RenderGraph graph(renderGraphAllocator, renderGraphRegistry);
-
         // backbuffer output
+        RHI::D3D12Texture* pBackBufferResource = pSwapChain->GetCurrentBackBufferResource();
         RHI::RgResourceHandle backBufColorHandle = graph.Import(pBackBufferResource);
-
         // game view output
         RHI::RgResourceHandle renderTargetColorHandle = graph.Import(p_RenderTargetTex.get());
         
-
         /**/
         //=================================================================================
         // 应该再给graph添加一个signal同步，目前先这样

@@ -4,6 +4,9 @@
 #include "runtime/function/framework/object/object_id_allocator.h"
 #include "runtime/function/render/rhi/hlsl_data_types.h"
 
+#include "DirectXTex.h"
+#include "DirectXTex.inl"
+
 #ifndef GLM_FORCE_RADIANS
 #define GLM_FORCE_RADIANS 1
 #endif
@@ -13,6 +16,8 @@
 #endif
 
 #include <glm/glm.hpp>
+
+// https://developer.nvidia.com/nvidia-texture-tools-exporter
 
 namespace MoYu
 {
@@ -484,60 +489,13 @@ namespace MoYu
     };
 
     //========================================================================
-    // 准备上传的Buffer和Texture数据
+    // 准备上传的Buffer和Image数据
     //========================================================================
-
-    class BufferData
-    {
-    public:
-        size_t m_size {0};
-        void*  m_data {nullptr};
-
-        BufferData() = delete;
-        BufferData(size_t size)
-        {
-            m_size = size;
-            m_data = malloc(size);
-        }
-        BufferData(void* data, size_t size)
-        {
-            m_size = size;
-            m_data = malloc(size);
-            memcpy(m_data, data, size);
-        }
-        ~BufferData()
-        {
-            if (m_data)
-            {
-                free(m_data);
-            }
-        }
-        bool isValid() const { return m_data != nullptr; }
-    };
-
-    struct TextureData
-    {
-    public:
-        uint32_t m_width {1};
-        uint32_t m_height {1};
-        uint32_t m_depth {0};
-        uint32_t m_mip_levels {0};
-        uint32_t m_array_layers {0};
-        uint32_t m_channels {4};
-        bool     m_is_hdr {false};
-        bool     m_need_free {true};
-        void*    m_pixels {nullptr};
-
-        TextureData() = default;
-        ~TextureData()
-        {
-            if (m_pixels && m_need_free)
-            {
-                free(m_pixels);
-            }
-        }
-        bool isValid() const { return m_pixels != nullptr; }
-    };
+    
+    typedef DirectX::Blob         MoYuScratchBuffer;
+    typedef DirectX::TexMetadata  MoYuTexMetaata;
+    typedef DirectX::Image        MoYuImage;
+    typedef DirectX::ScratchImage MoYuScratchImage;
 
     struct SkeletonDefinition
     {
@@ -555,15 +513,15 @@ namespace MoYu
     struct StaticMeshData
     {
         InputDefinition m_InputElementDefinition;
-        std::shared_ptr<BufferData> m_vertex_buffer;
-        std::shared_ptr<BufferData> m_index_buffer;
+        std::shared_ptr<MoYuScratchBuffer> m_vertex_buffer;
+        std::shared_ptr<MoYuScratchBuffer> m_index_buffer;
     };
 
     struct RenderMeshData
     {
         AxisAlignedBox m_axis_aligned_box;
         StaticMeshData m_static_mesh_data;
-        std::shared_ptr<BufferData> m_skeleton_binding_buffer;
+        std::shared_ptr<MoYuScratchBuffer> m_skeleton_binding_buffer;
     };
 
 } // namespace MoYu

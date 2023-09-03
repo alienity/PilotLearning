@@ -256,7 +256,7 @@ namespace RHI
 
             const bool uavCompat = D3D12RHIUtils::FormatIsUAVCompatible(mDevice.Get(), mTypedUAVLoadAdditionalFormats, desc.Format);
 
-            if (!uavCompat && !D3D12RHIUtils::FormatIsSRGB(desc.Format) && !D3D12RHIUtils::FormatIsBGR(desc.Format))
+            if (!uavCompat && !D3D12RHIUtils::IsSRGB(desc.Format) && !D3D12RHIUtils::IsBGR(desc.Format))
             {
                 throw std::runtime_error("GenerateMips doesn't support this texture format on this device");
             }
@@ -278,7 +278,7 @@ namespace RHI
                 throw std::runtime_error(
                     "GenerateMips needs TypedUAVLoadAdditionalFormats device support for sRGB/BGR");
             }
-            else if (D3D12RHIUtils::FormatIsBGR(desc.Format))
+            else if (D3D12RHIUtils::IsBGR(desc.Format))
             {
 #if !defined(_GAMING_XBOX) && !(defined(_XBOX_ONE) && defined(_TITLE))
                 if (!mStandardSwizzle64KBSupported)
@@ -418,7 +418,7 @@ namespace RHI
             if (D3D12RHIUtils::FormatIsUAVCompatible(mDevice.Get(), mTypedUAVLoadAdditionalFormats, format))
                 return true;
 
-            if (D3D12RHIUtils::FormatIsBGR(format))
+            if (D3D12RHIUtils::IsBGR(format))
             {
 #if defined(_GAMING_XBOX) || (defined(_XBOX_ONE) && defined(_TITLE))
                 // We know the RGB and BGR memory layouts match for Xbox One
@@ -429,7 +429,7 @@ namespace RHI
 #endif
             }
 
-            if (D3D12RHIUtils::FormatIsSRGB(format))
+            if (D3D12RHIUtils::IsSRGB(format))
             {
                 // sRGB path requires DXGI_FORMAT_R8G8B8A8_UNORM support for UAV load/store
                 return mTypedUAVLoadAdditionalFormats;
@@ -443,7 +443,7 @@ namespace RHI
         void GenerateMips_UnorderedAccessPath(_In_ ID3D12Resource* resource)
         {
             const auto desc = resource->GetDesc();
-            assert(!D3D12RHIUtils::FormatIsBGR(desc.Format) && !D3D12RHIUtils::FormatIsSRGB(desc.Format));
+            assert(!D3D12RHIUtils::IsBGR(desc.Format) && !D3D12RHIUtils::IsSRGB(desc.Format));
 
             const CD3DX12_HEAP_PROPERTIES defaultHeapProperties(D3D12_HEAP_TYPE_DEFAULT);
 
@@ -643,7 +643,7 @@ namespace RHI
         void GenerateMips_TexturePath(_In_ ID3D12Resource* resource)
         {
             const auto resourceDesc = resource->GetDesc();
-            assert(!D3D12RHIUtils::FormatIsBGR(resourceDesc.Format) || D3D12RHIUtils::FormatIsSRGB(resourceDesc.Format));
+            assert(!D3D12RHIUtils::IsBGR(resourceDesc.Format) || D3D12RHIUtils::IsSRGB(resourceDesc.Format));
 
             auto copyDesc   = resourceDesc;
             copyDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
@@ -708,7 +708,7 @@ namespace RHI
         void GenerateMips_TexturePathBGR(_In_ ID3D12Resource* resource)
         {
             const auto resourceDesc = resource->GetDesc();
-            assert(D3D12RHIUtils::FormatIsBGR(resourceDesc.Format));
+            assert(D3D12RHIUtils::IsBGR(resourceDesc.Format));
 
             // Create a resource with the same description with RGB and with UAV flags
             auto copyDesc   = resourceDesc;

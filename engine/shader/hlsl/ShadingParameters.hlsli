@@ -610,7 +610,182 @@ void evaluatePunctualLights(
 }
 
 
+//------------------------------------------------------------------------------
+// Image Based Lighting
+//------------------------------------------------------------------------------
 
+float3 decodeDataForIBL(const float4 data)
+{
+    return data.rgb;
+}
+
+float3 Irradiance_SphericalHarmonics(const FrameUniforms frameUniforms, const float3 n)
+{
+    return max(
+          frameUniforms.iblUniform.iblSH[0]
+        + frameUniforms.iblUniform.iblSH[1] * (n.y)
+        + frameUniforms.iblUniform.iblSH[2] * (n.z)
+        + frameUniforms.iblUniform.iblSH[3] * (n.x)
+        + frameUniforms.iblUniform.iblSH[4] * (n.y * n.x)
+        + frameUniforms.iblUniform.iblSH[5] * (n.y * n.z)
+        + frameUniforms.iblUniform.iblSH[6] * (3.0 * n.z * n.z - 1.0)
+        + frameUniforms.iblUniform.iblSH[7] * (n.z * n.x)
+        + frameUniforms.iblUniform.iblSH[8] * (n.x * n.x - n.y * n.y)
+        , 0.0);
+}
+
+float3 Irradiance_RoughnessOne(const FrameUniforms frameUniforms, const float3 n) {
+    // note: lod used is always integer, hopefully the hardware skips tri-linear filtering
+    return decodeDataForIBL(textureLod(light_iblSpecular, n, frameUniforms.iblUniform.iblRoughnessOneLevel));
+}
+
+
+//------------------------------------------------------------------------------
+// IBL irradiance dispatch
+//------------------------------------------------------------------------------
+
+
+float3 diffuseIrradiance(const FrameUniforms frameUniforms, const float3 n) {
+    if (frameUniforms.iblUniform.iblSH[0].x == 65504.0) {
+        uint2 s = textureSize(light_iblSpecular, int(frameUniforms.iblUniform.iblRoughnessOneLevel));
+        float du = 1.0 / float(s.x);
+        float dv = 1.0 / float(s.y);
+        float3 m0 = normalize(cross(n, float3(0.0, 1.0, 0.0)));
+        float3 m1 = cross(m0, n);
+        float3 m0du = m0 * du;
+        float3 m1dv = m1 * dv;
+        float3 c;
+        c  = Irradiance_RoughnessOne(frameUniforms, n - m0du - m1dv);
+        c += Irradiance_RoughnessOne(frameUniforms, n + m0du - m1dv);
+        c += Irradiance_RoughnessOne(frameUniforms, n + m0du + m1dv);
+        c += Irradiance_RoughnessOne(frameUniforms, n - m0du + m1dv);
+        return c * 0.25;
+    } else {
+        return Irradiance_SphericalHarmonics(frameUniforms, n);
+    }
+}
+
+
+//------------------------------------------------------------------------------
+// IBL specular
+//------------------------------------------------------------------------------
+
+float perceptualRoughnessToLod(const FrameUniforms frameUniforms, float perceptualRoughness)
+{
+    // The mapping below is a quadratic fit for log2(perceptualRoughness)+iblRoughnessOneLevel when
+    // iblRoughnessOneLevel is 4. We found empirically that this mapping works very well for
+    // a 256 cubemap with 5 levels used. But also scales well for other iblRoughnessOneLevel values.
+    return frameUniforms.iblUniform.iblRoughnessOneLevel * perceptualRoughness * (2.0 - perceptualRoughness);
+}
+
+float3 prefilteredRadiance(const FrameUniforms frameUniforms, const float3 r, float perceptualRoughness) {
+    float lod = perceptualRoughnessToLod(frameUniforms, perceptualRoughness);
+    return decodeDataForIBL(textureLod(light_iblSpecular, r, lod));
+}
+
+float3 prefilteredRadiance(const FrameUniforms frameUniforms, const float3 r, float roughness, float offset) {
+    float lod = frameUniforms.iblUniform.iblRoughnessOneLevel * roughness;
+    return decodeDataForIBL(textureLod(light_iblSpecular, r, lod + offset));
+}
+
+float3 getSpecularDominantDirection(const float3 n, const float3 r, float roughness)
+{
+    return lerp(r, n, roughness * roughness);
+}
+
+float3 specularDFG(const PixelParams pixel)
+{
+    return lerp(pixel.dfg.xxx, pixel.dfg.yyy, pixel.f0);
+}
+
+float3 getReflectedVector(const CommonShadingStruct params, const PixelParams pixel)
+{
+    return getSpecularDominantDirection(params.shading_normal, params.shading_reflected, pixel.roughness);
+}
+
+
+void evaluateIBL(
+    const FrameUniforms frameUniforms, 
+    const PerRenderableMeshData perMeshData, 
+    const CommonShadingStruct params,
+    const MaterialInputs material, 
+    const PixelParams pixel,
+    const SamplerStruct samplerStruct, 
+    inout float3 color)
+{
+    // specular layer
+    float3 Fr = float3(0.0f, 0.0f, 0.0f);
+
+    float3 E = specularDFG(pixel);
+    float3 r = getReflectedVector(params, pixel);
+    Fr = E * prefilteredRadiance(frameUniforms, r, pixel.perceptualRoughness);
+
+    // diffuse layer
+
+    float3 diffuseNormal = params.shading_normal;
+    float3 diffuseIrradiance = diffuseIrradiance(frameUniforms, diffuseNormal);
+
+    float diffuseBRDF = 1.0f;
+    float3 Fd = pixel.diffuseColor * diffuseIrradiance * (1.0 - E) * diffuseBRDF;
+
+    // Combine all terms
+    // Note: iblLuminance is already premultiplied by the exposure
+
+    color.rgb += Fr + Fd;
+    
+}
+
+/*
+vec3 irradianceSH(vec3 n) {
+    // uniform vec3 sphericalHarmonics[9]
+    // We can use only the first 2 bands for better performance
+    return
+          sphericalHarmonics[0]
+        + sphericalHarmonics[1] * (n.y)
+        + sphericalHarmonics[2] * (n.z)
+        + sphericalHarmonics[3] * (n.x)
+        + sphericalHarmonics[4] * (n.y * n.x)
+        + sphericalHarmonics[5] * (n.y * n.z)
+        + sphericalHarmonics[6] * (3.0 * n.z * n.z - 1.0)
+        + sphericalHarmonics[7] * (n.z * n.x)
+        + sphericalHarmonics[8] * (n.x * n.x - n.y * n.y);
+}
+
+// NOTE: this is the DFG LUT implementation of the function above
+vec2 prefilteredDFG_LUT(float coord, float NoV) {
+    // coord = sqrt(roughness), which is the mapping used by the
+    // IBL prefiltering code when computing the mipmaps
+    return textureLod(dfgLut, vec2(NoV, coord), 0.0).rg;
+}
+
+vec3 evaluateSpecularIBL(vec3 r, float perceptualRoughness) {
+    // This assumes a 256x256 cubemap, with 9 mip levels
+    float lod = 8.0 * perceptualRoughness;
+    // decodeEnvironmentMap() either decodes RGBM or is a no-op if the
+    // cubemap is stored in a float texture
+    return decodeEnvironmentMap(textureCubeLodEXT(environmentMap, r, lod));
+}
+
+vec3 evaluateIBL(vec3 n, vec3 v, vec3 diffuseColor, vec3 f0, vec3 f90, float perceptualRoughness) {
+    float NoV = max(dot(n, v), 0.0);
+    vec3 r = reflect(-v, n);
+
+    // Specular indirect
+    vec3 indirectSpecular = evaluateSpecularIBL(r, perceptualRoughness);
+    vec2 env = prefilteredDFG_LUT(perceptualRoughness, NoV);
+    vec3 specularColor = f0 * env.x + f90 * env.y;
+
+    // Diffuse indirect
+    // We multiply by the Lambertian BRDF to compute radiance from irradiance
+    // With the Disney BRDF we would have to remove the Fresnel term that
+    // depends on NoL (it would be rolled into the SH). The Lambertian BRDF
+    // can be baked directly in the SH to save a multiplication here
+    vec3 indirectDiffuse = max(irradianceSH(n), 0.0) * Fd_Lambert();
+
+    // Indirect contribution
+    return diffuseColor * indirectDiffuse + indirectSpecular * specularColor;
+}
+*/
 
 /**
  * This function evaluates all lights one by one:
@@ -632,9 +807,9 @@ float4 evaluateLights(const FrameUniforms frameUniforms, const PerRenderableMesh
     // currently not worth the extra operations
     float3 color = float3(0.0, 0.0, 0.0);
 
-    //// We always evaluate the IBL as not having one is going to be uncommon,
-    //// it also saves 1 shader variant
-    //evaluateIBL(materialInputs, pixel, color);
+    // We always evaluate the IBL as not having one is going to be uncommon,
+    // it also saves 1 shader variant
+    evaluateIBL(frameUniforms, perMeshData, commonShadingStruct, materialInputs, pixel, samplerStruct, color);
 
     evaluateDirectionalLight(frameUniforms, perMeshData, commonShadingStruct, materialInputs, pixel, samplerStruct, color);
 
