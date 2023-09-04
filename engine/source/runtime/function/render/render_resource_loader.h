@@ -35,8 +35,9 @@ namespace MoYu
         void endUploadBatch();
         void commitUploadBatch();
 
-        std::shared_ptr<MoYuScratchImage> loadTextureHDR(std::string file);
-        std::shared_ptr<MoYuScratchImage> loadTexture(std::string file, int force_channel = 0);
+        //std::shared_ptr<MoYuScratchImage> loadTextureHDR(std::string file);
+        //std::shared_ptr<MoYuScratchImage> loadTexture(std::string file);
+        std::shared_ptr<MoYuScratchImage> loadImage(std::string file);
 
         RenderMeshData loadMeshData(std::string mesh_file);
 

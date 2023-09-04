@@ -77,6 +77,7 @@ namespace MoYu
         // Tool pass
         {
             mToolPass = std::make_shared<ToolPass>();
+            mToolPass->setCommonInfo(renderPassCommonInfo);
             mToolPass->initialize({});
 
         }
@@ -190,6 +191,7 @@ namespace MoYu
     void DeferredRenderer::OnRender(RHI::D3D12CommandContext* context)
     {
 
+        /*
         //=================================================================================
         // 生成specular LD和DFG，生成diffuse radiance
         RHI::RenderGraph graph_4_tool(renderGraphAllocator, renderGraphRegistry);
@@ -198,7 +200,7 @@ namespace MoYu
 
         graph_4_tool.Execute(context);
         //=================================================================================
-
+        */
 
 
 

@@ -11,8 +11,8 @@ namespace MoYu
         //pD3D12SRVDescriptor =
         //    std::make_shared<RHI::D3D12Descriptor<D3D12_SHADER_RESOURCE_VIEW_DESC>>(m_Device->GetLinkedDevice());
 
-        ID3D12DescriptorHeap* pDescriptorHeap =
-            m_Device->GetLinkedDevice()->GetDescriptorHeap<D3D12_SHADER_RESOURCE_VIEW_DESC>()->GetDescriptorHeap();
+        //ID3D12DescriptorHeap* pDescriptorHeap =
+        //    m_Device->GetLinkedDevice()->GetDescriptorHeap<D3D12_SHADER_RESOURCE_VIEW_DESC>()->GetDescriptorHeap();
 
     }
 

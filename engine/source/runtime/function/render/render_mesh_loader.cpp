@@ -77,8 +77,14 @@ MoYu::StaticMeshData LoadModel(std::string filename, MoYu::AxisAlignedBox& bound
     std::uint32_t index_buffer_size  = indices_.size() * sizeof(std::uint32_t);
 
     mesh_data.m_InputElementDefinition = VertexDefine::InputElementDefinition;
-    mesh_data.m_vertex_buffer = std::make_shared<MoYu::BufferData>(vertexs_.data(), vertex_buffer_size);
-    mesh_data.m_index_buffer  = std::make_shared<MoYu::BufferData>(indices_.data(), index_buffer_size);
+
+    mesh_data.m_vertex_buffer = std::make_shared<MoYu::MoYuScratchBuffer>();
+    mesh_data.m_vertex_buffer->Initialize(vertex_buffer_size);
+    memcpy(mesh_data.m_vertex_buffer->GetBufferPointer(), vertexs_.data(), vertex_buffer_size);
+
+    mesh_data.m_index_buffer  = std::make_shared<MoYu::MoYuScratchBuffer>();
+    mesh_data.m_index_buffer->Initialize(index_buffer_size);
+    memcpy(mesh_data.m_index_buffer->GetBufferPointer(), indices_.data(), index_buffer_size);
 
     bounding_box = meshes_.bounding_box_;
 

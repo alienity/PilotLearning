@@ -493,7 +493,7 @@ namespace MoYu
     //========================================================================
     
     typedef DirectX::Blob         MoYuScratchBuffer;
-    typedef DirectX::TexMetadata  MoYuTexMetaata;
+    typedef DirectX::TexMetadata  MoYuTexMetadata;
     typedef DirectX::Image        MoYuImage;
     typedef DirectX::ScratchImage MoYuScratchImage;
 

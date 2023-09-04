@@ -610,7 +610,142 @@ void evaluatePunctualLights(
 }
 
 
+//------------------------------------------------------------------------------
+// Image Based Lighting
+//------------------------------------------------------------------------------
 
+float3 decodeDataForIBL(const float4 data)
+{
+    return data.rgb;
+}
+
+float3 Irradiance_SphericalHarmonics(const FrameUniforms frameUniforms, const float3 n)
+{
+    float4 outRadians = 
+          frameUniforms.iblUniform.iblSH[0]
+        + frameUniforms.iblUniform.iblSH[1] * (n.y)
+        + frameUniforms.iblUniform.iblSH[2] * (n.z)
+        + frameUniforms.iblUniform.iblSH[3] * (n.x)
+        + frameUniforms.iblUniform.iblSH[4] * (n.y * n.x)
+        + frameUniforms.iblUniform.iblSH[5] * (n.y * n.z)
+        + frameUniforms.iblUniform.iblSH[6] * (3.0 * n.z * n.z - 1.0)
+        + frameUniforms.iblUniform.iblSH[7] * (n.z * n.x)
+        + frameUniforms.iblUniform.iblSH[8] * (n.x * n.x - n.y * n.y);
+    return max(outRadians.rgb, float3(0.0, 0.0, 0.0));
+}
+
+float3 Irradiance_RoughnessOne(const FrameUniforms frameUniforms, const SamplerStruct samplerStruct, const float3 n)
+{
+    // note: lod used is always integer, hopefully the hardware skips tri-linear filtering
+    TextureCube<float4> ldLut = ResourceDescriptorHeap[frameUniforms.iblUniform.ld_lut_srv_index];
+    return decodeDataForIBL(ldLut.SampleLevel(samplerStruct.defSampler, n, frameUniforms.iblUniform.iblRoughnessOneLevel));
+}
+
+
+//------------------------------------------------------------------------------
+// IBL irradiance dispatch
+//------------------------------------------------------------------------------
+
+
+float3 diffuseIrradiance(const FrameUniforms frameUniforms, const SamplerStruct samplerStruct, const float3 n) {
+    if (frameUniforms.iblUniform.iblSH[0].x == 65504.0) {
+        TextureCube<float4> ldLut = ResourceDescriptorHeap[frameUniforms.iblUniform.ld_lut_srv_index];
+
+        int width;
+        int height;
+        int numberOfLevels;
+        ldLut.GetDimensions(int(frameUniforms.iblUniform.iblRoughnessOneLevel), width, height, numberOfLevels);
+
+        // uint2 s = textureSize(light_iblSpecular, int(frameUniforms.iblUniform.iblRoughnessOneLevel));
+        float du = 1.0 / float(width);
+        float dv = 1.0 / float(height);
+        float3 m0 = normalize(cross(n, float3(0.0, 1.0, 0.0)));
+        float3 m1 = cross(m0, n);
+        float3 m0du = m0 * du;
+        float3 m1dv = m1 * dv;
+        float3 c;
+        c  = Irradiance_RoughnessOne(frameUniforms, samplerStruct, n - m0du - m1dv);
+        c += Irradiance_RoughnessOne(frameUniforms, samplerStruct, n + m0du - m1dv);
+        c += Irradiance_RoughnessOne(frameUniforms, samplerStruct, n + m0du + m1dv);
+        c += Irradiance_RoughnessOne(frameUniforms, samplerStruct, n - m0du + m1dv);
+        return c * 0.25;
+    } else {
+        return Irradiance_SphericalHarmonics(frameUniforms, n);
+    }
+}
+
+
+//------------------------------------------------------------------------------
+// IBL specular
+//------------------------------------------------------------------------------
+
+float perceptualRoughnessToLod(const FrameUniforms frameUniforms, float perceptualRoughness)
+{
+    // The mapping below is a quadratic fit for log2(perceptualRoughness)+iblRoughnessOneLevel when
+    // iblRoughnessOneLevel is 4. We found empirically that this mapping works very well for
+    // a 256 cubemap with 5 levels used. But also scales well for other iblRoughnessOneLevel values.
+    return frameUniforms.iblUniform.iblRoughnessOneLevel * perceptualRoughness * (2.0 - perceptualRoughness);
+}
+
+float3 prefilteredRadiance(const FrameUniforms frameUniforms, const SamplerStruct samplerStruct, const float3 r, float perceptualRoughness)
+{
+    float lod = perceptualRoughnessToLod(frameUniforms, perceptualRoughness);
+    TextureCube<float4> dfgLut = ResourceDescriptorHeap[frameUniforms.iblUniform.ld_lut_srv_index];
+    return decodeDataForIBL(dfgLut.SampleLevel(samplerStruct.defSampler, r, lod));
+}
+
+float3 prefilteredRadiance(const FrameUniforms frameUniforms, const SamplerStruct samplerStruct, const float3 r, float roughness, float offset)
+{
+    float lod = frameUniforms.iblUniform.iblRoughnessOneLevel * roughness;
+    TextureCube<float4> dfgLut = ResourceDescriptorHeap[frameUniforms.iblUniform.ld_lut_srv_index];
+    return decodeDataForIBL(dfgLut.SampleLevel(samplerStruct.defSampler, r, lod + offset));
+}
+
+float3 getSpecularDominantDirection(const float3 n, const float3 r, float roughness)
+{
+    return lerp(r, n, roughness * roughness);
+}
+
+float3 specularDFG(const PixelParams pixel)
+{
+    return lerp(pixel.dfg.xxx, pixel.dfg.yyy, pixel.f0);
+}
+
+float3 getReflectedVector(const CommonShadingStruct params, const PixelParams pixel)
+{
+    return getSpecularDominantDirection(params.shading_normal, params.shading_reflected, pixel.roughness);
+}
+
+
+void evaluateIBL(
+    const FrameUniforms frameUniforms, 
+    const PerRenderableMeshData perMeshData, 
+    const CommonShadingStruct params,
+    const MaterialInputs material, 
+    const PixelParams pixel,
+    const SamplerStruct samplerStruct, 
+    inout float3 color)
+{
+    // specular layer
+    float3 Fr = float3(0.0f, 0.0f, 0.0f);
+
+    float3 E = specularDFG(pixel);
+    float3 r = getReflectedVector(params, pixel);
+    Fr = E * prefilteredRadiance(frameUniforms, samplerStruct, r, pixel.perceptualRoughness);
+
+    // diffuse layer
+    float3 _diffuseNormal = params.shading_normal;
+    float3 _diffuseIrradiance = diffuseIrradiance(frameUniforms, samplerStruct, _diffuseNormal);
+
+    float diffuseBRDF = 1.0f;
+    float3 Fd = pixel.diffuseColor * _diffuseIrradiance * (1.0 - E) * diffuseBRDF;
+
+    // Combine all terms
+    // Note: iblLuminance is already premultiplied by the exposure
+
+    color.rgb += Fr + Fd;
+    
+}
 
 /**
  * This function evaluates all lights one by one:
@@ -632,9 +767,9 @@ float4 evaluateLights(const FrameUniforms frameUniforms, const PerRenderableMesh
     // currently not worth the extra operations
     float3 color = float3(0.0, 0.0, 0.0);
 
-    //// We always evaluate the IBL as not having one is going to be uncommon,
-    //// it also saves 1 shader variant
-    //evaluateIBL(materialInputs, pixel, color);
+    // We always evaluate the IBL as not having one is going to be uncommon,
+    // it also saves 1 shader variant
+    // evaluateIBL(frameUniforms, perMeshData, commonShadingStruct, materialInputs, pixel, samplerStruct, color);
 
     evaluateDirectionalLight(frameUniforms, perMeshData, commonShadingStruct, materialInputs, pixel, samplerStruct, color);
 

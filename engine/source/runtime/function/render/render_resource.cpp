@@ -27,30 +27,30 @@ namespace MoYu
     {
         // sky box irradiance
         SkyBoxIrradianceMap skybox_irradiance_map        = level_resource_desc.m_ibl_resource_desc.m_skybox_irradiance_map;
-        std::shared_ptr<TextureData> irradiace_pos_x_map = loadTextureHDR(skybox_irradiance_map.m_positive_x_map);
-        std::shared_ptr<TextureData> irradiace_neg_x_map = loadTextureHDR(skybox_irradiance_map.m_negative_x_map);
-        std::shared_ptr<TextureData> irradiace_pos_y_map = loadTextureHDR(skybox_irradiance_map.m_positive_y_map);
-        std::shared_ptr<TextureData> irradiace_neg_y_map = loadTextureHDR(skybox_irradiance_map.m_negative_y_map);
-        std::shared_ptr<TextureData> irradiace_pos_z_map = loadTextureHDR(skybox_irradiance_map.m_positive_z_map);
-        std::shared_ptr<TextureData> irradiace_neg_z_map = loadTextureHDR(skybox_irradiance_map.m_negative_z_map);
+        std::shared_ptr<MoYu::MoYuScratchImage> irradiace_pos_x_map = loadImage(skybox_irradiance_map.m_positive_x_map);
+        std::shared_ptr<MoYu::MoYuScratchImage> irradiace_neg_x_map = loadImage(skybox_irradiance_map.m_negative_x_map);
+        std::shared_ptr<MoYu::MoYuScratchImage> irradiace_pos_y_map = loadImage(skybox_irradiance_map.m_positive_y_map);
+        std::shared_ptr<MoYu::MoYuScratchImage> irradiace_neg_y_map = loadImage(skybox_irradiance_map.m_negative_y_map);
+        std::shared_ptr<MoYu::MoYuScratchImage> irradiace_pos_z_map = loadImage(skybox_irradiance_map.m_positive_z_map);
+        std::shared_ptr<MoYu::MoYuScratchImage> irradiace_neg_z_map = loadImage(skybox_irradiance_map.m_negative_z_map);
 
         // sky box specular
         SkyBoxSpecularMap            skybox_specular_map = level_resource_desc.m_ibl_resource_desc.m_skybox_specular_map;
-        std::shared_ptr<TextureData> specular_pos_x_map  = loadTextureHDR(skybox_specular_map.m_positive_x_map);
-        std::shared_ptr<TextureData> specular_neg_x_map  = loadTextureHDR(skybox_specular_map.m_negative_x_map);
-        std::shared_ptr<TextureData> specular_pos_y_map  = loadTextureHDR(skybox_specular_map.m_positive_y_map);
-        std::shared_ptr<TextureData> specular_neg_y_map  = loadTextureHDR(skybox_specular_map.m_negative_y_map);
-        std::shared_ptr<TextureData> specular_pos_z_map  = loadTextureHDR(skybox_specular_map.m_positive_z_map);
-        std::shared_ptr<TextureData> specular_neg_z_map  = loadTextureHDR(skybox_specular_map.m_negative_z_map);
+        std::shared_ptr<MoYu::MoYuScratchImage> specular_pos_x_map  = loadImage(skybox_specular_map.m_positive_x_map);
+        std::shared_ptr<MoYu::MoYuScratchImage> specular_neg_x_map  = loadImage(skybox_specular_map.m_negative_x_map);
+        std::shared_ptr<MoYu::MoYuScratchImage> specular_pos_y_map  = loadImage(skybox_specular_map.m_positive_y_map);
+        std::shared_ptr<MoYu::MoYuScratchImage> specular_neg_y_map  = loadImage(skybox_specular_map.m_negative_y_map);
+        std::shared_ptr<MoYu::MoYuScratchImage> specular_pos_z_map  = loadImage(skybox_specular_map.m_positive_z_map);
+        std::shared_ptr<MoYu::MoYuScratchImage> specular_neg_z_map  = loadImage(skybox_specular_map.m_negative_z_map);
 
         // create IBL textures, take care of the texture order
-        std::array<std::shared_ptr<TextureData>, 6> irradiance_maps = {irradiace_pos_x_map,
+        std::array<std::shared_ptr<MoYu::MoYuScratchImage>, 6> irradiance_maps = {irradiace_pos_x_map,
                                                                        irradiace_neg_x_map,
                                                                        irradiace_pos_z_map,
                                                                        irradiace_neg_z_map,
                                                                        irradiace_pos_y_map,
                                                                        irradiace_neg_y_map};
-        std::array<std::shared_ptr<TextureData>, 6> specular_maps   = {specular_pos_x_map,
+        std::array<std::shared_ptr<MoYu::MoYuScratchImage>, 6> specular_maps   = {specular_pos_x_map,
                                                                      specular_neg_x_map,
                                                                      specular_pos_z_map,
                                                                      specular_neg_z_map,
@@ -58,10 +58,10 @@ namespace MoYu
                                                                      specular_neg_y_map};
 
         // brdf
-        std::shared_ptr<TextureData> brdf_map = loadTextureHDR(level_resource_desc.m_ibl_resource_desc.m_brdf_map);
+        std::shared_ptr<MoYu::MoYuScratchImage> brdf_map = loadImage(level_resource_desc.m_ibl_resource_desc.m_brdf_map);
 
         // color grading
-        std::shared_ptr<TextureData> color_grading_map = loadTexture(level_resource_desc.m_color_grading_resource_desc.m_color_grading_map);
+        std::shared_ptr<MoYu::MoYuScratchImage> color_grading_map = loadImage(level_resource_desc.m_color_grading_resource_desc.m_color_grading_map);
 
         startUploadBatch();
         {
@@ -96,35 +96,35 @@ namespace MoYu
 
         // sky box irradiance
         MoYu::CubeMap skybox_irradiance_map = level_resource_desc.m_skybox_irradiance_map;
-        std::shared_ptr<TextureData> irradiace_pos_x_map = loadTextureHDR(skybox_irradiance_map.m_positive_x_map);
-        std::shared_ptr<TextureData> irradiace_neg_x_map = loadTextureHDR(skybox_irradiance_map.m_negative_x_map);
-        std::shared_ptr<TextureData> irradiace_pos_y_map = loadTextureHDR(skybox_irradiance_map.m_positive_y_map);
-        std::shared_ptr<TextureData> irradiace_neg_y_map = loadTextureHDR(skybox_irradiance_map.m_negative_y_map);
-        std::shared_ptr<TextureData> irradiace_pos_z_map = loadTextureHDR(skybox_irradiance_map.m_positive_z_map);
-        std::shared_ptr<TextureData> irradiace_neg_z_map = loadTextureHDR(skybox_irradiance_map.m_negative_z_map);
+        std::shared_ptr<MoYu::MoYuScratchImage> irradiace_pos_x_map = loadImage(skybox_irradiance_map.m_positive_x_map);
+        std::shared_ptr<MoYu::MoYuScratchImage> irradiace_neg_x_map = loadImage(skybox_irradiance_map.m_negative_x_map);
+        std::shared_ptr<MoYu::MoYuScratchImage> irradiace_pos_y_map = loadImage(skybox_irradiance_map.m_positive_y_map);
+        std::shared_ptr<MoYu::MoYuScratchImage> irradiace_neg_y_map = loadImage(skybox_irradiance_map.m_negative_y_map);
+        std::shared_ptr<MoYu::MoYuScratchImage> irradiace_pos_z_map = loadImage(skybox_irradiance_map.m_positive_z_map);
+        std::shared_ptr<MoYu::MoYuScratchImage> irradiace_neg_z_map = loadImage(skybox_irradiance_map.m_negative_z_map);
 
         // sky box specular
         MoYu::CubeMap skybox_specular_map = level_resource_desc.m_skybox_specular_map;
-        std::shared_ptr<TextureData> specular_pos_x_map = loadTextureHDR(skybox_specular_map.m_positive_x_map);
-        std::shared_ptr<TextureData> specular_neg_x_map = loadTextureHDR(skybox_specular_map.m_negative_x_map);
-        std::shared_ptr<TextureData> specular_pos_y_map = loadTextureHDR(skybox_specular_map.m_positive_y_map);
-        std::shared_ptr<TextureData> specular_neg_y_map = loadTextureHDR(skybox_specular_map.m_negative_y_map);
-        std::shared_ptr<TextureData> specular_pos_z_map = loadTextureHDR(skybox_specular_map.m_positive_z_map);
-        std::shared_ptr<TextureData> specular_neg_z_map = loadTextureHDR(skybox_specular_map.m_negative_z_map);
+        std::shared_ptr<MoYu::MoYuScratchImage> specular_pos_x_map = loadImage(skybox_specular_map.m_positive_x_map);
+        std::shared_ptr<MoYu::MoYuScratchImage> specular_neg_x_map = loadImage(skybox_specular_map.m_negative_x_map);
+        std::shared_ptr<MoYu::MoYuScratchImage> specular_pos_y_map = loadImage(skybox_specular_map.m_positive_y_map);
+        std::shared_ptr<MoYu::MoYuScratchImage> specular_neg_y_map = loadImage(skybox_specular_map.m_negative_y_map);
+        std::shared_ptr<MoYu::MoYuScratchImage> specular_pos_z_map = loadImage(skybox_specular_map.m_positive_z_map);
+        std::shared_ptr<MoYu::MoYuScratchImage> specular_neg_z_map = loadImage(skybox_specular_map.m_negative_z_map);
 
         // create IBL textures, take care of the texture order
-        std::array<std::shared_ptr<TextureData>, 6> irradiance_maps = {irradiace_pos_x_map,
-                                                                       irradiace_neg_x_map,
-                                                                       irradiace_pos_z_map,
-                                                                       irradiace_neg_z_map,
-                                                                       irradiace_pos_y_map,
-                                                                       irradiace_neg_y_map};
-        std::array<std::shared_ptr<TextureData>, 6> specular_maps   = {specular_pos_x_map,
-                                                                       specular_neg_x_map,
-                                                                       specular_pos_z_map,
-                                                                       specular_neg_z_map,
-                                                                       specular_pos_y_map,
-                                                                       specular_neg_y_map};
+        std::array<std::shared_ptr<MoYu::MoYuScratchImage>, 6> irradiance_maps = {irradiace_pos_x_map,
+                                                                                  irradiace_neg_x_map,
+                                                                                  irradiace_pos_z_map,
+                                                                                  irradiace_neg_z_map,
+                                                                                  irradiace_pos_y_map,
+                                                                                  irradiace_neg_y_map};
+        std::array<std::shared_ptr<MoYu::MoYuScratchImage>, 6> specular_maps   = {specular_pos_x_map,
+                                                                                  specular_neg_x_map,
+                                                                                  specular_pos_z_map,
+                                                                                  specular_neg_z_map,
+                                                                                  specular_pos_y_map,
+                                                                                  specular_neg_y_map};
 
         startUploadBatch();
         {
@@ -296,10 +296,11 @@ namespace MoYu
 
         if (_sceneimage.m_image_file != "")
         {
-            std::shared_ptr<TextureData> _image_data = loadTexture(_sceneimage.m_image_file, 4);
-            m_width  = _image_data->m_width;
-            m_height = _image_data->m_height;
-            m_pixels = _image_data->m_pixels;
+            std::shared_ptr<MoYu::MoYuScratchImage> _image_data = loadImage(_sceneimage.m_image_file);
+
+            m_width  = _image_data->GetMetadata().width;
+            m_height = _image_data->GetMetadata().height;
+            m_pixels = _image_data->GetPixels();
         }
 
         return createTex2D(m_width, m_height, m_pixels, m_format, m_is_srgb, m_gen_mips, false);
@@ -456,9 +457,9 @@ namespace MoYu
         return dynamicBuffer;
     }
 
-    std::shared_ptr<RHI::D3D12Buffer> RenderResource::createDynamicBuffer(std::shared_ptr<BufferData>& buffer_data)
+    std::shared_ptr<RHI::D3D12Buffer> RenderResource::createDynamicBuffer(std::shared_ptr<MoYu::MoYuScratchBuffer>& buffer_data)
     {
-        return createDynamicBuffer(buffer_data->m_data, buffer_data->m_size, buffer_data->m_size);
+        return createDynamicBuffer(buffer_data->GetBufferPointer(), buffer_data->GetBufferSize(), buffer_data->GetBufferSize());
     }
     
     std::shared_ptr<RHI::D3D12Buffer> RenderResource::createStaticBuffer(void* buffer_data, uint32_t buffer_size, uint32_t buffer_stride, bool raw, bool batch)
@@ -496,9 +497,9 @@ namespace MoYu
         return staticBuffer;
     }
 
-    std::shared_ptr<RHI::D3D12Buffer> RenderResource::createStaticBuffer(std::shared_ptr<BufferData>& buffer_data, bool raw, bool batch)
+    std::shared_ptr<RHI::D3D12Buffer> RenderResource::createStaticBuffer(std::shared_ptr<MoYu::MoYuScratchBuffer>& buffer_data, bool raw, bool batch)
     {
-        return createStaticBuffer(buffer_data->m_data, buffer_data->m_size, buffer_data->m_size, raw, batch);
+        return createStaticBuffer(buffer_data->GetBufferPointer(), buffer_data->GetBufferSize(), buffer_data->GetBufferSize(), raw, batch);
     }
 
     std::shared_ptr<RHI::D3D12Texture> RenderResource::createTex2D(uint32_t width, uint32_t height, void* pixels, DXGI_FORMAT format, bool is_srgb, bool genMips, bool batch)
@@ -557,12 +558,12 @@ namespace MoYu
         return tex2d;
     }
 
-    std::shared_ptr<RHI::D3D12Texture> RenderResource::createTex2D(std::shared_ptr<TextureData>& tex2d_data, DXGI_FORMAT format, bool is_srgb, bool genMips, bool batch)
+    std::shared_ptr<RHI::D3D12Texture> RenderResource::createTex2D(std::shared_ptr<MoYu::MoYuScratchImage>& tex2d_data, DXGI_FORMAT format, bool is_srgb, bool genMips, bool batch)
     {
-        return createTex2D(tex2d_data->m_width, tex2d_data->m_height, tex2d_data->m_pixels, format, is_srgb, genMips, batch);
+        return createTex2D(tex2d_data->GetMetadata().width, tex2d_data->GetMetadata().height, tex2d_data->GetPixels(), format, is_srgb, genMips, batch);
     }
     
-    std::shared_ptr<RHI::D3D12Texture> RenderResource::createCubeMap(std::array<std::shared_ptr<TextureData>, 6>& cube_maps, DXGI_FORMAT format, bool is_srgb, bool genMips, bool batch)
+    std::shared_ptr<RHI::D3D12Texture> RenderResource::createCubeMap(std::array<std::shared_ptr<MoYu::MoYuScratchImage>, 6>& cube_maps, DXGI_FORMAT format, bool is_srgb, bool genMips, bool batch)
     {
         if (batch)
             this->startUploadBatch();
@@ -570,10 +571,12 @@ namespace MoYu
         // assume all textures have same width, height and format
         uint32_t cubemap_miplevels = 1;
         if (genMips)
-            cubemap_miplevels = static_cast<uint32_t>(std::floor(std::log2(std::max(cube_maps[0]->m_width, cube_maps[0]->m_height)))) + 1;
+            cubemap_miplevels = static_cast<uint32_t>(std::floor(std::log2(
+                                    std::max(cube_maps[0]->GetMetadata().width, cube_maps[0]->GetMetadata().height)))) +
+                                1;
 
-        UINT width  = cube_maps[0]->m_width;
-        UINT height = cube_maps[0]->m_height;
+        UINT width  = cube_maps[0]->GetMetadata().width;
+        UINT height = cube_maps[0]->GetMetadata().height;
         
         RHI::RHISurfaceCreateFlags texflags = RHI::RHISurfaceCreateFlagNone | RHI::RHISurfaceCreateRandomWrite;
         if (genMips)
@@ -593,8 +596,8 @@ namespace MoYu
         for (size_t i = 0; i < 6; i++)
         {
             D3D12_SUBRESOURCE_DATA resourceInitData;
-            resourceInitData.pData      = cube_maps[i]->m_pixels;
-            resourceInitData.RowPitch   = cube_maps[i]->m_width * bytesPerPixel;
+            resourceInitData.pData      = cube_maps[i]->GetPixels();
+            resourceInitData.RowPitch   = cube_maps[i]->GetMetadata().width * bytesPerPixel;
             resourceInitData.SlicePitch = resourceInitData.RowPitch * height;
 
             m_ResourceUpload->Upload(cube_tex->GetResource(), cubemap_miplevels * i, &resourceInitData, 1);
@@ -640,13 +643,13 @@ namespace MoYu
         return InternalMesh {false, mesh_data.m_axis_aligned_box, index_buffer, vertex_buffer};
     }
 
-    InternalVertexBuffer RenderResource::createVertexBuffer(InputDefinition input_definition, std::shared_ptr<BufferData> vertex_buffer)
+    InternalVertexBuffer RenderResource::createVertexBuffer(InputDefinition input_definition, std::shared_ptr<MoYu::MoYuScratchBuffer> vertex_buffer)
     {
         typedef D3D12MeshVertexPositionNormalTangentTexture MeshVertexDataDefinition;
 
         ASSERT(input_definition == MeshVertexDataDefinition::InputElementDefinition);
-        uint32_t vertex_buffer_size = vertex_buffer->m_size;
-        MeshVertexDataDefinition* vertex_buffer_data = static_cast<MeshVertexDataDefinition*>(vertex_buffer->m_data);
+        uint32_t vertex_buffer_size = vertex_buffer->GetBufferSize();
+        MeshVertexDataDefinition* vertex_buffer_data = static_cast<MeshVertexDataDefinition*>(vertex_buffer->GetBufferPointer());
         uint32_t inputLayoutStride = sizeof(MeshVertexDataDefinition);
         ASSERT(0 == (vertex_buffer_size % inputLayoutStride));
         uint32_t vertex_count = vertex_buffer_size / inputLayoutStride;
@@ -696,9 +699,9 @@ namespace MoYu
         return InternalVertexBuffer {input_definition, vertex_count, p_mesh_vertex_buffer};
     }
 
-    InternalIndexBuffer RenderResource::createIndexBuffer(std::shared_ptr<BufferData> index_buffer)
+    InternalIndexBuffer RenderResource::createIndexBuffer(std::shared_ptr<MoYu::MoYuScratchBuffer> index_buffer)
     {
-        uint32_t index_buffer_size = index_buffer->m_size;
+        uint32_t index_buffer_size = index_buffer->GetBufferSize();
 
         uint32_t index_count = index_buffer_size / sizeof(uint32_t);
 
@@ -706,7 +709,7 @@ namespace MoYu
 
         void* staging_buffer_data = inefficient_staging_buffer.Memory();
 
-        memcpy(staging_buffer_data, index_buffer->m_data, (size_t)index_buffer_size);
+        memcpy(staging_buffer_data, index_buffer->GetBufferPointer(), (size_t)index_buffer_size);
 
         std::shared_ptr<RHI::D3D12Buffer> p_mesh_index_buffer =
             RHI::D3D12Buffer::Create(m_Device->GetLinkedDevice(),

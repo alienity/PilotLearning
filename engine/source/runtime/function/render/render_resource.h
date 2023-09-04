@@ -39,21 +39,21 @@ namespace MoYu
 
     protected:
         std::shared_ptr<RHI::D3D12Buffer> createDynamicBuffer(void* buffer_data, uint32_t buffer_size, uint32_t buffer_stride);
-        std::shared_ptr<RHI::D3D12Buffer> createDynamicBuffer(std::shared_ptr<BufferData>& buffer_data);
+        std::shared_ptr<RHI::D3D12Buffer> createDynamicBuffer(std::shared_ptr<MoYu::MoYuScratchBuffer>& buffer_data);
         
         std::shared_ptr<RHI::D3D12Buffer> createStaticBuffer(void* buffer_data, uint32_t buffer_size, uint32_t buffer_stride, bool raw, bool batch = false);
-        std::shared_ptr<RHI::D3D12Buffer> createStaticBuffer(std::shared_ptr<BufferData>& buffer_data, bool raw, bool batch = false);
+        std::shared_ptr<RHI::D3D12Buffer> createStaticBuffer(std::shared_ptr<MoYu::MoYuScratchBuffer>& buffer_data, bool raw, bool batch = false);
 
         std::shared_ptr<RHI::D3D12Texture> createTex2D(uint32_t width, uint32_t height, void* pixels, DXGI_FORMAT format, bool is_srgb, bool genMips = false, bool batch = false);
-        std::shared_ptr<RHI::D3D12Texture> createTex2D(std::shared_ptr<TextureData>& tex2d_data, DXGI_FORMAT format, bool is_srgb, bool genMips = false, bool batch = false);
+        std::shared_ptr<RHI::D3D12Texture> createTex2D(std::shared_ptr<MoYu::MoYuScratchImage>& tex2d_data, DXGI_FORMAT format, bool is_srgb, bool genMips = false, bool batch = false);
 
-        std::shared_ptr<RHI::D3D12Texture> createCubeMap(std::array<std::shared_ptr<TextureData>, 6>& cube_maps, DXGI_FORMAT format, bool is_srgb, bool genMips = false, bool batch = false);
+        std::shared_ptr<RHI::D3D12Texture> createCubeMap(std::array<std::shared_ptr<MoYu::MoYuScratchImage>, 6>& cube_maps, DXGI_FORMAT format, bool is_srgb, bool genMips = false, bool batch = false);
 
         std::shared_ptr<RHI::D3D12Texture> SceneImageToTexture(const SceneImage& normal_image);
 
         InternalMesh createInternalMesh(SceneMesh scene_mesh);
         InternalMesh createInternalMesh(RenderMeshData mesh_data);
-        InternalVertexBuffer createVertexBuffer(InputDefinition input_definition, std::shared_ptr<BufferData> vertex_buffer);
-        InternalIndexBuffer createIndexBuffer(std::shared_ptr<BufferData> index_buffer);
+        InternalVertexBuffer createVertexBuffer(InputDefinition input_definition, std::shared_ptr<MoYu::MoYuScratchBuffer> vertex_buffer);
+        InternalIndexBuffer createIndexBuffer(std::shared_ptr<MoYu::MoYuScratchBuffer> index_buffer);
     };
 } // namespace MoYu

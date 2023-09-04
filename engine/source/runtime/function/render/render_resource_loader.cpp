@@ -7,8 +7,12 @@
 #include "runtime/resource/res_type/data/mesh_data.h"
 
 #include "runtime/function/global/global_context.h"
-
 #include "runtime/function/render/render_mesh_loader.h"
+
+#include "runtime/platform/file_service/file_service.h"
+#include "runtime/platform/file_service/file_system.h"
+#include "runtime/platform/file_service/binary_reader.h"
+#include "runtime/platform/file_service/binary_writer.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
@@ -19,6 +23,11 @@
 #include <algorithm>
 #include <filesystem>
 #include <vector>
+#include <iostream>  
+#include <string>
+#include <cctype>
+#include <algorithm>
+
 
 namespace MoYu
 {
@@ -52,7 +61,8 @@ namespace MoYu
 
         m_GraphicsMemory->Commit(syncHandle);
     }
-
+    
+    /*
     std::shared_ptr<MoYuScratchImage> RenderResourceBase::loadTextureHDR(std::string file)
     {
         std::shared_ptr<MoYuScratchImage> texture = _TextureData_Caches[file];
@@ -66,20 +76,23 @@ namespace MoYu
 
             std::string fileFullPath = asset_manager->getFullPath(file).generic_string();
 
-            texture = std::make_shared<TextureData>();
+            texture = std::make_shared<MoYuScratchImage>();
 
             int iw, ih, in;
             in = 4;
             if (is_hdr)
             {
-                texture->m_pixels = stbi_loadf(fileFullPath.c_str(), &iw, &ih, &in, 0);
+                float* _load_pixels = stbi_loadf(fileFullPath.c_str(), &iw, &ih, &in, 0);
+                texture->Initialize2D(DXGI_FORMAT::DXGI_FORMAT_R32G32B32A32_FLOAT, iw, ih, 1, 1);
+                uint8_t* _pixels = texture->GetPixels();
+                memcpy(_pixels, _load_pixels, sizeof(float) * 4 * iw * ih);
+                stbi_image_free(_load_pixels);
             }
             else
             {
-                float* out; // width * height * RGBA
+                float* _load_pixels; // width * height * RGBA
                 const char* err = nullptr;
-                int ret = LoadEXR((float**)&out, &iw, &ih, fileFullPath.c_str(), &err);
-
+                int ret = LoadEXR((float**)&_load_pixels, &iw, &ih, fileFullPath.c_str(), &err);
                 if (ret != TINYEXR_SUCCESS)
                 {
                     if (err)
@@ -88,41 +101,40 @@ namespace MoYu
                         FreeEXRErrorMessage(err); // release memory of error message.
                     }
                 }
-
-                texture->m_pixels = out;
+                else
+                {
+                    texture->Initialize2D(DXGI_FORMAT::DXGI_FORMAT_R32G32B32A32_FLOAT, iw, ih, 1, 1);
+                    uint8_t* _pixels = texture->GetPixels();
+                    memcpy(_pixels, _load_pixels, sizeof(float) * 4 * iw * ih);
+                    free(_pixels);
+                }
             }
-
-            if (!texture->m_pixels)
-                return nullptr;
-
-            texture->m_width    = iw;
-            texture->m_height   = ih;
-            texture->m_channels = in;
-
-            texture->m_depth        = 1;
-            texture->m_array_layers = 1;
-            texture->m_mip_levels   = 1;
-
-            texture->m_is_hdr  = true;
 
             _TextureData_Caches[file] = texture;
         }
 
         return texture;
     }
-
-    std::shared_ptr<MoYuScratchImage> RenderResourceBase::loadTexture(std::string file, int force_channel)
+    */
+    /*
+    std::shared_ptr<MoYuScratchImage> RenderResourceBase::loadTexture(std::string file)
     {
-        std::shared_ptr<TextureData> texture = _TextureData_Caches[file];
+        std::shared_ptr<MoYuScratchImage> texture = _TextureData_Caches[file];
 
         if (texture == nullptr)
         {
             std::shared_ptr<AssetManager> asset_manager = g_runtime_global_context.m_asset_manager;
             ASSERT(asset_manager);
 
-            texture = std::make_shared<TextureData>();
+            texture = std::make_shared<MoYuScratchImage>();
 
-            std::string fileFullPath = asset_manager->getFullPath(file).generic_string();
+            std::filesystem::path fileFullPath = asset_manager->getFullPath(file);
+            MoYu::FileStream stream(fileFullPath, MoYu::FileMode::Open, MoYu::FileAccess::Read);
+            std::unique_ptr<std::byte[]> fileDatas = stream.readAll();
+
+            MoYu::MoYuTexMetadata _texMetaData;
+            DirectX::LoadFromDDSFile(fileFullPath.c_str(), DirectX::DDS_FLAGS::DDS_FLAGS_NONE, _texMetaData, );
+
 
             int iw, ih, in;
             texture->m_pixels = stbi_load(fileFullPath.c_str(), &iw, &ih, &in, force_channel);
@@ -146,6 +158,88 @@ namespace MoYu
 
         return texture;
     }
+    */
+
+    std::shared_ptr<MoYuScratchImage> RenderResourceBase::loadImage(std::string file)
+    {
+        auto _image = _TextureData_Caches.find(file);
+        if (_image == _TextureData_Caches.end())
+        {
+            std::shared_ptr<AssetManager> asset_manager = g_runtime_global_context.m_asset_manager;
+            ASSERT(asset_manager);
+
+            std::filesystem::path file_full_path = asset_manager->getFullPath(file);
+            std::string file_path_str = file_full_path.generic_string();
+            std::string file_extension = file_full_path.extension().generic_string();
+            
+            auto texture = std::make_shared<MoYuScratchImage>();
+
+            int iw, ih, in;
+            in = 4;
+            int desired_channels = in;
+
+            if (file_extension == ".hdr")
+            {
+                if (stbi_is_hdr(file.c_str()))
+                {
+                    float* _load_pixels = stbi_loadf(file_path_str.c_str(), &iw, &ih, &in, desired_channels);
+                    texture->Initialize2D(DXGI_FORMAT::DXGI_FORMAT_R32G32B32A32_FLOAT, iw, ih, 1, 1);
+                    uint8_t* _pixels = texture->GetPixels();
+                    memcpy(_pixels, _load_pixels, sizeof(float) * 4 * iw * ih);
+                    stbi_image_free(_load_pixels);
+                }
+            }
+            else if (file_extension == ".exr")
+            {
+                float* _load_pixels; // width * height * RGBA
+                const char* err = nullptr;
+                int ret = LoadEXR((float**)&_load_pixels, &iw, &ih, file_path_str.c_str(), &err);
+                if (ret != TINYEXR_SUCCESS)
+                {
+                    if (err)
+                    {
+                        fprintf(stderr, "ERR : %s\n", err);
+                        FreeEXRErrorMessage(err); // release memory of error message.
+                    }
+                }
+                else
+                {
+                    texture->Initialize2D(DXGI_FORMAT::DXGI_FORMAT_R32G32B32A32_FLOAT, iw, ih, 1, 1);
+                    uint8_t* _pixels = texture->GetPixels();
+                    memcpy(_pixels, _load_pixels, sizeof(float) * 4 * iw * ih);
+                    free(_load_pixels);
+                }
+            }
+            else if (file_extension == ".dds")
+            {
+                MoYuScratchImage _scratchImage;
+                DirectX::LoadFromDDSFile(file_full_path.c_str(), DirectX::DDS_FLAGS::DDS_FLAGS_NONE, nullptr, _scratchImage);
+
+                *texture = std::move(_scratchImage);
+            }
+            else if (file_extension == ".tga")
+            {
+                MoYuScratchImage _scratchImage;
+                DirectX::LoadFromTGAFile(file_full_path.c_str(), nullptr, _scratchImage);
+
+                *texture = std::move(_scratchImage);
+            }
+            else
+            {
+                auto _load_pixels = stbi_load(file_path_str.c_str(), &iw, &ih, &in, desired_channels);
+                texture->Initialize2D(DXGI_FORMAT::DXGI_FORMAT_R8G8B8A8_UNORM, iw, ih, 1, 1);
+                uint8_t* _pixels = texture->GetPixels();
+                memcpy(_pixels, _load_pixels, sizeof(char) * 4 * iw * ih);
+                stbi_image_free(_load_pixels);
+            }
+
+            _TextureData_Caches[file] = texture;
+
+            return texture;
+        }
+
+        return _image->second;
+    }
 
     RenderMeshData RenderResourceBase::loadMeshData(std::string mesh_file)
     {
@@ -166,19 +260,25 @@ namespace MoYu
 
                 // vertex buffer
                 size_t vertex_size = bind_data->vertex_buffer.size() * sizeof(Vertex);
-                ret.m_static_mesh_data.m_vertex_buffer = std::make_shared<BufferData>(vertex_size);
-                memcpy(ret.m_static_mesh_data.m_vertex_buffer.get(), bind_data->vertex_buffer.data(), vertex_size);
+                auto _vertex_buffer = std::make_shared<MoYuScratchBuffer>();
+                _vertex_buffer->Initialize(vertex_size);
+                memcpy(_vertex_buffer->GetBufferPointer(), bind_data->vertex_buffer.data(), vertex_size);
+                ret.m_static_mesh_data.m_vertex_buffer = _vertex_buffer;
 
                 // index buffer
                 size_t index_size = bind_data->index_buffer.size() * sizeof(int);
-                ret.m_static_mesh_data.m_index_buffer = std::make_shared<BufferData>(index_size);
-                memcpy(ret.m_static_mesh_data.m_index_buffer.get(), bind_data->index_buffer.data(), index_size);
+                auto _index_buffer = std::make_shared<MoYuScratchBuffer>();
+                _index_buffer->Initialize(index_size);
+                memcpy(_index_buffer->GetBufferPointer(), bind_data->index_buffer.data(), index_size);
+                ret.m_static_mesh_data.m_index_buffer = _index_buffer;
 
                 // skeleton binding buffer
                 size_t skeleton_size = bind_data->skeleton_bind.size() * sizeof(SkeletonBinding);
-                ret.m_skeleton_binding_buffer = std::make_shared<BufferData>(skeleton_size);
-                memcpy(ret.m_skeleton_binding_buffer.get(), bind_data->skeleton_bind.data(), skeleton_size);
-
+                auto _skeleton_buffer = std::make_shared<MoYuScratchBuffer>();
+                _skeleton_buffer->Initialize(skeleton_size);
+                memcpy(_skeleton_buffer->GetBufferPointer(), bind_data->skeleton_bind.data(), skeleton_size);
+                ret.m_skeleton_binding_buffer = _skeleton_buffer;
+                
                 MoYu::AxisAlignedBox bounding_box;
                 for (size_t i = 0; i < bind_data->vertex_buffer.size(); i++)
                 {
