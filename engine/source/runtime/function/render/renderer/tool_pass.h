@@ -15,18 +15,21 @@ namespace MoYu
 
         struct ToolInputParameters : public PassInput
         {
-            //RHI::RgResourceHandle renderTargetColorHandle;
+            std::shared_ptr<RHI::D3D12Texture> p_IBLSpecular;
         };
 
         struct ToolOutputParameters : public PassOutput
         {
-            //RHI::RgResourceHandle backBufColorHandle;
+            std::shared_ptr<RHI::D3D12Texture> p_Radians;
+            std::shared_ptr<RHI::D3D12Texture> p_DFG;
+            std::shared_ptr<RHI::D3D12Texture> p_LD;
         };
 
     public:
         ~ToolPass() { destroy(); }
 
         void initialize(const ToolPassInitInfo& init_info);
+        void editorUpdate(RHI::D3D12CommandContext* context, ToolInputParameters& passInput, ToolOutputParameters& passOutput);
         void update(RHI::RenderGraph& graph, ToolInputParameters& passInput, ToolOutputParameters& passOutput);
         void destroy() override final;
     };

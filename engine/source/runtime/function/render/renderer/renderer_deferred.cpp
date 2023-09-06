@@ -79,7 +79,6 @@ namespace MoYu
             mToolPass = std::make_shared<ToolPass>();
             mToolPass->setCommonInfo(renderPassCommonInfo);
             mToolPass->initialize({});
-
         }
 
         // Cull pass
@@ -173,6 +172,7 @@ namespace MoYu
 
     DeferredRenderer::~DeferredRenderer()
     {
+        mToolPass                    = nullptr;
         mUIPass                      = nullptr;
         mIndirectCullPass            = nullptr;
         mIndirectShadowPass          = nullptr;
@@ -191,16 +191,15 @@ namespace MoYu
     void DeferredRenderer::OnRender(RHI::D3D12CommandContext* context)
     {
 
-        /*
+        /**/
         //=================================================================================
         // 生成specular LD和DFG，生成diffuse radiance
-        RHI::RenderGraph graph_4_tool(renderGraphAllocator, renderGraphRegistry);
+        mToolPass->update();
 
 
 
-        graph_4_tool.Execute(context);
         //=================================================================================
-        */
+        
 
 
 

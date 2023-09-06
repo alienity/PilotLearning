@@ -16,6 +16,16 @@ namespace MoYu
 
     }
 
+    void ToolPass::editorUpdate(RHI::D3D12CommandContext* context, ToolInputParameters& passInput, ToolOutputParameters& passOutput)
+    {
+        std::shared_ptr<RHI::D3D12Texture> p_Radians = ;
+        std::shared_ptr<RHI::D3D12Texture> p_DFG;
+        std::shared_ptr<RHI::D3D12Texture> p_LD;
+
+
+
+    }
+
     void ToolPass::update(RHI::RenderGraph& graph, ToolInputParameters& passInput, ToolOutputParameters& passOutput)
     {
         /*
