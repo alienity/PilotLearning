@@ -75,7 +75,12 @@ float2 DFG(float NoV, float a)
 // pre-filter the environment, based on some input roughness that varies over each mipmap level 
 // of the pre-filter cubemap (from 0.0 to 1.0), and store the result in prefilteredColor.
 // 所以这里用一次Draw一个Cube来实现是最方便的，因为光栅化会自动对Cube的每个像素都进行处理
-// 针对每个lod等级，都做一次绘制，每个lod等级使用的roughness不一样
+// 针对每个lod等级，都做一次绘制，每个lod等级使用的roughness不一样，
+// lod 0 --- α 0
+// lod 1 --- α 0.2
+// lod 2 --- α 0.4
+// lod 3 --- α 0.6
+// lod 4 --- α 0.8
 
 
 // implementation of the LD term

@@ -4,6 +4,9 @@ cbuffer Constants : register(b0)
 {
     int _IBLSpecularIndex;
     int _LDOutputIndex;
+
+    int _LodLevel;
+    float _roughness;
 };
 
 SamplerState defaultSampler : register(s10);
@@ -14,14 +17,19 @@ void CSMain(uint3 Gid : SV_GroupID, uint3 GTid : SV_GroupThreadID, uint3 DTid : 
     TextureCube<float4> m_IBLSpecular = ResourceDescriptorHeap[_IBLSpecularIndex];
     RWTexture2DArray<float4> m_OutputLDTex = ResourceDescriptorHeap[_LDOutputIndex];
 
-    uint width, height, numberOfLevels;
-    m_IBLSpecular.GetDimensions(0, width, height, numberOfLevels);
+    uint width, height;
+    m_IBLSpecular.GetDimensions(width, height);
 
-    if (DTid.x >= width || DTid.y >= height || DTid.z >= numberOfLevels)
+    uint curWidth = width >> _LodLevel;
+
+    if (DTid.x >= curWidth || DTid.y >= curWidth || DTid.z >= curWidth)
         return;
     
-    uint 
+    float3 localPos = float3(DTid.x, DTid.y, DTid.z);
 
+    float4 ldVal = LD(m_IBLSpecular, defaultSampler, localPos, _roughness);
+
+    
 
 
 
