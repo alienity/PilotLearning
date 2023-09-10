@@ -12,14 +12,14 @@ namespace MoYu
         return std::fabs(b - a) <= tolerance;
     }
 
-    float Math::degreesToRadians(float degrees) { return degrees * Math_fDeg2Rad; }
+    float Math::degreesToRadians(float degrees) { return degrees * f::DEG_TO_RAD; }
 
-    float Math::radiansToDegrees(float radians) { return radians * Math_fRad2Deg; }
+    float Math::radiansToDegrees(float radians) { return radians * f::RAD_TO_DEG; }
 
     float Math::angleUnitsToRadians(float angleunits)
     {
         if (k_AngleUnit == AngleUnit::AU_DEGREE)
-            return angleunits * Math_fDeg2Rad;
+            return angleunits * f::DEG_TO_RAD;
 
         return angleunits;
     }
@@ -27,7 +27,7 @@ namespace MoYu
     float Math::radiansToAngleUnits(float radians)
     {
         if (k_AngleUnit == AngleUnit::AU_DEGREE)
-            return radians * Math_fRad2Deg;
+            return radians * f::RAD_TO_DEG;
 
         return radians;
     }
@@ -35,7 +35,7 @@ namespace MoYu
     float Math::angleUnitsToDegrees(float angleunits)
     {
         if (k_AngleUnit == AngleUnit::AU_RADIAN)
-            return angleunits * Math_fRad2Deg;
+            return angleunits * f::RAD_TO_DEG;
 
         return angleunits;
     }
@@ -43,7 +43,7 @@ namespace MoYu
     float Math::degreesToAngleUnits(float degrees)
     {
         if (k_AngleUnit == AngleUnit::AU_RADIAN)
-            return degrees * Math_fDeg2Rad;
+            return degrees * f::DEG_TO_RAD;
 
         return degrees;
     }
@@ -58,7 +58,7 @@ namespace MoYu
             return 0.0;
         }
 
-        return Math_PI;
+        return f::PI;
     }
 
     float Math::asin(float value)
@@ -68,10 +68,10 @@ namespace MoYu
             if (value < 1.0)
                 return std::asin(value);
 
-            return Math_HALF_PI;
+            return f::PI_2;
         }
 
-        return -Math_HALF_PI;
+        return -f::PI_2;
     }
 
     Matrix4x4 Math::makeViewMatrix(const Vector3& position, const Quaternion& orientation)
@@ -449,7 +449,7 @@ namespace MoYu
             else  // m[2][0] = -1
             {
                 // Not a unique solution : thetaX − thetaZ = atan2(−r12 , r11)
-                thetaY = +Math_PI / 2;
+                thetaY = +f::PI / 2;
                 thetaZ = -atan2f(-m[1][2], m[1][1]);
                 thetaX = 0;
             }
@@ -457,7 +457,7 @@ namespace MoYu
         else // m[2][0] = +1
         {
             // Not a unique solution : thetaX + thetaZ = atan2(−r12 , r11)
-            thetaY = -Math_PI / 2;
+            thetaY = -f::PI / 2;
             thetaZ = atan2f(-m[1][2], m[1][1]);
             thetaX = 0;
         }
@@ -512,7 +512,7 @@ namespace MoYu
                 return;
             }
             // otherwise this singularity is angle = 180
-            radian    = Math_PI;
+            radian    = f::PI;
             double xx = (m[0][0] + 1) / 2;
             double yy = (m[1][1] + 1) / 2;
             double zz = (m[2][2] + 1) / 2;
@@ -1559,7 +1559,7 @@ namespace MoYu
             else // m[2][0] = -1
             {
                 // Not a unique solution : thetaX − thetaZ = atan2(−r12 , r11)
-                thetaY = +Math_PI / 2;
+                thetaY = +f::PI / 2;
                 thetaZ = -atan2f(-m12, m11);
                 thetaX = 0;
             }
@@ -1567,7 +1567,7 @@ namespace MoYu
         else // m[2][0] = +1
         {
             // Not a unique solution : thetaX + thetaZ = atan2(−r12 , r11)
-            thetaY = -Math_PI / 2;
+            thetaY = -f::PI / 2;
             thetaZ = atan2f(-m12, m11);
             thetaX = 0;
         }
@@ -1691,7 +1691,7 @@ namespace MoYu
             {
                 axis = Vector3::cross(f, Vector3::Up);
             }
-            return fromAxisAngle(axis, Math_PI);
+            return fromAxisAngle(axis, f::PI);
         }
         else
         {
