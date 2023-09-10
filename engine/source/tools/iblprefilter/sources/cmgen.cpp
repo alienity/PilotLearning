@@ -21,15 +21,10 @@
 #include "Image.h"
 #include "utilities.h"
 
-#include <imageio/ImageDecoder.h>
-#include <imageio/ImageEncoder.h>
+#include "imageio/ImageDecoder.h"
+#include "imageio/ImageEncoder.h"
 
-#include <image/Ktx1Bundle.h>
-#include <image/ColorTransform.h>
-
-#include <utils/JobSystem.h>
-#include <utils/Path.h>
-#include <utils/algorithm.h>
+#include "image/ColorTransform.h"
 
 #include "core/math/moyu_math.h"
 

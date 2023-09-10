@@ -36,7 +36,7 @@ set_target_properties(${TARGET_NAME} PROPERTIES FOLDER "${ToolRoot}")
 
 target_compile_options(${TARGET_NAME} PUBLIC "$<$<COMPILE_LANG_AND_ID:CXX,MSVC>:/WX->")
 
-target_link_libraries(${TARGET_NAME} PilotRuntime)
+target_link_libraries(${TARGET_NAME} PilotRuntime image)
 
 # target_link_libraries(${TARGET} PUBLIC image math png tinyexr utils z basis_encoder)
 

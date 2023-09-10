@@ -21,6 +21,4 @@ set_target_properties(${TARGET_NAME} PROPERTIES FOLDER "${ToolRoot}")
 
 target_compile_options(${TARGET_NAME} PUBLIC "$<$<COMPILE_LANG_AND_ID:CXX,MSVC>:/WX->")
 
-target_link_libraries(${TARGET_NAME} PilotRuntime)
-target_link_libraries(${TARGET_NAME} IBL)
-target_link_libraries(${TARGET_NAME} image)
+target_link_libraries(${TARGET_NAME} PilotRuntime IBL image imageio)

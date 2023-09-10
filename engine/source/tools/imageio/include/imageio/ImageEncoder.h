@@ -20,13 +20,11 @@
 #include <iosfwd>
 #include <string>
 
-#include <image/LinearImage.h>
-
-#include <utils/compiler.h>
+#include "image/LinearImage.h"
 
 namespace image {
 
-class UTILS_PUBLIC ImageEncoder {
+class ImageEncoder {
 public:
     enum class Format {
         PNG,        // 8-bit sRGB, 1 or 3 channels
