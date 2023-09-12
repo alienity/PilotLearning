@@ -161,7 +161,7 @@ highp vec2 computeReceiverPlaneDepthBias(const highp vec3 position) {
 mat2 getRandomRotationMatrix(highp vec2 fragCoord) {
     // rotate the poisson disk randomly
     fragCoord += vec2(frameUniforms.temporalNoise); // 0 when TAA is not used
-    float randomAngle = interleavedGradientNoise(fragCoord) * (2.0 * PI);
+    float randomAngle = interleavedGradientNoise(fragCoord) * (2.0 * F_PI);
     vec2 randomBase = vec2(cos(randomAngle), sin(randomAngle));
     mat2 R = mat2(randomBase.x, randomBase.y, -randomBase.y, randomBase.x);
     return R;

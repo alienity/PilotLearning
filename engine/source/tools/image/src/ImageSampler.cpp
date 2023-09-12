@@ -14,14 +14,10 @@
  * limitations under the License.
  */
 
-#include <image/ImageSampler.h>
-#include <image/ImageOps.h>
+#include "image/ImageSampler.h"
+#include "image/ImageOps.h"
 
-#include <math/scalar.h>
-#include <math/vec3.h>
-#include <math/vec4.h>
-
-#include <utils/Panic.h>
+#include "core/math/moyu_math.h"
 
 #include <memory>
 #include <string>
@@ -32,8 +28,6 @@ using namespace image;
 
 namespace {
 
-using namespace filament::math;
-
 struct FilterFunction {
     float (*fn)(float) = nullptr;
     float boundingRadius = 1;
@@ -41,31 +35,34 @@ struct FilterFunction {
 };
 
 const FilterFunction Box {
-    .fn = [](float t) { return t <= 0.5f ? 1.0f : 0.0f; },
-    .boundingRadius = 1
+    [](float t) { return t <= 0.5f ? 1.0f : 0.0f; },
+    1,
+    true
 };
 
-const FilterFunction Nearest { Box.fn, 0.0f };
+const FilterFunction Nearest { Box.fn, 0.0f, true };
 
 const FilterFunction Gaussian {
-    .fn = [](float t) {
+    [](float t) {
         if (t >= 2.0) return 0.0f;
-        const float scale = 1.0f / std::sqrt(0.5f * f::PI);
+        const float scale = 1.0f / std::sqrt(0.5f * MoYu::f::PI);
         return std::exp(-2.0f * t * t) * scale;
     },
-    .boundingRadius = 2
+    2,
+    true
 };
 
 const FilterFunction Hermite {
-    .fn = [](float t) {
+    [](float t) {
         if (t >= 1.0f) return 0.0f;
         return 2 * t * t * t - 3 * t * t + 1;
     },
-    .boundingRadius = 1
+    1,
+    true
 };
 
 const FilterFunction Mitchell {
-    .fn = [](float t) {
+    [](float t) {
         constexpr float B = 1.0f / 3.0f;
         constexpr float C = 1.0f / 3.0f;
         constexpr float P0 = (  6 - 2*B       ) / 6.0f;
@@ -80,21 +77,23 @@ const FilterFunction Mitchell {
         if (t >= 1.0f) return Q0 + Q1*t + Q2*t*t + Q3*t*t*t;
         return P0 + P1*t + P2*t*t + P3*t*t*t;
     },
-    .boundingRadius = 2
+    2,
+    true
 };
 
 // Not bothering with a fast approximation since we cache results for each row.
 float sinc(float t) {
     if (t <= 0.00001f) return 1.0f;
-    return std::sin(f::PI * t) / (f::PI * t);
+    return std::sin(MoYu::f::PI * t) / (MoYu::f::PI * t);
 }
 
 const FilterFunction Lanczos {
-    .fn = [](float t) {
+    [](float t) {
         if (t >= 1.0f) return 0.0f;
         return sinc(t) * sinc(t);
     },
-    .boundingRadius = 1
+    1,
+    true
 };
 
 // Describes a Multiply-Add operation: target[targetIndex] += source[sourceIndex] * weight.
@@ -202,7 +201,8 @@ FilterFunction createFilterFunction(Filter ftype) {
         case Filter::GAUSSIAN_NORMALS:
         case Filter::GAUSSIAN_SCALARS: fn = Gaussian; break;
         case Filter::DEFAULT:
-            PANIC_PRECONDITION("Unresolved filter type.");
+            //PANIC_PRECONDITION("Unresolved filter type.");
+            break;
     }
     return fn;
 }
@@ -212,17 +212,16 @@ void normalizeImpl(LinearImage& image) {
     const uint32_t width = image.getWidth(), height = image.getHeight();
     auto vecs = (VecT*) image.getPixelRef();
     for (uint32_t n = 0; n < width * height; ++n) {
-        vecs[n] = normalize(vecs[n]);
+        vecs[n] = VecT::normalize(vecs[n]);
     }
 }
 
 void normalize(LinearImage& image) {
-    ASSERT_PRECONDITION(image.getChannels() == 3 || image.getChannels() == 4,
-                        "Must be a 3 or 4 channel image");
+    assert(image.getChannels() == 3 || image.getChannels() == 4); // "Must be a 3 or 4 channel image"
     if (image.getChannels() == 3) {
-      normalizeImpl< filament::math::float3>(image);
+      normalizeImpl<MoYu::Vector3>(image);
     } else {
-      normalizeImpl< filament::math::float4>(image);
+      normalizeImpl<MoYu::Vector4>(image);
     }
 }
 
@@ -288,11 +287,11 @@ SingleSample::~SingleSample() {
 
 LinearImage resampleImage(const LinearImage& source, uint32_t width, uint32_t height,
         const ImageSampler& sampler) {
-    ASSERT_PRECONDITION(
+    assert(
         sampler.east.mode == Boundary::EXCLUDE &&
         sampler.north.mode == Boundary::EXCLUDE &&
         sampler.west.mode == Boundary::EXCLUDE &&
-        sampler.south.mode == Boundary::EXCLUDE, "Not yet implemented.");
+        sampler.south.mode == Boundary::EXCLUDE); // "Not yet implemented."
     const auto hfilter = sampler.horizontalFilter;
     const auto vfilter = sampler.verticalFilter;
     const float radius = sampler.filterRadiusMultiplier;
@@ -309,10 +308,11 @@ LinearImage resampleImage(const LinearImage& source, uint32_t width, uint32_t he
 
 LinearImage resampleImage(const LinearImage& source, uint32_t width, uint32_t height,
         Filter filter) {
-    return resampleImage(source, width, height, ImageSampler {
-        .horizontalFilter = filter,
-        .verticalFilter = filter
-    });
+    ImageSampler _imageSampler;
+    _imageSampler.horizontalFilter = filter;
+    _imageSampler.verticalFilter   = filter;
+
+    return resampleImage(source, width, height, _imageSampler);
 }
 
 void computeSingleSample(const LinearImage& source, float x, float y, SingleSample* result,
@@ -362,7 +362,6 @@ uint32_t getMipmapCount(const LinearImage& source) {
 }
 
 Filter filterFromString(const char* rawname) {
-    using namespace utils;
     static const std::unordered_map<std::string_view, Filter> map = {
             { "BOX",      Filter::BOX },
             { "NEAREST",  Filter::NEAREST },

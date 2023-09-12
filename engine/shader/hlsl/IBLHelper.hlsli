@@ -15,46 +15,137 @@ float2 hammersley(uint i, float numSamples)
     return float2(i / numSamples, bits / exp2(32));
 }
 
-float3 importanceSampleGGX( float2 Xi, float Roughness, float3 N )
-{
-    float a = Roughness * Roughness;
-    float Phi = 2 * PI * Xi.x;
-    float CosTheta = sqrt( (1 - Xi.y) / ( 1 + (a*a - 1) * Xi.y ) );
-    float SinTheta = sqrt( 1 - CosTheta * CosTheta );
-    float3 H;
-    H.x = SinTheta * cos( Phi );
-    H.y = SinTheta * sin( Phi );
-    H.z = CosTheta;
-    float3 UpVector = abs(N.z) < 0.999 ? float3(0,0,1) : float3(1,0,0);
-    float3 TangentX = normalize( cross( UpVector, N ) );
-    float3 TangentY = cross( N, TangentX );
-    // Tangent to world space
-    return TangentX * H.x + TangentY * H.y + N * H.z;
+float3 hemisphereImportanceSampleDggx(float2 u, float a) 
+{ // pdf = D(a) * cosTheta
+    const float phi = 2.0f * (float) F_PI * u.x;
+    // NOTE: (aa-1) == (a-1)(a+1) produces better fp accuracy
+    const float cosTheta2 = (1 - u.y) / (1 + (a + 1) * ((a - 1) * u.y));
+    const float cosTheta = sqrt(cosTheta2);
+    const float sinTheta = sqrt(1 - cosTheta2);
+    return float3(sinTheta * cos(phi), sinTheta * sin(phi), cosTheta);
 }
 
-float GDFG(float NoV, float NoL, float a)
+float3 hemisphereCosSample(float2 u)
+{  // pdf = cosTheta / F_PI;
+    const float phi = 2.0f * (float) F_PI * u.x;
+    const float cosTheta2 = 1 - u.y;
+    const float cosTheta = sqrt(cosTheta2);
+    const float sinTheta = sqrt(1 - cosTheta2);
+    return float3(sinTheta * cos(phi), sinTheta * sin(phi), cosTheta);
+}
+
+float3 hemisphereUniformSample(float2 u)
+{ // pdf = 1.0 / (2.0 * F_PI);
+    const float phi = 2.0f * (float) F_PI * u.x;
+    const float cosTheta = 1 - u.y;
+    const float sinTheta = sqrt(1 - cosTheta * cosTheta);
+    return float3(sinTheta * cos(phi), sinTheta * sin(phi), cosTheta);
+}
+
+float Visibility(float NoV, float NoL, float a)
 {
+    // Heitz 2014, "Understanding the Masking-Shadowing Function in Microfacet-Based BRDFs"
+    // Height-correlated GGX
     float a2 = a * a;
     float GGXL = NoV * sqrt((-NoL * a2 + NoL) * NoL + a2);
     float GGXV = NoL * sqrt((-NoV * a2 + NoV) * NoV + a2);
-    return (2 * NoL) / (GGXV + GGXL);
+    return 0.5f / (GGXV + GGXL);
 }
 
-// implementation of the LDFG term
-float2 DFG(float NoV, float a)
+/*
+ *
+ * Importance sampling GGX - Trowbridge-Reitz
+ * ------------------------------------------
+ *
+ * Important samples are chosen to integrate Dggx() * cos(theta) over the hemisphere.
+ *
+ * All calculations are made in tangent space, with n = [0 0 1]
+ *
+ *                      h (important sample)
+ *                     /.
+ *                    / .
+ *                   /  .
+ *                  /   .
+ *         --------o----+-------> n
+ *                   cos(theta)
+ *                    = n•h
+ *
+ *  h is micro facet's normal
+ *  l is the reflection of v around h, l = reflect(-v, h)  ==>  v•h = l•h
+ *
+ *  n•v is given as an input parameter at runtime
+ *
+ *  Since n = [0 0 1], we also have v.z = n•v
+ *
+ *  Since we need to compute v•h, we chose v as below. This choice only affects the
+ *  computation of v•h (and therefore the fresnel term too), but doesn't affect
+ *  n•l, which only relies on l.z (which itself only relies on v.z, i.e.: n•v)
+ *
+ *      | sqrt(1 - (n•v)^2)     (sin)
+ *  v = | 0
+ *      | n•v                   (cos)
+ *
+ *
+ *  h = important_sample_ggx()
+ *
+ *  l = reflect(-v, h) = 2 * v•h * h - v;
+ *
+ *  n•l = [0 0 1] • l = l.z
+ *
+ *  n•h = [0 0 1] • l = h.z
+ *
+ *
+ *  pdf() = D(h) <n•h> |J(h)|
+ *
+ *               1
+ *  |J(h)| = ----------
+ *            4 <v•h>
+ *
+ *
+ * Evaluating the integral
+ * -----------------------
+ *
+ * We are trying to evaluate the following integral:
+ *
+ *                    /
+ *             Er() = | fr(s) <n•l> ds
+ *                    /
+ *                    Ω
+ *
+ * For this, we're using importance sampling:
+ *
+ *                    1     fr(h)
+ *            Er() = --- ∑ ------- <n•l>
+ *                    N  h   pdf
+ *
+ * with:
+ *
+ *            fr() = D(h) F(h) V(v, l)
+ *
+ *
+ *  It results that:
+ *
+ *            1                        4 <v•h>
+ *    Er() = --- ∑ D(h) F(h) V(v, l) ------------ <n•l>
+ *            N  h                     D(h) <n•h>
+ *
+ *
+ *  +-------------------------------------------+
+ *  |          4                  <v•h>         |
+ *  |  Er() = --- ∑ F(h) V(v, l) ------- <n•l>  |
+ *  |          N  h               <n•h>         |
+ *  +-------------------------------------------+
+ *
+ */
+
+float2 DFV(float NoV, float linearRoughness, uint numSamples)
 {
-    float3 V;
-    V.x = sqrt(1.0f - NoV*NoV);
-    V.y = 0.0f;
-    V.z = NoV;
-
-    const uint sampleCount = 1024u;
-
     float2 r = 0.0f;
-    for (uint i = 0; i < sampleCount; i++)
+    float3 V = float3(sqrt(1.0f - NoV * NoV), 0, NoV);
+    for (uint i = 0; i < numSamples; i++)
     {
-        float2 Xi = hammersley(i, sampleCount);
-        float3 H = importanceSampleGGX(Xi, a, N);
+        float2 Xi = hammersley(i, numSamples);
+        float3 H = hemisphereImportanceSampleDggx(Xi, linearRoughness);
         float3 L = 2.0f * dot(V, H) * H - V;
 
         float VoH = saturate(dot(V, H));
@@ -62,15 +153,139 @@ float2 DFG(float NoV, float a)
         float NoH = saturate(H.z);
 
         if (NoL > 0.0f) {
-            float G = GDFG(NoV, NoL, a);
-            float Gv = G * VoH / NoH;
-            float Fc = pow(1 - VoH, 5.0f);
+            /*
+            * Fc = (1 - V•H)^5
+            * F(h) = f0*(1 - Fc) + f90*Fc
+            *
+            * f0 and f90 are known at runtime, but thankfully can be factored out, allowing us
+            * to split the integral in two terms and store both terms separately in a LUT.
+            *
+            * At runtime, we can reconstruct Er() exactly as below:
+            *
+            *            4                      <v•h>
+            *   DFV.x = --- ∑ (1 - Fc) V(v, l) ------- <n•l>
+            *            N  h                   <n•h>
+            *
+            *
+            *            4                      <v•h>
+            *   DFV.y = --- ∑ (    Fc) V(v, l) ------- <n•l>
+            *            N  h                   <n•h>
+            *
+            *
+            *   Er() = f0 * DFV.x + f90 * DFV.y
+            *
+            */
+            float Gv = Visibility(NoV, NoL, linearRoughness) * NoL * (VoH / NoH);
+            float Fc = pow5(1 - VoH);
             r.x += Gv * (1 - Fc);
             r.y += Gv * Fc;
         }
     }
-    return r * (1.0f / sampleCount);
+    return r * (4.0f / numSamples);
 }
+
+float2 DFV_Multiscatter(float NoV, float linearRoughness, uint numSamples)
+{
+    float2 r = 0;
+    const float3 V = float3(sqrt(1 - NoV * NoV), 0, NoV);
+    for (uint i = 0; i < numSamples; i++)
+    {
+        const float2 u = hammersley(i, numSamples);
+        const float3 H = hemisphereImportanceSampleDggx(u, linearRoughness);
+        const float3 L = 2 * dot(V, H) * H - V;
+        
+        const float VoH = saturate(dot(V, H));
+        const float NoL = saturate(L.z);
+        const float NoH = saturate(H.z);
+        
+        if (NoL > 0) {
+            const float v = Visibility(NoV, NoL, linearRoughness) * NoL * (VoH / NoH);
+            const float Fc = pow5(1 - VoH);
+            /*
+             * Assuming f90 = 1
+             *   Fc = (1 - V•H)^5
+             *   F(h) = f0*(1 - Fc) + Fc
+             *
+             * f0 and f90 are known at runtime, but thankfully can be factored out, allowing us
+             * to split the integral in two terms and store both terms separately in a LUT.
+             *
+             * At runtime, we can reconstruct Er() exactly as below:
+             *
+             *            4                <v•h>
+             *   DFV.x = --- ∑ Fc V(v, l) ------- <n•l>
+             *            N  h             <n•h>
+             *
+             *
+             *            4                <v•h>
+             *   DFV.y = --- ∑    V(v, l) ------- <n•l>
+             *            N  h             <n•h>
+             *
+             *
+             *   Er() = (1 - f0) * DFV.x + f0 * DFV.y
+             *
+             *        = mix(DFV.xxx, DFV.yyy, f0)
+             *
+             */
+            r.x += v * Fc;
+            r.y += v;
+        }
+    }
+    return r * (4.0f / numSamples);
+}
+
+//! Computes the "DFG" term of the "split-sum" approximation and stores it in a 2D image
+float3 DFG(int2 dstSize, int2 inTexPos, bool multiscatter)
+{
+    const int width = dstSize.x;
+    const int height = dstSize.y;
+    
+    const float h = (float) height;
+    const float coord = saturate((h - inTexPos.y + 0.5f) / h);
+    // map the coordinate in the texture to a linear_roughness,
+    // here we're using ^2, but other mappings are possible.
+    // ==> coord = sqrt(linear_roughness)
+    const float linear_roughness = coord * coord;
+    const float NoV = saturate((inTexPos.x + 0.5f) / width);
+    
+    float3 r;
+    if (multiscatter)
+        r = float3(DFV_Multiscatter(NoV, linear_roughness, 1024), 0);
+    else
+        r = float3(DFV(NoV, linear_roughness, 1024), 0);
+    
+    return r;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 // pre-filter the environment, based on some input roughness that varies over each mipmap level 
 // of the pre-filter cubemap (from 0.0 to 1.0), and store the result in prefilteredColor.
@@ -83,7 +298,117 @@ float2 DFG(float NoV, float a)
 // lod 4 --- α 0.8
 
 
-// implementation of the LD term
+/*
+ *
+ * Importance sampling GGX - Trowbridge-Reitz
+ * ------------------------------------------
+ *
+ * Important samples are chosen to integrate Dggx() * cos(theta) over the hemisphere.
+ *
+ * All calculations are made in tangent space, with n = [0 0 1]
+ *
+ *             l        h (important sample)
+ *             .\      /.
+ *             . \    / .
+ *             .  \  /  .
+ *             .   \/   .
+ *         ----+---o----+-------> n [0 0 1]
+ *     cos(2*theta)     cos(theta)
+ *        = n•l            = n•h
+ *
+ *  v = n
+ *  f0 = f90 = 1
+ *  V = 1
+ *
+ *  h is micro facet's normal
+ *
+ *  l is the reflection of v (i.e.: n) around h  ==>  n•h = l•h = v•h
+ *
+ *  h = important_sample_ggx()
+ *
+ *  n•h = [0 0 1]•h = h.z
+ *
+ *  l = reflect(-n, h)
+ *    = 2 * (n•h) * h - n;
+ *
+ *  n•l = cos(2 * theta)
+ *      = cos(theta)^2 - sin(theta)^2
+ *      = (n•h)^2 - (1 - (n•h)^2)
+ *      = 2(n•h)^2 - 1
+ *
+ *
+ *  pdf() = D(h) <n•h> |J(h)|
+ *
+ *               1
+ *  |J(h)| = ----------
+ *            4 <v•h>
+ *
+ *
+ * Pre-filtered importance sampling
+ * --------------------------------
+ *
+ *  see: "Real-time Shading with Filtered Importance Sampling", Jaroslav Krivanek
+ *  see: "GPU-Based Importance Sampling, GPU Gems 3", Mark Colbert
+ *
+ *
+ *                   Ωs
+ *     lod = log4(K ----)
+ *                   Ωp
+ *
+ *     log4(K) = 1, works well for box filters
+ *     K = 4
+ *
+ *             1
+ *     Ωs = ---------, solid-angle of an important sample
+ *           N * pdf
+ *
+ *              4 PI
+ *     Ωp ~ --------------, solid-angle of a sample in the base cubemap
+ *           texel_count
+ *
+ *
+ * Evaluating the integral
+ * -----------------------
+ *
+ *                    K     fr(h)
+ *            Er() = --- ∑ ------- L(h) <n•l>
+ *                    N  h   pdf
+ *
+ * with:
+ *
+ *            fr() = D(h)
+ *
+ *                       N
+ *            K = -----------------
+ *                    fr(h)
+ *                 ∑ ------- <n•l>
+ *                 h   pdf
+ *
+ *
+ *  It results that:
+ *
+ *            K           4 <v•h>
+ *    Er() = --- ∑ D(h) ------------ L(h) <n•l>
+ *            N  h        D(h) <n•h>
+ *
+ *
+ *              K
+ *    Er() = 4 --- ∑ L(h) <n•l>
+ *              N  h
+ *
+ *                  N       4
+ *    Er() = ------------- --- ∑ L(v) <n•l>
+ *             4 ∑ <n•l>    N
+ *
+ *
+ *  +------------------------------+
+ *  |          ∑ <n•l> L(h)        |
+ *  |  Er() = --------------       |
+ *  |            ∑ <n•l>           |
+ *  +------------------------------+
+ *
+ */
+
 float4 LD(TextureCube<float4> envMap, SamplerState enMapSampler, float3 localPos, float roughness)
 {
     float3 N = normalize(localPos);

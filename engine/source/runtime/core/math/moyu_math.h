@@ -832,6 +832,8 @@ namespace MoYu
             return Vector4(s / rhs.x, s / rhs.y, s / rhs.z, s / rhs.w);
         }
 
+        void normalize() { normalize(*this); }
+
         // Vector operations
         bool isNaN() { return Math::isNan(x) || Math::isNan(y) || Math::isNan(z) || Math::isNan(w); }
 
@@ -839,6 +841,21 @@ namespace MoYu
         static float dot(const Vector4& lhs, const Vector4& rhs)
         {
             return lhs.x * rhs.x + lhs.y * rhs.y + lhs.z * rhs.z + lhs.w * rhs.w;
+        }
+
+        static Vector4 normalize(const Vector4& v)
+        {
+            Vector4 out = Vector4(v.x, v.y, v.z, v.w);
+            float lengh = std::sqrt(out.x * out.x + out.y * out.y + out.z * out.z + out.w * out.w);
+            if (lengh > 0.0f)
+            {
+                float inv_length = 1.0f / lengh;
+                out.x *= inv_length;
+                out.y *= inv_length;
+                out.z *= inv_length;
+                out.w *= inv_length;
+            }
+            return out;
         }
 
         // Constants

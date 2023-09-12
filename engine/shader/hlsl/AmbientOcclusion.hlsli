@@ -96,8 +96,8 @@ float sphericalCapsIntersection(float cosCap1, float cosCap2, float cosDistance)
 
     // We work with cosine angles, replace the original paper's use of
     // cos(min(r1, r2)) with max(cosCap1, cosCap2)
-    // We also remove a multiplication by 2 * PI to simplify the computation
-    // since we divide by 2 * PI in computeBentSpecularAO()
+    // We also remove a multiplication by 2 * F_PI to simplify the computation
+    // since we divide by 2 * F_PI in computeBentSpecularAO()
 
     if (min(r1, r2) <= max(r1, r2) - d) {
         return 1.0 - max(cosCap1, cosCap2);
@@ -123,7 +123,7 @@ float SpecularAO_Cones(float3 bentNormal, float visibility, float roughness) {
     // angle betwen bent normal and reflection direction
     float cosB  = dot(bentNormal, shading_reflected);
 
-    // Remove the 2 * PI term from the denominator, it cancels out the same term from
+    // Remove the 2 * F_PI term from the denominator, it cancels out the same term from
     // sphericalCapsIntersection()
     float ao = sphericalCapsIntersection(cosAv, cosAs, cosB) / (1.0 - cosAs);
     // Smoothly kill specular AO when entering the perceptual roughness range [0.1..0.3]

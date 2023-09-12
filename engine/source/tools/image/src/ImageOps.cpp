@@ -116,14 +116,13 @@ LinearImage verticalFlip(const LinearImage& image) {
 }
 
 template<class VecT>
-LinearImage applyScaleOffset(const LinearImage& image,
-        typename VecT::value_type scale, typename VecT::value_type offset) {
+LinearImage applyScaleOffset(const LinearImage& image, float scale, float offset) {
     const uint32_t width = image.getWidth(), height = image.getHeight();
     LinearImage result(width, height, image.getChannels());
     auto src = (VecT const*) image.getPixelRef();
     auto dst = (VecT*) result.getPixelRef();
     for (uint32_t n = 0, end = width * height; n < end; ++n) {
-        dst[n] = scale * src[n] + VecT{offset};
+        dst[n] = scale * src[n] + VecT(offset);
     }
     return result;
 }
@@ -131,22 +130,21 @@ LinearImage applyScaleOffset(const LinearImage& image,
 LinearImage vectorsToColors(const LinearImage& image) {
     assert(image.getChannels() == 3 || image.getChannels() == 4); // "Must be a 3 or 4 channel image"
     return image.getChannels() == 3
-        ? applyScaleOffset<float3>(image, 0.5f, 0.5f)
-        : applyScaleOffset<float4>(image, 0.5f, 0.5f);
+        ? applyScaleOffset<MoYu::Vector3>(image, 0.5f, 0.5f)
+        : applyScaleOffset<MoYu::Vector4>(image, 0.5f, 0.5f);
 }
 
 LinearImage colorsToVectors(const LinearImage& image) {
-    ASSERT_PRECONDITION(image.getChannels() == 3 || image.getChannels() == 4,
-                        "Must be a 3 or 4 channel image");
+    assert(image.getChannels() == 3 || image.getChannels() == 4); // "Must be a 3 or 4 channel image"
     return image.getChannels() == 3
-        ? applyScaleOffset<float3>(image, 2.0f, -1.0f)
-        : applyScaleOffset<float4>(image, 2.0f, -1.0f);
+        ? applyScaleOffset<MoYu::Vector3>(image, 2.0f, -1.0f)
+        : applyScaleOffset<MoYu::Vector4>(image, 2.0f, -1.0f);
 }
 
 LinearImage extractChannel(const LinearImage& source, uint32_t channel) {
     const uint32_t width = source.getWidth(), height = source.getHeight();
     const uint32_t nchan = source.getChannels();
-    ASSERT_PRECONDITION(channel < nchan, "Channel is out of range.");
+    assert(channel < nchan); // "Channel is out of range."
     LinearImage result(width, height, 1);
     auto src = source.getPixelRef();
     auto dst = result.getPixelRef();
@@ -162,14 +160,14 @@ LinearImage combineChannels(std::initializer_list<LinearImage> images) {
 }
 
 LinearImage combineChannels(LinearImage const* img, size_t count) {
-    ASSERT_PRECONDITION(count > 0, "Must supply one or more image planes for combining.");
+    assert(count > 0); //  "Must supply one or more image planes for combining."
     const uint32_t width = img[0].getWidth();
     const uint32_t height = img[0].getHeight();
     for (size_t c = 0; c < count; ++c) {
         const LinearImage& plane = img[c];
-        ASSERT_PRECONDITION(plane.getWidth() == width, "Planes must all have same width.");
-        ASSERT_PRECONDITION(plane.getHeight() == height, "Planes must all have same height.");
-        ASSERT_PRECONDITION(plane.getChannels() == 1, "Planes must be single channel.");
+        assert(plane.getWidth() == width); // "Planes must all have same width."
+        assert(plane.getHeight() == height); // "Planes must all have same height."
+        assert(plane.getChannels() == 1); // "Planes must be single channel."
     }
     LinearImage result(width, height, (uint32_t) count);
     float* dst = result.getPixelRef();
@@ -409,10 +407,9 @@ LinearImage voronoiFromCoordField(const LinearImage& coordField, const LinearIma
 }
 
 void blitImage(LinearImage& target, const LinearImage& source) {
-    ASSERT_PRECONDITION(source.getWidth() == target.getWidth(), "Images must have same width.");
-    ASSERT_PRECONDITION(source.getHeight() == target.getHeight(), "Images must have same height.");
-    ASSERT_PRECONDITION(source.getChannels() == target.getChannels(),
-            "Images must have same number of channels.");
+    assert(source.getWidth() == target.getWidth()); // "Images must have same width."
+    assert(source.getHeight() == target.getHeight()); // "Images must have same height."
+    assert(source.getChannels() == target.getChannels()); // "Images must have same number of channels."
     memcpy(target.getPixelRef(), source.getPixelRef(),
             sizeof(float) * source.getWidth() * source.getHeight() * source.getChannels());
 }

@@ -70,7 +70,7 @@ float D_GGX(float roughness, float NoH, const float3 h)
 
     float a = NoH * roughness;
     float k = roughness / (oneMinusNoHSquared + a * a);
-    float d = k * k * (1.0 / PI);
+    float d = k * k * (1.0 / F_PI);
     return saturate(d);
 }
 
@@ -85,7 +85,7 @@ float D_GGX_Anisotropic(float at, float ab, float ToH, float BoH, float NoH)
     float3 d  = float3(ab * ToH, at * BoH, a2 * NoH);
     float  d2 = dot(d, d);
     float  b2 = a2 / d2;
-    return a2 * b2 * b2 * (1.0 / PI);
+    return a2 * b2 * b2 * (1.0 / F_PI);
 }
 
 float D_Charlie(float roughness, float NoH)
@@ -94,7 +94,7 @@ float D_Charlie(float roughness, float NoH)
     float invAlpha = 1.0 / roughness;
     float cos2h    = NoH * NoH;
     float sin2h    = max(1.0 - cos2h, 0.0078125); // 2^(-14/2), so sin2h^2 > 0 in fp16
-    return (2.0 + invAlpha) * pow(sin2h, invAlpha * 0.5) / (2.0 * PI);
+    return (2.0 + invAlpha) * pow(sin2h, invAlpha * 0.5) / (2.0 * F_PI);
 }
 
 float V_SmithGGXCorrelated(float roughness, float NoV, float NoL)
@@ -235,7 +235,7 @@ float visibilityCloth(float NoV, float NoL)
 
 float Fd_Lambert()
 {
-    return 1.0 / PI;
+    return 1.0 / F_PI;
 }
 
 float Fd_Burley(float roughness, float NoV, float NoL, float LoH)
@@ -244,7 +244,7 @@ float Fd_Burley(float roughness, float NoV, float NoL, float LoH)
     float f90          = 0.5 + 2.0 * roughness * LoH * LoH;
     float lightScatter = F_Schlick(1.0, f90, NoL);
     float viewScatter  = F_Schlick(1.0, f90, NoV);
-    return lightScatter * viewScatter * (1.0 / PI);
+    return lightScatter * viewScatter * (1.0 / F_PI);
 }
 
 // Energy conserving wrap diffuse term, does *not* include the divide by pi

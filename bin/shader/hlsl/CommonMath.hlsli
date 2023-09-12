@@ -6,19 +6,23 @@
 // Common math
 //------------------------------------------------------------------------------
 
-static const float g_PI		 = 3.141592654f;
-static const float g_2PI	 = 6.283185307f;
-static const float g_1DIVPI	 = 0.318309886f;
-static const float g_1DIV2PI = 0.159154943f;
-static const float g_1DIV4PI = 0.079577471f;
-static const float g_PIDIV2	 = 1.570796327f;
-static const float g_PIDIV4	 = 0.785398163f;
+static const float F_E        = 2.7182818284590;
+static const float F_LOG2E = 1.4426950408889;
+static const float F_LOG10E = 0.4342944819032;
+static const float F_LN2      = 0.6931471805599;
+static const float F_LN10     = 2.3025850929940;
+static const float F_PI       = 3.1415926535897;
+static const float F_PI_2     = 1.5707963267948;
+static const float F_PI_4     = 0.7853981633974;
+static const float F_1_PI     = 0.3183098861837;
+static const float F_2_PI     = 0.6366197723675;
+static const float F_2_SQRTPI = 1.1283791670955;
+static const float F_SQRT2    = 1.4142135623730;
+static const float F_SQRT1_2  = 0.7071067811865;
+static const float F_TAU      = 2.0 * F_PI;
 
-static const float FLT_EPS = 1e-5;
-static const float FLT_MAX = asfloat(0x7F7FFFFF);
-
-#define PI g_PI
-#define HALF_PI g_PIDIV2
+static const float FLT_EPS    = 1e-5;
+static const float FLT_MAX    = asfloat(0x7F7FFFFF);
 
 //------------------------------------------------------------------------------
 // Scalar operations
@@ -74,7 +78,7 @@ float acosFast(float x)
     float y = abs(x);
     float p = -0.1565827 * y + 1.570796;
     p = p * sqrt(1.0 - y);
-    return x >= 0.0 ? p : PI - p;
+    return x >= 0.0 ? p : F_PI - p;
 }
 
 /**
@@ -194,7 +198,7 @@ float SphericalTheta(float3 v)
 float SphericalPhi(float3 v)
 {
 	float p = atan2(v.y, v.x);
-	return (p < 0) ? (p + g_2PI) : p;
+    return (p < 0) ? (p + F_TAU) : p;
 }
 
 void CoordinateSystem(float3 v1, out float3 v2, out float3 v3)

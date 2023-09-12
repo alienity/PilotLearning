@@ -104,7 +104,7 @@ inline MoYu::Vector3 sRGBToLinear(const MoYu::Vector3& sRGB) {
     constexpr float a = 0.055f;
     constexpr float a1 = 1.055f;
     constexpr float p = 2.4f;
-    float3 linear;
+    MoYu::Vector3 linear;
     for (size_t i=0 ; i<3 ; i++) {
         if (sRGB[i] <= 0.04045f) {
             linear[i] = sRGB[i] * (1.0f / 12.92f);
@@ -116,12 +116,11 @@ inline MoYu::Vector3 sRGBToLinear(const MoYu::Vector3& sRGB) {
 }
 
 template<>
-inline filament::math::float4 sRGBToLinear(const filament::math::float4& sRGB) {
-    using filament::math::float4;
+inline MoYu::Vector4 sRGBToLinear(const MoYu::Vector4& sRGB) {
     constexpr float a = 0.055f;
     constexpr float a1 = 1.055f;
     constexpr float p = 2.4f;
-    float4 linear;
+    MoYu::Vector4 linear;
     for (size_t i=0 ; i<3 ; i++) {
         if (sRGB[i] <= 0.04045f) {
             linear[i] = sRGB[i] * (1.0f / 12.92f);
@@ -139,9 +138,8 @@ T linearToSRGB(const T& color);
 template<>
 inline MoYu::Vector3 linearToSRGB(const MoYu::Vector3& color) {
     using MoYu::Vector3;
-    float3 sRGBColor{color};
-    UTILS_NOUNROLL
-    for (size_t i = 0; i < sRGBColor.size(); i++) {
+    MoYu::Vector3 sRGBColor{color};
+    for (size_t i = 0; i < 3; i++) {
         sRGBColor[i] = (sRGBColor[i] <= 0.0031308f) ?
                 sRGBColor[i] * 12.92f : (powf(sRGBColor[i], 1.0f / 2.4f) * 1.055f) - 0.055f;
     }
@@ -215,25 +213,24 @@ std::unique_ptr<uint8_t[]> fromLinearToRGBM(const LinearImage& image) {
     return dst;
 }
 
-// Creates a 3-channel RGB_10_11_11_REV image from a f32 image.
-// The source image can have three or more channels, but only the first three are honored.
-inline std::unique_ptr<uint8_t[]> fromLinearToRGB_10_11_11_REV(const LinearImage& image) {
-    using namespace filament::math;
-    size_t w = image.getWidth();
-    size_t h = image.getHeight();
-    UTILS_UNUSED_IN_RELEASE size_t channels = image.getChannels();
-    assert(channels >= 3);
-    std::unique_ptr<uint8_t[]> dst(new uint8_t[w * h * sizeof(uint32_t)]);
-    uint8_t* d = dst.get();
-    for (size_t y = 0; y < h; ++y) {
-        for (size_t x = 0; x < w; ++x, d += sizeof(uint32_t)) {
-            auto src = image.get<float3>((uint32_t)x, (uint32_t)y);
-            uint32_t v = linearToRGB_10_11_11_REV(*src);
-            *reinterpret_cast<uint32_t*>(d) = v;
-        }
-    }
-    return dst;
-}
+//// Creates a 3-channel RGB_10_11_11_REV image from a f32 image.
+//// The source image can have three or more channels, but only the first three are honored.
+//inline std::unique_ptr<uint8_t[]> fromLinearToRGB_10_11_11_REV(const LinearImage& image) {
+//    size_t w = image.getWidth();
+//    size_t h = image.getHeight();
+//    size_t channels = image.getChannels();
+//    assert(channels >= 3);
+//    std::unique_ptr<uint8_t[]> dst(new uint8_t[w * h * sizeof(uint32_t)]);
+//    uint8_t* d = dst.get();
+//    for (size_t y = 0; y < h; ++y) {
+//        for (size_t x = 0; x < w; ++x, d += sizeof(uint32_t)) {
+//            auto src = image.get<float3>((uint32_t)x, (uint32_t)y);
+//            uint32_t v = linearToRGB_10_11_11_REV(*src);
+//            *reinterpret_cast<uint32_t*>(d) = v;
+//        }
+//    }
+//    return dst;
+//}
 
 // Creates a packed single-channel integer-based image from a floating-point image.
 // For example if T is uint8_t, then this performs a transformation from [0,1] to [0,255].
@@ -311,9 +308,9 @@ static LinearImage toLinearWithAlpha(size_t w, size_t h, size_t bpr,
 }
 
 // Constructs a 3-channel LinearImage from RGBM data.
-inline LinearImage toLinearFromRGBM( filament::math::float4 const* src, uint32_t w, uint32_t h) {
+inline LinearImage toLinearFromRGBM( MoYu::Vector4 const* src, uint32_t w, uint32_t h) {
     LinearImage result(w, h, 3);
-    auto dst = result.get< MoYu::Vector3>();
+    auto dst = result.get<MoYu::Vector3>();
     for (uint32_t row = 0; row < h; ++row) {
         for (uint32_t col = 0; col < w; ++col, ++src, ++dst) {
             *dst = RGBMtoLinear(*src);
@@ -327,7 +324,7 @@ inline LinearImage fromLinearToRGBM(const LinearImage& image) {
     const uint32_t w = image.getWidth(), h = image.getHeight();
     LinearImage result(w, h, 4);
     auto src = image.get< MoYu::Vector3>();
-    auto dst = result.get< filament::math::float4>();
+    auto dst = result.get<MoYu::Vector4>();
     for (uint32_t row = 0; row < h; ++row) {
         for (uint32_t col = 0; col < w; ++col, ++src, ++dst) {
             *dst = linearToRGBM(*src);

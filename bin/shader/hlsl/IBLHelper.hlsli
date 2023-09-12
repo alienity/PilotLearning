@@ -15,22 +15,30 @@ float2 hammersley(uint i, float numSamples)
     return float2(i / numSamples, bits / exp2(32));
 }
 
-float3 importanceSampleGGX( float2 Xi, float Roughness, float3 N )
-{
-    float a = Roughness * Roughness;
-    float Phi = 2 * PI * Xi.x;
-    float CosTheta = sqrt( (1 - Xi.y) / ( 1 + (a*a - 1) * Xi.y ) );
-    float SinTheta = sqrt( 1 - CosTheta * CosTheta );
-    float3 H;
-    H.x = SinTheta * cos( Phi );
-    H.y = SinTheta * sin( Phi );
-    H.z = CosTheta;
-    float3 UpVector = abs(N.z) < 0.999 ? float3(0,0,1) : float3(1,0,0);
-    float3 TangentX = normalize( cross( UpVector, N ) );
-    float3 TangentY = cross( N, TangentX );
-    // Tangent to world space
-    return TangentX * H.x + TangentY * H.y + N * H.z;
+float3 hemisphereImportanceSampleDggx(float2 u, float a) { // pdf = D(a) * cosTheta
+    const float phi = 2.0f * (float) F_PI * u.x;
+    // NOTE: (aa-1) == (a-1)(a+1) produces better fp accuracy
+    const float cosTheta2 = (1 - u.y) / (1 + (a + 1) * ((a - 1) * u.y));
+    const float cosTheta = std::sqrt(cosTheta2);
+    const float sinTheta = std::sqrt(1 - cosTheta2);
+    return { sinTheta * std::cos(phi), sinTheta * std::sin(phi), cosTheta };
 }
+
+static MoYu::Vector3 hemisphereCosSample(MoYu::Vector2 u) {  // pdf = cosTheta / F_PI;
+    const float phi = 2.0f * (float) F_PI * u.x;
+    const float cosTheta2 = 1 - u.y;
+    const float cosTheta = std::sqrt(cosTheta2);
+    const float sinTheta = std::sqrt(1 - cosTheta2);
+    return { sinTheta * std::cos(phi), sinTheta * std::sin(phi), cosTheta };
+}
+
+static MoYu::Vector3 hemisphereUniformSample(MoYu::Vector2 u) { // pdf = 1.0 / (2.0 * F_PI);
+    const float phi = 2.0f * (float) F_PI * u.x;
+    const float cosTheta = 1 - u.y;
+    const float sinTheta = std::sqrt(1 - cosTheta * cosTheta);
+    return { sinTheta * std::cos(phi), sinTheta * std::sin(phi), cosTheta };
+}
+
 
 float GDFG(float NoV, float NoL, float a)
 {

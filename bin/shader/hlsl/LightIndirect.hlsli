@@ -163,7 +163,7 @@ float2 hammersley(uint index) {
 float3 importanceSamplingNdfDggx(float2 u, float roughness) {
     // Importance sampling D_GGX
     float a2 = roughness * roughness;
-    float phi = 2.0 * PI * u.x;
+    float phi = 2.0 * F_PI * u.x;
     float cosTheta2 = (1.0 - u.y) / (1.0 + (a2 - 1.0) * u.y);
     float cosTheta = sqrt(cosTheta2);
     float sinTheta = sqrt(1.0 - cosTheta2);
@@ -171,7 +171,7 @@ float3 importanceSamplingNdfDggx(float2 u, float roughness) {
 }
 
 float3 hemisphereCosSample(float2 u) {
-    float phi = 2.0f * PI * u.x;
+    float phi = 2.0f * F_PI * u.x;
     float cosTheta2 = 1.0 - u.y;
     float cosTheta = sqrt(cosTheta2);
     float sinTheta = sqrt(1.0 - cosTheta2);
@@ -193,7 +193,7 @@ float3 importanceSamplingVNdfDggx(float2 u, float roughness, float3 v) {
     // sample point with polar coordinates (r, phi)
     float a = 1.0 / (1.0 + v.z);
     float r = sqrt(u.x);
-    float phi = (u.y < a) ? u.y / a * PI : PI + (u.y - a) / (1.0 - a) * PI;
+    float phi = (u.y < a) ? u.y / a * F_PI : F_PI + (u.y - a) / (1.0 - a) * F_PI;
     float p1 = r * cos(phi);
     float p2 = r * sin(phi) * ((u.y < a) ? 1.0 : v.z);
 
@@ -230,7 +230,7 @@ float3 isEvaluateSpecularIBL(const PixelParams pixel, const float3 n, const floa
 
     // Random rotation around N per pixel
     const float3 m = float3(0.06711056, 0.00583715, 52.9829189);
-    float a = 2.0 * PI * fract(m.z * fract(dot(gl_FragCoord.xy, m.xy)));
+    float a = 2.0 * F_PI * fract(m.z * fract(dot(gl_FragCoord.xy, m.xy)));
     float c = cos(a);
     float s = sin(a);
     mat3 R;
@@ -241,7 +241,7 @@ float3 isEvaluateSpecularIBL(const PixelParams pixel, const float3 n, const floa
 
     float roughness = pixel.roughness;
     float dim = float(textureSize(light_iblSpecular, 0).x);
-    float omegaP = (4.0 * PI) / (6.0 * dim * dim);
+    float omegaP = (4.0 * F_PI) / (6.0 * dim * dim);
 
     float3 indirectSpecular = float3(0.0);
     for (uint i = 0u; i < numSamples; i++) {
@@ -289,7 +289,7 @@ float3 isEvaluateDiffuseIBL(const PixelParams pixel, float3 n, float3 v) {
 
     // Random rotation around N per pixel
     const float3 m = float3(0.06711056, 0.00583715, 52.9829189);
-    float a = 2.0 * PI * fract(m.z * fract(dot(gl_FragCoord.xy, m.xy)));
+    float a = 2.0 * F_PI * fract(m.z * fract(dot(gl_FragCoord.xy, m.xy)));
     float c = cos(a);
     float s = sin(a);
     mat3 R;
@@ -299,7 +299,7 @@ float3 isEvaluateDiffuseIBL(const PixelParams pixel, float3 n, float3 v) {
     T *= R;
 
     float dim = float(textureSize(light_iblSpecular, 0).x);
-    float omegaP = (4.0 * PI) / (6.0 * dim * dim);
+    float omegaP = (4.0 * F_PI) / (6.0 * dim * dim);
 
     float3 indirectDiffuse = float3(0.0);
     for (uint i = 0u; i < numSamples; i++) {
@@ -314,7 +314,7 @@ float3 isEvaluateDiffuseIBL(const PixelParams pixel, float3 n, float3 v) {
         float NoL = saturate(dot(n, l));
         if (NoL > 0.0) {
             // PDF inverse (we must use D_GGX() here, which is used to generate samples)
-            float ipdf = PI / NoL;
+            float ipdf = F_PI / NoL;
             // we have to bias the mipLevel (+1) to help with very strong highlights
             float mipLevel = prefilteredImportanceSampling(ipdf, omegaP) + 1.0;
             float3 L = decodeDataForIBL(textureLod(light_iblSpecular, l, mipLevel));
@@ -322,7 +322,7 @@ float3 isEvaluateDiffuseIBL(const PixelParams pixel, float3 n, float3 v) {
         }
     }
 
-    return indirectDiffuse * invNumSamples; // we bake 1/PI here, which cancels out
+    return indirectDiffuse * invNumSamples; // we bake 1/F_PI here, which cancels out
 }
 
 void isEvaluateClearCoatIBL(const PixelParams pixel, float specularAO, inout float3 Fd, inout float3 Fr) {
@@ -419,7 +419,7 @@ void evaluateSubsurfaceIBL(const PixelParams pixel, const float3 diffuseIrradian
 #if defined(SHADING_MODEL_SUBSURFACE)
     float3 viewIndependent = diffuseIrradiance;
     float3 viewDependent = prefilteredRadiance(-shading_view, pixel.roughness, 1.0 + pixel.thickness);
-    float attenuation = (1.0 - pixel.thickness) / (2.0 * PI);
+    float attenuation = (1.0 - pixel.thickness) / (2.0 * F_PI);
     Fd += pixel.subsurfaceColor * (viewIndependent + viewDependent) * attenuation;
 #elif defined(SHADING_MODEL_CLOTH) && defined(MATERIAL_HAS_SUBSURFACE_COLOR)
     Fd *= saturate(pixel.subsurfaceColor + shading_NoV);
