@@ -5,48 +5,9 @@ cbuffer Constants : register(b0)
     int _IBLSpecularIndex;
     int _LDOutputIndex;
 
-    int _LodLevel;
+    uint _LodLevel;
     float _roughness;
 };
-
-void getCubemapFaceUV(float3 direction, out uint faceIndex, out float2 uv)
-{
-    float3 absDirection = abs(direction);
-
-    if (absDirection.x >= absDirection.y && absDirection.x >= absDirection.z)
-    {
-        if (direction.x > 0)
-            faceIndex = 0; // Positive X face
-        else
-            faceIndex = 1; // Negative X face
-
-        uv.x = -direction.z / absDirection.x;
-        uv.y = direction.y / absDirection.x;
-        uv = 0.5 * uv + 0.5;
-    }
-    else if (absDirection.y >= absDirection.x && absDirection.y >= absDirection.z)
-    {
-        if (direction.y > 0)
-            faceIndex = 2; // Positive Y face
-        else
-            faceIndex = 3; // Negative Y face
-
-        uv.x = direction.x / absDirection.y;
-        uv.y = direction.z / absDirection.y;
-        uv = 0.5 * uv + 0.5;
-    }
-    else
-    {
-        if (direction.z > 0)
-            faceIndex = 4; // Positive Z face
-        else
-            faceIndex = 5; // Negative Z face
-
-        uv.x = direction.x / absDirection.z;
-        uv.y = direction.y / absDirection.z;
-        uv = 0.5 * uv + 0.5;
-    }
-}
 
 SamplerState defaultSampler : register(s10);
 
@@ -66,13 +27,11 @@ void CSMain(uint3 Gid : SV_GroupID, uint3 GTid : SV_GroupThreadID, uint3 DTid : 
     
     float3 direction = normalize(float3(DTid.x, DTid.y, DTid.z));
 
-    float4 ldVal = LD(m_IBLSpecular, defaultSampler, direction, _roughness);
+    float4 ldVal = roughnessFilter(m_IBLSpecular, defaultSampler, 1200, direction, _roughness);
 
-    uint faceIndex;
-    float2 faceUV;
-    getCubemapFaceUV(direction, faceIndex, faceUV); 
+    CubemapAddress addr = getAddressForCubemap(direction); 
 
-    uint3 outputPos = uint3(faceUV.x * curWidth, DTid.y * curWidth, faceIndex);
+    uint3 outputPos = uint3(addr.st.x * curWidth, addr.st.y * curWidth, addr.face);
 
     m_OutputLDTex[outputPos] = ldVal;
 }

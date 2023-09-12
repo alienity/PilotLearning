@@ -546,6 +546,106 @@ Frustum ExtractPlanesDX(const float4x4 mvp)
 }
 
 //------------------------------------------------------------------------------
+// CubeMap Helper
+//------------------------------------------------------------------------------
+
+#define PX  0     // left            +----+
+#define NX  1     // right           | PY |
+#define PY  2     // bottom     +----+----+----+----+
+#define NY  3     // top        | NX | PZ | PX | NZ |
+#define PZ  4     // back       +----+----+----+----+
+#define NZ  5     // front           | NY |
+                  //                 +----+
+
+#define Face uint
+
+struct CubemapAddress
+{
+    Face face;
+    float2 st;
+};
+
+float3 getDirectionForCubemap(Face face, float2 xy)
+{
+    // map [0, dim] to [-1,1] with (-1,-1) at bottom left
+    float cx = xy.x;
+    float cy = 1 - xy.y;
+
+    float3 dir;
+    const float l = sqrt(cx * cx + cy * cy + 1);
+    switch (face)
+    {
+        case PX:  dir = float3(   1, cy, -cx); break;
+        case NX:  dir = float3(  -1, cy,  cx); break;
+        case PY:  dir = float3(  cx,  1, -cy); break;
+        case NY:  dir = float3(  cx, -1,  cy); break;
+        case PZ:  dir = float3(  cx, cy,   1); break;
+        case NZ:  dir = float3( -cx, cy,  -1); break;
+    }
+    return dir * (1.0f / l);
+}
+
+CubemapAddress getAddressForCubemap(float3 r)
+{
+    CubemapAddress addr;
+    float sc, tc, ma;
+    const float rx = abs(r.x);
+    const float ry = abs(r.y);
+    const float rz = abs(r.z);
+    if (rx >= ry && rx >= rz)
+    {
+        ma = 1.0f / rx;
+        if (r.x >= 0)
+        {
+            addr.face = PX;
+            sc = -r.z;
+            tc = -r.y;
+        }
+        else
+        {
+            addr.face = NX;
+            sc = r.z;
+            tc = -r.y;
+        }
+    }
+    else if (ry >= rx && ry >= rz)
+    {
+        ma = 1.0f / ry;
+        if (r.y >= 0)
+        {
+            addr.face = PY;
+            sc = r.x;
+            tc = r.z;
+        }
+        else
+        {
+            addr.face = NY;
+            sc = r.x;
+            tc = -r.z;
+        }
+    }
+    else
+    {
+        ma = 1.0f / rz;
+        if (r.z >= 0)
+        {
+            addr.face = PZ;
+            sc = r.x;
+            tc = -r.y;
+        }
+        else
+        {
+            addr.face = NZ;
+            sc = -r.x;
+            tc = -r.y;
+        }
+    }
+    // ma is guaranteed to be >= sc and tc
+    addr.st = float2((sc * ma + 1.0f) * 0.5f, (tc * ma + 1.0f) * 0.5f);
+    return addr;
+}
+
+//------------------------------------------------------------------------------
 // Material Transform
 //------------------------------------------------------------------------------
 

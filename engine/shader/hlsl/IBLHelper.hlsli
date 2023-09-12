@@ -258,35 +258,6 @@ float3 DFG(int2 dstSize, int2 inTexPos, bool multiscatter)
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 // pre-filter the environment, based on some input roughness that varies over each mipmap level 
 // of the pre-filter cubemap (from 0.0 to 1.0), and store the result in prefilteredColor.
 // 所以这里用一次Draw一个Cube来实现是最方便的，因为光栅化会自动对Cube的每个像素都进行处理
@@ -296,8 +267,6 @@ float3 DFG(int2 dstSize, int2 inTexPos, bool multiscatter)
 // lod 2 --- α 0.4
 // lod 3 --- α 0.6
 // lod 4 --- α 0.8
-
-
 /*
  *
  * Importance sampling GGX - Trowbridge-Reitz
@@ -409,100 +378,165 @@ float3 DFG(int2 dstSize, int2 inTexPos, bool multiscatter)
  *
  */
 
-float4 LD(TextureCube<float4> envMap, SamplerState enMapSampler, float3 localPos, float roughness)
+float4 roughnessFilter(TextureCube<float4> envMap, SamplerState enMapSampler, int maxNumSamples, float3 direction, float linearRoughness)
 {
-    float3 N = normalize(localPos);
-    float3 R = N;
-    float3 V = R;
+    float3 N = normalize(direction);
+    
+    const float3 upVector = abs(N.z) < 0.999 ? float3(0, 0, 1) : float3(1, 0, 0);
+    const float3 tangentX = normalize(cross(upVector, N));
+    const float3 tangentY = cross(N, tangentX);
+    float3x3 tangent2World = transpose(float3x3(tangentX, tangentY, N));
 
-    const uint SAMPLE_COUNT = 1024u;
-    float totalWeight = 0.0;   
+    float weight = 0;
+    // index of the sample to use
+    // our goal is to use maxNumSamples for which NoL is > 0
+    // to achieve this, we might have to try more samples than
+    // maxNumSamples
     float3 prefilteredColor = float3(0.0, 0.0, 0.0);     
-    for(uint i = 0u; i < SAMPLE_COUNT; ++i)
+    for (uint sampleIndex = 0u; sampleIndex < maxNumSamples; ++sampleIndex)
     {
-        float2 Xi = hammersley(i, SAMPLE_COUNT);
-        float3 H = importanceSampleGGX(Xi, roughness, N);
-        float3 L = 2.0f * dot(V, H) * H - V;
+        // get Hammersley distribution for the half-sphere
+        float2 Xi = hammersley(sampleIndex, maxNumSamples);
+        // Importance sampling GGX - Trowbridge-Reitz
+        float3 H = hemisphereImportanceSampleDggx(Xi, linearRoughness);
+        
+        const float NoH = H.z;
+        const float NoH2 = H.z * H.z;
+        const float NoL = 2 * NoH2 - 1;
+        float3 L = float3(2 * NoH * H.x, 2 * NoH * H.y, NoL);
 
-        float NdotL = max(dot(N, L), 0.0);
-        if(NdotL > 0.0)
+        L = mul(tangent2World, L);
+        
+        if (NoL > 0.0)
         {
-            prefilteredColor += envMap.Sample(enMapSampler, L).rgb * NdotL;
-            totalWeight      += NdotL;
+            prefilteredColor += envMap.Sample(enMapSampler, L).rgb * NoL;
+            weight += 1.0f / NoL;
         }
     }
-    prefilteredColor = prefilteredColor / totalWeight;
+    prefilteredColor = prefilteredColor * weight;
 
     return float4(prefilteredColor, 1.0);
 }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// 简单参考下glsl
 /*
-prefilterShader.use();
-prefilterShader.setInt("environmentMap", 0);
-prefilterShader.setMat4("projection", captureProjection);
-glActiveTexture(GL_TEXTURE0);
-glBindTexture(GL_TEXTURE_CUBE_MAP, envCubemap);
+ *
+ * Importance sampling
+ * -------------------
+ *
+ * Important samples are chosen to integrate cos(theta) over the hemisphere.
+ *
+ * All calculations are made in tangent space, with n = [0 0 1]
+ *
+ *                      l (important sample)
+ *                     /.
+ *                    / .
+ *                   /  .
+ *                  /   .
+ *         --------o----+-------> n (direction)
+ *                   cos(theta)
+ *                    = n•l
+ *
+ *
+ *  'direction' is given as an input parameter, and serves as tge z direction of the tangent space.
+ *
+ *  l = important_sample_cos()
+ *
+ *  n•l = [0 0 1] • l = l.z
+ *
+ *           n•l
+ *  pdf() = -----
+ *           PI
+ *
+ *
+ * Pre-filtered importance sampling
+ * --------------------------------
+ *
+ *  see: "Real-time Shading with Filtered Importance Sampling", Jaroslav Krivanek
+ *  see: "GPU-Based Importance Sampling, GPU Gems 3", Mark Colbert
+ *
+ *
+ *                   Ωs
+ *     lod = log4(K ----)
+ *                   Ωp
+ *
+ *     log4(K) = 1, works well for box filters
+ *     K = 4
+ *
+ *             1
+ *     Ωs = ---------, solid-angle of an important sample
+ *           N * pdf
+ *
+ *              4 PI
+ *     Ωp ~ --------------, solid-angle of a sample in the base cubemap
+ *           texel_count
+ *
+ *
+ * Evaluating the integral
+ * -----------------------
+ *
+ * We are trying to evaluate the following integral:
+ *
+ *                     /
+ *             Ed() =  | L(s) <n•l> ds
+ *                     /
+ *                     Ω
+ *
+ * For this, we're using importance sampling:
+ *
+ *                    1     L(l)
+ *            Ed() = --- ∑ ------- <n•l>
+ *                    N  l   pdf
+ *
+ *
+ *  It results that:
+ *
+ *             1           PI
+ *    Ed() = ---- ∑ L(l) ------  <n•l>
+ *            N   l        n•l
+ *
+ *
+ *  To avoid multiplying by 1/PI in the shader, we do it here, which simplifies to:
+ *
+ *  +----------------------+
+ *  |          1           |
+ *  |  Ed() = ---- ∑ L(l)  |
+ *  |          N   l       |
+ *  +----------------------+
+ *
+ */
 
-glBindFramebuffer(GL_FRAMEBUFFER, captureFBO);
-unsigned int maxMipLevels = 5;
-for (unsigned int mip = 0; mip < maxMipLevels; ++mip)
+float3 diffuseIrradiance(TextureCube<float4> envMap, SamplerState enMapSampler, int maxNumSamples, float3 direction)
 {
-    // reisze framebuffer according to mip-level size.
-    unsigned int mipWidth  = 128 * std::pow(0.5, mip);
-    unsigned int mipHeight = 128 * std::pow(0.5, mip);
-    glBindRenderbuffer(GL_RENDERBUFFER, captureRBO);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, mipWidth, mipHeight);
-    glViewport(0, 0, mipWidth, mipHeight);
-
-    float roughness = (float)mip / (float)(maxMipLevels - 1);
-    prefilterShader.setFloat("roughness", roughness);
-    for (unsigned int i = 0; i < 6; ++i)
+    float3 N = normalize(direction);
+    
+    float3 upVector = abs(N.z) < 0.999 ? float3(0, 0, 1) : float3(1, 0, 0);
+    float3 tangentX = normalize(cross(upVector, N));
+    float3 tangentY = cross(N, tangentX);
+    float3x3 tangent2World = transpose(float3x3(tangentX, tangentY, N));
+    
+    float3 prefilteredColor = float3(0.0, 0.0, 0.0);
+    for (uint sampleIndex = 0u; sampleIndex < maxNumSamples; ++sampleIndex)
     {
-        prefilterShader.setMat4("view", captureViews[i]);
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, 
-                               GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, prefilterMap, mip);
-
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        renderCube();
+        // get Hammersley distribution for the half-sphere
+        float2 u = hammersley(sampleIndex, maxNumSamples);
+        float3 L = hemisphereCosSample(u);
+        float3 N = float3(0, 0, 1);
+        float NoL = dot(N, L);
+        
+        L = mul(tangent2World, L);
+        
+        if (NoL > 0.0)
+        {
+            prefilteredColor += envMap.Sample(enMapSampler, L).rgb;
+        }
     }
+    
+    return prefilteredColor / maxNumSamples;
+
 }
-glBindFramebuffer(GL_FRAMEBUFFER, 0);   
-*/
+
 
 // 在d3d12中写入到指定mip中，当然如果直接用ComputeShader去做计算，就可以一次性计算出所有的mip，那我还是用cS做吧
 // https://www.gamedev.net/forums/topic/688777-render-to-specific-cubemap-mip/5343021/
 
-
-
-// 计算iradians map也可以使用上面的方法
-
-
-
-/*
-\begin{align*}
-    \alpha       &= perceptualRoughness^2                        \\
-    lod_{\alpha} &= \alpha^{\frac{1}{2}} = perceptualRoughness   \\
-\end{align*}
-*/
