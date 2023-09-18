@@ -80,6 +80,11 @@ namespace MoYu
         p_Device->OnEndFrame();
     }
 
+    void RendererManager::EditorTick(double deltaTime)
+    {
+        p_MoYuRenderer->LateTick(deltaTime);
+    }
+
     RHI::D3D12Device* RendererManager::GetDevice() { return p_Device.get(); }
 
     Renderer::Renderer(RendererInitParams renderer_init_info) :
@@ -95,5 +100,7 @@ namespace MoYu
     Renderer::~Renderer() {}
 
     void Renderer::OnRender(RHI::D3D12CommandContext* pContext) {}
+
+    void Renderer::LateTick(double deltaTime) {}
 
 } // namespace MoYu

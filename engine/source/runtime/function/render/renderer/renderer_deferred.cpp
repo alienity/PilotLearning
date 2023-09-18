@@ -76,9 +76,12 @@ namespace MoYu
 
         // Tool pass
         {
+            ToolPass::ToolPassInitInfo toolInitInfo;
+            toolInitInfo.m_ShaderCompiler = pCompiler;
+
             mToolPass = std::make_shared<ToolPass>();
             mToolPass->setCommonInfo(renderPassCommonInfo);
-            mToolPass->initialize({});
+            mToolPass->initialize(toolInitInfo);
         }
 
         // Cull pass
@@ -190,19 +193,6 @@ namespace MoYu
 
     void DeferredRenderer::OnRender(RHI::D3D12CommandContext* context)
     {
-
-        /**/
-        //=================================================================================
-        // 生成specular LD和DFG，生成diffuse radiance
-        ToolPass::ToolInputParameters _toolPassInput;
-        ToolPass::ToolOutputParameters _toolPassOutput;
-        mToolPass->editorUpdate(context, _toolPassInput, _toolPassOutput);
-
-
-
-        //=================================================================================
-        
-
 
 
         //IndirectCullPass::IndirectCullOutput indirectCullOutput;
@@ -344,6 +334,41 @@ namespace MoYu
         //DgmlBuilder Builder("Render Graph");
         //graph.ExportDgml(Builder);
         //Builder.SaveAs(std::filesystem::current_path() / "RenderGraph.dgml");
+
+    }
+
+    void DeferredRenderer::LateTick(double deltaTime)
+    {
+        RHI::D3D12CommandContext* pContext = pDevice->GetLinkedDevice()->GetCommandContext();
+
+        pDevice->OnBeginFrame();
+
+        pContext->Open();
+        {
+            {
+                // 生成specular LD和DFG，生成diffuse radiance
+                ToolPass::ToolInputParameters  _toolPassInput;
+                ToolPass::ToolOutputParameters _toolPassOutput;
+                mToolPass->editorUpdate(pContext, _toolPassInput, _toolPassOutput);
+            }
+
+
+        }
+        pContext->Close();
+
+        RHI::D3D12SyncHandle syncHandle = pContext->Execute(true);
+        syncHandle.WaitForCompletion();
+
+        {
+            // 保存DFG
+            mToolPass->lateUpdate();
+
+
+        }
+
+        pDevice->GetLinkedDevice()->Release(syncHandle);
+
+        pDevice->OnEndFrame();
 
     }
 

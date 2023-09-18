@@ -95,6 +95,9 @@ namespace MoYu
 
         // render one frame
         m_renderer_manager->Tick(deltaTimeMilisec);
+
+        // editor tick
+        m_renderer_manager->EditorTick(deltaTimeMilisec);
     }
 
     void RenderSystem::swapLogicRenderData() { m_swap_context.swapLogicRenderData(); }

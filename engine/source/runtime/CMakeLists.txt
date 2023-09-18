@@ -54,7 +54,7 @@ target_link_libraries(${TARGET_NAME} PUBLIC dxc)
 target_link_libraries(${TARGET_NAME} PUBLIC cityhash)
 # target_link_libraries(${TARGET_NAME} PUBLIC DirectX-Headers)
 target_link_libraries(${TARGET_NAME} PUBLIC DirectStorage)
-# target_link_libraries(${TARGET_NAME} PUBLIC DirectXTK12)
+target_link_libraries(${TARGET_NAME} PUBLIC DirectXTK12)
 target_link_libraries(${TARGET_NAME} PUBLIC d3d12.lib)
 target_link_libraries(${TARGET_NAME} PUBLIC DirectXTex)
 
@@ -121,6 +121,11 @@ target_include_directories(
 target_include_directories(
   ${TARGET_NAME} 
   PUBLIC $<BUILD_INTERFACE:${THIRD_PARTY_DIR}/DirectXTex/DirectXTex>
+)
+
+target_include_directories(
+  ${TARGET_NAME} 
+  PUBLIC $<BUILD_INTERFACE:${THIRD_PARTY_DIR}/DirectXTK12-sept2023>
 )
 
 # ---- Create an installable target ----

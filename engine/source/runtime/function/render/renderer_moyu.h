@@ -41,6 +41,7 @@ namespace MoYu
         void InitUIRenderer(WindowUI* window_ui);
         void PreparePassData(std::shared_ptr<RenderResource> render_resource);
         void Tick(double deltaTime);
+        void EditorTick(double deltaTime);
 
         RHI::D3D12Device* GetDevice();
         
@@ -84,6 +85,8 @@ namespace MoYu
         virtual ~Renderer();
 
         virtual void OnRender(RHI::D3D12CommandContext* pContext);
+
+        virtual void LateTick(double deltaTime);
 
         virtual void OnResize() {}
 

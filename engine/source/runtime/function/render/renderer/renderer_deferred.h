@@ -32,6 +32,8 @@ namespace MoYu
 
 		virtual void OnRender(RHI::D3D12CommandContext* Context);
 
+        virtual void LateTick(double deltaTime);
+
     public:
         uint32_t    backBufferWidth;
         uint32_t    backBufferHeight;
