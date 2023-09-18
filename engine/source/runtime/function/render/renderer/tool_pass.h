@@ -32,6 +32,11 @@ namespace MoYu
         void editorUpdate(RHI::D3D12CommandContext* context, ToolInputParameters& passInput, ToolOutputParameters& passOutput);
         void update(RHI::RenderGraph& graph, ToolInputParameters& passInput, ToolOutputParameters& passOutput);
         void destroy() override final;
+
+    private:
+        std::shared_ptr<RHI::D3D12Texture> p_DFG;
+        std::shared_ptr<RHI::D3D12Texture> p_LD;
+        std::shared_ptr<RHI::D3D12Texture> p_DiffuseRadians;
     };
 }
 

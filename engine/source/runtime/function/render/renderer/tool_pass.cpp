@@ -15,13 +15,25 @@ namespace MoYu
         //    m_Device->GetLinkedDevice()->GetDescriptorHeap<D3D12_SHADER_RESOURCE_VIEW_DESC>()->GetDescriptorHeap();
 
 
+
+
     }
 
     void ToolPass::editorUpdate(RHI::D3D12CommandContext* context, ToolInputParameters& passInput, ToolOutputParameters& passOutput)
     {
-        //std::shared_ptr<RHI::D3D12Texture> p_Radians = ;
-        //std::shared_ptr<RHI::D3D12Texture> p_DFG;
-        //std::shared_ptr<RHI::D3D12Texture> p_LD;
+        if (p_DFG == nullptr)
+        {
+            p_DFG = RHI::D3D12Texture::Create2D(m_Device->GetLinkedDevice(),
+                                                512,
+                                                512,
+                                                1,
+                                                DXGI_FORMAT::DXGI_FORMAT_R32G32B32A32_FLOAT,
+                                                RHI::RHISurfaceCreateFlags::RHISurfaceCreateRandomWrite,
+                                                1,
+                                                L"DFG");
+        }
+
+
 
 
 
@@ -65,6 +77,8 @@ namespace MoYu
 
     void ToolPass::destroy()
     {
+        p_DFG = nullptr;
+
 
     }
 

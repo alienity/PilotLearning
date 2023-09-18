@@ -194,7 +194,9 @@ namespace MoYu
         /**/
         //=================================================================================
         // 生成specular LD和DFG，生成diffuse radiance
-        //mToolPass->update();
+        ToolPass::ToolInputParameters _toolPassInput;
+        ToolPass::ToolOutputParameters _toolPassOutput;
+        mToolPass->editorUpdate(context, _toolPassInput, _toolPassOutput);
 
 
 
