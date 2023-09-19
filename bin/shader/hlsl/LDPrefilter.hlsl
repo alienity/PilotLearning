@@ -11,27 +11,27 @@ cbuffer Constants : register(b0)
 
 SamplerState defaultSampler : register(s10);
 
-[numthreads(8, 8, 8)]
+[numthreads(8, 8, 1)]
 void CSMain(uint3 Gid : SV_GroupID, uint3 GTid : SV_GroupThreadID, uint3 DTid : SV_DispatchThreadID) {
 
     TextureCube<float4> m_IBLSpecular = ResourceDescriptorHeap[_IBLSpecularIndex];
     RWTexture2DArray<float4> m_OutputLDTex = ResourceDescriptorHeap[_LDOutputIndex];
 
-    uint width, height;
-    m_IBLSpecular.GetDimensions(width, height);
+    uint width, height, elements;
+    m_OutputLDTex.GetDimensions(width, height, elements);
 
-    uint curWidth = width >> _LodLevel;
-
-    if (DTid.x >= curWidth || DTid.y >= curWidth || DTid.z >= curWidth)
+    if (DTid.x >= width || DTid.y >= height || DTid.z >= elements)
         return;
-    
-    float3 direction = normalize(float3(DTid.x, DTid.y, DTid.z));
+
+    float2 texXY = float2((DTid.x + 0.5f)/(float)width, (DTid.y + 0.5f)/(float)height) * 2.0f - 1.0f;
+    uint face = DTid.z;
+
+    float3 direction = getDirectionForCubemap(face, texXY);
+    direction = normalize(direction);
 
     float4 ldVal = roughnessFilter(m_IBLSpecular, defaultSampler, 1200, direction, _roughness);
 
-    CubemapAddress addr = getAddressForCubemap(direction); 
-
-    uint3 outputPos = uint3(addr.st.x * curWidth, addr.st.y * curWidth, addr.face);
+    uint3 outputPos = uint3(DTid.xyz);
 
     m_OutputLDTex[outputPos] = ldVal;
 }

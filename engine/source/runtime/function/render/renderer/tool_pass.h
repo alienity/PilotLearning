@@ -53,10 +53,14 @@ namespace MoYu
         //std::shared_ptr<RHI::D3D12PipelineState> p_RadiansPSO;
 
         bool isDFGGenerated = false;
-        bool isDFGSaved = false;
+        bool isDFGSaved     = false;
 
         bool isLDGenerated = false;
+        bool isLDSaved     = false;
+
         bool isRadiansGenerated = false;
+        bool isRadiansSaved     = false;
+
     };
 }
 

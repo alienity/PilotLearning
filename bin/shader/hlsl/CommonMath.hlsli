@@ -567,9 +567,9 @@ struct CubemapAddress
 
 float3 getDirectionForCubemap(Face face, float2 xy)
 {
-    // map [0, dim] to [-1,1] with (-1,-1) at bottom left
+    // map [0, dim] to [-1,1]
     float cx = xy.x;
-    float cy = 1 - xy.y;
+    float cy = -xy.y;
 
     float3 dir;
     const float l = sqrt(cx * cx + cy * cy + 1);

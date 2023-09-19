@@ -410,10 +410,10 @@ float4 roughnessFilter(TextureCube<float4> envMap, SamplerState enMapSampler, in
         if (NoL > 0.0)
         {
             prefilteredColor += envMap.Sample(enMapSampler, L).rgb * NoL;
-            weight += 1.0f / NoL;
+            weight += NoL;
         }
     }
-    prefilteredColor = prefilteredColor * weight;
+    prefilteredColor = prefilteredColor / weight;
 
     return float4(prefilteredColor, 1.0);
 }
