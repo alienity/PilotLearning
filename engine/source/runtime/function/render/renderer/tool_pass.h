@@ -62,5 +62,12 @@ namespace MoYu
         bool isRadiansSaved     = false;
 
     };
+
+    namespace Tools
+    {
+        void ReadCubemapToFile(ID3D12Device* device, ID3D12GraphicsCommandList* commandList, ID3D12Resource* cubemap, const wchar_t* filename);
+
+
+    }
 }
 
