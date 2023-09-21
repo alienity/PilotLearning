@@ -207,7 +207,7 @@ namespace MoYu
         }
         if (!isLDSaved)
         {
-            isLDSaved = !isLDSaved;
+            //isLDSaved = !isLDSaved;
 
             std::filesystem::path m_AssertRootPath = g_runtime_global_context.m_config_manager->getAssetFolder();
 
@@ -384,6 +384,8 @@ namespace MoYu
             UINT faceCount = desc.DepthOrArraySize;
             UINT mipLevels = desc.MipLevels;
 
+            UINT baseOffset = 0;
+
             // Copy the cubemap to the staging resource
             for (UINT i = 0; i < faceCount; i++)
             {
@@ -394,10 +396,20 @@ namespace MoYu
                     srcLoc.Type                        = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
                     srcLoc.SubresourceIndex = D3D12CalcSubresource(j, i, 0, desc.MipLevels, desc.DepthOrArraySize);
 
-                    
+                    UINT64 dstBlockSize = 0;
+
                     D3D12_PLACED_SUBRESOURCE_FOOTPRINT bufferFootprint;
-                    device->GetCopyableFootprints(
-                        &desc, srcLoc.SubresourceIndex, 1, 0, &bufferFootprint, nullptr, nullptr, nullptr);
+                    device->GetCopyableFootprints(&desc,
+                                                  srcLoc.SubresourceIndex,
+                                                  1,
+                                                  baseOffset,
+                                                  &bufferFootprint,
+                                                  nullptr,
+                                                  nullptr,
+                                                  &dstBlockSize);
+
+                    baseOffset += dstBlockSize;
+                    
 
                     D3D12_TEXTURE_COPY_LOCATION dstLoc = {};
                     dstLoc.pResource                   = stagingResource.Get();
@@ -418,16 +430,21 @@ namespace MoYu
             // Map the staging resource and write it to a file
             DirectX::ScratchImage outScratchImage;
             outScratchImage.InitializeCube(desc.Format, desc.Width, desc.Height, 1, desc.MipLevels);
-            void* pMappedMemory = outScratchImage.GetPixels();
-            D3D12_RANGE readRange  = {0, static_cast<SIZE_T>(outScratchImage.GetPixelsSize())};
-            stagingResource->Map(0, &readRange, &pMappedMemory);
+            uint8_t*    pMappedMemory = outScratchImage.GetPixels();
+            D3D12_RANGE readRange     = {0, outScratchImage.GetPixelsSize()};
+
+            char* pReadbackBufferData {};
+            stagingResource->Map(0, &readRange, reinterpret_cast<void**>(&pReadbackBufferData));
             
+            memcpy(pMappedMemory, pReadbackBufferData, outScratchImage.GetPixelsSize());
+
             const DirectX::Image* images = outScratchImage.GetImages();
             UINT imageCount = outScratchImage.GetImageCount();
 
             DirectX::TexMetadata mdata = outScratchImage.GetMetadata();
 
-            DirectX::SaveToDDSFile(images, imageCount, mdata, DirectX::DDS_FLAGS::DDS_FLAGS_NONE, filename);
+            HRESULT hr = DirectX::SaveToDDSFile(images, imageCount, mdata, DirectX::DDS_FLAGS::DDS_FLAGS_NONE, filename);
+            
             stagingResource->Unmap(0, nullptr);
             
 
