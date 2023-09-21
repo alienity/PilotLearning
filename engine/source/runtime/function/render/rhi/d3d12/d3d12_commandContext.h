@@ -43,6 +43,8 @@ namespace RHI
         D3D12CommandContext() noexcept = default;
         explicit D3D12CommandContext(D3D12LinkedDevice* Parent, RHID3D12CommandQueueType Type, D3D12_COMMAND_LIST_TYPE CommandListType);
 
+        ~D3D12CommandContext();
+
         D3D12CommandContext(D3D12CommandContext&&) noexcept = default;
         D3D12CommandContext& operator=(D3D12CommandContext&&) noexcept = default;
 
@@ -57,6 +59,10 @@ namespace RHI
 
         D3D12GraphicsContext* GetGraphicsContext();
         D3D12ComputeContext* GetComputeContext();
+
+        static std::shared_ptr<D3D12CommandContext> Begin(D3D12LinkedDevice* Parent, RHID3D12CommandQueueType Type);
+        // Close and Execute combine to one function
+        D3D12SyncHandle Finish(bool WaitForCompletion = true);
 
         void Open();
         void Close();

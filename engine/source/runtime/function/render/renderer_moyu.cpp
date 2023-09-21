@@ -62,27 +62,29 @@ namespace MoYu
 
     void RendererManager::Tick(double deltaTime)
     {
-        RHI::D3D12CommandContext* pContext = p_Device->GetLinkedDevice()->GetCommandContext();
-
         p_Device->OnBeginFrame();
-
-        pContext->Open();
         {
-            p_MoYuRenderer->OnRender(pContext);
+            p_MoYuRenderer->PreRender(deltaTime);
         }
-        pContext->Close();
+        {
+            RHI::D3D12CommandContext* pContext = p_Device->GetLinkedDevice()->GetCommandContext();
 
-        RendererPresent mPresent(pContext);
-        p_SwapChain->Present(true, mPresent);
+            pContext->Open();
+            {
+                p_MoYuRenderer->OnRender(pContext);
+            }
+            pContext->Close();
 
+            RendererPresent mPresent(pContext);
+            p_SwapChain->Present(true, mPresent);
+
+        }
+        {
+            p_MoYuRenderer->PostRender(deltaTime);
+        }
         p_Device->GetLinkedDevice()->Release(p_SwapChain->GetSyncHandle());
 
         p_Device->OnEndFrame();
-    }
-
-    void RendererManager::EditorTick(double deltaTime)
-    {
-        p_MoYuRenderer->LateTick(deltaTime);
     }
 
     RHI::D3D12Device* RendererManager::GetDevice() { return p_Device.get(); }
@@ -101,6 +103,7 @@ namespace MoYu
 
     void Renderer::OnRender(RHI::D3D12CommandContext* pContext) {}
 
-    void Renderer::LateTick(double deltaTime) {}
+    void Renderer::PreRender(double deltaTime) {}
+    void Renderer::PostRender(double deltaTime) {}
 
 } // namespace MoYu

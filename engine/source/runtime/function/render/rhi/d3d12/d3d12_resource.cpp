@@ -86,6 +86,10 @@ namespace RHI
             return ResourceState;
         }
 
+        // assume all subresources have the same state
+        if (Subresource == D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES)
+            return SubresourceStates[0];
+
         return SubresourceStates[Subresource];
     }
 

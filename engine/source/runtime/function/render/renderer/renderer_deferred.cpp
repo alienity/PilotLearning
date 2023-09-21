@@ -337,38 +337,18 @@ namespace MoYu
 
     }
 
-    void DeferredRenderer::LateTick(double deltaTime)
+    void DeferredRenderer::PreRender(double deltaTime)
     {
-        RHI::D3D12CommandContext* pContext = pDevice->GetLinkedDevice()->GetCommandContext();
-
-        pDevice->OnBeginFrame();
-
-        pContext->Open();
         {
-            {
-                // 生成specular LD和DFG，生成diffuse radiance
-                ToolPass::ToolInputParameters  _toolPassInput;
-                ToolPass::ToolOutputParameters _toolPassOutput;
-                mToolPass->editorUpdate(pContext, _toolPassInput, _toolPassOutput);
-            }
-
-
+            // 生成specular LD和DFG，生成diffuse radiance
+            ToolPass::ToolInputParameters  _toolPassInput;
+            ToolPass::ToolOutputParameters _toolPassOutput;
+            mToolPass->preUpdate(_toolPassInput, _toolPassOutput);
         }
-        pContext->Close();
+    }
 
-        RHI::D3D12SyncHandle syncHandle = pContext->Execute(true);
-        syncHandle.WaitForCompletion();
-
-        {
-            // 保存DFG
-            mToolPass->lateUpdate();
-
-
-        }
-
-        pDevice->GetLinkedDevice()->Release(syncHandle);
-
-        pDevice->OnEndFrame();
+    void DeferredRenderer::PostRender(double deltaTime)
+    {
 
     }
 

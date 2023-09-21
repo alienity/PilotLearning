@@ -30,10 +30,12 @@ namespace MoYu
         ~ToolPass() { destroy(); }
 
         void initialize(const ToolPassInitInfo& init_info);
-        void editorUpdate(RHI::D3D12CommandContext* context, ToolInputParameters& passInput, ToolOutputParameters& passOutput);
         void update(RHI::RenderGraph& graph, ToolInputParameters& passInput, ToolOutputParameters& passOutput);
-        void lateUpdate();
         void destroy() override final;
+
+        void preUpdate(ToolInputParameters& passInput, ToolOutputParameters& passOutput);
+        void preUpdate1(ToolInputParameters& passInput, ToolOutputParameters& passOutput);
+        void preUpdate2(ToolInputParameters& passInput, ToolOutputParameters& passOutput);
 
     private:
         std::shared_ptr<RHI::D3D12Texture> p_DFG;
@@ -65,7 +67,7 @@ namespace MoYu
 
     namespace Tools
     {
-        void ReadCubemapToFile(ID3D12Device* device, ID3D12GraphicsCommandList* commandList, ID3D12Resource* cubemap, const wchar_t* filename);
+        void ReadCubemapToFile(RHI::D3D12Device* device, RHI::D3D12Texture* cubemap, const wchar_t* filename);
 
 
     }

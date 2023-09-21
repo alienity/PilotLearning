@@ -73,6 +73,8 @@ namespace RHI
 
         void Close();
 
+        bool IsRecording() { return CommandListState == D3D12CommandListState::Recording; }
+
         D3D12_RESOURCE_STATES GetResourceStateTracked(D3D12Resource* Resource,
                                                       UINT Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES);
 

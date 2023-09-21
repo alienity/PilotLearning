@@ -48,6 +48,11 @@ namespace RHI
         m_pDynamicSamplerDescriptorHeap = std::make_shared<DynamicDescriptorHeap>(Parent, this, Parent->GetSamplerDescriptorHeap());
     }
 
+    D3D12CommandContext::~D3D12CommandContext()
+    {
+        assert(!m_CommandListHandle.IsRecording());
+    }
+
 	D3D12CommandQueue* D3D12CommandContext::GetCommandQueue() const noexcept
     {
         return GetParentLinkedDevice()->GetCommandQueue(m_Type);
@@ -77,6 +82,20 @@ namespace RHI
     D3D12ComputeContext* D3D12CommandContext::GetComputeContext()
     {
         return reinterpret_cast<D3D12ComputeContext*>(this);
+    }
+
+    std::shared_ptr<D3D12CommandContext> D3D12CommandContext::Begin(D3D12LinkedDevice* Parent, RHID3D12CommandQueueType Type)
+    {
+        std::shared_ptr<D3D12CommandContext> _CommandContext = std::make_shared<D3D12CommandContext>(Parent, Type, D3D12_COMMAND_LIST_TYPE_DIRECT);
+        _CommandContext->Open();
+        return _CommandContext;
+    }
+
+    D3D12SyncHandle D3D12CommandContext::Finish(bool WaitForCompletion)
+    {
+        this->Close();
+        D3D12SyncHandle _syncHandle = this->Execute(WaitForCompletion);
+        return _syncHandle;
     }
 
     void D3D12CommandContext::Open()
@@ -120,6 +139,7 @@ namespace RHI
         // Release temp resourcce
         //m_CpuLinearAllocator.Version(SyncHandle);
         m_GraphicsMemory->Commit(SyncHandle);
+
         return SyncHandle;
     }
 

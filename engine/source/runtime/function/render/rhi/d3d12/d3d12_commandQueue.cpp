@@ -49,8 +49,7 @@ namespace RHI
         }
     }
 
-    D3D12SyncHandle D3D12CommandQueue::ExecuteCommandLists(std::vector<D3D12CommandListHandle*> CommandListHandles,
-                                                           bool                                 WaitForCompletion)
+    D3D12SyncHandle D3D12CommandQueue::ExecuteCommandLists(std::vector<D3D12CommandListHandle*> CommandListHandles, bool WaitForCompletion)
     {
         UINT               NumCommandLists       = 0;
         UINT               NumBarrierCommandList = 0;

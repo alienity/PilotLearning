@@ -107,9 +107,24 @@ namespace MoYu
 
 
     }
-
-    void ToolPass::editorUpdate(RHI::D3D12CommandContext* context, ToolInputParameters& passInput, ToolOutputParameters& passOutput)
+    
+    void ToolPass::update(RHI::RenderGraph& graph, ToolInputParameters& passInput, ToolOutputParameters& passOutput)
     {
+
+
+    }
+
+    void ToolPass::preUpdate(ToolInputParameters& passInput, ToolOutputParameters& passOutput)
+    {
+        this->preUpdate1(passInput, passOutput);
+        this->preUpdate2(passInput, passOutput);
+    }
+
+    void ToolPass::preUpdate1(ToolInputParameters& passInput, ToolOutputParameters& passOutput)
+    {
+        std::shared_ptr<RHI::D3D12CommandContext> context =
+            RHI::D3D12CommandContext::Begin(m_Device->GetLinkedDevice(), RHI::RHID3D12CommandQueueType::Direct);
+
         if (!isDFGGenerated)
         {
             isDFGGenerated = !isDFGGenerated;
@@ -130,7 +145,7 @@ namespace MoYu
 
         if (!isLDGenerated)
         {
-            isLDGenerated = !isLDGenerated;
+            //isLDGenerated = !isLDGenerated;
 
             std::shared_ptr<RHI::D3D12Texture> p_IBLSpecular = m_render_scene->m_skybox_map.m_skybox_specular_map;
 
@@ -170,16 +185,10 @@ namespace MoYu
 
         }
 
-
+        context->Finish(true);
     }
 
-    void ToolPass::update(RHI::RenderGraph& graph, ToolInputParameters& passInput, ToolOutputParameters& passOutput)
-    {
-
-
-    }
-
-    void ToolPass::lateUpdate()
+    void ToolPass::preUpdate2(ToolInputParameters& passInput, ToolOutputParameters& passOutput)
     {
         if (!isDFGSaved)
         {
@@ -196,23 +205,20 @@ namespace MoYu
             DirectX::SaveDDSTextureToFile(
                 _commandQueue->GetCommandQueue(), p_DFG->GetResource(), m_DFGPath.c_str(), m_ResState, m_ResState);
         }
-
         if (!isLDSaved)
         {
             isLDSaved = !isLDSaved;
-
-            RHI::D3D12CommandQueue* _commandQueue = m_Device->GetLinkedDevice()->GetCommandQueue(RHI::RHID3D12CommandQueueType::Direct);
 
             std::filesystem::path m_AssertRootPath = g_runtime_global_context.m_config_manager->getAssetFolder();
 
             std::filesystem::path m_LDPath = m_AssertRootPath.append(L"texture\\global\\LD.dds");
 
-            D3D12_RESOURCE_STATES m_ResState = p_LD->GetResourceState().GetSubresourceState(0);
+            Tools::ReadCubemapToFile(m_Device, p_LD.get(), m_LDPath.c_str());
 
             // ------------------
             // https://learn.microsoft.com/en-us/windows/win32/direct3d12/readback-data-using-heaps
             // ------------------
-
+            /*
             ID3D12CommandQueue * commandQueue = _commandQueue->GetCommandQueue();
 
             ID3D12Resource* pSource = p_LD->GetResource();
@@ -287,18 +293,7 @@ namespace MoYu
             D3D12_PLACED_SUBRESOURCE_FOOTPRINT bufferFootprint;
             device->GetCopyableFootprints(&desc, 0, 1, 0, &bufferFootprint, nullptr, nullptr, nullptr);
 
-
-
-
             commandList->CopyResource(pStaging.Get(), copySource.Get());
-
-
-
-
-
-
-
-
 
             hr = commandList->Close();
 
@@ -326,7 +321,7 @@ namespace MoYu
             const DirectX::Image* image = outScratchImage.GetImage(0, 0, 0);
 
             DirectX::SaveToDDSFile(*image, DirectX::DDS_FLAGS::DDS_FLAGS_NONE, m_LDPath.c_str());
-
+            */
         }
     }
 
@@ -345,77 +340,96 @@ namespace MoYu
 
     namespace Tools
     {
-        void ReadCubemapToFile(ID3D12Device* device, ID3D12CommandQueue* commandQueue, ID3D12GraphicsCommandList* commandList, ID3D12Resource* cubemap, const wchar_t* filename)
+        void ReadCubemapToFile(RHI::D3D12Device* pDevice, RHI::D3D12Texture* pCubemap, const wchar_t* filename)
         {
-            // Create a fence
-            Microsoft::WRL::ComPtr<ID3D12Fence> fence;
-            device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_GRAPHICS_PPV_ARGS(fence.GetAddressOf()));
-            fence->SetName(L"ScreenGrab");
+            std::shared_ptr<RHI::D3D12CommandContext> context =
+                RHI::D3D12CommandContext::Begin(pDevice->GetLinkedDevice(), RHI::RHID3D12CommandQueueType::Direct);
+
+            ID3D12Device* device = pDevice->GetD3D12Device();
+
+            RHI::CResourceState state = pCubemap->GetResourceState();
+
+            context->TransitionBarrier(pCubemap, D3D12_RESOURCE_STATE_COPY_SOURCE);
+
+
+            ID3D12Resource* cubemap = pCubemap->GetResource();
+
+            UINT numSubresources = pCubemap->GetNumSubresources();
 
             // Create a staging resource for the cubemap
             D3D12_RESOURCE_DESC desc = cubemap->GetDesc();
-            desc.Flags               = D3D12_RESOURCE_FLAG_NONE;
-            desc.SampleDesc.Count    = 1;
-            desc.SampleDesc.Quality  = 0;
-            desc.Dimension           = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
-            //desc.Width *= 6;
-            //desc.MipLevels = 1;
-            //desc.Format    = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
+            
+            UINT64 totalResourceSize = 0;
+            UINT64 fpRowPitch[128]   = {0};
+            UINT   fpRowCount[128]   = {0};
+            // Get the rowcount, pitch and size of the top mip
+            device->GetCopyableFootprints(
+                &desc, 0, numSubresources, 0, nullptr, fpRowCount, fpRowPitch, &totalResourceSize);
+
+            // Round up the srcPitch to multiples of 256
+            const UINT64 dstRowPitch = (totalResourceSize + 255) & ~0xFFu;
+
+            D3D12_RESOURCE_DESC bufferDesc = CD3DX12_RESOURCE_DESC::Buffer(dstRowPitch);
+
+            D3D12_HEAP_PROPERTIES readbackHeapProperties {CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_READBACK)};
 
             Microsoft::WRL::ComPtr<ID3D12Resource> stagingResource;
-            device->CreateCommittedResource(&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_READBACK),
+            device->CreateCommittedResource(&readbackHeapProperties,
                                             D3D12_HEAP_FLAG_NONE,
-                                            &desc,
+                                            &bufferDesc,
                                             D3D12_RESOURCE_STATE_COPY_DEST,
                                             nullptr,
                                             IID_PPV_ARGS(&stagingResource));
 
+            UINT faceCount = desc.DepthOrArraySize;
+            UINT mipLevels = desc.MipLevels;
+
             // Copy the cubemap to the staging resource
-            for (UINT i = 0; i < 6; i++)
+            for (UINT i = 0; i < faceCount; i++)
             {
-                D3D12_TEXTURE_COPY_LOCATION srcLoc = {};
-                srcLoc.pResource                   = cubemap;
-                srcLoc.Type                        = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
-                srcLoc.SubresourceIndex            = D3D12CalcSubresource(i, 0, 0, cubemap->GetDesc().MipLevels, 6);
+                for (UINT j = 0; j < mipLevels; j++)
+                {
+                    D3D12_TEXTURE_COPY_LOCATION srcLoc = {};
+                    srcLoc.pResource                   = cubemap;
+                    srcLoc.Type                        = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
+                    srcLoc.SubresourceIndex = D3D12CalcSubresource(j, i, 0, desc.MipLevels, desc.DepthOrArraySize);
 
-                D3D12_TEXTURE_COPY_LOCATION dstLoc      = {};
-                dstLoc.pResource                        = stagingResource.Get();
-                dstLoc.Type                             = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
-                dstLoc.PlacedFootprint.Offset           = i * cubemap->GetDesc().Width * cubemap->GetDesc().Height * 4;
-                dstLoc.PlacedFootprint.Footprint.Format = desc.Format;
-                dstLoc.PlacedFootprint.Footprint.Width  = cubemap->GetDesc().Width;
-                dstLoc.PlacedFootprint.Footprint.Height = cubemap->GetDesc().Height;
-                dstLoc.PlacedFootprint.Footprint.Depth  = 1;
-                dstLoc.PlacedFootprint.Footprint.RowPitch = cubemap->GetDesc().Width * sizeof(float) * 4;
+                    
+                    D3D12_PLACED_SUBRESOURCE_FOOTPRINT bufferFootprint;
+                    device->GetCopyableFootprints(
+                        &desc, srcLoc.SubresourceIndex, 1, 0, &bufferFootprint, nullptr, nullptr, nullptr);
 
-                commandList->CopyTextureRegion(&dstLoc, 0, 0, 0, &srcLoc, nullptr);
+                    D3D12_TEXTURE_COPY_LOCATION dstLoc = {};
+                    dstLoc.pResource                   = stagingResource.Get();
+                    dstLoc.Type                        = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
+                    dstLoc.PlacedFootprint             = bufferFootprint;
+
+                    context->GetGraphicsCommandList()->CopyTextureRegion(&dstLoc, 0, 0, 0, &srcLoc, nullptr);
+                }
             }
 
-            // Submit the command list and wait for it to complete
-            commandList->Close();
+            //context->GetGraphicsCommandList()->CopyBufferRegion(
+            //    stagingResource.Get(), 0, cubemap, 0, totalResourceSize);
 
-            // Execute the command list
-            commandQueue->ExecuteCommandLists(1, CommandListCast(&commandList));
+            context->TransitionBarrier(pCubemap, state.GetSubresourceState(0));
 
-            // Signal the fence
-            commandQueue->Signal(fence.Get(), 1);
-
-            ID3D12CommandList* commandLists[] = {commandList};
-            commandQueue->ExecuteCommandLists(_countof(commandLists), commandLists);
-
-            while (fence->GetCompletedValue() < 1)
-                SwitchToThread();
+            context->Finish(true);
 
             // Map the staging resource and write it to a file
             DirectX::ScratchImage outScratchImage;
             outScratchImage.InitializeCube(desc.Format, desc.Width, desc.Height, 1, desc.MipLevels);
             void* pMappedMemory = outScratchImage.GetPixels();
             D3D12_RANGE readRange  = {0, static_cast<SIZE_T>(outScratchImage.GetPixelsSize())};
-            D3D12_RANGE writeRange = {0, 0};
             stagingResource->Map(0, &readRange, &pMappedMemory);
-            const DirectX::Image* image = outScratchImage.GetImage(0, 0, 0);
-            DirectX::SaveToDDSFile(*image, DirectX::DDS_FLAGS::DDS_FLAGS_NONE, filename);
+            
+            const DirectX::Image* images = outScratchImage.GetImages();
+            UINT imageCount = outScratchImage.GetImageCount();
+
+            DirectX::TexMetadata mdata = outScratchImage.GetMetadata();
+
+            DirectX::SaveToDDSFile(images, imageCount, mdata, DirectX::DDS_FLAGS::DDS_FLAGS_NONE, filename);
             stagingResource->Unmap(0, nullptr);
+            
 
         }
 
