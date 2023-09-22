@@ -303,6 +303,12 @@ namespace MoYu
         std::shared_ptr<RHI::D3D12Texture> m_skybox_specular_map;
     };
 
+    struct IBLConfigs
+    {
+        std::shared_ptr<RHI::D3D12Texture> m_dfg;
+        std::shared_ptr<RHI::D3D12Texture> m_ld;
+    };
+
     //========================================================================
     // Render Desc
     //========================================================================

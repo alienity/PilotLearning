@@ -37,6 +37,15 @@ namespace MoYu
         const std::string& global_rendering_res_url = config_manager->getGlobalRenderingResUrl();
         asset_manager->loadAsset(global_rendering_res_url, global_rendering_res);
 
+        //********************************************************************
+        /*
+        global_rendering_res.m_ibl_map.m_dfg_map = "asset/texture/global/DFG.dds";
+        global_rendering_res.m_ibl_map.m_ld_map = "asset/texture/global/LD.dds";
+
+        asset_manager->saveAsset(global_rendering_res, global_rendering_res_url);
+        */
+        //********************************************************************
+
         // initialize render manager
         RHI::DeviceOptions deviceOptions              = {};
 #ifdef _DEBUG

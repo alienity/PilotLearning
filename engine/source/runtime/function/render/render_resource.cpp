@@ -112,7 +112,7 @@ namespace MoYu
         std::shared_ptr<MoYu::MoYuScratchImage> specular_pos_z_map = loadImage(skybox_specular_map.m_positive_z_map);
         std::shared_ptr<MoYu::MoYuScratchImage> specular_neg_z_map = loadImage(skybox_specular_map.m_negative_z_map);
 
-        // create IBL textures, take care of the texture order
+        // create skybox textures, take care of the texture order
         std::array<std::shared_ptr<MoYu::MoYuScratchImage>, 6> irradiance_maps = {irradiace_pos_x_map,
                                                                                   irradiace_neg_x_map,
                                                                                   irradiace_pos_z_map,
@@ -126,6 +126,11 @@ namespace MoYu
                                                                                   specular_pos_y_map,
                                                                                   specular_neg_y_map};
 
+        // load dfg texture
+        std::shared_ptr<MoYu::MoYuScratchImage> _dfg_map = loadImage(level_resource_desc.m_ibl_map.m_dfg_map);
+        std::shared_ptr<MoYu::MoYuScratchImage> _ld_map  = loadImage(level_resource_desc.m_ibl_map.m_ld_map);
+
+
         startUploadBatch();
         {
             // create irradiance cubemap
@@ -135,6 +140,15 @@ namespace MoYu
             // create specular cubemap
             auto specular_tex = createCubeMap(specular_maps, DXGI_FORMAT::DXGI_FORMAT_R32G32B32A32_FLOAT, false, false, false);
             m_render_scene->m_skybox_map.m_skybox_specular_map = specular_tex;
+
+            // create ibl dfg
+            auto dfg_tex = createTex(_dfg_map);
+            m_render_scene->m_ibl_map.m_dfg = dfg_tex;
+
+            // create ibl ld
+            auto ld_tex = createTex(_ld_map);
+            m_render_scene->m_ibl_map.m_ld = ld_tex;
+
         }
         endUploadBatch();
 
@@ -187,6 +201,17 @@ namespace MoYu
         _meshUniform.totalMeshCount = render_scene->m_mesh_renderers.size();
 
         _frameUniforms->meshUniform = _meshUniform;
+
+        // IBL Uniform
+        HLSL::IBLUniform _iblUniform;
+        //_iblUniform.iblSH
+        _iblUniform.iblRoughnessOneLevel = 4;
+        _iblUniform.dfg_lut_srv_index    = render_scene->m_ibl_map.m_dfg->GetDefaultSRV()->GetIndex();
+        _iblUniform.ld_lut_srv_index     = render_scene->m_ibl_map.m_ld->GetDefaultSRV()->GetIndex();
+        _iblUniform.radians_srv_index    = 4;
+
+
+        _frameUniforms->iblUniform = _iblUniform;
 
         HLSL::DirectionalLightStruct _directionalLightStruct;
         _directionalLightStruct.lightColorIntensity =
@@ -612,6 +637,133 @@ namespace MoYu
             this->endUploadBatch();
 
         return cube_tex;
+    }
+
+    std::shared_ptr<RHI::D3D12Texture> RenderResource::createTex(std::shared_ptr<MoYu::MoYuScratchImage> scratch_image, bool batch)
+    {
+        if (batch)
+            this->startUploadBatch();
+
+        DirectX::ScratchImage& _sratchimage = *scratch_image;
+
+        DirectX::TexMetadata _texMetaData = _sratchimage.GetMetadata();
+
+        std::shared_ptr<RHI::D3D12Texture> _rhiTex = nullptr;
+
+        if (_texMetaData.dimension == DirectX::TEX_DIMENSION::TEX_DIMENSION_TEXTURE2D)
+        {
+            if (_texMetaData.arraySize == 1)
+            {
+                _rhiTex = RHI::D3D12Texture::Create2D(m_Device->GetLinkedDevice(),
+                                                      _texMetaData.width,
+                                                      _texMetaData.height,
+                                                      _texMetaData.mipLevels,
+                                                      _texMetaData.format,
+                                                      RHI::RHISurfaceCreateFlags::RHISurfaceCreateMipmap);
+
+                m_ResourceUpload->Transition(_rhiTex->GetResource(), D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COPY_DEST);
+                
+                int subresourceNumber = _texMetaData.mipLevels;
+
+                D3D12_SUBRESOURCE_DATA resourceInitDatas[12];
+                for (size_t i = 0; i < subresourceNumber; i++)
+                {
+                    const DirectX::Image* _image = _sratchimage.GetImage(i, 0, 0);
+                    D3D12_SUBRESOURCE_DATA _resourceInitData;
+                    _resourceInitData.pData = _image->pixels;
+                    _resourceInitData.RowPitch = _image->rowPitch;
+                    _resourceInitData.SlicePitch = _image->slicePitch;
+                    resourceInitDatas[i] = _resourceInitData;
+                }
+
+                m_ResourceUpload->Upload(_rhiTex->GetResource(), 0, resourceInitDatas, subresourceNumber);
+
+                m_ResourceUpload->Transition(_rhiTex->GetResource(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_COMMON);
+            }
+            else
+            {
+                if (_texMetaData.IsCubemap())
+                {
+                    // TODO: arrysize > 6
+                    _rhiTex = RHI::D3D12Texture::CreateCubeMap(m_Device->GetLinkedDevice(),
+                                                               _texMetaData.width,
+                                                               _texMetaData.height,
+                                                               _texMetaData.mipLevels,
+                                                               _texMetaData.format,
+                                                               RHI::RHISurfaceCreateFlags::RHISurfaceCreateMipmap);
+                }
+                else
+                {
+                    _rhiTex = RHI::D3D12Texture::Create2DArray(m_Device->GetLinkedDevice(),
+                                                               _texMetaData.width,
+                                                               _texMetaData.height,
+                                                               _texMetaData.arraySize,
+                                                               _texMetaData.mipLevels,
+                                                               _texMetaData.format,
+                                                               RHI::RHISurfaceCreateFlags::RHISurfaceCreateMipmap);
+                }
+                m_ResourceUpload->Transition(_rhiTex->GetResource(), D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COPY_DEST);
+                
+                D3D12_SUBRESOURCE_DATA resourceInitDatas[12*6];
+
+                int subresourceNumber = _texMetaData.arraySize * _texMetaData.mipLevels;
+
+                for (size_t i = 0; i < _texMetaData.arraySize; i++)
+                {
+                    for (size_t j = 0; j < _texMetaData.mipLevels; j++)
+                    {
+                        int _curSubIndex = D3D12CalcSubresource(j, i, 0, _texMetaData.mipLevels,_texMetaData.arraySize );
+
+                        const DirectX::Image*  _image = _sratchimage.GetImage(j, i, 0);
+                        D3D12_SUBRESOURCE_DATA _resourceInitData;
+                        _resourceInitData.pData      = _image->pixels;
+                        _resourceInitData.RowPitch   = _image->rowPitch;
+                        _resourceInitData.SlicePitch = _image->slicePitch;
+                        resourceInitDatas[_curSubIndex] = _resourceInitData;
+                    }
+                }
+
+                m_ResourceUpload->Upload(_rhiTex->GetResource(), 0, resourceInitDatas, subresourceNumber);
+
+                m_ResourceUpload->Transition(_rhiTex->GetResource(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_COMMON);
+            }
+        }
+        else if (_texMetaData.dimension == DirectX::TEX_DIMENSION::TEX_DIMENSION_TEXTURE3D)
+        {
+            /*
+            _rhiTex = RHI::D3D12Texture::Create3D(m_Device->GetLinkedDevice(),
+                                                  _texMetaData.width,
+                                                  _texMetaData.height,
+                                                  _texMetaData.arraySize,
+                                                  _texMetaData.mipLevels,
+                                                  _texMetaData.format,
+                                                  RHI::RHISurfaceCreateFlags::RHISurfaceCreateMipmap);
+
+            m_ResourceUpload->Transition(_rhiTex->GetResource(), D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COPY_DEST);
+                
+            int subresourceNumber = _texMetaData.mipLevels;
+
+            D3D12_SUBRESOURCE_DATA resourceInitDatas[12];
+            for (size_t i = 0; i < subresourceNumber; i++)
+            {
+                const DirectX::Image* _image = _sratchimage.GetImage(i, 0, 0);
+                D3D12_SUBRESOURCE_DATA _resourceInitData;
+                _resourceInitData.pData = _image->pixels;
+                _resourceInitData.RowPitch = _image->rowPitch;
+                _resourceInitData.SlicePitch = _image->slicePitch;
+                resourceInitDatas[i] = _resourceInitData;
+            }
+
+            m_ResourceUpload->Upload(_rhiTex->GetResource(), 0, resourceInitDatas, subresourceNumber);
+
+            m_ResourceUpload->Transition(_rhiTex->GetResource(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_COMMON);
+            */
+        }
+
+        if (batch)
+            this->endUploadBatch();
+
+        return _rhiTex;
     }
 
     InternalMesh RenderResource::createInternalMesh(SceneMesh scene_mesh)

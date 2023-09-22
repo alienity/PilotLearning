@@ -1,71 +1,76 @@
 {
-  "m_enable_fxaa": false,
-  "m_skybox_irradiance_map": {
-    "m_negative_x_map": "asset/texture/sky/skybox_irradiance_X-.exr",
-    "m_positive_x_map": "asset/texture/sky/skybox_irradiance_X+.exr",
-    "m_negative_y_map": "asset/texture/sky/skybox_irradiance_Y-.exr",
-    "m_positive_y_map": "asset/texture/sky/skybox_irradiance_Y+.exr",
-    "m_negative_z_map": "asset/texture/sky/skybox_irradiance_Z-.exr",
-    "m_positive_z_map": "asset/texture/sky/skybox_irradiance_Z+.exr"
-  },
-  "m_skybox_specular_map": {
-    "m_negative_x_map": "asset/texture/sky/skybox_specular_X-.exr",
-    "m_positive_x_map": "asset/texture/sky/skybox_specular_X+.exr",
-    "m_negative_y_map": "asset/texture/sky/skybox_specular_Y-.exr",
-    "m_positive_y_map": "asset/texture/sky/skybox_specular_Y+.exr",
-    "m_negative_z_map": "asset/texture/sky/skybox_specular_Z-.exr",
-    "m_positive_z_map": "asset/texture/sky/skybox_specular_Z+.exr"
-  },
-  "m_brdf_map": "asset/texture/global/brdf_schilk.exr",
-  "m_color_grading_map": "asset/texture/lut/color_grading_lut_01.png",
-  "m_sky_color": {
-    "r": 0.53,
-    "g": 0.81,
-    "b": 0.98,
-    "a": 1.0
-  },
-  "m_ambient_light": {
-    "r": 0.03,
-    "g": 0.03,
-    "b": 0.03,
-    "a": 1.0
-  },
-  "m_camera_config": {
-    "m_pose": {
-      "m_position": {
-        "x": 0.0,
-        "y": 0.1,
-        "z": 2.0
-      },
-      "m_target": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
-      },
-      "m_up": {
-        "x": 0.0,
-        "y": 1.0,
-        "z": 0.0
-      }
+    "m_ambient_light": {
+        "a": 1.0,
+        "b": 0.029999999329447746,
+        "g": 0.029999999329447746,
+        "r": 0.029999999329447746
     },
-    "m_aspect": {
-      "x": 1280.0,
-      "y": 768.0
+    "m_brdf_map": "asset/texture/global/brdf_schilk.exr",
+    "m_camera_config": {
+        "m_aspect": {
+            "x": 1280.0,
+            "y": 768.0
+        },
+        "m_fovY": 60.0,
+        "m_pose": {
+            "m_position": {
+                "x": 0.0,
+                "y": 0.10000000149011612,
+                "z": 2.0
+            },
+            "m_target": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "m_up": {
+                "x": 0.0,
+                "y": 1.0,
+                "z": 0.0
+            }
+        },
+        "m_z_far": 1000.0,
+        "m_z_near": 0.10000000149011612
     },
-    "m_z_far": 1000.0,
-    "m_z_near": 0.1,
-    "m_fovY": 60
-  },
-  "m_directional_light": {
-    "m_direction": {
-      "x": 0.5,
-      "y": -0.5,
-      "z": 0.5
+    "m_color_grading_map": "asset/texture/lut/color_grading_lut_01.png",
+    "m_directional_light": {
+        "m_color": {
+            "x": 0.0,
+            "y": 0.0,
+            "z": 0.0
+        },
+        "m_direction": {
+            "x": 0.5,
+            "y": -0.5,
+            "z": 0.5
+        }
     },
-    "m_color": {
-      "r": 1.0,
-      "g": 1.0,
-      "b": 1.0
+    "m_enable_fxaa": false,
+    "m_ibl_map": {
+        "m_dfg_map": "asset/texture/global/DFG.dds",
+        "m_irradians_map": "",
+        "m_ld_map": "asset/texture/global/LD.dds"
+    },
+    "m_sky_color": {
+        "a": 1.0,
+        "b": 0.9800000190734863,
+        "g": 0.8100000023841858,
+        "r": 0.5299999713897705
+    },
+    "m_skybox_irradiance_map": {
+        "m_negative_x_map": "asset/texture/sky/skybox_irradiance_X-.exr",
+        "m_negative_y_map": "asset/texture/sky/skybox_irradiance_Y-.exr",
+        "m_negative_z_map": "asset/texture/sky/skybox_irradiance_Z-.exr",
+        "m_positive_x_map": "asset/texture/sky/skybox_irradiance_X+.exr",
+        "m_positive_y_map": "asset/texture/sky/skybox_irradiance_Y+.exr",
+        "m_positive_z_map": "asset/texture/sky/skybox_irradiance_Z+.exr"
+    },
+    "m_skybox_specular_map": {
+        "m_negative_x_map": "asset/texture/sky/skybox_specular_X-.exr",
+        "m_negative_y_map": "asset/texture/sky/skybox_specular_Y-.exr",
+        "m_negative_z_map": "asset/texture/sky/skybox_specular_Z-.exr",
+        "m_positive_x_map": "asset/texture/sky/skybox_specular_X+.exr",
+        "m_positive_y_map": "asset/texture/sky/skybox_specular_Y+.exr",
+        "m_positive_z_map": "asset/texture/sky/skybox_specular_Z+.exr"
     }
-  }
 }

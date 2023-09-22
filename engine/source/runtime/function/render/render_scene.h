@@ -23,6 +23,9 @@ namespace MoYu
         // skybox
         SkyboxConfigs m_skybox_map;
 
+        // ibl
+        IBLConfigs m_ibl_map;
+
         // all light
         InternalAmbientLight            m_ambient_light;
         InternalDirectionLight          m_directional_light;

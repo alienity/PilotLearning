@@ -145,7 +145,7 @@ namespace MoYu
 
         if (!isLDGenerated)
         {
-            //isLDGenerated = !isLDGenerated;
+            isLDGenerated = !isLDGenerated;
 
             std::shared_ptr<RHI::D3D12Texture> p_IBLSpecular = m_render_scene->m_skybox_map.m_skybox_specular_map;
 
@@ -207,7 +207,7 @@ namespace MoYu
         }
         if (!isLDSaved)
         {
-            //isLDSaved = !isLDSaved;
+            isLDSaved = !isLDSaved;
 
             std::filesystem::path m_AssertRootPath = g_runtime_global_context.m_config_manager->getAssetFolder();
 
@@ -218,110 +218,6 @@ namespace MoYu
             // ------------------
             // https://learn.microsoft.com/en-us/windows/win32/direct3d12/readback-data-using-heaps
             // ------------------
-            /*
-            ID3D12CommandQueue * commandQueue = _commandQueue->GetCommandQueue();
-
-            ID3D12Resource* pSource = p_LD->GetResource();
-
-            D3D12_RESOURCE_DESC desc = pSource->GetDesc();
-
-            ID3D12Device* device = m_Device->GetD3D12Device();
-
-            UINT numSubresources = p_LD->GetNumSubresources();
-
-            UINT64 totalResourceSize = 0;
-            UINT64 fpRowPitch[128]   = {0};
-            UINT   fpRowCount[128]   = {0};
-            // Get the rowcount, pitch and size of the top mip
-            device->GetCopyableFootprints(
-                &desc, 0, numSubresources, 0, nullptr, fpRowCount, fpRowPitch, &totalResourceSize);
-
-            // Create a command allocator
-            Microsoft::WRL::ComPtr<ID3D12CommandAllocator> commandAlloc;
-            HRESULT hr = device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT,
-                                                        IID_GRAPHICS_PPV_ARGS(commandAlloc.GetAddressOf()));
-            commandAlloc->SetName(L"ScreenGrab");
-
-            // Spin up a new command list
-            Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> commandList;
-            hr = device->CreateCommandList(0,
-                                           D3D12_COMMAND_LIST_TYPE_DIRECT,
-                                           commandAlloc.Get(),
-                                           nullptr,
-                                           IID_GRAPHICS_PPV_ARGS(commandList.GetAddressOf()));
-            commandList->SetName(L"ScreenGrab");
-
-            // Create a fence
-            Microsoft::WRL::ComPtr<ID3D12Fence> fence;
-            hr = device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_GRAPHICS_PPV_ARGS(fence.GetAddressOf()));
-            fence->SetName(L"ScreenGrab");
-
-            // Round up the srcPitch to multiples of 256
-            const UINT64 dstRowPitch = (totalResourceSize + 255) & ~0xFFu;
-
-            // Readback resources must be buffers
-            D3D12_HEAP_PROPERTIES readbackHeapProperties {CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_READBACK)};
-            D3D12_RESOURCE_DESC   readbackBufferDesc {CD3DX12_RESOURCE_DESC::Buffer(dstRowPitch)};
-            Microsoft::WRL::ComPtr<ID3D12Resource> pStaging;
-
-            // Create a staging texture
-            hr = device->CreateCommittedResource(&readbackHeapProperties,
-                                                 D3D12_HEAP_FLAG_NONE,
-                                                 &readbackBufferDesc,
-                                                 D3D12_RESOURCE_STATE_COPY_DEST,
-                                                 nullptr,
-                                                 IID_GRAPHICS_PPV_ARGS(pStaging.ReleaseAndGetAddressOf()));
-
-            // copy resource
-            Microsoft::WRL::ComPtr<ID3D12Resource> copySource(pSource);
-            {
-                D3D12_RESOURCE_BARRIER barrierDesc {CD3DX12_RESOURCE_BARRIER::Transition(
-                    copySource.Get(), m_ResState, D3D12_RESOURCE_STATE_COPY_SOURCE)};
-                commandList->ResourceBarrier(1, &barrierDesc);
-            }
-
-            // Get the copy target location
-            D3D12_PLACED_SUBRESOURCE_FOOTPRINT bufferFootprint = {};
-            bufferFootprint.Footprint.Width = static_cast<UINT>(desc.Width);
-            bufferFootprint.Footprint.Height = desc.Height;
-            bufferFootprint.Footprint.Depth = 1;
-            bufferFootprint.Footprint.RowPitch = static_cast<UINT>(srcPitch);
-            bufferFootprint.Footprint.Format = desc.Format;
-
-
-
-            D3D12_PLACED_SUBRESOURCE_FOOTPRINT bufferFootprint;
-            device->GetCopyableFootprints(&desc, 0, 1, 0, &bufferFootprint, nullptr, nullptr, nullptr);
-
-            commandList->CopyResource(pStaging.Get(), copySource.Get());
-
-            hr = commandList->Close();
-
-            // Execute the command list
-            commandQueue->ExecuteCommandLists(1, CommandListCast(commandList.GetAddressOf()));
-
-            // Signal the fence
-            hr = commandQueue->Signal(fence.Get(), 1);
-
-            // Block until the copy is complete
-            while (fence->GetCompletedValue() < 1)
-                SwitchToThread();
-
-            
-            DirectX::ScratchImage outScratchImage;
-            outScratchImage.InitializeCube(desc.Format, desc.Width, desc.Height, 1, desc.MipLevels);
-
-            void* pMappedMemory = outScratchImage.GetPixels();
-
-            D3D12_RANGE readRange  = {0, static_cast<SIZE_T>(outScratchImage.GetPixelsSize())};
-            D3D12_RANGE writeRange = {0, 0};
-
-            hr = pStaging->Map(0, &readRange, &pMappedMemory);
-
-            const DirectX::Image* image = outScratchImage.GetImage(0, 0, 0);
-
-            DirectX::SaveToDDSFile(*image, DirectX::DDS_FLAGS::DDS_FLAGS_NONE, m_LDPath.c_str());
-            */
         }
     }
 

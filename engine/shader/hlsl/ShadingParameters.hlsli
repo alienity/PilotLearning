@@ -253,6 +253,25 @@ float shadowSample_PCF(
 }
 
 //------------------------------------------------------------------------------
+// IBL
+//------------------------------------------------------------------------------
+
+float3 PrefilteredDFG_LUT(Texture2D<float3> light_iblDFG, SamplerState light_iblDFGSampler, float lod, float NoV)
+{
+    // coord = sqrt(linear_roughness), which is the mapping used by cmgen.
+    return light_iblDFG.SampleLevel(light_iblDFGSampler, float2(NoV, lod), 0.0).rgb;
+}
+
+float3 prefilteredDFG(Texture2D<float3> light_iblDFG, SamplerState light_iblDFGSampler, float perceptualRoughness, float NoV)
+{
+    // PrefilteredDFG_LUT() takes a LOD, which is sqrt(roughness) = perceptualRoughness
+    return PrefilteredDFG_LUT(light_iblDFG, light_iblDFGSampler, perceptualRoughness, NoV);
+}
+
+
+
+
+//------------------------------------------------------------------------------
 // brdf calculation
 //------------------------------------------------------------------------------
 
@@ -282,8 +301,16 @@ void getRoughnessPixelParams(const CommonShadingStruct params, const MaterialInp
     pixel.perceptualRoughness = clamp(perceptualRoughness, MIN_PERCEPTUAL_ROUGHNESS, 1.0);
     // Remaps the roughness to a perceptually linear roughness (roughness^2)
     pixel.roughness = perceptualRoughnessToRoughness(pixel.perceptualRoughness);
+}
 
-    pixel.energyCompensation = 1.0f;
+void getEnergyCompensationPixelParams(const FrameUniforms frameUniforms, const CommonShadingStruct params, const MaterialInputs materialInputs, const SamplerStruct samplerStruct, inout PixelParams pixel)
+{
+    Texture2D<float3> dfgMap = ResourceDescriptorHeap[frameUniforms.iblUniform.dfg_lut_srv_index];
+
+    // Pre-filtered DFG term used for image-based lighting
+    pixel.dfg = prefilteredDFG(dfgMap, samplerStruct.defSampler, pixel.perceptualRoughness, params.shading_NoV);
+
+    pixel.energyCompensation = float3(1.0, 1.0, 1.0);
 }
 
 /**
@@ -294,10 +321,11 @@ void getRoughnessPixelParams(const CommonShadingStruct params, const MaterialInp
  * This function is also responsible for discarding the fragment when alpha
  * testing fails.
  */
-void getPixelParams(const CommonShadingStruct commonShadingStruct, const MaterialInputs materialInputs, out PixelParams pixel)
+void getPixelParams(const FrameUniforms frameUniforms, const CommonShadingStruct commonShadingStruct, const MaterialInputs materialInputs, const SamplerStruct samplerStruct, out PixelParams pixel)
 {
     getCommonPixelParams(materialInputs, pixel);
     getRoughnessPixelParams(commonShadingStruct, materialInputs, pixel);
+    getEnergyCompensationPixelParams(frameUniforms, commonShadingStruct, materialInputs, samplerStruct, pixel);
 }
 
 float3 isotropicLobe(const PixelParams pixel, const float3 h, float NoV, float NoL, float NoH, float LoH)
@@ -690,15 +718,15 @@ float perceptualRoughnessToLod(const FrameUniforms frameUniforms, float perceptu
 float3 prefilteredRadiance(const FrameUniforms frameUniforms, const SamplerStruct samplerStruct, const float3 r, float perceptualRoughness)
 {
     float lod = perceptualRoughnessToLod(frameUniforms, perceptualRoughness);
-    TextureCube<float4> dfgLut = ResourceDescriptorHeap[frameUniforms.iblUniform.ld_lut_srv_index];
-    return decodeDataForIBL(dfgLut.SampleLevel(samplerStruct.defSampler, r, lod));
+    TextureCube<float4> ldLut = ResourceDescriptorHeap[frameUniforms.iblUniform.ld_lut_srv_index];
+    return decodeDataForIBL(ldLut.SampleLevel(samplerStruct.defSampler, r, lod));
 }
 
 float3 prefilteredRadiance(const FrameUniforms frameUniforms, const SamplerStruct samplerStruct, const float3 r, float roughness, float offset)
 {
     float lod = frameUniforms.iblUniform.iblRoughnessOneLevel * roughness;
-    TextureCube<float4> dfgLut = ResourceDescriptorHeap[frameUniforms.iblUniform.ld_lut_srv_index];
-    return decodeDataForIBL(dfgLut.SampleLevel(samplerStruct.defSampler, r, lod + offset));
+    TextureCube<float4> ldLut = ResourceDescriptorHeap[frameUniforms.iblUniform.ld_lut_srv_index];
+    return decodeDataForIBL(ldLut.SampleLevel(samplerStruct.defSampler, r, lod + offset));
 }
 
 float3 getSpecularDominantDirection(const float3 n, const float3 r, float roughness)
@@ -733,17 +761,18 @@ void evaluateIBL(
     float3 r = getReflectedVector(params, pixel);
     Fr = E * prefilteredRadiance(frameUniforms, samplerStruct, r, pixel.perceptualRoughness);
 
-    // diffuse layer
-    float3 _diffuseNormal = params.shading_normal;
-    float3 _diffuseIrradiance = diffuseIrradiance(frameUniforms, samplerStruct, _diffuseNormal);
+    // // diffuse layer
+    // float3 _diffuseNormal = params.shading_normal;
+    // float3 _diffuseIrradiance = diffuseIrradiance(frameUniforms, samplerStruct, _diffuseNormal);
 
-    float diffuseBRDF = 1.0f;
-    float3 Fd = pixel.diffuseColor * _diffuseIrradiance * (1.0 - E) * diffuseBRDF;
+    // float diffuseBRDF = 1.0f;
+    // float3 Fd = pixel.diffuseColor * _diffuseIrradiance * (1.0 - E) * diffuseBRDF;
 
     // Combine all terms
     // Note: iblLuminance is already premultiplied by the exposure
 
-    color.rgb += Fr + Fd;
+    // color.rgb += Fr + Fd;
+    color.rgb += Fr;
     
 }
 
@@ -760,7 +789,7 @@ void evaluateIBL(
 float4 evaluateLights(const FrameUniforms frameUniforms, const PerRenderableMeshData perMeshData, const CommonShadingStruct commonShadingStruct, const MaterialInputs materialInputs, const SamplerStruct samplerStruct)
 {
     PixelParams pixel;
-    getPixelParams(commonShadingStruct, materialInputs, pixel);
+    getPixelParams(frameUniforms, commonShadingStruct, materialInputs, samplerStruct, pixel);
 
     // Ideally we would keep the diffuse and specular components separate
     // until the very end but it costs more ALUs on mobile. The gains are
@@ -769,7 +798,7 @@ float4 evaluateLights(const FrameUniforms frameUniforms, const PerRenderableMesh
 
     // We always evaluate the IBL as not having one is going to be uncommon,
     // it also saves 1 shader variant
-    // evaluateIBL(frameUniforms, perMeshData, commonShadingStruct, materialInputs, pixel, samplerStruct, color);
+    evaluateIBL(frameUniforms, perMeshData, commonShadingStruct, materialInputs, pixel, samplerStruct, color);
 
     evaluateDirectionalLight(frameUniforms, perMeshData, commonShadingStruct, materialInputs, pixel, samplerStruct, color);
 
