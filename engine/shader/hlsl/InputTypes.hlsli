@@ -72,22 +72,16 @@ struct PerMaterialParametersBuffer
     float clearCoatFactor;
     float clearCoatRoughnessFactor;
     float anisotropyFactor;
-    float normalScale;
-    float occlusionStrength;
+    float2 _padding0;
 
     float2 base_color_tilling;
     float2 metallic_roughness_tilling;
     float2 normal_tilling;
     float2 occlusion_tilling;
     float2 emissive_tilling;
-
-    float2 _padding_uniform_01;
-
-    float emissiveFactor;
+    
     uint   is_blend;
     uint   is_double_sided;
-
-    uint _padding_uniform_02;
 };
 
 struct PerMaterialViewIndexBuffer

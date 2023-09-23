@@ -61,6 +61,7 @@ namespace MoYu
         // initial global resources
         m_render_resource = std::make_shared<RenderResource>();
         m_render_resource->iniUploadBatch(m_renderer_manager->GetDevice());
+        m_render_resource->InitDefaultTextures();
         
         // setup render camera
         const CameraPose& camera_pose = global_rendering_res.m_camera_config.m_pose;

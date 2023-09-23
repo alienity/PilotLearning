@@ -17,9 +17,10 @@ namespace MoYu
         Vector4 m_base_color_factor {1.0f, 1.0f, 1.0f, 1.0f};
         float   m_metallic_factor {1.0f};
         float   m_roughness_factor {1.0f};
-        float   m_normal_scale {1.0f};
-        float   m_occlusion_strength {1.0f};
-        Vector3 m_emissive_factor {0.0f, 0.0f, 0.0f};
+        float   m_reflectance_factor {1.0f};
+        float   m_clearcoat_factor {1.0f};
+        float   m_clearcoat_roughness_factor {1.0f};
+        float   m_anisotropy_factor {0.0f};
 
         MaterialImage m_base_color_texture_file {};
         MaterialImage m_metallic_roughness_texture_file {};
@@ -37,9 +38,10 @@ namespace MoYu
                                        m_base_color_factor,
                                        m_metallic_factor,
                                        m_roughness_factor,
-                                       m_normal_scale,
-                                       m_occlusion_strength,
-                                       m_emissive_factor,
+                                       m_reflectance_factor,
+                                       m_clearcoat_factor,
+                                       m_clearcoat_roughness_factor,
+                                       m_anisotropy_factor,
                                        m_base_color_texture_file,
                                        m_metallic_roughness_texture_file,
                                        m_normal_texture_file,

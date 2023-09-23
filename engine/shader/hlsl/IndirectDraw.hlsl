@@ -133,7 +133,6 @@ float4 PSMain(VertexOutput input) : SV_Target0
     StructuredBuffer<PerMaterialParametersBuffer> matParamsBuffer = ResourceDescriptorHeap[material.parametersBufferIndex];
 
     float4 baseColorFactor = matParamsBuffer[0].baseColorFactor;
-    float  normalStength    = matParamsBuffer[0].normalScale;
 
     float2 baseColorTilling = matParamsBuffer[0].base_color_tilling;
     float2 normalTexTilling = matParamsBuffer[0].normal_tilling;
@@ -151,8 +150,6 @@ float4 PSMain(VertexOutput input) : SV_Target0
     float3 vTangent   = input.tangent.xyz;
     float3 vBiTangent = input.tangent.w * cross(vNormal, vTangent);
     float3 vNout      = normalize(vNt.x * vTangent + vNt.y * vBiTangent + vNt.z * vNormal);
-
-    vNout = vNout * normalStength;
 
     float3 positionWS = input.positionWS;
     float3 viewPos    = g_FrameUniform.cameraUniform.cameraPosition;

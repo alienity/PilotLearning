@@ -109,8 +109,16 @@ namespace MoYu
             //std::shared_ptr<RHI::D3D12ShaderResourceView> defaultWhiteView = real_resource->m_default_resource._white_texture2d_image->GetDefaultSRV();
             //std::shared_ptr<RHI::D3D12ShaderResourceView> defaultBlackView = real_resource->m_default_resource._black_texture2d_image->GetDefaultSRV();
 
-            std::shared_ptr<RHI::D3D12ShaderResourceView> defaultWhiteView = RHI::GetDefaultTexture(RHI::eDefaultTexture::kWhiteOpaque2D)->GetDefaultSRV();
-            std::shared_ptr<RHI::D3D12ShaderResourceView> defaultBlackView = RHI::GetDefaultTexture(RHI::eDefaultTexture::kBlackOpaque2D)->GetDefaultSRV();
+            //std::shared_ptr<RHI::D3D12ShaderResourceView> defaultWhiteView = RHI::GetDefaultTexture(RHI::eDefaultTexture::kWhiteOpaque2D)->GetDefaultSRV();
+            //std::shared_ptr<RHI::D3D12ShaderResourceView> defaultBlackView = RHI::GetDefaultTexture(RHI::eDefaultTexture::kBlackOpaque2D)->GetDefaultSRV();
+
+            std::shared_ptr<RHI::D3D12ShaderResourceView> defaultWhiteView =
+                render_resource->_Default2TexMap[DefaultTexType::White]->GetDefaultSRV();
+            std::shared_ptr<RHI::D3D12ShaderResourceView> defaultBlackView =
+                render_resource->_Default2TexMap[DefaultTexType::Black]->GetDefaultSRV();
+            std::shared_ptr<RHI::D3D12ShaderResourceView> defaultNormalView =
+                render_resource->_Default2TexMap[DefaultTexType::TangentNormal]->GetDefaultSRV();
+
 
             std::shared_ptr<RHI::D3D12ShaderResourceView> uniformBufferView = temp_ref_material.m_intenral_pbr_mat.material_uniform_buffer->GetDefaultSRV();
             //std::shared_ptr<RHI::D3D12ShaderResourceView> baseColorView = temp_ref_material.m_intenral_pbr_mat.base_color_texture_image->GetDefaultSRV();
@@ -118,19 +126,19 @@ namespace MoYu
             //std::shared_ptr<RHI::D3D12ShaderResourceView> normalView   = temp_ref_material.m_intenral_pbr_mat.normal_texture_image->GetDefaultSRV();
             //std::shared_ptr<RHI::D3D12ShaderResourceView> emissionView = temp_ref_material.m_intenral_pbr_mat.emissive_texture_image->GetDefaultSRV();
 
-            #define Tex2ViewIndex(toIndex, fromTex)\
+            #define Tex2ViewIndex(toIndex, replaceTexView, fromTex)\
             if (fromTex == nullptr)\
-                toIndex = defaultWhiteView->GetIndex();\
+                toIndex = replaceTexView->GetIndex();\
             else\
                 toIndex = fromTex->GetDefaultSRV()->GetIndex();\
 
             HLSL::PerMaterialViewIndexBuffer curMatViewIndexBuffer = {};
             curMatViewIndexBuffer.parametersBufferIndex = uniformBufferView->GetIndex();            
-            Tex2ViewIndex(curMatViewIndexBuffer.baseColorIndex, temp_ref_material.m_intenral_pbr_mat.base_color_texture_image)
-            Tex2ViewIndex(curMatViewIndexBuffer.metallicRoughnessIndex, temp_ref_material.m_intenral_pbr_mat.metallic_roughness_texture_image)
-            Tex2ViewIndex(curMatViewIndexBuffer.normalIndex, temp_ref_material.m_intenral_pbr_mat.normal_texture_image)
-            Tex2ViewIndex(curMatViewIndexBuffer.occlusionIndex, temp_ref_material.m_intenral_pbr_mat.occlusion_texture_image)
-            Tex2ViewIndex(curMatViewIndexBuffer.emissionIndex, temp_ref_material.m_intenral_pbr_mat.emissive_texture_image)
+            Tex2ViewIndex(curMatViewIndexBuffer.baseColorIndex, defaultWhiteView, temp_ref_material.m_intenral_pbr_mat.base_color_texture_image)
+            Tex2ViewIndex(curMatViewIndexBuffer.metallicRoughnessIndex, defaultWhiteView, temp_ref_material.m_intenral_pbr_mat.metallic_roughness_texture_image)
+            Tex2ViewIndex(curMatViewIndexBuffer.normalIndex, defaultNormalView, temp_ref_material.m_intenral_pbr_mat.normal_texture_image)
+            Tex2ViewIndex(curMatViewIndexBuffer.occlusionIndex, defaultWhiteView, temp_ref_material.m_intenral_pbr_mat.occlusion_texture_image)
+            Tex2ViewIndex(curMatViewIndexBuffer.emissionIndex, defaultBlackView, temp_ref_material.m_intenral_pbr_mat.emissive_texture_image)
 
             //curMatInstance.baseColorViewIndex = baseColorView->IsValid() ? baseColorView->GetIndex() : defaultWhiteView->GetIndex();
             //curMatInstance.metallicRoughnessViewIndex = metallicRoughnessView->IsValid() ? metallicRoughnessView->GetIndex() : defaultBlackView->GetIndex();

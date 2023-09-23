@@ -14,10 +14,23 @@ namespace MoYu
     class RenderCamera;
     class RenderScene;
 
+    enum DefaultTexType
+    {
+        White,
+        Black,
+        Red,
+        Green,
+        Blue,
+        BaseColor,
+        MetallicAndRoughness,
+        TangentNormal,
+    };
+
     class RenderResource : public RenderResourceBase
     {
     public:
         RenderResource() = default;
+        ~RenderResource();
 
         void updateFrameUniforms(RenderScene* render_scene, RenderCamera* camera);
         
@@ -34,8 +47,12 @@ namespace MoYu
         //HLSL::MeshDirectionalLightShadowPerframeStorageBufferObject m_mesh_directional_light_shadow_perframe_storage_buffer_object;
         //HLSL::MeshInstance m_all_mesh_buffer_object;
 
-    private:
-        float empty_image[4] = {0.5f, 0.5f, 0.5f, 0.5f};
+    public:
+        void InitDefaultTextures();
+        void ReleaseAllTextures();
+
+        std::map<SceneImage, std::shared_ptr<RHI::D3D12Texture>> _Image2TexMap;
+        std::map<DefaultTexType, std::shared_ptr<RHI::D3D12Texture>> _Default2TexMap;
 
     protected:
         std::shared_ptr<RHI::D3D12Buffer> createDynamicBuffer(void* buffer_data, uint32_t buffer_size, uint32_t buffer_stride);

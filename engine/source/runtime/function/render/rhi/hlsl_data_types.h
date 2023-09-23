@@ -55,9 +55,8 @@ namespace HLSL
         float reflectanceFactor {1.0f};
         float clearCoatFactor {1.0f};
         float clearCoatRoughnessFactor {1.0f};
-        float anisotropyFactor {1.0f};
-        float normalScale {1.0f};
-        float occlusionStrength {1.0f};
+        float anisotropyFactor {0.0f};
+        float2 _padding0;
 
         float2 base_color_tilling {1.0f, 1.0f};
         float2 metallic_roughness_tilling {1.0f, 1.0f};
@@ -65,13 +64,8 @@ namespace HLSL
         float2 occlusion_tilling {1.0f, 1.0f};
         float2 emissive_tilling {1.0f, 1.0f};
 
-        float2 _padding_uniform_01;
-
-        float emissiveFactor {1.0f};
         uint  is_blend {0};
         uint  is_double_sided {0};
-
-        uint _padding_uniform_02;
     };
 
     struct PerMaterialViewIndexBuffer

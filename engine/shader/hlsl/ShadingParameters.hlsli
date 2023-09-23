@@ -79,11 +79,7 @@ void inflateMaterial(
     float clearCoatFactor = materialParameterBuffer.clearCoatFactor;
     float clearCoatRoughnessFactor = materialParameterBuffer.clearCoatRoughnessFactor;
     float anisotropyFactor = materialParameterBuffer.anisotropyFactor;
-    float normalScale = materialParameterBuffer.normalScale;
-    float occlusionStrength = materialParameterBuffer.occlusionStrength;
     
-    float emissiveFactor = materialParameterBuffer.emissiveFactor;
-
     float2 base_color_tilling = materialParameterBuffer.base_color_tilling;
     float2 metallic_roughness_tilling = materialParameterBuffer.metallic_roughness_tilling;
     float2 normal_tilling = materialParameterBuffer.normal_tilling;
@@ -101,10 +97,9 @@ void inflateMaterial(
     material.metallic = metallicRoughness.r * metallicFactor;
     material.roughness = metallicRoughness.g * roughnessFactor;
     material.reflectance = reflectanceFactor;
-    material.ambientOcclusion = occlusionTexture.Sample(materialSampler, uv * occlusion_tilling).r * occlusionStrength;
+    material.ambientOcclusion = occlusionTexture.Sample(materialSampler, uv * occlusion_tilling).r;
     material.emissive = emissionTexture.Sample(materialSampler, uv * base_color_tilling);
-    material.emissive.w *= emissiveFactor;
-    material.normal = (normalTexture.Sample(materialSampler, uv * normal_tilling) * 2.0f - 1.0f) * normalScale;
+    material.normal = (normalTexture.Sample(materialSampler, uv * normal_tilling) * 2.0f - 1.0f);
 
 }
 

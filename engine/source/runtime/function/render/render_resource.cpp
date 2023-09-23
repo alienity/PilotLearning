@@ -22,69 +22,8 @@
 
 namespace MoYu
 {
-    /*
-    void RenderResource::uploadGlobalRenderResource(LevelResourceDesc level_resource_desc)
-    {
-        // sky box irradiance
-        SkyBoxIrradianceMap skybox_irradiance_map        = level_resource_desc.m_ibl_resource_desc.m_skybox_irradiance_map;
-        std::shared_ptr<MoYu::MoYuScratchImage> irradiace_pos_x_map = loadImage(skybox_irradiance_map.m_positive_x_map);
-        std::shared_ptr<MoYu::MoYuScratchImage> irradiace_neg_x_map = loadImage(skybox_irradiance_map.m_negative_x_map);
-        std::shared_ptr<MoYu::MoYuScratchImage> irradiace_pos_y_map = loadImage(skybox_irradiance_map.m_positive_y_map);
-        std::shared_ptr<MoYu::MoYuScratchImage> irradiace_neg_y_map = loadImage(skybox_irradiance_map.m_negative_y_map);
-        std::shared_ptr<MoYu::MoYuScratchImage> irradiace_pos_z_map = loadImage(skybox_irradiance_map.m_positive_z_map);
-        std::shared_ptr<MoYu::MoYuScratchImage> irradiace_neg_z_map = loadImage(skybox_irradiance_map.m_negative_z_map);
+    RenderResource::~RenderResource() { ReleaseAllTextures(); }
 
-        // sky box specular
-        SkyBoxSpecularMap            skybox_specular_map = level_resource_desc.m_ibl_resource_desc.m_skybox_specular_map;
-        std::shared_ptr<MoYu::MoYuScratchImage> specular_pos_x_map  = loadImage(skybox_specular_map.m_positive_x_map);
-        std::shared_ptr<MoYu::MoYuScratchImage> specular_neg_x_map  = loadImage(skybox_specular_map.m_negative_x_map);
-        std::shared_ptr<MoYu::MoYuScratchImage> specular_pos_y_map  = loadImage(skybox_specular_map.m_positive_y_map);
-        std::shared_ptr<MoYu::MoYuScratchImage> specular_neg_y_map  = loadImage(skybox_specular_map.m_negative_y_map);
-        std::shared_ptr<MoYu::MoYuScratchImage> specular_pos_z_map  = loadImage(skybox_specular_map.m_positive_z_map);
-        std::shared_ptr<MoYu::MoYuScratchImage> specular_neg_z_map  = loadImage(skybox_specular_map.m_negative_z_map);
-
-        // create IBL textures, take care of the texture order
-        std::array<std::shared_ptr<MoYu::MoYuScratchImage>, 6> irradiance_maps = {irradiace_pos_x_map,
-                                                                       irradiace_neg_x_map,
-                                                                       irradiace_pos_z_map,
-                                                                       irradiace_neg_z_map,
-                                                                       irradiace_pos_y_map,
-                                                                       irradiace_neg_y_map};
-        std::array<std::shared_ptr<MoYu::MoYuScratchImage>, 6> specular_maps   = {specular_pos_x_map,
-                                                                     specular_neg_x_map,
-                                                                     specular_pos_z_map,
-                                                                     specular_neg_z_map,
-                                                                     specular_pos_y_map,
-                                                                     specular_neg_y_map};
-
-        // brdf
-        std::shared_ptr<MoYu::MoYuScratchImage> brdf_map = loadImage(level_resource_desc.m_ibl_resource_desc.m_brdf_map);
-
-        // color grading
-        std::shared_ptr<MoYu::MoYuScratchImage> color_grading_map = loadImage(level_resource_desc.m_color_grading_resource_desc.m_color_grading_map);
-
-        startUploadBatch();
-        {
-            // create irradiance cubemap
-            auto irridiance_tex = createCubeMap(irradiance_maps);
-            m_global_render_resource._ibl_resource._irradiance_texture_image = irridiance_tex;
-
-            // create specular cubemap
-            auto specular_tex = createCubeMap(specular_maps);
-            m_global_render_resource._ibl_resource._specular_texture_image = specular_tex;
-
-            // create brdf lut texture
-            auto lut_tex = createTex2D(brdf_map);
-            m_global_render_resource._ibl_resource._brdfLUT_texture_image = lut_tex;
-
-            // create color grading texture
-            auto color_grading_tex = createTex2D(color_grading_map);
-            m_global_render_resource._color_grading_resource._color_grading_LUT_texture_image = color_grading_tex;
-        }
-        
-        endUploadBatch();
-    }
-    */
     bool RenderResource::updateGlobalRenderResource(RenderScene* m_render_scene, GlobalRenderingRes level_resource_desc)
     {
         // ambient light
@@ -310,25 +249,113 @@ namespace MoYu
         return true;
     }
 
+    void RenderResource::InitDefaultTextures()
+    {
+        auto linkedDevice = m_Device->GetLinkedDevice();
+
+        char _WhiteColor[4] = {255, 255, 255, 255};
+        char _BlackColor[4] = {0, 0, 0, 255};
+        char _RedColor[4]   = {255, 0, 0, 255};
+        char _GreenColor[4] = {0, 255, 0, 255};
+        char _BlueColor[4]  = {0, 0, 255, 255};
+
+        #define CreateDefault(color, name) \
+    RHI::D3D12Texture::Create2D(linkedDevice, \
+                                1, \
+                                1, \
+                                1, \
+                                DXGI_FORMAT::DXGI_FORMAT_R8G8B8A8_UNORM, \
+                                RHI::RHISurfaceCreateFlags::RHISurfaceCreateFlagNone, \
+                                1, \
+                                name, \
+                                D3D12_RESOURCE_STATE_COMMON, \
+                                std::nullopt, \
+                                D3D12_SUBRESOURCE_DATA {color, sizeof(char) * 4, sizeof(char) * 4});\
+
+        _Default2TexMap[White] = CreateDefault(_WhiteColor, L"WhiteTex");
+        _Default2TexMap[Black] = CreateDefault(_BlackColor, L"BlackTex");
+        _Default2TexMap[Red]   = CreateDefault(_RedColor, L"RedTex");
+        _Default2TexMap[Green] = CreateDefault(_GreenColor, L"GreenTex");
+        _Default2TexMap[Blue]  = CreateDefault(_BlueColor, L"BlueTex");
+
+        _Default2TexMap[BaseColor] =
+            RHI::D3D12Texture::Create2D(linkedDevice,
+                                        1,
+                                        1,
+                                        1,
+                                        DXGI_FORMAT::DXGI_FORMAT_R8G8B8A8_UNORM_SRGB,
+                                        RHI::RHISurfaceCreateFlags::RHISurfaceCreateFlagNone,
+                                        1,
+                                        L"DefaultBaseColor",
+                                        D3D12_RESOURCE_STATE_COMMON,
+                                        std::nullopt,
+                                        D3D12_SUBRESOURCE_DATA {_WhiteColor, sizeof(char) * 4, sizeof(char) * 4});
+
+
+        float _MetalAndRoughnessColor[4] = {1, 1, 0, 0};
+        D3D12_SUBRESOURCE_DATA _MetalAndRoughData =
+            D3D12_SUBRESOURCE_DATA {_MetalAndRoughnessColor, sizeof(float) * 4, sizeof(float) * 4};
+        _Default2TexMap[MetallicAndRoughness] =
+            RHI::D3D12Texture::Create2D(linkedDevice,
+                                        1,
+                                        1,
+                                        1,
+                                        DXGI_FORMAT::DXGI_FORMAT_R32G32B32A32_FLOAT,
+                                        RHI::RHISurfaceCreateFlags::RHISurfaceCreateFlagNone,
+                                        1,
+                                        L"DefaultMetallicAndRoughness",
+                                        D3D12_RESOURCE_STATE_COMMON,
+                                        std::nullopt,
+                                        _MetalAndRoughData);
+
+        float _NormalColor[4] = {0, 0, 1, 0};
+        D3D12_SUBRESOURCE_DATA _NormalData =
+            D3D12_SUBRESOURCE_DATA {_NormalColor, sizeof(float) * 4, sizeof(float) * 4};
+        _Default2TexMap[TangentNormal] =
+            RHI::D3D12Texture::Create2D(linkedDevice,
+                                        1,
+                                        1,
+                                        1,
+                                        DXGI_FORMAT::DXGI_FORMAT_R8G8B8A8_UNORM,
+                                        RHI::RHISurfaceCreateFlags::RHISurfaceCreateFlagNone,
+                                        1,
+                                        L"DefaultNormal",
+                                        D3D12_RESOURCE_STATE_COMMON,
+                                        std::nullopt,
+                                        _NormalData);
+        
+    }
+
+    void RenderResource::ReleaseAllTextures()
+    {
+        _Default2TexMap.clear();
+        _Image2TexMap.clear();
+    }
+
     std::shared_ptr<RHI::D3D12Texture> RenderResource::SceneImageToTexture(const SceneImage& _sceneimage)
     {
-        uint32_t    m_width    = 1;
-        uint32_t    m_height   = 1;
-        void*       m_pixels   = empty_image;
+        if (_sceneimage.m_image_file == "")
+            return nullptr;
+
+        if (_Image2TexMap.find(_sceneimage) != _Image2TexMap.end())
+            return _Image2TexMap[_sceneimage];
+
         DXGI_FORMAT m_format   = _sceneimage.m_is_srgb ? DXGI_FORMAT::DXGI_FORMAT_R8G8B8A8_UNORM_SRGB : DXGI_FORMAT::DXGI_FORMAT_R8G8B8A8_UNORM;
         bool        m_is_srgb  = _sceneimage.m_is_srgb;
         bool        m_gen_mips = _sceneimage.m_auto_mips;
 
-        if (_sceneimage.m_image_file != "")
-        {
-            std::shared_ptr<MoYu::MoYuScratchImage> _image_data = loadImage(_sceneimage.m_image_file);
+        std::shared_ptr<MoYu::MoYuScratchImage> _image_data = loadImage(_sceneimage.m_image_file);
 
-            m_width  = _image_data->GetMetadata().width;
-            m_height = _image_data->GetMetadata().height;
-            m_pixels = _image_data->GetPixels();
-        }
+        uint32_t m_width = _image_data->GetMetadata().width;
+        uint32_t m_height = _image_data->GetMetadata().height;
+        void*    m_pixels = _image_data->GetPixels();
 
-        return createTex2D(m_width, m_height, m_pixels, m_format, m_is_srgb, m_gen_mips, false);
+        std::shared_ptr<RHI::D3D12Texture> _tex =
+            createTex2D(m_width, m_height, m_pixels, m_format, m_is_srgb, m_gen_mips, false);
+
+        _Image2TexMap[_sceneimage] = _tex;
+
+        return _tex;
     }
 
     bool RenderResource::updateInternalMaterial(SceneMaterial scene_material, SceneMaterial& cached_material, InternalMaterial& internal_material, bool has_initialized)
@@ -351,9 +378,10 @@ namespace MoYu
             is_uniform_same &= m_mat_data.m_base_color_factor == m_cached_mat_data.m_base_color_factor;
             is_uniform_same &= m_mat_data.m_metallic_factor == m_cached_mat_data.m_metallic_factor;
             is_uniform_same &= m_mat_data.m_roughness_factor == m_cached_mat_data.m_roughness_factor;
-            is_uniform_same &= m_mat_data.m_normal_scale == m_cached_mat_data.m_normal_scale;
-            is_uniform_same &= m_mat_data.m_occlusion_strength == m_cached_mat_data.m_occlusion_strength;
-            is_uniform_same &= m_mat_data.m_emissive_factor == m_cached_mat_data.m_emissive_factor;
+            is_uniform_same &= m_mat_data.m_reflectance_factor == m_cached_mat_data.m_reflectance_factor;
+            is_uniform_same &= m_mat_data.m_clearcoat_factor == m_cached_mat_data.m_clearcoat_factor;
+            is_uniform_same &= m_mat_data.m_clearcoat_roughness_factor == m_cached_mat_data.m_clearcoat_roughness_factor;
+            is_uniform_same &= m_mat_data.m_anisotropy_factor == m_cached_mat_data.m_anisotropy_factor;
             is_uniform_same &= m_mat_data.m_base_color_texture_file.m_tilling == m_cached_mat_data.m_base_color_texture_file.m_tilling;
             is_uniform_same &= m_mat_data.m_metallic_roughness_texture_file.m_tilling == m_cached_mat_data.m_metallic_roughness_texture_file.m_tilling;
             is_uniform_same &= m_mat_data.m_normal_texture_file.m_tilling == m_cached_mat_data.m_normal_texture_file.m_tilling;
@@ -368,11 +396,11 @@ namespace MoYu
                 material_uniform_buffer_info.baseColorFactor   = GLMUtil::fromVec4(m_mat_data.m_base_color_factor);
                 material_uniform_buffer_info.metallicFactor    = m_mat_data.m_metallic_factor;
                 material_uniform_buffer_info.roughnessFactor   = m_mat_data.m_roughness_factor;
-                material_uniform_buffer_info.reflectanceFactor = 1.0f;
+                material_uniform_buffer_info.reflectanceFactor = m_mat_data.m_reflectance_factor;
 
-                material_uniform_buffer_info.normalScale       = m_mat_data.m_normal_scale;
-                material_uniform_buffer_info.occlusionStrength = m_mat_data.m_occlusion_strength;
-                material_uniform_buffer_info.emissiveFactor    = m_mat_data.m_emissive_factor.x;
+                material_uniform_buffer_info.clearCoatFactor          = m_mat_data.m_clearcoat_factor;
+                material_uniform_buffer_info.clearCoatRoughnessFactor = m_mat_data.m_clearcoat_roughness_factor;
+                material_uniform_buffer_info.anisotropyFactor         = m_mat_data.m_anisotropy_factor;
 
                 material_uniform_buffer_info.base_color_tilling = GLMUtil::fromVec2(m_mat_data.m_base_color_texture_file.m_tilling);
                 material_uniform_buffer_info.metallic_roughness_tilling = GLMUtil::fromVec2(m_mat_data.m_metallic_roughness_texture_file.m_tilling);
@@ -399,7 +427,8 @@ namespace MoYu
                 SceneImage base_color_image = m_mat_data.m_base_color_texture_file.m_image;
                 if (now_material.base_color_texture_image != nullptr)
                     now_material.base_color_texture_image = nullptr;
-                now_material.base_color_texture_image = SceneImageToTexture(base_color_image);
+                auto _tex = SceneImageToTexture(base_color_image);
+                now_material.base_color_texture_image = _tex == nullptr ? _Default2TexMap[BaseColor] : _tex;
             }
         }
         {
@@ -408,7 +437,8 @@ namespace MoYu
                 SceneImage metallic_roughness_image = m_mat_data.m_metallic_roughness_texture_file.m_image;
                 if (now_material.metallic_roughness_texture_image != nullptr)
                     now_material.metallic_roughness_texture_image = nullptr;
-                now_material.metallic_roughness_texture_image = SceneImageToTexture(metallic_roughness_image);
+                auto _tex = SceneImageToTexture(metallic_roughness_image);
+                now_material.metallic_roughness_texture_image = _tex == nullptr ? _Default2TexMap[MetallicAndRoughness] : _tex;
             }
         }
         {
@@ -417,7 +447,8 @@ namespace MoYu
                 SceneImage normal_image = m_mat_data.m_normal_texture_file.m_image;
                 if (now_material.normal_texture_image != nullptr)
                     now_material.normal_texture_image = nullptr;
-                now_material.normal_texture_image = SceneImageToTexture(normal_image);
+                auto _tex = SceneImageToTexture(normal_image);
+                now_material.normal_texture_image = _tex == nullptr ? _Default2TexMap[TangentNormal] : _tex;
             }
         }
         {
@@ -426,7 +457,8 @@ namespace MoYu
                 SceneImage occlusion_image = m_mat_data.m_occlusion_texture_file.m_image;
                 if (now_material.occlusion_texture_image != nullptr)
                     now_material.occlusion_texture_image = nullptr;
-                now_material.occlusion_texture_image = SceneImageToTexture(occlusion_image);
+                auto _tex = SceneImageToTexture(occlusion_image);
+                now_material.occlusion_texture_image = _tex == nullptr ? _Default2TexMap[White] : _tex;
             }
         }
         {
@@ -435,7 +467,8 @@ namespace MoYu
                 SceneImage emissive_image = m_mat_data.m_emissive_texture_file.m_image;
                 if (now_material.emissive_texture_image != nullptr)
                     now_material.emissive_texture_image = nullptr;
-                now_material.emissive_texture_image = SceneImageToTexture(emissive_image);
+                auto _tex = SceneImageToTexture(emissive_image);
+                now_material.emissive_texture_image = _tex == nullptr ? _Default2TexMap[Black] : _tex;
             }
         }
 

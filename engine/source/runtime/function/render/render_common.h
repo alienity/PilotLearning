@@ -351,6 +351,13 @@ namespace MoYu
                lhs.m_mip_levels == rhs.m_mip_levels && lhs.m_image_file == rhs.m_image_file;
     }
 
+    inline bool operator<(const SceneImage& l, const SceneImage& r)
+    {
+        return l.m_is_srgb < r.m_is_srgb || (l.m_is_srgb == r.m_is_srgb && l.m_auto_mips < r.m_auto_mips) ||
+               ((l.m_is_srgb == r.m_is_srgb && l.m_auto_mips == r.m_auto_mips) && l.m_image_file < r.m_image_file) ||
+               ((l.m_is_srgb == r.m_is_srgb && l.m_auto_mips == r.m_auto_mips && l.m_image_file == r.m_image_file) && l.m_mip_levels < r.m_mip_levels);
+    }
+
     struct MaterialImage
     {
         SceneImage m_image {};
@@ -370,9 +377,10 @@ namespace MoYu
         Vector4 m_base_color_factor {1.0f, 1.0f, 1.0f, 1.0f};
         float   m_metallic_factor {1.0f};
         float   m_roughness_factor {1.0f};
-        float   m_normal_scale {1.0f};
-        float   m_occlusion_strength {1.0f};
-        Vector3 m_emissive_factor {0.0f, 0.0f, 0.0f};
+        float   m_reflectance_factor {1.0f};
+        float   m_clearcoat_factor {1.0f};
+        float   m_clearcoat_roughness_factor {1.0f};
+        float   m_anisotropy_factor {0.0f};
 
         MaterialImage m_base_color_texture_file {};
         MaterialImage m_metallic_roughness_texture_file {};
@@ -386,8 +394,8 @@ namespace MoYu
 #define CompareVal(Val) lhs.Val == rhs.Val
 
         return CompareVal(m_blend) && CompareVal(m_double_sided) && CompareVal(m_base_color_factor) &&
-               CompareVal(m_metallic_factor) && CompareVal(m_roughness_factor) && CompareVal(m_normal_scale) &&
-               CompareVal(m_occlusion_strength) && CompareVal(m_emissive_factor) &&
+               CompareVal(m_metallic_factor) && CompareVal(m_roughness_factor) && CompareVal(m_reflectance_factor) &&
+               CompareVal(m_clearcoat_factor) && CompareVal(m_clearcoat_roughness_factor) && CompareVal(m_anisotropy_factor) &&
                CompareVal(m_base_color_texture_file) && CompareVal(m_metallic_roughness_texture_file) &&
                CompareVal(m_normal_texture_file) && CompareVal(m_occlusion_texture_file) &&
                CompareVal(m_emissive_texture_file);

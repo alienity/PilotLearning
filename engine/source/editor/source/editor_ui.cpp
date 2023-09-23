@@ -480,11 +480,13 @@ namespace MoYu
                 isDirty = true;
             if (ImGui::DragFloat("RoughnessFactor", &mat_res_ptr->m_roughness_factor, 0.02f, 0.0f, 1.0f))
                 isDirty = true;
-            if (ImGui::DragFloat("NormalScale", &mat_res_ptr->m_normal_scale, 0.02f, 0.0f, 1.0f))
+            if (ImGui::DragFloat("ReflectanceFactor", &mat_res_ptr->m_reflectance_factor, 0.02f, 0.0f, 1.0f))
                 isDirty = true;
-            if (ImGui::DragFloat("OcclusionStrength", &mat_res_ptr->m_occlusion_strength, 0.02f, 0.0f, 1.0f))
+            if (ImGui::DragFloat("ClearCoatFactor", &mat_res_ptr->m_clearcoat_factor, 0.02f, 0.0f, 1.0f))
                 isDirty = true;
-            if (ImGui::DragFloat3("OcclusionStrength", mat_res_ptr->m_emissive_factor.ptr(), 0.02f, 0.0f, 1.0f))
+            if (ImGui::DragFloat("ClearCoatRoughnessFactor", &mat_res_ptr->m_clearcoat_roughness_factor, 0.02f, 0.0f, 1.0f))
+                isDirty = true;
+            if (ImGui::DragFloat("AnistropyFactor", &mat_res_ptr->m_anisotropy_factor, 0.02f, 0.0f, 1.0f))
                 isDirty = true;
 
             m_editor_ui_creator["MaterialImage"]("BaseColorTextureFile", isDirty, &mat_res_ptr->m_base_color_texture_file);
