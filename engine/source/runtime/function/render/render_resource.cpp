@@ -308,7 +308,7 @@ namespace MoYu
                                         std::nullopt,
                                         _MetalAndRoughData);
 
-        float _NormalColor[4] = {0, 0, 1, 0};
+        float _NormalColor[4] = {0.5, 0.5, 1, 0};
         D3D12_SUBRESOURCE_DATA _NormalData =
             D3D12_SUBRESOURCE_DATA {_NormalColor, sizeof(float) * 4, sizeof(float) * 4};
         _Default2TexMap[TangentNormal] =

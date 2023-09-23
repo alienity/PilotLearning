@@ -5,7 +5,6 @@ cbuffer Constants : register(b0)
     int _IBLSpecularIndex;
     int _LDOutputIndex;
 
-    uint _LodLevel;
     float _roughness;
 };
 

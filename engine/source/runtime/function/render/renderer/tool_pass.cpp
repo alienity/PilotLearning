@@ -34,7 +34,7 @@ namespace MoYu
         {
             RHI::RootSignatureDesc ldRootSigDesc =
                 RHI::RootSignatureDesc()
-                    .Add32BitConstants<0, 0>(4)
+                    .Add32BitConstants<0, 0>(3)
                     .AddStaticSampler<10, 0>(D3D12_FILTER::D3D12_FILTER_ANISOTROPIC, D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_WRAP, 8)
                     .AllowResourceDescriptorHeapIndexing()
                     .AllowSampleDescriptorHeapIndexing();
@@ -105,7 +105,6 @@ namespace MoYu
         isLDGenerated  = false;
         isRadiansGenerated = false;
 
-
     }
     
     void ToolPass::update(RHI::RenderGraph& graph, ToolInputParameters& passInput, ToolOutputParameters& passOutput)
@@ -172,13 +171,11 @@ namespace MoYu
                 D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc = RHI::D3D12UnorderedAccessView::GetDesc(p_LD.get(), 0, i);
                 int ldUAVIndex = p_LD->CreateUAV(uavDesc)->GetIndex();
 
-                int _lodIndex = i;
                 float _roughness = roughnessArray[i];
 
                 computeContext->SetConstant(0, 0, specularSRVIndex);
                 computeContext->SetConstant(0, 1, ldUAVIndex);
-                computeContext->SetConstant(0, 2, _lodIndex);
-                computeContext->SetConstant(0, 3, _roughness);
+                computeContext->SetConstant(0, 2, _roughness);
 
                 computeContext->Dispatch3D(width, height, 6, 8, 8, 1);
             }
