@@ -58,19 +58,19 @@
         "r": 0.5299999713897705
     },
     "m_skybox_irradiance_map": {
-        "m_negative_x_map": "asset/texture/sky/skybox_irradiance_X-.exr",
-        "m_negative_y_map": "asset/texture/sky/skybox_irradiance_Y-.exr",
-        "m_negative_z_map": "asset/texture/sky/skybox_irradiance_Z-.exr",
-        "m_positive_x_map": "asset/texture/sky/skybox_irradiance_X+.exr",
-        "m_positive_y_map": "asset/texture/sky/skybox_irradiance_Y+.exr",
-        "m_positive_z_map": "asset/texture/sky/skybox_irradiance_Z+.exr"
+        "m_negative_x_map": "asset/texture/sky/skybox_irradiance_X-.hdr",
+        "m_negative_y_map": "asset/texture/sky/skybox_irradiance_Y-.hdr",
+        "m_negative_z_map": "asset/texture/sky/skybox_irradiance_Z-.hdr",
+        "m_positive_x_map": "asset/texture/sky/skybox_irradiance_X+.hdr",
+        "m_positive_y_map": "asset/texture/sky/skybox_irradiance_Y+.hdr",
+        "m_positive_z_map": "asset/texture/sky/skybox_irradiance_Z+.hdr"
     },
     "m_skybox_specular_map": {
-        "m_negative_x_map": "asset/texture/sky/skybox_specular_X-.exr",
-        "m_negative_y_map": "asset/texture/sky/skybox_specular_Y-.exr",
-        "m_negative_z_map": "asset/texture/sky/skybox_specular_Z-.exr",
-        "m_positive_x_map": "asset/texture/sky/skybox_specular_X+.exr",
-        "m_positive_y_map": "asset/texture/sky/skybox_specular_Y+.exr",
-        "m_positive_z_map": "asset/texture/sky/skybox_specular_Z+.exr"
+        "m_negative_x_map": "asset/texture/sky/skybox_specular_X-.hdr",
+        "m_negative_y_map": "asset/texture/sky/skybox_specular_Y-.hdr",
+        "m_negative_z_map": "asset/texture/sky/skybox_specular_Z-.hdr",
+        "m_positive_x_map": "asset/texture/sky/skybox_specular_X+.hdr",
+        "m_positive_y_map": "asset/texture/sky/skybox_specular_Y+.hdr",
+        "m_positive_z_map": "asset/texture/sky/skybox_specular_Z+.hdr"
     }
 }

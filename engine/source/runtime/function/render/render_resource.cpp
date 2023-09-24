@@ -73,11 +73,11 @@ namespace MoYu
         startUploadBatch();
         {
             // create irradiance cubemap
-            auto irridiance_tex = createCubeMap(irradiance_maps, DXGI_FORMAT::DXGI_FORMAT_R32G32B32A32_FLOAT, true, false, false);
+            auto irridiance_tex = createCubeMap(irradiance_maps, DXGI_FORMAT::DXGI_FORMAT_R32G32B32A32_FLOAT, true, false, false, false);
             m_render_scene->m_skybox_map.m_skybox_irradiance_map = irridiance_tex;
 
             // create specular cubemap
-            auto specular_tex = createCubeMap(specular_maps, DXGI_FORMAT::DXGI_FORMAT_R32G32B32A32_FLOAT, false, false, false);
+            auto specular_tex = createCubeMap(specular_maps, DXGI_FORMAT::DXGI_FORMAT_R32G32B32A32_FLOAT, false, false, false, false);
             m_render_scene->m_skybox_map.m_skybox_specular_map = specular_tex;
 
             // create ibl dfg
@@ -621,7 +621,7 @@ namespace MoYu
         return createTex2D(tex2d_data->GetMetadata().width, tex2d_data->GetMetadata().height, tex2d_data->GetPixels(), format, is_srgb, genMips, batch);
     }
     
-    std::shared_ptr<RHI::D3D12Texture> RenderResource::createCubeMap(std::array<std::shared_ptr<MoYu::MoYuScratchImage>, 6>& cube_maps, DXGI_FORMAT format, bool is_srgb, bool genMips, bool batch)
+    std::shared_ptr<RHI::D3D12Texture> RenderResource::createCubeMap(std::array<std::shared_ptr<MoYu::MoYuScratchImage>, 6>& cube_maps, DXGI_FORMAT format, bool is_srgb, bool isReadWrite, bool genMips, bool batch)
     {
         if (batch)
             this->startUploadBatch();
@@ -636,7 +636,9 @@ namespace MoYu
         UINT width  = cube_maps[0]->GetMetadata().width;
         UINT height = cube_maps[0]->GetMetadata().height;
         
-        RHI::RHISurfaceCreateFlags texflags = RHI::RHISurfaceCreateFlagNone | RHI::RHISurfaceCreateRandomWrite;
+        RHI::RHISurfaceCreateFlags texflags = RHI::RHISurfaceCreateFlagNone;
+        if (isReadWrite)
+            texflags |= RHI::RHISurfaceCreateRandomWrite;
         if (genMips)
             texflags |= RHI::RHISurfaceCreateMipmap;
         if (is_srgb)

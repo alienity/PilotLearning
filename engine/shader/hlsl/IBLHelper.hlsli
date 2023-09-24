@@ -409,7 +409,7 @@ float4 roughnessFilter(TextureCube<float4> envMap, SamplerState enMapSampler, in
         
         if (NoL > 0.0)
         {
-            prefilteredColor += envMap.Sample(enMapSampler, L).rgb * NoL;
+            prefilteredColor += clamp(envMap.Sample(enMapSampler, L).rgb, 0, 12) * NoL;
             weight += NoL;
         }
     }

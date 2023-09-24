@@ -182,12 +182,15 @@ namespace MoYu
             {
                 if (stbi_is_hdr(file.c_str()))
                 {
-                    float* _load_pixels = stbi_loadf(file_path_str.c_str(), &iw, &ih, &in, desired_channels);
-                    texture->Initialize2D(DXGI_FORMAT::DXGI_FORMAT_R32G32B32A32_FLOAT, iw, ih, 1, 1);
-                    uint8_t* _pixels = texture->GetPixels();
-                    memcpy(_pixels, _load_pixels, sizeof(float) * 4 * iw * ih);
-                    stbi_image_free(_load_pixels);
+                    //float* _load_pixels = stbi_loadf(file_path_str.c_str(), &iw, &ih, &in, desired_channels);
+                    //texture->Initialize2D(DXGI_FORMAT::DXGI_FORMAT_R32G32B32A32_FLOAT, iw, ih, 1, 1);
+                    //uint8_t* _pixels = texture->GetPixels();
+                    //memcpy(_pixels, _load_pixels, sizeof(float) * 4 * iw * ih);
+                    //stbi_image_free(_load_pixels);
                 }
+                MoYuScratchImage _scratchImage;
+                DirectX::LoadFromHDRFile(file_full_path.c_str(), nullptr, _scratchImage);
+                *texture = std::move(_scratchImage);
             }
             else if (file_extension == ".exr")
             {

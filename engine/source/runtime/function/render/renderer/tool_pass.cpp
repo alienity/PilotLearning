@@ -110,7 +110,6 @@ namespace MoYu
     void ToolPass::update(RHI::RenderGraph& graph, ToolInputParameters& passInput, ToolOutputParameters& passOutput)
     {
 
-
     }
 
     void ToolPass::preUpdate(ToolInputParameters& passInput, ToolOutputParameters& passOutput)
@@ -168,6 +167,9 @@ namespace MoYu
 
             for (size_t i = 0; i < 5; i++)
             {
+                UINT _MipWidth = width >> i;
+                UINT _MipHeight = height >> i;
+
                 D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc = RHI::D3D12UnorderedAccessView::GetDesc(p_LD.get(), 0, i);
                 int ldUAVIndex = p_LD->CreateUAV(uavDesc)->GetIndex();
 
@@ -177,13 +179,14 @@ namespace MoYu
                 computeContext->SetConstant(0, 1, ldUAVIndex);
                 computeContext->SetConstant(0, 2, _roughness);
 
-                computeContext->Dispatch3D(width, height, 6, 8, 8, 1);
+                computeContext->Dispatch3D(_MipWidth, _MipHeight, 6, 8, 8, 1);
             }
 
         }
 
         context->Finish(true);
     }
+
 
     void ToolPass::preUpdate2(ToolInputParameters& passInput, ToolOutputParameters& passOutput)
     {

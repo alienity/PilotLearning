@@ -67,7 +67,7 @@ namespace MoYu
         std::shared_ptr<RHI::D3D12Texture> createTex2D(uint32_t width, uint32_t height, void* pixels, DXGI_FORMAT format, bool is_srgb, bool genMips = false, bool batch = false);
         std::shared_ptr<RHI::D3D12Texture> createTex2D(std::shared_ptr<MoYu::MoYuScratchImage>& tex2d_data, DXGI_FORMAT format, bool is_srgb, bool genMips = false, bool batch = false);
 
-        std::shared_ptr<RHI::D3D12Texture> createCubeMap(std::array<std::shared_ptr<MoYu::MoYuScratchImage>, 6>& cube_maps, DXGI_FORMAT format, bool is_srgb, bool genMips = false, bool batch = false);
+        std::shared_ptr<RHI::D3D12Texture> createCubeMap(std::array<std::shared_ptr<MoYu::MoYuScratchImage>, 6>& cube_maps, DXGI_FORMAT format, bool is_srgb, bool isReadWrite = true, bool genMips = false, bool batch = false);
 
         std::shared_ptr<RHI::D3D12Texture> SceneImageToTexture(const SceneImage& normal_image);
 
