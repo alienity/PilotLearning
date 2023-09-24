@@ -85,4 +85,38 @@ namespace MoYu
     bool BoxIntersectsWithSphere(BoundingBox const& b, BoundingSphere const& s);
 
     //glm::mat4 CalculateDirectionalLightCamera(RenderScene& scene, RenderCamera& camera);
+
+    namespace ibl
+    {
+        /*
+        class float5 {
+            float v[5];
+        public:
+            float5() = default;
+            constexpr float5(float a, float b, float c, float d, float e) : v{ a, b, c, d, e } {}
+            constexpr float operator[](size_t i) const { return v[i]; }
+            float& operator[](size_t i) { return v[i]; }
+        };
+
+        static inline const float5 multiply(const float5 M[5], float5 x) noexcept {
+            return float5{
+                    M[0][0] * x[0] + M[1][0] * x[1] + M[2][0] * x[2] + M[3][0] * x[3] + M[4][0] * x[4],
+                    M[0][1] * x[0] + M[1][1] * x[1] + M[2][1] * x[2] + M[3][1] * x[3] + M[4][1] * x[4],
+                    M[0][2] * x[0] + M[1][2] * x[1] + M[2][2] * x[2] + M[3][2] * x[3] + M[4][2] * x[4],
+                    M[0][3] * x[0] + M[1][3] * x[1] + M[2][3] * x[2] + M[3][3] * x[3] + M[4][3] * x[4],
+                    M[0][4] * x[0] + M[1][4] * x[1] + M[2][4] * x[2] + M[3][4] * x[3] + M[4][4] * x[4]
+            };
+        };
+
+        inline constexpr size_t SHindex(size_t m, size_t l) { return l * (l + 1) + m; }
+
+        void ComputeShBasis(float* SHb, size_t numBands, const MoYu::Vector3& s);
+        float Kml(size_t m, size_t l);
+        std::vector<float> Ki(size_t numBands);
+        float ComputeTruncatedCosSh(size_t l);
+        MoYu::Vector3 rotateShericalHarmonicBand1(MoYu::Vector3 band1, MoYu::Matrix3x3 const& M);
+        float5 rotateShericalHarmonicBand2(float5 const& band2, MoYu::Matrix3x3 const& M);
+        */
+    }
+
 } // namespace MoYu

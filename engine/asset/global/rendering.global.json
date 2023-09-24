@@ -48,7 +48,7 @@
     "m_enable_fxaa": false,
     "m_ibl_map": {
         "m_dfg_map": "asset/texture/global/DFG.dds",
-        "m_irradians_map": "",
+        "m_irradians_map": "asset/texture/global/Radians.dds",
         "m_ld_map": "asset/texture/global/LD.dds"
     },
     "m_sky_color": {

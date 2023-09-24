@@ -156,6 +156,7 @@ namespace MoYu
     constexpr const float RAD_TO_DEG       = (float)d::RAD_TO_DEG;
     } // namespace f
 
+    constexpr float factorial(size_t n, size_t d = 1);
 
     struct Vector2;
     struct Vector3;

@@ -68,6 +68,7 @@ namespace MoYu
         // load dfg texture
         std::shared_ptr<MoYu::MoYuScratchImage> _dfg_map = loadImage(level_resource_desc.m_ibl_map.m_dfg_map);
         std::shared_ptr<MoYu::MoYuScratchImage> _ld_map  = loadImage(level_resource_desc.m_ibl_map.m_ld_map);
+        std::shared_ptr<MoYu::MoYuScratchImage> _radians_map  = loadImage(level_resource_desc.m_ibl_map.m_irradians_map);
 
 
         startUploadBatch();
@@ -87,6 +88,11 @@ namespace MoYu
             // create ibl ld
             auto ld_tex = createTex(_ld_map);
             m_render_scene->m_ibl_map.m_ld = ld_tex;
+
+            // create ibl radians
+            auto radians_tex = createTex(_radians_map);
+            m_render_scene->m_ibl_map.m_radians = radians_tex;
+
 
         }
         endUploadBatch();
@@ -147,7 +153,7 @@ namespace MoYu
         _iblUniform.iblRoughnessOneLevel = 4;
         _iblUniform.dfg_lut_srv_index    = render_scene->m_ibl_map.m_dfg->GetDefaultSRV()->GetIndex();
         _iblUniform.ld_lut_srv_index     = render_scene->m_ibl_map.m_ld->GetDefaultSRV()->GetIndex();
-        _iblUniform.radians_srv_index    = 4;
+        _iblUniform.radians_srv_index    = render_scene->m_ibl_map.m_radians->GetDefaultSRV()->GetIndex();
 
 
         _frameUniforms->iblUniform = _iblUniform;
@@ -253,11 +259,11 @@ namespace MoYu
     {
         auto linkedDevice = m_Device->GetLinkedDevice();
 
-        char _WhiteColor[4] = {255, 255, 255, 255};
-        char _BlackColor[4] = {0, 0, 0, 255};
-        char _RedColor[4]   = {255, 0, 0, 255};
-        char _GreenColor[4] = {0, 255, 0, 255};
-        char _BlueColor[4]  = {0, 0, 255, 255};
+        char _WhiteColor[4] = {(char)255, (char)255, (char)255, (char)255};
+        char _BlackColor[4] = {(char)0, (char)0, (char)0, (char)255};
+        char _RedColor[4]   = {(char)255, (char)0, (char)0, (char)255};
+        char _GreenColor[4] = {(char)0, (char)255, (char)0, (char)255};
+        char _BlueColor[4]  = {(char)0, (char)0, (char)255, (char)255};
 
         #define CreateDefault(color, name) \
     RHI::D3D12Texture::Create2D(linkedDevice, \

@@ -1,4 +1,5 @@
 #include "CommonMath.hlsli"
+#include "ColorSpaceUtility.hlsli"
 
 #define IBL_INTEGRATION_IMPORTANCE_SAMPLING_COUNT 64
 
@@ -409,7 +410,7 @@ float4 roughnessFilter(TextureCube<float4> envMap, SamplerState enMapSampler, in
         
         if (NoL > 0.0)
         {
-            prefilteredColor += clamp(envMap.Sample(enMapSampler, L).rgb, 0, 12) * NoL;
+            prefilteredColor += clamp(envMap.Sample(enMapSampler, L).rgb, 0, 30) * NoL;
             weight += NoL;
         }
     }
@@ -528,7 +529,8 @@ float3 diffuseIrradiance(TextureCube<float4> envMap, SamplerState enMapSampler, 
         
         if (NoL > 0.0)
         {
-            prefilteredColor += envMap.Sample(enMapSampler, L).rgb;
+            float3 envColor = clamp(envMap.Sample(enMapSampler, L).rgb, 0, 30);
+            prefilteredColor += envColor;
         }
     }
     
@@ -536,7 +538,23 @@ float3 diffuseIrradiance(TextureCube<float4> envMap, SamplerState enMapSampler, 
 
 }
 
-
 // 在d3d12中写入到指定mip中，当然如果直接用ComputeShader去做计算，就可以一次性计算出所有的mip，那我还是用cS做吧
 // https://www.gamedev.net/forums/topic/688777-render-to-specific-cubemap-mip/5343021/
+
+//*****************************************************************
+// SH
+//*****************************************************************
+
+/*
+ * returns n! / d!
+ */
+uint SHindex(uint m, uint l)
+{
+    return l * (l + 1) + m;
+}
+
+void computeShBasisBand2(out float SHb[9], const float3 s)
+{
+    
+}
 

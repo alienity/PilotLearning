@@ -3,6 +3,30 @@
 namespace MoYu
 {
     //------------------------------------------------------------------------------------------
+
+    /*
+     * returns n! / d!
+     */
+    static constexpr float factorial(size_t n, size_t d) {
+       d = std::max(size_t(1), d);
+       n = std::max(size_t(1), n);
+       float r = 1.0;
+       if (n == d) {
+           // intentionally left blank
+       } else if (n > d) {
+           for ( ; n>d ; n--) {
+               r *= n;
+           }
+       } else {
+           for ( ; d>n ; d--) {
+               r *= d;
+           }
+           r = 1.0f / r;
+       }
+       return r;
+    }
+
+    //------------------------------------------------------------------------------------------
     Math::AngleUnit Math::k_AngleUnit;
 
     Math::Math() { k_AngleUnit = AngleUnit::AU_DEGREE; }

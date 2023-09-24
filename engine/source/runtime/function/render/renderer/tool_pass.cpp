@@ -19,6 +19,8 @@ namespace MoYu
                 RHI_SHADER_TYPE::Compute, m_ShaderRootPath / "hlsl/DFGPrefilter.hlsl", ShaderCompileOptions(L"CSMain"));
             m_LDCS = m_ShaderCompiler->CompileShader(
                 RHI_SHADER_TYPE::Compute, m_ShaderRootPath / "hlsl/LDPrefilter.hlsl", ShaderCompileOptions(L"CSMain"));
+            m_RadiansCS = m_ShaderCompiler->CompileShader(
+                RHI_SHADER_TYPE::Compute, m_ShaderRootPath / "hlsl/RadiansPrefilter.hlsl", ShaderCompileOptions(L"CSMain"));
         }
 
         {
@@ -40,6 +42,16 @@ namespace MoYu
                     .AllowSampleDescriptorHeapIndexing();
 
             p_LDRootsignature = std::make_shared<RHI::D3D12RootSignature>(m_Device, ldRootSigDesc);
+        }
+        {
+            RHI::RootSignatureDesc radiansRootSigDesc =
+                RHI::RootSignatureDesc()
+                    .Add32BitConstants<0, 0>(2)
+                    .AddStaticSampler<10, 0>(D3D12_FILTER::D3D12_FILTER_ANISOTROPIC, D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_WRAP, 8)
+                    .AllowResourceDescriptorHeapIndexing()
+                    .AllowSampleDescriptorHeapIndexing();
+
+            p_RadiansRootsignature = std::make_shared<RHI::D3D12RootSignature>(m_Device, radiansRootSigDesc);
         }
 
         {
@@ -68,9 +80,22 @@ namespace MoYu
 
             p_LDPSO = std::make_shared<RHI::D3D12PipelineState>(m_Device, L"LDPSO", psoDesc);
         }
+        {
+            struct PsoStream
+            {
+                PipelineStateStreamRootSignature RootSignature;
+                PipelineStateStreamCS            CS;
+            } psoStream;
+            psoStream.RootSignature = PipelineStateStreamRootSignature(p_RadiansRootsignature.get());
+            psoStream.CS            = &m_RadiansCS;
+
+            PipelineStateStreamDesc psoDesc = {sizeof(PsoStream), &psoStream};
+
+            p_RadiansPSO = std::make_shared<RHI::D3D12PipelineState>(m_Device, L"RandiansPSO", psoDesc);
+        }
 
 
-        if (p_DFG == nullptr)
+        //if (p_DFG == nullptr)
         {
             p_DFG = RHI::D3D12Texture::Create2D(m_Device->GetLinkedDevice(),
                                                 512,
@@ -82,7 +107,7 @@ namespace MoYu
                                                 L"DFGTex");
         }
 
-        if (p_LD == nullptr)
+        //if (p_LD == nullptr)
         {
             std::shared_ptr<RHI::D3D12Texture> p_IBLSpecular = m_render_scene->m_skybox_map.m_skybox_specular_map;
 
@@ -99,16 +124,36 @@ namespace MoYu
                                                     L"LDTex");
         }
 
+        //if (p_DiffuseRadians = nullptr)
+        {
+            std::shared_ptr<RHI::D3D12Texture> p_IBLSpecular = m_render_scene->m_skybox_map.m_skybox_specular_map;
+
+            int width  = p_IBLSpecular->GetWidth();
+            int height = p_IBLSpecular->GetHeight();
+
+            p_DiffuseRadians = RHI::D3D12Texture::CreateCubeMap(m_Device->GetLinkedDevice(),
+                                                                width,
+                                                                height,
+                                                                1,
+                                                                DXGI_FORMAT::DXGI_FORMAT_R32G32B32A32_FLOAT,
+                                                                RHI::RHISurfaceCreateFlags::RHISurfaceCreateRandomWrite,
+                                                                1,
+                                                                L"RadiansTex");
+        }
+
         isDFGGenerated = false;
         isDFGSaved = false;
 
         isLDGenerated  = false;
-        isRadiansGenerated = false;
+        isLDSaved     = false;
 
+        isRadiansGenerated = false;
+        isRadiansSaved     = false;
     }
     
     void ToolPass::update(RHI::RenderGraph& graph, ToolInputParameters& passInput, ToolOutputParameters& passOutput)
     {
+
 
     }
 
@@ -184,9 +229,33 @@ namespace MoYu
 
         }
 
+        if (!isRadiansGenerated)
+        {
+            isRadiansGenerated = !isRadiansGenerated;
+
+            std::shared_ptr<RHI::D3D12Texture> p_IBLSpecular = m_render_scene->m_skybox_map.m_skybox_specular_map;
+
+            int specularSRVIndex = p_IBLSpecular->GetDefaultSRV()->GetIndex();
+
+            int width  = p_DiffuseRadians->GetWidth();
+            int height = p_DiffuseRadians->GetHeight();
+            
+            RHI::D3D12ComputeContext* computeContext = context->GetComputeContext();
+
+            computeContext->SetRootSignature(p_RadiansRootsignature.get());
+            computeContext->SetPipelineState(p_RadiansPSO.get());
+
+            D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc = RHI::D3D12UnorderedAccessView::GetDesc(p_DiffuseRadians.get(), 0, 0);
+            int radiansUAVIndex = p_DiffuseRadians->CreateUAV(uavDesc)->GetIndex();
+
+            computeContext->SetConstant(0, 0, specularSRVIndex);
+            computeContext->SetConstant(0, 1, radiansUAVIndex);
+
+            computeContext->Dispatch3D(width, height, 6, 8, 8, 1);
+        }
+
         context->Finish(true);
     }
-
 
     void ToolPass::preUpdate2(ToolInputParameters& passInput, ToolOutputParameters& passOutput)
     {
@@ -219,6 +288,16 @@ namespace MoYu
             // https://learn.microsoft.com/en-us/windows/win32/direct3d12/readback-data-using-heaps
             // ------------------
         }
+        if (!isRadiansSaved)
+        {
+            isRadiansSaved = !isRadiansSaved;
+
+            std::filesystem::path m_AssertRootPath = g_runtime_global_context.m_config_manager->getAssetFolder();
+
+            std::filesystem::path m_RadiansPath = m_AssertRootPath.append(L"texture\\global\\Radians.dds");
+
+            Tools::ReadCubemapToFile(m_Device, p_DiffuseRadians.get(), m_RadiansPath.c_str());
+        }
     }
 
 
@@ -226,12 +305,15 @@ namespace MoYu
     {
         p_DFG = nullptr;
         p_LD  = nullptr;
+        p_DiffuseRadians = nullptr;
 
         p_DFGRootsignature = nullptr;
         p_LDRootsignature  = nullptr;
+        p_RadiansRootsignature = nullptr;
 
         p_DFGPSO = nullptr;
         p_LDPSO  = nullptr;
+        p_RadiansPSO = nullptr;
     }
 
     namespace Tools

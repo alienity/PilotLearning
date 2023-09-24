@@ -758,8 +758,8 @@ void evaluateIBL(
     // float diffuseBRDF = 1.0f;
     // float3 Fd = pixel.diffuseColor * _diffuseIrradiance * (1.0 - E) * diffuseBRDF;
 
-    // Combine all terms
-    // Note: iblLuminance is already premultiplied by the exposure
+    // // Combine all terms
+    // // Note: iblLuminance is already premultiplied by the exposure
 
     // color.rgb += Fr + Fd;
     color.rgb += Fr;

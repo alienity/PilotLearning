@@ -347,4 +347,141 @@ namespace MoYu
         return light_proj_view;
     }
     */
+
+    namespace ibl
+    {
+        ///*
+        ///*
+        // * SH scaling factors:
+        // *  returns sqrt((2*l + 1) / 4*pi) * sqrt( (l-|m|)! / (l+|m|)! )
+        // */
+        //float Kml(size_t m, size_t l)
+        //{
+        //    m = m < 0 ? -m : m;  // abs() is not constexpr
+        //    const float K = (2 * l + 1) * factorial(size_t(l - m), size_t(l + m));
+        //    return std::sqrt(K) * (F_2_SQRTPI * 0.25);
+        //}
+
+        //std::vector<float> Ki(size_t numBands)
+        //{
+        //    const size_t numCoefs = numBands * numBands;
+        //    std::vector<float> K(numCoefs);
+        //    for (size_t l = 0; l < numBands; l++) {
+        //        K[SHindex(0, l)] = Kml(0, l);
+        //        for (size_t m = 1; m <= l; m++) {
+        //            K[SHindex(m, l)] =
+        //            K[SHindex(-m, l)] = F_SQRT2 * Kml(m, l);
+        //        }
+        //    }
+        //    return K;
+        //}
+
+        //// < cos(theta) > SH coefficients pre-multiplied by 1 / K(0,l)
+        //float ComputeTruncatedCosSh(size_t l)
+        //{
+        //    if (l == 0) {
+        //        return F_PI;
+        //    } else if (l == 1) {
+        //        return 2 * F_PI / 3;
+        //    } else if (l & 1u) {
+        //        return 0;
+        //    }
+        //    const size_t l_2 = l / 2;
+        //    float A0 = ((l_2 & 1u) ? 1.0f : -1.0f) / ((l + 2) * (l - 1));
+        //    float A1 = factorial(l, l_2) / (factorial(l_2) * (1 << l));
+        //    return 2 * F_PI * A0 * A1;
+        //}
+
+        ///*
+        // * Calculates non-normalized SH bases, i.e.:
+        // *  m > 0, cos(m*phi)   * P(m,l)
+        // *  m < 0, sin(|m|*phi) * P(|m|,l)
+        // *  m = 0, P(0,l)
+        // */
+        //void ComputeShBasis(float* SHb, size_t numBands, const MoYu::Vector3& s)
+        //{
+        //    /*
+        //     * TODO: all the Legendre computation below is identical for all faces, so it
+        //     * might make sense to pre-compute it once. Also note that there is
+        //     * a fair amount of symmetry within a face (which we could take advantage of
+        //     * to reduce the pre-compute table).
+        //     */
+
+        //    /*
+        //     * Below, we compute the associated Legendre polynomials using recursion.
+        //     * see: http://mathworld.wolfram.com/AssociatedLegendrePolynomial.html
+        //     *
+        //     * Note [0]: s.z == cos(theta) ==> we only need to compute P(s.z)
+        //     *
+        //     * Note [1]: We in fact compute P(s.z) / sin(theta)^|m|, by removing
+        //     * the "sqrt(1 - s.z*s.z)" [i.e.: sin(theta)] factor from the recursion.
+        //     * This is later corrected in the ( cos(m*phi), sin(m*phi) ) recursion.
+        //     */
+
+        //    // s = (x, y, z) = (sin(theta)*cos(phi), sin(theta)*sin(phi), cos(theta))
+
+        //    // handle m=0 separately, since it produces only one coefficient
+        //    float Pml_2 = 0;
+        //    float Pml_1 = 1;
+        //    SHb[0] =  Pml_1;
+        //    for (size_t l=1; l<numBands; l++) {
+        //        float Pml = ((2*l-1.0f)*Pml_1*s.z - (l-1.0f)*Pml_2) / l;
+        //        Pml_2 = Pml_1;
+        //        Pml_1 = Pml;
+        //        SHb[SHindex(0, l)] = Pml;
+        //    }
+        //    float Pmm = 1;
+        //    for (size_t m=1 ; m<numBands ; m++) {
+        //        Pmm = (1.0f - 2*m) * Pmm;      // See [1], divide by sqrt(1 - s.z*s.z);
+        //        Pml_2 = Pmm;
+        //        Pml_1 = (2*m + 1.0f)*Pmm*s.z;
+        //        // l == m
+        //        SHb[SHindex(-m, m)] = Pml_2;
+        //        SHb[SHindex( m, m)] = Pml_2;
+        //        if (m+1 < numBands) {
+        //            // l == m+1
+        //            SHb[SHindex(-m, m+1)] = Pml_1;
+        //            SHb[SHindex( m, m+1)] = Pml_1;
+        //            for (size_t l=m+2 ; l<numBands ; l++) {
+        //                float Pml = ((2*l - 1.0f)*Pml_1*s.z - (l + m - 1.0f)*Pml_2) / (l-m);
+        //                Pml_2 = Pml_1;
+        //                Pml_1 = Pml;
+        //                SHb[SHindex(-m, l)] = Pml;
+        //                SHb[SHindex( m, l)] = Pml;
+        //            }
+        //        }
+        //    }
+
+        //    // At this point, SHb contains the associated Legendre polynomials divided
+        //    // by sin(theta)^|m|. Below we compute the SH basis.
+        //    //
+        //    // ( cos(m*phi), sin(m*phi) ) recursion:
+        //    // cos(m*phi + phi) == cos(m*phi)*cos(phi) - sin(m*phi)*sin(phi)
+        //    // sin(m*phi + phi) == sin(m*phi)*cos(phi) + cos(m*phi)*sin(phi)
+        //    // cos[m+1] == cos[m]*s.x - sin[m]*s.y
+        //    // sin[m+1] == sin[m]*s.x + cos[m]*s.y
+        //    //
+        //    // Note that (d.x, d.y) == (cos(phi), sin(phi)) * sin(theta), so the
+        //    // code below actually evaluates:
+        //    //      (cos((m*phi), sin(m*phi)) * sin(theta)^|m|
+        //    float Cm = s.x;
+        //    float Sm = s.y;
+        //    for (size_t m = 1; m <= numBands; m++) {
+        //        for (size_t l = m; l < numBands; l++) {
+        //            SHb[SHindex(-m, l)] *= Sm;
+        //            SHb[SHindex( m, l)] *= Cm;
+        //        }
+        //        float Cm1 = Cm * s.x - Sm * s.y;
+        //        float Sm1 = Sm * s.x + Cm * s.y;
+        //        Cm = Cm1;
+        //        Sm = Sm1;
+        //    }
+        //}
+
+
+
+    }
+
+    
+
 } // namespace MoYu
