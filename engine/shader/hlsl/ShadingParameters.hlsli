@@ -301,30 +301,28 @@ float3 prefilteredDFG(Texture2D<float3> light_iblDFG, SamplerState light_iblDFGS
 //------------------------------------------------------------------------------
 
 float3 diffuseIrradiance(const FrameUniforms frameUniforms, const SamplerStruct samplerStruct, const float3 n) {
-    if (frameUniforms.iblUniform.iblSH[0].x == 65504.0) {
-        TextureCube<float4> ldLut = ResourceDescriptorHeap[frameUniforms.iblUniform.ld_lut_srv_index];
-
-        int width;
-        int height;
-        int numberOfLevels;
-        ldLut.GetDimensions(int(frameUniforms.iblUniform.iblRoughnessOneLevel), width, height, numberOfLevels);
-
-        // uint2 s = textureSize(light_iblSpecular, int(frameUniforms.iblUniform.iblRoughnessOneLevel));
-        float du = 1.0 / float(width);
-        float dv = 1.0 / float(height);
-        float3 m0 = normalize(cross(n, float3(0.0, 1.0, 0.0)));
-        float3 m1 = cross(m0, n);
-        float3 m0du = m0 * du;
-        float3 m1dv = m1 * dv;
-        float3 c;
-        c  = Irradiance_RoughnessOne(frameUniforms, samplerStruct, n - m0du - m1dv);
-        c += Irradiance_RoughnessOne(frameUniforms, samplerStruct, n + m0du - m1dv);
-        c += Irradiance_RoughnessOne(frameUniforms, samplerStruct, n + m0du + m1dv);
-        c += Irradiance_RoughnessOne(frameUniforms, samplerStruct, n - m0du + m1dv);
-        return c * 0.25;
-    } else {
+    // if (frameUniforms.iblUniform.iblSH[0].x == 65504.0) {
+    //     TextureCube<float4> ldLut = ResourceDescriptorHeap[frameUniforms.iblUniform.ld_lut_srv_index];
+    //     int width;
+    //     int height;
+    //     int numberOfLevels;
+    //     ldLut.GetDimensions(int(frameUniforms.iblUniform.iblRoughnessOneLevel), width, height, numberOfLevels);
+    //     // uint2 s = textureSize(light_iblSpecular, int(frameUniforms.iblUniform.iblRoughnessOneLevel));
+    //     float du = 1.0 / float(width);
+    //     float dv = 1.0 / float(height);
+    //     float3 m0 = normalize(cross(n, float3(0.0, 1.0, 0.0)));
+    //     float3 m1 = cross(m0, n);
+    //     float3 m0du = m0 * du;
+    //     float3 m1dv = m1 * dv;
+    //     float3 c;
+    //     c  = Irradiance_RoughnessOne(frameUniforms, samplerStruct, n - m0du - m1dv);
+    //     c += Irradiance_RoughnessOne(frameUniforms, samplerStruct, n + m0du - m1dv);
+    //     c += Irradiance_RoughnessOne(frameUniforms, samplerStruct, n + m0du + m1dv);
+    //     c += Irradiance_RoughnessOne(frameUniforms, samplerStruct, n - m0du + m1dv);
+    //     return c * 0.25;
+    // } else {
         return Irradiance_SphericalHarmonics(frameUniforms, n);
-    }
+    // }
 }
 
 
