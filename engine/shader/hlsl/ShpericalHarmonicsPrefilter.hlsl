@@ -78,11 +78,11 @@ void CSMain(uint3 Gid : SV_GroupID, uint3 GTid : SV_GroupThreadID, uint3 DTid : 
         float _sh[27];
         uint  _shIndex = 0;
         uint  i;
-        for (i = 0; i < 9; ++i)
+        for (i = 0; i < 3; ++i)
         {
-            for (uint j = 0; j < 3; ++j)
+            for (uint j = 0; j < 9; ++j)
             {
-                _sh[_shIndex++] = SH[i][j];
+                _sh[_shIndex++] = SH[j][i];
             }
         }
 
