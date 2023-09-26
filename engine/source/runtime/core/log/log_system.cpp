@@ -7,6 +7,8 @@
 
 namespace MoYu
 {
+    LogSystem* m_LogSystem;
+
     LogSystem::LogSystem()
     {
         auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
@@ -27,10 +29,20 @@ namespace MoYu
         spdlog::register_logger(m_logger);
     }
 
+    LogSystem* LogSystem::Instance()
+    {
+        if (m_LogSystem == nullptr)
+            m_LogSystem = new LogSystem();
+        return m_LogSystem;
+    }
+
     LogSystem::~LogSystem()
     {
         m_logger->flush();
         spdlog::drop_all();
+
+        delete m_LogSystem;
+        m_LogSystem = nullptr;
     }
 
 } // namespace MoYu

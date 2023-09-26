@@ -1,4 +1,5 @@
 #include "IBLHelper.hlsli"
+#include "SphericalHarmonicsHelper.hlsli"
 #include "CommonMath.hlsli"
 
 cbuffer Constants : register(b0)
@@ -16,21 +17,17 @@ void CSMain(uint3 Gid : SV_GroupID, uint3 GTid : SV_GroupThreadID, uint3 DTid : 
     RWStructuredBuffer<float4> m_OutputBuffer = ResourceDescriptorHeap[_SHOutputBufferIndex];
 
     uint width, height, elements;
-    m_OutputLDTex.GetDimensions(width, height, elements);
+    m_IBLRadians.GetDimensions(0, width, height, elements);
 
     float3 SH[9];
-
-    uint numBands = 2;
-    uint numCorfs = numBands * numBands;
 
     for(uint f = 0; f < elements; ++f)
     {
         for(uint x = 0; x < width; ++x)
         {
-            for(uint y = 0; y < width; ++y)
+            for(uint y = 0; y < height; ++y)
             {
                 float2 texXY = float2((x + 0.5f)/(float)width, (y + 0.5f)/(float)height) * 2.0f - 1.0f;
-                uint face = DTid.z;
 
                 float3 s = getDirectionForCubemap(f, texXY);
 
@@ -43,7 +40,7 @@ void CSMain(uint3 Gid : SV_GroupID, uint3 GTid : SV_GroupThreadID, uint3 DTid : 
                 computeShBasisBand2(SHb, s);
 
                 // apply coefficients to the sampled color
-                for (uint i=0 ; i<numCoefs ; i++)
+                for (uint i=0 ; i<9 ; i++)
                 {
                     SH[i] += color * SHb[i];
                 }
@@ -53,11 +50,11 @@ void CSMain(uint3 Gid : SV_GroupID, uint3 GTid : SV_GroupThreadID, uint3 DTid : 
     }
 
     // precompute the scaling factor K
-    float K[4];
+    float K[9];
     KiBand2(K);
 
     // apply truncated cos (irradiance)
-    for (uint l = 0; l < numBands; l++) {
+    for (uint l = 0; l < 3; l++) {
         const float truncatedCosSh = computeTruncatedCosSh(uint(l));
         K[SHindex(0, l)] *= truncatedCosSh;
         for (uint m = 1; m <= l; m++) {
@@ -67,15 +64,34 @@ void CSMain(uint3 Gid : SV_GroupID, uint3 GTid : SV_GroupThreadID, uint3 DTid : 
     }
 
     // apply all the scale factors
-    for (uint i = 0; i < numCoefs; i++)
+    for (uint i = 0; i < 9; i++)
     {
         SH[i] *= K[i];
     }
 
+    preprocessSH(SH);
+
     GroupMemoryBarrierWithGroupSync();
 
-    if(DTid == 0)
+    if (DTid.x == 0 && DTid.y == 0 && DTid.z == 0)
     {
-        m_OutputBuffer[]
+        float _sh[27];
+        uint  _shIndex = 0;
+        uint  i;
+        for (i = 0; i < 9; ++i)
+        {
+            for (uint j = 0; j < 3; ++j)
+            {
+                _sh[_shIndex++] = SH[i][j];
+            }
+        }
+
+        float4 _packSH[7];
+        PackSH(_sh, _packSH);
+
+        for (i = 0; i < 7; ++i)
+        {
+            m_OutputBuffer[i] = _packSH[i];
+        }
     }
 }

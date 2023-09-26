@@ -39,9 +39,17 @@ namespace MoYu
 
         //********************************************************************
         /*
-        global_rendering_res.m_ibl_map.m_dfg_map = "asset/texture/global/DFG.dds";
-        global_rendering_res.m_ibl_map.m_ld_map = "asset/texture/global/LD.dds";
+        //global_rendering_res.m_ibl_map.m_dfg_map = "asset/texture/global/DFG.dds";
+        //global_rendering_res.m_ibl_map.m_ld_map = "asset/texture/global/LD.dds";
 
+        global_rendering_res.m_ibl_map.m_SH.push_back({0.009743, 0.072145, 0.075367, 0.075067});
+        global_rendering_res.m_ibl_map.m_SH.push_back({0.014250, 0.119934, 0.125374, 0.104758});
+        global_rendering_res.m_ibl_map.m_SH.push_back({-0.018514, -0.012085, -0.012721, -0.042931});
+        global_rendering_res.m_ibl_map.m_SH.push_back({0.013441, 0.017198, -0.037952, -0.015641});
+        global_rendering_res.m_ibl_map.m_SH.push_back({0.019633, 0.025091, -0.003160, -0.001210});
+        global_rendering_res.m_ibl_map.m_SH.push_back({-0.022872, -0.024182, 0.097561, 0.037638});
+        global_rendering_res.m_ibl_map.m_SH.push_back({-0.016545, -0.001230, 0.039355, 1.000000});
+        
         asset_manager->saveAsset(global_rendering_res, global_rendering_res_url);
         */
         //********************************************************************

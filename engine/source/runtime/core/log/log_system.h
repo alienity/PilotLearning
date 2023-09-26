@@ -21,8 +21,12 @@ namespace MoYu
             Fatal
         };
 
-    public:
+    private:
         LogSystem();
+
+    public:
+        static LogSystem* Instance();
+
         ~LogSystem();
 
         template<typename... TARGS>
@@ -65,5 +69,20 @@ namespace MoYu
     private:
         std::shared_ptr<spdlog::logger> m_logger;
     };
+
+#define LOG_HELPER(LOG_LEVEL, ...) MoYu::LogSystem::Instance()->log(LOG_LEVEL, __VA_ARGS__)
+
+#define LOG_TRACE(...) LOG_HELPER(MoYu::LogSystem::LogLevel::Trace, __VA_ARGS__);
+
+#define LOG_DEBUG(...) LOG_HELPER(MoYu::LogSystem::LogLevel::Debug, __VA_ARGS__);
+
+#define LOG_INFO(...) LOG_HELPER(MoYu::LogSystem::LogLevel::Info, __VA_ARGS__);
+
+#define LOG_WARN(...) LOG_HELPER(MoYu::LogSystem::LogLevel::Warn, __VA_ARGS__);
+
+#define LOG_ERROR(...) LOG_HELPER(MoYu::LogSystem::LogLevel::Error, __VA_ARGS__);
+
+#define LOG_FATAL(...) LOG_HELPER(MoYu::LogSystem::LogLevel::Fatal, __VA_ARGS__);
+
 
 } // namespace MoYu

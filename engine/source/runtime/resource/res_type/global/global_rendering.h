@@ -50,8 +50,10 @@ namespace MoYu
         std::string m_dfg_map;
         std::string m_ld_map;
         std::string m_irradians_map;
+
+        std::vector<Vector4> m_SH;
     };
-    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(IBLTexs, m_dfg_map, m_ld_map, m_irradians_map)
+    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(IBLTexs, m_dfg_map, m_ld_map, m_irradians_map, m_SH)
 
     struct GlobalRenderingRes
     {

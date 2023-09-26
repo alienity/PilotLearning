@@ -38,21 +38,27 @@ namespace MoYu
         void preUpdate2(ToolInputParameters& passInput, ToolOutputParameters& passOutput);
 
     private:
+        HLSL::float4 _SH[7];
+
         std::shared_ptr<RHI::D3D12Texture> p_DFG;
         std::shared_ptr<RHI::D3D12Texture> p_LD;
         std::shared_ptr<RHI::D3D12Texture> p_DiffuseRadians;
+        std::shared_ptr<RHI::D3D12Buffer>  p_SH;
 
         Shader m_DFGCS;
         Shader m_LDCS;
         Shader m_RadiansCS;
+        Shader m_Radians2SHCS;
 
         std::shared_ptr<RHI::D3D12RootSignature> p_DFGRootsignature;
         std::shared_ptr<RHI::D3D12RootSignature> p_LDRootsignature;
         std::shared_ptr<RHI::D3D12RootSignature> p_RadiansRootsignature;
+        std::shared_ptr<RHI::D3D12RootSignature> p_Radians2SHRootsignature;
         
         std::shared_ptr<RHI::D3D12PipelineState> p_DFGPSO;
         std::shared_ptr<RHI::D3D12PipelineState> p_LDPSO;
         std::shared_ptr<RHI::D3D12PipelineState> p_RadiansPSO;
+        std::shared_ptr<RHI::D3D12PipelineState> p_Radians2SHPSO;
 
         bool isDFGGenerated = false;
         bool isDFGSaved     = false;
@@ -63,13 +69,14 @@ namespace MoYu
         bool isRadiansGenerated = false;
         bool isRadiansSaved     = false;
 
+        bool isSHGenerated = false;
+        bool isSHSaved     = false;
     };
 
     namespace Tools
     {
         void ReadCubemapToFile(RHI::D3D12Device* device, RHI::D3D12Texture* cubemap, const wchar_t* filename);
-
-
+        void ReadBuffer2SH(RHI::D3D12Device* pDevice, RHI::D3D12Buffer* pBuffer, HLSL::float4 pSH[7]);
     }
 }
 

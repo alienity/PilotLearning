@@ -26,6 +26,9 @@ namespace MoYu
 
     bool RenderResource::updateGlobalRenderResource(RenderScene* m_render_scene, GlobalRenderingRes level_resource_desc)
     {
+        // sherical harmonics
+        m_render_scene->m_ibl_map.m_SH = level_resource_desc.m_ibl_map.m_SH;
+
         // ambient light
         m_render_scene->m_ambient_light.m_color = level_resource_desc.m_ambient_light;
 
@@ -154,7 +157,8 @@ namespace MoYu
         _iblUniform.dfg_lut_srv_index    = render_scene->m_ibl_map.m_dfg->GetDefaultSRV()->GetIndex();
         _iblUniform.ld_lut_srv_index     = render_scene->m_ibl_map.m_ld->GetDefaultSRV()->GetIndex();
         _iblUniform.radians_srv_index    = render_scene->m_ibl_map.m_radians->GetDefaultSRV()->GetIndex();
-
+        for (size_t i = 0; i < 7; i++)
+            _iblUniform.iblSH[i] = GLMUtil::fromVec4(render_scene->m_ibl_map.m_SH[i]);
 
         _frameUniforms->iblUniform = _iblUniform;
 

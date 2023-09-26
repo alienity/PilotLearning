@@ -308,6 +308,8 @@ namespace MoYu
         std::shared_ptr<RHI::D3D12Texture> m_dfg;
         std::shared_ptr<RHI::D3D12Texture> m_ld;
         std::shared_ptr<RHI::D3D12Texture> m_radians;
+
+        std::vector<Vector4> m_SH;
     };
 
     //========================================================================

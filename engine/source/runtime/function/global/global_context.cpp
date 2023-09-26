@@ -25,8 +25,6 @@ namespace MoYu
 
         m_file_system = std::make_shared<FileSystem>();
 
-        m_logger_system = std::make_shared<LogSystem>();
-
         m_asset_manager = std::make_shared<AssetManager>();
 
         m_world_manager = std::make_shared<WorldManager>();
@@ -64,8 +62,6 @@ namespace MoYu
         m_input_system.reset();
 
         m_asset_manager.reset();
-
-        m_logger_system.reset();
 
         m_file_system.reset();
 
