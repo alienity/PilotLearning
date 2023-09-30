@@ -3,6 +3,7 @@
 #include "runtime/resource/config_manager/config_manager.h"
 #include "runtime/function/render/window_system.h"
 #include "runtime/function/render/rhi/rhi_core.h"
+#include "runtime/function/render/render_helper.h"
 
 #include "Inc/ScreenGrab.h"
 #include <DirectXHelpers.h>
@@ -294,7 +295,9 @@ namespace MoYu
         {
             isSHGenerated = !isSHGenerated;
 
-            int radiansSRVIndex = p_DiffuseRadians->GetDefaultSRV()->GetIndex();
+            std::shared_ptr<RHI::D3D12Texture> p_IBLSpecular = m_render_scene->m_skybox_map.m_skybox_specular_map;
+
+            int specularSRVIndex = p_IBLSpecular->GetDefaultSRV()->GetIndex();
             int shBufferUAVIndex = p_SH->GetDefaultUAV()->GetIndex();
 
             RHI::D3D12ComputeContext* computeContext = context->GetComputeContext();
@@ -302,10 +305,10 @@ namespace MoYu
             computeContext->SetRootSignature(p_Radians2SHRootsignature.get());
             computeContext->SetPipelineState(p_Radians2SHPSO.get());
 
-            computeContext->SetConstant(0, 0, radiansSRVIndex);
+            computeContext->SetConstant(0, 0, specularSRVIndex);
             computeContext->SetConstant(0, 1, shBufferUAVIndex);
 
-            computeContext->Dispatch2D(1, 1);
+            computeContext->Dispatch(1, 1, 1);
         }
 
         context->Finish(true);
@@ -554,6 +557,11 @@ namespace MoYu
             stagingResource->Map(0, &readRange, reinterpret_cast<void**>(&pReadbackBufferData));
             
             memcpy(pSH, pReadbackBufferData, totalResourceSize);
+
+            //for (size_t i = 0; i < 7; i++)
+            //{
+            //    MoYu::ibl::_GSH[i] = Vector4(pSH[i].x, pSH[i].y, pSH[i].z, pSH[i].w);
+            //}
 
             stagingResource->Unmap(0, nullptr);
         }

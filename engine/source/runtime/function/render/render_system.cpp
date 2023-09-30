@@ -42,13 +42,13 @@ namespace MoYu
         //global_rendering_res.m_ibl_map.m_dfg_map = "asset/texture/global/DFG.dds";
         //global_rendering_res.m_ibl_map.m_ld_map = "asset/texture/global/LD.dds";
 
-        global_rendering_res.m_ibl_map.m_SH.push_back({0.009743, 0.072145, 0.075367, 0.075067});
-        global_rendering_res.m_ibl_map.m_SH.push_back({0.014250, 0.119934, 0.125374, 0.104758});
-        global_rendering_res.m_ibl_map.m_SH.push_back({-0.018514, -0.012085, -0.012721, -0.042931});
-        global_rendering_res.m_ibl_map.m_SH.push_back({0.013441, 0.017198, -0.037952, -0.015641});
-        global_rendering_res.m_ibl_map.m_SH.push_back({0.019633, 0.025091, -0.003160, -0.001210});
-        global_rendering_res.m_ibl_map.m_SH.push_back({-0.022872, -0.024182, 0.097561, 0.037638});
-        global_rendering_res.m_ibl_map.m_SH.push_back({-0.016545, -0.001230, 0.039355, 1.000000});
+        global_rendering_res.m_ibl_map.m_SH.push_back({0.077955, 0.018075, -0.006585, 0.054287});
+        global_rendering_res.m_ibl_map.m_SH.push_back({0.095692, 0.028999, -0.012301, 0.066879});
+        global_rendering_res.m_ibl_map.m_SH.push_back({0.108528, 0.042469, -0.017639, 0.076553});
+        global_rendering_res.m_ibl_map.m_SH.push_back({0.026030, -0.001784, -0.020030, -0.009084});
+        global_rendering_res.m_ibl_map.m_SH.push_back({0.042516, -0.004795, -0.025369, -0.017373});
+        global_rendering_res.m_ibl_map.m_SH.push_back({0.063016, -0.008362, -0.030852, -0.025168});
+        global_rendering_res.m_ibl_map.m_SH.push_back({0.024397, 0.029684, 0.032878, 1.000000});
         
         asset_manager->saveAsset(global_rendering_res, global_rendering_res_url);
         */

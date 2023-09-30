@@ -6,6 +6,13 @@
 // Spherical Harmonics
 //*****************************************************************
 
+// 参考原版的球谐光照，预计算中乘cos是为了直接在光照计算的时候省掉入射光方向与法线有夹角，需要投影的计算
+// https://cseweb.ucsd.edu/~ravir/papers/envmap/envmap.pdf
+// 摘自filament文档上的
+// https://google.github.io/filament/Filament.html
+// In practice we pre-convolve L⊥ with ⟨cosθ⟩ and pre-scale these coefficients by the basis scaling factors Kml 
+// so that the reconstruction code is as simple as possible in the shader:
+// 参考整合sh和shade的函数
 // https://www.ppsloan.org/publications/StupidSH36.pdf
 
 // SH Basis coefs
@@ -121,13 +128,11 @@ void computeShBasisBand2(out float SHb[9], const float3 s)
 
     // s = (x, y, z) = (sin(theta)*cos(phi), sin(theta)*sin(phi), cos(theta))
 
-    static const uint numBands = 3;
-
     // handle m=0 separately, since it produces only one coefficient
     float Pml_2 = 0;
     float Pml_1 = 1;
     SHb[0] =  Pml_1;
-    for (uint l=1; l<numBands; l++) {
+    for (uint l=1; l<3; l++) {
         float Pml = ((2*l-1.0f)*Pml_1*s.z - (l-1.0f)*Pml_2) / l;
         Pml_2 = Pml_1;
         Pml_1 = Pml;
@@ -135,18 +140,18 @@ void computeShBasisBand2(out float SHb[9], const float3 s)
     }
     float Pmm = 1;
     uint m;
-    for (m=1 ; m<numBands ; m++) {
+    for (m=1 ; m<3 ; m++) {
         Pmm = (1.0f - 2*m) * Pmm;      // See [1], divide by sqrt(1 - s.z*s.z);
         Pml_2 = Pmm;
         Pml_1 = (2*m + 1.0f)*Pmm*s.z;
         // l == m
         SHb[SHindex(-m, m)] = Pml_2;
         SHb[SHindex( m, m)] = Pml_2;
-        if (m+1 < numBands) {
+        if (m+1 < 3) {
             // l == m+1
             SHb[SHindex(-m, m+1)] = Pml_1;
             SHb[SHindex( m, m+1)] = Pml_1;
-            for (uint l=m+2 ; l<numBands ; l++) {
+            for (uint l=m+2 ; l<3 ; l++) {
                 float Pml = ((2*l - 1.0f)*Pml_1*s.z - (l + m - 1.0f)*Pml_2) / (l-m);
                 Pml_2 = Pml_1;
                 Pml_1 = Pml;
@@ -170,8 +175,8 @@ void computeShBasisBand2(out float SHb[9], const float3 s)
     //      (cos((m*phi), sin(m*phi)) * sin(theta)^|m|
     float Cm = s.x;
     float Sm = s.y;
-    for (m = 1; m <= numBands; m++) {
-        for (uint l = m; l < numBands; l++) {
+    for (m = 1; m <= 3; m++) {
+        for (uint l = m; l < 3; l++) {
             SHb[SHindex(-m, l)] *= Sm;
             SHb[SHindex( m, l)] *= Cm;
         }
@@ -299,23 +304,16 @@ void preprocessSH(inout float3 SH[9])
 // See SetSHEMapConstants() in "Stupid Spherical Harmonics Tricks".
 // Constant + linear
 // 输入 sh[9*3] 表示9个球鞋系数的3个通道
-void PackSH(float sh[27], out float4 buffer[7])
+void PackSH(float3 inSH[9], out float4 packedSH[7])
 {
-    int c = 0;
-    for (c = 0; c < 3; c++)
-
-    {
-        buffer[c] = float4(sh[c * 9 + 3], sh[c * 9 + 1], sh[c * 9 + 2], sh[c * 9 + 0] - sh[c * 9 + 6]);
-    }
-
+    packedSH[0] = float4(inSH[3].r, inSH[1].r, inSH[2].r, inSH[0].r - inSH[6].r); // shAr
+    packedSH[1] = float4(inSH[3].g, inSH[1].g, inSH[2].g, inSH[0].g - inSH[6].g); // shAg
+    packedSH[2] = float4(inSH[3].b, inSH[1].b, inSH[2].b, inSH[0].b - inSH[6].b); // shAb
     // Quadratic (4/5)
-    for (c = 0; c < 3; c++)
-    {
-        buffer[3 + c] = float4(sh[c * 9 + 4], sh[c * 9 + 5], sh[c * 9 + 6] * 3.0f, sh[c * 9 + 7]);
-    }
-
+    packedSH[3] = float4(inSH[4].r, inSH[5].r, 3.0f * inSH[6].r, inSH[7].r); // shBr
+    packedSH[4] = float4(inSH[4].g, inSH[5].g, 3.0f * inSH[6].g, inSH[7].g); // shBg
+    packedSH[5] = float4(inSH[4].b, inSH[5].b, 3.0f * inSH[6].b, inSH[7].b); // shBb
     // Quadratic (5)
-    buffer[6] = float4(sh[0 * 9 + 8], sh[1 * 9 + 8], sh[2 * 9 + 8], 1.0f);
+    packedSH[6] = float4(inSH[8].r, inSH[8].g, inSH[8].b, 1.0f); // shC
 }
-
 

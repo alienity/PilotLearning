@@ -18,6 +18,9 @@
 #include "runtime/resource/asset_manager/asset_manager.h"
 #include "runtime/resource/config_manager/config_manager.h"
 
+#include "runtime/function/render/renderer/tool_pass.h"
+#include "runtime/function/render/render_helper.h"
+
 #include <stdexcept>
 
 namespace MoYu
