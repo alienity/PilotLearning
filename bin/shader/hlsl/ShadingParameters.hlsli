@@ -2,6 +2,7 @@
 #include "InputTypes.hlsli"
 #include "BSDF.hlsli"
 #include "IBLHelper.hlsli"
+#include "SphericalHarmonicsHelper.hlsli"
 
 struct VaringStruct
 {
@@ -258,16 +259,19 @@ float shadowSample_PCF(
 
 float3 Irradiance_SphericalHarmonics(const FrameUniforms frameUniforms, const float3 n)
 {
-    float4 outRadians = 
-          frameUniforms.iblUniform.iblSH[0]
-        + frameUniforms.iblUniform.iblSH[1] * (n.y)
-        + frameUniforms.iblUniform.iblSH[2] * (n.z)
-        + frameUniforms.iblUniform.iblSH[3] * (n.x)
-        + frameUniforms.iblUniform.iblSH[4] * (n.y * n.x)
-        + frameUniforms.iblUniform.iblSH[5] * (n.y * n.z)
-        + frameUniforms.iblUniform.iblSH[6] * (3.0 * n.z * n.z - 1.0)
-        + frameUniforms.iblUniform.iblSH[7] * (n.z * n.x)
-        + frameUniforms.iblUniform.iblSH[8] * (n.x * n.x - n.y * n.y);
+    //float4 outRadians = 
+    //      frameUniforms.iblUniform.iblSH[0]
+    //    + frameUniforms.iblUniform.iblSH[1] * (n.y)
+    //    + frameUniforms.iblUniform.iblSH[2] * (n.z)
+    //    + frameUniforms.iblUniform.iblSH[3] * (n.x)
+    //    + frameUniforms.iblUniform.iblSH[4] * (n.y * n.x)
+    //    + frameUniforms.iblUniform.iblSH[5] * (n.y * n.z)
+    //    + frameUniforms.iblUniform.iblSH[6] * (3.0 * n.z * n.z - 1.0)
+    //    + frameUniforms.iblUniform.iblSH[7] * (n.z * n.x)
+    //    + frameUniforms.iblUniform.iblSH[8] * (n.x * n.x - n.y * n.y);
+    
+    float3 outRadians = SampleSH9(frameUniforms.iblUniform.iblSH, n);
+    
     return max(outRadians.rgb, float3(0.0, 0.0, 0.0));
 }
 
@@ -301,30 +305,28 @@ float3 prefilteredDFG(Texture2D<float3> light_iblDFG, SamplerState light_iblDFGS
 //------------------------------------------------------------------------------
 
 float3 diffuseIrradiance(const FrameUniforms frameUniforms, const SamplerStruct samplerStruct, const float3 n) {
-    if (frameUniforms.iblUniform.iblSH[0].x == 65504.0) {
-        TextureCube<float4> ldLut = ResourceDescriptorHeap[frameUniforms.iblUniform.ld_lut_srv_index];
-
-        int width;
-        int height;
-        int numberOfLevels;
-        ldLut.GetDimensions(int(frameUniforms.iblUniform.iblRoughnessOneLevel), width, height, numberOfLevels);
-
-        // uint2 s = textureSize(light_iblSpecular, int(frameUniforms.iblUniform.iblRoughnessOneLevel));
-        float du = 1.0 / float(width);
-        float dv = 1.0 / float(height);
-        float3 m0 = normalize(cross(n, float3(0.0, 1.0, 0.0)));
-        float3 m1 = cross(m0, n);
-        float3 m0du = m0 * du;
-        float3 m1dv = m1 * dv;
-        float3 c;
-        c  = Irradiance_RoughnessOne(frameUniforms, samplerStruct, n - m0du - m1dv);
-        c += Irradiance_RoughnessOne(frameUniforms, samplerStruct, n + m0du - m1dv);
-        c += Irradiance_RoughnessOne(frameUniforms, samplerStruct, n + m0du + m1dv);
-        c += Irradiance_RoughnessOne(frameUniforms, samplerStruct, n - m0du + m1dv);
-        return c * 0.25;
-    } else {
+    // if (frameUniforms.iblUniform.iblSH[0].x == 65504.0) {
+    //     TextureCube<float4> ldLut = ResourceDescriptorHeap[frameUniforms.iblUniform.ld_lut_srv_index];
+    //     int width;
+    //     int height;
+    //     int numberOfLevels;
+    //     ldLut.GetDimensions(int(frameUniforms.iblUniform.iblRoughnessOneLevel), width, height, numberOfLevels);
+    //     // uint2 s = textureSize(light_iblSpecular, int(frameUniforms.iblUniform.iblRoughnessOneLevel));
+    //     float du = 1.0 / float(width);
+    //     float dv = 1.0 / float(height);
+    //     float3 m0 = normalize(cross(n, float3(0.0, 1.0, 0.0)));
+    //     float3 m1 = cross(m0, n);
+    //     float3 m0du = m0 * du;
+    //     float3 m1dv = m1 * dv;
+    //     float3 c;
+    //     c  = Irradiance_RoughnessOne(frameUniforms, samplerStruct, n - m0du - m1dv);
+    //     c += Irradiance_RoughnessOne(frameUniforms, samplerStruct, n + m0du - m1dv);
+    //     c += Irradiance_RoughnessOne(frameUniforms, samplerStruct, n + m0du + m1dv);
+    //     c += Irradiance_RoughnessOne(frameUniforms, samplerStruct, n - m0du + m1dv);
+    //     return c * 0.25;
+    // } else {
         return Irradiance_SphericalHarmonics(frameUniforms, n);
-    }
+    // }
 }
 
 
@@ -751,19 +753,17 @@ void evaluateIBL(
     float3 r = getReflectedVector(params, pixel);
     Fr = E * prefilteredRadiance(frameUniforms, samplerStruct, r, pixel.perceptualRoughness);
 
-    // // diffuse layer
-    // float3 _diffuseNormal = params.shading_normal;
-    // float3 _diffuseIrradiance = diffuseIrradiance(frameUniforms, samplerStruct, _diffuseNormal);
+    // diffuse layer
+    float3 _diffuseNormal = params.shading_normal;
+    float3 _diffuseIrradiance = diffuseIrradiance(frameUniforms, samplerStruct, _diffuseNormal);
 
-    // float diffuseBRDF = 1.0f;
-    // float3 Fd = pixel.diffuseColor * _diffuseIrradiance * (1.0 - E) * diffuseBRDF;
+    float diffuseBRDF = 1.0f;
+    float3 Fd = pixel.diffuseColor * _diffuseIrradiance * (1.0 - E) * diffuseBRDF;
 
     // Combine all terms
     // Note: iblLuminance is already premultiplied by the exposure
 
-    // color.rgb += Fr + Fd;
-    color.rgb += Fr;
-    
+    color.rgb += Fr + Fd;
 }
 
 /**

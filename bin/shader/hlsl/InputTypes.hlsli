@@ -179,7 +179,7 @@ struct AOUniform
 
 struct IBLUniform
 {
-    float4 iblSH[9]; // actually float3 entries (std140 requires float4 alignment)
+    float4 iblSH[7]; // actually float3 entries (std140 requires float4 alignment)
     float iblLuminance;
     float iblRoughnessOneLevel; // level for roughness == 1
     int   dfg_lut_srv_index;    // specular lut dfg

@@ -161,7 +161,10 @@ namespace MoYu
         _iblUniform.ld_lut_srv_index     = render_scene->m_ibl_map.m_ld->GetDefaultSRV()->GetIndex();
         _iblUniform.radians_srv_index    = render_scene->m_ibl_map.m_radians->GetDefaultSRV()->GetIndex();
         for (size_t i = 0; i < 7; i++)
-            _iblUniform.iblSH[i] = GLMUtil::fromVec4(render_scene->m_ibl_map.m_SH[i]);
+        {
+            _iblUniform.iblSH[i] = GLMUtil::fromVec4(EngineConfig::g_SHConfig._GSH[i]);
+            //_iblUniform.iblSH[i] = GLMUtil::fromVec4(render_scene->m_ibl_map.m_SH[i]);
+        }
 
         _frameUniforms->iblUniform = _iblUniform;
 

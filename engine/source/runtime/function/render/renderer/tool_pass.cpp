@@ -4,6 +4,7 @@
 #include "runtime/function/render/window_system.h"
 #include "runtime/function/render/rhi/rhi_core.h"
 #include "runtime/function/render/render_helper.h"
+#include "runtime/function/render/renderer/renderer_config.h"
 
 #include "Inc/ScreenGrab.h"
 #include <DirectXHelpers.h>
@@ -558,10 +559,10 @@ namespace MoYu
             
             memcpy(pSH, pReadbackBufferData, totalResourceSize);
 
-            //for (size_t i = 0; i < 7; i++)
-            //{
-            //    MoYu::ibl::_GSH[i] = Vector4(pSH[i].x, pSH[i].y, pSH[i].z, pSH[i].w);
-            //}
+            for (size_t i = 0; i < 7; i++)
+            {
+                EngineConfig::g_SHConfig._GSH[i] = Vector4(pSH[i].x, pSH[i].y, pSH[i].z, pSH[i].w);
+            }
 
             stagingResource->Unmap(0, nullptr);
         }

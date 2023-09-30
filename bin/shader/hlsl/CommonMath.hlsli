@@ -645,6 +645,44 @@ CubemapAddress getAddressForCubemap(float3 r)
     return addr;
 }
 
+/*
+ * Area of a cube face's quadrant projected onto a sphere
+ *
+ *  1 +---+----------+
+ *    |   |          |
+ *    |---+----------|
+ *    |   |(x,y)     |
+ *    |   |          |
+ *    |   |          |
+ * -1 +---+----------+
+ *   -1              1
+ *
+ *
+ * The quadrant (-1,1)-(x,y) is projected onto the unit sphere
+ *
+ */
+float sphereQuadrantArea(float x, float y)
+{
+    return atan2(x*y, sqrt(x*x + y*y + 1));
+}
+
+//! computes the solid angle of a pixel of a face of a cubemap
+float solidAngle(uint dim, uint u, uint v)
+{
+    const float iDim = 1.0f / dim;
+    float s = ((u + 0.5f) * 2 * iDim) - 1;
+    float t = ((v + 0.5f) * 2 * iDim) - 1;
+    const float x0 = s - iDim;
+    const float y0 = t - iDim;
+    const float x1 = s + iDim;
+    const float y1 = t + iDim;
+    float solidAngle = sphereQuadrantArea(x0, y0) -
+                        sphereQuadrantArea(x0, y1) -
+                        sphereQuadrantArea(x1, y0) +
+                        sphereQuadrantArea(x1, y1);
+    return solidAngle;
+}
+
 //------------------------------------------------------------------------------
 // Material Transform
 //------------------------------------------------------------------------------

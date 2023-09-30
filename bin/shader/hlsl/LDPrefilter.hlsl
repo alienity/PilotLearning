@@ -28,7 +28,7 @@ void CSMain(uint3 Gid : SV_GroupID, uint3 GTid : SV_GroupThreadID, uint3 DTid : 
     float3 direction = getDirectionForCubemap(face, texXY);
     direction = normalize(direction);
 
-    float4 ldVal = roughnessFilter(m_IBLSpecular, defaultSampler, 1200, direction, _roughness);
+    float4 ldVal = roughnessFilter(m_IBLSpecular, defaultSampler, 4096, direction, _roughness);
 
     uint3 outputPos = uint3(DTid.xyz);
 

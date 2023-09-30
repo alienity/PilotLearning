@@ -25,7 +25,7 @@ void CSMain(uint3 Gid : SV_GroupID, uint3 GTid : SV_GroupThreadID, uint3 DTid : 
     for(i = 0; i < 9; ++i)
         SH[i] = 0;
 
-    for(uint f = 0; f < elements; ++f)
+    for(uint f = 0; f < 6; ++f)
     {
        for(uint x = 0; x < width; ++x)
        {

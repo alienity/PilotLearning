@@ -18,4 +18,7 @@ namespace EngineConfig
 
     ToneMappingConfig g_ToneMappingConfig = ToneMappingConfig();
 
+    SHConfig g_SHConfig = SHConfig();
+
+
 }

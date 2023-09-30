@@ -1,6 +1,8 @@
 #pragma once
 #include <cstdint>
 
+#include "runtime/core/math/moyu_math.h"
+
 namespace EngineConfig
 {
     enum AntialiasingMode
@@ -94,6 +96,12 @@ namespace EngineConfig
     };
     extern ToneMappingConfig g_ToneMappingConfig;
 
+    struct SHConfig
+    {
+        MoYu::Vector4 _GSH[7];
+    };
+
+    extern SHConfig g_SHConfig;
 }
 
 // clang-format off
