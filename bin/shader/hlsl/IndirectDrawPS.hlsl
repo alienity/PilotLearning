@@ -49,6 +49,7 @@ float4 PSMain(VaringStruct varingStruct) : SV_Target0
     PerMaterialViewIndexBuffer materialViewIndexBuffer = g_MaterialViewIndexBuffers[renderableMeshData.perMaterialViewIndexBufferIndex];
 
     MaterialInputs materialInputs;
+    initMaterial(materialInputs);
     inflateMaterial(varingStruct, materialViewIndexBuffer, defaultSampler, materialInputs);
 
     CommonShadingStruct commonShadingStruct;

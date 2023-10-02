@@ -16,12 +16,25 @@ struct VaringStruct
 struct MaterialInputs
 {
     float4 baseColor;
-    float perceptualRoughness;
+
+    float roughness;
     float metallic;
     float reflectance;
+
     float ambientOcclusion;
     float4 emissive;
+
+    float clearCoat;
+    float clearCoatRoughness;
+
+    float anisotropy;
+    float3 anisotropyDirection;
+
+    float thickness;
+
     float3 normal;
+    float3 bentNormal;
+    float3 clearCoatNormal;
 };
 
 struct CommonShadingStruct
@@ -33,6 +46,11 @@ struct CommonShadingStruct
     float3 shading_geometricNormal; // normalized geometric normal, in world space
     float3 shading_reflected; // reflection of view about normal
     float shading_NoV; // dot(normal, view), always strictly >= MIN_N_DOT_V
+
+    float3 shading_bentNormal; // normalized transformed normal, in world space
+
+    float3 shading_clearCoatNormal;  // normalized clear coat layer normal, in world space
+
     float2 shading_normalizedViewportCoord;
 };
 
@@ -45,6 +63,22 @@ struct PixelParams
     float roughness;
     float3 dfg;
     float3 energyCompensation;
+
+    float clearCoat;
+    float clearCoatPerceptualRoughness;
+    float clearCoatRoughness;
+
+    float3 anisotropicT;
+    float3 anisotropicB;
+    float anisotropy;
+
+    float thickness;
+
+    float etaRI;
+    float etaIR;
+    float transmission;
+    float uThickness;
+    float3 absorption;
 };
 
 struct Light
@@ -62,6 +96,33 @@ struct Light
     uint shadowIndex;
     uint channels;
 };
+
+void initMaterial(inout MaterialInputs material)
+{
+    material.baseColor = float4(1.0, 1.0, 1.0, 1.0);
+
+    material.roughness = 1.0;
+    material.metallic = 0.0;
+    material.reflectance = 0.5;
+    material.ambientOcclusion = 1.0;
+
+    material.emissive = float4(0.0, 0.0, 0.0, 1.0);
+
+    material.clearCoat = 1.0;
+    material.clearCoatRoughness = 0.0;
+
+    material.anisotropy = 0.0;
+    material.anisotropyDirection = float3(1.0, 0.0, 0.0);
+
+    material.thickness = 0.5;
+
+    // material.subsurfacePower = 12.234;
+    // material.subsurfaceColor = float3(1.0, 1.0, 1.0);
+
+    material.normal = float3(0.0, 0.0, 1.0);
+    material.bentNormal = float3(0.0, 0.0, 1.0);
+    material.clearCoatNormal = float3(0.0, 0.0, 1.0);
+}
 
 void inflateMaterial(
     const VaringStruct varingStruct,
@@ -97,12 +158,14 @@ void inflateMaterial(
     material.baseColor = baseColorTexture.Sample(materialSampler, uv * base_color_tilling) * baseColorFactor;
     float2 metallicRoughness = metallicRoughnessTexture.Sample(materialSampler, uv * metallic_roughness_tilling).rg;
     material.metallic = metallicRoughness.r * metallicFactor;
-    material.perceptualRoughness = metallicRoughness.g * roughnessFactor;
+    material.roughness = metallicRoughness.g * roughnessFactor;
     material.reflectance = reflectanceFactor;
+    material.clearCoat = clearCoatFactor;
+    material.clearCoatRoughness = clearCoatRoughnessFactor;
+    material.anisotropy = anisotropyFactor;
     material.ambientOcclusion = occlusionTexture.Sample(materialSampler, uv * occlusion_tilling).r;
     material.emissive = emissionTexture.Sample(materialSampler, uv * base_color_tilling);
     material.normal = (normalTexture.Sample(materialSampler, uv * normal_tilling) * 2.0f - 1.0f);
-
 }
 
 //------------------------------------------------------------------------------
@@ -158,6 +221,8 @@ void prepareMaterial(const MaterialInputs material, inout CommonShadingStruct co
     commonShadingStruct.shading_normal = normalize(mul(commonShadingStruct.shading_tangentToWorld, material.normal));
     commonShadingStruct.shading_NoV = clampNoV(dot(commonShadingStruct.shading_normal, commonShadingStruct.shading_view));
     commonShadingStruct.shading_reflected = reflect(-commonShadingStruct.shading_view, commonShadingStruct.shading_normal);
+    commonShadingStruct.shading_bentNormal = normalize(mul(commonShadingStruct.shading_tangentToWorld, material.bentNormal));
+    commonShadingStruct.shading_clearCoatNormal = normalize(mul(commonShadingStruct.shading_tangentToWorld, material.clearCoatNormal));
 }
 
 //------------------------------------------------------------------------------
@@ -390,17 +455,43 @@ void getCommonPixelParams(const MaterialInputs material, inout PixelParams pixel
     pixel.f0 = computeF0(baseColor, material.metallic, reflectance);
 }
 
+void getClearCoatPixelParams(const MaterialInputs material, inout PixelParams pixel)
+{
+    pixel.clearCoat = material.clearCoat;
+
+    // Clamp the clear coat roughness to avoid divisions by 0
+    float clearCoatPerceptualRoughness = material.clearCoatRoughness;
+    clearCoatPerceptualRoughness = clamp(clearCoatPerceptualRoughness, MIN_PERCEPTUAL_ROUGHNESS, 1.0);
+
+    pixel.clearCoatPerceptualRoughness = clearCoatPerceptualRoughness;
+    pixel.clearCoatRoughness = perceptualRoughnessToRoughness(clearCoatPerceptualRoughness);
+}
+
 void getRoughnessPixelParams(const CommonShadingStruct params, const MaterialInputs material, inout PixelParams pixel)
 {
-    float perceptualRoughness = material.perceptualRoughness;
+    float perceptualRoughness = material.roughness;
 
     // This is used by the refraction code and must be saved before we apply specular AA
     pixel.perceptualRoughnessUnclamped = perceptualRoughness;
     
+    // This is a hack but it will do: the base layer must be at least as rough
+    // as the clear coat layer to take into account possible diffusion by the
+    // top layer
+    float basePerceptualRoughness = max(perceptualRoughness, pixel.clearCoatPerceptualRoughness);
+    perceptualRoughness = lerp(perceptualRoughness, basePerceptualRoughness, pixel.clearCoat);
+
     // Clamp the roughness to a minimum value to avoid divisions by 0 during lighting
     pixel.perceptualRoughness = clamp(perceptualRoughness, MIN_PERCEPTUAL_ROUGHNESS, 1.0);
     // Remaps the roughness to a perceptually linear roughness (roughness^2)
     pixel.roughness = perceptualRoughnessToRoughness(pixel.perceptualRoughness);
+}
+
+void getAnisotropyPixelParams(const CommonShadingStruct commonShadingStruct, const MaterialInputs material, inout PixelParams pixel)
+{
+    float3 direction = material.anisotropyDirection;
+    pixel.anisotropy = material.anisotropy;
+    pixel.anisotropicT = normalize(mul(commonShadingStruct.shading_tangentToWorld, direction));
+    pixel.anisotropicB = normalize(cross(commonShadingStruct.shading_geometricNormal, pixel.anisotropicT));
 }
 
 void getEnergyCompensationPixelParams(const FrameUniforms frameUniforms, const CommonShadingStruct params, const MaterialInputs materialInputs, const SamplerStruct samplerStruct, inout PixelParams pixel)
@@ -421,10 +512,13 @@ void getEnergyCompensationPixelParams(const FrameUniforms frameUniforms, const C
  * This function is also responsible for discarding the fragment when alpha
  * testing fails.
  */
-void getPixelParams(const FrameUniforms frameUniforms, const CommonShadingStruct commonShadingStruct, const MaterialInputs materialInputs, const SamplerStruct samplerStruct, out PixelParams pixel)
+void getPixelParams(const FrameUniforms frameUniforms, const CommonShadingStruct commonShadingStruct, 
+    const MaterialInputs materialInputs, const SamplerStruct samplerStruct, out PixelParams pixel)
 {
     getCommonPixelParams(materialInputs, pixel);
+    getClearCoatPixelParams(materialInputs, pixel);
     getRoughnessPixelParams(commonShadingStruct, materialInputs, pixel);
+    getAnisotropyPixelParams(commonShadingStruct, materialInputs, pixel);
     getEnergyCompensationPixelParams(frameUniforms, commonShadingStruct, materialInputs, samplerStruct, pixel);
 }
 
@@ -446,6 +540,26 @@ float3 specularLobe(const PixelParams pixel, const float3 h, float NoV, float No
 float3 diffuseLobe(const PixelParams pixel, float NoV, float NoL, float LoH)
 {
     return pixel.diffuseColor * diffuse(pixel.roughness, NoV, NoL, LoH);
+}
+
+//------------------------------------------------------------------------------
+// clear coat calculation
+//------------------------------------------------------------------------------
+
+float clearCoatLobe(const CommonShadingStruct commonShadingStruct, 
+    const PixelParams pixel, const float3 h, float NoH, float LoH, out float Fcc)
+{
+    // If the material has a normal map, we want to use the geometric normal
+    // instead to avoid applying the normal map details to the clear coat layer
+    float clearCoatNoH = saturate(dot(commonShadingStruct.shading_clearCoatNormal, h));
+
+    // clear coat specular lobe
+    float D = distributionClearCoat(pixel.clearCoatRoughness, clearCoatNoH, h);
+    float V = visibilityClearCoat(LoH);
+    float F = F_Schlick(0.04, 1.0, LoH) * pixel.clearCoat; // fix IOR to 1.5
+
+    Fcc = F;
+    return D * V * F;
 }
 
 /**
@@ -483,7 +597,22 @@ float3 surfaceShading(const CommonShadingStruct params, const PixelParams pixel,
     // at high roughness
     float3 color = Fd + Fr * pixel.energyCompensation;
 
-    return (color * light.colorIntensity.rgb) * (light.colorIntensity.w * light.attenuation * NoL * occlusion);
+    float Fcc;
+    float clearCoat = clearCoatLobe(params, pixel, h, NoH, LoH, Fcc);
+    float attenuation = 1.0 - Fcc;
+
+    color *= attenuation * NoL;
+
+    // If the material has a normal map, we want to use the geometric normal
+    // instead to avoid applying the normal map details to the clear coat layer
+    float clearCoatNoL = saturate(dot(params.shading_clearCoatNormal, light.l));
+    color += clearCoat * clearCoatNoL;
+
+    // Early exit to avoid the extra multiplication by NoL
+    return (color * light.colorIntensity.rgb) * (light.colorIntensity.w * light.attenuation * occlusion);
+
+
+    // return (color * light.colorIntensity.rgb) * (light.colorIntensity.w * light.attenuation * NoL * occlusion);
 }
 //------------------------------------------------------------------------------
 // Directional lights evaluation
@@ -776,7 +905,8 @@ void evaluateIBL(
  *
  * Returns a pre-exposed HDR RGBA color in linear space.
  */
-float4 evaluateLights(const FrameUniforms frameUniforms, const PerRenderableMeshData perMeshData, const CommonShadingStruct commonShadingStruct, const MaterialInputs materialInputs, const SamplerStruct samplerStruct)
+float4 evaluateLights(const FrameUniforms frameUniforms, const PerRenderableMeshData perMeshData, 
+    const CommonShadingStruct commonShadingStruct, const MaterialInputs materialInputs, const SamplerStruct samplerStruct)
 {
     PixelParams pixel;
     getPixelParams(frameUniforms, commonShadingStruct, materialInputs, samplerStruct, pixel);

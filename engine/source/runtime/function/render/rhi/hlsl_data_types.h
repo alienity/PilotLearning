@@ -51,10 +51,10 @@ namespace HLSL
         float4 baseColorFactor {1.0f, 1.0f, 1.0f, 1.0f};
 
         float metallicFactor {1.0f};
-        float roughnessFactor {1.0f};
-        float reflectanceFactor {1.0f};
+        float roughnessFactor {0.0f};
+        float reflectanceFactor {0.5f};
         float clearCoatFactor {1.0f};
-        float clearCoatRoughnessFactor {1.0f};
+        float clearCoatRoughnessFactor {0.0f};
         float anisotropyFactor {0.0f};
         float2 _padding0;
 
