@@ -10,6 +10,7 @@
 #include "runtime/function/render/renderer/indirect_draw_pass.h"
 #include "runtime/function/render/renderer/skybox_pass.h"
 #include "runtime/function/render/renderer/indirect_draw_transparent_pass.h"
+#include "runtime/function/render/renderer/ao_pass.h"
 #include "runtime/function/render/renderer/postprocess_passes.h"
 #include "runtime/function/render/renderer/indirect_display_pass.h"
 
@@ -52,6 +53,7 @@ namespace MoYu
         std::shared_ptr<IndirectDrawPass>            mIndirectOpaqueDrawPass;
         std::shared_ptr<SkyBoxPass>                  mSkyBoxPass;
         std::shared_ptr<IndirectDrawTransparentPass> mIndirectTransparentDrawPass;
+        std::shared_ptr<AOPass>                      mAOPass;
         std::shared_ptr<PostprocessPasses>           mPostprocessPasses;
         std::shared_ptr<DisplayPass>                 mDisplayPass;
         

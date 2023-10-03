@@ -20,5 +20,5 @@ namespace EngineConfig
 
     SHConfig g_SHConfig = SHConfig();
 
-
+    AOConfig g_AAConfig = AOConfig();
 }

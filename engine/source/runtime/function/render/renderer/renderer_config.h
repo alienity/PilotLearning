@@ -102,6 +102,20 @@ namespace EngineConfig
     };
 
     extern SHConfig g_SHConfig;
+
+    struct AOConfig
+    {
+        enum AOMode
+        {
+            None,
+            SSAO,
+            HBAO
+        };
+
+        AOMode _aoMode = AOMode::SSAO;
+    };
+
+    extern AOConfig g_AOConfig;
 }
 
 // clang-format off

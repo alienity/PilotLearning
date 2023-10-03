@@ -4,12 +4,21 @@
 #include "runtime/function/global/global_context.h"
 #include "runtime/resource/config_manager/config_manager.h"
 
+#include "runtime/resource/basic_geometry/mesh_tools.h"
+#include "runtime/resource/basic_geometry/triangle_mesh.h"
+#include "runtime/resource/basic_geometry/icosphere_mesh.h"
+#include "runtime/resource/basic_geometry/cube_mesh.h"
+
 namespace MoYu
 {
     DeferredRenderer::DeferredRenderer(RendererInitParams& renderInitParams) : Renderer(renderInitParams) {}
 
     void DeferredRenderer::Initialize()
     {
+        MoYu::StaticMeshData _smd = MoYu::Geometry::TriangleMesh::ToStaticMesh();
+        MoYu::StaticMeshData _imd = MoYu::Geometry::Icosphere::ToStaticMesh();
+        MoYu::StaticMeshData _cmd = MoYu::Geometry::CubeMesh::ToStaticMesh();
+
         RHI::D3D12Texture* pBackBufferResource = pSwapChain->GetCurrentBackBufferResource();
         
         CD3DX12_RESOURCE_DESC backDesc = pBackBufferResource->GetDesc();
@@ -128,6 +137,14 @@ namespace MoYu
             mIndirectShadowPass->setCommonInfo(renderPassCommonInfo);
             mIndirectShadowPass->initialize(shadowPassInit);
         }
+        // ao pass
+        {
+            AOPass::AOInitInfo aoPassInit;
+
+            mAOPass = std::make_shared<AOPass>();
+            mAOPass->setCommonInfo(renderPassCommonInfo);
+            mAOPass->initialize(aoPassInit); 
+        }
         // postprocess pass
         {
             RHI::RgTextureDesc resolveColorTexDesc = colorTexDesc;
@@ -180,6 +197,7 @@ namespace MoYu
         mIndirectCullPass            = nullptr;
         mIndirectShadowPass          = nullptr;
         mIndirectOpaqueDrawPass      = nullptr;
+        mAOPass                      = nullptr;
         mSkyBoxPass                  = nullptr;
         mIndirectTransparentDrawPass = nullptr;
         mPostprocessPasses           = nullptr;

@@ -14,6 +14,8 @@
 #include "runtime/platform/file_service/binary_reader.h"
 #include "runtime/platform/file_service/binary_writer.h"
 
+#include "runtime/resource/basic_geometry/icosphere_mesh.h"
+
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
@@ -292,9 +294,20 @@ namespace MoYu
             }
             else
             {
-                MoYu::AxisAlignedBox bounding_box;
-                ret.m_static_mesh_data = LoadModel(mesh_file, bounding_box);
-                ret.m_axis_aligned_box = bounding_box;
+                //E:\AllTestFolder\PilotLearningTest\engine\source\editor\Debug\asset\objects\basic\sphere.obj
+
+                if (mesh_file.find("sphere") != std::string::npos)
+                {
+                    MoYu::Geometry::BasicMesh _basicMesh = MoYu::Geometry::Icosphere::ToBasicMesh();
+                    ret.m_static_mesh_data = MoYu::Geometry::Icosphere::ToStaticMesh(_basicMesh);
+                    ret.m_axis_aligned_box = MoYu::Geometry::Icosphere::ToAxisAlignedBox(_basicMesh);
+                }
+                else
+                {
+                    MoYu::AxisAlignedBox bounding_box;
+                    ret.m_static_mesh_data = LoadModel(mesh_file, bounding_box);
+                    ret.m_axis_aligned_box = bounding_box;
+                }
             }
 
             _MeshData_Caches[mesh_file] = ret;
