@@ -86,27 +86,5 @@ namespace MoYu
             return _mesh;
         }
 
-        StaticMeshData TriangleMesh::ToStaticMesh()
-        {
-            BasicMesh _basicMesh = ToBasicMesh();
-
-            MoYu::StaticMeshData _staticMeshData = {};
-
-            std::uint32_t vertex_buffer_size = _basicMesh.vertices.size() * sizeof(Vertex);
-            std::uint32_t index_buffer_size  = _basicMesh.indices.size() * sizeof(std::uint32_t);
-
-            _staticMeshData.m_InputElementDefinition = Vertex::InputElementDefinition;
-
-            _staticMeshData.m_vertex_buffer = std::make_shared<MoYu::MoYuScratchBuffer>();
-            _staticMeshData.m_vertex_buffer->Initialize(vertex_buffer_size);
-            memcpy(_staticMeshData.m_vertex_buffer->GetBufferPointer(), _basicMesh.vertices.data(), vertex_buffer_size);
-
-            _staticMeshData.m_index_buffer = std::make_shared<MoYu::MoYuScratchBuffer>();
-            _staticMeshData.m_index_buffer->Initialize(index_buffer_size);
-            memcpy(_staticMeshData.m_index_buffer->GetBufferPointer(), _basicMesh.indices.data(), index_buffer_size);
-
-            return _staticMeshData;
-        }
-
     } // namespace Geometry
 } // namespace MoYu

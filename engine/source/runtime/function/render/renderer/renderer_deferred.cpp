@@ -15,10 +15,6 @@ namespace MoYu
 
     void DeferredRenderer::Initialize()
     {
-        MoYu::StaticMeshData _smd = MoYu::Geometry::TriangleMesh::ToStaticMesh();
-        MoYu::StaticMeshData _imd = MoYu::Geometry::Icosphere::ToStaticMesh();
-        MoYu::StaticMeshData _cmd = MoYu::Geometry::CubeMesh::ToStaticMesh();
-
         RHI::D3D12Texture* pBackBufferResource = pSwapChain->GetCurrentBackBufferResource();
         
         CD3DX12_RESOURCE_DESC backDesc = pBackBufferResource->GetDesc();

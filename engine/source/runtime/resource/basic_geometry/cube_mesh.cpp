@@ -157,6 +157,16 @@ namespace MoYu
             _t.normal   = glm::vec3(0, -1, 0);
             _t.texcoord = glm::uvec2(0, 0);
             vertices.push_back(_t);
+
+            for (size_t i = 0; i < 6; i++)
+            {
+                indices.push_back(0 + 6 * i);
+                indices.push_back(1 + 6 * i);
+                indices.push_back(2 + 6 * i);
+                indices.push_back(3 + 6 * i);
+                indices.push_back(4 + 6 * i);
+                indices.push_back(5 + 6 * i);
+            }
         }
 
         BasicMesh CubeMesh::ToBasicMesh()
@@ -178,7 +188,8 @@ namespace MoYu
                 iface.m_getNormal =
                     [](const SMikkTSpaceContext* pContext, float fvNormOut[], const int iFace, const int iVert) {
                         BasicMesh* working_mesh = static_cast<BasicMesh*>(pContext->m_pUserData);
-                        auto index = iFace * 3 + iVert;
+                        int indices_index = iFace * 3 + iVert;
+                        int index = working_mesh->indices[indices_index];
                         auto vertex = working_mesh->vertices[index];
                         fvNormOut[0] = vertex.normal.x;
                         fvNormOut[1] = vertex.normal.y;
@@ -187,7 +198,8 @@ namespace MoYu
                 iface.m_getPosition =
                     [](const SMikkTSpaceContext* pContext, float fvPosOut[], const int iFace, const int iVert) {
                         BasicMesh* working_mesh = static_cast<BasicMesh*>(pContext->m_pUserData);
-                        auto index = iFace * 3 + iVert;
+                        int indices_index = iFace * 3 + iVert;
+                        int index = working_mesh->indices[indices_index];
                         auto vertex = working_mesh->vertices[index];
                         fvPosOut[0] = vertex.position.x;
                         fvPosOut[1] = vertex.position.y;
@@ -196,7 +208,8 @@ namespace MoYu
                 iface.m_getTexCoord =
                     [](const SMikkTSpaceContext* pContext, float fvTexcOut[], const int iFace, const int iVert) {
                         BasicMesh* working_mesh = static_cast<BasicMesh*>(pContext->m_pUserData);
-                        auto index = iFace * 3 + iVert;
+                        int indices_index = iFace * 3 + iVert;
+                        int index = working_mesh->indices[indices_index];
                         auto vertex = working_mesh->vertices[index];
                         fvTexcOut[0] = vertex.texcoord.x;
                         fvTexcOut[1] = vertex.texcoord.y;
@@ -207,7 +220,8 @@ namespace MoYu
                                             const int                 iFace,
                                             const int                 iVert) {
                     BasicMesh* working_mesh = static_cast<BasicMesh*>(pContext->m_pUserData);
-                    auto  index  = iFace * 3 + iVert;
+                    int indices_index = iFace * 3 + iVert;
+                    int index = working_mesh->indices[indices_index];
                     auto* vertex = &working_mesh->vertices[index];
                     vertex->tangent.x = fvTangent[0];
                     vertex->tangent.y = fvTangent[1];
@@ -223,28 +237,6 @@ namespace MoYu
             }
 
             return _mesh;
-        }
-
-        StaticMeshData CubeMesh::ToStaticMesh()
-        {
-            BasicMesh _basicMesh = ToBasicMesh();
-
-            MoYu::StaticMeshData _staticMeshData = {};
-
-            std::uint32_t vertex_buffer_size = _basicMesh.vertices.size() * sizeof(Vertex);
-            std::uint32_t index_buffer_size  = _basicMesh.indices.size() * sizeof(std::uint32_t);
-
-            _staticMeshData.m_InputElementDefinition = Vertex::InputElementDefinition;
-
-            _staticMeshData.m_vertex_buffer = std::make_shared<MoYu::MoYuScratchBuffer>();
-            _staticMeshData.m_vertex_buffer->Initialize(vertex_buffer_size);
-            memcpy(_staticMeshData.m_vertex_buffer->GetBufferPointer(), _basicMesh.vertices.data(), vertex_buffer_size);
-
-            _staticMeshData.m_index_buffer = std::make_shared<MoYu::MoYuScratchBuffer>();
-            _staticMeshData.m_index_buffer->Initialize(index_buffer_size);
-            memcpy(_staticMeshData.m_index_buffer->GetBufferPointer(), _basicMesh.indices.data(), index_buffer_size);
-
-            return _staticMeshData;
         }
 
     } // namespace Geometry

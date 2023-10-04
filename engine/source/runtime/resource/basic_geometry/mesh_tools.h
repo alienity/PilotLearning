@@ -12,15 +12,18 @@ namespace MoYu
     {
         typedef D3D12MeshVertexPositionNormalTangentTexture Vertex;
 
-        static Vertex VertexInterpolate(Vertex& v0, Vertex& v1, float t);
-        static Vertex VertexVectorBuild(Vertex& init, Vertex& temp);
-        static Vertex VertexTransform(Vertex& v0, glm::mat4x4& matrix);
+        Vertex VertexInterpolate(Vertex& v0, Vertex& v1, float t);
+        Vertex VertexVectorBuild(Vertex& init, Vertex& temp);
+        Vertex VertexTransform(Vertex& v0, glm::mat4x4& matrix);
 
         struct BasicMesh
         {
             std::vector<Vertex> vertices;
             std::vector<int>    indices;
         };
+
+        AxisAlignedBox ToAxisAlignedBox(const BasicMesh& basicMesh);
+        StaticMeshData ToStaticMesh(const BasicMesh& basicMesh);
 
     }
 

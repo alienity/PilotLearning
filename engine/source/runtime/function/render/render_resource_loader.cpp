@@ -14,7 +14,9 @@
 #include "runtime/platform/file_service/binary_reader.h"
 #include "runtime/platform/file_service/binary_writer.h"
 
+#include "runtime/resource//basic_geometry/mesh_tools.h"
 #include "runtime/resource/basic_geometry/icosphere_mesh.h"
+#include "runtime/resource/basic_geometry/cube_mesh.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
@@ -299,9 +301,15 @@ namespace MoYu
                 if (mesh_file.find("sphere") != std::string::npos)
                 {
                     MoYu::Geometry::BasicMesh _basicMesh = MoYu::Geometry::Icosphere::ToBasicMesh();
-                    ret.m_static_mesh_data = MoYu::Geometry::Icosphere::ToStaticMesh(_basicMesh);
-                    ret.m_axis_aligned_box = MoYu::Geometry::Icosphere::ToAxisAlignedBox(_basicMesh);
+                    ret.m_static_mesh_data = MoYu::Geometry::ToStaticMesh(_basicMesh);
+                    ret.m_axis_aligned_box = MoYu::Geometry::ToAxisAlignedBox(_basicMesh);
                 }
+                //else if (mesh_file.find("cube") != std::string::npos)
+                //{
+                //    MoYu::Geometry::BasicMesh _basicMesh = MoYu::Geometry::CubeMesh::ToBasicMesh();
+                //    ret.m_static_mesh_data = MoYu::Geometry::ToStaticMesh(_basicMesh);
+                //    ret.m_axis_aligned_box = MoYu::Geometry::ToAxisAlignedBox(_basicMesh);
+                //}
                 else
                 {
                     MoYu::AxisAlignedBox bounding_box;

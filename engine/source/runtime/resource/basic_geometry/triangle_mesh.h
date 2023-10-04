@@ -15,7 +15,6 @@ namespace MoYu
             TriangleMesh();
 
             static BasicMesh ToBasicMesh();
-            static StaticMeshData ToStaticMesh();
 		};
 
     } // namespace Geometry

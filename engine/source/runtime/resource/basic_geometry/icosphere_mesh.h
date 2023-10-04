@@ -17,10 +17,7 @@ namespace MoYu
             ~Icosphere() {}
 
             static BasicMesh ToBasicMesh(float radius = 0.5f, int subdivision = 2, bool smooth = true);
-            static AxisAlignedBox ToAxisAlignedBox(const BasicMesh& basicMesh);
-            static StaticMeshData ToStaticMesh(const BasicMesh& basicMesh);
-            static StaticMeshData ToStaticMesh(float radius = 1.0f, int subdivision = 5, bool smooth = true);
-
+            
             // getters/setters
             float getRadius() const { return _radius; }
             void  setRadius(float radius);

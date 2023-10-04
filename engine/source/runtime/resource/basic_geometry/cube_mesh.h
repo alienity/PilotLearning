@@ -12,7 +12,6 @@ namespace MoYu
             CubeMesh();
 
             static BasicMesh ToBasicMesh();
-            static StaticMeshData ToStaticMesh();
 		};
 
     } // namespace Geometry

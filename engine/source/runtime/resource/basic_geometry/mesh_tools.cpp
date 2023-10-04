@@ -32,5 +32,54 @@ namespace MoYu
             v.texcoord = v0.texcoord;
             return v;
         }
+
+        AxisAlignedBox ToAxisAlignedBox(const BasicMesh& basicMesh)
+        {
+            float _fmax = std::numeric_limits<float>::max();
+            float _fmin = std::numeric_limits<float>::min();
+
+            glm::vec3 _min = glm::vec3(_fmax, _fmax, _fmax);
+            glm::vec3 _max = glm::vec3(_fmin, _fmin, _fmin);
+
+            for (size_t i = 0; i < basicMesh.vertices.size(); i++)
+            {
+                glm::vec3 _cutpos = basicMesh.vertices[i].position;
+
+                _min = glm::min(_cutpos, _min);
+                _max = glm::max(_cutpos, _max);
+            }
+
+            glm::vec3 _center = (_min + _max) * 0.5f;
+            glm::vec3 _half_extent = (_max - _min) * 0.5f;
+
+            Vector3 center = GLMUtil::toVec3(_center);
+            Vector3 half_extent = GLMUtil::toVec3(_half_extent);
+
+            AxisAlignedBox _outBox = AxisAlignedBox(center, half_extent);
+
+            return _outBox;
+        }
+
+        StaticMeshData ToStaticMesh(const BasicMesh& basicMesh)
+        {
+            MoYu::StaticMeshData _staticMeshData = {};
+
+            std::uint32_t vertex_buffer_size = basicMesh.vertices.size() * sizeof(Vertex);
+            std::uint32_t index_buffer_size  = basicMesh.indices.size() * sizeof(std::uint32_t);
+
+            _staticMeshData.m_InputElementDefinition = Vertex::InputElementDefinition;
+
+            _staticMeshData.m_vertex_buffer = std::make_shared<MoYu::MoYuScratchBuffer>();
+            _staticMeshData.m_vertex_buffer->Initialize(vertex_buffer_size);
+            memcpy(_staticMeshData.m_vertex_buffer->GetBufferPointer(), basicMesh.vertices.data(), vertex_buffer_size);
+
+            _staticMeshData.m_index_buffer = std::make_shared<MoYu::MoYuScratchBuffer>();
+            _staticMeshData.m_index_buffer->Initialize(index_buffer_size);
+            memcpy(_staticMeshData.m_index_buffer->GetBufferPointer(), basicMesh.indices.data(), index_buffer_size);
+
+            return _staticMeshData;
+        }
+
+
     }
 }
