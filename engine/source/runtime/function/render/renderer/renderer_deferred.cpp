@@ -95,6 +95,18 @@ namespace MoYu
             mIndirectCullPass->setCommonInfo(renderPassCommonInfo);
             mIndirectCullPass->initialize({});
         }
+        // GBuffer pass
+        {
+            IndirectGBufferPass::DrawPassInitInfo drawPassInit;
+            drawPassInit.albedoTexDesc = colorTexDesc;
+            drawPassInit.depthTexDesc = depthTexDesc;
+            drawPassInit.m_ShaderCompiler = pCompiler;
+            drawPassInit.m_ShaderRootPath = g_runtime_global_context.m_config_manager->getShaderFolder();
+
+            mIndirectGBufferPass = std::make_shared<IndirectGBufferPass>();
+            mIndirectGBufferPass->setCommonInfo(renderPassCommonInfo);
+            mIndirectGBufferPass->initialize(drawPassInit);
+        }
         // Opaque drawing pass
         {
             IndirectDrawPass::DrawPassInitInfo drawPassInit;
@@ -192,6 +204,7 @@ namespace MoYu
         mUIPass                      = nullptr;
         mIndirectCullPass            = nullptr;
         mIndirectShadowPass          = nullptr;
+        mIndirectGBufferPass         = nullptr;
         mIndirectOpaqueDrawPass      = nullptr;
         mAOPass                      = nullptr;
         mSkyBoxPass                  = nullptr;
@@ -246,6 +259,17 @@ namespace MoYu
         mIndirectShadowPass->update(graph, mShadowmapIntputParams, mShadowmapOutputParams);
         //=================================================================================
 
+        //=================================================================================
+        // indirect gbuffer
+        IndirectGBufferPass::DrawInputParameters mGBufferIntputParams;
+        IndirectGBufferPass::DrawOutputParameters mGBufferOutputParams;
+
+        mGBufferIntputParams.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
+        mGBufferIntputParams.meshBufferHandle     = indirectCullOutput.meshBufferHandle;
+        mGBufferIntputParams.materialBufferHandle = indirectCullOutput.materialBufferHandle;
+        mGBufferIntputParams.opaqueDrawHandle     = indirectCullOutput.opaqueDrawHandle.indirectSortBufferHandle;
+        mIndirectGBufferPass->update(graph, mGBufferIntputParams, mGBufferOutputParams);
+        //=================================================================================
 
         //=================================================================================
         // indirect opaque draw
