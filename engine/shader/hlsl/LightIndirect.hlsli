@@ -186,16 +186,16 @@ float3 importanceSamplingVNdfDggx(float2 u, float roughness, float3 v) {
     v = normalize(float3(alpha * v.x, alpha * v.y, v.z));
 
     // orthonormal basis
-    float3 up = abs(v.z) < 0.9999 ? float3(0.0, 0.0, 1.0) : float3(1.0, 0.0, 0.0);
+    float3 up = select(abs(v.z) < 0.9999, float3(0.0, 0.0, 1.0), float3(1.0, 0.0, 0.0));
     float3 t = normalize(cross(up, v));
     float3 b = cross(t, v);
 
     // sample point with polar coordinates (r, phi)
     float a = 1.0 / (1.0 + v.z);
     float r = sqrt(u.x);
-    float phi = (u.y < a) ? u.y / a * F_PI : F_PI + (u.y - a) / (1.0 - a) * F_PI;
+    float phi = select((u.y < a), u.y / a * F_PI, F_PI + (u.y - a) / (1.0 - a) * F_PI);
     float p1 = r * cos(phi);
-    float p2 = r * sin(phi) * ((u.y < a) ? 1.0 : v.z);
+    float p2 = r * sin(phi) * select((u.y < a), 1.0, v.z);
 
     // compute normal
     float3 h = p1 * t + p2 * b + sqrt(max(0.0, 1.0 - p1*p1 - p2*p2)) * v;

@@ -383,7 +383,7 @@ float4 roughnessFilter(TextureCube<float4> envMap, SamplerState enMapSampler, in
 {
     float3 N = normalize(direction);
     
-    const float3 upVector = abs(N.z) < 0.999 ? float3(0, 0, 1) : float3(1, 0, 0);
+    const float3 upVector = select(abs(N.z) < 0.999, float3(0, 0, 1), float3(1, 0, 0));
     const float3 tangentX = normalize(cross(upVector, N));
     const float3 tangentY = cross(N, tangentX);
     float3x3 tangent2World = transpose(float3x3(tangentX, tangentY, N));
@@ -511,7 +511,7 @@ float3 diffuseIrradiance(TextureCube<float4> envMap, SamplerState enMapSampler, 
 {
     float3 N = normalize(direction);
     
-    float3 upVector = abs(N.z) < 0.999 ? float3(0, 0, 1) : float3(1, 0, 0);
+    float3 upVector = select(abs(N.z) < 0.999, float3(0, 0, 1), float3(1, 0, 0));
     float3 tangentX = normalize(cross(upVector, N));
     float3 tangentY = cross(N, tangentX);
     float3x3 tangent2World = transpose(float3x3(tangentX, tangentY, N));

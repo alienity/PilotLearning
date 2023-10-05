@@ -197,8 +197,8 @@ void computeShadingParams(const FrameUniforms frameUniforms, const VaringStruct 
     
     float4x4 _worldFromViewMatrixTranspose = transpose(worldFromViewMatrix);
 
-    float3 sv = isPerspectiveProjection(projectionMatrix) ? 
-        (_worldFromViewMatrixTranspose[3].xyz - commonShadingStruct.shading_position) : _worldFromViewMatrixTranspose[2].xyz; // ortho camera backward dir
+    float3 sv = select(isPerspectiveProjection(projectionMatrix), 
+        (_worldFromViewMatrixTranspose[3].xyz - commonShadingStruct.shading_position), _worldFromViewMatrixTranspose[2].xyz); // ortho camera backward dir
     commonShadingStruct.shading_view = normalize(sv);
 
     // we do this so we avoid doing (matrix multiply), but we burn 4 varyings:

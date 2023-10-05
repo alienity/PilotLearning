@@ -189,7 +189,7 @@ float4 computeWorldPosition()
     const float ALMOST_ZERO_FLT = 1.08420217249e-19f;
     if (abs(position.w) < ALMOST_ZERO_FLT)
     {
-        position.w = position.w < 0.0 ? -ALMOST_ZERO_FLT : ALMOST_ZERO_FLT;
+        position.w = select(position.w < 0.0, -ALMOST_ZERO_FLT, ALMOST_ZERO_FLT);
     }
     return position * (1.0 / position.w);
 #else

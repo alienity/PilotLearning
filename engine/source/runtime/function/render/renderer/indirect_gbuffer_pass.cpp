@@ -112,6 +112,7 @@ namespace MoYu
             pIndirectGBufferPSO = std::make_shared<RHI::D3D12PipelineState>(m_Device, L"IndirectGBuffer", psoDesc);
         }
 
+
 	}
 
     void IndirectGBufferPass::update(RHI::RenderGraph& graph, DrawInputParameters& passInput, DrawOutputParameters& passOutput)

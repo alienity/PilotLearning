@@ -457,7 +457,7 @@ float chebyshevUpperBound(const highp vec2 moments, const highp float mean,
 
     pMax = reduceLightBleed(pMax, lightBleedReduction);
 
-    return mean <= moments.x ? 1.0 : pMax;
+    return select(mean <= moments.x, 1.0, pMax);
 }
 
 float evaluateShadowVSM(const highp vec2 moments, const highp float depth) {
@@ -525,11 +525,11 @@ uint getPointLightFace(const highp vec3 r) {
     highp float rz = abs(r.z);
     highp float d = max(rx, max(ry, rz));
     if (d == rx) {
-        return (r.x >= 0.0 ? 0u : 1u);
+        return select(r.x >= 0.0, 0u, 1u);
     } else if (d == ry) {
-        return (r.y >= 0.0 ? 2u : 3u);
+        return select(r.y >= 0.0, 2u, 3u);
     } else {
-        return (r.z >= 0.0 ? 4u : 5u);
+        return select(r.z >= 0.0, 4u, 5u);
     }
 }
 
