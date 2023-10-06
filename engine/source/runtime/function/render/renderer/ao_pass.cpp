@@ -9,6 +9,13 @@ namespace MoYu
 
 	void AOPass::initialize(const AOInitInfo& init_info)
 	{
+        colorTexDesc = init_info.colorTexDesc;
+
+        ShaderCompiler*       m_ShaderCompiler = init_info.m_ShaderCompiler;
+        std::filesystem::path m_ShaderRootPath = init_info.m_ShaderRootPath;
+
+
+
 
     }
 
@@ -20,6 +27,13 @@ namespace MoYu
     void AOPass::destroy()
     {
 
+    }
+
+    bool AOPass::initializeRenderTarget(RHI::RenderGraph& graph, DrawOutputParameters* drawPassOutput)
+    {
+
+
+        return false;
     }
 
 }
