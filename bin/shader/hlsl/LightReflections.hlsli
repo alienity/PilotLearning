@@ -17,7 +17,7 @@ float3 sampleSunAreaLight(const FrameUniforms frameUniforms, const float3 lightD
         float  LoR = dot(lightDirection, shading_reflected);
         float  d   = frameUniforms.sun.x;
         float3 s   = shading_reflected - LoR * lightDirection;
-        return LoR < d ? normalize(lightDirection * d + normalize(s) * frameUniforms.sun.y) : shading_reflected;
+        return select(LoR < d, normalize(lightDirection * d + normalize(s) * frameUniforms.sun.y), shading_reflected);
     }
 #endif
     return lightDirection;

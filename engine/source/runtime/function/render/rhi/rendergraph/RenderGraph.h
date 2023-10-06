@@ -76,6 +76,7 @@ namespace RHI
 
         RenderPass& Read(RgResourceHandle Resource, bool IgnoreBarrier = false);
         RenderPass& Write(RgResourceHandle& Resource, bool IgnoreBarrier = false);
+        RenderPass& Write(RgResourceHandle& Resource, RgResourceSubType subType, bool IgnoreBarrier = false);
         RenderPass& Read(RgResourceHandleExt ResourceExt);
         RenderPass& Write(RgResourceHandleExt& ResourceExt);
         

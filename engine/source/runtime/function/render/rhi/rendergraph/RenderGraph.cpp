@@ -1,4 +1,5 @@
 #include "RenderGraph.h"
+#include "runtime/core/log/log_system.h"
 #include <algorithm>
 
 namespace RHI
@@ -37,6 +38,23 @@ namespace RHI
 
 		return *this;
 	}
+
+    RenderPass& RenderPass::Write(RgResourceHandle& Resource, RgResourceSubType subType, bool IgnoreBarrier)
+    {
+		// Only allow buffers/textures
+        ASSERT(Resource.IsValid());
+        ASSERT(Resource.Type == RgResourceType::Buffer || Resource.Type == RgResourceType::Texture);
+
+		Resource.Version++;
+        
+        if (!WritesTo(Resource))
+        {
+            RgResourceHandleExt ResourceExt = ToRgResourceHandle(Resource, subType, IgnoreBarrier);
+            Writes.push_back(ResourceExt);
+        }
+
+		return *this;
+    }
 
     RenderPass& RenderPass::Read(RgResourceHandleExt ResourceExt)
     {
@@ -209,17 +227,38 @@ namespace RHI
 			D3D12_RESOURCE_STATES WriteState = D3D12_RESOURCE_STATE_COMMON;
             if (Write.rgHandle.Type == RgResourceType::Texture)
 			{
-                if (RenderGraph->AllowRenderTarget(Write.rgHandle))
+                if (RenderGraph->AllowRenderTarget(Write.rgHandle) && RenderGraph->AllowUnorderedAccess(Write.rgHandle))
                 {
-                    WriteState |= D3D12_RESOURCE_STATE_RENDER_TARGET;
+                    if (Write.rgSubType == RgResourceSubType::RenderTarget)
+                    {
+                        WriteState |= D3D12_RESOURCE_STATE_RENDER_TARGET;
+                    }
+                    else if (Write.rgSubType == RgResourceSubType::UnorderedAccess)
+                    {
+                        WriteState |= D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
+                    }
+                    else
+                    {
+                        WriteState |= D3D12_RESOURCE_STATE_RENDER_TARGET;
+                        MoYu::LogSystem::Instance()->log(MoYu::LogSystem::LogLevel::Error,
+                                                         "RgResourceHandle id = [{0:d}] has not set as RenderTarget or UnorderedAccess, Default as RenderTarget",
+                                                         (int)Write.rgHandle.Id);
+                    }
                 }
-                if (RenderGraph->AllowDepthStencil(Write.rgHandle))
+                else
                 {
-                    WriteState |= D3D12_RESOURCE_STATE_DEPTH_WRITE;
-                }
-                if (RenderGraph->AllowUnorderedAccess(Write.rgHandle))
-                {
-                    WriteState |= D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
+                    if (RenderGraph->AllowRenderTarget(Write.rgHandle))
+                    {
+                        WriteState |= D3D12_RESOURCE_STATE_RENDER_TARGET;
+                    }
+                    if (RenderGraph->AllowDepthStencil(Write.rgHandle))
+                    {
+                        WriteState |= D3D12_RESOURCE_STATE_DEPTH_WRITE;
+                    }
+                    if (RenderGraph->AllowUnorderedAccess(Write.rgHandle))
+                    {
+                        WriteState |= D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
+                    }
                 }
                 D3D12Texture* pTexture = RenderGraph->GetRegistry()->GetD3D12Texture(Write.rgHandle);
                 Context->TransitionBarrier(pTexture, WriteState);

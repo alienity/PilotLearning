@@ -91,7 +91,7 @@ float computeMicroShadowing(float NoL, float visibility)
 float3 getReflectedVector(const PixelParams pixel, const float3 v, const float3 n)
 {
 #if defined(MATERIAL_HAS_ANISOTROPY)
-    float3 anisotropyDirection = pixel.anisotropy >= 0.0 ? pixel.anisotropicB : pixel.anisotropicT;
+    float3 anisotropyDirection = select(pixel.anisotropy >= 0.0, pixel.anisotropicB, pixel.anisotropicT);
     float3 anisotropicTangent  = cross(anisotropyDirection, v);
     float3 anisotropicNormal   = cross(anisotropicTangent, anisotropyDirection);
     float  bendFactor          = abs(pixel.anisotropy) * saturate(5.0 * pixel.perceptualRoughness);

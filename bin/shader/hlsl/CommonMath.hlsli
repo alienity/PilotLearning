@@ -84,7 +84,7 @@ float acosFast(float x)
     float y = abs(x);
     float p = -0.1565827 * y + 1.570796;
     p = p * sqrt(1.0 - y);
-    return x >= 0.0 ? p : F_PI - p;
+    return select(x >= 0.0, p, F_PI - p);
 }
 
 /**
@@ -188,7 +188,7 @@ float interleavedGradientNoise(float2 w)
 
 float3 Faceforward(float3 n, float3 v)
 {
-	return (dot(n, v) < 0.0f) ? -n : n;
+	return select((dot(n, v) < 0.0f), -n, n);
 }
 
 float Sqr(float x)
@@ -204,7 +204,7 @@ float SphericalTheta(float3 v)
 float SphericalPhi(float3 v)
 {
 	float p = atan2(v.y, v.x);
-    return (p < 0) ? (p + F_TAU) : p;
+    return select((p < 0), (p + F_TAU), p);
 }
 
 void CoordinateSystem(float3 v1, out float3 v2, out float3 v3)
@@ -246,7 +246,7 @@ Frame InitFrameFromXY(float3 x, float3 y)
 
 float2 octWrap(float2 v)
 {
-	return float2((1.0f - abs(v.y)) * (v.x >= 0.0f ? 1.0f : -1.0f), (1.0f - abs(v.x)) * (v.y >= 0.0f ? 1.0f : -1.0f));
+	return float2((1.0f - abs(v.y)) * select(v.x >= 0.0f, 1.0f, -1.0f), (1.0f - abs(v.x)) * select(v.y >= 0.0f, 1.0f, -1.0f));
 }
 
 struct OctahedralVector
@@ -256,7 +256,7 @@ struct OctahedralVector
 	float3 Decode()
 	{
 		float3 v   = float3(x, y, 1.0f - abs(x) - abs(y));
-		float2 tmp = (v.z < 0.0f) ? octWrap(float2(v.x, v.y)) : float2(v.x, v.y);
+		float2 tmp = select((v.z < 0.0f), octWrap(float2(v.x, v.y)), float2(v.x, v.y));
 		v.x		   = tmp.x;
 		v.y		   = tmp.y;
 		return normalize(v);
@@ -268,7 +268,7 @@ OctahedralVector InitOctahedralVector(float3 v)
 	OctahedralVector ov;
 
 	float2 p = float2(v.x, v.y) * (1.0f / (abs(v.x) + abs(v.y) + abs(v.z)));
-	p		 = (v.z < 0.0f) ? octWrap(p) : p;
+	p		 = select((v.z < 0.0f), octWrap(p), p);
 
 	ov.x = p.x;
 	ov.y = p.y;
@@ -288,14 +288,14 @@ float3 OffsetRay(float3 p, float3 ng)
 	int3 of_i = int3(int_scale * ng.x, int_scale * ng.y, int_scale * ng.z);
 
 	float3 p_i = float3(
-		asfloat(asint(p.x) + ((p.x < 0) ? -of_i.x : of_i.x)),
-		asfloat(asint(p.y) + ((p.y < 0) ? -of_i.y : of_i.y)),
-		asfloat(asint(p.z) + ((p.z < 0) ? -of_i.z : of_i.z)));
+		asfloat(asint(p.x) + select((p.x < 0), -of_i.x, of_i.x)),
+		asfloat(asint(p.y) + select((p.y < 0), -of_i.y, of_i.y)),
+		asfloat(asint(p.z) + select((p.z < 0), -of_i.z, of_i.z)));
 
 	return float3(
-		abs(p.x) < origin ? p.x + float_scale * ng.x : p_i.x,
-		abs(p.y) < origin ? p.y + float_scale * ng.y : p_i.y,
-		abs(p.z) < origin ? p.z + float_scale * ng.z : p_i.z);
+		select(abs(p.x) < origin, p.x + float_scale * ng.x, p_i.x),
+		select(abs(p.y) < origin, p.y + float_scale * ng.y, p_i.y),
+		select(abs(p.z) < origin, p.z + float_scale * ng.z, p_i.z));
 }
 
 #define PLANE_INTERSECTION_POSITIVE_HALFSPACE 0

@@ -33,8 +33,9 @@ namespace MoYu
             DrawOutputParameters()
             {
                 albedoHandle.Invalidate();
-                normalHandle.Invalidate();
-                clearCoatNormalHandle.Invalidate();
+                worldNormalHandle.Invalidate();
+                worldTangentHandle.Invalidate();
+                matNormalHandle.Invalidate();
                 emissiveHandle.Invalidate();
                 metallic_Roughness_Reflectance_AO_Handle.Invalidate();
                 clearCoat_ClearCoatRoughness_Anisotropy_Handle.Invalidate();
@@ -42,8 +43,9 @@ namespace MoYu
             }
 
             RHI::RgResourceHandle albedoHandle;
-            RHI::RgResourceHandle normalHandle;
-            RHI::RgResourceHandle clearCoatNormalHandle;
+            RHI::RgResourceHandle worldNormalHandle;
+            RHI::RgResourceHandle worldTangentHandle;
+            RHI::RgResourceHandle matNormalHandle;
             RHI::RgResourceHandle emissiveHandle;
             RHI::RgResourceHandle metallic_Roughness_Reflectance_AO_Handle;
             RHI::RgResourceHandle clearCoat_ClearCoatRoughness_Anisotropy_Handle;
@@ -54,9 +56,7 @@ namespace MoYu
         ~IndirectGBufferPass() { destroy(); }
 
         void initialize(const DrawPassInitInfo& init_info);
-        void update(RHI::RenderGraph&         graph,
-                    DrawInputParameters&      passInput,
-                    DrawOutputParameters&     passOutput);
+        void update(RHI::RenderGraph& graph, DrawInputParameters& passInput, DrawOutputParameters& passOutput);
         void destroy() override final;
 
     protected:
@@ -68,13 +68,15 @@ namespace MoYu
         std::shared_ptr<RHI::D3D12RootSignature> pIndirectGBufferSignature;
         std::shared_ptr<RHI::D3D12PipelineState> pIndirectGBufferPSO;
 
-        RHI::RgTextureDesc albedoTexDesc;                               // float4
-        RHI::RgTextureDesc normalTexDesc;                               // float3
-        RHI::RgTextureDesc clearCoatNormalTexDesc;                      // float3
+        RHI::RgTextureDesc albedoDesc;                                  // float4
+        RHI::RgTextureDesc worldNormalDesc;                             // float3
+        RHI::RgTextureDesc worldTangentDesc;                            // float4
+        RHI::RgTextureDesc matNormalDesc;                               // float3
+        //RHI::RgTextureDesc clearCoatNormalDesc;                       // float3
         RHI::RgTextureDesc emissiveDesc;                                // float4
         RHI::RgTextureDesc metallic_Roughness_Reflectance_AO_Desc;      // float4
         RHI::RgTextureDesc clearCoat_ClearCoatRoughness_AnisotropyDesc; // float3
-        RHI::RgTextureDesc depthTexDesc;                                // float
+        RHI::RgTextureDesc depthDesc;                                   // float
 	};
 }
 

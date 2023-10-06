@@ -107,6 +107,17 @@ namespace MoYu
             mIndirectGBufferPass->setCommonInfo(renderPassCommonInfo);
             mIndirectGBufferPass->initialize(drawPassInit);
         }
+        // LightLoop pass
+        {
+            IndirectLightLoopPass::DrawPassInitInfo drawPassInit;
+            drawPassInit.colorTexDesc     = colorTexDesc;
+            drawPassInit.m_ShaderCompiler = pCompiler;
+            drawPassInit.m_ShaderRootPath = g_runtime_global_context.m_config_manager->getShaderFolder();
+
+            mIndirectLightLoopPass = std::make_shared<IndirectLightLoopPass>();
+            mIndirectLightLoopPass->setCommonInfo(renderPassCommonInfo);
+            mIndirectLightLoopPass->initialize(drawPassInit);
+        }
         // Opaque drawing pass
         {
             IndirectDrawPass::DrawPassInitInfo drawPassInit;
@@ -205,6 +216,7 @@ namespace MoYu
         mIndirectCullPass            = nullptr;
         mIndirectShadowPass          = nullptr;
         mIndirectGBufferPass         = nullptr;
+        mIndirectLightLoopPass       = nullptr;
         mIndirectOpaqueDrawPass      = nullptr;
         mAOPass                      = nullptr;
         mSkyBoxPass                  = nullptr;
@@ -258,19 +270,36 @@ namespace MoYu
         }
         mIndirectShadowPass->update(graph, mShadowmapIntputParams, mShadowmapOutputParams);
         //=================================================================================
-
+        
         //=================================================================================
         // indirect gbuffer
-        IndirectGBufferPass::DrawInputParameters mGBufferIntputParams;
-        IndirectGBufferPass::DrawOutputParameters mGBufferOutputParams;
+        IndirectGBufferPass::DrawInputParameters mGBufferIntput;
+        IndirectGBufferPass::DrawOutputParameters mGBufferOutput;
 
-        mGBufferIntputParams.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
-        mGBufferIntputParams.meshBufferHandle     = indirectCullOutput.meshBufferHandle;
-        mGBufferIntputParams.materialBufferHandle = indirectCullOutput.materialBufferHandle;
-        mGBufferIntputParams.opaqueDrawHandle     = indirectCullOutput.opaqueDrawHandle.indirectSortBufferHandle;
-        mIndirectGBufferPass->update(graph, mGBufferIntputParams, mGBufferOutputParams);
+        mGBufferIntput.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
+        mGBufferIntput.meshBufferHandle     = indirectCullOutput.meshBufferHandle;
+        mGBufferIntput.materialBufferHandle = indirectCullOutput.materialBufferHandle;
+        mGBufferIntput.opaqueDrawHandle     = indirectCullOutput.opaqueDrawHandle.indirectSortBufferHandle;
+        mIndirectGBufferPass->update(graph, mGBufferIntput, mGBufferOutput);
         //=================================================================================
+        
+        //=================================================================================
+        // light loop pass
+        IndirectLightLoopPass::DrawInputParameters mLightLoopIntput;
+        IndirectLightLoopPass::DrawOutputParameters mLightLoopOutput;
 
+        mLightLoopIntput.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
+        mLightLoopIntput.albedoHandle         = mGBufferOutput.albedoHandle;
+        mLightLoopIntput.worldNormalHandle    = mGBufferOutput.worldNormalHandle;
+        mLightLoopIntput.worldTangentHandle   = mGBufferOutput.worldTangentHandle;
+        mLightLoopIntput.materialNormalHandle = mGBufferOutput.matNormalHandle;
+        mLightLoopIntput.emissiveHandle       = mGBufferOutput.emissiveHandle;
+        mLightLoopIntput.metallic_Roughness_Reflectance_AO_Handle = mGBufferOutput.metallic_Roughness_Reflectance_AO_Handle;
+        mLightLoopIntput.clearCoat_ClearCoatRoughness_Anisotropy_Handle = mGBufferOutput.clearCoat_ClearCoatRoughness_Anisotropy_Handle;
+        mLightLoopIntput.gbufferDepthHandle = mGBufferOutput.depthHandle;
+        mIndirectLightLoopPass->update(graph, mLightLoopIntput, mLightLoopOutput);
+        //=================================================================================
+        /*
         //=================================================================================
         // indirect opaque draw
         IndirectDrawPass::DrawInputParameters  mDrawIntputParams;
@@ -287,16 +316,17 @@ namespace MoYu
         }
         mIndirectOpaqueDrawPass->update(graph, mDrawIntputParams, mDrawOutputParams);
         //=================================================================================
-
-
+        */
         //=================================================================================
         // skybox draw
         SkyBoxPass::DrawInputParameters  mSkyboxIntputParams;
         SkyBoxPass::DrawOutputParameters mSkyboxOutputParams;
 
         mSkyboxIntputParams.perframeBufferHandle    = indirectCullOutput.perframeBufferHandle;
-        mSkyboxOutputParams.renderTargetColorHandle = mDrawOutputParams.renderTargetColorHandle;
-        mSkyboxOutputParams.renderTargetDepthHandle = mDrawOutputParams.renderTargetDepthHandle;
+        mSkyboxOutputParams.renderTargetColorHandle = mLightLoopOutput.colorHandle;
+        mSkyboxOutputParams.renderTargetDepthHandle = mGBufferOutput.depthHandle;
+        //mSkyboxOutputParams.renderTargetColorHandle = mDrawOutputParams.renderTargetColorHandle;
+        //mSkyboxOutputParams.renderTargetDepthHandle = mDrawOutputParams.renderTargetDepthHandle;
         mSkyBoxPass->update(graph, mSkyboxIntputParams, mSkyboxOutputParams);
         //=================================================================================
 

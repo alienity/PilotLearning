@@ -88,12 +88,12 @@ EdgeData DetermineEdge(LuminanceData l, float2 baseMapTexelSize)
     float    vertical   = abs(l.e + l.w - 2 * l.m) * 2 + abs(l.ne + l.nw - 2 * l.n) + abs(l.se + l.sw - 2 * l.s);
     e.isHorizontal      = horizontal >= vertical;
 
-    float pLuminance = e.isHorizontal ? l.n : l.e;
-    float nLuminance = e.isHorizontal ? l.s : l.w;
+    float pLuminance = select(e.isHorizontal, l.n, l.e);
+    float nLuminance = select(e.isHorizontal, l.s, l.w);
     float pGradient  = abs(pLuminance - l.m);
     float nGradient  = abs(nLuminance - l.m);
 
-    e.pixelStep = e.isHorizontal ? baseMapTexelSize.y : baseMapTexelSize.x;
+    e.pixelStep = select(e.isHorizontal, baseMapTexelSize.y, baseMapTexelSize.x);
 
     if (pGradient < nGradient)
     {

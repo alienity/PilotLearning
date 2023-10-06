@@ -631,9 +631,7 @@ Light getDirectionalLight(const CommonShadingStruct params, const FrameUniforms 
 
 void evaluateDirectionalLight(
     const FrameUniforms frameUniforms, 
-    const PerRenderableMeshData perMeshData, 
     const CommonShadingStruct params,
-    const MaterialInputs material, 
     const PixelParams pixel,
     const SamplerStruct samplerStruct, 
     inout float3 color)
@@ -773,9 +771,7 @@ Light getSpotLight(const CommonShadingStruct params, const FrameUniforms frameUn
  */
 void evaluatePointLights(
     const FrameUniforms frameUniforms, 
-    const PerRenderableMeshData perMeshData, 
     const CommonShadingStruct params,
-    const MaterialInputs material, 
     const PixelParams pixel,
     const SamplerStruct samplerStruct, 
     inout float3 color)
@@ -813,9 +809,7 @@ void evaluatePointLights(
 
 void evaluateSpotLights(
     const FrameUniforms frameUniforms, 
-    const PerRenderableMeshData perMeshData, 
     const CommonShadingStruct params,
-    const MaterialInputs material, 
     const PixelParams pixel,
     const SamplerStruct samplerStruct, 
     inout float3 color)
@@ -855,22 +849,18 @@ void evaluateSpotLights(
 
 void evaluatePunctualLights(
     const FrameUniforms frameUniforms, 
-    const PerRenderableMeshData perMeshData, 
     const CommonShadingStruct params,
-    const MaterialInputs material, 
     const PixelParams pixel,
     const SamplerStruct samplerStruct, 
     inout float3 color)
 {
-    evaluatePointLights(frameUniforms, perMeshData, params, material, pixel, samplerStruct, color);
-    evaluateSpotLights(frameUniforms, perMeshData, params, material, pixel, samplerStruct, color);
+    evaluatePointLights(frameUniforms, params, pixel, samplerStruct, color);
+    evaluateSpotLights(frameUniforms, params, pixel, samplerStruct, color);
 }
 
 void evaluateIBL(
     const FrameUniforms frameUniforms, 
-    const PerRenderableMeshData perMeshData, 
     const CommonShadingStruct params,
-    const MaterialInputs material, 
     const PixelParams pixel,
     const SamplerStruct samplerStruct, 
     inout float3 color)
@@ -905,7 +895,7 @@ void evaluateIBL(
  *
  * Returns a pre-exposed HDR RGBA color in linear space.
  */
-float4 evaluateLights(const FrameUniforms frameUniforms, const PerRenderableMeshData perMeshData, 
+float4 evaluateLights(const FrameUniforms frameUniforms, 
     const CommonShadingStruct commonShadingStruct, const MaterialInputs materialInputs, const SamplerStruct samplerStruct)
 {
     PixelParams pixel;
@@ -918,11 +908,11 @@ float4 evaluateLights(const FrameUniforms frameUniforms, const PerRenderableMesh
 
     // We always evaluate the IBL as not having one is going to be uncommon,
     // it also saves 1 shader variant
-    evaluateIBL(frameUniforms, perMeshData, commonShadingStruct, materialInputs, pixel, samplerStruct, color);
+    evaluateIBL(frameUniforms, commonShadingStruct, pixel, samplerStruct, color);
 
-    evaluateDirectionalLight(frameUniforms, perMeshData, commonShadingStruct, materialInputs, pixel, samplerStruct, color);
+    evaluateDirectionalLight(frameUniforms, commonShadingStruct, pixel, samplerStruct, color);
 
-    evaluatePunctualLights(frameUniforms, perMeshData, commonShadingStruct, materialInputs, pixel, samplerStruct, color);
+    evaluatePunctualLights(frameUniforms, commonShadingStruct, pixel, samplerStruct, color);
 
     // // In fade mode we un-premultiply baseColor early on, so we need to
     // // premultiply again at the end (affects diffuse and specular lighting)
@@ -946,10 +936,10 @@ void addEmissive(const FrameUniforms frameUniforms, const MaterialInputs materia
  *
  * Returns a pre-exposed HDR RGBA color in linear space.
  */
-float4 evaluateMaterial(const FrameUniforms frameUniforms, const PerRenderableMeshData perMeshData, 
+float4 evaluateMaterial(const FrameUniforms frameUniforms,
     const CommonShadingStruct commonShadingStruct, const MaterialInputs materialInputs, const SamplerStruct samplerStruct)
 {
-    float4 color = evaluateLights(frameUniforms, perMeshData, commonShadingStruct, materialInputs, samplerStruct);
+    float4 color = evaluateLights(frameUniforms, commonShadingStruct, materialInputs, samplerStruct);
     addEmissive(frameUniforms, materialInputs, color);
     return color;
 }

@@ -216,7 +216,7 @@ float factorial(uint n, uint d = 1)
  */
 float Kml(uint m, uint l)
 {
-    m = m < 0 ? -m : m;  // abs() is not constexpr
+    m = select(m < 0, -m, m);  // abs() is not constexpr
     const float K = (2 * l + 1) * factorial(uint(l - m), uint(l + m));
     return sqrt(K) * (F_2_SQRTPI * 0.25);
 }
@@ -243,7 +243,7 @@ float computeTruncatedCosSh(uint l)
         return 0;
     }
     const uint l_2 = l / 2;
-    float A0 = ((l_2 & 1u) ? 1.0f : -1.0f) / ((l + 2) * int(l - 1));
+    float A0 = select((l_2 & 1u), 1.0f, -1.0f) / ((l + 2) * int(l - 1));
     float A1 = factorial(l, l_2) / (factorial(l_2) * uint(uint(1) << l));
     return 2 * F_PI * A0 * A1;
 }

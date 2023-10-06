@@ -55,8 +55,8 @@ namespace MoYu
 
         //drawpass.Write(renderTargetColorHandle);
         //drawpass.Write(renderTargetDepthHandle);
-        PassWrite(drawpass, passOutput.renderTargetColorHandle);
-        PassWrite(drawpass, passOutput.renderTargetDepthHandle);
+        PassWriteRT(drawpass, passOutput.renderTargetColorHandle);
+        PassWriteRT(drawpass, passOutput.renderTargetDepthHandle);
 
         drawpass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
 

@@ -60,7 +60,7 @@ float4 PSMain(VaringStruct varingStruct) : SV_Target0
     samplerStruct.defSampler = defaultSampler;
     samplerStruct.sdSampler = shadowmapSampler;
 
-    float4 fragColor = evaluateMaterial(g_FrameUniform, renderableMeshData, commonShadingStruct, materialInputs, samplerStruct);
+    float4 fragColor = evaluateMaterial(g_FrameUniform, commonShadingStruct, materialInputs, samplerStruct);
 
     return fragColor;
 }

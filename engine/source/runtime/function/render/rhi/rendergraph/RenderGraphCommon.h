@@ -15,6 +15,10 @@ namespace RHI
 #define PassWriteIg(p, b) p.Write(b, true)
 #define PassHandleDeclare(p, d, b) auto p##_##d = b
 
+#define PassWriteRT(p, b) p.Write(b, RHI::RgResourceSubType::RenderTarget)
+#define PassWriteUAV(p, b) p.Write(b, RHI::RgResourceSubType::UnorderedAccess)
+#define PassWriteRTIg(p, b) p.Write(b, RHI::RgResourceSubType::RenderTarget, true)
+#define PassWriteUAVIg(p, b) p.Write(b, RHI::RgResourceSubType::UnorderedAccess, true)
 
 #define HandleOps(h)\
     inline bool operator!=(const h& lhs, const h& rhs) { return !operator==(lhs, rhs); } \
@@ -37,7 +41,9 @@ namespace RHI
 		NoneType,
         VertexAndConstantBuffer,
         IndirectArgBuffer,
-        
+        RenderTarget,
+        UnorderedAccess,
+
 	};
 
 	enum RgResourceFlags : std::uint64_t
@@ -131,6 +137,15 @@ namespace RHI
 		}
         return rgResourceHandles;
     }
+
+	inline RgResourceHandleExt ToRgResourceHandle(RgResourceHandle& rgHandle, RgResourceSubType subType, bool ignoreBarrier)
+	{
+        RgResourceHandleExt rgResourceHandle = {};
+        rgResourceHandle.rgHandle  = rgHandle;
+        rgResourceHandle.rgSubType  = subType;
+        rgResourceHandle.rgTransFlag = ignoreBarrier ? RgBarrierFlag::NoneBarrier : RgBarrierFlag::AutoBarrier;
+        return rgResourceHandle;
+	}
 
 	inline RgResourceHandleExt ToRgResourceHandle(RgResourceHandle& rgHandle, bool ignoreBarrier)
 	{
