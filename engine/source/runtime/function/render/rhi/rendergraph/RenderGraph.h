@@ -74,12 +74,15 @@ namespace RHI
 
         RenderPass(std::string_view Name, RenderGraph* Graph);
 
-        RenderPass& Read(RgResourceHandle Resource, bool IgnoreBarrier = false);
-        RenderPass& Write(RgResourceHandle& Resource, bool IgnoreBarrier = false);
-        RenderPass& Write(RgResourceHandle& Resource, RgResourceSubType subType, bool IgnoreBarrier = false);
-        RenderPass& Read(RgResourceHandleExt ResourceExt);
-        RenderPass& Write(RgResourceHandleExt& ResourceExt);
-        
+        RenderPass& Read(RgResourceHandle  Resource,
+                         RgResourceSubType subType       = RgResourceSubType::NoneType,
+                         RgResourceSubType counterType   = RgResourceSubType::NoneType,
+                         bool              IgnoreBarrier = false);
+        RenderPass& Write(RgResourceHandle& Resource,
+                          RgResourceSubType subType       = RgResourceSubType::NoneType,
+                          RgResourceSubType counterType   = RgResourceSubType::NoneType,
+                          bool              IgnoreBarrier = false);
+
         template<typename PFNRenderPassCallback>
         void Execute(PFNRenderPassCallback&& Callback)
         {

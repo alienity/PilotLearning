@@ -60,6 +60,7 @@ namespace MoYu
 #ifdef _DEBUG
         deviceOptions.EnableDebugLayer                = true;
         deviceOptions.EnableAutoDebugName             = true;
+        deviceOptions.EnableGpuBasedValidation        = true;
 #endif
         RendererManagerInitInfo renderManagerInitInfo = {};
         renderManagerInitInfo.Options                 = deviceOptions;

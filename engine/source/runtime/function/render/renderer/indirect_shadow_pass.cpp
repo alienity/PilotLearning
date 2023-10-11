@@ -183,6 +183,18 @@ namespace MoYu
 
             RHI::D3D12GraphicsContext* graphicContext = context->GetGraphicsContext();
 
+            #define RegGetBufCounter(h) registry->GetD3D12Buffer(h)->GetCounterBuffer().get()
+            
+            for (size_t i = 0; i < dirIndirectSortBufferHandles.size(); i++)
+            {
+                graphicContext->TransitionBarrier(RegGetBufCounter(dirIndirectSortBufferHandles[i].rgHandle), D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT);
+            }
+            for (size_t i = 0; i < spotsIndirectSortBufferHandles.size(); i++)
+            {
+                graphicContext->TransitionBarrier(RegGetBufCounter(spotsIndirectSortBufferHandles[i].rgHandle), D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT);
+            }
+            graphicContext->FlushResourceBarriers();
+
             if (m_DirectionalShadowmap.m_identifier != UndefCommonIdentifier)
             {
                 RHI::D3D12Texture* pShadowmapStencilTex = registry->GetD3D12Texture(directionalShadowmapHandle);
@@ -258,12 +270,12 @@ namespace MoYu
 
                 auto pSpotCommandBuffer = registry->GetD3D12Buffer(spotsIndirectSortBufferHandles[i].rgHandle);
 
-                graphicContext->ExecuteIndirect(CommandSignatures::pIndirectDrawSpotShadowmap.get(),
-                                                pSpotCommandBuffer,
-                                                0,
-                                                HLSL::MeshLimit,
-                                                pSpotCommandBuffer->GetCounterBuffer().get(),
-                                                0);
+                //graphicContext->ExecuteIndirect(CommandSignatures::pIndirectDrawSpotShadowmap.get(),
+                //                                pSpotCommandBuffer,
+                //                                0,
+                //                                HLSL::MeshLimit,
+                //                                pSpotCommandBuffer->GetCounterBuffer().get(),
+                //                                0);
             }
 
         });

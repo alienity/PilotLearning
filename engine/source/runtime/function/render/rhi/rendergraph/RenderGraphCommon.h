@@ -15,11 +15,6 @@ namespace RHI
 #define PassWriteIg(p, b) p.Write(b, true)
 #define PassHandleDeclare(p, d, b) auto p##_##d = b
 
-#define PassWriteRT(p, b) p.Write(b, RHI::RgResourceSubType::RenderTarget)
-#define PassWriteUAV(p, b) p.Write(b, RHI::RgResourceSubType::UnorderedAccess)
-#define PassWriteRTIg(p, b) p.Write(b, RHI::RgResourceSubType::RenderTarget, true)
-#define PassWriteUAVIg(p, b) p.Write(b, RHI::RgResourceSubType::UnorderedAccess, true)
-
 #define HandleOps(h)\
     inline bool operator!=(const h& lhs, const h& rhs) { return !operator==(lhs, rhs); } \
     inline bool operator>(const h& lhs, const h& rhs) { return operator<(rhs, lhs); } \
@@ -42,8 +37,10 @@ namespace RHI
         VertexAndConstantBuffer,
         IndirectArgBuffer,
         RenderTarget,
+        DepthStencil,
         UnorderedAccess,
-
+        PSAccess,
+        PSNonAccess,
 	};
 
 	enum RgResourceFlags : std::uint64_t
@@ -98,60 +95,35 @@ namespace RHI
     struct RgResourceHandleExt
     {
         RgResourceHandle  rgHandle;
-        RgResourceSubType rgSubType : 32;
-        RgBarrierFlag     rgTransFlag : 32;
+        RgResourceSubType rgSubType : 64;
+        RgResourceSubType rgCounterType : 64;
+        RgBarrierFlag     rgTransFlag : 64;
     };
     inline bool operator==(const RgResourceHandleExt& lhs, const RgResourceHandleExt& rhs)
     {
-        return lhs.rgHandle == rhs.rgHandle && lhs.rgSubType == rhs.rgSubType && lhs.rgTransFlag == rhs.rgTransFlag;
+        return lhs.rgHandle == rhs.rgHandle && lhs.rgSubType == rhs.rgSubType &&
+               lhs.rgCounterType == rhs.rgCounterType && lhs.rgTransFlag == rhs.rgTransFlag;
     }
     inline bool operator<(const RgResourceHandleExt& lhs, const RgResourceHandleExt& rhs)
     {
         return lhs.rgHandle < rhs.rgHandle || (lhs.rgHandle == rhs.rgHandle && lhs.rgSubType < rhs.rgSubType) ||
-               (lhs.rgHandle == rhs.rgHandle && lhs.rgSubType == rhs.rgSubType && lhs.rgTransFlag < rhs.rgTransFlag);
+               (lhs.rgHandle == rhs.rgHandle && lhs.rgSubType == rhs.rgSubType && lhs.rgCounterType < rhs.rgCounterType) ||
+               (lhs.rgHandle == rhs.rgHandle && lhs.rgSubType == rhs.rgSubType && lhs.rgCounterType == rhs.rgCounterType && lhs.rgTransFlag < rhs.rgTransFlag);
     }
     HandleOps(RgResourceHandleExt)
 
-    static_assert(sizeof(RgResourceHandleExt) == sizeof(std::uint64_t) * 2);
+    static_assert(sizeof(RgResourceHandleExt) == sizeof(std::uint64_t) * 4);
 
     extern RgResourceHandleExt _DefaultRgResourceHandleExt;
     #define DefaultRgResourceHandleExt _DefaultRgResourceHandleExt
 
-	inline RgResourceHandleExt ToRgResourceHandle(RgResourceHandle& rgHandle, RgResourceSubType subType)
+	inline RgResourceHandleExt ToRgResourceHandle(RgResourceHandle& rgHandle, RgResourceSubType subType, RgResourceSubType counterType, bool ignoreBarrier)
 	{
         RgResourceHandleExt rgResourceHandle = {};
-        rgResourceHandle.rgHandle = rgHandle;
-        rgResourceHandle.rgSubType = subType;
-        return rgResourceHandle;
-	}
-
-	inline std::vector<RgResourceHandleExt> ToRgResourceHandle(std::vector<RgResourceHandle>& rgHandles, RgResourceSubType subType)
-    {
-        std::vector<RgResourceHandleExt> rgResourceHandles;
-        for (size_t i = 0; i < rgHandles.size(); i++)
-        {
-            RgResourceHandleExt rgResourceHandle = {};
-            rgResourceHandle.rgHandle = rgHandles[i];
-            rgResourceHandle.rgSubType = subType;
-            rgResourceHandles.push_back(rgResourceHandle);
-		}
-        return rgResourceHandles;
-    }
-
-	inline RgResourceHandleExt ToRgResourceHandle(RgResourceHandle& rgHandle, RgResourceSubType subType, bool ignoreBarrier)
-	{
-        RgResourceHandleExt rgResourceHandle = {};
-        rgResourceHandle.rgHandle  = rgHandle;
-        rgResourceHandle.rgSubType  = subType;
-        rgResourceHandle.rgTransFlag = ignoreBarrier ? RgBarrierFlag::NoneBarrier : RgBarrierFlag::AutoBarrier;
-        return rgResourceHandle;
-	}
-
-	inline RgResourceHandleExt ToRgResourceHandle(RgResourceHandle& rgHandle, bool ignoreBarrier)
-	{
-        RgResourceHandleExt rgResourceHandle = {};
-        rgResourceHandle.rgHandle  = rgHandle;
-        rgResourceHandle.rgTransFlag = ignoreBarrier ? RgBarrierFlag::NoneBarrier : RgBarrierFlag::AutoBarrier;
+        rgResourceHandle.rgHandle      = rgHandle;
+        rgResourceHandle.rgSubType     = subType;
+        rgResourceHandle.rgCounterType = counterType;
+        rgResourceHandle.rgTransFlag   = ignoreBarrier ? RgBarrierFlag::NoneBarrier : RgBarrierFlag::AutoBarrier;
         return rgResourceHandle;
 	}
 
