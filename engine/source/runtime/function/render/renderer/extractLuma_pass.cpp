@@ -88,9 +88,9 @@ namespace MoYu
 
         RHI::RenderPass& generateBloomPass = graph.AddRenderPass("ExtractLumaPass");
 
-        generateBloomPass.Read(passInput.inputSceneColorHandle);
-        generateBloomPass.Read(passInput.inputExposureHandle);
-        generateBloomPass.Write(passOutput.outputLumaLRHandle);
+        generateBloomPass.Read(passInput.inputSceneColorHandle, false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+        generateBloomPass.Read(passInput.inputExposureHandle, false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+        generateBloomPass.Write(passOutput.outputLumaLRHandle, false, RHIResourceState::RHI_RESOURCE_STATE_UNORDERED_ACCESS);
 
         generateBloomPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
             RHI::D3D12ComputeContext* computeContext = context->GetComputeContext();

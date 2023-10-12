@@ -139,34 +139,37 @@ namespace MoYu
 
         RHI::RgResourceHandle meshBufferHandle     = passInput.meshBufferHandle;
         RHI::RgResourceHandle materialBufferHandle = passInput.materialBufferHandle;
+        RHI::RgResourceHandle perframeBufferHandle = passInput.perframeBufferHandle;
 
-        RHI::RgResourceHandleExt perframeBufferHandle = RHI::ToRgResourceHandle(passInput.perframeBufferHandle, RHI::RgResourceSubType::VertexAndConstantBuffer);
-
-        std::vector<RHI::RgResourceHandleExt> dirIndirectSortBufferHandles = RHI::ToRgResourceHandle(passInput.dirIndirectSortBufferHandles, RHI::RgResourceSubType::IndirectArgBuffer);
-
-        std::vector<RHI::RgResourceHandleExt> spotsIndirectSortBufferHandles = RHI::ToRgResourceHandle(passInput.spotsIndirectSortBufferHandles, RHI::RgResourceSubType::IndirectArgBuffer);
+        std::vector<RHI::RgResourceHandle> dirIndirectSortBufferHandles(passInput.dirIndirectSortBufferHandles);
+        std::vector<RHI::RgResourceHandle> spotsIndirectSortBufferHandles(passInput.spotsIndirectSortBufferHandles);
 
         RHI::RenderPass& shadowpass = graph.AddRenderPass("IndirectShadowPass");
 
-        shadowpass.Read(perframeBufferHandle);
-        shadowpass.Read(meshBufferHandle);
-        shadowpass.Read(materialBufferHandle);
+        shadowpass.Read(perframeBufferHandle, false, RHIResourceState::RHI_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
+        shadowpass.Read(meshBufferHandle, false, RHIResourceState::RHI_RESOURCE_STATE_ALL_SHADER_RESOURCE);
+        shadowpass.Read(materialBufferHandle, false, RHIResourceState::RHI_RESOURCE_STATE_ALL_SHADER_RESOURCE);
 
         for (size_t i = 0; i < dirIndirectSortBufferHandles.size(); i++)
         {
-            shadowpass.Read(dirIndirectSortBufferHandles[i]);
+            shadowpass.Read(dirIndirectSortBufferHandles[i],
+                            false,
+                            RHIResourceState::RHI_RESOURCE_STATE_INDIRECT_ARGUMENT,
+                            RHIResourceState::RHI_RESOURCE_STATE_INDIRECT_ARGUMENT);
         }
         for (size_t i = 0; i < spotsIndirectSortBufferHandles.size(); i++)
         {
-            shadowpass.Read(spotsIndirectSortBufferHandles[i]);
+            shadowpass.Read(spotsIndirectSortBufferHandles[i],
+                            false,
+                            RHIResourceState::RHI_RESOURCE_STATE_INDIRECT_ARGUMENT,
+                            RHIResourceState::RHI_RESOURCE_STATE_INDIRECT_ARGUMENT);
         }
 
         RHI::RgResourceHandle directionalShadowmapHandle = RHI::_DefaultRgResourceHandle;
         if (m_DirectionalShadowmap.p_LightShadowmap != nullptr)
         {
-            passOutput.directionalShadowmapHandle =
-                graph.Import<RHI::D3D12Texture>(m_DirectionalShadowmap.p_LightShadowmap.get());
-            shadowpass.Write(passOutput.directionalShadowmapHandle);
+            passOutput.directionalShadowmapHandle = graph.Import<RHI::D3D12Texture>(m_DirectionalShadowmap.p_LightShadowmap.get());
+            shadowpass.Write(passOutput.directionalShadowmapHandle, false, RHIResourceState::RHI_RESOURCE_STATE_DEPTH_WRITE);
             directionalShadowmapHandle = passOutput.directionalShadowmapHandle;
         }
 
@@ -174,7 +177,7 @@ namespace MoYu
         {
             RHI::RgResourceHandle spotShadowMapHandle =
                 graph.Import<RHI::D3D12Texture>(m_SpotShadowmaps[i].p_LightShadowmap.get());
-            shadowpass.Write(spotShadowMapHandle);
+            shadowpass.Write(spotShadowMapHandle, false, RHIResourceState::RHI_RESOURCE_STATE_DEPTH_WRITE);
             passOutput.spotShadowmapHandle.push_back(spotShadowMapHandle);
         }
         std::vector<RHI::RgResourceHandle> spotShadowmapHandles = passOutput.spotShadowmapHandle;
@@ -185,16 +188,6 @@ namespace MoYu
 
             #define RegGetBufCounter(h) registry->GetD3D12Buffer(h)->GetCounterBuffer().get()
             
-            for (size_t i = 0; i < dirIndirectSortBufferHandles.size(); i++)
-            {
-                graphicContext->TransitionBarrier(RegGetBufCounter(dirIndirectSortBufferHandles[i].rgHandle), D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT);
-            }
-            for (size_t i = 0; i < spotsIndirectSortBufferHandles.size(); i++)
-            {
-                graphicContext->TransitionBarrier(RegGetBufCounter(spotsIndirectSortBufferHandles[i].rgHandle), D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT);
-            }
-            graphicContext->FlushResourceBarriers();
-
             if (m_DirectionalShadowmap.m_identifier != UndefCommonIdentifier)
             {
                 RHI::D3D12Texture* pShadowmapStencilTex = registry->GetD3D12Texture(directionalShadowmapHandle);
@@ -211,7 +204,7 @@ namespace MoYu
 
                 Vector2 shadowmap_size = m_DirectionalShadowmap.m_shadowmap_size;
 
-                graphicContext->SetConstantBuffer(1, registry->GetD3D12Buffer(perframeBufferHandle.rgHandle)->GetGpuVirtualAddress());
+                graphicContext->SetConstantBuffer(1, registry->GetD3D12Buffer(perframeBufferHandle)->GetGpuVirtualAddress());
                 graphicContext->SetBufferSRV(2, registry->GetD3D12Buffer(meshBufferHandle));
                 graphicContext->SetBufferSRV(3, registry->GetD3D12Buffer(materialBufferHandle));
 
@@ -234,7 +227,7 @@ namespace MoYu
 
                     graphicContext->SetConstant(0, 1, i);
 
-                    auto pDirectionCommandBuffer = registry->GetD3D12Buffer(dirIndirectSortBufferHandles[i].rgHandle);
+                    auto pDirectionCommandBuffer = registry->GetD3D12Buffer(dirIndirectSortBufferHandles[i]);
                     graphicContext->ExecuteIndirect(CommandSignatures::pIndirectDrawDirectionShadowmap.get(),
                                                         pDirectionCommandBuffer,
                                                         0,
@@ -261,21 +254,21 @@ namespace MoYu
                 graphicContext->SetScissorRect(RHIRect {0, 0, (int)shadowmap_size.x, (int)shadowmap_size.y});
 
                 graphicContext->SetConstant(0, 1, spot_index);
-                graphicContext->SetConstantBuffer(1, registry->GetD3D12Buffer(perframeBufferHandle.rgHandle)->GetGpuVirtualAddress());
+                graphicContext->SetConstantBuffer(1, registry->GetD3D12Buffer(perframeBufferHandle)->GetGpuVirtualAddress());
                 graphicContext->SetBufferSRV(2, registry->GetD3D12Buffer(meshBufferHandle));
                 graphicContext->SetBufferSRV(3, registry->GetD3D12Buffer(materialBufferHandle));
 
                 graphicContext->ClearRenderTarget(nullptr, shadowmapStencilView);
                 graphicContext->SetRenderTarget(nullptr, shadowmapStencilView);
 
-                auto pSpotCommandBuffer = registry->GetD3D12Buffer(spotsIndirectSortBufferHandles[i].rgHandle);
+                auto pSpotCommandBuffer = registry->GetD3D12Buffer(spotsIndirectSortBufferHandles[i]);
 
-                //graphicContext->ExecuteIndirect(CommandSignatures::pIndirectDrawSpotShadowmap.get(),
-                //                                pSpotCommandBuffer,
-                //                                0,
-                //                                HLSL::MeshLimit,
-                //                                pSpotCommandBuffer->GetCounterBuffer().get(),
-                //                                0);
+                graphicContext->ExecuteIndirect(CommandSignatures::pIndirectDrawSpotShadowmap.get(),
+                                                pSpotCommandBuffer,
+                                                0,
+                                                HLSL::MeshLimit,
+                                                pSpotCommandBuffer->GetCounterBuffer().get(),
+                                                0);
             }
 
         });

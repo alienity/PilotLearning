@@ -132,25 +132,24 @@ namespace MoYu
 
         RHI::RgResourceHandle meshBufferHandle     = passInput.meshBufferHandle;
         RHI::RgResourceHandle materialBufferHandle = passInput.materialBufferHandle;
-
-        RHI::RgResourceHandleExt perframeBufferHandle = RHI::ToRgResourceHandle(passInput.perframeBufferHandle, RHI::RgResourceSubType::VertexAndConstantBuffer);
-        RHI::RgResourceHandleExt opaqueDrawHandle = RHI::ToRgResourceHandle(passInput.opaqueDrawHandle, RHI::RgResourceSubType::IndirectArgBuffer);
+        RHI::RgResourceHandle perframeBufferHandle = passInput.perframeBufferHandle;
+        RHI::RgResourceHandle opaqueDrawHandle     = passInput.opaqueDrawHandle;
 
         RHI::RenderPass& drawpass = graph.AddRenderPass("IndirectGBufferPass");
 
 
-        drawpass.Read(passInput.meshBufferHandle);
-        drawpass.Read(passInput.materialBufferHandle);
-        drawpass.Read(perframeBufferHandle);
-        drawpass.Read(opaqueDrawHandle);
-        drawpass.Write(passOutput.albedoHandle);
-        drawpass.Write(passOutput.depthHandle);
-        drawpass.Write(passOutput.worldNormalHandle);
-        drawpass.Write(passOutput.worldTangentHandle);
-        drawpass.Write(passOutput.matNormalHandle);
-        drawpass.Write(passOutput.emissiveHandle);
-        drawpass.Write(passOutput.metallic_Roughness_Reflectance_AO_Handle);
-        drawpass.Write(passOutput.clearCoat_ClearCoatRoughness_Anisotropy_Handle);
+        drawpass.Read(passInput.meshBufferHandle, false, RHIResourceState::RHI_RESOURCE_STATE_ALL_SHADER_RESOURCE);
+        drawpass.Read(passInput.materialBufferHandle, false, RHIResourceState::RHI_RESOURCE_STATE_ALL_SHADER_RESOURCE);
+        drawpass.Read(passInput.perframeBufferHandle, false, RHIResourceState::RHI_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
+        drawpass.Read(passInput.opaqueDrawHandle, false, RHIResourceState::RHI_RESOURCE_STATE_INDIRECT_ARGUMENT, RHIResourceState::RHI_RESOURCE_STATE_INDIRECT_ARGUMENT);
+        drawpass.Write(passOutput.albedoHandle, false, RHIResourceState::RHI_RESOURCE_STATE_RENDER_TARGET);
+        drawpass.Write(passOutput.depthHandle, false, RHIResourceState::RHI_RESOURCE_STATE_DEPTH_WRITE);
+        drawpass.Write(passOutput.worldNormalHandle, false, RHIResourceState::RHI_RESOURCE_STATE_RENDER_TARGET);
+        drawpass.Write(passOutput.worldTangentHandle, false, RHIResourceState::RHI_RESOURCE_STATE_RENDER_TARGET);
+        drawpass.Write(passOutput.matNormalHandle, false, RHIResourceState::RHI_RESOURCE_STATE_RENDER_TARGET);
+        drawpass.Write(passOutput.emissiveHandle, false, RHIResourceState::RHI_RESOURCE_STATE_RENDER_TARGET);
+        drawpass.Write(passOutput.metallic_Roughness_Reflectance_AO_Handle, false, RHIResourceState::RHI_RESOURCE_STATE_RENDER_TARGET);
+        drawpass.Write(passOutput.clearCoat_ClearCoatRoughness_Anisotropy_Handle, false, RHIResourceState::RHI_RESOURCE_STATE_RENDER_TARGET);
 
         RHI::RgResourceHandle albedoHandle       = passOutput.albedoHandle;
         RHI::RgResourceHandle depthHandle        = passOutput.depthHandle;
@@ -158,10 +157,8 @@ namespace MoYu
         RHI::RgResourceHandle worldTangentHandle = passOutput.worldTangentHandle;
         RHI::RgResourceHandle matNormalHandle    = passOutput.matNormalHandle;
         RHI::RgResourceHandle emissiveHandle     = passOutput.emissiveHandle;
-        RHI::RgResourceHandle metallic_Roughness_Reflectance_AO_Handle =
-            passOutput.metallic_Roughness_Reflectance_AO_Handle;
-        RHI::RgResourceHandle clearCoat_ClearCoatRoughness_Anisotropy_Handle =
-            passOutput.clearCoat_ClearCoatRoughness_Anisotropy_Handle;
+        RHI::RgResourceHandle metallic_Roughness_Reflectance_AO_Handle = passOutput.metallic_Roughness_Reflectance_AO_Handle;
+        RHI::RgResourceHandle clearCoat_ClearCoatRoughness_Anisotropy_Handle = passOutput.clearCoat_ClearCoatRoughness_Anisotropy_Handle;
 
         drawpass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
 
@@ -194,11 +191,11 @@ namespace MoYu
 
             graphicContext->SetRootSignature(pIndirectGBufferSignature.get());
             graphicContext->SetPipelineState(pIndirectGBufferPSO.get());
-            graphicContext->SetConstantBuffer(1, registry->GetD3D12Buffer(perframeBufferHandle.rgHandle)->GetGpuVirtualAddress());
+            graphicContext->SetConstantBuffer(1, registry->GetD3D12Buffer(perframeBufferHandle)->GetGpuVirtualAddress());
             graphicContext->SetBufferSRV(2, registry->GetD3D12Buffer(meshBufferHandle));
             graphicContext->SetBufferSRV(3, registry->GetD3D12Buffer(materialBufferHandle));
 
-            auto pIndirectCommandBuffer = registry->GetD3D12Buffer(opaqueDrawHandle.rgHandle);
+            auto pIndirectCommandBuffer = registry->GetD3D12Buffer(opaqueDrawHandle);
 
             graphicContext->ExecuteIndirect(CommandSignatures::pIndirectDraw.get(),
                                             pIndirectCommandBuffer,

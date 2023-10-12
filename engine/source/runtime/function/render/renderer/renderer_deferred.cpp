@@ -369,10 +369,8 @@ namespace MoYu
         DisplayPass::DisplayInputParameters  mDisplayIntputParams;
         DisplayPass::DisplayOutputParameters mDisplayOutputParams;
 
-        //mDisplayIntputParams.inputRTColorHandle      = mPostprocessOutputParams.outputColorHandle;
-        mDisplayIntputParams.inputRTColorHandle      = mShadowmapOutputParams.directionalShadowmapHandle;
-        //mDisplayOutputParams.renderTargetColorHandle = renderTargetColorHandle;
-        mDisplayOutputParams.renderTargetColorHandle = backBufColorHandle;
+        mDisplayIntputParams.inputRTColorHandle      = mPostprocessOutputParams.outputColorHandle;
+        mDisplayOutputParams.renderTargetColorHandle = renderTargetColorHandle;
         mDisplayPass->update(graph, mDisplayIntputParams, mDisplayOutputParams);
         //=================================================================================
         

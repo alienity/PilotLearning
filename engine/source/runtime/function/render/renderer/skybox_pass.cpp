@@ -30,22 +30,19 @@ namespace MoYu
         //DrawInputParameters*  drawPassInput  = &passInput;
         //DrawOutputParameters* drawPassOutput = &passOutput;
 
-        RHI::RgResourceHandleExt perframeBufferHandle = RHI::ToRgResourceHandle(passInput.perframeBufferHandle, RHI::RgResourceSubType::VertexAndConstantBuffer);
-
-        //std::shared_ptr<RHI::D3D12Buffer> pPerframeBuffer = passInput.pPerframeBuffer;
-
         RHI::RenderPass& drawpass = graph.AddRenderPass("SkyboxPass");
 
+        RHI::RgResourceHandle perframeBufferHandle = passInput.perframeBufferHandle;
         RHI::RgResourceHandle renderTargetColorHandle = passOutput.renderTargetColorHandle;
         RHI::RgResourceHandle renderTargetDepthHandle = passOutput.renderTargetDepthHandle;
 
-        PassRead(drawpass, perframeBufferHandle);
-        PassReadIg(drawpass, passOutput.renderTargetColorHandle);
-        PassReadIg(drawpass, passOutput.renderTargetDepthHandle);
+        drawpass.Read(passInput.perframeBufferHandle, false, RHIResourceState::RHI_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
+        drawpass.Read(passOutput.renderTargetColorHandle, true);
+        drawpass.Read(passOutput.renderTargetDepthHandle, true);
 
-        PassWriteRT(drawpass, passOutput.renderTargetColorHandle);
-        PassWriteRT(drawpass, passOutput.renderTargetDepthHandle);
-        
+        drawpass.Write(passOutput.renderTargetColorHandle, false, RHIResourceState::RHI_RESOURCE_STATE_RENDER_TARGET);
+        drawpass.Write(passOutput.renderTargetDepthHandle, false, RHIResourceState::RHI_RESOURCE_STATE_DEPTH_WRITE);
+
         drawpass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
 
             RHI::D3D12GraphicsContext* graphicContext = context->GetGraphicsContext();
@@ -70,7 +67,7 @@ namespace MoYu
             graphicContext->SetPipelineState(PipelineStates::pSkyBoxPSO.get());
             graphicContext->SetConstants(0, specularIBLTexIndex, specularIBLTexLevel);
             //graphicContext->SetConstantBuffer(1, pPerframeBuffer->GetGpuVirtualAddress());
-            graphicContext->SetConstantBuffer(1, registry->GetD3D12Buffer(perframeBufferHandle.rgHandle)->GetGpuVirtualAddress());
+            graphicContext->SetConstantBuffer(1, registry->GetD3D12Buffer(perframeBufferHandle)->GetGpuVirtualAddress());
             
             graphicContext->Draw(3);
         });

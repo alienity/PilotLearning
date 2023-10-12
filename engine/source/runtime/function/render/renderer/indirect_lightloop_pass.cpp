@@ -57,21 +57,20 @@ namespace MoYu
     {
         bool needClearRenderTarget = initializeRenderTarget(graph, &passOutput);
 
-        RHI::RgResourceHandleExt perframeBufferHandle = RHI::ToRgResourceHandle(passInput.perframeBufferHandle, RHI::RgResourceSubType::VertexAndConstantBuffer);
-        
         RHI::RenderPass& drawpass = graph.AddRenderPass("LightLoopPass");
 
-        drawpass.Read(perframeBufferHandle);
-        drawpass.Read(passInput.albedoHandle);
-        drawpass.Read(passInput.gbufferDepthHandle);
-        drawpass.Read(passInput.worldNormalHandle);
-        drawpass.Read(passInput.worldTangentHandle);
-        drawpass.Read(passInput.materialNormalHandle);
-        drawpass.Read(passInput.emissiveHandle);
-        drawpass.Read(passInput.metallic_Roughness_Reflectance_AO_Handle);
-        drawpass.Read(passInput.clearCoat_ClearCoatRoughness_Anisotropy_Handle);
-        drawpass.Write(passOutput.colorHandle, RHI::RgResourceSubType::UnorderedAccess);
+        drawpass.Read(passInput.perframeBufferHandle, false, RHIResourceState::RHI_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
+        drawpass.Read(passInput.albedoHandle, false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+        drawpass.Read(passInput.gbufferDepthHandle, false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+        drawpass.Read(passInput.worldNormalHandle, false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+        drawpass.Read(passInput.worldTangentHandle, false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+        drawpass.Read(passInput.materialNormalHandle, false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+        drawpass.Read(passInput.emissiveHandle, false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+        drawpass.Read(passInput.metallic_Roughness_Reflectance_AO_Handle, false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+        drawpass.Read(passInput.clearCoat_ClearCoatRoughness_Anisotropy_Handle, false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+        drawpass.Write(passOutput.colorHandle, false, RHIResourceState::RHI_RESOURCE_STATE_UNORDERED_ACCESS);
 
+        RHI::RgResourceHandle perframeBufferHandle = passInput.perframeBufferHandle;
         RHI::RgResourceHandle albedoHandle         = passInput.albedoHandle;
         RHI::RgResourceHandle depthHandle          = passInput.gbufferDepthHandle;
         RHI::RgResourceHandle worldNormalHandle    = passInput.worldNormalHandle;
@@ -110,7 +109,7 @@ namespace MoYu
             pContext->SetConstant(0, 6, clearCoat_ClearCoatRoughness_Anisotropy_SRV->GetIndex());
             pContext->SetConstant(0, 7, depthSRV->GetIndex());
             pContext->SetConstant(0, 8, outColorUAV->GetIndex());
-            pContext->SetConstantBuffer(1, registry->GetD3D12Buffer(perframeBufferHandle.rgHandle)->GetGpuVirtualAddress());
+            pContext->SetConstantBuffer(1, registry->GetD3D12Buffer(perframeBufferHandle)->GetGpuVirtualAddress());
             
             pContext->Dispatch2D(colorTexDesc.Width, colorTexDesc.Height, 8, 8);
 

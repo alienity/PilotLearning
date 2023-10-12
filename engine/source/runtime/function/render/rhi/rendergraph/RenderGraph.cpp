@@ -1,5 +1,6 @@
 #include "RenderGraph.h"
 #include "runtime/core/log/log_system.h"
+#include "runtime/function/render/rhi/d3d12/rhi_d3d12_mappings.h"
 #include <algorithm>
 
 namespace RHI
@@ -7,7 +8,7 @@ namespace RHI
 
     RenderPass::RenderPass(std::string_view Name, RenderGraph* Graph) : Name(Name), ParentGraph(Graph) {}
 
-	RenderPass& RenderPass::Read(RgResourceHandle Resource, RgResourceSubType subType, RgResourceSubType counterType, bool IgnoreBarrier)
+	RenderPass& RenderPass::Read(RgResourceHandle Resource, bool IgnoreBarrier, RgResourceState subType, RgResourceState counterType)
 	{
 		// Only allow buffers/textures
         ASSERT(Resource.IsValid());
@@ -22,7 +23,7 @@ namespace RHI
 		return *this;
 	}
 
-	RenderPass& RenderPass::Write(RgResourceHandle& Resource, RgResourceSubType subType, RgResourceSubType counterType, bool IgnoreBarrier)
+	RenderPass& RenderPass::Write(RgResourceHandle& Resource, bool IgnoreBarrier, RgResourceState subType, RgResourceState counterType)
 	{
 		// Only allow buffers/textures
         ASSERT(Resource.IsValid());
@@ -136,6 +137,31 @@ namespace RHI
                 continue;
 			}
 
+            RHI::D3D12Resource* _ResourcePtr = nullptr;
+            RHI::D3D12Resource* _BufferCounterPtr = nullptr;
+            if (Read.rgHandle.Type == RgResourceType::Texture)
+            {
+                _ResourcePtr = RenderGraph->GetRegistry()->GetD3D12Texture(Read.rgHandle);
+            }
+            else if (Read.rgHandle.Type == RgResourceType::Buffer)
+            {
+                D3D12Buffer* _BufferPtr = RenderGraph->GetRegistry()->GetD3D12Buffer(Read.rgHandle);
+                _BufferCounterPtr = _BufferPtr->GetCounterBuffer().get();
+                _ResourcePtr = _BufferPtr;
+            }
+
+            if (_ResourcePtr != nullptr)
+            {
+                D3D12_RESOURCE_STATES _TargetState = RHITranslateD3D12(Read.rgSubType);
+                Context->TransitionBarrier(_ResourcePtr, _TargetState);
+            }
+            if (_BufferCounterPtr != nullptr)
+            {
+                D3D12_RESOURCE_STATES _TargetState = RHITranslateD3D12(Read.rgCounterType);
+                Context->TransitionBarrier(_BufferCounterPtr, _TargetState);
+            }
+
+            /*
 			if (Read.rgHandle.Type == RgResourceType::Texture)
 			{
                 ASSERT(Read.rgSubType != RgResourceSubType::NoneType);
@@ -186,6 +212,7 @@ namespace RHI
                     D3D12Buffer* pCBuffer = RenderGraph->GetRegistry()->GetD3D12Buffer(Read.rgHandle);
                 }
             }
+            */
 		}
 		for (auto Write : Writes)
 		{
@@ -194,6 +221,31 @@ namespace RHI
                 continue;
             }
 
+            RHI::D3D12Resource* _ResourcePtr = nullptr;
+            RHI::D3D12Resource* _BufferCounterPtr = nullptr;
+            if (Write.rgHandle.Type == RgResourceType::Texture)
+            {
+                _ResourcePtr = RenderGraph->GetRegistry()->GetD3D12Texture(Write.rgHandle);
+            }
+            else if (Write.rgHandle.Type == RgResourceType::Buffer)
+            {
+                D3D12Buffer* _BufferPtr = RenderGraph->GetRegistry()->GetD3D12Buffer(Write.rgHandle);
+                _BufferCounterPtr = _BufferPtr->GetCounterBuffer().get();
+                _ResourcePtr = _BufferPtr;
+            }
+
+            if (_ResourcePtr != nullptr)
+            {
+                D3D12_RESOURCE_STATES _TargetState = RHITranslateD3D12(Write.rgSubType);
+                Context->TransitionBarrier(_ResourcePtr, _TargetState);
+            }
+            if (_BufferCounterPtr != nullptr)
+            {
+                D3D12_RESOURCE_STATES _TargetState = RHITranslateD3D12(Write.rgCounterType);
+                Context->TransitionBarrier(_BufferCounterPtr, _TargetState);
+            }
+
+            /*
 			D3D12_RESOURCE_STATES WriteState = D3D12_RESOURCE_STATE_COMMON;
             if (Write.rgHandle.Type == RgResourceType::Texture)
 			{
@@ -242,6 +294,7 @@ namespace RHI
                 D3D12Buffer* pBuffer = RenderGraph->GetRegistry()->GetD3D12Buffer(Write.rgHandle);
                 Context->TransitionBarrier(pBuffer, WriteState);
 			}
+            */
 		}
 
 		Context->FlushResourceBarriers();

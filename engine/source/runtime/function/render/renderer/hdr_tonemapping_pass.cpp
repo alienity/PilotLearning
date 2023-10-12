@@ -63,11 +63,11 @@ namespace MoYu
 
         RHI::RenderPass& tonemappingPass = graph.AddRenderPass("ToneMapping");
 
-        tonemappingPass.Read(passInput.inputExposureHandle);
-        tonemappingPass.Read(passInput.inputBloomHandle);
-        tonemappingPass.Read(passInput.inputSceneColorHandle);
-        tonemappingPass.Write(passOutput.outputLumaBufferHandle);
-        tonemappingPass.Write(passOutput.outputPostEffectsHandle);
+        tonemappingPass.Read(passInput.inputExposureHandle, false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+        tonemappingPass.Read(passInput.inputBloomHandle, false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+        tonemappingPass.Read(passInput.inputSceneColorHandle, false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+        tonemappingPass.Write(passOutput.outputLumaBufferHandle, false, RHIResourceState::RHI_RESOURCE_STATE_UNORDERED_ACCESS);
+        tonemappingPass.Write(passOutput.outputPostEffectsHandle, false, RHIResourceState::RHI_RESOURCE_STATE_UNORDERED_ACCESS);
 
         auto inputExposureHandle     = passInput.inputExposureHandle;
         auto inputBloomHandle        = passInput.inputBloomHandle;

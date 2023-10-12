@@ -417,26 +417,27 @@ namespace MoYu
         {
             RHI::RenderPass& resetPass = graph.AddRenderPass("ResetPass");
 
-            PassReadIg(resetPass, uploadFrameUniformHandle);
-            PassReadIg(resetPass, uploadMaterialViewIndexHandle);
-            PassReadIg(resetPass, uploadMeshBufferHandle);
+            resetPass.Read(uploadFrameUniformHandle, true);
+            resetPass.Read(uploadMaterialViewIndexHandle, true);
+            resetPass.Read(uploadMeshBufferHandle, true);
 
-            PassWriteIg(resetPass, cullOutput.perframeBufferHandle);
-            PassWriteIg(resetPass, cullOutput.materialBufferHandle);
-            PassWriteIg(resetPass, cullOutput.meshBufferHandle);
-            PassWriteIg(resetPass, cullOutput.opaqueDrawHandle.indirectIndexBufferHandle);
-            PassWriteIg(resetPass, cullOutput.opaqueDrawHandle.indirectSortBufferHandle);
-            PassWriteIg(resetPass, cullOutput.transparentDrawHandle.indirectIndexBufferHandle);
-            PassWriteIg(resetPass, cullOutput.transparentDrawHandle.indirectSortBufferHandle);
+            resetPass.Write(cullOutput.perframeBufferHandle, true);
+            resetPass.Write(cullOutput.materialBufferHandle, true);
+            resetPass.Write(cullOutput.meshBufferHandle, true);
+            resetPass.Write(cullOutput.opaqueDrawHandle.indirectIndexBufferHandle, true);
+            resetPass.Write(cullOutput.opaqueDrawHandle.indirectSortBufferHandle, true);
+            resetPass.Write(cullOutput.transparentDrawHandle.indirectIndexBufferHandle, true);
+            resetPass.Write(cullOutput.transparentDrawHandle.indirectSortBufferHandle, true);
+            
             for (size_t i = 0; i < cullOutput.directionShadowmapHandles.size(); i++)
             {
-                //PassWriteIg(resetPass, cullOutput.directionShadowmapHandles[i].indirectIndexBufferHandle);
-                PassWriteIg(resetPass, cullOutput.directionShadowmapHandles[i].indirectSortBufferHandle);
+                resetPass.Write(cullOutput.directionShadowmapHandles[i].indirectIndexBufferHandle, true);
+                resetPass.Write(cullOutput.directionShadowmapHandles[i].indirectSortBufferHandle, true);
             }
             for (size_t i = 0; i < cullOutput.spotShadowmapHandles.size(); i++)
             {
-                //PassWriteIg(resetPass, cullOutput.spotShadowmapHandles[i].indirectIndexBufferHandle);
-                PassWriteIg(resetPass, cullOutput.spotShadowmapHandles[i].indirectSortBufferHandle);
+                resetPass.Write(cullOutput.spotShadowmapHandles[i].indirectIndexBufferHandle, true);
+                resetPass.Write(cullOutput.spotShadowmapHandles[i].indirectSortBufferHandle, true);
             }
 
             resetPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
@@ -475,12 +476,12 @@ namespace MoYu
             {
                 RHI::RenderPass& cullingPass = graph.AddRenderPass("OpaqueTransCullingPass");
 
-                PassReadIg(cullingPass, cullOutput.perframeBufferHandle);
-                PassReadIg(cullingPass, cullOutput.meshBufferHandle);
-                PassReadIg(cullingPass, cullOutput.materialBufferHandle);
+                cullingPass.Read(cullOutput.perframeBufferHandle, true);
+                cullingPass.Read(cullOutput.meshBufferHandle, true);
+                cullingPass.Read(cullOutput.materialBufferHandle, true);
 
-                PassWriteIg(cullingPass, cullOutput.opaqueDrawHandle.indirectIndexBufferHandle);
-                PassWriteIg(cullingPass, cullOutput.transparentDrawHandle.indirectIndexBufferHandle);
+                cullingPass.Write(cullOutput.opaqueDrawHandle.indirectIndexBufferHandle, true);
+                cullingPass.Write(cullOutput.transparentDrawHandle.indirectIndexBufferHandle, true);
 
                 cullingPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
                     RHI::D3D12ComputeContext* pAsyncCompute = context->GetComputeContext();
@@ -534,10 +535,10 @@ namespace MoYu
             {
                 RHI::RenderPass& opaqueSortPass = graph.AddRenderPass("OpaqueBitonicSortPass");
 
-                PassReadIg(opaqueSortPass, cullOutput.opaqueDrawHandle.indirectIndexBufferHandle);
+                opaqueSortPass.Read(cullOutput.opaqueDrawHandle.indirectIndexBufferHandle, true);
 
-                PassWriteIg(opaqueSortPass, sortDispatchArgsHandle);
-                PassWriteIg(opaqueSortPass, cullOutput.opaqueDrawHandle.indirectIndexBufferHandle);
+                opaqueSortPass.Write(sortDispatchArgsHandle, true);
+                opaqueSortPass.Write(cullOutput.opaqueDrawHandle.indirectIndexBufferHandle, true);
 
                 opaqueSortPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
                     RHI::D3D12ComputeContext* pAsyncCompute = context->GetComputeContext();
@@ -553,10 +554,10 @@ namespace MoYu
             {
                 RHI::RenderPass& transSortPass = graph.AddRenderPass("TransparentBitonicSortPass");
 
-                PassReadIg(transSortPass, cullOutput.transparentDrawHandle.indirectIndexBufferHandle);
+                transSortPass.Read(cullOutput.transparentDrawHandle.indirectIndexBufferHandle, true);
 
-                PassWriteIg(transSortPass, sortDispatchArgsHandle);
-                PassWriteIg(transSortPass, cullOutput.transparentDrawHandle.indirectIndexBufferHandle);
+                transSortPass.Write(sortDispatchArgsHandle, true);
+                transSortPass.Write(cullOutput.transparentDrawHandle.indirectIndexBufferHandle, true);
 
                 transSortPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
                     RHI::D3D12ComputeContext* pAsyncCompute = context->GetComputeContext();
@@ -572,11 +573,11 @@ namespace MoYu
             {
                 RHI::RenderPass& grabOpaquePass = graph.AddRenderPass("GrabOpaquePass");
 
-                PassReadIg(grabOpaquePass, cullOutput.meshBufferHandle);
-                PassReadIg(grabOpaquePass, cullOutput.opaqueDrawHandle.indirectIndexBufferHandle);
+                grabOpaquePass.Read(cullOutput.meshBufferHandle, true);
+                grabOpaquePass.Read(cullOutput.opaqueDrawHandle.indirectIndexBufferHandle, true);
 
-                PassWriteIg(grabOpaquePass, grabDispatchArgsHandle);
-                PassWriteIg(grabOpaquePass, cullOutput.opaqueDrawHandle.indirectSortBufferHandle);
+                grabOpaquePass.Write(grabDispatchArgsHandle, true);
+                grabOpaquePass.Write(cullOutput.opaqueDrawHandle.indirectSortBufferHandle, true);
 
                 grabOpaquePass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
                     RHI::D3D12ComputeContext* pAsyncCompute = context->GetComputeContext();
@@ -597,11 +598,11 @@ namespace MoYu
             {
                 RHI::RenderPass& grabTransPass = graph.AddRenderPass("GrabTransPass");
 
-                PassReadIg(grabTransPass, cullOutput.meshBufferHandle);
-                PassReadIg(grabTransPass, cullOutput.transparentDrawHandle.indirectIndexBufferHandle);
+                grabTransPass.Read(cullOutput.meshBufferHandle, true);
+                grabTransPass.Read(cullOutput.transparentDrawHandle.indirectIndexBufferHandle, true);
 
-                PassWriteIg(grabTransPass, grabDispatchArgsHandle);
-                PassWriteIg(grabTransPass, cullOutput.transparentDrawHandle.indirectSortBufferHandle);
+                grabTransPass.Write(grabDispatchArgsHandle, true);
+                grabTransPass.Write(cullOutput.transparentDrawHandle.indirectSortBufferHandle, true);
 
                 grabTransPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
                     RHI::D3D12ComputeContext* pAsyncCompute = context->GetComputeContext();
@@ -626,13 +627,13 @@ namespace MoYu
         {
             RHI::RenderPass& dirLightShadowCullPass = graph.AddRenderPass("DirectionLightShadowCullPass");
 
-            PassReadIg(dirLightShadowCullPass, cullOutput.perframeBufferHandle);
-            PassReadIg(dirLightShadowCullPass, cullOutput.meshBufferHandle);
-            PassReadIg(dirLightShadowCullPass, cullOutput.materialBufferHandle);
+            dirLightShadowCullPass.Read(cullOutput.perframeBufferHandle, true);
+            dirLightShadowCullPass.Read(cullOutput.meshBufferHandle, true);
+            dirLightShadowCullPass.Read(cullOutput.materialBufferHandle, true);
 
             for (size_t i = 0; i < cullOutput.directionShadowmapHandles.size(); i++)
             {
-                PassWriteIg(dirLightShadowCullPass, cullOutput.directionShadowmapHandles[i].indirectSortBufferHandle);
+                dirLightShadowCullPass.Write(cullOutput.directionShadowmapHandles[i].indirectSortBufferHandle, true);
             }
 
             dirLightShadowCullPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
@@ -673,14 +674,14 @@ namespace MoYu
         {
             RHI::RenderPass& spotLightShadowCullPass = graph.AddRenderPass("SpotLightShadowCullPass");
 
-            PassReadIg(spotLightShadowCullPass, cullOutput.perframeBufferHandle);
-            PassReadIg(spotLightShadowCullPass, cullOutput.meshBufferHandle);
-            PassReadIg(spotLightShadowCullPass, cullOutput.materialBufferHandle);
+            spotLightShadowCullPass.Read(cullOutput.perframeBufferHandle, true);
+            spotLightShadowCullPass.Read(cullOutput.meshBufferHandle, true);
+            spotLightShadowCullPass.Read(cullOutput.materialBufferHandle, true);
 
             std::vector<uint32_t> _spotlightIndex;
             for (size_t i = 0; i < cullOutput.spotShadowmapHandles.size(); i++)
             {
-                PassWriteIg(spotLightShadowCullPass, cullOutput.spotShadowmapHandles[i].indirectSortBufferHandle);
+                spotLightShadowCullPass.Write(cullOutput.spotShadowmapHandles[i].indirectSortBufferHandle, true);
                 _spotlightIndex.push_back(spotShadowmapCommandBuffer[i].m_lightIndex);
             }
 

@@ -98,9 +98,9 @@ namespace MoYu
 
         RHI::RenderPass& fxaaToLuminancePass = graph.AddRenderPass("FXAAToLuminance");
 
-        fxaaToLuminancePass.Read(passInput.inputLumaColorHandle);
-        fxaaToLuminancePass.Read(passInput.inputSceneColorHandle);
-        fxaaToLuminancePass.Write(mTmpColorHandle);
+        fxaaToLuminancePass.Read(passInput.inputLumaColorHandle, false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+        fxaaToLuminancePass.Read(passInput.inputSceneColorHandle, false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+        fxaaToLuminancePass.Write(mTmpColorHandle, false, RHIResourceState::RHI_RESOURCE_STATE_UNORDERED_ACCESS);
 
         RHI::RgResourceHandle FXAAToLuminance_inputLumaColorHandle = passInput.inputLumaColorHandle;
         RHI::RgResourceHandle FXAAToLuminance_inputSceneColorHandle = passInput.inputSceneColorHandle;
@@ -124,9 +124,9 @@ namespace MoYu
 
         RHI::RenderPass& fxaapass = graph.AddRenderPass("FXAA");
 
-        fxaapass.Read(passInput.inputSceneColorHandle);
-        fxaapass.Read(mTmpColorHandle);
-        fxaapass.Write(passOutput.outputColorHandle);
+        fxaapass.Read(passInput.inputSceneColorHandle, false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+        fxaapass.Read(mTmpColorHandle, false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+        fxaapass.Write(passOutput.outputColorHandle, false, RHIResourceState::RHI_RESOURCE_STATE_UNORDERED_ACCESS);
 
         RHI::RgResourceHandle FXAA_inputSceneColorHandle = passInput.inputSceneColorHandle;
         RHI::RgResourceHandle FXAA_outputColorHandle     = passOutput.outputColorHandle;

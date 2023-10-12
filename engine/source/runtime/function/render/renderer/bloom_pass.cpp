@@ -193,10 +193,10 @@ namespace MoYu
 
         RHI::RenderPass& generateBloomPass = graph.AddRenderPass("GenerateBloom");
 
-        generateBloomPass.Read(passInput.inputSceneColorHandle);
-        generateBloomPass.Read(passInput.inputExposureHandle);
-        generateBloomPass.Write(m_aBloomUAV1Handle[0]);
-        generateBloomPass.Write(m_LumaLRHandle);
+        generateBloomPass.Read(passInput.inputSceneColorHandle, false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+        generateBloomPass.Read(passInput.inputExposureHandle, false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+        generateBloomPass.Write(m_aBloomUAV1Handle[0], false, RHIResourceState::RHI_RESOURCE_STATE_UNORDERED_ACCESS);
+        generateBloomPass.Write(m_LumaLRHandle, false, RHIResourceState::RHI_RESOURCE_STATE_UNORDERED_ACCESS);
 
         generateBloomPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
             RHI::D3D12ComputeContext* computeContext = context->GetComputeContext();
@@ -242,11 +242,11 @@ namespace MoYu
         {
             RHI::RenderPass& downsampleBloomPass = graph.AddRenderPass("DownSampleBloom");
 
-            downsampleBloomPass.Read(m_aBloomUAV1Handle[0]);
-            downsampleBloomPass.Write(m_aBloomUAV2Handle[0]);
-            downsampleBloomPass.Write(m_aBloomUAV3Handle[0]);
-            downsampleBloomPass.Write(m_aBloomUAV4Handle[0]);
-            downsampleBloomPass.Write(m_aBloomUAV5Handle[0]);
+            downsampleBloomPass.Read(m_aBloomUAV1Handle[0], false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+            downsampleBloomPass.Write(m_aBloomUAV2Handle[0], false, RHIResourceState::RHI_RESOURCE_STATE_UNORDERED_ACCESS);
+            downsampleBloomPass.Write(m_aBloomUAV3Handle[0], false, RHIResourceState::RHI_RESOURCE_STATE_UNORDERED_ACCESS);
+            downsampleBloomPass.Write(m_aBloomUAV4Handle[0], false, RHIResourceState::RHI_RESOURCE_STATE_UNORDERED_ACCESS);
+            downsampleBloomPass.Write(m_aBloomUAV5Handle[0], false, RHIResourceState::RHI_RESOURCE_STATE_UNORDERED_ACCESS);
 
             downsampleBloomPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
                 RHI::D3D12ComputeContext* computeContext = context->GetComputeContext();
@@ -301,9 +301,9 @@ namespace MoYu
         {
             RHI::RenderPass& downsampleBloomPass = graph.AddRenderPass("DownSampleBloom");
 
-            downsampleBloomPass.Read(m_aBloomUAV1Handle[0]);
-            downsampleBloomPass.Write(m_aBloomUAV3Handle[0]);
-            downsampleBloomPass.Write(m_aBloomUAV5Handle[0]);
+            downsampleBloomPass.Read(m_aBloomUAV1Handle[0], false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+            downsampleBloomPass.Write(m_aBloomUAV3Handle[0], false, RHIResourceState::RHI_RESOURCE_STATE_UNORDERED_ACCESS);
+            downsampleBloomPass.Write(m_aBloomUAV5Handle[0], false, RHIResourceState::RHI_RESOURCE_STATE_UNORDERED_ACCESS);
 
             downsampleBloomPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
                 RHI::D3D12ComputeContext* computeContext = context->GetComputeContext();
@@ -358,9 +358,9 @@ namespace MoYu
             RHI::RgResourceHandle srcHandle = buffer[0];
             RHI::RgResourceHandle dstHandle = buffer[1];
 
-            upsampleBloomPass.Read(buffer[0]);
-            upsampleBloomPass.Read(lowerResBuf);
-            upsampleBloomPass.Write(buffer[1]);
+            upsampleBloomPass.Read(buffer[0], false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+            upsampleBloomPass.Read(lowerResBuf, false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+            upsampleBloomPass.Write(buffer[1], false, RHIResourceState::RHI_RESOURCE_STATE_UNORDERED_ACCESS);
 
             upsampleBloomPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
                 RHI::D3D12ComputeContext* computeContext = context->GetComputeContext();
@@ -401,8 +401,8 @@ namespace MoYu
             RHI::RgResourceHandle srcHandle = buffer[0];
             RHI::RgResourceHandle dstHandle = buffer[1];
 
-            upsampleBloomPass.Read(buffer[0]);
-            upsampleBloomPass.Write(buffer[1]);
+            upsampleBloomPass.Read(buffer[0], false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+            upsampleBloomPass.Write(buffer[1], false, RHIResourceState::RHI_RESOURCE_STATE_UNORDERED_ACCESS);
 
             upsampleBloomPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
                 RHI::D3D12ComputeContext* computeContext = context->GetComputeContext();

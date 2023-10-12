@@ -9,10 +9,6 @@ namespace RHI
 {
 #define PassHandle(pn, d) pn##_##d
 #define GImport(g, b) g.Import(b)
-#define PassRead(p, b) p.Read(b)
-#define PassWrite(p, b) p.Write(b)
-#define PassReadIg(p, b) p.Read(b, true)
-#define PassWriteIg(p, b) p.Write(b, true)
 #define PassHandleDeclare(p, d, b) auto p##_##d = b
 
 #define HandleOps(h)\
@@ -31,17 +27,7 @@ namespace RHI
 		RaytracingPipelineState,
 	};
 
-	enum RgResourceSubType : std::uint64_t
-    {
-		NoneType,
-        VertexAndConstantBuffer,
-        IndirectArgBuffer,
-        RenderTarget,
-        DepthStencil,
-        UnorderedAccess,
-        PSAccess,
-        PSNonAccess,
-	};
+    typedef RHIResourceState RgResourceState;
 
 	enum RgResourceFlags : std::uint64_t
 	{
@@ -94,10 +80,10 @@ namespace RHI
 
     struct RgResourceHandleExt
     {
-        RgResourceHandle  rgHandle;
-        RgResourceSubType rgSubType : 64;
-        RgResourceSubType rgCounterType : 64;
-        RgBarrierFlag     rgTransFlag : 64;
+        RgResourceHandle rgHandle;
+        RgResourceState  rgSubType : 64;
+        RgResourceState  rgCounterType : 64;
+        RgBarrierFlag    rgTransFlag : 64;
     };
     inline bool operator==(const RgResourceHandleExt& lhs, const RgResourceHandleExt& rhs)
     {
@@ -117,7 +103,7 @@ namespace RHI
     extern RgResourceHandleExt _DefaultRgResourceHandleExt;
     #define DefaultRgResourceHandleExt _DefaultRgResourceHandleExt
 
-	inline RgResourceHandleExt ToRgResourceHandle(RgResourceHandle& rgHandle, RgResourceSubType subType, RgResourceSubType counterType, bool ignoreBarrier)
+	inline RgResourceHandleExt ToRgResourceHandle(RgResourceHandle& rgHandle, RgResourceState subType, RgResourceState counterType, bool ignoreBarrier)
 	{
         RgResourceHandleExt rgResourceHandle = {};
         rgResourceHandle.rgHandle      = rgHandle;

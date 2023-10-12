@@ -192,4 +192,38 @@ namespace RHI
     {
         return DXGI_SAMPLE_DESC {SampleState.Count, SampleState.Quality};
     }
+
+    inline D3D12_RESOURCE_STATES RHITranslateD3D12(const RHIResourceState& ResourceState)
+    {
+        D3D12_RESOURCE_STATES _TargetState = D3D12_RESOURCE_STATE_COMMON;
+        // clang-format off
+        switch (ResourceState)
+        {
+            case RHI_RESOURCE_STATE_COMMON: _TargetState = D3D12_RESOURCE_STATE_COMMON; break;
+            case RHI_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER: _TargetState = D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER; break;
+            case RHI_RESOURCE_STATE_INDEX_BUFFER: _TargetState = D3D12_RESOURCE_STATE_INDEX_BUFFER; break;
+            case RHI_RESOURCE_STATE_RENDER_TARGET: _TargetState = D3D12_RESOURCE_STATE_RENDER_TARGET; break;
+            case RHI_RESOURCE_STATE_UNORDERED_ACCESS: _TargetState = D3D12_RESOURCE_STATE_UNORDERED_ACCESS; break;
+            case RHI_RESOURCE_STATE_DEPTH_WRITE: _TargetState = D3D12_RESOURCE_STATE_DEPTH_WRITE; break;
+            case RHI_RESOURCE_STATE_DEPTH_READ: _TargetState = D3D12_RESOURCE_STATE_DEPTH_READ; break;
+            case RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE: _TargetState = D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE; break;
+            case RHI_RESOURCE_STATE_PIXEL_SHADER_RESOURCE: _TargetState = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE; break;
+            case RHI_RESOURCE_STATE_STREAM_OUT: _TargetState = D3D12_RESOURCE_STATE_STREAM_OUT; break;
+            case RHI_RESOURCE_STATE_INDIRECT_ARGUMENT: _TargetState = D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT; break;
+            case RHI_RESOURCE_STATE_COPY_DEST: _TargetState = D3D12_RESOURCE_STATE_COPY_DEST; break;
+            case RHI_RESOURCE_STATE_COPY_SOURCE: _TargetState = D3D12_RESOURCE_STATE_COPY_SOURCE; break;
+            case RHI_RESOURCE_STATE_RESOLVE_DEST: _TargetState = D3D12_RESOURCE_STATE_RESOLVE_DEST; break;
+            case RHI_RESOURCE_STATE_RESOLVE_SOURCE: _TargetState = D3D12_RESOURCE_STATE_RESOLVE_SOURCE; break;
+            case RHI_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE: _TargetState = D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE; break;
+            case RHI_RESOURCE_STATE_SHADING_RATE_SOURCE: _TargetState = D3D12_RESOURCE_STATE_SHADING_RATE_SOURCE; break;
+            case RHI_RESOURCE_STATE_GENERIC_READ: _TargetState = D3D12_RESOURCE_STATE_GENERIC_READ; break;
+            case RHI_RESOURCE_STATE_ALL_SHADER_RESOURCE: _TargetState = D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE; break;
+            //case RHI_RESOURCE_STATE_PRESENT: break;
+            //case RHI_RESOURCE_STATE_PREDICATION: break;
+            default:
+                break;
+        }
+        // clang-format on
+        return _TargetState;
+    }
 }

@@ -22,8 +22,8 @@ namespace MoYu
         RHI::RgResourceHandle renderTargetColorHandle = passOutput.renderTargetColorHandle;
 
         graph.AddRenderPass("DisplayDrawPass")
-            .Read(passInput.inputRTColorHandle)
-            .Write(passOutput.renderTargetColorHandle)
+            .Read(passInput.inputRTColorHandle, false, RHIResourceState::RHI_RESOURCE_STATE_ALL_SHADER_RESOURCE)
+            .Write(passOutput.renderTargetColorHandle, false, RHIResourceState::RHI_RESOURCE_STATE_RENDER_TARGET)
             .Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
                 
                 RHI::D3D12GraphicsContext* graphicContext = context->GetGraphicsContext();
