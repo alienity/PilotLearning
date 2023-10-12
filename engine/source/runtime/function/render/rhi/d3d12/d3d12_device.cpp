@@ -380,7 +380,7 @@ namespace RHI
     CD3DX12FeatureSupport D3D12Device::InitializeFeatureSupport(const DeviceOptions& Options)
     {
         CD3DX12FeatureSupport FeatureSupport;
-        if (FAILED(m_FeatureSupport.Init(m_Device.Get())))
+        if (FAILED(FeatureSupport.Init(m_Device.Get())))
         {
             LOG_WARN("Failed to initialize CD3DX12FeatureSupport, certain features might be unavailable.");
         }

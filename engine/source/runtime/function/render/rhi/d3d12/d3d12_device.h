@@ -18,11 +18,11 @@ namespace RHI
         bool EnableDebugLayer;
         bool EnableGpuBasedValidation;
         bool EnableAutoDebugName;
+        bool WaveIntrinsics;
+        bool Raytracing;
+        bool DynamicResources;
+        bool MeshShaders;
 
-        bool                  WaveIntrinsics;
-        bool                  Raytracing;
-        bool                  DynamicResources;
-        bool                  MeshShaders;
         std::filesystem::path PsoCachePath;
     };
 

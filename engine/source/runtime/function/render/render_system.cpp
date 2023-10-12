@@ -61,6 +61,8 @@ namespace MoYu
         deviceOptions.EnableDebugLayer                = true;
         deviceOptions.EnableAutoDebugName             = true;
         deviceOptions.EnableGpuBasedValidation        = true;
+        deviceOptions.WaveIntrinsics                  = true;
+        deviceOptions.DynamicResources                = true;
 #endif
         RendererManagerInitInfo renderManagerInitInfo = {};
         renderManagerInitInfo.Options                 = deviceOptions;

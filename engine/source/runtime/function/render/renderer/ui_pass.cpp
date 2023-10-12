@@ -37,8 +37,8 @@ namespace MoYu
         RHI::RgResourceHandle backBufColorHandle = passOutput.backBufColorHandle;
         
         graph.AddRenderPass("UIPass")
-            .Read(passInput.renderTargetColorHandle)
-            .Write(passOutput.backBufColorHandle)
+            .Read(passInput.renderTargetColorHandle, false, RHIResourceState::RHI_RESOURCE_STATE_PIXEL_SHADER_RESOURCE)
+            .Write(passOutput.backBufColorHandle, false, RHIResourceState::RHI_RESOURCE_STATE_RENDER_TARGET)
             .Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
 
                 RHI::D3D12GraphicsContext* graphicsContext = context->GetGraphicsContext();
