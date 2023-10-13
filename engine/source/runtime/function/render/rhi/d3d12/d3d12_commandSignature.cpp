@@ -58,9 +58,13 @@ namespace RHI
         if (Builder.RequiresRootSignature)
         {
             ASSERT(RootSignature != nullptr);
+            VERIFY_D3D12_API(Parent->GetD3D12Device()->CreateCommandSignature(
+                &Desc, RootSignature, IID_PPV_ARGS(&CommandSignature)));
         }
-
-        VERIFY_D3D12_API(
-            Parent->GetD3D12Device()->CreateCommandSignature(&Desc, RootSignature, IID_PPV_ARGS(&CommandSignature)));
+        else
+        {
+            VERIFY_D3D12_API(
+                Parent->GetD3D12Device()->CreateCommandSignature(&Desc, nullptr, IID_PPV_ARGS(&CommandSignature)));
+        }
     }
 }

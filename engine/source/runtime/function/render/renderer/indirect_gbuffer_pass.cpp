@@ -58,10 +58,8 @@ namespace MoYu
         {
             RHI::RootSignatureDesc rootSigDesc =
                 RHI::RootSignatureDesc()
-                    .Add32BitConstants<0, 0>(1)
+                    .Add32BitConstants<0, 0>(3)
                     .AddConstantBufferView<1, 0>()
-                    .AddShaderResourceView<0, 0>()
-                    .AddShaderResourceView<1, 0>()
                     .AddStaticSampler<10, 0>(D3D12_FILTER::D3D12_FILTER_ANISOTROPIC,
                                              D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_WRAP,
                                              8)
@@ -75,6 +73,16 @@ namespace MoYu
                     .AllowSampleDescriptorHeapIndexing();
 
             pIndirectGBufferSignature = std::make_shared<RHI::D3D12RootSignature>(m_Device, rootSigDesc);
+        }
+        {
+            RHI::CommandSignatureDesc Builder(4);
+            Builder.AddConstant(0, 0, 1);
+            Builder.AddVertexBufferView(0);
+            Builder.AddIndexBufferView();
+            Builder.AddDrawIndexed();
+
+            pIndirectGBufferCommandSignature = std::make_shared<RHI::D3D12CommandSignature>(
+                m_Device, Builder, pIndirectGBufferSignature->GetApiHandle());
         }
 
         {
@@ -192,12 +200,14 @@ namespace MoYu
             graphicContext->SetRootSignature(pIndirectGBufferSignature.get());
             graphicContext->SetPipelineState(pIndirectGBufferPSO.get());
             graphicContext->SetConstantBuffer(1, registry->GetD3D12Buffer(perframeBufferHandle)->GetGpuVirtualAddress());
-            graphicContext->SetBufferSRV(2, registry->GetD3D12Buffer(meshBufferHandle));
-            graphicContext->SetBufferSRV(3, registry->GetD3D12Buffer(materialBufferHandle));
+            graphicContext->SetConstant(0, 1, registry->GetD3D12Buffer(meshBufferHandle)->GetDefaultSRV()->GetIndex());
+            graphicContext->SetConstant(0, 2, registry->GetD3D12Buffer(materialBufferHandle)->GetDefaultSRV()->GetIndex());
+            //graphicContext->SetBufferSRV(2, registry->GetD3D12Buffer(meshBufferHandle));
+            //graphicContext->SetBufferSRV(3, registry->GetD3D12Buffer(materialBufferHandle));
 
             auto pIndirectCommandBuffer = registry->GetD3D12Buffer(opaqueDrawHandle);
 
-            graphicContext->ExecuteIndirect(CommandSignatures::pIndirectDraw.get(),
+            graphicContext->ExecuteIndirect(pIndirectGBufferCommandSignature.get(),
                                             pIndirectCommandBuffer,
                                             0,
                                             HLSL::MeshLimit,
@@ -209,7 +219,9 @@ namespace MoYu
 
     void IndirectGBufferPass::destroy()
     {
-
+        pIndirectGBufferSignature = nullptr;
+        pIndirectGBufferPSO       = nullptr;
+        pIndirectGBufferCommandSignature = nullptr;
     }
 
     bool IndirectGBufferPass::initializeRenderTarget(RHI::RenderGraph& graph, DrawOutputParameters* drawPassOutput)

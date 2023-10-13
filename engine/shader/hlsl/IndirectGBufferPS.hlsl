@@ -4,10 +4,15 @@
 #include "ShadingParameters.hlsli"
 #include "Quaternion.hlsli"
 
-cbuffer RootConstants : register(b0, space0) { uint meshIndex; };
+cbuffer RootConstants : register(b0, space0)
+{
+    uint meshIndex;
+    uint perRenderableMeshDataIndex;
+    uint materialViewViewIndex;
+};
 ConstantBuffer<FrameUniforms> g_FrameUniform : register(b1, space0);
-StructuredBuffer<PerRenderableMeshData> g_RenderableMeshDatas : register(t0, space0);
-StructuredBuffer<PerMaterialViewIndexBuffer> g_MaterialViewIndexBuffers : register(t1, space0);
+// StructuredBuffer<PerRenderableMeshData> g_RenderableMeshDatas : register(t0, space0);
+// StructuredBuffer<PerMaterialViewIndexBuffer> g_MaterialViewIndexBuffers : register(t1, space0);
 
 SamplerState defaultSampler : register(s10);
 SamplerComparisonState shadowmapSampler : register(s11);
@@ -33,6 +38,8 @@ struct PSOutputGBuffer
 
 VaringStruct VSMain(VertexInput input)
 {
+    StructuredBuffer<PerRenderableMeshData> g_RenderableMeshDatas = ResourceDescriptorHeap[perRenderableMeshDataIndex];
+    
     VaringStruct output;
 
     PerRenderableMeshData renderableMeshData = g_RenderableMeshDatas[meshIndex];
@@ -57,6 +64,9 @@ VaringStruct VSMain(VertexInput input)
 
 PSOutputGBuffer PSMain(VaringStruct varingStruct)
 {
+    StructuredBuffer<PerRenderableMeshData> g_RenderableMeshDatas = ResourceDescriptorHeap[perRenderableMeshDataIndex];
+    StructuredBuffer<PerMaterialViewIndexBuffer> g_MaterialViewIndexBuffers = ResourceDescriptorHeap[materialViewViewIndex];
+
     PerRenderableMeshData renderableMeshData = g_RenderableMeshDatas[meshIndex];
     PerMaterialViewIndexBuffer materialViewIndexBuffer = g_MaterialViewIndexBuffers[renderableMeshData.perMaterialViewIndexBufferIndex];
 

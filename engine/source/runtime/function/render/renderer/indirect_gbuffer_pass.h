@@ -67,6 +67,7 @@ namespace MoYu
         Shader indirectGBufferPS;
         std::shared_ptr<RHI::D3D12RootSignature> pIndirectGBufferSignature;
         std::shared_ptr<RHI::D3D12PipelineState> pIndirectGBufferPSO;
+        std::shared_ptr<RHI::D3D12CommandSignature> pIndirectGBufferCommandSignature;
 
         RHI::RgTextureDesc albedoDesc;                                  // float4
         RHI::RgTextureDesc worldNormalDesc;                             // float3
