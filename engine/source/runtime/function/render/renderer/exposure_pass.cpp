@@ -86,7 +86,7 @@ namespace MoYu
         {
             RHI::RenderPass& defaultExposurePass = graph.AddRenderPass("DefaultUpdateExposure");
 
-            defaultExposurePass.Write(passOutput.exposureHandle, true);
+            defaultExposurePass.Write(outputExposureHandle, true);
             defaultExposurePass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
 
                 RHI::D3D12Buffer* exposureStructure = registry->GetD3D12Buffer(outputExposureHandle);
@@ -115,7 +115,7 @@ namespace MoYu
 
             RHI::RenderPass& genHistogramPass = graph.AddRenderPass("GenerateHDRDistogram");
             genHistogramPass.Read(inputLumaLRHandle, false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-            genHistogramPass.Write(passOutput.histogramHandle, false, RHIResourceState::RHI_RESOURCE_STATE_UNORDERED_ACCESS);
+            genHistogramPass.Write(histogramHandle, false, RHIResourceState::RHI_RESOURCE_STATE_UNORDERED_ACCESS);
             genHistogramPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
                 RHI::D3D12ComputeContext* computeContext = context->GetComputeContext();
 
