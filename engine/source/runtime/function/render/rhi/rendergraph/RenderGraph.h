@@ -76,12 +76,12 @@ namespace RHI
 
         RenderPass& Read(RgResourceHandle Resource,
                          bool             IgnoreBarrier = true,
-                         RgResourceState  subType       = RHIResourceState::RHI_RESOURCE_STATE_COMMON,
-                         RgResourceState  counterType   = RHIResourceState::RHI_RESOURCE_STATE_COMMON);
+                         RgResourceState  subType       = RHIResourceState::RHI_RESOURCE_STATE_NONE,
+                         RgResourceState  counterType   = RHIResourceState::RHI_RESOURCE_STATE_NONE);
         RenderPass& Write(RgResourceHandle& Resource,
                           bool              IgnoreBarrier = true,
-                          RgResourceState   subType       = RHIResourceState::RHI_RESOURCE_STATE_COMMON,
-                          RgResourceState   counterType   = RHIResourceState::RHI_RESOURCE_STATE_COMMON);
+                          RgResourceState   subType       = RHIResourceState::RHI_RESOURCE_STATE_NONE,
+                          RgResourceState   counterType   = RHIResourceState::RHI_RESOURCE_STATE_NONE);
 
         template<typename PFNRenderPassCallback>
         void Execute(PFNRenderPassCallback&& Callback)

@@ -313,6 +313,7 @@ enum RHIResourceState : uint64_t
     RHI_RESOURCE_STATE_ALL_SHADER_RESOURCE	= ( 0x40 | 0x80 ) ,
     RHI_RESOURCE_STATE_PRESENT	= 0,
     RHI_RESOURCE_STATE_PREDICATION	= 0x200,
+    RHI_RESOURCE_STATE_NONE = 0xffffffffffffffff,
 };
 
 struct RHISampleState

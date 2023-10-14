@@ -57,6 +57,7 @@ target_link_libraries(${TARGET_NAME} PUBLIC DirectStorage)
 target_link_libraries(${TARGET_NAME} PUBLIC DirectXTK12)
 target_link_libraries(${TARGET_NAME} PUBLIC d3d12.lib)
 target_link_libraries(${TARGET_NAME} PUBLIC DirectXTex)
+target_link_libraries(${TARGET_NAME} PUBLIC fmt)
 
 add_definitions(-DUNICODE -D_UNICODE)
 

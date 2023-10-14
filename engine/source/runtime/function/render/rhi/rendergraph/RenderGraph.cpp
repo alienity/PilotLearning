@@ -150,12 +150,12 @@ namespace RHI
                 _ResourcePtr = _BufferPtr;
             }
 
-            if (_ResourcePtr != nullptr)
+            if (_ResourcePtr != nullptr && Read.rgSubType != RgResourceState::RHI_RESOURCE_STATE_NONE)
             {
                 D3D12_RESOURCE_STATES _TargetState = RHITranslateD3D12(Read.rgSubType);
                 Context->TransitionBarrier(_ResourcePtr, _TargetState);
             }
-            if (_BufferCounterPtr != nullptr)
+            if (_BufferCounterPtr != nullptr && Read.rgCounterType != RgResourceState::RHI_RESOURCE_STATE_NONE)
             {
                 D3D12_RESOURCE_STATES _TargetState = RHITranslateD3D12(Read.rgCounterType);
                 Context->TransitionBarrier(_BufferCounterPtr, _TargetState);
@@ -234,12 +234,12 @@ namespace RHI
                 _ResourcePtr = _BufferPtr;
             }
 
-            if (_ResourcePtr != nullptr)
+            if (_ResourcePtr != nullptr && Write.rgSubType != RgResourceState::RHI_RESOURCE_STATE_NONE)
             {
                 D3D12_RESOURCE_STATES _TargetState = RHITranslateD3D12(Write.rgSubType);
                 Context->TransitionBarrier(_ResourcePtr, _TargetState);
             }
-            if (_BufferCounterPtr != nullptr)
+            if (_BufferCounterPtr != nullptr && Write.rgCounterType != RgResourceState::RHI_RESOURCE_STATE_NONE)
             {
                 D3D12_RESOURCE_STATES _TargetState = RHITranslateD3D12(Write.rgCounterType);
                 Context->TransitionBarrier(_BufferCounterPtr, _TargetState);
