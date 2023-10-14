@@ -138,6 +138,12 @@ if(NOT TARGET DirectXTex)
     set_target_properties(DirectXTex PROPERTIES FOLDER ${third_party_folder}/DirectXTex)
 endif()
 
+if(NOT TARGET FMT)
+    set(FMT_TEST OFF)
+    add_subdirectory(fmt-10.1.1)
+    set_target_properties(fmt PROPERTIES FOLDER ${third_party_folder}/fmt-10.1.1)
+endif()
+
 # if(NOT TARGET directxtex)
 #     include(directxtex.cmake)
 #     set_target_properties(directxtex PROPERTIES FOLDER ${third_party_folder}/directxtex_desktop_win10.2023.6.14.1)

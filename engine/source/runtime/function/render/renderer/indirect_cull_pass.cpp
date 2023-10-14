@@ -6,6 +6,7 @@
 #include "runtime/function/render/rhi/d3d12/d3d12_graphicsCommon.h"
 #include "runtime/function/render/glm_wrapper.h"
 
+#include "fmt/core.h"
 #include <cassert>
 
 namespace MoYu
@@ -189,8 +190,8 @@ namespace MoYu
 
                 for (size_t i = 0; i < m_render_scene->m_directional_light.m_cascade; i++)
                 {
-                    std::wstring _name = std::wstring(L"DirectionIndirectSortCommandBuffer_Cascade_" + i);
-
+                    std::wstring _name = fmt::format(L"DirectionIndirectSortCommandBuffer_Cascade_{}", i);
+                    
                     DrawCallCommandBuffer _CommandBuffer = {};
                     _CommandBuffer.p_IndirectIndexCommandBuffer = CreateIndexBuffer(_name);
                     _CommandBuffer.p_IndirectSortCommandBuffer  = CreateSortCommandBuffer(_name);
@@ -212,7 +213,7 @@ namespace MoYu
                 InternalSpotLight& _internalSpotLight = m_render_scene->m_spot_light_list[i];
                 if (_internalSpotLight.m_shadowmap)
                 {
-                    std::wstring _name = std::wstring(L"SpotIndirectSortCommandBuffer_" + i);
+                    std::wstring _name = fmt::format(L"SpotIndirectSortCommandBuffer_{}", i);
 
                     bool isFindInOldCommandBuffer = false;
                     for (size_t j = 0; j < spotShadowmapCommandBuffer.size(); j++)
