@@ -289,6 +289,7 @@ namespace MoYu
 
         if (!isPartiallyPreSorted)
         {
+            context->FlushResourceBarriers();
             context->SetPipelineState(ElementSizeBytes == 4 ? PipelineStates::pBitonic32PreSortPSO.get() :
                                                               PipelineStates::pBitonic64PreSortPSO.get());
 
@@ -365,6 +366,7 @@ namespace MoYu
 
             // Transition to indirect argument state
             context->TransitionBarrier(indirectSortBuffer, D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT);
+            context->FlushResourceBarriers();
         }
     }
 
@@ -444,6 +446,23 @@ namespace MoYu
             resetPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
                 RHI::D3D12ComputeContext* pCopyContext = context->GetComputeContext();
 
+                pCopyContext->TransitionBarrier(RegGetBufCounter(mOpaqueDrawHandle.indirectIndexBufferHandle), D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_DEST);
+                pCopyContext->TransitionBarrier(RegGetBufCounter(mOpaqueDrawHandle.indirectSortBufferHandle), D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_DEST);
+                pCopyContext->TransitionBarrier(RegGetBufCounter(mTransparentDrawHandle.indirectIndexBufferHandle), D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_DEST);
+                pCopyContext->TransitionBarrier(RegGetBufCounter(mTransparentDrawHandle.indirectSortBufferHandle), D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_DEST);
+                for (size_t i = 0; i < mDirShadowmapHandles.size(); i++)
+                {
+                    pCopyContext->TransitionBarrier(RegGetBufCounter(mDirShadowmapHandles[i].indirectSortBufferHandle), D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_DEST);
+                }
+                for (size_t i = 0; i < mSpotShadowmapHandles.size(); i++)
+                {
+                    pCopyContext->TransitionBarrier(RegGetBufCounter(mSpotShadowmapHandles[i].indirectSortBufferHandle), D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_DEST);
+                }
+                pCopyContext->TransitionBarrier(RegGetBuf(mPerframeBufferHandle), D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_DEST);
+                pCopyContext->TransitionBarrier(RegGetBuf(mMaterialBufferHandle), D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_DEST);
+                pCopyContext->TransitionBarrier(RegGetBuf(mMeshBufferHandle), D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_DEST);
+                pCopyContext->FlushResourceBarriers();
+
                 pCopyContext->ResetCounter(RegGetBufCounter(mOpaqueDrawHandle.indirectIndexBufferHandle));
                 pCopyContext->ResetCounter(RegGetBufCounter(mOpaqueDrawHandle.indirectSortBufferHandle));
                 pCopyContext->ResetCounter(RegGetBufCounter(mTransparentDrawHandle.indirectIndexBufferHandle));
@@ -466,7 +485,6 @@ namespace MoYu
                 pCopyContext->TransitionBarrier(RegGetBuf(mPerframeBufferHandle), D3D12_RESOURCE_STATE_GENERIC_READ);
                 pCopyContext->TransitionBarrier(RegGetBuf(mMaterialBufferHandle), D3D12_RESOURCE_STATE_GENERIC_READ);
                 pCopyContext->TransitionBarrier(RegGetBuf(mMeshBufferHandle), D3D12_RESOURCE_STATE_GENERIC_READ);
-
                 pCopyContext->FlushResourceBarriers();
             });
         }
@@ -494,6 +512,7 @@ namespace MoYu
                     pAsyncCompute->TransitionBarrier(RegGetBufCounter(mOpaqueDrawHandle.indirectIndexBufferHandle), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
                     pAsyncCompute->TransitionBarrier(RegGetBuf(mTransparentDrawHandle.indirectIndexBufferHandle), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
                     pAsyncCompute->TransitionBarrier(RegGetBufCounter(mTransparentDrawHandle.indirectIndexBufferHandle), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+                    pAsyncCompute->FlushResourceBarriers();
 
                     /**/
                     pAsyncCompute->SetRootSignature(RootSignatures::pIndirectCullForSort.get());
@@ -647,8 +666,8 @@ namespace MoYu
                 {
                     pAsyncCompute->TransitionBarrier(RegGetBuf(mDirShadowmapHandles[i].indirectSortBufferHandle), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
                     pAsyncCompute->InsertUAVBarrier(RegGetBuf(mDirShadowmapHandles[i].indirectSortBufferHandle));
-                    pAsyncCompute->TransitionBarrier(RegGetBufCounter(mDirShadowmapHandles[i].indirectSortBufferHandle), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-                    pAsyncCompute->InsertUAVBarrier(RegGetBufCounter(mDirShadowmapHandles[i].indirectSortBufferHandle));
+                    pAsyncCompute->TransitionBarrier(RegGetBufCounter(mDirShadowmapHandles[i].indirectSortBufferHandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+                    //pAsyncCompute->InsertUAVBarrier(RegGetBufCounter(mDirShadowmapHandles[i].indirectSortBufferHandle));
                 }
                 pAsyncCompute->FlushResourceBarriers();
 
@@ -667,6 +686,8 @@ namespace MoYu
                     pAsyncCompute->Dispatch1D(numMeshes, 128);
 
                     pAsyncCompute->TransitionBarrier(RegGetBuf(mDirShadowmapHandles[i].indirectSortBufferHandle), D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT);
+                    pAsyncCompute->TransitionBarrier(RegGetBufCounter(mDirShadowmapHandles[i].indirectSortBufferHandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+                    pAsyncCompute->FlushResourceBarriers();
                 }
             });
         }
@@ -696,8 +717,8 @@ namespace MoYu
                 {
                     pAsyncCompute->TransitionBarrier(RegGetBuf(mSpotShadowmapHandles[i].indirectSortBufferHandle), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
                     pAsyncCompute->InsertUAVBarrier(RegGetBuf(mSpotShadowmapHandles[i].indirectSortBufferHandle));
-                    pAsyncCompute->TransitionBarrier(RegGetBufCounter(mSpotShadowmapHandles[i].indirectSortBufferHandle), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-                    pAsyncCompute->InsertUAVBarrier(RegGetBufCounter(mSpotShadowmapHandles[i].indirectSortBufferHandle));
+                    pAsyncCompute->TransitionBarrier(RegGetBufCounter(mSpotShadowmapHandles[i].indirectSortBufferHandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+                    //pAsyncCompute->InsertUAVBarrier(RegGetBufCounter(mSpotShadowmapHandles[i].indirectSortBufferHandle));
                 }
                 pAsyncCompute->FlushResourceBarriers();
 
@@ -715,6 +736,8 @@ namespace MoYu
                     pAsyncCompute->Dispatch1D(numMeshes, 128);
 
                     pAsyncCompute->TransitionBarrier(RegGetBuf(mSpotShadowmapHandles[i].indirectSortBufferHandle), D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT);
+                    pAsyncCompute->TransitionBarrier(RegGetBufCounter(mSpotShadowmapHandles[i].indirectSortBufferHandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+                    pAsyncCompute->FlushResourceBarriers();
                 }
             });
         }

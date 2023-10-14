@@ -60,7 +60,7 @@ namespace MoYu
 #ifdef _DEBUG
         deviceOptions.EnableDebugLayer                = true;
         deviceOptions.EnableAutoDebugName             = true;
-        deviceOptions.EnableGpuBasedValidation        = true;
+        //deviceOptions.EnableGpuBasedValidation        = true;
         deviceOptions.WaveIntrinsics                  = true;
         deviceOptions.DynamicResources                = true;
 #endif
