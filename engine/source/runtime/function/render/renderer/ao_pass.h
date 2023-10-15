@@ -23,22 +23,24 @@ namespace MoYu
         {
             DrawInputParameters()
             {
-                inputSceneColorHandle.Invalidate();
-                inputLumaColorHandle.Invalidate();
+                perframeBufferHandle.Invalidate();
+                worldNormalHandle.Invalidate();
+                depthHandle.Invalidate();
             }
 
-            RHI::RgResourceHandle inputSceneColorHandle;
-            RHI::RgResourceHandle inputLumaColorHandle;
+            RHI::RgResourceHandle perframeBufferHandle;
+            RHI::RgResourceHandle worldNormalHandle;
+            RHI::RgResourceHandle depthHandle;
         };
 
         struct DrawOutputParameters : public PassOutput
         {
             DrawOutputParameters()
             {
-                outputColorHandle.Invalidate();
+                outputAOHandle.Invalidate();
             }
 
-            RHI::RgResourceHandle outputColorHandle;
+            RHI::RgResourceHandle outputAOHandle;
         };
 
     public:
@@ -55,9 +57,7 @@ namespace MoYu
 
     private:
         Shader SSAOCS;
-
         std::shared_ptr<RHI::D3D12RootSignature> pSSAOSignature;
-
         std::shared_ptr<RHI::D3D12PipelineState> pSSAOPSO;
 
 	};

@@ -159,6 +159,9 @@ namespace MoYu
         // ao pass
         {
             AOPass::AOInitInfo aoPassInit;
+            aoPassInit.colorTexDesc       = colorTexDesc;
+            aoPassInit.m_ShaderCompiler   = pCompiler;
+            aoPassInit.m_ShaderRootPath   = g_runtime_global_context.m_config_manager->getShaderFolder();
 
             mAOPass = std::make_shared<AOPass>();
             mAOPass->setCommonInfo(renderPassCommonInfo);
@@ -284,6 +287,17 @@ namespace MoYu
         //=================================================================================
         
         //=================================================================================
+        // ambient occlusion
+        AOPass::DrawInputParameters mAOIntput;
+        AOPass::DrawOutputParameters mAOOutput;
+
+        mAOIntput.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
+        mAOIntput.worldNormalHandle    = mGBufferOutput.worldNormalHandle;
+        mAOIntput.depthHandle          = mGBufferOutput.depthHandle;
+        mAOPass->update(graph, mAOIntput, mAOOutput);
+        //=================================================================================
+
+        //=================================================================================
         // light loop pass
         IndirectLightLoopPass::DrawInputParameters mLightLoopIntput;
         IndirectLightLoopPass::DrawOutputParameters mLightLoopOutput;
@@ -364,17 +378,21 @@ namespace MoYu
         //outputRTColorHandle = mPostprocessOutputParams.outputColorHandle;
         //=================================================================================
 
+
+
         //=================================================================================
         // display
         DisplayPass::DisplayInputParameters  mDisplayIntputParams;
         DisplayPass::DisplayOutputParameters mDisplayOutputParams;
 
-        mDisplayIntputParams.inputRTColorHandle      = mPostprocessOutputParams.outputColorHandle;
+        // mDisplayIntputParams.inputRTColorHandle   = mPostprocessOutputParams.outputColorHandle;
+         //mDisplayIntputParams.inputRTColorHandle   = mGBufferOutput.albedoHandle;
+        mDisplayIntputParams.inputRTColorHandle      = mAOOutput.outputAOHandle;
         mDisplayOutputParams.renderTargetColorHandle = renderTargetColorHandle;
+        //mDisplayOutputParams.renderTargetColorHandle = backBufColorHandle;
         mDisplayPass->update(graph, mDisplayIntputParams, mDisplayOutputParams);
         //=================================================================================
         
-
         //=================================================================================
         if (mUIPass != nullptr)
         {
