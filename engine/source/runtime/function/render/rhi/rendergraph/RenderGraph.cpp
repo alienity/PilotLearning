@@ -77,49 +77,6 @@ namespace RHI
 	void RenderGraphDependencyLevel::AddRenderPass(RenderPass* RenderPass)
 	{
 		RenderPasses.push_back(RenderPass);
-        /*
-        for (size_t i = 0; i < RenderPass->Reads.size(); i++)
-        {
-            RHI::RgResourceHandleExt& _toAdd = RenderPass->Reads[i];
-
-            bool _findSame = false;
-            for (size_t j = 0; j < Reads.size(); j++)
-            {
-                RHI::RgResourceHandleExt& _OldOne = Reads[j];
-                if (_OldOne == _toAdd)
-                {
-                    this->Reads[j] = _toAdd;
-
-                    _findSame = true;
-                }
-            }
-            if (!_findSame)
-            {
-                Reads.push_back(_toAdd);
-            }
-        }
-
-        for (size_t i = 0; i < RenderPass->Writes.size(); i++)
-        {
-            RHI::RgResourceHandleExt& _toAdd = RenderPass->Writes[i];
-
-            bool _findSame = false;
-            for (size_t j = 0; j < Writes.size(); j++)
-            {
-                RHI::RgResourceHandleExt& _OldOne = Writes[j];
-                if (_OldOne == _toAdd)
-                {
-                    this->Writes[j] = _toAdd;
-
-                    _findSame = true;
-                }
-            }
-            if (!_findSame)
-            {
-                Writes.push_back(_toAdd);
-            }
-        }
-        */
 		Reads.insert(RenderPass->Reads.begin(), RenderPass->Reads.end());
 		Writes.insert(RenderPass->Writes.begin(), RenderPass->Writes.end());
 	}
@@ -446,8 +403,41 @@ namespace RHI
 
         for (size_t i = 0; i < mReadWriteHandles.first.size(); i++)
         {
-            if (!handle2WritePassIdx[mReadWriteHandles.first[i]].empty())
+            if (!handle2WritePassIdx[mReadWriteHandles.first[i].rgHandle].empty())
                 return false;
+        }
+        return true;
+    }
+
+    bool RenderGraph::IsPassAvailable(std::vector<PassIdx>& passInSameLevel, InGraphPassIdx2ReadWriteHandle& pass2Handles, InGraphHandle2WritePassIdx& handle2WritePassIdx, RgResourceHandleExt& resource)
+    {
+        // 2.1 pass的reads没有被作为其他pass的write写过
+        if (!handle2WritePassIdx[resource.rgHandle].empty())
+        {
+            return false;
+        }
+
+        // 2.2 pass的reads跟前面遍历过的pass的reads的handle一样，但是读取状态不一样，也不能要
+        if (resource.rgTransFlag == RgBarrierFlag::NoneBarrier)
+            return true;
+
+        for (size_t i = 0; i < passInSameLevel.size(); i++)
+        {
+            PassIdx prevPassIdx = passInSameLevel[i];
+            auto& prevPassReads = pass2Handles[prevPassIdx].first;
+            for (size_t j = 0; j < prevPassReads.size(); j++)
+            {
+                auto& prevPassRead = prevPassReads[j];
+                if (prevPassRead.rgHandle == resource.rgHandle &&
+                    prevPassRead.rgTransFlag == RgBarrierFlag::AutoBarrier)
+                {
+                    if (prevPassRead.rgSubType != resource.rgSubType ||
+                        prevPassRead.rgCounterType != resource.rgCounterType)
+                    {
+                        return false;
+                    }
+                }
+            }
         }
         return true;
     }
@@ -468,23 +458,23 @@ namespace RHI
             RHI::RenderPass* pass = InGraphPass[i];
             PassIdx passIdx = pass->PassIndex;
 
-            std::vector<RHI::RgResourceHandle> readHandles(pass->Reads.size());
-            std::vector<RHI::RgResourceHandle> writeHandles(pass->Writes.size());
+            std::vector<RHI::RgResourceHandleExt> readHandles(pass->Reads.size());
+            std::vector<RHI::RgResourceHandleExt> writeHandles(pass->Writes.size());
 
             for (size_t j = 0; j < pass->Reads.size(); j++)
             {
-                RHI::RgResourceHandle readHandle = pass->Reads[j].rgHandle;
-                readHandles[j] = readHandle;
+                RHI::RgResourceHandleExt readHandleExt = pass->Reads[j];
+                readHandles[j] = readHandleExt;
                 //mHandle2ReadPassIdx[readHandle].insert(passIdx);
             }
             for (size_t j = 0; j < pass->Writes.size(); j++)
             {
-                RHI::RgResourceHandle writeHandle = pass->Writes[j].rgHandle;
-                writeHandles[j] = writeHandle;
-                mHandle2WritePassIdx[writeHandle].insert(passIdx);
+                RHI::RgResourceHandleExt writeHandleExt = pass->Writes[j];
+                writeHandles[j] = writeHandleExt;
+                mHandle2WritePassIdx[writeHandleExt.rgHandle].insert(passIdx);
             }
 
-            mPassIdx2ReadWriteHandle[passIdx] = std::pair<std::vector<RHI::RgResourceHandle>, std::vector<RHI::RgResourceHandle>>(readHandles, writeHandles);
+            mPassIdx2ReadWriteHandle[passIdx] = std::pair<std::vector<RHI::RgResourceHandleExt>, std::vector<RHI::RgResourceHandleExt>>(readHandles, writeHandles);
 
             mInGraphPassIdx[i] = passIdx;
         }
@@ -516,7 +506,7 @@ namespace RHI
                 bool isPassReadsClean = true;
                 for (size_t j = 0; j < mPassReads.size(); j++)
                 {
-                    if (!mHandle2WritePassIdx[mPassReads[j]].empty())
+                    if (!IsPassAvailable(passInSameLevel, mPassIdx2ReadWriteHandle, mHandle2WritePassIdx, mPassReads[j]))
                     {
                         isPassReadsClean = false;
                         break;
@@ -539,11 +529,11 @@ namespace RHI
 
                 auto& mPassWrites = mPassIdx2ReadWriteHandle[mPassIdx].second;
 
-                std::vector<RHI::RgResourceHandle>::iterator passWriteIter;
+                std::vector<RHI::RgResourceHandleExt>::iterator passWriteIter;
 
                 for (passWriteIter = mPassWrites.begin(); passWriteIter < mPassWrites.end(); passWriteIter++)
                 {
-                    RHI::RgResourceHandle passWriteHandle = *passWriteIter;
+                    RHI::RgResourceHandle passWriteHandle = passWriteIter->rgHandle;
                     
                     mHandle2WritePassIdx[passWriteHandle].erase(mPassIdx);
                 }

@@ -78,7 +78,7 @@ namespace MoYu
         m_zfar   = zfar;
         m_fovy   = fovy;
 
-        m_project_matrix = Math::makePerspectiveMatrix(Radian(Degree(m_fovy)), m_aspect, -m_znear, -m_zfar);
+        m_project_matrix = Math::makePerspectiveMatrix(MoYu::f::DEG_TO_RAD * m_fovy, m_aspect, -m_znear, -m_zfar);
     }
 
     Matrix4x4 RenderCamera::getViewMatrix()
@@ -103,7 +103,7 @@ namespace MoYu
 
     Matrix4x4 RenderCamera::getPersProjMatrix() const
     {
-        Matrix4x4 proj_mat = Math::makePerspectiveMatrix(Radian(Degree(m_fovy)), m_aspect, -m_znear, -m_zfar);
+        Matrix4x4 proj_mat = Math::makePerspectiveMatrix(MoYu::f::DEG_TO_RAD * m_fovy, m_aspect, -m_znear, -m_zfar);
 
         return proj_mat;
     }

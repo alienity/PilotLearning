@@ -290,7 +290,7 @@ struct RHIRenderTargetState
     DXGI_FORMAT   DSFormat         = DXGI_FORMAT_UNKNOWN;
 };
 
-enum RHIResourceState : uint64_t
+enum class RHIResourceState : uint64_t
 {
     RHI_RESOURCE_STATE_COMMON	= 0,
     RHI_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER	= 0x1,
@@ -315,6 +315,9 @@ enum RHIResourceState : uint64_t
     RHI_RESOURCE_STATE_PREDICATION	= 0x200,
     RHI_RESOURCE_STATE_NONE = 0xffffffffffffffff,
 };
+inline bool operator==(RHIResourceState l, RHIResourceState r) { return (uint64_t)l == (uint64_t)r; }
+inline bool operator!=(RHIResourceState l, RHIResourceState r) { return (uint64_t)l != (uint64_t)r; }
+
 
 struct RHISampleState
 {

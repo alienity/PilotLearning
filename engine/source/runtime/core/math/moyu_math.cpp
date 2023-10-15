@@ -108,9 +108,9 @@ namespace MoYu
         return Matrix4x4::lookAt(eye_position, target_position - eye_position, up_dir);
     }
 
-    Matrix4x4 Math::makePerspectiveMatrix(Radian fovy, float aspect, float znear, float zfar)
+    Matrix4x4 Math::makePerspectiveMatrix(float fovy, float aspect, float znear, float zfar)
     {
-        return Matrix4x4::createPerspectiveFieldOfView(fovy.valueRadians(), aspect, znear, zfar);
+        return Matrix4x4::createPerspectiveFieldOfView(fovy, aspect, znear, zfar);
     }
 
     Matrix4x4 Math::makeOrthographicProjectionMatrix(float left, float right, float bottom, float top, float znear, float zfar)

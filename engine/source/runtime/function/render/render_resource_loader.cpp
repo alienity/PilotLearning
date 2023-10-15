@@ -310,12 +310,12 @@ namespace MoYu
                     ret.m_static_mesh_data = MoYu::Geometry::ToStaticMesh(_basicMesh);
                     ret.m_axis_aligned_box = MoYu::Geometry::ToAxisAlignedBox(_basicMesh);
                 }
-                //else if (mesh_file.find("cube") != std::string::npos)
-                //{
-                //    MoYu::Geometry::BasicMesh _basicMesh = MoYu::Geometry::CubeMesh::ToBasicMesh();
-                //    ret.m_static_mesh_data = MoYu::Geometry::ToStaticMesh(_basicMesh);
-                //    ret.m_axis_aligned_box = MoYu::Geometry::ToAxisAlignedBox(_basicMesh);
-                //}
+                else if (mesh_file.find("cube") != std::string::npos)
+                {
+                    MoYu::Geometry::BasicMesh _basicMesh = MoYu::Geometry::CubeMesh::ToBasicMesh();
+                    ret.m_static_mesh_data = MoYu::Geometry::ToStaticMesh(_basicMesh);
+                    ret.m_axis_aligned_box = MoYu::Geometry::ToAxisAlignedBox(_basicMesh);
+                }
                 else
                 {
                     MoYu::AxisAlignedBox bounding_box;

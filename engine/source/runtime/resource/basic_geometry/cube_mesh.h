@@ -9,9 +9,9 @@ namespace MoYu
     {
 		struct CubeMesh : BasicMesh
 		{
-            CubeMesh();
+            CubeMesh(float width);
 
-            static BasicMesh ToBasicMesh();
+            static BasicMesh ToBasicMesh(float width = 0.5f);
 		};
 
     } // namespace Geometry

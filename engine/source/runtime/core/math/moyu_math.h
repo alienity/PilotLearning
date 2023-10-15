@@ -393,7 +393,7 @@ namespace MoYu
         static Matrix4x4
         makeLookAtMatrix(const Vector3& eye_position, const Vector3& target_position, const Vector3& up_dir);
 
-        static Matrix4x4 makePerspectiveMatrix(Radian fovy, float aspect, float znear, float zfar);
+        static Matrix4x4 makePerspectiveMatrix(float fovy, float aspect, float znear, float zfar);
 
         static Matrix4x4
         makeOrthographicProjectionMatrix(float left, float right, float bottom, float top, float znear, float zfar);

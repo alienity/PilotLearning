@@ -59,18 +59,17 @@ namespace RHI
         RgResourceFlags   Flags : 2;
         std::uint64_t     Version : 16; // 16 bits to represent version should be more than enough, we can always just increase bit used if is not enough
         std::uint64_t     Id : 32; // 32 bit unsigned int
-    };
 
-	inline bool operator==(const RgResourceHandle& lhs, const RgResourceHandle& rhs)
-    {
-        return lhs.Type == rhs.Type && lhs.Flags == rhs.Flags && lhs.Version == rhs.Version && lhs.Id == rhs.Id;
-    }
-    inline bool operator<(const RgResourceHandle& lhs, const RgResourceHandle& rhs)
-    {
-        return lhs.Type < rhs.Type || (lhs.Type == rhs.Type && lhs.Flags < rhs.Flags) ||
-               (lhs.Type == rhs.Type && lhs.Flags == rhs.Flags && lhs.Id < rhs.Id) ||
-               (lhs.Type == rhs.Type && lhs.Flags == rhs.Flags && lhs.Id == rhs.Id && lhs.Version < rhs.Version);
-    }
+        friend bool operator==(const RgResourceHandle& l, const RgResourceHandle& r)
+        {
+            return l.Type == r.Type && l.Flags == r.Flags && l.Version == r.Version && l.Id == r.Id;
+        }
+        friend bool operator<(const RgResourceHandle& l, const RgResourceHandle& r)
+        {
+            return std::tie(l.Type, l.Flags, l.Version, l.Id) <
+                   std::tie(r.Type, r.Flags, r.Version, r.Id); // keep the same order
+        }
+    };
     HandleOps(RgResourceHandle)
 
 	static_assert(sizeof(RgResourceHandle) == sizeof(std::uint64_t));
@@ -84,18 +83,18 @@ namespace RHI
         RgResourceState  rgSubType : 64;
         RgResourceState  rgCounterType : 64;
         RgBarrierFlag    rgTransFlag : 64;
+
+        friend bool operator==(const RgResourceHandleExt& l, const RgResourceHandleExt& r)
+        {
+            return l.rgHandle == r.rgHandle && l.rgSubType == r.rgSubType && l.rgCounterType == r.rgCounterType &&
+                   l.rgTransFlag == r.rgTransFlag;
+        }
+        friend bool operator<(const RgResourceHandleExt& l, const RgResourceHandleExt& r)
+        {
+            return std::tie(l.rgHandle, l.rgSubType, l.rgCounterType, l.rgTransFlag) <
+                   std::tie(r.rgHandle, r.rgSubType, r.rgCounterType, r.rgTransFlag); // keep the same order
+        }
     };
-    inline bool operator==(const RgResourceHandleExt& lhs, const RgResourceHandleExt& rhs)
-    {
-        return lhs.rgHandle == rhs.rgHandle && lhs.rgSubType == rhs.rgSubType &&
-               lhs.rgCounterType == rhs.rgCounterType && lhs.rgTransFlag == rhs.rgTransFlag;
-    }
-    inline bool operator<(const RgResourceHandleExt& lhs, const RgResourceHandleExt& rhs)
-    {
-        return lhs.rgHandle < rhs.rgHandle || (lhs.rgHandle == rhs.rgHandle && lhs.rgSubType < rhs.rgSubType) ||
-               (lhs.rgHandle == rhs.rgHandle && lhs.rgSubType == rhs.rgSubType && lhs.rgCounterType < rhs.rgCounterType) ||
-               (lhs.rgHandle == rhs.rgHandle && lhs.rgSubType == rhs.rgSubType && lhs.rgCounterType == rhs.rgCounterType && lhs.rgTransFlag < rhs.rgTransFlag);
-    }
     HandleOps(RgResourceHandleExt)
 
     static_assert(sizeof(RgResourceHandleExt) == sizeof(std::uint64_t) * 4);

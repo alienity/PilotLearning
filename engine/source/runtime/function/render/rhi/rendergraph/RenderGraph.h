@@ -15,7 +15,7 @@ namespace RHI
 {
 #define PassIdx uint32_t
 
-    typedef std::map<PassIdx, std::pair<std::vector<RHI::RgResourceHandle>, std::vector<RHI::RgResourceHandle>>> InGraphPassIdx2ReadWriteHandle;
+    typedef std::map<PassIdx, std::pair<std::vector<RHI::RgResourceHandleExt>, std::vector<RHI::RgResourceHandleExt>>> InGraphPassIdx2ReadWriteHandle;
     typedef std::map<RHI::RgResourceHandle, std::set<PassIdx>> InGraphHandle2ReadPassIdx, InGraphHandle2WritePassIdx;
 
     class RenderPass;
@@ -187,6 +187,7 @@ namespace RHI
         void Setup();
 
         bool IsPassAvailable(PassIdx passIdx, InGraphPassIdx2ReadWriteHandle& pass2Handles, InGraphHandle2WritePassIdx& handle2WritePassIdx);
+        bool IsPassAvailable(std::vector<PassIdx>& passInSameLevel, InGraphPassIdx2ReadWriteHandle& pass2Handles, InGraphHandle2WritePassIdx& handle2WritePassIdx, RgResourceHandleExt& resource);
 
         [[nodiscard]] std::string_view GetResourceName(RgResourceHandle Handle) const
         {

@@ -21,8 +21,21 @@ static const float F_SQRT2    = 1.4142135623730;
 static const float F_SQRT1_2  = 0.7071067811865;
 static const float F_TAU      = 2.0 * F_PI;
 
-static const float FLT_EPS    = 1e-5;
-static const float FLT_MAX    = asfloat(0x7F7FFFFF);
+#define MILLIMETERS_PER_METER 1000
+#define METERS_PER_MILLIMETER rcp(MILLIMETERS_PER_METER)
+#define CENTIMETERS_PER_METER 100
+#define METERS_PER_CENTIMETER rcp(CENTIMETERS_PER_METER)
+
+#define FLT_INF  asfloat(0x7F800000)
+#define FLT_EPS  5.960464478e-8  // 2^-24, machine epsilon: 1 + EPS = 1 (half of the ULP for 1.0f)
+#define FLT_MIN  1.175494351e-38 // Minimum normalized positive floating-point number
+#define FLT_MAX  3.402823466e+38 // Maximum representable floating-point number
+#define HALF_EPS 4.8828125e-4    // 2^-11, machine epsilon: 1 + EPS = 1 (half of the ULP for 1.0f)
+#define HALF_MIN 6.103515625e-5  // 2^-14, the same value for 10, 11 and 16-bit: https://www.khronos.org/opengl/wiki/Small_Float_Formats
+#define HALF_MIN_SQRT 0.0078125  // 2^-7 == sqrt(HALF_MIN), useful for ensuring HALF_MIN after x^2
+#define HALF_MAX 65504.0
+#define UINT_MAX 0xFFFFFFFFu
+#define INT_MAX  0x7FFFFFFF
 
 //------------------------------------------------------------------------------
 // Scalar operations

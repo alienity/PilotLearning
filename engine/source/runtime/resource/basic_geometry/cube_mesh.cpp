@@ -5,155 +5,155 @@ namespace MoYu
 {
 	namespace Geometry
 	{
-        CubeMesh::CubeMesh()
+        CubeMesh::CubeMesh(float width)
 		{
             Vertex _t;
-            _t.position  = glm::vec3(-1, -1, 1);
+            _t.position = glm::vec3(-1, -1, 1) * width;
             _t.normal   = glm::vec3(0, 0, 1);
             _t.texcoord = glm::uvec2(0, 0);
             vertices.push_back(_t);
-            _t.position  = glm::vec3(1, -1, 1);
+            _t.position = glm::vec3(1, -1, 1) * width;
             _t.normal   = glm::vec3(0, 0, 1);
             _t.texcoord = glm::uvec2(1, 0);
             vertices.push_back(_t);
-            _t.position  = glm::vec3(1, 1, 1);
+            _t.position = glm::vec3(1, 1, 1) * width;
             _t.normal   = glm::vec3(0, 0, 1);
             _t.texcoord = glm::uvec2(1, 1);
             vertices.push_back(_t);
-            _t.position  = glm::vec3(1, 1, 1);
+            _t.position = glm::vec3(1, 1, 1) * width;
             _t.normal   = glm::vec3(0, 0, 1);
             _t.texcoord = glm::uvec2(1, 1);
             vertices.push_back(_t);
-            _t.position  = glm::vec3(-1, 1, 1);
+            _t.position = glm::vec3(-1, 1, 1) * width;
             _t.normal   = glm::vec3(0, 0, 1);
             _t.texcoord = glm::uvec2(0, 1);
             vertices.push_back(_t);
-            _t.position  = glm::vec3(-1, -1, 1);
+            _t.position = glm::vec3(-1, -1, 1) * width;
             _t.normal   = glm::vec3(0, 0, 1);
             _t.texcoord = glm::uvec2(0, 0);
             vertices.push_back(_t);
 
-            _t.position  = glm::vec3(1, -1, 1);
+            _t.position = glm::vec3(1, -1, 1) * width;
             _t.normal   = glm::vec3(1, 0, 0);
             _t.texcoord = glm::uvec2(0, 0);
             vertices.push_back(_t);
-            _t.position  = glm::vec3(1, -1, -1);
+            _t.position = glm::vec3(1, -1, -1) * width;
             _t.normal   = glm::vec3(1, 0, 0);
             _t.texcoord = glm::uvec2(1, 0);
             vertices.push_back(_t);
-            _t.position  = glm::vec3(1, 1, -1);
+            _t.position = glm::vec3(1, 1, -1) * width;
             _t.normal   = glm::vec3(1, 0, 0);
             _t.texcoord = glm::uvec2(1, 1);
             vertices.push_back(_t);
-            _t.position  = glm::vec3(1, 1, -1);
+            _t.position = glm::vec3(1, 1, -1) * width;
             _t.normal   = glm::vec3(1, 0, 0);
             _t.texcoord = glm::uvec2(1, 1);
             vertices.push_back(_t);
-            _t.position  = glm::vec3(1, 1, 1);
+            _t.position = glm::vec3(1, 1, 1) * width;
             _t.normal   = glm::vec3(1, 0, 0);
             _t.texcoord = glm::uvec2(0, 1);
             vertices.push_back(_t);
-            _t.position  = glm::vec3(1, -1, 1);
+            _t.position = glm::vec3(1, -1, 1) * width;
             _t.normal   = glm::vec3(1, 0, 0);
             _t.texcoord = glm::uvec2(0, 0);
             vertices.push_back(_t);
 
-            _t.position  = glm::vec3(1, -1, -1);
+            _t.position = glm::vec3(1, -1, -1) * width;
             _t.normal   = glm::vec3(0, 0, -1);
             _t.texcoord = glm::uvec2(0, 0);
             vertices.push_back(_t);
-            _t.position  = glm::vec3(-1, -1, -1);
+            _t.position = glm::vec3(-1, -1, -1) * width;
             _t.normal   = glm::vec3(0, 0, -1);
             _t.texcoord = glm::uvec2(1, 0);
             vertices.push_back(_t);
-            _t.position  = glm::vec3(-1, 1, -1);
+            _t.position = glm::vec3(-1, 1, -1) * width;
             _t.normal   = glm::vec3(0, 0, -1);
             _t.texcoord = glm::uvec2(1, 1);
             vertices.push_back(_t);
-            _t.position  = glm::vec3(-1, 1, -1);
+            _t.position = glm::vec3(-1, 1, -1) * width;
             _t.normal   = glm::vec3(0, 0, -1);
             _t.texcoord = glm::uvec2(1, 1);
             vertices.push_back(_t);
-            _t.position  = glm::vec3(1, 1, -1);
+            _t.position = glm::vec3(1, 1, -1) * width;
             _t.normal   = glm::vec3(0, 0, -1);
             _t.texcoord = glm::uvec2(0, 1);
             vertices.push_back(_t);
-            _t.position  = glm::vec3(1, -1, -1);
+            _t.position = glm::vec3(1, -1, -1) * width;
             _t.normal   = glm::vec3(0, 0, -1);
             _t.texcoord = glm::uvec2(0, 0);
             vertices.push_back(_t);
 
-            _t.position  = glm::vec3(-1, -1, -1);
+            _t.position = glm::vec3(-1, -1, -1) * width;
             _t.normal   = glm::vec3(-1, 0, 0);
             _t.texcoord = glm::uvec2(0, 0);
             vertices.push_back(_t);
-            _t.position  = glm::vec3(-1, -1, 1);
+            _t.position = glm::vec3(-1, -1, 1) * width;
             _t.normal   = glm::vec3(-1, 0, 0);
             _t.texcoord = glm::uvec2(1, 0);
             vertices.push_back(_t);
-            _t.position  = glm::vec3(-1, 1, 1);
+            _t.position = glm::vec3(-1, 1, 1) * width;
             _t.normal   = glm::vec3(-1, 0, 0);
             _t.texcoord = glm::uvec2(1, 1);
             vertices.push_back(_t);
-            _t.position  = glm::vec3(-1, 1, 1);
+            _t.position = glm::vec3(-1, 1, 1) * width;
             _t.normal   = glm::vec3(-1, 0, 0);
             _t.texcoord = glm::uvec2(1, 1);
             vertices.push_back(_t);
-            _t.position  = glm::vec3(-1, 1, -1);
+            _t.position = glm::vec3(-1, 1, -1) * width;
             _t.normal   = glm::vec3(-1, 0, 0);
             _t.texcoord = glm::uvec2(0, 1);
             vertices.push_back(_t);
-            _t.position  = glm::vec3(-1, -1, -1);
+            _t.position = glm::vec3(-1, -1, -1) * width;
             _t.normal   = glm::vec3(-1, 0, 0);
             _t.texcoord = glm::uvec2(0, 0);
             vertices.push_back(_t);
 
-            _t.position  = glm::vec3(-1, 1, 1);
+            _t.position = glm::vec3(-1, 1, 1) * width;
             _t.normal   = glm::vec3(0, 1, 0);
             _t.texcoord = glm::uvec2(0, 0);
             vertices.push_back(_t);
-            _t.position  = glm::vec3(1, 1, 1);
+            _t.position = glm::vec3(1, 1, 1) * width;
             _t.normal   = glm::vec3(0, 1, 0);
             _t.texcoord = glm::uvec2(1, 0);
             vertices.push_back(_t);
-            _t.position  = glm::vec3(1, 1, -1);
+            _t.position = glm::vec3(1, 1, -1) * width;
             _t.normal   = glm::vec3(0, 1, 0);
             _t.texcoord = glm::uvec2(1, 1);
             vertices.push_back(_t);
-            _t.position  = glm::vec3(1, 1, -1);
+            _t.position = glm::vec3(1, 1, -1) * width;
             _t.normal   = glm::vec3(0, 1, 0);
             _t.texcoord = glm::uvec2(1, 1);
             vertices.push_back(_t);
-            _t.position  = glm::vec3(-1, 1, -1);
+            _t.position = glm::vec3(-1, 1, -1) * width;
             _t.normal   = glm::vec3(0, 1, 0);
             _t.texcoord = glm::uvec2(0, 1);
             vertices.push_back(_t);
-            _t.position  = glm::vec3(-1, 1, 1);
+            _t.position = glm::vec3(-1, 1, 1) * width;
             _t.normal   = glm::vec3(0, 1, 0);
             _t.texcoord = glm::uvec2(0, 0);
             vertices.push_back(_t);
 
-            _t.position  = glm::vec3(-1, -1, -1);
+            _t.position = glm::vec3(-1, -1, -1) * width;
             _t.normal   = glm::vec3(0, -1, 0);
             _t.texcoord = glm::uvec2(0, 0);
             vertices.push_back(_t);
-            _t.position  = glm::vec3(1, -1, -1);
+            _t.position = glm::vec3(1, -1, -1) * width;
             _t.normal   = glm::vec3(0, -1, 0);
             _t.texcoord = glm::uvec2(1, 0);
             vertices.push_back(_t);
-            _t.position  = glm::vec3(1, -1, 1);
+            _t.position = glm::vec3(1, -1, 1) * width;
             _t.normal   = glm::vec3(0, -1, 0);
             _t.texcoord = glm::uvec2(1, 1);
             vertices.push_back(_t);
-            _t.position  = glm::vec3(1, -1, 1);
+            _t.position = glm::vec3(1, -1, 1) * width;
             _t.normal   = glm::vec3(0, -1, 0);
             _t.texcoord = glm::uvec2(1, 1);
             vertices.push_back(_t);
-            _t.position  = glm::vec3(-1, -1, 1);
+            _t.position = glm::vec3(-1, -1, 1) * width;
             _t.normal   = glm::vec3(0, -1, 0);
             _t.texcoord = glm::uvec2(0, 1);
             vertices.push_back(_t);
-            _t.position  = glm::vec3(-1, -1, -1);
+            _t.position = glm::vec3(-1, -1, -1) * width;
             _t.normal   = glm::vec3(0, -1, 0);
             _t.texcoord = glm::uvec2(0, 0);
             vertices.push_back(_t);
@@ -169,9 +169,9 @@ namespace MoYu
             }
         }
 
-        BasicMesh CubeMesh::ToBasicMesh()
+        BasicMesh CubeMesh::ToBasicMesh(float width)
         {
-            BasicMesh _mesh = CubeMesh();
+            BasicMesh _mesh = CubeMesh(width);
 
             {
                 SMikkTSpaceInterface iface {};
