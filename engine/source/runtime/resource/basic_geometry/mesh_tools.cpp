@@ -52,8 +52,8 @@ namespace MoYu
             glm::vec3 _center = (_min + _max) * 0.5f;
             glm::vec3 _half_extent = (_max - _min) * 0.5f;
 
-            Vector3 center = GLMUtil::toVec3(_center);
-            Vector3 half_extent = GLMUtil::toVec3(_half_extent);
+            Vector3 center = GLMUtil::ToVec3(_center);
+            Vector3 half_extent = GLMUtil::ToVec3(_half_extent);
 
             AxisAlignedBox _outBox = AxisAlignedBox(center, half_extent);
 

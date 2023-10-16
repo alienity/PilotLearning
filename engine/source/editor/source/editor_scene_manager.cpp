@@ -8,13 +8,13 @@
 #include <glm/gtx/matrix_decompose.hpp>
 
 #include "runtime/core/base/macro.h"
+#include "runtime/core/math/moyu_math.h"
 
 #include "runtime/engine.h"
 #include "runtime/function/framework/component/transform/transform_component.h"
 #include "runtime/function/framework/level/level.h"
 #include "runtime/function/framework/world/world_manager.h"
 #include "runtime/function/input/input_system.h"
-#include "runtime/function/render/glm_wrapper.h"
 #include "runtime/function/render/render_camera.h"
 #include "runtime/function/render/render_system.h"
 
@@ -69,7 +69,7 @@ namespace MoYu
         }
         else
         {
-            glm::mat4 model_matrix = GLMUtil::fromMat4x4(selected_aixs->m_model_matrix);
+            glm::mat4 model_matrix = GLMUtil::FromMat4x4(selected_aixs->m_model_matrix);
             glm::vec3 model_scale;
             glm::quat model_rotation;
             glm::vec3 model_translation;
@@ -79,12 +79,12 @@ namespace MoYu
             float     window_forward   = game_engine_window_size.y / 2.0f / glm::tan(glm::radians(camera_fov) / 2.0f);
             glm::vec2 screen_center_uv = glm::vec2(cursor_uv.x, 1 - cursor_uv.y) - glm::vec2(0.5, 0.5);
             glm::vec3 world_ray_dir =
-                GLMUtil::fromVec3(camera_forward) * window_forward +
-                GLMUtil::fromVec3(camera_right) * (float)game_engine_window_size.x * screen_center_uv.x +
-                GLMUtil::fromVec3(camera_up) * (float)game_engine_window_size.y * screen_center_uv.y;
+                GLMUtil::FromVec3(camera_forward) * window_forward +
+                GLMUtil::FromVec3(camera_right) * (float)game_engine_window_size.x * screen_center_uv.x +
+                GLMUtil::FromVec3(camera_up) * (float)game_engine_window_size.y * screen_center_uv.y;
 
             glm::vec4 local_ray_origin =
-                glm::inverse(model_matrix) * glm::vec4(GLMUtil::fromVec3(camera_position), 1.0f);
+                glm::inverse(model_matrix) * glm::vec4(GLMUtil::FromVec3(camera_position), 1.0f);
             glm::vec3 local_ray_origin_xyz = glm::vec3(local_ray_origin.x, local_ray_origin.y, local_ray_origin.z);
             glm::vec3 local_ray_dir        = glm::normalize(glm::inverse(model_rotation)) * world_ray_dir;
 

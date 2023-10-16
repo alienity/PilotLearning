@@ -9,9 +9,10 @@
 #include "runtime/function/framework/object/object.h"
 #include "runtime/function/global/global_context.h"
 
+#include "runtime/core/math/moyu_math.h"
+
 #include "runtime/function/render/render_swap_context.h"
 #include "runtime/function/render/render_system.h"
-#include "runtime/function/render/glm_wrapper.h"
 #include "runtime/function/render/render_common.h"
 
 namespace MoYu
@@ -118,7 +119,7 @@ namespace MoYu
     {
         Matrix4x4 transform_matrix = m_transform_component_ptr->getMatrixWorld();
 
-        std::tuple<Quaternion, Vector3, Vector3> rts = GLMUtil::decomposeMat4x4(transform_matrix);
+        std::tuple<Quaternion, Vector3, Vector3> rts = GLMUtil::DecomposeMat4x4(transform_matrix);
 
         Quaternion m_rotation = std::get<0>(rts);
         Vector3    m_position = std::get<1>(rts);

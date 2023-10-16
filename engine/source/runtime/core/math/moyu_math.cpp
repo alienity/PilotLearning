@@ -27,51 +27,6 @@ namespace MoYu
     }
 
     //------------------------------------------------------------------------------------------
-    Math::AngleUnit Math::k_AngleUnit;
-
-    Math::Math() { k_AngleUnit = AngleUnit::AU_DEGREE; }
-
-    bool Math::realEqual(float a, float b, float tolerance /* = std::numeric_limits<float>::epsilon() */)
-    {
-        return std::fabs(b - a) <= tolerance;
-    }
-
-    float Math::degreesToRadians(float degrees) { return degrees * f::DEG_TO_RAD; }
-
-    float Math::radiansToDegrees(float radians) { return radians * f::RAD_TO_DEG; }
-
-    float Math::angleUnitsToRadians(float angleunits)
-    {
-        if (k_AngleUnit == AngleUnit::AU_DEGREE)
-            return angleunits * f::DEG_TO_RAD;
-
-        return angleunits;
-    }
-
-    float Math::radiansToAngleUnits(float radians)
-    {
-        if (k_AngleUnit == AngleUnit::AU_DEGREE)
-            return radians * f::RAD_TO_DEG;
-
-        return radians;
-    }
-
-    float Math::angleUnitsToDegrees(float angleunits)
-    {
-        if (k_AngleUnit == AngleUnit::AU_RADIAN)
-            return angleunits * f::RAD_TO_DEG;
-
-        return angleunits;
-    }
-
-    float Math::degreesToAngleUnits(float degrees)
-    {
-        if (k_AngleUnit == AngleUnit::AU_RADIAN)
-            return degrees * f::DEG_TO_RAD;
-
-        return degrees;
-    }
-
     float Math::acos(float value)
     {
         if (-1.0 < value)
@@ -105,7 +60,7 @@ namespace MoYu
 
     Matrix4x4 Math::makeLookAtMatrix(const Vector3& eye_position, const Vector3& target_position, const Vector3& up_dir)
     {
-        return Matrix4x4::lookAt(eye_position, target_position - eye_position, up_dir);
+        return Matrix4x4::lookAt(eye_position, target_position, up_dir);
     }
 
     Matrix4x4 Math::makePerspectiveMatrix(float fovy, float aspect, float znear, float zfar)
@@ -1345,11 +1300,11 @@ namespace MoYu
         return m;
     }
 
-    Matrix4x4 Matrix4x4::lookAt(const Vector3& eye, const Vector3& gaze, const Vector3& up)
+    Matrix4x4 Matrix4x4::lookAt(const Vector3& eye, const Vector3& center, const Vector3& up)
     {
-        Vector3 f = -Vector3::normalize(gaze);
-        Vector3 s = Vector3::normalize(Vector3::cross(up, f));
-        Vector3 u = Vector3::cross(f, s);
+        Vector3 f = Vector3::normalize(center - eye);
+        Vector3 s = Vector3::normalize(Vector3::cross(f, up));
+        Vector3 u = Vector3::cross(s, f);
 
         Matrix4x4 m = Identity;
 
@@ -1359,12 +1314,12 @@ namespace MoYu
         m[1][0] = u.x;
         m[1][1] = u.y;
         m[1][2] = u.z;
-        m[2][0] = f.x;
-        m[2][1] = f.y;
-        m[2][2] = f.z;
+        m[2][0] = -f.x;
+        m[2][1] = -f.y;
+        m[2][2] = -f.z;
         m[0][3] = -s.dot(eye);
         m[1][3] = -u.dot(eye);
-        m[2][3] = -f.dot(eye);
+        m[2][3] = f.dot(eye);
 
         return m;
     }

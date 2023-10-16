@@ -4,7 +4,6 @@
 #include "runtime/function/render/rhi/rhi_core.h"
 #include "runtime/core/math/moyu_math.h"
 #include "runtime/function/render/rhi/d3d12/d3d12_graphicsCommon.h"
-#include "runtime/function/render/glm_wrapper.h"
 
 #include "fmt/core.h"
 #include <cassert>
@@ -156,13 +155,13 @@ namespace MoYu
             drawIndexedArguments.StartInstanceLocation        = 0;
 
             HLSL::BoundingBox boundingBox = {};
-            boundingBox.center = GLMUtil::fromVec3(temp_ref_mesh.axis_aligned_box.getCenter()); // temp_node.bounding_box.center;
-            boundingBox.extents = GLMUtil::fromVec3(temp_ref_mesh.axis_aligned_box.getHalfExtent());//temp_node.bounding_box.extent;
+            boundingBox.center = GLMUtil::FromVec3(temp_ref_mesh.axis_aligned_box.getCenter()); // temp_node.bounding_box.center;
+            boundingBox.extents = GLMUtil::FromVec3(temp_ref_mesh.axis_aligned_box.getHalfExtent());//temp_node.bounding_box.extent;
 
             HLSL::PerRenderableMeshData curRenderableMeshData = {};
             curRenderableMeshData.enableVertexBlending = temp_ref_mesh.enable_vertex_blending; // temp_node.enable_vertex_blending;
-            curRenderableMeshData.worldFromModelMatrix = GLMUtil::fromMat4x4(temp_mesh_renderer.model_matrix); // temp_node.model_matrix;
-            curRenderableMeshData.modelFromWorldMatrix = GLMUtil::fromMat4x4(temp_mesh_renderer.model_matrix_inverse);//temp_node.model_matrix_inverse;
+            curRenderableMeshData.worldFromModelMatrix = GLMUtil::FromMat4x4(temp_mesh_renderer.model_matrix); // temp_node.model_matrix;
+            curRenderableMeshData.modelFromWorldMatrix = GLMUtil::FromMat4x4(temp_mesh_renderer.model_matrix_inverse);//temp_node.model_matrix_inverse;
             curRenderableMeshData.vertexBuffer         = temp_ref_mesh.vertex_buffer.vertex_buffer->GetVertexBufferView();//temp_node.ref_mesh->p_mesh_vertex_buffer->GetVertexBufferView();
             curRenderableMeshData.indexBuffer          = temp_ref_mesh.index_buffer.index_buffer->GetIndexBufferView();//temp_node.ref_mesh->p_mesh_index_buffer->GetIndexBufferView();
             curRenderableMeshData.drawIndexedArguments = drawIndexedArguments;

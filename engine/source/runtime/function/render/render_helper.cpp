@@ -1,7 +1,7 @@
 #include "runtime/function/render/render_helper.h"
-#include "runtime/function/render/glm_wrapper.h"
 #include "runtime/function/render/render_camera.h"
 #include "runtime/function/render/render_scene.h"
+#include "runtime/core/math/moyu_math.h"
 
 namespace MoYu
 {
@@ -233,8 +233,8 @@ namespace MoYu
         }
 
         BoundingBox b_out;
-        b_out.max_bound = GLMUtil::toVec3(max);
-        b_out.min_bound = GLMUtil::toVec3(min);
+        b_out.max_bound = GLMUtil::ToVec3(max);
+        b_out.min_bound = GLMUtil::ToVec3(min);
         return b_out;
     }
 
@@ -282,7 +282,7 @@ namespace MoYu
                                                              glm::vec3(1.0f, 1.0f, 0.0f),
                                                              glm::vec3(-1.0f, 1.0f, 0.0f)};
 
-            glm::mat4 inverse_proj_view_matrix = glm::inverse(GLMUtil::fromMat4x4(proj_view_matrix));
+            glm::mat4 inverse_proj_view_matrix = glm::inverse(GLMUtil::FromMat4x4(proj_view_matrix));
 
             frustum_bounding_box.min_bound = Vector3(FLT_MAX, FLT_MAX, FLT_MAX);
             frustum_bounding_box.max_bound = Vector3(FLT_MIN, FLT_MIN, FLT_MIN);
@@ -310,7 +310,7 @@ namespace MoYu
             for (const InternalMeshRenderer& entity : scene.m_mesh_renderers)
             {
                 BoundingBox mesh_asset_bounding_box {entity.m_bounding_box.getMinCorner(), entity.m_bounding_box.getMaxCorner()};
-                BoundingBox mesh_bounding_box_world = BoundingBoxTransform(mesh_asset_bounding_box, GLMUtil::fromMat4x4(entity.model_matrix));
+                BoundingBox mesh_bounding_box_world = BoundingBoxTransform(mesh_asset_bounding_box, GLMUtil::FromMat4x4(entity.model_matrix));
                 scene_bounding_box.merge(mesh_bounding_box_world);
             }
         }
@@ -327,7 +327,7 @@ namespace MoYu
                                   (frustum_bounding_box.max_bound.z - frustum_bounding_box.min_bound.z) * 0.5);
 
             glm::vec3 eye =
-                box_center + GLMUtil::fromVec3(scene.m_directional_light.m_direction) * glm::length(box_extents);
+                box_center + GLMUtil::FromVec3(scene.m_directional_light.m_direction) * glm::length(box_extents);
             glm::vec3 center = box_center;
             light_view       = glm::lookAtRH(eye, center, glm::vec3(0.0, 1.0, 0.0));
 

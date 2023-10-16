@@ -26,7 +26,8 @@
 #include "runtime/function/render/render_camera.h"
 #include "runtime/function/render/render_system.h"
 #include "runtime/function/render/window_system.h"
-#include "runtime/function/render/glm_wrapper.h"
+
+#include "runtime/core/math/moyu_math.h"
 
 #include "imgui.h"
 #include "imgui_widgets.cpp"
@@ -53,9 +54,9 @@ namespace MoYu
             MoYu::Vector3 euler = trans_ptr->m_rotation.toTaitBryanAngles();
 
             Vector3 degrees_val = {};
-            degrees_val.x = MoYu::Radian(euler.x).valueDegrees();
-            degrees_val.y = MoYu::Radian(euler.y).valueDegrees();
-            degrees_val.z = MoYu::Radian(euler.z).valueDegrees();
+            degrees_val.x = MoYu::Math::radiansToDegrees(euler.x);
+            degrees_val.y = MoYu::Math::radiansToDegrees(euler.y);
+            degrees_val.z = MoYu::Math::radiansToDegrees(euler.z);
 
             bool isDirty = false;
 
@@ -1274,10 +1275,10 @@ namespace MoYu
                 ImGuizmo::SetRect(window_pos.x, window_pos.y, displayWidth, displayHeight);
 
                 Matrix4x4 viewMatrix  = g_editor_global_context.m_scene_manager->getEditorCamera()->getViewMatrix();
-                glm::mat4 _cameraView = GLMUtil::fromMat4x4(viewMatrix);
+                glm::mat4 _cameraView = MoYu::GLMUtil::FromMat4x4(viewMatrix);
                 Matrix4x4 projMatrix  = g_editor_global_context.m_scene_manager->getEditorCamera()->getPersProjMatrix();
-                glm::mat4 _projMatrix = GLMUtil::fromMat4x4(projMatrix);
-                glm::mat4 _identiyMatrix = GLMUtil::fromMat4x4(Matrix4x4::Identity);
+                glm::mat4 _projMatrix = MoYu::GLMUtil::FromMat4x4(projMatrix);
+                glm::mat4 _identiyMatrix = MoYu::GLMUtil::FromMat4x4(Matrix4x4::Identity);
 
                 ImGuizmo::DrawGrid((const float*)&_cameraView, (const float*)&_projMatrix, (const float*)&_identiyMatrix, 100.f);
 
@@ -1291,7 +1292,7 @@ namespace MoYu
                 {
                     TransformComponent* trans_component_ptr = selected_object->getTransformComponent().lock().get();
                     Matrix4x4 worldMatrix = trans_component_ptr->getMatrixWorld();
-                    glm::mat4 _worldMatrix = GLMUtil::fromMat4x4(worldMatrix);
+                    glm::mat4 _worldMatrix = MoYu::GLMUtil::FromMat4x4(worldMatrix);
 
                     ImGuizmo::OPERATION op_type = ImGuizmo::OPERATION::TRANSLATE;
                     if (trans_button_ckecked)

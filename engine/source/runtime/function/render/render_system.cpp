@@ -1,6 +1,7 @@
 #include "runtime/function/render/render_system.h"
 
 #include "runtime/core/base/macro.h"
+#include "runtime/core/math/moyu_math.h"
 
 #include "runtime/resource/asset_manager/asset_manager.h"
 #include "runtime/resource/config_manager/config_manager.h"
@@ -10,7 +11,6 @@
 #include "runtime/function/render/window_system.h"
 #include "runtime/function/render/render_resource.h"
 #include "runtime/function/render/renderer_moyu.h"
-#include "runtime/function/render/glm_wrapper.h"
 #include "runtime/function/render/render_pass.h"
 
 #include "runtime/platform/system/systemtime.h"

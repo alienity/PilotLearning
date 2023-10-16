@@ -1,5 +1,5 @@
 #include "runtime/function/render/render_camera.h"
-#include "glm_wrapper.h"
+#include "runtime/core/math/moyu_math.h"
 
 namespace MoYu
 {
@@ -25,7 +25,7 @@ namespace MoYu
     void RenderCamera::rotate(Vector2 delta)
     {
         // rotation around x, y axis
-        delta = Vector2(Radian(Degree(delta.x)).valueRadians(), Radian(Degree(delta.y)).valueRadians());
+        delta = Vector2(Math::degreesToRadians(delta.x), Math::degreesToRadians(delta.y));
 
         // limit pitch
         float dot = m_up_axis.dot(forward());
@@ -33,8 +33,8 @@ namespace MoYu
             (dot > 0.99f && delta.x < 0.0f))    // angle nearing 0 degrees
             delta.x = 0.0f;
 
-        Quaternion pitch = Quaternion::fromAxisAngle(X, Radian(delta.x).valueRadians());
-        Quaternion yaw   = Quaternion::fromAxisAngle(Y, Radian(delta.y).valueRadians());
+        Quaternion pitch = Quaternion::fromAxisAngle(X, delta.x);
+        Quaternion yaw   = Quaternion::fromAxisAngle(Y, delta.y);
 
         m_rotation = pitch * m_rotation * yaw;
         m_invRotation = Quaternion::conjugate(m_rotation);
@@ -50,6 +50,12 @@ namespace MoYu
     {
         m_position = position;
 
+        Matrix4x4 viewMat = Math::makeLookAtMatrix(position, target, up);
+
+        m_rotation = GLMUtil::ToQuat(viewMat);
+        m_invRotation = GLMUtil::InverseQuat(m_rotation);
+
+        /*
         // model rotation
         // maps vectors to camera space (x, y, z)
         Vector3 forward = Vector3::normalize(target - position);
@@ -67,6 +73,7 @@ namespace MoYu
         // inverse of the model rotation
         // maps camera space vectors to model vectors
         m_invRotation = Quaternion::conjugate(m_rotation);
+        */
     }
 
     void RenderCamera::perspectiveProjection(int width, int height, float znear, float zfar, float fovy)

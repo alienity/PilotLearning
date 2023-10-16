@@ -1,4 +1,4 @@
-#include "runtime/function/render/glm_wrapper.h"
+#include "runtime/core/math/moyu_math.h"
 #include "runtime/function/render/render_camera.h"
 
 #include "runtime/function/render/render_mesh_loader.h"
@@ -117,14 +117,14 @@ namespace MoYu
 
         // Camera Uniform
         HLSL::CameraUniform _cameraUniform;
-        _cameraUniform.viewFromWorldMatrix = GLMUtil::fromMat4x4(view_matrix);
+        _cameraUniform.viewFromWorldMatrix = MoYu::GLMUtil::FromMat4x4(view_matrix);
         _cameraUniform.worldFromViewMatrix = glm::inverse(_cameraUniform.viewFromWorldMatrix);
-        _cameraUniform.clipFromViewMatrix  = GLMUtil::fromMat4x4(proj_matrix);
+        _cameraUniform.clipFromViewMatrix  = MoYu::GLMUtil::FromMat4x4(proj_matrix);
         _cameraUniform.viewFromClipMatrix  = glm::inverse(_cameraUniform.clipFromViewMatrix);
-        _cameraUniform.clipFromWorldMatrix = GLMUtil::fromMat4x4(proj_matrix * view_matrix);
+        _cameraUniform.clipFromWorldMatrix = GLMUtil::FromMat4x4(proj_matrix * view_matrix);
         _cameraUniform.worldFromClipMatrix = glm::inverse(_cameraUniform.clipFromWorldMatrix);
         _cameraUniform.clipTransform       = HLSL::float4(1, 1, 1, 1);
-        _cameraUniform.cameraPosition      = GLMUtil::fromVec3(camera_position);
+        _cameraUniform.cameraPosition      = GLMUtil::FromVec3(camera_position);
 
         _cameraUniform.resolution = HLSL::float4(camera->m_width, camera->m_height, 1.0f / camera->m_width, 1.0f / camera->m_height);
         _cameraUniform.logicalViewportScale = HLSL::float2(1.0f, 1.0f);
@@ -162,7 +162,7 @@ namespace MoYu
         _iblUniform.radians_srv_index    = render_scene->m_ibl_map.m_radians->GetDefaultSRV()->GetIndex();
         for (size_t i = 0; i < 7; i++)
         {
-            _iblUniform.iblSH[i] = GLMUtil::fromVec4(EngineConfig::g_SHConfig._GSH[i]);
+            _iblUniform.iblSH[i] = GLMUtil::FromVec4(EngineConfig::g_SHConfig._GSH[i]);
             //_iblUniform.iblSH[i] = GLMUtil::fromVec4(render_scene->m_ibl_map.m_SH[i]);
         }
 
@@ -170,11 +170,11 @@ namespace MoYu
 
         HLSL::DirectionalLightStruct _directionalLightStruct;
         _directionalLightStruct.lightColorIntensity =
-            HLSL::float4(GLMUtil::fromVec3(render_scene->m_directional_light.m_color.toVector3()), render_scene->m_directional_light.m_intensity);
-        _directionalLightStruct.lightPosition = GLMUtil::fromVec3(render_scene->m_directional_light.m_position);
+            HLSL::float4(GLMUtil::FromVec3(render_scene->m_directional_light.m_color.toVector3()), render_scene->m_directional_light.m_intensity);
+        _directionalLightStruct.lightPosition = GLMUtil::FromVec3(render_scene->m_directional_light.m_position);
         _directionalLightStruct.lightRadius = 1.0f;
         _directionalLightStruct.lightDirection =
-            GLMUtil::fromVec3(Vector3::normalize(render_scene->m_directional_light.m_direction));
+            GLMUtil::FromVec3(Vector3::normalize(render_scene->m_directional_light.m_direction));
         _directionalLightStruct.shadowType = render_scene->m_directional_light.m_shadowmap ? 1 : 0;
         _directionalLightStruct.lightFarAttenuationParams = HLSL::float2(100, 0.0001);
 
@@ -183,14 +183,14 @@ namespace MoYu
         _directionalLightShadowmap.shadowmap_size = HLSL::uint2(render_scene->m_directional_light.m_shadowmap_size.x,
                                                                 render_scene->m_directional_light.m_shadowmap_size.y);
         _directionalLightShadowmap.light_view_matrix =
-            GLMUtil::fromMat4x4(render_scene->m_directional_light.m_shadow_view_mat);
+            GLMUtil::FromMat4x4(render_scene->m_directional_light.m_shadow_view_mat);
         for (size_t i = 0; i < render_scene->m_directional_light.m_cascade; i++)
         {
             _directionalLightShadowmap.shadow_bounds[i] = (int)render_scene->m_directional_light.m_shadow_bounds.x << i;
             _directionalLightShadowmap.light_proj_matrix[i] =
-                GLMUtil::fromMat4x4(render_scene->m_directional_light.m_shadow_proj_mats[i]);
+                GLMUtil::FromMat4x4(render_scene->m_directional_light.m_shadow_proj_mats[i]);
             _directionalLightShadowmap.light_proj_view_matrix[i] =
-                GLMUtil::fromMat4x4(render_scene->m_directional_light.m_shadow_view_proj_mats[i]);
+                GLMUtil::FromMat4x4(render_scene->m_directional_light.m_shadow_view_proj_mats[i]);
         }
         _directionalLightStruct.directionalLightShadowmap = _directionalLightShadowmap;
 
@@ -207,10 +207,10 @@ namespace MoYu
             Color color  = render_scene->m_point_light_list[i].m_color;
 
             HLSL::PointLightStruct _pointLightStruct;
-            _pointLightStruct.lightPosition = GLMUtil::fromVec3(point_light_position);
+            _pointLightStruct.lightPosition = GLMUtil::FromVec3(point_light_position);
             _pointLightStruct.lightRadius = radius;
             _pointLightStruct.lightIntensity =
-                HLSL::float4(GLMUtil::fromVec3(Vector3(color.r, color.g, color.b)), point_light_intensity);
+                HLSL::float4(GLMUtil::FromVec3(Vector3(color.r, color.g, color.b)), point_light_intensity);
             _pointLightStruct.shadowType = 0;
             _pointLightStruct.falloff    = 1.0f / radius;
 
@@ -232,11 +232,11 @@ namespace MoYu
             Color color  = render_scene->m_spot_light_list[i].m_color;
 
             HLSL::SpotLightStruct _spotLightStruct;
-            _spotLightStruct.lightPosition = GLMUtil::fromVec3(spot_light_position);
+            _spotLightStruct.lightPosition = GLMUtil::FromVec3(spot_light_position);
             _spotLightStruct.lightRadius   = radius;
             _spotLightStruct.lightIntensity =
-                HLSL::float4(GLMUtil::fromVec3(Vector3(color.r, color.g, color.b)), spot_light_intensity);
-            _spotLightStruct.lightDirection = GLMUtil::fromVec3(spot_light_direction);
+                HLSL::float4(GLMUtil::FromVec3(Vector3(color.r, color.g, color.b)), spot_light_intensity);
+            _spotLightStruct.lightDirection = GLMUtil::FromVec3(spot_light_direction);
             _spotLightStruct.inner_radians  = Math::degreesToRadians(render_scene->m_spot_light_list[i].m_inner_degree);
             _spotLightStruct.outer_radians  = Math::degreesToRadians(render_scene->m_spot_light_list[i].m_outer_degree);
             _spotLightStruct.shadowType   = render_scene->m_spot_light_list[i].m_shadowmap;
@@ -246,7 +246,7 @@ namespace MoYu
             _spotLightSgadowmap.shadowmap_size = HLSL::uint2(render_scene->m_spot_light_list[i].m_shadowmap_size.x,
                                                              render_scene->m_spot_light_list[i].m_shadowmap_size.y);
             _spotLightSgadowmap.light_proj_view =
-                GLMUtil::fromMat4x4(render_scene->m_spot_light_list[i].m_shadow_view_proj_mat);
+                GLMUtil::FromMat4x4(render_scene->m_spot_light_list[i].m_shadow_view_proj_mat);
 
             _spotLightStruct.spotLightShadowmap = _spotLightSgadowmap;
 
@@ -409,7 +409,7 @@ namespace MoYu
                 HLSL::PerMaterialParametersBuffer material_uniform_buffer_info;
                 material_uniform_buffer_info.is_blend          = m_mat_data.m_blend;
                 material_uniform_buffer_info.is_double_sided   = m_mat_data.m_double_sided;
-                material_uniform_buffer_info.baseColorFactor   = GLMUtil::fromVec4(m_mat_data.m_base_color_factor);
+                material_uniform_buffer_info.baseColorFactor   = GLMUtil::FromVec4(m_mat_data.m_base_color_factor);
                 material_uniform_buffer_info.metallicFactor    = m_mat_data.m_metallic_factor;
                 material_uniform_buffer_info.roughnessFactor   = m_mat_data.m_roughness_factor;
                 material_uniform_buffer_info.reflectanceFactor = m_mat_data.m_reflectance_factor;
@@ -418,11 +418,11 @@ namespace MoYu
                 material_uniform_buffer_info.clearCoatRoughnessFactor = m_mat_data.m_clearcoat_roughness_factor;
                 material_uniform_buffer_info.anisotropyFactor         = m_mat_data.m_anisotropy_factor;
 
-                material_uniform_buffer_info.base_color_tilling = GLMUtil::fromVec2(m_mat_data.m_base_color_texture_file.m_tilling);
-                material_uniform_buffer_info.metallic_roughness_tilling = GLMUtil::fromVec2(m_mat_data.m_metallic_roughness_texture_file.m_tilling);
-                material_uniform_buffer_info.normal_tilling     = GLMUtil::fromVec2(m_mat_data.m_normal_texture_file.m_tilling);
-                material_uniform_buffer_info.occlusion_tilling  = GLMUtil::fromVec2(m_mat_data.m_occlusion_texture_file.m_tilling);
-                material_uniform_buffer_info.emissive_tilling   = GLMUtil::fromVec2(m_mat_data.m_emissive_texture_file.m_tilling);
+                material_uniform_buffer_info.base_color_tilling = GLMUtil::FromVec2(m_mat_data.m_base_color_texture_file.m_tilling);
+                material_uniform_buffer_info.metallic_roughness_tilling = GLMUtil::FromVec2(m_mat_data.m_metallic_roughness_texture_file.m_tilling);
+                material_uniform_buffer_info.normal_tilling     = GLMUtil::FromVec2(m_mat_data.m_normal_texture_file.m_tilling);
+                material_uniform_buffer_info.occlusion_tilling  = GLMUtil::FromVec2(m_mat_data.m_occlusion_texture_file.m_tilling);
+                material_uniform_buffer_info.emissive_tilling   = GLMUtil::FromVec2(m_mat_data.m_emissive_texture_file.m_tilling);
 
                 if (now_material.material_uniform_buffer == nullptr)
                 {

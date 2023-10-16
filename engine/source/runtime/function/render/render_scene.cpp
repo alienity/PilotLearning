@@ -1,6 +1,6 @@
 #include "runtime/function/render/render_scene.h"
-#include "runtime/function/render/glm_wrapper.h"
 #include "runtime/function/render/render_resource.h"
+#include "runtime/core/math/moyu_math.h"
 
 namespace MoYu
 {
@@ -44,7 +44,7 @@ namespace MoYu
         // add new light
         Matrix4x4 model_matrix = sceneTransform.m_transform_matrix;
 
-        std::tuple<Quaternion, Vector3, Vector3> rts = GLMUtil::decomposeMat4x4(model_matrix);
+        std::tuple<Quaternion, Vector3, Vector3> rts = GLMUtil::DecomposeMat4x4(model_matrix);
 
         Quaternion rotation    = std::get<0>(rts);
         Vector3    translation = std::get<1>(rts);
@@ -190,7 +190,7 @@ namespace MoYu
     void RenderScene::updateMeshRenderer(SceneMeshRenderer sceneMeshRenderer, SceneTransform sceneTransform, std::shared_ptr<RenderResource> m_render_resource)
     {
         const Matrix4x4 model_matrix = sceneTransform.m_transform_matrix;
-        const Matrix4x4 model_matrix_inverse = GLMUtil::inverseMat4x4(model_matrix);
+        const Matrix4x4 model_matrix_inverse = GLMUtil::InverseMat4x4(model_matrix);
 
         int mesh_finded = -1;
         std::vector<CachedMeshRenderer>& _mesh_renderers = m_mesh_renderers;
@@ -266,7 +266,7 @@ namespace MoYu
         m_camera.m_ViewMatrixInv = viewMatrixInv;
 
         m_camera.m_ProjMatrix    = projMatrix;
-        m_camera.m_ProjMatrixInv = GLMUtil::inverseMat4x4(projMatrix);
+        m_camera.m_ProjMatrixInv = GLMUtil::InverseMat4x4(projMatrix);
 
         m_camera.m_ViewProjMatrix    = projMatrix * viewMatrix;
         m_camera.m_ViewProjMatrixInv = m_camera.m_ProjMatrixInv * m_camera.m_ViewMatrixInv;

@@ -124,8 +124,8 @@ namespace MoYu
         const float& fovy = render_camera->m_fovy;
         const float  fovx = fovy * render_camera->m_aspect;
 
-        Radian cursor_delta_x(Math::degreesToRadians(m_cursor_delta_x));
-        Radian cursor_delta_y(Math::degreesToRadians(m_cursor_delta_y));
+        float cursor_delta_x(Math::degreesToRadians(m_cursor_delta_x));
+        float cursor_delta_y(Math::degreesToRadians(m_cursor_delta_y));
 
         m_cursor_delta_yaw   = (cursor_delta_x / (float)window_size[0]) * fovx;
         m_cursor_delta_pitch = -(cursor_delta_y / (float)window_size[1]) * fovy;

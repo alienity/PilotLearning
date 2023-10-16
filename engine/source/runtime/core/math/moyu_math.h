@@ -16,6 +16,20 @@
 #include <limits>
 #include <random>
 
+#ifndef GLM_FORCE_RADIANS
+#define GLM_FORCE_RADIANS 1
+#endif
+
+#ifndef GLM_FORCE_DEPTH_ZERO_TO_ONE
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE 1
+#endif
+
+#include <glm/ext/matrix_clip_space.hpp>
+#include <glm/glm.hpp>
+#include <glm/gtc/quaternion.hpp>
+#include <glm/gtx/matrix_decompose.hpp>
+#include <glm/gtx/quaternion.hpp>
+
 #define CMP(x, y) (fabsf(x - y) < FLT_EPSILON * fmaxf(1.0f, fmaxf(fabsf(x), fabsf(y))))
 
 #define MOYU_MIN(x, y) (((x) < (y)) ? (x) : (y))
@@ -167,258 +181,36 @@ namespace MoYu
     struct Transform;
     struct AxisAlignedBox;
 
-    struct Radian;
-    struct Angle;
-    struct Degree;
-
-    struct Radian
+    //---------------------------------------------------------------------------------------------
+    namespace Math
     {
-        float m_rad;
+        INLINE float abs(float value) { return std::fabs(value); }
+        INLINE bool  isNan(float f) { return std::isnan(f); }
+        INLINE float sqr(float value) { return value * value; }
+        INLINE float sqrt(float fValue) { return std::sqrt(fValue); }
+        INLINE float invSqrt(float value) { return 1.f / sqrt(value); }
+        INLINE bool  realEqual(float a, float b, float tolerance = std::numeric_limits<float>::epsilon()) { return std::fabs(b - a) <= tolerance; }
+        INLINE float clamp(float v, float min, float max) { return MOYU_CLAMP(v, min, max); }
+        INLINE float saturate(float f) { return MOYU_MAX(MOYU_MIN(f, 1.0f), 0.0f); }
+        INLINE float _max(float a, float b) { return MOYU_MAX(a, b); }
+        INLINE float _min(float a, float b) { return MOYU_MIN(a, b); }
 
-    public:
-        explicit Radian(float r = 0) : m_rad(r) {}
-        explicit Radian(const Degree& d);
-        Radian& operator=(float f)
-        {
-            m_rad = f;
-            return *this;
-        }
-        Radian& operator=(const Degree& d);
+        INLINE float degreesToRadians(float degrees) { return degrees * f::DEG_TO_RAD; }
+        INLINE float radiansToDegrees(float radians) { return radians * f::RAD_TO_DEG; }
 
-        float valueRadians() const { return m_rad; }
-        float valueDegrees() const; // see bottom of this file
-        float valueAngleUnits() const;
+        INLINE float sin(float value) { return std::sin(value); }
+        INLINE float cos(float value) { return std::cos(value); }
+        INLINE float tan(float value) { return std::tan(value); }
+        float acos(float value);
+        float asin(float value);
+        INLINE float atan(float value) { return std::atan(value); }
+        INLINE float atan2(float y_v, float x_v) { return std::atan2(y_v, x_v); }
 
-        void setValue(float f) { m_rad = f; }
-
-        const Radian& operator+() const { return *this; }
-        Radian        operator+(const Radian& r) const { return Radian(m_rad + r.m_rad); }
-        Radian        operator+(const Degree& d) const;
-        Radian&       operator+=(const Radian& r)
-        {
-            m_rad += r.m_rad;
-            return *this;
-        }
-        Radian& operator+=(const Degree& d);
-        Radian  operator-() const { return Radian(-m_rad); }
-        Radian  operator-(const Radian& r) const { return Radian(m_rad - r.m_rad); }
-        Radian  operator-(const Degree& d) const;
-        Radian& operator-=(const Radian& r)
-        {
-            m_rad -= r.m_rad;
-            return *this;
-        }
-        Radian& operator-=(const Degree& d);
-        Radian  operator*(float f) const { return Radian(m_rad * f); }
-        Radian  operator*(const Radian& f) const { return Radian(m_rad * f.m_rad); }
-        Radian& operator*=(float f)
-        {
-            m_rad *= f;
-            return *this;
-        }
-        Radian  operator/(float f) const { return Radian(m_rad / f); }
-        Radian& operator/=(float f)
-        {
-            m_rad /= f;
-            return *this;
-        }
-
-        bool operator<(const Radian& r) const { return m_rad < r.m_rad; }
-        bool operator<=(const Radian& r) const { return m_rad <= r.m_rad; }
-        bool operator==(const Radian& r) const { return m_rad == r.m_rad; }
-        bool operator!=(const Radian& r) const { return m_rad != r.m_rad; }
-        bool operator>=(const Radian& r) const { return m_rad >= r.m_rad; }
-        bool operator>(const Radian& r) const { return m_rad > r.m_rad; }
-    };
-
-    /** Wrapper class which indicates a given angle value is in Degrees.
-    @remarks
-        Degree values are interchangeable with Radian values, and conversions
-        will be done automatically between them.
-    */
-    struct Degree
-    {
-        float m_deg; // if you get an error here - make sure to define/typedef 'float' first
-
-    public:
-        explicit Degree(float d = 0) : m_deg(d) {}
-        explicit Degree(const Radian& r) : m_deg(r.valueDegrees()) {}
-        Degree& operator=(float f)
-        {
-            m_deg = f;
-            return *this;
-        }
-        Degree& operator=(const Degree& d) = default;
-        Degree& operator                   =(const Radian& r)
-        {
-            m_deg = r.valueDegrees();
-            return *this;
-        }
-
-        float valueDegrees() const { return m_deg; }
-        float valueRadians() const; // see bottom of this file
-        float valueAngleUnits() const;
-
-        const Degree& operator+() const { return *this; }
-        Degree        operator+(const Degree& d) const { return Degree(m_deg + d.m_deg); }
-        Degree        operator+(const Radian& r) const { return Degree(m_deg + r.valueDegrees()); }
-        Degree&       operator+=(const Degree& d)
-        {
-            m_deg += d.m_deg;
-            return *this;
-        }
-        Degree& operator+=(const Radian& r)
-        {
-            m_deg += r.valueDegrees();
-            return *this;
-        }
-        Degree  operator-() const { return Degree(-m_deg); }
-        Degree  operator-(const Degree& d) const { return Degree(m_deg - d.m_deg); }
-        Degree  operator-(const Radian& r) const { return Degree(m_deg - r.valueDegrees()); }
-        Degree& operator-=(const Degree& d)
-        {
-            m_deg -= d.m_deg;
-            return *this;
-        }
-        Degree& operator-=(const Radian& r)
-        {
-            m_deg -= r.valueDegrees();
-            return *this;
-        }
-        Degree  operator*(float f) const { return Degree(m_deg * f); }
-        Degree  operator*(const Degree& f) const { return Degree(m_deg * f.m_deg); }
-        Degree& operator*=(float f)
-        {
-            m_deg *= f;
-            return *this;
-        }
-        Degree  operator/(float f) const { return Degree(m_deg / f); }
-        Degree& operator/=(float f)
-        {
-            m_deg /= f;
-            return *this;
-        }
-
-        bool operator<(const Degree& d) const { return m_deg < d.m_deg; }
-        bool operator<=(const Degree& d) const { return m_deg <= d.m_deg; }
-        bool operator==(const Degree& d) const { return m_deg == d.m_deg; }
-        bool operator!=(const Degree& d) const { return m_deg != d.m_deg; }
-        bool operator>=(const Degree& d) const { return m_deg >= d.m_deg; }
-        bool operator>(const Degree& d) const { return m_deg > d.m_deg; }
-    };
-
-    /** Wrapper class which identifies a value as the currently default angle
-        type, as defined by Math::setAngleUnit.
-    @remarks
-        Angle values will be automatically converted between radians and degrees,
-        as appropriate.
-    */
-    struct Angle
-    {
-        float m_angle;
-
-    public:
-        explicit Angle(float angle) : m_angle(angle) {}
-        Angle() { m_angle = 0; }
-
-        explicit operator Radian() const;
-        explicit operator Degree() const;
-    };
-
-    // these functions could not be defined within the class definition of class
-    // Radian because they required class Degree to be defined
-    inline Radian::Radian(const Degree& d) : m_rad(d.valueRadians()) {}
-    inline Radian& Radian::operator=(const Degree& d)
-    {
-        m_rad = d.valueRadians();
-        return *this;
+        Matrix4x4 makeViewMatrix(const Vector3& position, const Quaternion& orientation);
+        Matrix4x4 makeLookAtMatrix(const Vector3& eye_position, const Vector3& target_position, const Vector3& up_dir);
+        Matrix4x4 makePerspectiveMatrix(float fovy, float aspect, float znear, float zfar);
+        Matrix4x4 makeOrthographicProjectionMatrix(float left, float right, float bottom, float top, float znear, float zfar);
     }
-    inline Radian Radian::operator+(const Degree& d) const { return Radian(m_rad + d.valueRadians()); }
-    inline Radian& Radian::operator+=(const Degree& d)
-    {
-        m_rad += d.valueRadians();
-        return *this;
-    }
-    inline Radian Radian::operator-(const Degree& d) const { return Radian(m_rad - d.valueRadians()); }
-    inline Radian& Radian::operator-=(const Degree& d)
-    {
-        m_rad -= d.valueRadians();
-        return *this;
-    }
-
-    class Math
-    {
-    private:
-        enum class AngleUnit
-        {
-            AU_DEGREE,
-            AU_RADIAN
-        };
-
-        // angle units used by the api
-        static AngleUnit k_AngleUnit;
-
-    public:
-        Math();
-
-        static float abs(float value) { return std::fabs(value); }
-        static bool  isNan(float f) { return std::isnan(f); }
-        static float sqr(float value) { return value * value; }
-        static float sqrt(float fValue) { return std::sqrt(fValue); }
-        static float invSqrt(float value) { return 1.f / sqrt(value); }
-        static bool  realEqual(float a, float b, float tolerance = std::numeric_limits<float>::epsilon());
-        static float clamp(float v, float min, float max) { return MOYU_CLAMP(v, min, max); }
-        static float saturate(float f) { return MOYU_MAX(MOYU_MIN(f, 1.0f), 0.0f); }
-        static float _max(float a, float b) { return MOYU_MAX(a, b); }
-        static float _min(float a, float b) { return MOYU_MIN(a, b); }
-
-        static float degreesToRadians(float degrees);
-        static float radiansToDegrees(float radians);
-        static float angleUnitsToRadians(float units);
-        static float radiansToAngleUnits(float radians);
-        static float angleUnitsToDegrees(float units);
-        static float degreesToAngleUnits(float degrees);
-
-        static float sin(float value) { return std::sin(value); }
-        static float cos(float value) { return std::cos(value); }
-        static float tan(float value) { return std::tan(value); }
-        static float acos(float value);
-        static float asin(float value);
-        static float atan(float value) { return std::atan(value); }
-        static float atan2(float y_v, float x_v) { return std::atan2(y_v, x_v); }
-
-        static Matrix4x4 makeViewMatrix(const Vector3&    position,
-                                        const Quaternion& orientation);
-
-        static Matrix4x4
-        makeLookAtMatrix(const Vector3& eye_position, const Vector3& target_position, const Vector3& up_dir);
-
-        static Matrix4x4 makePerspectiveMatrix(float fovy, float aspect, float znear, float zfar);
-
-        static Matrix4x4
-        makeOrthographicProjectionMatrix(float left, float right, float bottom, float top, float znear, float zfar);
-    };
-
-
-    inline float Radian::valueDegrees() const { return Math::radiansToDegrees(m_rad); }
-
-    inline float Radian::valueAngleUnits() const { return Math::radiansToAngleUnits(m_rad); }
-
-    inline float Degree::valueRadians() const { return Math::degreesToRadians(m_deg); }
-
-    inline float Degree::valueAngleUnits() const { return Math::degreesToAngleUnits(m_deg); }
-
-    inline Angle::operator Radian() const { return Radian(Math::angleUnitsToRadians(m_angle)); }
-
-    inline Angle::operator Degree() const { return Degree(Math::angleUnitsToDegrees(m_angle)); }
-
-    inline Radian operator*(float a, const Radian& b) { return Radian(a * b.valueRadians()); }
-
-    inline Radian operator/(float a, const Radian& b) { return Radian(a / b.valueRadians()); }
-
-    inline Degree operator*(float a, const Degree& b) { return Degree(a * b.valueDegrees()); }
-
-    inline Degree operator/(float a, const Degree& b) { return Degree(a / b.valueDegrees()); }
 
     //---------------------------------------------------------------------------------------------
 
@@ -985,22 +777,10 @@ namespace MoYu
 
         Matrix4x4(const float (&float_array)[16]);
 
-        Matrix4x4(float m00,
-                  float m01,
-                  float m02,
-                  float m03,
-                  float m10,
-                  float m11,
-                  float m12,
-                  float m13,
-                  float m20,
-                  float m21,
-                  float m22,
-                  float m23,
-                  float m30,
-                  float m31,
-                  float m32,
-                  float m33);
+        Matrix4x4(float m00, float m01, float m02, float m03,
+                  float m10, float m11, float m12, float m13,
+                  float m20, float m21, float m22, float m23,
+                  float m30, float m31, float m32, float m33);
 
         Matrix4x4(const Vector4& r0, const Vector4& r1, const Vector4& r2, const Vector4& r3);
 
@@ -1128,7 +908,7 @@ namespace MoYu
         static Matrix4x4 createOrthographicOffCenter(float left, float right, float bottom, float top, float zNearPlane, float zFarPlane);
 
         // eye是相机位置，gaze是相机向前朝向，up是相机向上朝向
-        static Matrix4x4 lookAt(const Vector3& eye, const Vector3& gaze, const Vector3& up);
+        static Matrix4x4 lookAt(const Vector3& eye, const Vector3& center, const Vector3& up);
         static Matrix4x4 createView(const Vector3& position, const Quaternion& orientation);
         static Matrix4x4 createWorld(const Vector3& position, const Vector3& forward, const Vector3& up);
 
@@ -1451,5 +1231,85 @@ namespace MoYu
     };
 
     using DefaultRNG = RandomNumberGenerator<std::mt19937>;
+
+} // namespace MoYu
+
+namespace MoYu
+{
+    // clang-format off
+    namespace GLMUtil
+    {
+        INLINE Vector2 ToVec2(glm::vec2 v) { return Vector2(v.x, v.y); }
+        INLINE glm::vec2 FromVec2(Vector2 v) { return glm::vec2(v.x, v.y); }
+
+        INLINE Vector3 ToVec3(glm::vec3 v) { return Vector3(v.x, v.y, v.z); }
+        INLINE glm::vec3 FromVec3(Vector3 v) { return glm::vec3(v.x, v.y, v.z); }
+
+        INLINE Vector4 ToVec4(glm::vec4 v) { return Vector4(v.x, v.y, v.z, v.w); }
+        INLINE glm::vec4 FromVec4(Vector4 v) { return glm::vec4(v.x, v.y, v.z, v.w); }
+
+        INLINE Quaternion ToQuat(glm::quat q) { return Quaternion(q.w, q.x, q.y, q.z); }
+        INLINE glm::quat  FromQuat(Quaternion q) { return glm::quat(q.w, q.x, q.y, q.z); }
+        
+        INLINE Matrix4x4 ToMat4x4(const glm::mat4x4& m)
+        {
+            return Matrix4x4 {m[0][0], m[1][0], m[2][0], m[3][0],
+                              m[0][1], m[1][1], m[2][1], m[3][1],
+                              m[0][2], m[1][2], m[2][2], m[3][2],
+                              m[0][3], m[1][3], m[2][3], m[3][3]};
+        }
+        INLINE glm::mat4x4 FromMat4x4(const Matrix4x4& m)
+        {
+            return glm::mat4x4 {m[0][0], m[1][0], m[2][0], m[3][0],
+                                m[0][1], m[1][1], m[2][1], m[3][1],
+                                m[0][2], m[1][2], m[2][2], m[3][2],
+                                m[0][3], m[1][3], m[2][3], m[3][3]};
+        }
+
+        INLINE Matrix4x4 InverseMat4x4(const Matrix4x4& m)
+        {
+            const glm::mat4x4 _mat4 = FromMat4x4(m);
+            const glm::mat4x4 _mat4_inverse = glm::inverse(_mat4);
+            return ToMat4x4(_mat4_inverse);
+        }
+
+        INLINE std::tuple<Quaternion, Vector3, Vector3> DecomposeMat4x4(const Matrix4x4& m)
+        {
+            glm::mat4 m_trans_glm = GLMUtil::FromMat4x4(m);
+
+            glm::vec3 model_scale;
+            glm::quat model_rotation;
+            glm::vec3 model_translation;
+            glm::vec3 model_skew;
+            glm::vec4 model_perspective;
+            glm::decompose(m_trans_glm, model_scale, model_rotation, model_translation, model_skew, model_perspective);
+
+            Vector3    t = GLMUtil::ToVec3(model_translation);
+            Quaternion r = GLMUtil::ToQuat(model_rotation);
+            Vector3    s = GLMUtil::ToVec3(model_scale);
+
+            return std::tuple<Quaternion, Vector3, Vector3> {r, t, s};
+        }
+        
+        INLINE Quaternion ToQuat(Matrix4x4 mat) { return GLMUtil::ToQuat(glm::toQuat(GLMUtil::FromMat4x4(mat))); }
+        INLINE Quaternion InverseQuat(const Quaternion& q) { return GLMUtil::ToQuat(glm::inverse(GLMUtil::FromQuat(q))); }
+
+        /*
+        INLINE Matrix4x4 PerspectiveProj(float fovy, float aspect, float zNear, float zFar)
+        {
+            glm::mat4 _perspectProj = glm::perspectiveRH_ZO(fovy, aspect, zNear, zFar);
+            Matrix4x4 projMat = GLMUtil::ToMat4x4(_perspectProj);
+            return projMat;
+        }
+
+        INLINE Matrix4x4 OrthographicProj(float left, float right, float bottom, float top, float zNear, float zFar)
+        {
+            glm::mat4 _orthoProj = glm::orthoRH_ZO(left, right, bottom, right, zNear, zFar);
+            Matrix4x4 projMat = GLMUtil::ToMat4x4(_orthoProj);
+            return projMat;
+        }
+        */
+    }; // namespace GLMUtil
+    // clang-format on
 
 } // namespace MoYu
