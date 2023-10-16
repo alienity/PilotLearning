@@ -61,7 +61,7 @@ namespace MoYu
         }
         else if (sceneLight.m_light_type == LightType::DirectionLight)
         {
-            Matrix4x4 dirLightViewMat = Matrix4x4::lookAt(translation, direction, Vector3::Up);
+            Matrix4x4 dirLightViewMat = Matrix4x4::lookAt(translation, translation + direction, Vector3::Up);
 
             m_directional_light.m_shadow_view_mat = dirLightViewMat;
 
