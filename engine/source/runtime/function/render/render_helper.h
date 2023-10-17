@@ -1,16 +1,6 @@
 #pragma once
 
-#include "runtime/core/math/moyu_math.h"
-
-#ifndef GLM_FORCE_RADIANS
-#define GLM_FORCE_RADIANS 1
-#endif
-
-#ifndef GLM_FORCE_DEPTH_ZERO_TO_ONE
-#define GLM_FORCE_DEPTH_ZERO_TO_ONE 1
-#endif
-
-#include <glm/glm.hpp>
+#include "runtime/core/math/moyu_math2.h"
 
 namespace MoYu
 {
@@ -31,16 +21,16 @@ namespace MoYu
 
     struct BoundingBox
     {
-        Vector3 min_bound {std::numeric_limits<float>::max(),
+        MFloat3 min_bound {std::numeric_limits<float>::max(),
                            std::numeric_limits<float>::max(),
                            std::numeric_limits<float>::max()};
-        Vector3 max_bound {std::numeric_limits<float>::min(),
+        MFloat3 max_bound {std::numeric_limits<float>::min(),
                            std::numeric_limits<float>::min(),
                            std::numeric_limits<float>::min()};
 
         BoundingBox() {}
 
-        BoundingBox(const Vector3& minv, const Vector3& maxv)
+        BoundingBox(const MFloat3& minv, const MFloat3& maxv)
         {
             min_bound = minv;
             max_bound = maxv;
@@ -48,14 +38,14 @@ namespace MoYu
 
         void merge(const BoundingBox& rhs)
         {
-            min_bound = Vector3::_min(min_bound, rhs.min_bound);
-            max_bound = Vector3::_max(max_bound, rhs.max_bound);
+            min_bound = glm::min(min_bound, rhs.min_bound);
+            max_bound = glm::max(max_bound, rhs.max_bound);
         }
 
-        void merge(const Vector3& point)
+        void merge(const MFloat3& point)
         {
-            min_bound = Vector3::_min(min_bound, point);
-            max_bound = Vector3::_max(max_bound, point);
+            min_bound = glm::min(min_bound, point);
+            max_bound = glm::max(max_bound, point);
         }
     };
 

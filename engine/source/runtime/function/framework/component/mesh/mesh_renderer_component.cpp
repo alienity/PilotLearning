@@ -9,7 +9,7 @@
 #include "runtime/function/framework/object/object.h"
 #include "runtime/function/global/global_context.h"
 
-#include "runtime/core/math/moyu_math.h"
+#include "runtime/core/math/moyu_math2.h"
 
 #include "runtime/function/render/render_swap_context.h"
 #include "runtime/function/render/render_system.h"
@@ -117,18 +117,19 @@ namespace MoYu
                                                SceneMesh*          m_scene_mesh_ptr,
                                                SceneMaterial*      m_scene_mat_ptr)
     {
-        Matrix4x4 transform_matrix = m_transform_component_ptr->getMatrixWorld();
+        MMatrix4x4 transform_matrix = m_transform_component_ptr->getMatrixWorld();
 
-        std::tuple<Quaternion, Vector3, Vector3> rts = GLMUtil::DecomposeMat4x4(transform_matrix);
-
-        Quaternion m_rotation = std::get<0>(rts);
-        Vector3    m_position = std::get<1>(rts);
-        Vector3    m_scale    = std::get<2>(rts);
+        MFloat3     m_scale;
+        MQuaternion m_orientation;
+        MFloat3     m_translation;
+        MFloat3     m_skew;
+        MFloat4     m_perspective;
+        glm::decompose(transform_matrix, m_scale, m_orientation, m_translation, m_skew, m_perspective);
 
         SceneTransform scene_transform     = {};
         scene_transform.m_identifier       = SceneCommonIdentifier {game_object_id, transform_component_id};
-        scene_transform.m_position         = m_position;
-        scene_transform.m_rotation         = m_rotation;
+        scene_transform.m_position         = m_translation;
+        scene_transform.m_rotation         = m_orientation;
         scene_transform.m_scale            = m_scale;
         scene_transform.m_transform_matrix = transform_matrix;
 

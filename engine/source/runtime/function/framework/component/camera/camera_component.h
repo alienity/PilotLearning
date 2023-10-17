@@ -1,6 +1,6 @@
 #pragma once
 
-#include "runtime/core/math/moyu_math.h"
+#include "runtime/core/math/moyu_math2.h"
 #include "runtime/resource/res_type/components/camera.h"
 #include "runtime/function/framework/component/component.h"
 
@@ -39,8 +39,8 @@ namespace MoYu
 
         CameraMode m_camera_mode {CameraMode::invalid};
 
-        Vector3 m_foward {Vector3::Forward};
-        Vector3 m_up {Vector3::Up};
-        Vector3 m_left{Vector3::Left};
+        MFloat3 m_foward {MYFloat3::Forward};
+        MFloat3 m_up {MYFloat3::Up};
+        MFloat3 m_left{MYFloat3::Left};
     };
 } // namespace MoYu

@@ -1,6 +1,6 @@
 #include "runtime/function/render/render_scene.h"
 #include "runtime/function/render/render_resource.h"
-#include "runtime/core/math/moyu_math.h"
+#include "runtime/core/math/moyu_math2.h"
 
 namespace MoYu
 {
@@ -42,26 +42,28 @@ namespace MoYu
 
 
         // add new light
-        Matrix4x4 model_matrix = sceneTransform.m_transform_matrix;
+        MMatrix4x4 model_matrix = sceneTransform.m_transform_matrix;
 
-        std::tuple<Quaternion, Vector3, Vector3> rts = GLMUtil::DecomposeMat4x4(model_matrix);
+        MFloat3     m_scale;
+        MQuaternion m_orientation;
+        MFloat3     m_translation;
+        MFloat3     m_skew;
+        MFloat4     m_perspective;
+        glm::decompose(model_matrix, m_scale, m_orientation, m_translation, m_skew, m_perspective);
 
-        Quaternion rotation    = std::get<0>(rts);
-        Vector3    translation = std::get<1>(rts);
-        Vector3    scale       = std::get<2>(rts);
-
-        Vector3 direction = rotation * Vector3::Forward;
+        MFloat3 direction = m_orientation * MYFloat3::Forward;
 
         if (sceneLight.m_light_type == LightType::AmbientLight)
         {
             m_ambient_light.m_color = sceneLight.ambient_light.m_color;
 
             m_ambient_light.m_identifier = sceneLight.m_identifier;
-            m_ambient_light.m_position   = translation;
+            m_ambient_light.m_position   = m_translation;
         }
         else if (sceneLight.m_light_type == LightType::DirectionLight)
         {
-            Matrix4x4 dirLightViewMat = Matrix4x4::lookAt(translation, translation + direction, Vector3::Up);
+            MMatrix4x4 dirLightViewMat =
+                MoYu::MYMatrix4x4::createLookAtMatrix(m_translation, m_translation + direction, MYFloat3::Up);
 
             m_directional_light.m_shadow_view_mat = dirLightViewMat;
 
@@ -75,15 +77,15 @@ namespace MoYu
                 int shadow_bounds_width_scale  = shadow_bounds_width << i;
                 int shadow_bounds_height_scale = shadow_bounds_height << i;
 
-                Matrix4x4 dirLightProjMat = Matrix4x4::createOrthographic(
+                MMatrix4x4 dirLightProjMat = MYMatrix4x4::createOrthographic(
                     shadow_bounds_width_scale, shadow_bounds_height_scale, shadow_near_plane, shadow_far_plane);
-                Matrix4x4 dirLightViewProjMat = dirLightProjMat * dirLightViewMat;
+                MMatrix4x4 dirLightViewProjMat = dirLightProjMat * dirLightViewMat;
 
                 m_directional_light.m_shadow_proj_mats[i] = dirLightProjMat;
                 m_directional_light.m_shadow_view_proj_mats[i] = dirLightViewProjMat;
             }
             m_directional_light.m_identifier           = sceneLight.m_identifier;
-            m_directional_light.m_position             = translation;
+            m_directional_light.m_position             = m_translation;
             m_directional_light.m_direction            = direction;
             m_directional_light.m_color                = sceneLight.direction_light.m_color;
             m_directional_light.m_intensity            = sceneLight.direction_light.m_intensity;
@@ -109,7 +111,7 @@ namespace MoYu
             {
                 InternalPointLight internalPointLight = {};
                 internalPointLight.m_identifier       = sceneLight.m_identifier;
-                internalPointLight.m_position         = translation;
+                internalPointLight.m_position         = m_translation;
                 internalPointLight.m_color            = sceneLight.point_light.m_color;
                 internalPointLight.m_intensity        = sceneLight.point_light.m_intensity;
                 internalPointLight.m_radius           = sceneLight.point_light.m_radius;
@@ -118,7 +120,7 @@ namespace MoYu
             else
             {
                 m_point_light_list[index_finded].m_identifier = sceneLight.m_identifier;
-                m_point_light_list[index_finded].m_position   = translation;
+                m_point_light_list[index_finded].m_position   = m_translation;
                 m_point_light_list[index_finded].m_color      = sceneLight.point_light.m_color;
                 m_point_light_list[index_finded].m_intensity  = sceneLight.point_light.m_intensity;
                 m_point_light_list[index_finded].m_radius     = sceneLight.point_light.m_radius;
@@ -136,19 +138,19 @@ namespace MoYu
                 }
             }
 
-            float _spotOutRadians = Math::degreesToRadians(sceneLight.spot_light.m_outer_degree);
+            float _spotOutRadians = MoYu::degreesToRadians(sceneLight.spot_light.m_outer_degree);
             float _spotNearPlane  = -sceneLight.spot_light.m_shadow_near_plane;
             float _spotFarPlane   = -sceneLight.spot_light.m_shadow_far_plane;
 
-            Matrix4x4 spotLightViewMat = Matrix4x4::lookAt(translation, direction, Vector3::Up);
-            Matrix4x4 spotLightProjMat = Matrix4x4::createPerspectiveFieldOfView(_spotOutRadians, 1, _spotNearPlane, _spotFarPlane);
-            Matrix4x4 spotLightViewProjMat = spotLightProjMat * spotLightViewMat;
+            MMatrix4x4 spotLightViewMat = MYMatrix4x4::createLookAtMatrix(m_translation, m_translation + direction, MYFloat3::Up);
+            MMatrix4x4 spotLightProjMat = MYMatrix4x4::createPerspectiveFieldOfView(_spotOutRadians, 1, _spotNearPlane, _spotFarPlane);
+            MMatrix4x4 spotLightViewProjMat = spotLightProjMat * spotLightViewMat;
 
             if (index_finded == -1)
             {
                 InternalSpotLight internalSpotLight      = {};
                 internalSpotLight.m_identifier           = sceneLight.m_identifier;
-                internalSpotLight.m_position             = translation;
+                internalSpotLight.m_position             = m_translation;
                 internalSpotLight.m_direction            = direction;
                 internalSpotLight.m_shadow_view_proj_mat = spotLightViewProjMat;
                 
@@ -169,7 +171,7 @@ namespace MoYu
             else
             {
                 m_spot_light_list[index_finded].m_identifier           = sceneLight.m_identifier;
-                m_spot_light_list[index_finded].m_position             = translation;
+                m_spot_light_list[index_finded].m_position             = m_translation;
                 m_spot_light_list[index_finded].m_direction            = direction;
                 m_spot_light_list[index_finded].m_shadow_view_proj_mat = spotLightViewProjMat;
 
@@ -189,8 +191,8 @@ namespace MoYu
 
     void RenderScene::updateMeshRenderer(SceneMeshRenderer sceneMeshRenderer, SceneTransform sceneTransform, std::shared_ptr<RenderResource> m_render_resource)
     {
-        const Matrix4x4 model_matrix = sceneTransform.m_transform_matrix;
-        const Matrix4x4 model_matrix_inverse = GLMUtil::InverseMat4x4(model_matrix);
+        const MMatrix4x4 model_matrix = sceneTransform.m_transform_matrix;
+        const MMatrix4x4 model_matrix_inverse = glm::inverse(model_matrix);
 
         int mesh_finded = -1;
         std::vector<CachedMeshRenderer>& _mesh_renderers = m_mesh_renderers;
@@ -230,23 +232,23 @@ namespace MoYu
         //const Matrix4x4 model_matrix = sceneTransform.m_transform_matrix;
         //const Matrix4x4 model_matrix_inverse = GLMUtil::inverseMat4x4(model_matrix);
 
-        const Vector3 position = sceneTransform.m_position;
-        const Quaternion rotation = sceneTransform.m_rotation;
+        const MFloat3 position = sceneTransform.m_position;
+        const MQuaternion rotation = sceneTransform.m_rotation;
 
-        const Vector3 direction = rotation * Vector3::Forward;
+        const MFloat3 direction = rotation * MYFloat3::Forward;
 
-        const Matrix4x4 viewMatrix = Matrix4x4::lookAt(position, direction, Vector3::Up);
-        const Matrix4x4 viewMatrixInv = viewMatrix.inverse();
+        const MMatrix4x4 viewMatrix = MYMatrix4x4::createLookAtMatrix(position, position + direction, MYFloat3::Up);
+        const MMatrix4x4 viewMatrixInv = glm::inverse(viewMatrix);
 
-        Matrix4x4 projMatrix = Matrix4x4::Identity;
+        MMatrix4x4 projMatrix = MYMatrix4x4::Identity;
         if (sceneCamera.m_projType == CameraProjType::Perspective)
         {
-            projMatrix = Matrix4x4::createPerspective(
+            projMatrix = MYMatrix4x4::createPerspective(
                 sceneCamera.m_width, sceneCamera.m_height, sceneCamera.m_znear, sceneCamera.m_zfar);
         }
         else
         {
-            projMatrix = Matrix4x4::createOrthographic(
+            projMatrix = MYMatrix4x4::createOrthographic(
                 sceneCamera.m_width, sceneCamera.m_height, sceneCamera.m_znear, sceneCamera.m_zfar);
         }
 
@@ -266,7 +268,7 @@ namespace MoYu
         m_camera.m_ViewMatrixInv = viewMatrixInv;
 
         m_camera.m_ProjMatrix    = projMatrix;
-        m_camera.m_ProjMatrixInv = GLMUtil::InverseMat4x4(projMatrix);
+        m_camera.m_ProjMatrixInv = glm::inverse(projMatrix);
 
         m_camera.m_ViewProjMatrix    = projMatrix * viewMatrix;
         m_camera.m_ViewProjMatrixInv = m_camera.m_ProjMatrixInv * m_camera.m_ViewMatrixInv;

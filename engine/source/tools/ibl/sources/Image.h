@@ -17,7 +17,7 @@
 #ifndef IBL_IMAGE_H
 #define IBL_IMAGE_H
 
-#include "core/math/moyu_math.h"
+#include "core/math/moyu_math2.h"
 #include <memory>
 
 namespace MoYu {
@@ -45,7 +45,7 @@ public:
 
     size_t getBytesPerRow() const { return mBpr; }
 
-    size_t getBytesPerPixel() const { return sizeof(MoYu::Vector3); }
+    size_t getBytesPerPixel() const { return sizeof(MoYu::MFloat3); }
 
     void* getData() const { return mData; }
 

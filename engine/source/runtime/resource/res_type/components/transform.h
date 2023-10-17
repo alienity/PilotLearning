@@ -5,9 +5,9 @@ namespace MoYu
 {
     struct TransformRes
     {
-        Vector3    m_position {Vector3::Zero};
-        Vector3    m_scale {Vector3::One};
-        Quaternion m_rotation {Quaternion::Identity};
+        MFloat3     m_position {MYFloat3::Zero};
+        MFloat3     m_scale {MYFloat3::One};
+        MQuaternion m_rotation {MYQuaternion::Identity};
     };
     NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(TransformRes, m_position, m_scale, m_rotation)
 } // namespace MoYu

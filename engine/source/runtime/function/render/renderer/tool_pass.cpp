@@ -561,7 +561,7 @@ namespace MoYu
 
             for (size_t i = 0; i < 7; i++)
             {
-                EngineConfig::g_SHConfig._GSH[i] = Vector4(pSH[i].x, pSH[i].y, pSH[i].z, pSH[i].w);
+                EngineConfig::g_SHConfig._GSH[i] = MFloat4(pSH[i].x, pSH[i].y, pSH[i].z, pSH[i].w);
             }
 
             stagingResource->Unmap(0, nullptr);

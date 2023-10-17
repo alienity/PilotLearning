@@ -8,7 +8,7 @@
 #include <glm/gtx/matrix_decompose.hpp>
 
 #include "runtime/core/base/macro.h"
-#include "runtime/core/math/moyu_math.h"
+#include "runtime/core/math/moyu_math2.h"
 
 #include "runtime/engine.h"
 #include "runtime/function/framework/component/transform/transform_component.h"

@@ -31,8 +31,8 @@ namespace ibl {
 void CubemapUtils::clamp(Image& src) {
     // See: http://graphicrants.blogspot.com/2013/12/tone-mapping.html
     // By Brian Karis
-    auto compress = [](MoYu::Vector3 color, float linear, float compressed) {
-        float luma = MoYu::Vector3::dot(color, MoYu::Vector3{ 0.2126, 0.7152, 0.0722 }); // REC 709
+    auto compress = [](MoYu::MFloat3 color, float linear, float compressed) {
+        float luma = glm::dot(color, MoYu::MFloat3{ 0.2126, 0.7152, 0.0722 }); // REC 709
         return luma <= linear ? color :
                (color / luma) * ((linear * linear - compressed * luma)
                                  / (2 * linear - compressed - luma));
@@ -41,7 +41,7 @@ void CubemapUtils::clamp(Image& src) {
     const size_t height = src.getHeight();
     for (size_t y = 0; y < height; ++y) {
         for (size_t x = 0; x < width; ++x) {
-            MoYu::Vector3& c = *static_cast<MoYu::Vector3*>(src.getPixelRef(x, y));
+            MoYu::MFloat3& c = *static_cast<MoYu::MFloat3*>(src.getPixelRef(x, y));
             // these values are chosen arbitrarily and seem to produce good result with
             // 4096 samples
             c = compress(c, 4096.0f, 16384.0f);
@@ -54,7 +54,7 @@ void CubemapUtils::highlight(Image& src) {
     const size_t height = src.getHeight();
     for (size_t y = 0; y < height; ++y) {
         for (size_t x = 0; x < width; ++x) {
-            MoYu::Vector3& c = *static_cast<MoYu::Vector3*>(src.getPixelRef(x, y));
+            MoYu::MFloat3& c = *static_cast<MoYu::MFloat3*>(src.getPixelRef(x, y));
             if (MOYU_MIN3(c.x, c.y, c.z) < 0.0f) {
                 c = { 0, 0, 1 };
             }
@@ -176,12 +176,12 @@ void CubemapUtils::equirectangularToCubemap(Cubemap& dst, const Image& src) {
     const size_t width = src.getWidth();
     const size_t height = src.getHeight();
 
-    auto toRectilinear = [width, height](MoYu::Vector3 s) -> MoYu::Vector2 {
+    auto toRectilinear = [width, height](MoYu::MFloat3 s) -> MoYu::MFloat2 {
         float xf = std::atan2(s.x, s.z) * F_1_PI;   // range [-1.0, 1.0]
         float yf = std::asin(s.y) * (2 * F_1_PI);   // range [-1.0, 1.0]
         xf = (xf + 1.0f) * 0.5f * (width  - 1);        // range [0, width [
         yf = (1.0f - yf) * 0.5f * (height - 1);        // range [0, height[
-        return MoYu::Vector2(xf, yf);
+        return MoYu::MFloat2(xf, yf);
     };
 
     process<EmptyState>(dst,
@@ -209,11 +209,11 @@ void CubemapUtils::equirectangularToCubemap(Cubemap& dst, const Image& src) {
             const size_t numSamples = size_t(dx * dy);
 
             const float iNumSamples = 1.0f / numSamples;
-            MoYu::Vector3 c = 0;
+            MoYu::MFloat3 c = MoYu::MYFloat3::Zero;
             for (size_t sample = 0; sample < numSamples; sample++) {
                 // Generate numSamples in our destination pixels and map them to input pixels
-                const MoYu::Vector2 h = hammersley(uint32_t(sample), iNumSamples);
-                const MoYu::Vector3 s(dst.getDirectionFor(f, x + h.x, y + h.y));
+                const MoYu::MFloat2 h = hammersley(uint32_t(sample), iNumSamples);
+                const MoYu::MFloat3 s(dst.getDirectionFor(f, x + h.x, y + h.y));
                 auto pos = toRectilinear(s);
 
                 // we can't use filterAt() here because it reads past the width/height
@@ -236,15 +236,15 @@ void CubemapUtils::cubemapToEquirectangular(Image& dst, const Cubemap& src) {
     auto parallelJobTask = [&](size_t j0, size_t count) {
         for (size_t j = j0; j < j0 + count; j++) {
             for (size_t i = 0; i < w; i++) {
-                MoYu::Vector3 c = 0;
+                MoYu::MFloat3 c = MoYu::MYFloat3::Zero;
                 const size_t numSamples = 64; // TODO: how to chose numsamples
                 for (size_t sample = 0; sample < numSamples; sample++) {
-                    const MoYu::Vector2 u = hammersley(uint32_t(sample), 1.0f / numSamples);
+                    const MoYu::MFloat2 u = hammersley(uint32_t(sample), 1.0f / numSamples);
                     float x = 2.0f * (i + u.x) / w - 1.0f;
                     float y = 1.0f - 2.0f * (j + u.y) / h;
                     float theta = x * F_PI;
                     float phi = y * F_PI * 0.5;
-                    MoYu::Vector3 s = {
+                    MoYu::MFloat3 s = {
                             std::cos(phi) * std::sin(theta),
                             std::sin(phi),
                             std::cos(phi) * std::cos(theta) };
@@ -264,10 +264,10 @@ void CubemapUtils::cubemapToOctahedron(Image& dst, const Cubemap& src) {
     auto parallelJobTask = [&](size_t j0, size_t count) {
         for (size_t j = j0; j < j0 + count; j++) {
             for (size_t i = 0; i < w; i++) {
-                MoYu::Vector3 c = 0;
+                MoYu::MFloat3 c = MoYu::MYFloat3::Zero;
                 const size_t numSamples = 64; // TODO: how to chose numsamples
                 for (size_t sample = 0; sample < numSamples; sample++) {
-                    const MoYu::Vector2 u = hammersley(uint32_t(sample), 1.0f / numSamples);
+                    const MoYu::MFloat2 u = hammersley(uint32_t(sample), 1.0f / numSamples);
                     float x = 2.0f * (i + u.x) / w - 1.0f;
                     float z = 2.0f * (j + u.y) / h - 1.0f;
                     float y;
@@ -331,7 +331,7 @@ void CubemapUtils::crossToCubemap(Cubemap& dst, const Image& src) {
                     size_t sampleCount = std::max(size_t(1), dim / dimension);
                     sampleCount = std::min(size_t(256), sampleCount * sampleCount);
                     for (size_t i = 0; i < sampleCount; i++) {
-                        const MoYu::Vector2 h = hammersley(uint32_t(i), 1.0f / sampleCount);
+                        const MoYu::MFloat2 h = hammersley(uint32_t(i), 1.0f / sampleCount);
                         size_t u = dx + size_t((x + h.x) * dim / dimension);
                         size_t v = dy + size_t((y + h.y) * dim / dimension);
                         Cubemap::writeAt(data, Cubemap::sampleAt(src.getPixelRef(u, v)));
@@ -355,8 +355,8 @@ void CubemapUtils::mirrorCubemap(Cubemap& dst, const Cubemap& src) {
     process<EmptyState>(dst,
             [&](EmptyState&, size_t y, Cubemap::Face f, Cubemap::Texel* data, size_t dim) {
         for (size_t x=0 ; x<dim ; ++x, ++data) {
-            const MoYu::Vector3 N(dst.getDirectionFor(f, x, y));
-            Cubemap::writeAt(data, src.sampleAt(MoYu::Vector3{ -N.x, N.y, N.z }));
+            const MoYu::MFloat3 N(dst.getDirectionFor(f, x, y));
+            Cubemap::writeAt(data, src.sampleAt(MoYu::MFloat3{ -N.x, N.y, N.z }));
         }
     });
 }

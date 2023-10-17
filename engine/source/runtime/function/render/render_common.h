@@ -1,6 +1,6 @@
 #pragma once
 
-#include "runtime/core/math/moyu_math.h"
+#include "runtime/core/math/moyu_math2.h"
 #include "runtime/function/framework/object/object_id_allocator.h"
 #include "runtime/function/render/rhi/hlsl_data_types.h"
 
@@ -162,12 +162,12 @@ namespace MoYu
 
         // 所有的值都设置在的uniformbuffer中
         /*
-        Vector4 m_base_color_factor;
+        MFloat4 m_base_color_factor;
         float   m_metallic_factor;
         float   m_roughness_factor;
         float   m_normal_scale;
         float   m_occlusion_strength;
-        Vector3 m_emissive_factor;
+        MFloat3 m_emissive_factor;
         */
         // Textures
         std::shared_ptr<RHI::D3D12Texture> base_color_texture_image;
@@ -190,8 +190,8 @@ namespace MoYu
 
         bool enable_vertex_blending = false;
 
-        Matrix4x4 model_matrix;
-        Matrix4x4 model_matrix_inverse;
+        MMatrix4x4 model_matrix;
+        MMatrix4x4 model_matrix_inverse;
 
         InternalMesh ref_mesh;
         InternalMaterial ref_material;
@@ -209,10 +209,10 @@ namespace MoYu
 
         bool    m_shadowmap {false};
         int     m_cascade {4};
-        Vector2 m_shadow_bounds {32, 32}; // cascade level 0
+        MFloat2 m_shadow_bounds {32, 32}; // cascade level 0
         float   m_shadow_near_plane {0.1f};
         float   m_shadow_far_plane {200.0f};
-        Vector2 m_shadowmap_size {1024, 1024};
+        MFloat2 m_shadowmap_size {1024, 1024};
     };
 
     struct BasePointLight
@@ -231,44 +231,44 @@ namespace MoYu
         float m_outer_degree;
 
         bool    m_shadowmap {false};
-        Vector2 m_shadow_bounds {128, 128};
+        MFloat2 m_shadow_bounds {128, 128};
         float   m_shadow_near_plane {0.1f};
         float   m_shadow_far_plane {200.0f};
-        Vector2 m_shadowmap_size {512, 512};
+        MFloat2 m_shadowmap_size {512, 512};
     };
 
     struct InternalAmbientLight : public BaseAmbientLight
     {
         SceneCommonIdentifier m_identifier;
 
-        Vector3 m_position;
+        MFloat3 m_position;
     };
 
     struct InternalDirectionLight : public BaseDirectionLight
     {
         SceneCommonIdentifier m_identifier;
 
-        Vector3   m_position;
-        Vector3   m_direction;
-        Matrix4x4 m_shadow_view_mat;
-        Matrix4x4 m_shadow_proj_mats[4];
-        Matrix4x4 m_shadow_view_proj_mats[4];
+        MFloat3   m_position;
+        MFloat3   m_direction;
+        MMatrix4x4 m_shadow_view_mat;
+        MMatrix4x4 m_shadow_proj_mats[4];
+        MMatrix4x4 m_shadow_view_proj_mats[4];
     };
 
     struct InternalPointLight : public BasePointLight
     {
         SceneCommonIdentifier m_identifier;
 
-        Vector3 m_position;
+        MFloat3 m_position;
     };
 
     struct InternalSpotLight : public BaseSpotLight
     {
         SceneCommonIdentifier m_identifier;
 
-        Vector3   m_position;
-        Vector3   m_direction;
-        Matrix4x4 m_shadow_view_proj_mat;
+        MFloat3   m_position;
+        MFloat3   m_direction;
+        MMatrix4x4 m_shadow_view_proj_mat;
     };
 
     struct InternalCamera
@@ -277,8 +277,8 @@ namespace MoYu
 
         CameraProjType m_projType;
 
-        Vector3    m_position;
-        Quaternion m_rotation;
+        MFloat3    m_position;
+        MQuaternion m_rotation;
 
         float m_width;
         float m_height;
@@ -287,14 +287,14 @@ namespace MoYu
         float m_aspect;
         float m_fovY;
 
-        Matrix4x4 m_ViewMatrix;
-        Matrix4x4 m_ViewMatrixInv;
+        MMatrix4x4 m_ViewMatrix;
+        MMatrix4x4 m_ViewMatrixInv;
 
-        Matrix4x4 m_ProjMatrix;
-        Matrix4x4 m_ProjMatrixInv;
+        MMatrix4x4 m_ProjMatrix;
+        MMatrix4x4 m_ProjMatrixInv;
 
-        Matrix4x4 m_ViewProjMatrix;
-        Matrix4x4 m_ViewProjMatrixInv;
+        MMatrix4x4 m_ViewProjMatrix;
+        MMatrix4x4 m_ViewProjMatrixInv;
     };
 
     struct SkyboxConfigs
@@ -309,7 +309,7 @@ namespace MoYu
         std::shared_ptr<RHI::D3D12Texture> m_ld;
         std::shared_ptr<RHI::D3D12Texture> m_radians;
 
-        std::vector<Vector4> m_SH;
+        std::vector<MFloat4> m_SH;
     };
 
     //========================================================================
@@ -364,7 +364,7 @@ namespace MoYu
     struct MaterialImage
     {
         SceneImage m_image {};
-        Vector2    m_tilling {1.0f, 1.0f};
+        MFloat2    m_tilling {1.0f, 1.0f};
     };
 
     inline bool operator==(const MaterialImage& lhs, const MaterialImage& rhs)
@@ -377,7 +377,7 @@ namespace MoYu
         bool m_blend {false};
         bool m_double_sided {false};
 
-        Vector4 m_base_color_factor {1.0f, 1.0f, 1.0f, 1.0f};
+        MFloat4 m_base_color_factor {1.0f, 1.0f, 1.0f, 1.0f};
         float   m_metallic_factor {1.0f};
         float   m_roughness_factor {1.0f};
         float   m_reflectance_factor {1.0f};
@@ -471,10 +471,10 @@ namespace MoYu
 
         SceneCommonIdentifier m_identifier;
 
-        Matrix4x4  m_transform_matrix {Matrix4x4::Identity};
-        Vector3    m_position {Vector3::Zero};
-        Quaternion m_rotation {Quaternion::Identity};
-        Vector3    m_scale {Vector3::One};
+        MMatrix4x4  m_transform_matrix {MYMatrix4x4::Identity};
+        MFloat3     m_position {MYFloat3::Zero};
+        MQuaternion m_rotation {MYQuaternion::Identity};
+        MFloat3     m_scale {MYFloat3::One};
     };
 
     struct GameObjectComponentDesc

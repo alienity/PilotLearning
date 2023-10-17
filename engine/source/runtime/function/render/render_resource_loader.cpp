@@ -290,7 +290,7 @@ namespace MoYu
                 for (size_t i = 0; i < bind_data->vertex_buffer.size(); i++)
                 {
                     Vertex v = bind_data->vertex_buffer[i];
-                    bounding_box.merge(Vector3(v.px, v.py, v.pz));
+                    bounding_box.merge(MFloat3(v.px, v.py, v.pz));
                 }
                 ret.m_axis_aligned_box = bounding_box;
             }

@@ -1,7 +1,7 @@
 #include "runtime/function/render/render_system.h"
 
 #include "runtime/core/base/macro.h"
-#include "runtime/core/math/moyu_math.h"
+#include "runtime/core/math/moyu_math2.h"
 
 #include "runtime/resource/asset_manager/asset_manager.h"
 #include "runtime/resource/config_manager/config_manager.h"

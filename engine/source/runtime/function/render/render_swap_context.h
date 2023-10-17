@@ -15,7 +15,7 @@ namespace MoYu
     {
         RenderCameraType m_camera_type;
         bool m_is_perspective;
-        Matrix4x4 m_view_matrix;
+        MMatrix4x4 m_view_matrix;
         int   m_width;
         int   m_height;
         float m_nearZ;

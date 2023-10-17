@@ -1,78 +1,86 @@
 #include "runtime/function/render/render_camera.h"
-#include "runtime/core/math/moyu_math.h"
 
 namespace MoYu
 {
 
-    void RenderCamera::setMainViewMatrix(const Matrix4x4& view_matrix, RenderCameraType type)
+    void RenderCamera::setMainViewMatrix(const MMatrix4x4& view_matrix, RenderCameraType type)
     {
         std::lock_guard<std::mutex> lock_guard(m_view_matrix_mutex);
 
         m_current_camera_type = type;
         m_view_matrix = view_matrix;
 
-        Vector3 s  = Vector3(view_matrix[0][0], view_matrix[0][1], view_matrix[0][2]);
-        Vector3 u  = Vector3(view_matrix[1][0], view_matrix[1][1], view_matrix[1][2]);
-        Vector3 f  = Vector3(-view_matrix[2][0], -view_matrix[2][1], -view_matrix[2][2]);
-        m_position = s * (-view_matrix[0][3]) + u * (-view_matrix[1][3]) + f * view_matrix[2][3];
+        MFloat3 s  = MFloat3(view_matrix[0][0], view_matrix[1][0], view_matrix[2][0]);
+        MFloat3 u  = MFloat3(view_matrix[0][1], view_matrix[1][1], view_matrix[2][1]);
+        MFloat3 f  = MFloat3(-view_matrix[0][2], -view_matrix[1][2], -view_matrix[2][2]);
+        m_position = s * (-view_matrix[3][0]) + u * (-view_matrix[3][1]) + f * view_matrix[3][2];
         
-        m_rotation = Quaternion::fromRotationMatrix(view_matrix);
-        m_invRotation = Quaternion::conjugate(m_rotation);
+        m_rotation = glm::toQuat(view_matrix);
+        m_invRotation = glm::conjugate(m_rotation);
     }
 
-    void RenderCamera::move(Vector3 delta) { m_position += delta; }
+    void RenderCamera::move(MFloat3 delta) { m_position += delta; }
 
-    void RenderCamera::rotate(Vector2 delta)
+    void RenderCamera::rotate(MFloat2 delta)
     {
         // rotation around x, y axis
-        delta = Vector2(Math::degreesToRadians(delta.x), Math::degreesToRadians(delta.y));
+        delta = MFloat2(MoYu::degreesToRadians(delta.x), MoYu::degreesToRadians(delta.y));
 
         // limit pitch
-        float dot = m_up_axis.dot(forward());
+        float dot = glm::dot(m_up_axis, forward());
         if ((dot < -0.99f && delta.x > 0.0f) || // angle nearing 180 degrees
             (dot > 0.99f && delta.x < 0.0f))    // angle nearing 0 degrees
             delta.x = 0.0f;
 
-        Quaternion pitch = Quaternion::fromAxisAngle(X, delta.x);
-        Quaternion yaw   = Quaternion::fromAxisAngle(Y, delta.y);
+        //MQuaternion pitch = glm::rotate(glm::quat(), delta.x, X);
+        //MQuaternion yaw   = glm::rotate(glm::quat(), delta.y, Y);
+        //MQuaternion pitch = MQuaternion::fromAxisAngle(X, delta.x);
+        //MQuaternion yaw   = MQuaternion::fromAxisAngle(Y, delta.y);
+        const float yaw   = delta.y;
+        const float pitch = delta.x;
+        const float roll  = 0;
 
-        m_rotation = pitch * m_rotation * yaw;
-        m_invRotation = Quaternion::conjugate(m_rotation);
+        MMatrix4x4  _orientate = glm::yawPitchRoll(yaw, pitch, roll);
+        MQuaternion _oriquat   = glm::quat_cast(_orientate);
+
+        //m_rotation = pitch * m_rotation * yaw;
+        m_rotation    = m_rotation * _oriquat;
+        m_invRotation = glm::conjugate(m_rotation);
     }
 
     void RenderCamera::zoom(float offset)
     {
         // > 0 = zoom in (decrease FOV by <offset> angles)
-        m_fovy = Math::clamp(m_fovy - offset, MIN_FOVY, MAX_FOVY);
+        m_fovy = glm::clamp(m_fovy - offset, MIN_FOVY, MAX_FOVY);
     }
 
-    void RenderCamera::lookAt(const Vector3& position, const Vector3& target, const Vector3& up)
+    void RenderCamera::lookAt(const MFloat3& position, const MFloat3& target, const MFloat3& up)
     {
         m_position = position;
 
-        Matrix4x4 viewMat = Math::makeLookAtMatrix(position, target, up);
+        MMatrix4x4 viewMat = MoYu::MYMatrix4x4::createLookAtMatrix(position, target, up);
 
-        m_rotation = GLMUtil::ToQuat(viewMat);
-        m_invRotation = GLMUtil::InverseQuat(m_rotation);
+        m_rotation = glm::toQuat(viewMat);
+        m_invRotation = glm::inverse(m_rotation);
 
         /*
         // model rotation
         // maps vectors to camera space (x, y, z)
-        Vector3 forward = Vector3::normalize(target - position);
-        m_rotation      = Quaternion::fromToRotation(forward, Vector3::Forward);
+        MFloat3 forward = MFloat3::normalize(target - position);
+        m_rotation      = MQuaternion::fromToRotation(forward, MFloat3::Forward);
 
         // correct the up vector
         // the cross product of non-orthogonal vectors is not normalized
-        Vector3 right  = Vector3::normalize(Vector3::cross(Vector3::normalize(up), -forward));
-        Vector3 orthUp = Vector3::cross(-forward, right);
+        MFloat3 right  = MFloat3::normalize(MFloat3::cross(MFloat3::normalize(up), -forward));
+        MFloat3 orthUp = MFloat3::cross(-forward, right);
 
-        Quaternion upRotation = Quaternion::fromToRotation(m_rotation * orthUp, Y);
+        MQuaternion upRotation = MQuaternion::fromToRotation(m_rotation * orthUp, Y);
 
         m_rotation = upRotation * m_rotation;
 
         // inverse of the model rotation
         // maps camera space vectors to model vectors
-        m_invRotation = Quaternion::conjugate(m_rotation);
+        m_invRotation = MQuaternion::conjugate(m_rotation);
         */
     }
 
@@ -85,18 +93,19 @@ namespace MoYu
         m_zfar   = zfar;
         m_fovy   = fovy;
 
-        m_project_matrix = Math::makePerspectiveMatrix(MoYu::f::DEG_TO_RAD * m_fovy, m_aspect, -m_znear, -m_zfar);
+        m_project_matrix =
+            MoYu::MYMatrix4x4::createPerspectiveFieldOfView(MoYu::f::DEG_TO_RAD * m_fovy, m_aspect, m_znear, m_zfar);
     }
 
-    Matrix4x4 RenderCamera::getViewMatrix()
+    MMatrix4x4 RenderCamera::getViewMatrix()
     {
         std::lock_guard<std::mutex> lock_guard(m_view_matrix_mutex);
-        auto                        view_matrix = Matrix4x4::Identity;
+        auto view_matrix = MYMatrix4x4::Identity;
         switch (m_current_camera_type)
         {
             case RenderCameraType::Editor:
                 {
-                    view_matrix = Math::makeLookAtMatrix(position(), position() + forward(), up());
+                    view_matrix = MoYu::MYMatrix4x4::createLookAtMatrix(position(), position() + forward(), up());
                 }
                 break;
             case RenderCameraType::Motor:
@@ -108,11 +117,17 @@ namespace MoYu
         return view_matrix;
     }
 
-    Matrix4x4 RenderCamera::getPersProjMatrix() const
+    MMatrix4x4 RenderCamera::getPersProjMatrix() const
     {
-        Matrix4x4 proj_mat = Math::makePerspectiveMatrix(MoYu::f::DEG_TO_RAD * m_fovy, m_aspect, -m_znear, -m_zfar);
+        MMatrix4x4 proj_mat =
+            MoYu::MYMatrix4x4::createPerspectiveFieldOfView(MoYu::f::DEG_TO_RAD * m_fovy, m_aspect, m_znear, m_zfar);
 
         return proj_mat;
+    }
+
+    MMatrix4x4 RenderCamera::getLookAtMatrix() const
+    {
+        return MoYu::MYMatrix4x4::createLookAtMatrix(position(), position() + forward(), up());
     }
 
 } // namespace MoYu

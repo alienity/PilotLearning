@@ -1,7 +1,6 @@
 #include "runtime/function/render/render_helper.h"
 #include "runtime/function/render/render_camera.h"
 #include "runtime/function/render/render_scene.h"
-#include "runtime/core/math/moyu_math.h"
 
 namespace MoYu
 {
@@ -233,8 +232,8 @@ namespace MoYu
         }
 
         BoundingBox b_out;
-        b_out.max_bound = GLMUtil::ToVec3(max);
-        b_out.min_bound = GLMUtil::ToVec3(min);
+        b_out.max_bound = max;
+        b_out.min_bound = min;
         return b_out;
     }
 

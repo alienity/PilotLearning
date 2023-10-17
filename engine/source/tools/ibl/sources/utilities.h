@@ -19,7 +19,7 @@
 
 #include <math.h>
 
-#include "core/math/moyu_math.h"
+#include "core/math/moyu_math2.h"
 
 namespace MoYu {
 namespace ibl {
@@ -40,7 +40,7 @@ inline bool isPOT(size_t x) {
     return !(x & (x - 1));
 }
 
-inline MoYu::Vector2 hammersley(uint32_t i, float iN) {
+inline MoYu::MFloat2 hammersley(uint32_t i, float iN) {
     constexpr float tof = 0.5f / 0x80000000U;
     uint32_t bits = i;
     bits = (bits << 16u) | (bits >> 16u);

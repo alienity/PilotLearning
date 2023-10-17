@@ -2,7 +2,7 @@
 #ifndef GEOMETRY_MESH_TOOL_H
 #define GEOMETRY_MESH_TOOL_H
 #include "runtime/function/render/render_common.h"
-#include "runtime/core/math/moyu_math.h"
+#include "runtime/core/math/moyu_math2.h"
 
 #include <vector>
 

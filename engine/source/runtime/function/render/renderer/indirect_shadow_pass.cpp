@@ -31,7 +31,7 @@ namespace MoYu
             m_DirectionalShadowmap.m_casccade = m_render_scene->m_directional_light.m_cascade;
             if (m_DirectionalShadowmap.p_LightShadowmap == nullptr)
             {
-                Vector2 shadowmap_size = m_render_scene->m_directional_light.m_shadowmap_size;
+                MFloat2 shadowmap_size = m_render_scene->m_directional_light.m_shadowmap_size;
                 //Vector2 cascade_shadowmap_size = shadowmap_size * 2;
 
                 m_DirectionalShadowmap.p_LightShadowmap =
@@ -86,7 +86,7 @@ namespace MoYu
                 {
                     if (!curSpotLighShaodwmaptExist)
                     {
-                        Vector2 shadowmap_size = curSpotLightDesc.m_shadowmap_size;
+                        MFloat2 shadowmap_size = curSpotLightDesc.m_shadowmap_size;
                     
                         std::shared_ptr<RHI::D3D12Texture> p_SpotLightShadowmap =
                             RHI::D3D12Texture::Create2D(m_Device->GetLinkedDevice(),
@@ -202,7 +202,7 @@ namespace MoYu
                 graphicContext->SetRootSignature(RootSignatures::pIndirectDrawDirectionShadowmap.get());
                 graphicContext->SetPipelineState(PipelineStates::pIndirectDrawDirectionShadowmap.get());
 
-                Vector2 shadowmap_size = m_DirectionalShadowmap.m_shadowmap_size;
+                MFloat2 shadowmap_size = m_DirectionalShadowmap.m_shadowmap_size;
 
                 graphicContext->SetConstantBuffer(1, registry->GetD3D12Buffer(perframeBufferHandle)->GetGpuVirtualAddress());
                 graphicContext->SetBufferSRV(2, registry->GetD3D12Buffer(meshBufferHandle));
@@ -245,7 +245,7 @@ namespace MoYu
 
                 graphicContext->SetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-                Vector2  shadowmap_size = m_SpotShadowmaps[i].m_shadowmap_size;
+                MFloat2  shadowmap_size = m_SpotShadowmaps[i].m_shadowmap_size;
                 uint32_t spot_index     = m_SpotShadowmaps[i].m_spot_index;
 
                 graphicContext->SetRootSignature(RootSignatures::pIndirectDrawSpotShadowmap.get());

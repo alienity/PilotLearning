@@ -5,23 +5,23 @@ namespace MoYu
 {
     struct DirLight
     {
-        Vector3 m_direction;
-        Vector3 m_color;
+        MFloat3 m_direction;
+        MFloat3 m_color;
     };
     NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(DirLight, m_direction, m_color)
 
     struct CameraPose
     {
-        Vector3 m_position;
-        Vector3 m_target;
-        Vector3 m_up;
+        MFloat3 m_position;
+        MFloat3 m_target;
+        MFloat3 m_up;
     };
     NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(CameraPose, m_position, m_target, m_up)
 
     struct CameraConfig
     {
         CameraPose m_pose;
-        Vector2    m_aspect;
+        MFloat2    m_aspect;
         float      m_z_far;
         float      m_z_near;
         float      m_fovY;
@@ -51,7 +51,7 @@ namespace MoYu
         std::string m_ld_map;
         std::string m_irradians_map;
 
-        std::vector<Vector4> m_SH;
+        std::vector<MFloat4> m_SH;
     };
     NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(IBLTexs, m_dfg_map, m_ld_map, m_irradians_map, m_SH)
 

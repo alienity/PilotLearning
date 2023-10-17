@@ -27,7 +27,7 @@
 #include "runtime/function/render/render_system.h"
 #include "runtime/function/render/window_system.h"
 
-#include "runtime/core/math/moyu_math.h"
+#include "runtime/core/math/moyu_math2.h"
 
 #include "imgui.h"
 #include "imgui_widgets.cpp"
@@ -41,8 +41,8 @@
 
 namespace MoYu
 {
-    bool DrawVecControl(const std::string& label, MoYu::Vector3& values, float resetValue = 0.0f, float columnWidth = 100.0f);
-    bool DrawVecControl(const std::string& label, MoYu::Quaternion& values, float resetValue = 0.0f, float columnWidth = 100.0f);
+    bool DrawVecControl(const std::string& label, MoYu::MFloat3& values, float resetValue = 0.0f, float columnWidth = 100.0f);
+    bool DrawVecControl(const std::string& label, MoYu::MQuaternion& values, float resetValue = 0.0f, float columnWidth = 100.0f);
 
     EditorUI::EditorUI()
     {
@@ -51,12 +51,14 @@ namespace MoYu
         m_editor_ui_creator["Transform"] = [this](const std::string& name, bool& is_dirty, void* value_ptr) -> void {
             Transform* trans_ptr = static_cast<Transform*>(value_ptr);
 
-            MoYu::Vector3 euler = trans_ptr->m_rotation.toTaitBryanAngles();
+            glm::vec3 euler;
+            glm::mat4 _quat = glm::mat4_cast(trans_ptr->m_rotation);
+            glm::extractEulerAngleYXZ(_quat, euler.y, euler.x, euler.z);
 
-            Vector3 degrees_val = {};
-            degrees_val.x = MoYu::Math::radiansToDegrees(euler.x);
-            degrees_val.y = MoYu::Math::radiansToDegrees(euler.y);
-            degrees_val.z = MoYu::Math::radiansToDegrees(euler.z);
+            MFloat3 degrees_val = {};
+            degrees_val.x = MoYu::radiansToDegrees(euler.x);
+            degrees_val.y = MoYu::radiansToDegrees(euler.y);
+            degrees_val.z = MoYu::radiansToDegrees(euler.z);
 
             bool isDirty = false;
 
@@ -64,12 +66,12 @@ namespace MoYu
             isDirty |= DrawVecControl("Rotation", degrees_val);
             isDirty |= DrawVecControl("Scale", trans_ptr->m_scale);
 
-            MoYu::Vector3 newEuler = {};
-            newEuler.x = Math::degreesToRadians(degrees_val.x);
-            newEuler.y = Math::degreesToRadians(degrees_val.y);
-            newEuler.z = Math::degreesToRadians(degrees_val.z);
+            MoYu::MFloat3 newEuler = {};
+            newEuler.x = MoYu::degreesToRadians(degrees_val.x);
+            newEuler.y = MoYu::degreesToRadians(degrees_val.y);
+            newEuler.z = MoYu::degreesToRadians(degrees_val.z);
 
-            trans_ptr->m_rotation = MoYu::Quaternion::fromTaitBryanAngles(newEuler);
+            trans_ptr->m_rotation = glm::eulerAngleYXZ(newEuler.y, newEuler.x, newEuler.z);
 
             is_dirty |= isDirty;
         };
@@ -106,7 +108,7 @@ namespace MoYu
         m_editor_ui_creator["Vector2"] = [this](const std::string& name, bool& is_dirty, void* value_ptr) -> void {
             bool isDirty = false;
 
-            Vector2* vec_ptr = static_cast<Vector2*>(value_ptr);
+            MFloat2* vec_ptr = static_cast<MFloat2*>(value_ptr);
             float val[2] = {vec_ptr->x, vec_ptr->y};
             
             std::string label   = "##" + name;
@@ -119,10 +121,10 @@ namespace MoYu
 
             is_dirty |= isDirty;
         };
-        m_editor_ui_creator["Vector3"] = [this](const std::string& name, bool& is_dirty, void* value_ptr) -> void {
+        m_editor_ui_creator["MFloat3"] = [this](const std::string& name, bool& is_dirty, void* value_ptr) -> void {
             bool isDirty = false;
 
-            Vector3* vec_ptr = static_cast<Vector3*>(value_ptr);
+            MFloat3* vec_ptr = static_cast<MFloat3*>(value_ptr);
             float    val[3]  = {vec_ptr->x, vec_ptr->y, vec_ptr->z};
 
             std::string label = "##" + name;
@@ -139,7 +141,7 @@ namespace MoYu
         m_editor_ui_creator["Vector4"] = [this](const std::string& name, bool& is_dirty, void* value_ptr) -> void {
             bool isDirty = false;
             
-            Vector4* vec_ptr = static_cast<Vector4*>(value_ptr);
+            MFloat4* vec_ptr = static_cast<MFloat4*>(value_ptr);
             float val[4] = {vec_ptr->x, vec_ptr->y, vec_ptr->z, vec_ptr->w};
             
             std::string label = "##" + name;
@@ -157,7 +159,7 @@ namespace MoYu
         m_editor_ui_creator["Quaternion"] = [this](const std::string& name, bool& is_dirty, void* value_ptr) -> void {
             bool isDirty = false;
 
-            Quaternion* qua_ptr = static_cast<Quaternion*>(value_ptr);
+            MQuaternion* qua_ptr = static_cast<MQuaternion*>(value_ptr);
             float val[4] = {qua_ptr->x, qua_ptr->y, qua_ptr->z, qua_ptr->w};
 
             std::string label = "##" + name;
@@ -475,7 +477,7 @@ namespace MoYu
                 isDirty = true;
             if (ImGui::Checkbox("IsDoubleSide", &mat_res_ptr->m_double_sided))
                 isDirty = true;
-            if (ImGui::ColorEdit4("BaseColorFactor", mat_res_ptr->m_base_color_factor.ptr()))
+            if (ImGui::ColorEdit4("BaseColorFactor", &mat_res_ptr->m_base_color_factor.x))
                 isDirty = true;
             if (ImGui::DragFloat("MetallicFactor", &mat_res_ptr->m_metallic_factor, 0.02f, 0.0f, 1.0f))
                 isDirty = true;
@@ -530,7 +532,7 @@ namespace MoYu
                 isDirty = true;
             if (ImGui::InputInt("m_mip_levels", &scene_image_ptr->m_mip_levels, 1))
             {
-                int _mipLevel = MoYu::Math::clamp(scene_image_ptr->m_mip_levels, 0, 12);
+                int _mipLevel = glm::clamp(scene_image_ptr->m_mip_levels, 0, 12);
                 if (scene_image_ptr->m_mip_levels != _mipLevel)
                 {
                     scene_image_ptr->m_mip_levels = _mipLevel;
@@ -1216,8 +1218,8 @@ namespace MoYu
 
         auto menu_bar_rect = ImGui::GetCurrentWindow()->MenuBarRect();
 
-        Vector2 new_window_pos  = {0.0f, 0.0f};
-        Vector2 new_window_size = {0.0f, 0.0f};
+        MFloat2 new_window_pos  = {0.0f, 0.0f};
+        MFloat2 new_window_size = {0.0f, 0.0f};
         new_window_pos.x        = ImGui::GetWindowPos().x;
         new_window_pos.y        = ImGui::GetWindowPos().y + menu_bar_rect.Min.y + 20;
         new_window_size.x       = ImGui::GetWindowSize().x;
@@ -1258,12 +1260,12 @@ namespace MoYu
             //g_editor_global_context.m_input_manager->setEngineWindowPos(new_window_pos);
             //g_editor_global_context.m_input_manager->setEngineWindowSize(new_window_size);
 
-            Vector2 cursor_offset = Vector2((new_window_size.x - displayWidth) * 0.5f, (new_window_size.y - displayHeight) * 0.5f);
+            MFloat2 cursor_offset = MFloat2((new_window_size.x - displayWidth) * 0.5f, (new_window_size.y - displayHeight) * 0.5f);
 
             ImVec2 cilld_cur_pos = ImVec2(cursor_offset.x + new_window_pos.x, cursor_offset.y + new_window_pos.y);
 
-            g_editor_global_context.m_input_manager->setEngineWindowPos(Vector2(cilld_cur_pos.x, cilld_cur_pos.y));
-            g_editor_global_context.m_input_manager->setEngineWindowSize(Vector2(displayWidth, displayHeight));
+            g_editor_global_context.m_input_manager->setEngineWindowPos(MFloat2(cilld_cur_pos.x, cilld_cur_pos.y));
+            g_editor_global_context.m_input_manager->setEngineWindowSize(MFloat2(displayWidth, displayHeight));
 
             ImGui::SetCursorPosX(cursor_offset.x);
             ImGui::BeginChild("GameView", ImVec2(displayWidth, displayHeight), true, ImGuiWindowFlags_NoDocking);
@@ -1274,11 +1276,11 @@ namespace MoYu
 
                 ImGuizmo::SetRect(window_pos.x, window_pos.y, displayWidth, displayHeight);
 
-                Matrix4x4 viewMatrix  = g_editor_global_context.m_scene_manager->getEditorCamera()->getViewMatrix();
-                glm::mat4 _cameraView = MoYu::GLMUtil::FromMat4x4(viewMatrix);
-                Matrix4x4 projMatrix  = g_editor_global_context.m_scene_manager->getEditorCamera()->getPersProjMatrix();
-                glm::mat4 _projMatrix = MoYu::GLMUtil::FromMat4x4(projMatrix);
-                glm::mat4 _identiyMatrix = MoYu::GLMUtil::FromMat4x4(Matrix4x4::Identity);
+                MMatrix4x4 viewMatrix  = g_editor_global_context.m_scene_manager->getEditorCamera()->getViewMatrix();
+                glm::mat4  _cameraView = viewMatrix;
+                MMatrix4x4 projMatrix = g_editor_global_context.m_scene_manager->getEditorCamera()->getPersProjMatrix();
+                glm::mat4  _projMatrix    = projMatrix;
+                glm::mat4  _identiyMatrix = MYMatrix4x4::Identity;
 
                 ImGuizmo::DrawGrid((const float*)&_cameraView, (const float*)&_projMatrix, (const float*)&_identiyMatrix, 100.f);
 
@@ -1291,8 +1293,8 @@ namespace MoYu
                 if (selected_object != nullptr)
                 {
                     TransformComponent* trans_component_ptr = selected_object->getTransformComponent().lock().get();
-                    Matrix4x4 worldMatrix = trans_component_ptr->getMatrixWorld();
-                    glm::mat4 _worldMatrix = MoYu::GLMUtil::FromMat4x4(worldMatrix);
+                    MMatrix4x4 worldMatrix = trans_component_ptr->getMatrixWorld();
+                    glm::mat4 _worldMatrix = worldMatrix;
 
                     ImGuizmo::OPERATION op_type = ImGuizmo::OPERATION::TRANSLATE;
                     if (trans_button_ckecked)
@@ -1676,9 +1678,9 @@ namespace MoYu
         handleOfGameView = handle;
     }
 
-    bool DrawVecControl(const std::string& label, MoYu::Vector3& values, float resetValue, float columnWidth)
+    bool DrawVecControl(const std::string& label, MoYu::MFloat3& values, float resetValue, float columnWidth)
     {
-        Vector3 prevVal = values;
+        MFloat3 prevVal = values;
 
         ImGui::PushID(label.c_str());
 
@@ -1738,9 +1740,9 @@ namespace MoYu
         return false;
     }
 
-    bool DrawVecControl(const std::string& label, MoYu::Quaternion& values, float resetValue, float columnWidth)
+    bool DrawVecControl(const std::string& label, MoYu::MQuaternion& values, float resetValue, float columnWidth)
     {
-        Quaternion prevVal = values;
+        MQuaternion prevVal = values;
 
         ImGui::PushID(label.c_str());
 

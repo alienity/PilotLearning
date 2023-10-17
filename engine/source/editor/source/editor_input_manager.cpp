@@ -41,11 +41,11 @@ namespace MoYu
                                                                              std::placeholders::_4));
     }
 
-    void EditorInputManager::updateCursorOnAxis(Vector2 cursor_uv)
+    void EditorInputManager::updateCursorOnAxis(MFloat2 cursor_uv)
     {
         //if (g_editor_global_context.m_scene_manager->getEditorCamera())
         //{
-        //    Vector2 window_size(m_engine_window_size.x, m_engine_window_size.y);
+        //    MFloat2 window_size(m_engine_window_size.x, m_engine_window_size.y);
         //    m_cursor_on_axis = g_editor_global_context.m_scene_manager->updateCursorOnAxis(cursor_uv, window_size);
         //}
     }
@@ -54,32 +54,32 @@ namespace MoYu
     {
         float           camera_speed  = m_camera_speed;
         std::shared_ptr editor_camera = g_editor_global_context.m_scene_manager->getEditorCamera();
-        Quaternion      camera_rotate = Quaternion::inverse(editor_camera->rotation());
-        Vector3         camera_relative_pos(0, 0, 0);
+        MQuaternion     camera_rotate = glm::inverse(editor_camera->rotation());
+        MFloat3         camera_relative_pos(0, 0, 0);
 
         if ((unsigned int)EditorCommand::camera_foward & m_editor_command)
         {
-            camera_relative_pos += camera_rotate * Vector3 {0, 0, -camera_speed};
+            camera_relative_pos += camera_rotate * MFloat3 {0, 0, -camera_speed};
         }
         if ((unsigned int)EditorCommand::camera_back & m_editor_command)
         {
-            camera_relative_pos += camera_rotate * Vector3 {0, 0, camera_speed};
+            camera_relative_pos += camera_rotate * MFloat3 {0, 0, camera_speed};
         }
         if ((unsigned int)EditorCommand::camera_left & m_editor_command)
         {
-            camera_relative_pos += camera_rotate * Vector3 {-camera_speed, 0, 0};
+            camera_relative_pos += camera_rotate * MFloat3 {-camera_speed, 0, 0};
         }
         if ((unsigned int)EditorCommand::camera_right & m_editor_command)
         {
-            camera_relative_pos += camera_rotate * Vector3 {camera_speed, 0, 0};
+            camera_relative_pos += camera_rotate * MFloat3 {camera_speed, 0, 0};
         }
         if ((unsigned int)EditorCommand::camera_up & m_editor_command)
         {
-            camera_relative_pos += Vector3 {0, camera_speed, 0};
+            camera_relative_pos += MFloat3 {0, camera_speed, 0};
         }
         if ((unsigned int)EditorCommand::camera_down & m_editor_command)
         {
-            camera_relative_pos += Vector3 {0, -camera_speed, 0};
+            camera_relative_pos += MFloat3 {0, -camera_speed, 0};
         }
         if ((unsigned int)EditorCommand::delete_object & m_editor_command)
         {
@@ -204,7 +204,7 @@ namespace MoYu
                     glfwSetInputMode(
                         g_editor_global_context.m_window_system->getWindow(), GLFW_CURSOR, GLFW_CURSOR_NORMAL);
                     g_editor_global_context.m_scene_manager->getEditorCamera()->rotate(
-                        Vector2(m_mouse_y - ypos, m_mouse_x - xpos) * angularVelocity);
+                        MFloat2(m_mouse_y - ypos, m_mouse_x - xpos) * angularVelocity);
 
                 }
                 else if (g_editor_global_context.m_window_system->isMouseButtonDown(GLFW_MOUSE_BUTTON_LEFT))
@@ -230,7 +230,7 @@ namespace MoYu
 
                     if (isCursorInRect(m_engine_window_pos, m_engine_window_size))
                     {
-                        Vector2 cursor_uv = Vector2((m_mouse_x - m_engine_window_pos.x) / m_engine_window_size.x,
+                        MFloat2 cursor_uv = MFloat2((m_mouse_x - m_engine_window_pos.x) / m_engine_window_size.x,
                                                     (m_mouse_y - m_engine_window_pos.y) / m_engine_window_size.y);
                         updateCursorOnAxis(cursor_uv);
                     }
@@ -279,7 +279,7 @@ namespace MoYu
 
     void EditorInputManager::onWindowClosed() { g_editor_global_context.m_engine_runtime->shutdownEngine(); }
 
-    bool EditorInputManager::isCursorInRect(Vector2 pos, Vector2 size) const
+    bool EditorInputManager::isCursorInRect(MFloat2 pos, MFloat2 size) const
     {
         return pos.x <= m_mouse_x && m_mouse_x <= pos.x + size.x && pos.y <= m_mouse_y && m_mouse_y <= pos.y + size.y;
     }

@@ -23,21 +23,13 @@
 
 #include "CubemapUtilsImpl.h"
 
-#include "core/math/moyu_math.h"
+#include "core/math/moyu_math2.h"
 
 #include <random>
 #include <vector>
 
 namespace MoYu {
 namespace ibl {
-
-static float clamp(float v, float min, float max) {
-    return Math::_min(Math::_max(min, v), max);
-}
-
-static float saturate(float v) {
-    return Math::_min(Math::_max(0, v), 1);
-}
 
 static float pow5(float x) {
     const float x2 = x * x;
@@ -49,7 +41,7 @@ static float pow6(float x) {
     return x2 * x2 * x2;
 }
 
-static MoYu::Vector3 hemisphereImportanceSampleDggx(MoYu::Vector2 u, float a) { // pdf = D(a) * cosTheta
+static MoYu::MFloat3 hemisphereImportanceSampleDggx(MoYu::MFloat2 u, float a) { // pdf = D(a) * cosTheta
     const float phi = 2.0f * (float) F_PI * u.x;
     // NOTE: (aa-1) == (a-1)(a+1) produces better fp accuracy
     const float cosTheta2 = (1 - u.y) / (1 + (a + 1) * ((a - 1) * u.y));
@@ -58,7 +50,7 @@ static MoYu::Vector3 hemisphereImportanceSampleDggx(MoYu::Vector2 u, float a) { 
     return { sinTheta * std::cos(phi), sinTheta * std::sin(phi), cosTheta };
 }
 
-static MoYu::Vector3 hemisphereCosSample(MoYu::Vector2 u) {  // pdf = cosTheta / F_PI;
+static MoYu::MFloat3 hemisphereCosSample(MoYu::MFloat2 u) {  // pdf = cosTheta / F_PI;
     const float phi = 2.0f * (float) F_PI * u.x;
     const float cosTheta2 = 1 - u.y;
     const float cosTheta = std::sqrt(cosTheta2);
@@ -66,7 +58,7 @@ static MoYu::Vector3 hemisphereCosSample(MoYu::Vector2 u) {  // pdf = cosTheta /
     return { sinTheta * std::cos(phi), sinTheta * std::sin(phi), cosTheta };
 }
 
-static MoYu::Vector3 hemisphereUniformSample(MoYu::Vector2 u) { // pdf = 1.0 / (2.0 * F_PI);
+static MoYu::MFloat3 hemisphereUniformSample(MoYu::MFloat2 u) { // pdf = 1.0 / (2.0 * F_PI);
     const float phi = 2.0f * (float) F_PI * u.x;
     const float cosTheta = 1 - u.y;
     const float sinTheta = std::sqrt(1 - cosTheta * cosTheta);
@@ -130,7 +122,7 @@ static MoYu::Vector3 hemisphereUniformSample(MoYu::Vector2 u) { // pdf = 1.0 / (
  *  |                                            |
  *  +--------------------------------------------+
  */
-static MoYu::Vector3 hemisphereImportanceSampleDCharlie(MoYu::Vector2 u, float a) { // pdf = DistributionCharlie() * cosTheta
+static MoYu::MFloat3 hemisphereImportanceSampleDCharlie(MoYu::MFloat2 u, float a) { // pdf = DistributionCharlie() * cosTheta
     const float phi = 2.0f * (float) F_PI * u.x;
 
     const float sinTheta = std::pow(u.y, a / (2 * a + 1));
@@ -295,7 +287,7 @@ static float VisibilityAshikhmin(float NoV, float NoL, float /*a*/) {
  */
 
 void CubemapIBL::roughnessFilter(Cubemap& dst, const std::vector<Cubemap>& levels,
-        float linearRoughness, size_t maxNumSamples, MoYu::Vector3 mirror, bool prefilter)
+        float linearRoughness, size_t maxNumSamples, MoYu::MFloat3 mirror, bool prefilter)
 {
     const float numSamples = maxNumSamples;
     const float inumSamples = 1.0f / numSamples;
@@ -311,8 +303,8 @@ void CubemapIBL::roughnessFilter(Cubemap& dst, const std::vector<Cubemap>& level
                 (CubemapUtils::EmptyState&, size_t y, Cubemap::Face f, Cubemap::Texel* data, size_t dim) {
                     const Cubemap& cm = levels[0];
                     for (size_t x = 0; x < dim; ++x, ++data) {
-                        const MoYu::Vector2 p(Cubemap::center(x, y));
-                        const MoYu::Vector3 N(dst.getDirectionFor(f, p.x, p.y) * mirror);
+                        const MoYu::MFloat2 p(Cubemap::center(x, y));
+                        const MoYu::MFloat3 N(dst.getDirectionFor(f, p.x, p.y) * mirror);
                         // FIXME: we should pick the proper LOD here and do trilinear filtering
                         Cubemap::writeAt(data, cm.sampleAt(N));
                     }
@@ -323,7 +315,7 @@ void CubemapIBL::roughnessFilter(Cubemap& dst, const std::vector<Cubemap>& level
 
     // be careful w/ the size of this structure, the smaller the better
     struct CacheEntry {
-        MoYu::Vector3 L;
+        MoYu::MFloat3 L;
         float brdf_NoL;
         float lerp;
         uint8_t l0;
@@ -342,18 +334,18 @@ void CubemapIBL::roughnessFilter(Cubemap& dst, const std::vector<Cubemap>& level
     for (size_t sampleIndex = 0 ; sampleIndex < maxNumSamples; sampleIndex++) {
 
         // get Hammersley distribution for the half-sphere
-        const MoYu::Vector2 u = hammersley(uint32_t(sampleIndex), inumSamples);
+        const MoYu::MFloat2 u = hammersley(uint32_t(sampleIndex), inumSamples);
 
         // Importance sampling GGX - Trowbridge-Reitz
-        const MoYu::Vector3 H = hemisphereImportanceSampleDggx(u, linearRoughness);
+        const MoYu::MFloat3 H = hemisphereImportanceSampleDggx(u, linearRoughness);
 
 #if 0
         // This produces the same result that the code below using the the non-simplified
         // equation. This let's us see that N == V and that L = -reflect(V, H)
         // Keep this for reference.
-        const MoYu::Vector3 N = {0, 0, 1};
-        const MoYu::Vector3 V = N;
-        const MoYu::Vector3 L = 2 * dot(H, V) * H - V;
+        const MoYu::MFloat3 N = {0, 0, 1};
+        const MoYu::MFloat3 V = N;
+        const MoYu::MFloat3 L = 2 * dot(H, V) * H - V;
         const float NoL = dot(N, L);
         const float NoH = dot(N, H);
         const float NoH2 = NoH * NoH;
@@ -362,7 +354,7 @@ void CubemapIBL::roughnessFilter(Cubemap& dst, const std::vector<Cubemap>& level
         const float NoH = H.z;
         const float NoH2 = H.z * H.z;
         const float NoL = 2 * NoH2 - 1;
-        const MoYu::Vector3 L(2 * NoH * H.x, 2 * NoH * H.y, NoL);
+        const MoYu::MFloat3 L(2 * NoH * H.x, 2 * NoH * H.y, NoL);
 #endif
 
         if (NoL > 0) {
@@ -372,7 +364,7 @@ void CubemapIBL::roughnessFilter(Cubemap& dst, const std::vector<Cubemap>& level
             constexpr float K = 4;
             const float omegaS = 1 / (numSamples * pdf);
             const float l = float(log4(omegaS) - log4(omegaP) + log4(K));
-            const float mipLevel = prefilter ? clamp(float(l), 0.0f, maxLevelf) : 0.0f;
+            const float mipLevel = prefilter ? glm::clamp(float(l), 0.0f, maxLevelf) : 0.0f;
 
             const float brdf_NoL = float(NoL);
 
@@ -404,35 +396,35 @@ void CubemapIBL::roughnessFilter(Cubemap& dst, const std::vector<Cubemap>& level
 
     auto scanline = [&](State& state, size_t y,
             Cubemap::Face f, Cubemap::Texel* data, size_t dim) {
-        MoYu::Matrix3x3 R;
+        MoYu::MMatrix3x3 R;
         const size_t numSamples = cache.size();
         for (size_t x = 0; x < dim; ++x, ++data) {
-            const MoYu::Vector2 p(Cubemap::center(x, y));
-            const MoYu::Vector3 N(dst.getDirectionFor(f, p.x, p.y) * mirror);
+            const MoYu::MFloat2 p(Cubemap::center(x, y));
+            const MoYu::MFloat3 N(dst.getDirectionFor(f, p.x, p.y) * mirror);
 
             // center the cone around the normal (handle case of normal close to up)
-            const MoYu::Vector3 up = std::abs(N.z) < 0.999 ? MoYu::Vector3(0, 0, 1) : MoYu::Vector3(1, 0, 0);
+            const MoYu::MFloat3 up = std::abs(N.z) < 0.999 ? MoYu::MFloat3(0, 0, 1) : MoYu::MFloat3(1, 0, 0);
             
-            Vector3 _right = MoYu::Vector3::normalize(Vector3::cross(up, N));
-            Vector3 _forward = Vector3::cross(N, _right); 
+            MFloat3 _right = glm::normalize(glm::cross(up, N));
+            MFloat3 _forward = glm::cross(N, _right); 
 
-            R = MoYu::Matrix3x3(_right, _forward, N);
-            R = R.transpose();
+            R = MoYu::MMatrix3x3(_right, _forward, N);
+            R = glm::transpose(R);
 
-            Matrix3x3 _rot = Matrix3x3::Identity;
-            _rot.fromAngleAxis(MoYu::Vector3 {0, 0, 1}, state.distribution(state.gen));
+            MMatrix3x3 _rot = MYMatrix3x3::Identity;
+            _rot.fromAngleAxis(MoYu::MFloat3 {0, 0, 1}, state.distribution(state.gen));
 
             R = R * _rot;
 
-            //R *= mat3f::rotation(state.distribution(state.gen), MoYu::Vector3{0,0,1});
+            //R *= mat3f::rotation(state.distribution(state.gen), MoYu::MFloat3{0,0,1});
 
-            MoYu::Vector3 Li = 0;
+            MoYu::MFloat3 Li = 0;
             for (size_t sample = 0; sample < numSamples; sample++) {
                 const CacheEntry& e = cache[sample];
-                const MoYu::Vector3 L(R * e.L);
+                const MoYu::MFloat3 L(R * e.L);
                 const Cubemap& cmBase = levels[e.l0];
                 const Cubemap& next = levels[e.l1];
-                const MoYu::Vector3 c0 = Cubemap::trilinearFilterAt(cmBase, next, e.lerp, L);
+                const MoYu::MFloat3 c0 = Cubemap::trilinearFilterAt(cmBase, next, e.lerp, L);
                 Li += c0 * e.brdf_NoL;
             }
             Cubemap::writeAt(data, Cubemap::Texel(Li));
@@ -543,7 +535,7 @@ void CubemapIBL::diffuseIrradiance(Cubemap& dst, const std::vector<Cubemap>& lev
     std::atomic_uint progress = {0};
 
     struct CacheEntry {
-        MoYu::Vector3 L;
+        MoYu::MFloat3 L;
         float lerp;
         uint8_t l0;
         uint8_t l1;
@@ -555,10 +547,10 @@ void CubemapIBL::diffuseIrradiance(Cubemap& dst, const std::vector<Cubemap>& lev
     // precompute everything that only depends on the sample #
     for (size_t sampleIndex = 0; sampleIndex < maxNumSamples; sampleIndex++) {
         // get Hammersley distribution for the half-sphere
-        const MoYu::Vector2 u = hammersley(uint32_t(sampleIndex), inumSamples);
-        const MoYu::Vector3 L = hemisphereCosSample(u);
-        const MoYu::Vector3 N = { 0, 0, 1 };
-        const float NoL = Vector3::dot(N, L);
+        const MoYu::MFloat2 u = hammersley(uint32_t(sampleIndex), inumSamples);
+        const MoYu::MFloat3 L = hemisphereCosSample(u);
+        const MoYu::MFloat3 N = { 0, 0, 1 };
+        const float NoL = MFloat3::dot(N, L);
 
         if (NoL > 0) {
             float pdf = NoL * (float) F_1_PI;
@@ -582,25 +574,25 @@ void CubemapIBL::diffuseIrradiance(Cubemap& dst, const std::vector<Cubemap>& lev
         Matrix3x3 R;
         const size_t numSamples = cache.size();
         for (size_t x = 0; x < dim; ++x, ++data) {
-            const MoYu::Vector2 p(Cubemap::center(x, y));
-            const MoYu::Vector3 N(dst.getDirectionFor(f, p.x, p.y));
+            const MoYu::MFloat2 p(Cubemap::center(x, y));
+            const MoYu::MFloat3 N(dst.getDirectionFor(f, p.x, p.y));
 
             // center the cone around the normal (handle case of normal close to up)
-            const MoYu::Vector3 up = std::abs(N.z) < 0.999 ? MoYu::Vector3(0, 0, 1) : MoYu::Vector3(1, 0, 0);
+            const MoYu::MFloat3 up = std::abs(N.z) < 0.999 ? MoYu::MFloat3(0, 0, 1) : MoYu::MFloat3(1, 0, 0);
 
-            Vector3 _right   = MoYu::Vector3::normalize(Vector3::cross(up, N));
-            Vector3 _forward = Vector3::cross(N, _right);
+            MFloat3 _right   = MoYu::MFloat3::normalize(MFloat3::cross(up, N));
+            MFloat3 _forward = MFloat3::cross(N, _right);
 
             R = MoYu::Matrix3x3(_right, _forward, N);
             R = R.transpose();
 
-            MoYu::Vector3 Li = 0;
+            MoYu::MFloat3 Li = 0;
             for (size_t sample = 0; sample < numSamples; sample++) {
                 const CacheEntry& e = cache[sample];
-                const MoYu::Vector3 L(R * e.L);
+                const MoYu::MFloat3 L(R * e.L);
                 const Cubemap& cmBase = levels[e.l0];
                 const Cubemap& next = levels[e.l1];
-                const MoYu::Vector3 c0 = Cubemap::trilinearFilterAt(cmBase, next, e.lerp, L);
+                const MoYu::MFloat3 c0 = Cubemap::trilinearFilterAt(cmBase, next, e.lerp, L);
                 Li += c0;
             }
             Cubemap::writeAt(data, Cubemap::Texel(Li * inumSamples));
@@ -609,15 +601,15 @@ void CubemapIBL::diffuseIrradiance(Cubemap& dst, const std::vector<Cubemap>& lev
 }
 
 // Not importance-sampled
-static MoYu::Vector2 DFV_NoIS(float NoV, float roughness, size_t numSamples) {
-    MoYu::Vector2 r = 0;
+static MoYu::MFloat2 DFV_NoIS(float NoV, float roughness, size_t numSamples) {
+    MoYu::MFloat2 r = 0;
     const float linearRoughness = roughness * roughness;
-    const MoYu::Vector3 V(std::sqrt(1 - NoV * NoV), 0, NoV);
+    const MoYu::MFloat3 V(std::sqrt(1 - NoV * NoV), 0, NoV);
     for (size_t i = 0; i < numSamples; i++) {
-        const MoYu::Vector2 u = hammersley(uint32_t(i), 1.0f / numSamples);
-        const MoYu::Vector3 H = hemisphereCosSample(u);
-        const MoYu::Vector3 L = 2 * Vector3::dot(V, H) * H - V;
-        const float VoH = saturate(Vector3::dot(V, H));
+        const MoYu::MFloat2 u = hammersley(uint32_t(i), 1.0f / numSamples);
+        const MoYu::MFloat3 H = hemisphereCosSample(u);
+        const MoYu::MFloat3 L = 2 * MFloat3::dot(V, H) * H - V;
+        const float VoH = saturate(MFloat3::dot(V, H));
         const float NoL = saturate(L.z);
         const float NoH = saturate(H.z);
         if (NoL > 0) {
@@ -720,14 +712,14 @@ static MoYu::Vector2 DFV_NoIS(float NoV, float roughness, size_t numSamples) {
  *
  */
 
-static MoYu::Vector2 DFV(float NoV, float linearRoughness, size_t numSamples) {
-    MoYu::Vector2 r = 0;
-    const MoYu::Vector3 V(std::sqrt(1 - NoV * NoV), 0, NoV);
+static MoYu::MFloat2 DFV(float NoV, float linearRoughness, size_t numSamples) {
+    MoYu::MFloat2 r = 0;
+    const MoYu::MFloat3 V(std::sqrt(1 - NoV * NoV), 0, NoV);
     for (size_t i = 0; i < numSamples; i++) {
-        const MoYu::Vector2 u = hammersley(uint32_t(i), 1.0f / numSamples);
-        const MoYu::Vector3 H = hemisphereImportanceSampleDggx(u, linearRoughness);
-        const MoYu::Vector3 L = 2 * Vector3::dot(V, H) * H - V;
-        const float VoH = saturate(Vector3::dot(V, H));
+        const MoYu::MFloat2 u = hammersley(uint32_t(i), 1.0f / numSamples);
+        const MoYu::MFloat3 H = hemisphereImportanceSampleDggx(u, linearRoughness);
+        const MoYu::MFloat3 L = 2 * MFloat3::dot(V, H) * H - V;
+        const float VoH = saturate(MFloat3::dot(V, H));
         const float NoL = saturate(L.z);
         const float NoH = saturate(H.z);
         if (NoL > 0) {
@@ -762,14 +754,14 @@ static MoYu::Vector2 DFV(float NoV, float linearRoughness, size_t numSamples) {
     return r * (4.0f / numSamples);
 }
 
-static MoYu::Vector2 DFV_Multiscatter(float NoV, float linearRoughness, size_t numSamples) {
-    MoYu::Vector2 r = 0;
-    const MoYu::Vector3 V(std::sqrt(1 - NoV * NoV), 0, NoV);
+static MoYu::MFloat2 DFV_Multiscatter(float NoV, float linearRoughness, size_t numSamples) {
+    MoYu::MFloat2 r = 0;
+    const MoYu::MFloat3 V(std::sqrt(1 - NoV * NoV), 0, NoV);
     for (size_t i = 0; i < numSamples; i++) {
-        const MoYu::Vector2 u = hammersley(uint32_t(i), 1.0f / numSamples);
-        const MoYu::Vector3 H = hemisphereImportanceSampleDggx(u, linearRoughness);
-        const MoYu::Vector3 L = 2 * Vector3::dot(V, H) * H - V;
-        const float VoH = saturate(Vector3::dot(V, H));
+        const MoYu::MFloat2 u = hammersley(uint32_t(i), 1.0f / numSamples);
+        const MoYu::MFloat3 H = hemisphereImportanceSampleDggx(u, linearRoughness);
+        const MoYu::MFloat3 L = 2 * MFloat3::dot(V, H) * H - V;
+        const float VoH = saturate(MFloat3::dot(V, H));
         const float NoL = saturate(L.z);
         const float NoH = saturate(H.z);
         if (NoL > 0) {
@@ -811,12 +803,12 @@ static float DFV_LazanyiTerm(float NoV, float linearRoughness, size_t numSamples
     float r = 0;
     const float cosThetaMax = (float) std::cos(81.7 * F_PI / 180.0);
     const float q = 1.0f / (cosThetaMax * pow6(1.0f - cosThetaMax));
-    const MoYu::Vector3 V(std::sqrt(1 - NoV * NoV), 0, NoV);
+    const MoYu::MFloat3 V(std::sqrt(1 - NoV * NoV), 0, NoV);
     for (size_t i = 0; i < numSamples; i++) {
-        const MoYu::Vector2 u = hammersley(uint32_t(i), 1.0f / numSamples);
-        const MoYu::Vector3 H = hemisphereImportanceSampleDggx(u, linearRoughness);
-        const MoYu::Vector3 L = 2 * Vector3::dot(V, H) * H - V;
-        const float VoH = saturate(Vector3::dot(V, H));
+        const MoYu::MFloat2 u = hammersley(uint32_t(i), 1.0f / numSamples);
+        const MoYu::MFloat3 H = hemisphereImportanceSampleDggx(u, linearRoughness);
+        const MoYu::MFloat3 L = 2 * MFloat3::dot(V, H) * H - V;
+        const float VoH = saturate(MFloat3::dot(V, H));
         const float NoL = saturate(L.z);
         const float NoH = saturate(H.z);
         if (NoL > 0) {
@@ -830,12 +822,12 @@ static float DFV_LazanyiTerm(float NoV, float linearRoughness, size_t numSamples
 
 static float DFV_Charlie_Uniform(float NoV, float linearRoughness, size_t numSamples) {
     float r = 0.0;
-    const MoYu::Vector3 V(std::sqrt(1 - NoV * NoV), 0, NoV);
+    const MoYu::MFloat3 V(std::sqrt(1 - NoV * NoV), 0, NoV);
     for (size_t i = 0; i < numSamples; i++) {
-        const MoYu::Vector2 u = hammersley(uint32_t(i), 1.0f / numSamples);
-        const MoYu::Vector3 H = hemisphereUniformSample(u);
-        const MoYu::Vector3 L = 2 * Vector3::dot(V, H) * H - V;
-        const float VoH = saturate(Vector3::dot(V, H));
+        const MoYu::MFloat2 u = hammersley(uint32_t(i), 1.0f / numSamples);
+        const MoYu::MFloat3 H = hemisphereUniformSample(u);
+        const MoYu::MFloat3 L = 2 * MFloat3::dot(V, H) * H - V;
+        const float VoH = saturate(MFloat3::dot(V, H));
         const float NoL = saturate(L.z);
         const float NoH = saturate(H.z);
         if (NoL > 0) {
@@ -935,12 +927,12 @@ static float DFV_Charlie_Uniform(float NoV, float linearRoughness, size_t numSam
  */
 static float DFV_Charlie_IS(float NoV, float linearRoughness, size_t numSamples) {
     float r = 0.0;
-    const MoYu::Vector3 V(std::sqrt(1 - NoV * NoV), 0, NoV);
+    const MoYu::MFloat3 V(std::sqrt(1 - NoV * NoV), 0, NoV);
     for (size_t i = 0; i < numSamples; i++) {
-        const MoYu::Vector2 u = hammersley(uint32_t(i), 1.0f / numSamples);
-        const MoYu::Vector3 H = hemisphereImportanceSampleDCharlie(u, linearRoughness);
-        const MoYu::Vector3 L = 2 * Vector3::dot(V, H) * H - V;
-        const float VoH = saturate(Vector3::dot(V, H));
+        const MoYu::MFloat2 u = hammersley(uint32_t(i), 1.0f / numSamples);
+        const MoYu::MFloat3 H = hemisphereImportanceSampleDCharlie(u, linearRoughness);
+        const MoYu::MFloat3 L = 2 * MFloat3::dot(V, H) * H - V;
+        const float VoH = saturate(MFloat3::dot(V, H));
         const float NoL = saturate(L.z);
         const float NoH = saturate(H.z);
         if (NoL > 0) {
@@ -973,7 +965,7 @@ void CubemapIBL::DFG(Image& dst, bool multiscatter, bool cloth) {
         for (size_t x = 0; x < height; x++, data++) {
             // const float NoV = float(x) / (width-1);
             const float NoV = saturate((x + 0.5f) / width);
-            MoYu::Vector3 r = { dfvFunction(NoV, linear_roughness, 1024), 0 };
+            MoYu::MFloat3 r = { dfvFunction(NoV, linear_roughness, 1024), 0 };
             if (cloth) {
                 r.z = float(DFV_Charlie_Uniform(NoV, linear_roughness, 4096));
             }

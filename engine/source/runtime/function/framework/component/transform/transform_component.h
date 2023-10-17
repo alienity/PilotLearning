@@ -1,6 +1,6 @@
 #pragma once
 
-#include "runtime/core/math/moyu_math.h"
+#include "runtime/core/math/moyu_math2.h"
 #include "runtime/function/framework/component/component.h"
 #include "runtime/function/framework/object/object.h"
 
@@ -17,22 +17,22 @@ namespace MoYu
 
         void markToErase() override {};
 
-        Vector3    getPosition() const { return m_transform_buffer[m_current_index].m_position; }
-        Vector3    getScale() const { return m_transform_buffer[m_current_index].m_scale; }
-        Quaternion getRotation() const { return m_transform_buffer[m_current_index].m_rotation; }
+        MFloat3    getPosition() const { return m_transform_buffer[m_current_index].m_position; }
+        MFloat3    getScale() const { return m_transform_buffer[m_current_index].m_scale; }
+        MQuaternion getRotation() const { return m_transform_buffer[m_current_index].m_rotation; }
 
-        void setPosition(const Vector3& new_translation);
-        void setScale(const Vector3& new_scale);
-        void setRotation(const Quaternion& new_rotation);
+        void setPosition(const MFloat3& new_translation);
+        void setScale(const MFloat3& new_scale);
+        void setRotation(const MQuaternion& new_rotation);
 
         const Transform& getTransformConst() const { return m_transform_buffer[m_current_index]; }
 
         // for editor
         Transform& getTransform() { return m_transform_buffer[m_next_index]; }
 
-        const Matrix4x4 getMatrix() const { return m_transform_buffer[m_current_index].getMatrix(); }
+        const MMatrix4x4 getMatrix() const { return m_transform_buffer[m_current_index].getMatrix(); }
 
-        const Matrix4x4 getMatrixWorld();
+        const MMatrix4x4 getMatrixWorld();
 
         const bool isMatrixDirty() const;
 
@@ -40,13 +40,13 @@ namespace MoYu
         void tick(float delta_time) override;
         void lateTick(float delta_time) override;
 
-        static Matrix4x4 getMatrixWorldRecursively(const TransformComponent* trans);
+        static MMatrix4x4 getMatrixWorldRecursively(const TransformComponent* trans);
         static bool isDirtyRecursively(const TransformComponent* trans);
         static void UpdateWorldMatrixRecursively(TransformComponent* trans);
 
     private:
-        Matrix4x4 m_matrix_world_prev {Matrix4x4::Zero};
-        Matrix4x4 m_matrix_world {Matrix4x4::Identity};
+        MMatrix4x4 m_matrix_world_prev {MYMatrix4x4::Zero};
+        MMatrix4x4 m_matrix_world {MYMatrix4x4::Identity};
 
         //Transform m_transform;
 

@@ -1,7 +1,7 @@
 #pragma once
 #include <cstdint>
 
-#include "runtime/core/math/moyu_math.h"
+#include "runtime/core/math/moyu_math2.h"
 
 namespace EngineConfig
 {
@@ -98,7 +98,7 @@ namespace EngineConfig
 
     struct SHConfig
     {
-        MoYu::Vector4 _GSH[7];
+        MoYu::MFloat4 _GSH[7];
     };
 
     extern SHConfig g_SHConfig;

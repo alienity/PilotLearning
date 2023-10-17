@@ -1,6 +1,6 @@
 #pragma once
 
-#include "runtime/core/math/moyu_math.h"
+#include "runtime/core/math/moyu_math2.h"
 #include "runtime/resource/res_type/components/light.h"
 #include "runtime/function/framework/component/component.h"
 

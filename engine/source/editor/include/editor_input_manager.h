@@ -1,6 +1,6 @@
 #pragma once
 
-#include "runtime/core/math/moyu_math.h"
+#include "runtime/core/math/moyu_math2.h"
 
 #include "runtime/function/render/render_camera.h"
 
@@ -33,7 +33,7 @@ namespace MoYu
 
     public:
         void registerInput();
-        void updateCursorOnAxis(Vector2 cursor_uv);
+        void updateCursorOnAxis(MFloat2 cursor_uv);
         void processEditorCommand();
         void onKeyInEditorMode(int key, int scancode, int action, int mods);
 
@@ -44,20 +44,20 @@ namespace MoYu
         void onScroll(double xoffset, double yoffset);
         void onWindowClosed();
 
-        bool isCursorInRect(Vector2 pos, Vector2 size) const;
+        bool isCursorInRect(MFloat2 pos, MFloat2 size) const;
 
     public:
-        Vector2 getEngineWindowPos() const { return m_engine_window_pos; };
-        Vector2 getEngineWindowSize() const { return m_engine_window_size; };
+        MFloat2 getEngineWindowPos() const { return m_engine_window_pos; };
+        MFloat2 getEngineWindowSize() const { return m_engine_window_size; };
         float   getCameraSpeed() const { return m_camera_speed; };
 
-        void setEngineWindowPos(Vector2 new_window_pos) { m_engine_window_pos = new_window_pos; };
-        void setEngineWindowSize(Vector2 new_window_size) { m_engine_window_size = new_window_size; };
+        void setEngineWindowPos(MFloat2 new_window_pos) { m_engine_window_pos = new_window_pos; };
+        void setEngineWindowSize(MFloat2 new_window_size) { m_engine_window_size = new_window_size; };
         void resetEditorCommand() { m_editor_command = 0; }
 
     private:
-        Vector2 m_engine_window_pos {0.0f, 0.0f};
-        Vector2 m_engine_window_size {1280.0f, 768.0f};
+        MFloat2 m_engine_window_pos {0.0f, 0.0f};
+        MFloat2 m_engine_window_size {1280.0f, 768.0f};
         float   m_mouse_x {0.0f};
         float   m_mouse_y {0.0f};
         float   m_camera_speed {0.05f};

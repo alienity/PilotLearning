@@ -1,7 +1,7 @@
 #include "runtime/function/framework/component/camera/camera_component.h"
 
 #include "runtime/core/base/macro.h"
-#include "runtime/core/math/moyu_math.h"
+#include "runtime/core/math/moyu_math2.h"
 
 #include "runtime/resource/asset_manager/asset_manager.h"
 
