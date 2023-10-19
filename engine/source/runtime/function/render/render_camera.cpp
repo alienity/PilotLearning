@@ -32,20 +32,24 @@ namespace MoYu
             (dot > 0.99f && delta.x < 0.0f))    // angle nearing 0 degrees
             delta.x = 0.0f;
 
+        float _y, _x, _z;
+        glm::extractEulerAngleZXY(glm::toMat4(m_rotation), _z, _x, _y);
+
+        _y += delta.y;
+        _x += delta.x;
+
+        glm::mat4 _rot = glm::eulerAngleZXY(_z, _x, _y);
+
+        m_rotation    = glm::toQuat(_rot);
+        m_invRotation = glm::conjugate(m_rotation);
+
         //MQuaternion pitch = glm::rotate(glm::quat(), delta.x, X);
         //MQuaternion yaw   = glm::rotate(glm::quat(), delta.y, Y);
-        //MQuaternion pitch = MQuaternion::fromAxisAngle(X, delta.x);
-        //MQuaternion yaw   = MQuaternion::fromAxisAngle(Y, delta.y);
-        const float yaw   = delta.y;
-        const float pitch = delta.x;
-        const float roll  = 0;
 
-        MMatrix4x4  _orientate = glm::yawPitchRoll(yaw, pitch, roll);
-        MQuaternion _oriquat   = glm::quat_cast(_orientate);
+        //MQuaternion _rot = glm::toQuat(glm::eulerAngleYXZ(delta.y, delta.x, 0.f));
 
         //m_rotation = pitch * m_rotation * yaw;
-        m_rotation    = m_rotation * _oriquat;
-        m_invRotation = glm::conjugate(m_rotation);
+        //m_invRotation = glm::conjugate(m_rotation);
     }
 
     void RenderCamera::zoom(float offset)
