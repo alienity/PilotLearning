@@ -69,8 +69,8 @@ namespace MoYu
 
             int   shadow_bounds_width  = sceneLight.direction_light.m_shadow_bounds.x;
             int   shadow_bounds_height = sceneLight.direction_light.m_shadow_bounds.y;
-            float shadow_near_plane    = -sceneLight.direction_light.m_shadow_near_plane;
-            float shadow_far_plane     = -sceneLight.direction_light.m_shadow_far_plane;
+            float shadow_near_plane    = sceneLight.direction_light.m_shadow_near_plane;
+            float shadow_far_plane     = sceneLight.direction_light.m_shadow_far_plane;
 
             for (size_t i = 0; i < sceneLight.direction_light.m_cascade; i++)
             {
@@ -139,9 +139,9 @@ namespace MoYu
             }
 
             float _spotOutRadians = MoYu::degreesToRadians(sceneLight.spot_light.m_outer_degree);
-            float _spotNearPlane  = -sceneLight.spot_light.m_shadow_near_plane;
-            float _spotFarPlane   = -sceneLight.spot_light.m_shadow_far_plane;
-
+            float _spotNearPlane  = sceneLight.spot_light.m_shadow_near_plane;
+            float _spotFarPlane   = sceneLight.spot_light.m_shadow_far_plane;
+            
             MMatrix4x4 spotLightViewMat = MYMatrix4x4::createLookAtMatrix(m_translation, m_translation + direction, MYFloat3::Up);
             MMatrix4x4 spotLightProjMat = MYMatrix4x4::createPerspectiveFieldOfView(_spotOutRadians, 1, _spotNearPlane, _spotFarPlane);
             MMatrix4x4 spotLightViewProjMat = spotLightProjMat * spotLightViewMat;

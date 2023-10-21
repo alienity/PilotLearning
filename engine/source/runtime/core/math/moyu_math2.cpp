@@ -112,8 +112,8 @@ namespace MoYu
         m[3][0] = -(right + left) / (right - left);
         m[1][1] = 2 / (top - bottom);
         m[3][1] = -(top + bottom) / (top - bottom);
-        m[2][2] = 1 / (zNearPlane - zFarPlane);
-        m[3][2] = -zFarPlane / (zNearPlane - zFarPlane);
+        m[2][2] = 1 / (zFarPlane - zNearPlane);
+        m[3][2] = zFarPlane / (zFarPlane - zNearPlane);
         m[3][3] = 1;
 
         return m;

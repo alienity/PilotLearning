@@ -1,7 +1,7 @@
 #include "utility.h"
 #include "macro.h"
 #include "city.h"
-#include "runtime/core/math/moyu_math.h"
+#include "runtime/core/math/moyu_math2.h"
 
 #ifndef NOMINMAX
 #define NOMINMAX

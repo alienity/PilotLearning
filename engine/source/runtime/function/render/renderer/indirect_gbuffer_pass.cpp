@@ -88,6 +88,9 @@ namespace MoYu
         {
             RHI::D3D12InputLayout InputLayout = MoYu::D3D12MeshVertexPositionNormalTangentTexture::InputLayout;
 
+            RHIRasterizerState rasterizerState = RHIRasterizerState();
+            rasterizerState.CullMode = RHI_CULL_MODE::Back;
+
             RHIDepthStencilState DepthStencilState;
             DepthStencilState.DepthEnable = true;
             DepthStencilState.DepthFunc   = RHI_COMPARISON_FUNC::GreaterEqual;
@@ -121,7 +124,7 @@ namespace MoYu
             psoStream.RootSignature         = PipelineStateStreamRootSignature(pIndirectGBufferSignature.get());
             psoStream.InputLayout           = &InputLayout;
             psoStream.PrimitiveTopologyType = RHI_PRIMITIVE_TOPOLOGY::Triangle;
-            psoStream.RasterrizerState      = RHIRasterizerState();
+            psoStream.RasterrizerState      = rasterizerState;
             psoStream.VS                    = &indirectGBufferVS;
             psoStream.PS                    = &indirectGBufferPS;
             psoStream.DepthStencilState     = DepthStencilState;

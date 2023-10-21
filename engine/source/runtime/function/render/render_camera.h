@@ -44,7 +44,7 @@ namespace MoYu
         void setMainViewMatrix(const MMatrix4x4& view_matrix, RenderCameraType type = RenderCameraType::Editor);
          
         void move(MFloat3 delta);
-        void rotate(MFloat2 delta);
+        void rotate(MFloat2 delta); // delta.x -- yaw, delta.y -- pitch
         void zoom(float offset);
         void lookAt(const MFloat3& position, const MFloat3& target, const MFloat3& up);
         void perspectiveProjection(int width, int height, float znear, float zfar, float fovy);

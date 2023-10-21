@@ -21,26 +21,29 @@ namespace MoYu
 
     void RenderCamera::move(MFloat3 delta) { m_position += delta; }
 
+     // delta.x -- yaw, delta.y -- pitch
     void RenderCamera::rotate(MFloat2 delta)
     {
         // rotation around x, y axis
         delta = MFloat2(MoYu::degreesToRadians(delta.x), MoYu::degreesToRadians(delta.y));
 
+        // ZXY从右往左乘得旋转矩阵，就是intrinsic的，对应的分别是从右往左 Roll - Pitch - Yaw
+
+        float _alpha, _beta, _gamma;
+        glm::extractEulerAngleZXY(glm::toMat4(m_rotation), _gamma, _beta, _alpha);
+
+        _alpha += delta.x;
+        _beta += delta.y;
+        _gamma = 0;
+
         // limit pitch
-        float dot = glm::dot(m_up_axis, forward());
-        if ((dot < -0.99f && delta.x > 0.0f) || // angle nearing 180 degrees
-            (dot > 0.99f && delta.x < 0.0f))    // angle nearing 0 degrees
-            delta.x = 0.0f;
-
-        float _y, _x, _z;
-        glm::extractEulerAngleZXY(glm::toMat4(m_rotation), _z, _x, _y);
-
-        _y += delta.y;
-        _x += delta.x;
-
-        glm::mat4 _rot = glm::eulerAngleZXY(_z, _x, _y);
-
-        m_rotation    = glm::toQuat(_rot);
+        float _pitchLimit = MoYu::degreesToRadians(89.0f);
+        if (_beta > _pitchLimit)
+            _beta = _pitchLimit;
+        if (_beta < -_pitchLimit)
+            _beta = -_pitchLimit;
+        
+        m_rotation    = glm::toQuat(glm::eulerAngleZXY(_gamma, _beta, _alpha));
         m_invRotation = glm::conjugate(m_rotation);
 
         //MQuaternion pitch = glm::rotate(glm::quat(), delta.x, X);
@@ -109,7 +112,11 @@ namespace MoYu
         {
             case RenderCameraType::Editor:
                 {
-                    view_matrix = MoYu::MYMatrix4x4::createLookAtMatrix(position(), position() + forward(), up());
+                    MFloat3 _position = position();
+                    MFloat3 _forward = forward();
+                    MFloat3 _up  = up();
+
+                    view_matrix = MoYu::MYMatrix4x4::createLookAtMatrix(_position, _position + _forward, _up);
                 }
                 break;
             case RenderCameraType::Motor:

@@ -203,9 +203,14 @@ namespace MoYu
                 {
                     glfwSetInputMode(
                         g_editor_global_context.m_window_system->getWindow(), GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-                    g_editor_global_context.m_scene_manager->getEditorCamera()->rotate(
-                        MFloat2(m_mouse_y - ypos, m_mouse_x - xpos) * angularVelocity);
+                    
+                    float xoffset = xpos - m_mouse_x;
+                    float yoffset = ypos - m_mouse_y; // reversed since y-coordinates range from bottom to top
+                    xoffset *= angularVelocity;
+                    yoffset *= angularVelocity;
 
+                    auto _camera = g_editor_global_context.m_scene_manager->getEditorCamera();
+                    _camera->rotate(MFloat2(xoffset, yoffset));
                 }
                 else if (g_editor_global_context.m_window_system->isMouseButtonDown(GLFW_MOUSE_BUTTON_LEFT))
                 {

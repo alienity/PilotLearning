@@ -1,6 +1,7 @@
 #pragma once
 
-#include <spdlog/spdlog.h>
+#include "spdlog/spdlog.h"
+#include "fmt/core.h"
 
 #include <cstdint>
 #include <stdexcept>
