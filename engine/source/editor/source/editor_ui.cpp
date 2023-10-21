@@ -1049,7 +1049,9 @@ namespace MoYu
                                                                   DefaultMeshType::Convexmesh,
                                                                   DefaultMeshType::Cube,
                                                                   DefaultMeshType::Cylinder,
-                                                                  DefaultMeshType::Sphere};
+                                                                  DefaultMeshType::Sphere,
+                                                                  DefaultMeshType::Triangle,
+                                                                  DefaultMeshType::Square};
 
                     for (int i = 0; i < IM_ARRAYSIZE(param_types); i++)
                     {

@@ -23,6 +23,8 @@ namespace MoYu
     MeshComponentRes _cube_mesh       = {false, "asset/objects/basic/cube.obj", ""};
     MeshComponentRes _cylinder_mesh   = {false, "asset/objects/basic/cylinder.obj", ""};
     MeshComponentRes _sphere_mesh     = {false, "asset/objects/basic/sphere.obj", ""};
+    MeshComponentRes _triangle_mesh   = {false, "asset/objects/basic/triangle.obj", ""};
+    MeshComponentRes _square_mesh     = {false, "asset/objects/basic/square.obj", ""};
 
     MaterialComponentRes _pbr_mat = {"asset/objects/environment/_material/temp.material.json", false, {}};
 
@@ -32,6 +34,8 @@ namespace MoYu
     MeshRendererComponentRes _cube_mesh_mat       = {_cube_mesh, _pbr_mat};
     MeshRendererComponentRes _cylinder_mesh_mat   = {_cylinder_mesh, _pbr_mat};
     MeshRendererComponentRes _sphere_mesh_mat     = {_sphere_mesh, _pbr_mat};
+    MeshRendererComponentRes _triangle_mesh_mat   = {_triangle_mesh, _pbr_mat};
+    MeshRendererComponentRes _square_mesh_mat     = {_square_mesh, _pbr_mat};
 
     std::string DefaultMeshTypeToName(DefaultMeshType type)
     {
@@ -47,6 +51,10 @@ namespace MoYu
             return "Cylinder";
         else if (type == MoYu::Sphere)
             return "Sphere";
+        else if (type == MoYu::Triangle)
+            return "Triangle";
+        else if (type == MoYu::Square)
+            return "Square";
         else
             return "Capsule";
     }
@@ -65,6 +73,10 @@ namespace MoYu
             return _cylinder_mesh_mat;
         else if (type == MoYu::Sphere)
             return _sphere_mesh_mat;
+        else if (type == MoYu::Triangle)
+            return _triangle_mesh_mat;
+        else if (type == MoYu::Square)
+            return _square_mesh_mat;
         else
             return _capsule_mesh_mat;
     }

@@ -27,5 +27,24 @@ namespace MoYu
 
     }
 
+    namespace Geometry
+    {
+
+        struct TriangleMesh : BasicMesh
+        {
+            TriangleMesh(float width);
+
+            static BasicMesh ToBasicMesh(float width = 1.0f);
+        };
+
+        struct SquareMesh : BasicMesh
+        {
+            SquareMesh(float width);
+
+            static BasicMesh ToBasicMesh(float width = 1.0f);
+        };
+
+    } // namespace Geometry
+
 }
 #endif

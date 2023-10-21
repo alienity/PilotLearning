@@ -316,6 +316,18 @@ namespace MoYu
                     ret.m_static_mesh_data = MoYu::Geometry::ToStaticMesh(_basicMesh);
                     ret.m_axis_aligned_box = MoYu::Geometry::ToAxisAlignedBox(_basicMesh);
                 }
+                else if (mesh_file.find("triangle") != std::string::npos)
+                {
+                    MoYu::Geometry::BasicMesh _basicMesh = MoYu::Geometry::TriangleMesh::ToBasicMesh();
+                    ret.m_static_mesh_data = MoYu::Geometry::ToStaticMesh(_basicMesh);
+                    ret.m_axis_aligned_box = MoYu::Geometry::ToAxisAlignedBox(_basicMesh);
+                }
+                else if (mesh_file.find("square") != std::string::npos)
+                {
+                    MoYu::Geometry::BasicMesh _basicMesh = MoYu::Geometry::SquareMesh::ToBasicMesh();
+                    ret.m_static_mesh_data = MoYu::Geometry::ToStaticMesh(_basicMesh);
+                    ret.m_axis_aligned_box = MoYu::Geometry::ToAxisAlignedBox(_basicMesh);
+                }
                 else
                 {
                     MoYu::AxisAlignedBox bounding_box;

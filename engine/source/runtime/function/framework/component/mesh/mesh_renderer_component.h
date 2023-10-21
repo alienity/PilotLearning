@@ -17,7 +17,9 @@ namespace MoYu
         Convexmesh,
         Cube,
         Cylinder,
-        Sphere
+        Sphere,
+        Triangle,
+        Square,
     };
 
     std::string              DefaultMeshTypeToName(DefaultMeshType type);
