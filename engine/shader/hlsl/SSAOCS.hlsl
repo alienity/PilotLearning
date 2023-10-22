@@ -6,6 +6,7 @@ cbuffer RootConstants : register(b0, space0)
     uint normalIndex;
     uint depthIndex;
     uint ssaoIndex;
+    uint _upOffset;
 };
 ConstantBuffer<FrameUniforms> g_FrameUniform : register(b1, space0);
 
@@ -17,13 +18,16 @@ float toLinearZ(float fz, float m22, float m23)
     return -m23/(fz+m22);
 }
 
+/*
+// 我的法线算的有问题
 // https://gamedev.stackexchange.com/questions/32681/random-number-hlsl
 // https://learnopengl.com/Advanced-Lighting/SSAO
-float ssao(SSAOInput ssaoInput, float2 uv, uint2 screenSize)
+float3 ssao(SSAOInput ssaoInput, float2 uv, uint2 screenSize)
 {
     // Parameters used in coordinate conversion
     float4x4 projMatInv = ssaoInput.frameUniforms.cameraUniform.viewFromClipMatrix;
     float4x4 projMatrix = ssaoInput.frameUniforms.cameraUniform.clipFromViewMatrix;
+    // float3x3 normalMat = transpose((float3x3)ssaoInput.frameUniforms.cameraUniform.worldFromViewMatrix);
     float3x3 normalMat = transpose((float3x3)ssaoInput.frameUniforms.cameraUniform.worldFromViewMatrix);
 
     int alphaNumber = 8;
@@ -33,47 +37,112 @@ float ssao(SSAOInput ssaoInput, float2 uv, uint2 screenSize)
     float _Attenuation = 0.2f;
 
     float raw_depth_o = ssaoInput.depthTex.Sample(ssaoInput.defaultSampler, uv).r;
-    float4 pos_ss = float4(uv.xy*2-1, raw_depth_o, 1.0f);
+    float4 pos_ss = float4(uv.x*2-1, uv.y*2-1, raw_depth_o, 1.0f);
     float4 _pos_view = mul(projMatInv, pos_ss);
     float3 pos_view = _pos_view.xyz / _pos_view.w;
-
     float3 norm_world = ssaoInput.worldNormalMap.Sample(ssaoInput.defaultSampler, uv).rgb * 2 - 1;
     float3 norm_view = mul(normalMat, norm_world);
 
-    float3 tangent_view = float3(1,0,0);
-    float3 bitangent_view = float3(0,1,0);
-    const float3 up_view = float3(0,0,1);
-    if(dot(norm_view, up_view) > FLT_MIN)
+    norm_view = normalize(cross(ddy(pos_view), ddx(pos_view)));
+
+    float3 pos_view_new = pos_view + norm_view * 0.2f;
+    float4 _pos_ss_new = mul(projMatrix, float4(pos_view_new, 1.0f));
+    float3 pos_ss_new = _pos_ss_new.xyz / _pos_ss_new.w;
+
+    float2 uv_new = float2(pos_ss_new.x, pos_ss_new.y)*0.5+0.5;
+    float raw_depth_new = ssaoInput.depthTex.Sample(ssaoInput.defaultSampler, uv_new).r;
+
+    if(_upOffset == 1)
     {
-        tangent_view = normalize(cross(up_view, norm_view));
-        bitangent_view = cross(norm_view, tangent_view);
+        return norm_world;
     }
-    float3x3 tbn_view = float3x3(tangent_view, bitangent_view, norm_view);
-
-    float occlusionAmount = 0;
-    for(int i = 0; i < betaNumber; i++) {
-        for(int j = 0; j < alphaNumber; j++) {
-            float alpha = 0.5f * F_PI * float(j) / alphaNumber;
-            // float alpha = F_PI * float(j) / alphaNumber;
-            float beta = 2 * F_PI * float(i) / betaNumber;
-            float3 dir = float3(sin(alpha)*sin(beta), sin(alpha)*cos(beta), cos(alpha));
-            float3 sampleDir = normalize(mul(tbn_view, dir)) * _Radius;
-            float3 pos_view_new = pos_view + sampleDir;
-            float4 _pos_ss_new = mul(projMatrix, float4(pos_view_new, 1.0f));
-            float3 pos_ss_new = _pos_ss_new.xyz / _pos_ss_new.w;
-
-            float2 uv_new = pos_ss_new.xy*0.5+0.5;
-            float raw_depth_new = ssaoInput.depthTex.Sample(ssaoInput.defaultSampler, uv_new).r;
-
-            float diff = step(raw_depth_new, pos_ss_new.z);
-            occlusionAmount += diff;
-        }
+    else if(_upOffset == 2)
+    {
+        return norm_view;
     }
+    else if(_upOffset == 3)
+    {
+        return pos_view;
+    }
+    else if(_upOffset == 4)
+    {
+        return pos_view_new;
+    }
+    else if(_upOffset == 5)
+    {
+        return pos_ss.xyz;
+        // return float3(pos_ss.xy*0.5+0.5, pos_ss.z);
+    }
+    else if(_upOffset == 6)
+    {
+        return pos_ss_new.xyz;
+        // return float3(pos_ss_new.xy*0.5+0.5, pos_ss_new.z);
+    }
+    else if(_upOffset == 7)
+    {
+        return float3(pos_ss_new.z, 0, 0);
+    }
+    else if(_upOffset == 8)
+    {
+        return float3(raw_depth_new, 0, 0);
+    }
+    else if(_upOffset == 9)
+    {
+        return float3(uv, 0);
+    }
+    else if(_upOffset == 10 )
+    {
+        return float3(uv_new.xy, 0);
+    }
+    else
+    {
+        float diff = step(raw_depth_new, pos_ss_new.z);
+        return float3(diff, 0, 0);
+    }
+    // 感觉是viewmatrix看的方向反了，本来应该朝向电脑的view方向，却是朝向自己的，像是z反了
 
-    return occlusionAmount / (betaNumber * alphaNumber);
-    
+
+
+
+
+
+
+
+    // 
+    // float3 tangent_view = float3(1,0,0);
+    // float3 bitangent_view = float3(0,1,0);
+    // const float3 up_view = float3(0,0,1);
+    // if(dot(norm_view, up_view) > FLT_MIN)
+    // {
+    //     tangent_view = normalize(cross(up_view, norm_view));
+    //     bitangent_view = cross(norm_view, tangent_view);
+    // }
+    // float3x3 tbn_view = float3x3(tangent_view, bitangent_view, norm_view);
+
+    // float occlusionAmount = 0;
+    // for(int i = 0; i < betaNumber; i++) {
+    //     for(int j = 0; j < alphaNumber; j++) {
+    //         float alpha = 0.5f * F_PI * float(j) / alphaNumber;
+    //         // float alpha = F_PI * float(j) / alphaNumber;
+    //         float beta = 2 * F_PI * float(i) / betaNumber;
+    //         float3 dir = float3(sin(alpha)*sin(beta), sin(alpha)*cos(beta), cos(alpha));
+    //         float3 sampleDir = normalize(mul(tbn_view, dir)) * _Radius;
+    //         float3 pos_view_new = pos_view + sampleDir;
+    //         float4 _pos_ss_new = mul(projMatrix, float4(pos_view_new, 1.0f));
+    //         float3 pos_ss_new = _pos_ss_new.xyz / _pos_ss_new.w;
+
+    //         float2 uv_new = pos_ss_new.xy*0.5+0.5;
+    //         float raw_depth_new = ssaoInput.depthTex.Sample(ssaoInput.defaultSampler, uv_new).r;
+
+    //         float diff = step(raw_depth_new, pos_ss_new.z);
+    //         occlusionAmount += diff;
+    //     }
+    // }
+
+    // return occlusionAmount / (betaNumber * alphaNumber);
+    // 
 }
-
+*/
 
 [numthreads( 8, 8, 1 )]
 void CSMain( uint3 DTid : SV_DispatchThreadID )
@@ -99,8 +168,8 @@ void CSMain( uint3 DTid : SV_DispatchThreadID )
     // float3 ao__ = ssao(_input, uv, uint2(width, height));
     // ssaoTexture[DTid.xy] = float4(ao__, 1.0f);
 
-    float ao = ssao(_input, uv, uint2(width, height));
-    // ao = 1 - ao;
+    float ao = CustomSSAO(_input, uv, uint2(width, height));
+    ao = 1 - ao;
     float4 outAO = float4(ao, 0, 0, 1.0f);
     ssaoTexture[DTid.xy] = outAO;
     // ssaoTexture[DTid.xy] = float4(uv, 0, 1);

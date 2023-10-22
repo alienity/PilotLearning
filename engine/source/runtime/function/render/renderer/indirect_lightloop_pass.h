@@ -27,6 +27,7 @@ namespace MoYu
             RHI::RgResourceHandle worldTangentHandle;
             RHI::RgResourceHandle materialNormalHandle;
             RHI::RgResourceHandle emissiveHandle;
+            RHI::RgResourceHandle ambientOcclusionHandle;
             RHI::RgResourceHandle metallic_Roughness_Reflectance_AO_Handle;
             RHI::RgResourceHandle clearCoat_ClearCoatRoughness_Anisotropy_Handle;
             RHI::RgResourceHandle gbufferDepthHandle;

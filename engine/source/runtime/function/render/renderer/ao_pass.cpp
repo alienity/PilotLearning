@@ -2,6 +2,8 @@
 #include "runtime/resource/config_manager/config_manager.h"
 #include "runtime/function/render/rhi/rhi_core.h"
 
+#include "runtime/function/render/renderer/renderer_config.h"
+
 #include <cassert>
 
 namespace MoYu
@@ -20,7 +22,7 @@ namespace MoYu
         {
             RHI::RootSignatureDesc rootSigDesc =
                 RHI::RootSignatureDesc()
-                    .Add32BitConstants<0, 0>(3)
+                    .Add32BitConstants<0, 0>(4)
                     .AddConstantBufferView<1, 0>()
                     .AddStaticSampler<10, 0>(D3D12_FILTER::D3D12_FILTER_ANISOTROPIC,
                                              D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_WRAP,
@@ -49,6 +51,7 @@ namespace MoYu
 
             pSSAOPSO = std::make_shared<RHI::D3D12PipelineState>(m_Device, L"LightLoopPSO", psoDesc);
         }
+
     }
 
 
@@ -90,12 +93,6 @@ namespace MoYu
 
     void AOPass::destroy()
     {
-
-
-
-
-
-
 
     }
 

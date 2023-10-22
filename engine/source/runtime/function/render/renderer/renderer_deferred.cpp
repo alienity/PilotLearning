@@ -5,7 +5,6 @@
 #include "runtime/resource/config_manager/config_manager.h"
 
 #include "runtime/resource/basic_geometry/mesh_tools.h"
-#include "runtime/resource/basic_geometry/triangle_mesh.h"
 #include "runtime/resource/basic_geometry/icosphere_mesh.h"
 #include "runtime/resource/basic_geometry/cube_mesh.h"
 
@@ -308,6 +307,7 @@ namespace MoYu
         mLightLoopIntput.worldTangentHandle   = mGBufferOutput.worldTangentHandle;
         mLightLoopIntput.materialNormalHandle = mGBufferOutput.matNormalHandle;
         mLightLoopIntput.emissiveHandle       = mGBufferOutput.emissiveHandle;
+        mLightLoopIntput.ambientOcclusionHandle = mAOOutput.outputAOHandle;
         mLightLoopIntput.metallic_Roughness_Reflectance_AO_Handle = mGBufferOutput.metallic_Roughness_Reflectance_AO_Handle;
         mLightLoopIntput.clearCoat_ClearCoatRoughness_Anisotropy_Handle = mGBufferOutput.clearCoat_ClearCoatRoughness_Anisotropy_Handle;
         mLightLoopIntput.gbufferDepthHandle = mGBufferOutput.depthHandle;
@@ -385,9 +385,9 @@ namespace MoYu
         DisplayPass::DisplayInputParameters  mDisplayIntputParams;
         DisplayPass::DisplayOutputParameters mDisplayOutputParams;
 
-        // mDisplayIntputParams.inputRTColorHandle   = mPostprocessOutputParams.outputColorHandle;
-         //mDisplayIntputParams.inputRTColorHandle   = mGBufferOutput.albedoHandle;
-        mDisplayIntputParams.inputRTColorHandle      = mAOOutput.outputAOHandle;
+        mDisplayIntputParams.inputRTColorHandle   = mPostprocessOutputParams.outputColorHandle;
+        //mDisplayIntputParams.inputRTColorHandle   = mGBufferOutput.albedoHandle;
+        //mDisplayIntputParams.inputRTColorHandle      = mAOOutput.outputAOHandle;
         mDisplayOutputParams.renderTargetColorHandle = renderTargetColorHandle;
         //mDisplayOutputParams.renderTargetColorHandle = backBufColorHandle;
         mDisplayPass->update(graph, mDisplayIntputParams, mDisplayOutputParams);

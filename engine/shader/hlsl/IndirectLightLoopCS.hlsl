@@ -11,6 +11,7 @@ cbuffer RootConstants : register(b0, space0)
     uint worldTangentIndex;
     uint materialNormalIndex;
     uint emissiveIndex;
+    uint ambientOcclusionIndex;
     uint metallic_Roughness_Reflectance_AOIndex;
     uint clearCoat_ClearCoatRoughness_AnisotropyIndex;
     uint depthIndex;
@@ -29,6 +30,7 @@ void CSMain( uint3 DTid : SV_DispatchThreadID )
     Texture2D<float4> worldTangentTexture = ResourceDescriptorHeap[worldTangentIndex];
     Texture2D<float4> materialNormalTexture = ResourceDescriptorHeap[materialNormalIndex];
     Texture2D<float4> emissiveTexture = ResourceDescriptorHeap[emissiveIndex];
+    Texture2D<float4> ambientCollusionTexture = ResourceDescriptorHeap[ambientOcclusionIndex];
     Texture2D<float4> metallic_Roughness_Reflectance_AO_Texture = ResourceDescriptorHeap[metallic_Roughness_Reflectance_AOIndex];
     Texture2D<float4> clearCoat_ClearCoatRoughness_Anisotropy_Texture = ResourceDescriptorHeap[clearCoat_ClearCoatRoughness_AnisotropyIndex];
     Texture2D<float4> depthTexture = ResourceDescriptorHeap[depthIndex];
@@ -49,20 +51,21 @@ void CSMain( uint3 DTid : SV_DispatchThreadID )
         materialInputs.roughness = mrra.g;
         materialInputs.reflectance = mrra.b;
         materialInputs.ambientOcclusion = mrra.a;
+        materialInputs.ambientOcclusion *= ambientCollusionTexture.Sample(defaultSampler, uv).r;
         materialInputs.emissive = emissiveTexture.Sample(defaultSampler, uv).rgba;
         float3 cra = clearCoat_ClearCoatRoughness_Anisotropy_Texture.Sample(defaultSampler, uv).rgb;
         materialInputs.clearCoat = cra.r;
         materialInputs.clearCoatRoughness = cra.g;
         materialInputs.anisotropy = cra.b;
-        materialInputs.normal = materialNormalTexture[DTid.xy].rgb * 2.0f - 1.0f;
+        materialInputs.normal = materialNormalTexture.Sample(defaultSampler, uv).rgb * 2.0f - 1.0f;
     }
 
     CommonShadingStruct commonShadingStruct;
     // computeShadingParams(g_FrameUniform, varingStruct, commonShadingStruct);
     {
         // http://www.mikktspace.com/
-        float3 n = worldNormalTexture[DTid.xy].rgb * 2.0f - 1.0f;
-        float4 vertex_worldTangent = worldTangentTexture[DTid.xy].xyzw * 2.0f - 1.0f;
+        float3 n = worldNormalTexture.Sample(defaultSampler, uv).rgb * 2.0f - 1.0f;
+        float4 vertex_worldTangent = worldTangentTexture.Sample(defaultSampler, uv).xyzw * 2.0f - 1.0f;
         float3 t = vertex_worldTangent.xyz;
         float3 b = cross(n, t) * vertex_worldTangent.w;
 
@@ -72,8 +75,7 @@ void CSMain( uint3 DTid : SV_DispatchThreadID )
         commonShadingStruct.shading_tangentToWorld = transpose(float3x3(t, b, n));
 
         float depth = depthTexture.Sample(defaultSampler, uv).r;
-        float3 clipPos = float3(uv.x*2.0f-1.0f, uv.y*2.0f-1.0f, depth);
-        clipPos.y *= -1;
+        float3 clipPos = float3(uv.x*2.0f-1.0f, (1-uv.y)*2.0f-1.0f, depth);
         float4 vertexPos = mul(g_FrameUniform.cameraUniform.worldFromClipMatrix, float4(clipPos, 1.0f));
         commonShadingStruct.shading_position.xyz = vertexPos.xyz / vertexPos.w;
 

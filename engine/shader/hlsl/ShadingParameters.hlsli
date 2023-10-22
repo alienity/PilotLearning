@@ -861,16 +861,23 @@ void evaluatePunctualLights(
 void evaluateIBL(
     const FrameUniforms frameUniforms, 
     const CommonShadingStruct params,
+    const MaterialInputs material,
     const PixelParams pixel,
     const SamplerStruct samplerStruct, 
     inout float3 color)
 {
+    // ambient occlusion
+    float ssao = material.ambientOcclusion;
+    float diffuseAO = ssao;
+    float specularAO = ssao;
+
     // specular layer
     float3 Fr = float3(0.0f, 0.0f, 0.0f);
 
     float3 E = specularDFG(pixel);
     float3 r = getReflectedVector(params, pixel);
     Fr = E * prefilteredRadiance(frameUniforms, samplerStruct, r, pixel.perceptualRoughness);
+    Fr *= specularAO;
 
     // diffuse layer
     float3 _diffuseNormal = params.shading_normal;
@@ -878,6 +885,7 @@ void evaluateIBL(
 
     float diffuseBRDF = 1.0f;
     float3 Fd = pixel.diffuseColor * _diffuseIrradiance * (1.0 - E) * diffuseBRDF;
+    Fd *= diffuseAO;
 
     // Combine all terms
     // Note: iblLuminance is already premultiplied by the exposure
@@ -908,7 +916,7 @@ float4 evaluateLights(const FrameUniforms frameUniforms,
 
     // We always evaluate the IBL as not having one is going to be uncommon,
     // it also saves 1 shader variant
-    evaluateIBL(frameUniforms, commonShadingStruct, pixel, samplerStruct, color);
+    evaluateIBL(frameUniforms, commonShadingStruct, materialInputs, pixel, samplerStruct, color);
 
     evaluateDirectionalLight(frameUniforms, commonShadingStruct, pixel, samplerStruct, color);
 
