@@ -6,7 +6,6 @@ cbuffer RootConstants : register(b0, space0)
     uint normalIndex;
     uint depthIndex;
     uint ssaoIndex;
-    uint _upOffset;
 };
 ConstantBuffer<FrameUniforms> g_FrameUniform : register(b1, space0);
 

@@ -60,6 +60,9 @@ namespace MoYu
         std::shared_ptr<RHI::D3D12RootSignature> pSSAOSignature;
         std::shared_ptr<RHI::D3D12PipelineState> pSSAOPSO;
 
+        Shader HBAOCS;
+        std::shared_ptr<RHI::D3D12RootSignature> pHBAOSignature;
+        std::shared_ptr<RHI::D3D12PipelineState> pHBAOPSO;
 	};
 }
 

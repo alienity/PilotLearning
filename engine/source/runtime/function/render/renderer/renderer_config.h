@@ -112,7 +112,7 @@ namespace EngineConfig
             HBAO
         };
 
-        AOMode _aoMode = AOMode::SSAO;
+        AOMode _aoMode = AOMode::HBAO;
     };
 
     extern AOConfig g_AOConfig;
