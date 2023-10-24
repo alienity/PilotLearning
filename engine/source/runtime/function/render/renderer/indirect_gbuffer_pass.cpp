@@ -93,6 +93,7 @@ namespace MoYu
 
             RHIDepthStencilState DepthStencilState;
             DepthStencilState.DepthEnable = true;
+            DepthStencilState.DepthWrite  = false;
             DepthStencilState.DepthFunc   = RHI_COMPARISON_FUNC::GreaterEqual;
 
             RHIRenderTargetState RenderTargetState;
@@ -139,12 +140,15 @@ namespace MoYu
 
     void IndirectGBufferPass::update(RHI::RenderGraph& graph, DrawInputParameters& passInput, DrawOutputParameters& passOutput)
     {
-        bool needClearRenderTarget = initializeRenderTarget(graph, &passOutput);
-
         RHI::RgResourceHandle meshBufferHandle     = passInput.meshBufferHandle;
         RHI::RgResourceHandle materialBufferHandle = passInput.materialBufferHandle;
         RHI::RgResourceHandle perframeBufferHandle = passInput.perframeBufferHandle;
         RHI::RgResourceHandle opaqueDrawHandle     = passInput.opaqueDrawHandle;
+        RHI::RgResourceHandle inputDepthHandle          = passInput.depthHandle;
+
+        passOutput.depthHandle = inputDepthHandle;
+
+        bool needClearRenderTarget = initializeRenderTarget(graph, &passOutput);
 
         RHI::RenderPass& drawpass = graph.AddRenderPass("IndirectGBufferPass");
 
@@ -153,6 +157,7 @@ namespace MoYu
         drawpass.Read(passInput.materialBufferHandle, false, RHIResourceState::RHI_RESOURCE_STATE_ALL_SHADER_RESOURCE);
         drawpass.Read(passInput.perframeBufferHandle, false, RHIResourceState::RHI_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
         drawpass.Read(passInput.opaqueDrawHandle, false, RHIResourceState::RHI_RESOURCE_STATE_INDIRECT_ARGUMENT, RHIResourceState::RHI_RESOURCE_STATE_INDIRECT_ARGUMENT);
+        drawpass.Read(inputDepthHandle, true);
         drawpass.Write(passOutput.albedoHandle, false, RHIResourceState::RHI_RESOURCE_STATE_RENDER_TARGET);
         drawpass.Write(passOutput.depthHandle, false, RHIResourceState::RHI_RESOURCE_STATE_DEPTH_WRITE);
         drawpass.Write(passOutput.worldNormalHandle, false, RHIResourceState::RHI_RESOURCE_STATE_RENDER_TARGET);
@@ -198,7 +203,8 @@ namespace MoYu
                                                                  clearCoat_ClearCoatRoughness_Anisotropy_RTView};
 
             graphicContext->SetRenderTargets(_rtviews, depthStencilView);
-            graphicContext->ClearRenderTarget(_rtviews, depthStencilView);
+            //graphicContext->ClearRenderTarget(_rtviews, depthStencilView);
+            graphicContext->ClearRenderTarget(_rtviews, NULL);
 
             graphicContext->SetRootSignature(pIndirectGBufferSignature.get());
             graphicContext->SetPipelineState(pIndirectGBufferPSO.get());

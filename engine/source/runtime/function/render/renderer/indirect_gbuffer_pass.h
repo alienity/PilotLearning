@@ -26,6 +26,7 @@ namespace MoYu
             RHI::RgResourceHandle meshBufferHandle;
             RHI::RgResourceHandle materialBufferHandle;
             RHI::RgResourceHandle opaqueDrawHandle;
+            RHI::RgResourceHandle depthHandle;
         };
 
         struct DrawOutputParameters : public PassOutput

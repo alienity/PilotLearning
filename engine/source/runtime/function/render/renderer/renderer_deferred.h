@@ -13,6 +13,7 @@
 #include "runtime/function/render/renderer/ao_pass.h"
 #include "runtime/function/render/renderer/postprocess_passes.h"
 #include "runtime/function/render/renderer/indirect_display_pass.h"
+#include "runtime/function/render/renderer/indirect_depth_prepass.h"
 #include "runtime/function/render/renderer/indirect_gbuffer_pass.h"
 #include "runtime/function/render/renderer/indirect_lightloop_pass.h"
 
@@ -52,6 +53,7 @@ namespace MoYu
         std::shared_ptr<UIPass>                      mUIPass;
         std::shared_ptr<IndirectCullPass>            mIndirectCullPass;
         std::shared_ptr<IndirectShadowPass>          mIndirectShadowPass;
+        std::shared_ptr<IndirectDepthPrePass>        mIndirectDepthPrePass;
         std::shared_ptr<IndirectGBufferPass>         mIndirectGBufferPass;
         std::shared_ptr<IndirectLightLoopPass>       mIndirectLightLoopPass;
         std::shared_ptr<IndirectDrawPass>            mIndirectOpaqueDrawPass;
