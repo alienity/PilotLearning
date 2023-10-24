@@ -86,8 +86,10 @@ float CustomHBAO(HBAOInput hbaoInput, float2 uv, uint2 screenSize)
     // Parameters used in coordinate conversion
     float4x4 projMatInv = hbaoInput.frameUniforms.cameraUniform.viewFromClipMatrix;
     float4x4 projMatrix = hbaoInput.frameUniforms.cameraUniform.clipFromViewMatrix;
+
+    // float4x4 viewMatInv = hbaoInput.frameUniforms.cameraUniform.worldFromViewMatrix;
     
-    // float3x3 normalMat = transpose((float3x3)hbaoInput.frameUniforms.cameraUniform.worldFromViewMatrix);
+    float3x3 normalMat = transpose((float3x3)hbaoInput.frameUniforms.cameraUniform.worldFromViewMatrix);
 
     float raw_depth_o = hbaoInput.depthTex.Sample(hbaoInput.defaultSampler, uv).r;
     float4 pos_ss = float4(uv.xy*2-1, raw_depth_o, 1.0f);
@@ -96,7 +98,10 @@ float CustomHBAO(HBAOInput hbaoInput, float2 uv, uint2 screenSize)
     float3 vpos_o = pos_view.xyz / pos_view.w;
     float depth_o = vpos_o.z;
 
-    float3 norm_o = -normalize(cross(ddy(vpos_o), ddx(vpos_o)));
+    // float3 norm_o = normalize(cross(ddx(vpos_o), ddy(vpos_o)));
+    float3 norm_o = hbaoInput.worldNormalMap.SampleLevel(hbaoInput.defaultSampler, uv, 0).rgb * 2 - 1;
+    norm_o = mul(normalMat, norm_o);
+    norm_o.y = -norm_o.y;
 
     // This was added to avoid a NVIDIA driver issue.
     float randAddon = uv.x * 1e-10;
@@ -130,6 +135,7 @@ float CustomHBAO(HBAOInput hbaoInput, float2 uv, uint2 screenSize)
             float4 pos_ss_s1 = float4(SnappedUV.xy*2.0f-1.0f, depth_snapped, 1.0f);
             float4 pos_view_s1 = mul(projMatInv, pos_ss_s1);
             float3 S = pos_view_s1.xyz/pos_view_s1.w;
+            S.z -= 0.00001f;
             RayPixels += StepSizePixels;
 
             AO += ComputeAO(vpos_o, norm_o, S);
