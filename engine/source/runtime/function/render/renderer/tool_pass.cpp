@@ -173,7 +173,7 @@ namespace MoYu
             p_SH = RHI::D3D12Buffer::Create(m_Device->GetLinkedDevice(),
                                             RHI::RHIBufferRandomReadWrite | RHI::RHIBufferTargetStructured,
                                             1,
-                                            sizeof(HLSL::float4) * 7,
+                                            sizeof(glm::float4) * 7,
                                             L"SphericalHormonics");
         }
 
@@ -504,7 +504,7 @@ namespace MoYu
             stagingResource->Unmap(0, nullptr);
         }
 
-        void ReadBuffer2SH(RHI::D3D12Device* pDevice, RHI::D3D12Buffer* pBuffer, HLSL::float4 pSH[7])
+        void ReadBuffer2SH(RHI::D3D12Device* pDevice, RHI::D3D12Buffer* pBuffer, glm::float4 pSH[7])
         {
             std::shared_ptr<RHI::D3D12CommandContext> context =
                 RHI::D3D12CommandContext::Begin(pDevice->GetLinkedDevice(), RHI::RHID3D12CommandQueueType::Direct);
@@ -561,7 +561,7 @@ namespace MoYu
 
             for (size_t i = 0; i < 7; i++)
             {
-                EngineConfig::g_SHConfig._GSH[i] = MFloat4(pSH[i].x, pSH[i].y, pSH[i].z, pSH[i].w);
+                EngineConfig::g_SHConfig._GSH[i] = glm::float4(pSH[i].x, pSH[i].y, pSH[i].z, pSH[i].w);
             }
 
             stagingResource->Unmap(0, nullptr);

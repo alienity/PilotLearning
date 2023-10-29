@@ -335,14 +335,13 @@ namespace RHI
 
     D3D12Buffer::D3D12Buffer(D3D12LinkedDevice*   Parent,
                              UINT64               SizeInBytes,
-                             UINT                 Stride,
+                             UINT64               Stride,
                              D3D12_HEAP_TYPE      HeapType,
                              D3D12_RESOURCE_FLAGS ResourceFlags) :
         D3D12Resource(Parent,
                       CD3DX12_HEAP_PROPERTIES(HeapType, Parent->GetNodeMask(), Parent->GetNodeMask()),
                       CD3DX12_RESOURCE_DESC::Buffer(SizeInBytes, ResourceFlags),
-                      ResourceStateDeterminer(CD3DX12_RESOURCE_DESC::Buffer(SizeInBytes, ResourceFlags), HeapType)
-                          .InferInitialState(),
+                      ResourceStateDeterminer(CD3DX12_RESOURCE_DESC::Buffer(SizeInBytes, ResourceFlags), HeapType).InferInitialState(),
                       std::nullopt),
         m_HeapType(HeapType), m_SizeInBytes(SizeInBytes), m_Stride(Stride),
         m_GpuVirtualAddress(m_pResource->GetGPUVirtualAddress()),
@@ -355,7 +354,7 @@ namespace RHI
 
     D3D12Buffer::D3D12Buffer(D3D12LinkedDevice*    Parent,
                              UINT64                SizeInBytes,
-                             UINT                  Stride,
+                             UINT64                Stride,
                              D3D12_HEAP_TYPE       HeapType,
                              D3D12_RESOURCE_FLAGS  ResourceFlags,
                              D3D12_RESOURCE_STATES InitialResourceState) :

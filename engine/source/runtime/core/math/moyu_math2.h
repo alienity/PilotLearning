@@ -24,13 +24,16 @@
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE 1
 #endif
 
-#include <glm/ext/matrix_clip_space.hpp>
+#include <glm/fwd.hpp>
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
-#include <glm/gtx/matrix_decompose.hpp>
+#include <glm/gtc/matrix_access.hpp>
 #include <glm/gtx/quaternion.hpp>
 #include <glm/gtx/euler_angles.hpp>
-#include <glm/fwd.hpp>
+#include <glm/gtx/compatibility.hpp>
+#include <glm/gtx/matrix_decompose.hpp>
+#include <glm/gtx/matrix_interpolation.hpp>
+#include <glm/ext/matrix_clip_space.hpp>
 
 #define CMP(x, y) (fabsf(x - y) < FLT_EPSILON * fmaxf(1.0f, fmaxf(fabsf(x), fabsf(y))))
 
@@ -174,60 +177,40 @@ namespace MoYu
 
     constexpr float factorial(size_t n, size_t d = 1);
 
-    typedef glm::uvec1 MUint;
-    typedef glm::uvec2 MUint2;
-    typedef glm::uvec3 MUint3;
-    typedef glm::uvec4 MUint4;
-
-    typedef glm::ivec1 MInt;
-    typedef glm::ivec2 MInt2;
-    typedef glm::ivec3 MInt3;
-    typedef glm::ivec4 MInt4;
-
-    typedef glm::fvec1 MFloat;
-    typedef glm::fvec2 MFloat2;
-    typedef glm::fvec3 MFloat3;
-    typedef glm::fvec4 MFloat4;
-
-    typedef glm::mat3x3 MMatrix3x3;
-    typedef glm::mat4x4 MMatrix4x4;
-
-    typedef glm::quat MQuaternion;
-
     struct Transform;
     struct AxisAlignedBox;
 
     namespace MYFloat2
     {
-        extern MFloat2 Zero;
-        extern MFloat2 One;
-        extern MFloat2 UnitX;
-        extern MFloat2 UnitY;
+        extern glm::float2 Zero;
+        extern glm::float2 One;
+        extern glm::float2 UnitX;
+        extern glm::float2 UnitY;
     }
 
     namespace MYFloat3
     {
-        extern MFloat3 Zero;
-        extern MFloat3 One;
-        extern MFloat3 UnitX;
-        extern MFloat3 UnitY;
-        extern MFloat3 UnitZ;
-        extern MFloat3 Up;
-        extern MFloat3 Down;
-        extern MFloat3 Right;
-        extern MFloat3 Left;
-        extern MFloat3 Forward;
-        extern MFloat3 Backward;
+        extern glm::float3 Zero;
+        extern glm::float3 One;
+        extern glm::float3 UnitX;
+        extern glm::float3 UnitY;
+        extern glm::float3 UnitZ;
+        extern glm::float3 Up;
+        extern glm::float3 Down;
+        extern glm::float3 Right;
+        extern glm::float3 Left;
+        extern glm::float3 Forward;
+        extern glm::float3 Backward;
     }
 
     namespace MYFloat4
     {
-        extern MFloat4 Zero;
-        extern MFloat4 One;
-        extern MFloat4 UnitX;
-        extern MFloat4 UnitY;
-        extern MFloat4 UnitZ;
-        extern MFloat4 UnitW;
+        extern glm::float4 Zero;
+        extern glm::float4 One;
+        extern glm::float4 UnitX;
+        extern glm::float4 UnitY;
+        extern glm::float4 UnitZ;
+        extern glm::float4 UnitW;
     }
 
     namespace MYMatrix3x3
@@ -253,11 +236,11 @@ namespace MoYu
         //// https://en.wikipedia.org/wiki/Euler_angles
         //// https://www.geometrictools.com/Documentation/EulerAngles.pdf
         //// Tait–Bryan angles, extrinsic angles, ZYX in order
-        //MFloat3 toTaitBryanAngles() const;
-        //void    fromTaitBryanAngles(const MFloat3& taitBryanAngles);
+        //glm::float3 toTaitBryanAngles() const;
+        //void    fromTaitBryanAngles(const glm::float3& taitBryanAngles);
 
-        extern MMatrix3x3 Zero;
-        extern MMatrix3x3 Identity;
+        extern glm::float3x3 Zero;
+        extern glm::float3x3 Identity;
     }
 
     namespace MYMatrix4x4
@@ -270,16 +253,16 @@ namespace MoYu
         // 其中 zNearPlane < zFarPlane，且都是正值
         // 输出 canonical view volume 是xy区间是[-1,1]，z的区间是[0,1]
         // 参考 http://www.songho.ca/opengl/gl_projectionmatrix.html
-        MMatrix4x4 createPerspectiveFieldOfView(float fovY, float aspectRatio, float zNearPlane, float zFarPlane);
-        MMatrix4x4 createPerspective(float width, float height, float zNearPlane, float zFarPlane);
-        MMatrix4x4 createPerspectiveOffCenter(float left, float right, float bottom, float top, float zNearPlane, float zFarPlane);
-        MMatrix4x4 createOrthographic(float width, float height, float zNearPlane, float zFarPlane);
-        MMatrix4x4 createOrthographicOffCenter(float left, float right, float bottom, float top, float zNearPlane, float zFarPlane);
+        glm::float4x4 createPerspectiveFieldOfView(float fovY, float aspectRatio, float zNearPlane, float zFarPlane);
+        glm::float4x4 createPerspective(float width, float height, float zNearPlane, float zFarPlane);
+        glm::float4x4 createPerspectiveOffCenter(float left, float right, float bottom, float top, float zNearPlane, float zFarPlane);
+        glm::float4x4 createOrthographic(float width, float height, float zNearPlane, float zFarPlane);
+        glm::float4x4 createOrthographicOffCenter(float left, float right, float bottom, float top, float zNearPlane, float zFarPlane);
 
         // eye是相机位置，gaze是相机向前朝向，up是相机向上朝向
-        MMatrix4x4 createLookAtMatrix(const MFloat3& eye, const MFloat3& center, const MFloat3& up);
-        MMatrix4x4 createViewMatrix(const MFloat3& position, const MQuaternion& orientation);
-        MMatrix4x4 createWorldMatrix(const MFloat3& position, const MQuaternion& orientation, const MFloat3& scale);
+        glm::float4x4 createLookAtMatrix(const glm::float3& eye, const glm::float3& center, const glm::float3& up);
+        glm::float4x4 createViewMatrix(const glm::float3& position, const glm::quat& orientation);
+        glm::float4x4 createWorldMatrix(const glm::float3& position, const glm::quat& orientation, const glm::float3& scale);
 
         /** Building a Matrix4 from orientation / scale / position.
         @remarks
@@ -287,25 +270,25 @@ namespace MoYu
         of orientation axes, scale does not affect size of translation, rotation and scaling are always
         centered on the origin.
         */
-        MMatrix4x4 makeTransform(const MFloat3& position, const MQuaternion& orientation, const MFloat3& scale);
+        glm::float4x4 makeTransform(const glm::float3& position, const glm::quat& orientation, const glm::float3& scale);
 
         /** Building an inverse Matrix4 from orientation / scale / position.
         @remarks
         As makeTransform except it build the inverse given the same data as makeTransform, so
         performing -translation, -rotate, 1/scale in that order.
         */
-        MMatrix4x4 makeInverseTransform(const MFloat3& position, const MQuaternion& orientation, const MFloat3& scale);
+        glm::float4x4 makeInverseTransform(const glm::float3& position, const glm::quat& orientation, const glm::float3& scale);
 
         // Constants
-        extern MMatrix4x4 Zero;
-        extern MMatrix4x4 Identity;
+        extern glm::float4x4 Zero;
+        extern glm::float4x4 Identity;
     }
 
     namespace MYQuaternion
     {
         // https://en.wikipedia.org/wiki/Quaternions_and_spatial_rotation
 
-        extern MQuaternion Identity;
+        extern glm::quat Identity;
     }
 
     INLINE float degreesToRadians(float degrees) { return degrees * f::DEG_TO_RAD; }
@@ -318,9 +301,9 @@ namespace MoYu
     struct Transform
     {
     public:
-        MFloat3     m_position {MYFloat3::Zero};
-        MFloat3     m_scale {MYFloat3::One};
-        MQuaternion m_rotation {MYQuaternion::Identity};
+        glm::float3     m_position {MYFloat3::Zero};
+        glm::float3     m_scale {MYFloat3::One};
+        glm::quat       m_rotation {MYQuaternion::Identity};
 
         // Comparison operators
         bool operator==(const Transform& t) const
@@ -333,11 +316,11 @@ namespace MoYu
         }
 
         Transform() = default;
-        Transform(const MFloat3& position, const MQuaternion& rotation, const MFloat3& scale) :
+        Transform(const glm::float3& position, const glm::quat& rotation, const glm::float3& scale) :
             m_position {position}, m_rotation {rotation}, m_scale {scale}
         {}
 
-        MMatrix4x4 getMatrix() const { return MYMatrix4x4::makeTransform(m_position, m_rotation, m_scale); }
+        glm::float4x4 getMatrix() const { return MYMatrix4x4::makeTransform(m_position, m_rotation, m_scale); }
     };
 
     //---------------------------------------------------------------------------------------------
@@ -346,23 +329,23 @@ namespace MoYu
     {
     public:
         AxisAlignedBox() {}
-        AxisAlignedBox(const MFloat3& center, const MFloat3& half_extent);
+        AxisAlignedBox(const glm::float3& center, const glm::float3& half_extent);
 
         void merge(const AxisAlignedBox& axis_aligned_box);
-        void merge(const MFloat3& new_point);
-        void update(const MFloat3& center, const MFloat3& half_extent);
+        void merge(const glm::float3& new_point);
+        void update(const glm::float3& center, const glm::float3& half_extent);
 
-        const MFloat3& getCenter() const { return m_center; }
-        const MFloat3& getHalfExtent() const { return m_half_extent; }
-        const MFloat3& getMinCorner() const { return m_min_corner; }
-        const MFloat3& getMaxCorner() const { return m_max_corner; }
+        const glm::float3& getCenter() const { return m_center; }
+        const glm::float3& getHalfExtent() const { return m_half_extent; }
+        const glm::float3& getMinCorner() const { return m_min_corner; }
+        const glm::float3& getMaxCorner() const { return m_max_corner; }
 
     private:
-        MFloat3 m_center {MYFloat3::Zero};
-        MFloat3 m_half_extent {MYFloat3::Zero};
+        glm::float3 m_center {MYFloat3::Zero};
+        glm::float3 m_half_extent {MYFloat3::Zero};
 
-        MFloat3 m_min_corner {FLT_MAX, FLT_MAX, FLT_MAX};
-        MFloat3 m_max_corner {-FLT_MAX, -FLT_MAX, -FLT_MAX};
+        glm::float3 m_min_corner {FLT_MAX, FLT_MAX, FLT_MAX};
+        glm::float3 m_max_corner {-FLT_MAX, -FLT_MAX, -FLT_MAX};
     };
 
     struct Color
@@ -373,8 +356,8 @@ namespace MoYu
         Color() = default;
         Color(float r, float g, float b) : r(r), g(g), b(b), a(1) {}
         Color(float r, float g, float b, float a) : r(r), g(g), b(b), a(a) {}
-        Color(MFloat3 color) : r(color[0]), g(color[1]), b(color[2]), a(1) {}
-        Color(MFloat4 color) : r(color[0]), g(color[1]), b(color[2]), a(color[2]) {}
+        Color(glm::float3 color) : r(color[0]), g(color[1]), b(color[2]), a(1) {}
+        Color(glm::float4 color) : r(color[0]), g(color[1]), b(color[2]), a(color[2]) {}
 
         float operator[](size_t i) const
         {
@@ -421,8 +404,8 @@ namespace MoYu
         uint32_t R11G11B10F(bool RoundToEven = false) const;
         uint32_t R9G9B9E5() const;
 
-        MFloat4 toVector4() const { return MFloat4(r, g, b, a); }
-        MFloat3 toVector3() const { return MFloat3(r, g, b); }
+        glm::float4 toVector4() const { return glm::float4(r, g, b, a); }
+        glm::float3 toVector3() const { return glm::float3(r, g, b); }
 
     public:
         static const Color White;

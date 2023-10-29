@@ -23,8 +23,6 @@
 
 #include "CubemapUtilsImpl.h"
 
-#include "core/math/moyu_math2.h"
-
 #include <random>
 #include <vector>
 
@@ -41,7 +39,7 @@ static float pow6(float x) {
     return x2 * x2 * x2;
 }
 
-static MoYu::MFloat3 hemisphereImportanceSampleDggx(MoYu::MFloat2 u, float a) { // pdf = D(a) * cosTheta
+static glm::float3 hemisphereImportanceSampleDggx(glm::float2 u, float a) { // pdf = D(a) * cosTheta
     const float phi = 2.0f * (float) F_PI * u.x;
     // NOTE: (aa-1) == (a-1)(a+1) produces better fp accuracy
     const float cosTheta2 = (1 - u.y) / (1 + (a + 1) * ((a - 1) * u.y));
@@ -50,7 +48,7 @@ static MoYu::MFloat3 hemisphereImportanceSampleDggx(MoYu::MFloat2 u, float a) { 
     return { sinTheta * std::cos(phi), sinTheta * std::sin(phi), cosTheta };
 }
 
-static MoYu::MFloat3 hemisphereCosSample(MoYu::MFloat2 u) {  // pdf = cosTheta / F_PI;
+static glm::float3 hemisphereCosSample(glm::float2 u) {  // pdf = cosTheta / F_PI;
     const float phi = 2.0f * (float) F_PI * u.x;
     const float cosTheta2 = 1 - u.y;
     const float cosTheta = std::sqrt(cosTheta2);
@@ -58,7 +56,7 @@ static MoYu::MFloat3 hemisphereCosSample(MoYu::MFloat2 u) {  // pdf = cosTheta /
     return { sinTheta * std::cos(phi), sinTheta * std::sin(phi), cosTheta };
 }
 
-static MoYu::MFloat3 hemisphereUniformSample(MoYu::MFloat2 u) { // pdf = 1.0 / (2.0 * F_PI);
+static glm::float3 hemisphereUniformSample(glm::float2 u) { // pdf = 1.0 / (2.0 * F_PI);
     const float phi = 2.0f * (float) F_PI * u.x;
     const float cosTheta = 1 - u.y;
     const float sinTheta = std::sqrt(1 - cosTheta * cosTheta);
@@ -122,7 +120,7 @@ static MoYu::MFloat3 hemisphereUniformSample(MoYu::MFloat2 u) { // pdf = 1.0 / (
  *  |                                            |
  *  +--------------------------------------------+
  */
-static MoYu::MFloat3 hemisphereImportanceSampleDCharlie(MoYu::MFloat2 u, float a) { // pdf = DistributionCharlie() * cosTheta
+static glm::float3 hemisphereImportanceSampleDCharlie(glm::float2 u, float a) { // pdf = DistributionCharlie() * cosTheta
     const float phi = 2.0f * (float) F_PI * u.x;
 
     const float sinTheta = std::pow(u.y, a / (2 * a + 1));
@@ -287,7 +285,7 @@ static float VisibilityAshikhmin(float NoV, float NoL, float /*a*/) {
  */
 
 void CubemapIBL::roughnessFilter(Cubemap& dst, const std::vector<Cubemap>& levels,
-        float linearRoughness, size_t maxNumSamples, MoYu::MFloat3 mirror, bool prefilter)
+        float linearRoughness, size_t maxNumSamples, glm::float3 mirror, bool prefilter)
 {
     const float numSamples = maxNumSamples;
     const float inumSamples = 1.0f / numSamples;
@@ -303,8 +301,8 @@ void CubemapIBL::roughnessFilter(Cubemap& dst, const std::vector<Cubemap>& level
                 (CubemapUtils::EmptyState&, size_t y, Cubemap::Face f, Cubemap::Texel* data, size_t dim) {
                     const Cubemap& cm = levels[0];
                     for (size_t x = 0; x < dim; ++x, ++data) {
-                        const MoYu::MFloat2 p(Cubemap::center(x, y));
-                        const MoYu::MFloat3 N(dst.getDirectionFor(f, p.x, p.y) * mirror);
+                        const glm::float2 p(Cubemap::center(x, y));
+                        const glm::float3 N(dst.getDirectionFor(f, p.x, p.y) * mirror);
                         // FIXME: we should pick the proper LOD here and do trilinear filtering
                         Cubemap::writeAt(data, cm.sampleAt(N));
                     }
@@ -315,7 +313,7 @@ void CubemapIBL::roughnessFilter(Cubemap& dst, const std::vector<Cubemap>& level
 
     // be careful w/ the size of this structure, the smaller the better
     struct CacheEntry {
-        MoYu::MFloat3 L;
+        glm::float3 L;
         float brdf_NoL;
         float lerp;
         uint8_t l0;
@@ -334,18 +332,18 @@ void CubemapIBL::roughnessFilter(Cubemap& dst, const std::vector<Cubemap>& level
     for (size_t sampleIndex = 0 ; sampleIndex < maxNumSamples; sampleIndex++) {
 
         // get Hammersley distribution for the half-sphere
-        const MoYu::MFloat2 u = hammersley(uint32_t(sampleIndex), inumSamples);
+        const glm::float2 u = hammersley(uint32_t(sampleIndex), inumSamples);
 
         // Importance sampling GGX - Trowbridge-Reitz
-        const MoYu::MFloat3 H = hemisphereImportanceSampleDggx(u, linearRoughness);
+        const glm::float3 H = hemisphereImportanceSampleDggx(u, linearRoughness);
 
 #if 0
         // This produces the same result that the code below using the the non-simplified
         // equation. This let's us see that N == V and that L = -reflect(V, H)
         // Keep this for reference.
-        const MoYu::MFloat3 N = {0, 0, 1};
-        const MoYu::MFloat3 V = N;
-        const MoYu::MFloat3 L = 2 * dot(H, V) * H - V;
+        const glm::float3 N = {0, 0, 1};
+        const glm::float3 V = N;
+        const glm::float3 L = 2 * dot(H, V) * H - V;
         const float NoL = dot(N, L);
         const float NoH = dot(N, H);
         const float NoH2 = NoH * NoH;
@@ -354,7 +352,7 @@ void CubemapIBL::roughnessFilter(Cubemap& dst, const std::vector<Cubemap>& level
         const float NoH = H.z;
         const float NoH2 = H.z * H.z;
         const float NoL = 2 * NoH2 - 1;
-        const MoYu::MFloat3 L(2 * NoH * H.x, 2 * NoH * H.y, NoL);
+        const glm::float3 L(2 * NoH * H.x, 2 * NoH * H.y, NoL);
 #endif
 
         if (NoL > 0) {
@@ -396,35 +394,34 @@ void CubemapIBL::roughnessFilter(Cubemap& dst, const std::vector<Cubemap>& level
 
     auto scanline = [&](State& state, size_t y,
             Cubemap::Face f, Cubemap::Texel* data, size_t dim) {
-        MoYu::MMatrix3x3 R;
+        glm::float3x3 R;
         const size_t numSamples = cache.size();
         for (size_t x = 0; x < dim; ++x, ++data) {
-            const MoYu::MFloat2 p(Cubemap::center(x, y));
-            const MoYu::MFloat3 N(dst.getDirectionFor(f, p.x, p.y) * mirror);
+            const glm::float2 p(Cubemap::center(x, y));
+            const glm::float3 N(dst.getDirectionFor(f, p.x, p.y) * mirror);
 
             // center the cone around the normal (handle case of normal close to up)
-            const MoYu::MFloat3 up = std::abs(N.z) < 0.999 ? MoYu::MFloat3(0, 0, 1) : MoYu::MFloat3(1, 0, 0);
+            const glm::float3 up = std::abs(N.z) < 0.999 ? glm::float3(0, 0, 1) : glm::float3(1, 0, 0);
             
-            MFloat3 _right = glm::normalize(glm::cross(up, N));
-            MFloat3 _forward = glm::cross(N, _right); 
+            glm::float3 _right = glm::normalize(glm::cross(up, N));
+            glm::float3 _forward = glm::cross(N, _right); 
 
-            R = MoYu::MMatrix3x3(_right, _forward, N);
+            R = glm::float3x3(_right, _forward, N);
             R = glm::transpose(R);
 
-            MMatrix3x3 _rot = MYMatrix3x3::Identity;
-            _rot.fromAngleAxis(MoYu::MFloat3 {0, 0, 1}, state.distribution(state.gen));
+            glm::float3x3 _rot = glm::axisAngleMatrix(glm::float3 {0, 0, 1}, state.distribution(state.gen));
 
             R = R * _rot;
 
-            //R *= mat3f::rotation(state.distribution(state.gen), MoYu::MFloat3{0,0,1});
+            //R *= mat3f::rotation(state.distribution(state.gen), glm::float3{0,0,1});
 
-            MoYu::MFloat3 Li = 0;
+            glm::float3 Li = glm::float3(0);
             for (size_t sample = 0; sample < numSamples; sample++) {
                 const CacheEntry& e = cache[sample];
-                const MoYu::MFloat3 L(R * e.L);
+                const glm::float3 L(R * e.L);
                 const Cubemap& cmBase = levels[e.l0];
                 const Cubemap& next = levels[e.l1];
-                const MoYu::MFloat3 c0 = Cubemap::trilinearFilterAt(cmBase, next, e.lerp, L);
+                const glm::float3 c0 = Cubemap::trilinearFilterAt(cmBase, next, e.lerp, L);
                 Li += c0 * e.brdf_NoL;
             }
             Cubemap::writeAt(data, Cubemap::Texel(Li));
@@ -535,7 +532,7 @@ void CubemapIBL::diffuseIrradiance(Cubemap& dst, const std::vector<Cubemap>& lev
     std::atomic_uint progress = {0};
 
     struct CacheEntry {
-        MoYu::MFloat3 L;
+        glm::float3 L;
         float lerp;
         uint8_t l0;
         uint8_t l1;
@@ -547,10 +544,10 @@ void CubemapIBL::diffuseIrradiance(Cubemap& dst, const std::vector<Cubemap>& lev
     // precompute everything that only depends on the sample #
     for (size_t sampleIndex = 0; sampleIndex < maxNumSamples; sampleIndex++) {
         // get Hammersley distribution for the half-sphere
-        const MoYu::MFloat2 u = hammersley(uint32_t(sampleIndex), inumSamples);
-        const MoYu::MFloat3 L = hemisphereCosSample(u);
-        const MoYu::MFloat3 N = { 0, 0, 1 };
-        const float NoL = MFloat3::dot(N, L);
+        const glm::float2 u = hammersley(uint32_t(sampleIndex), inumSamples);
+        const glm::float3 L = hemisphereCosSample(u);
+        const glm::float3 N = { 0, 0, 1 };
+        const float NoL = glm::dot(N, L);
 
         if (NoL > 0) {
             float pdf = NoL * (float) F_1_PI;
@@ -558,7 +555,7 @@ void CubemapIBL::diffuseIrradiance(Cubemap& dst, const std::vector<Cubemap>& lev
             constexpr float K = 4;
             const float omegaS = 1.0f / (numSamples * pdf);
             const float l = float(log4(omegaS) - log4(omegaP) + log4(K));
-            const float mipLevel = clamp(float(l), 0.0f, maxLevelf);
+            const float mipLevel = glm::clamp(float(l), 0.0f, maxLevelf);
 
             uint8_t l0 = uint8_t(mipLevel);
             uint8_t l1 = uint8_t(std::min(maxLevel, size_t(l0 + 1)));
@@ -571,28 +568,27 @@ void CubemapIBL::diffuseIrradiance(Cubemap& dst, const std::vector<Cubemap>& lev
     CubemapUtils::process<CubemapUtils::EmptyState>(dst,
             [&](CubemapUtils::EmptyState&, size_t y, Cubemap::Face f, Cubemap::Texel* data, size_t dim) {
 
-        Matrix3x3 R;
+        glm::float3x3 R;
         const size_t numSamples = cache.size();
         for (size_t x = 0; x < dim; ++x, ++data) {
-            const MoYu::MFloat2 p(Cubemap::center(x, y));
-            const MoYu::MFloat3 N(dst.getDirectionFor(f, p.x, p.y));
+            const glm::float2 p(Cubemap::center(x, y));
+            const glm::float3 N(dst.getDirectionFor(f, p.x, p.y));
 
             // center the cone around the normal (handle case of normal close to up)
-            const MoYu::MFloat3 up = std::abs(N.z) < 0.999 ? MoYu::MFloat3(0, 0, 1) : MoYu::MFloat3(1, 0, 0);
+            const glm::float3 up = std::abs(N.z) < 0.999 ? glm::float3(0, 0, 1) : glm::float3(1, 0, 0);
 
-            MFloat3 _right   = MoYu::MFloat3::normalize(MFloat3::cross(up, N));
-            MFloat3 _forward = MFloat3::cross(N, _right);
+            glm::float3 _right   = glm::normalize(glm::cross(up, N));
+            glm::float3 _forward = glm::cross(N, _right);
 
-            R = MoYu::Matrix3x3(_right, _forward, N);
-            R = R.transpose();
+            R = glm::transpose(glm::float3x3(_right, _forward, N));
 
-            MoYu::MFloat3 Li = 0;
+            glm::float3 Li = glm::float3(0);
             for (size_t sample = 0; sample < numSamples; sample++) {
                 const CacheEntry& e = cache[sample];
-                const MoYu::MFloat3 L(R * e.L);
+                const glm::float3 L(R * e.L);
                 const Cubemap& cmBase = levels[e.l0];
                 const Cubemap& next = levels[e.l1];
-                const MoYu::MFloat3 c0 = Cubemap::trilinearFilterAt(cmBase, next, e.lerp, L);
+                const glm::float3 c0 = Cubemap::trilinearFilterAt(cmBase, next, e.lerp, L);
                 Li += c0;
             }
             Cubemap::writeAt(data, Cubemap::Texel(Li * inumSamples));
@@ -601,17 +597,17 @@ void CubemapIBL::diffuseIrradiance(Cubemap& dst, const std::vector<Cubemap>& lev
 }
 
 // Not importance-sampled
-static MoYu::MFloat2 DFV_NoIS(float NoV, float roughness, size_t numSamples) {
-    MoYu::MFloat2 r = 0;
+static glm::float2 DFV_NoIS(float NoV, float roughness, size_t numSamples) {
+    glm::float2 r = glm::float2(0);
     const float linearRoughness = roughness * roughness;
-    const MoYu::MFloat3 V(std::sqrt(1 - NoV * NoV), 0, NoV);
+    const glm::float3 V(std::sqrt(1 - NoV * NoV), 0, NoV);
     for (size_t i = 0; i < numSamples; i++) {
-        const MoYu::MFloat2 u = hammersley(uint32_t(i), 1.0f / numSamples);
-        const MoYu::MFloat3 H = hemisphereCosSample(u);
-        const MoYu::MFloat3 L = 2 * MFloat3::dot(V, H) * H - V;
-        const float VoH = saturate(MFloat3::dot(V, H));
-        const float NoL = saturate(L.z);
-        const float NoH = saturate(H.z);
+        const glm::float2 u = hammersley(uint32_t(i), 1.0f / numSamples);
+        const glm::float3 H = hemisphereCosSample(u);
+        const glm::float3 L = 2 * glm::dot(V, H) * H - V;
+        const float VoH = glm::clamp(glm::dot(V, H), 0.0f, 1.0f);
+        const float NoL = glm::clamp(L.z, 0.0f, 1.0f);
+        const float NoH = glm::clamp(H.z, 0.0f, 1.0f);
         if (NoL > 0) {
             // Note: remember VoH == LoH  (H is half vector)
             const float J = 1.0f / (4.0f * VoH);
@@ -623,7 +619,7 @@ static MoYu::MFloat2 DFV_NoIS(float NoV, float roughness, size_t numSamples) {
             r.y += d * v * Fc;
         }
     }
-    return r / numSamples;
+    return r * (1.0f / numSamples);
 }
 
 /*
@@ -712,16 +708,16 @@ static MoYu::MFloat2 DFV_NoIS(float NoV, float roughness, size_t numSamples) {
  *
  */
 
-static MoYu::MFloat2 DFV(float NoV, float linearRoughness, size_t numSamples) {
-    MoYu::MFloat2 r = 0;
-    const MoYu::MFloat3 V(std::sqrt(1 - NoV * NoV), 0, NoV);
+static glm::float2 DFV(float NoV, float linearRoughness, size_t numSamples) {
+    glm::float2 r = glm::float2(0);
+    const glm::float3 V(std::sqrt(1 - NoV * NoV), 0, NoV);
     for (size_t i = 0; i < numSamples; i++) {
-        const MoYu::MFloat2 u = hammersley(uint32_t(i), 1.0f / numSamples);
-        const MoYu::MFloat3 H = hemisphereImportanceSampleDggx(u, linearRoughness);
-        const MoYu::MFloat3 L = 2 * MFloat3::dot(V, H) * H - V;
-        const float VoH = saturate(MFloat3::dot(V, H));
-        const float NoL = saturate(L.z);
-        const float NoH = saturate(H.z);
+        const glm::float2 u = hammersley(uint32_t(i), 1.0f / numSamples);
+        const glm::float3 H = hemisphereImportanceSampleDggx(u, linearRoughness);
+        const glm::float3 L = 2 * glm::dot(V, H) * H - V;
+        const float VoH = glm::clamp(glm::dot(V, H), 0.f, 1.f);
+        const float NoL = glm::clamp(L.z, 0.f, 1.f);
+        const float NoH = glm::clamp(H.z, 0.f, 1.f);
         if (NoL > 0) {
             /*
              * Fc = (1 - V•H)^5
@@ -754,16 +750,16 @@ static MoYu::MFloat2 DFV(float NoV, float linearRoughness, size_t numSamples) {
     return r * (4.0f / numSamples);
 }
 
-static MoYu::MFloat2 DFV_Multiscatter(float NoV, float linearRoughness, size_t numSamples) {
-    MoYu::MFloat2 r = 0;
-    const MoYu::MFloat3 V(std::sqrt(1 - NoV * NoV), 0, NoV);
+static glm::float2 DFV_Multiscatter(float NoV, float linearRoughness, size_t numSamples) {
+    glm::float2 r = glm::float2(0);
+    const glm::float3 V(std::sqrt(1 - NoV * NoV), 0, NoV);
     for (size_t i = 0; i < numSamples; i++) {
-        const MoYu::MFloat2 u = hammersley(uint32_t(i), 1.0f / numSamples);
-        const MoYu::MFloat3 H = hemisphereImportanceSampleDggx(u, linearRoughness);
-        const MoYu::MFloat3 L = 2 * MFloat3::dot(V, H) * H - V;
-        const float VoH = saturate(MFloat3::dot(V, H));
-        const float NoL = saturate(L.z);
-        const float NoH = saturate(H.z);
+        const glm::float2 u = hammersley(uint32_t(i), 1.0f / numSamples);
+        const glm::float3 H = hemisphereImportanceSampleDggx(u, linearRoughness);
+        const glm::float3 L = 2 * glm::dot(V, H) * H - V;
+        const float VoH = glm::clamp(glm::dot(V, H), 0.f, 1.f);
+        const float NoL = glm::clamp(L.z, 0.f, 1.f);
+        const float NoH = glm::clamp(H.z, 0.f, 1.f);
         if (NoL > 0) {
             const float v = Visibility(NoV, NoL, linearRoughness) * NoL * (VoH / NoH);
             const float Fc = pow5(1 - VoH);
@@ -803,14 +799,14 @@ static float DFV_LazanyiTerm(float NoV, float linearRoughness, size_t numSamples
     float r = 0;
     const float cosThetaMax = (float) std::cos(81.7 * F_PI / 180.0);
     const float q = 1.0f / (cosThetaMax * pow6(1.0f - cosThetaMax));
-    const MoYu::MFloat3 V(std::sqrt(1 - NoV * NoV), 0, NoV);
+    const glm::float3 V(std::sqrt(1 - NoV * NoV), 0, NoV);
     for (size_t i = 0; i < numSamples; i++) {
-        const MoYu::MFloat2 u = hammersley(uint32_t(i), 1.0f / numSamples);
-        const MoYu::MFloat3 H = hemisphereImportanceSampleDggx(u, linearRoughness);
-        const MoYu::MFloat3 L = 2 * MFloat3::dot(V, H) * H - V;
-        const float VoH = saturate(MFloat3::dot(V, H));
-        const float NoL = saturate(L.z);
-        const float NoH = saturate(H.z);
+        const glm::float2 u = hammersley(uint32_t(i), 1.0f / numSamples);
+        const glm::float3 H = hemisphereImportanceSampleDggx(u, linearRoughness);
+        const glm::float3 L = 2 * glm::dot(V, H) * H - V;
+        const float VoH = glm::clamp(glm::dot(V, H), 0.f, 1.f);
+        const float NoL = glm::clamp(L.z, 0.f, 1.f);
+        const float NoH = glm::clamp(H.z, 0.f, 1.f);
         if (NoL > 0) {
             const float v = Visibility(NoV, NoL, linearRoughness) * NoL * (VoH / NoH);
             const float Fc = pow6(1 - VoH);
@@ -822,14 +818,14 @@ static float DFV_LazanyiTerm(float NoV, float linearRoughness, size_t numSamples
 
 static float DFV_Charlie_Uniform(float NoV, float linearRoughness, size_t numSamples) {
     float r = 0.0;
-    const MoYu::MFloat3 V(std::sqrt(1 - NoV * NoV), 0, NoV);
+    const glm::float3 V(std::sqrt(1 - NoV * NoV), 0, NoV);
     for (size_t i = 0; i < numSamples; i++) {
-        const MoYu::MFloat2 u = hammersley(uint32_t(i), 1.0f / numSamples);
-        const MoYu::MFloat3 H = hemisphereUniformSample(u);
-        const MoYu::MFloat3 L = 2 * MFloat3::dot(V, H) * H - V;
-        const float VoH = saturate(MFloat3::dot(V, H));
-        const float NoL = saturate(L.z);
-        const float NoH = saturate(H.z);
+        const glm::float2 u = hammersley(uint32_t(i), 1.0f / numSamples);
+        const glm::float3 H = hemisphereUniformSample(u);
+        const glm::float3 L = 2 * glm::dot(V, H) * H - V;
+        const float VoH = glm::clamp(glm::dot(V, H), 0.f, 1.f);
+        const float NoL = glm::clamp(L.z, 0.f, 1.f);
+        const float NoH = glm::clamp(H.z, 0.f, 1.f);
         if (NoL > 0) {
             const float v = VisibilityAshikhmin(NoV, NoL, linearRoughness);
             const float d = DistributionCharlie(NoH, linearRoughness);
@@ -927,14 +923,14 @@ static float DFV_Charlie_Uniform(float NoV, float linearRoughness, size_t numSam
  */
 static float DFV_Charlie_IS(float NoV, float linearRoughness, size_t numSamples) {
     float r = 0.0;
-    const MoYu::MFloat3 V(std::sqrt(1 - NoV * NoV), 0, NoV);
+    const glm::float3 V(std::sqrt(1 - NoV * NoV), 0, NoV);
     for (size_t i = 0; i < numSamples; i++) {
-        const MoYu::MFloat2 u = hammersley(uint32_t(i), 1.0f / numSamples);
-        const MoYu::MFloat3 H = hemisphereImportanceSampleDCharlie(u, linearRoughness);
-        const MoYu::MFloat3 L = 2 * MFloat3::dot(V, H) * H - V;
-        const float VoH = saturate(MFloat3::dot(V, H));
-        const float NoL = saturate(L.z);
-        const float NoH = saturate(H.z);
+        const glm::float2 u = hammersley(uint32_t(i), 1.0f / numSamples);
+        const glm::float3 H = hemisphereImportanceSampleDCharlie(u, linearRoughness);
+        const glm::float3 L = 2 * glm::dot(V, H) * H - V;
+        const float VoH = glm::clamp(glm::dot(V, H), 0.f, 1.f);
+        const float NoL = glm::clamp(L.z, 0.f, 1.f);
+        const float NoH = glm::clamp(H.z, 0.f, 1.f);
         if (NoL > 0) {
             const float J = 1.0f / (4.0f * VoH);
             const float pdf = NoH; // D has been removed as it cancels out in the previous equation
@@ -957,15 +953,15 @@ void CubemapIBL::DFG(Image& dst, bool multiscatter, bool cloth) {
                 static_cast<Cubemap::Texel*>(dst.getPixelRef(0, y));
 
         const float h = (float) height;
-        const float coord = saturate((h - y + 0.5f) / h);
+        const float coord = glm::clamp((h - y + 0.5f) / h, 0.f, 1.f);
         // map the coordinate in the texture to a linear_roughness,
         // here we're using ^2, but other mappings are possible.
         // ==> coord = sqrt(linear_roughness)
         const float linear_roughness = coord * coord;
         for (size_t x = 0; x < height; x++, data++) {
             // const float NoV = float(x) / (width-1);
-            const float NoV = saturate((x + 0.5f) / width);
-            MoYu::MFloat3 r = { dfvFunction(NoV, linear_roughness, 1024), 0 };
+            const float NoV = glm::clamp((x + 0.5f) / width, 0.f, 1.f);
+            glm::float3 r = { dfvFunction(NoV, linear_roughness, 1024), 0 };
             if (cloth) {
                 r.z = float(DFV_Charlie_Uniform(NoV, linear_roughness, 4096));
             }

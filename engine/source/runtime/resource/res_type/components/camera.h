@@ -29,8 +29,8 @@ namespace MoYu
         float      m_fovY {100.f};
         float      m_horizontal_offset {3.f};
         float      m_vertical_offset {2.5f};
-        MQuaternion m_cursor_pitch {MYQuaternion::Identity};
-        MQuaternion m_cursor_yaw {MYQuaternion::Identity};
+        glm::quat m_cursor_pitch {MYQuaternion::Identity};
+        glm::quat m_cursor_yaw {MYQuaternion::Identity};
         int        m_width {1366};
         int        m_height {768};
         float      m_nearZ {0.1f};

@@ -25,21 +25,26 @@ namespace MoYu
     // InputLayout类型相关
     //************************************************************
 
-    enum InputDefinition
+    enum InputDefinition : uint64_t
     {
-        POSITION = 0,
-        NORMAL   = 1 << 0,
-        TANGENT  = 1 << 1,
-        TEXCOORD = 1 << 2,
-        INDICES  = 1 << 3,
-        WEIGHTS  = 1 << 4
+        POSITION  = 0,
+        NORMAL    = 1 << 0,
+        TANGENT   = 1 << 1,
+        TEXCOORD  = 1 << 2,
+        TEXCOORD0 = 1 << 2,
+        TEXCOORD1 = 1 << 3,
+        TEXCOORD2 = 1 << 4,
+        TEXCOORD3 = 1 << 5,
+        INDICES   = 1 << 6,
+        WEIGHTS   = 1 << 7,
+        COLOR     = 1 << 8
     };
     DEFINE_MOYU_ENUM_FLAG_OPERATORS(InputDefinition)
 
     // Vertex struct holding position information.
     struct D3D12MeshVertexPosition
     {
-        glm::vec3 position;
+        glm::float3 position;
 
         static const RHI::D3D12InputLayout InputLayout;
 
@@ -53,8 +58,8 @@ namespace MoYu
     // Vertex struct holding position and color information.
     struct D3D12MeshVertexPositionTexture
     {
-        glm::vec3 position;
-        glm::vec2 texcoord;
+        glm::float3 position;
+        glm::float2 texcoord;
 
         static const RHI::D3D12InputLayout InputLayout;
 
@@ -69,10 +74,10 @@ namespace MoYu
 
     struct D3D12MeshVertexPositionNormalTangentTexture
     {
-        glm::vec3 position;
-        glm::vec3 normal;
-        glm::vec4 tangent;
-        glm::vec2 texcoord;
+        glm::float3 position;
+        glm::float3 normal;
+        glm::float4 tangent;
+        glm::float2 texcoord;
 
         static const RHI::D3D12InputLayout InputLayout;
 
@@ -86,12 +91,12 @@ namespace MoYu
 
     struct D3D12MeshVertexPositionNormalTangentTextureJointBinding
     {
-        glm::vec3  position;
-        glm::vec3  normal;
-        glm::vec4  tangent;
-        glm::vec2  texcoord;
-        glm::ivec4 indices;
-        glm::vec4  weights;
+        glm::float3 position;
+        glm::float3 normal;
+        glm::float4 tangent;
+        glm::float2 texcoord;
+        glm::uvec4  indices;
+        glm::float4 weights;
 
         static const RHI::D3D12InputLayout InputLayout;
 
@@ -101,6 +106,27 @@ namespace MoYu
 
     private:
         static constexpr unsigned int         InputElementCount = 6;
+        static const D3D12_INPUT_ELEMENT_DESC InputElements[InputElementCount];
+    };
+
+    //************************************************************
+    // 地形TerrainPatchCluster
+    //************************************************************
+    struct D3D12TerrainPatch
+    {
+        glm::float3 position;
+        glm::float3 normal;
+        glm::float4 tangent;
+        glm::float2 texcoord0;
+        glm::float4 color;
+
+        static const RHI::D3D12InputLayout InputLayout;
+
+        static const InputDefinition InputElementDefinition = InputDefinition::POSITION | InputDefinition::NORMAL |
+                                                              InputDefinition::TANGENT | InputDefinition::TEXCOORD |
+                                                              InputDefinition::COLOR;
+    private:
+        static constexpr unsigned int         InputElementCount = 5;
         static const D3D12_INPUT_ELEMENT_DESC InputElements[InputElementCount];
     };
 
@@ -162,12 +188,12 @@ namespace MoYu
 
         // 所有的值都设置在的uniformbuffer中
         /*
-        MFloat4 m_base_color_factor;
+        glm::float4 m_base_color_factor;
         float   m_metallic_factor;
         float   m_roughness_factor;
         float   m_normal_scale;
         float   m_occlusion_strength;
-        MFloat3 m_emissive_factor;
+        glm::float3 m_emissive_factor;
         */
         // Textures
         std::shared_ptr<RHI::D3D12Texture> base_color_texture_image;
@@ -190,8 +216,8 @@ namespace MoYu
 
         bool enable_vertex_blending = false;
 
-        MMatrix4x4 model_matrix;
-        MMatrix4x4 model_matrix_inverse;
+        glm::float4x4 model_matrix;
+        glm::float4x4 model_matrix_inverse;
 
         InternalMesh ref_mesh;
         InternalMaterial ref_material;
@@ -209,10 +235,10 @@ namespace MoYu
 
         bool    m_shadowmap {false};
         int     m_cascade {4};
-        MFloat2 m_shadow_bounds {32, 32}; // cascade level 0
+        glm::float2 m_shadow_bounds {32, 32}; // cascade level 0
         float   m_shadow_near_plane {0.1f};
         float   m_shadow_far_plane {200.0f};
-        MFloat2 m_shadowmap_size {1024, 1024};
+        glm::float2 m_shadowmap_size {1024, 1024};
     };
 
     struct BasePointLight
@@ -231,44 +257,44 @@ namespace MoYu
         float m_outer_degree;
 
         bool    m_shadowmap {false};
-        MFloat2 m_shadow_bounds {128, 128};
+        glm::float2 m_shadow_bounds {128, 128};
         float   m_shadow_near_plane {0.1f};
         float   m_shadow_far_plane {200.0f};
-        MFloat2 m_shadowmap_size {512, 512};
+        glm::float2 m_shadowmap_size {512, 512};
     };
 
     struct InternalAmbientLight : public BaseAmbientLight
     {
         SceneCommonIdentifier m_identifier;
 
-        MFloat3 m_position;
+        glm::float3 m_position;
     };
 
     struct InternalDirectionLight : public BaseDirectionLight
     {
         SceneCommonIdentifier m_identifier;
 
-        MFloat3   m_position;
-        MFloat3   m_direction;
-        MMatrix4x4 m_shadow_view_mat;
-        MMatrix4x4 m_shadow_proj_mats[4];
-        MMatrix4x4 m_shadow_view_proj_mats[4];
+        glm::float3   m_position;
+        glm::float3   m_direction;
+        glm::float4x4 m_shadow_view_mat;
+        glm::float4x4 m_shadow_proj_mats[4];
+        glm::float4x4 m_shadow_view_proj_mats[4];
     };
 
     struct InternalPointLight : public BasePointLight
     {
         SceneCommonIdentifier m_identifier;
 
-        MFloat3 m_position;
+        glm::float3 m_position;
     };
 
     struct InternalSpotLight : public BaseSpotLight
     {
         SceneCommonIdentifier m_identifier;
 
-        MFloat3   m_position;
-        MFloat3   m_direction;
-        MMatrix4x4 m_shadow_view_proj_mat;
+        glm::float3   m_position;
+        glm::float3   m_direction;
+        glm::float4x4 m_shadow_view_proj_mat;
     };
 
     struct InternalCamera
@@ -277,8 +303,8 @@ namespace MoYu
 
         CameraProjType m_projType;
 
-        MFloat3    m_position;
-        MQuaternion m_rotation;
+        glm::float3 m_position;
+        glm::quat   m_rotation;
 
         float m_width;
         float m_height;
@@ -287,14 +313,14 @@ namespace MoYu
         float m_aspect;
         float m_fovY;
 
-        MMatrix4x4 m_ViewMatrix;
-        MMatrix4x4 m_ViewMatrixInv;
+        glm::float4x4 m_ViewMatrix;
+        glm::float4x4 m_ViewMatrixInv;
 
-        MMatrix4x4 m_ProjMatrix;
-        MMatrix4x4 m_ProjMatrixInv;
+        glm::float4x4 m_ProjMatrix;
+        glm::float4x4 m_ProjMatrixInv;
 
-        MMatrix4x4 m_ViewProjMatrix;
-        MMatrix4x4 m_ViewProjMatrixInv;
+        glm::float4x4 m_ViewProjMatrix;
+        glm::float4x4 m_ViewProjMatrixInv;
     };
 
     struct SkyboxConfigs
@@ -309,7 +335,13 @@ namespace MoYu
         std::shared_ptr<RHI::D3D12Texture> m_ld;
         std::shared_ptr<RHI::D3D12Texture> m_radians;
 
-        std::vector<MFloat4> m_SH;
+        std::vector<glm::float4> m_SH;
+    };
+
+    struct TerrainConfigs
+    {
+        std::shared_ptr<RHI::D3D12Texture> m_HeightMap;
+        std::shared_ptr<RHI::D3D12Texture> m_NormalMap;
     };
 
     //========================================================================
@@ -364,7 +396,7 @@ namespace MoYu
     struct MaterialImage
     {
         SceneImage m_image {};
-        MFloat2    m_tilling {1.0f, 1.0f};
+        glm::float2    m_tilling {1.0f, 1.0f};
     };
 
     inline bool operator==(const MaterialImage& lhs, const MaterialImage& rhs)
@@ -377,7 +409,7 @@ namespace MoYu
         bool m_blend {false};
         bool m_double_sided {false};
 
-        MFloat4 m_base_color_factor {1.0f, 1.0f, 1.0f, 1.0f};
+        glm::float4 m_base_color_factor {1.0f, 1.0f, 1.0f, 1.0f};
         float   m_metallic_factor {1.0f};
         float   m_roughness_factor {1.0f};
         float   m_reflectance_factor {1.0f};
@@ -471,10 +503,10 @@ namespace MoYu
 
         SceneCommonIdentifier m_identifier;
 
-        MMatrix4x4  m_transform_matrix {MYMatrix4x4::Identity};
-        MFloat3     m_position {MYFloat3::Zero};
-        MQuaternion m_rotation {MYQuaternion::Identity};
-        MFloat3     m_scale {MYFloat3::One};
+        glm::float4x4  m_transform_matrix {MYMatrix4x4::Identity};
+        glm::float3     m_position {MYFloat3::Zero};
+        glm::quat m_rotation {MYQuaternion::Identity};
+        glm::float3     m_scale {MYFloat3::One};
     };
 
     struct GameObjectComponentDesc

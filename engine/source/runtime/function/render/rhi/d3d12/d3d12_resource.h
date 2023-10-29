@@ -169,12 +169,12 @@ namespace RHI
         D3D12Buffer() noexcept = default;
         D3D12Buffer(D3D12LinkedDevice*   Parent,
                     UINT64               SizeInBytes,
-                    UINT                 Stride,
+                    UINT64               Stride,
                     D3D12_HEAP_TYPE      HeapType,
                     D3D12_RESOURCE_FLAGS ResourceFlags);
         D3D12Buffer(D3D12LinkedDevice*    Parent,
                     UINT64                SizeInBytes,
-                    UINT                  Stride,
+                    UINT64                Stride,
                     D3D12_HEAP_TYPE       HeapType,
                     D3D12_RESOURCE_FLAGS  ResourceFlags,
                     D3D12_RESOURCE_STATES InitialResourceState);

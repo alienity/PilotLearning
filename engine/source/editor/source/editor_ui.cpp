@@ -41,8 +41,8 @@
 
 namespace MoYu
 {
-    bool DrawVecControl(const std::string& label, MoYu::MFloat3& values, float resetValue = 0.0f, float columnWidth = 100.0f);
-    bool DrawVecControl(const std::string& label, MoYu::MQuaternion& values, float resetValue = 0.0f, float columnWidth = 100.0f);
+    bool DrawVecControl(const std::string& label, glm::float3& values, float resetValue = 0.0f, float columnWidth = 100.0f);
+    bool DrawVecControl(const std::string& label, glm::quat& values, float resetValue = 0.0f, float columnWidth = 100.0f);
 
     EditorUI::EditorUI()
     {
@@ -55,7 +55,7 @@ namespace MoYu
             glm::mat4 _quat = glm::mat4_cast(trans_ptr->m_rotation);
             glm::extractEulerAngleYXZ(_quat, euler.y, euler.x, euler.z);
 
-            MFloat3 degrees_val = {};
+            glm::float3 degrees_val = {};
             degrees_val.x = MoYu::radiansToDegrees(euler.x);
             degrees_val.y = MoYu::radiansToDegrees(euler.y);
             degrees_val.z = MoYu::radiansToDegrees(euler.z);
@@ -66,7 +66,7 @@ namespace MoYu
             isDirty |= DrawVecControl("Rotation", degrees_val);
             isDirty |= DrawVecControl("Scale", trans_ptr->m_scale);
 
-            MoYu::MFloat3 newEuler = {};
+            glm::float3 newEuler = {};
             newEuler.x = MoYu::degreesToRadians(degrees_val.x);
             newEuler.y = MoYu::degreesToRadians(degrees_val.y);
             newEuler.z = MoYu::degreesToRadians(degrees_val.z);
@@ -108,7 +108,7 @@ namespace MoYu
         m_editor_ui_creator["Vector2"] = [this](const std::string& name, bool& is_dirty, void* value_ptr) -> void {
             bool isDirty = false;
 
-            MFloat2* vec_ptr = static_cast<MFloat2*>(value_ptr);
+            glm::float2* vec_ptr = static_cast<glm::float2*>(value_ptr);
             float val[2] = {vec_ptr->x, vec_ptr->y};
             
             std::string label   = "##" + name;
@@ -121,10 +121,10 @@ namespace MoYu
 
             is_dirty |= isDirty;
         };
-        m_editor_ui_creator["MFloat3"] = [this](const std::string& name, bool& is_dirty, void* value_ptr) -> void {
+        m_editor_ui_creator["glm::float3"] = [this](const std::string& name, bool& is_dirty, void* value_ptr) -> void {
             bool isDirty = false;
 
-            MFloat3* vec_ptr = static_cast<MFloat3*>(value_ptr);
+            glm::float3* vec_ptr = static_cast<glm::float3*>(value_ptr);
             float    val[3]  = {vec_ptr->x, vec_ptr->y, vec_ptr->z};
 
             std::string label = "##" + name;
@@ -141,7 +141,7 @@ namespace MoYu
         m_editor_ui_creator["Vector4"] = [this](const std::string& name, bool& is_dirty, void* value_ptr) -> void {
             bool isDirty = false;
             
-            MFloat4* vec_ptr = static_cast<MFloat4*>(value_ptr);
+            glm::float4* vec_ptr = static_cast<glm::float4*>(value_ptr);
             float val[4] = {vec_ptr->x, vec_ptr->y, vec_ptr->z, vec_ptr->w};
             
             std::string label = "##" + name;
@@ -159,7 +159,7 @@ namespace MoYu
         m_editor_ui_creator["Quaternion"] = [this](const std::string& name, bool& is_dirty, void* value_ptr) -> void {
             bool isDirty = false;
 
-            MQuaternion* qua_ptr = static_cast<MQuaternion*>(value_ptr);
+            glm::quat* qua_ptr = static_cast<glm::quat*>(value_ptr);
             float val[4] = {qua_ptr->x, qua_ptr->y, qua_ptr->z, qua_ptr->w};
 
             std::string label = "##" + name;
@@ -1220,8 +1220,8 @@ namespace MoYu
 
         auto menu_bar_rect = ImGui::GetCurrentWindow()->MenuBarRect();
 
-        MFloat2 new_window_pos  = {0.0f, 0.0f};
-        MFloat2 new_window_size = {0.0f, 0.0f};
+        glm::float2 new_window_pos  = {0.0f, 0.0f};
+        glm::float2 new_window_size = {0.0f, 0.0f};
         new_window_pos.x        = ImGui::GetWindowPos().x;
         new_window_pos.y        = ImGui::GetWindowPos().y + menu_bar_rect.Min.y + 20;
         new_window_size.x       = ImGui::GetWindowSize().x;
@@ -1262,12 +1262,12 @@ namespace MoYu
             //g_editor_global_context.m_input_manager->setEngineWindowPos(new_window_pos);
             //g_editor_global_context.m_input_manager->setEngineWindowSize(new_window_size);
 
-            MFloat2 cursor_offset = MFloat2((new_window_size.x - displayWidth) * 0.5f, (new_window_size.y - displayHeight) * 0.5f);
+            glm::float2 cursor_offset = glm::float2((new_window_size.x - displayWidth) * 0.5f, (new_window_size.y - displayHeight) * 0.5f);
 
             ImVec2 cilld_cur_pos = ImVec2(cursor_offset.x + new_window_pos.x, cursor_offset.y + new_window_pos.y);
 
-            g_editor_global_context.m_input_manager->setEngineWindowPos(MFloat2(cilld_cur_pos.x, cilld_cur_pos.y));
-            g_editor_global_context.m_input_manager->setEngineWindowSize(MFloat2(displayWidth, displayHeight));
+            g_editor_global_context.m_input_manager->setEngineWindowPos(glm::float2(cilld_cur_pos.x, cilld_cur_pos.y));
+            g_editor_global_context.m_input_manager->setEngineWindowSize(glm::float2(displayWidth, displayHeight));
 
             ImGui::SetCursorPosX(cursor_offset.x);
             ImGui::BeginChild("GameView", ImVec2(displayWidth, displayHeight), true, ImGuiWindowFlags_NoDocking);
@@ -1278,9 +1278,9 @@ namespace MoYu
 
                 ImGuizmo::SetRect(window_pos.x, window_pos.y, displayWidth, displayHeight);
 
-                MMatrix4x4 viewMatrix  = g_editor_global_context.m_scene_manager->getEditorCamera()->getViewMatrix();
+                glm::float4x4 viewMatrix  = g_editor_global_context.m_scene_manager->getEditorCamera()->getViewMatrix();
                 glm::mat4  _cameraView = viewMatrix;
-                MMatrix4x4 projMatrix = g_editor_global_context.m_scene_manager->getEditorCamera()->getPersProjMatrix();
+                glm::float4x4 projMatrix = g_editor_global_context.m_scene_manager->getEditorCamera()->getPersProjMatrix();
                 glm::mat4  _projMatrix    = projMatrix;
                 glm::mat4  _identiyMatrix = MYMatrix4x4::Identity;
 
@@ -1295,7 +1295,7 @@ namespace MoYu
                 if (selected_object != nullptr)
                 {
                     TransformComponent* trans_component_ptr = selected_object->getTransformComponent().lock().get();
-                    MMatrix4x4 worldMatrix = trans_component_ptr->getMatrixWorld();
+                    glm::float4x4 worldMatrix = trans_component_ptr->getMatrixWorld();
                     glm::mat4 _worldMatrix = worldMatrix;
 
                     ImGuizmo::OPERATION op_type = ImGuizmo::OPERATION::TRANSLATE;
@@ -1680,9 +1680,9 @@ namespace MoYu
         handleOfGameView = handle;
     }
 
-    bool DrawVecControl(const std::string& label, MoYu::MFloat3& values, float resetValue, float columnWidth)
+    bool DrawVecControl(const std::string& label, glm::float3& values, float resetValue, float columnWidth)
     {
-        MFloat3 prevVal = values;
+        glm::float3 prevVal = values;
 
         ImGui::PushID(label.c_str());
 
@@ -1742,9 +1742,9 @@ namespace MoYu
         return false;
     }
 
-    bool DrawVecControl(const std::string& label, MoYu::MQuaternion& values, float resetValue, float columnWidth)
+    bool DrawVecControl(const std::string& label, glm::quat& values, float resetValue, float columnWidth)
     {
-        MQuaternion prevVal = values;
+        glm::quat prevVal = values;
 
         ImGui::PushID(label.c_str());
 

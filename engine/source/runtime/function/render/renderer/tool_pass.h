@@ -38,7 +38,7 @@ namespace MoYu
         void preUpdate2(ToolInputParameters& passInput, ToolOutputParameters& passOutput);
 
     private:
-        HLSL::float4 _SH[7];
+        glm::float4 _SH[7];
 
         std::shared_ptr<RHI::D3D12Texture> p_DFG;
         std::shared_ptr<RHI::D3D12Texture> p_LD;
@@ -76,7 +76,7 @@ namespace MoYu
     namespace Tools
     {
         void ReadCubemapToFile(RHI::D3D12Device* device, RHI::D3D12Texture* cubemap, const wchar_t* filename);
-        void ReadBuffer2SH(RHI::D3D12Device* pDevice, RHI::D3D12Buffer* pBuffer, HLSL::float4 pSH[7]);
+        void ReadBuffer2SH(RHI::D3D12Device* pDevice, RHI::D3D12Buffer* pBuffer, glm::float4 pSH[7]);
     }
 }
 

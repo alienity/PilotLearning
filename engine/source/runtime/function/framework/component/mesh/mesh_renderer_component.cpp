@@ -129,13 +129,13 @@ namespace MoYu
                                                SceneMesh*          m_scene_mesh_ptr,
                                                SceneMaterial*      m_scene_mat_ptr)
     {
-        MMatrix4x4 transform_matrix = m_transform_component_ptr->getMatrixWorld();
+        glm::float4x4 transform_matrix = m_transform_component_ptr->getMatrixWorld();
 
-        MFloat3     m_scale;
-        MQuaternion m_orientation;
-        MFloat3     m_translation;
-        MFloat3     m_skew;
-        MFloat4     m_perspective;
+        glm::float3     m_scale;
+        glm::quat m_orientation;
+        glm::float3     m_translation;
+        glm::float3     m_skew;
+        glm::float4     m_perspective;
         glm::decompose(transform_matrix, m_scale, m_orientation, m_translation, m_skew, m_perspective);
 
         SceneTransform scene_transform     = {};

@@ -116,26 +116,26 @@ namespace MoYu
             
             struct MipGenInBuffer
             {
-                HLSL::uint   SrcMipLevel;  // Texture level of source mip
-                HLSL::uint   NumMipLevels; // Number of OutMips to write: [1, 4]
-                HLSL::float2 TexelSize;    // 1.0 / OutMip1.Dimensions
+                glm::uint   SrcMipLevel;  // Texture level of source mip
+                glm::uint   NumMipLevels; // Number of OutMips to write: [1, 4]
+                glm::float2 TexelSize;    // 1.0 / OutMip1.Dimensions
 
-                HLSL::uint SrcIndex;
-                HLSL::uint OutMip1Index;
-                HLSL::uint OutMip2Index;
-                HLSL::uint OutMip3Index;
-                HLSL::uint OutMip4Index;
+                glm::uint SrcIndex;
+                glm::uint OutMip1Index;
+                glm::uint OutMip2Index;
+                glm::uint OutMip3Index;
+                glm::uint OutMip4Index;
             };
 
-            HLSL::float2 _Mip1TexelSize = {_SrcDesc.Width >> 2, _SrcDesc.Height >> 2};
-            HLSL::uint _SrcMipLevel = 0;
-            HLSL::uint _NumMipLevels = 4;
+            glm::float2 _Mip1TexelSize = {_SrcDesc.Width >> 2, _SrcDesc.Height >> 2};
+            glm::uint _SrcMipLevel = 0;
+            glm::uint _NumMipLevels = 4;
 
-            HLSL::uint _SrcIndex = _SrcTexture->CreateSRV(_Mip0SRVDesc)->GetIndex();
-            HLSL::uint _OutMip1Index = _SrcTexture->CreateUAV(_Mip1UAVDesc)->GetIndex();
-            HLSL::uint _OutMip2Index = _SrcTexture->CreateUAV(_Mip2UAVDesc)->GetIndex();
-            HLSL::uint _OutMip3Index = _SrcTexture->CreateUAV(_Mip3UAVDesc)->GetIndex();
-            HLSL::uint _OutMip4Index = _SrcTexture->CreateUAV(_Mip4UAVDesc)->GetIndex();
+            glm::uint _SrcIndex = _SrcTexture->CreateSRV(_Mip0SRVDesc)->GetIndex();
+            glm::uint _OutMip1Index = _SrcTexture->CreateUAV(_Mip1UAVDesc)->GetIndex();
+            glm::uint _OutMip2Index = _SrcTexture->CreateUAV(_Mip2UAVDesc)->GetIndex();
+            glm::uint _OutMip3Index = _SrcTexture->CreateUAV(_Mip3UAVDesc)->GetIndex();
+            glm::uint _OutMip4Index = _SrcTexture->CreateUAV(_Mip4UAVDesc)->GetIndex();
 
             MipGenInBuffer _MipGenInBuffer = {_SrcMipLevel, _NumMipLevels, _Mip1TexelSize, _SrcIndex, _OutMip1Index, _OutMip2Index, _OutMip3Index, _OutMip4Index};
 
@@ -153,7 +153,7 @@ namespace MoYu
                 pContext->SetPipelineState(pGenerateMinMipsLinearPSO.get());
             }
 
-            size_t _MipBufSize = sizeof(MipGenInBuffer) / sizeof(HLSL::uint);
+            size_t _MipBufSize = sizeof(MipGenInBuffer) / sizeof(glm::uint);
 
             for (size_t i = 0; i < _MipBufSize; i++)
             {

@@ -98,7 +98,7 @@ namespace EngineConfig
 
     struct SHConfig
     {
-        MoYu::MFloat4 _GSH[7];
+        glm::float4 _GSH[7];
     };
 
     extern SHConfig g_SHConfig;

@@ -116,5 +116,9 @@
         "m_positive_x_map": "asset/texture/sky/skybox_specular_X+.hdr",
         "m_positive_y_map": "asset/texture/sky/skybox_specular_Y+.hdr",
         "m_positive_z_map": "asset/texture/sky/skybox_specular_Z+.hdr"
+    },
+    "m_terrain_map": {
+        "m_height_map": "asset/texture/terrain/HeightMap.png",
+        "m_normal_map": "asset/texture/terrain/NormalMap.png"
     }
 }

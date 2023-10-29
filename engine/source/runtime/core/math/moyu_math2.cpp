@@ -32,43 +32,43 @@ namespace MoYu
 
     //------------------------------------------------------------------------------------------
 
-    MFloat2 MYFloat2::Zero(0.f, 0.f);
-    MFloat2 MYFloat2::One(1.f, 1.f);
-    MFloat2 MYFloat2::UnitX(1.f, 0.f);
-    MFloat2 MYFloat2::UnitY(0.f, 1.f);
+    glm::float2 MYFloat2::Zero(0.f, 0.f);
+    glm::float2 MYFloat2::One(1.f, 1.f);
+    glm::float2 MYFloat2::UnitX(1.f, 0.f);
+    glm::float2 MYFloat2::UnitY(0.f, 1.f);
 
-    MFloat3 MYFloat3::Zero(0.f, 0.f, 0.f);
-    MFloat3 MYFloat3::One(1.f, 1.f, 1.f);
-    MFloat3 MYFloat3::UnitX(1.f, 0.f, 0.f);
-    MFloat3 MYFloat3::UnitY(0.f, 1.f, 0.f);
-    MFloat3 MYFloat3::UnitZ(0.f, 0.f, 1.f);
-    MFloat3 MYFloat3::Up(0.f, 1.f, 0.f);
-    MFloat3 MYFloat3::Down(0.f, -1.f, 0.f);
-    MFloat3 MYFloat3::Right(1.f, 0.f, 0.f);
-    MFloat3 MYFloat3::Left(-1.f, 0.f, 0.f);
-    MFloat3 MYFloat3::Forward(0.f, 0.f, -1.f);
-    MFloat3 MYFloat3::Backward(0.f, 0.f, 1.f);
+    glm::float3 MYFloat3::Zero(0.f, 0.f, 0.f);
+    glm::float3 MYFloat3::One(1.f, 1.f, 1.f);
+    glm::float3 MYFloat3::UnitX(1.f, 0.f, 0.f);
+    glm::float3 MYFloat3::UnitY(0.f, 1.f, 0.f);
+    glm::float3 MYFloat3::UnitZ(0.f, 0.f, 1.f);
+    glm::float3 MYFloat3::Up(0.f, 1.f, 0.f);
+    glm::float3 MYFloat3::Down(0.f, -1.f, 0.f);
+    glm::float3 MYFloat3::Right(1.f, 0.f, 0.f);
+    glm::float3 MYFloat3::Left(-1.f, 0.f, 0.f);
+    glm::float3 MYFloat3::Forward(0.f, 0.f, -1.f);
+    glm::float3 MYFloat3::Backward(0.f, 0.f, 1.f);
 
-    MFloat4 MYFloat4::Zero(0.f, 0.f, 0.f, 0.f);
-    MFloat4 MYFloat4::One(1.f, 1.f, 1.f, 1.f);
-    MFloat4 MYFloat4::UnitX(1.f, 0.f, 0.f, 0.f);
-    MFloat4 MYFloat4::UnitY(0.f, 1.f, 0.f, 0.f);
-    MFloat4 MYFloat4::UnitZ(0.f, 0.f, 1.f, 0.f);
-    MFloat4 MYFloat4::UnitW(0.f, 0.f, 0.f, 1.f);
+    glm::float4 MYFloat4::Zero(0.f, 0.f, 0.f, 0.f);
+    glm::float4 MYFloat4::One(1.f, 1.f, 1.f, 1.f);
+    glm::float4 MYFloat4::UnitX(1.f, 0.f, 0.f, 0.f);
+    glm::float4 MYFloat4::UnitY(0.f, 1.f, 0.f, 0.f);
+    glm::float4 MYFloat4::UnitZ(0.f, 0.f, 1.f, 0.f);
+    glm::float4 MYFloat4::UnitW(0.f, 0.f, 0.f, 1.f);
 
-    MMatrix3x3 MYMatrix3x3::Zero(0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f);
-    MMatrix3x3 MYMatrix3x3::Identity(1.f, 0.f, 0.f, 0.f, 1.f, 0.f, 0.f, 0.f, 1.f);
+    glm::float3x3 MYMatrix3x3::Zero(0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f);
+    glm::float3x3 MYMatrix3x3::Identity(1.f, 0.f, 0.f, 0.f, 1.f, 0.f, 0.f, 0.f, 1.f);
 
-    MMatrix4x4 MYMatrix4x4::Zero(0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f);
-    MMatrix4x4 MYMatrix4x4::Identity(1.f, 0.f, 0.f, 0.f, 0.f, 1.f, 0.f, 0.f, 0.f, 0.f, 1.f, 0.f, 0.f, 0.f, 0.f, 1.f);
+    glm::float4x4 MYMatrix4x4::Zero(0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f);
+    glm::float4x4 MYMatrix4x4::Identity(1.f, 0.f, 0.f, 0.f, 0.f, 1.f, 0.f, 0.f, 0.f, 0.f, 1.f, 0.f, 0.f, 0.f, 0.f, 1.f);
 
-    MQuaternion MYQuaternion::Identity(1.f, 0.f, 0.f, 0.f);
+    glm::quat MYQuaternion::Identity(1.f, 0.f, 0.f, 0.f);
 
     //------------------------------------------------------------------------------------------
 
-    MMatrix4x4 MYMatrix4x4::createPerspectiveFieldOfView(float fovY, float aspectRatio, float zNearPlane, float zFarPlane)
+    glm::float4x4 MYMatrix4x4::createPerspectiveFieldOfView(float fovY, float aspectRatio, float zNearPlane, float zFarPlane)
     {
-       MMatrix4x4 m = Zero;
+       glm::float4x4 m = Zero;
 
         m[0][0] = 1.0f / (aspectRatio * std::tan(fovY * 0.5f));
         m[1][1] = 1.0f / std::tan(fovY * 0.5f);
@@ -79,14 +79,14 @@ namespace MoYu
         return m;
     }
 
-    MMatrix4x4 MYMatrix4x4::createPerspective(float width, float height, float zNearPlane, float zFarPlane)
+    glm::float4x4 MYMatrix4x4::createPerspective(float width, float height, float zNearPlane, float zFarPlane)
     {
         return createPerspectiveOffCenter(-width * 0.5f, width * 0.5f, -height * 0.5f, height * 0.5f, zNearPlane, zFarPlane);
     }
 
-    MMatrix4x4 MYMatrix4x4::createPerspectiveOffCenter(float left, float right, float bottom, float top, float zNearPlane, float zFarPlane)
+    glm::float4x4 MYMatrix4x4::createPerspectiveOffCenter(float left, float right, float bottom, float top, float zNearPlane, float zFarPlane)
     {
-        MMatrix4x4 m = Zero;
+        glm::float4x4 m = Zero;
 
         m[0][0] = 2 * zNearPlane / (right - left);
         m[2][0] = (right + left) / (right - left);
@@ -99,14 +99,14 @@ namespace MoYu
         return m;
     }
 
-    MMatrix4x4 MYMatrix4x4::createOrthographic(float width, float height, float zNearPlane, float zFarPlane)
+    glm::float4x4 MYMatrix4x4::createOrthographic(float width, float height, float zNearPlane, float zFarPlane)
     {
         return createOrthographicOffCenter(-width * 0.5f, width * 0.5f, -height * 0.5f, height * 0.5f, zNearPlane, zFarPlane);
     }
 
-    MMatrix4x4 MYMatrix4x4::createOrthographicOffCenter(float left, float right, float bottom, float top, float zNearPlane, float zFarPlane)
+    glm::float4x4 MYMatrix4x4::createOrthographicOffCenter(float left, float right, float bottom, float top, float zNearPlane, float zFarPlane)
     {
-        MMatrix4x4 m = Zero;
+        glm::float4x4 m = Zero;
 
         m[0][0] = 2 / (right - left);
         m[3][0] = -(right + left) / (right - left);
@@ -119,21 +119,21 @@ namespace MoYu
         return m;
     }
 
-    MMatrix4x4 MYMatrix4x4::createLookAtMatrix(const MFloat3& eye, const MFloat3& center, const MFloat3& up)
+    glm::float4x4 MYMatrix4x4::createLookAtMatrix(const glm::float3& eye, const glm::float3& center, const glm::float3& up)
     {
         glm::mat lookAtMat = glm::lookAtRH(eye, center, up);
         return lookAtMat;
     }
 
-    MMatrix4x4 MYMatrix4x4::createViewMatrix(const MFloat3& position, const MQuaternion& orientation)
+    glm::float4x4 MYMatrix4x4::createViewMatrix(const glm::float3& position, const glm::quat& orientation)
     {
-        glm::mat r_inverse  = glm::toMat4(glm::inverse(orientation));
+        glm::mat r_inverse  = glm::mat4(glm::inverse(orientation));
         glm::mat t_inverse  = glm::translate(glm::mat4(1.0), -position);
         glm::mat tr_inverse = r_inverse * t_inverse;
         return tr_inverse;
     }
 
-    MMatrix4x4 MYMatrix4x4::createWorldMatrix(const MFloat3& position, const MQuaternion& orientation, const MFloat3& scale)
+    glm::float4x4 MYMatrix4x4::createWorldMatrix(const glm::float3& position, const glm::quat& orientation, const glm::float3& scale)
     {
         glm::mat t = glm::translate(glm::mat4(1.0), position);
         glm::mat r = glm::toMat4(orientation);
@@ -142,7 +142,7 @@ namespace MoYu
         return trs;
     }
 
-    MMatrix4x4 MYMatrix4x4::makeTransform(const MFloat3& position, const MQuaternion& orientation, const MFloat3& scale)
+    glm::float4x4 MYMatrix4x4::makeTransform(const glm::float3& position, const glm::quat& orientation, const glm::float3& scale)
     {
         glm::mat t = glm::translate(glm::mat4(1.0), position);
         glm::mat r = glm::toMat4(orientation);
@@ -151,7 +151,7 @@ namespace MoYu
         return trs;
     }
 
-    MMatrix4x4 MYMatrix4x4::makeInverseTransform(const MFloat3& position, const MQuaternion& orientation, const MFloat3& scale)
+    glm::float4x4 MYMatrix4x4::makeInverseTransform(const glm::float3& position, const glm::quat& orientation, const glm::float3& scale)
     {
         glm::mat t_inverse = glm::translate(glm::mat4(1.0), -position);
         glm::mat r_inverse = glm::toMat4(glm::inverse(orientation));
@@ -162,7 +162,7 @@ namespace MoYu
 
     //------------------------------------------------------------------------------------------
 
-    AxisAlignedBox::AxisAlignedBox(const MFloat3& center, const MFloat3& half_extent) { update(center, half_extent); }
+    AxisAlignedBox::AxisAlignedBox(const glm::float3& center, const glm::float3& half_extent) { update(center, half_extent); }
 
     void AxisAlignedBox::merge(const AxisAlignedBox& axis_aligned_box)
     { 
@@ -170,7 +170,7 @@ namespace MoYu
         merge(axis_aligned_box.getMaxCorner());
     }
 
-    void AxisAlignedBox::merge(const MFloat3& new_point)
+    void AxisAlignedBox::merge(const glm::float3& new_point)
     {
         m_min_corner = glm::min(m_min_corner, new_point);
         m_max_corner = glm::max(m_max_corner, new_point);
@@ -179,7 +179,7 @@ namespace MoYu
         m_half_extent = m_center - m_min_corner;
     }
 
-    void AxisAlignedBox::update(const MFloat3& center, const MFloat3& half_extent)
+    void AxisAlignedBox::update(const glm::float3& center, const glm::float3& half_extent)
     {
         m_center      = center;
         m_half_extent = half_extent;

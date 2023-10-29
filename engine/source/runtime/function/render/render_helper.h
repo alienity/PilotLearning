@@ -21,16 +21,16 @@ namespace MoYu
 
     struct BoundingBox
     {
-        MFloat3 min_bound {std::numeric_limits<float>::max(),
+        glm::float3 min_bound {std::numeric_limits<float>::max(),
                            std::numeric_limits<float>::max(),
                            std::numeric_limits<float>::max()};
-        MFloat3 max_bound {std::numeric_limits<float>::min(),
+        glm::float3 max_bound {std::numeric_limits<float>::min(),
                            std::numeric_limits<float>::min(),
                            std::numeric_limits<float>::min()};
 
         BoundingBox() {}
 
-        BoundingBox(const MFloat3& minv, const MFloat3& maxv)
+        BoundingBox(const glm::float3& minv, const glm::float3& maxv)
         {
             min_bound = minv;
             max_bound = maxv;
@@ -42,7 +42,7 @@ namespace MoYu
             max_bound = glm::max(max_bound, rhs.max_bound);
         }
 
-        void merge(const MFloat3& point)
+        void merge(const glm::float3& point)
         {
             min_bound = glm::min(min_bound, point);
             max_bound = glm::max(max_bound, point);

@@ -52,8 +52,8 @@ namespace MoYu
             glm::vec3 _center = (_min + _max) * 0.5f;
             glm::vec3 _half_extent = (_max - _min) * 0.5f;
 
-            MFloat3 center      = _center;
-            MFloat3 half_extent = _half_extent;
+            glm::float3 center      = _center;
+            glm::float3 half_extent = _half_extent;
 
             AxisAlignedBox _outBox = AxisAlignedBox(center, half_extent);
 
@@ -283,4 +283,79 @@ namespace MoYu
         }
 
     }
+
+    namespace TerrainGeometry
+    {
+        D3D12TerrainPatch CreatePatch(glm::float3 position, glm::float2 coord, glm::float4 color)
+        {
+            D3D12TerrainPatch _t;
+            _t.position  = position;
+            _t.texcoord0 = coord;
+            _t.color     = color;
+            _t.normal    = glm::vec3(0, 1, 0);
+            _t.tangent   = glm::vec4(1, 0, 0, 1);
+            return _t;
+        }
+
+        TerrainPatchMesh::TerrainPatchMesh(float scale)
+        {
+            vertices.push_back(CreatePatch(scale * glm::vec3(-2, 0, -2), glm::vec2(0, 0), glm::vec4(0, 0, 0, 0)));
+            vertices.push_back(CreatePatch(scale * glm::vec3(-1, 0, -2), glm::vec2(0.25, 0), glm::vec4(1, 0, 0, 0)));
+            vertices.push_back(CreatePatch(scale * glm::vec3(0, 0, -2), glm::vec2(0.5, 0), glm::vec4(0, 0, 0, 0)));
+            vertices.push_back(CreatePatch(scale * glm::vec3(1, 0, -2), glm::vec2(0.75, 0), glm::vec4(1, 0, 0, 0)));
+            vertices.push_back(CreatePatch(scale * glm::vec3(2, 0, -2), glm::vec2(1.0, 0), glm::vec4(0, 0, 0, 0)));
+
+            vertices.push_back(CreatePatch(scale * glm::vec3(-2, 0, -1), glm::vec2(0, 0.25), glm::vec4(0, 0, 1, 0)));
+            vertices.push_back(CreatePatch(scale * glm::vec3(-1, 0, -1), glm::vec2(0.25, 0.25), glm::vec4(0, 0, 0, 0)));
+            vertices.push_back(CreatePatch(scale * glm::vec3(0, 0, -1), glm::vec2(0.5, 0.25), glm::vec4(0, 0, 0, 0)));
+            vertices.push_back(CreatePatch(scale * glm::vec3(1, 0, -1), glm::vec2(0.75, 0.25), glm::vec4(0, 0, 0, 0)));
+            vertices.push_back(CreatePatch(scale * glm::vec3(2, 0, -1), glm::vec2(1.0, 0.25), glm::vec4(0, 0, 0, 1)));
+
+            vertices.push_back(CreatePatch(scale * glm::vec3(-2, 0, 0), glm::vec2(0, 0.5), glm::vec4(0, 0, 0, 0)));
+            vertices.push_back(CreatePatch(scale * glm::vec3(-1, 0, 0), glm::vec2(0.25, 0.5), glm::vec4(0, 0, 0, 0)));
+            vertices.push_back(CreatePatch(scale * glm::vec3(0, 0, 0), glm::vec2(0.5, 0.5), glm::vec4(0, 0, 0, 0)));
+            vertices.push_back(CreatePatch(scale * glm::vec3(1, 0, 0), glm::vec2(0.75, 0.5), glm::vec4(0, 0, 0, 0)));
+            vertices.push_back(CreatePatch(scale * glm::vec3(2, 0, 0), glm::vec2(1.0, 0.5), glm::vec4(0, 0, 0, 0)));
+
+            vertices.push_back(CreatePatch(scale * glm::vec3(-2, 0, 1), glm::vec2(0, 0.75), glm::vec4(0, 0, 1, 0)));
+            vertices.push_back(CreatePatch(scale * glm::vec3(-1, 0, 1), glm::vec2(0.25, 0.75), glm::vec4(0, 0, 0, 0)));
+            vertices.push_back(CreatePatch(scale * glm::vec3(0, 0, 1), glm::vec2(0.5, 0.75), glm::vec4(0, 0, 0, 0)));
+            vertices.push_back(CreatePatch(scale * glm::vec3(1, 0, 1), glm::vec2(0.75, 0.75), glm::vec4(0, 0, 0, 0)));
+            vertices.push_back(CreatePatch(scale * glm::vec3(2, 0, 1), glm::vec2(1.0, 0.75), glm::vec4(0, 0, 0, 1)));
+
+            vertices.push_back(CreatePatch(scale * glm::vec3(-2, 0, 2), glm::vec2(0, 1.0), glm::vec4(0, 0, 0, 0)));
+            vertices.push_back(CreatePatch(scale * glm::vec3(-1, 0, 2), glm::vec2(0.25, 1.0), glm::vec4(0, 1, 0, 0)));
+            vertices.push_back(CreatePatch(scale * glm::vec3(0, 0, 2), glm::vec2(0.5, 1.0), glm::vec4(0, 0, 0, 0)));
+            vertices.push_back(CreatePatch(scale * glm::vec3(1, 0, 2), glm::vec2(0.75, 1.0), glm::vec4(0, 1, 0, 0)));
+            vertices.push_back(CreatePatch(scale * glm::vec3(2, 0, 2), glm::vec2(1.0, 1.0), glm::vec4(0, 0, 0, 0)));
+
+            #define AddTriIndices(a, b, c) indices.push_back(a); indices.push_back(b); indices.push_back(c);
+
+            #define AddQuadIndices(d) AddTriIndices(0 + d, 5 + d, 6 + d) AddTriIndices(0 + d, 6 + d, 1 + d)
+
+            #define AddQuadIndices4(d) AddQuadIndices(d) AddQuadIndices(d + 1) AddQuadIndices(d + 2) AddQuadIndices(d + 3)
+
+            #define AddQuadIndices16() AddQuadIndices4(0) AddQuadIndices4(5) AddQuadIndices4(10) AddQuadIndices4(15) AddQuadIndices4(20)
+
+            AddQuadIndices16()
+        }
+
+        TerrainPatchMesh ToTerrainPatchMesh(float scale)
+        {
+            TerrainPatchMesh _mesh = TerrainPatchMesh(scale);
+            return _mesh;
+        }
+
+        AxisAlignedBox ToAxisAlignedBox(const TerrainPatchMesh& basicMesh)
+        {
+            return AxisAlignedBox();
+        }
+
+        StaticMeshData ToStaticMesh(const TerrainPatchMesh& basicMesh)
+        {
+            return StaticMeshData();
+        }
+    }
+
+
 }

@@ -6,6 +6,7 @@
 #include "runtime/function/render/renderer/tool_pass.h"
 #include "runtime/function/render/renderer/ui_pass.h"
 #include "runtime/function/render/renderer/indirect_cull_pass.h"
+#include "runtime/function/render/renderer/terrain_cull_pass.h"
 #include "runtime/function/render/renderer/indirect_shadow_pass.h"
 #include "runtime/function/render/renderer/indirect_draw_pass.h"
 #include "runtime/function/render/renderer/skybox_pass.h"
@@ -51,6 +52,7 @@ namespace MoYu
 
         std::shared_ptr<UIPass>                      mUIPass;
         std::shared_ptr<IndirectCullPass>            mIndirectCullPass;
+        std::shared_ptr<IndirectTerrainCullPass>     mTerrainCullPass;
         std::shared_ptr<IndirectShadowPass>          mIndirectShadowPass;
         std::shared_ptr<IndirectGBufferPass>         mIndirectGBufferPass;
         std::shared_ptr<IndirectLightLoopPass>       mIndirectLightLoopPass;

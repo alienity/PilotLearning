@@ -234,7 +234,7 @@ namespace MoYu
             else
             {
                 auto _load_pixels = stbi_load(file_path_str.c_str(), &iw, &ih, &in, desired_channels);
-                texture->Initialize2D(DXGI_FORMAT::DXGI_FORMAT_R8G8B8A8_UNORM, iw, ih, 1, 1);
+                texture->Initialize2D(DXGI_FORMAT::DXGI_FORMAT_R8G8B8A8_TYPELESS, iw, ih, 1, 1);
                 uint8_t* _pixels = texture->GetPixels();
                 memcpy(_pixels, _load_pixels, sizeof(char) * 4 * iw * ih);
                 stbi_image_free(_load_pixels);
@@ -290,7 +290,7 @@ namespace MoYu
                 for (size_t i = 0; i < bind_data->vertex_buffer.size(); i++)
                 {
                     Vertex v = bind_data->vertex_buffer[i];
-                    bounding_box.merge(MFloat3(v.px, v.py, v.pz));
+                    bounding_box.merge(glm::float3(v.px, v.py, v.pz));
                 }
                 ret.m_axis_aligned_box = bounding_box;
             }

@@ -45,7 +45,7 @@ public:
 
     size_t getBytesPerRow() const { return mBpr; }
 
-    size_t getBytesPerPixel() const { return sizeof(MoYu::MFloat3); }
+    size_t getBytesPerPixel() const { return sizeof(glm::float3); }
 
     void* getData() const { return mData; }
 

@@ -39,8 +39,8 @@ namespace MoYu
 
         CameraMode m_camera_mode {CameraMode::invalid};
 
-        MFloat3 m_foward {MYFloat3::Forward};
-        MFloat3 m_up {MYFloat3::Up};
-        MFloat3 m_left{MYFloat3::Left};
+        glm::float3 m_foward {MYFloat3::Forward};
+        glm::float3 m_up {MYFloat3::Up};
+        glm::float3 m_left{MYFloat3::Left};
     };
 } // namespace MoYu

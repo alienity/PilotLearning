@@ -17,22 +17,22 @@ namespace MoYu
 
         void markToErase() override {};
 
-        MFloat3    getPosition() const { return m_transform_buffer[m_current_index].m_position; }
-        MFloat3    getScale() const { return m_transform_buffer[m_current_index].m_scale; }
-        MQuaternion getRotation() const { return m_transform_buffer[m_current_index].m_rotation; }
+        glm::float3    getPosition() const { return m_transform_buffer[m_current_index].m_position; }
+        glm::float3    getScale() const { return m_transform_buffer[m_current_index].m_scale; }
+        glm::quat getRotation() const { return m_transform_buffer[m_current_index].m_rotation; }
 
-        void setPosition(const MFloat3& new_translation);
-        void setScale(const MFloat3& new_scale);
-        void setRotation(const MQuaternion& new_rotation);
+        void setPosition(const glm::float3& new_translation);
+        void setScale(const glm::float3& new_scale);
+        void setRotation(const glm::quat& new_rotation);
 
         const Transform& getTransformConst() const { return m_transform_buffer[m_current_index]; }
 
         // for editor
         Transform& getTransform() { return m_transform_buffer[m_next_index]; }
 
-        const MMatrix4x4 getMatrix() const { return m_transform_buffer[m_current_index].getMatrix(); }
+        const glm::float4x4 getMatrix() const { return m_transform_buffer[m_current_index].getMatrix(); }
 
-        const MMatrix4x4 getMatrixWorld();
+        const glm::float4x4 getMatrixWorld();
 
         const bool isMatrixDirty() const;
 
@@ -40,13 +40,13 @@ namespace MoYu
         void tick(float delta_time) override;
         void lateTick(float delta_time) override;
 
-        static MMatrix4x4 getMatrixWorldRecursively(const TransformComponent* trans);
+        static glm::float4x4 getMatrixWorldRecursively(const TransformComponent* trans);
         static bool isDirtyRecursively(const TransformComponent* trans);
         static void UpdateWorldMatrixRecursively(TransformComponent* trans);
 
     private:
-        MMatrix4x4 m_matrix_world_prev {MYMatrix4x4::Zero};
-        MMatrix4x4 m_matrix_world {MYMatrix4x4::Identity};
+        glm::float4x4 m_matrix_world_prev {MYMatrix4x4::Zero};
+        glm::float4x4 m_matrix_world {MYMatrix4x4::Identity};
 
         //Transform m_transform;
 

@@ -17,14 +17,14 @@ namespace MoYu
     public:
         RenderCameraType m_current_camera_type {RenderCameraType::Editor};
 
-        MFloat3 m_up_axis {Y};
+        glm::float3 m_up_axis {Y};
 
         // 可以从已知数据中计算出来
-        MFloat3     m_position {0.0f, 0.0f, 0.0f};
-        MQuaternion m_rotation {MYQuaternion::Identity};
-        MQuaternion m_invRotation {MYQuaternion::Identity};
+        glm::float3     m_position {0.0f, 0.0f, 0.0f};
+        glm::quat m_rotation {MYQuaternion::Identity};
+        glm::quat m_invRotation {MYQuaternion::Identity};
         float       m_aspect {1.78f};
-        MMatrix4x4  m_project_matrix {MYMatrix4x4::Identity};
+        glm::float4x4  m_project_matrix {MYMatrix4x4::Identity};
 
         // 需要传入，以计算projectionMatrix
         int       m_width {1366};
@@ -33,39 +33,39 @@ namespace MoYu
         float     m_zfar {1000.0f};
         float     m_fovy {90.f};
         bool      m_isPerspective {true};
-        MMatrix4x4 m_view_matrix {MYMatrix4x4::Identity};
+        glm::float4x4 m_view_matrix {MYMatrix4x4::Identity};
 
-        static const MFloat3 X, Y, Z;
+        static const glm::float3 X, Y, Z;
 
         static constexpr float MIN_FOVY {10.0f};
         static constexpr float MAX_FOVY {120.0f};
         static constexpr int   MAIN_VIEW_MATRIX_INDEX {0};
 
-        void setMainViewMatrix(const MMatrix4x4& view_matrix, RenderCameraType type = RenderCameraType::Editor);
+        void setMainViewMatrix(const glm::float4x4& view_matrix, RenderCameraType type = RenderCameraType::Editor);
          
-        void move(MFloat3 delta);
-        void rotate(MFloat2 delta); // delta.x -- yaw, delta.y -- pitch
+        void move(glm::float3 delta);
+        void rotate(glm::float2 delta); // delta.x -- yaw, delta.y -- pitch
         void zoom(float offset);
-        void lookAt(const MFloat3& position, const MFloat3& target, const MFloat3& up);
+        void lookAt(const glm::float3& position, const glm::float3& target, const glm::float3& up);
         void perspectiveProjection(int width, int height, float znear, float zfar, float fovy);
 
-        MFloat3    position() const { return m_position; }
-        MQuaternion rotation() const { return m_rotation; }
+        glm::float3    position() const { return m_position; }
+        glm::quat rotation() const { return m_rotation; }
 
-        MFloat3   forward() const { return (m_invRotation * (-Z)); }
-        MFloat3   up() const { return (m_invRotation * Y); }
-        MFloat3   right() const { return (m_invRotation * X); }
+        glm::float3   forward() const { return (m_invRotation * (-Z)); }
+        glm::float3   up() const { return (m_invRotation * Y); }
+        glm::float3   right() const { return (m_invRotation * X); }
 
-        MMatrix4x4 getViewMatrix();
-        MMatrix4x4 getPersProjMatrix() const;
-        MMatrix4x4 getLookAtMatrix() const;
+        glm::float4x4 getViewMatrix();
+        glm::float4x4 getPersProjMatrix() const;
+        glm::float4x4 getLookAtMatrix() const;
 
     protected:
         std::mutex m_view_matrix_mutex;
     };
 
-    inline const MFloat3 RenderCamera::X = {1.0f, 0.0f, 0.0f};
-    inline const MFloat3 RenderCamera::Y = {0.0f, 1.0f, 0.0f};
-    inline const MFloat3 RenderCamera::Z = {0.0f, 0.0f, 1.0f};
+    inline const glm::float3 RenderCamera::X = {1.0f, 0.0f, 0.0f};
+    inline const glm::float3 RenderCamera::Y = {0.0f, 1.0f, 0.0f};
+    inline const glm::float3 RenderCamera::Z = {0.0f, 0.0f, 1.0f};
 
 } // namespace MoYu

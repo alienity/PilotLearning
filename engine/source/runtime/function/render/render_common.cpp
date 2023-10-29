@@ -124,6 +124,23 @@ namespace MoYu
         RHI::D3D12InputLayout( D3D12MeshVertexPositionNormalTangentTextureJointBinding::InputElements, 
             D3D12MeshVertexPositionNormalTangentTextureJointBinding::InputElementCount);
 
+    //--------------------------------------------------------------------------------------
+    // Vertex struct holding position, normal, tangent and texture mapping information.
+    const D3D12_INPUT_ELEMENT_DESC D3D12TerrainPatch::InputElements[] =
+    {
+        { "POSITION",    0, DXGI_FORMAT_R32G32B32_FLOAT,    0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+        { "NORMAL",      0, DXGI_FORMAT_R32G32B32_FLOAT,    0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+        { "TANGENT",     0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+        { "TEXCOORD",    0, DXGI_FORMAT_R32G32_FLOAT,       0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+        { "COLOR",       0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+    };
+
+    static_assert(sizeof(D3D12TerrainPatch) == 64, "Vertex struct/layout mismatch");
+
+    const RHI::D3D12InputLayout D3D12TerrainPatch::InputLayout = 
+        RHI::D3D12InputLayout( D3D12TerrainPatch::InputElements, D3D12TerrainPatch::InputElementCount);
+
+
     // clang-format on
 
 

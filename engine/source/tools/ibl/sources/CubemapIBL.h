@@ -45,7 +45,7 @@ public:
      * @param updater           a callback for the caller to track progress
      */
     static void roughnessFilter(Cubemap& dst, const std::vector<Cubemap>& levels,
-            float linearRoughness, size_t maxNumSamples, MoYu::MFloat3 mirror, bool prefilter);
+            float linearRoughness, size_t maxNumSamples, glm::float3 mirror, bool prefilter);
 
     //! Computes the "DFG" term of the "split-sum" approximation and stores it in a 2D image
     static void DFG(Image& dst, bool multiscatter, bool cloth);

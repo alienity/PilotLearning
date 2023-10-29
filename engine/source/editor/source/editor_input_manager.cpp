@@ -41,11 +41,11 @@ namespace MoYu
                                                                              std::placeholders::_4));
     }
 
-    void EditorInputManager::updateCursorOnAxis(MFloat2 cursor_uv)
+    void EditorInputManager::updateCursorOnAxis(glm::float2 cursor_uv)
     {
         //if (g_editor_global_context.m_scene_manager->getEditorCamera())
         //{
-        //    MFloat2 window_size(m_engine_window_size.x, m_engine_window_size.y);
+        //    glm::float2 window_size(m_engine_window_size.x, m_engine_window_size.y);
         //    m_cursor_on_axis = g_editor_global_context.m_scene_manager->updateCursorOnAxis(cursor_uv, window_size);
         //}
     }
@@ -54,32 +54,32 @@ namespace MoYu
     {
         float           camera_speed  = m_camera_speed;
         std::shared_ptr editor_camera = g_editor_global_context.m_scene_manager->getEditorCamera();
-        MQuaternion     camera_rotate = glm::inverse(editor_camera->rotation());
-        MFloat3         camera_relative_pos(0, 0, 0);
+        glm::quat       camera_rotate = glm::inverse(editor_camera->rotation());
+        glm::float3     camera_relative_pos(0, 0, 0);
 
         if ((unsigned int)EditorCommand::camera_foward & m_editor_command)
         {
-            camera_relative_pos += camera_rotate * MFloat3 {0, 0, -camera_speed};
+            camera_relative_pos += camera_rotate * glm::float3 {0, 0, -camera_speed};
         }
         if ((unsigned int)EditorCommand::camera_back & m_editor_command)
         {
-            camera_relative_pos += camera_rotate * MFloat3 {0, 0, camera_speed};
+            camera_relative_pos += camera_rotate * glm::float3 {0, 0, camera_speed};
         }
         if ((unsigned int)EditorCommand::camera_left & m_editor_command)
         {
-            camera_relative_pos += camera_rotate * MFloat3 {-camera_speed, 0, 0};
+            camera_relative_pos += camera_rotate * glm::float3 {-camera_speed, 0, 0};
         }
         if ((unsigned int)EditorCommand::camera_right & m_editor_command)
         {
-            camera_relative_pos += camera_rotate * MFloat3 {camera_speed, 0, 0};
+            camera_relative_pos += camera_rotate * glm::float3 {camera_speed, 0, 0};
         }
         if ((unsigned int)EditorCommand::camera_up & m_editor_command)
         {
-            camera_relative_pos += MFloat3 {0, camera_speed, 0};
+            camera_relative_pos += glm::float3 {0, camera_speed, 0};
         }
         if ((unsigned int)EditorCommand::camera_down & m_editor_command)
         {
-            camera_relative_pos += MFloat3 {0, -camera_speed, 0};
+            camera_relative_pos += glm::float3 {0, -camera_speed, 0};
         }
         if ((unsigned int)EditorCommand::delete_object & m_editor_command)
         {
@@ -210,7 +210,7 @@ namespace MoYu
                     yoffset *= angularVelocity;
 
                     auto _camera = g_editor_global_context.m_scene_manager->getEditorCamera();
-                    _camera->rotate(MFloat2(xoffset, yoffset));
+                    _camera->rotate(glm::float2(xoffset, yoffset));
                 }
                 else if (g_editor_global_context.m_window_system->isMouseButtonDown(GLFW_MOUSE_BUTTON_LEFT))
                 {
@@ -235,7 +235,7 @@ namespace MoYu
 
                     if (isCursorInRect(m_engine_window_pos, m_engine_window_size))
                     {
-                        MFloat2 cursor_uv = MFloat2((m_mouse_x - m_engine_window_pos.x) / m_engine_window_size.x,
+                        glm::float2 cursor_uv = glm::float2((m_mouse_x - m_engine_window_pos.x) / m_engine_window_size.x,
                                                     (m_mouse_y - m_engine_window_pos.y) / m_engine_window_size.y);
                         updateCursorOnAxis(cursor_uv);
                     }
@@ -284,7 +284,7 @@ namespace MoYu
 
     void EditorInputManager::onWindowClosed() { g_editor_global_context.m_engine_runtime->shutdownEngine(); }
 
-    bool EditorInputManager::isCursorInRect(MFloat2 pos, MFloat2 size) const
+    bool EditorInputManager::isCursorInRect(glm::float2 pos, glm::float2 size) const
     {
         return pos.x <= m_mouse_x && m_mouse_x <= pos.x + size.x && pos.y <= m_mouse_y && m_mouse_y <= pos.y + size.y;
     }

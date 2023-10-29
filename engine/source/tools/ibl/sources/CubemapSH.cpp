@@ -22,8 +22,6 @@
 
 #include "CubemapUtilsImpl.h"
 
-#include "core/math/moyu_math.h"
-
 #include <array>
 #include <limits>
 #include <iomanip>
@@ -106,7 +104,7 @@ constexpr float CubemapSH::computeTruncatedCosSh(size_t l) {
 void CubemapSH::computeShBasis(
         float* SHb,
         size_t numBands,
-        const MoYu::Vector3& s)
+        const glm::float3& s)
 {
 #if 0
     // Reference implementation
@@ -203,54 +201,54 @@ void CubemapSH::computeShBasis(
 /*
  * utilities to rotate very low order spherical harmonics (up to 3rd band)
  */
-MoYu::Vector3 CubemapSH::rotateShericalHarmonicBand1(MoYu::Vector3 band1, MoYu::Matrix3x3 const& M) {
+glm::float3 CubemapSH::rotateShericalHarmonicBand1(glm::float3 band1, glm::float3x3 const& M) {
 
     // inverse() is not constexpr -- so we pre-calculate it in mathematica
     //
-    //    constexpr MoYu::Vector3 N0{ 1, 0, 0 };
-    //    constexpr MoYu::Vector3 N1{ 0, 1, 0 };
-    //    constexpr MoYu::Vector3 N2{ 0, 0, 1 };
+    //    constexpr glm::float3 N0{ 1, 0, 0 };
+    //    constexpr glm::float3 N1{ 0, 1, 0 };
+    //    constexpr glm::float3 N2{ 0, 0, 1 };
     //
     //    constexpr mat3f A1 = { // this is the projection of N0, N1, N2 to SH space
-    //            MoYu::Vector3{ -N0.y, N0.z, -N0.x },
-    //            MoYu::Vector3{ -N1.y, N1.z, -N1.x },
-    //            MoYu::Vector3{ -N2.y, N2.z, -N2.x }
+    //            glm::float3{ -N0.y, N0.z, -N0.x },
+    //            glm::float3{ -N1.y, N1.z, -N1.x },
+    //            glm::float3{ -N2.y, N2.z, -N2.x }
     //    };
     //
     //    const mat3f invA1 = inverse(A1);
 
-    MoYu::Matrix3x3 invA1TimesK = MoYu::Matrix3x3(0, 0, -1, -1, 0, 0, 0, 1, 0);
+    glm::float3x3 invA1TimesK = glm::float3x3(0, 0, -1, -1, 0, 0, 0, 1, 0);
     //{
-    //        MoYu::Vector3{ 0, -1,  0 },
-    //        MoYu::Vector3{ 0,  0,  1 },
-    //        MoYu::Vector3{-1,  0,  0 }
+    //        glm::float3{ 0, -1,  0 },
+    //        glm::float3{ 0,  0,  1 },
+    //        glm::float3{-1,  0,  0 }
     //};
 
     // below can't be constexpr
-    const MoYu::Vector3 MN0 = M.getColumn(0);  // M * N0;
-    const MoYu::Vector3 MN1 = M.getColumn(1);  // M * N1;
-    const MoYu::Vector3 MN2 = M.getColumn(2);  // M * N2;
-    const MoYu::Matrix3x3 R1OverK =
-        MoYu::Matrix3x3(-MN0.y, -MN1.y, -MN2.y, MN0.z, MN1.z, MN2.z, -MN0.x, -MN1.x, -MN2.x);
+    const glm::float3 MN0 = glm::column(M, 0);  // M * N0;
+    const glm::float3 MN1 = glm::column(M, 1);  // M * N1;
+    const glm::float3 MN2 = glm::column(M, 2);  // M * N2;
+    const glm::float3x3 R1OverK =
+        glm::float3x3(-MN0.y, -MN1.y, -MN2.y, MN0.z, MN1.z, MN2.z, -MN0.x, -MN1.x, -MN2.x);
     //{
-    //        MoYu::Vector3{ -MN0.y, MN0.z, -MN0.x },
-    //        MoYu::Vector3{ -MN1.y, MN1.z, -MN1.x },
-    //        MoYu::Vector3{ -MN2.y, MN2.z, -MN2.x }
+    //        glm::float3{ -MN0.y, MN0.z, -MN0.x },
+    //        glm::float3{ -MN1.y, MN1.z, -MN1.x },
+    //        glm::float3{ -MN2.y, MN2.z, -MN2.x }
     //};
 
     return R1OverK * (invA1TimesK * band1);
 }
 
-CubemapSH::float5 CubemapSH::rotateShericalHarmonicBand2(float5 const& band2, MoYu::Matrix3x3 const& M) {
+CubemapSH::float5 CubemapSH::rotateShericalHarmonicBand2(float5 const& band2, glm::float3x3 const& M) {
     constexpr float M_SQRT_3  = 1.7320508076f;
     constexpr float n = F_SQRT1_2;
 
     //  Below we precompute (with help of Mathematica):
-    //    constexpr MoYu::Vector3 N0{ 1, 0, 0 };
-    //    constexpr MoYu::Vector3 N1{ 0, 0, 1 };
-    //    constexpr MoYu::Vector3 N2{ n, n, 0 };
-    //    constexpr MoYu::Vector3 N3{ n, 0, n };
-    //    constexpr MoYu::Vector3 N4{ 0, n, n };
+    //    constexpr glm::float3 N0{ 1, 0, 0 };
+    //    constexpr glm::float3 N1{ 0, 0, 1 };
+    //    constexpr glm::float3 N2{ n, n, 0 };
+    //    constexpr glm::float3 N3{ n, 0, n };
+    //    constexpr glm::float3 N4{ 0, n, n };
     //    constexpr float M_SQRT_PI = 1.7724538509f;
     //    constexpr float M_SQRT_15 = 3.8729833462f;
     //    constexpr float k = M_SQRT_15 / (2.0f * M_SQRT_PI);
@@ -265,7 +263,7 @@ CubemapSH::float5 CubemapSH::rotateShericalHarmonicBand2(float5 const& band2, Mo
 
     // This projects a vec3 to SH2/k space (i.e. we premultiply by 1/k)
     // below can't be constexpr
-    auto project = [](MoYu::Vector3 s) -> float5 {
+    auto project = [](glm::float3 s) -> float5 {
         return {
                                        (s.y * s.x),
                                      - (s.y * s.z),
@@ -282,11 +280,11 @@ CubemapSH::float5 CubemapSH::rotateShericalHarmonicBand2(float5 const& band2, Mo
     // this is: mat5{project(N0), project(N1), project(N2), project(N3), project(N4)} / k
     // (the 1/k comes from project(), see above)
     const float5 ROverK[5] = {
-            project(M.getColumn(0)),                  // M * N0
-            project(M.getColumn(2)),                  // M * N1
-            project(n * (M.getColumn(0) + M.getColumn(1))),     // M * N2
-            project(n * (M.getColumn(0) + M.getColumn(2))),     // M * N3
-            project(n * (M.getColumn(1) + M.getColumn(2)))      // M * N4
+            project(glm::column(M, 0)),                  // M * N0
+            project(glm::column(M, 2)),                  // M * N1
+            project(n * (glm::column(M, 0) + glm::column(M, 1))),     // M * N2
+            project(n * (glm::column(M, 0) + glm::column(M, 2))),     // M * N3
+            project(n * (glm::column(M, 1) + glm::column(M, 2)))      // M * N4
     };
 
     // notice how "k" disappears
@@ -328,15 +326,15 @@ float CubemapSH::sincWindow(size_t l, float w) {
     return std::pow(x, 4);
 }
 
-void CubemapSH::windowSH(std::unique_ptr<MoYu::Vector3[]>& sh, size_t numBands, float cutoff) {
+void CubemapSH::windowSH(std::unique_ptr<glm::float3[]>& sh, size_t numBands, float cutoff) {
 
     using SH3 = std::array<float, 9>;
 
-    auto rotateSh3Bands = [](SH3 const& sh, MoYu::Matrix3x3 M) -> SH3 {
+    auto rotateSh3Bands = [](SH3 const& sh, glm::float3x3 M) -> SH3 {
         SH3 out;
         const float b0 = sh[0];
-        const MoYu::Vector3 band1{ sh[1], sh[2], sh[3] };
-        const MoYu::Vector3 b1 = rotateShericalHarmonicBand1(band1, M);
+        const glm::float3 band1{ sh[1], sh[2], sh[3] };
+        const glm::float3 b1 = rotateShericalHarmonicBand1(band1, M);
         const float5 band2{ sh[4], sh[5], sh[6], sh[7], sh[8] };
         const float5 b2 = rotateShericalHarmonicBand2(band2, M);
         return { b0, b1[0], b1[1], b1[2], b2[0], b2[1], b2[2], b2[3], b2[4] };
@@ -363,14 +361,14 @@ void CubemapSH::windowSH(std::unique_ptr<MoYu::Vector3[]>& sh, size_t numBands, 
         };
 
         // first this to do is to rotate the SH to align Z with the optimal linear direction
-        const MoYu::Vector3 dir = MoYu::Vector3::normalize(MoYu::Vector3{ -f[3], -f[1], f[2] });
-        const MoYu::Vector3 z_axis = -dir;
-        const MoYu::Vector3 x_axis = MoYu::Vector3::normalize(MoYu::Vector3::cross(z_axis, MoYu::Vector3 {0, 1, 0}));
-        const MoYu::Vector3 y_axis = MoYu::Vector3::cross(x_axis, z_axis);
-        const MoYu::Matrix3x3 M = MoYu::Matrix3x3(x_axis, y_axis, -z_axis);
+        const glm::float3 dir = glm::normalize(glm::float3{ -f[3], -f[1], f[2] });
+        const glm::float3 z_axis = -dir;
+        const glm::float3 x_axis = glm::normalize(glm::cross(z_axis, glm::float3 {0, 1, 0}));
+        const glm::float3 y_axis = glm::cross(x_axis, z_axis);
+        const glm::float3x3 M = glm::float3x3(x_axis, y_axis, -z_axis);
 
         f = rotateSh3Bands(f, M);
-        // here we're guaranteed to have normalize(MoYu::Vector3{ -f[3], -f[1], f[2] }) == { 0, 0, 1 }
+        // here we're guaranteed to have normalize(glm::float3{ -f[3], -f[1], f[2] }) == { 0, 0, 1 }
 
 
         // Find the min for |m| = 2
@@ -505,22 +503,22 @@ void CubemapSH::windowSH(std::unique_ptr<MoYu::Vector3[]>& sh, size_t numBands, 
     }
 }
 
-std::unique_ptr<MoYu::Vector3[]> CubemapSH::computeSH(const Cubemap& cm, size_t numBands, bool irradiance) {
+std::unique_ptr<glm::float3[]> CubemapSH::computeSH(const Cubemap& cm, size_t numBands, bool irradiance) {
 
     const size_t numCoefs = numBands * numBands;
-    std::unique_ptr<MoYu::Vector3[]> SH(new MoYu::Vector3[numCoefs]{});
+    std::unique_ptr<glm::float3[]> SH(new glm::float3[numCoefs]{});
 
     struct State {
         State() = default;
         explicit State(size_t numCoefs) : numCoefs(numCoefs) { }
 
         State& operator=(State const & rhs) {
-            SH.reset(new MoYu::Vector3[rhs.numCoefs]{}); // NOLINT(modernize-make-unique)
+            SH.reset(new glm::float3[rhs.numCoefs]{}); // NOLINT(modernize-make-unique)
             SHb.reset(new float[rhs.numCoefs]{}); // NOLINT(modernize-make-unique)
             return *this;
         }
         size_t numCoefs = 0;
-        std::unique_ptr<MoYu::Vector3[]> SH;
+        std::unique_ptr<glm::float3[]> SH;
         std::unique_ptr<float[]> SHb;
     } prototype(numCoefs);
 
@@ -528,10 +526,10 @@ std::unique_ptr<MoYu::Vector3[]> CubemapSH::computeSH(const Cubemap& cm, size_t 
             [&](State& state, size_t y, Cubemap::Face f, Cubemap::Texel const* data, size_t dim) {
         for (size_t x=0 ; x<dim ; ++x, ++data) {
 
-            MoYu::Vector3 s(cm.getDirectionFor(f, x, y));
+            glm::float3 s(cm.getDirectionFor(f, x, y));
 
             // sample a color
-            MoYu::Vector3 color(Cubemap::sampleAt(data));
+            glm::float3 color(Cubemap::sampleAt(data));
 
             // take solid angle into account
             color *= CubemapUtils::solidAngle(dim, x, y);
@@ -573,7 +571,7 @@ std::unique_ptr<MoYu::Vector3[]> CubemapSH::computeSH(const Cubemap& cm, size_t 
 }
 
 void CubemapSH::renderSH(Cubemap& cm,
-        const std::unique_ptr<MoYu::Vector3[]>& sh, size_t numBands) {
+        const std::unique_ptr<glm::float3[]>& sh, size_t numBands) {
     const size_t numCoefs = numBands * numBands;
 
     // precompute the scaling factor K
@@ -581,7 +579,7 @@ void CubemapSH::renderSH(Cubemap& cm,
 
     struct State {
         // we compute the min just for debugging -- it's not actually needed.
-        MoYu::Vector3 min = std::numeric_limits<float>::max();
+        glm::float3 min = glm::float3(std::numeric_limits<float>::max());
     } prototype;
 
     CubemapUtils::process<State>(cm,
@@ -589,19 +587,19 @@ void CubemapSH::renderSH(Cubemap& cm,
                     Cubemap::Face f, Cubemap::Texel* data, size_t dim) {
                 std::vector<float> SHb(numCoefs);
                 for (size_t x = 0; x < dim; ++x, ++data) {
-                    MoYu::Vector3 s(cm.getDirectionFor(f, x, y));
+                    glm::float3 s(cm.getDirectionFor(f, x, y));
                     computeShBasis(SHb.data(), numBands, s);
-                    MoYu::Vector3 c = 0;
+                    glm::float3 c = glm::float3(0);
                     for (size_t i = 0; i < numCoefs; i++) {
                         c += sh[i] * (K[i] * SHb[i]);
                     }
                     c *= F_1_PI;
-                    state.min = MoYu::Vector3::_min(c, state.min);
+                    state.min = glm::min(c, state.min);
                     Cubemap::writeAt(data, Cubemap::Texel(c));
                 }
             },
             [&](State& state) {
-                prototype.min = MoYu::Vector3::_min(prototype.min, state.min);
+                prototype.min = glm::min(prototype.min, state.min);
             }, prototype);
     //slog.d << prototype.min << io::endl;
 }
@@ -611,7 +609,7 @@ void CubemapSH::renderSH(Cubemap& cm,
  * truncated cos(theta) (i.e.: saturate(s.z)), pre-scaled by the reconstruction
  * factors.
  */
-void CubemapSH::preprocessSHForShader(std::unique_ptr<MoYu::Vector3[]>& SH) {
+void CubemapSH::preprocessSHForShader(std::unique_ptr<glm::float3[]>& SH) {
     constexpr size_t numBands = 3;
     constexpr size_t numCoefs = numBands * numBands;
 
@@ -654,13 +652,13 @@ void CubemapSH::preprocessSHForShader(std::unique_ptr<MoYu::Vector3[]>& SH) {
     }
 }
 
-void CubemapSH::renderPreScaledSH3Bands(Cubemap& cm, const std::unique_ptr<MoYu::Vector3[]>& sh) {
+void CubemapSH::renderPreScaledSH3Bands(Cubemap& cm, const std::unique_ptr<glm::float3[]>& sh) {
     CubemapUtils::process<CubemapUtils::EmptyState>(cm,
             [&](CubemapUtils::EmptyState&, size_t y, Cubemap::Face f, Cubemap::Texel* data,
                     size_t dim) {
                 for (size_t x = 0; x < dim; ++x, ++data) {
-                    MoYu::Vector3 s(cm.getDirectionFor(f, x, y));
-                    MoYu::Vector3 c = 0;
+                    glm::float3 s(cm.getDirectionFor(f, x, y));
+                    glm::float3 c = glm::float3(0);
                     c += sh[0];
 
                     c += sh[1] * s.y;
@@ -707,7 +705,7 @@ float CubemapSH::Legendre(size_t l, size_t m, float x) {
 }
 
 // Only used for debugging
-float  CubemapSH::TSH(int l, int m, const MoYu::Vector3& d) {
+float  CubemapSH::TSH(int l, int m, const glm::float3& d) {
     if (l==0 && m==0) {
         return 1 / (2*sqrt(F_PI));
     } else if (l==1 && m==-1) {

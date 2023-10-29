@@ -14,10 +14,10 @@ namespace MoYu
         
         bool    shadows {false};
         int     cascade {4};
-        MFloat2 shadow_bounds {512, 512};
+        glm::float2 shadow_bounds {512, 512};
         float   shadow_near_plane {0.1f};
         float   shadow_far_plane {200.0f};
-        MFloat2 shadowmap_size {512, 512};
+        glm::float2 shadowmap_size {512, 512};
     };
     NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(DirectionLightParameter,
                                                     color,
@@ -48,10 +48,10 @@ namespace MoYu
         float outer_angle {60.0f};
 
         bool    shadows {false};
-        MFloat2 shadow_bounds {32, 32};
+        glm::float2 shadow_bounds {32, 32};
         float   shadow_near_plane {0.1f};
         float   shadow_far_plane {32.0f};
-        MFloat2 shadowmap_size {256, 256};
+        glm::float2 shadowmap_size {256, 256};
     };
     NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(SpotLightParameter,
                                        color,

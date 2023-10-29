@@ -58,12 +58,12 @@ namespace MoYu
     void IndirectCullPass::initialize(const RenderPassInitInfo& init_info)
     {
         // create default buffer
-        pFrameUniformBuffer = CreateCullingBuffer(1, sizeof(HLSL::FrameUniforms), L"FrameUniformBuffer");
+        pFrameUniformBuffer = CreateCullingBuffer(1, MoYu::AlignUp(sizeof(HLSL::FrameUniforms), 256), L"FrameUniformBuffer");
         pMaterialViewIndexBuffer = CreateCullingBuffer(HLSL::MaterialLimit, sizeof(HLSL::PerMaterialViewIndexBuffer), L"MaterialViewIndexBuffer");
         pRenderableMeshBuffer = CreateCullingBuffer(HLSL::MeshLimit, sizeof(HLSL::PerRenderableMeshData), L"PerRenderableMeshBuffer");
 
         // create upload buffer
-        pUploadFrameUniformBuffer = CreateUploadBuffer(1, sizeof(HLSL::FrameUniforms), L"UploadFrameUniformBuffer");
+        pUploadFrameUniformBuffer = CreateUploadBuffer(1, MoYu::AlignUp(sizeof(HLSL::FrameUniforms), 256), L"UploadFrameUniformBuffer");
         pUploadMaterialViewIndexBuffer = CreateUploadBuffer(HLSL::MaterialLimit, sizeof(HLSL::PerMaterialViewIndexBuffer), L"UploadMaterialViewIndexBuffer");
         pUploadRenderableMeshBuffer = CreateUploadBuffer(HLSL::MeshLimit, sizeof(HLSL::PerRenderableMeshData), L"UploadPerRenderableMeshBuffer");
 

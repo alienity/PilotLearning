@@ -5,23 +5,23 @@ namespace MoYu
 {
     struct DirLight
     {
-        MFloat3 m_direction;
-        MFloat3 m_color;
+        glm::float3 m_direction;
+        glm::float3 m_color;
     };
     NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(DirLight, m_direction, m_color)
 
     struct CameraPose
     {
-        MFloat3 m_position;
-        MFloat3 m_target;
-        MFloat3 m_up;
+        glm::float3 m_position;
+        glm::float3 m_target;
+        glm::float3 m_up;
     };
     NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(CameraPose, m_position, m_target, m_up)
 
     struct CameraConfig
     {
         CameraPose m_pose;
-        MFloat2    m_aspect;
+        glm::float2    m_aspect;
         float      m_z_far;
         float      m_z_near;
         float      m_fovY;
@@ -51,9 +51,16 @@ namespace MoYu
         std::string m_ld_map;
         std::string m_irradians_map;
 
-        std::vector<MFloat4> m_SH;
+        std::vector<glm::float4> m_SH;
     };
     NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(IBLTexs, m_dfg_map, m_ld_map, m_irradians_map, m_SH)
+
+    struct TerrainMaps
+    {
+        std::string m_height_map;
+        std::string m_normal_map;
+    };
+    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(TerrainMaps, m_height_map, m_normal_map)
 
     struct GlobalRenderingRes
     {
@@ -61,6 +68,7 @@ namespace MoYu
         CubeMap      m_skybox_irradiance_map;
         CubeMap      m_skybox_specular_map;
         IBLTexs      m_ibl_map;
+        TerrainMaps  m_terrain_map;
         std::string  m_brdf_map;
         std::string  m_color_grading_map;
         Color        m_sky_color;
@@ -73,6 +81,7 @@ namespace MoYu
                                        m_skybox_irradiance_map,
                                        m_skybox_specular_map,
                                        m_ibl_map,
+                                       m_terrain_map,
                                        m_brdf_map,
                                        m_color_grading_map,
                                        m_sky_color,

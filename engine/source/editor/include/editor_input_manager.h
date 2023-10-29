@@ -33,7 +33,7 @@ namespace MoYu
 
     public:
         void registerInput();
-        void updateCursorOnAxis(MFloat2 cursor_uv);
+        void updateCursorOnAxis(glm::float2 cursor_uv);
         void processEditorCommand();
         void onKeyInEditorMode(int key, int scancode, int action, int mods);
 
@@ -44,20 +44,20 @@ namespace MoYu
         void onScroll(double xoffset, double yoffset);
         void onWindowClosed();
 
-        bool isCursorInRect(MFloat2 pos, MFloat2 size) const;
+        bool isCursorInRect(glm::float2 pos, glm::float2 size) const;
 
     public:
-        MFloat2 getEngineWindowPos() const { return m_engine_window_pos; };
-        MFloat2 getEngineWindowSize() const { return m_engine_window_size; };
+        glm::float2 getEngineWindowPos() const { return m_engine_window_pos; };
+        glm::float2 getEngineWindowSize() const { return m_engine_window_size; };
         float   getCameraSpeed() const { return m_camera_speed; };
 
-        void setEngineWindowPos(MFloat2 new_window_pos) { m_engine_window_pos = new_window_pos; };
-        void setEngineWindowSize(MFloat2 new_window_size) { m_engine_window_size = new_window_size; };
+        void setEngineWindowPos(glm::float2 new_window_pos) { m_engine_window_pos = new_window_pos; };
+        void setEngineWindowSize(glm::float2 new_window_size) { m_engine_window_size = new_window_size; };
         void resetEditorCommand() { m_editor_command = 0; }
 
     private:
-        MFloat2 m_engine_window_pos {0.0f, 0.0f};
-        MFloat2 m_engine_window_size {1280.0f, 768.0f};
+        glm::float2 m_engine_window_pos {0.0f, 0.0f};
+        glm::float2 m_engine_window_size {1280.0f, 768.0f};
         float   m_mouse_x {0.0f};
         float   m_mouse_y {0.0f};
         float   m_camera_speed {0.05f};

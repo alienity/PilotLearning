@@ -18,7 +18,7 @@
 #define IBL_CUBEMAPSH_H
 
 
-#include "core/math/moyu_math.h"
+#include "core/math/moyu_math2.h"
 
 #include <memory>
 #include <vector>
@@ -37,14 +37,14 @@ public:
      * Spherical Harmonics decomposition of the given cubemap
      * Optionally calculates irradiance by convolving with truncated cos.
      */
-    static std::unique_ptr<MoYu::Vector3[]> computeSH(const Cubemap& cm, size_t numBands, bool irradiance);
+    static std::unique_ptr<glm::float3[]> computeSH(const Cubemap& cm, size_t numBands, bool irradiance);
 
     /**
      * Render given spherical harmonics into a cubemap
      */
-    static void renderSH(Cubemap& cm, const std::unique_ptr<MoYu::Vector3[]>& sh, size_t numBands);
+    static void renderSH(Cubemap& cm, const std::unique_ptr<glm::float3[]>& sh, size_t numBands);
 
-    static void windowSH(std::unique_ptr<MoYu::Vector3[]>& sh, size_t numBands, float cutoff);
+    static void windowSH(std::unique_ptr<glm::float3[]>& sh, size_t numBands, float cutoff);
 
     /**
      * Compute spherical harmonics of the irradiance of the given cubemap.
@@ -53,12 +53,12 @@ public:
      * cannot be rendered with renderSH() above. Instead use renderPreScaledSH3Bands() which
      * is exactly the code ran by our shader.
      */
-    static void preprocessSHForShader(std::unique_ptr<MoYu::Vector3[]>& sh);
+    static void preprocessSHForShader(std::unique_ptr<glm::float3[]>& sh);
 
     /**
      * Render pre-scaled irrandiance SH
      */
-    static void renderPreScaledSH3Bands(Cubemap& cm, const std::unique_ptr<MoYu::Vector3[]>& sh);
+    static void renderPreScaledSH3Bands(Cubemap& cm, const std::unique_ptr<glm::float3[]>& sh);
 
     static constexpr size_t getShIndex(size_t m, size_t l) {
         return SHindex(m, l);
@@ -89,7 +89,7 @@ private:
         return l * (l + 1) + m;
     }
 
-    static void computeShBasis(float* SHb, size_t numBands, const MoYu::Vector3& s);
+    static void computeShBasis(float* SHb, size_t numBands, const glm::float3& s);
 
     static float Kml(size_t m, size_t l);
 
@@ -99,13 +99,13 @@ private:
 
     static float sincWindow(size_t l, float w);
 
-    static MoYu::Vector3 rotateShericalHarmonicBand1(MoYu::Vector3 band1, MoYu::Matrix3x3 const& M);
+    static glm::float3 rotateShericalHarmonicBand1(glm::float3 band1, glm::float3x3 const& M);
 
-    static float5 rotateShericalHarmonicBand2(float5 const& band2, MoYu::Matrix3x3 const& M);
+    static float5 rotateShericalHarmonicBand2(float5 const& band2, glm::float3x3 const& M);
 
         // debugging only...
     static float Legendre(size_t l, size_t m, float x);
-    static float TSH(int l, int m, const MoYu::Vector3& d);
+    static float TSH(int l, int m, const glm::float3& d);
     static void printShBase(std::ostream& out, int l, int m);
 };
 

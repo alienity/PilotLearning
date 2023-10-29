@@ -22,7 +22,7 @@ namespace ibl {
 Image::Image() {}
 
 Image::Image(size_t w, size_t h, size_t stride)
-        : mBpr((stride ? stride : w) * sizeof(MoYu::MFloat3)),
+        : mBpr((stride ? stride : w) * sizeof(glm::float3)),
           mWidth(w),
           mHeight(h),
           mOwnedData(new uint8_t[mBpr * h]),

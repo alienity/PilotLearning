@@ -142,7 +142,7 @@ ModelLoaderMesh ProcessMesh(aiMesh* mesh)
         }
 
         vertices.push_back(vertex);
-        bounding_box.merge(MoYu::MFloat3(vertex.position.x, vertex.position.y, vertex.position.z));
+        bounding_box.merge(glm::float3(vertex.position.x, vertex.position.y, vertex.position.z));
     }
 
     for (UINT i = 0; i < mesh->mNumFaces; i++)

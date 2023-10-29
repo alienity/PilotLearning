@@ -285,10 +285,20 @@ struct MeshUniform
     float3 _padding_0;
 };
 
+struct TerrainUniform
+{
+    uint terrainSize;      // 1024*1024
+    uint terrainMaxHeight; // 1024
+    uint heightMapIndex;
+    uint normalMapIndex;
+    float4x4 local2WorldMatrix;
+};
+
 struct FrameUniforms
 {
     CameraUniform cameraUniform;
     BaseUniform baseUniform;
+    TerrainUniform terrainUniform;
     MeshUniform meshUniform;
     AOUniform aoUniform;
     IBLUniform iblUniform;

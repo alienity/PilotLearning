@@ -64,7 +64,7 @@ public:
                     //                 +----+
     };
 
-    using Texel = MoYu::MFloat3;
+    using Texel = glm::float3;
 
 
     //! releases all images and reset the cubemap size
@@ -80,26 +80,26 @@ public:
     inline Image& getImageForFace(Face face);
 
     //! computes the center of a pixel at coordinate x, y
-    static inline MoYu::MFloat2 center(size_t x, size_t y);
+    static inline glm::float2 center(size_t x, size_t y);
 
     //! computes a direction vector from a face and a location of the center of pixel in an Image
-    inline MoYu::MFloat3 getDirectionFor(Face face, size_t x, size_t y) const;
+    inline glm::float3 getDirectionFor(Face face, size_t x, size_t y) const;
 
     //! computes a direction vector from a face and a location in pixel in an Image
-    inline MoYu::MFloat3 getDirectionFor(Face face, float x, float y) const;
+    inline glm::float3 getDirectionFor(Face face, float x, float y) const;
 
     //! samples the cubemap at the given direction using nearest neighbor filtering
-    inline Texel const& sampleAt(const MoYu::MFloat3& direction) const;
+    inline Texel const& sampleAt(const glm::float3& direction) const;
 
     //! samples the cubemap at the given direction using bilinear filtering
-    inline Texel filterAt(const MoYu::MFloat3& direction) const;
+    inline Texel filterAt(const glm::float3& direction) const;
 
     //! samples an image at the given location in pixel using bilinear filtering
     static Texel filterAt(const Image& image, float x, float y);
     static Texel filterAtCenter(const Image& image, size_t x, size_t y);
 
     //! samples two cubemaps in a given direction and lerps the result by a given lerp factor
-    static Texel trilinearFilterAt(const Cubemap& c0, const Cubemap& c1, float lerp, const MoYu::MFloat3& direction);
+    static Texel trilinearFilterAt(const Cubemap& c0, const Cubemap& c1, float lerp, const glm::float3& direction);
 
     //! reads a texel at a given address
     inline static const Texel& sampleAt(void const* data) {
@@ -129,7 +129,7 @@ public:
     };
 
     //! returns the face and texture coordinates of the given direction
-    static Address getAddressFor(const MoYu::MFloat3& direction);
+    static Address getAddressFor(const glm::float3& direction);
 
 private:
     size_t mDimensions = 0;
@@ -148,20 +148,20 @@ inline Image& Cubemap::getImageForFace(Face face) {
     return mFaces[int(face)];
 }
 
-inline MoYu::MFloat2 Cubemap::center(size_t x, size_t y) {
+inline glm::float2 Cubemap::center(size_t x, size_t y) {
     return { x + 0.5f, y + 0.5f };
 }
 
-inline MoYu::MFloat3 Cubemap::getDirectionFor(Face face, size_t x, size_t y) const {
+inline glm::float3 Cubemap::getDirectionFor(Face face, size_t x, size_t y) const {
     return getDirectionFor(face, x + 0.5f, y + 0.5f);
 }
 
-inline MoYu::MFloat3 Cubemap::getDirectionFor(Face face, float x, float y) const {
+inline glm::float3 Cubemap::getDirectionFor(Face face, float x, float y) const {
     // map [0, dim] to [-1,1] with (-1,-1) at bottom left
     float cx = (x * mScale) - 1;
     float cy = 1 - (y * mScale);
 
-    MoYu::MFloat3 dir;
+    glm::float3 dir;
     const float l = std::sqrt(cx * cx + cy * cy + 1);
     switch (face) {
         case Face::PX:  dir = {   1, cy, -cx }; break;
@@ -174,14 +174,14 @@ inline MoYu::MFloat3 Cubemap::getDirectionFor(Face face, float x, float y) const
     return dir * (1 / l);
 }
 
-inline Cubemap::Texel const& Cubemap::sampleAt(const MoYu::MFloat3& direction) const {
+inline Cubemap::Texel const& Cubemap::sampleAt(const glm::float3& direction) const {
     Cubemap::Address addr(getAddressFor(direction));
     const size_t x = std::min(size_t(addr.s * mDimensions), mDimensions - 1);
     const size_t y = std::min(size_t(addr.t * mDimensions), mDimensions - 1);
     return sampleAt(getImageForFace(addr.face).getPixelRef(x, y));
 }
 
-inline Cubemap::Texel Cubemap::filterAt(const MoYu::MFloat3& direction) const {
+inline Cubemap::Texel Cubemap::filterAt(const glm::float3& direction) const {
     Cubemap::Address addr(getAddressFor(direction));
     addr.s = std::min(addr.s * mDimensions, mUpperBound);
     addr.t = std::min(addr.t * mDimensions, mUpperBound);

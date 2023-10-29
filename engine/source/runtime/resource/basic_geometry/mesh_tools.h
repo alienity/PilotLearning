@@ -46,5 +46,25 @@ namespace MoYu
 
     } // namespace Geometry
 
+    namespace TerrainGeometry
+    {
+        // https://zhuanlan.zhihu.com/p/352850047
+        // 地块的mesh是宽度为4的mesh，一边有5个顶点
+        struct TerrainPatchMesh
+        {
+            TerrainPatchMesh(float scale);
+
+            std::vector<D3D12TerrainPatch> vertices;
+            std::vector<int> indices;
+        };
+
+        TerrainPatchMesh ToTerrainPatchMesh(float scale = 1.0);
+
+        AxisAlignedBox ToAxisAlignedBox(const TerrainPatchMesh& basicMesh);
+        StaticMeshData ToStaticMesh(const TerrainPatchMesh& basicMesh);
+
+
+    }
+
 }
 #endif

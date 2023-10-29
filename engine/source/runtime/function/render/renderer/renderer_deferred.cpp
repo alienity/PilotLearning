@@ -94,6 +94,12 @@ namespace MoYu
             mIndirectCullPass->setCommonInfo(renderPassCommonInfo);
             mIndirectCullPass->initialize({});
         }
+        // Terrain Cull pass
+        {
+            mTerrainCullPass = std::make_shared<IndirectTerrainCullPass>();
+            mTerrainCullPass->setCommonInfo(renderPassCommonInfo);
+            mTerrainCullPass->initialize({});
+        }
         // GBuffer pass
         {
             IndirectGBufferPass::DrawPassInitInfo drawPassInit;
@@ -207,6 +213,7 @@ namespace MoYu
         mIndirectCullPass->prepareMeshData(render_resource);
         mIndirectShadowPass->prepareShadowmaps(render_resource);
         mSkyBoxPass->prepareMeshData(render_resource);
+        mTerrainCullPass->prepareMeshData(render_resource);
 
         mIndirectCullPass->inflatePerframeBuffer(render_resource);
     }
@@ -216,6 +223,7 @@ namespace MoYu
         mToolPass                    = nullptr;
         mUIPass                      = nullptr;
         mIndirectCullPass            = nullptr;
+        mTerrainCullPass             = nullptr;
         mIndirectShadowPass          = nullptr;
         mIndirectGBufferPass         = nullptr;
         mIndirectLightLoopPass       = nullptr;
@@ -253,6 +261,11 @@ namespace MoYu
         mIndirectCullPass->update(graph, indirectCullOutput);
         //=================================================================================
 
+        //=================================================================================
+        // Terrain¼ô²ÃPass
+        IndirectTerrainCullPass::IndirectCullOutput terrainCullOutput;
+        mTerrainCullPass->update(graph, terrainCullOutput);
+        //=================================================================================
 
         //=================================================================================
         // indirect draw shadow
@@ -285,6 +298,14 @@ namespace MoYu
         mIndirectGBufferPass->update(graph, mGBufferIntput, mGBufferOutput);
         //=================================================================================
         
+        //=================================================================================
+        // depth pyramid
+
+
+
+
+        //=================================================================================
+
         //=================================================================================
         // ambient occlusion
         AOPass::DrawInputParameters mAOIntput;

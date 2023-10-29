@@ -35,7 +35,7 @@ namespace MoYu
         out_component_res.m_component_json_data = AssetManager::saveJson(transform_res);
     }
 
-    void TransformComponent::setPosition(const MFloat3& new_translation)
+    void TransformComponent::setPosition(const glm::float3& new_translation)
     {
         //m_transform.m_position = new_translation;
 
@@ -44,7 +44,7 @@ namespace MoYu
         markDirty();
     }
 
-    void TransformComponent::setScale(const MFloat3& new_scale)
+    void TransformComponent::setScale(const glm::float3& new_scale)
     {
         //m_transform.m_scale = new_scale;
 
@@ -53,7 +53,7 @@ namespace MoYu
         markDirty();
     }
 
-    void TransformComponent::setRotation(const MQuaternion& new_rotation)
+    void TransformComponent::setRotation(const glm::quat& new_rotation)
     {
         //m_transform.m_rotation = new_rotation;
 
@@ -62,7 +62,7 @@ namespace MoYu
         markDirty();
     }
 
-    const MMatrix4x4 TransformComponent::getMatrixWorld()
+    const glm::float4x4 TransformComponent::getMatrixWorld()
     {
         if (TransformComponent::isDirtyRecursively(this))
         {
@@ -133,12 +133,12 @@ namespace MoYu
         markIdle();
     }
 
-    MMatrix4x4 TransformComponent::getMatrixWorldRecursively(const TransformComponent* trans)
+    glm::float4x4 TransformComponent::getMatrixWorldRecursively(const TransformComponent* trans)
     {
         if (trans == nullptr)
             return MYMatrix4x4::Identity;
 
-        MMatrix4x4 matrix_world = trans->getMatrix();
+        glm::float4x4 matrix_world = trans->getMatrix();
         if (!trans->m_object.expired())
         {
             auto m_object_ptr    = trans->m_object.lock();

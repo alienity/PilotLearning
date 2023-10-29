@@ -42,14 +42,17 @@ namespace MoYu
         //global_rendering_res.m_ibl_map.m_dfg_map = "asset/texture/global/DFG.dds";
         //global_rendering_res.m_ibl_map.m_ld_map = "asset/texture/global/LD.dds";
 
-        global_rendering_res.m_ibl_map.m_SH.clear();
-        global_rendering_res.m_ibl_map.m_SH.push_back({0.175984, 0.254935, -0.499536, 0.406282});
-        global_rendering_res.m_ibl_map.m_SH.push_back({0.171224, 0.319489, -0.519344, 0.444903});
-        global_rendering_res.m_ibl_map.m_SH.push_back({0.145627, 0.383557, -0.483396, 0.455199});
-        global_rendering_res.m_ibl_map.m_SH.push_back({0.129544, -0.269722, 0.386505, -0.307530});
-        global_rendering_res.m_ibl_map.m_SH.push_back({0.123614, -0.271124, 0.373376, -0.304015});
-        global_rendering_res.m_ibl_map.m_SH.push_back({0.105162, -0.248446, 0.305565, -0.275927});
-        global_rendering_res.m_ibl_map.m_SH.push_back({0.034980, 0.041000, 0.041401, 1.000000});
+        //global_rendering_res.m_ibl_map.m_SH.clear();
+        //global_rendering_res.m_ibl_map.m_SH.push_back({0.175984, 0.254935, -0.499536, 0.406282});
+        //global_rendering_res.m_ibl_map.m_SH.push_back({0.171224, 0.319489, -0.519344, 0.444903});
+        //global_rendering_res.m_ibl_map.m_SH.push_back({0.145627, 0.383557, -0.483396, 0.455199});
+        //global_rendering_res.m_ibl_map.m_SH.push_back({0.129544, -0.269722, 0.386505, -0.307530});
+        //global_rendering_res.m_ibl_map.m_SH.push_back({0.123614, -0.271124, 0.373376, -0.304015});
+        //global_rendering_res.m_ibl_map.m_SH.push_back({0.105162, -0.248446, 0.305565, -0.275927});
+        //global_rendering_res.m_ibl_map.m_SH.push_back({0.034980, 0.041000, 0.041401, 1.000000});
+
+        global_rendering_res.m_terrain_map.m_height_map = "asset/texture/terrain/HeightMap.png";
+        global_rendering_res.m_terrain_map.m_normal_map = "asset/texture/terrain/NormalMap.png";
         
         asset_manager->saveAsset(global_rendering_res, global_rendering_res_url);
         */
