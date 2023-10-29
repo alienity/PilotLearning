@@ -52,13 +52,18 @@ namespace MoYu
         // 地块的mesh是宽度为4的mesh，一边有5个顶点
         struct TerrainPatchMesh
         {
-            TerrainPatchMesh(float scale);
+            TerrainPatchMesh(uint32_t totallevel, float scale, uint32_t treeIndex, glm::u64vec2 bitOffset, glm::float2 localOffset);
+
+            uint32_t     totalLevel; // tree的总共级数
+            float        localScale; // 当前patch的缩放
+            float        localMaxHeight; // 当前patch的最大高度
+            uint32_t     linearTreeIndex; // 在展开的tree中的位置
+            glm::u64vec2 localTreePosBit; // 标识在tree中的具体位置，按位标识位置
+            glm::float2  localOffset; // 当前patch在大地图中的世界坐标偏移
 
             std::vector<D3D12TerrainPatch> vertices;
             std::vector<int> indices;
         };
-
-        TerrainPatchMesh ToTerrainPatchMesh(float scale = 1.0);
 
         AxisAlignedBox ToAxisAlignedBox(const TerrainPatchMesh& basicMesh);
         StaticMeshData ToStaticMesh(const TerrainPatchMesh& basicMesh);

@@ -4,15 +4,13 @@
 
 namespace MoYu
 {
-
-	void TerrainRenderer::GeneratePatch(uint32_t level, glm::int2 offset)
+	TerrainRenderer::TerrainRenderer()
 	{
-        if (level == _TerrainQuadLevel)
-            return;
 
-		float curLevelWidth = glm::pow(2, 12 - level);
+	}
 
-
+	TerrainRenderer::~TerrainRenderer()
+	{
 
 	}
 
@@ -21,19 +19,77 @@ namespace MoYu
         local2WorldMatrix = glm::float4x4(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1);
         world2LocalMatrix = glm::float4x4(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1);
 
+		terrainPageMips = 6;
+		rootPageSize = 64;
+
 		terrainSize = 1024;
         terrainMaxHeight = 1024;
 
-		_TerrainQuadLevel = 14;
+        //InitTerrainNodePage();
+	}
 
-		_BasicPatchMesh = TerrainGeometry::ToTerrainPatchMesh();
+	void TerrainRenderer::InitTerrainNodePage()
+	{
+        /*
+		if (_tPageRoot == nullptr)
+		{
+            float perSize = 64;
+            TRect rect = TRect {0, 0, (float)terrainSize, (float)terrainSize};
+			_tPageRoot = std::make_shared<TNodePage>(rect);
+            for (size_t i = rect.xMin; i < rect.xMin + rect.width; i += perSize)
+            {
+                for (size_t j = rect.yMin; j < rect.yMin + rect.height; j += perSize)
+                {
+                    _tPageRoot->children.push_back(TNodePage(TRect {(float)i, (float)j, perSize, perSize}, terrainPageLevel));
+                }
+            }
+		}
+        */
+	}
 
-		for (size_t i = 0; i < _TerrainQuadLevel; i++)
+	void TerrainRenderer::GenerateTerrainNodes()
+	{
+        glm::uint pageSize = rootPageSize * (1 - glm::pow(4, terrainPageMips)) / (1 - 4);
+        _TNodes.reserve(pageSize);
+
+		TRect rect = TRect {0, 0, (float)terrainSize, (float)terrainSize};
+        for (size_t i = rect.xMin; i < rect.xMin + rect.width; i += rootPageSize)
         {
-			//uint32_t _Offset = 
+            for (size_t j = rect.yMin; j < rect.yMin + rect.height; j += rootPageSize)
+            {
+                GenerateTerrainNodes(TRect {(float)i, (float)j, (float)rootPageSize, (float)rootPageSize}, terrainPageMips);
+            }
+        }
+	}
 
+	void TerrainRenderer::GenerateTerrainNodes(TRect rect, int mip)
+	{
+        //rect = r;
+        //mip  = m;
+        if (mip > 0)
+        {
+            GenerateTerrainNodes(TRect {rect.xMin, rect.yMin, rect.width * 0.5f, rect.height * 0.5f}, mip - 1);
+            GenerateTerrainNodes(TRect {rect.xMin + rect.width * 0.5f, rect.yMin, rect.width * 0.5f, rect.height * 0.5f}, mip - 1);
+            GenerateTerrainNodes(TRect {rect.xMin, rect.yMin + rect.height * 0.5f, rect.width * 0.5f, rect.height * 0.5f}, mip - 1);
+            GenerateTerrainNodes(TRect {rect.xMin + rect.width * 0.5f, rect.yMin + rect.height * 0.5f, rect.width * 0.5f, rect.height * 0.5f}, mip - 1);
+        }
+        float _minHeight = 1000000.f;
+        float _maxHeight = -1000000.f;
+        if (mip == 0)
+        {
 
         }
+        else
+        {
+            for (size_t i = 0; i < 4; i++)
+            {
+                _minHeight = glm::min(_minHeight, children[i].node.minHeight);
+                _maxHeight = glm::max(_maxHeight, children[i].node.maxHeight);
+            }
+        }
+        node = TNode(r, m, _minHeight, _maxHeight);
+
+
 
 	}
 

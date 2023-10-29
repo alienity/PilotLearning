@@ -297,37 +297,44 @@ namespace MoYu
             return _t;
         }
 
-        TerrainPatchMesh::TerrainPatchMesh(float scale)
+        TerrainPatchMesh::TerrainPatchMesh(uint32_t totallevel, float scale, uint32_t treeIndex, glm::u64vec2 bitOffset, glm::float2 localOffset)
         {
-            vertices.push_back(CreatePatch(scale * glm::vec3(-2, 0, -2), glm::vec2(0, 0), glm::vec4(0, 0, 0, 0)));
-            vertices.push_back(CreatePatch(scale * glm::vec3(-1, 0, -2), glm::vec2(0.25, 0), glm::vec4(1, 0, 0, 0)));
-            vertices.push_back(CreatePatch(scale * glm::vec3(0, 0, -2), glm::vec2(0.5, 0), glm::vec4(0, 0, 0, 0)));
-            vertices.push_back(CreatePatch(scale * glm::vec3(1, 0, -2), glm::vec2(0.75, 0), glm::vec4(1, 0, 0, 0)));
-            vertices.push_back(CreatePatch(scale * glm::vec3(2, 0, -2), glm::vec2(1.0, 0), glm::vec4(0, 0, 0, 0)));
+            this->totalLevel      = totallevel;
+            this->localScale      = scale;
+            this->localMaxHeight  = 0;
+            this->linearTreeIndex = treeIndex;
+            this->localTreePosBit = bitOffset;
+            this->localOffset     = localOffset;
 
-            vertices.push_back(CreatePatch(scale * glm::vec3(-2, 0, -1), glm::vec2(0, 0.25), glm::vec4(0, 0, 1, 0)));
-            vertices.push_back(CreatePatch(scale * glm::vec3(-1, 0, -1), glm::vec2(0.25, 0.25), glm::vec4(0, 0, 0, 0)));
-            vertices.push_back(CreatePatch(scale * glm::vec3(0, 0, -1), glm::vec2(0.5, 0.25), glm::vec4(0, 0, 0, 0)));
-            vertices.push_back(CreatePatch(scale * glm::vec3(1, 0, -1), glm::vec2(0.75, 0.25), glm::vec4(0, 0, 0, 0)));
-            vertices.push_back(CreatePatch(scale * glm::vec3(2, 0, -1), glm::vec2(1.0, 0.25), glm::vec4(0, 0, 0, 1)));
+            vertices.push_back(CreatePatch(glm::vec3(0.0, 0, 0.0), glm::vec2(0, 0), glm::vec4(0, 0, 0, 0)));
+            vertices.push_back(CreatePatch(glm::vec3(0.25, 0, 0.0), glm::vec2(0.25, 0), glm::vec4(1, 0, 0, 0)));
+            vertices.push_back(CreatePatch(glm::vec3(0.5, 0, 0.0), glm::vec2(0.5, 0), glm::vec4(0, 0, 0, 0)));
+            vertices.push_back(CreatePatch(glm::vec3(0.75, 0, 0.0), glm::vec2(0.75, 0), glm::vec4(1, 0, 0, 0)));
+            vertices.push_back(CreatePatch(glm::vec3(1.0, 0, 0.0), glm::vec2(1.0, 0), glm::vec4(0, 0, 0, 0)));
 
-            vertices.push_back(CreatePatch(scale * glm::vec3(-2, 0, 0), glm::vec2(0, 0.5), glm::vec4(0, 0, 0, 0)));
-            vertices.push_back(CreatePatch(scale * glm::vec3(-1, 0, 0), glm::vec2(0.25, 0.5), glm::vec4(0, 0, 0, 0)));
-            vertices.push_back(CreatePatch(scale * glm::vec3(0, 0, 0), glm::vec2(0.5, 0.5), glm::vec4(0, 0, 0, 0)));
-            vertices.push_back(CreatePatch(scale * glm::vec3(1, 0, 0), glm::vec2(0.75, 0.5), glm::vec4(0, 0, 0, 0)));
-            vertices.push_back(CreatePatch(scale * glm::vec3(2, 0, 0), glm::vec2(1.0, 0.5), glm::vec4(0, 0, 0, 0)));
+            vertices.push_back(CreatePatch(glm::vec3(0.0, 0, 0.25),  glm::vec2(0, 0.25), glm::vec4(0, 0, 1, 0)));
+            vertices.push_back(CreatePatch(glm::vec3(0.25, 0, 0.25), glm::vec2(0.25, 0.25), glm::vec4(0, 0, 0, 0)));
+            vertices.push_back(CreatePatch(glm::vec3(0.5, 0, 0.25), glm::vec2(0.5, 0.25), glm::vec4(0, 0, 0, 0)));
+            vertices.push_back(CreatePatch(glm::vec3(0.75, 0, 0.25), glm::vec2(0.75, 0.25), glm::vec4(0, 0, 0, 0)));
+            vertices.push_back(CreatePatch(glm::vec3(1.0, 0, 0.25), glm::vec2(1.0, 0.25), glm::vec4(0, 0, 0, 1)));
 
-            vertices.push_back(CreatePatch(scale * glm::vec3(-2, 0, 1), glm::vec2(0, 0.75), glm::vec4(0, 0, 1, 0)));
-            vertices.push_back(CreatePatch(scale * glm::vec3(-1, 0, 1), glm::vec2(0.25, 0.75), glm::vec4(0, 0, 0, 0)));
-            vertices.push_back(CreatePatch(scale * glm::vec3(0, 0, 1), glm::vec2(0.5, 0.75), glm::vec4(0, 0, 0, 0)));
-            vertices.push_back(CreatePatch(scale * glm::vec3(1, 0, 1), glm::vec2(0.75, 0.75), glm::vec4(0, 0, 0, 0)));
-            vertices.push_back(CreatePatch(scale * glm::vec3(2, 0, 1), glm::vec2(1.0, 0.75), glm::vec4(0, 0, 0, 1)));
+            vertices.push_back(CreatePatch(glm::vec3(0.0, 0, 0.5), glm::vec2(0, 0.5), glm::vec4(0, 0, 0, 0)));
+            vertices.push_back(CreatePatch(glm::vec3(0.25, 0, 0.5), glm::vec2(0.25, 0.5), glm::vec4(0, 0, 0, 0)));
+            vertices.push_back(CreatePatch(glm::vec3(0.5, 0, 0.5), glm::vec2(0.5, 0.5), glm::vec4(0, 0, 0, 0)));
+            vertices.push_back(CreatePatch(glm::vec3(0.75, 0, 0.5), glm::vec2(0.75, 0.5), glm::vec4(0, 0, 0, 0)));
+            vertices.push_back(CreatePatch(glm::vec3(1.0, 0, 0.5), glm::vec2(1.0, 0.5), glm::vec4(0, 0, 0, 0)));
 
-            vertices.push_back(CreatePatch(scale * glm::vec3(-2, 0, 2), glm::vec2(0, 1.0), glm::vec4(0, 0, 0, 0)));
-            vertices.push_back(CreatePatch(scale * glm::vec3(-1, 0, 2), glm::vec2(0.25, 1.0), glm::vec4(0, 1, 0, 0)));
-            vertices.push_back(CreatePatch(scale * glm::vec3(0, 0, 2), glm::vec2(0.5, 1.0), glm::vec4(0, 0, 0, 0)));
-            vertices.push_back(CreatePatch(scale * glm::vec3(1, 0, 2), glm::vec2(0.75, 1.0), glm::vec4(0, 1, 0, 0)));
-            vertices.push_back(CreatePatch(scale * glm::vec3(2, 0, 2), glm::vec2(1.0, 1.0), glm::vec4(0, 0, 0, 0)));
+            vertices.push_back(CreatePatch(glm::vec3(0.0, 0, 0.75),  glm::vec2(0, 0.75), glm::vec4(0, 0, 1, 0)));
+            vertices.push_back(CreatePatch(glm::vec3(0.25, 0, 0.75),  glm::vec2(0.25, 0.75), glm::vec4(0, 0, 0, 0)));
+            vertices.push_back(CreatePatch(glm::vec3(0.5, 0, 0.75),  glm::vec2(0.5, 0.75), glm::vec4(0, 0, 0, 0)));
+            vertices.push_back(CreatePatch(glm::vec3(0.75, 0, 0.75),  glm::vec2(0.75, 0.75), glm::vec4(0, 0, 0, 0)));
+            vertices.push_back(CreatePatch(glm::vec3(1.0, 0, 0.75),  glm::vec2(1.0, 0.75), glm::vec4(0, 0, 0, 1)));
+
+            vertices.push_back(CreatePatch(glm::vec3(0.0, 0, 1.0),   glm::vec2(0, 1.0), glm::vec4(0, 0, 0, 0)));
+            vertices.push_back(CreatePatch(glm::vec3(0.25, 0, 1.0),   glm::vec2(0.25, 1.0), glm::vec4(0, 1, 0, 0)));
+            vertices.push_back(CreatePatch(glm::vec3(0.5, 0, 1.0),   glm::vec2(0.5, 1.0), glm::vec4(0, 0, 0, 0)));
+            vertices.push_back(CreatePatch(glm::vec3(0.75, 0, 1.0),   glm::vec2(0.75, 1.0), glm::vec4(0, 1, 0, 0)));
+            vertices.push_back(CreatePatch(glm::vec3(1.0, 0, 1.0),   glm::vec2(1.0, 1.0), glm::vec4(0, 0, 0, 0)));
 
             #define AddTriIndices(a, b, c) indices.push_back(a); indices.push_back(b); indices.push_back(c);
 
@@ -338,12 +345,6 @@ namespace MoYu
             #define AddQuadIndices16() AddQuadIndices4(0) AddQuadIndices4(5) AddQuadIndices4(10) AddQuadIndices4(15) AddQuadIndices4(20)
 
             AddQuadIndices16()
-        }
-
-        TerrainPatchMesh ToTerrainPatchMesh(float scale)
-        {
-            TerrainPatchMesh _mesh = TerrainPatchMesh(scale);
-            return _mesh;
         }
 
         AxisAlignedBox ToAxisAlignedBox(const TerrainPatchMesh& basicMesh)
