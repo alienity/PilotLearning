@@ -23,12 +23,15 @@ namespace MoYu
 
         void tick(float delta_time) override;
 
+        void updateTerrainRes(const TerrainComponentRes& res);
+
         // for editor
         SceneMaterial& getSceneMaterial() { return m_material; }
 
-    private:
+    //private:
         TerrainComponentRes m_terrain_res;
 
+        SceneTerrainMesh m_terrain;
         SceneMaterial m_material;
     };
 } // namespace MoYu

@@ -17,54 +17,61 @@
 
 namespace MoYu
 {
-    //MaterialComponentRes _pbr_mat = {"asset/objects/environment/_material/temp.material.json", false, {}};
-
-    //TerrainComponent _capsule_mesh_mat = {_capsule_mesh, _pbr_mat};
+    SceneImage _defaultTerrainHeightmap {false, false, 1, "asset/texture/terrain/HeightMap.png"};
+    SceneImage _defaultTerrainNormalmap {false, false, 1, "asset/texture/terrain/NormalMap.png"};
+    TerrainComponentRes _defaultTerrainComponentRes {glm::int2(1024, 1024), 1024, _defaultTerrainHeightmap, _defaultTerrainNormalmap};
 
     void TerrainComponent::postLoadResource(std::weak_ptr<GObject> object, const std::string json_data)
     {
         m_object = object;
 
-        MeshRendererComponentRes mesh_renderer_res = AssetManager::loadJson<MeshRendererComponentRes>(json_data);
-        updateMeshRendererRes(mesh_renderer_res);
+        TerrainComponentRes terrain_res = AssetManager::loadJson<TerrainComponentRes>(json_data);
+        updateTerrainRes(terrain_res);
 
         markInit();
     }
 
+    void TerrainComponent::updateTerrainRes(const TerrainComponentRes& res)
+    {
+        m_terrain_res = res;
+
+        m_terrain.terrain_size = res.terrain_size;
+        m_terrain.terrian_max_height = res.terrain_max_height;
+        m_terrain.m_terrain_height_map_file = res.m_heightmap_file.m_image_file;
+        m_terrain.m_terrain_normal_map_file = res.m_normalmap_file.m_image_file;
+
+        markDirty();
+    }
+
     void TerrainComponent::save(ComponentDefinitionRes& out_component_res)
     {
-        MeshComponentRes mesh_res {};
-        (&mesh_res)->m_is_mesh_data   = m_scene_mesh.m_is_mesh_data;
-        (&mesh_res)->m_mesh_data_path = m_scene_mesh.m_mesh_data_path;
-        (&mesh_res)->m_sub_mesh_file  = m_scene_mesh.m_sub_mesh_file;
+        TerrainComponentRes terrain_res {};
+        (&terrain_res)->terrain_size       = m_terrain.terrain_size;
+        (&terrain_res)->terrain_max_height = m_terrain.terrian_max_height;
+        (&terrain_res)->m_heightmap_file   = SceneImage {false, false, 1, m_terrain.m_terrain_height_map_file};
+        (&terrain_res)->m_normalmap_file   = SceneImage {false, false, 1, m_terrain.m_terrain_normal_map_file};
 
-        MaterialComponentRes material_res {};
-        (&material_res)->m_material_file    = m_mesh_renderer_res.m_material_res.m_material_file;
-        (&material_res)->m_is_material_init = true;
-
-        MaterialRes mat_res_data = ToMaterialRes(m_material.m_mat_data, m_material.m_shader_name);
-        (&material_res)->m_material_serialized_json_data = AssetManager::saveJson(mat_res_data);
-
-        MeshRendererComponentRes mesh_renderer_res {};
-        (&mesh_renderer_res)->m_mesh_res     = mesh_res;
-        (&mesh_renderer_res)->m_material_res = material_res;
-
-        out_component_res.m_type_name           = "MeshRendererComponent";
+        out_component_res.m_type_name           = "TerrainComponent";
         out_component_res.m_component_name      = this->m_component_name;
-        out_component_res.m_component_json_data = AssetManager::saveJson(mesh_renderer_res);
+        out_component_res.m_component_json_data = AssetManager::saveJson(terrain_res);
     }
 
     void TerrainComponent::reset()
     {
+        m_terrain_res = _defaultTerrainComponentRes;
 
+        m_terrain  = SceneTerrainMesh {_defaultTerrainComponentRes.terrain_size,
+                                      _defaultTerrainComponentRes.terrain_max_height,
+                                      _defaultTerrainComponentRes.m_heightmap_file.m_image_file,
+                                      _defaultTerrainComponentRes.m_normalmap_file.m_image_file};
         m_material = {};
     }
 
     GameObjectComponentDesc component2SwapData(MoYu::GObjectID     game_object_id,
                                                MoYu::GComponentID  transform_component_id,
                                                TransformComponent* m_transform_component_ptr,
-                                               MoYu::GComponentID  mesh_renderer_component_id,
-                                               SceneMesh*          m_scene_mesh_ptr,
+                                               MoYu::GComponentID  terrain_component_id,
+                                               SceneTerrainMesh*   m_terrain_mesh_ptr,
                                                SceneMaterial*      m_scene_mat_ptr)
     {
         glm::float4x4 transform_matrix = m_transform_component_ptr->getMatrixWorld();
@@ -83,17 +90,17 @@ namespace MoYu
         scene_transform.m_scale            = m_scale;
         scene_transform.m_transform_matrix = transform_matrix;
 
-        SceneMeshRenderer scene_mesh_renderer = {};
-        scene_mesh_renderer.m_identifier      = SceneCommonIdentifier {game_object_id, mesh_renderer_component_id};
-        scene_mesh_renderer.m_scene_mesh      = *m_scene_mesh_ptr;
-        scene_mesh_renderer.m_material        = *m_scene_mat_ptr;
+        SceneTerrainRenderer scene_terrain_renderer = {};
+        scene_terrain_renderer.m_identifier         = SceneCommonIdentifier {game_object_id, terrain_component_id};
+        scene_terrain_renderer.m_scene_terrain_mesh = *m_terrain_mesh_ptr;
+        scene_terrain_renderer.m_material        = *m_scene_mat_ptr;
 
-        GameObjectComponentDesc light_component_desc = {};
-        light_component_desc.m_component_type        = ComponentType::C_Transform | ComponentType::C_MeshRenderer;
-        light_component_desc.m_transform_desc        = scene_transform;
-        light_component_desc.m_mesh_renderer_desc    = scene_mesh_renderer;
+        GameObjectComponentDesc current_component_desc = {};
+        current_component_desc.m_component_type        = ComponentType::C_Transform | ComponentType::C_Terrain;
+        current_component_desc.m_transform_desc        = scene_transform;
+        current_component_desc.m_terrain_mesh_renderer_desc = scene_terrain_renderer;
 
-        return light_component_desc;
+        return current_component_desc;
     }
 
     void TerrainComponent::tick(float delta_time)
@@ -110,15 +117,15 @@ namespace MoYu
 
         MoYu::GObjectID game_object_id = m_obj_ptr->getID();
         MoYu::GComponentID transform_component_id = m_transform_component_ptr->getComponentId();
-        MoYu::GComponentID mesh_renderer_component_id = this->getComponentId();
+        MoYu::GComponentID terrain_component_id = this->getComponentId();
 
         if (this->isToErase())
         {
             GameObjectComponentDesc mesh_renderer_desc = component2SwapData(game_object_id,
                                                                             transform_component_id,
                                                                             m_transform_component_ptr,
-                                                                            mesh_renderer_component_id,
-                                                                            &m_scene_mesh,
+                                                                            terrain_component_id,
+                                                                            &m_terrain,
                                                                             &m_material);
 
             logic_swap_data.addDeleteGameObject({game_object_id, {mesh_renderer_desc}});
@@ -130,8 +137,8 @@ namespace MoYu
             GameObjectComponentDesc mesh_renderer_desc = component2SwapData(game_object_id,
                                                                             transform_component_id,
                                                                             m_transform_component_ptr,
-                                                                            mesh_renderer_component_id,
-                                                                            &m_scene_mesh,
+                                                                            terrain_component_id,
+                                                                            &m_terrain,
                                                                             &m_material);
 
             logic_swap_data.addDirtyGameObject({game_object_id, {mesh_renderer_desc}});

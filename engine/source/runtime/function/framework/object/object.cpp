@@ -10,6 +10,7 @@
 #include "runtime/function/framework/component/light/light_component.h"
 #include "runtime/function/framework/component/mesh/mesh_renderer_component.h"
 #include "runtime/function/framework/component/camera/camera_component.h"
+#include "runtime/function/framework/component/terrain/terrain_component.h"
 
 namespace MoYu
 {
@@ -151,6 +152,12 @@ namespace MoYu
             else if (type_name == "MeshRendererComponent")
             {
                 std::shared_ptr<MeshRendererComponent> m_component = std::make_shared<MeshRendererComponent>();
+                m_component->postLoadResource(weak_from_this(), component_json_data);
+                m_components.push_back(m_component);
+            }
+            else if (type_name == "TerrainComponent")
+            {
+                std::shared_ptr<TerrainComponent> m_component = std::make_shared<TerrainComponent>();
                 m_component->postLoadResource(weak_from_this(), component_json_data);
                 m_components.push_back(m_component);
             }

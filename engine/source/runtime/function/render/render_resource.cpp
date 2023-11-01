@@ -76,10 +76,6 @@ namespace MoYu
         std::shared_ptr<MoYu::MoYuScratchImage> _ld_map  = loadImage(level_resource_desc.m_ibl_map.m_ld_map);
         std::shared_ptr<MoYu::MoYuScratchImage> _radians_map  = loadImage(level_resource_desc.m_ibl_map.m_irradians_map);
 
-        // terrain height and normal map
-        std::shared_ptr<MoYu::MoYuScratchImage> _terrain_height_map = loadImage(level_resource_desc.m_terrain_map.m_height_map);
-        std::shared_ptr<MoYu::MoYuScratchImage> _terrain_normal_map = loadImage(level_resource_desc.m_terrain_map.m_normal_map);
-
         startUploadBatch();
         {
             // create irradiance cubemap
@@ -101,12 +97,6 @@ namespace MoYu
             // create ibl radians
             auto radians_tex = createTex(_radians_map);
             m_render_scene->m_ibl_map.m_radians = radians_tex;
-
-            // create terrain height and normal map
-            auto terrain_height_map = createTex(_terrain_height_map);
-            auto terrain_normal_map = createTex(_terrain_normal_map);
-            m_render_scene->m_terrain_map.m_HeightMap = terrain_height_map;
-            m_render_scene->m_terrain_map.m_NormalMap = terrain_normal_map;
         }
         endUploadBatch();
 
@@ -262,6 +252,13 @@ namespace MoYu
         updateInternalMaterial(scene_mesh_renderer.m_material, cached_mesh_renderer.m_material, internal_mesh_renderer.ref_material, has_initialized);
 
         cached_mesh_renderer = scene_mesh_renderer;
+
+        return true;
+    }
+
+    bool RenderResource::updateInternalTerrainRenderer(SceneTerrainRenderer scene_terrain_renderer, SceneTerrainRenderer& cached_terrain_renderer, InternalTerrainRenderer& internal_terrain_renderer, bool has_initialized)
+    {
+
 
         return true;
     }

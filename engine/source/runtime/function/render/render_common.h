@@ -21,6 +21,16 @@
 
 namespace MoYu
 {
+
+    //========================================================================
+    // 准备上传的Buffer和Image数据
+    //========================================================================
+
+    typedef DirectX::Blob         MoYuScratchBuffer;
+    typedef DirectX::TexMetadata  MoYuTexMetadata;
+    typedef DirectX::Image        MoYuImage;
+    typedef DirectX::ScratchImage MoYuScratchImage;
+
     //************************************************************
     // InputLayout类型相关
     //************************************************************
@@ -180,6 +190,21 @@ namespace MoYu
         InternalVertexBuffer vertex_buffer;
     };
 
+    struct InternalTerrain
+    {
+        glm::int2 terrain_size;
+        int terrain_max_height;
+
+        int terrain_root_patch_width;
+        int terrain_mip_levels;
+
+        std::shared_ptr<MoYu::MoYuScratchImage> terrain_heightmap_scratch;
+        std::shared_ptr<MoYu::MoYuScratchImage> terrain_normalmap_scratch;
+
+        std::shared_ptr<RHI::D3D12Texture> terrain_heightmap;
+        std::shared_ptr<RHI::D3D12Texture> terrain_normalmap;
+    };
+
     struct InternalPBRMaterial
     {
         // Factors
@@ -220,6 +245,17 @@ namespace MoYu
         glm::float4x4 model_matrix_inverse;
 
         InternalMesh ref_mesh;
+        InternalMaterial ref_material;
+    };
+
+    struct InternalTerrainRenderer
+    {
+        SceneCommonIdentifier m_identifier;
+
+        glm::float4x4 model_matrix;
+        glm::float4x4 model_matrix_inverse;
+
+        InternalTerrain ref_terrain;
         InternalMaterial ref_material;
     };
 
@@ -338,12 +374,6 @@ namespace MoYu
         std::vector<glm::float4> m_SH;
     };
 
-    struct TerrainConfigs
-    {
-        std::shared_ptr<RHI::D3D12Texture> m_HeightMap;
-        std::shared_ptr<RHI::D3D12Texture> m_NormalMap;
-    };
-
     //========================================================================
     // Render Desc
     //========================================================================
@@ -355,6 +385,7 @@ namespace MoYu
         C_Camera       = 1 << 1,
         C_Mesh         = 1 << 2,
         C_Material     = 1 << 3,
+        C_Terrain      = 1 << 4,
         C_MeshRenderer = C_Mesh | C_Material
     };
     DEFINE_MOYU_ENUM_FLAG_OPERATORS(ComponentType)
@@ -370,6 +401,21 @@ namespace MoYu
     {
         return lhs.m_is_mesh_data == rhs.m_is_mesh_data && lhs.m_sub_mesh_file == rhs.m_sub_mesh_file &&
                lhs.m_mesh_data_path == rhs.m_mesh_data_path;
+    }
+
+    struct SceneTerrainMesh
+    {
+        glm::int2 terrain_size {glm::int2(1024, 1024)};
+        int terrian_max_height {1024};
+        std::string m_terrain_height_map_file {""};
+        std::string m_terrain_normal_map_file {""};
+    };
+
+    inline bool operator==(const SceneTerrainMesh& lhs, const SceneTerrainMesh& rhs)
+    {
+        return lhs.terrain_size == rhs.terrain_size && lhs.terrian_max_height == rhs.terrian_max_height &&
+               lhs.m_terrain_height_map_file == rhs.m_terrain_height_map_file &&
+               lhs.m_terrain_normal_map_file == rhs.m_terrain_normal_map_file;
     }
 
     struct SceneImage
@@ -460,6 +506,16 @@ namespace MoYu
         SceneMaterial m_material;
     };
 
+    struct SceneTerrainRenderer
+    {
+        static const ComponentType m_component_type {ComponentType::C_Terrain};
+
+        SceneCommonIdentifier m_identifier;
+
+        SceneTerrainMesh m_scene_terrain_mesh;
+        SceneMaterial m_material;
+    };
+    
     enum LightType
     {
         AmbientLight,
@@ -517,6 +573,7 @@ namespace MoYu
 
         SceneTransform    m_transform_desc {};
         SceneMeshRenderer m_mesh_renderer_desc {};
+        SceneTerrainRenderer m_terrain_mesh_renderer_desc {};
         SceneLight        m_scene_light {};
         SceneCamera       m_scene_camera {};
     };
@@ -538,13 +595,9 @@ namespace MoYu
     };
 
     //========================================================================
-    // 准备上传的Buffer和Image数据
+    // 骨骼数据
     //========================================================================
-    
-    typedef DirectX::Blob         MoYuScratchBuffer;
-    typedef DirectX::TexMetadata  MoYuTexMetadata;
-    typedef DirectX::Image        MoYuImage;
-    typedef DirectX::ScratchImage MoYuScratchImage;
+
 
     struct SkeletonDefinition
     {

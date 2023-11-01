@@ -175,6 +175,11 @@ namespace MoYu
                         MoYu::SceneCamera sceneCamera = objParts[i].m_scene_camera;
                         m_render_scene->updateCamera(sceneCamera, meshTransform);
                     }
+                    else if (objParts[i].m_component_type & ComponentType::C_Terrain)
+                    {
+                        MoYu::SceneTerrainRenderer terrainRenderer = objParts[i].m_terrain_mesh_renderer_desc;
+                        m_render_scene->updateTerrainRenderer(terrainRenderer, meshTransform, m_render_resource);
+                    }
                 }
             }
             swap_data.m_game_object_resource_desc.reset();
@@ -205,6 +210,10 @@ namespace MoYu
                     {
                         MoYu::SceneCamera sceneCamera = objParts[i].m_scene_camera;
                         m_render_scene->removeCamera(sceneCamera);
+                    }
+                    else if (objParts[i].m_component_type & ComponentType::C_Terrain)
+                    {
+
                     }
                 }
             }

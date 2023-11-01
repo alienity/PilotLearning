@@ -14,6 +14,7 @@
 #include "runtime/engine.h"
 
 #include "runtime/function/framework/component/mesh/mesh_renderer_component.h"
+#include "runtime/function/framework/component/terrain/terrain_component.h"
 #include "runtime/function/framework/component/transform/transform_component.h"
 #include "runtime/function/framework/component/camera/camera_component.h"
 #include "runtime/function/framework/component/light/light_component.h"
@@ -584,6 +585,26 @@ namespace MoYu
 
             is_dirty |= isDirty;
         };
+        m_editor_ui_creator["TerrainComponent"] = [this, &asset_folder](const std::string& name, bool& is_dirty, void* value_ptr) -> void {
+            bool isDirty = false;
+
+            if (ImGui::TreeNode(name.c_str()))
+            {
+                ImGui::Indent();
+
+                TerrainComponent* terrain_ptr = static_cast<TerrainComponent*>(value_ptr);
+
+                m_editor_ui_creator["Vector2"]("TerrainSize", isDirty, &terrain_ptr->m_terrain_res.terrain_size);
+                m_editor_ui_creator["float"]("TerrainMaxHeight", isDirty, &terrain_ptr->m_terrain_res.terrain_max_height);
+                m_editor_ui_creator["SceneImage"]("TerrainHeightMap", isDirty, &terrain_ptr->m_terrain_res.m_heightmap_file);
+                m_editor_ui_creator["SceneImage"]("TerrainNormalMap", isDirty, &terrain_ptr->m_terrain_res.m_normalmap_file);
+
+                ImGui::Unindent();
+                ImGui::TreePop();
+            }
+
+            is_dirty |= isDirty;
+        };
         m_editor_ui_creator["LightComponent"] = [this, &asset_folder](const std::string& name, bool& is_dirty, void* value_ptr) -> void {
             bool isDirty = false;
 
@@ -1072,6 +1093,20 @@ namespace MoYu
                     }
                 }
                 ImGui::EndMenu();
+            }
+
+            if (ImGui::MenuItem("Terrain Renderer Component"))
+            {
+                if (selected_object->tryGetComponent<TerrainComponent>("TerrainComponent"))
+                {
+                    LOG_INFO("object {} already has Terrain Renderer Component", selected_object->getName());
+                }
+                else
+                {
+                    std::shared_ptr<TerrainComponent> terrain_component = std::make_shared<TerrainComponent>();
+                    selected_object->tryAddComponent(terrain_component);
+                    LOG_INFO("Add New Terrain Component");
+                }
             }
 
             ImGui::EndPopup();

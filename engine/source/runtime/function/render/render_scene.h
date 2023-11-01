@@ -17,6 +17,12 @@ namespace MoYu
         InternalMeshRenderer internalMeshRenderer;
     };
 
+    struct CachedTerrainRenderer
+    {
+        SceneTerrainRenderer cachedSceneTerrainRenderer;
+        InternalTerrainRenderer internalTerrainRenderer;
+    };
+
     class RenderScene
     {
     public:
@@ -25,9 +31,6 @@ namespace MoYu
 
         // ibl
         IBLConfigs m_ibl_map;
-
-        // terrain
-        TerrainConfigs m_terrain_map;
 
         // all light
         InternalAmbientLight            m_ambient_light;
@@ -38,6 +41,9 @@ namespace MoYu
         // render entities
         std::vector<CachedMeshRenderer> m_mesh_renderers;
 
+        // terrain entities
+        std::vector<CachedTerrainRenderer> m_terrain_renderers;
+
         // camera
         InternalCamera m_camera;
 
@@ -45,10 +51,12 @@ namespace MoYu
         void updateLight(SceneLight sceneLight, SceneTransform sceneTransform);
         void updateMeshRenderer(SceneMeshRenderer sceneMeshRenderer, SceneTransform sceneTransform, std::shared_ptr<RenderResource> m_render_resource);
         void updateCamera(SceneCamera sceneCamera, SceneTransform sceneTransform);
+        void updateTerrainRenderer(SceneTerrainRenderer sceneTerrainRenderer, SceneTransform sceneTransform, std::shared_ptr<RenderResource> m_render_resource);
 
         // remove component
         void removeLight(SceneLight sceneLight);
         void removeMeshRenderer(SceneMeshRenderer sceneMeshRenderer);
         void removeCamera(SceneCamera sceneCamera);
+        void removeTerrainRenderer(SceneTerrainRenderer sceneTerrainRenderer);
     };
 } // namespace MoYu

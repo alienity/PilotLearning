@@ -275,6 +275,44 @@ namespace MoYu
 
     }
 
+    void RenderScene::updateTerrainRenderer(SceneTerrainRenderer sceneTerrainRenderer, SceneTransform sceneTransform, std::shared_ptr<RenderResource> m_render_resource)
+    {
+        const glm::float4x4 model_matrix = sceneTransform.m_transform_matrix;
+        const glm::float4x4 model_matrix_inverse = glm::inverse(model_matrix);
+
+        int mesh_finded = -1;
+        std::vector<CachedTerrainRenderer>& _mesh_renderers = m_terrain_renderers;
+        for (int j = 0; j < _mesh_renderers.size(); j++)
+        {
+            if (_mesh_renderers[j].cachedSceneTerrainRenderer.m_identifier == sceneTerrainRenderer.m_identifier)
+            {
+                mesh_finded = j;
+                break;
+            }
+        }
+        if (mesh_finded == -1)
+        {
+            CachedTerrainRenderer cachedMeshRenderer;
+            m_render_resource->updateInternalTerrainRenderer(sceneTerrainRenderer,
+                                                             cachedMeshRenderer.cachedSceneTerrainRenderer,
+                                                             cachedMeshRenderer.internalTerrainRenderer,
+                                                          false);
+            cachedMeshRenderer.internalTerrainRenderer.model_matrix         = model_matrix;
+            cachedMeshRenderer.internalTerrainRenderer.model_matrix_inverse = model_matrix_inverse;
+
+            _mesh_renderers.push_back(cachedMeshRenderer);
+        }
+        else
+        {
+            m_render_resource->updateInternalTerrainRenderer(sceneTerrainRenderer,
+                                                             _mesh_renderers[mesh_finded].cachedSceneTerrainRenderer,
+                                                          _mesh_renderers[mesh_finded].internalTerrainRenderer,
+                                                          true);
+            _mesh_renderers[mesh_finded].internalTerrainRenderer.model_matrix      = model_matrix;
+            _mesh_renderers[mesh_finded].internalTerrainRenderer.model_matrix_inverse = model_matrix_inverse;
+        }
+    }
+
     void RenderScene::removeLight(SceneLight sceneLight)
     {
         if (sceneLight.m_light_type == LightType::AmbientLight)
@@ -326,5 +364,10 @@ namespace MoYu
     void RenderScene::removeCamera(SceneCamera sceneCamera)
     {
         m_camera = {};
+    }
+
+    void RenderScene::removeTerrainRenderer(SceneTerrainRenderer sceneTerrainRenderer)
+    {
+
     }
 }

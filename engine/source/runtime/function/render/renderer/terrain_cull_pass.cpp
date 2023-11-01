@@ -61,6 +61,7 @@ namespace MoYu
 
     void IndirectTerrainCullPass::prepareMeshData(std::shared_ptr<RenderResource> render_resource)
     {
+        /*
         // FrameUniforms
         HLSL::FrameUniforms* _frameUniforms = &render_resource->m_FrameUniforms;
 
@@ -83,8 +84,7 @@ namespace MoYu
         _terrainUniform.local2WorldMatrix = glm::float4x4(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1);
 
         _frameUniforms->terrainUniform = _terrainUniform;
-
-
+        */
     }
 
     void IndirectTerrainCullPass::update(RHI::RenderGraph& graph, IndirectCullOutput& cullOutput)
