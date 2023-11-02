@@ -106,7 +106,7 @@ namespace MoYu
 
             is_dirty |= isDirty;
         };
-        m_editor_ui_creator["Vector2"] = [this](const std::string& name, bool& is_dirty, void* value_ptr) -> void {
+        m_editor_ui_creator["glm::float2"] = [this](const std::string& name, bool& is_dirty, void* value_ptr) -> void {
             bool isDirty = false;
 
             glm::float2* vec_ptr = static_cast<glm::float2*>(value_ptr);
@@ -116,6 +116,22 @@ namespace MoYu
             ImGui::Text("%s", name.c_str());
             ImGui::SameLine();
             isDirty    = ImGui::DragFloat2(label.c_str(), val);
+
+            vec_ptr->x = val[0];
+            vec_ptr->y = val[1];
+
+            is_dirty |= isDirty;
+        };
+        m_editor_ui_creator["glm::int2"] = [this](const std::string& name, bool& is_dirty, void* value_ptr) -> void {
+            bool isDirty = false;
+
+            glm::int2* vec_ptr = static_cast<glm::int2*>(value_ptr);
+            int val[2]  = {vec_ptr->x, vec_ptr->y};
+
+            std::string label = "##" + name;
+            ImGui::Text("%s", name.c_str());
+            ImGui::SameLine();
+            isDirty = ImGui::DragInt2(label.c_str(), val);
 
             vec_ptr->x = val[0];
             vec_ptr->y = val[1];
@@ -139,7 +155,7 @@ namespace MoYu
 
             is_dirty |= isDirty;
         };
-        m_editor_ui_creator["Vector4"] = [this](const std::string& name, bool& is_dirty, void* value_ptr) -> void {
+        m_editor_ui_creator["glm::float4"] = [this](const std::string& name, bool& is_dirty, void* value_ptr) -> void {
             bool isDirty = false;
             
             glm::float4* vec_ptr = static_cast<glm::float4*>(value_ptr);
@@ -317,10 +333,10 @@ namespace MoYu
             m_editor_ui_creator["Color"]("color", isDirty, &light_ptr->color);
             m_editor_ui_creator["float"]("intensity", isDirty, &light_ptr->intensity);
             m_editor_ui_creator["bool"]("shadows", isDirty, &light_ptr->shadows);
-            m_editor_ui_creator["Vector2"]("shadow_bounds", isDirty, &light_ptr->shadow_bounds);
+            m_editor_ui_creator["glm::float2"]("shadow_bounds", isDirty, &light_ptr->shadow_bounds);
             m_editor_ui_creator["float"]("shadow_near_plane", isDirty, &light_ptr->shadow_near_plane);
             m_editor_ui_creator["float"]("shadow_far_plane", isDirty, &light_ptr->shadow_far_plane);
-            m_editor_ui_creator["Vector2"]("shadowmap_size", isDirty, &light_ptr->shadowmap_size);
+            m_editor_ui_creator["glm::float2"]("shadowmap_size", isDirty, &light_ptr->shadowmap_size);
 
             is_dirty |= isDirty;
         };
@@ -346,10 +362,10 @@ namespace MoYu
             m_editor_ui_creator["float"]("inner_angle", isDirty, &light_ptr->inner_angle);
             m_editor_ui_creator["float"]("outer_angle", isDirty, &light_ptr->outer_angle);
             m_editor_ui_creator["bool"]("shadows", isDirty, &light_ptr->shadows);
-            m_editor_ui_creator["Vector2"]("shadow_bounds", isDirty, &light_ptr->shadow_bounds);
+            m_editor_ui_creator["glm::float2"]("shadow_bounds", isDirty, &light_ptr->shadow_bounds);
             m_editor_ui_creator["float"]("shadow_near_plane", isDirty, &light_ptr->shadow_near_plane);
             m_editor_ui_creator["float"]("shadow_far_plane", isDirty, &light_ptr->shadow_far_plane);
-            m_editor_ui_creator["Vector2"]("shadowmap_size", isDirty, &light_ptr->shadowmap_size);
+            m_editor_ui_creator["glm::float2"]("shadowmap_size", isDirty, &light_ptr->shadowmap_size);
 
             is_dirty |= isDirty;
         };  
@@ -594,10 +610,10 @@ namespace MoYu
 
                 TerrainComponent* terrain_ptr = static_cast<TerrainComponent*>(value_ptr);
 
-                m_editor_ui_creator["Vector2"]("TerrainSize", isDirty, &terrain_ptr->m_terrain_res.terrain_size);
-                m_editor_ui_creator["float"]("TerrainMaxHeight", isDirty, &terrain_ptr->m_terrain_res.terrain_max_height);
-                m_editor_ui_creator["SceneImage"]("TerrainHeightMap", isDirty, &terrain_ptr->m_terrain_res.m_heightmap_file);
-                m_editor_ui_creator["SceneImage"]("TerrainNormalMap", isDirty, &terrain_ptr->m_terrain_res.m_normalmap_file);
+                m_editor_ui_creator["glm::int2"]("TerrainSize", isDirty, &terrain_ptr->m_terrain.terrain_size);
+                m_editor_ui_creator["int"]("TerrainMaxHeight", isDirty, &terrain_ptr->m_terrain.terrian_max_height);
+                m_editor_ui_creator["SceneImage"]("TerrainHeightMap", isDirty, &terrain_ptr->m_terrain.m_terrain_height_map);
+                m_editor_ui_creator["SceneImage"]("TerrainNormalMap", isDirty, &terrain_ptr->m_terrain.m_terrain_normal_map);
 
                 ImGui::Unindent();
                 ImGui::TreePop();

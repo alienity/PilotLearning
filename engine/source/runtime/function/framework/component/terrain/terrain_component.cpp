@@ -37,8 +37,8 @@ namespace MoYu
 
         m_terrain.terrain_size = res.terrain_size;
         m_terrain.terrian_max_height = res.terrain_max_height;
-        m_terrain.m_terrain_height_map_file = res.m_heightmap_file.m_image_file;
-        m_terrain.m_terrain_normal_map_file = res.m_normalmap_file.m_image_file;
+        m_terrain.m_terrain_height_map = res.m_heightmap_file;
+        m_terrain.m_terrain_normal_map = res.m_normalmap_file;
 
         markDirty();
     }
@@ -48,8 +48,8 @@ namespace MoYu
         TerrainComponentRes terrain_res {};
         (&terrain_res)->terrain_size       = m_terrain.terrain_size;
         (&terrain_res)->terrain_max_height = m_terrain.terrian_max_height;
-        (&terrain_res)->m_heightmap_file   = SceneImage {false, false, 1, m_terrain.m_terrain_height_map_file};
-        (&terrain_res)->m_normalmap_file   = SceneImage {false, false, 1, m_terrain.m_terrain_normal_map_file};
+        (&terrain_res)->m_heightmap_file   = m_terrain.m_terrain_height_map;
+        (&terrain_res)->m_normalmap_file   = m_terrain.m_terrain_normal_map;
 
         out_component_res.m_type_name           = "TerrainComponent";
         out_component_res.m_component_name      = this->m_component_name;
@@ -62,8 +62,8 @@ namespace MoYu
 
         m_terrain  = SceneTerrainMesh {_defaultTerrainComponentRes.terrain_size,
                                       _defaultTerrainComponentRes.terrain_max_height,
-                                      _defaultTerrainComponentRes.m_heightmap_file.m_image_file,
-                                      _defaultTerrainComponentRes.m_normalmap_file.m_image_file};
+                                      _defaultTerrainComponentRes.m_heightmap_file,
+                                      _defaultTerrainComponentRes.m_normalmap_file};
         m_material = {};
     }
 

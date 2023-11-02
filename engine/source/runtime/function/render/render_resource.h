@@ -40,8 +40,13 @@ namespace MoYu
         bool updateInternalMesh(SceneMesh scene_mesh, SceneMesh& cached_mesh, InternalMesh& internal_mesh, bool has_initialized = false);
         bool updateInternalMeshRenderer(SceneMeshRenderer scene_mesh_renderer, 
             SceneMeshRenderer& cached_mesh_renderer, InternalMeshRenderer& internal_mesh_renderer, bool has_initialized = false);
-        bool updateInternalTerrainRenderer(SceneTerrainRenderer scene_terrain_renderer, 
-            SceneTerrainRenderer& cached_terrain_renderer, InternalTerrainRenderer& internal_terrain_renderer, bool has_initialized = false);
+        bool updateInternalTerrainRenderer(
+            SceneTerrainRenderer scene_terrain_renderer, 
+            SceneTerrainRenderer& cached_terrain_renderer, 
+            InternalTerrainRenderer& internal_terrain_renderer, 
+            glm::float4x4 model_matrix,
+            glm::float4x4 model_matrix_inv,
+            bool has_initialized = false);
 
         // bindless objects
         HLSL::FrameUniforms m_FrameUniforms;

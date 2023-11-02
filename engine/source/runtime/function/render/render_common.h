@@ -190,21 +190,6 @@ namespace MoYu
         InternalVertexBuffer vertex_buffer;
     };
 
-    struct InternalTerrain
-    {
-        glm::int2 terrain_size;
-        int terrain_max_height;
-
-        int terrain_root_patch_width;
-        int terrain_mip_levels;
-
-        std::shared_ptr<MoYu::MoYuScratchImage> terrain_heightmap_scratch;
-        std::shared_ptr<MoYu::MoYuScratchImage> terrain_normalmap_scratch;
-
-        std::shared_ptr<RHI::D3D12Texture> terrain_heightmap;
-        std::shared_ptr<RHI::D3D12Texture> terrain_normalmap;
-    };
-
     struct InternalPBRMaterial
     {
         // Factors
@@ -246,6 +231,32 @@ namespace MoYu
 
         InternalMesh ref_mesh;
         InternalMaterial ref_material;
+    };
+    
+    struct InternalPatchNode
+    {
+        std::shared_ptr<MoYuScratchBuffer> m_scratch_index_buffer;
+        std::shared_ptr<MoYuScratchBuffer> m_scratch_vertex_buffer;
+
+        InternalIndexBuffer  index_buffer;
+        InternalVertexBuffer vertex_buffer;
+    };
+
+    struct InternalTerrain
+    {
+        glm::int2 terrain_size;
+        int terrain_max_height;
+
+        int terrain_root_patch_number; // the number of patch in root level
+        int terrain_mip_levels;
+
+        std::shared_ptr<InternalPatchNode> terrain_basic_patch;
+
+        std::shared_ptr<MoYu::MoYuScratchImage> terrain_heightmap_scratch;
+        std::shared_ptr<MoYu::MoYuScratchImage> terrain_normalmap_scratch;
+
+        std::shared_ptr<RHI::D3D12Texture> terrain_heightmap;
+        std::shared_ptr<RHI::D3D12Texture> terrain_normalmap;
     };
 
     struct InternalTerrainRenderer
@@ -403,21 +414,6 @@ namespace MoYu
                lhs.m_mesh_data_path == rhs.m_mesh_data_path;
     }
 
-    struct SceneTerrainMesh
-    {
-        glm::int2 terrain_size {glm::int2(1024, 1024)};
-        int terrian_max_height {1024};
-        std::string m_terrain_height_map_file {""};
-        std::string m_terrain_normal_map_file {""};
-    };
-
-    inline bool operator==(const SceneTerrainMesh& lhs, const SceneTerrainMesh& rhs)
-    {
-        return lhs.terrain_size == rhs.terrain_size && lhs.terrian_max_height == rhs.terrian_max_height &&
-               lhs.m_terrain_height_map_file == rhs.m_terrain_height_map_file &&
-               lhs.m_terrain_normal_map_file == rhs.m_terrain_normal_map_file;
-    }
-
     struct SceneImage
     {
         bool m_is_srgb {false};
@@ -437,6 +433,23 @@ namespace MoYu
         return l.m_is_srgb < r.m_is_srgb || (l.m_is_srgb == r.m_is_srgb && l.m_auto_mips < r.m_auto_mips) ||
                ((l.m_is_srgb == r.m_is_srgb && l.m_auto_mips == r.m_auto_mips) && l.m_image_file < r.m_image_file) ||
                ((l.m_is_srgb == r.m_is_srgb && l.m_auto_mips == r.m_auto_mips && l.m_image_file == r.m_image_file) && l.m_mip_levels < r.m_mip_levels);
+    }
+
+
+    struct SceneTerrainMesh
+    {
+        glm::int2  terrain_size {glm::int2(1024, 1024)};
+        int        terrian_max_height {1024};
+        SceneImage m_terrain_height_map {};
+        SceneImage m_terrain_normal_map {};
+    };
+
+    inline bool operator==(const SceneTerrainMesh& lhs, const SceneTerrainMesh& rhs)
+    {
+        return lhs.terrain_size == rhs.terrain_size && 
+               lhs.terrian_max_height == rhs.terrian_max_height &&
+               lhs.m_terrain_height_map == rhs.m_terrain_height_map &&
+               lhs.m_terrain_normal_map == rhs.m_terrain_normal_map;
     }
 
     struct MaterialImage

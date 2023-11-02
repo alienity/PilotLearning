@@ -20,6 +20,7 @@
 
 #include "runtime/function/render/renderer/tool_pass.h"
 #include "runtime/function/render/render_helper.h"
+#include "runtime/function/render/terrain_render_helper.h"
 
 #include <stdexcept>
 
@@ -256,9 +257,42 @@ namespace MoYu
         return true;
     }
 
-    bool RenderResource::updateInternalTerrainRenderer(SceneTerrainRenderer scene_terrain_renderer, SceneTerrainRenderer& cached_terrain_renderer, InternalTerrainRenderer& internal_terrain_renderer, bool has_initialized)
+    bool RenderResource::updateInternalTerrainRenderer(
+        SceneTerrainRenderer scene_terrain_renderer, 
+        SceneTerrainRenderer& cached_terrain_renderer, 
+        InternalTerrainRenderer& internal_terrain_renderer, 
+        glm::float4x4 model_matrix,
+        glm::float4x4 model_matrix_inv,
+        bool has_initialized)
     {
+        internal_terrain_renderer.model_matrix = model_matrix;
+        internal_terrain_renderer.model_matrix_inverse = model_matrix_inv;
 
+        bool is_terrain_same = scene_terrain_renderer.m_scene_terrain_mesh == cached_terrain_renderer.m_scene_terrain_mesh;
+
+        if (!is_terrain_same || !has_initialized)
+        {
+            internal_terrain_renderer.m_identifier = scene_terrain_renderer.m_identifier;
+
+            InternalTerrain internal_terrain {};
+
+            internal_terrain.terrain_size = scene_terrain_renderer.m_scene_terrain_mesh.terrain_size;
+            internal_terrain.terrain_max_height = scene_terrain_renderer.m_scene_terrain_mesh.terrian_max_height;
+            internal_terrain.terrain_root_patch_number = internal_terrain.terrain_size.x / TNode::SpecificMipLevelWidth(0);
+            internal_terrain.terrain_mip_levels = TerrainMipLevel;
+
+            internal_terrain.terrain_basic_patch = ;
+
+            TerrainRenderHelper terrainRenderHelper;
+            terrainRenderHelper.InitTerrainRenderer(&internal_terrain);
+
+            internal_terrain_renderer.ref_terrain = internal_terrain;
+
+            InternalMaterial internal_material {};
+            internal_terrain_renderer.ref_material = internal_material;
+        }
+
+        cached_terrain_renderer = scene_terrain_renderer;
 
         return true;
     }

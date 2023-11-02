@@ -296,9 +296,9 @@ namespace MoYu
             m_render_resource->updateInternalTerrainRenderer(sceneTerrainRenderer,
                                                              cachedMeshRenderer.cachedSceneTerrainRenderer,
                                                              cachedMeshRenderer.internalTerrainRenderer,
-                                                          false);
-            cachedMeshRenderer.internalTerrainRenderer.model_matrix         = model_matrix;
-            cachedMeshRenderer.internalTerrainRenderer.model_matrix_inverse = model_matrix_inverse;
+                                                             model_matrix,
+                                                             model_matrix_inverse,
+                                                             false);
 
             _mesh_renderers.push_back(cachedMeshRenderer);
         }
@@ -306,10 +306,10 @@ namespace MoYu
         {
             m_render_resource->updateInternalTerrainRenderer(sceneTerrainRenderer,
                                                              _mesh_renderers[mesh_finded].cachedSceneTerrainRenderer,
-                                                          _mesh_renderers[mesh_finded].internalTerrainRenderer,
-                                                          true);
-            _mesh_renderers[mesh_finded].internalTerrainRenderer.model_matrix      = model_matrix;
-            _mesh_renderers[mesh_finded].internalTerrainRenderer.model_matrix_inverse = model_matrix_inverse;
+                                                             _mesh_renderers[mesh_finded].internalTerrainRenderer,
+                                                             model_matrix,
+                                                             model_matrix_inverse,
+                                                             true);
         }
     }
 

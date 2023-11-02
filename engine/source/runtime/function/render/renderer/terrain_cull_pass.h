@@ -7,11 +7,6 @@
 
 namespace MoYu
 {
-    struct GBCluster
-    {
-
-    };
-
     struct TerrainMeshPatchBuffer
     {
         glm::float2 patchRelativePos;
