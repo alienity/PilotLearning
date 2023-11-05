@@ -233,24 +233,36 @@ namespace MoYu
         InternalMaterial ref_material;
     };
     
-    struct InternalPatchNode
+    struct InternalScratchIndexBuffer
     {
-        std::shared_ptr<MoYuScratchBuffer> m_scratch_index_buffer;
-        std::shared_ptr<MoYuScratchBuffer> m_scratch_vertex_buffer;
+        uint32_t index_stride;
+        uint32_t index_count;
+        std::shared_ptr<MoYuScratchBuffer> index_buffer;
+    };
 
-        InternalIndexBuffer  index_buffer;
-        InternalVertexBuffer vertex_buffer;
+    struct InternalScratchVertexBuffer
+    {
+        InputDefinition input_element_definition;
+        uint32_t vertex_count;
+        std::shared_ptr<MoYuScratchBuffer> vertex_buffer;
+    };
+
+    struct InternalScratchMesh
+    {
+        InternalScratchIndexBuffer  scratch_index_buffer;
+        InternalScratchVertexBuffer scratch_vertex_buffer;
     };
 
     struct InternalTerrain
     {
-        glm::int2 terrain_size;
-        int terrain_max_height;
+        glm::int2 terrain_size; // 假设地形大小是1024
+        int terrain_max_height; // 假设最大高度是1024
 
-        int terrain_root_patch_number; // the number of patch in root level
-        int terrain_mip_levels;
+        //int terrain_root_patch_number; // the number of patch in root level
+        int terrain_mip_levels; // 9, {2, 4, 8, 16, 32, 64, 128, 256, 512}
 
-        std::shared_ptr<InternalPatchNode> terrain_basic_patch;
+        InternalScratchMesh terrain_patch_scratch_mesh;
+        InternalMesh terrain_patch_mesh;
 
         std::shared_ptr<MoYu::MoYuScratchImage> terrain_heightmap_scratch;
         std::shared_ptr<MoYu::MoYuScratchImage> terrain_normalmap_scratch;

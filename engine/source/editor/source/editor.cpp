@@ -22,6 +22,7 @@ namespace MoYu
         registerEdtorTickComponent("TransformComponent");
         registerEdtorTickComponent("MeshRendererComponent");
         registerEdtorTickComponent("LightComponent");
+        registerEdtorTickComponent("TerrainComponent");
     }
 
     PilotEditor::~PilotEditor() {}

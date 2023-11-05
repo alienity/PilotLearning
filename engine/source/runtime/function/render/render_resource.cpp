@@ -26,7 +26,16 @@
 
 namespace MoYu
 {
-    RenderResource::~RenderResource() { ReleaseAllTextures(); }
+    RenderResource::RenderResource()
+    {
+        terrainHelper = std::make_shared<TerrainRenderHelper>();
+    }
+
+    RenderResource::~RenderResource()
+    {
+        terrainHelper = nullptr;
+        ReleaseAllTextures();
+    }
 
     bool RenderResource::updateGlobalRenderResource(RenderScene* m_render_scene, GlobalRenderingRes level_resource_desc)
     {
@@ -275,16 +284,7 @@ namespace MoYu
             internal_terrain_renderer.m_identifier = scene_terrain_renderer.m_identifier;
 
             InternalTerrain internal_terrain {};
-
-            internal_terrain.terrain_size = scene_terrain_renderer.m_scene_terrain_mesh.terrain_size;
-            internal_terrain.terrain_max_height = scene_terrain_renderer.m_scene_terrain_mesh.terrian_max_height;
-            internal_terrain.terrain_root_patch_number = internal_terrain.terrain_size.x / TNode::SpecificMipLevelWidth(0);
-            internal_terrain.terrain_mip_levels = TerrainMipLevel;
-
-            internal_terrain.terrain_basic_patch = ;
-
-            TerrainRenderHelper terrainRenderHelper;
-            terrainRenderHelper.InitTerrainRenderer(&internal_terrain);
+            terrainHelper->InitTerrainRenderer(&scene_terrain_renderer, &internal_terrain, this);
 
             internal_terrain_renderer.ref_terrain = internal_terrain;
 
@@ -870,22 +870,24 @@ namespace MoYu
 
     InternalMesh RenderResource::createInternalMesh(RenderMeshData mesh_data)
     {
-        InternalVertexBuffer vertex_buffer = createVertexBuffer(mesh_data.m_static_mesh_data.m_InputElementDefinition,
-                                                                mesh_data.m_static_mesh_data.m_vertex_buffer);
+        InternalVertexBuffer vertex_buffer = createVertexBuffer<D3D12MeshVertexPositionNormalTangentTexture>(
+            mesh_data.m_static_mesh_data.m_InputElementDefinition, mesh_data.m_static_mesh_data.m_vertex_buffer);
 
-        InternalIndexBuffer index_buffer = createIndexBuffer(mesh_data.m_static_mesh_data.m_index_buffer);
+        InternalIndexBuffer index_buffer = createIndexBuffer<uint32_t>(mesh_data.m_static_mesh_data.m_index_buffer);
 
         return InternalMesh {false, mesh_data.m_axis_aligned_box, index_buffer, vertex_buffer};
     }
 
+    /*
+    template<typename T> 
     InternalVertexBuffer RenderResource::createVertexBuffer(InputDefinition input_definition, std::shared_ptr<MoYu::MoYuScratchBuffer> vertex_buffer)
     {
-        typedef D3D12MeshVertexPositionNormalTangentTexture MeshVertexDataDefinition;
+        //typedef D3D12MeshVertexPositionNormalTangentTexture MeshVertexDataDefinition;
 
-        ASSERT(input_definition == MeshVertexDataDefinition::InputElementDefinition);
+        ASSERT(input_definition == T::InputElementDefinition);
         uint32_t vertex_buffer_size = vertex_buffer->GetBufferSize();
-        MeshVertexDataDefinition* vertex_buffer_data = static_cast<MeshVertexDataDefinition*>(vertex_buffer->GetBufferPointer());
-        uint32_t inputLayoutStride = sizeof(MeshVertexDataDefinition);
+        T* vertex_buffer_data = static_cast<T*>(vertex_buffer->GetBufferPointer());
+        uint32_t inputLayoutStride = sizeof(T);
         ASSERT(0 == (vertex_buffer_size % inputLayoutStride));
         uint32_t vertex_count = vertex_buffer_size / inputLayoutStride;
         //uint32_t vertex_buffer_size = inputLayoutStride * vertex_count;
@@ -899,22 +901,23 @@ namespace MoYu
             m_GraphicsMemory->Allocate(inefficient_staging_buffer_size);
         void* inefficient_staging_buffer_data = inefficient_staging_buffer.Memory();
 
-        MeshVertexDataDefinition* mesh_vertexs = reinterpret_cast<MeshVertexDataDefinition*>(
+        T* mesh_vertexs = reinterpret_cast<T*>(
             reinterpret_cast<uint8_t*>(inefficient_staging_buffer_data) + vertex_buffer_offset);
 
         for (uint32_t vertex_index = 0; vertex_index < vertex_count; ++vertex_index)
         {
-            mesh_vertexs[vertex_index].position = vertex_buffer_data[vertex_index].position;
-            mesh_vertexs[vertex_index].normal   = vertex_buffer_data[vertex_index].normal;
-            mesh_vertexs[vertex_index].tangent  = vertex_buffer_data[vertex_index].tangent;
-            mesh_vertexs[vertex_index].texcoord = vertex_buffer_data[vertex_index].texcoord;
+            mesh_vertexs[vertex_index] = vertex_buffer_data[vertex_index];
+            //mesh_vertexs[vertex_index].position = vertex_buffer_data[vertex_index].position;
+            //mesh_vertexs[vertex_index].normal   = vertex_buffer_data[vertex_index].normal;
+            //mesh_vertexs[vertex_index].tangent  = vertex_buffer_data[vertex_index].tangent;
+            //mesh_vertexs[vertex_index].texcoord = vertex_buffer_data[vertex_index].texcoord;
         }
 
         std::shared_ptr<RHI::D3D12Buffer> p_mesh_vertex_buffer =
             RHI::D3D12Buffer::Create(m_Device->GetLinkedDevice(),
                                      RHI::RHIBufferTargetVertex,
                                      vertex_count,
-                                     sizeof(MeshVertexDataDefinition),
+                                     sizeof(T),
                                      L"MeshVertexBuffer",
                                      RHI::RHIBufferModeImmutable,
                                      D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
@@ -933,12 +936,15 @@ namespace MoYu
 
         return InternalVertexBuffer {input_definition, vertex_count, p_mesh_vertex_buffer};
     }
+    */
 
+    /*
+    template<typename T> 
     InternalIndexBuffer RenderResource::createIndexBuffer(std::shared_ptr<MoYu::MoYuScratchBuffer> index_buffer)
     {
         uint32_t index_buffer_size = index_buffer->GetBufferSize();
 
-        uint32_t index_count = index_buffer_size / sizeof(uint32_t);
+        uint32_t index_count = index_buffer_size / sizeof(T);
 
         RHI::SharedGraphicsResource inefficient_staging_buffer = m_GraphicsMemory->Allocate(index_buffer_size);
 
@@ -950,7 +956,7 @@ namespace MoYu
             RHI::D3D12Buffer::Create(m_Device->GetLinkedDevice(),
                                      RHI::RHIBufferTargetIndex,
                                      index_count,
-                                     sizeof(uint32_t),
+                                     sizeof(T),
                                      L"MeshIndexBuffer",
                                      RHI::RHIBufferModeImmutable,
                                      D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_INDEX_BUFFER);
@@ -970,6 +976,6 @@ namespace MoYu
 
         return InternalIndexBuffer {sizeof(uint32_t), index_count, p_mesh_index_buffer};
     }
-
+    */
 
 } // namespace MoYu

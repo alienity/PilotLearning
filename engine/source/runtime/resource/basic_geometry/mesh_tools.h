@@ -46,6 +46,7 @@ namespace MoYu
 
     } // namespace Geometry
 
+    /*
     namespace TerrainGeometry
     {
         // https://zhuanlan.zhihu.com/p/352850047
@@ -67,9 +68,7 @@ namespace MoYu
 
         AxisAlignedBox ToAxisAlignedBox(const TerrainPatchMesh& basicMesh);
         StaticMeshData ToStaticMesh(const TerrainPatchMesh& basicMesh);
-
-
     }
-
+    */
 }
 #endif

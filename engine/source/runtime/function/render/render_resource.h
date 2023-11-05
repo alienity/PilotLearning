@@ -13,6 +13,7 @@ namespace MoYu
 {
     class RenderCamera;
     class RenderScene;
+    class TerrainRenderHelper;
 
     enum DefaultTexType
     {
@@ -29,7 +30,7 @@ namespace MoYu
     class RenderResource : public RenderResourceBase
     {
     public:
-        RenderResource() = default;
+        RenderResource();
         ~RenderResource();
 
         void updateFrameUniforms(RenderScene* render_scene, RenderCamera* camera);
@@ -62,7 +63,8 @@ namespace MoYu
         std::map<SceneImage, std::shared_ptr<RHI::D3D12Texture>> _Image2TexMap;
         std::map<DefaultTexType, std::shared_ptr<RHI::D3D12Texture>> _Default2TexMap;
 
-    protected:
+        std::shared_ptr<TerrainRenderHelper> terrainHelper;
+
         std::shared_ptr<RHI::D3D12Buffer> createDynamicBuffer(void* buffer_data, uint32_t buffer_size, uint32_t buffer_stride);
         std::shared_ptr<RHI::D3D12Buffer> createDynamicBuffer(std::shared_ptr<MoYu::MoYuScratchBuffer>& buffer_data);
         
@@ -81,7 +83,96 @@ namespace MoYu
 
         InternalMesh createInternalMesh(SceneMesh scene_mesh);
         InternalMesh createInternalMesh(RenderMeshData mesh_data);
-        InternalVertexBuffer createVertexBuffer(InputDefinition input_definition, std::shared_ptr<MoYu::MoYuScratchBuffer> vertex_buffer);
-        InternalIndexBuffer createIndexBuffer(std::shared_ptr<MoYu::MoYuScratchBuffer> index_buffer);
+
+        //template<typename T> 
+        //InternalVertexBuffer createVertexBuffer(InputDefinition input_definition, std::shared_ptr<MoYu::MoYuScratchBuffer> vertex_buffer);
+        //template<typename T> 
+        //InternalIndexBuffer createIndexBuffer(std::shared_ptr<MoYu::MoYuScratchBuffer> index_buffer);
+
+        template<typename T>
+        InternalVertexBuffer createVertexBuffer(InputDefinition input_definition, std::shared_ptr<MoYu::MoYuScratchBuffer> vertex_buffer)
+        {
+            ASSERT(input_definition == T::InputElementDefinition);
+            uint32_t vertex_buffer_size = vertex_buffer->GetBufferSize();
+            T* vertex_buffer_data = static_cast<T*>(vertex_buffer->GetBufferPointer());
+            uint32_t inputLayoutStride  = sizeof(T);
+            ASSERT(0 == (vertex_buffer_size % inputLayoutStride));
+            uint32_t vertex_count = vertex_buffer_size / inputLayoutStride;
+            
+            // temporary staging buffer
+            uint32_t inefficient_staging_buffer_size = vertex_buffer_size;
+
+            RHI::SharedGraphicsResource inefficient_staging_buffer =
+                m_GraphicsMemory->Allocate(inefficient_staging_buffer_size);
+            void* inefficient_staging_buffer_data = inefficient_staging_buffer.Memory();
+
+            T* mesh_vertexs = reinterpret_cast<T*>(reinterpret_cast<uint8_t*>(inefficient_staging_buffer_data));
+
+            for (uint32_t vertex_index = 0; vertex_index < vertex_count; ++vertex_index)
+            {
+                mesh_vertexs[vertex_index] = vertex_buffer_data[vertex_index];
+            }
+
+            std::shared_ptr<RHI::D3D12Buffer> p_mesh_vertex_buffer =
+                RHI::D3D12Buffer::Create(m_Device->GetLinkedDevice(),
+                                         RHI::RHIBufferTargetVertex,
+                                         vertex_count,
+                                         sizeof(T),
+                                         L"MeshVertexBuffer",
+                                         RHI::RHIBufferModeImmutable,
+                                         D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
+            {
+                startUploadBatch();
+                {
+                    D3D12_RESOURCE_STATES buf_ori_state =
+                        p_mesh_vertex_buffer->GetResourceState().GetSubresourceState(0);
+                    m_ResourceUpload->Transition(p_mesh_vertex_buffer->GetResource(),
+                                                 buf_ori_state,
+                                                 D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_DEST);
+                    m_ResourceUpload->Upload(p_mesh_vertex_buffer->GetResource(), 0, inefficient_staging_buffer);
+                    m_ResourceUpload->Transition(p_mesh_vertex_buffer->GetResource(),
+                                                 D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_DEST,
+                                                 buf_ori_state);
+                }
+                endUploadBatch();
+            }
+
+            return InternalVertexBuffer {input_definition, vertex_count, p_mesh_vertex_buffer};
+        }
+
+        template<typename T>
+        InternalIndexBuffer createIndexBuffer(std::shared_ptr<MoYu::MoYuScratchBuffer> index_buffer)
+        {
+            uint32_t index_buffer_size = index_buffer->GetBufferSize();
+            uint32_t index_count = index_buffer_size / sizeof(T);
+            RHI::SharedGraphicsResource inefficient_staging_buffer = m_GraphicsMemory->Allocate(index_buffer_size);
+            void* staging_buffer_data = inefficient_staging_buffer.Memory();
+            memcpy(staging_buffer_data, index_buffer->GetBufferPointer(), (size_t)index_buffer_size);
+            std::shared_ptr<RHI::D3D12Buffer> p_mesh_index_buffer =
+                RHI::D3D12Buffer::Create(m_Device->GetLinkedDevice(),
+                                         RHI::RHIBufferTargetIndex,
+                                         index_count,
+                                         sizeof(T),
+                                         L"MeshIndexBuffer",
+                                         RHI::RHIBufferModeImmutable,
+                                         D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_INDEX_BUFFER);
+            {
+                startUploadBatch();
+                {
+                    D3D12_RESOURCE_STATES buf_ori_state =
+                        p_mesh_index_buffer->GetResourceState().GetSubresourceState(0);
+                    m_ResourceUpload->Transition(p_mesh_index_buffer->GetResource(),
+                                                 buf_ori_state,
+                                                 D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_DEST);
+                    m_ResourceUpload->Upload(p_mesh_index_buffer->GetResource(), 0, inefficient_staging_buffer);
+                    m_ResourceUpload->Transition(p_mesh_index_buffer->GetResource(),
+                                                 D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_DEST,
+                                                 buf_ori_state);
+                }
+                endUploadBatch();
+            }
+            return InternalIndexBuffer {sizeof(uint32_t), index_count, p_mesh_index_buffer};
+        }
+
     };
 } // namespace MoYu

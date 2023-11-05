@@ -368,6 +368,14 @@ namespace MoYu
 
     void RenderScene::removeTerrainRenderer(SceneTerrainRenderer sceneTerrainRenderer)
     {
-
+        std::vector<CachedTerrainRenderer>& _mesh_renderers = m_terrain_renderers;
+        for (int j = 0; j < _mesh_renderers.size(); j++)
+        {
+            if (_mesh_renderers[j].cachedSceneTerrainRenderer.m_identifier == sceneTerrainRenderer.m_identifier)
+            {
+                _mesh_renderers.erase(_mesh_renderers.begin() + j);
+                break;
+            }
+        }
     }
 }

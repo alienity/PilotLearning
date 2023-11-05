@@ -1,4 +1,5 @@
 #pragma once
+#include "runtime/function/render/render_common.h"
 #include <vector>
 
 namespace MoYu
@@ -25,16 +26,6 @@ namespace MoYu
         }
     };
 
-
-    // mip0层级的节点边缘数量位宽
-    #define RootLevelNodeWidthBit 3
-    // mip1之后层级的节点边缘数量位宽
-    #define SubLevelNodeWidthBit 1
-
-    #define RootLevelNodeCountBit 6
-    #define SubLevelNodeCountBit 2
-
-
     struct TNode
     {
         int mip;
@@ -44,51 +35,19 @@ namespace MoYu
         float maxHeight;
         int neighbor;
 
-        TNode() = default;
-
-        static uint32_t SpecificMipLevelWidth(uint32_t curMipLevel)
-        {
-            uint32_t totalNodeCountWidth = 1 << RootLevelNodeWidthBit;
-            for (size_t i = 1; i <= curMipLevel; i++)
-            {
-                totalNodeCountWidth = totalNodeCountWidth << SubLevelNodeWidthBit;
-            }
-            return totalNodeCountWidth;
-        }
-
+        static std::uint32_t SpecificMipLevelWidth(int curMipLevel);
         // 特定MipLevel的Node节点数量
-        static uint32_t SpecificMipLevelNodeCount(uint32_t curMipLevel)
-        {
-            uint32_t totalNodeCount = 1 << RootLevelNodeCountBit;
-            for (size_t i = 1; i <= curMipLevel; i++)
-            {
-                totalNodeCount = totalNodeCount << SubLevelNodeCountBit;
-            }
-            return totalNodeCount;
-        }
-
+        static std::uint32_t SpecificMipLevelNodeCount(int curMipLevel);
         // 到达指定MipLevel的Node节点数量
-        static uint32_t ToMipLevelNodeCount(uint32_t curMipLevel)
-        {
-            uint32_t totalNodeCount = 0;
-            for (size_t i = 0; i <= curMipLevel; i++)
-            {
-                totalNodeCount += SpecificMipLevelNodeCount(i);
-            }
-            return totalNodeCount;
-        }
-
+        static std::uint32_t ToMipLevelNodeCount(int curMipLevel);
         // 当前MipLevel的Index节点在全局Array中的位置
-        static uint32_t SpecificMipLevelNodeInArrayOffset(uint32_t curMipLevel, uint32_t curLevelIndex)
-        {
-            uint32_t _parentMipLevelOffset = ToMipLevelNodeCount(curMipLevel - 1);
-            uint32_t _curNodeOffset = _parentMipLevelOffset + curLevelIndex;
-            return _curNodeOffset;
-        }
-
+        static std::uint32_t SpecificMipLevelNodeInArrayOffset(int curMipLevel, int curLevelIndex);
     };
 
-    #define TerrainMipLevel 6
+    #define TerrainMipLevel 9
+
+    struct InternalTerrain;
+    class RenderResource;
 
     class TerrainRenderHelper
     {
@@ -96,7 +55,12 @@ namespace MoYu
         TerrainRenderHelper();
         ~TerrainRenderHelper();
 
-        void InitTerrainRenderer(InternalTerrain* internalTerrain);
+        void InitTerrainRenderer(SceneTerrainRenderer* sceneTerrainRenderer, InternalTerrain* internalTerrain, RenderResource* renderResource);
+
+        void InitTerrainBasicInfo();
+        void InitTerrainHeightAndNormalMap();
+        void InitInternalTerrainPatchMesh();
+
         void InitTerrainNodePage();
 
         void GenerateTerrainNodes();
@@ -105,8 +69,25 @@ namespace MoYu
         float GetTerrainHeight(glm::float2 localXZ);
         glm::float3 GetTerrainNormal(glm::float2 localXZ);
 
+        static InternalScratchMesh GenerateTerrainPatchScratchMesh();
+        static InternalMesh GenerateTerrainPatchMesh(RenderResource* pRenderResource, InternalScratchMesh internalScratchMesh);
+
         std::vector<TNode> _TNodes; // 线性记录所有的图块
 
+        SceneTerrainRenderer* mSceneTerrainRenderer;
         InternalTerrain* mInternalTerrain;
+        RenderResource*  mRenderResource;
+
+    private:
+        InternalScratchMesh mInternalScratchMesh;
+        InternalMesh mInternalhMesh;
+
+        std::shared_ptr<MoYu::MoYuScratchImage> terrain_heightmap_scratch;
+        std::shared_ptr<MoYu::MoYuScratchImage> terrain_normalmap_scratch;
+
+        std::shared_ptr<RHI::D3D12Texture> terrain_heightmap;
+        std::shared_ptr<RHI::D3D12Texture> terrain_normalmap;
     };
+
+
 } // namespace MoYu

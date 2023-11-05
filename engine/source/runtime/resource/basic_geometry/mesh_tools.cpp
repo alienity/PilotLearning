@@ -284,6 +284,7 @@ namespace MoYu
 
     }
 
+    /*
     namespace TerrainGeometry
     {
         D3D12TerrainPatch CreatePatch(glm::float3 position, glm::float2 coord, glm::float4 color)
@@ -357,6 +358,6 @@ namespace MoYu
             return StaticMeshData();
         }
     }
-
+    */
 
 }
