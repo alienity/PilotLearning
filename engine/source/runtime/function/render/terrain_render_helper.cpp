@@ -6,7 +6,7 @@
 namespace MoYu
 {
     // 每一级level的每个patch的宽度，其中每层level的node节点数是相同的，都是8x8个
-    int PatchWidthOfMipLevel[TerrainMipLevel] = {2, 4, 8, 16, 32, 64, 128, 256, 512};
+    int PatchWidthOfMipLevel[TerrainMipLevel] = {16, 32, 64, 128, 256, 512}; // 1024
     // 每层level的node节点数是相同的，都是8x8个
     int PatchNodeWidth = 8;
 
@@ -27,7 +27,7 @@ namespace MoYu
     * 0. 根据相机位置在terrain的空间的位置，取一个对齐到顶点后的位置A
     * 1. 算出TerrainHeightMap的MaxHeightMap和MinHeightMap的mipmap图
     * 2. 根据最小最大值生成一张mipoffset图，heightThreshold值就用MaxHeight*0.00001
-    * 3. 这里提前把patchmesh的宽度缩放到1，那mip0上就有8x8个patchmeshnode，
+    * 3. 这里提前把patchmesh的宽度缩放到2，那mip0上就有8x8个patchmeshnode，
     * 4. 以A点为起点，遍历周围8个level对应的所有patch，存到struct{ float2 offset; float mip; float mipOffset; float minHeight; float maxHeight; } // 根据mip可以算出新的patch对应的scale
     * 5. 使用光源或者直接用相机对第4步得到的patch的数组进行剪裁
     * 6. 绘制阴影和直接绘制对象

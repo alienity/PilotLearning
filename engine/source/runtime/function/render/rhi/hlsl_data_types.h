@@ -293,4 +293,27 @@ namespace HLSL
 
     const std::uint64_t totalIndexCommandBufferInBytes = HLSL::MeshLimit * sizeof(HLSL::BitonicSortCommandSigParams);
 
+    enum NeighborFace
+    {
+        None  = 0,
+        EAST  = 1 << 0,
+        SOUTH = 1 << 1,
+        WEST  = 1 << 2,
+        NORTH = 1 << 3
+    };
+
+    struct TerrainPatchNode
+    {
+        glm::float2 patchMinPos; // node的左下角顶点
+        float       maxHeight;   // 当前node最大高度
+        float       minHeight;   // 当前node最小高度
+        float       nodeWidth;   // patchnode的宽度
+        int         mipLevel;    // 当前node的mip等级
+        uint32_t    neighbor;    // 更高一级mip作为邻居的标识
+        float       _padding_0;
+    };
+
+    // 512 * 512
+    #define MaxTerrainNodeCount 262144
+
 } // namespace HLSL

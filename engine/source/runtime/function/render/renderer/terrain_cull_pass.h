@@ -7,11 +7,6 @@
 
 namespace MoYu
 {
-    struct TerrainMeshPatchBuffer
-    {
-        glm::float2 patchRelativePos;
-
-    };
 
     struct TerrainSpotShadowmapCommandBuffer
     {
@@ -76,7 +71,7 @@ namespace MoYu
         RHI::RgBufferDesc grabDispatchArgsBufferDesc;
 
         // used for later draw call
-        std::shared_ptr<RHI::D3D12Buffer> terrainCommandBuffer;
+        std::shared_ptr<RHI::D3D12Buffer> terrainPatchNodeIndexBuffer;
 
         // used for shadowmap drawing
         TerrainDirShadowmapCommandBuffer               dirShadowmapCommandBuffers;

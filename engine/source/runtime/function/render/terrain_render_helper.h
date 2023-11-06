@@ -44,7 +44,7 @@ namespace MoYu
         static std::uint32_t SpecificMipLevelNodeInArrayOffset(int curMipLevel, int curLevelIndex);
     };
 
-    #define TerrainMipLevel 9
+    #define TerrainMipLevel 6
 
     struct InternalTerrain;
     class RenderResource;

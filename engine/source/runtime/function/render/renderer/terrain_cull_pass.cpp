@@ -48,8 +48,20 @@ namespace MoYu
                              sizeof(HLSL::BitonicSortCommandSigParams), \
                              name)
 
+
     void IndirectTerrainCullPass::initialize(const RenderPassInitInfo& init_info)
     {
+        terrainPatchNodeIndexBuffer = RHI::D3D12Buffer::Create(
+            m_Device->GetLinkedDevice(),
+            RHI::RHIBufferRandomReadWrite | RHI::RHIBufferTargetStructured | RHI::RHIBufferTargetCounter,
+            MaxTerrainNodeCount,
+            sizeof(HLSL::TerrainPatchNode),
+            L"TerrainPatchIndexBuffer");
+
+
+
+
+
         /*
         // create upload buffer
         grabDispatchArgsBufferDesc = CreateArgBufferDesc("GrabDispatchArgs", 22 * 23 / 2);
@@ -89,6 +101,8 @@ namespace MoYu
 
     void IndirectTerrainCullPass::update(RHI::RenderGraph& graph, IndirectCullOutput& cullOutput)
     {
+
+
 
     }
 
