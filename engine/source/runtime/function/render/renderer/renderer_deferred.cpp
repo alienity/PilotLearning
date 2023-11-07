@@ -96,9 +96,14 @@ namespace MoYu
         }
         // Terrain Cull pass
         {
+            TerrainCullInitInfo drawPassInit;
+            drawPassInit.colorTexDesc     = colorTexDesc;
+            drawPassInit.m_ShaderCompiler = pCompiler;
+            drawPassInit.m_ShaderRootPath = g_runtime_global_context.m_config_manager->getShaderFolder();
+
             mTerrainCullPass = std::make_shared<IndirectTerrainCullPass>();
             mTerrainCullPass->setCommonInfo(renderPassCommonInfo);
-            mTerrainCullPass->initialize({});
+            mTerrainCullPass->initialize(drawPassInit);
         }
         // GBuffer pass
         {
@@ -263,8 +268,12 @@ namespace MoYu
 
         //=================================================================================
         // Terrain¼ô²ÃPass
-        IndirectTerrainCullPass::IndirectCullOutput terrainCullOutput;
-        mTerrainCullPass->update(graph, terrainCullOutput);
+        IndirectTerrainCullPass::TerrainCullInput terrainCullInput;
+        IndirectTerrainCullPass::TerrainCullOutput terrainCullOutput;
+
+        terrainCullInput.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
+
+        mTerrainCullPass->update(graph, terrainCullInput, terrainCullOutput);
         //=================================================================================
 
         //=================================================================================

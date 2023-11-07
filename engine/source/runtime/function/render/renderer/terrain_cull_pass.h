@@ -38,22 +38,37 @@ namespace MoYu
         }
     };
 
+    struct TerrainCullInitInfo : public RenderPassInitInfo
+    {
+        RHI::RgTextureDesc colorTexDesc;
+
+        ShaderCompiler*       m_ShaderCompiler;
+        std::filesystem::path m_ShaderRootPath;
+    };
+
     class IndirectTerrainCullPass : public RenderPass
 	{
     public:
         struct DrawCallCommandBufferHandle
         {
             RHI::RgResourceHandle indirectIndexBufferHandle = RHI::_DefaultRgResourceHandle;
-            RHI::RgResourceHandle indirectSortBufferHandle  = RHI::_DefaultRgResourceHandle;
         };
 
-        struct IndirectCullOutput
+        struct TerrainCullInput : public PassInput
         {
-            RHI::RgResourceHandle perframeBufferHandle = RHI::_DefaultRgResourceHandle;
-            RHI::RgResourceHandle meshBufferHandle     = RHI::_DefaultRgResourceHandle;
+            TerrainCullInput() { perframeBufferHandle.Invalidate(); }
+
+            RHI::RgResourceHandle perframeBufferHandle;
+        };
+
+        struct TerrainCullOutput : public PassOutput
+        {
+            TerrainCullOutput() { outputTerrainIndexHandle.Invalidate(); }
+
+            RHI::RgResourceHandle outputTerrainIndexHandle;
 
             DrawCallCommandBufferHandle terrainDrawHandle;
-            
+
             std::vector<DrawCallCommandBufferHandle> directionShadowmapHandles;
             std::vector<DrawCallCommandBufferHandle> spotShadowmapHandles;
         };
@@ -61,13 +76,15 @@ namespace MoYu
     public:
         ~IndirectTerrainCullPass() { destroy(); }
 
-        void initialize(const RenderPassInitInfo& init_info);
+        void initialize(const TerrainCullInitInfo& init_info);
         void prepareMeshData(std::shared_ptr<RenderResource> render_resource);
-        void update(RHI::RenderGraph& cullingGraph, IndirectCullOutput& indirectCullOutput);
+        void update(RHI::RenderGraph& graph, TerrainCullInput& passInput, TerrainCullOutput& passOutput);
 
         void destroy() override final;
 
     private:
+        bool initializeRenderTarget(RHI::RenderGraph& graph, TerrainCullOutput* drawPassOutput);
+
         RHI::RgBufferDesc grabDispatchArgsBufferDesc;
 
         // used for later draw call
@@ -76,6 +93,10 @@ namespace MoYu
         // used for shadowmap drawing
         TerrainDirShadowmapCommandBuffer               dirShadowmapCommandBuffers;
         std::vector<TerrainSpotShadowmapCommandBuffer> spotShadowmapCommandBuffer;
+
+        Shader indirecTerrainPatchNodesGenCS;
+        std::shared_ptr<RHI::D3D12RootSignature> pIndirecTerrainPatchNodesGenSignature;
+        std::shared_ptr<RHI::D3D12PipelineState> pIndirecTerrainPatchNodesGenPSO;
 	};
 }
 

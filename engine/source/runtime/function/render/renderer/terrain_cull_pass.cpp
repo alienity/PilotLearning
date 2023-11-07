@@ -17,40 +17,51 @@ namespace MoYu
 #define RegGetBufDefSRVIdx(h) registry->GetD3D12Buffer(h)->GetDefaultSRV()->GetIndex()
 #define RegGetBufDefUAVIdx(h) registry->GetD3D12Buffer(h)->GetDefaultUAV()->GetIndex()
 
-#define CreateCullingBuffer(numElement, elementSize, bufferName) \
-    RHI::D3D12Buffer::Create(m_Device->GetLinkedDevice(), \
-                             RHI::RHIBufferRandomReadWrite, \
-                             numElement, \
-                             elementSize, \
-                             bufferName, \
-                             RHI::RHIBufferModeImmutable, \
-                             D3D12_RESOURCE_STATE_GENERIC_READ)
-
-#define CreateUploadBuffer(numElement, elementSize, bufferName) \
-    RHI::D3D12Buffer::Create(m_Device->GetLinkedDevice(), \
-                             RHI::RHIBufferTargetNone, \
-                             numElement, \
-                             elementSize, \
-                             bufferName, \
-                             RHI::RHIBufferModeDynamic, \
-                             D3D12_RESOURCE_STATE_GENERIC_READ)
-
-#define CreateArgBufferDesc(name, numElements) \
-    RHI::RgBufferDesc(name) \
-        .SetSize(numElements, sizeof(D3D12_DISPATCH_ARGUMENTS)) \
-        .SetRHIBufferMode(RHI::RHIBufferMode::RHIBufferModeImmutable) \
-        .SetRHIBufferTarget(RHI::RHIBufferTarget::RHIBufferTargetIndirectArgs | RHI::RHIBufferTarget::RHIBufferRandomReadWrite | RHI::RHIBufferTarget::RHIBufferTargetRaw)
-
-#define CreateIndexBuffer(name) \
-    RHI::D3D12Buffer::Create(m_Device->GetLinkedDevice(), \
-                             RHI::RHIBufferRandomReadWrite | RHI::RHIBufferTargetStructured | RHI::RHIBufferTargetCounter, \
-                             HLSL::MeshLimit, \
-                             sizeof(HLSL::BitonicSortCommandSigParams), \
-                             name)
-
-
-    void IndirectTerrainCullPass::initialize(const RenderPassInitInfo& init_info)
+    void IndirectTerrainCullPass::initialize(const TerrainCullInitInfo& init_info)
     {
+        ShaderCompiler*       m_ShaderCompiler = init_info.m_ShaderCompiler;
+        std::filesystem::path m_ShaderRootPath = init_info.m_ShaderRootPath;
+
+        indirecTerrainPatchNodesGenCS =
+            m_ShaderCompiler->CompileShader(RHI_SHADER_TYPE::Compute,
+                                            m_ShaderRootPath / "hlsl/IndirecTerrainPatchNodesGen.hlsl",
+                                            ShaderCompileOptions(L"CSMain"));
+
+        {
+            RHI::RootSignatureDesc rootSigDesc =
+                RHI::RootSignatureDesc()
+                    .Add32BitConstants<0, 0>(4)
+                    .AddStaticSampler<10, 0>(D3D12_FILTER::D3D12_FILTER_ANISOTROPIC,
+                                             D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_WRAP,
+                                             8)
+                    .AddStaticSampler<11, 0>(D3D12_FILTER::D3D12_FILTER_COMPARISON_ANISOTROPIC,
+                                             D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
+                                             8,
+                                             D3D12_COMPARISON_FUNC::D3D12_COMPARISON_FUNC_GREATER_EQUAL,
+                                             D3D12_STATIC_BORDER_COLOR_OPAQUE_BLACK)
+                    .AllowInputLayout()
+                    .AllowResourceDescriptorHeapIndexing()
+                    .AllowSampleDescriptorHeapIndexing();
+
+            pIndirecTerrainPatchNodesGenSignature = std::make_shared<RHI::D3D12RootSignature>(m_Device, rootSigDesc);
+        }
+
+        {
+            struct PsoStream
+            {
+                PipelineStateStreamRootSignature RootSignature;
+                PipelineStateStreamCS            CS;
+            } psoStream;
+            psoStream.RootSignature = PipelineStateStreamRootSignature(pIndirecTerrainPatchNodesGenSignature.get());
+            psoStream.CS            = &indirecTerrainPatchNodesGenCS;
+            PipelineStateStreamDesc psoDesc = {sizeof(PsoStream), &psoStream};
+
+            pIndirecTerrainPatchNodesGenPSO =
+                std::make_shared<RHI::D3D12PipelineState>(m_Device, L"IndirecTerrainPatchNodesGenPSO", psoDesc);
+        }
+
+        //-----------------------------------------------------------
+
         terrainPatchNodeIndexBuffer = RHI::D3D12Buffer::Create(
             m_Device->GetLinkedDevice(),
             RHI::RHIBufferRandomReadWrite | RHI::RHIBufferTargetStructured | RHI::RHIBufferTargetCounter,
@@ -58,50 +69,43 @@ namespace MoYu
             sizeof(HLSL::TerrainPatchNode),
             L"TerrainPatchIndexBuffer");
 
-
-
-
-
-        /*
-        // create upload buffer
-        grabDispatchArgsBufferDesc = CreateArgBufferDesc("GrabDispatchArgs", 22 * 23 / 2);
-
-        // buffer for opaque draw
-        terrainCommandBuffer = CreateIndexBuffer(L"OpaqueIndexBuffer");
-        */
     }
 
     void IndirectTerrainCullPass::prepareMeshData(std::shared_ptr<RenderResource> render_resource)
     {
-        /*
-        // FrameUniforms
-        HLSL::FrameUniforms* _frameUniforms = &render_resource->m_FrameUniforms;
 
-        auto _HeightMap = m_render_scene->m_terrain_map.m_HeightMap.get();
-        auto _NormalMap = m_render_scene->m_terrain_map.m_NormalMap.get();
-
-        auto _HeightMapDesc = RHI::D3D12ShaderResourceView::GetDesc(_HeightMap, false, 0, 1);
-        _HeightMapDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-        auto _NormalMapDesc = RHI::D3D12ShaderResourceView::GetDesc(_NormalMap, false, 0, 1);
-        _NormalMapDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-
-        auto _HeightMapSRV = _HeightMap->CreateSRV(_HeightMapDesc);
-        auto _NormalMapSRV = _NormalMap->CreateSRV(_NormalMapDesc);
-
-        HLSL::TerrainUniform _terrainUniform = {};
-        _terrainUniform.terrainSize       = 1024;
-        _terrainUniform.terrainMaxHeight  = 1024;
-        _terrainUniform.heightMapIndex    = _HeightMapSRV->GetIndex();
-        _terrainUniform.normalMapIndex    = _NormalMapSRV->GetIndex();
-        _terrainUniform.local2WorldMatrix = glm::float4x4(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1);
-
-        _frameUniforms->terrainUniform = _terrainUniform;
-        */
     }
 
-    void IndirectTerrainCullPass::update(RHI::RenderGraph& graph, IndirectCullOutput& cullOutput)
+    void IndirectTerrainCullPass::update(RHI::RenderGraph& graph, TerrainCullInput& passInput, TerrainCullOutput& passOutput)
     {
+        bool needClearRenderTarget = initializeRenderTarget(graph, &passOutput);
 
+        RHI::RgResourceHandle terrainPatchNodeHandle = GImport(graph, terrainPatchNodeIndexBuffer.get());
+
+        RHI::RgResourceHandle perframeBufferHandle = passInput.perframeBufferHandle;
+
+        RHI::RenderPass& terrainNodesBuildPass = graph.AddRenderPass("TerrainNodesBuildPass");
+
+        terrainNodesBuildPass.Read(passInput.perframeBufferHandle, true); // RHIResourceState::RHI_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER
+        terrainNodesBuildPass.Write(terrainPatchNodeHandle, true); // RHIResourceState::RHI_RESOURCE_STATE_UNORDERED_ACCESS
+        
+        terrainNodesBuildPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
+            RHI::D3D12ComputeContext* pContext = context->GetComputeContext();
+
+            pContext->TransitionBarrier(RegGetBuf(perframeBufferHandle), D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
+            pContext->TransitionBarrier(RegGetBuf(terrainPatchNodeHandle), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+            pContext->FlushResourceBarriers();
+
+            RHI::D3D12ConstantBufferView* perframeCBVHandle = registry->GetD3D12Buffer(perframeBufferHandle)->GetDefaultCBV().get();
+            RHI::D3D12UnorderedAccessView* terrainNodeHandleUAV = registry->GetD3D12Buffer(terrainPatchNodeHandle)->GetDefaultUAV().get();
+
+            pContext->SetRootSignature(pIndirecTerrainPatchNodesGenSignature.get());
+            pContext->SetPipelineState(pIndirecTerrainPatchNodesGenPSO.get());
+            pContext->SetConstant(0, 0, perframeCBVHandle->GetIndex());
+            pContext->SetConstant(0, 1, terrainNodeHandleUAV->GetIndex());
+            
+            pContext->Dispatch2D(1024, 1024, 8, 8);
+        });
 
 
     }
@@ -110,6 +114,11 @@ namespace MoYu
     {
 
 
+    }
+
+    bool IndirectTerrainCullPass::initializeRenderTarget(RHI::RenderGraph& graph, TerrainCullOutput* drawPassOutput)
+    {
+        return true;
     }
 
 }

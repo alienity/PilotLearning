@@ -315,12 +315,11 @@ struct FrameUniforms
 struct TerrainPatchNode
 {
     float2 patchMinPos; // node的左下角顶点
-    float  maxHeight;   // 当前node最大高度
-    float  minHeight;   // 当前node最小高度
-    float  nodeWidth;   // patchnode的宽度
-    int    mipLevel;    // 当前node的mip等级
-    uint   neighbor;    // 更高一级mip作为邻居的标识
-    float  _padding_0;
+    float maxHeight; // 当前node最大高度
+    float minHeight; // 当前node最小高度
+    float nodeWidth; // patchnode的宽度
+    int mipLevel; // 当前node的mip等级
+    uint neighbor; // 更高一级mip作为邻居的标识
 };
 
 
