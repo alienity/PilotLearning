@@ -55,7 +55,8 @@ float3 ApplySRGBCurve(float3 x)
     //return x < 0.0031308 ? 12.92 * x : 1.055 * pow(abs(x), 1.0 / 2.4) - 0.055;
      
     // This is cheaper but nearly equivalent
-    return x < 0.0031308 ? 12.92 * x : 1.13005 * sqrt(abs(x - 0.00228)) - 0.13448 * x + 0.005719;
+    // return x < 0.0031308 ? 12.92 * x : 1.13005 * sqrt(abs(x - 0.00228)) - 0.13448 * x + 0.005719;
+    return select(x < 0.0031308, 12.92 * x, 1.13005 * sqrt(abs(x - 0.00228)) - 0.13448 * x + 0.005719);
 }
 
 float4 PackColor(float4 Linear)
@@ -161,9 +162,9 @@ void main( uint GI : SV_GroupIndex, uint3 DTid : SV_DispatchThreadID )
 #if DOWNSAMPLE_METHOD == 0
         Src1 = 0.25 * (Src1 + Src2 + Src3 + Src4);
 #elif DOWNSAMPLE_METHOD == 1
-        Src1 = max(max(Src1, Src2), max(Src3, Src4),);
+        Src1 = max(max(Src1, Src2), max(Src3, Src4));
 #elif DOWNSAMPLE_METHOD == 2
-        Src1 = min(min(Src1, Src2), min(Src3, Src4),);
+        Src1 = min(min(Src1, Src2), min(Src3, Src4));
 #endif
 
         OutMip2[DTid.xy / 2] = PackColor(Src1);
@@ -184,9 +185,9 @@ void main( uint GI : SV_GroupIndex, uint3 DTid : SV_DispatchThreadID )
 #if DOWNSAMPLE_METHOD == 0
         Src1 = 0.25 * (Src1 + Src2 + Src3 + Src4);
 #elif DOWNSAMPLE_METHOD == 1
-        Src1 = max(max(Src1, Src2), max(Src3, Src4),);
+        Src1 = max(max(Src1, Src2), max(Src3, Src4));
 #elif DOWNSAMPLE_METHOD == 2
-        Src1 = min(min(Src1, Src2), min(Src3, Src4),);
+        Src1 = min(min(Src1, Src2), min(Src3, Src4));
 #endif
 
         OutMip3[DTid.xy / 4] = PackColor(Src1);
@@ -208,9 +209,9 @@ void main( uint GI : SV_GroupIndex, uint3 DTid : SV_DispatchThreadID )
 #if DOWNSAMPLE_METHOD == 0
         Src1 = 0.25 * (Src1 + Src2 + Src3 + Src4);
 #elif DOWNSAMPLE_METHOD == 1
-        Src1 = max(max(Src1, Src2), max(Src3, Src4),);
+        Src1 = max(max(Src1, Src2), max(Src3, Src4));
 #elif DOWNSAMPLE_METHOD == 2
-        Src1 = min(min(Src1, Src2), min(Src3, Src4),);
+        Src1 = min(min(Src1, Src2), min(Src3, Src4));
 #endif
 
         OutMip4[DTid.xy / 8] = PackColor(Src1);

@@ -69,20 +69,194 @@ namespace MoYu
             sizeof(HLSL::TerrainPatchNode),
             L"TerrainPatchIndexBuffer");
 
+
+
     }
 
     void IndirectTerrainCullPass::prepareMeshData(std::shared_ptr<RenderResource> render_resource)
     {
+        if (terrainMinHeightMap == nullptr || terrainMaxHeightMap == nullptr)
+        {
+            InternalTerrainRenderer& internalTerrainRenderer = m_render_scene->m_terrain_renderers[0].internalTerrainRenderer;
 
+            std::shared_ptr<RHI::D3D12Texture> terrainHeightmap = internalTerrainRenderer.ref_terrain.terrain_heightmap;
+            auto heightmapDesc = terrainHeightmap->GetDesc();
+
+            terrainMinHeightMap =
+                RHI::D3D12Texture::Create2D(m_Device->GetLinkedDevice(),
+                                            heightmapDesc.Width,
+                                            heightmapDesc.Height,
+                                            8,
+                                            heightmapDesc.Format,
+                                            RHI::RHISurfaceCreateRandomWrite | RHI::RHISurfaceCreateMipmap,
+                                            1,
+                                            L"TerrainMinHeightmap",
+                                            D3D12_RESOURCE_STATE_COMMON,
+                                            std::nullopt);
+
+
+            terrainMaxHeightMap =
+                RHI::D3D12Texture::Create2D(m_Device->GetLinkedDevice(),
+                                            heightmapDesc.Width,
+                                            heightmapDesc.Height,
+                                            8,
+                                            heightmapDesc.Format,
+                                            RHI::RHISurfaceCreateRandomWrite | RHI::RHISurfaceCreateMipmap,
+                                            1,
+                                            L"TerrainMaxHeightmap",
+                                            D3D12_RESOURCE_STATE_COMMON,
+                                            std::nullopt);
+        }
     }
 
     void IndirectTerrainCullPass::update(RHI::RenderGraph& graph, TerrainCullInput& passInput, TerrainCullOutput& passOutput)
     {
         bool needClearRenderTarget = initializeRenderTarget(graph, &passOutput);
 
+        InternalTerrainRenderer& internalTerrainRenderer = m_render_scene->m_terrain_renderers[0].internalTerrainRenderer;
+        std::shared_ptr<RHI::D3D12Texture> terrainHeightmap = internalTerrainRenderer.ref_terrain.terrain_heightmap;
+        std::shared_ptr<RHI::D3D12Texture> terrainNormalmap = internalTerrainRenderer.ref_terrain.terrain_normalmap;
+
+        RHI::RgResourceHandle terrainHeightmapHandle = GImport(graph, terrainHeightmap.get());
+        RHI::RgResourceHandle terrainNormalmapHandle = GImport(graph, terrainNormalmap.get());
+
+        RHI::RgResourceHandle terrainMinHeightMapHandle = GImport(graph, terrainMinHeightMap.get());
+        RHI::RgResourceHandle terrainMaxHeightMapHandle = GImport(graph, terrainMaxHeightMap.get());
+
         RHI::RgResourceHandle terrainPatchNodeHandle = GImport(graph, terrainPatchNodeIndexBuffer.get());
 
         RHI::RgResourceHandle perframeBufferHandle = passInput.perframeBufferHandle;
+
+        //=================================================================================
+        // 生成HeightMap的MaxHeightMap和MinHeightMap
+        //=================================================================================
+        RHI::RenderPass& genHeightMapMipMapPass = graph.AddRenderPass("GenerateHeightMapMipMapPass");
+
+        genHeightMapMipMapPass.Read(terrainHeightmapHandle, true);
+        genHeightMapMipMapPass.Write(terrainMinHeightMapHandle, true);
+        genHeightMapMipMapPass.Write(terrainMaxHeightMapHandle, true);
+
+        genHeightMapMipMapPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
+            RHI::D3D12ComputeContext* pContext = context->GetComputeContext();
+
+            {
+                pContext->TransitionBarrier(RegGetTex(terrainHeightmapHandle), D3D12_RESOURCE_STATE_COPY_SOURCE);
+                pContext->TransitionBarrier(RegGetTex(terrainMinHeightMapHandle), D3D12_RESOURCE_STATE_COPY_DEST, 0);
+                pContext->TransitionBarrier(RegGetTex(terrainMaxHeightMapHandle), D3D12_RESOURCE_STATE_COPY_DEST, 0);
+                pContext->FlushResourceBarriers();
+
+                const CD3DX12_TEXTURE_COPY_LOCATION src(terrainHeightmap->GetResource(), 0);
+
+                const CD3DX12_TEXTURE_COPY_LOCATION dst(terrainMinHeightMap->GetResource(), 0);
+                context->GetGraphicsCommandList()->CopyTextureRegion(&dst, 0, 0, 0, &src, nullptr);
+
+                const CD3DX12_TEXTURE_COPY_LOCATION dst_max(terrainMaxHeightMap->GetResource(), 0);
+                context->GetGraphicsCommandList()->CopyTextureRegion(&dst_max, 0, 0, 0, &src, nullptr);
+            }
+
+            //--------------------------------------------------
+            // 生成MinHeightMap
+            //--------------------------------------------------
+
+            {
+                RHI::D3D12Texture* _SrcTexture = RegGetTex(terrainMinHeightMapHandle);
+
+                pContext->TransitionBarrier(_SrcTexture, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, 0);
+                for (size_t i = 1; i < _SrcTexture->GetNumSubresources(); i++)
+                {
+                    pContext->TransitionBarrier(_SrcTexture, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, i);
+                }
+                pContext->FlushResourceBarriers();
+
+                auto _SrcDesc = _SrcTexture->GetDesc();
+
+                auto _Mip0SRVDesc = RHI::D3D12ShaderResourceView::GetDesc(_SrcTexture, false, 0, 1);
+                auto _Mip1UAVDesc = RHI::D3D12UnorderedAccessView::GetDesc(_SrcTexture, 0, 1);
+                auto _Mip2UAVDesc = RHI::D3D12UnorderedAccessView::GetDesc(_SrcTexture, 0, 2);
+                auto _Mip3UAVDesc = RHI::D3D12UnorderedAccessView::GetDesc(_SrcTexture, 0, 3);
+                auto _Mip4UAVDesc = RHI::D3D12UnorderedAccessView::GetDesc(_SrcTexture, 0, 4);
+            
+                pContext->SetRootSignature(RootSignatures::pGenerateMipsLinearSignature.get());
+                pContext->SetPipelineState(PipelineStates::pGenerateMinMipsLinearPSO.get());
+
+                glm::float2 _Mip1TexelSize = {_SrcDesc.Width >> 2, _SrcDesc.Height >> 2};
+                glm::uint   _SrcMipLevel   = 0;
+                glm::uint   _NumMipLevels  = 4;
+
+                glm::uint _SrcIndex     = _SrcTexture->CreateSRV(_Mip0SRVDesc)->GetIndex();
+                glm::uint _OutMip1Index = _SrcTexture->CreateUAV(_Mip1UAVDesc)->GetIndex();
+                glm::uint _OutMip2Index = _SrcTexture->CreateUAV(_Mip2UAVDesc)->GetIndex();
+                glm::uint _OutMip3Index = _SrcTexture->CreateUAV(_Mip3UAVDesc)->GetIndex();
+                glm::uint _OutMip4Index = _SrcTexture->CreateUAV(_Mip4UAVDesc)->GetIndex();
+
+                _minMipGenBuffer = {_SrcMipLevel,
+                                    _NumMipLevels,
+                                    _Mip1TexelSize,
+                                    _SrcIndex,
+                                    _OutMip1Index,
+                                    _OutMip2Index,
+                                    _OutMip3Index,
+                                    _OutMip4Index};
+
+                pContext->SetConstantArray(0, 1, &_minMipGenBuffer);
+            
+                pContext->Dispatch2D(_SrcDesc.Width, _SrcDesc.Height, 8, 8);
+            }
+            //--------------------------------------------------
+            // 生成MaxHeightMap
+            //--------------------------------------------------
+            {
+                RHI::D3D12Texture* _SrcTexture = RegGetTex(terrainMaxHeightMapHandle);
+
+                pContext->TransitionBarrier(_SrcTexture, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, 0);
+                for (size_t i = 1; i < _SrcTexture->GetNumSubresources(); i++)
+                {
+                    pContext->TransitionBarrier(_SrcTexture, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, i);
+                }
+                pContext->FlushResourceBarriers();
+
+                auto _SrcDesc = _SrcTexture->GetDesc();
+
+                auto _Mip0SRVDesc = RHI::D3D12ShaderResourceView::GetDesc(_SrcTexture, false, 0, 1);
+                auto _Mip1UAVDesc = RHI::D3D12UnorderedAccessView::GetDesc(_SrcTexture, 0, 1);
+                auto _Mip2UAVDesc = RHI::D3D12UnorderedAccessView::GetDesc(_SrcTexture, 0, 2);
+                auto _Mip3UAVDesc = RHI::D3D12UnorderedAccessView::GetDesc(_SrcTexture, 0, 3);
+                auto _Mip4UAVDesc = RHI::D3D12UnorderedAccessView::GetDesc(_SrcTexture, 0, 4);
+            
+                pContext->SetRootSignature(RootSignatures::pGenerateMipsLinearSignature.get());
+                pContext->SetPipelineState(PipelineStates::pGenerateMaxMipsLinearPSO.get());
+
+                glm::float2 _Mip1TexelSize = {_SrcDesc.Width >> 2, _SrcDesc.Height >> 2};
+                glm::uint   _SrcMipLevel   = 0;
+                glm::uint   _NumMipLevels  = 4;
+
+                glm::uint _SrcIndex     = _SrcTexture->CreateSRV(_Mip0SRVDesc)->GetIndex();
+                glm::uint _OutMip1Index = _SrcTexture->CreateUAV(_Mip1UAVDesc)->GetIndex();
+                glm::uint _OutMip2Index = _SrcTexture->CreateUAV(_Mip2UAVDesc)->GetIndex();
+                glm::uint _OutMip3Index = _SrcTexture->CreateUAV(_Mip3UAVDesc)->GetIndex();
+                glm::uint _OutMip4Index = _SrcTexture->CreateUAV(_Mip4UAVDesc)->GetIndex();
+
+                _maxMipGenBuffer = {_SrcMipLevel,
+                                    _NumMipLevels,
+                                    _Mip1TexelSize,
+                                    _SrcIndex,
+                                    _OutMip1Index,
+                                    _OutMip2Index,
+                                    _OutMip3Index,
+                                    _OutMip4Index};
+
+                pContext->SetConstantArray(0, 1, &_maxMipGenBuffer);
+            
+                pContext->Dispatch2D(_SrcDesc.Width, _SrcDesc.Height, 8, 8);
+
+            }
+
+        });
+
+
+        //=================================================================================
+        // 根据相机位置生成Node节点
+        //=================================================================================
 
         RHI::RenderPass& terrainNodesBuildPass = graph.AddRenderPass("TerrainNodesBuildPass");
 
@@ -106,6 +280,9 @@ namespace MoYu
             
             pContext->Dispatch2D(1024, 1024, 8, 8);
         });
+
+
+
 
 
     }

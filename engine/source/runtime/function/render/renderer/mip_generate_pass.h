@@ -53,43 +53,8 @@ namespace MoYu
         void update(RHI::RenderGraph& graph, DrawInputParameters& passInput, DrawOutputParameters& passOutput);
         void destroy() override final;
 
-    //protected:
-    //    RHI::RgTextureDesc depthPyramidDesc;
-    //    RHI::RgTextureDesc depthMinPyramidDesc;
-    //    RHI::RgTextureDesc depthMaxPyramidDesc;
-
     private:
-        Shader GenerateMipsLinearCS;
-        Shader GenerateMipsLinearOddCS;
-        Shader GenerateMipsLinearOddXCS;
-        Shader GenerateMipsLinearOddYCS;
 
-        Shader GenerateMaxMipsLinearCS;
-        Shader GenerateMaxMipsLinearOddCS;
-        Shader GenerateMaxMipsLinearOddXCS;
-        Shader GenerateMaxMipsLinearOddYCS;
-
-        Shader GenerateMinMipsLinearCS;
-        Shader GenerateMinMipsLinearOddCS;
-        Shader GenerateMinMipsLinearOddXCS;
-        Shader GenerateMinMipsLinearOddYCS;
-
-        std::shared_ptr<RHI::D3D12RootSignature> pGenerateMipsLinearSignature;
-
-        std::shared_ptr<RHI::D3D12PipelineState> pGenerateMipsLinearPSO;
-        std::shared_ptr<RHI::D3D12PipelineState> pGenerateMipsLinearOddPSO;
-        std::shared_ptr<RHI::D3D12PipelineState> pGenerateMipsLinearOddXPSO;
-        std::shared_ptr<RHI::D3D12PipelineState> pGenerateMipsLinearOddYPSO;
-
-        std::shared_ptr<RHI::D3D12PipelineState> pGenerateMaxMipsLinearPSO;
-        std::shared_ptr<RHI::D3D12PipelineState> pGenerateMaxMipsLinearOddPSO;
-        std::shared_ptr<RHI::D3D12PipelineState> pGenerateMaxMipsLinearOddXPSO;
-        std::shared_ptr<RHI::D3D12PipelineState> pGenerateMaxMipsLinearOddYPSO;
-
-        std::shared_ptr<RHI::D3D12PipelineState> pGenerateMinMipsLinearPSO;
-        std::shared_ptr<RHI::D3D12PipelineState> pGenerateMinMipsLinearOddPSO;
-        std::shared_ptr<RHI::D3D12PipelineState> pGenerateMinMipsLinearOddXPSO;
-        std::shared_ptr<RHI::D3D12PipelineState> pGenerateMinMipsLinearOddYPSO;
 	};
 }
 

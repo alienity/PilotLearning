@@ -58,6 +58,19 @@ struct Shaders
         inline static Shader IndirectCullGrab;
         inline static Shader IndirectCullDirectionShadowmap;
         inline static Shader IndirectCullSpotShadowmap;
+
+        inline static Shader GenerateMipsLinearCS;
+        inline static Shader GenerateMipsLinearOddCS;
+        inline static Shader GenerateMipsLinearOddXCS;
+        inline static Shader GenerateMipsLinearOddYCS;
+        inline static Shader GenerateMaxMipsLinearCS;
+        inline static Shader GenerateMaxMipsLinearOddCS;
+        inline static Shader GenerateMaxMipsLinearOddXCS;
+        inline static Shader GenerateMaxMipsLinearOddYCS;
+        inline static Shader GenerateMinMipsLinearCS;
+        inline static Shader GenerateMinMipsLinearOddCS;
+        inline static Shader GenerateMinMipsLinearOddXCS;
+        inline static Shader GenerateMinMipsLinearOddYCS;
     };
 
     static void Compile(ShaderCompiler* Compiler, const std::filesystem::path& ShaderPath)
@@ -118,6 +131,26 @@ struct Shaders
             ShaderCompileOptions spotCSOption(g_CSEntryPoint);
             spotCSOption.SetDefine({L"SPOTSHADOW"}, {L"1"});
             CS::IndirectCullSpotShadowmap = Compiler->CompileShader(RHI_SHADER_TYPE::Compute, ShaderPath / "hlsl/IndirectCullShadowmap.hlsl", spotCSOption);
+
+            {
+            #define GetCompiledShader(ShaderName) Compiler->CompileShader(RHI_SHADER_TYPE::Compute, ShaderPath / ShaderName, ShaderCompileOptions(L"main"));
+
+                CS::GenerateMipsLinearCS = GetCompiledShader("hlsl/GenerateMipsLinearCS.hlsl")
+                CS::GenerateMipsLinearOddCS = GetCompiledShader("hlsl/GenerateMipsLinearOddCS.hlsl")
+                CS::GenerateMipsLinearOddXCS = GetCompiledShader("hlsl/GenerateMipsLinearOddXCS.hlsl")
+                CS::GenerateMipsLinearOddYCS = GetCompiledShader("hlsl/GenerateMipsLinearOddYCS.hlsl")
+
+                CS::GenerateMaxMipsLinearCS = GetCompiledShader("hlsl/GenerateMaxMipsLinearCS.hlsl")
+                CS::GenerateMaxMipsLinearOddCS = GetCompiledShader("hlsl/GenerateMaxMipsLinearOddCS.hlsl")
+                CS::GenerateMaxMipsLinearOddXCS = GetCompiledShader("hlsl/GenerateMaxMipsLinearOddXCS.hlsl")
+                CS::GenerateMaxMipsLinearOddYCS = GetCompiledShader("hlsl/GenerateMaxMipsLinearOddYCS.hlsl")
+
+                CS::GenerateMinMipsLinearCS = GetCompiledShader("hlsl/GenerateMinMipsLinearCS.hlsl")
+                CS::GenerateMinMipsLinearOddCS = GetCompiledShader("hlsl/GenerateMinMipsLinearOddCS.hlsl")
+                CS::GenerateMinMipsLinearOddXCS = GetCompiledShader("hlsl/GenerateMinMipsLinearOddXCS.hlsl")
+                CS::GenerateMinMipsLinearOddYCS = GetCompiledShader("hlsl/GenerateMinMipsLinearOddYCS.hlsl")
+            }
+
         }
     }
 
@@ -149,6 +182,8 @@ struct RootSignatures
     inline static std::shared_ptr<RHI::D3D12RootSignature> pIndirectDrawDirectionShadowmap;
     inline static std::shared_ptr<RHI::D3D12RootSignature> pIndirectDrawSpotShadowmap;
     inline static std::shared_ptr<RHI::D3D12RootSignature> pSkyBoxRootSignature;
+
+    inline static std::shared_ptr<RHI::D3D12RootSignature> pGenerateMipsLinearSignature;
 
     static void Compile(RHI::D3D12Device* pDevice)
     {
@@ -312,6 +347,17 @@ struct RootSignatures
             pSkyBoxRootSignature = std::make_shared<RHI::D3D12RootSignature>(pDevice, rootSigDesc);
         }
 
+        {
+            RHI::RootSignatureDesc rootSigDesc =
+                RHI::RootSignatureDesc()
+                    .Add32BitConstants<0, 0>(12)
+                    .AddStaticSampler<10, 0>(D3D12_FILTER::D3D12_FILTER_MIN_MAG_MIP_LINEAR, D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_CLAMP, 8)
+                    .AllowInputLayout()
+                    .AllowResourceDescriptorHeapIndexing()
+                    .AllowSampleDescriptorHeapIndexing();
+
+            pGenerateMipsLinearSignature = std::make_shared<RHI::D3D12RootSignature>(pDevice, rootSigDesc);
+        }
     }
 
     static void Release()
@@ -328,6 +374,7 @@ struct RootSignatures
         pIndirectDrawDirectionShadowmap = nullptr;
         pIndirectDrawSpotShadowmap      = nullptr;
         pSkyBoxRootSignature            = nullptr;
+        pGenerateMipsLinearSignature    = nullptr;
     }
 };
 
@@ -415,6 +462,35 @@ struct PipelineStates
     inline static std::shared_ptr<RHI::D3D12PipelineState> pIndirectDrawSpotShadowmap;
 
     inline static std::shared_ptr<RHI::D3D12PipelineState> pSkyBoxPSO;
+
+    inline static std::shared_ptr<RHI::D3D12PipelineState> pGenerateMipsLinearPSO;
+    inline static std::shared_ptr<RHI::D3D12PipelineState> pGenerateMipsLinearOddPSO;
+    inline static std::shared_ptr<RHI::D3D12PipelineState> pGenerateMipsLinearOddXPSO;
+    inline static std::shared_ptr<RHI::D3D12PipelineState> pGenerateMipsLinearOddYPSO;
+
+    inline static std::shared_ptr<RHI::D3D12PipelineState> pGenerateMaxMipsLinearPSO;
+    inline static std::shared_ptr<RHI::D3D12PipelineState> pGenerateMaxMipsLinearOddPSO;
+    inline static std::shared_ptr<RHI::D3D12PipelineState> pGenerateMaxMipsLinearOddXPSO;
+    inline static std::shared_ptr<RHI::D3D12PipelineState> pGenerateMaxMipsLinearOddYPSO;
+
+    inline static std::shared_ptr<RHI::D3D12PipelineState> pGenerateMinMipsLinearPSO;
+    inline static std::shared_ptr<RHI::D3D12PipelineState> pGenerateMinMipsLinearOddPSO;
+    inline static std::shared_ptr<RHI::D3D12PipelineState> pGenerateMinMipsLinearOddXPSO;
+    inline static std::shared_ptr<RHI::D3D12PipelineState> pGenerateMinMipsLinearOddYPSO;
+
+    static std::shared_ptr<RHI::D3D12PipelineState> CreatePSO(RHI::D3D12RootSignature* rootSig, Shader& cs, RHI::D3D12Device* device, std::wstring name)
+    {
+        struct PsoStream
+        {
+            PipelineStateStreamRootSignature RootSignature;
+            PipelineStateStreamCS            CS;
+        } psoStream;
+        psoStream.RootSignature         = PipelineStateStreamRootSignature(rootSig);
+        psoStream.CS                    = &cs;
+        PipelineStateStreamDesc psoDesc = {sizeof(PsoStream), &psoStream};
+
+        return std::make_shared<RHI::D3D12PipelineState>(device, name, psoDesc);
+    }
 
     static void Compile(DXGI_FORMAT PiplineRtFormat, DXGI_FORMAT PipelineDsFormat, DXGI_FORMAT RtFormat, DXGI_FORMAT DsFormat, RHI::D3D12Device* pDevice)
     {
@@ -795,6 +871,22 @@ struct PipelineStates
             PipelineStateStreamDesc psoDesc = {sizeof(PsoStream), &psoStream};
             pSkyBoxPSO = std::make_shared<RHI::D3D12PipelineState>(pDevice, L"SkyBox", psoDesc);
         }
+        {
+            pGenerateMipsLinearPSO = CreatePSO(RootSignatures::pGenerateMipsLinearSignature.get(), Shaders::CS::GenerateMipsLinearCS, pDevice, L"GenerateMipsLinearPSO");
+            pGenerateMipsLinearOddPSO = CreatePSO(RootSignatures::pGenerateMipsLinearSignature.get(), Shaders::CS::GenerateMipsLinearOddCS, pDevice, L"GenerateMipsLinearOddPSO");
+            pGenerateMipsLinearOddXPSO = CreatePSO(RootSignatures::pGenerateMipsLinearSignature.get(), Shaders::CS::GenerateMipsLinearOddXCS, pDevice, L"GenerateMipsLinearOddXPSO");
+            pGenerateMipsLinearOddYPSO = CreatePSO(RootSignatures::pGenerateMipsLinearSignature.get(), Shaders::CS::GenerateMipsLinearOddYCS, pDevice, L"GenerateMipsLinearOddYPSO");
+
+            pGenerateMaxMipsLinearPSO = CreatePSO(RootSignatures::pGenerateMipsLinearSignature.get(), Shaders::CS::GenerateMaxMipsLinearCS, pDevice, L"GenerateMaxMipsLinearPSO");
+            pGenerateMaxMipsLinearOddPSO = CreatePSO(RootSignatures::pGenerateMipsLinearSignature.get(), Shaders::CS::GenerateMaxMipsLinearOddCS, pDevice, L"GenerateMaxMipsLinearOddPSO");
+            pGenerateMaxMipsLinearOddXPSO = CreatePSO(RootSignatures::pGenerateMipsLinearSignature.get(), Shaders::CS::GenerateMaxMipsLinearOddXCS, pDevice, L"GenerateMaxMipsLinearOddXPSO");
+            pGenerateMaxMipsLinearOddYPSO = CreatePSO(RootSignatures::pGenerateMipsLinearSignature.get(), Shaders::CS::GenerateMaxMipsLinearOddYCS, pDevice, L"GenerateMaxMipsLinearOddYPSO");
+
+            pGenerateMinMipsLinearPSO = CreatePSO(RootSignatures::pGenerateMipsLinearSignature.get(), Shaders::CS::GenerateMinMipsLinearCS, pDevice, L"GenerateMinMipsLinearPSO");
+            pGenerateMinMipsLinearOddPSO = CreatePSO(RootSignatures::pGenerateMipsLinearSignature.get(), Shaders::CS::GenerateMinMipsLinearOddCS, pDevice, L"GenerateMinMipsLinearOddPSO");
+            pGenerateMinMipsLinearOddXPSO = CreatePSO(RootSignatures::pGenerateMipsLinearSignature.get(), Shaders::CS::GenerateMinMipsLinearOddXCS, pDevice, L"GenerateMinMipsLinearOddXPSO");
+            pGenerateMinMipsLinearOddYPSO = CreatePSO(RootSignatures::pGenerateMipsLinearSignature.get(), Shaders::CS::GenerateMinMipsLinearOddYCS, pDevice, L"GenerateMinMipsLinearOddYPSO");
+        }
     }
 
     static void Release()
@@ -822,6 +914,21 @@ struct PipelineStates
         pIndirectDrawSpotShadowmap      = nullptr;
 
         pSkyBoxPSO = nullptr;
+
+        pGenerateMipsLinearPSO = nullptr;
+        pGenerateMipsLinearOddPSO = nullptr;
+        pGenerateMipsLinearOddXPSO = nullptr;
+        pGenerateMipsLinearOddYPSO = nullptr;
+
+        pGenerateMaxMipsLinearPSO = nullptr;
+        pGenerateMaxMipsLinearOddPSO = nullptr;
+        pGenerateMaxMipsLinearOddXPSO = nullptr;
+        pGenerateMaxMipsLinearOddYPSO = nullptr;
+
+        pGenerateMinMipsLinearPSO = nullptr;
+        pGenerateMinMipsLinearOddPSO = nullptr;
+        pGenerateMinMipsLinearOddXPSO = nullptr;
+        pGenerateMinMipsLinearOddYPSO = nullptr;
     }
 };
 // clang-format on
