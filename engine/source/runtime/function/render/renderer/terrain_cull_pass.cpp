@@ -133,6 +133,8 @@ namespace MoYu
         RHI::RenderPass& genHeightMapMipMapPass = graph.AddRenderPass("GenerateHeightMapMipMapPass");
 
         genHeightMapMipMapPass.Read(terrainHeightmapHandle, true);
+        genHeightMapMipMapPass.Read(terrainMinHeightMapHandle, true);
+        genHeightMapMipMapPass.Read(terrainMaxHeightMapHandle, true);
         genHeightMapMipMapPass.Write(terrainMinHeightMapHandle, true);
         genHeightMapMipMapPass.Write(terrainMaxHeightMapHandle, true);
 
@@ -152,6 +154,8 @@ namespace MoYu
 
                 const CD3DX12_TEXTURE_COPY_LOCATION dst_max(terrainMaxHeightMap->GetResource(), 0);
                 context->GetGraphicsCommandList()->CopyTextureRegion(&dst_max, 0, 0, 0, &src, nullptr);
+
+                context->FlushResourceBarriers();
             }
 
             //--------------------------------------------------
@@ -161,7 +165,7 @@ namespace MoYu
             {
                 RHI::D3D12Texture* _SrcTexture = RegGetTex(terrainMinHeightMapHandle);
 
-                pContext->TransitionBarrier(_SrcTexture, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, 0);
+                pContext->TransitionBarrier(_SrcTexture, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE, 0);
                 for (size_t i = 1; i < _SrcTexture->GetNumSubresources(); i++)
                 {
                     pContext->TransitionBarrier(_SrcTexture, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, i);
@@ -208,7 +212,7 @@ namespace MoYu
             {
                 RHI::D3D12Texture* _SrcTexture = RegGetTex(terrainMaxHeightMapHandle);
 
-                pContext->TransitionBarrier(_SrcTexture, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, 0);
+                pContext->TransitionBarrier(_SrcTexture, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE, 0);
                 for (size_t i = 1; i < _SrcTexture->GetNumSubresources(); i++)
                 {
                     pContext->TransitionBarrier(_SrcTexture, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, i);

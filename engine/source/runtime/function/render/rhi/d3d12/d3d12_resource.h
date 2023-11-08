@@ -31,7 +31,7 @@ namespace RHI
         {
             return ResourceState == D3D12_RESOURCE_STATE_UNINITIALIZED;
         }
-        [[nodiscard]] bool IsUnknown() const noexcept { return ResourceState == D3D12_RESOURCE_STATE_UNKNOWN; }
+        [[nodiscard]] bool IsUnknown(UINT Subresource) const noexcept;
 
         // Returns true if all subresources have the same state
         [[nodiscard]] bool IsUniform() const noexcept { return TrackingMode == ETrackingMode::PerResource; }

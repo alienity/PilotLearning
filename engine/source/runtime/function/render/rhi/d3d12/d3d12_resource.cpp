@@ -93,6 +93,19 @@ namespace RHI
         return SubresourceStates[Subresource];
     }
 
+    bool CResourceState::IsUnknown(UINT Subresource) const noexcept
+    {
+        if (Subresource == D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES)
+        {
+            return ResourceState == D3D12_RESOURCE_STATE_UNKNOWN;
+        }
+        else
+        {
+            ASSERT(Subresource < SubresourceStates.size());
+            return SubresourceStates[Subresource] == D3D12_RESOURCE_STATE_UNKNOWN;
+        }
+    }
+
     void CResourceState::SetSubresourceState(std::uint32_t Subresource, D3D12_RESOURCE_STATES State)
     {
         // If setting all subresources, or the resource only has a single subresource, set the per-resource state

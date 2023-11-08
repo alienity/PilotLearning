@@ -83,7 +83,7 @@ namespace RHI
 
 	void RenderGraphDependencyLevel::Execute(RenderGraph* RenderGraph, D3D12CommandContext* Context)
 	{
-        Context->FlushResourceBarriers();
+        //Context->FlushResourceBarriers();
 
 		// Figure out all the barriers needed for each level
 		// Handle resource transitions for all registered resources

@@ -85,7 +85,7 @@ namespace RHI
     {
         CResourceState& ResourceState = ResourceStateTracker.GetResourceState(Resource);
         // First use on the command list
-        if (ResourceState.IsUnknown())
+        if (ResourceState.IsUnknown(Subresource))
         {
             ResourceStateTracker.Add(PendingResourceBarrier {Resource, State, Subresource});
         }
