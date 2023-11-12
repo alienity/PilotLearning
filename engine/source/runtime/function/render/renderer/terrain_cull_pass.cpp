@@ -158,6 +158,7 @@ namespace MoYu
                 context->FlushResourceBarriers();
             }
 
+            /*
             //--------------------------------------------------
             // Éú³ÉMinHeightMap
             //--------------------------------------------------
@@ -254,6 +255,7 @@ namespace MoYu
                 pContext->Dispatch2D(_SrcDesc.Width, _SrcDesc.Height, 8, 8);
 
             }
+            */
 
         });
 

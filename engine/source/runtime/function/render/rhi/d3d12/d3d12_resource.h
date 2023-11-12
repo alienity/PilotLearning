@@ -15,34 +15,23 @@ namespace RHI
     class CResourceState
     {
     public:
-        enum class ETrackingMode
-        {
-            PerResource,
-            PerSubresource
-        };
-
         CResourceState() noexcept = default;
         explicit CResourceState(std::uint32_t NumSubresources, D3D12_RESOURCE_STATES InitialResourceState);
 
         [[nodiscard]] auto begin() const noexcept { return SubresourceStates.begin(); }
         [[nodiscard]] auto end() const noexcept { return SubresourceStates.end(); }
 
-        [[nodiscard]] bool IsUninitialized() const noexcept
-        {
-            return ResourceState == D3D12_RESOURCE_STATE_UNINITIALIZED;
-        }
-        [[nodiscard]] bool IsUnknown(UINT Subresource) const noexcept;
+        [[nodiscard]] bool IsUninitialized() const noexcept;
+        [[nodiscard]] bool IsUnknown(std::uint32_t Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES) const noexcept;
 
         // Returns true if all subresources have the same state
-        [[nodiscard]] bool IsUniform() const noexcept { return TrackingMode == ETrackingMode::PerResource; }
+        [[nodiscard]] bool IsUniform() const noexcept;
 
-        [[nodiscard]] D3D12_RESOURCE_STATES GetSubresourceState(std::uint32_t Subresource) const;
+        [[nodiscard]] D3D12_RESOURCE_STATES GetSubresourceState(std::uint32_t Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES) const;
 
         void SetSubresourceState(std::uint32_t Subresource, D3D12_RESOURCE_STATES State);
 
     private:
-        ETrackingMode                      TrackingMode  = ETrackingMode::PerResource;
-        D3D12_RESOURCE_STATES              ResourceState = D3D12_RESOURCE_STATE_UNINITIALIZED;
         std::vector<D3D12_RESOURCE_STATES> SubresourceStates;
     };
 

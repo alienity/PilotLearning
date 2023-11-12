@@ -67,65 +67,73 @@ namespace RHI
     };
 
     CResourceState::CResourceState(std::uint32_t NumSubresources, D3D12_RESOURCE_STATES InitialResourceState) :
-        ResourceState(InitialResourceState), SubresourceStates(NumSubresources, InitialResourceState)
+        SubresourceStates(NumSubresources, InitialResourceState)
+    {}
+
+    bool CResourceState::IsUninitialized() const noexcept
     {
-        if (NumSubresources == 1)
-        {
-            TrackingMode = ETrackingMode::PerResource;
-        }
-        else
-        {
-            TrackingMode = ETrackingMode::PerSubresource;
-        }
+        return SubresourceStates.empty();
     }
 
-    D3D12_RESOURCE_STATES CResourceState::GetSubresourceState(std::uint32_t Subresource) const
+    bool CResourceState::IsUnknown(std::uint32_t Subresource) const noexcept
     {
-        if (TrackingMode == ETrackingMode::PerResource)
-        {
-            return ResourceState;
-        }
-
-        // assume all subresources have the same state
-        if (Subresource == D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES)
-            return SubresourceStates[0];
-
-        return SubresourceStates[Subresource];
-    }
-
-    bool CResourceState::IsUnknown(UINT Subresource) const noexcept
-    {
+        bool hasUnkownState = false;
         if (Subresource == D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES)
         {
-            return ResourceState == D3D12_RESOURCE_STATE_UNKNOWN;
+            for (int i = 0; i < SubresourceStates.size(); i++)
+            {
+                if (SubresourceStates[i] == D3D12_RESOURCE_STATE_UNKNOWN)
+                {
+                    hasUnkownState = true;
+                    break;
+                }
+            }
         }
         else
         {
             ASSERT(Subresource < SubresourceStates.size());
-            return SubresourceStates[Subresource] == D3D12_RESOURCE_STATE_UNKNOWN;
+            hasUnkownState = SubresourceStates[Subresource] == D3D12_RESOURCE_STATE_UNKNOWN;
         }
+        return hasUnkownState;
+    }
+
+    D3D12_RESOURCE_STATES CResourceState::GetSubresourceState(std::uint32_t Subresource) const
+    {
+        // assume all subresources have the same state
+        if (Subresource == D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES)
+        {
+            ASSERT(IsUniform());
+            return SubresourceStates[0];   
+        }
+        ASSERT(Subresource < SubresourceStates.size());
+        return SubresourceStates[Subresource];
+    }
+
+    bool CResourceState::IsUniform() const noexcept
+    {
+        for (int i = 1; i < SubresourceStates.size(); i++)
+        {
+            if (SubresourceStates[i - 1] != SubresourceStates[i])
+            {
+                return false;
+            }
+        }
+        return true;
     }
 
     void CResourceState::SetSubresourceState(std::uint32_t Subresource, D3D12_RESOURCE_STATES State)
     {
         // If setting all subresources, or the resource only has a single subresource, set the per-resource state
-        if (Subresource == D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES || SubresourceStates.size() == 1)
+        if (Subresource == D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES)
         {
-            TrackingMode  = ETrackingMode::PerResource;
-            ResourceState = State;
+            for (int i = 0; i < SubresourceStates.size(); i++)
+            {
+                SubresourceStates[i] = State;
+            }
         }
         else
         {
-            // If we previous tracked resource per resource level, we need to update all
-            // all subresource states before proceeding
-            if (TrackingMode == ETrackingMode::PerResource)
-            {
-                TrackingMode = ETrackingMode::PerSubresource;
-                for (auto& SubresourceState : SubresourceStates)
-                {
-                    SubresourceState = ResourceState;
-                }
-            }
+            ASSERT(Subresource < SubresourceStates.size());
             SubresourceStates[Subresource] = State;
         }
     }
@@ -525,7 +533,6 @@ namespace RHI
     {
         if (p_CounterBufferD3D12 != nullptr)
         {
-            pCommandContext->Open();
             pCommandContext->ResetCounter(p_CounterBufferD3D12.get(), 0, 0);
         }
     }

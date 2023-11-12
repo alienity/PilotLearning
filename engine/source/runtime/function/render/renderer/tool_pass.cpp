@@ -203,6 +203,10 @@ namespace MoYu
 
     void ToolPass::preUpdate1(ToolInputParameters& passInput, ToolOutputParameters& passOutput)
     {
+        bool isUpdateNeeded = !isDFGGenerated || !isLDGenerated || !isRadiansGenerated || !isSHGenerated;
+        if (!isUpdateNeeded)
+            return;
+
         std::shared_ptr<RHI::D3D12CommandContext> context =
             RHI::D3D12CommandContext::Begin(m_Device->GetLinkedDevice(), RHI::RHID3D12CommandQueueType::Direct);
 

@@ -332,8 +332,9 @@ namespace MoYu
     {
         {
             context->TransitionBarrier(indirectIndexBuffer->GetCounterBuffer().get(), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+            context->TransitionBarrier(indirectSortBuffer->GetCounterBuffer().get(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
             context->TransitionBarrier(grabDispatchArgBuffer, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-            context->InsertUAVBarrier(grabDispatchArgBuffer);
+            //context->InsertUAVBarrier(grabDispatchArgBuffer);
             context->FlushResourceBarriers();
 
             context->SetPipelineState(PipelineStates::pIndirectCullArgs.get());
@@ -350,7 +351,7 @@ namespace MoYu
             context->TransitionBarrier(indirectIndexBuffer, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
             context->TransitionBarrier(grabDispatchArgBuffer, D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT);
             context->TransitionBarrier(indirectSortBuffer, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-            context->InsertUAVBarrier(indirectSortBuffer);
+            //context->InsertUAVBarrier(indirectSortBuffer);
             context->FlushResourceBarriers();
 
             context->SetPipelineState(PipelineStates::pIndirectCullGrab.get());
@@ -481,9 +482,38 @@ namespace MoYu
                 pCopyContext->CopyBuffer(RegGetBuf(mMaterialBufferHandle), RegGetBuf(uploadMaterialViewIndexHandle));
                 pCopyContext->CopyBuffer(RegGetBuf(mMeshBufferHandle), RegGetBuf(uploadMeshBufferHandle));
 
-                pCopyContext->TransitionBarrier(RegGetBuf(mPerframeBufferHandle), D3D12_RESOURCE_STATE_GENERIC_READ);
-                pCopyContext->TransitionBarrier(RegGetBuf(mMaterialBufferHandle), D3D12_RESOURCE_STATE_GENERIC_READ);
-                pCopyContext->TransitionBarrier(RegGetBuf(mMeshBufferHandle), D3D12_RESOURCE_STATE_GENERIC_READ);
+                // transition buffer state
+                {
+                    pCopyContext->TransitionBarrier(RegGetBuf(mPerframeBufferHandle), D3D12_RESOURCE_STATE_GENERIC_READ);
+                    pCopyContext->TransitionBarrier(RegGetBuf(mMaterialBufferHandle), D3D12_RESOURCE_STATE_GENERIC_READ);
+                    pCopyContext->TransitionBarrier(RegGetBuf(mMeshBufferHandle), D3D12_RESOURCE_STATE_GENERIC_READ);
+
+                    // transition vertex and index buffer state
+                    std::vector<CachedMeshRenderer>& _mesh_renderers = m_render_scene->m_mesh_renderers;
+                    uint32_t numMeshes = _mesh_renderers.size();
+                    for (size_t i = 0; i < numMeshes; i++)
+                    {
+                        InternalMeshRenderer& temp_mesh_renderer = _mesh_renderers[i].internalMeshRenderer;
+                        InternalMesh& temp_ref_mesh = temp_mesh_renderer.ref_mesh;
+                        pCopyContext->TransitionBarrier(temp_ref_mesh.index_buffer.index_buffer.get(), D3D12_RESOURCE_STATE_COMMON);
+                        pCopyContext->TransitionBarrier(temp_ref_mesh.vertex_buffer.vertex_buffer.get(), D3D12_RESOURCE_STATE_COMMON);
+                    }
+                }
+                pCopyContext->FlushResourceBarriers();
+
+
+                {
+                    // transition vertex and index buffer state
+                    std::vector<CachedMeshRenderer>& _mesh_renderers = m_render_scene->m_mesh_renderers;
+                    uint32_t numMeshes = _mesh_renderers.size();
+                    for (size_t i = 0; i < numMeshes; i++)
+                    {
+                        InternalMeshRenderer& temp_mesh_renderer = _mesh_renderers[i].internalMeshRenderer;
+                        InternalMesh& temp_ref_mesh = temp_mesh_renderer.ref_mesh;
+                        pCopyContext->TransitionBarrier(temp_ref_mesh.index_buffer.index_buffer.get(), D3D12_RESOURCE_STATE_INDEX_BUFFER);
+                        pCopyContext->TransitionBarrier(temp_ref_mesh.vertex_buffer.vertex_buffer.get(), D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
+                    }
+                }
                 pCopyContext->FlushResourceBarriers();
             });
         }
@@ -664,8 +694,8 @@ namespace MoYu
                 for (size_t i = 0; i < mDirShadowmapHandles.size(); i++)
                 {
                     pAsyncCompute->TransitionBarrier(RegGetBuf(mDirShadowmapHandles[i].indirectSortBufferHandle), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-                    pAsyncCompute->InsertUAVBarrier(RegGetBuf(mDirShadowmapHandles[i].indirectSortBufferHandle));
-                    pAsyncCompute->TransitionBarrier(RegGetBufCounter(mDirShadowmapHandles[i].indirectSortBufferHandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+                    //pAsyncCompute->InsertUAVBarrier(RegGetBuf(mDirShadowmapHandles[i].indirectSortBufferHandle));
+                    pAsyncCompute->TransitionBarrier(RegGetBufCounter(mDirShadowmapHandles[i].indirectSortBufferHandle), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
                     //pAsyncCompute->InsertUAVBarrier(RegGetBufCounter(mDirShadowmapHandles[i].indirectSortBufferHandle));
                 }
                 pAsyncCompute->FlushResourceBarriers();
@@ -715,8 +745,8 @@ namespace MoYu
                 for (size_t i = 0; i < mSpotShadowmapHandles.size(); i++)
                 {
                     pAsyncCompute->TransitionBarrier(RegGetBuf(mSpotShadowmapHandles[i].indirectSortBufferHandle), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-                    pAsyncCompute->InsertUAVBarrier(RegGetBuf(mSpotShadowmapHandles[i].indirectSortBufferHandle));
-                    pAsyncCompute->TransitionBarrier(RegGetBufCounter(mSpotShadowmapHandles[i].indirectSortBufferHandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+                    //pAsyncCompute->InsertUAVBarrier(RegGetBuf(mSpotShadowmapHandles[i].indirectSortBufferHandle));
+                    pAsyncCompute->TransitionBarrier(RegGetBufCounter(mSpotShadowmapHandles[i].indirectSortBufferHandle), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
                     //pAsyncCompute->InsertUAVBarrier(RegGetBufCounter(mSpotShadowmapHandles[i].indirectSortBufferHandle));
                 }
                 pAsyncCompute->FlushResourceBarriers();

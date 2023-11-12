@@ -84,11 +84,6 @@ namespace MoYu
         InternalMesh createInternalMesh(SceneMesh scene_mesh);
         InternalMesh createInternalMesh(RenderMeshData mesh_data);
 
-        //template<typename T> 
-        //InternalVertexBuffer createVertexBuffer(InputDefinition input_definition, std::shared_ptr<MoYu::MoYuScratchBuffer> vertex_buffer);
-        //template<typename T> 
-        //InternalIndexBuffer createIndexBuffer(std::shared_ptr<MoYu::MoYuScratchBuffer> index_buffer);
-
         template<typename T>
         InternalVertexBuffer createVertexBuffer(InputDefinition input_definition, std::shared_ptr<MoYu::MoYuScratchBuffer> vertex_buffer)
         {
@@ -120,7 +115,7 @@ namespace MoYu
                                          sizeof(T),
                                          L"MeshVertexBuffer",
                                          RHI::RHIBufferModeImmutable,
-                                         D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
+                                         D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COMMON);
             {
                 startUploadBatch();
                 {
@@ -155,7 +150,7 @@ namespace MoYu
                                          sizeof(T),
                                          L"MeshIndexBuffer",
                                          RHI::RHIBufferModeImmutable,
-                                         D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_INDEX_BUFFER);
+                                         D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COMMON);
             {
                 startUploadBatch();
                 {

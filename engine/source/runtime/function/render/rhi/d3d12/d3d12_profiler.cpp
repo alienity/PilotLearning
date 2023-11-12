@@ -1,6 +1,7 @@
 #include "d3d12_profiler.h"
 #include "d3d12_linkedDevice.h"
 #include "d3d12_commandQueue.h"
+#include "runtime/function/render/rhi/d3d12/d3d12_commandContext.h"
 
 namespace RHI
 {
@@ -150,6 +151,10 @@ namespace RHI
         assert(ProfileData.QueryStarted == true);
         assert(ProfileData.QueryFinished == false);
 
+         //CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(
+         //   TimestampQueryReadback.Get(), D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COPY_DEST);
+         //CommandList->ResourceBarrier(1, &barrier);
+
         // Insert the end timestamp
         UINT StartIndex = Index * 2 + 0;
         UINT EndIndex   = Index * 2 + 1;
@@ -157,12 +162,12 @@ namespace RHI
 
         // Resolve the data
         UINT64 AlignedDestinationBufferOffset = (FrameIndex * MaxProfiles * 2 + StartIndex) * sizeof(UINT64);
-        CommandList->ResolveQueryData(TimestampQueryHeap.Get(),
-                                      D3D12_QUERY_TYPE_TIMESTAMP,
-                                      StartIndex,
-                                      2,
-                                      TimestampQueryReadback.Get(),
-                                      AlignedDestinationBufferOffset);
+        //CommandList->ResolveQueryData(TimestampQueryHeap.Get(),
+        //                              D3D12_QUERY_TYPE_TIMESTAMP,
+        //                              StartIndex,
+        //                              2,
+        //                              TimestampQueryReadback.Get(),
+        //                              AlignedDestinationBufferOffset);
 
         ProfileData.QueryStarted  = false;
         ProfileData.QueryFinished = true;

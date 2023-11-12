@@ -234,12 +234,12 @@ namespace RHI
         if (trackedResourceState != State)
         {
             m_CommandListHandle.TransitionBarrier(Resource, State, Subresource);
-        }
 
-        if (/*trackedResourceState == D3D12_RESOURCE_STATE_UNORDERED_ACCESS ||*/
-            State == D3D12_RESOURCE_STATE_UNORDERED_ACCESS)
-        {
-            m_CommandListHandle.UAVBarrier(Resource);
+            if (/*trackedResourceState == D3D12_RESOURCE_STATE_UNORDERED_ACCESS ||*/
+                State == D3D12_RESOURCE_STATE_UNORDERED_ACCESS)
+            {
+                m_CommandListHandle.UAVBarrier(Resource);
+            }
         }
 
         if (FlushImmediate)
