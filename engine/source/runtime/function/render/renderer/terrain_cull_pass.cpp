@@ -184,7 +184,10 @@ namespace MoYu
                 pContext->SetRootSignature(RootSignatures::pGenerateMipsLinearSignature.get());
                 pContext->SetPipelineState(PipelineStates::pGenerateMinMipsLinearPSO.get());
 
-                glm::float2 _Mip1TexelSize = {_SrcDesc.Width >> 2, _SrcDesc.Height >> 2};
+                int _width  = _SrcDesc.Width >> 1;
+                int _height = _SrcDesc.Height >> 1;
+
+                glm::float2 _Mip1TexelSize = {1.0f / _width, 1.0f / _height};
                 glm::uint   _SrcMipLevel   = 0;
                 glm::uint   _NumMipLevels  = 4;
 
@@ -205,7 +208,7 @@ namespace MoYu
 
                 pContext->SetConstantArray(0, sizeof(MipGenInBuffer) / sizeof(int), &_minMipGenBuffer);
             
-                pContext->Dispatch2D(_SrcDesc.Width, _SrcDesc.Height, 8, 8);
+                pContext->Dispatch2D(_width, _height, 8, 8);
             }
             
             //--------------------------------------------------
@@ -232,7 +235,10 @@ namespace MoYu
                 pContext->SetRootSignature(RootSignatures::pGenerateMipsLinearSignature.get());
                 pContext->SetPipelineState(PipelineStates::pGenerateMaxMipsLinearPSO.get());
 
-                glm::float2 _Mip1TexelSize = {_SrcDesc.Width >> 2, _SrcDesc.Height >> 2};
+                int _width = _SrcDesc.Width >> 1;
+                int _height = _SrcDesc.Height >> 1;
+
+                glm::float2 _Mip1TexelSize = {1.0f / _width, 1.0f / _height};
                 glm::uint   _SrcMipLevel   = 0;
                 glm::uint   _NumMipLevels  = 4;
 
@@ -253,7 +259,7 @@ namespace MoYu
 
                 pContext->SetConstantArray(0, sizeof(MipGenInBuffer) / sizeof(int), &_maxMipGenBuffer);
             
-                pContext->Dispatch2D(_SrcDesc.Width, _SrcDesc.Height, 8, 8);
+                pContext->Dispatch2D(_width, _height, 8, 8);
 
             }
             
