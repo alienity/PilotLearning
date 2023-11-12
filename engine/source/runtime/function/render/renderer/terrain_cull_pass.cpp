@@ -158,7 +158,7 @@ namespace MoYu
                 context->FlushResourceBarriers();
             }
 
-            /*
+            
             //--------------------------------------------------
             // 生成MinHeightMap
             //--------------------------------------------------
@@ -203,10 +203,11 @@ namespace MoYu
                                     _OutMip3Index,
                                     _OutMip4Index};
 
-                pContext->SetConstantArray(0, 1, &_minMipGenBuffer);
+                pContext->SetConstantArray(0, sizeof(MipGenInBuffer) / sizeof(int), &_minMipGenBuffer);
             
                 pContext->Dispatch2D(_SrcDesc.Width, _SrcDesc.Height, 8, 8);
             }
+            
             //--------------------------------------------------
             // 生成MaxHeightMap
             //--------------------------------------------------
@@ -250,12 +251,12 @@ namespace MoYu
                                     _OutMip3Index,
                                     _OutMip4Index};
 
-                pContext->SetConstantArray(0, 1, &_maxMipGenBuffer);
+                pContext->SetConstantArray(0, sizeof(MipGenInBuffer) / sizeof(int), &_maxMipGenBuffer);
             
                 pContext->Dispatch2D(_SrcDesc.Width, _SrcDesc.Height, 8, 8);
 
             }
-            */
+            
 
         });
 
