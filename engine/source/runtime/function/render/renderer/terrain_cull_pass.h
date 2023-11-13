@@ -84,6 +84,8 @@ namespace MoYu
 
     private:
         bool initializeRenderTarget(RHI::RenderGraph& graph, TerrainCullOutput* drawPassOutput);
+        void generateMipmapForTerrainHeightmap(RHI::D3D12ComputeContext* context, RHI::D3D12Texture* srcTexture, bool genMin);
+        void generateMipmapForTerrainHeightmap(RHI::D3D12ComputeContext* context, RHI::D3D12Texture* srcTexture, int srcIndex, bool genMin);
 
         struct MipGenInBuffer
         {
@@ -97,9 +99,6 @@ namespace MoYu
             glm::uint OutMip3Index;
             glm::uint OutMip4Index;
         };
-
-        MipGenInBuffer _minMipGenBuffer;
-        MipGenInBuffer _maxMipGenBuffer;
 
         RHI::RgBufferDesc grabDispatchArgsBufferDesc;
 

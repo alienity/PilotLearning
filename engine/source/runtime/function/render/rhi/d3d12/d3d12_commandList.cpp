@@ -73,6 +73,12 @@ namespace RHI
         VERIFY_D3D12_API(GraphicsCommandList->Close());
     }
 
+    CResourceState D3D12CommandListHandle::GetAllTrackedResourceState(D3D12Resource* Resource)
+    {
+        CResourceState& ResourceState = ResourceStateTracker.GetResourceState(Resource);
+        return ResourceState;
+    }
+
     D3D12_RESOURCE_STATES D3D12CommandListHandle::GetResourceStateTracked(D3D12Resource* Resource, UINT Subresource)
     {
         CResourceState& ResourceState = ResourceStateTracker.GetResourceState(Resource);

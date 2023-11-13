@@ -7,6 +7,8 @@ struct RootIndexBuffer
 {
     uint meshPerFrameBufferIndex;
     uint terrainPatchNodeIndex;
+    uint terrainMinHeightmap;
+    uint terrainMaxHeightmap;
 };
 
 ConstantBuffer<RootIndexBuffer> g_RootIndexBuffer : register(b0, space0);
@@ -56,8 +58,12 @@ void GetMaxMinHeight(int2 pivotPos, int mipLevel, out float minHeight, out float
 [numthreads(8, 8, 1)]
 void CSMain(CSParams Params) {
 
+    const int baseNodeWidth = 2;
+
     ConstantBuffer<FrameUniforms> mFrameUniforms = ResourceDescriptorHeap[g_RootIndexBuffer.meshPerFrameBufferIndex];
     AppendStructuredBuffer<TerrainPatchNode> terrainPatchNodeBuffer = ResourceDescriptorHeap[g_RootIndexBuffer.terrainPatchNodeIndex];
+    Texture2D<float4> terrainMinHeightmap = ResourceDescriptorHeap[g_RootIndexBuffer.terrainMinHeightmap];
+    Texture2D<float4> terrainMaxHeightmap = ResourceDescriptorHeap[g_RootIndexBuffer.terrainMaxHeightmap];
 
     uint2 index = Params.DispatchThreadID.xy;
     float2 pixelPos = index + float2(0.5, 0.5);
@@ -66,7 +72,8 @@ void CSMain(CSParams Params) {
     float3 cameraDirection = -mFrameUniforms.cameraUniform.worldFromViewMatrix._m02_m12_m22;
     float3 focusPosition = cameraPosition + cameraDirection;
     
-    float2 pivotCenter = float2(floor(focusPosition.xz / 2.0f) * 2.0f);
+    // float2 pivotCenter = float2(floor(focusPosition.xz / baseNodeWidth) * baseNodeWidth);
+    float2 pivotCenter = float2(0,0);
 
     // calculate the mip level of the pixel
     float2 dis = pixelPos - pivotCenter;
@@ -77,18 +84,18 @@ void CSMain(CSParams Params) {
 
     // calculate the down-left index of the node
     int mipNodeWidth = pow(2, mipLevel+1);
-    int2 nodePivot = floor(dis / mipNodeWidth) * mipNodeWidth + float2(0.5, 0.5);
+    float2 nodePivot = floor(dis / mipNodeWidth) * mipNodeWidth + float2(0.5, 0.5);
 
     // check whether the nodePivot is the same as the basic index
     float pivotLen = length(nodePivot - dis);
-    if(pivotLen == 0)
+    if(pivotLen < 0.000001f)
     {
         uint neighbor = 0;
 
-        int2 northPos = nodePivot + int2(0, mipNodeWidth);
-        int2 eastPos = nodePivot + float2(mipNodeWidth, 0);
-        int2 southPos = nodePivot + float2(0, -2);
-        int2 westPos = nodePivot + float2(-2, 0);
+        float2 northPos = nodePivot + float2(0, mipNodeWidth);
+        float2 eastPos = nodePivot + float2(mipNodeWidth, 0);
+        float2 southPos = nodePivot + float2(0, -2);
+        float2 westPos = nodePivot + float2(-2, 0);
 
         int neighborMipLevel;
         GetMipLevel(eastPos, nodePivot, neighborMipLevel);

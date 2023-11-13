@@ -72,10 +72,6 @@ float4 PackColor(float4 Linear)
 void main( uint GI : SV_GroupIndex, uint3 DTid : SV_DispatchThreadID )
 {
     Texture2D<float4> SrcMip = ResourceDescriptorHeap[SrcIndex];
-    RWTexture2D<float4> OutMip1 = ResourceDescriptorHeap[OutMip1Index];
-    RWTexture2D<float4> OutMip2 = ResourceDescriptorHeap[OutMip2Index];
-    RWTexture2D<float4> OutMip3 = ResourceDescriptorHeap[OutMip3Index];
-    RWTexture2D<float4> OutMip4 = ResourceDescriptorHeap[OutMip4Index];
 
     // One bilinear sample is insufficient when scaling down by more than 2x.
     // You will slightly undersample in the case where the source dimension
@@ -137,6 +133,7 @@ void main( uint GI : SV_GroupIndex, uint3 DTid : SV_DispatchThreadID )
 #endif
 #endif
 
+    RWTexture2D<float4> OutMip1 = ResourceDescriptorHeap[OutMip1Index];
     OutMip1[DTid.xy] = PackColor(Src1);
 
     // A scalar (constant) branch can exit all threads coherently.
@@ -167,6 +164,7 @@ void main( uint GI : SV_GroupIndex, uint3 DTid : SV_DispatchThreadID )
         Src1 = min(min(Src1, Src2), min(Src3, Src4));
 #endif
 
+        RWTexture2D<float4> OutMip2 = ResourceDescriptorHeap[OutMip2Index];
         OutMip2[DTid.xy / 2] = PackColor(Src1);
         StoreColor(GI, Src1);
     }
@@ -190,6 +188,7 @@ void main( uint GI : SV_GroupIndex, uint3 DTid : SV_DispatchThreadID )
         Src1 = min(min(Src1, Src2), min(Src3, Src4));
 #endif
 
+        RWTexture2D<float4> OutMip3 = ResourceDescriptorHeap[OutMip3Index];
         OutMip3[DTid.xy / 4] = PackColor(Src1);
         StoreColor(GI, Src1);
     }
@@ -214,6 +213,7 @@ void main( uint GI : SV_GroupIndex, uint3 DTid : SV_DispatchThreadID )
         Src1 = min(min(Src1, Src2), min(Src3, Src4));
 #endif
 
+        RWTexture2D<float4> OutMip4 = ResourceDescriptorHeap[OutMip4Index];
         OutMip4[DTid.xy / 8] = PackColor(Src1);
     }
 }

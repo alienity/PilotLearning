@@ -31,7 +31,7 @@ namespace RHI
 
         void SetSubresourceState(std::uint32_t Subresource, D3D12_RESOURCE_STATES State);
 
-    private:
+    //private:
         std::vector<D3D12_RESOURCE_STATES> SubresourceStates;
     };
 

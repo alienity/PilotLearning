@@ -229,21 +229,53 @@ namespace RHI
 
     void D3D12CommandContext::TransitionBarrier(D3D12Resource* Resource, D3D12_RESOURCE_STATES State, UINT Subresource, bool FlushImmediate)
     {
-        D3D12_RESOURCE_STATES trackedResourceState = m_CommandListHandle.GetResourceStateTracked(Resource, Subresource);
-
-        if (trackedResourceState != State)
+        if (Subresource == D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES)
         {
-            m_CommandListHandle.TransitionBarrier(Resource, State, Subresource);
-
-            if (/*trackedResourceState == D3D12_RESOURCE_STATE_UNORDERED_ACCESS ||*/
-                State == D3D12_RESOURCE_STATE_UNORDERED_ACCESS)
+            CResourceState allTrackedState = m_CommandListHandle.GetAllTrackedResourceState(Resource);
+            if (allTrackedState.IsUniform())
             {
-                m_CommandListHandle.UAVBarrier(Resource);
+                D3D12_RESOURCE_STATES trackedResourceState = allTrackedState.GetSubresourceState(0);
+                if (trackedResourceState != State)
+                {
+                    m_CommandListHandle.TransitionBarrier(Resource, State, Subresource);
+                }
+            }
+            else
+            {
+                for (int i = 0; i < allTrackedState.SubresourceStates.size(); i++)
+                {
+                    if (allTrackedState.SubresourceStates[i] != State)
+                    {
+                        m_CommandListHandle.TransitionBarrier(Resource, State, i);
+                    }
+                }
             }
         }
-
+        else
+        {
+            m_CommandListHandle.TransitionBarrier(Resource, State, Subresource);
+        }
+        if (State == D3D12_RESOURCE_STATE_UNORDERED_ACCESS)
+        {
+            m_CommandListHandle.UAVBarrier(Resource);
+        }
         if (FlushImmediate)
+        {
             m_CommandListHandle.FlushResourceBarriers();
+        }
+
+        //D3D12_RESOURCE_STATES trackedResourceState = m_CommandListHandle.GetResourceStateTracked(Resource, Subresource);
+        //if (trackedResourceState != State)
+        //{
+        //    m_CommandListHandle.TransitionBarrier(Resource, State, Subresource);
+        //    if (/*trackedResourceState == D3D12_RESOURCE_STATE_UNORDERED_ACCESS ||*/
+        //        State == D3D12_RESOURCE_STATE_UNORDERED_ACCESS)
+        //    {
+        //        m_CommandListHandle.UAVBarrier(Resource);
+        //    }
+        //}
+        //if (FlushImmediate)
+        //    m_CommandListHandle.FlushResourceBarriers();
     }
 
     void D3D12CommandContext::AliasingBarrier(D3D12Resource* BeforeResource, D3D12Resource* AfterResource, bool FlushImmediate)
