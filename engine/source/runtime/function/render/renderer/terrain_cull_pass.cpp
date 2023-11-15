@@ -34,11 +34,6 @@ namespace MoYu
                     .AddStaticSampler<10, 0>(D3D12_FILTER::D3D12_FILTER_ANISOTROPIC,
                                              D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_WRAP,
                                              8)
-                    .AddStaticSampler<11, 0>(D3D12_FILTER::D3D12_FILTER_COMPARISON_ANISOTROPIC,
-                                             D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
-                                             8,
-                                             D3D12_COMPARISON_FUNC::D3D12_COMPARISON_FUNC_GREATER_EQUAL,
-                                             D3D12_STATIC_BORDER_COLOR_OPAQUE_BLACK)
                     .AllowInputLayout()
                     .AllowResourceDescriptorHeapIndexing()
                     .AllowSampleDescriptorHeapIndexing();
@@ -176,7 +171,6 @@ namespace MoYu
             
         });
 
-
         //=================================================================================
         // 根据相机位置生成Node节点
         //=================================================================================
@@ -190,6 +184,12 @@ namespace MoYu
         
         terrainNodesBuildPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
             RHI::D3D12ComputeContext* pContext = context->GetComputeContext();
+
+            pContext->TransitionBarrier(RegGetBufCounter(terrainPatchNodeHandle), D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_DEST);
+            pContext->FlushResourceBarriers();
+            pContext->ResetCounter(RegGetBufCounter(terrainPatchNodeHandle));
+            pContext->TransitionBarrier(RegGetBufCounter(terrainPatchNodeHandle), D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+            pContext->FlushResourceBarriers();
 
             pContext->TransitionBarrier(RegGetBuf(perframeBufferHandle), D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
             pContext->TransitionBarrier(RegGetBuf(terrainPatchNodeHandle), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
@@ -237,7 +237,7 @@ namespace MoYu
     void IndirectTerrainCullPass::generateMipmapForTerrainHeightmap(RHI::D3D12ComputeContext* context, RHI::D3D12Texture* _SrcTexture, bool genMin)
     {
         int numSubresource = _SrcTexture->GetNumSubresources();
-        int iterCount = numSubresource / 4;
+        int iterCount = glm::ceil(numSubresource / 4.0f);
         for (int i = 0; i < iterCount; i++)
         {
             generateMipmapForTerrainHeightmap(context, _SrcTexture, 4 * i, genMin);

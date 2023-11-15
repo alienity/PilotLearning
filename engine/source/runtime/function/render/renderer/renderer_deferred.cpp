@@ -117,6 +117,19 @@ namespace MoYu
             mIndirectGBufferPass->setCommonInfo(renderPassCommonInfo);
             mIndirectGBufferPass->initialize(drawPassInit);
         }
+        // Terrain GBuffer pass
+        {
+            ////mIndirectTerrainGBufferPass
+            //IndirectTerrainGBufferPass::DrawPassInitInfo drawPassInit;
+            //drawPassInit.albedoTexDesc    = colorTexDesc;
+            //drawPassInit.depthTexDesc     = depthTexDesc;
+            //drawPassInit.m_ShaderCompiler = pCompiler;
+            //drawPassInit.m_ShaderRootPath = g_runtime_global_context.m_config_manager->getShaderFolder();
+
+            //mIndirectTerrainGBufferPass = std::make_shared<IndirectTerrainGBufferPass>();
+            //mIndirectTerrainGBufferPass->setCommonInfo(renderPassCommonInfo);
+            //mIndirectTerrainGBufferPass->initialize(drawPassInit);
+        }
         // LightLoop pass
         {
             IndirectLightLoopPass::DrawPassInitInfo drawPassInit;
@@ -231,6 +244,7 @@ namespace MoYu
         mTerrainCullPass             = nullptr;
         mIndirectShadowPass          = nullptr;
         mIndirectGBufferPass         = nullptr;
+        mIndirectTerrainGBufferPass  = nullptr;
         mIndirectLightLoopPass       = nullptr;
         mIndirectOpaqueDrawPass      = nullptr;
         mAOPass                      = nullptr;
@@ -270,9 +284,7 @@ namespace MoYu
         // Terrain¼ô²ÃPass
         IndirectTerrainCullPass::TerrainCullInput terrainCullInput;
         IndirectTerrainCullPass::TerrainCullOutput terrainCullOutput;
-
         terrainCullInput.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
-
         mTerrainCullPass->update(graph, terrainCullInput, terrainCullOutput);
         //=================================================================================
 
@@ -307,6 +319,24 @@ namespace MoYu
         mIndirectGBufferPass->update(graph, mGBufferIntput, mGBufferOutput);
         //=================================================================================
         
+        //=================================================================================
+        //// indirect terrain gbuffer
+        //IndirectTerrainGBufferPass::DrawInputParameters mTerrainGBufferIntput;
+        //IndirectTerrainGBufferPass::DrawOutputParameters mTerrainGBufferOutput;
+        //mTerrainGBufferIntput.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
+        //mTerrainGBufferOutput.albedoHandle = mGBufferOutput.albedoHandle;
+        //mTerrainGBufferOutput.albedoHandle = mGBufferOutput.albedoHandle;
+        //mTerrainGBufferOutput.worldNormalHandle    = mGBufferOutput.worldNormalHandle;
+        //mTerrainGBufferOutput.worldTangentHandle   = mGBufferOutput.worldTangentHandle;
+        //mTerrainGBufferOutput.matNormalHandle      = mGBufferOutput.matNormalHandle;
+        //mTerrainGBufferOutput.emissiveHandle       = mGBufferOutput.emissiveHandle;
+        //mTerrainGBufferOutput.metallic_Roughness_Reflectance_AO_Handle = mGBufferOutput.metallic_Roughness_Reflectance_AO_Handle;
+        //mTerrainGBufferOutput.clearCoat_ClearCoatRoughness_Anisotropy_Handle = mGBufferOutput.clearCoat_ClearCoatRoughness_Anisotropy_Handle;
+        //mTerrainGBufferOutput.depthHandle = mGBufferOutput.depthHandle;
+        //mIndirectTerrainGBufferPass->update(graph, mTerrainGBufferIntput, mTerrainGBufferOutput);
+        //=================================================================================
+
+
         //=================================================================================
         // depth pyramid
 

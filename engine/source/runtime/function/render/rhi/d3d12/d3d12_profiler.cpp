@@ -162,12 +162,12 @@ namespace RHI
 
         // Resolve the data
         UINT64 AlignedDestinationBufferOffset = (FrameIndex * MaxProfiles * 2 + StartIndex) * sizeof(UINT64);
-        //CommandList->ResolveQueryData(TimestampQueryHeap.Get(),
-        //                              D3D12_QUERY_TYPE_TIMESTAMP,
-        //                              StartIndex,
-        //                              2,
-        //                              TimestampQueryReadback.Get(),
-        //                              AlignedDestinationBufferOffset);
+        CommandList->ResolveQueryData(TimestampQueryHeap.Get(),
+                                      D3D12_QUERY_TYPE_TIMESTAMP,
+                                      StartIndex,
+                                      2,
+                                      TimestampQueryReadback.Get(),
+                                      AlignedDestinationBufferOffset);
 
         ProfileData.QueryStarted  = false;
         ProfileData.QueryFinished = true;

@@ -191,7 +191,7 @@ namespace RHI
     void D3D12CommandContext::ResetCounter(D3D12Buffer* CounterResource, UINT64 CounterOffset, UINT Value /*= 0*/)
     {
         FillBuffer(CounterResource, 0, Value, sizeof(UINT));
-        TransitionBarrier(CounterResource, D3D12_RESOURCE_STATE_GENERIC_READ);
+        //TransitionBarrier(CounterResource, D3D12_RESOURCE_STATE_GENERIC_READ);
     }
 
     GraphicsResource D3D12CommandContext::ReserveUploadMemory(UINT64 SizeInBytes, UINT Alignment)

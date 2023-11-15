@@ -154,6 +154,21 @@ namespace MoYu
 
         _frameUniforms->baseUniform = _baseUniform;
 
+        // terrain Uniform
+        HLSL::TerrainUniform _terrainUniform;
+        _terrainUniform.terrainSize = 1024;
+        _terrainUniform.terrainMaxHeight = 1024;
+        if (render_scene->m_terrain_renderers.size() != 0)
+        {
+            _terrainUniform.local2WorldMatrix =
+                render_scene->m_terrain_renderers[0].internalTerrainRenderer.model_matrix;
+        }
+        else
+        {
+            _terrainUniform.local2WorldMatrix = glm::mat4(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1);
+        }
+        _frameUniforms->terrainUniform = _terrainUniform;
+
         // mesh Uniform
         HLSL::MeshUniform _meshUniform;
         _meshUniform.totalMeshCount = render_scene->m_mesh_renderers.size();
