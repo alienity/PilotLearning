@@ -4,6 +4,7 @@
 #include "runtime/function/render/rhi/rhi_core.h"
 #include "runtime/core/math/moyu_math2.h"
 #include "runtime/function/render/rhi/d3d12/d3d12_graphicsCommon.h"
+#include "runtime/function/render/terrain_render_helper.h"
 
 #include "fmt/core.h"
 #include <cassert>
@@ -57,7 +58,7 @@ namespace MoYu
 
         //-----------------------------------------------------------
 
-        terrainPatchNodeIndexBuffer = RHI::D3D12Buffer::Create(
+        terrainPatchNodeBuffer = RHI::D3D12Buffer::Create(
             m_Device->GetLinkedDevice(),
             RHI::RHIBufferRandomReadWrite | RHI::RHIBufferTargetStructured | RHI::RHIBufferTargetCounter,
             MaxTerrainNodeCount,
@@ -102,6 +103,61 @@ namespace MoYu
                                             D3D12_RESOURCE_STATE_COMMON,
                                             std::nullopt);
         }
+
+        if (terrainUploadCommandSigBuffer == nullptr)
+        {
+            terrainUploadCommandSigBuffer =
+                RHI::D3D12Buffer::Create(m_Device->GetLinkedDevice(),
+                                         RHI::RHIBufferTargetStructured,
+                                         1,
+                                         MoYu::AlignUp(sizeof(HLSL::TerrainRenderableMeshData), 256),
+                                         L"TerrainCommandSigUploadBuffer",
+                                         RHI::RHIBufferModeDynamic,
+                                         D3D12_RESOURCE_STATE_GENERIC_READ);
+        }
+        if (terrainCommandSigBuffer == nullptr)
+        {
+            terrainCommandSigBuffer =
+                RHI::D3D12Buffer::Create(m_Device->GetLinkedDevice(),
+                                         RHI::RHIBufferTargetStructured,
+                                         1,
+                                         MoYu::AlignUp(sizeof(HLSL::TerrainRenderableMeshData), 256),
+                                         L"TerrainCommandSigBuffer",
+                                         RHI::RHIBufferModeImmutable,
+                                         D3D12_RESOURCE_STATE_GENERIC_READ);
+        }
+        {
+            std::vector<CachedTerrainRenderer>& _terrain_renderers = m_render_scene->m_terrain_renderers;
+            
+            if (_terrain_renderers.size() > 0)
+            {
+                InternalTerrainRenderer& _internalTerrainRenderer = _terrain_renderers[0].internalTerrainRenderer;
+
+                MoYu::InternalIndexBuffer& _index_buffer = _internalTerrainRenderer.ref_terrain.terrain_patch_mesh.index_buffer;
+                MoYu::InternalVertexBuffer& _vertex_buffer = _internalTerrainRenderer.ref_terrain.terrain_patch_mesh.vertex_buffer;
+
+                D3D12_DRAW_INDEXED_ARGUMENTS _drawIndexedArguments = {};
+                _drawIndexedArguments.IndexCountPerInstance = _index_buffer.index_count;
+                _drawIndexedArguments.InstanceCount         = 1;
+                _drawIndexedArguments.StartIndexLocation    = 0;
+                _drawIndexedArguments.BaseVertexLocation    = 0;
+                _drawIndexedArguments.StartInstanceLocation = 0;
+
+                HLSL::TerrainRenderableMeshData _terrainRenderableMeshData = {};
+                (&_terrainRenderableMeshData)->worldFromModelMatrix = _internalTerrainRenderer.model_matrix;
+                (&_terrainRenderableMeshData)->modelFromWorldMatrix = glm::inverse(_internalTerrainRenderer.model_matrix);
+                (&_terrainRenderableMeshData)->vertexBuffer         = _vertex_buffer.vertex_buffer->GetVertexBufferView();
+                (&_terrainRenderableMeshData)->indexBuffer          = _index_buffer.index_buffer->GetIndexBufferView();
+                (&_terrainRenderableMeshData)->drawIndexedArguments = _drawIndexedArguments;
+
+                HLSL::TerrainRenderableMeshData* pTerrainRenderableMesh =
+                    terrainUploadCommandSigBuffer->GetCpuVirtualAddress<HLSL::TerrainRenderableMeshData>();
+
+                memcpy(pTerrainRenderableMesh, &_terrainRenderableMeshData, sizeof(HLSL::TerrainRenderableMeshData));
+
+                terrainInstanceCountOffset = ((char*)&_terrainRenderableMeshData.drawIndexedArguments.InstanceCount - (char*)&_terrainRenderableMeshData) / sizeof(char);
+            }
+        }
     }
 
     void IndirectTerrainCullPass::update(RHI::RenderGraph& graph, TerrainCullInput& passInput, TerrainCullOutput& passOutput)
@@ -118,7 +174,10 @@ namespace MoYu
         RHI::RgResourceHandle terrainMinHeightMapHandle = GImport(graph, terrainMinHeightMap.get());
         RHI::RgResourceHandle terrainMaxHeightMapHandle = GImport(graph, terrainMaxHeightMap.get());
 
-        RHI::RgResourceHandle terrainPatchNodeHandle = GImport(graph, terrainPatchNodeIndexBuffer.get());
+        RHI::RgResourceHandle terrainPatchNodeHandle = GImport(graph, terrainPatchNodeBuffer.get());
+
+        RHI::RgResourceHandle mainCommandSigUploadBufferHandle = GImport(graph, terrainUploadCommandSigBuffer.get());
+        RHI::RgResourceHandle mainCommandSigBufferHandle = GImport(graph, terrainCommandSigBuffer.get());
 
         RHI::RgResourceHandle perframeBufferHandle = passInput.perframeBufferHandle;
 
@@ -215,7 +274,46 @@ namespace MoYu
             pContext->Dispatch2D(minHeightmapDesc.Width, minHeightmapDesc.Height, 8, 8);
         });
 
+        //=================================================================================
+        // 主相机剪裁
+        //=================================================================================
 
+        RHI::RenderPass& cameraCullingPass = graph.AddRenderPass("TerrainCommandSignaturePreparePass");
+
+        cameraCullingPass.Read(terrainPatchNodeHandle, true);
+        cameraCullingPass.Read(mainCommandSigUploadBufferHandle, true);
+        cameraCullingPass.Write(mainCommandSigBufferHandle, true);
+
+        cameraCullingPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
+            RHI::D3D12ComputeContext* pContext = context->GetComputeContext();
+
+            pContext->TransitionBarrier(RegGetBuf(mainCommandSigUploadBufferHandle), D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_GENERIC_READ);
+            pContext->TransitionBarrier(RegGetBufCounter(terrainPatchNodeHandle), D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_SOURCE);
+            pContext->TransitionBarrier(RegGetBuf(mainCommandSigBufferHandle), D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_DEST);
+            pContext->FlushResourceBarriers();
+
+            pContext->CopyBufferRegion(RegGetBuf(mainCommandSigBufferHandle), 0, RegGetBuf(mainCommandSigUploadBufferHandle), 0, sizeof(HLSL::TerrainRenderableMeshData));
+            pContext->CopyBufferRegion(RegGetBuf(mainCommandSigBufferHandle), terrainInstanceCountOffset, RegGetBufCounter(terrainPatchNodeHandle), 0, sizeof(int));
+            
+            pContext->TransitionBarrier(RegGetBuf(mainCommandSigBufferHandle), D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT);
+            pContext->FlushResourceBarriers();
+
+        });
+
+
+        //=================================================================================
+        // 光源Shadow剪裁
+        //=================================================================================
+
+
+        //=================================================================================
+        // 输出Pass结果
+        //=================================================================================
+
+        passOutput.maxHeightmapPyramidHandle = terrainMaxHeightMapHandle;
+        passOutput.minHeightmapPyramidHandle = terrainMinHeightMapHandle;
+        passOutput.terrainPatchNodeBufferHandle = terrainPatchNodeHandle;
+        passOutput.terrainDrawHandle = DrawCallCommandBufferHandle {mainCommandSigBufferHandle};
 
     }
 

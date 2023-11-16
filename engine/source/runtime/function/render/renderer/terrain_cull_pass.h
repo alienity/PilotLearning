@@ -51,6 +51,7 @@ namespace MoYu
     public:
         struct DrawCallCommandBufferHandle
         {
+            RHI::RgResourceHandle commandSigBufferHandle = RHI::_DefaultRgResourceHandle;
             RHI::RgResourceHandle indirectIndexBufferHandle = RHI::_DefaultRgResourceHandle;
         };
 
@@ -63,9 +64,12 @@ namespace MoYu
 
         struct TerrainCullOutput : public PassOutput
         {
-            TerrainCullOutput() { outputTerrainIndexHandle.Invalidate(); }
+            TerrainCullOutput() { terrainPatchNodeBufferHandle.Invalidate(); }
 
-            RHI::RgResourceHandle outputTerrainIndexHandle;
+            RHI::RgResourceHandle maxHeightmapPyramidHandle;
+            RHI::RgResourceHandle minHeightmapPyramidHandle;
+
+            RHI::RgResourceHandle terrainPatchNodeBufferHandle;
 
             DrawCallCommandBufferHandle terrainDrawHandle;
 
@@ -107,7 +111,12 @@ namespace MoYu
         std::shared_ptr<RHI::D3D12Texture> terrainMaxHeightMap;
 
         // used for later draw call
-        std::shared_ptr<RHI::D3D12Buffer> terrainPatchNodeIndexBuffer;
+        std::shared_ptr<RHI::D3D12Buffer> terrainPatchNodeBuffer;
+
+        // main camera instance CommandSignature Buffer
+        std::shared_ptr<RHI::D3D12Buffer> terrainUploadCommandSigBuffer;
+        std::shared_ptr<RHI::D3D12Buffer> terrainCommandSigBuffer;
+        int terrainInstanceCountOffset;
 
         // used for shadowmap drawing
         TerrainDirShadowmapCommandBuffer               dirShadowmapCommandBuffers;

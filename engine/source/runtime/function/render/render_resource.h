@@ -115,7 +115,7 @@ namespace MoYu
                                          sizeof(T),
                                          L"MeshVertexBuffer",
                                          RHI::RHIBufferModeImmutable,
-                                         D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COMMON);
+                                         D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
             {
                 startUploadBatch();
                 {
@@ -150,7 +150,7 @@ namespace MoYu
                                          sizeof(T),
                                          L"MeshIndexBuffer",
                                          RHI::RHIBufferModeImmutable,
-                                         D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COMMON);
+                                         D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_INDEX_BUFFER);
             {
                 startUploadBatch();
                 {
