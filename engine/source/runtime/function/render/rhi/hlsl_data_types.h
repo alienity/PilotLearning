@@ -101,24 +101,6 @@ namespace HLSL
         glm::uvec3 _padding_materialIndex2;
     };
 
-    struct TerrainRenderableMeshData
-    {
-        // 64
-        glm::float4x4 worldFromModelMatrix;
-        // 64
-        glm::float4x4 modelFromWorldMatrix;
-
-        // 16
-        D3D12_VERTEX_BUFFER_VIEW vertexBuffer;
-        // 16
-        D3D12_INDEX_BUFFER_VIEW indexBuffer;
-
-        // 20
-        D3D12_DRAW_INDEXED_ARGUMENTS drawIndexedArguments;
-        // 12
-        glm::float3 _padding_drawArguments;
-    };
-
     struct CameraUniform
     {
         glm::float4x4 viewFromWorldMatrix; // clip    view <- world    : view matrix
@@ -277,6 +259,7 @@ namespace HLSL
         glm::uint heightMapIndex;
         glm::uint normalMapIndex;
         glm::float4x4 local2WorldMatrix;
+        glm::float4x4 world2LocalMatrix;
     };
 
     struct FrameUniforms
@@ -301,7 +284,7 @@ namespace HLSL
 
     struct CommandSignatureParams
     {
-        glm::uint                         MeshIndex;
+        glm::uint                    MeshIndex;
         D3D12_VERTEX_BUFFER_VIEW     VertexBuffer;
         D3D12_INDEX_BUFFER_VIEW      IndexBuffer;
         D3D12_DRAW_INDEXED_ARGUMENTS DrawIndexedArguments;
@@ -328,7 +311,6 @@ namespace HLSL
         float       nodeWidth;   // patchnode的宽度
         int         mipLevel;    // 当前node的mip等级
         uint32_t    neighbor;    // 更高一级mip作为邻居的标识
-        float       _padding_0;
     };
 
     // 512 * 512

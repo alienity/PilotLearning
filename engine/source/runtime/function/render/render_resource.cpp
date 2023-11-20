@@ -160,13 +160,14 @@ namespace MoYu
         _terrainUniform.terrainMaxHeight = 1024;
         if (render_scene->m_terrain_renderers.size() != 0)
         {
-            _terrainUniform.local2WorldMatrix =
-                render_scene->m_terrain_renderers[0].internalTerrainRenderer.model_matrix;
+            _terrainUniform.local2WorldMatrix = render_scene->m_terrain_renderers[0].internalTerrainRenderer.model_matrix;
         }
         else
         {
             _terrainUniform.local2WorldMatrix = glm::mat4(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1);
         }
+        _terrainUniform.world2LocalMatrix = glm::inverse(_terrainUniform.local2WorldMatrix);
+
         _frameUniforms->terrainUniform = _terrainUniform;
 
         // mesh Uniform

@@ -91,8 +91,8 @@ void CSMain(CSParams Params) {
     float3 cameraDirection = -mFrameUniforms.cameraUniform.worldFromViewMatrix._m02_m12_m22;
     float3 focusPosition = cameraPosition + cameraDirection;
     
-    float2 pivotCenter = float2(floor(focusPosition.xz / baseNodeWidth) * baseNodeWidth) + float2(0.5, 0.5);
-    // float2 pivotCenter = float2(0.5, 0.5);
+    // float2 pivotCenter = float2(floor(focusPosition.xz / baseNodeWidth) * baseNodeWidth) + float2(0.5, 0.5);
+    float2 pivotCenter = float2(0.5, 0.5);
 
     // calculate the mip level of the pixel
     float2 dis = pixelPos - pivotCenter;

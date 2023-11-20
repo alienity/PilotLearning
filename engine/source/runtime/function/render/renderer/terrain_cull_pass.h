@@ -4,9 +4,16 @@
 #include "runtime/function/global/global_context.h"
 #include "runtime/resource/config_manager/config_manager.h"
 #include "runtime/function/render/rhi/rendergraph/RenderGraphCommon.h"
+#include "runtime/function/render/rhi/hlsl_data_types.h"
 
 namespace MoYu
 {
+    struct TerrainCommandSignatureParams
+    {
+        D3D12_VERTEX_BUFFER_VIEW     VertexBuffer;
+        D3D12_INDEX_BUFFER_VIEW      IndexBuffer;
+        D3D12_DRAW_INDEXED_ARGUMENTS DrawIndexedArguments;
+    };
 
     struct TerrainSpotShadowmapCommandBuffer
     {
@@ -66,6 +73,8 @@ namespace MoYu
         {
             TerrainCullOutput() { terrainPatchNodeBufferHandle.Invalidate(); }
 
+            RHI::RgResourceHandle terrainHeightmapHandle;
+            RHI::RgResourceHandle terrainNormalmapHandle;
             RHI::RgResourceHandle maxHeightmapPyramidHandle;
             RHI::RgResourceHandle minHeightmapPyramidHandle;
 

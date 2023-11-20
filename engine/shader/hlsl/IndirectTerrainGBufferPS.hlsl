@@ -4,14 +4,19 @@
 #include "ShadingParameters.hlsli"
 #include "Quaternion.hlsli"
 
+#define EAST 1
+#define SOUTH 2
+#define WEST 4
+#define NORTH 8
+
 cbuffer RootConstants : register(b0, space0)
 {
-    uint meshIndex;
     uint terrainPatchNodeIndex;
-    uint perRenderableMeshDataIndex;
-    uint materialViewViewIndex;
+    uint meshPerFrameBufferIndex;
+    uint terrainHeightmapIndex;
+    uint terrainNormalmapIndex;
 };
-ConstantBuffer<FrameUniforms> g_FrameUniform : register(b1, space0);
+// ConstantBuffer<FrameUniforms> g_FrameUniform : register(b1, space0);
 // StructuredBuffer<PerRenderableMeshData> g_RenderableMeshDatas : register(t0, space0);
 // StructuredBuffer<PerMaterialViewIndexBuffer> g_MaterialViewIndexBuffers : register(t1, space0);
 
@@ -24,6 +29,9 @@ struct VertexInput
     float3 normal   : NORMAL;
     float4 tangent  : TANGENT;
     float2 texcoord : TEXCOORD;
+    float4 color    : COLOR;
+    
+    uint instanceID : SV_InstanceID;
 };
 
 struct PSOutputGBuffer
@@ -39,29 +47,69 @@ struct PSOutputGBuffer
 
 VaringStruct VSMain(VertexInput input)
 {
-    StructuredBuffer<TerrainPatchNode> g_TerrainPatchNodes = ResourceDescriptorHeap[terrainPatchNodeIndex];
-    
+    StructuredBuffer<TerrainPatchNode> mTerrainPatchNodes = ResourceDescriptorHeap[terrainPatchNodeIndex];
+    ConstantBuffer<FrameUniforms> mFrameUniforms = ResourceDescriptorHeap[meshPerFrameBufferIndex];
 
+    Texture2D<float4> terrainHeightmap = ResourceDescriptorHeap[terrainHeightmapIndex];
+    Texture2D<float4> terrainNormalmap = ResourceDescriptorHeap[terrainNormalmapIndex];
 
-    StructuredBuffer<PerRenderableMeshData> g_RenderableMeshDatas = ResourceDescriptorHeap[perRenderableMeshDataIndex];
-    
+    TerrainPatchNode _terrainPatchNode = mTerrainPatchNodes[input.instanceID];
+
+    float4x4 localToWorldMatrix = mFrameUniforms.terrainUniform.local2WorldMatrix;
+    float4x4 localToWorldMatrixInv = mFrameUniforms.terrainUniform.world2LocalMatrix;
+    float4x4 projectionViewMatrix  = mFrameUniforms.cameraUniform.clipFromWorldMatrix;
+    float terrainMaxHeight = mFrameUniforms.terrainUniform.terrainMaxHeight;
+    float terrainSize = mFrameUniforms.terrainUniform.terrainSize;
+
+    float3 localPosition = input.position;
+
+    if(_terrainPatchNode.neighbor & EAST)
+    {
+        localPosition += -float3(input.color.a, 0, 0);
+    }
+    if(_terrainPatchNode.neighbor & SOUTH)
+    {
+        localPosition += float3(0, 0, input.color.g);
+    }
+    if(_terrainPatchNode.neighbor & WEST)
+    {
+        localPosition += float3(input.color.b, 0, 0);
+    }
+    if(_terrainPatchNode.neighbor & NORTH)
+    {
+        localPosition += -float3(0, 0, input.color.g);
+    }
+
+    localPosition = localPosition * _terrainPatchNode.nodeWidth + 
+        float3(_terrainPatchNode.patchMinPos.x, 0, _terrainPatchNode.patchMinPos.y) + float3(0, 1.5, 0);
+
+    float2 terrainUV = float2(localPosition.x, localPosition.z) / float2(terrainSize + 1, terrainSize + 1);
+    float curHeight = terrainHeightmap.SampleLevel(defaultSampler, terrainUV, 0).b;
+
+    localPosition.y = curHeight * terrainMaxHeight;
+
+    localPosition.xyz *= 0.01f;
+    localPosition.y += 1.5f;
+
     VaringStruct output;
-
-    PerRenderableMeshData renderableMeshData = g_RenderableMeshDatas[meshIndex];
-
-    float4x4 localToWorldMatrix    = renderableMeshData.worldFromModelMatrix;
-    float4x4 localToWorldMatrixInv = renderableMeshData.modelFromWorldMatrix;
-    float4x4 projectionViewMatrix  = g_FrameUniform.cameraUniform.clipFromWorldMatrix;
-
-    output.vertex_worldPosition = mul(localToWorldMatrix, float4(input.position, 1.0f));
+    output.vertex_worldPosition = mul(localToWorldMatrix, float4(localPosition, 1.0f));
     output.vertex_position = mul(projectionViewMatrix, output.vertex_worldPosition);
 
-    output.vertex_uv01 = input.texcoord;
+    // output.vertex_uv01 = input.texcoord;
+    output.vertex_uv01 = terrainUV;
+
+    float3 localNormal = terrainNormalmap.SampleLevel(defaultSampler, terrainUV, 0).rgb;
+    localNormal = normalize(localNormal * 2 - 1);
+
+    float3 localTangent = float3(1, 0, 0);
+    float3 localBitangent = cross(localNormal, localTangent);
+    localTangent = cross(localBitangent, localNormal);
 
     float3x3 normalMat = transpose((float3x3)localToWorldMatrixInv);
 
-    output.vertex_worldNormal      = normalize(mul(normalMat, input.normal));
-    output.vertex_worldTangent.xyz = normalize(mul(normalMat, input.tangent.xyz));
+    // output.vertex_worldNormal      = normalize(mul(normalMat, input.normal));    
+    output.vertex_worldNormal      = normalize(mul(normalMat, localNormal));
+    output.vertex_worldTangent.xyz = normalize(mul(normalMat, localTangent));
     output.vertex_worldTangent.w   = input.tangent.w;
 
     return output;
@@ -69,29 +117,28 @@ VaringStruct VSMain(VertexInput input)
 
 PSOutputGBuffer PSMain(VaringStruct varingStruct)
 {
-    StructuredBuffer<PerRenderableMeshData> g_RenderableMeshDatas = ResourceDescriptorHeap[perRenderableMeshDataIndex];
-    StructuredBuffer<PerMaterialViewIndexBuffer> g_MaterialViewIndexBuffers = ResourceDescriptorHeap[materialViewViewIndex];
+    float2 terrainUV = varingStruct.vertex_uv01.xy;
 
-    PerRenderableMeshData renderableMeshData = g_RenderableMeshDatas[meshIndex];
-    PerMaterialViewIndexBuffer materialViewIndexBuffer = g_MaterialViewIndexBuffers[renderableMeshData.perMaterialViewIndexBufferIndex];
+    Texture2D<float4> terrainNormalmap = ResourceDescriptorHeap[terrainNormalmapIndex];
 
-    MaterialInputs materialInputs;
-    initMaterial(materialInputs);
-    inflateMaterial(varingStruct, materialViewIndexBuffer, defaultSampler, materialInputs);
+    float3 localNormal = terrainNormalmap.SampleLevel(defaultSampler, terrainUV, 0).rgb;
+    localNormal = normalize(localNormal * 2 - 1);
+    float3 localTangent = float3(1, 0, 0);
+    float3 localBitangent = cross(localNormal, localTangent);
+    localTangent = cross(localBitangent, localNormal);
 
-    CommonShadingStruct commonShadingStruct;
-    computeShadingParams(g_FrameUniform, varingStruct, commonShadingStruct);
-    prepareMaterial(materialInputs, commonShadingStruct);
 
     PSOutputGBuffer output;
 
-    output.albedo = materialInputs.baseColor;
-    output.worldNormal = float4(varingStruct.vertex_worldNormal.xyz * 0.5 + 0.5f, 0);
-    output.worldTangent = float4(varingStruct.vertex_worldTangent.xyzw * 0.5 + 0.5f);
-    output.materialNormal = float4(materialInputs.normal.xyz * 0.5f + 0.5f, 0);
-    output.emissive = materialInputs.emissive;
-    output.metallic_Roughness_Reflectance_AO.xyzw = float4(materialInputs.metallic, materialInputs.roughness, materialInputs.reflectance, materialInputs.ambientOcclusion);
-    output.clearCoat_ClearCoatRoughness_Anisotropy = float4(materialInputs.clearCoat, materialInputs.clearCoatRoughness, materialInputs.anisotropy, 0.0f);
+    // output.albedo = float4(1,1,1,1);
+    // output.albedo = float4(varingStruct.vertex_uv01.x, varingStruct.vertex_uv01.y, 0, 1);
+    output.albedo = float4(localNormal.xyz ,1);
+    output.worldNormal = float4(localNormal.xyz, 0);
+    output.worldTangent = float4(localTangent.xyz, 1);
+    output.materialNormal = float4(0, 1, 0, 0);
+    output.emissive = float4(0, 0, 0, 0);
+    output.metallic_Roughness_Reflectance_AO.xyzw = float4(0, 1, 0, 0);
+    output.clearCoat_ClearCoatRoughness_Anisotropy = float4(0, 0, 0, 0.0f);
 
     return output;
 }

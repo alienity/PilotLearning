@@ -8,8 +8,14 @@ namespace MoYu
 
 	void IndirectTerrainGBufferPass::initialize(const DrawPassInitInfo& init_info)
 	{
-        albedoDesc = init_info.albedoTexDesc;
-        depthDesc = init_info.depthTexDesc;
+        albedoDesc                                  = init_info.albedoDesc;
+        depthDesc                                   = init_info.depthDesc;
+        worldNormalDesc                             = init_info.worldNormalDesc;
+        worldTangentDesc                            = init_info.worldTangentDesc;
+        matNormalDesc                               = init_info.matNormalDesc;
+        emissiveDesc                                = init_info.emissiveDesc;
+        metallic_Roughness_Reflectance_AO_Desc      = init_info.metallic_Roughness_Reflectance_AO_Desc;
+        clearCoat_ClearCoatRoughness_AnisotropyDesc = init_info.clearCoat_ClearCoatRoughness_AnisotropyDesc;
 
         ShaderCompiler*       m_ShaderCompiler = init_info.m_ShaderCompiler;
         std::filesystem::path m_ShaderRootPath = init_info.m_ShaderRootPath;
@@ -23,7 +29,6 @@ namespace MoYu
             RHI::RootSignatureDesc rootSigDesc =
                 RHI::RootSignatureDesc()
                     .Add32BitConstants<0, 0>(4)
-                    .AddConstantBufferView<1, 0>()
                     .AddStaticSampler<10, 0>(D3D12_FILTER::D3D12_FILTER_ANISOTROPIC,
                                              D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_WRAP,
                                              8)
@@ -39,7 +44,9 @@ namespace MoYu
             pIndirectTerrainGBufferSignature = std::make_shared<RHI::D3D12RootSignature>(m_Device, rootSigDesc);
         }
         {
-            RHI::CommandSignatureDesc mBuilder(4);
+            RHI::CommandSignatureDesc mBuilder(3);
+            mBuilder.AddVertexBufferView(0);
+            mBuilder.AddIndexBufferView();
             mBuilder.AddDrawIndexed();
 
             pIndirectTerrainGBufferCommandSignature = std::make_shared<RHI::D3D12CommandSignature>(
@@ -47,9 +54,10 @@ namespace MoYu
         }
 
         {
-            RHI::D3D12InputLayout InputLayout = MoYu::D3D12MeshVertexPositionNormalTangentTexture::InputLayout;
+            RHI::D3D12InputLayout InputLayout = MoYu::D3D12TerrainPatch::InputLayout;
 
             RHIRasterizerState rasterizerState = RHIRasterizerState();
+            //rasterizerState.FillMode = RHI_FILL_MODE::Wireframe;
             rasterizerState.CullMode = RHI_CULL_MODE::Back;
 
             RHIDepthStencilState DepthStencilState;
@@ -105,11 +113,27 @@ namespace MoYu
 
         RHI::RgResourceHandle perframeBufferHandle = passInput.perframeBufferHandle;
         RHI::RgResourceHandle terrainPatchNodeHandle = passInput.terrainPatchNodeHandle;
+        RHI::RgResourceHandle terrainHeightmapHandle = passInput.terrainHeightmapHandle;
+        RHI::RgResourceHandle terrainNormalmapHandle = passInput.terrainNormalmapHandle;
+        RHI::RgResourceHandle drawCallCommandSigBufferHandle = passInput.drawCallCommandSigBufferHandle;
         
         RHI::RenderPass& drawpass = graph.AddRenderPass("IndirectTerrainGBufferPass");
 
         drawpass.Read(passInput.perframeBufferHandle, false, RHIResourceState::RHI_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
-        drawpass.Read(passInput.terrainPatchNodeHandle, false, RHIResourceState::RHI_RESOURCE_STATE_INDIRECT_ARGUMENT, RHIResourceState::RHI_RESOURCE_STATE_INDIRECT_ARGUMENT);
+        drawpass.Read(passInput.terrainHeightmapHandle, false, RHIResourceState::RHI_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+        drawpass.Read(passInput.terrainNormalmapHandle, false, RHIResourceState::RHI_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+        drawpass.Read(passInput.terrainPatchNodeHandle, false, RHIResourceState::RHI_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+        drawpass.Read(passInput.drawCallCommandSigBufferHandle, false, RHIResourceState::RHI_RESOURCE_STATE_INDIRECT_ARGUMENT);
+
+        drawpass.Read(passOutput.albedoHandle, true);
+        drawpass.Read(passOutput.depthHandle, true);
+        drawpass.Read(passOutput.worldNormalHandle, true);
+        drawpass.Read(passOutput.worldTangentHandle, true);
+        drawpass.Read(passOutput.matNormalHandle, true);
+        drawpass.Read(passOutput.emissiveHandle, true);
+        drawpass.Read(passOutput.metallic_Roughness_Reflectance_AO_Handle, true);
+        drawpass.Read(passOutput.clearCoat_ClearCoatRoughness_Anisotropy_Handle, true);
+
         drawpass.Write(passOutput.albedoHandle, false, RHIResourceState::RHI_RESOURCE_STATE_RENDER_TARGET);
         drawpass.Write(passOutput.depthHandle, false, RHIResourceState::RHI_RESOURCE_STATE_DEPTH_WRITE);
         drawpass.Write(passOutput.worldNormalHandle, false, RHIResourceState::RHI_RESOURCE_STATE_RENDER_TARGET);
@@ -159,20 +183,21 @@ namespace MoYu
 
             graphicContext->SetRootSignature(pIndirectTerrainGBufferSignature.get());
             graphicContext->SetPipelineState(pIndirectTerrainGBufferPSO.get());
-            graphicContext->SetConstantBuffer(1, registry->GetD3D12Buffer(perframeBufferHandle)->GetGpuVirtualAddress());
-            //graphicContext->SetConstant(0, 1, registry->GetD3D12Buffer(meshBufferHandle)->GetDefaultSRV()->GetIndex());
-            //graphicContext->SetConstant(0, 2, registry->GetD3D12Buffer(materialBufferHandle)->GetDefaultSRV()->GetIndex());
-            //graphicContext->SetBufferSRV(2, registry->GetD3D12Buffer(meshBufferHandle));
-            //graphicContext->SetBufferSRV(3, registry->GetD3D12Buffer(materialBufferHandle));
 
-            auto pIndirectCommandBuffer = registry->GetD3D12Buffer(terrainPatchNodeHandle);
+            graphicContext->SetConstant(0, 0, registry->GetD3D12Buffer(terrainPatchNodeHandle)->GetDefaultSRV()->GetIndex());
+            graphicContext->SetConstant(0, 1, registry->GetD3D12Buffer(perframeBufferHandle)->GetDefaultCBV()->GetIndex());
+            graphicContext->SetConstant(0, 2, registry->GetD3D12Texture(terrainHeightmapHandle)->GetDefaultSRV()->GetIndex());
+            graphicContext->SetConstant(0, 3, registry->GetD3D12Texture(terrainNormalmapHandle)->GetDefaultSRV()->GetIndex());
+
+            auto pDrawCallCommandSigBuffer = registry->GetD3D12Buffer(drawCallCommandSigBufferHandle);
 
             graphicContext->ExecuteIndirect(pIndirectTerrainGBufferCommandSignature.get(),
-                                            pIndirectCommandBuffer,
+                                            pDrawCallCommandSigBuffer,
                                             0,
-                                            HLSL::MeshLimit,
-                                            pIndirectCommandBuffer->GetCounterBuffer().get(),
+                                            1,
+                                            nullptr,
                                             0);
+
         });
     }
 
@@ -187,48 +212,7 @@ namespace MoYu
     bool IndirectTerrainGBufferPass::initializeRenderTarget(RHI::RenderGraph& graph, DrawOutputParameters* drawPassOutput)
     {
         bool needClearRenderTarget = false;
-        if (!drawPassOutput->albedoHandle.IsValid())
-        {
-            needClearRenderTarget        = true;
-            drawPassOutput->albedoHandle = graph.Create<RHI::D3D12Texture>(albedoDesc);
-        }
-        if (!drawPassOutput->depthHandle.IsValid())
-        {
-            needClearRenderTarget       = true;
-            drawPassOutput->depthHandle = graph.Create<RHI::D3D12Texture>(depthDesc);
-        }
-        if (!drawPassOutput->worldNormalHandle.IsValid())
-        {
-            needClearRenderTarget        = true;
-            drawPassOutput->worldNormalHandle = graph.Create<RHI::D3D12Texture>(worldNormalDesc);
-        }
-        if (!drawPassOutput->worldTangentHandle.IsValid())
-        {
-            needClearRenderTarget       = true;
-            drawPassOutput->worldTangentHandle = graph.Create<RHI::D3D12Texture>(worldTangentDesc);
-        }
-        if (!drawPassOutput->matNormalHandle.IsValid())
-        {
-            needClearRenderTarget       = true;
-            drawPassOutput->matNormalHandle = graph.Create<RHI::D3D12Texture>(matNormalDesc);
-        }
-        if (!drawPassOutput->emissiveHandle.IsValid())
-        {
-            needClearRenderTarget       = true;
-            drawPassOutput->emissiveHandle = graph.Create<RHI::D3D12Texture>(emissiveDesc);
-        }
-        if (!drawPassOutput->metallic_Roughness_Reflectance_AO_Handle.IsValid())
-        {
-            needClearRenderTarget       = true;
-            drawPassOutput->metallic_Roughness_Reflectance_AO_Handle =
-                graph.Create<RHI::D3D12Texture>(metallic_Roughness_Reflectance_AO_Desc);
-        }
-        if (!drawPassOutput->clearCoat_ClearCoatRoughness_Anisotropy_Handle.IsValid())
-        {
-            needClearRenderTarget       = true;
-            drawPassOutput->clearCoat_ClearCoatRoughness_Anisotropy_Handle =
-                graph.Create<RHI::D3D12Texture>(clearCoat_ClearCoatRoughness_AnisotropyDesc);
-        }
+        
         return needClearRenderTarget;
     }
 

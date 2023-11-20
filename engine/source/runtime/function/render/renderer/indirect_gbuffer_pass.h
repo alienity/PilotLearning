@@ -59,15 +59,7 @@ namespace MoYu
         void update(RHI::RenderGraph& graph, DrawInputParameters& passInput, DrawOutputParameters& passOutput);
         void destroy() override final;
 
-    protected:
         bool initializeRenderTarget(RHI::RenderGraph& graph, DrawOutputParameters* drawPassOutput);
-
-    private:
-        Shader indirectGBufferVS;
-        Shader indirectGBufferPS;
-        std::shared_ptr<RHI::D3D12RootSignature> pIndirectGBufferSignature;
-        std::shared_ptr<RHI::D3D12PipelineState> pIndirectGBufferPSO;
-        std::shared_ptr<RHI::D3D12CommandSignature> pIndirectGBufferCommandSignature;
 
         RHI::RgTextureDesc albedoDesc;                                  // float4
         RHI::RgTextureDesc worldNormalDesc;                             // float3
@@ -78,6 +70,13 @@ namespace MoYu
         RHI::RgTextureDesc metallic_Roughness_Reflectance_AO_Desc;      // float4
         RHI::RgTextureDesc clearCoat_ClearCoatRoughness_AnisotropyDesc; // float3
         RHI::RgTextureDesc depthDesc;                                   // float
+
+    private:
+        Shader indirectGBufferVS;
+        Shader indirectGBufferPS;
+        std::shared_ptr<RHI::D3D12RootSignature> pIndirectGBufferSignature;
+        std::shared_ptr<RHI::D3D12PipelineState> pIndirectGBufferPSO;
+        std::shared_ptr<RHI::D3D12CommandSignature> pIndirectGBufferCommandSignature;
 	};
 }
 

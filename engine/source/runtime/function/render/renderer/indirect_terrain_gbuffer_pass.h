@@ -13,8 +13,14 @@ namespace MoYu
     public:
         struct DrawPassInitInfo : public RenderPassInitInfo
         {
-            RHI::RgTextureDesc albedoTexDesc;
-            RHI::RgTextureDesc depthTexDesc;
+            RHI::RgTextureDesc albedoDesc;
+            RHI::RgTextureDesc depthDesc;
+            RHI::RgTextureDesc worldNormalDesc;                             // float3
+            RHI::RgTextureDesc worldTangentDesc;                            // float4
+            RHI::RgTextureDesc matNormalDesc;                               // float3
+            RHI::RgTextureDesc emissiveDesc;                                // float4
+            RHI::RgTextureDesc metallic_Roughness_Reflectance_AO_Desc;      // float4
+            RHI::RgTextureDesc clearCoat_ClearCoatRoughness_AnisotropyDesc; // float3
 
             ShaderCompiler*       m_ShaderCompiler;
             std::filesystem::path m_ShaderRootPath;
@@ -24,6 +30,11 @@ namespace MoYu
         {
             RHI::RgResourceHandle perframeBufferHandle;
             RHI::RgResourceHandle terrainPatchNodeHandle;
+            RHI::RgResourceHandle terrainHeightmapHandle;
+            RHI::RgResourceHandle terrainNormalmapHandle;
+
+            RHI::RgResourceHandle drawCallCommandSigBufferHandle;
+            //RHI::RgResourceHandle indirectIndexBufferHandle = RHI::_DefaultRgResourceHandle;
         };
 
         struct DrawOutputParameters : public PassOutput
@@ -68,14 +79,13 @@ namespace MoYu
         std::shared_ptr<RHI::D3D12CommandSignature> pIndirectTerrainGBufferCommandSignature;
 
         RHI::RgTextureDesc albedoDesc;                                  // float4
+        RHI::RgTextureDesc depthDesc;                                   // float
         RHI::RgTextureDesc worldNormalDesc;                             // float3
         RHI::RgTextureDesc worldTangentDesc;                            // float4
         RHI::RgTextureDesc matNormalDesc;                               // float3
-        //RHI::RgTextureDesc clearCoatNormalDesc;                       // float3
         RHI::RgTextureDesc emissiveDesc;                                // float4
         RHI::RgTextureDesc metallic_Roughness_Reflectance_AO_Desc;      // float4
         RHI::RgTextureDesc clearCoat_ClearCoatRoughness_AnisotropyDesc; // float3
-        RHI::RgTextureDesc depthDesc;                                   // float
 	};
 }
 

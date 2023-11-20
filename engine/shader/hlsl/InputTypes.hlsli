@@ -127,24 +127,6 @@ struct PerRenderableMeshData
     uint3 _padding_materialIndex2;
 };
 
-struct TerrainRenderableMeshData
-{
-	// 64
-    float4x4 worldFromModelMatrix;
-    // 64
-    float4x4 modelFromWorldMatrix;
-	
-	// 16
-	D3D12_VERTEX_BUFFER_VIEW vertexBuffer;
-	// 16
-	D3D12_INDEX_BUFFER_VIEW indexBuffer;
-
-	// 20
-	D3D12_DRAW_INDEXED_ARGUMENTS drawIndexedArguments;
-    // 12
-    float3 _padding_drawArguments;
-};
-
 // ------------------------------------------------------------------------------------------------------------------------
 
 // =======================================
@@ -310,6 +292,7 @@ struct TerrainUniform
     uint heightMapIndex;
     uint normalMapIndex;
     float4x4 local2WorldMatrix;
+    float4x4 world2LocalMatrix;
 };
 
 struct FrameUniforms

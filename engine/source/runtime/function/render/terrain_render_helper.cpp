@@ -400,36 +400,37 @@ namespace MoYu
         std::vector<int> indices {};
 
         float patchScale = 2.0f;
+        float biasScale  = patchScale * 0.25f;
 
-        vertices.push_back(CreatePatch(patchScale * glm::vec3(0.0, 0, 0.0), glm::vec2(0, 0), glm::vec4(0, 0, 0, 0)));
-        vertices.push_back(CreatePatch(patchScale * glm::vec3(0.25, 0, 0.0), glm::vec2(0.25, 0), glm::vec4(1, 0, 0, 0)));
-        vertices.push_back(CreatePatch(patchScale * glm::vec3(0.5, 0, 0.0), glm::vec2(0.5, 0), glm::vec4(0, 0, 0, 0)));
-        vertices.push_back(CreatePatch(patchScale * glm::vec3(0.75, 0, 0.0), glm::vec2(0.75, 0), glm::vec4(1, 0, 0, 0)));
-        vertices.push_back(CreatePatch(patchScale * glm::vec3(1.0, 0, 0.0), glm::vec2(1.0, 0), glm::vec4(0, 0, 0, 0)));
+        vertices.push_back(CreatePatch(patchScale * glm::vec3(0.0, 0, 0.0), glm::vec2(0, 0), biasScale * glm::vec4(0, 0, 0, 0)));
+        vertices.push_back(CreatePatch(patchScale * glm::vec3(0.25, 0, 0.0), glm::vec2(0.25, 0), biasScale * glm::vec4(1, 0, 0, 0)));
+        vertices.push_back(CreatePatch(patchScale * glm::vec3(0.5, 0, 0.0), glm::vec2(0.5, 0), biasScale * glm::vec4(0, 0, 0, 0)));
+        vertices.push_back(CreatePatch(patchScale * glm::vec3(0.75, 0, 0.0), glm::vec2(0.75, 0), biasScale * glm::vec4(1, 0, 0, 0)));
+        vertices.push_back(CreatePatch(patchScale * glm::vec3(1.0, 0, 0.0), glm::vec2(1.0, 0), biasScale * glm::vec4(0, 0, 0, 0)));
 
-        vertices.push_back(CreatePatch(patchScale * glm::vec3(0.0, 0, 0.25),  glm::vec2(0, 0.25), glm::vec4(0, 0, 1, 0)));
-        vertices.push_back(CreatePatch(patchScale * glm::vec3(0.25, 0, 0.25), glm::vec2(0.25, 0.25), glm::vec4(0, 0, 0, 0)));
-        vertices.push_back(CreatePatch(patchScale * glm::vec3(0.5, 0, 0.25), glm::vec2(0.5, 0.25), glm::vec4(0, 0, 0, 0)));
-        vertices.push_back(CreatePatch(patchScale * glm::vec3(0.75, 0, 0.25), glm::vec2(0.75, 0.25), glm::vec4(0, 0, 0, 0)));
-        vertices.push_back(CreatePatch(patchScale * glm::vec3(1.0, 0, 0.25), glm::vec2(1.0, 0.25), glm::vec4(0, 0, 0, 1)));
+        vertices.push_back(CreatePatch(patchScale * glm::vec3(0.0, 0, 0.25),  glm::vec2(0, 0.25), biasScale * glm::vec4(0, 0, 1, 0)));
+        vertices.push_back(CreatePatch(patchScale * glm::vec3(0.25, 0, 0.25), glm::vec2(0.25, 0.25), biasScale * glm::vec4(0, 0, 0, 0)));
+        vertices.push_back(CreatePatch(patchScale * glm::vec3(0.5, 0, 0.25), glm::vec2(0.5, 0.25), biasScale * glm::vec4(0, 0, 0, 0)));
+        vertices.push_back(CreatePatch(patchScale * glm::vec3(0.75, 0, 0.25), glm::vec2(0.75, 0.25), biasScale * glm::vec4(0, 0, 0, 0)));
+        vertices.push_back(CreatePatch(patchScale * glm::vec3(1.0, 0, 0.25), glm::vec2(1.0, 0.25), biasScale * glm::vec4(0, 0, 0, 1)));
 
-        vertices.push_back(CreatePatch(patchScale * glm::vec3(0.0, 0, 0.5), glm::vec2(0, 0.5), glm::vec4(0, 0, 0, 0)));
-        vertices.push_back(CreatePatch(patchScale * glm::vec3(0.25, 0, 0.5), glm::vec2(0.25, 0.5), glm::vec4(0, 0, 0, 0)));
-        vertices.push_back(CreatePatch(patchScale * glm::vec3(0.5, 0, 0.5), glm::vec2(0.5, 0.5), glm::vec4(0, 0, 0, 0)));
-        vertices.push_back(CreatePatch(patchScale * glm::vec3(0.75, 0, 0.5), glm::vec2(0.75, 0.5), glm::vec4(0, 0, 0, 0)));
-        vertices.push_back(CreatePatch(patchScale * glm::vec3(1.0, 0, 0.5), glm::vec2(1.0, 0.5), glm::vec4(0, 0, 0, 0)));
+        vertices.push_back(CreatePatch(patchScale * glm::vec3(0.0, 0, 0.5), glm::vec2(0, 0.5), biasScale * glm::vec4(0, 0, 0, 0)));
+        vertices.push_back(CreatePatch(patchScale * glm::vec3(0.25, 0, 0.5), glm::vec2(0.25, 0.5), biasScale * glm::vec4(0, 0, 0, 0)));
+        vertices.push_back(CreatePatch(patchScale * glm::vec3(0.5, 0, 0.5), glm::vec2(0.5, 0.5), biasScale * glm::vec4(0, 0, 0, 0)));
+        vertices.push_back(CreatePatch(patchScale * glm::vec3(0.75, 0, 0.5), glm::vec2(0.75, 0.5), biasScale * glm::vec4(0, 0, 0, 0)));
+        vertices.push_back(CreatePatch(patchScale * glm::vec3(1.0, 0, 0.5), glm::vec2(1.0, 0.5), biasScale * glm::vec4(0, 0, 0, 0)));
 
-        vertices.push_back(CreatePatch(patchScale * glm::vec3(0.0, 0, 0.75),  glm::vec2(0, 0.75), glm::vec4(0, 0, 1, 0)));
-        vertices.push_back(CreatePatch(patchScale * glm::vec3(0.25, 0, 0.75),  glm::vec2(0.25, 0.75), glm::vec4(0, 0, 0, 0)));
-        vertices.push_back(CreatePatch(patchScale * glm::vec3(0.5, 0, 0.75),  glm::vec2(0.5, 0.75), glm::vec4(0, 0, 0, 0)));
-        vertices.push_back(CreatePatch(patchScale * glm::vec3(0.75, 0, 0.75),  glm::vec2(0.75, 0.75), glm::vec4(0, 0, 0, 0)));
-        vertices.push_back(CreatePatch(patchScale * glm::vec3(1.0, 0, 0.75),  glm::vec2(1.0, 0.75), glm::vec4(0, 0, 0, 1)));
+        vertices.push_back(CreatePatch(patchScale * glm::vec3(0.0, 0, 0.75),  glm::vec2(0, 0.75), biasScale * glm::vec4(0, 0, 1, 0)));
+        vertices.push_back(CreatePatch(patchScale * glm::vec3(0.25, 0, 0.75),  glm::vec2(0.25, 0.75), biasScale * glm::vec4(0, 0, 0, 0)));
+        vertices.push_back(CreatePatch(patchScale * glm::vec3(0.5, 0, 0.75),  glm::vec2(0.5, 0.75), biasScale * glm::vec4(0, 0, 0, 0)));
+        vertices.push_back(CreatePatch(patchScale * glm::vec3(0.75, 0, 0.75),  glm::vec2(0.75, 0.75), biasScale * glm::vec4(0, 0, 0, 0)));
+        vertices.push_back(CreatePatch(patchScale * glm::vec3(1.0, 0, 0.75),  glm::vec2(1.0, 0.75), biasScale * glm::vec4(0, 0, 0, 1)));
 
-        vertices.push_back(CreatePatch(patchScale * glm::vec3(0.0, 0, 1.0),   glm::vec2(0, 1.0), glm::vec4(0, 0, 0, 0)));
-        vertices.push_back(CreatePatch(patchScale * glm::vec3(0.25, 0, 1.0),   glm::vec2(0.25, 1.0), glm::vec4(0, 1, 0, 0)));
-        vertices.push_back(CreatePatch(patchScale * glm::vec3(0.5, 0, 1.0),   glm::vec2(0.5, 1.0), glm::vec4(0, 0, 0, 0)));
-        vertices.push_back(CreatePatch(patchScale * glm::vec3(0.75, 0, 1.0),   glm::vec2(0.75, 1.0), glm::vec4(0, 1, 0, 0)));
-        vertices.push_back(CreatePatch(patchScale * glm::vec3(1.0, 0, 1.0),   glm::vec2(1.0, 1.0), glm::vec4(0, 0, 0, 0)));
+        vertices.push_back(CreatePatch(patchScale * glm::vec3(0.0, 0, 1.0),   glm::vec2(0, 1.0), biasScale * glm::vec4(0, 0, 0, 0)));
+        vertices.push_back(CreatePatch(patchScale * glm::vec3(0.25, 0, 1.0),   glm::vec2(0.25, 1.0), biasScale * glm::vec4(0, 1, 0, 0)));
+        vertices.push_back(CreatePatch(patchScale * glm::vec3(0.5, 0, 1.0),   glm::vec2(0.5, 1.0), biasScale * glm::vec4(0, 0, 0, 0)));
+        vertices.push_back(CreatePatch(patchScale * glm::vec3(0.75, 0, 1.0),   glm::vec2(0.75, 1.0), biasScale * glm::vec4(0, 1, 0, 0)));
+        vertices.push_back(CreatePatch(patchScale * glm::vec3(1.0, 0, 1.0),   glm::vec2(1.0, 1.0), biasScale * glm::vec4(0, 0, 0, 0)));
 
         #define AddTriIndices(a, b, c) indices.push_back(a); indices.push_back(b); indices.push_back(c);
 
@@ -437,7 +438,7 @@ namespace MoYu
 
         #define AddQuadIndices4(d) AddQuadIndices(d) AddQuadIndices(d + 1) AddQuadIndices(d + 2) AddQuadIndices(d + 3)
 
-        #define AddQuadIndices16() AddQuadIndices4(0) AddQuadIndices4(5) AddQuadIndices4(10) AddQuadIndices4(15) AddQuadIndices4(20)
+        #define AddQuadIndices16() AddQuadIndices4(0) AddQuadIndices4(5) AddQuadIndices4(10) AddQuadIndices4(15)
 
         AddQuadIndices16()
 

@@ -110,18 +110,19 @@ namespace MoYu
                 RHI::D3D12Buffer::Create(m_Device->GetLinkedDevice(),
                                          RHI::RHIBufferTargetStructured,
                                          1,
-                                         MoYu::AlignUp(sizeof(HLSL::TerrainRenderableMeshData), 256),
+                                         MoYu::AlignUp(sizeof(MoYu::TerrainCommandSignatureParams), 256),
                                          L"TerrainCommandSigUploadBuffer",
                                          RHI::RHIBufferModeDynamic,
                                          D3D12_RESOURCE_STATE_GENERIC_READ);
         }
+
         if (terrainCommandSigBuffer == nullptr)
         {
             terrainCommandSigBuffer =
                 RHI::D3D12Buffer::Create(m_Device->GetLinkedDevice(),
                                          RHI::RHIBufferTargetStructured,
                                          1,
-                                         MoYu::AlignUp(sizeof(HLSL::TerrainRenderableMeshData), 256),
+                                         MoYu::AlignUp(sizeof(MoYu::TerrainCommandSignatureParams), 256),
                                          L"TerrainCommandSigBuffer",
                                          RHI::RHIBufferModeImmutable,
                                          D3D12_RESOURCE_STATE_GENERIC_READ);
@@ -143,19 +144,17 @@ namespace MoYu
                 _drawIndexedArguments.BaseVertexLocation    = 0;
                 _drawIndexedArguments.StartInstanceLocation = 0;
 
-                HLSL::TerrainRenderableMeshData _terrainRenderableMeshData = {};
-                (&_terrainRenderableMeshData)->worldFromModelMatrix = _internalTerrainRenderer.model_matrix;
-                (&_terrainRenderableMeshData)->modelFromWorldMatrix = glm::inverse(_internalTerrainRenderer.model_matrix);
-                (&_terrainRenderableMeshData)->vertexBuffer         = _vertex_buffer.vertex_buffer->GetVertexBufferView();
-                (&_terrainRenderableMeshData)->indexBuffer          = _index_buffer.index_buffer->GetIndexBufferView();
-                (&_terrainRenderableMeshData)->drawIndexedArguments = _drawIndexedArguments;
+                MoYu::TerrainCommandSignatureParams _terrainCommandSigParams = {};
+                (&_terrainCommandSigParams)->VertexBuffer         = _vertex_buffer.vertex_buffer->GetVertexBufferView();
+                (&_terrainCommandSigParams)->IndexBuffer          = _index_buffer.index_buffer->GetIndexBufferView();
+                (&_terrainCommandSigParams)->DrawIndexedArguments = _drawIndexedArguments;
 
-                HLSL::TerrainRenderableMeshData* pTerrainRenderableMesh =
-                    terrainUploadCommandSigBuffer->GetCpuVirtualAddress<HLSL::TerrainRenderableMeshData>();
+                MoYu::TerrainCommandSignatureParams* pTerrainCommandSigParams =
+                    terrainUploadCommandSigBuffer->GetCpuVirtualAddress<MoYu::TerrainCommandSignatureParams>();
 
-                memcpy(pTerrainRenderableMesh, &_terrainRenderableMeshData, sizeof(HLSL::TerrainRenderableMeshData));
+                memcpy(pTerrainCommandSigParams, &_terrainCommandSigParams, sizeof(MoYu::TerrainCommandSignatureParams));
 
-                terrainInstanceCountOffset = ((char*)&_terrainRenderableMeshData.drawIndexedArguments.InstanceCount - (char*)&_terrainRenderableMeshData) / sizeof(char);
+                terrainInstanceCountOffset = ((char*)&_terrainCommandSigParams.DrawIndexedArguments.InstanceCount - (char*)&_terrainCommandSigParams) / sizeof(char);
             }
         }
     }
@@ -292,13 +291,14 @@ namespace MoYu
             pContext->TransitionBarrier(RegGetBuf(mainCommandSigBufferHandle), D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_DEST);
             pContext->FlushResourceBarriers();
 
-            pContext->CopyBufferRegion(RegGetBuf(mainCommandSigBufferHandle), 0, RegGetBuf(mainCommandSigUploadBufferHandle), 0, sizeof(HLSL::TerrainRenderableMeshData));
+            pContext->CopyBufferRegion(RegGetBuf(mainCommandSigBufferHandle), 0, RegGetBuf(mainCommandSigUploadBufferHandle), 0, sizeof(MoYu::TerrainCommandSignatureParams));
             pContext->CopyBufferRegion(RegGetBuf(mainCommandSigBufferHandle), terrainInstanceCountOffset, RegGetBufCounter(terrainPatchNodeHandle), 0, sizeof(int));
             
             pContext->TransitionBarrier(RegGetBuf(mainCommandSigBufferHandle), D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT);
             pContext->FlushResourceBarriers();
 
         });
+
 
 
         //=================================================================================
@@ -310,19 +310,17 @@ namespace MoYu
         // Êä³öPass½á¹û
         //=================================================================================
 
-        passOutput.maxHeightmapPyramidHandle = terrainMaxHeightMapHandle;
-        passOutput.minHeightmapPyramidHandle = terrainMinHeightMapHandle;
+        passOutput.terrainHeightmapHandle       = terrainHeightmapHandle;
+        passOutput.terrainNormalmapHandle       = terrainNormalmapHandle;
+        passOutput.maxHeightmapPyramidHandle    = terrainMaxHeightMapHandle;
+        passOutput.minHeightmapPyramidHandle    = terrainMinHeightMapHandle;
         passOutput.terrainPatchNodeBufferHandle = terrainPatchNodeHandle;
-        passOutput.terrainDrawHandle = DrawCallCommandBufferHandle {mainCommandSigBufferHandle};
+        passOutput.terrainDrawHandle            = DrawCallCommandBufferHandle {mainCommandSigBufferHandle};
 
     }
 
     void IndirectTerrainCullPass::destroy()
     {
-
-
-
-
 
 
     }
