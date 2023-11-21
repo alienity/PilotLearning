@@ -81,14 +81,14 @@ VaringStruct VSMain(VertexInput input)
     }
 
     localPosition = localPosition * _terrainPatchNode.nodeWidth + 
-        float3(_terrainPatchNode.patchMinPos.x, 0, _terrainPatchNode.patchMinPos.y) + float3(0, 1.5, 0);
+        float3(_terrainPatchNode.patchMinPos.x, 0, _terrainPatchNode.patchMinPos.y);
 
     float2 terrainUV = float2(localPosition.x, localPosition.z) / float2(terrainSize + 1, terrainSize + 1);
     float curHeight = terrainHeightmap.SampleLevel(defaultSampler, terrainUV, 0).b;
 
     localPosition.y = curHeight * terrainMaxHeight;
 
-    localPosition.xyz *= 0.01f;
+    // localPosition.xyz *= 0.01f;
     localPosition.y += 1.5f;
 
     VaringStruct output;

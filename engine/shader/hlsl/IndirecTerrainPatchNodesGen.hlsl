@@ -20,9 +20,30 @@ SamplerState defaultSampler : register(s10);
 #define WEST 4
 #define NORTH 8
 
+#define MAXMIPLEVEL 3
+
+#define BASENODEWIDTH 2
+
+#define MIP0WIDTH 16
+#define MIP1WIDTH 32
+#define MIP2WIDTH 64
+#define MIP3WIDTH 128
+
+/*
+[0, 8] 区间是mip0
+(8, 16] 区间是mip1
+(16, 32] 区间是mip2
+(32, 64] 区间是mip3
+// (64, 128] 区间是mip4
+// (128, 256] 区间是mip5
+// (256, 512] 区间是mip6
+// (512, 1024] 区间是mip7
+*/
 int mipCalc(float x)
 {
-    return floor(max(0,-2+log2(x)));
+    int mipLevel = floor(max(0,-2+log2(x)));
+    mipLevel = min(mipLevel, MAXMIPLEVEL);
+    return mipLevel;
 }
 
 void GetMipLevel(float2 pixelPos, float2 originPos, out int outMipLevel)
@@ -56,7 +77,7 @@ void GetPivotPosAndMipLevel(float2 pixelPos, float2 originPos, out int2 outNodeP
 
 void GetMaxMinHeight(Texture2D<float4> minHeightmap, Texture2D<float4> maxHeightmap, int2 pivotPos, int2 heightSize, int mipLevel, float terrainMaxHeight, out float minHeight, out float maxHeight)
 {
-    float2 pivotUV = (pivotPos + float2(0.5, 0.5)) / float2(heightSize.x, heightSize.y);
+    float2 pivotUV = (pivotPos) / float2(heightSize.x, heightSize.y);
     // fetch height from pyramid heightmap
     minHeight = minHeightmap.SampleLevel(defaultSampler, pivotUV, mipLevel).b;
     maxHeight = maxHeightmap.SampleLevel(defaultSampler, pivotUV, mipLevel).b;
@@ -68,7 +89,7 @@ void GetMaxMinHeight(Texture2D<float4> minHeightmap, Texture2D<float4> maxHeight
 [numthreads(8, 8, 1)]
 void CSMain(CSParams Params) {
 
-    const int baseNodeWidth = 2;
+    // const int baseNodeWidth = 2;
 
     ConstantBuffer<FrameUniforms> mFrameUniforms = ResourceDescriptorHeap[g_RootIndexBuffer.meshPerFrameBufferIndex];
     AppendStructuredBuffer<TerrainPatchNode> terrainPatchNodeBuffer = ResourceDescriptorHeap[g_RootIndexBuffer.terrainPatchNodeIndex];
@@ -83,7 +104,7 @@ void CSMain(CSParams Params) {
         return;
 
     uint2 index = Params.DispatchThreadID.xy;
-    float2 pixelPos = index + float2(0.5, 0.5);
+    float2 pixelPos = index + float2(0, 0);
 
     float terrainMaxHeight = mFrameUniforms.terrainUniform.terrainMaxHeight;
 
@@ -91,30 +112,33 @@ void CSMain(CSParams Params) {
     float3 cameraDirection = -mFrameUniforms.cameraUniform.worldFromViewMatrix._m02_m12_m22;
     float3 focusPosition = cameraPosition + cameraDirection;
     
-    // float2 pivotCenter = float2(floor(focusPosition.xz / baseNodeWidth) * baseNodeWidth) + float2(0.5, 0.5);
-    float2 pivotCenter = float2(0.5, 0.5);
+    // float2 pivotCenter = float2(floor(focusPosition.xz / BASENODEWIDTH) * BASENODEWIDTH) + float2(0, 0);
+    // float2 pivotCenter = float2(floor(focusPosition.xz / MIP3WIDTH) * MIP3WIDTH);
+    float2 pivotCenter = float2(floor(focusPosition.xz / BASENODEWIDTH) * BASENODEWIDTH);
 
     // calculate the mip level of the pixel
-    float2 dis = pixelPos - pivotCenter;
-    int mipLevel = mipCalc(max(abs(dis.x), abs(dis.y)));
+    float2 pixelDis = pixelPos - pivotCenter;
+    int mipLevel = mipCalc(max(abs(pixelDis.x), abs(pixelDis.y)));
 
     // fetch from the mipoffset and offset eh current mipLevel
 
 
     // calculate the down-left index of the node
     int mipNodeWidth = pow(2, mipLevel+1);
-    float2 nodePivot = floor(dis / mipNodeWidth) * mipNodeWidth;
+    float2 alignPivotDis = floor(pixelDis / mipNodeWidth) * mipNodeWidth;
 
-    // check whether the nodePivot is the same as the basic index
-    float2 pivotDiff = nodePivot - dis;
+    // check whether the alignPivotDis is the same as the basic index
+    float2 pivotDiff = alignPivotDis - pixelDis;
     if(pivotDiff.x == 0 && pivotDiff.y == 0)
     {
+        float2 curIdxPivot = pivotCenter + alignPivotDis;
+
         uint neighbor = 0;
 
-        float2 northPos = nodePivot + float2(0, mipNodeWidth) + float2(0.5, 0.5);
-        float2 eastPos = nodePivot + float2(mipNodeWidth, 0) + float2(0.5, 0.5);
-        float2 southPos = nodePivot + float2(0, -2) + float2(0.5, 0.5);
-        float2 westPos = nodePivot + float2(-2, 0) + float2(0.5, 0.5);
+        float2 northPos = curIdxPivot + float2(0, mipNodeWidth);
+        float2 eastPos = curIdxPivot + float2(mipNodeWidth, 0);
+        float2 southPos = curIdxPivot + float2(0, -2);
+        float2 westPos = curIdxPivot + float2(-2, 0);
 
         int neighborMipLevel;
         GetMipLevel(eastPos, pivotCenter, neighborMipLevel);
@@ -139,10 +163,10 @@ void CSMain(CSParams Params) {
         }
 
         float minHeight, maxHeight;
-        GetMaxMinHeight(terrainMinHeightmap, terrainMaxHeightmap, nodePivot, int2(terrainWidth, terrainHeight), mipLevel, terrainMaxHeight, minHeight, maxHeight);
+        GetMaxMinHeight(terrainMinHeightmap, terrainMaxHeightmap, curIdxPivot, int2(terrainWidth, terrainHeight), mipLevel, terrainMaxHeight, minHeight, maxHeight);
 
         TerrainPatchNode _patchNode;
-        _patchNode.patchMinPos = nodePivot;
+        _patchNode.patchMinPos = curIdxPivot;
         _patchNode.maxHeight = maxHeight;
         _patchNode.minHeight = minHeight;
         _patchNode.nodeWidth = mipNodeWidth;
