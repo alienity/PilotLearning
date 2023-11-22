@@ -49,6 +49,9 @@ void CSMain(CSParams Params) {
     float3 boxMin = float3(patchNode.patchMinPos.x, patchNode.minHeight, patchNode.patchMinPos.y);
     float3 boxMax = float3(patchNode.patchMinPos.x + patchNode.nodeWidth, patchNode.maxHeight, patchNode.patchMinPos.y + patchNode.nodeWidth);
 
+    boxMin.y += 1.5f;
+    boxMax.y += 1.5f;
+
     BoundingBox aabb;
     aabb.Center = (boxMax + boxMin) * 0.5f;
     aabb.Extents = (boxMax - boxMin) * 0.5f;

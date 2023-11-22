@@ -116,9 +116,8 @@ void CSMain(CSParams Params) {
 
     focusPosition = mul(terrainWorld2LocalMat, float4(focusPosition, 1.0f)).xyz;
     
-    // float2 pivotCenter = float2(floor(focusPosition.xz / BASENODEWIDTH) * BASENODEWIDTH) + float2(0, 0);
-    float2 pivotCenter = float2(floor(focusPosition.xz / MIP3WIDTH) * MIP3WIDTH);
-    // float2 pivotCenter = float2(floor(focusPosition.xz / BASENODEWIDTH) * BASENODEWIDTH);
+    // float2 pivotCenter = float2(floor(focusPosition.xz / MIP3WIDTH) * MIP3WIDTH);
+    float2 pivotCenter = float2(floor(focusPosition.xz / BASENODEWIDTH) * BASENODEWIDTH);
 
     // calculate the mip level of the pixel
     float2 pixelDis = pixelPos - pivotCenter;

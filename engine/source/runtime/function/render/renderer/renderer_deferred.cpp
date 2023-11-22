@@ -335,6 +335,7 @@ namespace MoYu
         mTerrainGBufferIntput.terrainHeightmapHandle = terrainCullOutput.terrainHeightmapHandle;
         mTerrainGBufferIntput.terrainNormalmapHandle = terrainCullOutput.terrainNormalmapHandle;
         mTerrainGBufferIntput.drawCallCommandSigBufferHandle = terrainCullOutput.terrainDrawHandle.commandSigBufferHandle;
+        mTerrainGBufferIntput.drawIndexBufferHandle = terrainCullOutput.terrainDrawHandle.indirectIndexBufferHandle;
         mTerrainGBufferOutput.albedoHandle         = mGBufferOutput.albedoHandle;
         mTerrainGBufferOutput.worldNormalHandle    = mGBufferOutput.worldNormalHandle;
         mTerrainGBufferOutput.worldTangentHandle   = mGBufferOutput.worldTangentHandle;

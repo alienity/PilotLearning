@@ -34,7 +34,7 @@ namespace MoYu
             RHI::RgResourceHandle terrainNormalmapHandle;
 
             RHI::RgResourceHandle drawCallCommandSigBufferHandle;
-            //RHI::RgResourceHandle indirectIndexBufferHandle = RHI::_DefaultRgResourceHandle;
+            RHI::RgResourceHandle drawIndexBufferHandle;
         };
 
         struct DrawOutputParameters : public PassOutput

@@ -17,6 +17,7 @@ namespace MoYu
 #define RegGetBufDefCBVIdx(h) registry->GetD3D12Buffer(h)->GetDefaultCBV()->GetIndex()
 #define RegGetBufDefSRVIdx(h) registry->GetD3D12Buffer(h)->GetDefaultSRV()->GetIndex()
 #define RegGetBufDefUAVIdx(h) registry->GetD3D12Buffer(h)->GetDefaultUAV()->GetIndex()
+#define RegGetBufCounterSRVIdx(h) registry->GetD3D12Buffer(h)->GetCounterBuffer()->GetDefaultSRV()->GetIndex()
 
     void IndirectTerrainCullPass::initialize(const TerrainCullInitInfo& init_info)
     {
@@ -324,6 +325,10 @@ namespace MoYu
         terrainMainCullingPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
             RHI::D3D12ComputeContext* pContext = context->GetComputeContext();
 
+            pContext->TransitionBarrier(RegGetBufCounter(patchNodeVisiableToCameraIndexHandle), D3D12_RESOURCE_STATE_COPY_DEST);
+            pContext->FlushResourceBarriers();
+            pContext->ResetCounter(RegGetBufCounter(patchNodeVisiableToCameraIndexHandle));
+
             pContext->TransitionBarrier(RegGetBuf(perframeBufferHandle), D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
             pContext->TransitionBarrier(RegGetBuf(terrainPatchNodeHandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
             pContext->TransitionBarrier(RegGetBufCounter(terrainPatchNodeHandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
@@ -345,7 +350,7 @@ namespace MoYu
             RootIndexBuffer rootIndexBuffer =
                 RootIndexBuffer {RegGetBufDefCBVIdx(perframeBufferHandle),
                                  RegGetBufDefSRVIdx(terrainPatchNodeHandle),
-                                 registry->GetD3D12Buffer(terrainPatchNodeHandle)->GetCounterBuffer()->GetDefaultSRV()->GetIndex(),
+                                 RegGetBufCounterSRVIdx(terrainPatchNodeHandle),
                                  RegGetBufDefUAVIdx(patchNodeVisiableToCameraIndexHandle)};
 
             pContext->SetConstantArray(0, sizeof(RootIndexBuffer) / sizeof(UINT), &rootIndexBuffer);
@@ -358,20 +363,20 @@ namespace MoYu
         //=================================================================================
         RHI::RenderPass& cameraCullingPass = graph.AddRenderPass("TerrainCommandSignaturePreparePass");
 
-        cameraCullingPass.Read(terrainPatchNodeHandle, true);
         cameraCullingPass.Read(mainCommandSigUploadBufferHandle, true);
+        cameraCullingPass.Read(patchNodeVisiableToCameraIndexHandle, true);
         cameraCullingPass.Write(mainCommandSigBufferHandle, true);
 
         cameraCullingPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
             RHI::D3D12ComputeContext* pContext = context->GetComputeContext();
 
             pContext->TransitionBarrier(RegGetBuf(mainCommandSigUploadBufferHandle), D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_GENERIC_READ);
-            pContext->TransitionBarrier(RegGetBufCounter(terrainPatchNodeHandle), D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_SOURCE);
+            pContext->TransitionBarrier(RegGetBufCounter(patchNodeVisiableToCameraIndexHandle), D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_SOURCE);
             pContext->TransitionBarrier(RegGetBuf(mainCommandSigBufferHandle), D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_DEST);
             pContext->FlushResourceBarriers();
 
             pContext->CopyBufferRegion(RegGetBuf(mainCommandSigBufferHandle), 0, RegGetBuf(mainCommandSigUploadBufferHandle), 0, sizeof(MoYu::TerrainCommandSignatureParams));
-            pContext->CopyBufferRegion(RegGetBuf(mainCommandSigBufferHandle), terrainInstanceCountOffset, RegGetBufCounter(terrainPatchNodeHandle), 0, sizeof(int));
+            pContext->CopyBufferRegion(RegGetBuf(mainCommandSigBufferHandle), terrainInstanceCountOffset, RegGetBufCounter(patchNodeVisiableToCameraIndexHandle), 0, sizeof(int));
             
             pContext->TransitionBarrier(RegGetBuf(mainCommandSigBufferHandle), D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT);
             pContext->FlushResourceBarriers();
@@ -383,6 +388,7 @@ namespace MoYu
         //=================================================================================
 
 
+
         //=================================================================================
         // Êä³öPass½á¹û
         //=================================================================================
@@ -392,13 +398,13 @@ namespace MoYu
         passOutput.maxHeightmapPyramidHandle    = terrainMaxHeightMapHandle;
         passOutput.minHeightmapPyramidHandle    = terrainMinHeightMapHandle;
         passOutput.terrainPatchNodeBufferHandle = terrainPatchNodeHandle;
-        passOutput.terrainDrawHandle            = DrawCallCommandBufferHandle {mainCommandSigBufferHandle};
+        passOutput.terrainDrawHandle =
+            DrawCallCommandBufferHandle {mainCommandSigBufferHandle, patchNodeVisiableToCameraIndexHandle};
 
     }
 
     void IndirectTerrainCullPass::destroy()
     {
-
 
     }
 

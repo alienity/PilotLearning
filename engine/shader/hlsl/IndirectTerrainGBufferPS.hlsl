@@ -15,6 +15,7 @@ cbuffer RootConstants : register(b0, space0)
     uint meshPerFrameBufferIndex;
     uint terrainHeightmapIndex;
     uint terrainNormalmapIndex;
+    uint terrainDrawIdxBufferIndex;
 };
 // ConstantBuffer<FrameUniforms> g_FrameUniform : register(b1, space0);
 // StructuredBuffer<PerRenderableMeshData> g_RenderableMeshDatas : register(t0, space0);
@@ -53,7 +54,11 @@ VaringStruct VSMain(VertexInput input)
     Texture2D<float4> terrainHeightmap = ResourceDescriptorHeap[terrainHeightmapIndex];
     Texture2D<float4> terrainNormalmap = ResourceDescriptorHeap[terrainNormalmapIndex];
 
-    TerrainPatchNode _terrainPatchNode = mTerrainPatchNodes[input.instanceID];
+    StructuredBuffer<uint> mDrawIdxBuffer = ResourceDescriptorHeap[terrainDrawIdxBufferIndex];
+
+    uint patchNodeIndex = mDrawIdxBuffer[input.instanceID];
+
+    TerrainPatchNode _terrainPatchNode = mTerrainPatchNodes[patchNodeIndex];
 
     float4x4 localToWorldMatrix = mFrameUniforms.terrainUniform.local2WorldMatrix;
     float4x4 localToWorldMatrixInv = mFrameUniforms.terrainUniform.world2LocalMatrix;

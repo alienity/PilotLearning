@@ -28,7 +28,7 @@ namespace MoYu
         {
             RHI::RootSignatureDesc rootSigDesc =
                 RHI::RootSignatureDesc()
-                    .Add32BitConstants<0, 0>(4)
+                    .Add32BitConstants<0, 0>(5)
                     .AddStaticSampler<10, 0>(D3D12_FILTER::D3D12_FILTER_ANISOTROPIC,
                                              D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_WRAP,
                                              8)
@@ -57,7 +57,7 @@ namespace MoYu
             RHI::D3D12InputLayout InputLayout = MoYu::D3D12TerrainPatch::InputLayout;
 
             RHIRasterizerState rasterizerState = RHIRasterizerState();
-            //rasterizerState.FillMode = RHI_FILL_MODE::Wireframe;
+            rasterizerState.FillMode = RHI_FILL_MODE::Wireframe;
             rasterizerState.CullMode = RHI_CULL_MODE::Back;
 
             RHIDepthStencilState DepthStencilState;
@@ -115,7 +115,9 @@ namespace MoYu
         RHI::RgResourceHandle terrainPatchNodeHandle = passInput.terrainPatchNodeHandle;
         RHI::RgResourceHandle terrainHeightmapHandle = passInput.terrainHeightmapHandle;
         RHI::RgResourceHandle terrainNormalmapHandle = passInput.terrainNormalmapHandle;
+
         RHI::RgResourceHandle drawCallCommandSigBufferHandle = passInput.drawCallCommandSigBufferHandle;
+        RHI::RgResourceHandle drawCallIndexBufferHandle      = passInput.drawIndexBufferHandle;
         
         RHI::RenderPass& drawpass = graph.AddRenderPass("IndirectTerrainGBufferPass");
 
@@ -124,6 +126,7 @@ namespace MoYu
         drawpass.Read(passInput.terrainNormalmapHandle, false, RHIResourceState::RHI_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
         drawpass.Read(passInput.terrainPatchNodeHandle, false, RHIResourceState::RHI_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
         drawpass.Read(passInput.drawCallCommandSigBufferHandle, false, RHIResourceState::RHI_RESOURCE_STATE_INDIRECT_ARGUMENT);
+        drawpass.Read(passInput.drawIndexBufferHandle, false, RHIResourceState::RHI_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 
         drawpass.Read(passOutput.albedoHandle, true);
         drawpass.Read(passOutput.depthHandle, true);
@@ -188,6 +191,7 @@ namespace MoYu
             graphicContext->SetConstant(0, 1, registry->GetD3D12Buffer(perframeBufferHandle)->GetDefaultCBV()->GetIndex());
             graphicContext->SetConstant(0, 2, registry->GetD3D12Texture(terrainHeightmapHandle)->GetDefaultSRV()->GetIndex());
             graphicContext->SetConstant(0, 3, registry->GetD3D12Texture(terrainNormalmapHandle)->GetDefaultSRV()->GetIndex());
+            graphicContext->SetConstant(0, 4, registry->GetD3D12Buffer(drawCallIndexBufferHandle)->GetDefaultSRV()->GetIndex());
 
             auto pDrawCallCommandSigBuffer = registry->GetD3D12Buffer(drawCallCommandSigBufferHandle);
 
