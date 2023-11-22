@@ -23,12 +23,13 @@ namespace MoYu
         ShaderCompiler*       m_ShaderCompiler = init_info.m_ShaderCompiler;
         std::filesystem::path m_ShaderRootPath = init_info.m_ShaderRootPath;
 
-        indirecTerrainPatchNodesGenCS =
-            m_ShaderCompiler->CompileShader(RHI_SHADER_TYPE::Compute,
-                                            m_ShaderRootPath / "hlsl/IndirecTerrainPatchNodesGen.hlsl",
-                                            ShaderCompileOptions(L"CSMain"));
-
+        //--------------------------------------------------------------------------
         {
+            indirecTerrainPatchNodesGenCS =
+                m_ShaderCompiler->CompileShader(RHI_SHADER_TYPE::Compute,
+                                                m_ShaderRootPath / "hlsl/IndirecTerrainPatchNodesGen.hlsl",
+                                                ShaderCompileOptions(L"CSMain"));
+
             RHI::RootSignatureDesc rootSigDesc =
                 RHI::RootSignatureDesc()
                     .Add32BitConstants<0, 0>(4)
@@ -40,9 +41,7 @@ namespace MoYu
                     .AllowSampleDescriptorHeapIndexing();
 
             pIndirecTerrainPatchNodesGenSignature = std::make_shared<RHI::D3D12RootSignature>(m_Device, rootSigDesc);
-        }
 
-        {
             struct PsoStream
             {
                 PipelineStateStreamRootSignature RootSignature;
@@ -55,7 +54,40 @@ namespace MoYu
             pIndirecTerrainPatchNodesGenPSO =
                 std::make_shared<RHI::D3D12PipelineState>(m_Device, L"IndirecTerrainPatchNodesGenPSO", psoDesc);
         }
+        //--------------------------------------------------------------------------
 
+        //--------------------------------------------------------------------------
+        {
+
+            patchNodeVisiableIndexGenCS =
+                m_ShaderCompiler->CompileShader(RHI_SHADER_TYPE::Compute,
+                                                m_ShaderRootPath / "hlsl/TerrainPatchNodeVisiableIndexGen.hlsl",
+                                                ShaderCompileOptions(L"CSMain"));
+
+            RHI::RootSignatureDesc rootSigDesc =
+                RHI::RootSignatureDesc()
+                    .Add32BitConstants<0, 0>(4)
+                    .AddStaticSampler<10, 0>(D3D12_FILTER::D3D12_FILTER_ANISOTROPIC,
+                                             D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_WRAP,
+                                             8)
+                    .AllowInputLayout()
+                    .AllowResourceDescriptorHeapIndexing()
+                    .AllowSampleDescriptorHeapIndexing();
+
+            pPatchNodeVisiableIndexGenSignature = std::make_shared<RHI::D3D12RootSignature>(m_Device, rootSigDesc);
+
+            struct PsoStream
+            {
+                PipelineStateStreamRootSignature RootSignature;
+                PipelineStateStreamCS            CS;
+            } psoStream;
+            psoStream.RootSignature = PipelineStateStreamRootSignature(pPatchNodeVisiableIndexGenSignature.get());
+            psoStream.CS            = &patchNodeVisiableIndexGenCS;
+            PipelineStateStreamDesc psoDesc = {sizeof(PsoStream), &psoStream};
+
+            pPatchNodeVisiableIndexGenPSO =
+                std::make_shared<RHI::D3D12PipelineState>(m_Device, L"TerrainPatchNodeVisiableIndexGenPSO", psoDesc);
+        }
         //-----------------------------------------------------------
 
         terrainPatchNodeBuffer = RHI::D3D12Buffer::Create(
@@ -65,7 +97,12 @@ namespace MoYu
             sizeof(HLSL::TerrainPatchNode),
             L"TerrainPatchIndexBuffer");
 
-
+        patchNodeVisiableToMainCameraIndexBuffer = RHI::D3D12Buffer::Create(
+            m_Device->GetLinkedDevice(),
+            RHI::RHIBufferRandomReadWrite | RHI::RHIBufferTargetStructured | RHI::RHIBufferTargetCounter,
+            MaxTerrainNodeCount,
+            sizeof(uint32_t),
+            L"PatchNodeVisiableToMainCameraIndexBuffer");
 
     }
 
@@ -174,6 +211,7 @@ namespace MoYu
         RHI::RgResourceHandle terrainMaxHeightMapHandle = GImport(graph, terrainMaxHeightMap.get());
 
         RHI::RgResourceHandle terrainPatchNodeHandle = GImport(graph, terrainPatchNodeBuffer.get());
+        RHI::RgResourceHandle patchNodeVisiableToCameraIndexHandle = GImport(graph, patchNodeVisiableToMainCameraIndexBuffer.get());
 
         RHI::RgResourceHandle mainCommandSigUploadBufferHandle = GImport(graph, terrainUploadCommandSigBuffer.get());
         RHI::RgResourceHandle mainCommandSigBufferHandle = GImport(graph, terrainCommandSigBuffer.get());
@@ -235,7 +273,7 @@ namespace MoYu
 
         RHI::RenderPass& terrainNodesBuildPass = graph.AddRenderPass("TerrainNodesBuildPass");
 
-        terrainNodesBuildPass.Read(passInput.perframeBufferHandle, true); // RHIResourceState::RHI_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER
+        terrainNodesBuildPass.Read(perframeBufferHandle, true); // RHIResourceState::RHI_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER
         terrainNodesBuildPass.Read(terrainMinHeightMapHandle, true);
         terrainNodesBuildPass.Read(terrainMaxHeightMapHandle, true);
         terrainNodesBuildPass.Write(terrainPatchNodeHandle, true); // RHIResourceState::RHI_RESOURCE_STATE_UNORDERED_ACCESS
@@ -276,7 +314,48 @@ namespace MoYu
         //=================================================================================
         // 主相机剪裁
         //=================================================================================
+        
+        RHI::RenderPass& terrainMainCullingPass = graph.AddRenderPass("TerrainMainCullingPass");
 
+        terrainMainCullingPass.Read(perframeBufferHandle, true);
+        terrainMainCullingPass.Read(terrainPatchNodeHandle, true);
+        terrainMainCullingPass.Write(patchNodeVisiableToCameraIndexHandle, true);
+
+        terrainMainCullingPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
+            RHI::D3D12ComputeContext* pContext = context->GetComputeContext();
+
+            pContext->TransitionBarrier(RegGetBuf(perframeBufferHandle), D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
+            pContext->TransitionBarrier(RegGetBuf(terrainPatchNodeHandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+            pContext->TransitionBarrier(RegGetBufCounter(terrainPatchNodeHandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+            pContext->TransitionBarrier(RegGetBuf(patchNodeVisiableToCameraIndexHandle), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+            pContext->TransitionBarrier(RegGetBufCounter(patchNodeVisiableToCameraIndexHandle), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+            pContext->FlushResourceBarriers();
+
+            pContext->SetRootSignature(pPatchNodeVisiableIndexGenSignature.get());
+            pContext->SetPipelineState(pPatchNodeVisiableIndexGenPSO.get());
+
+            struct RootIndexBuffer
+            {
+                UINT meshPerFrameBufferIndex;
+                UINT terrainPatchNodeIndex;
+                UINT terrainPatchNodeCountIndex;
+                UINT terrainVisNodeIdxIndex;
+            };
+
+            RootIndexBuffer rootIndexBuffer =
+                RootIndexBuffer {RegGetBufDefCBVIdx(perframeBufferHandle),
+                                 RegGetBufDefSRVIdx(terrainPatchNodeHandle),
+                                 registry->GetD3D12Buffer(terrainPatchNodeHandle)->GetCounterBuffer()->GetDefaultSRV()->GetIndex(),
+                                 RegGetBufDefUAVIdx(patchNodeVisiableToCameraIndexHandle)};
+
+            pContext->SetConstantArray(0, sizeof(RootIndexBuffer) / sizeof(UINT), &rootIndexBuffer);
+
+            pContext->Dispatch1D(4096, 128);
+        });
+        
+        //=================================================================================
+        // 主相机地形CommandSignature准备
+        //=================================================================================
         RHI::RenderPass& cameraCullingPass = graph.AddRenderPass("TerrainCommandSignaturePreparePass");
 
         cameraCullingPass.Read(terrainPatchNodeHandle, true);
@@ -298,8 +377,6 @@ namespace MoYu
             pContext->FlushResourceBarriers();
 
         });
-
-
 
         //=================================================================================
         // 光源Shadow剪裁

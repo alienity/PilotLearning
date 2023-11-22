@@ -30,10 +30,10 @@ SamplerState defaultSampler : register(s10);
 #define MIP3WIDTH 128
 
 /*
-[0, 8] 区间是mip0
-(8, 16] 区间是mip1
-(16, 32] 区间是mip2
-(32, 64] 区间是mip3
+[0, 16] 区间是mip0
+(16, 32] 区间是mip1
+(32, 64] 区间是mip2
+(64, 128] 区间是mip3
 // (64, 128] 区间是mip4
 // (128, 256] 区间是mip5
 // (256, 512] 区间是mip6
@@ -106,15 +106,19 @@ void CSMain(CSParams Params) {
     uint2 index = Params.DispatchThreadID.xy;
     float2 pixelPos = index + float2(0, 0);
 
+    float4x4 terrainWorld2LocalMat = mFrameUniforms.terrainUniform.world2LocalMatrix;
+
     float terrainMaxHeight = mFrameUniforms.terrainUniform.terrainMaxHeight;
 
     float3 cameraPosition = mFrameUniforms.cameraUniform.cameraPosition;
     float3 cameraDirection = -mFrameUniforms.cameraUniform.worldFromViewMatrix._m02_m12_m22;
     float3 focusPosition = cameraPosition + cameraDirection;
+
+    focusPosition = mul(terrainWorld2LocalMat, float4(focusPosition, 1.0f)).xyz;
     
     // float2 pivotCenter = float2(floor(focusPosition.xz / BASENODEWIDTH) * BASENODEWIDTH) + float2(0, 0);
-    // float2 pivotCenter = float2(floor(focusPosition.xz / MIP3WIDTH) * MIP3WIDTH);
-    float2 pivotCenter = float2(floor(focusPosition.xz / BASENODEWIDTH) * BASENODEWIDTH);
+    float2 pivotCenter = float2(floor(focusPosition.xz / MIP3WIDTH) * MIP3WIDTH);
+    // float2 pivotCenter = float2(floor(focusPosition.xz / BASENODEWIDTH) * BASENODEWIDTH);
 
     // calculate the mip level of the pixel
     float2 pixelDis = pixelPos - pivotCenter;

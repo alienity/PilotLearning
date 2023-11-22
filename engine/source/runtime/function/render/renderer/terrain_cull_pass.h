@@ -121,6 +121,8 @@ namespace MoYu
 
         // used for later draw call
         std::shared_ptr<RHI::D3D12Buffer> terrainPatchNodeBuffer;
+        // used to mark terrain patch node that are visiable to main camera
+        std::shared_ptr<RHI::D3D12Buffer> patchNodeVisiableToMainCameraIndexBuffer;
 
         // main camera instance CommandSignature Buffer
         std::shared_ptr<RHI::D3D12Buffer> terrainUploadCommandSigBuffer;
@@ -134,6 +136,10 @@ namespace MoYu
         Shader indirecTerrainPatchNodesGenCS;
         std::shared_ptr<RHI::D3D12RootSignature> pIndirecTerrainPatchNodesGenSignature;
         std::shared_ptr<RHI::D3D12PipelineState> pIndirecTerrainPatchNodesGenPSO;
+
+        Shader patchNodeVisiableIndexGenCS;
+        std::shared_ptr<RHI::D3D12RootSignature> pPatchNodeVisiableIndexGenSignature;
+        std::shared_ptr<RHI::D3D12PipelineState> pPatchNodeVisiableIndexGenPSO;
 	};
 }
 
