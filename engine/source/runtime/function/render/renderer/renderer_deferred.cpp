@@ -186,6 +186,16 @@ namespace MoYu
             mIndirectShadowPass->setCommonInfo(renderPassCommonInfo);
             mIndirectShadowPass->initialize(shadowPassInit);
         }
+        // terrain shadow pass
+        {
+            IndirectTerrainShadowPass::ShadowPassInitInfo terrainShadowPassInit;
+            terrainShadowPassInit.m_ShaderCompiler = pCompiler;
+            terrainShadowPassInit.m_ShaderRootPath = g_runtime_global_context.m_config_manager->getShaderFolder();
+
+            mIndirectTerrainShadowPass = std::make_shared<IndirectTerrainShadowPass>();
+            mIndirectTerrainShadowPass->setCommonInfo(renderPassCommonInfo);
+            mIndirectTerrainShadowPass->initialize(terrainShadowPassInit); 
+        }
         // ao pass
         {
             AOPass::AOInitInfo aoPassInit;
@@ -237,6 +247,7 @@ namespace MoYu
 
         mIndirectCullPass->prepareMeshData(render_resource);
         mIndirectShadowPass->prepareShadowmaps(render_resource);
+        mIndirectTerrainShadowPass->prepareShadowmaps(render_resource);
         mSkyBoxPass->prepareMeshData(render_resource);
         mTerrainCullPass->prepareMeshData(render_resource);
 
@@ -250,6 +261,7 @@ namespace MoYu
         mIndirectCullPass            = nullptr;
         mTerrainCullPass             = nullptr;
         mIndirectShadowPass          = nullptr;
+        mIndirectTerrainShadowPass   = nullptr;
         mIndirectGBufferPass         = nullptr;
         mIndirectTerrainGBufferPass  = nullptr;
         mIndirectLightLoopPass       = nullptr;
@@ -315,6 +327,30 @@ namespace MoYu
         //=================================================================================
         
         //=================================================================================
+        // indirect terrain draw shadow
+        IndirectTerrainShadowPass::ShadowInputParameters  mTerrainShadowmapIntputParams;
+        IndirectTerrainShadowPass::ShadowOutputParameters mTerrainShadowmapOutputParams;
+
+        mTerrainShadowmapIntputParams.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
+        mTerrainShadowmapIntputParams.terrainPatchNodeHandle = terrainCullOutput.terrainPatchNodeBufferHandle;
+        mTerrainShadowmapIntputParams.terrainHeightmapHandle = terrainCullOutput.terrainHeightmapHandle;
+        for (int i = 0; i < terrainCullOutput.directionShadowmapHandles.size(); i++)
+        {
+            auto& _indexAndSigHandle = terrainCullOutput.directionShadowmapHandles[i];
+            mTerrainShadowmapIntputParams.dirShadowIndexAndSigHandle.push_back(
+                {_indexAndSigHandle.commandSigBufferHandle, _indexAndSigHandle.indirectIndexBufferHandle});
+        }
+        mTerrainShadowmapOutputParams.directionalShadowmapHandle = mShadowmapOutputParams.directionalShadowmapHandle;
+        mIndirectTerrainShadowPass->update(graph, mTerrainShadowmapIntputParams, mTerrainShadowmapOutputParams);
+        //=================================================================================
+
+        //=================================================================================
+        // shadowmap output
+        RHI::RgResourceHandle directionalShadowmapHandle = mTerrainShadowmapOutputParams.directionalShadowmapHandle;
+        std::vector<RHI::RgResourceHandle> spotShadowmapHandle = mShadowmapOutputParams.spotShadowmapHandle;
+        //=================================================================================
+
+        //=================================================================================
         // indirect gbuffer
         IndirectGBufferPass::DrawInputParameters mGBufferIntput;
         IndirectGBufferPass::DrawOutputParameters mGBufferOutput;
@@ -334,8 +370,14 @@ namespace MoYu
         mTerrainGBufferIntput.terrainPatchNodeHandle = terrainCullOutput.terrainPatchNodeBufferHandle;
         mTerrainGBufferIntput.terrainHeightmapHandle = terrainCullOutput.terrainHeightmapHandle;
         mTerrainGBufferIntput.terrainNormalmapHandle = terrainCullOutput.terrainNormalmapHandle;
-        mTerrainGBufferIntput.drawCallCommandSigBufferHandle = terrainCullOutput.terrainDrawHandle.commandSigBufferHandle;
-        mTerrainGBufferIntput.drawIndexBufferHandle = terrainCullOutput.terrainDrawHandle.indirectIndexBufferHandle;
+
+        mTerrainGBufferIntput.drawIndexAndSigHandle  = {terrainCullOutput.terrainDrawHandle.commandSigBufferHandle, terrainCullOutput.terrainDrawHandle.indirectIndexBufferHandle};
+        for (int i = 0; i < terrainCullOutput.directionShadowmapHandles.size(); i++)
+        {
+            auto& _indexAndSigHandle = terrainCullOutput.directionShadowmapHandles[i];
+            mTerrainGBufferIntput.dirShadowIndexAndSigHandle.push_back({_indexAndSigHandle.commandSigBufferHandle, _indexAndSigHandle.indirectIndexBufferHandle});
+        }
+
         mTerrainGBufferOutput.albedoHandle         = mGBufferOutput.albedoHandle;
         mTerrainGBufferOutput.worldNormalHandle    = mGBufferOutput.worldNormalHandle;
         mTerrainGBufferOutput.worldTangentHandle   = mGBufferOutput.worldTangentHandle;
@@ -394,10 +436,10 @@ namespace MoYu
         mDrawIntputParams.meshBufferHandle     = indirectCullOutput.meshBufferHandle;
         mDrawIntputParams.materialBufferHandle = indirectCullOutput.materialBufferHandle;
         mDrawIntputParams.opaqueDrawHandle     = indirectCullOutput.opaqueDrawHandle.indirectSortBufferHandle;
-        mDrawIntputParams.directionalShadowmapTexHandle = mShadowmapOutputParams.directionalShadowmapHandle;
-        for (size_t i = 0; i < mShadowmapOutputParams.spotShadowmapHandle.size(); i++)
+        mDrawIntputParams.directionalShadowmapTexHandle = directionalShadowmapHandle;
+        for (size_t i = 0; i < spotShadowmapHandle.size(); i++)
         {
-            mDrawIntputParams.spotShadowmapTexHandles.push_back(mShadowmapOutputParams.spotShadowmapHandle[i]);
+            mDrawIntputParams.spotShadowmapTexHandles.push_back(spotShadowmapHandle[i]);
         }
         mIndirectOpaqueDrawPass->update(graph, mDrawIntputParams, mDrawOutputParams);
         //=================================================================================
@@ -425,10 +467,10 @@ namespace MoYu
         mDrawTransIntputParams.meshBufferHandle     = indirectCullOutput.meshBufferHandle;
         mDrawTransIntputParams.materialBufferHandle = indirectCullOutput.materialBufferHandle;
         mDrawTransIntputParams.transparentDrawHandle = indirectCullOutput.transparentDrawHandle.indirectSortBufferHandle;
-        mDrawTransIntputParams.directionalShadowmapTexHandle = mShadowmapOutputParams.directionalShadowmapHandle;
-        for (size_t i = 0; i < mShadowmapOutputParams.spotShadowmapHandle.size(); i++)
+        mDrawTransIntputParams.directionalShadowmapTexHandle = directionalShadowmapHandle;
+        for (size_t i = 0; i < spotShadowmapHandle.size(); i++)
         {
-            mDrawTransIntputParams.spotShadowmapTexHandles.push_back(mShadowmapOutputParams.spotShadowmapHandle[i]);
+            mDrawTransIntputParams.spotShadowmapTexHandles.push_back(spotShadowmapHandle[i]);
         }
         mDrawTransOutputParams.renderTargetColorHandle = mSkyboxOutputParams.renderTargetColorHandle;
         mDrawTransOutputParams.renderTargetDepthHandle = mSkyboxOutputParams.renderTargetDepthHandle;

@@ -15,20 +15,6 @@ ConstantBuffer<RootIndexBuffer> g_RootIndexBuffer : register(b0, space0);
 
 SamplerState defaultSampler : register(s10);
 
-#define EAST 1
-#define SOUTH 2
-#define WEST 4
-#define NORTH 8
-
-#define MAXMIPLEVEL 3
-
-#define BASENODEWIDTH 2
-
-#define MIP0WIDTH 16
-#define MIP1WIDTH 32
-#define MIP2WIDTH 64
-#define MIP3WIDTH 128
-
 [numthreads(128, 1, 1)]
 void CSMain(CSParams Params) {
 

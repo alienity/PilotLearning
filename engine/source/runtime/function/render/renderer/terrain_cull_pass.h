@@ -15,33 +15,31 @@ namespace MoYu
         D3D12_DRAW_INDEXED_ARGUMENTS DrawIndexedArguments;
     };
 
-    struct TerrainSpotShadowmapCommandBuffer
+    struct TerrainDrawCommandBuffer
     {
-        std::shared_ptr<RHI::D3D12Buffer> m_DrawCallCommandBuffer;
-        SceneCommonIdentifier m_identifier;
-        uint32_t m_lightIndex;
-
-        void Reset()
-        {
-            m_identifier = SceneCommonIdentifier();
-            m_lightIndex = 0;
-            m_DrawCallCommandBuffer = nullptr;
-        }
+        std::shared_ptr<RHI::D3D12Buffer> m_PatchNodeVisiableIndexBuffer;
+        std::shared_ptr<RHI::D3D12Buffer> m_TerrainCommandSignatureBuffer;
     };
 
     struct TerrainDirShadowmapCommandBuffer
     {
-        std::vector<std::shared_ptr<RHI::D3D12Buffer>> m_DrawCallCommandBuffers;
+        std::vector<std::shared_ptr<RHI::D3D12Buffer>> m_PatchNodeVisiableIndexBuffers;
+        std::vector<std::shared_ptr<RHI::D3D12Buffer>> m_TerrainCommandSignatureBuffers;
         SceneCommonIdentifier m_identifier;
         
         void Reset()
         {
             m_identifier = SceneCommonIdentifier();
-            for (size_t i = 0; i < m_DrawCallCommandBuffers.size(); i++)
+            for (int i = 0; i < m_PatchNodeVisiableIndexBuffers.size(); i++)
             {
-                m_DrawCallCommandBuffers[i] = nullptr;
+                m_PatchNodeVisiableIndexBuffers[i] = nullptr;
             }
-            m_DrawCallCommandBuffers.clear();
+            m_PatchNodeVisiableIndexBuffers.clear();
+            for (int i = 0; i < m_TerrainCommandSignatureBuffers.size(); i++)
+            {
+                m_TerrainCommandSignatureBuffers[i] = nullptr;
+            }
+            m_TerrainCommandSignatureBuffers.clear();
         }
     };
 
@@ -81,9 +79,7 @@ namespace MoYu
             RHI::RgResourceHandle terrainPatchNodeBufferHandle;
 
             DrawCallCommandBufferHandle terrainDrawHandle;
-
             std::vector<DrawCallCommandBufferHandle> directionShadowmapHandles;
-            std::vector<DrawCallCommandBufferHandle> spotShadowmapHandles;
         };
 
     public:
@@ -121,25 +117,27 @@ namespace MoYu
 
         // used for later draw call
         std::shared_ptr<RHI::D3D12Buffer> terrainPatchNodeBuffer;
-        // used to mark terrain patch node that are visiable to main camera
-        std::shared_ptr<RHI::D3D12Buffer> patchNodeVisiableToMainCameraIndexBuffer;
+
+        // 用于主相机绘制的buffer
+        TerrainDrawCommandBuffer mainCameraCommandBuffer;
+        // 用于方向光绘制的buffer
+        TerrainDirShadowmapCommandBuffer dirShadowmapCommandBuffers;
 
         // main camera instance CommandSignature Buffer
         std::shared_ptr<RHI::D3D12Buffer> terrainUploadCommandSigBuffer;
-        std::shared_ptr<RHI::D3D12Buffer> terrainCommandSigBuffer;
         int terrainInstanceCountOffset;
-
-        // used for shadowmap drawing
-        TerrainDirShadowmapCommandBuffer               dirShadowmapCommandBuffers;
-        std::vector<TerrainSpotShadowmapCommandBuffer> spotShadowmapCommandBuffer;
 
         Shader indirecTerrainPatchNodesGenCS;
         std::shared_ptr<RHI::D3D12RootSignature> pIndirecTerrainPatchNodesGenSignature;
         std::shared_ptr<RHI::D3D12PipelineState> pIndirecTerrainPatchNodesGenPSO;
 
-        Shader patchNodeVisiableIndexGenCS;
-        std::shared_ptr<RHI::D3D12RootSignature> pPatchNodeVisiableIndexGenSignature;
-        std::shared_ptr<RHI::D3D12PipelineState> pPatchNodeVisiableIndexGenPSO;
+        Shader patchNodeVisToMainCamIndexGenCS;
+        std::shared_ptr<RHI::D3D12RootSignature> pPatchNodeVisToMainCamIndexGenSignature;
+        std::shared_ptr<RHI::D3D12PipelineState> pPatchNodeVisToMainCamIndexGenPSO;
+
+        Shader patchNodeVisToDirCascadeIndexGenCS;
+        std::shared_ptr<RHI::D3D12RootSignature> pPatchNodeVisToDirCascadeIndexGenSignature;
+        std::shared_ptr<RHI::D3D12PipelineState> pPatchNodeVisToDirCascadeIndexGenPSO;
 	};
 }
 

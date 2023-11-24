@@ -60,9 +60,9 @@ namespace MoYu
         //--------------------------------------------------------------------------
         {
 
-            patchNodeVisiableIndexGenCS =
+            patchNodeVisToMainCamIndexGenCS =
                 m_ShaderCompiler->CompileShader(RHI_SHADER_TYPE::Compute,
-                                                m_ShaderRootPath / "hlsl/TerrainPatchNodeVisiableIndexGen.hlsl",
+                                                m_ShaderRootPath / "hlsl/PatchNodeCullingForMainCamera.hlsl",
                                                 ShaderCompileOptions(L"CSMain"));
 
             RHI::RootSignatureDesc rootSigDesc =
@@ -75,19 +75,54 @@ namespace MoYu
                     .AllowResourceDescriptorHeapIndexing()
                     .AllowSampleDescriptorHeapIndexing();
 
-            pPatchNodeVisiableIndexGenSignature = std::make_shared<RHI::D3D12RootSignature>(m_Device, rootSigDesc);
+            pPatchNodeVisToMainCamIndexGenSignature = std::make_shared<RHI::D3D12RootSignature>(m_Device, rootSigDesc);
 
             struct PsoStream
             {
                 PipelineStateStreamRootSignature RootSignature;
                 PipelineStateStreamCS            CS;
             } psoStream;
-            psoStream.RootSignature = PipelineStateStreamRootSignature(pPatchNodeVisiableIndexGenSignature.get());
-            psoStream.CS            = &patchNodeVisiableIndexGenCS;
+            psoStream.RootSignature = PipelineStateStreamRootSignature(pPatchNodeVisToMainCamIndexGenSignature.get());
+            psoStream.CS            = &patchNodeVisToMainCamIndexGenCS;
             PipelineStateStreamDesc psoDesc = {sizeof(PsoStream), &psoStream};
 
-            pPatchNodeVisiableIndexGenPSO =
-                std::make_shared<RHI::D3D12PipelineState>(m_Device, L"TerrainPatchNodeVisiableIndexGenPSO", psoDesc);
+            pPatchNodeVisToMainCamIndexGenPSO =
+                std::make_shared<RHI::D3D12PipelineState>(m_Device, L"TerrainPatchNodeCullingForMainCameraPSO", psoDesc);
+        }
+        //-----------------------------------------------------------
+
+        //-----------------------------------------------------------
+        {
+            patchNodeVisToDirCascadeIndexGenCS =
+                m_ShaderCompiler->CompileShader(RHI_SHADER_TYPE::Compute,
+                                                m_ShaderRootPath / "hlsl/PatchNodeCullingForDirShadow.hlsl",
+                                                ShaderCompileOptions(L"CSMain"));
+
+            RHI::RootSignatureDesc rootSigDesc =
+                RHI::RootSignatureDesc()
+                    .Add32BitConstants<0, 0>(5)
+                    .AddStaticSampler<10, 0>(D3D12_FILTER::D3D12_FILTER_ANISOTROPIC,
+                                             D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_WRAP,
+                                             8)
+                    .AllowInputLayout()
+                    .AllowResourceDescriptorHeapIndexing()
+                    .AllowSampleDescriptorHeapIndexing();
+
+            pPatchNodeVisToDirCascadeIndexGenSignature =
+                std::make_shared<RHI::D3D12RootSignature>(m_Device, rootSigDesc);
+
+            struct PsoStream
+            {
+                PipelineStateStreamRootSignature RootSignature;
+                PipelineStateStreamCS            CS;
+            } psoStream;
+            psoStream.RootSignature =
+                PipelineStateStreamRootSignature(pPatchNodeVisToDirCascadeIndexGenSignature.get());
+            psoStream.CS            = &patchNodeVisToDirCascadeIndexGenCS;
+            PipelineStateStreamDesc psoDesc = {sizeof(PsoStream), &psoStream};
+
+            pPatchNodeVisToDirCascadeIndexGenPSO =
+                std::make_shared<RHI::D3D12PipelineState>(m_Device, L"TerrainPatchNodeCullingForDirShadowPSO", psoDesc);
         }
         //-----------------------------------------------------------
 
@@ -97,13 +132,6 @@ namespace MoYu
             MaxTerrainNodeCount,
             sizeof(HLSL::TerrainPatchNode),
             L"TerrainPatchIndexBuffer");
-
-        patchNodeVisiableToMainCameraIndexBuffer = RHI::D3D12Buffer::Create(
-            m_Device->GetLinkedDevice(),
-            RHI::RHIBufferRandomReadWrite | RHI::RHIBufferTargetStructured | RHI::RHIBufferTargetCounter,
-            MaxTerrainNodeCount,
-            sizeof(uint32_t),
-            L"PatchNodeVisiableToMainCameraIndexBuffer");
 
     }
 
@@ -154,17 +182,7 @@ namespace MoYu
                                          D3D12_RESOURCE_STATE_GENERIC_READ);
         }
 
-        if (terrainCommandSigBuffer == nullptr)
-        {
-            terrainCommandSigBuffer =
-                RHI::D3D12Buffer::Create(m_Device->GetLinkedDevice(),
-                                         RHI::RHIBufferTargetStructured,
-                                         1,
-                                         MoYu::AlignUp(sizeof(MoYu::TerrainCommandSignatureParams), 256),
-                                         L"TerrainCommandSigBuffer",
-                                         RHI::RHIBufferModeImmutable,
-                                         D3D12_RESOURCE_STATE_GENERIC_READ);
-        }
+        // 更新CommandBuffer通用数据
         {
             std::vector<CachedTerrainRenderer>& _terrain_renderers = m_render_scene->m_terrain_renderers;
             
@@ -195,6 +213,75 @@ namespace MoYu
                 terrainInstanceCountOffset = ((char*)&_terrainCommandSigParams.DrawIndexedArguments.InstanceCount - (char*)&_terrainCommandSigParams) / sizeof(char);
             }
         }
+
+        // 主相机会使用到的IndexBuffer和CommandSignature
+        {
+            if (mainCameraCommandBuffer.m_PatchNodeVisiableIndexBuffer == nullptr)
+            {
+                mainCameraCommandBuffer.m_PatchNodeVisiableIndexBuffer = RHI::D3D12Buffer::Create(
+                    m_Device->GetLinkedDevice(),
+                    RHI::RHIBufferRandomReadWrite | RHI::RHIBufferTargetStructured | RHI::RHIBufferTargetCounter,
+                    MaxTerrainNodeCount,
+                    sizeof(uint32_t),
+                    L"PatchNodeVisiableToMainCameraIndexBuffer");
+
+                mainCameraCommandBuffer.m_TerrainCommandSignatureBuffer =
+                    RHI::D3D12Buffer::Create(m_Device->GetLinkedDevice(),
+                                             RHI::RHIBufferTargetStructured,
+                                             1,
+                                             MoYu::AlignUp(sizeof(MoYu::TerrainCommandSignatureParams), 256),
+                                             L"TerrainCommandSigBuffer",
+                                             RHI::RHIBufferModeImmutable,
+                                             D3D12_RESOURCE_STATE_GENERIC_READ);
+            }
+        }
+
+        // 主光源会使用到的IndexBuffer和CommandSignature
+        {
+            if (m_render_scene->m_directional_light.m_identifier != UndefCommonIdentifier)
+            {
+                if (dirShadowmapCommandBuffers.m_identifier != m_render_scene->m_directional_light.m_identifier)
+                {
+                    dirShadowmapCommandBuffers.Reset();
+                }
+
+                if (dirShadowmapCommandBuffers.m_PatchNodeVisiableIndexBuffers.size() != m_render_scene->m_directional_light.m_cascade)
+                {
+                    dirShadowmapCommandBuffers.m_PatchNodeVisiableIndexBuffers.clear();
+                    dirShadowmapCommandBuffers.m_TerrainCommandSignatureBuffers.clear();
+
+                    dirShadowmapCommandBuffers.m_identifier = m_render_scene->m_directional_light.m_identifier;
+
+                    for (size_t i = 0; i < m_render_scene->m_directional_light.m_cascade; i++)
+                    {
+                        std::shared_ptr<RHI::D3D12Buffer> shadowPatchNodeVisiableIndexBuffer =
+                            RHI::D3D12Buffer::Create(m_Device->GetLinkedDevice(),
+                                                     RHI::RHIBufferRandomReadWrite | RHI::RHIBufferTargetStructured | RHI::RHIBufferTargetCounter,
+                                                     MaxTerrainNodeCount,
+                                                     sizeof(uint32_t),
+                                                     fmt::format(L"DirectionPatchNodeIndexBuffer_Cascade_{}", i));
+
+                        dirShadowmapCommandBuffers.m_PatchNodeVisiableIndexBuffers.push_back(shadowPatchNodeVisiableIndexBuffer);
+
+                        std::shared_ptr<RHI::D3D12Buffer> terrainCommandSignatureBuffer =
+                            RHI::D3D12Buffer::Create(m_Device->GetLinkedDevice(),
+                                                     RHI::RHIBufferTargetStructured,
+                                                     1,
+                                                     MoYu::AlignUp(sizeof(MoYu::TerrainCommandSignatureParams), 256),
+                                                     fmt::format(L"DirectionTerrainCommandSigBuffer_Cascade_{}", i),
+                                                     RHI::RHIBufferModeImmutable,
+                                                     D3D12_RESOURCE_STATE_GENERIC_READ);
+
+                        dirShadowmapCommandBuffers.m_TerrainCommandSignatureBuffers.push_back(terrainCommandSignatureBuffer);
+
+                    }
+                }
+            }
+            else
+            {
+                dirShadowmapCommandBuffers.Reset();
+            }
+        }
     }
 
     void IndirectTerrainCullPass::update(RHI::RenderGraph& graph, TerrainCullInput& passInput, TerrainCullOutput& passOutput)
@@ -212,10 +299,21 @@ namespace MoYu
         RHI::RgResourceHandle terrainMaxHeightMapHandle = GImport(graph, terrainMaxHeightMap.get());
 
         RHI::RgResourceHandle terrainPatchNodeHandle = GImport(graph, terrainPatchNodeBuffer.get());
-        RHI::RgResourceHandle patchNodeVisiableToCameraIndexHandle = GImport(graph, patchNodeVisiableToMainCameraIndexBuffer.get());
+
+        RHI::RgResourceHandle mainCamPatchNodeVisiableIndexHandle = GImport(graph, mainCameraCommandBuffer.m_PatchNodeVisiableIndexBuffer.get());
+        RHI::RgResourceHandle mainCamCommandSigBufferHandle = GImport(graph, mainCameraCommandBuffer.m_TerrainCommandSignatureBuffer.get());
+
+        std::vector<RHI::RgResourceHandle> dirShadowPatchNodeVisiableIndexHandles {};
+        std::vector<RHI::RgResourceHandle> dirShadowCommandSigBufferHandles {};
+        for (int i = 0; i < dirShadowmapCommandBuffers.m_PatchNodeVisiableIndexBuffers.size(); i++)
+        {
+            dirShadowPatchNodeVisiableIndexHandles.push_back(
+                GImport(graph, dirShadowmapCommandBuffers.m_PatchNodeVisiableIndexBuffers[i].get()));
+            dirShadowCommandSigBufferHandles.push_back(
+                GImport(graph, dirShadowmapCommandBuffers.m_TerrainCommandSignatureBuffers[i].get()));
+        }
 
         RHI::RgResourceHandle mainCommandSigUploadBufferHandle = GImport(graph, terrainUploadCommandSigBuffer.get());
-        RHI::RgResourceHandle mainCommandSigBufferHandle = GImport(graph, terrainCommandSigBuffer.get());
 
         RHI::RgResourceHandle perframeBufferHandle = passInput.perframeBufferHandle;
 
@@ -320,24 +418,24 @@ namespace MoYu
 
         terrainMainCullingPass.Read(perframeBufferHandle, true);
         terrainMainCullingPass.Read(terrainPatchNodeHandle, true);
-        terrainMainCullingPass.Write(patchNodeVisiableToCameraIndexHandle, true);
+        terrainMainCullingPass.Write(mainCamPatchNodeVisiableIndexHandle, true);
 
         terrainMainCullingPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
             RHI::D3D12ComputeContext* pContext = context->GetComputeContext();
 
-            pContext->TransitionBarrier(RegGetBufCounter(patchNodeVisiableToCameraIndexHandle), D3D12_RESOURCE_STATE_COPY_DEST);
+            pContext->TransitionBarrier(RegGetBufCounter(mainCamPatchNodeVisiableIndexHandle), D3D12_RESOURCE_STATE_COPY_DEST);
             pContext->FlushResourceBarriers();
-            pContext->ResetCounter(RegGetBufCounter(patchNodeVisiableToCameraIndexHandle));
+            pContext->ResetCounter(RegGetBufCounter(mainCamPatchNodeVisiableIndexHandle));
 
             pContext->TransitionBarrier(RegGetBuf(perframeBufferHandle), D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
             pContext->TransitionBarrier(RegGetBuf(terrainPatchNodeHandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
             pContext->TransitionBarrier(RegGetBufCounter(terrainPatchNodeHandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-            pContext->TransitionBarrier(RegGetBuf(patchNodeVisiableToCameraIndexHandle), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-            pContext->TransitionBarrier(RegGetBufCounter(patchNodeVisiableToCameraIndexHandle), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+            pContext->TransitionBarrier(RegGetBuf(mainCamPatchNodeVisiableIndexHandle), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+            pContext->TransitionBarrier(RegGetBufCounter(mainCamPatchNodeVisiableIndexHandle), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
             pContext->FlushResourceBarriers();
 
-            pContext->SetRootSignature(pPatchNodeVisiableIndexGenSignature.get());
-            pContext->SetPipelineState(pPatchNodeVisiableIndexGenPSO.get());
+            pContext->SetRootSignature(pPatchNodeVisToMainCamIndexGenSignature.get());
+            pContext->SetPipelineState(pPatchNodeVisToMainCamIndexGenPSO.get());
 
             struct RootIndexBuffer
             {
@@ -351,7 +449,7 @@ namespace MoYu
                 RootIndexBuffer {RegGetBufDefCBVIdx(perframeBufferHandle),
                                  RegGetBufDefSRVIdx(terrainPatchNodeHandle),
                                  RegGetBufCounterSRVIdx(terrainPatchNodeHandle),
-                                 RegGetBufDefUAVIdx(patchNodeVisiableToCameraIndexHandle)};
+                                 RegGetBufDefUAVIdx(mainCamPatchNodeVisiableIndexHandle)};
 
             pContext->SetConstantArray(0, sizeof(RootIndexBuffer) / sizeof(UINT), &rootIndexBuffer);
 
@@ -361,34 +459,139 @@ namespace MoYu
         //=================================================================================
         // 主相机地形CommandSignature准备
         //=================================================================================
-        RHI::RenderPass& cameraCullingPass = graph.AddRenderPass("TerrainCommandSignaturePreparePass");
+        RHI::RenderPass& cameraCullingPass = graph.AddRenderPass("TerrainCommandSignatureForMainCameraPreparePass");
 
         cameraCullingPass.Read(mainCommandSigUploadBufferHandle, true);
-        cameraCullingPass.Read(patchNodeVisiableToCameraIndexHandle, true);
-        cameraCullingPass.Write(mainCommandSigBufferHandle, true);
+        cameraCullingPass.Read(mainCamPatchNodeVisiableIndexHandle, true);
+        cameraCullingPass.Write(mainCamCommandSigBufferHandle, true);
 
         cameraCullingPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
             RHI::D3D12ComputeContext* pContext = context->GetComputeContext();
 
             pContext->TransitionBarrier(RegGetBuf(mainCommandSigUploadBufferHandle), D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_GENERIC_READ);
-            pContext->TransitionBarrier(RegGetBufCounter(patchNodeVisiableToCameraIndexHandle), D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_SOURCE);
-            pContext->TransitionBarrier(RegGetBuf(mainCommandSigBufferHandle), D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_DEST);
+            pContext->TransitionBarrier(RegGetBufCounter(mainCamPatchNodeVisiableIndexHandle), D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_SOURCE);
+            pContext->TransitionBarrier(RegGetBuf(mainCamCommandSigBufferHandle), D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_DEST);
             pContext->FlushResourceBarriers();
 
-            pContext->CopyBufferRegion(RegGetBuf(mainCommandSigBufferHandle), 0, RegGetBuf(mainCommandSigUploadBufferHandle), 0, sizeof(MoYu::TerrainCommandSignatureParams));
-            pContext->CopyBufferRegion(RegGetBuf(mainCommandSigBufferHandle), terrainInstanceCountOffset, RegGetBufCounter(patchNodeVisiableToCameraIndexHandle), 0, sizeof(int));
+            pContext->CopyBufferRegion(RegGetBuf(mainCamCommandSigBufferHandle), 0, RegGetBuf(mainCommandSigUploadBufferHandle), 0, sizeof(MoYu::TerrainCommandSignatureParams));
+            pContext->CopyBufferRegion(RegGetBuf(mainCamCommandSigBufferHandle), terrainInstanceCountOffset, RegGetBufCounter(mainCamPatchNodeVisiableIndexHandle), 0, sizeof(int));
             
-            pContext->TransitionBarrier(RegGetBuf(mainCommandSigBufferHandle), D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT);
+            pContext->TransitionBarrier(RegGetBuf(mainCamCommandSigBufferHandle), D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT);
             pContext->FlushResourceBarriers();
 
         });
-
+        
         //=================================================================================
         // 光源Shadow剪裁
         //=================================================================================
+        int dirShadowmapVisiableBufferCount = dirShadowmapCommandBuffers.m_PatchNodeVisiableIndexBuffers.size();
+        if (dirShadowmapVisiableBufferCount != 0)
+        {
+            RHI::RenderPass& dirLightShadowCullPass = graph.AddRenderPass("DirectionLightTerrainPatchNodeCullPass");
 
+            dirLightShadowCullPass.Read(perframeBufferHandle, true);
+            dirLightShadowCullPass.Read(terrainPatchNodeHandle, true);            
+            for (int i = 0; i < dirShadowmapVisiableBufferCount; i++)
+            {
+                dirLightShadowCullPass.Write(dirShadowPatchNodeVisiableIndexHandles[i], true);
+            }
+            dirLightShadowCullPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
+                RHI::D3D12ComputeContext* pContext = context->GetComputeContext();
 
+                for (int i = 0; i < dirShadowmapVisiableBufferCount; i++)
+                {
+                    pContext->TransitionBarrier(RegGetBufCounter(dirShadowPatchNodeVisiableIndexHandles[i]), D3D12_RESOURCE_STATE_COPY_DEST);
+                }
+                pContext->FlushResourceBarriers();
+                for (int i = 0; i < dirShadowmapVisiableBufferCount; i++)
+                {
+                    pContext->ResetCounter(RegGetBufCounter(dirShadowPatchNodeVisiableIndexHandles[i]));
+                }
+                for (int i = 0; i < dirShadowmapVisiableBufferCount; i++)
+                {
+                    pContext->TransitionBarrier(RegGetBuf(dirShadowPatchNodeVisiableIndexHandles[i]), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+                    pContext->TransitionBarrier(RegGetBufCounter(dirShadowPatchNodeVisiableIndexHandles[i]), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+                }
+                pContext->TransitionBarrier(RegGetBuf(perframeBufferHandle), D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
+                pContext->TransitionBarrier(RegGetBuf(terrainPatchNodeHandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+                pContext->TransitionBarrier(RegGetBufCounter(terrainPatchNodeHandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+                pContext->FlushResourceBarriers();
 
+                for (int i = 0; i < dirShadowmapVisiableBufferCount; i++)
+                {
+                    pContext->SetRootSignature(pPatchNodeVisToDirCascadeIndexGenSignature.get());
+                    pContext->SetPipelineState(pPatchNodeVisToDirCascadeIndexGenPSO.get());
+
+                    struct RootIndexBuffer
+                    {
+                        UINT cascadeLevel;
+                        UINT meshPerFrameBufferIndex;
+                        UINT terrainPatchNodeIndex;
+                        UINT terrainPatchNodeCountIndex;
+                        UINT terrainVisNodeIdxIndex;
+                    };
+
+                    RootIndexBuffer rootIndexBuffer =
+                        RootIndexBuffer {(UINT)i,
+                                         RegGetBufDefCBVIdx(perframeBufferHandle),
+                                         RegGetBufDefSRVIdx(terrainPatchNodeHandle),
+                                         RegGetBufCounterSRVIdx(terrainPatchNodeHandle),
+                                         RegGetBufDefUAVIdx(dirShadowPatchNodeVisiableIndexHandles[i])};
+
+                    pContext->SetConstantArray(0, sizeof(RootIndexBuffer) / sizeof(UINT), &rootIndexBuffer);
+
+                    pContext->Dispatch1D(4096, 128);
+                }
+            });
+        }
+
+        //=================================================================================
+        // 阴影相机地形CommandSignature准备
+        //=================================================================================
+
+        if (dirShadowmapVisiableBufferCount != 0)
+        {
+            RHI::RenderPass& dirShadowCullingPass = graph.AddRenderPass("TerrainCommandSignatureForDirShadowPreparePass");
+
+            dirShadowCullingPass.Read(mainCommandSigUploadBufferHandle, true);
+            for (int i = 0; i < dirShadowmapVisiableBufferCount; i++)
+            {
+                dirShadowCullingPass.Read(dirShadowPatchNodeVisiableIndexHandles[i], true);
+                dirShadowCullingPass.Write(dirShadowCommandSigBufferHandles[i], true);
+            }
+
+            dirShadowCullingPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
+                RHI::D3D12ComputeContext* pContext = context->GetComputeContext();
+
+                pContext->TransitionBarrier(RegGetBuf(mainCommandSigUploadBufferHandle), D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_GENERIC_READ);
+                for (int i = 0; i < dirShadowmapVisiableBufferCount; i++)
+                {
+                    pContext->TransitionBarrier(RegGetBufCounter(dirShadowPatchNodeVisiableIndexHandles[i]), D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_SOURCE);
+                    pContext->TransitionBarrier(RegGetBuf(dirShadowCommandSigBufferHandles[i]), D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_DEST);
+                }
+                pContext->FlushResourceBarriers();
+
+                for (int i = 0; i < dirShadowmapVisiableBufferCount; i++)
+                {
+                    pContext->CopyBufferRegion(RegGetBuf(dirShadowCommandSigBufferHandles[i]),
+                                               0,
+                                               RegGetBuf(mainCommandSigUploadBufferHandle),
+                                               0,
+                                               sizeof(MoYu::TerrainCommandSignatureParams));
+                    pContext->CopyBufferRegion(RegGetBuf(dirShadowCommandSigBufferHandles[i]),
+                                               terrainInstanceCountOffset,
+                                               RegGetBufCounter(dirShadowPatchNodeVisiableIndexHandles[i]),
+                                               0,
+                                               sizeof(int));
+                    pContext->TransitionBarrier(RegGetBuf(dirShadowCommandSigBufferHandles[i]),
+                                                D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT);
+                }
+
+                pContext->FlushResourceBarriers();
+
+            });
+        }
+        
         //=================================================================================
         // 输出Pass结果
         //=================================================================================
@@ -398,13 +601,18 @@ namespace MoYu
         passOutput.maxHeightmapPyramidHandle    = terrainMaxHeightMapHandle;
         passOutput.minHeightmapPyramidHandle    = terrainMinHeightMapHandle;
         passOutput.terrainPatchNodeBufferHandle = terrainPatchNodeHandle;
-        passOutput.terrainDrawHandle =
-            DrawCallCommandBufferHandle {mainCommandSigBufferHandle, patchNodeVisiableToCameraIndexHandle};
+        passOutput.terrainDrawHandle = DrawCallCommandBufferHandle {mainCamCommandSigBufferHandle, mainCamPatchNodeVisiableIndexHandle};
+        for (int i = 0; i < dirShadowmapVisiableBufferCount; i++)
+        {
+            passOutput.directionShadowmapHandles.push_back(DrawCallCommandBufferHandle {dirShadowCommandSigBufferHandles[i], dirShadowPatchNodeVisiableIndexHandles[i]});
+        }
+
 
     }
 
     void IndirectTerrainCullPass::destroy()
     {
+
 
     }
 
