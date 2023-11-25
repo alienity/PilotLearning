@@ -28,7 +28,7 @@ namespace MoYu
         {
             RHI::RootSignatureDesc rootSigDesc =
                 RHI::RootSignatureDesc()
-                    .Add32BitConstants<0, 0>(5)
+                    .Add32BitConstants<0, 0>(12)
                     .AddStaticSampler<10, 0>(D3D12_FILTER::D3D12_FILTER_ANISOTROPIC,
                                              D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_WRAP,
                                              8)
@@ -57,7 +57,7 @@ namespace MoYu
             RHI::D3D12InputLayout InputLayout = MoYu::D3D12TerrainPatch::InputLayout;
 
             RHIRasterizerState rasterizerState = RHIRasterizerState();
-            //rasterizerState.FillMode = RHI_FILL_MODE::Wireframe;
+            rasterizerState.FillMode = RHI_FILL_MODE::Wireframe;
             rasterizerState.CullMode = RHI_CULL_MODE::Back;
 
             RHIDepthStencilState DepthStencilState;
@@ -197,6 +197,7 @@ namespace MoYu
             graphicContext->SetConstant(0, 2, registry->GetD3D12Texture(terrainHeightmapHandle)->GetDefaultSRV()->GetIndex());
             graphicContext->SetConstant(0, 3, registry->GetD3D12Texture(terrainNormalmapHandle)->GetDefaultSRV()->GetIndex());
             graphicContext->SetConstant(0, 4, registry->GetD3D12Buffer(drawIndexAndSigHandle.drawIndexBufferHandle)->GetDefaultSRV()->GetIndex());
+            graphicContext->SetConstant(0, 5, registry->GetD3D12Buffer(drawIndexAndSigHandle.drawIndexBufferHandle)->GetDefaultSRV()->GetIndex());
 
             auto pDrawCallCommandSigBuffer = registry->GetD3D12Buffer(drawIndexAndSigHandle.drawCallCommandSigBufferHandle);
 
@@ -207,9 +208,9 @@ namespace MoYu
                                             nullptr,
                                             0);
 
+
         });
     }
-
 
     void IndirectTerrainGBufferPass::destroy()
     {

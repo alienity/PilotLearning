@@ -16,6 +16,7 @@ cbuffer RootConstants : register(b0, space0)
     uint terrainHeightmapIndex;
     uint terrainNormalmapIndex;
     uint terrainDrawIdxBufferIndex;
+    uint terrainMateiralBufferIndex;
 };
 // ConstantBuffer<FrameUniforms> g_FrameUniform : register(b1, space0);
 // StructuredBuffer<PerRenderableMeshData> g_RenderableMeshDatas : register(t0, space0);
@@ -74,7 +75,7 @@ VaringStruct VSMain(VertexInput input)
     }
     if(_terrainPatchNode.neighbor & SOUTH)
     {
-        localPosition += float3(0, 0, input.color.g);
+        localPosition += float3(0, 0, input.color.r);
     }
     if(_terrainPatchNode.neighbor & WEST)
     {
@@ -88,13 +89,13 @@ VaringStruct VSMain(VertexInput input)
     localPosition = localPosition * _terrainPatchNode.nodeWidth + 
         float3(_terrainPatchNode.patchMinPos.x, 0, _terrainPatchNode.patchMinPos.y);
 
-    float2 terrainUV = float2(localPosition.x, localPosition.z) / float2(terrainSize + 1, terrainSize + 1);
+    float2 terrainUV = (localPosition.xz) / float2(terrainSize, terrainSize);
     float curHeight = terrainHeightmap.SampleLevel(defaultSampler, terrainUV, 0).b;
 
     localPosition.y = curHeight * terrainMaxHeight;
 
     // localPosition.xyz *= 0.01f;
-    localPosition.y += 1.5f;
+    // localPosition.y += 1.5f;
 
     VaringStruct output;
     output.vertex_worldPosition = mul(localToWorldMatrix, float4(localPosition, 1.0f));
@@ -103,17 +104,14 @@ VaringStruct VSMain(VertexInput input)
     // output.vertex_uv01 = input.texcoord;
     output.vertex_uv01 = terrainUV;
 
-    float3 localNormal = terrainNormalmap.SampleLevel(defaultSampler, terrainUV, 0).rgb;
+    float3 localNormal = input.normal.xyz;
     localNormal = normalize(localNormal * 2 - 1);
-
-    float3 localTangent = float3(1, 0, 0);
+    float3 localTangent = input.tangent.xyz;
     float3 localBitangent = cross(localNormal, localTangent);
     localTangent = cross(localBitangent, localNormal);
-
     float3x3 normalMat = transpose((float3x3)localToWorldMatrixInv);
 
-    // output.vertex_worldNormal      = normalize(mul(normalMat, input.normal));    
-    output.vertex_worldNormal      = normalize(mul(normalMat, localNormal));
+    output.vertex_worldNormal      = normalize(mul(normalMat, localNormal));    
     output.vertex_worldTangent.xyz = normalize(mul(normalMat, localTangent));
     output.vertex_worldTangent.w   = input.tangent.w;
 
@@ -122,13 +120,19 @@ VaringStruct VSMain(VertexInput input)
 
 PSOutputGBuffer PSMain(VaringStruct varingStruct)
 {
+    ConstantBuffer<FrameUniforms> mFrameUniforms = ResourceDescriptorHeap[meshPerFrameBufferIndex];
+    float4x4 localToWorldMatrix = mFrameUniforms.terrainUniform.local2WorldMatrix;
+    float4x4 localToWorldMatrixInv = mFrameUniforms.terrainUniform.world2LocalMatrix;
+    float3x3 normalMat = transpose((float3x3)localToWorldMatrixInv);
+
     float2 terrainUV = varingStruct.vertex_uv01.xy;
 
     Texture2D<float4> terrainNormalmap = ResourceDescriptorHeap[terrainNormalmapIndex];
 
     float3 localNormal = terrainNormalmap.SampleLevel(defaultSampler, terrainUV, 0).rgb;
-    localNormal = normalize(localNormal * 2 - 1);
-    float3 localTangent = float3(1, 0, 0);
+    localNormal = normalize(mul(normalMat, (localNormal * 2 - 1)));
+    localNormal.x = -localNormal.x;
+    float3 localTangent = normalize(mul(normalMat, float3(1, 0, 0)));
     float3 localBitangent = cross(localNormal, localTangent);
     localTangent = cross(localBitangent, localNormal);
 
@@ -137,7 +141,7 @@ PSOutputGBuffer PSMain(VaringStruct varingStruct)
 
     // output.albedo = float4(1,1,1,1);
     // output.albedo = float4(varingStruct.vertex_uv01.x, varingStruct.vertex_uv01.y, 0, 1);
-    output.albedo = float4(localNormal.xyz ,1);
+    output.albedo = float4(localNormal.xyz*0.5+0.5, 1);
     output.worldNormal = float4(localNormal.xyz, 0);
     output.worldTangent = float4(localTangent.xyz, 1);
     output.materialNormal = float4(0, 1, 0, 0);

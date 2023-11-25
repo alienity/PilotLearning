@@ -75,9 +75,10 @@ void GetPivotPosAndMipLevel(float2 pixelPos, float2 originPos, out int2 outNodeP
     outNodePivot = nodePivot;
 }
 
-void GetMaxMinHeight(Texture2D<float4> minHeightmap, Texture2D<float4> maxHeightmap, int2 pivotPos, int2 heightSize, int mipLevel, float terrainMaxHeight, out float minHeight, out float maxHeight)
+void GetMaxMinHeight(Texture2D<float4> minHeightmap, Texture2D<float4> maxHeightmap, 
+    float2 pivotPos, int2 heightSize, int mipLevel, float terrainMaxHeight, out float minHeight, out float maxHeight)
 {
-    float2 pivotUV = (pivotPos) / float2(heightSize.x, heightSize.y);
+    float2 pivotUV = pivotPos.xy / float2(heightSize.x, heightSize.y);
     // fetch height from pyramid heightmap
     minHeight = minHeightmap.SampleLevel(defaultSampler, pivotUV, mipLevel).b;
     maxHeight = maxHeightmap.SampleLevel(defaultSampler, pivotUV, mipLevel).b;
@@ -166,7 +167,7 @@ void CSMain(CSParams Params) {
         }
 
         float minHeight, maxHeight;
-        GetMaxMinHeight(terrainMinHeightmap, terrainMaxHeightmap, curIdxPivot, int2(terrainWidth, terrainHeight), mipLevel, terrainMaxHeight, minHeight, maxHeight);
+        GetMaxMinHeight(terrainMinHeightmap, terrainMaxHeightmap, curIdxPivot, int2(terrainWidth-1, terrainHeight-1), mipLevel + 1, terrainMaxHeight, minHeight, maxHeight);
 
         TerrainPatchNode _patchNode;
         _patchNode.patchMinPos = curIdxPivot;

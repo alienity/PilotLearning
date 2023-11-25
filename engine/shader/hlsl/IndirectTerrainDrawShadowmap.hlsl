@@ -66,7 +66,7 @@ VertexOutput VSMain(VertexInput input)
     }
     if(_terrainPatchNode.neighbor & SOUTH)
     {
-        localPosition += float3(0, 0, input.color.g);
+        localPosition += float3(0, 0, input.color.r);
     }
     if(_terrainPatchNode.neighbor & WEST)
     {
@@ -86,7 +86,7 @@ VertexOutput VSMain(VertexInput input)
     localPosition.y = curHeight * terrainMaxHeight;
 
     // localPosition.xyz *= 0.01f;
-    localPosition.y += 1.5f;
+    // localPosition.y += 1.5f;
 
     VertexOutput output;
     output.vertex_worldPosition = mul(localToWorldMatrix, float4(localPosition, 1.0f));

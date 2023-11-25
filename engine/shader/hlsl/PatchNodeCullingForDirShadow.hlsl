@@ -33,17 +33,20 @@ void CSMain(CSParams Params) {
 
     TerrainPatchNode patchNode = terrainPatchNodeBuffer[index];
 
-    float3 boxMin = float3(patchNode.patchMinPos.x, patchNode.minHeight, patchNode.patchMinPos.y);
-    float3 boxMax = float3(patchNode.patchMinPos.x + patchNode.nodeWidth, patchNode.maxHeight, patchNode.patchMinPos.y + patchNode.nodeWidth);
+    float heightBias = 0.1f;
+    float3 boxMin = float3(patchNode.patchMinPos.x, patchNode.minHeight - heightBias, patchNode.patchMinPos.y);
+    float3 boxMax = float3(patchNode.patchMinPos.x + patchNode.nodeWidth, patchNode.maxHeight + heightBias, patchNode.patchMinPos.y + patchNode.nodeWidth);
 
-    boxMin.y += 1.5f;
-    boxMax.y += 1.5f;
+    // boxMin.y += 1.5f;
+    // boxMax.y += 1.5f;
 
+    BoundingBox patchBox;
+    patchBox.Center = (boxMax + boxMin) * 0.5f;
+    patchBox.Extents = (boxMax - boxMin) * 0.5f;
+
+    float4x4 localToWorldMatrix = mFrameUniforms.terrainUniform.local2WorldMatrix;
     BoundingBox aabb;
-    aabb.Center = (boxMax + boxMin) * 0.5f;
-    aabb.Extents = (boxMax - boxMin) * 0.5f;
-    aabb._Padding_Center = 0;
-    aabb._Padding_Extents = 0;
+    patchBox.Transform(localToWorldMatrix, aabb);
 
     int cascadeLevel = g_RootIndexBuffer.cascadeLevel;
 
