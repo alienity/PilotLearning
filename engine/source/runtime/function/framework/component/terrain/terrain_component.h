@@ -26,12 +26,12 @@ namespace MoYu
         void updateTerrainRes(const TerrainComponentRes& res);
 
         // for editor
-        SceneMaterial& getSceneMaterial() { return m_material; }
+        TerrainMaterial& getTerrainMaterial() { return m_material; }
 
     //private:
         TerrainComponentRes m_terrain_res;
 
         SceneTerrainMesh m_terrain;
-        SceneMaterial m_material;
+        TerrainMaterial  m_material;
     };
 } // namespace MoYu

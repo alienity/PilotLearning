@@ -5,6 +5,49 @@
 
 namespace MoYu
 {
+    void IndirectTerrainGBufferPass::prepareMatBuffer(std::shared_ptr<RenderResource> render_resource)
+    {
+        if (pMatTextureIndexBuffer == nullptr)
+        {
+            pMatTextureIndexBuffer = RHI::D3D12Buffer::Create(m_Device->GetLinkedDevice(),
+                                                              RHI::RHIBufferTargetNone,
+                                                              2,
+                                                              sizeof(MaterialIndexStruct),
+                                                              L"TerrainMatTextureIndex",
+                                                              RHI::RHIBufferModeDynamic,
+                                                              D3D12_RESOURCE_STATE_GENERIC_READ);
+        }
+        if (pMatTextureTillingBuffer == nullptr)
+        {
+            pMatTextureTillingBuffer = RHI::D3D12Buffer::Create(m_Device->GetLinkedDevice(),
+                                                                RHI::RHIBufferTargetNone,
+                                                                2,
+                                                                sizeof(MaterialTillingStruct),
+                                                                L"TerrainMatTextureTilling",
+                                                                RHI::RHIBufferModeDynamic,
+                                                                D3D12_RESOURCE_STATE_GENERIC_READ);
+        }
+
+        if (m_render_scene->m_terrain_renderers.size() > 0)
+        {
+            MaterialIndexStruct* pMaterialViewIndexBuffer = pMatTextureIndexBuffer->GetCpuVirtualAddress<MaterialIndexStruct>();
+            MaterialTillingStruct* pMaterialTillingBuffer = pMatTextureTillingBuffer->GetCpuVirtualAddress<MaterialTillingStruct>();
+
+            for (int i = 0; i < 1; i++)
+            {
+                auto terrainBaseTextures = m_render_scene->m_terrain_renderers[i].internalTerrainRenderer.ref_material.terrain_base_textures;
+                (&pMaterialViewIndexBuffer[i])->albedoIndex = terrainBaseTextures->albedo->GetDefaultSRV()->GetIndex();
+                (&pMaterialViewIndexBuffer[i])->armIndex    = terrainBaseTextures->ao_roughness_metallic->GetDefaultSRV()->GetIndex();
+                (&pMaterialViewIndexBuffer[i])->displacementIndex = terrainBaseTextures->displacement->GetDefaultSRV()->GetIndex();
+                (&pMaterialViewIndexBuffer[i])->normalIndex       = terrainBaseTextures->normal->GetDefaultSRV()->GetIndex();
+
+                (&pMaterialTillingBuffer[i])->albedoTilling = terrainBaseTextures->albedo_tilling;
+                (&pMaterialTillingBuffer[i])->armTilling = terrainBaseTextures->ao_roughness_metallic_tilling;
+                (&pMaterialTillingBuffer[i])->displacementTilling = terrainBaseTextures->displacement_tilling;
+                (&pMaterialTillingBuffer[i])->normalTilling = terrainBaseTextures->normal_tilling;
+            }
+        }
+    }
 
 	void IndirectTerrainGBufferPass::initialize(const DrawPassInitInfo& init_info)
 	{
@@ -57,7 +100,7 @@ namespace MoYu
             RHI::D3D12InputLayout InputLayout = MoYu::D3D12TerrainPatch::InputLayout;
 
             RHIRasterizerState rasterizerState = RHIRasterizerState();
-            rasterizerState.FillMode = RHI_FILL_MODE::Wireframe;
+            //rasterizerState.FillMode = RHI_FILL_MODE::Wireframe;
             rasterizerState.CullMode = RHI_CULL_MODE::Back;
 
             RHIDepthStencilState DepthStencilState;
@@ -109,6 +152,9 @@ namespace MoYu
 
     void IndirectTerrainGBufferPass::update(RHI::RenderGraph& graph, DrawInputParameters& passInput, DrawOutputParameters& passOutput)
     {
+        RHI::RgResourceHandle terrainMatIndexHandle = GImport(graph, pMatTextureIndexBuffer.get());
+        RHI::RgResourceHandle terrainMatTillingHandle = GImport(graph, pMatTextureTillingBuffer.get());
+
         bool needClearRenderTarget = initializeRenderTarget(graph, &passOutput);
 
         RHI::RgResourceHandle perframeBufferHandle = passInput.perframeBufferHandle;
@@ -120,6 +166,9 @@ namespace MoYu
         std::vector<DrawIndexAndCommandSigHandle> dirShadowIndexAndSigHandle = passInput.dirShadowIndexAndSigHandle;
 
         RHI::RenderPass& drawpass = graph.AddRenderPass("IndirectTerrainGBufferPass");
+
+        drawpass.Read(terrainMatIndexHandle, false, RHIResourceState::RHI_RESOURCE_STATE_GENERIC_READ);
+        drawpass.Read(terrainMatTillingHandle, false, RHIResourceState::RHI_RESOURCE_STATE_GENERIC_READ);
 
         drawpass.Read(passInput.perframeBufferHandle, false, RHIResourceState::RHI_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
         drawpass.Read(passInput.terrainHeightmapHandle, false, RHIResourceState::RHI_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
@@ -198,6 +247,8 @@ namespace MoYu
             graphicContext->SetConstant(0, 3, registry->GetD3D12Texture(terrainNormalmapHandle)->GetDefaultSRV()->GetIndex());
             graphicContext->SetConstant(0, 4, registry->GetD3D12Buffer(drawIndexAndSigHandle.drawIndexBufferHandle)->GetDefaultSRV()->GetIndex());
             graphicContext->SetConstant(0, 5, registry->GetD3D12Buffer(drawIndexAndSigHandle.drawIndexBufferHandle)->GetDefaultSRV()->GetIndex());
+            graphicContext->SetConstant(0, 6, registry->GetD3D12Buffer(terrainMatIndexHandle)->GetDefaultSRV()->GetIndex());
+            graphicContext->SetConstant(0, 7, registry->GetD3D12Buffer(terrainMatTillingHandle)->GetDefaultSRV()->GetIndex());
 
             auto pDrawCallCommandSigBuffer = registry->GetD3D12Buffer(drawIndexAndSigHandle.drawCallCommandSigBufferHandle);
 
@@ -207,7 +258,6 @@ namespace MoYu
                                             1,
                                             nullptr,
                                             0);
-
 
         });
     }
@@ -225,5 +275,6 @@ namespace MoYu
         
         return needClearRenderTarget;
     }
+
 
 }

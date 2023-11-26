@@ -70,6 +70,8 @@ namespace MoYu
     public:
         ~IndirectTerrainGBufferPass() { destroy(); }
 
+        void prepareMatBuffer(std::shared_ptr<RenderResource> render_resource);
+
         void initialize(const DrawPassInitInfo& init_info);
         void update(RHI::RenderGraph& graph, DrawInputParameters& passInput, DrawOutputParameters& passOutput);
         void destroy() override final;
@@ -83,6 +85,25 @@ namespace MoYu
         std::shared_ptr<RHI::D3D12RootSignature> pIndirectTerrainGBufferSignature;
         std::shared_ptr<RHI::D3D12PipelineState> pIndirectTerrainGBufferPSO;
         std::shared_ptr<RHI::D3D12CommandSignature> pIndirectTerrainGBufferCommandSignature;
+
+        struct MaterialIndexStruct
+        {
+            int albedoIndex;
+            int armIndex;
+            int displacementIndex;
+            int normalIndex;
+        };
+
+        struct MaterialTillingStruct
+        {
+            glm::float2 albedoTilling;
+            glm::float2 armTilling;
+            glm::float2 displacementTilling;
+            glm::float2 normalTilling;
+        };
+
+        std::shared_ptr<RHI::D3D12Buffer> pMatTextureIndexBuffer;
+        std::shared_ptr<RHI::D3D12Buffer> pMatTextureTillingBuffer;
 
         RHI::RgTextureDesc albedoDesc;                                  // float4
         RHI::RgTextureDesc depthDesc;                                   // float

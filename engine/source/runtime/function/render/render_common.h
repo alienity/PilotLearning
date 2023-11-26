@@ -253,6 +253,19 @@ namespace MoYu
         InternalScratchVertexBuffer scratch_vertex_buffer;
     };
 
+    struct InternalTerrainBaseTexture
+    {
+        std::shared_ptr<RHI::D3D12Texture> albedo;
+        std::shared_ptr<RHI::D3D12Texture> ao_roughness_metallic;
+        std::shared_ptr<RHI::D3D12Texture> displacement;
+        std::shared_ptr<RHI::D3D12Texture> normal;
+
+        glm::float2 albedo_tilling;
+        glm::float2 ao_roughness_metallic_tilling;
+        glm::float2 displacement_tilling;
+        glm::float2 normal_tilling;
+    };
+
     struct InternalTerrain
     {
         glm::int2 terrain_size; // 假设地形大小是1024
@@ -271,6 +284,11 @@ namespace MoYu
         std::shared_ptr<RHI::D3D12Texture> terrain_normalmap;
     };
 
+    struct InternalTerrainMaterial
+    {
+        InternalTerrainBaseTexture terrain_base_textures[2];
+    };
+
     struct InternalTerrainRenderer
     {
         SceneCommonIdentifier m_identifier;
@@ -279,7 +297,7 @@ namespace MoYu
         glm::float4x4 model_matrix_inverse;
 
         InternalTerrain ref_terrain;
-        InternalMaterial ref_material;
+        InternalTerrainMaterial ref_material;
     };
 
     struct BaseAmbientLight
@@ -467,7 +485,7 @@ namespace MoYu
     struct MaterialImage
     {
         SceneImage m_image {};
-        glm::float2    m_tilling {1.0f, 1.0f};
+        glm::float2 m_tilling {1.0f, 1.0f};
     };
 
     inline bool operator==(const MaterialImage& lhs, const MaterialImage& rhs)
@@ -497,7 +515,7 @@ namespace MoYu
 
     inline bool operator==(const ScenePBRMaterial& lhs, const ScenePBRMaterial& rhs)
     {
-#define CompareVal(Val) lhs.Val == rhs.Val
+        #define CompareVal(Val) lhs.Val == rhs.Val
 
         return CompareVal(m_blend) && CompareVal(m_double_sided) && CompareVal(m_base_color_factor) &&
                CompareVal(m_metallic_factor) && CompareVal(m_roughness_factor) && CompareVal(m_reflectance_factor) &&
@@ -531,6 +549,32 @@ namespace MoYu
         SceneMaterial m_material;
     };
 
+    struct TerrainBaseTex
+    {
+        MaterialImage m_albedo_file {};
+        MaterialImage m_ao_roughness_metallic_file {};
+        MaterialImage m_displacement_file {};
+        MaterialImage m_normal_file {};
+    };
+
+    inline bool operator==(const TerrainBaseTex& lhs, const TerrainBaseTex& rhs)
+    {
+    #define CompareVal(Val) lhs.Val == rhs.Val
+
+        return CompareVal(m_albedo_file) && CompareVal(m_ao_roughness_metallic_file) &&
+               CompareVal(m_displacement_file) && CompareVal(m_normal_file);
+    }
+
+    struct TerrainMaterial
+    {
+        TerrainBaseTex m_base_texs[2];
+    };
+    inline bool operator==(const TerrainMaterial& lhs, const TerrainMaterial& rhs)
+    {
+    #define CompareVal(Val) lhs.Val == rhs.Val
+        return CompareVal(m_base_texs[0]) && CompareVal(m_base_texs[1]);
+    }
+
     struct SceneTerrainRenderer
     {
         static const ComponentType m_component_type {ComponentType::C_Terrain};
@@ -538,7 +582,7 @@ namespace MoYu
         SceneCommonIdentifier m_identifier;
 
         SceneTerrainMesh m_scene_terrain_mesh;
-        SceneMaterial m_material;
+        TerrainMaterial  m_terrain_material;
     };
     
     enum LightType

@@ -250,6 +250,7 @@ namespace MoYu
         mIndirectTerrainShadowPass->prepareShadowmaps(render_resource);
         mSkyBoxPass->prepareMeshData(render_resource);
         mTerrainCullPass->prepareMeshData(render_resource);
+        mIndirectTerrainGBufferPass->prepareMatBuffer(render_resource);
 
         mIndirectCullPass->inflatePerframeBuffer(render_resource);
     }

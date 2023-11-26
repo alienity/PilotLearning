@@ -17,6 +17,8 @@ cbuffer RootConstants : register(b0, space0)
     uint terrainNormalmapIndex;
     uint terrainDrawIdxBufferIndex;
     uint terrainMateiralBufferIndex;
+    uint terrainMatIndexBufferIndex;
+    uint terrainMatTillingBufferIndex;
 };
 // ConstantBuffer<FrameUniforms> g_FrameUniform : register(b1, space0);
 // StructuredBuffer<PerRenderableMeshData> g_RenderableMeshDatas : register(t0, space0);
@@ -24,6 +26,22 @@ cbuffer RootConstants : register(b0, space0)
 
 SamplerState defaultSampler : register(s10);
 SamplerComparisonState shadowmapSampler : register(s11);
+
+struct MaterialIndexStruct
+{
+    int albedoIndex;
+    int armIndex;
+    int displacementIndex;
+    int normalIndex;
+};
+
+struct MaterialTillingStruct
+{
+    float2 albedoTilling;
+    float2 armTilling;
+    float2 displacementTilling;
+    float2 normalTilling;
+};
 
 struct VertexInput
 {
@@ -52,6 +70,8 @@ VaringStruct VSMain(VertexInput input)
     StructuredBuffer<TerrainPatchNode> mTerrainPatchNodes = ResourceDescriptorHeap[terrainPatchNodeIndex];
     ConstantBuffer<FrameUniforms> mFrameUniforms = ResourceDescriptorHeap[meshPerFrameBufferIndex];
 
+    // StructuredBuffer<MaterialIndexStruct> mMaterialIndexBuffer = ResourceDescriptorHeap[terrainMatIndexBufferIndex];
+    
     Texture2D<float4> terrainHeightmap = ResourceDescriptorHeap[terrainHeightmapIndex];
     Texture2D<float4> terrainNormalmap = ResourceDescriptorHeap[terrainNormalmapIndex];
 
@@ -136,17 +156,39 @@ PSOutputGBuffer PSMain(VaringStruct varingStruct)
     float3 localBitangent = cross(localNormal, localTangent);
     localTangent = cross(localBitangent, localNormal);
 
+    /*
+    int albedoIndex;
+    int armIndex;
+    int displacementIndex;
+    int normalIndex;
+    */
+
+    StructuredBuffer<MaterialIndexStruct> mMaterialIndexBuffers = ResourceDescriptorHeap[terrainMatIndexBufferIndex];
+    StructuredBuffer<MaterialTillingStruct> mMaterialTillingBuffers = ResourceDescriptorHeap[terrainMatTillingBufferIndex];
+    Texture2D<float3> albedoTexture = ResourceDescriptorHeap[mMaterialIndexBuffers[0].albedoIndex];
+    float2 albedoTilling = mMaterialTillingBuffers[0].albedoTilling;
+    Texture2D<float3> aoroughnessmetalTexture = ResourceDescriptorHeap[mMaterialIndexBuffers[0].armIndex];
+    float2 armTilling = mMaterialTillingBuffers[0].armTilling;
+    Texture2D<float3> displacementTexture = ResourceDescriptorHeap[mMaterialIndexBuffers[0].displacementIndex];
+    float2 displacementTilling = mMaterialTillingBuffers[0].displacementTilling;
+    Texture2D<float3> normalTexture = ResourceDescriptorHeap[mMaterialIndexBuffers[0].normalIndex];
+    float2 normalTilling = mMaterialTillingBuffers[0].normalTilling;
+
+    float3 albedo = albedoTexture.Sample(defaultSampler, terrainUV * albedoTilling).rgb;
+    float3 aoRoughnessMetallic = albedoTexture.Sample(defaultSampler, terrainUV * armTilling).rgb;
+    float3 displacement = displacementTexture.Sample(defaultSampler, terrainUV * displacementTilling).rgb;
+    float3 normal = normalTexture.Sample(defaultSampler, terrainUV * normalTilling).rgb*2-1;
 
     PSOutputGBuffer output;
 
     // output.albedo = float4(1,1,1,1);
     // output.albedo = float4(varingStruct.vertex_uv01.x, varingStruct.vertex_uv01.y, 0, 1);
-    output.albedo = float4(localNormal.xyz*0.5+0.5, 1);
+    output.albedo = float4(albedo.rgb, 1);
     output.worldNormal = float4(localNormal.xyz, 0);
     output.worldTangent = float4(localTangent.xyz, 1);
-    output.materialNormal = float4(0, 1, 0, 0);
+    output.materialNormal = float4(normal.xyz, 0);
     output.emissive = float4(0, 0, 0, 0);
-    output.metallic_Roughness_Reflectance_AO.xyzw = float4(0, 1, 0, 0);
+    output.metallic_Roughness_Reflectance_AO.xyzw = float4(aoRoughnessMetallic.z, aoRoughnessMetallic.y, 0, aoRoughnessMetallic.x);
     output.clearCoat_ClearCoatRoughness_Anisotropy = float4(0, 0, 0, 0.0f);
 
     return output;

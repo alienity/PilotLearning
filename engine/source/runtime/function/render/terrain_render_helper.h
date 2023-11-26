@@ -55,10 +55,15 @@ namespace MoYu
         TerrainRenderHelper();
         ~TerrainRenderHelper();
 
-        void InitTerrainRenderer(SceneTerrainRenderer* sceneTerrainRenderer, InternalTerrain* internalTerrain, RenderResource* renderResource);
+        void InitTerrainRenderer(SceneTerrainRenderer*    sceneTerrainRenderer,
+                                 SceneTerrainRenderer*    cachedSceneTerrainRenderer,
+                                 InternalTerrain*         internalTerrain,
+                                 InternalTerrainMaterial* internalTerrainMaterial,
+                                 RenderResource*          renderResource);
 
         void InitTerrainBasicInfo();
         void InitTerrainHeightAndNormalMap();
+        void InitTerrainBaseTextures();
         void InitInternalTerrainPatchMesh();
 
         void InitTerrainNodePage();
@@ -75,12 +80,18 @@ namespace MoYu
         std::vector<TNode> _TNodes; // 线性记录所有的图块
 
         SceneTerrainRenderer* mSceneTerrainRenderer;
+        SceneTerrainRenderer* mCachedSceneTerrainRenderer;
         InternalTerrain* mInternalTerrain;
+        InternalTerrainMaterial* mInternalTerrainMaterial;
         RenderResource*  mRenderResource;
 
     private:
+        bool mIsHeightmapInit;
+        bool mIsNaterialInit;
+
         InternalScratchMesh mInternalScratchMesh;
         InternalMesh mInternalhMesh;
+        InternalTerrainBaseTexture mInternalBaseTextures[2];
 
         std::shared_ptr<MoYu::MoYuScratchImage> terrain_heightmap_scratch;
         std::shared_ptr<MoYu::MoYuScratchImage> terrain_normalmap_scratch;

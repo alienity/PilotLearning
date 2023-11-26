@@ -294,17 +294,18 @@ namespace MoYu
         internal_terrain_renderer.model_matrix_inverse = model_matrix_inv;
 
         bool is_terrain_same = scene_terrain_renderer.m_scene_terrain_mesh == cached_terrain_renderer.m_scene_terrain_mesh;
+        is_terrain_same &= scene_terrain_renderer.m_terrain_material == cached_terrain_renderer.m_terrain_material;
 
         if (!is_terrain_same || !has_initialized)
         {
             internal_terrain_renderer.m_identifier = scene_terrain_renderer.m_identifier;
 
             InternalTerrain internal_terrain {};
-            terrainHelper->InitTerrainRenderer(&scene_terrain_renderer, &internal_terrain, this);
+            InternalTerrainMaterial internal_material {};
+            terrainHelper->InitTerrainRenderer(
+                &scene_terrain_renderer, &cached_terrain_renderer, &internal_terrain, &internal_material, this);
 
             internal_terrain_renderer.ref_terrain = internal_terrain;
-
-            InternalMaterial internal_material {};
             internal_terrain_renderer.ref_material = internal_material;
         }
 
