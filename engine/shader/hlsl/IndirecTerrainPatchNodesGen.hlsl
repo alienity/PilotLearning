@@ -78,10 +78,11 @@ void GetPivotPosAndMipLevel(float2 pixelPos, float2 originPos, out int2 outNodeP
 void GetMaxMinHeight(Texture2D<float4> minHeightmap, Texture2D<float4> maxHeightmap, 
     float2 pivotPos, int2 heightSize, int mipLevel, float terrainMaxHeight, out float minHeight, out float maxHeight)
 {
-    float2 pivotUV = pivotPos.xy / float2(heightSize.x, heightSize.y);
+    float pixelOffset = pow(2, mipLevel);
+    float2 pivotUV = (pivotPos.xy+float2(pixelOffset,pixelOffset)) / float2(heightSize.x, heightSize.y);
     // fetch height from pyramid heightmap
-    minHeight = minHeightmap.SampleLevel(defaultSampler, pivotUV, mipLevel).b;
-    maxHeight = maxHeightmap.SampleLevel(defaultSampler, pivotUV, mipLevel).b;
+    minHeight = minHeightmap.SampleLevel(defaultSampler, pivotUV, mipLevel+1).b;
+    maxHeight = maxHeightmap.SampleLevel(defaultSampler, pivotUV, mipLevel+1).b;
 
     minHeight = minHeight * terrainMaxHeight;
     maxHeight = maxHeight * terrainMaxHeight;
