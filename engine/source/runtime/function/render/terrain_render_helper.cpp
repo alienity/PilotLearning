@@ -493,6 +493,33 @@ namespace MoYu
         float patchScale = 2.0f;
         float biasScale  = patchScale * 0.25f;
 
+
+        /*
+        int vertexCount = 20;
+        float bias = 1.0f / vertexCount;
+
+        for (int i = 0; i < vertexCount; i++)
+        {
+            float vOffset = bias * i;
+            for (int j = 0; j < vertexCount; j++)
+            {
+                float westOffset  = j == 0 ? i % 2 : 0;
+                float eastOffset  = j == vertexCount - 1 ? i % 2 : 0;
+                float northOffset = i == 0 ? j % 2 : 0;
+                float southOffset = i == vertexCount - 1 ? j % 2 : 0;
+
+                float biasOffset = bias * j;
+                float uOffset = bias * i;                
+
+                vertices.push_back(
+                    CreatePatch(patchScale * glm::vec3(biasOffset, 0, 0.0),
+                                glm::vec2(uOffset, vOffset),
+                                biasScale * glm::vec4(northOffset, southOffset, westOffset, eastOffset)));
+            }
+        }
+        */
+
+
         vertices.push_back(CreatePatch(patchScale * glm::vec3(0.0, 0, 0.0), glm::vec2(0, 0), biasScale * glm::vec4(0, 0, 0, 0)));
         vertices.push_back(CreatePatch(patchScale * glm::vec3(0.25, 0, 0.0), glm::vec2(0.25, 0), biasScale * glm::vec4(1, 0, 0, 0)));
         vertices.push_back(CreatePatch(patchScale * glm::vec3(0.5, 0, 0.0), glm::vec2(0.5, 0), biasScale * glm::vec4(0, 0, 0, 0)));

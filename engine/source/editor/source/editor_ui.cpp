@@ -1450,7 +1450,7 @@ namespace MoYu
                 ImGui::EndDragDropSource();
             }
         }
-        if (node->m_file_type == "jpg" || node->m_file_type == "png" || node->m_file_type == "tga")
+        if (node->m_file_type == "jpg" || node->m_file_type == "png" || node->m_file_type == "tga" || node->m_file_type == "exr" || node->m_file_type == "dds")
         {
             if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_None))
             {
