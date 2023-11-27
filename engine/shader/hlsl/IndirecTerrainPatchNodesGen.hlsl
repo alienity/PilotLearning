@@ -20,7 +20,7 @@ SamplerState defaultSampler : register(s10);
 #define WEST 4
 #define NORTH 8
 
-#define MAXMIPLEVEL 3
+#define MAXMIPLEVEL 8
 
 #define BASENODEWIDTH 2
 
@@ -112,8 +112,8 @@ void CSMain(CSParams Params) {
 
     float terrainMaxHeight = mFrameUniforms.terrainUniform.terrainMaxHeight;
 
-    float3 cameraPosition = mFrameUniforms.cameraUniform.cameraPosition;
-    float3 cameraDirection = -mFrameUniforms.cameraUniform.worldFromViewMatrix._m02_m12_m22;
+    float3 cameraPosition = mFrameUniforms.cameraUniform.curFrameUniform.cameraPosition;
+    float3 cameraDirection = -mFrameUniforms.cameraUniform.curFrameUniform.worldFromViewMatrix._m02_m12_m22;
     float3 focusPosition = cameraPosition + cameraDirection;
 
     focusPosition = mul(terrainWorld2LocalMat, float4(focusPosition, 1.0f)).xyz;

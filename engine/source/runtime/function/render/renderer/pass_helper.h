@@ -39,5 +39,18 @@ namespace MoYu
         }
     };
 
+    struct MipGenInBuffer
+    {
+        glm::uint   SrcMipLevel;  // Texture level of source mip
+        glm::uint   NumMipLevels; // Number of OutMips to write: [1, 4]
+        glm::float2 TexelSize;    // 1.0 / OutMip1.Dimensions
+
+        glm::uint SrcIndex;
+        glm::uint OutMip1Index;
+        glm::uint OutMip2Index;
+        glm::uint OutMip3Index;
+        glm::uint OutMip4Index;
+    };
+
 }
 

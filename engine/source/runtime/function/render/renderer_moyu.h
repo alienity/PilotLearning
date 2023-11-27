@@ -96,6 +96,8 @@ namespace MoYu
         {
             viewport = {offset_x, offset_y, width, height};
         }
+        
+        static int m_FrameIndex;
 
     protected:
         RHI::D3D12Device*    pDevice       = nullptr;
@@ -106,7 +108,6 @@ namespace MoYu
         RHI::RenderGraphAllocator renderGraphAllocator;
         RHI::RenderGraphRegistry  renderGraphRegistry;
 
-        size_t frameIndex = 0;
         EngineContentViewport viewport;
     };
 

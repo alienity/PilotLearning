@@ -4,7 +4,7 @@
 #include "runtime/function/global/global_context.h"
 #include "runtime/resource/config_manager/config_manager.h"
 #include "runtime/function/render/rhi/rendergraph/RenderGraphCommon.h"
-#include "runtime/function/render/renderer/shadow_helper.h"
+#include "runtime/function/render/renderer/pass_helper.h"
 
 namespace MoYu
 {

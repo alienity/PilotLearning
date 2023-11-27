@@ -53,12 +53,12 @@ void CSMain(CSParams Params) {
         BoundingBox aabb;
         meshData.boundingBox.Transform(meshData.worldFromModelMatrix, aabb);
 
-        Frustum frustum = ExtractPlanesDX(mFrameUniforms.cameraUniform.clipFromWorldMatrix);
+        Frustum frustum = ExtractPlanesDX(mFrameUniforms.cameraUniform.curFrameUniform.clipFromWorldMatrix);
 
         bool visible = FrustumContainsBoundingBox(frustum, aabb) != CONTAINMENT_DISJOINT;
         if (visible)
         {
-            float3 cameraPos  = mFrameUniforms.cameraUniform.cameraPosition;
+            float3 cameraPos  = mFrameUniforms.cameraUniform.curFrameUniform.cameraPosition;
             float3 aabbCenter = aabb.Center;
 
             float meshDistance = distance(cameraPos, aabbCenter);

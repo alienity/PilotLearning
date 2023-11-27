@@ -85,6 +85,8 @@ namespace MoYu
         p_Device->GetLinkedDevice()->Release(p_SwapChain->GetSyncHandle());
 
         p_Device->OnEndFrame();
+
+        p_Device->GetLinkedDevice()->m_FrameIndex = (p_Device->GetLinkedDevice()->m_FrameIndex + 1) % 2;
     }
 
     RHI::D3D12Device* RendererManager::GetDevice() { return p_Device.get(); }

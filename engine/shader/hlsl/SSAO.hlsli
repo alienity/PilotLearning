@@ -54,10 +54,10 @@ struct SSAOInput
 float CustomSSAO(SSAOInput ssaoInput, float2 uv, uint2 screenSize)
 {
     // Parameters used in coordinate conversion
-    float4x4 projMatInv = ssaoInput.frameUniforms.cameraUniform.viewFromClipMatrix;
-    float4x4 projMatrix = ssaoInput.frameUniforms.cameraUniform.clipFromViewMatrix;
+    float4x4 projMatInv = ssaoInput.frameUniforms.cameraUniform.curFrameUniform.viewFromClipMatrix;
+    float4x4 projMatrix = ssaoInput.frameUniforms.cameraUniform.curFrameUniform.clipFromViewMatrix;
     
-    float3x3 normalMat = transpose((float3x3)ssaoInput.frameUniforms.cameraUniform.worldFromViewMatrix);
+    float3x3 normalMat = transpose((float3x3)ssaoInput.frameUniforms.cameraUniform.curFrameUniform.worldFromViewMatrix);
 
     // Get the depth, normal and view position for this fragment
     // float3 raw_norm_o = ssaoInput.worldNormalMap.Sample(ssaoInput.defaultSampler, uv).rgb * 2 - 1;

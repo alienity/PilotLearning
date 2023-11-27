@@ -31,6 +31,8 @@ static int CVar_GlobalDynamicGPUSamplerHeapSize = 1024;
 
 namespace RHI
 {
+    UINT D3D12LinkedDevice::m_FrameIndex = 0;
+
     // clang-format off
     D3D12LinkedDevice::D3D12LinkedDevice(D3D12Device* Parent, D3D12NodeMask NodeMask)
         : D3D12DeviceChild(Parent)

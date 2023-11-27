@@ -91,7 +91,7 @@ VaringStruct VSMain(VertexInput input)
 
     float4x4 localToWorldMatrix = mFrameUniforms.terrainUniform.local2WorldMatrix;
     float4x4 localToWorldMatrixInv = mFrameUniforms.terrainUniform.world2LocalMatrix;
-    float4x4 projectionViewMatrix  = mFrameUniforms.cameraUniform.clipFromWorldMatrix;
+    float4x4 projectionViewMatrix  = mFrameUniforms.cameraUniform.curFrameUniform.clipFromWorldMatrix;
     float terrainMaxHeight = mFrameUniforms.terrainUniform.terrainMaxHeight;
     float terrainSize = mFrameUniforms.terrainUniform.terrainSize;
 
@@ -120,10 +120,10 @@ VaringStruct VSMain(VertexInput input)
     float2 terrainUV = (localPosition.xz) / float2(terrainSize, terrainSize);
     float curHeight = terrainHeightmap.SampleLevel(defaultSampler, terrainUV, 0).b;
 
-    float displacement = displacementTexture.SampleLevel(defaultSampler, terrainUV * displacementTilling, 0).r;
+    // float displacement = displacementTexture.SampleLevel(defaultSampler, terrainUV * displacementTilling, 0).r;
 
     localPosition.y = curHeight * terrainMaxHeight;
-    // localPosition.y = displacement;
+    // localPosition.y += displacement * 0.5f;
 
     // localPosition.xyz *= 0.01f;
     // localPosition.y += 1.5f;

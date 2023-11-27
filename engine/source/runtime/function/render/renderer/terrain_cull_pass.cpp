@@ -5,6 +5,7 @@
 #include "runtime/core/math/moyu_math2.h"
 #include "runtime/function/render/rhi/d3d12/d3d12_graphicsCommon.h"
 #include "runtime/function/render/terrain_render_helper.h"
+#include "runtime/function/render/renderer/pass_helper.h"
 
 #include "fmt/core.h"
 #include <cassert>
@@ -132,6 +133,8 @@ namespace MoYu
             MaxTerrainNodeCount,
             sizeof(HLSL::TerrainPatchNode),
             L"TerrainPatchIndexBuffer");
+
+        isTerrainMinMaxHeightReady = false;
 
     }
 
@@ -320,52 +323,56 @@ namespace MoYu
         //=================================================================================
         // 生成HeightMap的MaxHeightMap和MinHeightMap
         //=================================================================================
-        RHI::RenderPass& genHeightMapMipMapPass = graph.AddRenderPass("GenerateHeightMapMipMapPass");
+        if (!isTerrainMinMaxHeightReady)
+        {
+            isTerrainMinMaxHeightReady = true;
 
-        genHeightMapMipMapPass.Read(terrainHeightmapHandle, true);
-        genHeightMapMipMapPass.Read(terrainMinHeightMapHandle, true);
-        genHeightMapMipMapPass.Read(terrainMaxHeightMapHandle, true);
-        genHeightMapMipMapPass.Write(terrainMinHeightMapHandle, true);
-        genHeightMapMipMapPass.Write(terrainMaxHeightMapHandle, true);
+            RHI::RenderPass& genHeightMapMipMapPass = graph.AddRenderPass("GenerateHeightMapMipMapPass");
 
-        genHeightMapMipMapPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
-            RHI::D3D12ComputeContext* pContext = context->GetComputeContext();
+            genHeightMapMipMapPass.Read(terrainHeightmapHandle, true);
+            genHeightMapMipMapPass.Read(terrainMinHeightMapHandle, true);
+            genHeightMapMipMapPass.Read(terrainMaxHeightMapHandle, true);
+            genHeightMapMipMapPass.Write(terrainMinHeightMapHandle, true);
+            genHeightMapMipMapPass.Write(terrainMaxHeightMapHandle, true);
 
-            {
-                pContext->TransitionBarrier(RegGetTex(terrainHeightmapHandle), D3D12_RESOURCE_STATE_COPY_SOURCE);
-                pContext->TransitionBarrier(RegGetTex(terrainMinHeightMapHandle), D3D12_RESOURCE_STATE_COPY_DEST, 0);
-                pContext->TransitionBarrier(RegGetTex(terrainMaxHeightMapHandle), D3D12_RESOURCE_STATE_COPY_DEST, 0);
-                pContext->FlushResourceBarriers();
+            genHeightMapMipMapPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
+                RHI::D3D12ComputeContext* pContext = context->GetComputeContext();
 
-                const CD3DX12_TEXTURE_COPY_LOCATION src(terrainHeightmap->GetResource(), 0);
+                {
+                    pContext->TransitionBarrier(RegGetTex(terrainHeightmapHandle), D3D12_RESOURCE_STATE_COPY_SOURCE);
+                    pContext->TransitionBarrier(RegGetTex(terrainMinHeightMapHandle), D3D12_RESOURCE_STATE_COPY_DEST, 0);
+                    pContext->TransitionBarrier(RegGetTex(terrainMaxHeightMapHandle), D3D12_RESOURCE_STATE_COPY_DEST, 0);
+                    pContext->FlushResourceBarriers();
 
-                const CD3DX12_TEXTURE_COPY_LOCATION dst(terrainMinHeightMap->GetResource(), 0);
-                context->GetGraphicsCommandList()->CopyTextureRegion(&dst, 0, 0, 0, &src, nullptr);
+                    const CD3DX12_TEXTURE_COPY_LOCATION src(terrainHeightmap->GetResource(), 0);
 
-                const CD3DX12_TEXTURE_COPY_LOCATION dst_max(terrainMaxHeightMap->GetResource(), 0);
-                context->GetGraphicsCommandList()->CopyTextureRegion(&dst_max, 0, 0, 0, &src, nullptr);
+                    const CD3DX12_TEXTURE_COPY_LOCATION dst(terrainMinHeightMap->GetResource(), 0);
+                    context->GetGraphicsCommandList()->CopyTextureRegion(&dst, 0, 0, 0, &src, nullptr);
 
-                context->FlushResourceBarriers();
-            }
+                    const CD3DX12_TEXTURE_COPY_LOCATION dst_max(terrainMaxHeightMap->GetResource(), 0);
+                    context->GetGraphicsCommandList()->CopyTextureRegion(&dst_max, 0, 0, 0, &src, nullptr);
 
-            //--------------------------------------------------
-            // 生成MinHeightMap
-            //--------------------------------------------------
-            {
-                RHI::D3D12Texture* _SrcTexture = RegGetTex(terrainMinHeightMapHandle);
-                generateMipmapForTerrainHeightmap(pContext, _SrcTexture, true);
-            }
+                    context->FlushResourceBarriers();
+                }
+
+                //--------------------------------------------------
+                // 生成MinHeightMap
+                //--------------------------------------------------
+                {
+                    RHI::D3D12Texture* _SrcTexture = RegGetTex(terrainMinHeightMapHandle);
+                    generateMipmapForTerrainHeightmap(pContext, _SrcTexture, true);
+                }
             
-            //--------------------------------------------------
-            // 生成MaxHeightMap
-            //--------------------------------------------------
-            {
-                RHI::D3D12Texture* _SrcTexture = RegGetTex(terrainMaxHeightMapHandle);
-                generateMipmapForTerrainHeightmap(pContext, _SrcTexture, false);
-            }
+                //--------------------------------------------------
+                // 生成MaxHeightMap
+                //--------------------------------------------------
+                {
+                    RHI::D3D12Texture* _SrcTexture = RegGetTex(terrainMaxHeightMapHandle);
+                    generateMipmapForTerrainHeightmap(pContext, _SrcTexture, false);
+                }
             
-        });
-
+            });
+        }
         //=================================================================================
         // 根据相机位置生成Node节点
         //=================================================================================
@@ -456,6 +463,28 @@ namespace MoYu
             pContext->Dispatch1D(4096, 128);
         });
         
+        //=================================================================================
+        // 使用上一帧depth进行剪裁
+        //=================================================================================
+
+
+
+        //=================================================================================
+        // 使用剪裁后的结果绘制gbuffer
+        //=================================================================================
+
+
+        //=================================================================================
+        // 使用绘制得到的gbuffer里面的depth继续剪裁
+        //=================================================================================
+
+
+        //=================================================================================
+        // 使用新剪裁出来的结果进行gbuffer绘制
+        //=================================================================================
+
+
+
         //=================================================================================
         // 主相机地形CommandSignature准备
         //=================================================================================

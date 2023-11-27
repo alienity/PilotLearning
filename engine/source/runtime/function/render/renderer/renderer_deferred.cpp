@@ -10,7 +10,9 @@
 
 namespace MoYu
 {
-    DeferredRenderer::DeferredRenderer(RendererInitParams& renderInitParams) : Renderer(renderInitParams) {}
+    DeferredRenderer::DeferredRenderer(RendererInitParams& renderInitParams) :
+        Renderer(renderInitParams)
+    {}
 
     void DeferredRenderer::Initialize()
     {
@@ -90,9 +92,15 @@ namespace MoYu
 
         // Cull pass
         {
+            MoYu::IndirectCullPass::IndirectCullInitInfo indirectCullInit;
+            indirectCullInit.albedoTexDesc    = colorTexDesc;
+            indirectCullInit.depthTexDesc     = depthTexDesc;
+            indirectCullInit.m_ShaderCompiler = pCompiler;
+            indirectCullInit.m_ShaderRootPath = g_runtime_global_context.m_config_manager->getShaderFolder();
+
             mIndirectCullPass = std::make_shared<IndirectCullPass>();
             mIndirectCullPass->setCommonInfo(renderPassCommonInfo);
-            mIndirectCullPass->initialize({});
+            mIndirectCullPass->initialize(indirectCullInit);
         }
         // Terrain Cull pass
         {
@@ -136,6 +144,19 @@ namespace MoYu
             mIndirectTerrainGBufferPass = std::make_shared<IndirectTerrainGBufferPass>();
             mIndirectTerrainGBufferPass->setCommonInfo(renderPassCommonInfo);
             mIndirectTerrainGBufferPass->initialize(drawPassInit);
+        }
+        // Depth Pyramid
+        {
+            DepthPyramidPass::DrawPassInitInfo depthDrawPassInit;
+            depthDrawPassInit.albedoTexDesc = mIndirectGBufferPass->albedoDesc;
+            depthDrawPassInit.depthTexDesc  = mIndirectGBufferPass->depthDesc;
+
+            depthDrawPassInit.m_ShaderCompiler = pCompiler;
+            depthDrawPassInit.m_ShaderRootPath = g_runtime_global_context.m_config_manager->getShaderFolder();
+
+            mDepthPyramidPass = std::make_shared<DepthPyramidPass>();
+            mDepthPyramidPass->setCommonInfo(renderPassCommonInfo);
+            mDepthPyramidPass->initialize(depthDrawPassInit);
         }
         // LightLoop pass
         {
@@ -251,6 +272,7 @@ namespace MoYu
         mSkyBoxPass->prepareMeshData(render_resource);
         mTerrainCullPass->prepareMeshData(render_resource);
         mIndirectTerrainGBufferPass->prepareMatBuffer(render_resource);
+        mDepthPyramidPass->prepareMeshData(render_resource);
 
         mIndirectCullPass->inflatePerframeBuffer(render_resource);
     }
@@ -265,6 +287,7 @@ namespace MoYu
         mIndirectTerrainShadowPass   = nullptr;
         mIndirectGBufferPass         = nullptr;
         mIndirectTerrainGBufferPass  = nullptr;
+        mDepthPyramidPass            = nullptr;
         mIndirectLightLoopPass       = nullptr;
         mIndirectOpaqueDrawPass      = nullptr;
         mAOPass                      = nullptr;
@@ -305,6 +328,10 @@ namespace MoYu
         IndirectTerrainCullPass::TerrainCullInput terrainCullInput;
         IndirectTerrainCullPass::TerrainCullOutput terrainCullOutput;
         terrainCullInput.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
+        
+        mTerrainCullPass->lastFrameMinDepthPyramid = mDepthPyramidPass->GetLastFrameMinDepthPyramid();
+        mTerrainCullPass->lastFrameMaxDepthPyramid = mDepthPyramidPass->GetLastFrameMaxDepthPyramid();
+
         mTerrainCullPass->update(graph, terrainCullInput, terrainCullOutput);
         //=================================================================================
 
@@ -393,10 +420,12 @@ namespace MoYu
 
         //=================================================================================
         // depth pyramid
+        DepthPyramidPass::DrawInputParameters mDepthPyramidInput;
+        DepthPyramidPass::DrawOutputParameters mDepthPyramidOutput;
+        mDepthPyramidInput.depthHandle = mTerrainGBufferOutput.depthHandle;
+        mDepthPyramidInput.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
 
-
-
-
+        mDepthPyramidPass->update(graph, mDepthPyramidInput, mDepthPyramidOutput);
         //=================================================================================
 
         //=================================================================================
@@ -534,7 +563,6 @@ namespace MoYu
         //DgmlBuilder Builder("Render Graph");
         //graph.ExportDgml(Builder);
         //Builder.SaveAs(std::filesystem::current_path() / "RenderGraph.dgml");
-
     }
 
     void DeferredRenderer::PreRender(double deltaTime)

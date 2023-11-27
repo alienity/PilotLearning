@@ -55,8 +55,11 @@ namespace MoYu
                              sizeof(HLSL::CommandSignatureParams), \
                              name)
 
-    void IndirectCullPass::initialize(const RenderPassInitInfo& init_info)
+    void IndirectCullPass::initialize(const IndirectCullInitInfo& init_info)
     {
+        albedoDesc = init_info.albedoTexDesc;
+        depthDesc  = init_info.depthTexDesc;
+
         // create default buffer
         pFrameUniformBuffer = CreateCullingBuffer(1, MoYu::AlignUp(sizeof(HLSL::FrameUniforms), 256), L"FrameUniformBuffer");
         pMaterialViewIndexBuffer = CreateCullingBuffer(HLSL::MaterialLimit, sizeof(HLSL::PerMaterialViewIndexBuffer), L"MaterialViewIndexBuffer");
@@ -172,6 +175,12 @@ namespace MoYu
         }
 
         prepareBuffer();
+        prepareRenderTexture();
+    }
+
+    void IndirectCullPass::prepareRenderTexture()
+    {
+        
     }
 
     void IndirectCullPass::prepareBuffer()

@@ -24,10 +24,10 @@ float toLinearZ(float fz, float m22, float m23)
 float3 ssao(SSAOInput ssaoInput, float2 uv, uint2 screenSize)
 {
     // Parameters used in coordinate conversion
-    float4x4 projMatInv = ssaoInput.frameUniforms.cameraUniform.viewFromClipMatrix;
-    float4x4 projMatrix = ssaoInput.frameUniforms.cameraUniform.clipFromViewMatrix;
-    // float3x3 normalMat = transpose((float3x3)ssaoInput.frameUniforms.cameraUniform.worldFromViewMatrix);
-    float3x3 normalMat = transpose((float3x3)ssaoInput.frameUniforms.cameraUniform.worldFromViewMatrix);
+    float4x4 projMatInv = ssaoInput.frameUniforms.cameraUniform.curFrameUniform.viewFromClipMatrix;
+    float4x4 projMatrix = ssaoInput.frameUniforms.cameraUniform.curFrameUniform.clipFromViewMatrix;
+    // float3x3 normalMat = transpose((float3x3)ssaoInput.frameUniforms.cameraUniform.curFrameUniform.worldFromViewMatrix);
+    float3x3 normalMat = transpose((float3x3)ssaoInput.frameUniforms.cameraUniform.curFrameUniform.worldFromViewMatrix);
 
     int alphaNumber = 8;
     int betaNumber = 8;

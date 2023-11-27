@@ -35,7 +35,7 @@ VertexOutput VSMain(VertexInput input)
     PerRenderableMeshData mesh = g_MeshesInstance[meshIndex];
 
     output.positionWS = mul(mesh.worldFromModelMatrix, float4(input.position, 1.0f)).xyz;
-    output.position   = mul(g_FrameUniform.cameraUniform.clipFromWorldMatrix, float4(output.positionWS, 1.0f));
+    output.position   = mul(g_FrameUniform.cameraUniform.curFrameUniform.clipFromWorldMatrix, float4(output.positionWS, 1.0f));
 
     output.texcoord    = input.texcoord;
 
@@ -152,7 +152,7 @@ float4 PSMain(VertexOutput input) : SV_Target0
     float3 vNout      = normalize(vNt.x * vTangent + vNt.y * vBiTangent + vNt.z * vNormal);
 
     float3 positionWS = input.positionWS;
-    float3 viewPos    = g_FrameUniform.cameraUniform.cameraPosition;
+    float3 viewPos    = g_FrameUniform.cameraUniform.curFrameUniform.cameraPosition;
 
     float3 outColor = float3(0, 0, 0);
 

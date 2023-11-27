@@ -46,7 +46,7 @@ VaringStruct VSMain(VertexInput input)
 
     float4x4 localToWorldMatrix    = renderableMeshData.worldFromModelMatrix;
     float4x4 localToWorldMatrixInv = renderableMeshData.modelFromWorldMatrix;
-    float4x4 projectionViewMatrix  = g_FrameUniform.cameraUniform.clipFromWorldMatrix;
+    float4x4 projectionViewMatrix  = g_FrameUniform.cameraUniform.curFrameUniform.clipFromWorldMatrix;
 
     output.vertex_worldPosition = mul(localToWorldMatrix, float4(input.position, 1.0f));
     output.vertex_position = mul(projectionViewMatrix, output.vertex_worldPosition);

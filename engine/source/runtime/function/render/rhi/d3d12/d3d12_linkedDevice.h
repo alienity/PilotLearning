@@ -71,6 +71,7 @@ namespace RHI
         void Release(D3D12SyncHandle syncHandle);
         //-----------------------------------------------------------
 
+        static UINT m_FrameIndex;
     private:
         static constexpr UINT MaxSharedBufferCount = 3;
 

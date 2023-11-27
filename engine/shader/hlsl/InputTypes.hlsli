@@ -134,17 +134,23 @@ struct PerRenderableMeshData
 // and get the interface block names. It is also used by filabridge to get the interface block names.
 // =======================================
 
-struct CameraUniform
+struct FrameCameraUniform
 {
     float4x4 viewFromWorldMatrix; // clip    view <- world    : view matrix
     float4x4 worldFromViewMatrix; // clip    view -> world    : model matrix
-    float4x4 clipFromViewMatrix; // clip <- view    world    : projection matrix
-    float4x4 viewFromClipMatrix; // clip -> view    world    : inverse projection matrix
+    float4x4 clipFromViewMatrix;  // clip <- view    world    : projection matrix
+    float4x4 viewFromClipMatrix;  // clip -> view    world    : inverse projection matrix
     float4x4 clipFromWorldMatrix; // clip <- view <- world
     float4x4 worldFromClipMatrix; // clip -> view -> world
-    float4 clipTransform; // [sx, sy, tx, ty] only used by VERTEX_DOMAIN_DEVICE
-    float3 cameraPosition; // camera position
-    float _baseReserved0;
+    float4   clipTransform;       // [sx, sy, tx, ty] only used by VERTEX_DOMAIN_DEVICE
+    float3   cameraPosition;
+    float    _baseReserved0;
+};
+
+struct CameraUniform
+{
+    FrameCameraUniform curFrameUniform;
+    FrameCameraUniform lastFrameUniform;
     
     float4 resolution; // physical viewport width, height, 1/width, 1/height
     float2 logicalViewportScale; // scale-factor to go from physical to logical viewport

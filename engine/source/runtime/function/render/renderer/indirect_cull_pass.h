@@ -54,6 +54,15 @@ namespace MoYu
     class IndirectCullPass : public RenderPass
 	{
     public:
+        struct IndirectCullInitInfo : public RenderPassInitInfo
+        {
+            RHI::RgTextureDesc albedoTexDesc;
+            RHI::RgTextureDesc depthTexDesc;
+
+            ShaderCompiler*       m_ShaderCompiler;
+            std::filesystem::path m_ShaderRootPath;
+        };
+
         struct DrawCallCommandBufferHandle
         {
             RHI::RgResourceHandle indirectIndexBufferHandle = RHI::_DefaultRgResourceHandle;
@@ -76,7 +85,7 @@ namespace MoYu
     public:
         ~IndirectCullPass() { destroy(); }
 
-        void initialize(const RenderPassInitInfo& init_info);
+        void initialize(const IndirectCullInitInfo& init_info);
         void prepareMeshData(std::shared_ptr<RenderResource> render_resource);
         void inflatePerframeBuffer(std::shared_ptr<RenderResource> render_resource);
         //void cullMeshs(RHI::D3D12CommandContext* context, RHI::RenderGraphRegistry* registry, IndirectCullOutput& indirectCullOutput);
@@ -86,6 +95,7 @@ namespace MoYu
 
     private:
         void prepareBuffer();
+        void prepareRenderTexture();
 
         void bitonicSort(RHI::D3D12ComputeContext*      context,
                          RHI::D3D12Buffer*              keyIndexList,
@@ -111,6 +121,10 @@ namespace MoYu
         std::shared_ptr<RHI::D3D12Buffer> pFrameUniformBuffer;
         std::shared_ptr<RHI::D3D12Buffer> pMaterialViewIndexBuffer;
         std::shared_ptr<RHI::D3D12Buffer> pRenderableMeshBuffer;
+
+        // desc
+        RHI::RgTextureDesc albedoDesc;
+        RHI::RgTextureDesc depthDesc;
 
         /*
         // for sort

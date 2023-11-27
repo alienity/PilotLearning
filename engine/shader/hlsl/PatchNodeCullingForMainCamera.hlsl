@@ -47,7 +47,7 @@ void CSMain(CSParams Params) {
     BoundingBox aabb;
     patchBox.Transform(localToWorldMatrix, aabb);
 
-    Frustum frustum = ExtractPlanesDX(mFrameUniforms.cameraUniform.clipFromWorldMatrix);
+    Frustum frustum = ExtractPlanesDX(mFrameUniforms.cameraUniform.curFrameUniform.clipFromWorldMatrix);
 
     bool visible = FrustumContainsBoundingBox(frustum, aabb) != CONTAINMENT_DISJOINT;
     if (visible)

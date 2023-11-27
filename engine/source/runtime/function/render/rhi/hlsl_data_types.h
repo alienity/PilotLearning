@@ -101,7 +101,7 @@ namespace HLSL
         glm::uvec3 _padding_materialIndex2;
     };
 
-    struct CameraUniform
+    struct FrameCameraUniform
     {
         glm::float4x4 viewFromWorldMatrix; // clip    view <- world    : view matrix
         glm::float4x4 worldFromViewMatrix; // clip    view -> world    : model matrix
@@ -111,7 +111,13 @@ namespace HLSL
         glm::float4x4 worldFromClipMatrix; // clip -> view -> world
         glm::float4   clipTransform;       // [sx, sy, tx, ty] only used by VERTEX_DOMAIN_DEVICE
         glm::float3   cameraPosition;
-        float    _baseReserved0;
+        float         _baseReserved0;
+    };
+
+    struct CameraUniform
+    {
+        FrameCameraUniform curFrameUniform;
+        FrameCameraUniform lastFrameUniform;
 
         glm::float4 resolution;            // physical viewport width, height, 1/width, 1/height
         glm::float2 logicalViewportScale;  // scale-factor to go from physical to logical viewport
@@ -305,12 +311,12 @@ namespace HLSL
 
     struct TerrainPatchNode
     {
-        glm::float2 patchMinPos; // nodeµÄ×óÏÂ½Ç¶¥µã
-        float       maxHeight;   // µ±Ç°node×î´ó¸ß¶È
-        float       minHeight;   // µ±Ç°node×îÐ¡¸ß¶È
-        float       nodeWidth;   // patchnodeµÄ¿í¶È
-        int         mipLevel;    // µ±Ç°nodeµÄmipµÈ¼¶
-        uint32_t    neighbor;    // ¸ü¸ßÒ»¼¶mip×÷ÎªÁÚ¾ÓµÄ±êÊ¶
+        glm::float2 patchMinPos; // nodeï¿½ï¿½ï¿½ï¿½ï¿½Â½Ç¶ï¿½ï¿½ï¿½
+        float       maxHeight;   // ï¿½ï¿½Ç°nodeï¿½ï¿½ï¿½ß¶ï¿½
+        float       minHeight;   // ï¿½ï¿½Ç°nodeï¿½ï¿½Ð¡ï¿½ß¶ï¿½
+        float       nodeWidth;   // patchnodeï¿½Ä¿ï¿½ï¿½ï¿½
+        int         mipLevel;    // ï¿½ï¿½Ç°nodeï¿½ï¿½mipï¿½È¼ï¿½
+        uint32_t    neighbor;    // ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½mipï¿½ï¿½Îªï¿½Ú¾ÓµÄ±ï¿½Ê¶
     };
 
     // 512 * 512

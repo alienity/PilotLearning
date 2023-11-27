@@ -490,36 +490,54 @@ namespace MoYu
         std::vector<D3D12TerrainPatch> vertices {};
         std::vector<int> indices {};
 
-        float patchScale = 2.0f;
-        float biasScale  = patchScale * 0.25f;
-
-
-        /*
-        int vertexCount = 20;
+        int vertexCount = 8;
         float bias = 1.0f / vertexCount;
 
-        for (int i = 0; i < vertexCount; i++)
+        float patchScale = 2.0f;
+        float biasScale  = patchScale * bias;
+
+        for (int i = 0; i <= vertexCount; i++)
         {
-            float vOffset = bias * i;
-            for (int j = 0; j < vertexCount; j++)
+            for (int j = 0; j <= vertexCount; j++)
             {
-                float westOffset  = j == 0 ? i % 2 : 0;
-                float eastOffset  = j == vertexCount - 1 ? i % 2 : 0;
-                float northOffset = i == 0 ? j % 2 : 0;
-                float southOffset = i == vertexCount - 1 ? j % 2 : 0;
+                glm::float4 color = glm::float4(0, 0, 0, 0);
+                if (i == 0 || j == 0)
+                {
+                    float westOffset  = j == 0 ? i % 2 : 0;
+                    float eastOffset  = j == vertexCount ? i % 2 : 0;
+                    float northOffset = i == 0 ? j % 2 : 0;
+                    float southOffset = i == vertexCount ? j % 2 : 0;
+                    color = glm::float4(northOffset, southOffset, westOffset, eastOffset);
+                }
 
-                float biasOffset = bias * j;
-                float uOffset = bias * i;                
+                float xBiasOffset = bias * j;
+                float yBiasOffset = bias * i;
+                glm::float3 xyBiasOffset = glm::float3(xBiasOffset, 0, yBiasOffset);
 
-                vertices.push_back(
-                    CreatePatch(patchScale * glm::vec3(biasOffset, 0, 0.0),
-                                glm::vec2(uOffset, vOffset),
-                                biasScale * glm::vec4(northOffset, southOffset, westOffset, eastOffset)));
+                float uOffset = bias * j;                
+                float vOffset = bias * i;
+                glm::float2 uvOffset = glm::float2(uOffset, vOffset);
+
+                vertices.push_back(CreatePatch(patchScale * xyBiasOffset, uvOffset, bias * color));
             }
         }
-        */
 
+        #define AddTriIndices(a, b, c) indices.push_back(a); indices.push_back(b); indices.push_back(c);
+        for (int i = 0; i < vertexCount; i++)
+        {
+            for (int j = 0; j < vertexCount; j++)
+            {
+                int i00 = (i + 0) * (vertexCount + 1) + (j + 0);
+                int i10 = (i + 1) * (vertexCount + 1) + (j + 0);
+                int i01 = (i + 0) * (vertexCount + 1) + (j + 1);
+                int i11 = (i + 1) * (vertexCount + 1) + (j + 1);
 
+                AddTriIndices(i00, i10, i01)
+                AddTriIndices(i10, i11, i01)
+            }
+        }
+
+        /*
         vertices.push_back(CreatePatch(patchScale * glm::vec3(0.0, 0, 0.0), glm::vec2(0, 0), biasScale * glm::vec4(0, 0, 0, 0)));
         vertices.push_back(CreatePatch(patchScale * glm::vec3(0.25, 0, 0.0), glm::vec2(0.25, 0), biasScale * glm::vec4(1, 0, 0, 0)));
         vertices.push_back(CreatePatch(patchScale * glm::vec3(0.5, 0, 0.0), glm::vec2(0.5, 0), biasScale * glm::vec4(0, 0, 0, 0)));
@@ -559,6 +577,7 @@ namespace MoYu
         #define AddQuadIndices16() AddQuadIndices4(0) AddQuadIndices4(5) AddQuadIndices4(10) AddQuadIndices4(15)
 
         AddQuadIndices16()
+        */
 
         std::uint32_t vertex_buffer_size = vertices.size() * sizeof(D3D12TerrainPatch);
         InternalScratchVertexBuffer scratch_vertex_buffer {};

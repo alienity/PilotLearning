@@ -192,8 +192,8 @@ void computeShadingParams(const FrameUniforms frameUniforms, const VaringStruct 
 
     // With perspective camera, the view vector is cast from the fragment pos to the eye position,
     // With ortho camera, however, the view vector is the same for all fragments:
-    float4x4 projectionMatrix = frameUniforms.cameraUniform.clipFromViewMatrix;
-    float4x4 worldFromViewMatrix = frameUniforms.cameraUniform.worldFromViewMatrix;
+    float4x4 projectionMatrix = frameUniforms.cameraUniform.curFrameUniform.clipFromViewMatrix;
+    float4x4 worldFromViewMatrix = frameUniforms.cameraUniform.curFrameUniform.worldFromViewMatrix;
     
     float4x4 _worldFromViewMatrixTranspose = transpose(worldFromViewMatrix);
 
@@ -680,7 +680,7 @@ float getDistanceAttenuation(const CommonShadingStruct params, const FrameUnifor
     float attenuation = getSquareFalloffAttenuation(distanceSquare, falloff);
     // light far attenuation
     // float3 v = getWorldPosition(params) - getWorldCameraPosition(frameUniforms);
-    float3 v = params.shading_position - frameUniforms.cameraUniform.cameraPosition;
+    float3 v = params.shading_position - frameUniforms.cameraUniform.curFrameUniform.cameraPosition;
     float d = dot(v, v);
     attenuation *= saturate(frameUniforms.directionalLight.lightFarAttenuationParams.x - d * frameUniforms.directionalLight.lightFarAttenuationParams.y);
     // Assume a punctual light occupies a volume of 1cm to avoid a division by 0

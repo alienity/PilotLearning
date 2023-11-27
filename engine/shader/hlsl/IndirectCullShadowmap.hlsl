@@ -45,7 +45,7 @@ void CSMain(CSParams Params) {
 #elif defined(SPOTSHADOW)
         Frustum frustum = ExtractPlanesDX(g_FrameUniforms.spotLightUniform.spotLightStructs[spotIndex].spotLightShadowmap.light_proj_view);
 #else
-        Frustum frustum = ExtractPlanesDX(g_FrameUniforms.cameraUniform.clipFromWorldMatrix);
+        Frustum frustum = ExtractPlanesDX(g_FrameUniforms.cameraUniform.curFrameUniform.clipFromWorldMatrix);
 #endif
 
         bool visible = FrustumContainsBoundingBox(frustum, aabb) != CONTAINMENT_DISJOINT;

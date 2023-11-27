@@ -76,13 +76,13 @@ void CSMain( uint3 DTid : SV_DispatchThreadID )
 
         float depth = depthTexture.Sample(defaultSampler, uv).r;
         float3 clipPos = float3(uv.x*2.0f-1.0f, (1-uv.y)*2.0f-1.0f, depth);
-        float4 vertexPos = mul(g_FrameUniform.cameraUniform.worldFromClipMatrix, float4(clipPos, 1.0f));
+        float4 vertexPos = mul(g_FrameUniform.cameraUniform.curFrameUniform.worldFromClipMatrix, float4(clipPos, 1.0f));
         commonShadingStruct.shading_position.xyz = vertexPos.xyz / vertexPos.w;
 
         // With perspective camera, the view vector is cast from the fragment pos to the eye position,
         // With ortho camera, however, the view vector is the same for all fragments:
-        float4x4 projectionMatrix = g_FrameUniform.cameraUniform.clipFromViewMatrix;
-        float4x4 worldFromViewMatrix = g_FrameUniform.cameraUniform.worldFromViewMatrix;
+        float4x4 projectionMatrix = g_FrameUniform.cameraUniform.curFrameUniform.clipFromViewMatrix;
+        float4x4 worldFromViewMatrix = g_FrameUniform.cameraUniform.curFrameUniform.worldFromViewMatrix;
         float4x4 _worldFromViewMatrixTranspose = transpose(worldFromViewMatrix);
         float3 sv = select(isPerspectiveProjection(projectionMatrix), 
             (_worldFromViewMatrixTranspose[3].xyz - commonShadingStruct.shading_position), _worldFromViewMatrixTranspose[2].xyz); // ortho camera backward dir

@@ -91,29 +91,20 @@ namespace MoYu
 
         void destroy() override final;
 
+        std::shared_ptr<RHI::D3D12Texture> lastFrameMinDepthPyramid;
+        std::shared_ptr<RHI::D3D12Texture> lastFrameMaxDepthPyramid;
     private:
         bool initializeRenderTarget(RHI::RenderGraph& graph, TerrainCullOutput* drawPassOutput);
         void generateMipmapForTerrainHeightmap(RHI::D3D12ComputeContext* context, RHI::D3D12Texture* srcTexture, bool genMin);
         void generateMipmapForTerrainHeightmap(RHI::D3D12ComputeContext* context, RHI::D3D12Texture* srcTexture, int srcIndex, bool genMin);
-
-        struct MipGenInBuffer
-        {
-            glm::uint   SrcMipLevel;  // Texture level of source mip
-            glm::uint   NumMipLevels; // Number of OutMips to write: [1, 4]
-            glm::float2 TexelSize;    // 1.0 / OutMip1.Dimensions
-
-            glm::uint SrcIndex;
-            glm::uint OutMip1Index;
-            glm::uint OutMip2Index;
-            glm::uint OutMip3Index;
-            glm::uint OutMip4Index;
-        };
 
         RHI::RgBufferDesc grabDispatchArgsBufferDesc;
 
         // terrain heightmap min max heightmap
         std::shared_ptr<RHI::D3D12Texture> terrainMinHeightMap;
         std::shared_ptr<RHI::D3D12Texture> terrainMaxHeightMap;
+
+        bool isTerrainMinMaxHeightReady;
 
         // used for later draw call
         std::shared_ptr<RHI::D3D12Buffer> terrainPatchNodeBuffer;

@@ -123,15 +123,21 @@ namespace MoYu
         HLSL::FrameUniforms* _frameUniforms = &m_FrameUniforms;
 
         // Camera Uniform
+        HLSL::FrameCameraUniform _frameCameraUniform;
+        _frameCameraUniform.viewFromWorldMatrix = view_matrix;
+        _frameCameraUniform.worldFromViewMatrix = glm::inverse(_frameCameraUniform.viewFromWorldMatrix);
+        _frameCameraUniform.clipFromViewMatrix  = proj_matrix;
+        _frameCameraUniform.viewFromClipMatrix  = glm::inverse(_frameCameraUniform.clipFromViewMatrix);
+        _frameCameraUniform.clipFromWorldMatrix = proj_matrix * view_matrix;
+        _frameCameraUniform.worldFromClipMatrix = glm::inverse(_frameCameraUniform.clipFromWorldMatrix);
+        _frameCameraUniform.clipTransform       = glm::float4(1, 1, 1, 1);
+        _frameCameraUniform.cameraPosition      = camera_position;
+
+        HLSL::FrameCameraUniform _lastFrameCameraUniform = _frameUniforms->cameraUniform.curFrameUniform;
+
         HLSL::CameraUniform _cameraUniform;
-        _cameraUniform.viewFromWorldMatrix = view_matrix;
-        _cameraUniform.worldFromViewMatrix = glm::inverse(_cameraUniform.viewFromWorldMatrix);
-        _cameraUniform.clipFromViewMatrix  = proj_matrix;
-        _cameraUniform.viewFromClipMatrix  = glm::inverse(_cameraUniform.clipFromViewMatrix);
-        _cameraUniform.clipFromWorldMatrix = proj_matrix * view_matrix;
-        _cameraUniform.worldFromClipMatrix = glm::inverse(_cameraUniform.clipFromWorldMatrix);
-        _cameraUniform.clipTransform       = glm::float4(1, 1, 1, 1);
-        _cameraUniform.cameraPosition      = camera_position;
+        _cameraUniform.lastFrameUniform = _lastFrameCameraUniform;
+        _cameraUniform.curFrameUniform = _frameCameraUniform;
 
         _cameraUniform.resolution = glm::float4(camera->m_width, camera->m_height, 1.0f / camera->m_width, 1.0f / camera->m_height);
         _cameraUniform.logicalViewportScale = glm::float2(1.0f, 1.0f);

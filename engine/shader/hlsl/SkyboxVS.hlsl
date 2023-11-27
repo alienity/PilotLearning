@@ -13,8 +13,8 @@ struct VSOutput
 
 VSOutput VSMain(uint VertID : SV_VertexID)
 {
-    float4x4 ProjInverse = g_FramUniforms.cameraUniform.viewFromClipMatrix;
-    float3x3 ViewInverse = (float3x3)g_FramUniforms.cameraUniform.worldFromViewMatrix;
+    float4x4 ProjInverse = g_FramUniforms.cameraUniform.curFrameUniform.viewFromClipMatrix;
+    float3x3 ViewInverse = (float3x3)g_FramUniforms.cameraUniform.curFrameUniform.worldFromViewMatrix;
 
     float2 ScreenUV = float2(uint2(VertID, VertID << 1) & 2);
     float4 ProjectedPos = float4(lerp(float2(-1, 1), float2(1, -1), ScreenUV), 0, 1);

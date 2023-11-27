@@ -16,6 +16,7 @@
 #include "runtime/function/render/renderer/postprocess_passes.h"
 #include "runtime/function/render/renderer/indirect_display_pass.h"
 #include "runtime/function/render/renderer/indirect_gbuffer_pass.h"
+#include "runtime/function/render/renderer/indirect_depth_pyramid_pass.h"
 #include "runtime/function/render/renderer/indirect_terrain_gbuffer_pass.h"
 #include "runtime/function/render/renderer/indirect_lightloop_pass.h"
 
@@ -61,6 +62,7 @@ namespace MoYu
         std::shared_ptr<IndirectTerrainGBufferPass>  mIndirectTerrainGBufferPass;
         std::shared_ptr<IndirectLightLoopPass>       mIndirectLightLoopPass;
         std::shared_ptr<IndirectDrawPass>            mIndirectOpaqueDrawPass;
+        std::shared_ptr<DepthPyramidPass>            mDepthPyramidPass;
         std::shared_ptr<SkyBoxPass>                  mSkyBoxPass;
         std::shared_ptr<IndirectDrawTransparentPass> mIndirectTransparentDrawPass;
         std::shared_ptr<AOPass>                      mAOPass;

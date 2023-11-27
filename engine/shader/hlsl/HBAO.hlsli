@@ -84,12 +84,12 @@ struct HBAOInput
 float CustomHBAO(HBAOInput hbaoInput, float2 uv, uint2 screenSize)
 {
     // Parameters used in coordinate conversion
-    float4x4 projMatInv = hbaoInput.frameUniforms.cameraUniform.viewFromClipMatrix;
-    float4x4 projMatrix = hbaoInput.frameUniforms.cameraUniform.clipFromViewMatrix;
+    float4x4 projMatInv = hbaoInput.frameUniforms.cameraUniform.curFrameUniform.viewFromClipMatrix;
+    float4x4 projMatrix = hbaoInput.frameUniforms.cameraUniform.curFrameUniform.clipFromViewMatrix;
 
-    // float4x4 viewMatInv = hbaoInput.frameUniforms.cameraUniform.worldFromViewMatrix;
+    // float4x4 viewMatInv = hbaoInput.frameUniforms.cameraUniform.curFrameUniform.worldFromViewMatrix;
     
-    float3x3 normalMat = transpose((float3x3)hbaoInput.frameUniforms.cameraUniform.worldFromViewMatrix);
+    float3x3 normalMat = transpose((float3x3)hbaoInput.frameUniforms.cameraUniform.curFrameUniform.worldFromViewMatrix);
 
     float raw_depth_o = hbaoInput.depthTex.Sample(hbaoInput.defaultSampler, uv).r;
     float4 pos_ss = float4(uv.xy*2-1, raw_depth_o, 1.0f);

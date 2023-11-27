@@ -47,7 +47,7 @@ VertexOutput VSMain(VertexInput input)
     #elif defined(SPOTSHADOW)
     float4x4 view_proj_mat = g_FramUniforms.spotLightUniform.spotLightStructs[spotIndex].spotLightShadowmap.light_proj_view;
     #else
-    float4x4 view_proj_mat = g_FramUniforms.cameraUniform.clipFromWorldMatrix;
+    float4x4 view_proj_mat = g_FramUniforms.cameraUniform.curFrameUniform.clipFromWorldMatrix;
     #endif
 
     output.positionWS = mul(mesh.worldFromModelMatrix, float4(input.position, 1.0f)).xyz;
