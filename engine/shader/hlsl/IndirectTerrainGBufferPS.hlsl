@@ -97,21 +97,23 @@ VaringStruct VSMain(VertexInput input)
 
     float3 localPosition = input.position;
 
+    float edgeOffsetScale = pow(2, max(0, _terrainPatchNode.mipLevel-1));
+
     if(_terrainPatchNode.neighbor & EAST)
     {
-        localPosition += -float3(input.color.a, 0, 0);
+        localPosition += float3(0, 0, -input.color.a) * edgeOffsetScale;
     }
     if(_terrainPatchNode.neighbor & SOUTH)
     {
-        localPosition += float3(0, 0, input.color.r);
+        localPosition += float3(input.color.r, 0, 0) * edgeOffsetScale;
     }
     if(_terrainPatchNode.neighbor & WEST)
     {
-        localPosition += float3(input.color.b, 0, 0);
+        localPosition += float3(0, 0, input.color.b) * edgeOffsetScale;
     }
     if(_terrainPatchNode.neighbor & NORTH)
     {
-        localPosition += -float3(0, 0, input.color.g);
+        localPosition += float3(-input.color.g, 0, 0) * edgeOffsetScale;
     }
 
     localPosition = localPosition * _terrainPatchNode.nodeWidth + 
@@ -124,9 +126,6 @@ VaringStruct VSMain(VertexInput input)
 
     localPosition.y = curHeight * terrainMaxHeight;
     // localPosition.y += displacement * 0.5f;
-
-    // localPosition.xyz *= 0.01f;
-    // localPosition.y += 1.5f;
 
     VaringStruct output;
     output.vertex_worldPosition = mul(localToWorldMatrix, float4(localPosition, 1.0f));
@@ -190,7 +189,7 @@ PSOutputGBuffer PSMain(VaringStruct varingStruct)
 
     PSOutputGBuffer output;
 
-    // output.albedo = float4(1,1,1,1);
+    // output.albedo = float4(0,0,0,1);
     // output.albedo = float4(varingStruct.vertex_uv01.x, varingStruct.vertex_uv01.y, 0, 1);
     output.albedo = float4(albedo.rgb, 1);
     output.worldNormal = float4(localNormal.xyz * 0.5 + 0.5f, 0);

@@ -52,5 +52,31 @@ namespace MoYu
         glm::uint OutMip4Index;
     };
 
+
+    struct GBufferOutput : public PassOutput
+    {
+        GBufferOutput()
+        {
+            albedoHandle.Invalidate();
+            worldNormalHandle.Invalidate();
+            worldTangentHandle.Invalidate();
+            matNormalHandle.Invalidate();
+            emissiveHandle.Invalidate();
+            metallic_Roughness_Reflectance_AO_Handle.Invalidate();
+            clearCoat_ClearCoatRoughness_Anisotropy_Handle.Invalidate();
+            depthHandle.Invalidate();
+        }
+
+        RHI::RgResourceHandle albedoHandle;
+        RHI::RgResourceHandle worldNormalHandle;
+        RHI::RgResourceHandle worldTangentHandle;
+        RHI::RgResourceHandle matNormalHandle;
+        RHI::RgResourceHandle emissiveHandle;
+        RHI::RgResourceHandle metallic_Roughness_Reflectance_AO_Handle;
+        RHI::RgResourceHandle clearCoat_ClearCoatRoughness_Anisotropy_Handle;
+        RHI::RgResourceHandle depthHandle;
+    };
+
+
 }
 

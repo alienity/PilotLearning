@@ -15,10 +15,18 @@ namespace MoYu
         D3D12_DRAW_INDEXED_ARGUMENTS DrawIndexedArguments;
     };
 
-    struct TerrainDrawCommandBuffer
+    struct PatchNodeIndexBuffer
     {
-        std::shared_ptr<RHI::D3D12Buffer> m_PatchNodeVisiableIndexBuffer;
         std::shared_ptr<RHI::D3D12Buffer> m_TerrainCommandSignatureBuffer;
+        std::shared_ptr<RHI::D3D12Buffer> m_PatchNodeVisiableIndexBuffer;
+        std::shared_ptr<RHI::D3D12Buffer> m_PatchNodeNonVisiableIndexBuffer;
+
+        void Reset()
+        {
+            m_TerrainCommandSignatureBuffer = nullptr;
+            m_PatchNodeVisiableIndexBuffer  = nullptr;
+            m_PatchNodeNonVisiableIndexBuffer = nullptr;
+        }
     };
 
     struct TerrainDirShadowmapCommandBuffer
@@ -62,9 +70,14 @@ namespace MoYu
 
         struct TerrainCullInput : public PassInput
         {
-            TerrainCullInput() { perframeBufferHandle.Invalidate(); }
+            TerrainCullInput()
+            {
+                perframeBufferHandle.Invalidate();
+                lastMinDepthPyramidHandle.Invalidate();
+            }
 
             RHI::RgResourceHandle perframeBufferHandle;
+            RHI::RgResourceHandle lastMinDepthPyramidHandle;
         };
 
         struct TerrainCullOutput : public PassOutput
@@ -90,9 +103,6 @@ namespace MoYu
         void update(RHI::RenderGraph& graph, TerrainCullInput& passInput, TerrainCullOutput& passOutput);
 
         void destroy() override final;
-
-        std::shared_ptr<RHI::D3D12Texture> lastFrameMinDepthPyramid;
-        std::shared_ptr<RHI::D3D12Texture> lastFrameMaxDepthPyramid;
     private:
         bool initializeRenderTarget(RHI::RenderGraph& graph, TerrainCullOutput* drawPassOutput);
         void generateMipmapForTerrainHeightmap(RHI::D3D12ComputeContext* context, RHI::D3D12Texture* srcTexture, bool genMin);
@@ -106,13 +116,17 @@ namespace MoYu
 
         bool isTerrainMinMaxHeightReady;
 
-        // used for later draw call
+        // 主相机对应的所有的地块patch
         std::shared_ptr<RHI::D3D12Buffer> terrainPatchNodeBuffer;
 
-        // 用于主相机绘制的buffer
-        TerrainDrawCommandBuffer mainCameraCommandBuffer;
+        // 主相机视锥可见的IndexBuffer
+        std::shared_ptr<RHI::D3D12Buffer> m_MainCameraVisiableIndexBuffer;
+
         // 用于方向光绘制的buffer
         TerrainDirShadowmapCommandBuffer dirShadowmapCommandBuffers;
+
+        // 使用上一帧depth剪裁后的buffer
+        PatchNodeIndexBuffer mainCamPatchNodeIndexBuffer;
 
         // main camera instance CommandSignature Buffer
         std::shared_ptr<RHI::D3D12Buffer> terrainUploadCommandSigBuffer;
@@ -129,6 +143,10 @@ namespace MoYu
         Shader patchNodeVisToDirCascadeIndexGenCS;
         std::shared_ptr<RHI::D3D12RootSignature> pPatchNodeVisToDirCascadeIndexGenSignature;
         std::shared_ptr<RHI::D3D12PipelineState> pPatchNodeVisToDirCascadeIndexGenPSO;
+
+        Shader patchNodeCullByDepthCS;
+        std::shared_ptr<RHI::D3D12RootSignature> pPatchNodeCullByDepthSignature;
+        std::shared_ptr<RHI::D3D12PipelineState> pPatchNodeCullByDepthPSO;
 	};
 }
 

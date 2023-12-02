@@ -1,9 +1,9 @@
 #pragma once
 
 #include "runtime/function/render/render_pass.h"
-
 #include "runtime/function/global/global_context.h"
 #include "runtime/resource/config_manager/config_manager.h"
+#include "runtime/function/render/renderer/pass_helper.h"
 
 namespace MoYu
 {
@@ -28,38 +28,14 @@ namespace MoYu
             RHI::RgResourceHandle opaqueDrawHandle;
         };
 
-        struct DrawOutputParameters : public PassOutput
-        {
-            DrawOutputParameters()
-            {
-                albedoHandle.Invalidate();
-                worldNormalHandle.Invalidate();
-                worldTangentHandle.Invalidate();
-                matNormalHandle.Invalidate();
-                emissiveHandle.Invalidate();
-                metallic_Roughness_Reflectance_AO_Handle.Invalidate();
-                clearCoat_ClearCoatRoughness_Anisotropy_Handle.Invalidate();
-                depthHandle.Invalidate();
-            }
-
-            RHI::RgResourceHandle albedoHandle;
-            RHI::RgResourceHandle worldNormalHandle;
-            RHI::RgResourceHandle worldTangentHandle;
-            RHI::RgResourceHandle matNormalHandle;
-            RHI::RgResourceHandle emissiveHandle;
-            RHI::RgResourceHandle metallic_Roughness_Reflectance_AO_Handle;
-            RHI::RgResourceHandle clearCoat_ClearCoatRoughness_Anisotropy_Handle;
-            RHI::RgResourceHandle depthHandle;
-        };
-
     public:
         ~IndirectGBufferPass() { destroy(); }
 
         void initialize(const DrawPassInitInfo& init_info);
-        void update(RHI::RenderGraph& graph, DrawInputParameters& passInput, DrawOutputParameters& passOutput);
+        void update(RHI::RenderGraph& graph, DrawInputParameters& passInput, GBufferOutput& passOutput);
         void destroy() override final;
 
-        bool initializeRenderTarget(RHI::RenderGraph& graph, DrawOutputParameters* drawPassOutput);
+        bool initializeRenderTarget(RHI::RenderGraph& graph, GBufferOutput* drawPassOutput);
 
         RHI::RgTextureDesc albedoDesc;                                  // float4
         RHI::RgTextureDesc worldNormalDesc;                             // float3

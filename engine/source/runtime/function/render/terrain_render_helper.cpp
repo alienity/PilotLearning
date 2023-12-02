@@ -490,10 +490,10 @@ namespace MoYu
         std::vector<D3D12TerrainPatch> vertices {};
         std::vector<int> indices {};
 
-        int vertexCount = 8;
+        int vertexCount = 4;
         float bias = 1.0f / vertexCount;
 
-        float patchScale = 2.0f;
+        float patchScale = 1.0f;
         float biasScale  = patchScale * bias;
 
         for (int i = 0; i <= vertexCount; i++)
@@ -501,7 +501,7 @@ namespace MoYu
             for (int j = 0; j <= vertexCount; j++)
             {
                 glm::float4 color = glm::float4(0, 0, 0, 0);
-                if (i == 0 || j == 0)
+                if (i == 0 || j == 0 || i == vertexCount || j == vertexCount)
                 {
                     float westOffset  = j == 0 ? i % 2 : 0;
                     float eastOffset  = j == vertexCount ? i % 2 : 0;
@@ -518,7 +518,7 @@ namespace MoYu
                 float vOffset = bias * i;
                 glm::float2 uvOffset = glm::float2(uOffset, vOffset);
 
-                vertices.push_back(CreatePatch(patchScale * xyBiasOffset, uvOffset, bias * color));
+                vertices.push_back(CreatePatch(patchScale * xyBiasOffset, uvOffset, biasScale * color));
             }
         }
 

@@ -20,7 +20,7 @@ SamplerState defaultSampler : register(s10);
 #define WEST 4
 #define NORTH 8
 
-#define MAXMIPLEVEL 8
+#define MAXMIPLEVEL 4
 
 #define BASENODEWIDTH 2
 
@@ -30,10 +30,10 @@ SamplerState defaultSampler : register(s10);
 #define MIP3WIDTH 128
 
 /*
-[0, 16] 区间是mip0
-(16, 32] 区间是mip1
-(32, 64] 区间是mip2
-(64, 128] 区间是mip3
+[0, 8] 区间是mip0
+(8, 16] 区间是mip1
+(16, 32] 区间是mip2
+(32, 64] 区间是mip3
 // (64, 128] 区间是mip4
 // (128, 256] 区间是mip5
 // (256, 512] 区间是mip6
@@ -106,7 +106,8 @@ void CSMain(CSParams Params) {
         return;
 
     uint2 index = Params.DispatchThreadID.xy;
-    float2 pixelPos = index + float2(0, 0);
+    // 因为只算左下角
+    float2 vertexPos = index;
 
     float4x4 terrainWorld2LocalMat = mFrameUniforms.terrainUniform.world2LocalMatrix;
 
@@ -118,25 +119,28 @@ void CSMain(CSParams Params) {
 
     focusPosition = mul(terrainWorld2LocalMat, float4(focusPosition, 1.0f)).xyz;
     
-    // float2 pivotCenter = float2(floor(focusPosition.xz / MIP3WIDTH) * MIP3WIDTH);
-    float2 pivotCenter = float2(floor(focusPosition.xz / BASENODEWIDTH) * BASENODEWIDTH);
+    // float2 vertexCenter = float2(floor(focusPosition.xz / MIP3WIDTH) * MIP3WIDTH);
+    float2 vertexCenter = float2(floor(focusPosition.xz / BASENODEWIDTH) * BASENODEWIDTH);
 
     // calculate the mip level of the pixel
-    float2 pixelDis = pixelPos - pivotCenter;
-    int mipLevel = mipCalc(max(abs(pixelDis.x), abs(pixelDis.y)));
+    float2 vertexToCenterDis = vertexPos - vertexCenter;
+    int mipLevel = mipCalc(max(abs(vertexToCenterDis.x), abs(vertexToCenterDis.y))-0.5f);
 
     // fetch from the mipoffset and offset eh current mipLevel
 
 
     // calculate the down-left index of the node
-    int mipNodeWidth = pow(2, mipLevel+1);
-    float2 alignPivotDis = floor(pixelDis / mipNodeWidth) * mipNodeWidth;
+    int mipNodeWidth = pow(2, mipLevel) * BASENODEWIDTH;
+    float2 alignedToCenterDis = floor(vertexToCenterDis / mipNodeWidth) * mipNodeWidth;
 
-    // check whether the alignPivotDis is the same as the basic index
-    float2 pivotDiff = alignPivotDis - pixelDis;
-    if(pivotDiff.x == 0 && pivotDiff.y == 0)
+    // 这里考虑patch的(1,1)点作为计算锚点，所有做后续确认计算的点都是锚点
+    float2 alignedPivot = alignedToCenterDis + float2(1,1);
+
+    // check whether the alignedToCenterDis is the same as the basic index
+    float2 vertexDiff = alignedPivot - vertexToCenterDis;
+    if(vertexDiff.x == 0 && vertexDiff.y == 0)
     {
-        float2 curIdxPivot = pivotCenter + alignPivotDis;
+        float2 curIdxPivot = vertexCenter + alignedPivot;
 
         uint neighbor = 0;
 
@@ -146,32 +150,36 @@ void CSMain(CSParams Params) {
         float2 westPos = curIdxPivot + float2(-2, 0);
 
         int neighborMipLevel;
-        GetMipLevel(eastPos, pivotCenter, neighborMipLevel);
+        GetMipLevel(eastPos, vertexCenter, neighborMipLevel);
         if(mipLevel + 1 == neighborMipLevel)
         {
             neighbor = neighbor | EAST;
         }
-        GetMipLevel(southPos, pivotCenter, neighborMipLevel);
+        GetMipLevel(southPos, vertexCenter, neighborMipLevel);
         if(mipLevel + 1 == neighborMipLevel)
         {
             neighbor = neighbor | SOUTH;
         }
-        GetMipLevel(westPos, pivotCenter, neighborMipLevel);
+        GetMipLevel(westPos, vertexCenter, neighborMipLevel);
         if(mipLevel + 1 == neighborMipLevel)
         {
             neighbor = neighbor | WEST;
         }
-        GetMipLevel(northPos, pivotCenter, neighborMipLevel);
+        GetMipLevel(northPos, vertexCenter, neighborMipLevel);
         if(mipLevel + 1 == neighborMipLevel)
         {
             neighbor = neighbor | NORTH;
         }
 
+        float2 patchMinPos = curIdxPivot - float2(1, 1);
+
         float minHeight, maxHeight;
-        GetMaxMinHeight(terrainMinHeightmap, terrainMaxHeightmap, curIdxPivot, int2(terrainWidth-1, terrainHeight-1), mipLevel + 1, terrainMaxHeight, minHeight, maxHeight);
+        GetMaxMinHeight(terrainMinHeightmap, terrainMaxHeightmap, patchMinPos, int2(terrainWidth-1, terrainHeight-1), mipLevel + 1, terrainMaxHeight, minHeight, maxHeight);
+
+        // float patchScale = mipNodeWidth / BASENODEWIDTH;
 
         TerrainPatchNode _patchNode;
-        _patchNode.patchMinPos = curIdxPivot;
+        _patchNode.patchMinPos = patchMinPos;
         _patchNode.maxHeight = maxHeight;
         _patchNode.minHeight = minHeight;
         _patchNode.nodeWidth = mipNodeWidth;

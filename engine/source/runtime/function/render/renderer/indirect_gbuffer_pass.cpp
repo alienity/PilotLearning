@@ -137,7 +137,7 @@ namespace MoYu
 
 	}
 
-    void IndirectGBufferPass::update(RHI::RenderGraph& graph, DrawInputParameters& passInput, DrawOutputParameters& passOutput)
+    void IndirectGBufferPass::update(RHI::RenderGraph& graph, DrawInputParameters& passInput, GBufferOutput& passOutput)
     {
         bool needClearRenderTarget = initializeRenderTarget(graph, &passOutput);
 
@@ -227,7 +227,7 @@ namespace MoYu
         pIndirectGBufferCommandSignature = nullptr;
     }
 
-    bool IndirectGBufferPass::initializeRenderTarget(RHI::RenderGraph& graph, DrawOutputParameters* drawPassOutput)
+    bool IndirectGBufferPass::initializeRenderTarget(RHI::RenderGraph& graph, GBufferOutput* drawPassOutput)
     {
         bool needClearRenderTarget = false;
         if (!drawPassOutput->albedoHandle.IsValid())

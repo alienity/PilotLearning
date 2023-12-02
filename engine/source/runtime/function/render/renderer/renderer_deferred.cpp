@@ -325,13 +325,15 @@ namespace MoYu
         
         //=================================================================================
         // Terrain剪裁Pass
+        // Terrain使用上一帧depth剪裁Pass
+        RHI::RgResourceHandle lastFrameMinDepthPyramidHandle =
+            graph.Import(mDepthPyramidPass->GetLastFrameMinDepthPyramid().get());
+
         IndirectTerrainCullPass::TerrainCullInput terrainCullInput;
         IndirectTerrainCullPass::TerrainCullOutput terrainCullOutput;
         terrainCullInput.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
+        terrainCullInput.lastMinDepthPyramidHandle = lastFrameMinDepthPyramidHandle;
         
-        mTerrainCullPass->lastFrameMinDepthPyramid = mDepthPyramidPass->GetLastFrameMinDepthPyramid();
-        mTerrainCullPass->lastFrameMaxDepthPyramid = mDepthPyramidPass->GetLastFrameMaxDepthPyramid();
-
         mTerrainCullPass->update(graph, terrainCullInput, terrainCullOutput);
         //=================================================================================
 
@@ -378,11 +380,19 @@ namespace MoYu
         std::vector<RHI::RgResourceHandle> spotShadowmapHandle = mShadowmapOutputParams.spotShadowmapHandle;
         //=================================================================================
 
+
+
+        //=================================================================================
+        // prepare gbuffer output
+        GBufferOutput mGBufferOutput;
+        mIndirectGBufferPass->initializeRenderTarget(graph, &mGBufferOutput);
+
+        //=================================================================================
+
         //=================================================================================
         // indirect gbuffer
         IndirectGBufferPass::DrawInputParameters mGBufferIntput;
-        IndirectGBufferPass::DrawOutputParameters mGBufferOutput;
-
+        
         mGBufferIntput.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
         mGBufferIntput.meshBufferHandle     = indirectCullOutput.meshBufferHandle;
         mGBufferIntput.materialBufferHandle = indirectCullOutput.materialBufferHandle;
@@ -393,7 +403,6 @@ namespace MoYu
         //=================================================================================
         // indirect terrain gbuffer
         IndirectTerrainGBufferPass::DrawInputParameters mTerrainGBufferIntput;
-        IndirectTerrainGBufferPass::DrawOutputParameters mTerrainGBufferOutput;
         mTerrainGBufferIntput.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
         mTerrainGBufferIntput.terrainPatchNodeHandle = terrainCullOutput.terrainPatchNodeBufferHandle;
         mTerrainGBufferIntput.terrainHeightmapHandle = terrainCullOutput.terrainHeightmapHandle;
@@ -406,15 +415,7 @@ namespace MoYu
             mTerrainGBufferIntput.dirShadowIndexAndSigHandle.push_back({_indexAndSigHandle.commandSigBufferHandle, _indexAndSigHandle.indirectIndexBufferHandle});
         }
 
-        mTerrainGBufferOutput.albedoHandle         = mGBufferOutput.albedoHandle;
-        mTerrainGBufferOutput.worldNormalHandle    = mGBufferOutput.worldNormalHandle;
-        mTerrainGBufferOutput.worldTangentHandle   = mGBufferOutput.worldTangentHandle;
-        mTerrainGBufferOutput.matNormalHandle      = mGBufferOutput.matNormalHandle;
-        mTerrainGBufferOutput.emissiveHandle       = mGBufferOutput.emissiveHandle;
-        mTerrainGBufferOutput.metallic_Roughness_Reflectance_AO_Handle = mGBufferOutput.metallic_Roughness_Reflectance_AO_Handle;
-        mTerrainGBufferOutput.clearCoat_ClearCoatRoughness_Anisotropy_Handle = mGBufferOutput.clearCoat_ClearCoatRoughness_Anisotropy_Handle;
-        mTerrainGBufferOutput.depthHandle = mGBufferOutput.depthHandle;
-        mIndirectTerrainGBufferPass->update(graph, mTerrainGBufferIntput, mTerrainGBufferOutput);
+        mIndirectTerrainGBufferPass->update(graph, mTerrainGBufferIntput, mGBufferOutput);
         //=================================================================================
 
 
@@ -422,7 +423,7 @@ namespace MoYu
         // depth pyramid
         DepthPyramidPass::DrawInputParameters mDepthPyramidInput;
         DepthPyramidPass::DrawOutputParameters mDepthPyramidOutput;
-        mDepthPyramidInput.depthHandle = mTerrainGBufferOutput.depthHandle;
+        mDepthPyramidInput.depthHandle          = mGBufferOutput.depthHandle;
         mDepthPyramidInput.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
 
         mDepthPyramidPass->update(graph, mDepthPyramidInput, mDepthPyramidOutput);
@@ -434,8 +435,8 @@ namespace MoYu
         AOPass::DrawOutputParameters mAOOutput;
 
         mAOIntput.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
-        mAOIntput.worldNormalHandle    = mTerrainGBufferOutput.worldNormalHandle;
-        mAOIntput.depthHandle          = mTerrainGBufferOutput.depthHandle;
+        mAOIntput.worldNormalHandle    = mGBufferOutput.worldNormalHandle;
+        mAOIntput.depthHandle          = mGBufferOutput.depthHandle;
         mAOPass->update(graph, mAOIntput, mAOOutput);
         //=================================================================================
 
@@ -445,15 +446,17 @@ namespace MoYu
         IndirectLightLoopPass::DrawOutputParameters mLightLoopOutput;
 
         mLightLoopIntput.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
-        mLightLoopIntput.albedoHandle           = mTerrainGBufferOutput.albedoHandle;
-        mLightLoopIntput.worldNormalHandle      = mTerrainGBufferOutput.worldNormalHandle;
-        mLightLoopIntput.worldTangentHandle     = mTerrainGBufferOutput.worldTangentHandle;
-        mLightLoopIntput.materialNormalHandle   = mTerrainGBufferOutput.matNormalHandle;
-        mLightLoopIntput.emissiveHandle         = mTerrainGBufferOutput.emissiveHandle;
+        mLightLoopIntput.albedoHandle           = mGBufferOutput.albedoHandle;
+        mLightLoopIntput.worldNormalHandle      = mGBufferOutput.worldNormalHandle;
+        mLightLoopIntput.worldTangentHandle     = mGBufferOutput.worldTangentHandle;
+        mLightLoopIntput.materialNormalHandle   = mGBufferOutput.matNormalHandle;
+        mLightLoopIntput.emissiveHandle         = mGBufferOutput.emissiveHandle;
         mLightLoopIntput.ambientOcclusionHandle = mAOOutput.outputAOHandle;
-        mLightLoopIntput.metallic_Roughness_Reflectance_AO_Handle = mTerrainGBufferOutput.metallic_Roughness_Reflectance_AO_Handle;
-        mLightLoopIntput.clearCoat_ClearCoatRoughness_Anisotropy_Handle = mTerrainGBufferOutput.clearCoat_ClearCoatRoughness_Anisotropy_Handle;
-        mLightLoopIntput.gbufferDepthHandle = mTerrainGBufferOutput.depthHandle;
+        mLightLoopIntput.metallic_Roughness_Reflectance_AO_Handle =
+            mGBufferOutput.metallic_Roughness_Reflectance_AO_Handle;
+        mLightLoopIntput.clearCoat_ClearCoatRoughness_Anisotropy_Handle =
+            mGBufferOutput.clearCoat_ClearCoatRoughness_Anisotropy_Handle;
+        mLightLoopIntput.gbufferDepthHandle = mGBufferOutput.depthHandle;
         mIndirectLightLoopPass->update(graph, mLightLoopIntput, mLightLoopOutput);
         //=================================================================================
         /*
@@ -481,7 +484,7 @@ namespace MoYu
 
         mSkyboxIntputParams.perframeBufferHandle    = indirectCullOutput.perframeBufferHandle;
         mSkyboxOutputParams.renderTargetColorHandle = mLightLoopOutput.colorHandle;
-        mSkyboxOutputParams.renderTargetDepthHandle = mTerrainGBufferOutput.depthHandle;
+        mSkyboxOutputParams.renderTargetDepthHandle = mGBufferOutput.depthHandle;
         //mSkyboxOutputParams.renderTargetColorHandle = mDrawOutputParams.renderTargetColorHandle;
         //mSkyboxOutputParams.renderTargetDepthHandle = mDrawOutputParams.renderTargetDepthHandle;
         mSkyBoxPass->update(graph, mSkyboxIntputParams, mSkyboxOutputParams);

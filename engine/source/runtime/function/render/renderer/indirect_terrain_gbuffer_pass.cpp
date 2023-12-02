@@ -103,6 +103,7 @@ namespace MoYu
             //rasterizerState.FillMode = RHI_FILL_MODE::Wireframe;
             rasterizerState.CullMode = RHI_CULL_MODE::Back;
 
+
             RHIDepthStencilState DepthStencilState;
             DepthStencilState.DepthEnable = true;
             DepthStencilState.DepthFunc   = RHI_COMPARISON_FUNC::GreaterEqual;
@@ -147,15 +148,12 @@ namespace MoYu
             pIndirectTerrainGBufferPSO = std::make_shared<RHI::D3D12PipelineState>(m_Device, L"IndirectTerrainGBuffer", psoDesc);
         }
 
-
 	}
 
-    void IndirectTerrainGBufferPass::update(RHI::RenderGraph& graph, DrawInputParameters& passInput, DrawOutputParameters& passOutput)
+    void IndirectTerrainGBufferPass::update(RHI::RenderGraph& graph, DrawInputParameters& passInput, GBufferOutput& passOutput)
     {
         RHI::RgResourceHandle terrainMatIndexHandle = GImport(graph, pMatTextureIndexBuffer.get());
         RHI::RgResourceHandle terrainMatTillingHandle = GImport(graph, pMatTextureTillingBuffer.get());
-
-        bool needClearRenderTarget = initializeRenderTarget(graph, &passOutput);
 
         RHI::RgResourceHandle perframeBufferHandle = passInput.perframeBufferHandle;
         RHI::RgResourceHandle terrainPatchNodeHandle = passInput.terrainPatchNodeHandle;
@@ -268,14 +266,5 @@ namespace MoYu
         pIndirectTerrainGBufferPSO       = nullptr;
         pIndirectTerrainGBufferCommandSignature = nullptr;
     }
-
-    bool IndirectTerrainGBufferPass::initializeRenderTarget(RHI::RenderGraph& graph, DrawOutputParameters* drawPassOutput)
-    {
-        bool needClearRenderTarget = false;
-        
-        return needClearRenderTarget;
-    }
-
-
 
 }

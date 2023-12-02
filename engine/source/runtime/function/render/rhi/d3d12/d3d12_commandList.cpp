@@ -171,25 +171,55 @@ namespace RHI
         {
             CResourceState& ResourceState = Resource->GetResourceState();
 
-            D3D12_RESOURCE_STATES StateBefore = ResourceState.GetSubresourceState(Subresource);
-            D3D12_RESOURCE_STATES StateAfter  = State != D3D12_RESOURCE_STATE_UNKNOWN ? State : StateBefore;
-
-            if (StateBefore != StateAfter)
+            if ((Subresource == D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES) && !ResourceState.IsUniform())
             {
-                ResourceBarriers.push_back(CD3DX12_RESOURCE_BARRIER::Transition(
-                    Resource->GetResource(), StateBefore, StateAfter, Subresource));
+                int subresourceNumber = Resource->GetNumSubresources();
+                for (int subIdx = 0; subIdx < subresourceNumber; subIdx++)
+                {
+                    D3D12_RESOURCE_STATES StateBefore = ResourceState.GetSubresourceState(subIdx);
+                    D3D12_RESOURCE_STATES StateAfter  = State != D3D12_RESOURCE_STATE_UNKNOWN ? State : StateBefore;
+
+                    if (StateBefore != StateAfter)
+                    {
+                        ResourceBarriers.push_back(CD3DX12_RESOURCE_BARRIER::Transition(
+                            Resource->GetResource(), StateBefore, StateAfter, subIdx));
+                    }
+
+                    // Get the command list resource state associate with this resource
+                    D3D12_RESOURCE_STATES StateCommandList =
+                        ResourceStateTracker.GetResourceState(Resource).GetSubresourceState(subIdx);
+                    D3D12_RESOURCE_STATES StatePrevious =
+                        StateCommandList != D3D12_RESOURCE_STATE_UNKNOWN ? StateCommandList : StateAfter;
+
+                    // If global state is not same as commandlist space state, then change the global state
+                    if (StateBefore != StatePrevious)
+                    {
+                        ResourceState.SetSubresourceState(subIdx, StatePrevious);
+                    }
+                }
             }
-
-            // Get the command list resource state associate with this resource
-            D3D12_RESOURCE_STATES StateCommandList =
-                ResourceStateTracker.GetResourceState(Resource).GetSubresourceState(Subresource);
-            D3D12_RESOURCE_STATES StatePrevious =
-                StateCommandList != D3D12_RESOURCE_STATE_UNKNOWN ? StateCommandList : StateAfter;
-
-            // If global state is not same as commandlist space state, then change the global state
-            if (StateBefore != StatePrevious)
+            else
             {
-                ResourceState.SetSubresourceState(Subresource, StatePrevious);
+                D3D12_RESOURCE_STATES StateBefore = ResourceState.GetSubresourceState(Subresource);
+                D3D12_RESOURCE_STATES StateAfter  = State != D3D12_RESOURCE_STATE_UNKNOWN ? State : StateBefore;
+
+                if (StateBefore != StateAfter)
+                {
+                    ResourceBarriers.push_back(CD3DX12_RESOURCE_BARRIER::Transition(
+                        Resource->GetResource(), StateBefore, StateAfter, Subresource));
+                }
+
+                // Get the command list resource state associate with this resource
+                D3D12_RESOURCE_STATES StateCommandList =
+                    ResourceStateTracker.GetResourceState(Resource).GetSubresourceState(Subresource);
+                D3D12_RESOURCE_STATES StatePrevious =
+                    StateCommandList != D3D12_RESOURCE_STATE_UNKNOWN ? StateCommandList : StateAfter;
+
+                // If global state is not same as commandlist space state, then change the global state
+                if (StateBefore != StatePrevious)
+                {
+                    ResourceState.SetSubresourceState(Subresource, StatePrevious);
+                }
             }
         }
 
