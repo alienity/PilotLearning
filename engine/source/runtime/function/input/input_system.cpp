@@ -121,7 +121,7 @@ namespace MoYu
 
         std::shared_ptr<RenderCamera> render_camera = g_runtime_global_context.m_render_system->getRenderCamera();
 
-        const float& fovy = render_camera->m_fovy;
+        const float& fovy = render_camera->m_fieldOfViewY;
         const float  fovx = fovy * render_camera->m_aspect;
 
         float cursor_delta_x(MoYu::degreesToRadians(m_cursor_delta_x));

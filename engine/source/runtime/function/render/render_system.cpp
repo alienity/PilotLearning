@@ -147,6 +147,9 @@ namespace MoYu
     {
         RenderSwapData& swap_data = m_swap_context.getRenderSwapData();
 
+        // update common data
+        m_render_camera->updatePerFrame();
+
         // update game object if needed
         if (swap_data.m_game_object_resource_desc.has_value())
         {

@@ -603,22 +603,22 @@ namespace MoYu
         RHI::RenderPass& cameraCullingPass = graph.AddRenderPass("TerrainCommandSignatureForMainCameraPreparePass");
 
         cameraCullingPass.Read(mainCommandSigUploadBufferHandle, true);
-        cameraCullingPass.Read(mainCamVisiableIndexHandle, true);
-        //cameraCullingPass.Read(visiableIndexBufferHandle, true);
+        //cameraCullingPass.Read(mainCamVisiableIndexHandle, true);
+        cameraCullingPass.Read(visiableIndexBufferHandle, true);
         cameraCullingPass.Write(terrainCommandSigBufHandle, true);
 
         cameraCullingPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
             RHI::D3D12ComputeContext* pContext = context->GetComputeContext();
 
             pContext->TransitionBarrier(RegGetBuf(mainCommandSigUploadBufferHandle), D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_GENERIC_READ);
-            pContext->TransitionBarrier(RegGetBufCounter(mainCamVisiableIndexHandle), D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_SOURCE);
-            //pContext->TransitionBarrier(RegGetBufCounter(visiableIndexBufferHandle), D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_SOURCE);
+            //pContext->TransitionBarrier(RegGetBufCounter(mainCamVisiableIndexHandle), D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_SOURCE);
+            pContext->TransitionBarrier(RegGetBufCounter(visiableIndexBufferHandle), D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_SOURCE);
             pContext->TransitionBarrier(RegGetBuf(terrainCommandSigBufHandle), D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_DEST);
             pContext->FlushResourceBarriers();
 
             pContext->CopyBufferRegion(RegGetBuf(terrainCommandSigBufHandle), 0, RegGetBuf(mainCommandSigUploadBufferHandle), 0, sizeof(MoYu::TerrainCommandSignatureParams));
-            pContext->CopyBufferRegion(RegGetBuf(terrainCommandSigBufHandle), terrainInstanceCountOffset, RegGetBufCounter(mainCamVisiableIndexHandle), 0, sizeof(int));
-            //pContext->CopyBufferRegion(RegGetBuf(terrainCommandSigBufHandle), terrainInstanceCountOffset, RegGetBufCounter(visiableIndexBufferHandle), 0, sizeof(int));
+            //pContext->CopyBufferRegion(RegGetBuf(terrainCommandSigBufHandle), terrainInstanceCountOffset, RegGetBufCounter(mainCamVisiableIndexHandle), 0, sizeof(int));
+            pContext->CopyBufferRegion(RegGetBuf(terrainCommandSigBufHandle), terrainInstanceCountOffset, RegGetBufCounter(visiableIndexBufferHandle), 0, sizeof(int));
             
             pContext->TransitionBarrier(RegGetBuf(terrainCommandSigBufHandle), D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT);
             pContext->FlushResourceBarriers();

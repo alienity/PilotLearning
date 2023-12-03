@@ -118,6 +118,8 @@ namespace MoYu
         glm::float4x4 view_matrix     = camera->getViewMatrix();
         glm::float4x4 proj_matrix     = camera->getPersProjMatrix();
         glm::float3   camera_position = camera->position();
+
+        glm::float4x4 unjitter_proj_matrix = camera->getUnJitterPersProjMatrix();
         
         // FrameUniforms
         HLSL::FrameUniforms* _frameUniforms = &m_FrameUniforms;
@@ -132,6 +134,9 @@ namespace MoYu
         _frameCameraUniform.worldFromClipMatrix = glm::inverse(_frameCameraUniform.clipFromWorldMatrix);
         _frameCameraUniform.clipTransform       = glm::float4(1, 1, 1, 1);
         _frameCameraUniform.cameraPosition      = camera_position;
+        // update camera taa parameters
+        _frameCameraUniform.unJitterProjectionMatrix = unjitter_proj_matrix;
+        _frameCameraUniform.unJitterProjectionMatrixInv = glm::inverse(unjitter_proj_matrix);
 
         HLSL::FrameCameraUniform _lastFrameCameraUniform = _frameUniforms->cameraUniform.curFrameUniform;
 
@@ -139,12 +144,13 @@ namespace MoYu
         _cameraUniform.lastFrameUniform = _lastFrameCameraUniform;
         _cameraUniform.curFrameUniform = _frameCameraUniform;
 
-        _cameraUniform.resolution = glm::float4(camera->m_width, camera->m_height, 1.0f / camera->m_width, 1.0f / camera->m_height);
+        _cameraUniform.resolution = glm::float4(
+            camera->m_pixelWidth, camera->m_pixelHeight, 1.0f / camera->m_pixelWidth, 1.0f / camera->m_pixelHeight);
         _cameraUniform.logicalViewportScale = glm::float2(1.0f, 1.0f);
         _cameraUniform.logicalViewportOffset = glm::float2(0.0f, 0.0f);
 
-        _cameraUniform.cameraNear = camera->m_znear;
-        _cameraUniform.cameraFar = camera->m_zfar;
+        _cameraUniform.cameraNear = camera->m_nearClipPlane;
+        _cameraUniform.cameraFar = camera->m_farClipPlane;
 
         _cameraUniform.exposure = 1.0f;
         _cameraUniform.ev100 = 1.0f;

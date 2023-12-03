@@ -1,7 +1,17 @@
 #include "runtime/function/render/render_camera.h"
+#include "runtime/function/render/renderer/renderer_config.h"
 
 namespace MoYu
 {
+    void RenderCamera::updatePerFrame()
+    {
+        if (EngineConfig::g_AntialiasingMode == EngineConfig::AntialiasingMode::TAA)
+        {
+            glm::float4 activeSample = m_frustumJitter.UpdateSample(this);
+        }
+
+
+    }
 
     void RenderCamera::setMainViewMatrix(const glm::float4x4& view_matrix, RenderCameraType type)
     {
@@ -58,7 +68,7 @@ namespace MoYu
     void RenderCamera::zoom(float offset)
     {
         // > 0 = zoom in (decrease FOV by <offset> angles)
-        m_fovy = glm::clamp(m_fovy - offset, MIN_FOVY, MAX_FOVY);
+        m_fieldOfViewY = glm::clamp(m_fieldOfViewY - offset, MIN_FOVY, MAX_FOVY);
     }
 
     void RenderCamera::lookAt(const glm::float3& position, const glm::float3& target, const glm::float3& up)
@@ -93,15 +103,15 @@ namespace MoYu
 
     void RenderCamera::perspectiveProjection(int width, int height, float znear, float zfar, float fovy)
     {
-        m_width  = width;
-        m_height = height;
-        m_aspect = width / (float)height; 
-        m_znear  = znear;
-        m_zfar   = zfar;
-        m_fovy   = fovy;
+        m_pixelWidth    = width;
+        m_pixelHeight   = height;
+        m_nearClipPlane = znear;
+        m_farClipPlane  = zfar;
+        m_aspect        = width / (float)height;
+        m_fieldOfViewY  = fovy;
 
-        m_project_matrix =
-            MoYu::MYMatrix4x4::createPerspectiveFieldOfView(MoYu::f::DEG_TO_RAD * m_fovy, m_aspect, m_znear, m_zfar);
+        m_project_matrix = MoYu::MYMatrix4x4::createPerspectiveFieldOfView(
+            MoYu::f::DEG_TO_RAD * m_fieldOfViewY, m_aspect, m_nearClipPlane, m_farClipPlane);
     }
 
     glm::float4x4 RenderCamera::getViewMatrix()
@@ -130,15 +140,76 @@ namespace MoYu
 
     glm::float4x4 RenderCamera::getPersProjMatrix() const
     {
-        glm::float4x4 proj_mat =
-            MoYu::MYMatrix4x4::createPerspectiveFieldOfView(MoYu::f::DEG_TO_RAD * m_fovy, m_aspect, m_znear, m_zfar);
+        //glm::float4x4 proj_mat = MoYu::MYMatrix4x4::createPerspectiveFieldOfView(
+        //    MoYu::f::DEG_TO_RAD * m_fieldOfViewY, m_aspect, m_nearClipPlane, m_farClipPlane);
 
-        return proj_mat;
+        if (EngineConfig::g_AntialiasingMode == EngineConfig::AntialiasingMode::TAA)
+        {
+            glm::float4 activeSample = m_frustumJitter.activeSample;
+
+            return getProjectionMatrix(activeSample.x, activeSample.y);
+        }
+        else
+        {
+            return getProjectionMatrix(0, 0);
+        }
+    }
+
+    glm::float4x4 RenderCamera::getUnJitterPersProjMatrix() const
+    {
+        // glm::float4x4 proj_mat = MoYu::MYMatrix4x4::createPerspectiveFieldOfView(
+        //     MoYu::f::DEG_TO_RAD * m_fieldOfViewY, m_aspect, m_nearClipPlane, m_farClipPlane);
+        return getProjectionMatrix(0, 0);
     }
 
     glm::float4x4 RenderCamera::getLookAtMatrix() const
     {
         return MoYu::MYMatrix4x4::createLookAtMatrix(position(), position() + forward(), up());
+    }
+
+    glm::float4x4 RenderCamera::getWorldToCameraMatrix()
+    {
+        return getViewMatrix();
+    }
+
+    glm::float4x4 RenderCamera::getCameraToWorldMatrix()
+    {
+        glm::float4x4 worldToCameraMat = getWorldToCameraMatrix();
+        return glm::inverse(worldToCameraMat);
+    }
+
+    glm::float4 RenderCamera::getProjectionExtents(float texelOffsetX, float texelOffsetY) const
+    {
+        float oneExtentY = glm::tan(0.5f * MoYu::f::DEG_TO_RAD * this->m_fieldOfViewY);
+        float oneExtentX = oneExtentY * this->m_aspect;
+        float texelSizeX = oneExtentX / (0.5f * this->m_pixelWidth);
+        float texelSizeY = oneExtentY / (0.5f * this->m_pixelHeight);
+        float oneJitterX = texelSizeX * texelOffsetX;
+        float oneJitterY = texelSizeY * texelOffsetY;
+
+        return glm::float4(oneExtentX,
+                           oneExtentY,
+                           oneJitterX,
+                           oneJitterY); // xy = frustum extents at distance 1, zw = jitter at distance 1
+    }
+
+    glm::float4x4 RenderCamera::getProjectionMatrix(float texelOffsetX, float texelOffsetY) const
+    {
+        glm::float4 extents = this->getProjectionExtents(texelOffsetX, texelOffsetY);
+
+        float cf = this->m_farClipPlane;
+        float cn = this->m_nearClipPlane;
+        float xm = extents.z - extents.x;
+        float xp = extents.z + extents.x;
+        float ym = extents.w - extents.y;
+        float yp = extents.w + extents.y;
+
+        return MoYu::MYMatrix4x4::createPerspectiveOffCenter(xm * cn, xp * cn, ym * cn, yp * cn, cn, cf);
+    }
+
+    FrustumJitter* RenderCamera::getFrustumJitter()
+    {
+        return &m_frustumJitter;
     }
 
 } // namespace MoYu

@@ -186,6 +186,10 @@ namespace MoYu
         extern glm::float2 One;
         extern glm::float2 UnitX;
         extern glm::float2 UnitY;
+
+        // positive if v2 is on the left side of v1
+        float signedAngle(glm::float2 v1, glm::float2 v2);
+        glm::float2 rotate(glm::float2 v, float theta);
     }
 
     namespace MYFloat3

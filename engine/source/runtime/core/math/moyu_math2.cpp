@@ -66,6 +66,35 @@ namespace MoYu
 
     //------------------------------------------------------------------------------------------
 
+
+    float MYFloat2::signedAngle(glm::float2 v1, glm::float2 v2)
+    {
+       glm::float2 n1 = glm::normalize(v1);
+       glm::float2 n2 = glm::normalize(v2);
+
+       float dot = glm::dot(n1, n2);
+       if (dot > 1.0f)
+           dot = 1.0f;
+       if (dot < -1.0f)
+           dot = -1.0f;
+
+       float theta = glm::acos(dot);
+       float sgn   = glm::dot(glm::float2(-n1.y, n1.x), n2);
+       if (sgn >= 0.0f)
+           return theta;
+       else
+           return -theta;
+    }
+
+    glm::float2 MYFloat2::rotate(glm::float2 v, float theta)
+    {
+       float cs = glm::cos(theta);
+       float sn = glm::sin(theta);
+       float x1 = v.x * cs - v.y * sn;
+       float y1 = v.x * sn + v.y * cs;
+       return glm::float2(x1, y1);
+    }
+
     glm::float4x4 MYMatrix4x4::createPerspectiveFieldOfView(float fovY, float aspectRatio, float zNearPlane, float zFarPlane)
     {
        glm::float4x4 m = Zero;

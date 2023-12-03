@@ -140,11 +140,13 @@ struct FrameCameraUniform
     float4x4 worldFromViewMatrix; // clip    view -> world    : model matrix
     float4x4 clipFromViewMatrix;  // clip <- view    world    : projection matrix
     float4x4 viewFromClipMatrix;  // clip -> view    world    : inverse projection matrix
+    float4x4 unJitterProjectionMatrix; // Unjitter projection matrix
+    float4x4 unJitterProjectionMatrixInv; // Unjitter projection matrix inverse
     float4x4 clipFromWorldMatrix; // clip <- view <- world
     float4x4 worldFromClipMatrix; // clip -> view -> world
     float4   clipTransform;       // [sx, sy, tx, ty] only used by VERTEX_DOMAIN_DEVICE
-    float3   cameraPosition;
-    float    _baseReserved0;
+    float3   cameraPosition;      // camera world position
+    uint     jitterIndex;         // jitter index
 };
 
 struct CameraUniform
@@ -181,6 +183,16 @@ struct AOUniform
     float aoBentNormals; // 0: no AO bent normal, >0.0 AO bent normals
     float aoReserved0;
     float aoReserved1;
+};
+
+struct TAAUniform
+{
+    float4 projectionExtents;  // xy = frustum extents at distance 1, zw = jitter at distance 1
+    float4 jitterUV;
+    float feedbackMin;
+    float feedbackMax;
+    float motionScale;
+    float __Reserved0;
 };
 
 struct IBLUniform
@@ -307,6 +319,7 @@ struct FrameUniforms
     BaseUniform baseUniform;
     TerrainUniform terrainUniform;
     MeshUniform meshUniform;
+    TAAUniform taaUniform;
     AOUniform aoUniform;
     IBLUniform iblUniform;
     SSRUniform ssrUniform;

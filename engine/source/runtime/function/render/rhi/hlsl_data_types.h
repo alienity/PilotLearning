@@ -107,11 +107,13 @@ namespace HLSL
         glm::float4x4 worldFromViewMatrix; // clip    view -> world    : model matrix
         glm::float4x4 clipFromViewMatrix;  // clip <- view    world    : projection matrix
         glm::float4x4 viewFromClipMatrix;  // clip -> view    world    : inverse projection matrix
+        glm::float4x4 unJitterProjectionMatrix; // Unjitter projection matrix
+        glm::float4x4 unJitterProjectionMatrixInv; // Unjitter projection matrix inverse
         glm::float4x4 clipFromWorldMatrix; // clip <- view <- world
         glm::float4x4 worldFromClipMatrix; // clip -> view -> world
         glm::float4   clipTransform;       // [sx, sy, tx, ty] only used by VERTEX_DOMAIN_DEVICE
-        glm::float3   cameraPosition;
-        float         _baseReserved0;
+        glm::float3   cameraPosition;      // camera world position
+        glm::uint     jitterIndex;         // jitter index
     };
 
     struct CameraUniform
@@ -148,6 +150,16 @@ namespace HLSL
         float aoBentNormals;                    // 0: no AO bent normal, >0.0 AO bent normals
         float aoReserved0;
         float aoReserved1;
+    };
+
+    struct TAAuniform
+    {
+        glm::float4 projectionExtents; // xy = frustum extents at distance 1, zw = jitter at distance 1
+        glm::float4 jitterUV;
+        float       feedbackMin;
+        float       feedbackMax;
+        float       motionScale;
+        float       __Reserved0;
     };
 
     struct IBLUniform
@@ -275,6 +287,7 @@ namespace HLSL
         TerrainUniform         terrainUniform;
         MeshUniform            meshUniform;
         AOUniform              aoUniform;
+        TAAuniform             taaUniform;
         IBLUniform             iblUniform;
         SSRUniform             ssrUniform;
         DirectionalLightStruct directionalLight;

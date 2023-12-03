@@ -58,6 +58,13 @@ namespace EngineConfig
     };
     extern SMAAConfig g_SMAAConfig;
 
+    struct TAAConfig
+    {
+
+    };
+
+    extern TAAConfig g_TAAConfig;
+
     struct HDRConfig
     {
         bool  m_EnableHDR              = true;
