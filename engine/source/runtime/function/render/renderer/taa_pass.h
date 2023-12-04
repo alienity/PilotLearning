@@ -48,11 +48,11 @@ namespace MoYu
             DrawOutputParameters()
             {
                 motionVectorHandle.Invalidate();
-                //depthHandle.Invalidate();
+                depthHandle.Invalidate();
             }
 
             RHI::RgResourceHandle motionVectorHandle;
-            //RHI::RgResourceHandle depthHandle;
+            RHI::RgResourceHandle depthHandle;
         };
 
     public:
