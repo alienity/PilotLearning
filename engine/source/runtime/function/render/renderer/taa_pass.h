@@ -35,11 +35,13 @@ namespace MoYu
             {
                 perframeBufferHandle.Invalidate();
                 colorBufferHandle.Invalidate();
+                depthBufferHandle.Invalidate();
                 motionVectorHandle.Invalidate();
             }
 
             RHI::RgResourceHandle perframeBufferHandle;
             RHI::RgResourceHandle colorBufferHandle;
+            RHI::RgResourceHandle depthBufferHandle;
             RHI::RgResourceHandle motionVectorHandle;
         };
 
@@ -47,12 +49,10 @@ namespace MoYu
         {
             DrawOutputParameters()
             {
-                motionVectorHandle.Invalidate();
-                depthHandle.Invalidate();
+                aaOutHandle.Invalidate();
             }
 
-            RHI::RgResourceHandle motionVectorHandle;
-            RHI::RgResourceHandle depthHandle;
+            RHI::RgResourceHandle aaOutHandle;
         };
 
     public:
@@ -64,8 +64,6 @@ namespace MoYu
         void drawCameraMotionVector(RHI::RenderGraph& graph, DrawInputParameters& passInput, DrawOutputParameters& passOutput);
         void destroy() override final;
 
-        bool initializeRenderTarget(RHI::RenderGraph& graph, TAAOutput* taaOutput);
-
     private:
         Shader TemporalReprojectionCS;
         std::shared_ptr<RHI::D3D12RootSignature> pTemporalReprojectionSignature;
@@ -73,6 +71,7 @@ namespace MoYu
 
         RHI::RgTextureDesc reprojectionTexDesc;
         std::shared_ptr<RHI::D3D12Texture> reprojectionBuffer[2];
+        std::shared_ptr<RHI::D3D12Texture> motionVectorBuffer;
 
         int indexRead;
         int indexWrite;

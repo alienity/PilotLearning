@@ -7,6 +7,7 @@
 
 #include "runtime/function/render/renderer/msaa_resolve_pass.h"
 #include "runtime/function/render/renderer/fxaa_pass.h"
+#include "runtime/function/render/renderer/taa_pass.h"
 #include "runtime/function/render/renderer/bloom_pass.h"
 #include "runtime/function/render/renderer/extractLuma_pass.h"
 #include "runtime/function/render/renderer/hdr_tonemapping_pass.h"
@@ -27,10 +28,14 @@ namespace MoYu
         {
             PostprocessInputParameters()
             {
+                perframeBufferHandle.Invalidate();
+                motionVectorHandle.Invalidate();
                 inputSceneColorHandle.Invalidate();
                 inputSceneDepthHandle.Invalidate();
             }
 
+            RHI::RgResourceHandle perframeBufferHandle;
+            RHI::RgResourceHandle motionVectorHandle;
             RHI::RgResourceHandle inputSceneColorHandle;
             RHI::RgResourceHandle inputSceneDepthHandle;
         };
@@ -55,6 +60,7 @@ namespace MoYu
         ~PostprocessPasses() { destroy(); }
 
         void initialize(const PostprocessInitInfo& init_info);
+        void PreparePassData(std::shared_ptr<RenderResource> render_resource);
         void update(RHI::RenderGraph& graph, PostprocessInputParameters& passInput, PostprocessOutputParameters& passOutput);
         void destroy() override final;
 
@@ -73,6 +79,7 @@ namespace MoYu
 
         std::shared_ptr<MSAAResolvePass>    mResolvePass;
         std::shared_ptr<FXAAPass>           mFXAAPass;
+        std::shared_ptr<TAAPass>            mTAAPass;
         std::shared_ptr<BloomPass>          mBloomPass;
         std::shared_ptr<ExtractLumaPass>    mExtractLumaPass;
         std::shared_ptr<HDRToneMappingPass> mHDRToneMappingPass;

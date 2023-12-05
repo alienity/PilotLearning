@@ -8,18 +8,51 @@
 cbuffer RootConstants : register(b0, space0)
 {
     uint perFrameBufferIndex;
-    uint mainColorBufferIndex;
     uint motionVectorBufferIndex;
+    uint mainColorBufferIndex;
     uint depthBufferIndex;
     uint reprojectionBufferReadIndex;
     uint reprojectionBufferWriteIndex;
+	uint outColorBufferIndex;
 };
 
 SamplerState defaultSampler : register(s10);
 
+//note: normalized random, float=[0;1[
+float PDnrand( float2 n ) {
+	return frac( sin(dot(n.xy, float2(12.9898f, 78.233f)))* 43758.5453f );
+}
+float2 PDnrand2( float2 n ) {
+	return frac( sin(dot(n.xy, float2(12.9898f, 78.233f)))* float2(43758.5453f, 28001.8384f) );
+}
+float3 PDnrand3( float2 n ) {
+	return frac( sin(dot(n.xy, float2(12.9898f, 78.233f)))* float3(43758.5453f, 28001.8384f, 50849.4141f ) );
+}
+float4 PDnrand4( float2 n ) {
+	return frac( sin(dot(n.xy, float2(12.9898f, 78.233f)))* float4(43758.5453f, 28001.8384f, 50849.4141f, 12996.89f) );
+}
+
+//====
+//note: signed random, float=[-1;1[
+float PDsrand( float2 n ) {
+	return PDnrand( n ) * 2 - 1;
+}
+float2 PDsrand2( float2 n ) {
+	return PDnrand2( n ) * 2 - 1;
+}
+float3 PDsrand3( float2 n ) {
+	return PDnrand3( n ) * 2 - 1;
+}
+float4 PDsrand4( float2 n ) {
+	return PDnrand4( n ) * 2 - 1;
+}
+
 // Convert rgb to luminance
 // with rgb in linear space with sRGB primaries and D65 white point
-float Luminance(float3 linearRgb) { return dot(linearRgb, float3(0.2126729, 0.7151522, 0.0721750)); }
+float Luminance(float3 linearRgb)
+{
+	return dot(linearRgb, float3(0.2126729, 0.7151522, 0.0721750));
+}
 
 float toLinearZ(float fz, float m22, float m23)
 {
@@ -62,6 +95,11 @@ float3 find_closest_fragment_3x3(Texture2D<float> depthTexture, float2 depthTexe
 	if (ZCMP_GT(dmin.z, dbr.z)) dmin = dbr;
 
 	return float3(uv + dd.xy * dmin.xy, dmin.z);
+}
+
+float4 resolve_color(float4 c)
+{
+	return c;
 }
 
 float4 clip_aabb(float3 aabb_min, float3 aabb_max, float4 p, float4 q)
@@ -133,7 +171,8 @@ void CSMain( uint3 DTid : SV_DispatchThreadID )
     Texture2D<float3> motionVectorBuffer = ResourceDescriptorHeap[motionVectorBufferIndex];
     Texture2D<float> depthBuffer = ResourceDescriptorHeap[depthBufferIndex];
     Texture2D<float4> reprojectionBufferRead = ResourceDescriptorHeap[reprojectionBufferReadIndex];
-    Texture2D<float4> reprojectionBufferWrite = ResourceDescriptorHeap[reprojectionBufferWriteIndex];
+    RWTexture2D<float4> reprojectionBufferWrite = ResourceDescriptorHeap[reprojectionBufferWriteIndex];
+	RWTexture2D<float4> outColorBuffer = ResourceDescriptorHeap[outColorBufferIndex];
 
     uint width, height;
     depthBuffer.GetDimensions(width, height);
@@ -150,27 +189,32 @@ void CSMain( uint3 DTid : SV_DispatchThreadID )
     float feedbackMax = taaUniform.feedbackMax;
     float motionScale = taaUniform.motionScale;
 
-    float2 uv = DTid.xy / float2(width, height);
-    float2 depthTexelSize = 1.0f / float2(width, height);
+	float2 ss_txc = DTid.xy / float2(width, height);
+    float2 texel_size = 1.0f / float2(width, height);
+
+    float2 uv = ss_txc; // - jitterUV.xy;
+	float _time = mFrameUniforms.baseUniform.time;
+	float sin_time = sin(_time);
 
         //--- 3x3 nearest (good)
-    float3 c_frag = find_closest_fragment_3x3(depthBuffer, depthTexelSize, uv);
+    float3 c_frag = find_closest_fragment_3x3(depthBuffer, texel_size, uv);
     float2 ss_vel = motionVectorBuffer.Sample(defaultSampler, c_frag.xy).xy;
     // float vs_dist = depth_resolve_linear(c_frag.z);
     float vs_dist = depth_resolve_linear(c_frag.z, projectionMatrix._m22, projectionMatrix._m23);
 
     // temporal resolve
-    float4 color_temporal = temporal_reprojection(mainColorBuffer, reprojectionBufferRead, depthTexelSize, feedbackMin, feedbackMax, uv, ss_vel, vs_dist);
+    float4 color_temporal = temporal_reprojection(mainColorBuffer, reprojectionBufferRead, texel_size, feedbackMin, feedbackMax, uv, ss_vel, vs_dist);
 
     // prepare outputs
     float4 to_buffer = resolve_color(color_temporal);
-
     float4 to_screen = resolve_color(color_temporal);
 
     // add noise
-    float4 noise4 = PDsrand4(IN.ss_txc + _SinTime.x + 0.6959174) / 510.0;
+    float4 noise4 = PDsrand4(ss_txc + sin_time + 0.6959174) / 510.0;
     float4 outbuffer = saturate(to_buffer + noise4);
     float4 outscreen = saturate(to_screen + noise4);
 
+	reprojectionBufferWrite[DTid.xy] = outbuffer;
+	outColorBuffer[DTid.xy] = outscreen;
 }
 

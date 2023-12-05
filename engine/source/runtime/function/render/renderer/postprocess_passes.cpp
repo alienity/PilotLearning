@@ -13,6 +13,7 @@ namespace MoYu
 
         RenderPassCommonInfo renderPassCommonInfo = {m_RenderGraphAllocator, m_RenderGraphRegistry, m_Device, m_WindowSystem};
 
+        // MSAA
         {
             MSAAResolvePass::MSAAResolveInitInfo resolvePassInit;
             resolvePassInit.colorTexDesc = colorTexDesc;
@@ -21,6 +22,7 @@ namespace MoYu
             mResolvePass->setCommonInfo(renderPassCommonInfo);
             mResolvePass->initialize(resolvePassInit);
         }
+        // FXAA pass
         {
             FXAAPass::FXAAInitInfo fxaaPassInit;
             fxaaPassInit.m_ColorTexDesc   = colorTexDesc;
@@ -31,6 +33,17 @@ namespace MoYu
             mFXAAPass = std::make_shared<FXAAPass>();
             mFXAAPass->setCommonInfo(renderPassCommonInfo);
             mFXAAPass->initialize(fxaaPassInit);
+        }
+        // TAA pass
+        {
+            TAAPass::TAAInitInfo taaPassInit;
+            taaPassInit.m_ColorTexDesc   = colorTexDesc;
+            taaPassInit.m_ShaderCompiler = init_info.m_ShaderCompiler;
+            taaPassInit.m_ShaderRootPath = g_runtime_global_context.m_config_manager->getShaderFolder();
+
+            mTAAPass = std::make_shared<TAAPass>();
+            mTAAPass->setCommonInfo(renderPassCommonInfo);
+            mTAAPass->initialize(taaPassInit);
         }
         if (EngineConfig::g_BloomConfig.m_BloomEnable)
         {
@@ -117,12 +130,24 @@ namespace MoYu
 
     }
 
+    void PostprocessPasses::PreparePassData(std::shared_ptr<RenderResource> render_resource)
+    {
+        mTAAPass->prepareTAAMetaData(render_resource);
+
+
+
+    }
+
     void PostprocessPasses::update(RHI::RenderGraph& graph, PostprocessInputParameters& passInput, PostprocessOutputParameters& passOutput)
     {
         //PostprocessInputParameters*  drawPassInput  = &passInput;
         //PostprocessOutputParameters* drawPassOutput = &passOutput;
 
+        RHI::RgResourceHandle perframeBufferHandle = passInput.perframeBufferHandle;
+        RHI::RgResourceHandle motionVectorHandle   = passInput.motionVectorHandle;
+
         RHI::RgResourceHandle inputSceneColorHandle = passInput.inputSceneColorHandle;
+        RHI::RgResourceHandle inputSceneDepthHandle = passInput.inputSceneDepthHandle;
 
         RHI::RgResourceHandle postTargetColorHandle0 = graph.Create<RHI::D3D12Texture>(colorTexDesc);
         RHI::RgResourceHandle postTargetColorHandle1 = graph.Create<RHI::D3D12Texture>(colorTexDesc);
@@ -159,6 +184,18 @@ namespace MoYu
             mFXAAPass->update(graph, mFXAAIntputParams, mFXAAOutputParams);
 
             outputTargetHandle = mFXAAOutputParams.outputColorHandle;
+        }
+        else if (EngineConfig::g_AntialiasingMode == EngineConfig::TAA)
+        {
+            TAAPass::DrawInputParameters  mTAAIntput;
+            TAAPass::DrawOutputParameters mTAAOutput;
+            mTAAIntput.perframeBufferHandle = perframeBufferHandle;
+            mTAAIntput.motionVectorHandle   = motionVectorHandle;
+            mTAAIntput.colorBufferHandle    = inputSceneColorHandle;
+            mTAAIntput.depthBufferHandle    = inputSceneDepthHandle;
+            mTAAOutput.aaOutHandle          = postTargetColorHandle0;
+
+            mTAAPass->update(graph, mTAAIntput, mTAAOutput);
         }
         else
         {
@@ -231,7 +268,16 @@ namespace MoYu
         passOutput.outputColorHandle = outputTargetHandle;
     }
 
-    void PostprocessPasses::destroy() {}
+    void PostprocessPasses::destroy()
+    {
+        mResolvePass = nullptr;
+        mFXAAPass    = nullptr;
+        mTAAPass     = nullptr;
+        mBloomPass   = nullptr;
+        mExtractLumaPass = nullptr;
+        mHDRToneMappingPass = nullptr;
+        mExposurePass       = nullptr;
+    }
 
     //bool PostprocessPasses::initializeResolveTarget(RHI::RenderGraph& graph, PostprocessOutputParameters* drawPassOutput)
     //{

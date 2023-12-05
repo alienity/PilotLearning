@@ -113,17 +113,6 @@ namespace MoYu
             mTerrainCullPass->setCommonInfo(renderPassCommonInfo);
             mTerrainCullPass->initialize(drawPassInit);
         }
-        // TAA pass
-        {
-            TAAPass::TAAInitInfo taaPassInit;
-            taaPassInit.m_ColorTexDesc = colorTexDesc;
-            taaPassInit.m_ShaderCompiler  = pCompiler;
-            taaPassInit.m_ShaderRootPath = g_runtime_global_context.m_config_manager->getShaderFolder();
-
-            mTAAPass = std::make_shared<TAAPass>();
-            mTAAPass->setCommonInfo(renderPassCommonInfo);
-            mTAAPass->initialize(taaPassInit);
-        }
         // GBuffer pass
         {
             IndirectGBufferPass::DrawPassInitInfo drawPassInit;
@@ -284,7 +273,8 @@ namespace MoYu
         mTerrainCullPass->prepareMeshData(render_resource);
         mIndirectTerrainGBufferPass->prepareMatBuffer(render_resource);
         mDepthPyramidPass->prepareMeshData(render_resource);
-        mTAAPass->prepareTAAMetaData(render_resource);
+
+        mPostprocessPasses->PreparePassData(render_resource);
 
         mIndirectCullPass->inflatePerframeBuffer(render_resource);
     }
@@ -297,7 +287,6 @@ namespace MoYu
         mTerrainCullPass             = nullptr;
         mIndirectShadowPass          = nullptr;
         mIndirectTerrainShadowPass   = nullptr;
-        mTAAPass                     = nullptr;
         mIndirectGBufferPass         = nullptr;
         mIndirectTerrainGBufferPass  = nullptr;
         mDepthPyramidPass            = nullptr;
@@ -521,17 +510,6 @@ namespace MoYu
         mIndirectTransparentDrawPass->update(graph, mDrawTransIntputParams, mDrawTransOutputParams);
         //=================================================================================
 
-        
-        //=================================================================================
-        // camera motion vector pass
-        TAAPass::DrawInputParameters  mTAAIntput;
-        TAAPass::DrawOutputParameters mTAAOutput;
-        mTAAIntput.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
-        mTAAIntput.colorBufferHandle = mDrawTransOutputParams.renderTargetColorHandle;
-        //mTAAIntput.motionVectorHandle = ;
-
-        mTAAPass->drawCameraMotionVector(graph, mTAAIntput, mTAAOutput);
-        //=================================================================================
 
         //=================================================================================
         //RHI::RgResourceHandle outputRTColorHandle = mDrawOutputParams.renderTargetColorHandle;
@@ -540,7 +518,10 @@ namespace MoYu
         PostprocessPasses::PostprocessInputParameters  mPostprocessIntputParams;
         PostprocessPasses::PostprocessOutputParameters mPostprocessOutputParams;
 
+        mPostprocessIntputParams.perframeBufferHandle  = indirectCullOutput.perframeBufferHandle;
+        //mPostprocessIntputParams.motionVectorHandle  = indirectCullOutput.perframeBufferHandle;
         mPostprocessIntputParams.inputSceneColorHandle = mDrawTransOutputParams.renderTargetColorHandle;
+        mPostprocessIntputParams.inputSceneDepthHandle = mDrawTransOutputParams.renderTargetDepthHandle;
         mPostprocessPasses->update(graph, mPostprocessIntputParams, mPostprocessOutputParams);
 
         //outputRTColorHandle = mPostprocessOutputParams.outputColorHandle;

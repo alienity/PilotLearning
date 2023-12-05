@@ -3,7 +3,7 @@
 namespace EngineConfig
 {
 
-    AntialiasingMode g_AntialiasingMode = AntialiasingMode::FXAA;
+    AntialiasingMode g_AntialiasingMode = AntialiasingMode::TAA;
 
     MSAAConfig g_MASSConfig = {4};
 

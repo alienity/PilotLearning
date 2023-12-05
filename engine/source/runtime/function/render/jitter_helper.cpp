@@ -3,6 +3,7 @@
 
 namespace MoYu
 {
+    float FrustumJitter::points_Halton_2_3_x16[16 * 2] = {0};
 
     FrustumJitter::FrustumJitter()
     {

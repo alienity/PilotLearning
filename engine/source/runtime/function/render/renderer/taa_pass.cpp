@@ -12,9 +12,10 @@ namespace MoYu
 #define RegGetTex(h) registry->GetD3D12Texture(h)
 #define RegGetBufDefCBVIdx(h) registry->GetD3D12Buffer(h)->GetDefaultCBV()->GetIndex()
 #define RegGetBufDefSRVIdx(h) registry->GetD3D12Buffer(h)->GetDefaultSRV()->GetIndex()
-#define RegGetTexDefSRVIdx(h) registry->GetD3D12Texture(h)->GetDefaultSRV()->GetIndex()
 #define RegGetBufDefUAVIdx(h) registry->GetD3D12Buffer(h)->GetDefaultUAV()->GetIndex()
 #define RegGetBufCounterSRVIdx(h) registry->GetD3D12Buffer(h)->GetCounterBuffer()->GetDefaultSRV()->GetIndex()
+#define RegGetTexDefSRVIdx(h) registry->GetD3D12Texture(h)->GetDefaultSRV()->GetIndex()
+#define RegGetTexDefUAVIdx(h) registry->GetD3D12Texture(h)->GetDefaultUAV()->GetIndex()
 
 	void TAAPass::initialize(const TAAInitInfo& init_info)
 	{
@@ -106,62 +107,95 @@ namespace MoYu
                                                 std::nullopt);
             }
         }
+        if (motionVectorBuffer == nullptr)
+        {
+            std::wstring _name = fmt::format(L"MotionVectorTmp");
+            motionVectorBuffer =
+                RHI::D3D12Texture::Create2D(m_Device->GetLinkedDevice(),
+                                            reprojectionTexDesc.Width,
+                                            reprojectionTexDesc.Height,
+                                            1,
+                                            reprojectionTexDesc.Format,
+                                            RHI::RHISurfaceCreateRandomWrite,
+                                            1,
+                                            _name,
+                                            D3D12_RESOURCE_STATE_COMMON,
+                                            std::nullopt);
+        }
     }
 
     void TAAPass::update(RHI::RenderGraph& graph, DrawInputParameters& passInput, DrawOutputParameters& passOutput)
     {
-        
-    }
-
-    void TAAPass::drawCameraMotionVector(RHI::RenderGraph& graph, DrawInputParameters& passInput, DrawOutputParameters& passOutput)
-    {
         RHI::RgResourceHandle reprojectionBufferRead  = GImport(graph, reprojectionBuffer[indexRead].get());
         RHI::RgResourceHandle reprojectionBufferWrite = GImport(graph, reprojectionBuffer[indexWrite].get());
+
+        RHI::RgResourceHandle motionVectorHandle = GImport(graph, motionVectorBuffer.get());
 
         RHI::RenderPass& trPass = graph.AddRenderPass("TemporalReprojectionPass");
 
         RHI::RgResourceHandle perframeBufferHandle = passInput.perframeBufferHandle;
-        RHI::RgResourceHandle motionVectorHandle   = passOutput.motionVectorHandle;
-        RHI::RgResourceHandle depthHandle          = passOutput.depthHandle;
+        RHI::RgResourceHandle colorHandle          = passInput.colorBufferHandle;
+        RHI::RgResourceHandle depthHandle          = passInput.depthBufferHandle;
 
+        RHI::RgResourceHandle aaOutputHandle = passOutput.aaOutHandle;
+        
         trPass.Read(perframeBufferHandle, true); // RHIResourceState::RHI_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER
         trPass.Read(motionVectorHandle, true);
+        trPass.Read(colorHandle, true);
         trPass.Read(depthHandle, true);
         trPass.Read(reprojectionBufferRead, true);
         trPass.Write(reprojectionBufferWrite, true); // RHIResourceState::RHI_RESOURCE_STATE_UNORDERED_ACCESS
+        trPass.Write(aaOutputHandle, true);          // RHIResourceState::RHI_RESOURCE_STATE_UNORDERED_ACCESS
         
         trPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
             RHI::D3D12ComputeContext* pContext = context->GetComputeContext();
 
-            pContext->TransitionBarrier(RegGetBufCounter(terrainPatchNodeHandle), D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_DEST);
-            pContext->FlushResourceBarriers();
-            pContext->ResetCounter(RegGetBufCounter(terrainPatchNodeHandle));
-            pContext->TransitionBarrier(RegGetBufCounter(terrainPatchNodeHandle), D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-            pContext->FlushResourceBarriers();
-
             pContext->TransitionBarrier(RegGetBuf(perframeBufferHandle), D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
-            pContext->TransitionBarrier(RegGetBuf(terrainPatchNodeHandle), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-            pContext->TransitionBarrier(RegGetTex(terrainMinHeightMapHandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-            pContext->TransitionBarrier(RegGetTex(terrainMaxHeightMapHandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+            pContext->TransitionBarrier(RegGetTex(motionVectorHandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+            pContext->TransitionBarrier(RegGetTex(colorHandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+            pContext->TransitionBarrier(RegGetTex(depthHandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+            pContext->TransitionBarrier(RegGetTex(reprojectionBufferRead), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+            pContext->TransitionBarrier(RegGetTex(reprojectionBufferWrite), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+            pContext->TransitionBarrier(RegGetTex(aaOutputHandle), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
             pContext->FlushResourceBarriers();
 
-            RHI::D3D12Texture* minHeightmap = registry->GetD3D12Texture(terrainMinHeightMapHandle);
-            auto minHeightmapDesc = minHeightmap->GetDesc();
+            RHI::D3D12Texture* depthTexture = registry->GetD3D12Texture(depthHandle);
 
-            RHI::D3D12ConstantBufferView* perframeCBVHandle = registry->GetD3D12Buffer(perframeBufferHandle)->GetDefaultCBV().get();
-            RHI::D3D12UnorderedAccessView* terrainNodeHandleUAV = registry->GetD3D12Buffer(terrainPatchNodeHandle)->GetDefaultUAV().get();
-            RHI::D3D12ShaderResourceView* terrainMinHeightmapSRV = registry->GetD3D12Texture(terrainMinHeightMapHandle)->GetDefaultSRV().get();
-            RHI::D3D12ShaderResourceView* terrainMaxHeightmapSRV = registry->GetD3D12Texture(terrainMaxHeightMapHandle)->GetDefaultSRV().get();
+            auto depthDesc = depthTexture->GetDesc();
 
-            pContext->SetRootSignature(pIndirecTerrainPatchNodesGenSignature.get());
-            pContext->SetPipelineState(pIndirecTerrainPatchNodesGenPSO.get());
-            pContext->SetConstant(0, 0, perframeCBVHandle->GetIndex());
-            pContext->SetConstant(0, 1, terrainNodeHandleUAV->GetIndex());
-            pContext->SetConstant(0, 2, terrainMinHeightmapSRV->GetIndex());
-            pContext->SetConstant(0, 3, terrainMaxHeightmapSRV->GetIndex());
-            
-            pContext->Dispatch2D(minHeightmapDesc.Width, minHeightmapDesc.Height, 8, 8);
+            pContext->SetRootSignature(pTemporalReprojectionSignature.get());
+            pContext->SetPipelineState(pTemporalReprojectionPSO.get());
+
+            struct RootIndexBuffer
+            {
+                UINT perFrameBufferIndex;
+                UINT motionVectorBufferIndex;
+                UINT mainColorBufferIndex;
+                UINT depthBufferIndex;
+                UINT reprojectionBufferReadIndex;
+                UINT reprojectionBufferWriteIndex;
+                UINT outColorBufferIndex;
+            };
+
+            RootIndexBuffer rootIndexBuffer = RootIndexBuffer {RegGetBufDefCBVIdx(perframeBufferHandle),
+                                                               RegGetTexDefSRVIdx(motionVectorHandle),
+                                                               RegGetTexDefSRVIdx(colorHandle),
+                                                               RegGetTexDefSRVIdx(depthHandle),
+                                                               RegGetTexDefSRVIdx(reprojectionBufferRead),
+                                                               RegGetTexDefUAVIdx(reprojectionBufferWrite),
+                                                               RegGetTexDefUAVIdx(aaOutputHandle)};
+
+            pContext->SetConstantArray(0, sizeof(RootIndexBuffer) / sizeof(UINT), &rootIndexBuffer);
+
+            pContext->Dispatch2D(depthDesc.Width, depthDesc.Height, 8, 8);
         });
+
+        passOutput.aaOutHandle = reprojectionBufferWrite;
+    }
+
+    void TAAPass::drawCameraMotionVector(RHI::RenderGraph& graph, DrawInputParameters& passInput, DrawOutputParameters& passOutput)
+    {
+        
 
     }
 
@@ -170,9 +204,5 @@ namespace MoYu
         
     }
 
-    bool TAAPass::initializeRenderTarget(RHI::RenderGraph& graph, TAAOutput* taaOutput)
-    {
-
-    }
 
 }
