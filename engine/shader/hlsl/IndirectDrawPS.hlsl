@@ -29,16 +29,16 @@ VaringStruct VSMain(VertexInput input)
     float4x4 localToWorldMatrixInv = renderableMeshData.modelFromWorldMatrix;
     float4x4 projectionViewMatrix  = g_FrameUniform.cameraUniform.curFrameUniform.clipFromWorldMatrix;
 
-    output.vertex_worldPosition = mul(localToWorldMatrix, float4(input.position, 1.0f));
-    output.vertex_position = mul(projectionViewMatrix, output.vertex_worldPosition);
+    output.ws_position = mul(localToWorldMatrix, float4(input.position, 1.0f));
+    output.cs_pos = mul(projectionViewMatrix, output.ws_position);
 
     output.vertex_uv01 = input.texcoord;
 
     float3x3 normalMat = transpose((float3x3)localToWorldMatrixInv);
 
-    output.vertex_worldNormal      = normalize(mul(normalMat, input.normal));
-    output.vertex_worldTangent.xyz = normalize(mul(normalMat, input.tangent.xyz));
-    output.vertex_worldTangent.w   = input.tangent.w;
+    output.ws_normal      = normalize(mul(normalMat, input.normal));
+    output.ws_tangent.xyz = normalize(mul(normalMat, input.tangent.xyz));
+    output.ws_tangent.w   = input.tangent.w;
 
     return output;
 }

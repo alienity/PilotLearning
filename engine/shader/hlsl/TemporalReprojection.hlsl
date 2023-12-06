@@ -147,6 +147,13 @@ float4 temporal_reprojection(Texture2D<float4> mainTex, Texture2D<float4> prevTe
 
     float4 cavg = (ctl + ctc + ctr + cml + cmc + cmr + cbl + cbc + cbr) / 9.0;
 
+	float4 cmin5 = min(ctc, min(cml, min(cmc, min(cmr, cbc))));
+	float4 cmax5 = max(ctc, max(cml, max(cmc, max(cmr, cbc))));
+	float4 cavg5 = (ctc + cml + cmc + cmr + cbc) / 5.0;
+	cmin = 0.5 * (cmin + cmin5);
+	cmax = 0.5 * (cmax + cmax5);
+	cavg = 0.5 * (cavg + cavg5);
+
 	// clamp to neighbourhood of current sample
 	texel1 = clip_aabb(cmin.xyz, cmax.xyz, clamp(cavg, cmin, cmax), texel1);
 
@@ -168,7 +175,7 @@ void CSMain( uint3 DTid : SV_DispatchThreadID )
 {
     ConstantBuffer<FrameUniforms> mFrameUniforms = ResourceDescriptorHeap[perFrameBufferIndex];
     Texture2D<float4> mainColorBuffer = ResourceDescriptorHeap[mainColorBufferIndex];
-    Texture2D<float3> motionVectorBuffer = ResourceDescriptorHeap[motionVectorBufferIndex];
+    Texture2D<float4> motionVectorBuffer = ResourceDescriptorHeap[motionVectorBufferIndex];
     Texture2D<float> depthBuffer = ResourceDescriptorHeap[depthBufferIndex];
     Texture2D<float4> reprojectionBufferRead = ResourceDescriptorHeap[reprojectionBufferReadIndex];
     RWTexture2D<float4> reprojectionBufferWrite = ResourceDescriptorHeap[reprojectionBufferWriteIndex];
@@ -189,7 +196,7 @@ void CSMain( uint3 DTid : SV_DispatchThreadID )
     float feedbackMax = taaUniform.feedbackMax;
     float motionScale = taaUniform.motionScale;
 
-	float2 ss_txc = DTid.xy / float2(width, height);
+	float2 ss_txc = (DTid.xy + float2(0.5, 0.5)) / float2(width, height);
     float2 texel_size = 1.0f / float2(width, height);
 
     float2 uv = ss_txc; // - jitterUV.xy;
@@ -199,7 +206,6 @@ void CSMain( uint3 DTid : SV_DispatchThreadID )
         //--- 3x3 nearest (good)
     float3 c_frag = find_closest_fragment_3x3(depthBuffer, texel_size, uv);
     float2 ss_vel = motionVectorBuffer.Sample(defaultSampler, c_frag.xy).xy;
-    // float vs_dist = depth_resolve_linear(c_frag.z);
     float vs_dist = depth_resolve_linear(c_frag.z, projectionMatrix._m22, projectionMatrix._m23);
 
     // temporal resolve
@@ -211,6 +217,7 @@ void CSMain( uint3 DTid : SV_DispatchThreadID )
 
     // add noise
     float4 noise4 = PDsrand4(ss_txc + sin_time + 0.6959174) / 510.0;
+
     float4 outbuffer = saturate(to_buffer + noise4);
     float4 outscreen = saturate(to_screen + noise4);
 

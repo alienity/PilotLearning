@@ -1,7 +1,5 @@
 #include "runtime/function/render/renderer/indirect_gbuffer_pass.h"
-
 #include "runtime/resource/config_manager/config_manager.h"
-
 #include "runtime/function/render/rhi/rhi_core.h"
 
 #include <cassert>
@@ -30,10 +28,11 @@ namespace MoYu
         worldTangentDesc.Name = "WorldTangent";
         worldTangentDesc.SetClearValue(RHI::RgClearValue(0.0f, 0.0f, 0.0f, 0.0f, worldTangentDesc.Format));
 
-        emissiveDesc      = worldNormalDesc;
-        emissiveDesc.Name = "Emissive";
-        emissiveDesc.SetFormat(DXGI_FORMAT::DXGI_FORMAT_R32G32B32A32_FLOAT);
-        emissiveDesc.SetClearValue(RHI::RgClearValue(0.0f, 0.0f, 0.0f, 0.0f, emissiveDesc.Format));
+        motionVectorDesc  = worldNormalDesc;
+        motionVectorDesc.Name = "MotionVector";
+        motionVectorDesc.SetFormat(DXGI_FORMAT::DXGI_FORMAT_R32G32B32A32_FLOAT);
+        motionVectorDesc.SetClearValue(
+            RHI::RgClearValue(0.0f, 0.0f, 0.0f, 0.0f, DXGI_FORMAT::DXGI_FORMAT_R32G32B32A32_FLOAT));
 
         metallic_Roughness_Reflectance_AO_Desc      = worldNormalDesc;
         metallic_Roughness_Reflectance_AO_Desc.Name = "Metallic_Roughness_Reflectance_AO";
@@ -100,9 +99,9 @@ namespace MoYu
             RenderTargetState.RTFormats[1] = worldNormalDesc.Format;  // worldNormal;
             RenderTargetState.RTFormats[2] = worldTangentDesc.Format; // worldTangent;
             RenderTargetState.RTFormats[3] = matNormalDesc.Format;   // normalTexDesc;
-            RenderTargetState.RTFormats[4] = emissiveDesc.Format; // emissiveDesc;
-            RenderTargetState.RTFormats[5] = metallic_Roughness_Reflectance_AO_Desc.Format; // metallic_Roughness_Reflectance_AO_Desc;
-            RenderTargetState.RTFormats[6] = clearCoat_ClearCoatRoughness_AnisotropyDesc.Format; // clearCoat_ClearCoatRoughness_AnisotropyDesc;
+            RenderTargetState.RTFormats[4] = metallic_Roughness_Reflectance_AO_Desc.Format; // metallic_Roughness_Reflectance_AO_Desc;
+            RenderTargetState.RTFormats[5] = clearCoat_ClearCoatRoughness_AnisotropyDesc.Format; // clearCoat_ClearCoatRoughness_AnisotropyDesc;
+            RenderTargetState.RTFormats[6] = motionVectorDesc.Format; // motionVectorDesc;
             RenderTargetState.NumRenderTargets = 7;
             RenderTargetState.DSFormat         = DXGI_FORMAT_D32_FLOAT; // DXGI_FORMAT_D32_FLOAT;
 
@@ -158,18 +157,18 @@ namespace MoYu
         drawpass.Write(passOutput.worldNormalHandle, false, RHIResourceState::RHI_RESOURCE_STATE_RENDER_TARGET);
         drawpass.Write(passOutput.worldTangentHandle, false, RHIResourceState::RHI_RESOURCE_STATE_RENDER_TARGET);
         drawpass.Write(passOutput.matNormalHandle, false, RHIResourceState::RHI_RESOURCE_STATE_RENDER_TARGET);
-        drawpass.Write(passOutput.emissiveHandle, false, RHIResourceState::RHI_RESOURCE_STATE_RENDER_TARGET);
         drawpass.Write(passOutput.metallic_Roughness_Reflectance_AO_Handle, false, RHIResourceState::RHI_RESOURCE_STATE_RENDER_TARGET);
         drawpass.Write(passOutput.clearCoat_ClearCoatRoughness_Anisotropy_Handle, false, RHIResourceState::RHI_RESOURCE_STATE_RENDER_TARGET);
+        drawpass.Write(passOutput.motionVectorHandle, false, RHIResourceState::RHI_RESOURCE_STATE_RENDER_TARGET);
 
         RHI::RgResourceHandle albedoHandle       = passOutput.albedoHandle;
         RHI::RgResourceHandle depthHandle        = passOutput.depthHandle;
         RHI::RgResourceHandle worldNormalHandle  = passOutput.worldNormalHandle;
         RHI::RgResourceHandle worldTangentHandle = passOutput.worldTangentHandle;
         RHI::RgResourceHandle matNormalHandle    = passOutput.matNormalHandle;
-        RHI::RgResourceHandle emissiveHandle     = passOutput.emissiveHandle;
         RHI::RgResourceHandle metallic_Roughness_Reflectance_AO_Handle = passOutput.metallic_Roughness_Reflectance_AO_Handle;
         RHI::RgResourceHandle clearCoat_ClearCoatRoughness_Anisotropy_Handle = passOutput.clearCoat_ClearCoatRoughness_Anisotropy_Handle;
+        RHI::RgResourceHandle motionVectorHandle = passOutput.motionVectorHandle;
 
         drawpass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
 
@@ -181,9 +180,9 @@ namespace MoYu
             RHI::D3D12RenderTargetView* worldNormalRTView = registry->GetD3D12Texture(worldNormalHandle)->GetDefaultRTV().get();
             RHI::D3D12RenderTargetView* worldTangentRTView = registry->GetD3D12Texture(worldTangentHandle)->GetDefaultRTV().get();
             RHI::D3D12RenderTargetView* matNormalRTView = registry->GetD3D12Texture(matNormalHandle)->GetDefaultRTV().get();
-            RHI::D3D12RenderTargetView* emissiveRTView = registry->GetD3D12Texture(emissiveHandle)->GetDefaultRTV().get();
             RHI::D3D12RenderTargetView* metallic_Roughness_Reflectance_AO_RTView = registry->GetD3D12Texture(metallic_Roughness_Reflectance_AO_Handle)->GetDefaultRTV().get();
             RHI::D3D12RenderTargetView* clearCoat_ClearCoatRoughness_Anisotropy_RTView = registry->GetD3D12Texture(clearCoat_ClearCoatRoughness_Anisotropy_Handle)->GetDefaultRTV().get();
+            RHI::D3D12RenderTargetView* motionVectorRTView = registry->GetD3D12Texture(motionVectorHandle)->GetDefaultRTV().get();
 
             graphicContext->SetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
             graphicContext->SetViewport(RHIViewport {0.0f, 0.0f, (float)albedoDesc.Width, (float)albedoDesc.Height, 0.0f, 1.0f});
@@ -193,9 +192,9 @@ namespace MoYu
                                                                  worldNormalRTView,
                                                                  worldTangentRTView,
                                                                  matNormalRTView,
-                                                                 emissiveRTView,
                                                                  metallic_Roughness_Reflectance_AO_RTView,
-                                                                 clearCoat_ClearCoatRoughness_Anisotropy_RTView};
+                                                                 clearCoat_ClearCoatRoughness_Anisotropy_RTView,
+                                                                 motionVectorRTView};
 
             graphicContext->SetRenderTargets(_rtviews, depthStencilView);
             graphicContext->ClearRenderTarget(_rtviews, depthStencilView);
@@ -255,11 +254,6 @@ namespace MoYu
             needClearRenderTarget       = true;
             drawPassOutput->matNormalHandle = graph.Create<RHI::D3D12Texture>(matNormalDesc);
         }
-        if (!drawPassOutput->emissiveHandle.IsValid())
-        {
-            needClearRenderTarget       = true;
-            drawPassOutput->emissiveHandle = graph.Create<RHI::D3D12Texture>(emissiveDesc);
-        }
         if (!drawPassOutput->metallic_Roughness_Reflectance_AO_Handle.IsValid())
         {
             needClearRenderTarget       = true;
@@ -272,6 +266,12 @@ namespace MoYu
             drawPassOutput->clearCoat_ClearCoatRoughness_Anisotropy_Handle =
                 graph.Create<RHI::D3D12Texture>(clearCoat_ClearCoatRoughness_AnisotropyDesc);
         }
+
+        if (!drawPassOutput->motionVectorHandle.IsValid())
+        {
+            drawPassOutput->motionVectorHandle = graph.Create<RHI::D3D12Texture>(motionVectorDesc);
+        }
+
         return needClearRenderTarget;
     }
 

@@ -42,7 +42,7 @@ namespace MoYu
         RHI::RgTextureDesc worldTangentDesc;                            // float4
         RHI::RgTextureDesc matNormalDesc;                               // float3
         //RHI::RgTextureDesc clearCoatNormalDesc;                       // float3
-        RHI::RgTextureDesc emissiveDesc;                                // float4
+        RHI::RgTextureDesc motionVectorDesc;                            // float
         RHI::RgTextureDesc metallic_Roughness_Reflectance_AO_Desc;      // float4
         RHI::RgTextureDesc clearCoat_ClearCoatRoughness_AnisotropyDesc; // float3
         RHI::RgTextureDesc depthDesc;                                   // float

@@ -31,9 +31,9 @@ struct PSOutputGBuffer
     float4 worldNormal : SV_Target1; // float3
     float4 worldTangent : SV_Target2; // float4
     float4 materialNormal : SV_Target3; // float3
-    float4 emissive : SV_Target4;
-    float4 metallic_Roughness_Reflectance_AO : SV_Target5;
-    float4 clearCoat_ClearCoatRoughness_Anisotropy : SV_Target6; // float3
+    float4 metallic_Roughness_Reflectance_AO : SV_Target4;
+    float4 clearCoat_ClearCoatRoughness_Anisotropy : SV_Target5; // float3
+    float4 motionVector : SV_Target6;
 };
 
 VaringStruct VSMain(VertexInput input)
@@ -47,17 +47,19 @@ VaringStruct VSMain(VertexInput input)
     float4x4 localToWorldMatrix    = renderableMeshData.worldFromModelMatrix;
     float4x4 localToWorldMatrixInv = renderableMeshData.modelFromWorldMatrix;
     float4x4 projectionViewMatrix  = g_FrameUniform.cameraUniform.curFrameUniform.clipFromWorldMatrix;
+    float4x4 projectionViewMatrixPrev = g_FrameUniform.cameraUniform.lastFrameUniform.clipFromWorldMatrix;
 
-    output.vertex_worldPosition = mul(localToWorldMatrix, float4(input.position, 1.0f));
-    output.vertex_position = mul(projectionViewMatrix, output.vertex_worldPosition);
+    output.ws_position = mul(localToWorldMatrix, float4(input.position, 1.0f));
+    output.cs_pos = mul(projectionViewMatrix, output.ws_position);
+    output.cs_pos_prev = mul(projectionViewMatrixPrev, output.ws_position);
 
     output.vertex_uv01 = input.texcoord;
 
     float3x3 normalMat = transpose((float3x3)localToWorldMatrixInv);
 
-    output.vertex_worldNormal      = normalize(mul(normalMat, input.normal));
-    output.vertex_worldTangent.xyz = normalize(mul(normalMat, input.tangent.xyz));
-    output.vertex_worldTangent.w   = input.tangent.w;
+    output.ws_normal      = normalize(mul(normalMat, input.normal));
+    output.ws_tangent.xyz = normalize(mul(normalMat, input.tangent.xyz));
+    output.ws_tangent.w   = input.tangent.w;
 
     return output;
 }
@@ -81,12 +83,18 @@ PSOutputGBuffer PSMain(VaringStruct varingStruct)
     PSOutputGBuffer output;
 
     output.albedo = materialInputs.baseColor;
-    output.worldNormal = float4(varingStruct.vertex_worldNormal.xyz * 0.5 + 0.5f, 0);
-    output.worldTangent = float4(varingStruct.vertex_worldTangent.xyzw * 0.5 + 0.5f);
+    output.worldNormal = float4(varingStruct.ws_normal.xyz * 0.5 + 0.5f, 0);
+    output.worldTangent = float4(varingStruct.ws_tangent.xyzw * 0.5 + 0.5f);
     output.materialNormal = float4(materialInputs.normal.xyz * 0.5f + 0.5f, 0);
-    output.emissive = materialInputs.emissive;
     output.metallic_Roughness_Reflectance_AO.xyzw = float4(materialInputs.metallic, materialInputs.roughness, materialInputs.reflectance, materialInputs.ambientOcclusion);
     output.clearCoat_ClearCoatRoughness_Anisotropy = float4(materialInputs.clearCoat, materialInputs.clearCoatRoughness, materialInputs.anisotropy, 0.0f);
+    
+    // compute velocity in ndc
+    float2 ndc_curr = varingStruct.cs_pos.xy/varingStruct.cs_pos.w;
+    float2 ndc_prev = varingStruct.cs_pos_prev.xy/varingStruct.cs_pos_prev.w;
+    // compute screen space velocity [0,1;0,1]
+    float2 mv = 0.5f * (ndc_curr - ndc_prev);
+    output.motionVector = float4(mv.xy, 0, 0);
 
     return output;
 }

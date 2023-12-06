@@ -134,7 +134,7 @@ namespace MoYu
             drawPassInit.worldNormalDesc = mIndirectGBufferPass->worldNormalDesc;
             drawPassInit.worldTangentDesc = mIndirectGBufferPass->worldTangentDesc;
             drawPassInit.matNormalDesc    = mIndirectGBufferPass->matNormalDesc;
-            drawPassInit.emissiveDesc     = mIndirectGBufferPass->emissiveDesc;
+            drawPassInit.motionVectorDesc = mIndirectGBufferPass->motionVectorDesc;
             drawPassInit.metallic_Roughness_Reflectance_AO_Desc = mIndirectGBufferPass->metallic_Roughness_Reflectance_AO_Desc;
             drawPassInit.clearCoat_ClearCoatRoughness_AnisotropyDesc = mIndirectGBufferPass->clearCoat_ClearCoatRoughness_AnisotropyDesc;
             
@@ -450,7 +450,6 @@ namespace MoYu
         mLightLoopIntput.worldNormalHandle      = mGBufferOutput.worldNormalHandle;
         mLightLoopIntput.worldTangentHandle     = mGBufferOutput.worldTangentHandle;
         mLightLoopIntput.materialNormalHandle   = mGBufferOutput.matNormalHandle;
-        mLightLoopIntput.emissiveHandle         = mGBufferOutput.emissiveHandle;
         mLightLoopIntput.ambientOcclusionHandle = mAOOutput.outputAOHandle;
         mLightLoopIntput.metallic_Roughness_Reflectance_AO_Handle =
             mGBufferOutput.metallic_Roughness_Reflectance_AO_Handle;
@@ -519,15 +518,13 @@ namespace MoYu
         PostprocessPasses::PostprocessOutputParameters mPostprocessOutputParams;
 
         mPostprocessIntputParams.perframeBufferHandle  = indirectCullOutput.perframeBufferHandle;
-        //mPostprocessIntputParams.motionVectorHandle  = indirectCullOutput.perframeBufferHandle;
+        mPostprocessIntputParams.motionVectorHandle    = mGBufferOutput.motionVectorHandle;
         mPostprocessIntputParams.inputSceneColorHandle = mDrawTransOutputParams.renderTargetColorHandle;
         mPostprocessIntputParams.inputSceneDepthHandle = mDrawTransOutputParams.renderTargetDepthHandle;
         mPostprocessPasses->update(graph, mPostprocessIntputParams, mPostprocessOutputParams);
 
         //outputRTColorHandle = mPostprocessOutputParams.outputColorHandle;
         //=================================================================================
-
-
 
         //=================================================================================
         // display
@@ -537,24 +534,24 @@ namespace MoYu
         mDisplayIntputParams.inputRTColorHandle   = mPostprocessOutputParams.outputColorHandle;
         //mDisplayIntputParams.inputRTColorHandle   = mTerrainGBufferOutput.albedoHandle;
         //mDisplayIntputParams.inputRTColorHandle      = mAOOutput.outputAOHandle;
-        mDisplayOutputParams.renderTargetColorHandle = renderTargetColorHandle;
-        //mDisplayOutputParams.renderTargetColorHandle = backBufColorHandle;
+        //mDisplayOutputParams.renderTargetColorHandle = renderTargetColorHandle;
+        mDisplayOutputParams.renderTargetColorHandle = backBufColorHandle;
         mDisplayPass->update(graph, mDisplayIntputParams, mDisplayOutputParams);
         //=================================================================================
         
-        //=================================================================================
-        if (mUIPass != nullptr)
-        {
-            UIPass::UIInputParameters mUIIntputParams;
-            UIPass::UIOutputParameters mUIOutputParams;
+        ////=================================================================================
+        //if (mUIPass != nullptr)
+        //{
+        //    UIPass::UIInputParameters mUIIntputParams;
+        //    UIPass::UIOutputParameters mUIOutputParams;
 
-            //mUIIntputParams.renderTargetColorHandle = renderTargetColorHandle;
-            mUIIntputParams.renderTargetColorHandle = mDisplayOutputParams.renderTargetColorHandle;
-            mUIOutputParams.backBufColorHandle = backBufColorHandle;
-            
-            mUIPass->update(graph, mUIIntputParams, mUIOutputParams);
-        }
-        //=================================================================================
+        //    //mUIIntputParams.renderTargetColorHandle = renderTargetColorHandle;
+        //    mUIIntputParams.renderTargetColorHandle = mDisplayOutputParams.renderTargetColorHandle;
+        //    mUIOutputParams.backBufColorHandle = backBufColorHandle;
+        //    
+        //    mUIPass->update(graph, mUIIntputParams, mUIOutputParams);
+        //}
+        ////=================================================================================
 
         graph.Execute(context);
 

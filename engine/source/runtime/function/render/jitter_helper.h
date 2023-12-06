@@ -19,6 +19,7 @@ namespace MoYu
 
     public:
         static float points_Halton_2_3_x16[16 * 2];
+        static float patternScale;
 
         glm::float3 focalMotionPos;
         glm::float3 focalMotionDir;

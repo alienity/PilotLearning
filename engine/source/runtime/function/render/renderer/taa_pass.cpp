@@ -129,13 +129,12 @@ namespace MoYu
         RHI::RgResourceHandle reprojectionBufferRead  = GImport(graph, reprojectionBuffer[indexRead].get());
         RHI::RgResourceHandle reprojectionBufferWrite = GImport(graph, reprojectionBuffer[indexWrite].get());
 
-        RHI::RgResourceHandle motionVectorHandle = GImport(graph, motionVectorBuffer.get());
-
         RHI::RenderPass& trPass = graph.AddRenderPass("TemporalReprojectionPass");
 
         RHI::RgResourceHandle perframeBufferHandle = passInput.perframeBufferHandle;
         RHI::RgResourceHandle colorHandle          = passInput.colorBufferHandle;
         RHI::RgResourceHandle depthHandle          = passInput.depthBufferHandle;
+        RHI::RgResourceHandle motionVectorHandle   = passInput.motionVectorHandle;
 
         RHI::RgResourceHandle aaOutputHandle = passOutput.aaOutHandle;
         
@@ -190,12 +189,12 @@ namespace MoYu
             pContext->Dispatch2D(depthDesc.Width, depthDesc.Height, 8, 8);
         });
 
-        passOutput.aaOutHandle = reprojectionBufferWrite;
+        passOutput.aaOutHandle = aaOutputHandle;
     }
 
     void TAAPass::drawCameraMotionVector(RHI::RenderGraph& graph, DrawInputParameters& passInput, DrawOutputParameters& passOutput)
     {
-        
+                
 
     }
 

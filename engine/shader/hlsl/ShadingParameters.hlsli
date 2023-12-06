@@ -6,11 +6,12 @@
 
 struct VaringStruct
 {
-    float4 vertex_position : SV_POSITION;
-    float3 vertex_worldNormal : NORMAL;
-    float4 vertex_worldTangent : TANGENT;
-    float4 vertex_worldPosition : TEXCOORD0;
+    float4 cs_pos : SV_POSITION;
+    float3 ws_normal : NORMAL;
+    float4 ws_tangent : TANGENT;
+    float4 ws_position : TEXCOORD0;
     float2 vertex_uv01 : TEXCOORD1;
+    float4 cs_pos_prev : TEXCOORD2;
 };
 
 struct MaterialInputs
@@ -179,16 +180,16 @@ void inflateMaterial(
 void computeShadingParams(const FrameUniforms frameUniforms, const VaringStruct varing, inout CommonShadingStruct commonShadingStruct)
 {
     // http://www.mikktspace.com/
-    float3 n = varing.vertex_worldNormal;
-    float3 t = varing.vertex_worldTangent.xyz;
-    float3 b = cross(n, t) * varing.vertex_worldTangent.w;
+    float3 n = varing.ws_normal;
+    float3 t = varing.ws_tangent.xyz;
+    float3 b = cross(n, t) * varing.ws_tangent.w;
     
     commonShadingStruct.shading_geometricNormal = normalize(n);
 
     // We use unnormalized post-interpolation values, assuming mikktspace tangents
     commonShadingStruct.shading_tangentToWorld = transpose(float3x3(t, b, n));
 
-    commonShadingStruct.shading_position = varing.vertex_worldPosition.xyz;
+    commonShadingStruct.shading_position = varing.ws_position.xyz;
 
     // With perspective camera, the view vector is cast from the fragment pos to the eye position,
     // With ortho camera, however, the view vector is the same for all fragments:
@@ -204,7 +205,7 @@ void computeShadingParams(const FrameUniforms frameUniforms, const VaringStruct 
     // we do this so we avoid doing (matrix multiply), but we burn 4 varyings:
     //    p = clipFromWorldMatrix * shading_position;
     //    shading_normalizedViewportCoord = p.xy * 0.5 / p.w + 0.5
-    commonShadingStruct.shading_normalizedViewportCoord = varing.vertex_position.xy * (0.5 / varing.vertex_position.w) + 0.5;
+    commonShadingStruct.shading_normalizedViewportCoord = varing.cs_pos.xy * (0.5 / varing.cs_pos.w) + 0.5;
 }
 
 /**

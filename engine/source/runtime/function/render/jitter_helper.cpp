@@ -4,6 +4,7 @@
 namespace MoYu
 {
     float FrustumJitter::points_Halton_2_3_x16[16 * 2] = {0};
+    float FrustumJitter::patternScale = 1.0f;
 
     FrustumJitter::FrustumJitter()
     {
@@ -16,8 +17,10 @@ namespace MoYu
         activeSample = glm::float4(0, 0, 0, 0);
         activeIndex  = -2;
 
+        patternScale = 1.0f; 
+
         feedbackMin = 0.88f;
-        feedbackMin = 0.97f;
+        feedbackMax = 0.97f;
         motionScale = 1.0f;
     }
 
@@ -52,8 +55,8 @@ namespace MoYu
         int n = 16;
         int i = index % n;
 
-        float x = points_Halton_2_3_x16[2 * i + 0];
-        float y = points_Halton_2_3_x16[2 * i + 1];
+        float x = patternScale *  points_Halton_2_3_x16[2 * i + 0];
+        float y = patternScale * points_Halton_2_3_x16[2 * i + 1];
 
         return glm::float2(x, y);
     }
@@ -103,6 +106,7 @@ namespace MoYu
                 activeSample.y = sample.y;
             }
         }
+
 
         return activeSample;
     }

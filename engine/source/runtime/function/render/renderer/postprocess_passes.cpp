@@ -196,6 +196,8 @@ namespace MoYu
             mTAAOutput.aaOutHandle          = postTargetColorHandle0;
 
             mTAAPass->update(graph, mTAAIntput, mTAAOutput);
+
+            outputTargetHandle = mTAAOutput.aaOutHandle;
         }
         else
         {

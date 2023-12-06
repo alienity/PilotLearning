@@ -62,9 +62,9 @@ struct PSOutputGBuffer
     float4 worldNormal : SV_Target1; // float3
     float4 worldTangent : SV_Target2; // float4
     float4 materialNormal : SV_Target3; // float3
-    float4 emissive : SV_Target4;
-    float4 metallic_Roughness_Reflectance_AO : SV_Target5;
-    float4 clearCoat_ClearCoatRoughness_Anisotropy : SV_Target6; // float3
+    float4 metallic_Roughness_Reflectance_AO : SV_Target4;
+    float4 clearCoat_ClearCoatRoughness_Anisotropy : SV_Target5; // float3
+    float4 motionVector : SV_Target6;
 };
 
 VaringStruct VSMain(VertexInput input)
@@ -92,6 +92,8 @@ VaringStruct VSMain(VertexInput input)
     float4x4 localToWorldMatrix = mFrameUniforms.terrainUniform.local2WorldMatrix;
     float4x4 localToWorldMatrixInv = mFrameUniforms.terrainUniform.world2LocalMatrix;
     float4x4 projectionViewMatrix  = mFrameUniforms.cameraUniform.curFrameUniform.clipFromWorldMatrix;
+    float4x4 projectionViewMatrixPrev = mFrameUniforms.cameraUniform.lastFrameUniform.clipFromWorldMatrix;
+
     float terrainMaxHeight = mFrameUniforms.terrainUniform.terrainMaxHeight;
     float terrainSize = mFrameUniforms.terrainUniform.terrainSize;
 
@@ -128,8 +130,9 @@ VaringStruct VSMain(VertexInput input)
     // localPosition.y += displacement * 0.5f;
 
     VaringStruct output;
-    output.vertex_worldPosition = mul(localToWorldMatrix, float4(localPosition, 1.0f));
-    output.vertex_position = mul(projectionViewMatrix, output.vertex_worldPosition);
+    output.ws_position = mul(localToWorldMatrix, float4(localPosition, 1.0f));
+    output.cs_pos = mul(projectionViewMatrix, output.ws_position);
+    output.cs_pos_prev = mul(projectionViewMatrixPrev, output.ws_position);
 
     // output.vertex_uv01 = input.texcoord;
     output.vertex_uv01 = terrainUV;
@@ -141,9 +144,9 @@ VaringStruct VSMain(VertexInput input)
     localTangent = cross(localBitangent, localNormal);
     float3x3 normalMat = transpose((float3x3)localToWorldMatrixInv);
 
-    output.vertex_worldNormal      = normalize(mul(normalMat, localNormal));    
-    output.vertex_worldTangent.xyz = normalize(mul(normalMat, localTangent));
-    output.vertex_worldTangent.w   = input.tangent.w;
+    output.ws_normal      = normalize(mul(normalMat, localNormal));    
+    output.ws_tangent.xyz = normalize(mul(normalMat, localTangent));
+    output.ws_tangent.w   = input.tangent.w;
 
     return output;
 }
@@ -195,9 +198,15 @@ PSOutputGBuffer PSMain(VaringStruct varingStruct)
     output.worldNormal = float4(localNormal.xyz * 0.5 + 0.5f, 0);
     output.worldTangent = float4(localTangent.xyz, 1) * 0.5 + 0.5f;
     output.materialNormal = float4(normal.xyz * 0.5 + 0.5f, 0);
-    output.emissive = float4(0, 0, 0, 0);
     output.metallic_Roughness_Reflectance_AO.xyzw = float4(aoRoughnessMetallic.z, aoRoughnessMetallic.y, 0, aoRoughnessMetallic.x);
     output.clearCoat_ClearCoatRoughness_Anisotropy = float4(0, 0, 0, 0.0f);
+
+    // compute velocity in ndc
+    float2 ndc_curr = varingStruct.cs_pos.xy/varingStruct.cs_pos.w;
+    float2 ndc_prev = varingStruct.cs_pos_prev.xy/varingStruct.cs_pos_prev.w;
+    // compute screen space velocity [0,1;0,1]
+    float2 mv = 0.5f * (ndc_curr - ndc_prev);
+    output.motionVector = float4(mv.xy, 0, 0);
 
     return output;
 }

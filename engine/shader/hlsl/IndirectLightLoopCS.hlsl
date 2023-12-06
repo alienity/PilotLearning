@@ -10,7 +10,6 @@ cbuffer RootConstants : register(b0, space0)
     uint worldNormalIndex;
     uint worldTangentIndex;
     uint materialNormalIndex;
-    uint emissiveIndex;
     uint ambientOcclusionIndex;
     uint metallic_Roughness_Reflectance_AOIndex;
     uint clearCoat_ClearCoatRoughness_AnisotropyIndex;
@@ -29,7 +28,6 @@ void CSMain( uint3 DTid : SV_DispatchThreadID )
     Texture2D<float4> worldNormalTexture = ResourceDescriptorHeap[worldNormalIndex];
     Texture2D<float4> worldTangentTexture = ResourceDescriptorHeap[worldTangentIndex];
     Texture2D<float4> materialNormalTexture = ResourceDescriptorHeap[materialNormalIndex];
-    Texture2D<float4> emissiveTexture = ResourceDescriptorHeap[emissiveIndex];
     Texture2D<float4> ambientCollusionTexture = ResourceDescriptorHeap[ambientOcclusionIndex];
     Texture2D<float4> metallic_Roughness_Reflectance_AO_Texture = ResourceDescriptorHeap[metallic_Roughness_Reflectance_AOIndex];
     Texture2D<float4> clearCoat_ClearCoatRoughness_Anisotropy_Texture = ResourceDescriptorHeap[clearCoat_ClearCoatRoughness_AnisotropyIndex];
@@ -52,7 +50,7 @@ void CSMain( uint3 DTid : SV_DispatchThreadID )
         materialInputs.reflectance = mrra.b;
         materialInputs.ambientOcclusion = mrra.a;
         materialInputs.ambientOcclusion *= ambientCollusionTexture.Sample(defaultSampler, uv).r;
-        materialInputs.emissive = emissiveTexture.Sample(defaultSampler, uv).rgba;
+        materialInputs.emissive = float4(0,0,0,0);
         float3 cra = clearCoat_ClearCoatRoughness_Anisotropy_Texture.Sample(defaultSampler, uv).rgb;
         materialInputs.clearCoat = cra.r;
         materialInputs.clearCoatRoughness = cra.g;
