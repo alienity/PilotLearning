@@ -319,8 +319,8 @@ struct FrameUniforms
     BaseUniform baseUniform;
     TerrainUniform terrainUniform;
     MeshUniform meshUniform;
-    TAAUniform taaUniform;
     AOUniform aoUniform;
+    TAAUniform taaUniform;
     IBLUniform iblUniform;
     SSRUniform ssrUniform;
     DirectionalLightStruct directionalLight;

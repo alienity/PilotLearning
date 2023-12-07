@@ -119,15 +119,15 @@ float4 clip_aabb(float3 aabb_min, float3 aabb_max, float4 p, float4 q)
 		return q;// point inside aabb
 }
 
-float4 temporal_reprojection(Texture2D<float4> mainTex, Texture2D<float4> prevTex, 
-    float2 mainTexTexelSize, float feedbackMin, float feedbackMax, float2 ss_txc, float2 ss_vel, float vs_dist)
+float4 temporal_reprojection(Texture2D<float4> mainTex, Texture2D<float4> prevTex, float2 mainTexTexelSize, 
+	float2 jitterUV, float feedbackMin, float feedbackMax, float2 ss_txc, float2 ss_vel, float vs_dist)
 {
 	// read texels
-	float4 texel0 = mainTex.Sample(defaultSampler, ss_txc);
+	float4 texel0 = mainTex.Sample(defaultSampler, ss_txc - jitterUV.xy);
 	float4 texel1 = prevTex.Sample(defaultSampler, ss_txc - ss_vel);
 
 	// calc min-max of current neighbourhood
-	float2 uv = ss_txc;
+	float2 uv = ss_txc/* - jitterUV.xy*/;
 
 	float2 du = float2(mainTexTexelSize.x, 0.0);
 	float2 dv = float2(0.0, mainTexTexelSize.y);
@@ -199,7 +199,7 @@ void CSMain( uint3 DTid : SV_DispatchThreadID )
 	float2 ss_txc = (DTid.xy + float2(0.5, 0.5)) / float2(width, height);
     float2 texel_size = 1.0f / float2(width, height);
 
-    float2 uv = ss_txc; // - jitterUV.xy;
+    float2 uv = ss_txc - jitterUV.xy;
 	float _time = mFrameUniforms.baseUniform.time;
 	float sin_time = sin(_time);
 
@@ -207,9 +207,12 @@ void CSMain( uint3 DTid : SV_DispatchThreadID )
     float3 c_frag = find_closest_fragment_3x3(depthBuffer, texel_size, uv);
     float2 ss_vel = motionVectorBuffer.Sample(defaultSampler, c_frag.xy).xy;
     float vs_dist = depth_resolve_linear(c_frag.z, projectionMatrix._m22, projectionMatrix._m23);
+	// float2 ss_vel = motionVectorBuffer.Sample(defaultSampler, uv.xy).xy;
+	// float vs_dist = depthBuffer.Sample(defaultSampler, uv.xy).x;
 
     // temporal resolve
-    float4 color_temporal = temporal_reprojection(mainColorBuffer, reprojectionBufferRead, texel_size, feedbackMin, feedbackMax, uv, ss_vel, vs_dist);
+    float4 color_temporal = temporal_reprojection(mainColorBuffer, reprojectionBufferRead, texel_size, 
+		jitterUV.xy, feedbackMin, feedbackMax, ss_txc, ss_vel, vs_dist);
 
     // prepare outputs
     float4 to_buffer = resolve_color(color_temporal);

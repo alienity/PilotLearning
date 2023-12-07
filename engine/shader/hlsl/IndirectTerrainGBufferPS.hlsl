@@ -92,7 +92,10 @@ VaringStruct VSMain(VertexInput input)
     float4x4 localToWorldMatrix = mFrameUniforms.terrainUniform.local2WorldMatrix;
     float4x4 localToWorldMatrixInv = mFrameUniforms.terrainUniform.world2LocalMatrix;
     float4x4 projectionViewMatrix  = mFrameUniforms.cameraUniform.curFrameUniform.clipFromWorldMatrix;
-    float4x4 projectionViewMatrixPrev = mFrameUniforms.cameraUniform.lastFrameUniform.clipFromWorldMatrix;
+
+    float4x4 projectionMatrix         = mFrameUniforms.cameraUniform.curFrameUniform.clipFromViewMatrix;
+    float4x4 lastviewFromWorldMatrix  = mFrameUniforms.cameraUniform.lastFrameUniform.viewFromWorldMatrix;
+    float4x4 projectionViewMatrixPrev = mul(projectionMatrix, lastviewFromWorldMatrix);
 
     float terrainMaxHeight = mFrameUniforms.terrainUniform.terrainMaxHeight;
     float terrainSize = mFrameUniforms.terrainUniform.terrainSize;
@@ -132,7 +135,9 @@ VaringStruct VSMain(VertexInput input)
     VaringStruct output;
     output.ws_position = mul(localToWorldMatrix, float4(localPosition, 1.0f));
     output.cs_pos = mul(projectionViewMatrix, output.ws_position);
-    output.cs_pos_prev = mul(projectionViewMatrixPrev, output.ws_position);
+
+    output.cs_xy_curr = output.cs_pos.xyw;
+    output.cs_xy_prev = mul(projectionViewMatrixPrev, output.ws_position).xyw;
 
     // output.vertex_uv01 = input.texcoord;
     output.vertex_uv01 = terrainUV;
@@ -202,10 +207,11 @@ PSOutputGBuffer PSMain(VaringStruct varingStruct)
     output.clearCoat_ClearCoatRoughness_Anisotropy = float4(0, 0, 0, 0.0f);
 
     // compute velocity in ndc
-    float2 ndc_curr = varingStruct.cs_pos.xy/varingStruct.cs_pos.w;
-    float2 ndc_prev = varingStruct.cs_pos_prev.xy/varingStruct.cs_pos_prev.w;
+    float2 ndc_curr = varingStruct.cs_xy_curr.xy/varingStruct.cs_xy_curr.z;
+    float2 ndc_prev = varingStruct.cs_xy_prev.xy/varingStruct.cs_xy_prev.z;
     // compute screen space velocity [0,1;0,1]
     float2 mv = 0.5f * (ndc_curr - ndc_prev);
+    mv.y = -mv.y;
     output.motionVector = float4(mv.xy, 0, 0);
 
     return output;

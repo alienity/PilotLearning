@@ -17,7 +17,7 @@ namespace MoYu
         activeSample = glm::float4(0, 0, 0, 0);
         activeIndex  = -2;
 
-        patternScale = 1.0f; 
+        patternScale = 0.5f; 
 
         feedbackMin = 0.88f;
         feedbackMax = 0.97f;

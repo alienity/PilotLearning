@@ -11,7 +11,8 @@ struct VaringStruct
     float4 ws_tangent : TANGENT;
     float4 ws_position : TEXCOORD0;
     float2 vertex_uv01 : TEXCOORD1;
-    float4 cs_pos_prev : TEXCOORD2;
+    float3 cs_xy_curr : TEXCOORD2;
+    float3 cs_xy_prev : TEXCOORD3;
 };
 
 struct MaterialInputs
