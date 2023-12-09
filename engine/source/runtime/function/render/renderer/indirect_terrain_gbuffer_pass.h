@@ -53,6 +53,8 @@ namespace MoYu
         void destroy() override final;
 
     private:
+        int passIndex;
+
         Shader indirectTerrainGBufferVS;
         Shader indirectTerrainGBufferPS;
         std::shared_ptr<RHI::D3D12RootSignature> pIndirectTerrainGBufferSignature;

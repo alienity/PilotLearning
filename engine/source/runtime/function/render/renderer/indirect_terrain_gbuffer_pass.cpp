@@ -47,6 +47,8 @@ namespace MoYu
                 (&pMaterialTillingBuffer[i])->normalTilling = terrainBaseTextures->normal_tilling;
             }
         }
+
+        passIndex = 0;
     }
 
 	void IndirectTerrainGBufferPass::initialize(const DrawPassInitInfo& init_info)
@@ -163,7 +165,13 @@ namespace MoYu
         DrawIndexAndCommandSigHandle drawIndexAndSigHandle = passInput.drawIndexAndSigHandle;
         std::vector<DrawIndexAndCommandSigHandle> dirShadowIndexAndSigHandle = passInput.dirShadowIndexAndSigHandle;
 
-        RHI::RenderPass& drawpass = graph.AddRenderPass("IndirectTerrainGBufferPass");
+        std::string_view passName;
+        if (passIndex == 0)
+            passName = std::string_view("IndirectTerrainGBufferPass_0");
+        else
+            passName = std::string_view("IndirectTerrainGBufferPass_1");
+
+        RHI::RenderPass& drawpass = graph.AddRenderPass(passName);
 
         drawpass.Read(terrainMatIndexHandle, false, RHIResourceState::RHI_RESOURCE_STATE_GENERIC_READ);
         drawpass.Read(terrainMatTillingHandle, false, RHIResourceState::RHI_RESOURCE_STATE_GENERIC_READ);
@@ -258,6 +266,8 @@ namespace MoYu
                                             0);
 
         });
+
+        passIndex += 1;
     }
 
     void IndirectTerrainGBufferPass::destroy()

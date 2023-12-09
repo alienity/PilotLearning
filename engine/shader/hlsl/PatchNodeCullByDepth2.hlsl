@@ -10,7 +10,6 @@ cbuffer RootConstants : register(b0, space0)
     uint terrainPatchNodeIndex;
     uint inputPatchNodeIdxBufferIndex;
     uint inputPatchNodeIdxCounterIndex;
-    uint nonVisiableIndexBufferIndex;
     uint visiableIndexBufferIndex;
 };
 
@@ -24,7 +23,6 @@ void CSMain(CSParams Params) {
     StructuredBuffer<TerrainPatchNode> terrainPatchNodeBuffer = ResourceDescriptorHeap[terrainPatchNodeIndex];
     StructuredBuffer<uint> terrainPatchNodeIdxBuffer = ResourceDescriptorHeap[inputPatchNodeIdxBufferIndex];
     StructuredBuffer<uint> terrainPatchNodeIdxCountBuffer = ResourceDescriptorHeap[inputPatchNodeIdxCounterIndex];
-    AppendStructuredBuffer<uint> nonVisiableIndexBuffer = ResourceDescriptorHeap[nonVisiableIndexBufferIndex];
     AppendStructuredBuffer<uint> visiableIndexBuffer = ResourceDescriptorHeap[visiableIndexBufferIndex];
 
     uint terrainPatchNodeCount = terrainPatchNodeIdxCountBuffer[0];
@@ -73,9 +71,5 @@ void CSMain(CSParams Params) {
     if(ndc.z >= minDepth - 0.01f)
     {
         visiableIndexBuffer.Append(patchIndex);
-    }
-    else
-    {
-        nonVisiableIndexBuffer.Append(patchIndex);
     }
 }

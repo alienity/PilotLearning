@@ -323,20 +323,28 @@ namespace MoYu
         // 应该再给graph添加一个signal同步，目前先这样
         IndirectCullPass::IndirectCullOutput indirectCullOutput;
         mIndirectCullPass->update(graph, indirectCullOutput);
-        //=================================================================================
+        //=================================================================================E:\GIT\PilotLearning\engine\shader\hlsl\PatchNodeCullByDepth.hlsl
         
         //=================================================================================
         // Terrain剪裁Pass
-        // Terrain使用上一帧depth剪裁Pass
         RHI::RgResourceHandle lastFrameMinDepthPyramidHandle =
             graph.Import(mDepthPyramidPass->GetLastFrameMinDepthPyramid().get());
 
         IndirectTerrainCullPass::TerrainCullInput terrainCullInput;
         IndirectTerrainCullPass::TerrainCullOutput terrainCullOutput;
         terrainCullInput.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
-        terrainCullInput.lastMinDepthPyramidHandle = lastFrameMinDepthPyramidHandle;
         
         mTerrainCullPass->update(graph, terrainCullInput, terrainCullOutput);
+        //=================================================================================
+
+        //=================================================================================
+        // Terrain使用上一帧depth剪裁Pass
+        IndirectTerrainCullPass::DepthCullIndexInput _input = {};
+        _input.minDepthPyramidHandle  = lastFrameMinDepthPyramidHandle;
+        _input.perframeBufferHandle   = indirectCullOutput.perframeBufferHandle;
+        IndirectTerrainCullPass::DrawCallCommandBufferHandle _output = {};
+
+        mTerrainCullPass->cullByLastFrameDepth(graph, _input, _output);
         //=================================================================================
 
         //=================================================================================
@@ -401,14 +409,14 @@ namespace MoYu
         //=================================================================================
         
         //=================================================================================
-        // indirect terrain gbuffer
+        // indirect terrain gbuffer for pass 1
         IndirectTerrainGBufferPass::DrawInputParameters mTerrainGBufferIntput;
         mTerrainGBufferIntput.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
         mTerrainGBufferIntput.terrainPatchNodeHandle = terrainCullOutput.terrainPatchNodeBufferHandle;
         mTerrainGBufferIntput.terrainHeightmapHandle = terrainCullOutput.terrainHeightmapHandle;
         mTerrainGBufferIntput.terrainNormalmapHandle = terrainCullOutput.terrainNormalmapHandle;
 
-        mTerrainGBufferIntput.drawIndexAndSigHandle  = {terrainCullOutput.terrainDrawHandle.commandSigBufferHandle, terrainCullOutput.terrainDrawHandle.indirectIndexBufferHandle};
+        mTerrainGBufferIntput.drawIndexAndSigHandle  = {_output.commandSigBufferHandle, _output.indirectIndexBufferHandle};
         for (int i = 0; i < terrainCullOutput.directionShadowmapHandles.size(); i++)
         {
             auto& _indexAndSigHandle = terrainCullOutput.directionShadowmapHandles[i];
@@ -417,7 +425,6 @@ namespace MoYu
 
         mIndirectTerrainGBufferPass->update(graph, mTerrainGBufferIntput, mGBufferOutput);
         //=================================================================================
-
 
         //=================================================================================
         // depth pyramid
@@ -428,6 +435,45 @@ namespace MoYu
 
         mDepthPyramidPass->update(graph, mDepthPyramidInput, mDepthPyramidOutput);
         //=================================================================================
+
+        //=================================================================================
+        // Terrain使用当前帧depth剪裁Pass
+        IndirectTerrainCullPass::DepthCullIndexInput _input2 = {};
+        _input2.minDepthPyramidHandle = mDepthPyramidOutput.minDepthPtyramidHandle;
+        _input2.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
+        IndirectTerrainCullPass::DrawCallCommandBufferHandle _output2 = {};
+
+        mTerrainCullPass->cullByCurrentFrameDepth(graph, _input2, _output2);
+        //=================================================================================
+        
+        //=================================================================================
+        // indirect terrain gbuffer for pass 2
+        IndirectTerrainGBufferPass::DrawInputParameters mTerrainGBufferIntput2;
+        mTerrainGBufferIntput2.perframeBufferHandle  = indirectCullOutput.perframeBufferHandle;
+        mTerrainGBufferIntput2.terrainPatchNodeHandle = terrainCullOutput.terrainPatchNodeBufferHandle;
+        mTerrainGBufferIntput2.terrainHeightmapHandle = terrainCullOutput.terrainHeightmapHandle;
+        mTerrainGBufferIntput2.terrainNormalmapHandle = terrainCullOutput.terrainNormalmapHandle;
+
+        mTerrainGBufferIntput2.drawIndexAndSigHandle  = {_output2.commandSigBufferHandle, _output2.indirectIndexBufferHandle};
+        for (int i = 0; i < terrainCullOutput.directionShadowmapHandles.size(); i++)
+        {
+            auto& _indexAndSigHandle = terrainCullOutput.directionShadowmapHandles[i];
+            mTerrainGBufferIntput2.dirShadowIndexAndSigHandle.push_back({_indexAndSigHandle.commandSigBufferHandle, _indexAndSigHandle.indirectIndexBufferHandle});
+        }
+
+        mIndirectTerrainGBufferPass->update(graph, mTerrainGBufferIntput2, mGBufferOutput);
+        //=================================================================================
+        /*
+        //=================================================================================
+        // depth pyramid2
+        DepthPyramidPass::DrawInputParameters mDepthPyramidInput2;
+        DepthPyramidPass::DrawOutputParameters mDepthPyramidOutput2;
+        mDepthPyramidInput2.depthHandle          = mGBufferOutput.depthHandle;
+        mDepthPyramidInput2.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
+
+        mDepthPyramidPass->update(graph, mDepthPyramidInput2, mDepthPyramidOutput2);
+        //=================================================================================
+        */
 
         //=================================================================================
         // ambient occlusion

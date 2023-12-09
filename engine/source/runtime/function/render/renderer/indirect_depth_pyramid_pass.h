@@ -50,6 +50,8 @@ namespace MoYu
         std::shared_ptr<RHI::D3D12Texture> GetCurrentFrameMaxDepthPyramid();
 
     private:
+        int passIndex;
+
         // used for depth
         struct DepthPyramidStruct
         {

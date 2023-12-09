@@ -160,6 +160,36 @@ namespace MoYu
                 std::make_shared<RHI::D3D12PipelineState>(m_Device, L"PatchNodeCullByDepthPSO", psoDesc);
         }
 
+        {
+            patchNodeCullByDepthCS2 =
+                m_ShaderCompiler->CompileShader(RHI_SHADER_TYPE::Compute,
+                                                m_ShaderRootPath / "hlsl/PatchNodeCullByDepth2.hlsl",
+                                                ShaderCompileOptions(L"CSMain"));
+            RHI::RootSignatureDesc rootSigDesc =
+                RHI::RootSignatureDesc()
+                    .Add32BitConstants<0, 0>(12)
+                    .AddStaticSampler<10, 0>(D3D12_FILTER::D3D12_FILTER_ANISOTROPIC,
+                                             D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_WRAP,
+                                             8)
+                    .AllowInputLayout()
+                    .AllowResourceDescriptorHeapIndexing()
+                    .AllowSampleDescriptorHeapIndexing();
+
+            pPatchNodeCullByDepthSignature2 =
+                std::make_shared<RHI::D3D12RootSignature>(m_Device, rootSigDesc);
+
+            struct PsoStream
+            {
+                PipelineStateStreamRootSignature RootSignature;
+                PipelineStateStreamCS            CS;
+            } psoStream;
+            psoStream.RootSignature = PipelineStateStreamRootSignature(pPatchNodeCullByDepthSignature2.get());
+            psoStream.CS                    = &patchNodeCullByDepthCS2;
+            PipelineStateStreamDesc psoDesc = {sizeof(PsoStream), &psoStream};
+
+            pPatchNodeCullByDepthPSO2 =
+                std::make_shared<RHI::D3D12PipelineState>(m_Device, L"PatchNodeCullByDepthPSO2", psoDesc);
+        }
 
         terrainPatchNodeBuffer = RHI::D3D12Buffer::Create(
             m_Device->GetLinkedDevice(),
@@ -262,24 +292,24 @@ namespace MoYu
                 L"MainCameraFrustumVisiableIndexBuffer");
         }
 
-        // 深度剪裁的可见和不可见的indexbuffer和CommandSignature
-        if (mainCamPatchNodeIndexBuffer.m_PatchNodeVisiableIndexBuffer == nullptr)
+        // 使用上一帧深度剪裁的可见和不可见的indexbuffer和CommandSignature
+        if (lastDepthCullRemainIndexBuffer.m_PatchNodeVisiableIndexBuffer == nullptr)
         {
-            mainCamPatchNodeIndexBuffer.m_PatchNodeVisiableIndexBuffer = RHI::D3D12Buffer::Create(
+            lastDepthCullRemainIndexBuffer.m_PatchNodeVisiableIndexBuffer = RHI::D3D12Buffer::Create(
                 m_Device->GetLinkedDevice(),
                 RHI::RHIBufferRandomReadWrite | RHI::RHIBufferTargetStructured | RHI::RHIBufferTargetCounter,
                 MaxTerrainNodeCount,
                 sizeof(uint32_t),
-                L"PatchNodeVisiableToDepthIndexBuffer");
+                L"PatchNodeVisiableToLstDepthIndexBuffer");
 
-            mainCamPatchNodeIndexBuffer.m_PatchNodeNonVisiableIndexBuffer = RHI::D3D12Buffer::Create(
+            lastDepthCullRemainIndexBuffer.m_PatchNodeNonVisiableIndexBuffer = RHI::D3D12Buffer::Create(
                 m_Device->GetLinkedDevice(),
                 RHI::RHIBufferRandomReadWrite | RHI::RHIBufferTargetStructured | RHI::RHIBufferTargetCounter,
                 MaxTerrainNodeCount,
                 sizeof(uint32_t),
-                L"PatchNodeNonVisiableToDepthIndexBuffer");
+                L"PatchNodeNonVisiableToLstDepthIndexBuffer");
 
-            mainCamPatchNodeIndexBuffer.m_TerrainCommandSignatureBuffer =
+            lastDepthCullRemainIndexBuffer.m_TerrainCommandSignatureBuffer =
                 RHI::D3D12Buffer::Create(m_Device->GetLinkedDevice(),
                                          RHI::RHIBufferTargetStructured,
                                          1,
@@ -288,6 +318,33 @@ namespace MoYu
                                          RHI::RHIBufferModeImmutable,
                                          D3D12_RESOURCE_STATE_GENERIC_READ);
         }
+        // 使用当前帧深度剪裁的可见和不可见的indexbuffer和CommandSignature
+        if (curDepthCullRemainIndexBuffer.m_PatchNodeVisiableIndexBuffer == nullptr)
+        {
+            curDepthCullRemainIndexBuffer.m_PatchNodeVisiableIndexBuffer = RHI::D3D12Buffer::Create(
+                m_Device->GetLinkedDevice(),
+                RHI::RHIBufferRandomReadWrite | RHI::RHIBufferTargetStructured | RHI::RHIBufferTargetCounter,
+                MaxTerrainNodeCount,
+                sizeof(uint32_t),
+                L"PatchNodeVisiableToCurDepthIndexBuffer");
+
+            curDepthCullRemainIndexBuffer.m_PatchNodeNonVisiableIndexBuffer = RHI::D3D12Buffer::Create(
+                m_Device->GetLinkedDevice(),
+                RHI::RHIBufferRandomReadWrite | RHI::RHIBufferTargetStructured | RHI::RHIBufferTargetCounter,
+                MaxTerrainNodeCount,
+                sizeof(uint32_t),
+                L"PatchNodeNonVisiableToCurDepthIndexBuffer");
+
+            curDepthCullRemainIndexBuffer.m_TerrainCommandSignatureBuffer =
+                RHI::D3D12Buffer::Create(m_Device->GetLinkedDevice(),
+                                         RHI::RHIBufferTargetStructured,
+                                         1,
+                                         MoYu::AlignUp(sizeof(MoYu::TerrainCommandSignatureParams), 256),
+                                         L"PatchNodeCommandSigBuffer",
+                                         RHI::RHIBufferModeImmutable,
+                                         D3D12_RESOURCE_STATE_GENERIC_READ);
+        }
+
 
         // 主光源会使用到的IndexBuffer和CommandSignature
         {
@@ -337,6 +394,18 @@ namespace MoYu
         }
     }
 
+    ////===============================================================
+    //// 内部缓存handle
+    RHI::RgResourceHandle terrainHeightmapHandle;
+    RHI::RgResourceHandle terrainNormalmapHandle;
+    RHI::RgResourceHandle terrainMinHeightMapHandle;
+    RHI::RgResourceHandle terrainMaxHeightMapHandle;
+    RHI::RgResourceHandle mainCamVisiableIndexHandle;
+    RHI::RgResourceHandle terrainPatchNodeHandle;
+    RHI::RgResourceHandle mainCommandSigUploadBufferHandle;
+    RHI::RgResourceHandle lastFrameNonVisiableIndexBufferHandle;
+    ////===============================================================
+
     void IndirectTerrainCullPass::update(RHI::RenderGraph& graph, TerrainCullInput& passInput, TerrainCullOutput& passOutput)
     {
         bool needClearRenderTarget = initializeRenderTarget(graph, &passOutput);
@@ -345,19 +414,15 @@ namespace MoYu
         std::shared_ptr<RHI::D3D12Texture> terrainHeightmap = internalTerrainRenderer.ref_terrain.terrain_heightmap;
         std::shared_ptr<RHI::D3D12Texture> terrainNormalmap = internalTerrainRenderer.ref_terrain.terrain_normalmap;
 
-        RHI::RgResourceHandle terrainHeightmapHandle = GImport(graph, terrainHeightmap.get());
-        RHI::RgResourceHandle terrainNormalmapHandle = GImport(graph, terrainNormalmap.get());
+        /*RHI::RgResourceHandle*/ terrainHeightmapHandle = GImport(graph, terrainHeightmap.get());
+        /*RHI::RgResourceHandle*/ terrainNormalmapHandle = GImport(graph, terrainNormalmap.get());
 
-        RHI::RgResourceHandle terrainMinHeightMapHandle = GImport(graph, terrainMinHeightMap.get());
-        RHI::RgResourceHandle terrainMaxHeightMapHandle = GImport(graph, terrainMaxHeightMap.get());
+        /*RHI::RgResourceHandle*/ terrainMinHeightMapHandle = GImport(graph, terrainMinHeightMap.get());
+        /*RHI::RgResourceHandle*/ terrainMaxHeightMapHandle = GImport(graph, terrainMaxHeightMap.get());
 
-        RHI::RgResourceHandle terrainPatchNodeHandle = GImport(graph, terrainPatchNodeBuffer.get());
+        /*RHI::RgResourceHandle*/ terrainPatchNodeHandle = GImport(graph, terrainPatchNodeBuffer.get());
 
-        RHI::RgResourceHandle mainCamVisiableIndexHandle = GImport(graph, m_MainCameraVisiableIndexBuffer.get());
-
-        RHI::RgResourceHandle terrainCommandSigBufHandle = GImport(graph, mainCamPatchNodeIndexBuffer.m_TerrainCommandSignatureBuffer.get()); 
-        RHI::RgResourceHandle visiableIndexBufferHandle = GImport(graph, mainCamPatchNodeIndexBuffer.m_PatchNodeVisiableIndexBuffer.get());
-        RHI::RgResourceHandle nonVisiableIndexBufferHandle = GImport(graph, mainCamPatchNodeIndexBuffer.m_PatchNodeNonVisiableIndexBuffer.get());
+        /*RHI::RgResourceHandle*/ mainCamVisiableIndexHandle = GImport(graph, m_MainCameraVisiableIndexBuffer.get());
 
         std::vector<RHI::RgResourceHandle> dirShadowPatchNodeVisiableIndexHandles {};
         std::vector<RHI::RgResourceHandle> dirShadowCommandSigBufferHandles {};
@@ -369,11 +434,10 @@ namespace MoYu
                 GImport(graph, dirShadowmapCommandBuffers.m_TerrainCommandSignatureBuffers[i].get()));
         }
 
-        RHI::RgResourceHandle mainCommandSigUploadBufferHandle = GImport(graph, terrainUploadCommandSigBuffer.get());
+        /*RHI::RgResourceHandle*/ mainCommandSigUploadBufferHandle = GImport(graph, terrainUploadCommandSigBuffer.get());
 
         RHI::RgResourceHandle perframeBufferHandle = passInput.perframeBufferHandle;
-        RHI::RgResourceHandle lastMinDepthPyramidHandle = passInput.lastMinDepthPyramidHandle;
-
+        
         //=================================================================================
         // 生成HeightMap的MaxHeightMap和MinHeightMap
         //=================================================================================
@@ -518,114 +582,6 @@ namespace MoYu
         });
         
         //=================================================================================
-        // 使用上一帧depth进行剪裁
-        //=================================================================================
-        
-        RHI::RenderPass& depthCullingPass = graph.AddRenderPass("DepthCullingForTerrain");
-
-        depthCullingPass.Read(perframeBufferHandle, true);
-        depthCullingPass.Read(lastMinDepthPyramidHandle, true);
-        depthCullingPass.Read(terrainPatchNodeHandle, true);
-        depthCullingPass.Read(mainCamVisiableIndexHandle, true);
-        depthCullingPass.Write(nonVisiableIndexBufferHandle, true);
-        depthCullingPass.Write(visiableIndexBufferHandle, true);
-        
-        depthCullingPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
-            RHI::D3D12ComputeContext* pContext = context->GetComputeContext();
-
-            pContext->TransitionBarrier(RegGetBufCounter(nonVisiableIndexBufferHandle), D3D12_RESOURCE_STATE_COPY_DEST);
-            pContext->TransitionBarrier(RegGetBufCounter(visiableIndexBufferHandle), D3D12_RESOURCE_STATE_COPY_DEST);
-            pContext->FlushResourceBarriers();
-            pContext->ResetCounter(RegGetBufCounter(nonVisiableIndexBufferHandle));
-            pContext->ResetCounter(RegGetBufCounter(visiableIndexBufferHandle));
-
-            pContext->TransitionBarrier(RegGetBuf(perframeBufferHandle), D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
-            pContext->TransitionBarrier(RegGetTex(lastMinDepthPyramidHandle), D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE);
-            pContext->TransitionBarrier(RegGetBuf(terrainPatchNodeHandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-            pContext->TransitionBarrier(RegGetBuf(mainCamVisiableIndexHandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-            pContext->TransitionBarrier(RegGetBufCounter(mainCamVisiableIndexHandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-            pContext->TransitionBarrier(RegGetBuf(nonVisiableIndexBufferHandle), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-            pContext->TransitionBarrier(RegGetBufCounter(nonVisiableIndexBufferHandle), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-            pContext->TransitionBarrier(RegGetBuf(visiableIndexBufferHandle), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-            pContext->TransitionBarrier(RegGetBufCounter(visiableIndexBufferHandle), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-            pContext->FlushResourceBarriers();
-
-            pContext->SetRootSignature(pPatchNodeCullByDepthSignature.get());
-            pContext->SetPipelineState(pPatchNodeCullByDepthPSO.get());
-
-            struct RootIndexBuffer
-            {
-                UINT perframeBufferIndex;
-                UINT maxDepthPyramidIndex;
-                UINT terrainPatchNodeIndex;
-                UINT inputPatchNodeIdxBufferIndex;
-                UINT inputPatchNodeIdxCounterIndex;
-                UINT nonVisiableIndexBufferIndex;
-                UINT visiableIndexBufferIndex;
-            };
-
-            RootIndexBuffer rootIndexBuffer =
-                RootIndexBuffer {RegGetBufDefCBVIdx(perframeBufferHandle),
-                                 RegGetTexDefSRVIdx(lastMinDepthPyramidHandle),
-                                 RegGetBufDefSRVIdx(terrainPatchNodeHandle),
-                                 RegGetBufDefSRVIdx(mainCamVisiableIndexHandle),
-                                 RegGetBufCounterSRVIdx(mainCamVisiableIndexHandle),
-                                 RegGetBufDefUAVIdx(nonVisiableIndexBufferHandle),
-                                 RegGetBufDefUAVIdx(visiableIndexBufferHandle)};
-
-            pContext->SetConstantArray(0, sizeof(RootIndexBuffer) / sizeof(UINT), &rootIndexBuffer);
-
-            pContext->Dispatch1D(4096, 128);
-
-        });
-        
-
-
-        //=================================================================================
-        // 使用剪裁后的结果绘制gbuffer
-        //=================================================================================
-
-
-        //=================================================================================
-        // 使用绘制得到的gbuffer里面的depth继续剪裁
-        //=================================================================================
-
-
-        //=================================================================================
-        // 使用新剪裁出来的结果进行gbuffer绘制
-        //=================================================================================
-
-
-
-        //=================================================================================
-        // 主相机地形CommandSignature准备
-        //=================================================================================
-        RHI::RenderPass& cameraCullingPass = graph.AddRenderPass("TerrainCommandSignatureForMainCameraPreparePass");
-
-        cameraCullingPass.Read(mainCommandSigUploadBufferHandle, true);
-        //cameraCullingPass.Read(mainCamVisiableIndexHandle, true);
-        cameraCullingPass.Read(visiableIndexBufferHandle, true);
-        cameraCullingPass.Write(terrainCommandSigBufHandle, true);
-
-        cameraCullingPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
-            RHI::D3D12ComputeContext* pContext = context->GetComputeContext();
-
-            pContext->TransitionBarrier(RegGetBuf(mainCommandSigUploadBufferHandle), D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_GENERIC_READ);
-            //pContext->TransitionBarrier(RegGetBufCounter(mainCamVisiableIndexHandle), D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_SOURCE);
-            pContext->TransitionBarrier(RegGetBufCounter(visiableIndexBufferHandle), D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_SOURCE);
-            pContext->TransitionBarrier(RegGetBuf(terrainCommandSigBufHandle), D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_DEST);
-            pContext->FlushResourceBarriers();
-
-            pContext->CopyBufferRegion(RegGetBuf(terrainCommandSigBufHandle), 0, RegGetBuf(mainCommandSigUploadBufferHandle), 0, sizeof(MoYu::TerrainCommandSignatureParams));
-            //pContext->CopyBufferRegion(RegGetBuf(terrainCommandSigBufHandle), terrainInstanceCountOffset, RegGetBufCounter(mainCamVisiableIndexHandle), 0, sizeof(int));
-            pContext->CopyBufferRegion(RegGetBuf(terrainCommandSigBufHandle), terrainInstanceCountOffset, RegGetBufCounter(visiableIndexBufferHandle), 0, sizeof(int));
-            
-            pContext->TransitionBarrier(RegGetBuf(terrainCommandSigBufHandle), D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT);
-            pContext->FlushResourceBarriers();
-
-        });
-        
-        //=================================================================================
         // 光源Shadow剪裁
         //=================================================================================
         int dirShadowmapVisiableBufferCount = dirShadowmapCommandBuffers.m_PatchNodeVisiableIndexBuffers.size();
@@ -746,8 +702,6 @@ namespace MoYu
         passOutput.minHeightmapPyramidHandle    = terrainMinHeightMapHandle;
         passOutput.terrainPatchNodeBufferHandle = terrainPatchNodeHandle;
 
-        //passOutput.depthCullInputHandle = DepthCullInputStruct {perframeBufferHandle, terrainPatchNodeHandle, mainCamVisiableIndexHandle, mainCommandSigUploadBufferHandle};
-        passOutput.terrainDrawHandle = DrawCallCommandBufferHandle {terrainCommandSigBufHandle, mainCamVisiableIndexHandle};
         for (int i = 0; i < dirShadowmapVisiableBufferCount; i++)
         {
             passOutput.directionShadowmapHandles.push_back(DrawCallCommandBufferHandle {dirShadowCommandSigBufferHandles[i], dirShadowPatchNodeVisiableIndexHandles[i]});
@@ -756,8 +710,235 @@ namespace MoYu
 
     }
 
+    void IndirectTerrainCullPass::cullingPassLastFrame(RHI::RenderGraph& graph, DepthCullInput& cullPassInput)
+    {
+        RHI::RgResourceHandle perframeBufferHandle         = cullPassInput.perframeBufferHandle;
+        RHI::RgResourceHandle lastMinDepthPyramidHandle    = cullPassInput.minDepthPyramidHandle;
+        RHI::RgResourceHandle terrainPatchNodeHandle       = cullPassInput.terrainPatchNodeHandle;
+        RHI::RgResourceHandle inputIndexBufferHandle       = cullPassInput.inputIndexBufferHandle;
+        RHI::RgResourceHandle nonVisiableIndexBufferHandle = cullPassInput.nonVisiableIndexBufferHandle;
+        RHI::RgResourceHandle visiableIndexBufferHandle    = cullPassInput.visiableIndexBufferHandle;
+
+        RHI::RenderPass& depthCullingPass = graph.AddRenderPass("DepthCullingForTerrain_0");
+
+        depthCullingPass.Read(perframeBufferHandle, true);
+        depthCullingPass.Read(lastMinDepthPyramidHandle, true);
+        depthCullingPass.Read(terrainPatchNodeHandle, true);
+        depthCullingPass.Read(inputIndexBufferHandle, true);
+        depthCullingPass.Write(nonVisiableIndexBufferHandle, true);
+        depthCullingPass.Write(visiableIndexBufferHandle, true);
+        
+        depthCullingPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
+            RHI::D3D12ComputeContext* pContext = context->GetComputeContext();
+
+            pContext->TransitionBarrier(RegGetBufCounter(nonVisiableIndexBufferHandle), D3D12_RESOURCE_STATE_COPY_DEST);
+            pContext->TransitionBarrier(RegGetBufCounter(visiableIndexBufferHandle), D3D12_RESOURCE_STATE_COPY_DEST);
+            pContext->FlushResourceBarriers();
+            pContext->ResetCounter(RegGetBufCounter(nonVisiableIndexBufferHandle));
+            pContext->ResetCounter(RegGetBufCounter(visiableIndexBufferHandle));
+
+            pContext->TransitionBarrier(RegGetBuf(perframeBufferHandle), D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
+            pContext->TransitionBarrier(RegGetTex(lastMinDepthPyramidHandle), D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE);
+            pContext->TransitionBarrier(RegGetBuf(terrainPatchNodeHandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+            pContext->TransitionBarrier(RegGetBuf(inputIndexBufferHandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+            pContext->TransitionBarrier(RegGetBufCounter(inputIndexBufferHandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+            pContext->TransitionBarrier(RegGetBuf(nonVisiableIndexBufferHandle), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+            pContext->TransitionBarrier(RegGetBufCounter(nonVisiableIndexBufferHandle), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+            pContext->TransitionBarrier(RegGetBuf(visiableIndexBufferHandle), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+            pContext->TransitionBarrier(RegGetBufCounter(visiableIndexBufferHandle), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+            pContext->FlushResourceBarriers();
+            
+            pContext->SetRootSignature(pPatchNodeCullByDepthSignature.get());
+            pContext->SetPipelineState(pPatchNodeCullByDepthPSO.get());
+
+            struct RootIndexBuffer
+            {
+                UINT perframeBufferIndex;
+                UINT maxDepthPyramidIndex;
+                UINT terrainPatchNodeIndex;
+                UINT inputPatchNodeIdxBufferIndex;
+                UINT inputPatchNodeIdxCounterIndex;
+                UINT nonVisiableIndexBufferIndex;
+                UINT visiableIndexBufferIndex;
+            };
+
+            RootIndexBuffer rootIndexBuffer =
+                RootIndexBuffer {RegGetBufDefCBVIdx(perframeBufferHandle),
+                                 RegGetTexDefSRVIdx(lastMinDepthPyramidHandle),
+                                 RegGetBufDefSRVIdx(terrainPatchNodeHandle),
+                                 RegGetBufDefSRVIdx(inputIndexBufferHandle),
+                                 RegGetBufCounterSRVIdx(inputIndexBufferHandle),
+                                 RegGetBufDefUAVIdx(nonVisiableIndexBufferHandle),
+                                 RegGetBufDefUAVIdx(visiableIndexBufferHandle)};
+
+            pContext->SetConstantArray(0, sizeof(RootIndexBuffer) / sizeof(UINT), &rootIndexBuffer);
+
+            pContext->Dispatch1D(4096, 128);
+
+        });
+
+        cullPassInput.nonVisiableIndexBufferHandle = nonVisiableIndexBufferHandle;
+        cullPassInput.visiableIndexBufferHandle    = visiableIndexBufferHandle;
+    }
+
+    void IndirectTerrainCullPass::cullingPassCurFrame(RHI::RenderGraph& graph, DepthCullInput& cullPassInput)
+    {
+        RHI::RgResourceHandle perframeBufferHandle         = cullPassInput.perframeBufferHandle;
+        RHI::RgResourceHandle lastMinDepthPyramidHandle    = cullPassInput.minDepthPyramidHandle;
+        RHI::RgResourceHandle terrainPatchNodeHandle       = cullPassInput.terrainPatchNodeHandle;
+        RHI::RgResourceHandle inputIndexBufferHandle       = cullPassInput.inputIndexBufferHandle;
+        RHI::RgResourceHandle visiableIndexBufferHandle    = cullPassInput.visiableIndexBufferHandle;
+
+        RHI::RenderPass& depthCullingPass = graph.AddRenderPass("DepthCullingForTerrain_1");
+
+        depthCullingPass.Read(perframeBufferHandle, true);
+        depthCullingPass.Read(lastMinDepthPyramidHandle, true);
+        depthCullingPass.Read(terrainPatchNodeHandle, true);
+        depthCullingPass.Read(inputIndexBufferHandle, true);
+        depthCullingPass.Write(visiableIndexBufferHandle, true);
+        
+        depthCullingPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
+            RHI::D3D12ComputeContext* pContext = context->GetComputeContext();
+
+            pContext->TransitionBarrier(RegGetBufCounter(visiableIndexBufferHandle), D3D12_RESOURCE_STATE_COPY_DEST);
+            pContext->FlushResourceBarriers();
+            pContext->ResetCounter(RegGetBufCounter(visiableIndexBufferHandle));
+
+            pContext->TransitionBarrier(RegGetBuf(perframeBufferHandle), D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
+            pContext->TransitionBarrier(RegGetTex(lastMinDepthPyramidHandle), D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE);
+            pContext->TransitionBarrier(RegGetBuf(terrainPatchNodeHandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+            pContext->TransitionBarrier(RegGetBuf(inputIndexBufferHandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+            pContext->TransitionBarrier(RegGetBufCounter(inputIndexBufferHandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+            pContext->TransitionBarrier(RegGetBuf(visiableIndexBufferHandle), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+            pContext->TransitionBarrier(RegGetBufCounter(visiableIndexBufferHandle), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+            pContext->FlushResourceBarriers();
+            
+            pContext->SetRootSignature(pPatchNodeCullByDepthSignature2.get());
+            pContext->SetPipelineState(pPatchNodeCullByDepthPSO2.get());
+
+            struct RootIndexBuffer
+            {
+                UINT perframeBufferIndex;
+                UINT maxDepthPyramidIndex;
+                UINT terrainPatchNodeIndex;
+                UINT inputPatchNodeIdxBufferIndex;
+                UINT inputPatchNodeIdxCounterIndex;
+                UINT visiableIndexBufferIndex;
+            };
+
+            RootIndexBuffer rootIndexBuffer =
+                RootIndexBuffer {RegGetBufDefCBVIdx(perframeBufferHandle),
+                                 RegGetTexDefSRVIdx(lastMinDepthPyramidHandle),
+                                 RegGetBufDefSRVIdx(terrainPatchNodeHandle),
+                                 RegGetBufDefSRVIdx(inputIndexBufferHandle),
+                                 RegGetBufCounterSRVIdx(inputIndexBufferHandle),
+                                 RegGetBufDefUAVIdx(visiableIndexBufferHandle)};
+
+            pContext->SetConstantArray(0, sizeof(RootIndexBuffer) / sizeof(UINT), &rootIndexBuffer);
+
+            pContext->Dispatch1D(4096, 128);
+
+        });
+
+        cullPassInput.visiableIndexBufferHandle    = visiableIndexBufferHandle;
+    }
+
+    void IndirectTerrainCullPass::genCullCommandSignature(RHI::RenderGraph& graph, DepthCommandSigGenInput& cmdBufferInput)
+    {
+        RHI::RenderPass& cameraCullingPass = graph.AddRenderPass("TerrainCommandSignaturePass");
+
+        RHI::RgResourceHandle visiableIndexBufferHandle = cmdBufferInput.inputIndexBufferHandle;
+        RHI::RgResourceHandle terrainCommandSigBufHandle = cmdBufferInput.terrainCommandSigBufHandle;
+
+        cameraCullingPass.Read(mainCommandSigUploadBufferHandle, true);
+        cameraCullingPass.Read(visiableIndexBufferHandle, true);
+        cameraCullingPass.Write(terrainCommandSigBufHandle, true);
+
+        cameraCullingPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
+            RHI::D3D12ComputeContext* pContext = context->GetComputeContext();
+
+            pContext->TransitionBarrier(RegGetBuf(mainCommandSigUploadBufferHandle), D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_GENERIC_READ);
+            pContext->TransitionBarrier(RegGetBufCounter(visiableIndexBufferHandle), D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_SOURCE);
+            pContext->TransitionBarrier(RegGetBuf(terrainCommandSigBufHandle), D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_DEST);
+            pContext->FlushResourceBarriers();
+
+            pContext->CopyBufferRegion(RegGetBuf(terrainCommandSigBufHandle), 0, RegGetBuf(mainCommandSigUploadBufferHandle), 0, sizeof(MoYu::TerrainCommandSignatureParams));
+            pContext->CopyBufferRegion(RegGetBuf(terrainCommandSigBufHandle), terrainInstanceCountOffset, RegGetBufCounter(visiableIndexBufferHandle), 0, sizeof(int));
+            
+            pContext->TransitionBarrier(RegGetBuf(terrainCommandSigBufHandle), D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT);
+            pContext->FlushResourceBarriers();
+
+        });
+
+        cmdBufferInput.terrainCommandSigBufHandle = terrainCommandSigBufHandle;
+    }
+
+    void IndirectTerrainCullPass::cullByLastFrameDepth(RHI::RenderGraph& graph, DepthCullIndexInput& input, DrawCallCommandBufferHandle& output)
+    {
+        RHI::RgResourceHandle terrainCommandSigBufHandle = GImport(graph, lastDepthCullRemainIndexBuffer.m_TerrainCommandSignatureBuffer.get()); 
+        RHI::RgResourceHandle visiableIndexBufferHandle = GImport(graph, lastDepthCullRemainIndexBuffer.m_PatchNodeVisiableIndexBuffer.get());
+        RHI::RgResourceHandle nonVisiableIndexBufferHandle = GImport(graph, lastDepthCullRemainIndexBuffer.m_PatchNodeNonVisiableIndexBuffer.get());
+
+        //=================================================================================
+        // 使用上一帧depth进行剪裁
+        //=================================================================================
+        DepthCullInput cullPassInput               = {};
+        cullPassInput.perframeBufferHandle         = input.perframeBufferHandle;
+        cullPassInput.minDepthPyramidHandle        = input.minDepthPyramidHandle;
+        cullPassInput.terrainPatchNodeHandle       = terrainPatchNodeHandle;
+        cullPassInput.inputIndexBufferHandle       = mainCamVisiableIndexHandle;
+        cullPassInput.nonVisiableIndexBufferHandle = nonVisiableIndexBufferHandle;
+        cullPassInput.visiableIndexBufferHandle    = visiableIndexBufferHandle;
+        cullingPassLastFrame(graph, cullPassInput);
+
+        //=================================================================================
+        // 主相机地形CommandSignature准备
+        //=================================================================================
+        DepthCommandSigGenInput cmdBufferInput = {};
+        cmdBufferInput.inputIndexBufferHandle  = cullPassInput.visiableIndexBufferHandle; 
+        cmdBufferInput.terrainCommandSigBufHandle = terrainCommandSigBufHandle;
+        genCullCommandSignature(graph, cmdBufferInput);
+
+        // 保存不可见index，用于给当前帧depth再做一次剪裁
+        lastFrameNonVisiableIndexBufferHandle = cullPassInput.nonVisiableIndexBufferHandle;
+
+        // 输出index和commandsignature
+        output.commandSigBufferHandle = cmdBufferInput.terrainCommandSigBufHandle;
+        output.indirectIndexBufferHandle = cmdBufferInput.inputIndexBufferHandle;
+    }
+
+    void IndirectTerrainCullPass::cullByCurrentFrameDepth(RHI::RenderGraph& graph, DepthCullIndexInput& input, DrawCallCommandBufferHandle& output)
+    {
+        RHI::RgResourceHandle terrainCommandSigBufHandle = GImport(graph, curDepthCullRemainIndexBuffer.m_TerrainCommandSignatureBuffer.get()); 
+        RHI::RgResourceHandle visiableIndexBufferHandle = GImport(graph, curDepthCullRemainIndexBuffer.m_PatchNodeVisiableIndexBuffer.get());
+        
+        //=================================================================================
+        // 使用上一帧depth进行剪裁
+        //=================================================================================
+        DepthCullInput cullPassInput               = {};
+        cullPassInput.perframeBufferHandle         = input.perframeBufferHandle;
+        cullPassInput.minDepthPyramidHandle        = input.minDepthPyramidHandle;
+        cullPassInput.terrainPatchNodeHandle       = terrainPatchNodeHandle;
+        cullPassInput.inputIndexBufferHandle       = lastFrameNonVisiableIndexBufferHandle;
+        cullPassInput.visiableIndexBufferHandle    = visiableIndexBufferHandle;
+        cullingPassCurFrame(graph, cullPassInput);
+
+        //=================================================================================
+        // 主相机地形CommandSignature准备
+        //=================================================================================
+        DepthCommandSigGenInput cmdBufferInput = {};
+        cmdBufferInput.inputIndexBufferHandle  = cullPassInput.visiableIndexBufferHandle; 
+        cmdBufferInput.terrainCommandSigBufHandle = terrainCommandSigBufHandle;
+        genCullCommandSignature(graph, cmdBufferInput);
+
+        // 输出index和commandsignature
+        output.commandSigBufferHandle = cmdBufferInput.terrainCommandSigBufHandle;
+        output.indirectIndexBufferHandle = cmdBufferInput.inputIndexBufferHandle;
+    }
+
     void IndirectTerrainCullPass::destroy()
     {
+
 
 
     }

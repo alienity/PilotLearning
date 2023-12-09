@@ -53,6 +53,8 @@ namespace MoYu
                                                 std::nullopt);
             }
         }
+
+        passIndex = 0;
     }
 
     void DepthPyramidPass::update(RHI::RenderGraph& graph, DrawInputParameters& passInput, DrawOutputParameters& passOutput)
@@ -69,7 +71,13 @@ namespace MoYu
 
             RHI::RgResourceHandle depthHandle = passInput.depthHandle;
 
-            RHI::RenderPass& genHeightMapMipMapPass = graph.AddRenderPass("GenerateMinMaxDepthPyramidPass");
+            std::string_view passName;
+            if (passIndex == 0)
+                passName = std::string_view("GenerateMinMaxDepthPyramidPass_0");
+            else
+                passName = std::string_view("GenerateMinMaxDepthPyramidPass_1");
+
+            RHI::RenderPass& genHeightMapMipMapPass = graph.AddRenderPass(passName);
 
             genHeightMapMipMapPass.Read(depthHandle, true);
             genHeightMapMipMapPass.Write(minDepthPyramidHandle, true);
@@ -115,6 +123,8 @@ namespace MoYu
             passOutput.minDepthPtyramidHandle = minDepthPyramidHandle;
             passOutput.maxDepthPtyramidHandle = maxDepthPyramidHandle;
         }
+
+        passIndex += 1;
     }
 
 
