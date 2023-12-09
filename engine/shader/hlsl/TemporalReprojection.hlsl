@@ -221,8 +221,8 @@ void CSMain( uint3 DTid : SV_DispatchThreadID )
     // add noise
     float4 noise4 = PDsrand4(ss_txc + sin_time + 0.6959174) / 510.0;
 
-    float4 outbuffer = saturate(to_buffer + noise4);
-    float4 outscreen = saturate(to_screen + noise4);
+    float4 outbuffer = max(to_buffer + noise4, 0);
+    float4 outscreen = max(to_screen + noise4, 0);
 
 	reprojectionBufferWrite[DTid.xy] = outbuffer;
 	outColorBuffer[DTid.xy] = outscreen;
