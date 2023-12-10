@@ -24,6 +24,7 @@ namespace Dgml
         XmlWriter::BeginElement(Stream, "Node");
         {
             XmlWriter::Attribute(Stream, "Id", Node.Id);
+            XmlWriter::Attribute(Stream, "Type", Node.Type);
             XmlWriter::Attribute(Stream, "Label", Node.Label);
         }
         XmlWriter::EndCloseElement(Stream);

@@ -580,24 +580,24 @@ namespace MoYu
         mDisplayIntputParams.inputRTColorHandle   = mPostprocessOutputParams.outputColorHandle;
         //mDisplayIntputParams.inputRTColorHandle   = mTerrainGBufferOutput.albedoHandle;
         //mDisplayIntputParams.inputRTColorHandle      = mAOOutput.outputAOHandle;
-        //mDisplayOutputParams.renderTargetColorHandle = renderTargetColorHandle;
-        mDisplayOutputParams.renderTargetColorHandle = backBufColorHandle;
+        mDisplayOutputParams.renderTargetColorHandle = renderTargetColorHandle;
+        //mDisplayOutputParams.renderTargetColorHandle = backBufColorHandle;
         mDisplayPass->update(graph, mDisplayIntputParams, mDisplayOutputParams);
         //=================================================================================
         
-        ////=================================================================================
-        //if (mUIPass != nullptr)
-        //{
-        //    UIPass::UIInputParameters mUIIntputParams;
-        //    UIPass::UIOutputParameters mUIOutputParams;
+        //=================================================================================
+        if (mUIPass != nullptr)
+        {
+            UIPass::UIInputParameters mUIIntputParams;
+            UIPass::UIOutputParameters mUIOutputParams;
 
-        //    //mUIIntputParams.renderTargetColorHandle = renderTargetColorHandle;
-        //    mUIIntputParams.renderTargetColorHandle = mDisplayOutputParams.renderTargetColorHandle;
-        //    mUIOutputParams.backBufColorHandle = backBufColorHandle;
-        //    
-        //    mUIPass->update(graph, mUIIntputParams, mUIOutputParams);
-        //}
-        ////=================================================================================
+            //mUIIntputParams.renderTargetColorHandle = renderTargetColorHandle;
+            mUIIntputParams.renderTargetColorHandle = mDisplayOutputParams.renderTargetColorHandle;
+            mUIOutputParams.backBufColorHandle = backBufColorHandle;
+            
+            mUIPass->update(graph, mUIIntputParams, mUIOutputParams);
+        }
+        //=================================================================================
 
         graph.Execute(context);
 

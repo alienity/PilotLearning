@@ -81,6 +81,7 @@ namespace RHI
         UINT64 GetUniqueId() const { return g_GlobalUniqueId; }
 
         void SetResourceName(std::wstring name);
+        std::wstring GetResourceName();
 
         [[nodiscard]] const CD3DX12_CLEAR_VALUE GetClearValue() const noexcept;
         [[nodiscard]] inline void  GetClearColor(FLOAT color[4]) const;

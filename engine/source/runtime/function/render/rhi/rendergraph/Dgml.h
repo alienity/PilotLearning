@@ -8,7 +8,9 @@ namespace Dgml
     struct Node
     {
         std::string Id;
+        std::string Type;
         std::string Label;
+        std::string BackgroundColor;
     };
 
     struct Link

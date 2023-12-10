@@ -6,10 +6,11 @@ DgmlBuilder::DgmlBuilder(const std::string& Title, Dgml::GraphDirection Directio
     Graph(Title, Direction)
 {}
 
-Dgml::Node* DgmlBuilder::AddNode(std::string_view Id, std::string_view Label)
+Dgml::Node* DgmlBuilder::AddNode(std::string_view Id, std::string_view Type, std::string_view Label)
 {
     auto Node   = Graph.AddNode();
     Node->Id    = Id;
+    Node->Type  = Type;
     Node->Label = Label;
     return Node;
 }

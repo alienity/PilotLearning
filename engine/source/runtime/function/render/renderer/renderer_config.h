@@ -123,6 +123,13 @@ namespace EngineConfig
     };
 
     extern AOConfig g_AOConfig;
+
+    struct VolumeLightConfig
+    {
+
+    };
+
+    extern VolumeLightConfig g_VolumeLightConfig;
 }
 
 // clang-format off

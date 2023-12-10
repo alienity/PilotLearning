@@ -2,6 +2,9 @@
 #include "runtime/core/log/log_system.h"
 #include "runtime/function/render/rhi/d3d12/rhi_d3d12_mappings.h"
 #include <algorithm>
+#include <string>
+#include <locale>
+#include <codecvt>
 
 namespace RHI
 {
@@ -548,6 +551,59 @@ namespace RHI
 
 	void RenderGraph::ExportDgml(DgmlBuilder& Builder) const
 	{
+        for (int i = 0; i < InGraphResHandle.size(); i++)
+        {
+            auto handle = InGraphResHandle[i];
+
+            std::string _nodeId = (std::string)fmt::format("Node_{}", (int)(handle.Id));
+
+            std::string _name;
+
+            // Setup converter
+            using convert_type = std::codecvt_utf8<wchar_t>;
+            std::wstring_convert<convert_type, wchar_t> converter;
+
+            // Convert wstring to UTF-8 string
+            if (handle.Type == RgResourceType::Buffer)
+                _name = converter.to_bytes(Registry.GetD3D12Buffer(handle)->GetResourceName());
+            else if (handle.Type == RgResourceType::Texture)
+                _name = converter.to_bytes(Registry.GetD3D12Texture(handle)->GetResourceName());
+
+            std::string_view nodeName = _name;
+
+            Builder.AddNode(_nodeId, "Node", nodeName);
+        }
+
+        for (int i = 0; i < DependencyLevels.size(); i++)
+        {
+            auto& renderPasses = DependencyLevels[i].RenderPasses;
+            for (int j = 0; j < renderPasses.size(); j++)
+            {
+                std::string _passId = (std::string) fmt::format("Pass_{}", renderPasses[j]->PassIndex);
+                std::string_view passId = _passId;
+                std::string_view passName = renderPasses[j]->Name;
+
+                Builder.AddNode(passId, "Pass", passName);
+
+                auto& pReads = renderPasses[j]->Reads;
+                auto& pWrites = renderPasses[j]->Writes;
+
+                for (int m = 0; m < pReads.size(); m++)
+                {
+                    std::string _nodeId = (std::string)fmt::format("Node_{}", (int)(pReads[m].rgHandle.Id));
+
+                    Builder.AddLink(_nodeId, _passId, "");
+                }
+
+                for (int m = 0; m < pWrites.size(); m++)
+                {
+                    std::string _nodeId = (std::string)fmt::format("Node_{}", (int)(pWrites[m].rgHandle.Id));
+
+                    Builder.AddLink(_passId, _nodeId, "");
+                }
+            }
+        }
+
 
 	}
 } // namespace RHI

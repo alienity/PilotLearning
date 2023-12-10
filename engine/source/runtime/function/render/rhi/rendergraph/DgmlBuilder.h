@@ -7,7 +7,7 @@ class DgmlBuilder
 public:
     explicit DgmlBuilder(const std::string& Title, Dgml::GraphDirection Direction = Dgml::GraphDirection::Default);
 
-    Dgml::Node* AddNode(std::string_view Id, std::string_view Label);
+    Dgml::Node* AddNode(std::string_view Id, std::string_view Type, std::string_view Label);
 
     Dgml::Link* AddLink(const std::string& Source, const std::string& Target, std::string_view Label);
 

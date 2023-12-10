@@ -213,6 +213,11 @@ namespace RHI
         m_pResource->SetName(name.c_str());
     }
 
+    std::wstring D3D12Resource::GetResourceName()
+    {
+        return this->m_ResourceName;
+    }
+
     const CD3DX12_CLEAR_VALUE D3D12Resource::GetClearValue() const noexcept
     {
         return m_ClearValue.has_value() ? m_ClearValue.value() : CD3DX12_CLEAR_VALUE {};
