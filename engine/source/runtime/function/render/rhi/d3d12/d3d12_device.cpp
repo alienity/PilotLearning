@@ -305,7 +305,7 @@ namespace RHI
             {
                 LOG_WARN("WARNING:  Unable to enable D3D12 debug validation layer\n");
             }
-
+            #ifdef DEBUG
             Microsoft::WRL::ComPtr<IDXGIInfoQueue> dxgiInfoQueue;
             if (SUCCEEDED(DXGIGetDebugInterface1(0, IID_PPV_ARGS(dxgiInfoQueue.GetAddressOf()))))
             {
@@ -322,7 +322,8 @@ namespace RHI
                 filter.DenyList.NumIDs = _countof(hide);
                 filter.DenyList.pIDList = hide;
                 dxgiInfoQueue->AddStorageFilterEntries(DXGI_DEBUG_DXGI, &filter);
-            }
+            }	  
+			#endif // DEBUG
 
             Microsoft::WRL::ComPtr<ID3D12Debug5> debug5Interface;
             if (SUCCEEDED(debugInterface->QueryInterface(IID_PPV_ARGS(&debug5Interface))))

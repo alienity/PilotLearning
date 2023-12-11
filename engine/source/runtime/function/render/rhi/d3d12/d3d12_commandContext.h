@@ -96,7 +96,7 @@ namespace RHI
         void TransitionBarrier(D3D12Resource* Resource, D3D12_RESOURCE_STATES State, UINT Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES, bool FlushImmediate = false);
         void AliasingBarrier(D3D12Resource* BeforeResource, D3D12Resource* AfterResource, bool FlushImmediate = false);
         void InsertUAVBarrier(D3D12Resource* Resource, bool FlushImmediate = false);
-        inline void FlushResourceBarriers();
+        void FlushResourceBarriers();
 
         bool AssertResourceState(D3D12Resource* Resource, D3D12_RESOURCE_STATES State, UINT Subresource);
 
