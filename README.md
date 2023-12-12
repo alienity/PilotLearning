@@ -71,27 +71,44 @@ GPU Driven Terrain的流程
 7. 重新用新的Depth生成新的`MaxDepthPyramid`，给后处理和下一帧剪裁时使用
 
 #### 图块mesh结构
-图块mesh中在边缘顶点都存了需要退化的值，可视化出来如下
+图块mesh中在边缘顶点都存了需要退化的值，可视化出来如下，我们将要退化的值存到mesh的Color通道上
+<div style="display:inline-block">
+  <img src="https://raw.githubusercontent.com/alienity/PilotLearning/main/data/mesh_terrain.png" alt="mesh_terrain" width="256">
+</div>
 
+#### 绘制时的顶点退化
+在绘制与高一级level的mesh地块的时候，与高一级图块相连的图块的mesh顶点要退化到低一级mip的地块的边缘或者内里的一个点上
+<div style="display:inline-block">
+  <img src="https://raw.githubusercontent.com/alienity/PilotLearning/main/data/mesh_diffuse.png" alt="mesh_diffuse" width="256">
+</div>
+
+#### 绘制阴影的示例
+<div style="display:inline-block">
+  <img src="https://raw.githubusercontent.com/alienity/PilotLearning/main/data/shadow_terrain.png" alt="shadow_terrain" width="512">
+</div>
 
 ## AO
 当前实现了SSAO和HBAO
 
 ### SSAO
+<div style="display:inline-block">
+  <img src="https://raw.githubusercontent.com/alienity/PilotLearning/main/data/SSAO.png" alt="SSAO" width="512">
+</div>
 
 ### HBAO
-
-![HBAO](https://raw.githubusercontent.com/alienity/PilotLearning/main/data/HBAO.png)
+<div style="display:inline-block">
+  <img src="https://raw.githubusercontent.com/alienity/PilotLearning/main/data/HBAO.png" alt="HBAO" width="512">
+</div>
 
 
 ## AA
 
-### FXAA
+![Transparent](https://raw.githubusercontent.com/alienity/PilotLearning/main/data/Transparent.png)
 
+### FXAA
+![Transparent](https://raw.githubusercontent.com/alienity/PilotLearning/main/data/FXAA.png)
 
 ### TAA
-
-![SkyBox](https://raw.githubusercontent.com/alienity/PilotLearning/main/data/SkyBox.png)
 ![TemporalReprojection](https://raw.githubusercontent.com/alienity/PilotLearning/main/data/TemporalReprojection.png)
 
 ## Bloom
