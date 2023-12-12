@@ -102,23 +102,31 @@ GPU Driven Terrain的流程
 
 
 ## AA
-
-![Transparent](https://raw.githubusercontent.com/alienity/PilotLearning/main/data/Transparent.png)
+<div style="display:inline-block">
+  <img src="https://raw.githubusercontent.com/alienity/PilotLearning/main/data/Transparent.png" alt="Transparent" width="512">
+</div>
 
 ### FXAA
-![Transparent](https://raw.githubusercontent.com/alienity/PilotLearning/main/data/FXAA.png)
+<div style="display:inline-block">
+  <img src="https://raw.githubusercontent.com/alienity/PilotLearning/main/data/FXAA.png" alt="FXAA" width="512">
+</div>
 
 ### TAA
-![TemporalReprojection](https://raw.githubusercontent.com/alienity/PilotLearning/main/data/TemporalReprojection.png)
+<div style="display:inline-block">
+  <img src="https://raw.githubusercontent.com/alienity/PilotLearning/main/data/TemporalReprojection.png" alt="TemporalReprojection" width="512">
+</div>
 
 ## Bloom
-
-![Bloom](https://raw.githubusercontent.com/alienity/PilotLearning/main/data/Bloom.png)
+<div style="display:inline-block">
+  <img src="https://raw.githubusercontent.com/alienity/PilotLearning/main/data/Bloom.png" alt="Bloom" width="512">
+</div>
 
 
 ## ToneMapping
 
-![ToneMapping](https://raw.githubusercontent.com/alienity/PilotLearning/main/data/ToneMapping.png)
+<div style="display:inline-block">
+  <img src="https://raw.githubusercontent.com/alienity/PilotLearning/main/data/ToneMapping.png" alt="ToneMapping" width="512">
+</div>
 
 
 
