@@ -1,4 +1,4 @@
-> 练习渲染技术和学习d3d12的渲染器，基于RenderGraph自动生成Pass层级，使用全bindless，将所有的几乎全部计算都在GPU上完成
+> 练习渲染技术和学习d3d12的渲染器，基于RenderGraph自动生成Pass层级，使用全bindless，将所有的几乎全部计算都在GPU上完成。参考Pilot渲染器，只使用了其资源和UI样式。
 
 # 实现模块
 1. RenderGraph
@@ -18,7 +18,7 @@ RenderGraph会生成一个有向无环图，Graph中包含Pass节点和Resource�
 
 一起执行Barrier可以在pass执行之前很久就把状态转换做好
 
-### 直接根据Graph生成的Graph
+### 直接根据RenderGraph生成的可视化Graph
 ![rawImage](https://raw.githubusercontent.com/alienity/PilotLearning/main/data/graph.png)
 
 ### 重新组织后的Graph
@@ -43,28 +43,35 @@ RenderGraph会生成一个有向无环图，Graph中包含Pass节点和Resource�
 - MotionVector
 - DepthBuffer
 
-![GBuffer_Color](https://raw.githubusercontent.com/alienity/PilotLearning/main/data/GBuffer_Color.png)
-![GBuffer_Normal](https://raw.githubusercontent.com/alienity/PilotLearning/main/data/GBuffer_Normal.png)
-![GBuffer_Tangent](https://raw.githubusercontent.com/alienity/PilotLearning/main/data/GBuffer_Tangent.png)
-![Material_Normal](https://raw.githubusercontent.com/alienity/PilotLearning/main/data/Material_Normal.png)
-![GBuffer_MRRA](https://raw.githubusercontent.com/alienity/PilotLearning/main/data/GBuffer_MRRA.png)
-![GBuffer_CCA](https://raw.githubusercontent.com/alienity/PilotLearning/main/data/GBuffer_CCA.png)
-![GBuffer_MotionVector](https://raw.githubusercontent.com/alienity/PilotLearning/main/data/GBuffer_MotionVector.png)
-![GBuffer_Depth](https://raw.githubusercontent.com/alienity/PilotLearning/main/data/GBuffer_Depth.png)
+<div style="display:inline-block">
+  <img src="https://raw.githubusercontent.com/alienity/PilotLearning/main/data/GBuffer_Color.png" alt="GBuffer_Color" width="256">
+  <img src="https://raw.githubusercontent.com/alienity/PilotLearning/main/data/GBuffer_Normal.png" alt="GBuffer_Normal" width="256">
+  <img src="https://raw.githubusercontent.com/alienity/PilotLearning/main/data/GBuffer_Tangent.png" alt="GBuffer_Tangent" width="256">
+  <img src="https://raw.githubusercontent.com/alienity/PilotLearning/main/data/Material_Normal.png" alt="Material_Normal" width="256">
+  <img src="https://raw.githubusercontent.com/alienity/PilotLearning/main/data/GBuffer_MRRA.png" alt="GBuffer_MRRA" width="256">
+  <img src="https://raw.githubusercontent.com/alienity/PilotLearning/main/data/GBuffer_CCA.png" alt="GBuffer_CCA" width="256">
+  <img src="https://raw.githubusercontent.com/alienity/PilotLearning/main/data/GBuffer_MotionVector.png" alt="GBuffer_MotionVector" width="256">
+  <img src="https://raw.githubusercontent.com/alienity/PilotLearning/main/data/GBuffer_Depth.png" alt="GBuffer_Depth" width="256">
+</div>
 
 #### Shadowmap绘制
-类似Opaque和Transparent对象的绘制，把通过Light剪裁出来的对象准备到buffer中，针对不同的Cascade等级，绘制到不同的CascadeLevel中，
-![DirectionCascadeShadowmap](https://raw.githubusercontent.com/alienity/PilotLearning/main/data/DirectionCascadeShadowmap.png)
+类似Opaque和Transparent对象的绘制，把通过Light剪裁出来的对象准备到buffer中，针对不同的Cascade等级，绘制到不同的CascadeLevel中，采样阴影时使用PCF抗锯齿
+<div style="display:inline-block">
+  <img src="https://raw.githubusercontent.com/alienity/PilotLearning/main/data/DirectionCascadeShadowmap.png" alt="DirectionCascadeShadowmap" width="512">
+</div>
 
 ### GPU Driven Terrain
 GPU Driven Terrain的流程
-1. 使用相机Frustum剪裁场景地形
-2. 使用上一帧MaxDepthPyramid重映射到当前帧剪裁剩余地形图块，并绘制地形到GBuffer
-3. 重新生成depth的mipmap，MaxDpethPyramid，
-4. 使用新生成的MaxDpethPyramid对剩余的地形图块进行剪裁，并绘制地形到GBuffer，这里所有的地形图块都绘制完成了
-5. 重新用新的Depth生成新的MaxDepthPyramid
+1. 准备基础地形图块，允许多级MipLevel图块相邻时退化顶点，确保不同Level之间顶点之间都是无缝连接的
+2. 在ComputeShader中生成多级MipLevel图块，图块包含图块坐标和缩放，以及相邻图块的miplevel
+3. 使用相机Frustum剪裁场景地形图块，剔除相机视锥之外的图块
+4. 使用上一帧`MaxDepthPyramid`重映射到当前帧剪裁剩余地形图块，并绘制地形到GBuffer
+5. 重新生成depth的mipmap，即`MaxDpethPyramid`
+6. 使用新生成的`MaxDpethPyramid`对剩余的地形图块进行剪裁，并绘制地形到GBuffer，这里所有的地形图块都绘制完成了
+7. 重新用新的Depth生成新的`MaxDepthPyramid`，给后处理和下一帧剪裁时使用
 
-TODO：补充地形图块的设计和地形在GPU上的生成流程
+#### 图块mesh结构
+图块mesh中在边缘顶点都存了需要退化的值，可视化出来如下
 
 
 ## AO

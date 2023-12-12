@@ -82,6 +82,11 @@ namespace HLSL
         // 64
         glm::float4x4 modelFromWorldMatrix;
 
+        // 64
+        glm::float4x4 prevWorldFromModelMatrix;
+        // 64
+        glm::float4x4 prevModelFromWorldMatrix;
+
         // 16
         D3D12_VERTEX_BUFFER_VIEW vertexBuffer;
         // 16
@@ -278,6 +283,8 @@ namespace HLSL
         glm::uint normalMapIndex;
         glm::float4x4 local2WorldMatrix;
         glm::float4x4 world2LocalMatrix;
+        glm::float4x4 prevLocal2WorldMatrix;
+        glm::float4x4 prevWorld2LocalMatrix;
     };
 
     struct FrameUniforms

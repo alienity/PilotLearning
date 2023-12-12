@@ -23,7 +23,7 @@ namespace MoYu
 {
 
     //========================================================================
-    // ×¼±¸ÉÏ´«µÄBufferºÍImageÊý¾Ý
+    // ×¼ï¿½ï¿½ï¿½Ï´ï¿½ï¿½ï¿½Bufferï¿½ï¿½Imageï¿½ï¿½ï¿½ï¿½
     //========================================================================
 
     typedef DirectX::Blob         MoYuScratchBuffer;
@@ -32,7 +32,7 @@ namespace MoYu
     typedef DirectX::ScratchImage MoYuScratchImage;
 
     //************************************************************
-    // InputLayoutÀàÐÍÏà¹Ø
+    // InputLayoutï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     //************************************************************
 
     enum InputDefinition : uint64_t
@@ -120,7 +120,7 @@ namespace MoYu
     };
 
     //************************************************************
-    // µØÐÎTerrainPatchCluster
+    // ï¿½ï¿½ï¿½ï¿½TerrainPatchCluster
     //************************************************************
     struct D3D12TerrainPatch
     {
@@ -141,7 +141,7 @@ namespace MoYu
     };
 
     //************************************************************
-    // ³¡¾°¶ÔÓ¦µ½µÄäÖÈ¾¶ÔÏó
+    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ó¦ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½È¾ï¿½ï¿½ï¿½ï¿½
     //************************************************************
 
     enum CameraProjType
@@ -196,7 +196,7 @@ namespace MoYu
         bool m_blend;
         bool m_double_sided;
 
-        // ËùÓÐµÄÖµ¶¼ÉèÖÃÔÚµÄuniformbufferÖÐ
+        // ï¿½ï¿½ï¿½Ðµï¿½Öµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Úµï¿½uniformbufferï¿½ï¿½
         /*
         glm::float4 m_base_color_factor;
         float   m_metallic_factor;
@@ -228,6 +228,8 @@ namespace MoYu
 
         glm::float4x4 model_matrix;
         glm::float4x4 model_matrix_inverse;
+        glm::float4x4 prev_model_matrix;
+        glm::float4x4 prev_model_matrix_inverse;
 
         InternalMesh ref_mesh;
         InternalMaterial ref_material;
@@ -268,8 +270,8 @@ namespace MoYu
 
     struct InternalTerrain
     {
-        glm::int2 terrain_size; // ¼ÙÉèµØÐÎ´óÐ¡ÊÇ1024
-        int terrain_max_height; // ¼ÙÉè×î´ó¸ß¶ÈÊÇ1024
+        glm::int2 terrain_size; // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Î´ï¿½Ð¡ï¿½ï¿½1024
+        int terrain_max_height; // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ß¶ï¿½ï¿½ï¿½1024
 
         //int terrain_root_patch_number; // the number of patch in root level
         int terrain_mip_levels; // 9, {2, 4, 8, 16, 32, 64, 128, 256, 512}
@@ -295,6 +297,8 @@ namespace MoYu
 
         glm::float4x4 model_matrix;
         glm::float4x4 model_matrix_inverse;
+        glm::float4x4 prev_model_matrix;
+        glm::float4x4 prev_model_matrix_inverse;
 
         InternalTerrain ref_terrain;
         InternalTerrainMaterial ref_material;
@@ -527,7 +531,7 @@ namespace MoYu
 
     struct MaterialRes;
 
-    // MaterialResÊÇ¿ÉÒÔ´æËùÓÐ²ÄÖÊµÄ¶ÔÏó£¬¶øScenePBRMaterialÊÇPBR²ÄÖÊÊôÐÔ
+    // MaterialResï¿½Ç¿ï¿½ï¿½Ô´ï¿½ï¿½ï¿½ï¿½Ð²ï¿½ï¿½ÊµÄ¶ï¿½ï¿½ó£¬¶ï¿½ScenePBRMaterialï¿½ï¿½PBRï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     MaterialRes ToMaterialRes(const ScenePBRMaterial& pbrMaterial, const std::string shaderName);
     ScenePBRMaterial ToPBRMaterial(const MaterialRes& materialRes);
 
@@ -664,7 +668,7 @@ namespace MoYu
     };
 
     //========================================================================
-    // ¹Ç÷ÀÊý¾Ý
+    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     //========================================================================
 
 

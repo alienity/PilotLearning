@@ -173,12 +173,15 @@ namespace MoYu
         if (render_scene->m_terrain_renderers.size() != 0)
         {
             _terrainUniform.local2WorldMatrix = render_scene->m_terrain_renderers[0].internalTerrainRenderer.model_matrix;
+            _terrainUniform.prevLocal2WorldMatrix = render_scene->m_terrain_renderers[0].internalTerrainRenderer.prev_model_matrix;
         }
         else
         {
             _terrainUniform.local2WorldMatrix = glm::mat4(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1);
+            _terrainUniform.prevLocal2WorldMatrix = glm::mat4(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1);
         }
         _terrainUniform.world2LocalMatrix = glm::inverse(_terrainUniform.local2WorldMatrix);
+        _terrainUniform.prevWorld2LocalMatrix = glm::inverse(_terrainUniform.prevLocal2WorldMatrix);
 
         _frameUniforms->terrainUniform = _terrainUniform;
 
@@ -300,10 +303,14 @@ namespace MoYu
         InternalTerrainRenderer& internal_terrain_renderer, 
         glm::float4x4 model_matrix,
         glm::float4x4 model_matrix_inv,
+        glm::float4x4 prev_model_matrix,
+        glm::float4x4 prev_model_matrix_inv,
         bool has_initialized)
     {
         internal_terrain_renderer.model_matrix = model_matrix;
         internal_terrain_renderer.model_matrix_inverse = model_matrix_inv;
+        internal_terrain_renderer.prev_model_matrix = prev_model_matrix;
+        internal_terrain_renderer.prev_model_matrix_inverse = prev_model_matrix_inv;
 
         bool is_terrain_same = scene_terrain_renderer.m_scene_terrain_mesh == cached_terrain_renderer.m_scene_terrain_mesh;
         is_terrain_same &= scene_terrain_renderer.m_terrain_material == cached_terrain_renderer.m_terrain_material;

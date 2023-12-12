@@ -165,6 +165,8 @@ namespace MoYu
             curRenderableMeshData.enableVertexBlending = temp_ref_mesh.enable_vertex_blending; // temp_node.enable_vertex_blending;
             curRenderableMeshData.worldFromModelMatrix = temp_mesh_renderer.model_matrix; // temp_node.model_matrix;
             curRenderableMeshData.modelFromWorldMatrix = temp_mesh_renderer.model_matrix_inverse;//temp_node.model_matrix_inverse;
+            curRenderableMeshData.prevWorldFromModelMatrix = temp_mesh_renderer.prev_model_matrix;
+            curRenderableMeshData.prevModelFromWorldMatrix = temp_mesh_renderer.prev_model_matrix_inverse;
             curRenderableMeshData.vertexBuffer         = temp_ref_mesh.vertex_buffer.vertex_buffer->GetVertexBufferView();//temp_node.ref_mesh->p_mesh_vertex_buffer->GetVertexBufferView();
             curRenderableMeshData.indexBuffer          = temp_ref_mesh.index_buffer.index_buffer->GetIndexBufferView();//temp_node.ref_mesh->p_mesh_index_buffer->GetIndexBufferView();
             curRenderableMeshData.drawIndexedArguments = drawIndexedArguments;

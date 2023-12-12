@@ -18,6 +18,43 @@ cbuffer RootConstants : register(b0, space0)
 
 SamplerState defaultSampler : register(s10);
 
+// https://software.intel.com/en-us/node/503873
+float3 RGB_YCoCg(float3 c)
+{
+	// Y = R/4 + G/2 + B/4
+	// Co = R/2 - B/2
+	// Cg = -R/4 + G/2 - B/4
+	return float3(
+			c.x/4.0 + c.y/2.0 + c.z/4.0,
+			c.x/2.0 - c.z/2.0,
+		-c.x/4.0 + c.y/2.0 - c.z/4.0
+	);
+}
+
+// https://software.intel.com/en-us/node/503873
+float3 YCoCg_RGB(float3 c)
+{
+	// R = Y + Co - Cg
+	// G = Y + Cg
+	// B = Y - Co - Cg
+	return saturate(float3(
+		c.x + c.y - c.z,
+		c.x + c.z,
+		c.x - c.y - c.z
+	));
+}
+
+float4 sample_color(Texture2D<float4> tex, float2 uv)
+{
+	float4 c = tex.Sample(defaultSampler, uv);
+	return float4(RGB_YCoCg(c.rgb), c.a);
+}
+
+float4 resolve_color(float4 c)
+{
+	return float4(YCoCg_RGB(c.rgb).rgb, c.a);
+}
+
 //note: normalized random, float=[0;1[
 float PDnrand( float2 n ) {
 	return frac( sin(dot(n.xy, float2(12.9898f, 78.233f)))* 43758.5453f );
@@ -97,11 +134,6 @@ float3 find_closest_fragment_3x3(Texture2D<float> depthTexture, float2 depthTexe
 	return float3(uv + dd.xy * dmin.xy, dmin.z);
 }
 
-float4 resolve_color(float4 c)
-{
-	return c;
-}
-
 float4 clip_aabb(float3 aabb_min, float3 aabb_max, float4 p, float4 q)
 {
 	// note: only clips towards aabb center (but fast!)
@@ -123,8 +155,8 @@ float4 temporal_reprojection(Texture2D<float4> mainTex, Texture2D<float4> prevTe
 	float2 jitterUV, float feedbackMin, float feedbackMax, float2 ss_txc, float2 ss_vel, float vs_dist)
 {
 	// read texels
-	float4 texel0 = mainTex.Sample(defaultSampler, ss_txc - jitterUV.xy);
-	float4 texel1 = prevTex.Sample(defaultSampler, ss_txc - ss_vel);
+	float4 texel0 = sample_color(mainTex, ss_txc - jitterUV.xy);
+	float4 texel1 = sample_color(prevTex, ss_txc - ss_vel);
 
 	// calc min-max of current neighbourhood
 	float2 uv = ss_txc/* - jitterUV.xy*/;
@@ -132,15 +164,15 @@ float4 temporal_reprojection(Texture2D<float4> mainTex, Texture2D<float4> prevTe
 	float2 du = float2(mainTexTexelSize.x, 0.0);
 	float2 dv = float2(0.0, mainTexTexelSize.y);
 
-	float4 ctl = mainTex.Sample(defaultSampler, uv - dv - du);
-	float4 ctc = mainTex.Sample(defaultSampler, uv - dv);
-	float4 ctr = mainTex.Sample(defaultSampler, uv - dv + du);
-	float4 cml = mainTex.Sample(defaultSampler, uv - du);
-	float4 cmc = mainTex.Sample(defaultSampler, uv);
-	float4 cmr = mainTex.Sample(defaultSampler, uv + du);
-	float4 cbl = mainTex.Sample(defaultSampler, uv + dv - du);
-	float4 cbc = mainTex.Sample(defaultSampler, uv + dv);
-	float4 cbr = mainTex.Sample(defaultSampler, uv + dv + du);
+	float4 ctl = sample_color(mainTex, uv - dv - du);
+	float4 ctc = sample_color(mainTex, uv - dv);
+	float4 ctr = sample_color(mainTex, uv - dv + du);
+	float4 cml = sample_color(mainTex, uv - du);
+	float4 cmc = sample_color(mainTex, uv);
+	float4 cmr = sample_color(mainTex, uv + du);
+	float4 cbl = sample_color(mainTex, uv + dv - du);
+	float4 cbc = sample_color(mainTex, uv + dv);
+	float4 cbr = sample_color(mainTex, uv + dv + du);
 
 	float4 cmin = min(ctl, min(ctc, min(ctr, min(cml, min(cmc, min(cmr, min(cbl, min(cbc, cbr))))))));
 	float4 cmax = max(ctl, max(ctc, max(ctr, max(cml, max(cmc, max(cmr, max(cbl, max(cbc, cbr))))))));
@@ -154,12 +186,21 @@ float4 temporal_reprojection(Texture2D<float4> mainTex, Texture2D<float4> prevTe
 	cmax = 0.5 * (cmax + cmax5);
 	cavg = 0.5 * (cavg + cavg5);
 
+	// shrink chroma min-max
+	float2 chroma_extent = 0.25 * 0.5 * (cmax.r - cmin.r);
+	float2 chroma_center = texel0.gb;
+	cmin.yz = chroma_center - chroma_extent;
+	cmax.yz = chroma_center + chroma_extent;
+	cavg.yz = chroma_center;
+
 	// clamp to neighbourhood of current sample
 	texel1 = clip_aabb(cmin.xyz, cmax.xyz, clamp(cavg, cmin, cmax), texel1);
 
 	// feedback weight from unbiased luminance diff (t.lottes)
-	float lum0 = Luminance(texel0.rgb);
-	float lum1 = Luminance(texel1.rgb);
+	float lum0 = texel0.r;
+	float lum1 = texel1.r;
+	// float lum0 = Luminance(texel0.rgb);
+	// float lum1 = Luminance(texel1.rgb);
 
 	float unbiased_diff = abs(lum0 - lum1) / max(lum0, max(lum1, 0.2));
 	float unbiased_weight = 1.0 - unbiased_diff;

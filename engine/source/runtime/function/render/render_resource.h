@@ -47,6 +47,8 @@ namespace MoYu
             InternalTerrainRenderer& internal_terrain_renderer, 
             glm::float4x4 model_matrix,
             glm::float4x4 model_matrix_inv,
+            glm::float4x4 prev_model_matrix,
+            glm::float4x4 prev_model_matrix_inv,
             bool has_initialized = false);
 
         // bindless objects

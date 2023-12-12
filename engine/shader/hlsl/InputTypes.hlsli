@@ -107,6 +107,11 @@ struct PerRenderableMeshData
     float4x4 worldFromModelMatrix;
     // 64
     float4x4 modelFromWorldMatrix;
+
+	// 64
+    float4x4 prevWorldFromModelMatrix;
+    // 64
+    float4x4 prevModelFromWorldMatrix;
 	
 	// 16
 	D3D12_VERTEX_BUFFER_VIEW vertexBuffer;
@@ -311,6 +316,8 @@ struct TerrainUniform
     uint normalMapIndex;
     float4x4 local2WorldMatrix;
     float4x4 world2LocalMatrix;
+    float4x4 prevLocal2WorldMatrix;
+    float4x4 prevWorld2LocalMatrix;
 };
 
 struct FrameUniforms

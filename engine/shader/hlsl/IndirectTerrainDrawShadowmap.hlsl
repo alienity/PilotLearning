@@ -60,27 +60,29 @@ VertexOutput VSMain(VertexInput input)
 
     float3 localPosition = input.position;
 
+    float edgeOffsetScale = pow(2, max(0, _terrainPatchNode.mipLevel-1));
+
     if(_terrainPatchNode.neighbor & EAST)
     {
-        localPosition += -float3(input.color.a, 0, 0);
+        localPosition += float3(0, 0, -input.color.a) * edgeOffsetScale;
     }
     if(_terrainPatchNode.neighbor & SOUTH)
     {
-        localPosition += float3(0, 0, input.color.r);
+        localPosition += float3(input.color.r, 0, 0) * edgeOffsetScale;
     }
     if(_terrainPatchNode.neighbor & WEST)
     {
-        localPosition += float3(input.color.b, 0, 0);
+        localPosition += float3(0, 0, input.color.b) * edgeOffsetScale;
     }
     if(_terrainPatchNode.neighbor & NORTH)
     {
-        localPosition += -float3(0, 0, input.color.g);
+        localPosition += float3(-input.color.g, 0, 0) * edgeOffsetScale;
     }
 
     localPosition = localPosition * _terrainPatchNode.nodeWidth + 
         float3(_terrainPatchNode.patchMinPos.x, 0, _terrainPatchNode.patchMinPos.y);
 
-    float2 terrainUV = float2(localPosition.x, localPosition.z) / float2(terrainSize + 1, terrainSize + 1);
+    float2 terrainUV = (localPosition.xz) / float2(terrainSize, terrainSize);
     float curHeight = terrainHeightmap.SampleLevel(defaultSampler, terrainUV, 0).b;
 
     localPosition.y = curHeight * terrainMaxHeight;

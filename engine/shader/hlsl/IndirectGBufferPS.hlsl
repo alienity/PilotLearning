@@ -55,8 +55,11 @@ VaringStruct VSMain(VertexInput input)
     output.ws_position = mul(localToWorldMatrix, float4(input.position, 1.0f));
     output.cs_pos = mul(projectionViewMatrix, output.ws_position);
 
+    float4x4 prevLocalToWorldMatrix = renderableMeshData.prevWorldFromModelMatrix;
+    float4 prev_ws_position = mul(prevLocalToWorldMatrix, float4(input.position, 1.0f));
+    
     output.cs_xy_curr = output.cs_pos.xyw;
-    output.cs_xy_prev = mul(projectionViewMatrixPrev, output.ws_position).xyw;
+    output.cs_xy_prev = mul(projectionViewMatrixPrev, prev_ws_position).xyw;
 
     output.vertex_uv01 = input.texcoord;
 

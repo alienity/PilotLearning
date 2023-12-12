@@ -939,8 +939,6 @@ namespace MoYu
     void IndirectTerrainCullPass::destroy()
     {
 
-
-
     }
 
     bool IndirectTerrainCullPass::initializeRenderTarget(RHI::RenderGraph& graph, TerrainCullOutput* drawPassOutput)
