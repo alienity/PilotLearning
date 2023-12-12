@@ -12,6 +12,12 @@
 9. Bloom
 10. ToneMapping
 
+# 编译
+本项目使用CMake管理代码，在win11系统下拉去代码，生成visualstudio项目，可以直接编译，可以运行的是MoYuEditor
+<div style="display:inline-block">
+  <img src="https://raw.githubusercontent.com/alienity/PilotLearning/main/data/project.png" alt="project" width="512">
+</div>
+
 ## 管线流程
 ### RenderGraph简介
 RenderGraph会生成一个有向无环图，Graph中包含Pass节点和Resource节点，通过在有向无环图中进行拓扑排序，可以找出可以并行录制并且一起做barrier的pass，从而可以得到执行的管线流程图，如下图所示，而重新组织后的graph则会更清晰。
