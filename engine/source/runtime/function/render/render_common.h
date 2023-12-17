@@ -255,6 +255,30 @@ namespace MoYu
         InternalScratchVertexBuffer scratch_vertex_buffer;
     };
 
+    struct ClipmapInstanceScratchBuffer
+    {
+        int clip_index_counts;
+        std::shared_ptr<MoYuScratchBuffer> clip_buffer; // 存ClipmapIndexInstance数组
+    };
+
+    struct InternalScratchClipmap
+    {
+        ClipmapInstanceScratchBuffer instance_scratch_buffer;
+        InternalScratchMesh clipmap_scratch_mesh[5];
+    };
+
+    struct ClipmapInstanceBuffer
+    {
+        int clip_index_counts;
+        std::shared_ptr<RHI::D3D12Buffer> clip_buffer; // 存ClipmapIndexInstance数组
+    };
+
+    struct InternalClipmap
+    {
+        ClipmapInstanceBuffer instance_buffer;
+        InternalMesh clipmap_mesh[5];
+    };
+
     struct InternalTerrainBaseTexture
     {
         std::shared_ptr<RHI::D3D12Texture> albedo;
@@ -270,14 +294,14 @@ namespace MoYu
 
     struct InternalTerrain
     {
-        glm::int2 terrain_size; // ������δ�С��1024
-        int terrain_max_height; // �������߶���1024
+        glm::int2 terrain_size;
+        int terrain_max_height;
 
-        //int terrain_root_patch_number; // the number of patch in root level
-        int terrain_mip_levels; // 9, {2, 4, 8, 16, 32, 64, 128, 256, 512}
+        int mesh_size;
+        int mesh_lods;
 
-        InternalScratchMesh terrain_patch_scratch_mesh;
-        InternalMesh terrain_patch_mesh;
+        InternalScratchClipmap terrain_scratch_clipmap;
+        InternalClipmap terrain_clipmap;
 
         std::shared_ptr<MoYu::MoYuScratchImage> terrain_heightmap_scratch;
         std::shared_ptr<MoYu::MoYuScratchImage> terrain_normalmap_scratch;

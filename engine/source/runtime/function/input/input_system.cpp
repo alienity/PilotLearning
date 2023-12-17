@@ -1,6 +1,7 @@
 #include "runtime/function/input/input_system.h"
 
-#include "core/base/macro.h"
+#include "runtime/core/base/macro.h"
+#include "runtime/function/global/global_context.h"
 
 #include "engine.h"
 #include "runtime/function/global/global_context.h"

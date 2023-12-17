@@ -1,5 +1,6 @@
 #include "shader_compiler.h"
 #include "runtime/core/base/macro.h"
+#include "runtime/function/global/global_context.h"
 #include "runtime/platform/file_service/file_service.h"
 
 #define VERIFY_DXC_API(expr) \

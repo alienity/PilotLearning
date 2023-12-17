@@ -9,6 +9,7 @@
 
 #include "runtime/core/base/utility.h"
 #include "runtime/core/base/macro.h"
+#include "runtime/function/global/global_context.h"
 #include "runtime/core/math/moyu_math2.h"
 
 namespace RHI
@@ -644,6 +645,11 @@ namespace RHI
     void D3D12GraphicsContext::SetPrimitiveTopology(D3D12_PRIMITIVE_TOPOLOGY Topology)
     {
         m_CommandListHandle->IASetPrimitiveTopology(Topology);
+    }
+
+    void D3D12GraphicsContext::SetConstantArray(UINT RootIndex, UINT Offset, UINT NumConstants, const void* pConstants)
+    {
+        m_CommandListHandle->SetGraphicsRoot32BitConstants(RootIndex, NumConstants, pConstants, Offset);
     }
 
     void D3D12GraphicsContext::SetConstantArray(UINT RootIndex, UINT NumConstants, const void* pConstants)

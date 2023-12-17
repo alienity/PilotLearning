@@ -5,6 +5,7 @@
 #include "d3d12_pipelineState.h"
 #include "d3d12_fence.h"
 #include "runtime/core/base/macro.h"
+#include "runtime/function/global/global_context.h"
 
 // D3D12.DRED
 // Enable device removed extended data\n

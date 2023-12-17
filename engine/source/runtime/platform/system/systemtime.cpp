@@ -1,6 +1,7 @@
 #pragma once
 #include "systemtime.h"
-#include "core/base/macro.h"
+#include "runtime/core/base/macro.h"
+#include "runtime/function/global/global_context.h"
 
 SystemTime g_SystemTime;
 

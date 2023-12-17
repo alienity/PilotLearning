@@ -7,6 +7,7 @@
 
 #include <unordered_set>
 #include "runtime/core/base/macro.h"
+#include "runtime/function/global/global_context.h"
 #include "runtime/platform/system/stopwatch.h"
 
 namespace RHI

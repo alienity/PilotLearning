@@ -5,6 +5,16 @@
 
 namespace MoYu
 {
+#define RegGetBuf(h) registry->GetD3D12Buffer(h)
+#define RegGetBufCounter(h) registry->GetD3D12Buffer(h)->GetCounterBuffer().get()
+#define RegGetTex(h) registry->GetD3D12Texture(h)
+#define RegGetBufDefCBVIdx(h) registry->GetD3D12Buffer(h)->GetDefaultCBV()->GetIndex()
+#define RegGetBufDefSRVIdx(h) registry->GetD3D12Buffer(h)->GetDefaultSRV()->GetIndex()
+#define RegGetBufDefUAVIdx(h) registry->GetD3D12Buffer(h)->GetDefaultUAV()->GetIndex()
+#define RegGetBufCounterSRVIdx(h) registry->GetD3D12Buffer(h)->GetCounterBuffer()->GetDefaultSRV()->GetIndex()
+#define RegGetTexDefSRVIdx(h) registry->GetD3D12Texture(h)->GetDefaultSRV()->GetIndex()
+#define RegGetTexDefUAVIdx(h) registry->GetD3D12Texture(h)->GetDefaultUAV()->GetIndex()
+
     void IndirectTerrainGBufferPass::prepareMatBuffer(std::shared_ptr<RenderResource> render_resource)
     {
         if (pMatTextureIndexBuffer == nullptr)
@@ -89,7 +99,8 @@ namespace MoYu
             pIndirectTerrainGBufferSignature = std::make_shared<RHI::D3D12RootSignature>(m_Device, rootSigDesc);
         }
         {
-            RHI::CommandSignatureDesc mBuilder(3);
+            RHI::CommandSignatureDesc mBuilder(4);
+            mBuilder.AddConstant(0, 0, 1);
             mBuilder.AddVertexBufferView(0);
             mBuilder.AddIndexBufferView();
             mBuilder.AddDrawIndexed();
@@ -158,18 +169,19 @@ namespace MoYu
         RHI::RgResourceHandle terrainMatTillingHandle = GImport(graph, pMatTextureTillingBuffer.get());
 
         RHI::RgResourceHandle perframeBufferHandle = passInput.perframeBufferHandle;
-        RHI::RgResourceHandle terrainPatchNodeHandle = passInput.terrainPatchNodeHandle;
         RHI::RgResourceHandle terrainHeightmapHandle = passInput.terrainHeightmapHandle;
         RHI::RgResourceHandle terrainNormalmapHandle = passInput.terrainNormalmapHandle;
 
-        DrawIndexAndCommandSigHandle drawIndexAndSigHandle = passInput.drawIndexAndSigHandle;
-        std::vector<DrawIndexAndCommandSigHandle> dirShadowIndexAndSigHandle = passInput.dirShadowIndexAndSigHandle;
+        RHI::RgResourceHandle terrainCommandSigHandle = passInput.terrainCommandSigHandle;
+        RHI::RgResourceHandle transformBufferHandle   = passInput.transformBufferHandle;
 
-        std::string_view passName;
-        if (passIndex == 0)
-            passName = std::string_view("IndirectTerrainGBufferPass_0");
-        else
-            passName = std::string_view("IndirectTerrainGBufferPass_1");
+        InternalTerrainRenderer& internalTerrainRenderer =
+            m_render_scene->m_terrain_renderers[0].internalTerrainRenderer;
+
+        uint32_t clipmapPatchNumber =
+            internalTerrainRenderer.ref_terrain.terrain_clipmap.instance_buffer.clip_index_counts;
+
+        std::string_view passName = std::string_view("IndirectTerrainGBufferPass");
 
         RHI::RenderPass& drawpass = graph.AddRenderPass(passName);
 
@@ -179,15 +191,9 @@ namespace MoYu
         drawpass.Read(passInput.perframeBufferHandle, false, RHIResourceState::RHI_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
         drawpass.Read(passInput.terrainHeightmapHandle, false, RHIResourceState::RHI_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
         drawpass.Read(passInput.terrainNormalmapHandle, false, RHIResourceState::RHI_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-        drawpass.Read(passInput.terrainPatchNodeHandle, false, RHIResourceState::RHI_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-
-        drawpass.Read(passInput.drawIndexAndSigHandle.drawCallCommandSigBufferHandle, false, RHIResourceState::RHI_RESOURCE_STATE_INDIRECT_ARGUMENT);
-        drawpass.Read(passInput.drawIndexAndSigHandle.drawIndexBufferHandle, false, RHIResourceState::RHI_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-        //for (int i = 0; i < passInput.dirShadowIndexAndSigHandle.size(); i++)
-        //{
-        //    drawpass.Read(passInput.dirShadowIndexAndSigHandle[i].drawCallCommandSigBufferHandle, false, RHIResourceState::RHI_RESOURCE_STATE_INDIRECT_ARGUMENT);
-        //    drawpass.Read(passInput.dirShadowIndexAndSigHandle[i].drawIndexBufferHandle, false, RHIResourceState::RHI_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-        //}
+        
+        drawpass.Read(passInput.terrainCommandSigHandle, false, RHIResourceState::RHI_RESOURCE_STATE_INDIRECT_ARGUMENT);
+        drawpass.Read(passInput.transformBufferHandle, false, RHIResourceState::RHI_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 
         drawpass.Read(passOutput.albedoHandle, true);
         drawpass.Read(passOutput.depthHandle, true);
@@ -247,21 +253,32 @@ namespace MoYu
             graphicContext->SetRootSignature(pIndirectTerrainGBufferSignature.get());
             graphicContext->SetPipelineState(pIndirectTerrainGBufferPSO.get());
 
-            graphicContext->SetConstant(0, 0, registry->GetD3D12Buffer(terrainPatchNodeHandle)->GetDefaultSRV()->GetIndex());
-            graphicContext->SetConstant(0, 1, registry->GetD3D12Buffer(perframeBufferHandle)->GetDefaultCBV()->GetIndex());
-            graphicContext->SetConstant(0, 2, registry->GetD3D12Texture(terrainHeightmapHandle)->GetDefaultSRV()->GetIndex());
-            graphicContext->SetConstant(0, 3, registry->GetD3D12Texture(terrainNormalmapHandle)->GetDefaultSRV()->GetIndex());
-            graphicContext->SetConstant(0, 4, registry->GetD3D12Buffer(drawIndexAndSigHandle.drawIndexBufferHandle)->GetDefaultSRV()->GetIndex());
-            graphicContext->SetConstant(0, 5, registry->GetD3D12Buffer(drawIndexAndSigHandle.drawIndexBufferHandle)->GetDefaultSRV()->GetIndex());
-            graphicContext->SetConstant(0, 6, registry->GetD3D12Buffer(terrainMatIndexHandle)->GetDefaultSRV()->GetIndex());
-            graphicContext->SetConstant(0, 7, registry->GetD3D12Buffer(terrainMatTillingHandle)->GetDefaultSRV()->GetIndex());
+            struct RootIndexBuffer
+            {
+                uint32_t transformBufferIndex;
+                uint32_t perFrameBufferIndex;
+                uint32_t terrainHeightmapIndex;
+                uint32_t terrainNormalmapIndex;
+                uint32_t terrainMatIndexBufferIndex;
+                uint32_t terrainMatTillingBufferIndex;
+            };
 
-            auto pDrawCallCommandSigBuffer = registry->GetD3D12Buffer(drawIndexAndSigHandle.drawCallCommandSigBufferHandle);
+            RootIndexBuffer rootIndexBuffer =
+                RootIndexBuffer {RegGetBufDefSRVIdx(transformBufferHandle),
+                                 RegGetBufDefCBVIdx(perframeBufferHandle),
+                                 RegGetTexDefSRVIdx(terrainHeightmapHandle),
+                                 RegGetTexDefSRVIdx(terrainNormalmapHandle),
+                                 RegGetBufDefSRVIdx(terrainMatIndexHandle),
+                                 RegGetBufDefSRVIdx(terrainMatTillingHandle)};
+
+            graphicContext->SetConstantArray(0, 1, sizeof(RootIndexBuffer) / sizeof(UINT), &rootIndexBuffer);
+            
+            auto pDrawCallCommandSigBuffer = registry->GetD3D12Buffer(terrainCommandSigHandle);
 
             graphicContext->ExecuteIndirect(pIndirectTerrainGBufferCommandSignature.get(),
                                             pDrawCallCommandSigBuffer,
                                             0,
-                                            1,
+                                            5,//clipmapPatchNumber,
                                             nullptr,
                                             0);
 

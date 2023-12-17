@@ -11,6 +11,7 @@
 
 #include "runtime/function/render/rhi/hlsl_data_types.h"
 #include "runtime/core/base/macro.h"
+#include "runtime/function/global/global_context.h"
 
 #include "runtime/platform/path/path.h"
 #include "runtime/platform/system/systemtime.h"

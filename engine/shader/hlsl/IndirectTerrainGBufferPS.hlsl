@@ -4,27 +4,19 @@
 #include "ShadingParameters.hlsli"
 #include "Quaternion.hlsli"
 
-#define EAST 1
-#define SOUTH 2
-#define WEST 4
-#define NORTH 8
-
 #define TillingScale 256
 
 cbuffer RootConstants : register(b0, space0)
 {
-    uint terrainPatchNodeIndex;
-    uint meshPerFrameBufferIndex;
+    uint clipmapIndex;
+
+    uint transformBufferIndex;
+    uint perFrameBufferIndex;
     uint terrainHeightmapIndex;
     uint terrainNormalmapIndex;
-    uint terrainDrawIdxBufferIndex;
-    uint terrainMateiralBufferIndex;
     uint terrainMatIndexBufferIndex;
     uint terrainMatTillingBufferIndex;
 };
-// ConstantBuffer<FrameUniforms> g_FrameUniform : register(b1, space0);
-// StructuredBuffer<PerRenderableMeshData> g_RenderableMeshDatas : register(t0, space0);
-// StructuredBuffer<PerMaterialViewIndexBuffer> g_MaterialViewIndexBuffers : register(t1, space0);
 
 SamplerState defaultSampler : register(s10);
 SamplerComparisonState shadowmapSampler : register(s11);
@@ -48,12 +40,8 @@ struct MaterialTillingStruct
 struct VertexInput
 {
     float3 position : POSITION;
-    float3 normal   : NORMAL;
-    float4 tangent  : TANGENT;
-    float2 texcoord : TEXCOORD;
-    float4 color    : COLOR;
-    
-    uint instanceID : SV_InstanceID;
+
+    // uint instanceID : SV_InstanceID;
 };
 
 struct PSOutputGBuffer
@@ -69,25 +57,23 @@ struct PSOutputGBuffer
 
 VaringStruct VSMain(VertexInput input)
 {
-    StructuredBuffer<TerrainPatchNode> mTerrainPatchNodes = ResourceDescriptorHeap[terrainPatchNodeIndex];
-    ConstantBuffer<FrameUniforms> mFrameUniforms = ResourceDescriptorHeap[meshPerFrameBufferIndex];
+    ConstantBuffer<FrameUniforms> mFrameUniforms = ResourceDescriptorHeap[perFrameBufferIndex];
 
-    // StructuredBuffer<MaterialIndexStruct> mMaterialIndexBuffer = ResourceDescriptorHeap[terrainMatIndexBufferIndex];
-    
     Texture2D<float4> terrainHeightmap = ResourceDescriptorHeap[terrainHeightmapIndex];
     Texture2D<float4> terrainNormalmap = ResourceDescriptorHeap[terrainNormalmapIndex];
 
-    StructuredBuffer<uint> mDrawIdxBuffer = ResourceDescriptorHeap[terrainDrawIdxBufferIndex];
+    StructuredBuffer<ClipmapIndexInstance> clipmapTransformBuffers = ResourceDescriptorHeap[transformBufferIndex];
 
     StructuredBuffer<MaterialIndexStruct> mMaterialIndexBuffers = ResourceDescriptorHeap[terrainMatIndexBufferIndex];
     StructuredBuffer<MaterialTillingStruct> mMaterialTillingBuffers = ResourceDescriptorHeap[terrainMatTillingBufferIndex];
-    
+
     Texture2D<float3> displacementTexture = ResourceDescriptorHeap[mMaterialIndexBuffers[0].displacementIndex];
-    float2 displacementTilling = mMaterialTillingBuffers[0].displacementTilling * TillingScale;
+    float2 displacementTilling = mMaterialTillingBuffers[0].displacementTilling * TillingScale;    
 
-    uint patchNodeIndex = mDrawIdxBuffer[input.instanceID];
+    ClipmapIndexInstance clipTransform = clipmapTransformBuffers[clipmapIndex];
 
-    TerrainPatchNode _terrainPatchNode = mTerrainPatchNodes[patchNodeIndex];
+    float4x4 tLocalTransform = clipTransform.transform;
+    // int tMeshType = clipTransform.mesh_type;
 
     float4x4 localToWorldMatrix = mFrameUniforms.terrainUniform.local2WorldMatrix;
     float4x4 localToWorldMatrixInv = mFrameUniforms.terrainUniform.world2LocalMatrix;
@@ -101,66 +87,44 @@ VaringStruct VSMain(VertexInput input)
     float terrainSize = mFrameUniforms.terrainUniform.terrainSize;
 
     float3 localPosition = input.position;
-
-    float edgeOffsetScale = pow(2, max(0, _terrainPatchNode.mipLevel-1));
-
-    if(_terrainPatchNode.neighbor & EAST)
-    {
-        localPosition += float3(0, 0, -input.color.a) * edgeOffsetScale;
-    }
-    if(_terrainPatchNode.neighbor & SOUTH)
-    {
-        localPosition += float3(input.color.r, 0, 0) * edgeOffsetScale;
-    }
-    if(_terrainPatchNode.neighbor & WEST)
-    {
-        localPosition += float3(0, 0, input.color.b) * edgeOffsetScale;
-    }
-    if(_terrainPatchNode.neighbor & NORTH)
-    {
-        localPosition += float3(-input.color.g, 0, 0) * edgeOffsetScale;
-    }
-
-    localPosition = localPosition * _terrainPatchNode.nodeWidth + 
-        float3(_terrainPatchNode.patchMinPos.x, 0, _terrainPatchNode.patchMinPos.y);
-
+    localPosition = mul(tLocalTransform, float4(localPosition, 1)).xyz;
+    
     float2 terrainUV = (localPosition.xz) / float2(terrainSize, terrainSize);
     float curHeight = terrainHeightmap.SampleLevel(defaultSampler, terrainUV, 0).b;
 
-    // float displacement = displacementTexture.SampleLevel(defaultSampler, terrainUV * displacementTilling, 0).r;
-
     localPosition.y = curHeight * terrainMaxHeight;
-    // localPosition.y += displacement * 0.5f;
 
     VaringStruct output;
-    output.ws_position = mul(localToWorldMatrix, float4(localPosition, 1.0f));
+    // output.ws_position = mul(localToWorldMatrix, float4(localPosition, 1.0f));
+    output.ws_position = float4(localPosition, 1.0f);
     output.cs_pos = mul(projectionViewMatrix, output.ws_position);
 
     float4x4 prevLocalToWorldMatrix = mFrameUniforms.terrainUniform.prevLocal2WorldMatrix;
-    float4 prev_ws_position = mul(prevLocalToWorldMatrix, float4(localPosition, 1.0f));
+    // float4 prev_ws_position = mul(prevLocalToWorldMatrix, float4(localPosition, 1.0f));
+    float4 prev_ws_position = float4(localPosition, 1.0f);
     output.cs_xy_curr = output.cs_pos.xyw;
     output.cs_xy_prev = mul(projectionViewMatrixPrev, prev_ws_position).xyw;
 
     // output.vertex_uv01 = input.texcoord;
     output.vertex_uv01 = terrainUV;
 
-    float3 localNormal = input.normal.xyz;
+    float3 localNormal = float3(0,1,0);
     localNormal = normalize(localNormal * 2 - 1);
-    float3 localTangent = input.tangent.xyz;
+    float3 localTangent = float3(1,0,0);
     float3 localBitangent = cross(localNormal, localTangent);
     localTangent = cross(localBitangent, localNormal);
     float3x3 normalMat = transpose((float3x3)localToWorldMatrixInv);
 
     output.ws_normal      = normalize(mul(normalMat, localNormal));    
     output.ws_tangent.xyz = normalize(mul(normalMat, localTangent));
-    output.ws_tangent.w   = input.tangent.w;
+    output.ws_tangent.w   = 1;
 
     return output;
 }
 
 PSOutputGBuffer PSMain(VaringStruct varingStruct)
 {
-    ConstantBuffer<FrameUniforms> mFrameUniforms = ResourceDescriptorHeap[meshPerFrameBufferIndex];
+    ConstantBuffer<FrameUniforms> mFrameUniforms = ResourceDescriptorHeap[perFrameBufferIndex];
     float4x4 localToWorldMatrix = mFrameUniforms.terrainUniform.local2WorldMatrix;
     float4x4 localToWorldMatrixInv = mFrameUniforms.terrainUniform.world2LocalMatrix;
     float3x3 normalMat = transpose((float3x3)localToWorldMatrixInv);

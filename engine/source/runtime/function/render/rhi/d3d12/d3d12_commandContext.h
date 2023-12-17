@@ -207,6 +207,7 @@ namespace RHI
         void SetBlendFactor(MoYu::Color BlendFactor);
         void SetPrimitiveTopology(D3D12_PRIMITIVE_TOPOLOGY Topology);
 
+        void SetConstantArray(UINT RootIndex, UINT Offset, UINT NumConstants, const void* pConstants);
         void SetConstantArray(UINT RootIndex, UINT NumConstants, const void* pConstants);
         void SetConstant(UINT RootIndex, UINT Offset, DWParam Val);
         void SetConstants(UINT RootIndex, DWParam X);

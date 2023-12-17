@@ -1,6 +1,7 @@
 #include "runtime/function/framework/world/world_manager.h"
 
 #include "runtime/core/base/macro.h"
+#include "runtime/function/global/global_context.h"
 
 #include "runtime/resource/asset_manager/asset_manager.h"
 #include "runtime/resource/config_manager/config_manager.h"

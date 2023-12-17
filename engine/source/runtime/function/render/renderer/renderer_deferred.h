@@ -1,6 +1,7 @@
 #pragma once
 
 #include "runtime/core/base/macro.h"
+#include "runtime/function/global/global_context.h"
 #include "runtime/function/render/renderer_moyu.h"
 #include "runtime/function/render/render_scene.h"
 #include "runtime/function/render/renderer/tool_pass.h"

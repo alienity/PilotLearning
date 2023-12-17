@@ -339,6 +339,12 @@ struct FrameUniforms
 // Terrain
 // =======================================
 
+struct ClipmapIndexInstance
+{
+    float4x4 transform;
+    int mesh_type;
+};
+
 struct TerrainPatchNode
 {
     float2 patchMinPos; // node的左下角顶点

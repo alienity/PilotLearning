@@ -21,6 +21,7 @@
 #include "directx/d3d12.h"
 
 #include "runtime/core/base/macro.h"
+#include "runtime/function/global/global_context.h"
 #include "runtime/core/math/moyu_math2.h"
 #include "runtime/platform/system/system_core.h"
 

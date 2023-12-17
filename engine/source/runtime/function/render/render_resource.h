@@ -66,7 +66,7 @@ namespace MoYu
         std::map<DefaultTexType, std::shared_ptr<RHI::D3D12Texture>> _Default2TexMap;
 
         std::shared_ptr<TerrainRenderHelper> terrainHelper;
-
+        
         std::shared_ptr<RHI::D3D12Buffer> createDynamicBuffer(void* buffer_data, uint32_t buffer_size, uint32_t buffer_stride);
         std::shared_ptr<RHI::D3D12Buffer> createDynamicBuffer(std::shared_ptr<MoYu::MoYuScratchBuffer>& buffer_data);
         

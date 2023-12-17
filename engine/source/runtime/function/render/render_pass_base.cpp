@@ -1,6 +1,7 @@
 #include "runtime/function/render/render_pass_base.h"
 
 #include "runtime/core/base/macro.h"
+#include "runtime/function/global/global_context.h"
 #include "runtime/function/render/render_system.h"
 
 #include "runtime/function/render/rhi/rendergraph/RenderGraph.h"

@@ -5,81 +5,7 @@
 
 namespace MoYu
 {
-    // 每一级level的每个patch的宽度，其中每层level的node节点数是相同的，都是8x8个
-    int PatchWidthOfMipLevel[TerrainMipLevel] = {16, 32, 64, 128, 256, 512}; // 1024
-    // 每层level的node节点数是相同的，都是8x8个
-    int PatchNodeWidth = 8;
-
-    /*
-    * 那样其实在terrain的local空间内，可以确定确定相机对应的像素点上的每个点在terrain上的位置
-    * 1. 对齐相机到terrain的具体某个顶点A上，
-    * 2. 确定以A点为原点，周围一直到terrain边缘的所有miplevel上的patch，以及patch的从heightmap的mip图中获取到的最大最小高度
-    * 3. 在取到每个patch的node的同时找到其上下左右的距离自身node长度的位置处对应的miplevel，用以确定退化的方向
-    * 4. 取出的所有patch的node还要给光源做剪裁，以便计算阴影
-    * 5. 取出的所有patch的node也要给相机做剪裁
-    * 
-    * 但是在gpu上就没法给远处的patch自定义的mip等级了，那其实还是需要在cpu上预计算一个mip偏移图，这个mip偏移值是根据梯度来算的，
-    * 不过好像也可以通过gpu来算，就是要提前算一个mip出来，直接对全图算，最小最大高度和梯度
-    * 
-    * 其中做剪裁的时候，也可以直接使用上一帧的depthpyramid做gpudriven剪裁
-    * 
-    * 实现步骤：
-    * 0. 根据相机位置在terrain的空间的位置，取一个对齐到顶点后的位置A
-    * 1. 算出TerrainHeightMap的MaxHeightMap和MinHeightMap的mipmap图
-    * 2. 根据最小最大值生成一张mipoffset图，heightThreshold值就用MaxHeight*0.00001
-    * 3. 这里提前把patchmesh的宽度缩放到2，那mip0上就有8x8个patchmeshnode，
-    * 4. 以A点为起点，遍历周围8个level对应的所有patch，存到struct{ float2 offset; float mip; float mipOffset; float minHeight; float maxHeight; } // 根据mip可以算出新的patch对应的scale
-    * 5. 使用光源或者直接用相机对第4步得到的patch的数组进行剪裁
-    * 6. 绘制阴影和直接绘制对象
-    */
-
-    /**/
-    uint32_t TNode::SpecificMipLevelWidth(int curMipLevel)
-    {
-        return 0;
-
-        //uint32_t totalNodeCountWidth = 1 << RootLevelNodeWidthBit;
-        //for (size_t i = 1; i <= curMipLevel; i++)
-        //{
-        //    totalNodeCountWidth = totalNodeCountWidth << SubLevelNodeWidthBit;
-        //}
-        //return totalNodeCountWidth;
-    }
-
-    // 特定MipLevel的Node节点数量
-    uint32_t TNode::SpecificMipLevelNodeCount(int curMipLevel)
-    {
-        return 0;
-
-        //uint32_t totalNodeCount = 1 << RootLevelNodeCountBit;
-        //for (size_t i = 1; i <= curMipLevel; i++)
-        //{
-        //    totalNodeCount = totalNodeCount << SubLevelNodeCountBit;
-        //}
-        //return totalNodeCount;
-    }
-
-    // 到达指定MipLevel的Node节点数量
-    uint32_t TNode::ToMipLevelNodeCount(int curMipLevel)
-    {
-        uint32_t totalNodeCount = 0;
-        for (size_t i = 0; i <= curMipLevel; i++)
-        {
-            totalNodeCount += SpecificMipLevelNodeCount(i);
-        }
-        return totalNodeCount;
-    }
-
-    // 当前MipLevel的Index节点在全局Array中的位置
-    uint32_t TNode::SpecificMipLevelNodeInArrayOffset(int curMipLevel, int curLevelIndex)
-    {
-        uint32_t _parentMipLevelOffset = ToMipLevelNodeCount(curMipLevel - 1);
-        uint32_t _curNodeOffset        = _parentMipLevelOffset + curLevelIndex;
-        return _curNodeOffset;
-    }
-
-    //---------------------------------------------------------------------------------
-
+    
 	TerrainRenderHelper::TerrainRenderHelper()
 	{
         mIsHeightmapInit = false;
@@ -88,7 +14,7 @@ namespace MoYu
 
 	TerrainRenderHelper::~TerrainRenderHelper()
 	{
-
+        mTerrain3D = nullptr;
 	}
 
     void TerrainRenderHelper::InitTerrainRenderer(SceneTerrainRenderer*    sceneTerrainRenderer,
@@ -97,6 +23,12 @@ namespace MoYu
                                                   InternalTerrainMaterial* internalTerrainMaterial,
                                                   RenderResource*          renderResource)
 	{
+        if (mTerrain3D == nullptr)
+        {
+            mTerrain3D = std::make_shared<Terrain3D>();
+        }
+        mTerrain3D->snap(glm::float3(0, 0, 0));
+
         mSceneTerrainRenderer = sceneTerrainRenderer;
         mCachedSceneTerrainRenderer = cachedSceneTerrainRenderer;
 
@@ -105,19 +37,15 @@ namespace MoYu
         mRenderResource = renderResource;
 
         InitTerrainBasicInfo();
-        InitInternalTerrainPatchMesh();
+        InitInternalTerrainClipmap();
         InitTerrainHeightAndNormalMap();
         InitTerrainBaseTextures();
-        //InitTerrainNodePage();
 	}
 
     void TerrainRenderHelper::InitTerrainBasicInfo()
     {
         mInternalTerrain->terrain_size       = mSceneTerrainRenderer->m_scene_terrain_mesh.terrain_size;
         mInternalTerrain->terrain_max_height = mSceneTerrainRenderer->m_scene_terrain_mesh.terrian_max_height;
-        //mInternalTerrain->terrain_root_patch_number =
-        //    mInternalTerrain->terrain_size.x / TNode::SpecificMipLevelWidth(0);
-        mInternalTerrain->terrain_mip_levels = TerrainMipLevel;
     }
 
     void TerrainRenderHelper::InitTerrainHeightAndNormalMap()
@@ -248,170 +176,187 @@ namespace MoYu
 
     }
 
-    void TerrainRenderHelper::InitInternalTerrainPatchMesh()
+    void TerrainRenderHelper::InitInternalTerrainClipmap()
     {
-        if (mInternalScratchMesh.scratch_vertex_buffer.vertex_buffer == nullptr)
-        {
-            mInternalScratchMesh = GenerateTerrainPatchScratchMesh();
-        }
-        mInternalTerrain->terrain_patch_scratch_mesh = mInternalScratchMesh;
+        mInternalTerrain->mesh_size = mTerrain3D->get_mesh_size();
+        mInternalTerrain->mesh_lods = mTerrain3D->get_mesh_lods();
 
-        if (mInternalhMesh.vertex_buffer.vertex_buffer == nullptr)
+        //********************************************************************************
+        // update scratch buffer
         {
-            mInternalhMesh = GenerateTerrainPatchMesh(mRenderResource, mInternalScratchMesh);
+            InternalScratchClipmap* _internalScratchClipmap = &mInternalTerrain->terrain_scratch_clipmap;
+
+            ClipmapInstanceScratchBuffer* _clipmapInstanceScratchBuffer = &_internalScratchClipmap->instance_scratch_buffer;
+
+            int clip_counts = GetClipCount();
+            _clipmapInstanceScratchBuffer->clip_index_counts = clip_counts;
+
+            std::shared_ptr<MoYuScratchBuffer> _clip_buffer = _clipmapInstanceScratchBuffer->clip_buffer;
+            if (_clip_buffer == nullptr)
+            {
+                uint32_t clip_total_size = clip_counts * sizeof(HLSL::ClipmapIndexInstance);
+                _clip_buffer = std::make_shared<MoYuScratchBuffer>();
+                _clip_buffer->Initialize(clip_total_size);
+                _clipmapInstanceScratchBuffer->clip_buffer = _clip_buffer;
+            }
+            HLSL::ClipmapIndexInstance* _clipmapIndexInstance =
+                (HLSL::ClipmapIndexInstance*)_clip_buffer->GetBufferPointer();
+            UpdateClipBuffer(_clipmapIndexInstance);
+
+            auto _clipPatches = mTerrain3D->get_clip_patch();
+            for (int i = 0; i < 5; i++)
+            {
+                UpdateClipPatchScratchMesh(&_internalScratchClipmap->clipmap_scratch_mesh[i], _clipPatches[i]);
+            }
         }
-        mInternalTerrain->terrain_patch_mesh = mInternalhMesh;
+        //********************************************************************************
+
+        //********************************************************************************
+        // update d3d12 buffer
+        {
+            std::shared_ptr<MoYuScratchBuffer> _clip_scratch_buffer =
+                mInternalTerrain->terrain_scratch_clipmap.instance_scratch_buffer.clip_buffer;
+
+            InternalClipmap* _terrain_clipmap = &mInternalTerrain->terrain_clipmap;
+
+            ClipmapInstanceBuffer* _clipmapInstanceBuffer = &_terrain_clipmap->instance_buffer;
+
+            int clip_counts = GetClipCount();
+            _clipmapInstanceBuffer->clip_index_counts = clip_counts;
+
+            uint32_t clip_total_size = clip_counts * sizeof(HLSL::ClipmapIndexInstance);
+            std::shared_ptr<RHI::D3D12Buffer> _clip_buffer = _clipmapInstanceBuffer->clip_buffer;
+            if (_clip_buffer == nullptr)
+            {
+                _clip_buffer = mRenderResource->createDynamicBuffer(_clip_scratch_buffer);
+                _clipmapInstanceBuffer->clip_buffer = _clip_buffer;
+            }
+            else
+            {
+                HLSL::ClipmapIndexInstance * _clipmapIndexInstance = _clip_buffer->GetCpuVirtualAddress<HLSL::ClipmapIndexInstance>();
+                memcpy(_clipmapIndexInstance, _clip_scratch_buffer->GetBufferPointer(), clip_total_size);
+            }
+            auto _clipPatches = mTerrain3D->get_clip_patch();
+            for (int i = 0; i < 5; i++)
+            {
+                UpdateClipPatchMesh(&_terrain_clipmap->clipmap_mesh[i],
+                                    &mInternalTerrain->terrain_scratch_clipmap.clipmap_scratch_mesh[i]);
+            }
+        }
+        //********************************************************************************
     }
 
-	void TerrainRenderHelper::InitTerrainNodePage()
-	{
-        /*
-		if (_tPageRoot == nullptr)
-		{
-            float perSize = 64;
-            TRect rect = TRect {0, 0, (float)terrainSize, (float)terrainSize};
-			_tPageRoot = std::make_shared<TNodePage>(rect);
-            for (size_t i = rect.xMin; i < rect.xMin + rect.width; i += perSize)
-            {
-                for (size_t j = rect.yMin; j < rect.yMin + rect.height; j += perSize)
-                {
-                    _tPageRoot->children.push_back(TNodePage(TRect {(float)i, (float)j, perSize, perSize}, terrainPageLevel));
-                }
-            }
-		}
-        */
-
-        GenerateTerrainNodes();
-	}
-
-    /*
-	void TerrainRenderHelper::GenerateTerrainNodes()
-	{
-        uint32_t rootPageCount = terrainSize / rootPageSize;
-
-        uint32_t pageSize = rootPageCount * (1 - glm::pow(4, terrainPageMips)) / (1 - 4);
-        _TNodes.reserve(pageSize);
-
-        std::queue<TNode> _TNodeQueue;
-
-		TRect rect = TRect {0, 0, (float)terrainSize, (float)terrainSize};
-        for (size_t j = rect.yMin, int yIndex = 0; j < rect.yMin + rect.height; j += rootPageSize, yIndex += 1)
-        {
-            for (size_t i = rect.xMin, int xIndex = 0; i < rect.xMin + rect.width; i += rootPageSize, xIndex += 1)
-            {
-                uint32_t _patchIndex = yIndex * rootPageCount + xIndex;
-                TNode _TNode = GenerateTerrainNodes(TRect {(float)i, (float)j, (float)rootPageSize, (float)rootPageSize}, _patchIndex, 0);
-                _TNodeQueue.push(_TNode);
-            }
-        }
-
-        while (!_TNodeQueue.empty())
-        {
-            TNode _TNode = _TNodeQueue.front();
-            _TNodeQueue.pop();
-
-            uint32_t _nodePatchIndex = _TNode.index;
-            uint32_t _nodeMipIndex = _TNode.mip;
-
-            uint32_t _arrayOffset = TNode::InArrayOffset(rootPageCount, _nodeMipIndex, _nodePatchIndex);
-            _TNodes[_arrayOffset] = _TNode;
-
-            TRect _rect = _TNode.rect;
-
-            if (_nodeMipIndex < terrainPageMips - 1)
-            {
-                TNode _TNode00 = GenerateTerrainNodes(TRect {_rect.xMin, _rect.yMin, _rect.width * 0.5f, _rect.height * 0.5f},
-                    _nodePatchIndex << 2 + 0, _nodeMipIndex + 1);
-                TNode _TNode10 = GenerateTerrainNodes(TRect {_rect.xMin + _rect.width * 0.5f, _rect.yMin, _rect.width * 0.5f, _rect.height * 0.5f},
-                    _nodePatchIndex << 2 + 1, _nodeMipIndex + 1);
-                TNode _TNode01 = GenerateTerrainNodes(TRect {_rect.xMin, _rect.yMin + _rect.height * 0.5f, _rect.width * 0.5f, _rect.height * 0.5f},
-                    _nodePatchIndex << 2 + 2, _nodeMipIndex + 1);
-                TNode _TNode11 = GenerateTerrainNodes(TRect {_rect.xMin + _rect.width * 0.5f, _rect.yMin + _rect.height * 0.5f, _rect.width * 0.5f, _rect.height * 0.5f},
-                    _nodePatchIndex << 2 + 3, _nodeMipIndex + 1);
-
-                _TNodeQueue.push(_TNode00);
-                _TNodeQueue.push(_TNode10);
-                _TNodeQueue.push(_TNode01);
-                _TNodeQueue.push(_TNode11);
-            }
-        }
-	}
-    */
-
-    void TerrainRenderHelper::GenerateTerrainNodes()
+    void TerrainRenderHelper::UpdateClipPatchMesh(InternalMesh* internalMesh, InternalScratchMesh* internalScratchMesh)
     {
-        int terrainSize = mInternalTerrain->terrain_size.x;
-        //int terrain_root_patch_number = mInternalTerrain->terrain_root_patch_number;
-
-        float rootNodeWidth = (float)MoYu::TNode::SpecificMipLevelWidth(0);
-        float rootNodeCount = terrainSize / rootNodeWidth;
-
-        uint32_t _totalNodeCount = TNode::ToMipLevelNodeCount(TerrainMipLevel);
-        _TNodes.resize(_totalNodeCount);
-
-        int yIndex = 0;
-        int xIndex = 0;
-        TRect rect = TRect {0, 0, (float)terrainSize, (float)terrainSize};
-        for (size_t j = rect.yMin; j < rect.yMin + rect.height; j += rootNodeWidth, yIndex += 1)
+        if (internalMesh->vertex_buffer.vertex_buffer == nullptr)
         {
-            for (size_t i = rect.xMin; i < rect.xMin + rect.width; i += rootNodeWidth, xIndex += 1)
-            {
-                uint32_t _patchIndex = yIndex * rootNodeCount + xIndex;
-                TNode _tNode = GenerateTerrainNodes(TRect {(float)i, (float)j, (float)rootNodeWidth, (float)rootNodeWidth}, _patchIndex, 0);
-                uint32_t _arrayOffset = TNode::SpecificMipLevelNodeInArrayOffset(0, _patchIndex);
-                _TNodes[_arrayOffset] = _tNode;
-            }
+            internalMesh->vertex_buffer.vertex_buffer =
+                mRenderResource->createDynamicBuffer(internalScratchMesh->scratch_vertex_buffer.vertex_buffer);
         }
+        else
+        {
+            uint32_t vertex_buffer_size = internalScratchMesh->scratch_vertex_buffer.vertex_buffer->GetBufferSize() *
+                                          sizeof(D3D12MeshVertexPosition);
+            memcpy(internalMesh->vertex_buffer.vertex_buffer->GetCpuVirtualAddress(),
+                   internalScratchMesh->scratch_vertex_buffer.vertex_buffer->GetBufferPointer(),
+                   vertex_buffer_size);
+        }
+        internalMesh->vertex_buffer.vertex_count = internalScratchMesh->scratch_vertex_buffer.vertex_count;
 
-        std::wstring _logStr = fmt::format(L"_TNodes count = {}", _TNodes.size());
-        MoYu::LogSystem::Instance()->log(MoYu::LogSystem::LogLevel::Info, _logStr);
+        if (internalMesh->index_buffer.index_buffer == nullptr)
+        {
+            internalMesh->index_buffer.index_buffer =
+                mRenderResource->createDynamicBuffer(internalScratchMesh->scratch_index_buffer.index_buffer);
+        }
+        else
+        {
+            uint32_t index_buffer_size =
+                internalScratchMesh->scratch_index_buffer.index_buffer->GetBufferSize() * sizeof(std::uint32_t);
+            memcpy(internalMesh->index_buffer.index_buffer->GetCpuVirtualAddress(),
+                   internalScratchMesh->scratch_index_buffer.index_buffer->GetBufferPointer(),
+                   index_buffer_size);
+        }
+        internalMesh->index_buffer.index_count  = internalScratchMesh->scratch_index_buffer.index_count;
+        internalMesh->index_buffer.index_stride = internalScratchMesh->scratch_index_buffer.index_stride;
     }
 
-	TNode TerrainRenderHelper::GenerateTerrainNodes(TRect rect, uint32_t pathcIndex, int mip)
-	{
-
-        float _minHeight = std::numeric_limits<float>::max();
-        float _maxHeight = -std::numeric_limits<float>::max();
-
-        if (mip < TerrainMipLevel - 1)
+    void TerrainRenderHelper::UpdateClipPatchScratchMesh(InternalScratchMesh* internalScratchMesh, GeoClipPatch geoPatch)
+    {
+        InternalScratchVertexBuffer* scratch_vertex_buffer = &internalScratchMesh->scratch_vertex_buffer;
+        std::uint32_t vertex_buffer_size = geoPatch.vertices.size() * sizeof(D3D12MeshVertexPosition);
+        if (scratch_vertex_buffer->vertex_buffer == nullptr)
         {
-            uint32_t _offset = 1 << (2 * pathcIndex);
-
-            TNode _TNode00 = GenerateTerrainNodes(TRect {rect.xMin, rect.yMin, rect.width * 0.5f, rect.height * 0.5f}, _offset + 0, mip + 1);
-            TNode _TNode01 = GenerateTerrainNodes(TRect {rect.xMin + rect.width * 0.5f, rect.yMin, rect.width * 0.5f, rect.height * 0.5f}, _offset + 1, mip + 1);
-            TNode _TNode10 = GenerateTerrainNodes(TRect {rect.xMin, rect.yMin + rect.height * 0.5f, rect.width * 0.5f, rect.height * 0.5f}, _offset + 2, mip + 1);
-            TNode _TNode11 = GenerateTerrainNodes(TRect {rect.xMin + rect.width * 0.5f, rect.yMin + rect.height * 0.5f, rect.width * 0.5f, rect.height * 0.5f}, _offset + 3, mip + 1);
-
-            _TNodes[MoYu::TNode::SpecificMipLevelNodeInArrayOffset(_TNode00.mip, _TNode00.index)] = _TNode00;
-            _TNodes[MoYu::TNode::SpecificMipLevelNodeInArrayOffset(_TNode01.mip, _TNode01.index)] = _TNode01;
-            _TNodes[MoYu::TNode::SpecificMipLevelNodeInArrayOffset(_TNode10.mip, _TNode10.index)] = _TNode10;
-            _TNodes[MoYu::TNode::SpecificMipLevelNodeInArrayOffset(_TNode11.mip, _TNode11.index)] = _TNode11;
-
-            _minHeight = glm::min(glm::min(_TNode00.minHeight, _TNode01.minHeight), glm::min(_TNode10.minHeight, _TNode11.minHeight));
-            _maxHeight = glm::max(glm::max(_TNode00.maxHeight, _TNode01.maxHeight), glm::max(_TNode10.maxHeight, _TNode11.maxHeight));
+            scratch_vertex_buffer->input_element_definition = D3D12MeshVertexPosition::InputElementDefinition;
+            scratch_vertex_buffer->vertex_buffer = std::make_shared<MoYuScratchBuffer>();
+            scratch_vertex_buffer->vertex_buffer->Initialize(vertex_buffer_size);
         }
-        else if (mip == TerrainMipLevel - 1)
-        {
-            for (float i = rect.xMin; i < rect.xMin + rect.width; i += 1.0f)
-            {
-                for (float j = rect.yMin; j < rect.yMin + rect.height; j += 1.0f)
-                {
-                    float _curHeight = GetTerrainHeight(glm::float2(i, j));
-                    _minHeight = glm::min(_minHeight, _curHeight);
-                    _maxHeight = glm::max(_maxHeight, _curHeight);
-                }
-            }
-        }
+        scratch_vertex_buffer->vertex_count = geoPatch.vertices.size();
+        memcpy(scratch_vertex_buffer->vertex_buffer->GetBufferPointer(), geoPatch.vertices.data(), vertex_buffer_size);
+
         
-        TNode _TNode     = {};
-        _TNode.mip       = mip;
-        _TNode.index     = pathcIndex;
-        _TNode.rect      = rect;
-        _TNode.minHeight = _maxHeight;
-        _TNode.maxHeight = _minHeight;
+        InternalScratchIndexBuffer* scratch_index_buffer = &internalScratchMesh->scratch_index_buffer;
+        std::uint32_t index_buffer_size = geoPatch.indices.size() * sizeof(std::uint32_t);
+        if (scratch_index_buffer->index_buffer == nullptr)
+        {
+            scratch_index_buffer->index_stride  = sizeof(uint32_t);
+            scratch_index_buffer->index_buffer = std::make_shared<MoYuScratchBuffer>();
+            scratch_index_buffer->index_buffer->Initialize(index_buffer_size);
+        }
+        scratch_index_buffer->index_count  = geoPatch.indices.size();
+        memcpy(scratch_index_buffer->index_buffer->GetBufferPointer(), geoPatch.indices.data(), index_buffer_size);
+    }
 
-        return _TNode;
-	}
+    uint32_t TerrainRenderHelper::GetClipCount()
+    {
+        const auto& transform_instance = mTerrain3D->get_transform_instance();
+
+        int clip_counts = 1 + transform_instance.tiles.size() + transform_instance.fillers.size() +
+                          transform_instance.trims.size() + transform_instance.seams.size();
+
+        return clip_counts;
+    }
+
+    void TerrainRenderHelper::UpdateClipBuffer(HLSL::ClipmapIndexInstance* clipmapIdxInstance)
+    {
+        const auto& transform_instance = mTerrain3D->get_transform_instance();
+
+        int clip_counts = 1 + transform_instance.tiles.size() + transform_instance.fillers.size() +
+                          transform_instance.trims.size() + transform_instance.seams.size();
+
+        uint32_t clip_count = 0;
+        // store cross matrix and type
+        clipmapIdxInstance[clip_count].mesh_type = GeoClipMap::CROSS;
+        clipmapIdxInstance[clip_count].transform = transform_instance.cross.getMatrix();
+        clip_count += 1;
+        // store tiles
+        for (int i = 0; i < transform_instance.tiles.size(); i++)
+        {
+            clipmapIdxInstance[clip_count].mesh_type = GeoClipMap::TILE;
+            clipmapIdxInstance[clip_count].transform = transform_instance.tiles[i].getMatrix();
+            clip_count += 1;
+        }
+        // store fillers
+        for (int i = 0; i < transform_instance.fillers.size(); i++)
+        {
+            clipmapIdxInstance[clip_count].mesh_type = GeoClipMap::FILLER;
+            clipmapIdxInstance[clip_count].transform = transform_instance.fillers[i].getMatrix();
+            clip_count += 1;
+        }
+        // store trims
+        for (int i = 0; i < transform_instance.trims.size(); i++)
+        {
+            clipmapIdxInstance[clip_count].mesh_type = GeoClipMap::TRIM;
+            clipmapIdxInstance[clip_count].transform = transform_instance.trims[i].getMatrix();
+            clip_count += 1;
+        }
+        // store seams
+        for (int i = 0; i < transform_instance.seams.size(); i++)
+        {
+            clipmapIdxInstance[clip_count].mesh_type = GeoClipMap::SEAM;
+            clipmapIdxInstance[clip_count].transform = transform_instance.seams[i].getMatrix();
+            clip_count += 1;
+        }
+    }
 
 	float TerrainRenderHelper::GetTerrainHeight(glm::float2 localXZ)
 	{
@@ -483,135 +428,6 @@ namespace MoYu
         _t.normal    = glm::vec3(0, 1, 0);
         _t.tangent   = glm::vec4(1, 0, 0, 1);
         return _t;
-    }
-
-    InternalScratchMesh TerrainRenderHelper::GenerateTerrainPatchScratchMesh()
-    {
-        std::vector<D3D12TerrainPatch> vertices {};
-        std::vector<int> indices {};
-
-        int vertexCount = 4;
-        float bias = 1.0f / vertexCount;
-
-        float patchScale = 1.0f;
-        float biasScale  = patchScale * bias;
-
-        for (int i = 0; i <= vertexCount; i++)
-        {
-            for (int j = 0; j <= vertexCount; j++)
-            {
-                glm::float4 color = glm::float4(0, 0, 0, 0);
-                if (i == 0 || j == 0 || i == vertexCount || j == vertexCount)
-                {
-                    float westOffset  = j == 0 ? i % 2 : 0;
-                    float eastOffset  = j == vertexCount ? i % 2 : 0;
-                    float northOffset = i == 0 ? j % 2 : 0;
-                    float southOffset = i == vertexCount ? j % 2 : 0;
-                    color = glm::float4(northOffset, southOffset, westOffset, eastOffset);
-                }
-
-                float xBiasOffset = bias * j;
-                float yBiasOffset = bias * i;
-                glm::float3 xyBiasOffset = glm::float3(xBiasOffset, 0, yBiasOffset);
-
-                float uOffset = bias * j;                
-                float vOffset = bias * i;
-                glm::float2 uvOffset = glm::float2(uOffset, vOffset);
-
-                vertices.push_back(CreatePatch(patchScale * xyBiasOffset, uvOffset, biasScale * color));
-            }
-        }
-
-        #define AddTriIndices(a, b, c) indices.push_back(a); indices.push_back(b); indices.push_back(c);
-        for (int i = 0; i < vertexCount; i++)
-        {
-            for (int j = 0; j < vertexCount; j++)
-            {
-                int i00 = (i + 0) * (vertexCount + 1) + (j + 0);
-                int i10 = (i + 1) * (vertexCount + 1) + (j + 0);
-                int i01 = (i + 0) * (vertexCount + 1) + (j + 1);
-                int i11 = (i + 1) * (vertexCount + 1) + (j + 1);
-
-                AddTriIndices(i00, i10, i01)
-                AddTriIndices(i10, i11, i01)
-            }
-        }
-
-        /*
-        vertices.push_back(CreatePatch(patchScale * glm::vec3(0.0, 0, 0.0), glm::vec2(0, 0), biasScale * glm::vec4(0, 0, 0, 0)));
-        vertices.push_back(CreatePatch(patchScale * glm::vec3(0.25, 0, 0.0), glm::vec2(0.25, 0), biasScale * glm::vec4(1, 0, 0, 0)));
-        vertices.push_back(CreatePatch(patchScale * glm::vec3(0.5, 0, 0.0), glm::vec2(0.5, 0), biasScale * glm::vec4(0, 0, 0, 0)));
-        vertices.push_back(CreatePatch(patchScale * glm::vec3(0.75, 0, 0.0), glm::vec2(0.75, 0), biasScale * glm::vec4(1, 0, 0, 0)));
-        vertices.push_back(CreatePatch(patchScale * glm::vec3(1.0, 0, 0.0), glm::vec2(1.0, 0), biasScale * glm::vec4(0, 0, 0, 0)));
-
-        vertices.push_back(CreatePatch(patchScale * glm::vec3(0.0, 0, 0.25),  glm::vec2(0, 0.25), biasScale * glm::vec4(0, 0, 1, 0)));
-        vertices.push_back(CreatePatch(patchScale * glm::vec3(0.25, 0, 0.25), glm::vec2(0.25, 0.25), biasScale * glm::vec4(0, 0, 0, 0)));
-        vertices.push_back(CreatePatch(patchScale * glm::vec3(0.5, 0, 0.25), glm::vec2(0.5, 0.25), biasScale * glm::vec4(0, 0, 0, 0)));
-        vertices.push_back(CreatePatch(patchScale * glm::vec3(0.75, 0, 0.25), glm::vec2(0.75, 0.25), biasScale * glm::vec4(0, 0, 0, 0)));
-        vertices.push_back(CreatePatch(patchScale * glm::vec3(1.0, 0, 0.25), glm::vec2(1.0, 0.25), biasScale * glm::vec4(0, 0, 0, 1)));
-
-        vertices.push_back(CreatePatch(patchScale * glm::vec3(0.0, 0, 0.5), glm::vec2(0, 0.5), biasScale * glm::vec4(0, 0, 0, 0)));
-        vertices.push_back(CreatePatch(patchScale * glm::vec3(0.25, 0, 0.5), glm::vec2(0.25, 0.5), biasScale * glm::vec4(0, 0, 0, 0)));
-        vertices.push_back(CreatePatch(patchScale * glm::vec3(0.5, 0, 0.5), glm::vec2(0.5, 0.5), biasScale * glm::vec4(0, 0, 0, 0)));
-        vertices.push_back(CreatePatch(patchScale * glm::vec3(0.75, 0, 0.5), glm::vec2(0.75, 0.5), biasScale * glm::vec4(0, 0, 0, 0)));
-        vertices.push_back(CreatePatch(patchScale * glm::vec3(1.0, 0, 0.5), glm::vec2(1.0, 0.5), biasScale * glm::vec4(0, 0, 0, 0)));
-
-        vertices.push_back(CreatePatch(patchScale * glm::vec3(0.0, 0, 0.75),  glm::vec2(0, 0.75), biasScale * glm::vec4(0, 0, 1, 0)));
-        vertices.push_back(CreatePatch(patchScale * glm::vec3(0.25, 0, 0.75),  glm::vec2(0.25, 0.75), biasScale * glm::vec4(0, 0, 0, 0)));
-        vertices.push_back(CreatePatch(patchScale * glm::vec3(0.5, 0, 0.75),  glm::vec2(0.5, 0.75), biasScale * glm::vec4(0, 0, 0, 0)));
-        vertices.push_back(CreatePatch(patchScale * glm::vec3(0.75, 0, 0.75),  glm::vec2(0.75, 0.75), biasScale * glm::vec4(0, 0, 0, 0)));
-        vertices.push_back(CreatePatch(patchScale * glm::vec3(1.0, 0, 0.75),  glm::vec2(1.0, 0.75), biasScale * glm::vec4(0, 0, 0, 1)));
-
-        vertices.push_back(CreatePatch(patchScale * glm::vec3(0.0, 0, 1.0),   glm::vec2(0, 1.0), biasScale * glm::vec4(0, 0, 0, 0)));
-        vertices.push_back(CreatePatch(patchScale * glm::vec3(0.25, 0, 1.0),   glm::vec2(0.25, 1.0), biasScale * glm::vec4(0, 1, 0, 0)));
-        vertices.push_back(CreatePatch(patchScale * glm::vec3(0.5, 0, 1.0),   glm::vec2(0.5, 1.0), biasScale * glm::vec4(0, 0, 0, 0)));
-        vertices.push_back(CreatePatch(patchScale * glm::vec3(0.75, 0, 1.0),   glm::vec2(0.75, 1.0), biasScale * glm::vec4(0, 1, 0, 0)));
-        vertices.push_back(CreatePatch(patchScale * glm::vec3(1.0, 0, 1.0),   glm::vec2(1.0, 1.0), biasScale * glm::vec4(0, 0, 0, 0)));
-
-        #define AddTriIndices(a, b, c) indices.push_back(a); indices.push_back(b); indices.push_back(c);
-
-        #define AddQuadIndices(d) AddTriIndices(0 + d, 5 + d, 6 + d) AddTriIndices(0 + d, 6 + d, 1 + d)
-
-        #define AddQuadIndices4(d) AddQuadIndices(d) AddQuadIndices(d + 1) AddQuadIndices(d + 2) AddQuadIndices(d + 3)
-
-        #define AddQuadIndices16() AddQuadIndices4(0) AddQuadIndices4(5) AddQuadIndices4(10) AddQuadIndices4(15)
-
-        AddQuadIndices16()
-        */
-
-        std::uint32_t vertex_buffer_size = vertices.size() * sizeof(D3D12TerrainPatch);
-        InternalScratchVertexBuffer scratch_vertex_buffer {};
-        scratch_vertex_buffer.input_element_definition = D3D12TerrainPatch::InputElementDefinition;
-        scratch_vertex_buffer.vertex_count = vertices.size();
-        scratch_vertex_buffer.vertex_buffer = std::make_shared<MoYuScratchBuffer>();
-        scratch_vertex_buffer.vertex_buffer->Initialize(vertex_buffer_size);
-        memcpy(scratch_vertex_buffer.vertex_buffer->GetBufferPointer(), vertices.data(), vertex_buffer_size);
-
-        std::uint32_t index_buffer_size = indices.size() * sizeof(std::uint32_t);
-        InternalScratchIndexBuffer scratch_index_buffer {};
-        scratch_index_buffer.index_stride = sizeof(uint32_t);
-        scratch_index_buffer.index_count  = indices.size();
-        scratch_index_buffer.index_buffer = std::make_shared<MoYuScratchBuffer>();
-        scratch_index_buffer.index_buffer->Initialize(index_buffer_size);
-        memcpy(scratch_index_buffer.index_buffer->GetBufferPointer(), indices.data(), index_buffer_size);
-
-        InternalScratchMesh scratchMesh {scratch_index_buffer, scratch_vertex_buffer};
-
-        return scratchMesh;
-    }
-
-    InternalMesh TerrainRenderHelper::GenerateTerrainPatchMesh(RenderResource* pRenderResource, InternalScratchMesh internalScratchMesh)
-    {
-        InternalVertexBuffer vertex_buffer = pRenderResource->createVertexBuffer<D3D12TerrainPatch>(
-            internalScratchMesh.scratch_vertex_buffer.input_element_definition,
-            internalScratchMesh.scratch_vertex_buffer.vertex_buffer);
-
-        InternalIndexBuffer index_buffer =
-            pRenderResource->createIndexBuffer<uint32_t>(internalScratchMesh.scratch_index_buffer.index_buffer);
-
-        InternalMesh internalhMesh {false, {}, index_buffer, vertex_buffer};
-
-        return internalhMesh;
     }
 
 }

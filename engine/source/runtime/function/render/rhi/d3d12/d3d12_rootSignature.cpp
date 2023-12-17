@@ -1,6 +1,7 @@
 #include "d3d12_rootSignature.h"
 #include "d3d12_device.h"
 #include "runtime/core/base/macro.h"
+#include "runtime/function/global/global_context.h"
 
 namespace RHI
 {

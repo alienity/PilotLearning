@@ -20,6 +20,8 @@ namespace HLSL
     static constexpr size_t LightLimit    = 32;
     static constexpr size_t MeshLimit     = 2048;
 
+    static constexpr size_t TerrainPatchMeshLimit = 256;
+
     static const uint32_t m_point_light_shadow_map_dimension       = 2048;
     static const uint32_t m_directional_light_shadow_map_dimension = 4096;
 
@@ -319,6 +321,14 @@ namespace HLSL
     const std::uint64_t totalCommandBufferSizeInBytes = HLSL::MeshLimit * sizeof(HLSL::CommandSignatureParams);
 
     const std::uint64_t totalIndexCommandBufferInBytes = HLSL::MeshLimit * sizeof(HLSL::BitonicSortCommandSigParams);
+
+
+    struct ClipmapIndexInstance
+    {
+        glm::float4x4 transform;
+        int mesh_type;
+    };
+
 
     enum NeighborFace
     {

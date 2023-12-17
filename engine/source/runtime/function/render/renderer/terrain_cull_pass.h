@@ -8,8 +8,16 @@
 
 namespace MoYu
 {
-    struct TerrainCommandSignatureParams
+    struct TerrainUploadCommandSignatureParams
     {
+        D3D12_VERTEX_BUFFER_VIEW     VertexBuffer;
+        D3D12_INDEX_BUFFER_VIEW      IndexBuffer;
+        D3D12_DRAW_INDEXED_ARGUMENTS DrawIndexedArguments;
+    };
+
+    struct TerrainToDrawCommandSignatureParams
+    {
+        uint32_t                     ClipIndex;
         D3D12_VERTEX_BUFFER_VIEW     VertexBuffer;
         D3D12_INDEX_BUFFER_VIEW      IndexBuffer;
         D3D12_DRAW_INDEXED_ARGUMENTS DrawIndexedArguments;
@@ -80,17 +88,13 @@ namespace MoYu
 
         struct TerrainCullOutput
         {
-            TerrainCullOutput() { terrainPatchNodeBufferHandle.Invalidate(); }
-
             RHI::RgResourceHandle terrainHeightmapHandle;
             RHI::RgResourceHandle terrainNormalmapHandle;
             RHI::RgResourceHandle maxHeightmapPyramidHandle;
             RHI::RgResourceHandle minHeightmapPyramidHandle;
 
-            RHI::RgResourceHandle terrainPatchNodeBufferHandle;
-
-            // 阴影的draw index buffer
-            std::vector<DrawCallCommandBufferHandle> directionShadowmapHandles;
+            RHI::RgResourceHandle terrainCommandSigHandle;
+            RHI::RgResourceHandle transformBufferHandle;
         };
 
         struct DepthCullIndexInput
@@ -106,8 +110,8 @@ namespace MoYu
         void prepareMeshData(std::shared_ptr<RenderResource> render_resource);
         void update(RHI::RenderGraph& graph, TerrainCullInput& passInput, TerrainCullOutput& passOutput);
         
-        void cullByLastFrameDepth(RHI::RenderGraph& graph, DepthCullIndexInput& input, DrawCallCommandBufferHandle& output);
-        void cullByCurrentFrameDepth(RHI::RenderGraph& graph, DepthCullIndexInput& input, DrawCallCommandBufferHandle& output);
+        //void cullByLastFrameDepth(RHI::RenderGraph& graph, DepthCullIndexInput& input, DrawCallCommandBufferHandle& output);
+        //void cullByCurrentFrameDepth(RHI::RenderGraph& graph, DepthCullIndexInput& input, DrawCallCommandBufferHandle& output);
 
         void destroy() override final;
     private:
@@ -145,9 +149,9 @@ namespace MoYu
             RHI::RgResourceHandle terrainCommandSigBufHandle;
         };
 
-        void cullingPassLastFrame(RHI::RenderGraph& graph, DepthCullInput& cullPassInput);
-        void cullingPassCurFrame(RHI::RenderGraph& graph, DepthCullInput& cullPassInput);
-        void genCullCommandSignature(RHI::RenderGraph& graph, DepthCommandSigGenInput& cmdBufferInput);
+        //void cullingPassLastFrame(RHI::RenderGraph& graph, DepthCullInput& cullPassInput);
+        //void cullingPassCurFrame(RHI::RenderGraph& graph, DepthCullInput& cullPassInput);
+        //void genCullCommandSignature(RHI::RenderGraph& graph, DepthCommandSigGenInput& cmdBufferInput);
 
         bool initializeRenderTarget(RHI::RenderGraph& graph, TerrainCullOutput* drawPassOutput);
         void generateMipmapForTerrainHeightmap(RHI::D3D12ComputeContext* context, RHI::D3D12Texture* srcTexture, bool genMin);
@@ -177,8 +181,11 @@ namespace MoYu
 
         // main camera instance CommandSignature Buffer
         std::shared_ptr<RHI::D3D12Buffer> terrainUploadCommandSigBuffer;
-        int terrainInstanceCountOffset;
-
+        //std::shared_ptr<RHI::D3D12Buffer> uploadClipmapTransformBuffer;
+        // 真正使用的CommandSignatureBuffer
+        std::shared_ptr<RHI::D3D12Buffer> terrainToDrawCommandSigBuffer;
+        std::shared_ptr<RHI::D3D12Buffer> clipmapTransformBuffer;
+        
         Shader indirecTerrainPatchNodesGenCS;
         std::shared_ptr<RHI::D3D12RootSignature> pIndirecTerrainPatchNodesGenSignature;
         std::shared_ptr<RHI::D3D12PipelineState> pIndirecTerrainPatchNodesGenPSO;

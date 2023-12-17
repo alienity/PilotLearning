@@ -1,6 +1,7 @@
 #include "runtime/function/framework/component/light/light_component.h"
 
 #include "runtime/core/base/macro.h"
+#include "runtime/function/global/global_context.h"
 #include "runtime/core/math/moyu_math2.h"
 
 #include "runtime/resource/asset_manager/asset_manager.h"

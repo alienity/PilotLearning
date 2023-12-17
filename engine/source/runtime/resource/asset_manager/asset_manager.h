@@ -1,6 +1,7 @@
 #pragma once
 
 #include "runtime/core/base/macro.h"
+#include "runtime/function/global/global_context.h"
 #include "runtime/core/meta/json.h"
 
 #include <filesystem>

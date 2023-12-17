@@ -1,6 +1,7 @@
 #include "runtime/function/framework/object/object_id_allocator.h"
 
-#include "core/base/macro.h"
+#include "runtime/core/base/macro.h"
+#include "runtime/function/global/global_context.h"
 
 namespace MoYu
 {

@@ -1,6 +1,7 @@
 #include "runtime/function/framework/level/level.h"
 #include "runtime/engine.h"
 #include "runtime/core/base/macro.h"
+#include "runtime/function/global/global_context.h"
 #include "runtime/resource/asset_manager/asset_manager.h"
 #include "runtime/resource/res_type/common/level.h"
 #include "runtime/function/framework/object/object.h"
