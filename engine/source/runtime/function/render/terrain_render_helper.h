@@ -5,9 +5,7 @@
 
 namespace MoYu
 {
-    struct InternalTerrain;
     class RenderResource;
-    class Terrain3D;
 
     class TerrainRenderHelper
     {
@@ -21,15 +19,18 @@ namespace MoYu
                                  InternalTerrainMaterial* internalTerrainMaterial,
                                  RenderResource*          renderResource);
 
-        void InitTerrainBasicInfo();
-        void InitTerrainHeightAndNormalMap();
-        void InitTerrainBaseTextures();
-        void InitInternalTerrainClipmap();
+        void InitTerrainBasicInfo(RenderResource* renderResource);
+        void InitTerrainHeightAndNormalMap(RenderResource* renderResource);
+        void InitTerrainBaseTextures(RenderResource* renderResource);
+        void InitInternalTerrainClipmap(RenderResource* renderResource);
 
         uint32_t GetClipCount();
         void UpdateClipBuffer(HLSL::ClipmapIndexInstance* clipmapIdxInstance);
         void UpdateClipPatchScratchMesh(InternalScratchMesh* internalScratchMesh, GeoClipPatch geoPatch);
-        void UpdateClipPatchMesh(InternalMesh* internalMesh, InternalScratchMesh* internalScratchMesh);
+        void UpdateClipPatchMesh(RenderResource* renderResource, InternalMesh* internalMesh, InternalScratchMesh* internalScratchMesh);
+
+        // update terrain clipmap mesh data
+        void UpdateInternalTerrainClipmap(glm::float3 cameraPos, RenderResource* renderResource);
 
         float GetTerrainHeight(glm::float2 localXZ);
         glm::float3 GetTerrainNormal(glm::float2 localXZ);
@@ -38,9 +39,10 @@ namespace MoYu
         SceneTerrainRenderer* mCachedSceneTerrainRenderer;
         InternalTerrain* mInternalTerrain;
         InternalTerrainMaterial* mInternalTerrainMaterial;
-        RenderResource*  mRenderResource;
 
     private:
+        glm::float2 last_cam_xz;
+
         bool mIsHeightmapInit;
         bool mIsNaterialInit;
 

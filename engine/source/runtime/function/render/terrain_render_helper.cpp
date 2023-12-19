@@ -27,28 +27,28 @@ namespace MoYu
         {
             mTerrain3D = std::make_shared<Terrain3D>();
         }
-        mTerrain3D->snap(glm::float3(0, 0, 0));
+        mTerrain3D->snap(glm::float2(0, 0));
+        last_cam_xz = glm::float2(0, 0);
 
         mSceneTerrainRenderer = sceneTerrainRenderer;
         mCachedSceneTerrainRenderer = cachedSceneTerrainRenderer;
 
         mInternalTerrain = internalTerrain;
         mInternalTerrainMaterial = internalTerrainMaterial;
-        mRenderResource = renderResource;
 
-        InitTerrainBasicInfo();
-        InitInternalTerrainClipmap();
-        InitTerrainHeightAndNormalMap();
-        InitTerrainBaseTextures();
+        InitTerrainBasicInfo(renderResource);
+        InitInternalTerrainClipmap(renderResource);
+        InitTerrainHeightAndNormalMap(renderResource);
+        InitTerrainBaseTextures(renderResource);
 	}
 
-    void TerrainRenderHelper::InitTerrainBasicInfo()
+    void TerrainRenderHelper::InitTerrainBasicInfo(RenderResource* renderResource)
     {
         mInternalTerrain->terrain_size       = mSceneTerrainRenderer->m_scene_terrain_mesh.terrain_size;
         mInternalTerrain->terrain_max_height = mSceneTerrainRenderer->m_scene_terrain_mesh.terrian_max_height;
     }
 
-    void TerrainRenderHelper::InitTerrainHeightAndNormalMap()
+    void TerrainRenderHelper::InitTerrainHeightAndNormalMap(RenderResource* renderResource)
     {
         bool isHeightmapSame = mCachedSceneTerrainRenderer->m_scene_terrain_mesh == mSceneTerrainRenderer->m_scene_terrain_mesh;
         if (!isHeightmapSame || !mIsHeightmapInit)
@@ -60,22 +60,22 @@ namespace MoYu
 
             if (!isHeightmapSame || !mIsHeightmapInit)
             {
-                terrain_heightmap_scratch = mRenderResource->loadImage(
+                terrain_heightmap_scratch = renderResource->loadImage(
                     mSceneTerrainRenderer->m_scene_terrain_mesh.m_terrain_height_map.m_image_file);
             }
             if (isNormalmapSame || !mIsHeightmapInit)
             {
-                terrain_normalmap_scratch = mRenderResource->loadImage(
+                terrain_normalmap_scratch = renderResource->loadImage(
                     mSceneTerrainRenderer->m_scene_terrain_mesh.m_terrain_normal_map.m_image_file);
             }
 
             if (!isHeightmapSame || !isNormalmapSame || !mIsHeightmapInit)
             {
-                mRenderResource->startUploadBatch();
+                renderResource->startUploadBatch();
                 if (!isHeightmapSame || !mIsHeightmapInit)
                 {
                     SceneImage terrainSceneImage = mSceneTerrainRenderer->m_scene_terrain_mesh.m_terrain_height_map;
-                    terrain_heightmap = mRenderResource->createTex2D(terrain_heightmap_scratch,
+                    terrain_heightmap = renderResource->createTex2D(terrain_heightmap_scratch,
                                                                      DXGI_FORMAT::DXGI_FORMAT_R8G8B8A8_UNORM,
                                                                      terrainSceneImage.m_is_srgb,
                                                                      terrainSceneImage.m_auto_mips,
@@ -84,13 +84,13 @@ namespace MoYu
                 if (!isNormalmapSame || !mIsHeightmapInit)
                 {
                     SceneImage terrainSceneImage = mSceneTerrainRenderer->m_scene_terrain_mesh.m_terrain_normal_map;
-                    terrain_normalmap = mRenderResource->createTex2D(terrain_normalmap_scratch,
+                    terrain_normalmap = renderResource->createTex2D(terrain_normalmap_scratch,
                                                                      DXGI_FORMAT::DXGI_FORMAT_R8G8B8A8_UNORM,
                                                                      terrainSceneImage.m_is_srgb,
                                                                      terrainSceneImage.m_auto_mips,
                                                                      false);
                 }
-                mRenderResource->endUploadBatch();
+                renderResource->endUploadBatch();
             }
 
             mCachedSceneTerrainRenderer->m_scene_terrain_mesh = mSceneTerrainRenderer->m_scene_terrain_mesh;
@@ -106,13 +106,13 @@ namespace MoYu
 
     }
 
-    void TerrainRenderHelper::InitTerrainBaseTextures()
+    void TerrainRenderHelper::InitTerrainBaseTextures(RenderResource* renderResource)
     {
         bool isMaterialSame = mCachedSceneTerrainRenderer->m_terrain_material == mSceneTerrainRenderer->m_terrain_material;
 
         if (!isMaterialSame || !mIsNaterialInit)
         {
-            mRenderResource->startUploadBatch();
+            renderResource->startUploadBatch();
 
             MoYu::TerrainMaterial& m_terrain_material = mSceneTerrainRenderer->m_terrain_material;
 
@@ -128,8 +128,8 @@ namespace MoYu
                               mSceneTerrainRenderer->m_terrain_material.m_base_texs[i].m_albedo_file;
                 if (!isSame || !mIsNaterialInit)
                 {
-                    auto _tex = mRenderResource->SceneImageToTexture(baseTex.m_albedo_file.m_image);
-                    _internalBaseTex.albedo = _tex == nullptr ? mRenderResource->_Default2TexMap[BaseColor] : _tex;
+                    auto _tex = renderResource->SceneImageToTexture(baseTex.m_albedo_file.m_image);
+                    _internalBaseTex.albedo = _tex == nullptr ? renderResource->_Default2TexMap[BaseColor] : _tex;
                 }
                 _internalBaseTex.albedo_tilling = baseTex.m_albedo_file.m_tilling;
 
@@ -137,8 +137,8 @@ namespace MoYu
                          mSceneTerrainRenderer->m_terrain_material.m_base_texs[i].m_ao_roughness_metallic_file;
                 if (!isSame || !mIsNaterialInit)
                 {
-                    auto _tex = mRenderResource->SceneImageToTexture(baseTex.m_ao_roughness_metallic_file.m_image);
-                    _internalBaseTex.ao_roughness_metallic = _tex == nullptr ? mRenderResource->_Default2TexMap[Black] : _tex;
+                    auto _tex = renderResource->SceneImageToTexture(baseTex.m_ao_roughness_metallic_file.m_image);
+                    _internalBaseTex.ao_roughness_metallic = _tex == nullptr ? renderResource->_Default2TexMap[Black] : _tex;
                 }
                 _internalBaseTex.ao_roughness_metallic_tilling = baseTex.m_ao_roughness_metallic_file.m_tilling;
 
@@ -146,8 +146,8 @@ namespace MoYu
                          mSceneTerrainRenderer->m_terrain_material.m_base_texs[i].m_displacement_file;
                 if (!isSame || !mIsNaterialInit)
                 {
-                    auto _tex = mRenderResource->SceneImageToTexture(baseTex.m_displacement_file.m_image);
-                    _internalBaseTex.displacement = _tex == nullptr ? mRenderResource->_Default2TexMap[BaseColor] : _tex;
+                    auto _tex = renderResource->SceneImageToTexture(baseTex.m_displacement_file.m_image);
+                    _internalBaseTex.displacement = _tex == nullptr ? renderResource->_Default2TexMap[BaseColor] : _tex;
                 }
                 _internalBaseTex.displacement_tilling = baseTex.m_displacement_file.m_tilling;
 
@@ -155,13 +155,13 @@ namespace MoYu
                          mSceneTerrainRenderer->m_terrain_material.m_base_texs[i].m_normal_file;
                 if (!isSame || !mIsNaterialInit)
                 {
-                    auto _tex = mRenderResource->SceneImageToTexture(baseTex.m_normal_file.m_image);
-                    _internalBaseTex.normal = _tex == nullptr ? mRenderResource->_Default2TexMap[Green] : _tex;
+                    auto _tex = renderResource->SceneImageToTexture(baseTex.m_normal_file.m_image);
+                    _internalBaseTex.normal = _tex == nullptr ? renderResource->_Default2TexMap[Green] : _tex;
                 }
                 _internalBaseTex.normal_tilling = baseTex.m_normal_file.m_tilling;
             }
 
-            mRenderResource->endUploadBatch();
+            renderResource->endUploadBatch();
 
             mCachedSceneTerrainRenderer->m_terrain_material == mSceneTerrainRenderer->m_terrain_material;
 
@@ -176,7 +176,7 @@ namespace MoYu
 
     }
 
-    void TerrainRenderHelper::InitInternalTerrainClipmap()
+    void TerrainRenderHelper::InitInternalTerrainClipmap(RenderResource* renderResource)
     {
         mInternalTerrain->mesh_size = mTerrain3D->get_mesh_size();
         mInternalTerrain->mesh_lods = mTerrain3D->get_mesh_lods();
@@ -228,7 +228,7 @@ namespace MoYu
             std::shared_ptr<RHI::D3D12Buffer> _clip_buffer = _clipmapInstanceBuffer->clip_buffer;
             if (_clip_buffer == nullptr)
             {
-                _clip_buffer = mRenderResource->createDynamicBuffer(_clip_scratch_buffer);
+                _clip_buffer = renderResource->createDynamicBuffer(_clip_scratch_buffer);
                 _clipmapInstanceBuffer->clip_buffer = _clip_buffer;
             }
             else
@@ -239,39 +239,44 @@ namespace MoYu
             auto _clipPatches = mTerrain3D->get_clip_patch();
             for (int i = 0; i < 5; i++)
             {
-                UpdateClipPatchMesh(&_terrain_clipmap->clipmap_mesh[i],
+                UpdateClipPatchMesh(renderResource,
+                                    &_terrain_clipmap->clipmap_mesh[i],
                                     &mInternalTerrain->terrain_scratch_clipmap.clipmap_scratch_mesh[i]);
             }
         }
         //********************************************************************************
     }
 
-    void TerrainRenderHelper::UpdateClipPatchMesh(InternalMesh* internalMesh, InternalScratchMesh* internalScratchMesh)
+    void TerrainRenderHelper::UpdateClipPatchMesh(RenderResource* renderResource, InternalMesh* internalMesh, InternalScratchMesh* internalScratchMesh)
     {
+        uint32_t vertex_buffer_stride = sizeof(D3D12MeshVertexPosition);
+        uint32_t vertex_buffer_size = internalScratchMesh->scratch_vertex_buffer.vertex_buffer->GetBufferSize();
         if (internalMesh->vertex_buffer.vertex_buffer == nullptr)
         {
+            void* vertex_buffer_data = internalScratchMesh->scratch_vertex_buffer.vertex_buffer->GetBufferPointer();
             internalMesh->vertex_buffer.vertex_buffer =
-                mRenderResource->createDynamicBuffer(internalScratchMesh->scratch_vertex_buffer.vertex_buffer);
+                renderResource->createDynamicBuffer(vertex_buffer_data, vertex_buffer_size, vertex_buffer_stride);
         }
         else
         {
-            uint32_t vertex_buffer_size = internalScratchMesh->scratch_vertex_buffer.vertex_buffer->GetBufferSize() *
-                                          sizeof(D3D12MeshVertexPosition);
             memcpy(internalMesh->vertex_buffer.vertex_buffer->GetCpuVirtualAddress(),
                    internalScratchMesh->scratch_vertex_buffer.vertex_buffer->GetBufferPointer(),
                    vertex_buffer_size);
         }
         internalMesh->vertex_buffer.vertex_count = internalScratchMesh->scratch_vertex_buffer.vertex_count;
+        internalMesh->vertex_buffer.input_element_definition = internalScratchMesh->scratch_vertex_buffer.input_element_definition;
 
+
+        uint32_t index_buffer_stride = sizeof(std::uint32_t);
+        uint32_t index_buffer_size = internalScratchMesh->scratch_index_buffer.index_buffer->GetBufferSize();
         if (internalMesh->index_buffer.index_buffer == nullptr)
         {
+            void* index_buffer_data = internalScratchMesh->scratch_index_buffer.index_buffer->GetBufferPointer();
             internalMesh->index_buffer.index_buffer =
-                mRenderResource->createDynamicBuffer(internalScratchMesh->scratch_index_buffer.index_buffer);
+                renderResource->createDynamicBuffer(index_buffer_data, index_buffer_size, index_buffer_stride);
         }
         else
         {
-            uint32_t index_buffer_size =
-                internalScratchMesh->scratch_index_buffer.index_buffer->GetBufferSize() * sizeof(std::uint32_t);
             memcpy(internalMesh->index_buffer.index_buffer->GetCpuVirtualAddress(),
                    internalScratchMesh->scratch_index_buffer.index_buffer->GetBufferPointer(),
                    index_buffer_size);
@@ -304,6 +309,17 @@ namespace MoYu
         }
         scratch_index_buffer->index_count  = geoPatch.indices.size();
         memcpy(scratch_index_buffer->index_buffer->GetBufferPointer(), geoPatch.indices.data(), index_buffer_size);
+    }
+
+    void TerrainRenderHelper::UpdateInternalTerrainClipmap(glm::float3 cameraPos, RenderResource* renderResource)
+    {
+        glm::float2 cameraXZ = glm::float2(cameraPos.x, cameraPos.z);
+        if (glm::length(cameraXZ - last_cam_xz) > 1.0f)
+        {
+            mTerrain3D->snap(cameraXZ);
+            InitInternalTerrainClipmap(renderResource);
+            last_cam_xz = cameraXZ;
+        }
     }
 
     uint32_t TerrainRenderHelper::GetClipCount()

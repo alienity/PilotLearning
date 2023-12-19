@@ -64,6 +64,8 @@ std::vector<GeoClipPatch> GeoClipMap::generate(int p_size, int p_levels)
 			}
 		}
 
+		std::reverse(indices.begin(), indices.end());
+
 		aabb = AxisAlignedBox(glm::float3(0, 0, 0), glm::float3(PATCH_VERT_RESOLUTION, 0.1, PATCH_VERT_RESOLUTION));
         geoClipPatch_mesh[MeshType::TILE] = (GeoClipPatch {aabb, vertices, indices});
 	}
@@ -146,6 +148,8 @@ std::vector<GeoClipPatch> GeoClipMap::generate(int p_size, int p_levels)
 			}
 		}
 
+		std::reverse(indices.begin(), indices.end());
+
 		geoClipPatch_mesh[MeshType::FILLER] = (GeoClipPatch {aabb, vertices, indices});
 	}
 
@@ -204,6 +208,8 @@ std::vector<GeoClipPatch> GeoClipMap::generate(int p_size, int p_levels)
 			indices[n++] = start_of_horizontal + (i + 0) * 2 + 1;
 			indices[n++] = start_of_horizontal + (i + 1) * 2 + 0;
 		}
+
+		std::reverse(indices.begin(), indices.end());
 
 		geoClipPatch_mesh[MeshType::TRIM] = (GeoClipPatch {aabb, vertices, indices});
 	}
@@ -275,6 +281,8 @@ std::vector<GeoClipPatch> GeoClipMap::generate(int p_size, int p_levels)
 			indices[n++] = start_of_vertical + tl;
 		}
 
+		std::reverse(indices.begin(), indices.end());
+
 		geoClipPatch_mesh[MeshType::CROSS] = (GeoClipPatch {aabb, vertices, indices});
 	}
 
@@ -316,6 +324,8 @@ std::vector<GeoClipPatch> GeoClipMap::generate(int p_size, int p_levels)
 		}
 
 		indices[indices.size() - 1] = 0;
+
+		std::reverse(indices.begin(), indices.end());
 
 		geoClipPatch_mesh[MeshType::SEAM] = (GeoClipPatch {aabb, vertices, indices});
 	}

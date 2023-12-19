@@ -188,7 +188,7 @@
             "m_id": 15,
             "m_instanced_components": [
                 {
-                    "m_component_json_data": "{\n    \"m_position\": {\n        \"x\": -239.6999969482422,\n        \"y\": 1.100000023841858,\n        \"z\": -140.3000030517578\n    },\n    \"m_rotation\": {\n        \"w\": 1.0,\n        \"x\": 0.0,\n        \"y\": 0.0,\n        \"z\": 0.0\n    },\n    \"m_scale\": {\n        \"x\": 1.0,\n        \"y\": 1.0,\n        \"z\": 1.0\n    }\n}",
+                    "m_component_json_data": "{\n    \"m_position\": {\n        \"x\": 0.0,\n        \"y\": 2.4000000953674316,\n        \"z\": 0.0\n    },\n    \"m_rotation\": {\n        \"w\": 1.0,\n        \"x\": 0.0,\n        \"y\": 0.0,\n        \"z\": 0.0\n    },\n    \"m_scale\": {\n        \"x\": 1.0,\n        \"y\": 1.0,\n        \"z\": 1.0\n    }\n}",
                     "m_component_name": "TransformComponent",
                     "m_type_name": "TransformComponent"
                 },

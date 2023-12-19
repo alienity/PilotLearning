@@ -110,12 +110,12 @@ namespace MoYu
         }
 
         {
-            RHI::D3D12InputLayout InputLayout = MoYu::D3D12TerrainPatch::InputLayout;
+            //RHI::D3D12InputLayout InputLayout = MoYu::D3D12TerrainPatch::InputLayout;
+            RHI::D3D12InputLayout InputLayout = MoYu::D3D12MeshVertexPosition::InputLayout;
 
             RHIRasterizerState rasterizerState = RHIRasterizerState();
             //rasterizerState.FillMode = RHI_FILL_MODE::Wireframe;
             rasterizerState.CullMode = RHI_CULL_MODE::Back;
-
 
             RHIDepthStencilState DepthStencilState;
             DepthStencilState.DepthEnable = true;
@@ -278,7 +278,7 @@ namespace MoYu
             graphicContext->ExecuteIndirect(pIndirectTerrainGBufferCommandSignature.get(),
                                             pDrawCallCommandSigBuffer,
                                             0,
-                                            5,//clipmapPatchNumber,
+                                            clipmapPatchNumber,
                                             nullptr,
                                             0);
 

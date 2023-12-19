@@ -8,6 +8,9 @@
 #include "runtime/resource/basic_geometry/icosphere_mesh.h"
 #include "runtime/resource/basic_geometry/cube_mesh.h"
 
+#include "runtime/function/render/render_helper.h"
+#include "runtime/function/render/terrain_render_helper.h"
+
 namespace MoYu
 {
     DeferredRenderer::DeferredRenderer(RendererInitParams& renderInitParams) :
@@ -264,6 +267,8 @@ namespace MoYu
 
     void DeferredRenderer::PreparePassData(std::shared_ptr<RenderResource> render_resource)
     {
+        //render_resource->terrainHelper->UpdateInternalTerrainClipmap(RenderPass::m_render_camera->position(), render_resource.get());
+
         render_resource->updateFrameUniforms(RenderPass::m_render_scene, RenderPass::m_render_camera);
 
         mIndirectCullPass->prepareMeshData(render_resource);
@@ -575,24 +580,24 @@ namespace MoYu
         mDisplayIntputParams.inputRTColorHandle   = mPostprocessOutputParams.outputColorHandle;
         //mDisplayIntputParams.inputRTColorHandle   = mTerrainGBufferOutput.albedoHandle;
         //mDisplayIntputParams.inputRTColorHandle      = mAOOutput.outputAOHandle;
-        //mDisplayOutputParams.renderTargetColorHandle = renderTargetColorHandle;
-        mDisplayOutputParams.renderTargetColorHandle = backBufColorHandle;
+        mDisplayOutputParams.renderTargetColorHandle = renderTargetColorHandle;
+        //mDisplayOutputParams.renderTargetColorHandle = backBufColorHandle;
         mDisplayPass->update(graph, mDisplayIntputParams, mDisplayOutputParams);
         //=================================================================================
         
-        ////=================================================================================
-        //if (mUIPass != nullptr)
-        //{
-        //    UIPass::UIInputParameters mUIIntputParams;
-        //    UIPass::UIOutputParameters mUIOutputParams;
+        //=================================================================================
+        if (mUIPass != nullptr)
+        {
+            UIPass::UIInputParameters mUIIntputParams;
+            UIPass::UIOutputParameters mUIOutputParams;
 
-        //    //mUIIntputParams.renderTargetColorHandle = renderTargetColorHandle;
-        //    mUIIntputParams.renderTargetColorHandle = mDisplayOutputParams.renderTargetColorHandle;
-        //    mUIOutputParams.backBufColorHandle = backBufColorHandle;
-        //    
-        //    mUIPass->update(graph, mUIIntputParams, mUIOutputParams);
-        //}
-        ////=================================================================================
+            //mUIIntputParams.renderTargetColorHandle = renderTargetColorHandle;
+            mUIIntputParams.renderTargetColorHandle = mDisplayOutputParams.renderTargetColorHandle;
+            mUIOutputParams.backBufColorHandle = backBufColorHandle;
+            
+            mUIPass->update(graph, mUIIntputParams, mUIOutputParams);
+        }
+        //=================================================================================
 
         graph.Execute(context);
 

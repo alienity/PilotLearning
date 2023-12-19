@@ -40,8 +40,6 @@ struct MaterialTillingStruct
 struct VertexInput
 {
     float3 position : POSITION;
-
-    // uint instanceID : SV_InstanceID;
 };
 
 struct PSOutputGBuffer
@@ -88,20 +86,25 @@ VaringStruct VSMain(VertexInput input)
 
     float3 localPosition = input.position;
     localPosition = mul(tLocalTransform, float4(localPosition, 1)).xyz;
+    float3 worldPosition = mul(localToWorldMatrix, float4(localPosition, 1)).xyz;
     
-    float2 terrainUV = (localPosition.xz) / float2(terrainSize, terrainSize);
+    float2 terrainUV = (worldPosition.xz) / float2(terrainSize, terrainSize);
     float curHeight = terrainHeightmap.SampleLevel(defaultSampler, terrainUV, 0).b;
 
-    localPosition.y = curHeight * terrainMaxHeight;
+    worldPosition.y += curHeight * terrainMaxHeight;
 
     VaringStruct output;
-    // output.ws_position = mul(localToWorldMatrix, float4(localPosition, 1.0f));
-    output.ws_position = float4(localPosition, 1.0f);
+    output.ws_position = float4(worldPosition, 1.0f);
     output.cs_pos = mul(projectionViewMatrix, output.ws_position);
 
     float4x4 prevLocalToWorldMatrix = mFrameUniforms.terrainUniform.prevLocal2WorldMatrix;
-    // float4 prev_ws_position = mul(prevLocalToWorldMatrix, float4(localPosition, 1.0f));
-    float4 prev_ws_position = float4(localPosition, 1.0f);
+    float4 prev_ws_position = mul(prevLocalToWorldMatrix, float4(localPosition, 1.0f));
+
+    float2 prevTerrainUV = (prev_ws_position.xz) / float2(terrainSize, terrainSize);
+    float prevHeight = terrainHeightmap.SampleLevel(defaultSampler, prevTerrainUV, 0).b;
+
+    prev_ws_position.y += prevHeight * terrainMaxHeight;
+
     output.cs_xy_curr = output.cs_pos.xyw;
     output.cs_xy_prev = mul(projectionViewMatrixPrev, prev_ws_position).xyw;
 
@@ -135,7 +138,7 @@ PSOutputGBuffer PSMain(VaringStruct varingStruct)
 
     float3 localNormal = terrainNormalmap.SampleLevel(defaultSampler, terrainUV, 0).rgb;
     localNormal = normalize(mul(normalMat, (localNormal * 2 - 1)));
-    localNormal.x = -localNormal.x;
+    localNormal.z = -localNormal.z;
     float3 localTangent = normalize(mul(normalMat, float3(1, 0, 0)));
     float3 localBitangent = cross(localNormal, localTangent);
     localTangent = cross(localBitangent, localNormal);

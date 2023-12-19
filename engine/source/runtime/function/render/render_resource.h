@@ -2,6 +2,7 @@
 
 #include "runtime/function/render/render_resource_loader.h"
 #include "runtime/function/render/render_common.h"
+#include "runtime/function/render/terrain_render_helper.h"
 
 #include <array>
 #include <cstdint>
@@ -13,8 +14,7 @@ namespace MoYu
 {
     class RenderCamera;
     class RenderScene;
-    class TerrainRenderHelper;
-
+    
     enum DefaultTexType
     {
         White,

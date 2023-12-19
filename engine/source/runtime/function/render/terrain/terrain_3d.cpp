@@ -124,9 +124,11 @@ std::vector<GeoClipPatch> Terrain3D::get_clip_patch() const
 /**
  * Centers the terrain and LODs on a provided position. Y height is ignored.
  */
-void Terrain3D::snap(glm::float3 p_cam_pos) {
-	p_cam_pos.y = 0;
-    LOG(fmt::format("Snapping terrain to: ({},{},{})", p_cam_pos.x, p_cam_pos.y, p_cam_pos.z));
+void Terrain3D::snap(glm::float2 p_cam_xz)
+{
+    LOG(fmt::format("Snapping terrain to: ({},{})", p_cam_xz.x, p_cam_xz.y));
+
+	glm::float3 p_cam_pos = glm::float3(p_cam_xz.x, 0, p_cam_xz.y);
 
 	// Position cross
 	{

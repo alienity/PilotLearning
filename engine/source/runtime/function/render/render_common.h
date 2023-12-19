@@ -23,7 +23,7 @@ namespace MoYu
 {
 
     //========================================================================
-    // ׼���ϴ���Buffer��Image����
+    // ScratchBuffer ScratchImage
     //========================================================================
 
     typedef DirectX::Blob         MoYuScratchBuffer;
@@ -32,7 +32,7 @@ namespace MoYu
     typedef DirectX::ScratchImage MoYuScratchImage;
 
     //************************************************************
-    // InputLayout�������
+    // InputLayout
     //************************************************************
 
     enum InputDefinition : uint64_t
@@ -120,7 +120,7 @@ namespace MoYu
     };
 
     //************************************************************
-    // ����TerrainPatchCluster
+    // TerrainPatchCluster
     //************************************************************
     struct D3D12TerrainPatch
     {
@@ -141,7 +141,7 @@ namespace MoYu
     };
 
     //************************************************************
-    // ������Ӧ������Ⱦ����
+    // Scene
     //************************************************************
 
     enum CameraProjType
@@ -196,7 +196,7 @@ namespace MoYu
         bool m_blend;
         bool m_double_sided;
 
-        // ���е�ֵ�������ڵ�uniformbuffer��
+        // 
         /*
         glm::float4 m_base_color_factor;
         float   m_metallic_factor;
@@ -555,7 +555,6 @@ namespace MoYu
 
     struct MaterialRes;
 
-    // MaterialRes�ǿ��Դ����в��ʵĶ��󣬶�ScenePBRMaterial��PBR��������
     MaterialRes ToMaterialRes(const ScenePBRMaterial& pbrMaterial, const std::string shaderName);
     ScenePBRMaterial ToPBRMaterial(const MaterialRes& materialRes);
 
@@ -692,7 +691,7 @@ namespace MoYu
     };
 
     //========================================================================
-    // ��������
+    // 
     //========================================================================
 
 

@@ -7,7 +7,7 @@
 #define __FLT_MAX__ FLT_MAX
 #endif
 
-#include "runtime/function/render/render_camera.h"
+#include "runtime/core/math/moyu_math2.h"
 #include "runtime/function/render/terrain/geoclipmap.h"
 
 namespace MoYu
@@ -59,7 +59,7 @@ namespace MoYu
         std::vector<GeoClipPatch> get_clip_patch() const;
 
 		// Terrain methods
-		void snap(glm::float3 p_cam_pos);
+		void snap(glm::float2 p_cam_xz);
 	};
 
 } // namespace MoYu

@@ -173,8 +173,9 @@ namespace MoYu
         _terrainUniform.terrainMaxHeight = 1024;
         if (render_scene->m_terrain_renderers.size() != 0)
         {
+            _terrainUniform.prevLocal2WorldMatrix = _frameUniforms->terrainUniform.local2WorldMatrix;
             _terrainUniform.local2WorldMatrix = render_scene->m_terrain_renderers[0].internalTerrainRenderer.model_matrix;
-            _terrainUniform.prevLocal2WorldMatrix = render_scene->m_terrain_renderers[0].internalTerrainRenderer.prev_model_matrix;
+            //_terrainUniform.prevLocal2WorldMatrix = render_scene->m_terrain_renderers[0].internalTerrainRenderer.prev_model_matrix;
         }
         else
         {
@@ -320,13 +321,11 @@ namespace MoYu
         {
             internal_terrain_renderer.m_identifier = scene_terrain_renderer.m_identifier;
 
-            InternalTerrain internal_terrain {};
-            InternalTerrainMaterial internal_material {};
-            terrainHelper->InitTerrainRenderer(
-                &scene_terrain_renderer, &cached_terrain_renderer, &internal_terrain, &internal_material, this);
-
-            internal_terrain_renderer.ref_terrain = internal_terrain;
-            internal_terrain_renderer.ref_material = internal_material;
+            terrainHelper->InitTerrainRenderer(&scene_terrain_renderer,
+                                               &cached_terrain_renderer,
+                                               &internal_terrain_renderer.ref_terrain,
+                                               &internal_terrain_renderer.ref_material,
+                                               this);
         }
 
         cached_terrain_renderer = scene_terrain_renderer;
