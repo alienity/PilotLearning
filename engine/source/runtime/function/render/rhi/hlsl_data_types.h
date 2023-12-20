@@ -20,7 +20,7 @@ namespace HLSL
     static constexpr size_t LightLimit    = 32;
     static constexpr size_t MeshLimit     = 2048;
 
-    static constexpr size_t TerrainPatchMeshLimit = 256;
+    static constexpr uint32_t GeoClipMeshType = 5;
 
     static const uint32_t m_point_light_shadow_map_dimension       = 2048;
     static const uint32_t m_directional_light_shadow_map_dimension = 4096;
