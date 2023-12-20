@@ -298,17 +298,22 @@ namespace MoYu
                 break;
             }
         }
+        if (m_terrain_render_helper == nullptr)
+        {
+            m_terrain_render_helper = std::make_shared<TerrainRenderHelper>();
+        }
         if (mesh_finded == -1)
         {
             CachedTerrainRenderer cachedMeshRenderer;
-            m_render_resource->updateInternalTerrainRenderer(sceneTerrainRenderer,
-                                                             cachedMeshRenderer.cachedSceneTerrainRenderer,
-                                                             cachedMeshRenderer.internalTerrainRenderer,
-                                                             model_matrix,
-                                                             model_matrix_inverse,
-                                                             model_matrix,
-                                                             model_matrix_inverse,
-                                                             false);
+            m_terrain_render_helper->updateInternalTerrainRenderer(m_render_resource.get(),
+                                                                   sceneTerrainRenderer,
+                                                                   cachedMeshRenderer.cachedSceneTerrainRenderer,
+                                                                   cachedMeshRenderer.internalTerrainRenderer,
+                                                                   model_matrix,
+                                                                   model_matrix_inverse,
+                                                                   model_matrix,
+                                                                   model_matrix_inverse,
+                                                                   false);
 
             _mesh_renderers.push_back(cachedMeshRenderer);
         }
@@ -317,14 +322,16 @@ namespace MoYu
             glm::mat4x4 prev_model_matrix = _mesh_renderers[mesh_finded].internalTerrainRenderer.model_matrix;
             glm::mat4x4 prev_model_matrix_inverse = _mesh_renderers[mesh_finded].internalTerrainRenderer.model_matrix_inverse;
 
-            m_render_resource->updateInternalTerrainRenderer(sceneTerrainRenderer,
-                                                             _mesh_renderers[mesh_finded].cachedSceneTerrainRenderer,
-                                                             _mesh_renderers[mesh_finded].internalTerrainRenderer,
-                                                             model_matrix,
-                                                             model_matrix_inverse,
-                                                             prev_model_matrix,
-                                                             prev_model_matrix_inverse,
-                                                             true);
+            m_terrain_render_helper->updateInternalTerrainRenderer(
+                m_render_resource.get(),
+                sceneTerrainRenderer,
+                _mesh_renderers[mesh_finded].cachedSceneTerrainRenderer,
+                _mesh_renderers[mesh_finded].internalTerrainRenderer,
+                model_matrix,
+                model_matrix_inverse,
+                prev_model_matrix,
+                prev_model_matrix_inverse,
+                true);
         }
     }
 
@@ -393,4 +400,15 @@ namespace MoYu
             }
         }
     }
+
+    void RenderScene::updateTerrainClipmap(glm::float3 cameraPos, RenderResource* m_render_resource)
+    {
+        if (!m_terrain_renderers.empty())
+        {
+            InternalTerrain* internalTerrain = &m_terrain_renderers[0].internalTerrainRenderer.ref_terrain;
+
+            m_terrain_render_helper->UpdateInternalTerrainClipmap(internalTerrain, cameraPos, m_render_resource);
+        }
+    }
+
 }

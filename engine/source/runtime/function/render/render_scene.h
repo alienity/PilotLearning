@@ -4,6 +4,7 @@
 
 #include "runtime/function/render/render_common.h"
 #include "runtime/function/render/render_guid_allocator.h"
+#include "runtime/function/render/terrain_render_helper.h"
 
 #include <vector>
 
@@ -58,5 +59,11 @@ namespace MoYu
         void removeMeshRenderer(SceneMeshRenderer sceneMeshRenderer);
         void removeCamera(SceneCamera sceneCamera);
         void removeTerrainRenderer(SceneTerrainRenderer sceneTerrainRenderer);
+
+        // update terrain mesh data
+        void updateTerrainClipmap(glm::float3 cameraPos, RenderResource* m_render_resource);
+
+    private:
+        std::shared_ptr<TerrainRenderHelper> m_terrain_render_helper;
     };
 } // namespace MoYu

@@ -29,12 +29,11 @@ namespace MoYu
 {
     RenderResource::RenderResource()
     {
-        terrainHelper = std::make_shared<TerrainRenderHelper>();
+        
     }
 
     RenderResource::~RenderResource()
     {
-        terrainHelper = nullptr;
         ReleaseAllTextures();
     }
 
@@ -295,40 +294,6 @@ namespace MoYu
         updateInternalMaterial(scene_mesh_renderer.m_material, cached_mesh_renderer.m_material, internal_mesh_renderer.ref_material, has_initialized);
 
         cached_mesh_renderer = scene_mesh_renderer;
-
-        return true;
-    }
-
-    bool RenderResource::updateInternalTerrainRenderer(
-        SceneTerrainRenderer scene_terrain_renderer, 
-        SceneTerrainRenderer& cached_terrain_renderer, 
-        InternalTerrainRenderer& internal_terrain_renderer, 
-        glm::float4x4 model_matrix,
-        glm::float4x4 model_matrix_inv,
-        glm::float4x4 prev_model_matrix,
-        glm::float4x4 prev_model_matrix_inv,
-        bool has_initialized)
-    {
-        internal_terrain_renderer.model_matrix = model_matrix;
-        internal_terrain_renderer.model_matrix_inverse = model_matrix_inv;
-        internal_terrain_renderer.prev_model_matrix = prev_model_matrix;
-        internal_terrain_renderer.prev_model_matrix_inverse = prev_model_matrix_inv;
-
-        bool is_terrain_same = scene_terrain_renderer.m_scene_terrain_mesh == cached_terrain_renderer.m_scene_terrain_mesh;
-        is_terrain_same &= scene_terrain_renderer.m_terrain_material == cached_terrain_renderer.m_terrain_material;
-
-        if (!is_terrain_same || !has_initialized)
-        {
-            internal_terrain_renderer.m_identifier = scene_terrain_renderer.m_identifier;
-
-            terrainHelper->InitTerrainRenderer(&scene_terrain_renderer,
-                                               &cached_terrain_renderer,
-                                               &internal_terrain_renderer.ref_terrain,
-                                               &internal_terrain_renderer.ref_material,
-                                               this);
-        }
-
-        cached_terrain_renderer = scene_terrain_renderer;
 
         return true;
     }

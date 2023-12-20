@@ -2,7 +2,6 @@
 
 #include "runtime/function/render/render_resource_loader.h"
 #include "runtime/function/render/render_common.h"
-#include "runtime/function/render/terrain_render_helper.h"
 
 #include <array>
 #include <cstdint>
@@ -41,15 +40,6 @@ namespace MoYu
         bool updateInternalMesh(SceneMesh scene_mesh, SceneMesh& cached_mesh, InternalMesh& internal_mesh, bool has_initialized = false);
         bool updateInternalMeshRenderer(SceneMeshRenderer scene_mesh_renderer, 
             SceneMeshRenderer& cached_mesh_renderer, InternalMeshRenderer& internal_mesh_renderer, bool has_initialized = false);
-        bool updateInternalTerrainRenderer(
-            SceneTerrainRenderer scene_terrain_renderer, 
-            SceneTerrainRenderer& cached_terrain_renderer, 
-            InternalTerrainRenderer& internal_terrain_renderer, 
-            glm::float4x4 model_matrix,
-            glm::float4x4 model_matrix_inv,
-            glm::float4x4 prev_model_matrix,
-            glm::float4x4 prev_model_matrix_inv,
-            bool has_initialized = false);
 
         // bindless objects
         HLSL::FrameUniforms m_FrameUniforms;
@@ -65,8 +55,6 @@ namespace MoYu
         std::map<SceneImage, std::shared_ptr<RHI::D3D12Texture>> _Image2TexMap;
         std::map<DefaultTexType, std::shared_ptr<RHI::D3D12Texture>> _Default2TexMap;
 
-        std::shared_ptr<TerrainRenderHelper> terrainHelper;
-        
         std::shared_ptr<RHI::D3D12Buffer> createDynamicBuffer(void* buffer_data, uint32_t buffer_size, uint32_t buffer_stride);
         std::shared_ptr<RHI::D3D12Buffer> createDynamicBuffer(std::shared_ptr<MoYu::MoYuScratchBuffer>& buffer_data);
         
