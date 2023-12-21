@@ -339,10 +339,35 @@ struct FrameUniforms
 // Terrain
 // =======================================
 
-struct ClipmapIndexInstance
+struct ClipmapTransform
 {
     float4x4 transform;
     int mesh_type;
+};
+
+struct ClipmapMeshCount
+{
+    uint tile_count;
+    uint filler_count;
+    uint trim_count;
+    uint cross_cunt;
+    uint seam_count;
+    uint total_count;
+};
+
+struct ClipMeshCommandSigParams
+{
+    D3D12_VERTEX_BUFFER_VIEW     VertexBuffer;
+    D3D12_INDEX_BUFFER_VIEW      IndexBuffer;
+    D3D12_DRAW_INDEXED_ARGUMENTS DrawIndexedArguments;
+};
+
+struct ToDrawCommandSignatureParams
+{
+    uint ClipIndex;
+    D3D12_VERTEX_BUFFER_VIEW     VertexBuffer;
+    D3D12_INDEX_BUFFER_VIEW      IndexBuffer;
+    D3D12_DRAW_INDEXED_ARGUMENTS DrawIndexedArguments;
 };
 
 struct TerrainPatchNode

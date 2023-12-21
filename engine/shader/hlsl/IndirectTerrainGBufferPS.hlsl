@@ -60,7 +60,7 @@ VaringStruct VSMain(VertexInput input)
     Texture2D<float4> terrainHeightmap = ResourceDescriptorHeap[terrainHeightmapIndex];
     Texture2D<float4> terrainNormalmap = ResourceDescriptorHeap[terrainNormalmapIndex];
 
-    StructuredBuffer<ClipmapIndexInstance> clipmapTransformBuffers = ResourceDescriptorHeap[transformBufferIndex];
+    StructuredBuffer<ClipmapTransform> clipmapTransformBuffers = ResourceDescriptorHeap[transformBufferIndex];
 
     StructuredBuffer<MaterialIndexStruct> mMaterialIndexBuffers = ResourceDescriptorHeap[terrainMatIndexBufferIndex];
     StructuredBuffer<MaterialTillingStruct> mMaterialTillingBuffers = ResourceDescriptorHeap[terrainMatTillingBufferIndex];
@@ -68,7 +68,7 @@ VaringStruct VSMain(VertexInput input)
     Texture2D<float3> displacementTexture = ResourceDescriptorHeap[mMaterialIndexBuffers[0].displacementIndex];
     float2 displacementTilling = mMaterialTillingBuffers[0].displacementTilling * TillingScale;    
 
-    ClipmapIndexInstance clipTransform = clipmapTransformBuffers[clipmapIndex];
+    ClipmapTransform clipTransform = clipmapTransformBuffers[clipmapIndex];
 
     float4x4 tLocalTransform = clipTransform.transform;
     // int tMeshType = clipTransform.mesh_type;

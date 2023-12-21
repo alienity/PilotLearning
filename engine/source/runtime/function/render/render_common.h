@@ -255,27 +255,30 @@ namespace MoYu
         InternalScratchVertexBuffer scratch_vertex_buffer;
     };
 
-    struct ClipmapInstanceScratchBuffer
+    struct ClipmapTransformScratchBuffer
     {
-        int clip_index_counts;
-        std::shared_ptr<MoYuScratchBuffer> clip_buffer; // 存ClipmapIndexInstance数组
+        int clip_transform_counts;
+        std::shared_ptr<MoYuScratchBuffer> clip_transform_buffer; // ClipmapTransform array
+        int clip_mesh_count[5]; // GeoClipMap::MeshType 5 types
     };
 
     struct InternalScratchClipmap
     {
-        ClipmapInstanceScratchBuffer instance_scratch_buffer;
+        ClipmapTransformScratchBuffer instance_scratch_buffer;
         InternalScratchMesh clipmap_scratch_mesh[5];
     };
 
-    struct ClipmapInstanceBuffer
+    struct ClipmapTransformBuffer
     {
-        int clip_index_counts;
-        std::shared_ptr<RHI::D3D12Buffer> clip_buffer; // 存ClipmapIndexInstance数组
+        int clip_transform_counts;
+        std::shared_ptr<RHI::D3D12Buffer> clip_transform_buffer; // ClipmapTransform array
+        std::shared_ptr<RHI::D3D12Buffer> clip_mesh_count_buffer; // GeoClipMap::MeshType type count
+        std::shared_ptr<RHI::D3D12Buffer> clip_base_mesh_command_buffer; // GeoClipMap::MeshType size, struct element is HLSL::ClipMeshCommandSigParams
     };
 
     struct InternalClipmap
     {
-        ClipmapInstanceBuffer instance_buffer;
+        ClipmapTransformBuffer instance_buffer;
         InternalMesh clipmap_mesh[5];
     };
 

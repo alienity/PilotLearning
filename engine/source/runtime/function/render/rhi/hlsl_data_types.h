@@ -323,12 +323,36 @@ namespace HLSL
     const std::uint64_t totalIndexCommandBufferInBytes = HLSL::MeshLimit * sizeof(HLSL::BitonicSortCommandSigParams);
 
 
-    struct ClipmapIndexInstance
+    struct ClipmapTransform
     {
         glm::float4x4 transform;
         int mesh_type;
     };
 
+    struct ClipmapMeshCount
+    {
+        int tile_count;
+        int filler_count;
+        int trim_count;
+        int seam_count;
+        int cross_cunt;
+        int total_count;
+    };
+
+    struct ClipMeshCommandSigParams
+    {
+        D3D12_VERTEX_BUFFER_VIEW     VertexBuffer;
+        D3D12_INDEX_BUFFER_VIEW      IndexBuffer;
+        D3D12_DRAW_INDEXED_ARGUMENTS DrawIndexedArguments;
+    };
+
+    struct ToDrawCommandSignatureParams
+    {
+        uint32_t                     ClipIndex;
+        D3D12_VERTEX_BUFFER_VIEW     VertexBuffer;
+        D3D12_INDEX_BUFFER_VIEW      IndexBuffer;
+        D3D12_DRAW_INDEXED_ARGUMENTS DrawIndexedArguments;
+    };
 
     enum NeighborFace
     {

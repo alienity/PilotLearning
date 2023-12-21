@@ -113,21 +113,28 @@ namespace MoYu
         {
             InternalScratchClipmap* _internalScratchClipmap = &internalTerrain->terrain_scratch_clipmap;
 
-            ClipmapInstanceScratchBuffer* _clipmapInstanceScratchBuffer = &_internalScratchClipmap->instance_scratch_buffer;
+            ClipmapTransformScratchBuffer* _clipmapTransformScratchBuffer = &_internalScratchClipmap->instance_scratch_buffer;
+
+            const auto& transform_instance = mTerrain3D->get_transform_instance();
+
+            _clipmapTransformScratchBuffer->clip_mesh_count[GeoClipMap::MeshType::CROSS]  = 1;
+            _clipmapTransformScratchBuffer->clip_mesh_count[GeoClipMap::MeshType::TILE]   = transform_instance.tiles.size();
+            _clipmapTransformScratchBuffer->clip_mesh_count[GeoClipMap::MeshType::FILLER] = transform_instance.fillers.size();
+            _clipmapTransformScratchBuffer->clip_mesh_count[GeoClipMap::MeshType::TRIM]   = transform_instance.trims.size();
+            _clipmapTransformScratchBuffer->clip_mesh_count[GeoClipMap::MeshType::SEAM]   = transform_instance.seams.size();
 
             int clip_counts = GetClipCount();
-            _clipmapInstanceScratchBuffer->clip_index_counts = clip_counts;
+            _clipmapTransformScratchBuffer->clip_transform_counts = clip_counts;
 
-            std::shared_ptr<MoYuScratchBuffer> _clip_buffer = _clipmapInstanceScratchBuffer->clip_buffer;
-            if (_clip_buffer == nullptr)
+            std::shared_ptr<MoYuScratchBuffer> _clip_transform_buffer = _clipmapTransformScratchBuffer->clip_transform_buffer;
+            if (_clip_transform_buffer == nullptr)
             {
-                uint32_t clip_total_size = clip_counts * sizeof(HLSL::ClipmapIndexInstance);
-                _clip_buffer = std::make_shared<MoYuScratchBuffer>();
-                _clip_buffer->Initialize(clip_total_size);
-                _clipmapInstanceScratchBuffer->clip_buffer = _clip_buffer;
+                uint32_t clip_total_size = clip_counts * sizeof(HLSL::ClipmapTransform);
+                _clip_transform_buffer   = std::make_shared<MoYuScratchBuffer>();
+                _clip_transform_buffer->Initialize(clip_total_size);
+                _clipmapTransformScratchBuffer->clip_transform_buffer = _clip_transform_buffer;
             }
-            HLSL::ClipmapIndexInstance* _clipmapIndexInstance =
-                (HLSL::ClipmapIndexInstance*)_clip_buffer->GetBufferPointer();
+            HLSL::ClipmapTransform* _clipmapIndexInstance = (HLSL::ClipmapTransform*)_clip_transform_buffer->GetBufferPointer();
             UpdateClipBuffer(_clipmapIndexInstance);
 
             auto _clipPatches = mTerrain3D->get_clip_patch();
@@ -141,28 +148,58 @@ namespace MoYu
         //********************************************************************************
         // update d3d12 buffer
         {
-            std::shared_ptr<MoYuScratchBuffer> _clip_scratch_buffer =
-                internalTerrain->terrain_scratch_clipmap.instance_scratch_buffer.clip_buffer;
+            std::shared_ptr<MoYuScratchBuffer> _clip_scratch_trans_buffer =
+                internalTerrain->terrain_scratch_clipmap.instance_scratch_buffer.clip_transform_buffer;
 
             InternalClipmap* _terrain_clipmap = &internalTerrain->terrain_clipmap;
 
-            ClipmapInstanceBuffer* _clipmapInstanceBuffer = &_terrain_clipmap->instance_buffer;
+            ClipmapTransformBuffer* _clipmapInstanceBuffer = &_terrain_clipmap->instance_buffer;
 
+            // update clipmap transform buffer
             int clip_counts = GetClipCount();
-            _clipmapInstanceBuffer->clip_index_counts = clip_counts;
+            _clipmapInstanceBuffer->clip_transform_counts = clip_counts;
 
-            uint32_t clip_total_size = clip_counts * sizeof(HLSL::ClipmapIndexInstance);
-            std::shared_ptr<RHI::D3D12Buffer> _clip_buffer = _clipmapInstanceBuffer->clip_buffer;
-            if (_clip_buffer == nullptr)
+            uint32_t clip_total_size = clip_counts * sizeof(HLSL::ClipmapTransform);
+            std::shared_ptr<RHI::D3D12Buffer> _clip_transform_buffer = _clipmapInstanceBuffer->clip_transform_buffer;
+            if (_clip_transform_buffer == nullptr)
             {
-                _clip_buffer = renderResource->createDynamicBuffer(_clip_scratch_buffer);
-                _clipmapInstanceBuffer->clip_buffer = _clip_buffer;
+                _clip_transform_buffer = renderResource->createDynamicBuffer(
+                    _clip_scratch_trans_buffer->GetBufferPointer(), clip_total_size, sizeof(HLSL::ClipmapTransform));
+                _clipmapInstanceBuffer->clip_transform_buffer = _clip_transform_buffer;
             }
             else
             {
-                HLSL::ClipmapIndexInstance * _clipmapIndexInstance = _clip_buffer->GetCpuVirtualAddress<HLSL::ClipmapIndexInstance>();
-                memcpy(_clipmapIndexInstance, _clip_scratch_buffer->GetBufferPointer(), clip_total_size);
+                HLSL::ClipmapTransform* _clipmapIndexInstance = _clip_transform_buffer->GetCpuVirtualAddress<HLSL::ClipmapTransform>();
+                memcpy(_clipmapIndexInstance, _clip_scratch_trans_buffer->GetBufferPointer(), clip_total_size);
             }
+
+            // update clipmap mesh count buffer
+            const auto& transform_instance = mTerrain3D->get_transform_instance();
+
+            int total_count = transform_instance.tiles.size() + transform_instance.fillers.size() +
+                              transform_instance.trims.size() + transform_instance.seams.size() + 1;
+
+            HLSL::ClipmapMeshCount _clipmapMeshCount = {transform_instance.tiles.size(),
+                                                        transform_instance.fillers.size(),
+                                                        transform_instance.trims.size(),
+                                                        transform_instance.seams.size(),
+                                                        1,
+                                                        total_count};
+
+            std::shared_ptr<RHI::D3D12Buffer> _clip_mesh_count_buffer = _clipmapInstanceBuffer->clip_mesh_count_buffer;
+            if (_clip_mesh_count_buffer == nullptr)
+            {
+                int _mesh_count_size = MoYu::AlignUp(sizeof(HLSL::ClipmapMeshCount), 256);
+                _clip_mesh_count_buffer = renderResource->createDynamicBuffer(&_clipmapMeshCount, _mesh_count_size, _mesh_count_size);
+                _clipmapInstanceBuffer->clip_mesh_count_buffer = _clip_mesh_count_buffer;
+            }
+            else
+            {
+                HLSL::ClipmapMeshCount* _clip_mesh_count_addr = _clip_mesh_count_buffer->GetCpuVirtualAddress<HLSL::ClipmapMeshCount>();
+                memcpy(_clip_mesh_count_addr, &_clipmapMeshCount, sizeof(HLSL::ClipmapMeshCount));
+            }
+
+            // update clipmap base mesh
             auto _clipPatches = mTerrain3D->get_clip_patch();
             for (int i = 0; i < 5; i++)
             {
@@ -170,6 +207,46 @@ namespace MoYu
                                     &_terrain_clipmap->clipmap_mesh[i],
                                     &internalTerrain->terrain_scratch_clipmap.clipmap_scratch_mesh[i]);
             }
+
+            // update structurebuffer contain clipmap base mesh index and vertex information
+            std::shared_ptr<RHI::D3D12Buffer> _clip_base_mesh_buffer = _clipmapInstanceBuffer->clip_base_mesh_command_buffer;
+            if (_clip_base_mesh_buffer == nullptr)
+            {
+                int base_mesh_buffer_size = HLSL::GeoClipMeshType * sizeof(HLSL::ClipMeshCommandSigParams);
+                _clip_base_mesh_buffer = renderResource->createDynamicBuffer(
+                    nullptr, base_mesh_buffer_size, sizeof(HLSL::ClipMeshCommandSigParams));
+                _clipmapInstanceBuffer->clip_base_mesh_command_buffer = _clip_base_mesh_buffer;
+            }
+            void* _raw_mesh_buffer = _clip_base_mesh_buffer->GetCpuVirtualAddress();
+            for (int i = 0; i < HLSL::GeoClipMeshType; i++)
+            {
+                MoYu::InternalMesh& _clipmap_mesh = _terrain_clipmap->clipmap_mesh[i];
+                MoYu::InternalIndexBuffer& _index_buffer = _clipmap_mesh.index_buffer;
+                MoYu::InternalVertexBuffer& _vertex_buffer = _clipmap_mesh.vertex_buffer;
+
+                D3D12_DRAW_INDEXED_ARGUMENTS _drawIndexedArguments = {};
+                _drawIndexedArguments.IndexCountPerInstance        = _index_buffer.index_count;
+                _drawIndexedArguments.InstanceCount                = 1;
+                _drawIndexedArguments.StartIndexLocation           = 0;
+                _drawIndexedArguments.BaseVertexLocation           = 0;
+                _drawIndexedArguments.StartInstanceLocation        = 0;
+
+                int t0 = sizeof(D3D12_VERTEX_BUFFER_VIEW);
+                int t1 = sizeof(D3D12_INDEX_BUFFER_VIEW);
+                int t2 = sizeof(D3D12_DRAW_INDEXED_ARGUMENTS);
+                int t3 = t0 + t1 + t2;
+
+                char* cur_pos = (char*)_raw_mesh_buffer + t3 * i;
+
+                auto vv = _vertex_buffer.vertex_buffer->GetVertexBufferView();
+                auto ii = _index_buffer.index_buffer->GetIndexBufferView();
+
+                memcpy(cur_pos, (char*)(&vv), t1);
+                memcpy(cur_pos + t0, (char*)(&ii), t2);
+                memcpy(cur_pos + t0 + t1, (char*)(&_drawIndexedArguments), t3);
+            }
+
+
         }
         //********************************************************************************
     }
@@ -336,7 +413,7 @@ namespace MoYu
         return clip_counts;
     }
 
-    void TerrainRenderHelper::UpdateClipBuffer(HLSL::ClipmapIndexInstance* clipmapIdxInstance)
+    void TerrainRenderHelper::UpdateClipBuffer(HLSL::ClipmapTransform* clipmapIdxInstance)
     {
         const auto& transform_instance = mTerrain3D->get_transform_instance();
 

@@ -48,7 +48,7 @@ namespace MoYu
                                      RenderResource*          renderResource);
 
         uint32_t GetClipCount();
-        void UpdateClipBuffer(HLSL::ClipmapIndexInstance* clipmapIdxInstance);
+        void UpdateClipBuffer(HLSL::ClipmapTransform* clipmapIdxInstance);
         void UpdateClipPatchScratchMesh(InternalScratchMesh* internalScratchMesh, GeoClipPatch geoPatch);
         void UpdateClipPatchMesh(RenderResource* renderResource, InternalMesh* internalMesh, InternalScratchMesh* internalScratchMesh);
 

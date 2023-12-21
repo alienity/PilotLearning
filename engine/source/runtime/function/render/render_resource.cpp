@@ -559,8 +559,11 @@ namespace MoYu
                                      L"DynamicBuffer",
                                      RHI::RHIBufferModeDynamic);
 
-        void* bufferPtr = dynamicBuffer->GetCpuVirtualAddress<void>();
-        memcpy(bufferPtr, buffer_data, buffer_size);
+        if (buffer_data != nullptr)
+        {
+            void* bufferPtr = dynamicBuffer->GetCpuVirtualAddress<void>();
+            memcpy(bufferPtr, buffer_data, buffer_size);
+        }
         return dynamicBuffer;
     }
 

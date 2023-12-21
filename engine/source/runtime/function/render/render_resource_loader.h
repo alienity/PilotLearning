@@ -41,8 +41,10 @@ namespace MoYu
 
         RenderMeshData loadMeshData(std::string mesh_file);
 
-    protected:
+    //protected:
         RHI::D3D12Device*         m_Device;
+
+    protected:
         RHI::ResourceUploadBatch* m_ResourceUpload;
         RHI::GraphicsMemory*      m_GraphicsMemory;
     };

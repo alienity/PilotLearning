@@ -8,34 +8,19 @@
 
 namespace MoYu
 {
-    struct TerrainClipMeshCommandSigParams
-    {
-        D3D12_VERTEX_BUFFER_VIEW     VertexBuffer;
-        D3D12_INDEX_BUFFER_VIEW      IndexBuffer;
-        D3D12_DRAW_INDEXED_ARGUMENTS DrawIndexedArguments;
-    };
-
-    struct TerrainToDrawCommandSignatureParams
-    {
-        uint32_t                     ClipIndex;
-        D3D12_VERTEX_BUFFER_VIEW     VertexBuffer;
-        D3D12_INDEX_BUFFER_VIEW      IndexBuffer;
-        D3D12_DRAW_INDEXED_ARGUMENTS DrawIndexedArguments;
-    };
-
     struct TerrainDirShadowmapCommandBuffer
     {
-        std::vector<std::shared_ptr<RHI::D3D12Buffer>> m_visableClipMeshTransformCommandSigBuffer;
+        std::vector<std::shared_ptr<RHI::D3D12Buffer>> m_VisableClipmapBuffers;
         SceneCommonIdentifier m_identifier;
         
         void Reset()
         {
             m_identifier = SceneCommonIdentifier();
-            for (int i = 0; i < m_visableClipMeshTransformCommandSigBuffer.size(); i++)
+            for (int i = 0; i < m_VisableClipmapBuffers.size(); i++)
             {
-                m_visableClipMeshTransformCommandSigBuffer[i] = nullptr;
+                m_VisableClipmapBuffers[i] = nullptr;
             }
-            m_visableClipMeshTransformCommandSigBuffer.clear();
+            m_VisableClipmapBuffers.clear();
         }
     };
 
@@ -138,32 +123,25 @@ namespace MoYu
 
         bool isTerrainMinMaxHeightReady;
 
-        // main camera instance CommandSignature Buffer
-        std::shared_ptr<RHI::D3D12Buffer> terrainClipMeshUploadCommandSigBuffer;
-        std::shared_ptr<RHI::D3D12Buffer> clipmapTransformUploadCommandSigBuffer;
-
         // 5中clipmap的meshtype
-        std::shared_ptr<RHI::D3D12Buffer> terrainClipMeshCommandSigBuffer;
+        std::shared_ptr<RHI::D3D12Buffer> clipmapBaseCommandSigBuffer;
         // terrain的clipmap的transform
-        std::shared_ptr<RHI::D3D12Buffer> clipmapTransformCommandSigBuffer;
+        std::shared_ptr<RHI::D3D12Buffer> clipmapTransformBuffer;
+        // tile count buffer
+        std::shared_ptr<RHI::D3D12Buffer> clipmapMeshCountBuffer;
 
         // 相机视锥内的clipmap
-        std::shared_ptr<RHI::D3D12Buffer> cameraVisableClipMeshTransformCommandSigBuffer;
+        std::shared_ptr<RHI::D3D12Buffer> camVisableClipmapBuffer;
         // 方向光的多级clipmap
-        TerrainDirShadowmapCommandBuffer dirVisableClipMeshTransformCommandSigBuffer;
+        TerrainDirShadowmapCommandBuffer dirVisableClipmapBuffers;
 
+        Shader mainCamVisClipmapCS;
+        std::shared_ptr<RHI::D3D12RootSignature> pMainCamVisClipmapSignature;
+        std::shared_ptr<RHI::D3D12PipelineState> pMainCamVisClipmapGenPSO;
 
-        Shader indirecTerrainPatchNodesGenCS;
-        std::shared_ptr<RHI::D3D12RootSignature> pIndirecTerrainPatchNodesGenSignature;
-        std::shared_ptr<RHI::D3D12PipelineState> pIndirecTerrainPatchNodesGenPSO;
-
-        Shader patchNodeVisToMainCamIndexGenCS;
-        std::shared_ptr<RHI::D3D12RootSignature> pPatchNodeVisToMainCamIndexGenSignature;
-        std::shared_ptr<RHI::D3D12PipelineState> pPatchNodeVisToMainCamIndexGenPSO;
-
-        Shader patchNodeVisToDirCascadeIndexGenCS;
-        std::shared_ptr<RHI::D3D12RootSignature> pPatchNodeVisToDirCascadeIndexGenSignature;
-        std::shared_ptr<RHI::D3D12PipelineState> pPatchNodeVisToDirCascadeIndexGenPSO;
+        Shader dirVisClipmapCS;
+        std::shared_ptr<RHI::D3D12RootSignature> pDirVisClipmapSignature;
+        std::shared_ptr<RHI::D3D12PipelineState> pDirVisClipmapGenPSO;
 	};
 }
 

@@ -178,8 +178,7 @@ namespace MoYu
         InternalTerrainRenderer& internalTerrainRenderer =
             m_render_scene->m_terrain_renderers[0].internalTerrainRenderer;
 
-        uint32_t clipmapPatchNumber =
-            internalTerrainRenderer.ref_terrain.terrain_clipmap.instance_buffer.clip_index_counts;
+        uint32_t clipTransCount = internalTerrainRenderer.ref_terrain.terrain_clipmap.instance_buffer.clip_transform_counts;
 
         std::string_view passName = std::string_view("IndirectTerrainGBufferPass");
 
@@ -275,14 +274,15 @@ namespace MoYu
             
             auto pDrawCallCommandSigBuffer = registry->GetD3D12Buffer(terrainCommandSigHandle);
 
-            graphicContext->ExecuteIndirect(pIndirectTerrainGBufferCommandSignature.get(),
-                                            pDrawCallCommandSigBuffer,
-                                            0,
-                                            clipmapPatchNumber,
-                                            nullptr,
-                                            0);
+            //graphicContext->ExecuteIndirect(pIndirectTerrainGBufferCommandSignature.get(),
+            //                                pDrawCallCommandSigBuffer,
+            //                                0,
+            //                                clipTransCount,
+            //                                pDrawCallCommandSigBuffer->GetCounterBuffer().get(),
+            //                                0);
 
         });
+
 
         passIndex += 1;
     }

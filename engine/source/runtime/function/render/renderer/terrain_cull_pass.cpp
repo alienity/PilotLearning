@@ -28,105 +28,64 @@ namespace MoYu
 
         //--------------------------------------------------------------------------
         {
-            indirecTerrainPatchNodesGenCS =
+            mainCamVisClipmapCS =
                 m_ShaderCompiler->CompileShader(RHI_SHADER_TYPE::Compute,
-                                                m_ShaderRootPath / "hlsl/IndirecTerrainPatchNodesGen.hlsl",
+                                                m_ShaderRootPath / "hlsl/ClipmapCullingForMainCamera.hlsl",
                                                 ShaderCompileOptions(L"CSMain"));
 
             RHI::RootSignatureDesc rootSigDesc =
                 RHI::RootSignatureDesc()
-                    .Add32BitConstants<0, 0>(4)
-                    .AddStaticSampler<10, 0>(D3D12_FILTER::D3D12_FILTER_ANISOTROPIC,
-                                             D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_WRAP,
-                                             8)
+                    .Add32BitConstants<0, 0>(12)
+                    .AddStaticSampler<10, 0>(D3D12_FILTER::D3D12_FILTER_ANISOTROPIC, D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_WRAP, 8)
                     .AllowInputLayout()
                     .AllowResourceDescriptorHeapIndexing()
                     .AllowSampleDescriptorHeapIndexing();
 
-            pIndirecTerrainPatchNodesGenSignature = std::make_shared<RHI::D3D12RootSignature>(m_Device, rootSigDesc);
+            pMainCamVisClipmapSignature = std::make_shared<RHI::D3D12RootSignature>(m_Device, rootSigDesc);
 
             struct PsoStream
             {
                 PipelineStateStreamRootSignature RootSignature;
                 PipelineStateStreamCS            CS;
             } psoStream;
-            psoStream.RootSignature = PipelineStateStreamRootSignature(pIndirecTerrainPatchNodesGenSignature.get());
-            psoStream.CS            = &indirecTerrainPatchNodesGenCS;
+            psoStream.RootSignature         = PipelineStateStreamRootSignature(pMainCamVisClipmapSignature.get());
+            psoStream.CS                    = &mainCamVisClipmapCS;
             PipelineStateStreamDesc psoDesc = {sizeof(PsoStream), &psoStream};
 
-            pIndirecTerrainPatchNodesGenPSO =
-                std::make_shared<RHI::D3D12PipelineState>(m_Device, L"IndirecTerrainPatchNodesGenPSO", psoDesc);
+            pMainCamVisClipmapGenPSO =
+                std::make_shared<RHI::D3D12PipelineState>(m_Device, L"MainCamVisClipmapGenPSO", psoDesc);
         }
         //--------------------------------------------------------------------------
 
         //--------------------------------------------------------------------------
         {
-
-            patchNodeVisToMainCamIndexGenCS =
-                m_ShaderCompiler->CompileShader(RHI_SHADER_TYPE::Compute,
-                                                m_ShaderRootPath / "hlsl/PatchNodeCullingForMainCamera.hlsl",
-                                                ShaderCompileOptions(L"CSMain"));
+            dirVisClipmapCS = m_ShaderCompiler->CompileShader(RHI_SHADER_TYPE::Compute,
+                                                              m_ShaderRootPath / "hlsl/ClipmapCullingForDirShadow.hlsl",
+                                                              ShaderCompileOptions(L"CSMain"));
 
             RHI::RootSignatureDesc rootSigDesc =
                 RHI::RootSignatureDesc()
-                    .Add32BitConstants<0, 0>(4)
-                    .AddStaticSampler<10, 0>(D3D12_FILTER::D3D12_FILTER_ANISOTROPIC,
-                                             D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_WRAP,
-                                             8)
+                    .Add32BitConstants<0, 0>(12)
+                    .AddStaticSampler<10, 0>(D3D12_FILTER::D3D12_FILTER_ANISOTROPIC, D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_WRAP, 8)
                     .AllowInputLayout()
                     .AllowResourceDescriptorHeapIndexing()
                     .AllowSampleDescriptorHeapIndexing();
 
-            pPatchNodeVisToMainCamIndexGenSignature = std::make_shared<RHI::D3D12RootSignature>(m_Device, rootSigDesc);
+            pDirVisClipmapSignature = std::make_shared<RHI::D3D12RootSignature>(m_Device, rootSigDesc);
 
             struct PsoStream
             {
                 PipelineStateStreamRootSignature RootSignature;
                 PipelineStateStreamCS            CS;
             } psoStream;
-            psoStream.RootSignature = PipelineStateStreamRootSignature(pPatchNodeVisToMainCamIndexGenSignature.get());
-            psoStream.CS            = &patchNodeVisToMainCamIndexGenCS;
+            psoStream.RootSignature         = PipelineStateStreamRootSignature(pDirVisClipmapSignature.get());
+            psoStream.CS                    = &dirVisClipmapCS;
             PipelineStateStreamDesc psoDesc = {sizeof(PsoStream), &psoStream};
 
-            pPatchNodeVisToMainCamIndexGenPSO =
-                std::make_shared<RHI::D3D12PipelineState>(m_Device, L"TerrainPatchNodeCullingForMainCameraPSO", psoDesc);
+            pDirVisClipmapGenPSO =
+                std::make_shared<RHI::D3D12PipelineState>(m_Device, L"DirVisClipmapGenPSO", psoDesc);
         }
-        //-----------------------------------------------------------
-
-        //-----------------------------------------------------------
-        {
-            patchNodeVisToDirCascadeIndexGenCS =
-                m_ShaderCompiler->CompileShader(RHI_SHADER_TYPE::Compute,
-                                                m_ShaderRootPath / "hlsl/PatchNodeCullingForDirShadow.hlsl",
-                                                ShaderCompileOptions(L"CSMain"));
-
-            RHI::RootSignatureDesc rootSigDesc =
-                RHI::RootSignatureDesc()
-                    .Add32BitConstants<0, 0>(5)
-                    .AddStaticSampler<10, 0>(D3D12_FILTER::D3D12_FILTER_ANISOTROPIC,
-                                             D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_WRAP,
-                                             8)
-                    .AllowInputLayout()
-                    .AllowResourceDescriptorHeapIndexing()
-                    .AllowSampleDescriptorHeapIndexing();
-
-            pPatchNodeVisToDirCascadeIndexGenSignature =
-                std::make_shared<RHI::D3D12RootSignature>(m_Device, rootSigDesc);
-
-            struct PsoStream
-            {
-                PipelineStateStreamRootSignature RootSignature;
-                PipelineStateStreamCS            CS;
-            } psoStream;
-            psoStream.RootSignature =
-                PipelineStateStreamRootSignature(pPatchNodeVisToDirCascadeIndexGenSignature.get());
-            psoStream.CS            = &patchNodeVisToDirCascadeIndexGenCS;
-            PipelineStateStreamDesc psoDesc = {sizeof(PsoStream), &psoStream};
-
-            pPatchNodeVisToDirCascadeIndexGenPSO =
-                std::make_shared<RHI::D3D12PipelineState>(m_Device, L"TerrainPatchNodeCullingForDirShadowPSO", psoDesc);
-        }
-        //-----------------------------------------------------------
+        //--------------------------------------------------------------------------
 
         isTerrainMinMaxHeightReady = false;
 
@@ -167,116 +126,94 @@ namespace MoYu
                                             std::nullopt);
         }
 
-        if (terrainClipMeshUploadCommandSigBuffer == nullptr)
+        if (clipmapBaseCommandSigBuffer == nullptr)
         {
-            terrainClipMeshUploadCommandSigBuffer =
-                RHI::D3D12Buffer::Create(m_Device->GetLinkedDevice(),
-                                         RHI::RHIBufferTargetStructured,
-                                         HLSL::GeoClipMeshType,
-                                         sizeof(MoYu::TerrainClipMeshCommandSigParams),
-                                         L"TerrainUploadClipMeshCommandSigBuffer",
-                                         RHI::RHIBufferModeDynamic,
-                                         D3D12_RESOURCE_STATE_GENERIC_READ);
-
-            terrainClipMeshCommandSigBuffer = RHI::D3D12Buffer::Create(m_Device->GetLinkedDevice(),
-                                                                       RHI::RHIBufferTargetStructured,
-                                                                       HLSL::GeoClipMeshType,
-                                                                       sizeof(MoYu::TerrainClipMeshCommandSigParams),
-                                                                       L"TerrainClipMeshCommandSigBuffer",
-                                                                       RHI::RHIBufferModeImmutable,
-                                                                       D3D12_RESOURCE_STATE_GENERIC_READ);
+            clipmapBaseCommandSigBuffer = RHI::D3D12Buffer::Create(m_Device->GetLinkedDevice(),
+                                                             RHI::RHIBufferTargetStructured,
+                                                             HLSL::GeoClipMeshType,
+                                                             sizeof(HLSL::ClipMeshCommandSigParams),
+                                                             L"ClipmapBaseCommandSigBuffer",
+                                                             RHI::RHIBufferModeImmutable,
+                                                             D3D12_RESOURCE_STATE_GENERIC_READ);
         }
-        if (clipmapTransformUploadCommandSigBuffer == nullptr)
+
         {
             std::vector<CachedTerrainRenderer>& _terrain_renderers = m_render_scene->m_terrain_renderers;
             InternalTerrainRenderer& _internalTerrainRenderer      = _terrain_renderers[0].internalTerrainRenderer;
 
-            uint32_t clip_counts = _internalTerrainRenderer.ref_terrain.terrain_clipmap.instance_buffer.clip_index_counts;
+            uint32_t clip_transform_counts =
+                _internalTerrainRenderer.ref_terrain.terrain_clipmap.instance_buffer.clip_transform_counts;
 
-            clipmapTransformUploadCommandSigBuffer = RHI::D3D12Buffer::Create(m_Device->GetLinkedDevice(),
-                                                                              RHI::RHIBufferTargetStructured,
-                                                                              clip_counts,
-                                                                              sizeof(HLSL::ClipmapIndexInstance),
-                                                                              L"ClipmapTransformUploadBuffer",
-                                                                              RHI::RHIBufferModeDynamic,
-                                                                              D3D12_RESOURCE_STATE_GENERIC_READ);
+            // Clipmap Transform Buffer
+            if (clipmapTransformBuffer == nullptr)
+            {
+                clipmapTransformBuffer = RHI::D3D12Buffer::Create(m_Device->GetLinkedDevice(),
+                                                                  RHI::RHIBufferTargetStructured,
+                                                                  clip_transform_counts,
+                                                                  sizeof(HLSL::ClipmapTransform),
+                                                                  L"ClipmapTransformBuffer",
+                                                                  RHI::RHIBufferModeImmutable,
+                                                                  D3D12_RESOURCE_STATE_GENERIC_READ);
+            }
 
-            clipmapTransformCommandSigBuffer = RHI::D3D12Buffer::Create(m_Device->GetLinkedDevice(),
-                                                                        RHI::RHIBufferTargetStructured,
-                                                                        clip_counts,
-                                                                        sizeof(HLSL::ClipmapIndexInstance),
-                                                                        L"ClipmapTransformBuffer",
-                                                                        RHI::RHIBufferModeImmutable,
-                                                                        D3D12_RESOURCE_STATE_GENERIC_READ);
-        }
+            if (clipmapMeshCountBuffer == nullptr)
+            {
+                clipmapMeshCountBuffer = RHI::D3D12Buffer::Create(m_Device->GetLinkedDevice(),
+                                                                  RHI::RHIBufferTargetStructured,
+                                                                  1,
+                                                                  MoYu::AlignUp(sizeof(HLSL::TerrainPatchNode), 256),
+                                                                  L"ClipmapMeshCountBuffer",
+                                                                  RHI::RHIBufferModeImmutable,
+                                                                  D3D12_RESOURCE_STATE_GENERIC_READ);
+            }
 
-        // 主相机会使用到的CommandSignatureBuffer
-        if (cameraVisableClipMeshTransformCommandSigBuffer == nullptr)
-        {
-            std::vector<CachedTerrainRenderer>& _terrain_renderers = m_render_scene->m_terrain_renderers;
-            InternalTerrainRenderer& _internalTerrainRenderer = _terrain_renderers[0].internalTerrainRenderer;
+            // 主相机会使用到的CommandSignatureBuffer
+            if (camVisableClipmapBuffer == nullptr)
+            {
+                camVisableClipmapBuffer = RHI::D3D12Buffer::Create(
+                    m_Device->GetLinkedDevice(),
+                    RHI::RHIBufferRandomReadWrite | RHI::RHIBufferTargetStructured | RHI::RHIBufferTargetCounter,
+                    clip_transform_counts,
+                    sizeof(HLSL::ToDrawCommandSignatureParams),
+                    L"CamVisableClipmapBuffer",
+                    RHI::RHIBufferModeImmutable,
+                    D3D12_RESOURCE_STATE_GENERIC_READ);
+            }
 
-            uint32_t clip_counts = _internalTerrainRenderer.ref_terrain.terrain_clipmap.instance_buffer.clip_index_counts;
-
-            cameraVisableClipMeshTransformCommandSigBuffer = RHI::D3D12Buffer::Create(
-                m_Device->GetLinkedDevice(),
-                RHI::RHIBufferTargetStructured | RHI::RHIBufferTargetStructured | RHI::RHIBufferTargetCounter,
-                clip_counts,
-                sizeof(HLSL::ClipmapIndexInstance),
-                L"ClipmapTransformBuffer",
-                RHI::RHIBufferModeImmutable,
-                D3D12_RESOURCE_STATE_GENERIC_READ);
-        }
-
-        // 主光源会使用到的CommandSignatureBuffer
-        {
+            // 主光源会使用到的CommandSignatureBuffer
             if (m_render_scene->m_directional_light.m_identifier != UndefCommonIdentifier)
             {
-                if (dirVisableClipMeshTransformCommandSigBuffer.m_identifier !=
-                    m_render_scene->m_directional_light.m_identifier)
+                if (dirVisableClipmapBuffers.m_identifier != m_render_scene->m_directional_light.m_identifier)
                 {
-                    dirVisableClipMeshTransformCommandSigBuffer.Reset();
+                    dirVisableClipmapBuffers.Reset();
                 }
 
-                if (dirVisableClipMeshTransformCommandSigBuffer.m_visableClipMeshTransformCommandSigBuffer.size() !=
+                if (dirVisableClipmapBuffers.m_VisableClipmapBuffers.size() !=
                     m_render_scene->m_directional_light.m_cascade)
                 {
-                    dirVisableClipMeshTransformCommandSigBuffer.m_visableClipMeshTransformCommandSigBuffer.clear();
+                    dirVisableClipmapBuffers.m_VisableClipmapBuffers.clear();
 
-                    dirVisableClipMeshTransformCommandSigBuffer.m_identifier =
-                        m_render_scene->m_directional_light.m_identifier;
+                    dirVisableClipmapBuffers.m_identifier = m_render_scene->m_directional_light.m_identifier;
 
                     for (size_t i = 0; i < m_render_scene->m_directional_light.m_cascade; i++)
                     {
                         std::shared_ptr<RHI::D3D12Buffer> shadowClipNodeVisiableBuffer =
                             RHI::D3D12Buffer::Create(m_Device->GetLinkedDevice(),
-                                                     RHI::RHIBufferRandomReadWrite | RHI::RHIBufferTargetStructured |
-                                                         RHI::RHIBufferTargetCounter,
-                                                     MaxTerrainNodeCount,
-                                                     sizeof(uint32_t),
-                                                     fmt::format(L"DirectionPatchNodeIndexBuffer_Cascade_{}", i));
+                                                     RHI::RHIBufferRandomReadWrite | RHI::RHIBufferTargetStructured | RHI::RHIBufferTargetCounter,
+                                                     clip_transform_counts,
+                                                    sizeof(HLSL::ToDrawCommandSignatureParams),
+                                                     fmt::format(L"DirectionClipmapTransformBuffer_Cascade_{}", i));
 
-                        dirVisableClipMeshTransformCommandSigBuffer.m_visableClipMeshTransformCommandSigBuffer
-                            .push_back(shadowClipNodeVisiableBuffer);
+                        dirVisableClipmapBuffers.m_VisableClipmapBuffers.push_back(shadowClipNodeVisiableBuffer);
                     }
                 }
             }
             else
             {
-                dirVisableClipMeshTransformCommandSigBuffer.Reset();
+                dirVisableClipmapBuffers.Reset();
             }
         }
     }
-
-    ////===============================================================
-    //// 内部缓存handle
-    RHI::RgResourceHandle terrainHeightmapHandle;
-    RHI::RgResourceHandle terrainNormalmapHandle;
-    RHI::RgResourceHandle terrainMinHeightMapHandle;
-    RHI::RgResourceHandle terrainMaxHeightMapHandle;
-    RHI::RgResourceHandle terrainClipmapHandle;
-    RHI::RgResourceHandle transformBufferHandle;
-    ////===============================================================
 
     void IndirectTerrainCullPass::update(RHI::RenderGraph& graph, TerrainCullInput& passInput, TerrainCullOutput& passOutput)
     {
@@ -286,22 +223,25 @@ namespace MoYu
         std::shared_ptr<RHI::D3D12Texture> terrainHeightmap = internalTerrainRenderer.ref_terrain.terrain_heightmap;
         std::shared_ptr<RHI::D3D12Texture> terrainNormalmap = internalTerrainRenderer.ref_terrain.terrain_normalmap;
 
-        std::shared_ptr<RHI::D3D12Buffer> uploadTransformBuffer =
-            internalTerrainRenderer.ref_terrain.terrain_clipmap.instance_buffer.clip_buffer;
+        std::shared_ptr<RHI::D3D12Buffer> uploadTransformBuffer = internalTerrainRenderer.ref_terrain.terrain_clipmap.instance_buffer.clip_transform_buffer;
+        std::shared_ptr<RHI::D3D12Buffer> uploadMeshCountBuffer = internalTerrainRenderer.ref_terrain.terrain_clipmap.instance_buffer.clip_mesh_count_buffer;
+        std::shared_ptr<RHI::D3D12Buffer> uploadBaseMeshCommandSigBuffer = internalTerrainRenderer.ref_terrain.terrain_clipmap.instance_buffer.clip_base_mesh_command_buffer;
 
-        terrainHeightmapHandle = GImport(graph, terrainHeightmap.get());
-        terrainNormalmapHandle = GImport(graph, terrainNormalmap.get());
+        RHI::RgResourceHandle terrainHeightmapHandle = GImport(graph, terrainHeightmap.get());
+        RHI::RgResourceHandle terrainNormalmapHandle = GImport(graph, terrainNormalmap.get());
 
-        terrainMinHeightMapHandle = GImport(graph, terrainMinHeightMap.get());
-        terrainMaxHeightMapHandle = GImport(graph, terrainMaxHeightMap.get());
+        RHI::RgResourceHandle terrainMinHeightMapHandle = GImport(graph, terrainMinHeightMap.get());
+        RHI::RgResourceHandle terrainMaxHeightMapHandle = GImport(graph, terrainMaxHeightMap.get());
 
-        RHI::RgResourceHandle uploadTerrainClipmapHandle = GImport(graph, terrainClipMeshUploadCommandSigBuffer.get());
-        RHI::RgResourceHandle uploadTransformBufferHandle = GImport(graph, clipmapTransformUploadCommandSigBuffer.get());
+        RHI::RgResourceHandle uploadBaseMeshCommandSigHandle = GImport(graph, uploadBaseMeshCommandSigBuffer.get());
+        RHI::RgResourceHandle uploadClipmapTransformHandle   = GImport(graph, uploadTransformBuffer.get());
+        RHI::RgResourceHandle uploadMeshCountHandle          = GImport(graph, uploadMeshCountBuffer.get());
 
-        terrainClipmapHandle  = GImport(graph, terrainClipMeshCommandSigBuffer.get());
-        transformBufferHandle = GImport(graph, clipmapTransformCommandSigBuffer.get());
+        RHI::RgResourceHandle clipmapBaseCommandSighandle = GImport(graph, clipmapBaseCommandSigBuffer.get());
+        RHI::RgResourceHandle clipmapTransformHandle      = GImport(graph, clipmapTransformBuffer.get());
+        RHI::RgResourceHandle clipmapMeshCountHandle      = GImport(graph, clipmapMeshCountBuffer.get());
 
-        RHI::RgResourceHandle mainCamVisbaleClipmapHandle = GImport(graph, cameraVisableClipMeshTransformCommandSigBuffer.get());
+        RHI::RgResourceHandle camVisableClipmapHandle = GImport(graph, camVisableClipmapBuffer.get());
         
 
         RHI::RgResourceHandle perframeBufferHandle = passInput.perframeBufferHandle;
@@ -364,21 +304,25 @@ namespace MoYu
         //=================================================================================
         RHI::RenderPass& terrainCommandSigPreparePass = graph.AddRenderPass("TerrainClipmapPreparePass");
 
-        terrainCommandSigPreparePass.Read(uploadTerrainClipmapHandle, true);
-        terrainCommandSigPreparePass.Read(uploadTransformBufferHandle, true);
-        terrainCommandSigPreparePass.Write(terrainClipmapHandle, true);
-        terrainCommandSigPreparePass.Write(transformBufferHandle, true);
+        terrainCommandSigPreparePass.Read(uploadBaseMeshCommandSigHandle, true);
+        terrainCommandSigPreparePass.Read(uploadClipmapTransformHandle, true);
+        terrainCommandSigPreparePass.Read(uploadMeshCountHandle, true);
+        terrainCommandSigPreparePass.Write(clipmapBaseCommandSighandle, true);
+        terrainCommandSigPreparePass.Write(clipmapTransformHandle, true);
+        terrainCommandSigPreparePass.Write(clipmapMeshCountHandle, true);
 
         terrainCommandSigPreparePass.Execute(
             [=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
                 RHI::D3D12ComputeContext* pContext = context->GetComputeContext();
 
-                pContext->TransitionBarrier(RegGetBuf(terrainClipmapHandle), D3D12_RESOURCE_STATE_COPY_DEST);
-                pContext->TransitionBarrier(RegGetBuf(transformBufferHandle), D3D12_RESOURCE_STATE_COPY_DEST);
+                pContext->TransitionBarrier(RegGetBuf(clipmapBaseCommandSighandle), D3D12_RESOURCE_STATE_COPY_DEST);
+                pContext->TransitionBarrier(RegGetBuf(clipmapTransformHandle), D3D12_RESOURCE_STATE_COPY_DEST);
+                pContext->TransitionBarrier(RegGetBuf(clipmapMeshCountHandle), D3D12_RESOURCE_STATE_COPY_DEST);
                 pContext->FlushResourceBarriers();
 
-                pContext->CopyBuffer(RegGetBuf(terrainClipmapHandle), RegGetBuf(uploadTerrainClipmapHandle));
-                pContext->CopyBuffer(RegGetBuf(transformBufferHandle), RegGetBuf(uploadTransformBufferHandle));
+                pContext->CopyBuffer(RegGetBuf(clipmapBaseCommandSighandle), RegGetBuf(uploadBaseMeshCommandSigHandle));
+                pContext->CopyBuffer(RegGetBuf(clipmapTransformHandle), RegGetBuf(uploadClipmapTransformHandle));
+                pContext->CopyBuffer(RegGetBuf(clipmapMeshCountHandle), RegGetBuf(uploadMeshCountHandle));
 
                 pContext->FlushResourceBarriers();
             });
@@ -389,44 +333,52 @@ namespace MoYu
         RHI::RenderPass& terrainMainCullingPass = graph.AddRenderPass("TerrainMainCullingPass");
 
         terrainMainCullingPass.Read(perframeBufferHandle, true);
-        terrainMainCullingPass.Read(terrainClipmapHandle, true);
-        terrainMainCullingPass.Read(transformBufferHandle, true);
-        terrainMainCullingPass.Write(mainCamVisbaleClipmapHandle, true);
+        terrainMainCullingPass.Read(clipmapBaseCommandSighandle, true);
+        terrainMainCullingPass.Read(clipmapTransformHandle, true);
+        terrainMainCullingPass.Read(clipmapMeshCountHandle, true);
+        terrainMainCullingPass.Write(camVisableClipmapHandle, true);
 
         terrainMainCullingPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
             RHI::D3D12ComputeContext* pContext = context->GetComputeContext();
 
-            pContext->TransitionBarrier(RegGetBufCounter(mainCamVisiableIndexHandle), D3D12_RESOURCE_STATE_COPY_DEST);
+            pContext->TransitionBarrier(RegGetBufCounter(camVisableClipmapHandle), D3D12_RESOURCE_STATE_COPY_DEST);
             pContext->FlushResourceBarriers();
-            pContext->ResetCounter(RegGetBufCounter(mainCamVisiableIndexHandle));
+            pContext->ResetCounter(RegGetBufCounter(camVisableClipmapHandle));
 
             pContext->TransitionBarrier(RegGetBuf(perframeBufferHandle), D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
-            pContext->TransitionBarrier(RegGetBuf(terrainPatchNodeHandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-            pContext->TransitionBarrier(RegGetBufCounter(terrainPatchNodeHandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-            pContext->TransitionBarrier(RegGetBuf(mainCamVisiableIndexHandle), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-            pContext->TransitionBarrier(RegGetBufCounter(mainCamVisiableIndexHandle), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+            pContext->TransitionBarrier(RegGetBuf(clipmapMeshCountHandle), D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
+            pContext->TransitionBarrier(RegGetBuf(clipmapBaseCommandSighandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+            pContext->TransitionBarrier(RegGetBuf(clipmapTransformHandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+            pContext->TransitionBarrier(RegGetBuf(camVisableClipmapHandle), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+            pContext->TransitionBarrier(RegGetBufCounter(camVisableClipmapHandle), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
             pContext->FlushResourceBarriers();
 
-            pContext->SetRootSignature(pPatchNodeVisToMainCamIndexGenSignature.get());
-            pContext->SetPipelineState(pPatchNodeVisToMainCamIndexGenPSO.get());
+            pContext->SetRootSignature(pMainCamVisClipmapSignature.get());
+            pContext->SetPipelineState(pMainCamVisClipmapGenPSO.get());
 
             struct RootIndexBuffer
             {
-                UINT meshPerFrameBufferIndex;
-                UINT terrainPatchNodeIndex;
-                UINT terrainPatchNodeCountIndex;
-                UINT terrainVisNodeIdxIndex;
+                uint32_t perFrameBufferIndex;
+                uint32_t clipmapMeshCountIndex;
+                uint32_t transformBufferIndex;
+                uint32_t clipmapBaseCommandSigIndex;
+                uint32_t clipmapVisableBufferIndex;
             };
 
-            RootIndexBuffer rootIndexBuffer =
-                RootIndexBuffer {RegGetBufDefCBVIdx(perframeBufferHandle),
-                                 RegGetBufDefSRVIdx(terrainPatchNodeHandle),
-                                 RegGetBufCounterSRVIdx(terrainPatchNodeHandle),
-                                 RegGetBufDefUAVIdx(mainCamVisiableIndexHandle)};
+            RootIndexBuffer rootIndexBuffer = RootIndexBuffer {RegGetBufDefCBVIdx(perframeBufferHandle),
+                                                               RegGetBufDefCBVIdx(clipmapMeshCountHandle),
+                                                               RegGetBufDefSRVIdx(clipmapTransformHandle),
+                                                               RegGetBufDefSRVIdx(clipmapBaseCommandSighandle),
+                                                               RegGetBufDefUAVIdx(camVisableClipmapHandle)};
 
             pContext->SetConstantArray(0, sizeof(RootIndexBuffer) / sizeof(UINT), &rootIndexBuffer);
 
-            pContext->Dispatch1D(4096, 128);
+            pContext->Dispatch1D(256, 8);
+
+
+            pContext->TransitionBarrier(RegGetBuf(camVisableClipmapHandle), D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT);
+            pContext->TransitionBarrier(RegGetBufCounter(camVisableClipmapHandle), D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT);
+            pContext->FlushResourceBarriers();
         });
 
 
@@ -633,241 +585,15 @@ namespace MoYu
         // 输出Pass结果
         //=================================================================================
 
-        passOutput.terrainHeightmapHandle       = terrainHeightmapHandle;
-        passOutput.terrainNormalmapHandle       = terrainNormalmapHandle;
-        passOutput.maxHeightmapPyramidHandle    = terrainMaxHeightMapHandle;
-        passOutput.minHeightmapPyramidHandle    = terrainMinHeightMapHandle;
-        passOutput.terrainCommandSigHandle      = terrainClipmapHandle;
-        passOutput.transformBufferHandle        = transformBufferHandle;
+        passOutput.terrainHeightmapHandle    = terrainHeightmapHandle;
+        passOutput.terrainNormalmapHandle    = terrainNormalmapHandle;
+        passOutput.maxHeightmapPyramidHandle = terrainMaxHeightMapHandle;
+        passOutput.minHeightmapPyramidHandle = terrainMinHeightMapHandle;
+        passOutput.terrainCommandSigHandle   = camVisableClipmapHandle;
+        passOutput.transformBufferHandle     = clipmapTransformHandle;
 
     }
-    /*
-    void IndirectTerrainCullPass::cullingPassLastFrame(RHI::RenderGraph& graph, DepthCullInput& cullPassInput)
-    {
-        RHI::RgResourceHandle perframeBufferHandle         = cullPassInput.perframeBufferHandle;
-        RHI::RgResourceHandle lastMinDepthPyramidHandle    = cullPassInput.minDepthPyramidHandle;
-        RHI::RgResourceHandle terrainPatchNodeHandle       = cullPassInput.terrainPatchNodeHandle;
-        RHI::RgResourceHandle inputIndexBufferHandle       = cullPassInput.inputIndexBufferHandle;
-        RHI::RgResourceHandle nonVisiableIndexBufferHandle = cullPassInput.nonVisiableIndexBufferHandle;
-        RHI::RgResourceHandle visiableIndexBufferHandle    = cullPassInput.visiableIndexBufferHandle;
 
-        RHI::RenderPass& depthCullingPass = graph.AddRenderPass("DepthCullingForTerrain_0");
-
-        depthCullingPass.Read(perframeBufferHandle, true);
-        depthCullingPass.Read(lastMinDepthPyramidHandle, true);
-        depthCullingPass.Read(terrainPatchNodeHandle, true);
-        depthCullingPass.Read(inputIndexBufferHandle, true);
-        depthCullingPass.Write(nonVisiableIndexBufferHandle, true);
-        depthCullingPass.Write(visiableIndexBufferHandle, true);
-        
-        depthCullingPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
-            RHI::D3D12ComputeContext* pContext = context->GetComputeContext();
-
-            pContext->TransitionBarrier(RegGetBufCounter(nonVisiableIndexBufferHandle), D3D12_RESOURCE_STATE_COPY_DEST);
-            pContext->TransitionBarrier(RegGetBufCounter(visiableIndexBufferHandle), D3D12_RESOURCE_STATE_COPY_DEST);
-            pContext->FlushResourceBarriers();
-            pContext->ResetCounter(RegGetBufCounter(nonVisiableIndexBufferHandle));
-            pContext->ResetCounter(RegGetBufCounter(visiableIndexBufferHandle));
-
-            pContext->TransitionBarrier(RegGetBuf(perframeBufferHandle), D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
-            pContext->TransitionBarrier(RegGetTex(lastMinDepthPyramidHandle), D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE);
-            pContext->TransitionBarrier(RegGetBuf(terrainPatchNodeHandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-            pContext->TransitionBarrier(RegGetBuf(inputIndexBufferHandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-            pContext->TransitionBarrier(RegGetBufCounter(inputIndexBufferHandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-            pContext->TransitionBarrier(RegGetBuf(nonVisiableIndexBufferHandle), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-            pContext->TransitionBarrier(RegGetBufCounter(nonVisiableIndexBufferHandle), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-            pContext->TransitionBarrier(RegGetBuf(visiableIndexBufferHandle), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-            pContext->TransitionBarrier(RegGetBufCounter(visiableIndexBufferHandle), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-            pContext->FlushResourceBarriers();
-            
-            pContext->SetRootSignature(pPatchNodeCullByDepthSignature.get());
-            pContext->SetPipelineState(pPatchNodeCullByDepthPSO.get());
-
-            struct RootIndexBuffer
-            {
-                UINT perframeBufferIndex;
-                UINT maxDepthPyramidIndex;
-                UINT terrainPatchNodeIndex;
-                UINT inputPatchNodeIdxBufferIndex;
-                UINT inputPatchNodeIdxCounterIndex;
-                UINT nonVisiableIndexBufferIndex;
-                UINT visiableIndexBufferIndex;
-            };
-
-            RootIndexBuffer rootIndexBuffer =
-                RootIndexBuffer {RegGetBufDefCBVIdx(perframeBufferHandle),
-                                 RegGetTexDefSRVIdx(lastMinDepthPyramidHandle),
-                                 RegGetBufDefSRVIdx(terrainPatchNodeHandle),
-                                 RegGetBufDefSRVIdx(inputIndexBufferHandle),
-                                 RegGetBufCounterSRVIdx(inputIndexBufferHandle),
-                                 RegGetBufDefUAVIdx(nonVisiableIndexBufferHandle),
-                                 RegGetBufDefUAVIdx(visiableIndexBufferHandle)};
-
-            pContext->SetConstantArray(0, sizeof(RootIndexBuffer) / sizeof(UINT), &rootIndexBuffer);
-
-            pContext->Dispatch1D(4096, 128);
-
-        });
-
-        cullPassInput.nonVisiableIndexBufferHandle = nonVisiableIndexBufferHandle;
-        cullPassInput.visiableIndexBufferHandle    = visiableIndexBufferHandle;
-    }
-
-    void IndirectTerrainCullPass::cullingPassCurFrame(RHI::RenderGraph& graph, DepthCullInput& cullPassInput)
-    {
-        RHI::RgResourceHandle perframeBufferHandle         = cullPassInput.perframeBufferHandle;
-        RHI::RgResourceHandle lastMinDepthPyramidHandle    = cullPassInput.minDepthPyramidHandle;
-        RHI::RgResourceHandle terrainPatchNodeHandle       = cullPassInput.terrainPatchNodeHandle;
-        RHI::RgResourceHandle inputIndexBufferHandle       = cullPassInput.inputIndexBufferHandle;
-        RHI::RgResourceHandle visiableIndexBufferHandle    = cullPassInput.visiableIndexBufferHandle;
-
-        RHI::RenderPass& depthCullingPass = graph.AddRenderPass("DepthCullingForTerrain_1");
-
-        depthCullingPass.Read(perframeBufferHandle, true);
-        depthCullingPass.Read(lastMinDepthPyramidHandle, true);
-        depthCullingPass.Read(terrainPatchNodeHandle, true);
-        depthCullingPass.Read(inputIndexBufferHandle, true);
-        depthCullingPass.Write(visiableIndexBufferHandle, true);
-        
-        depthCullingPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
-            RHI::D3D12ComputeContext* pContext = context->GetComputeContext();
-
-            pContext->TransitionBarrier(RegGetBufCounter(visiableIndexBufferHandle), D3D12_RESOURCE_STATE_COPY_DEST);
-            pContext->FlushResourceBarriers();
-            pContext->ResetCounter(RegGetBufCounter(visiableIndexBufferHandle));
-
-            pContext->TransitionBarrier(RegGetBuf(perframeBufferHandle), D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
-            pContext->TransitionBarrier(RegGetTex(lastMinDepthPyramidHandle), D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE);
-            pContext->TransitionBarrier(RegGetBuf(terrainPatchNodeHandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-            pContext->TransitionBarrier(RegGetBuf(inputIndexBufferHandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-            pContext->TransitionBarrier(RegGetBufCounter(inputIndexBufferHandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-            pContext->TransitionBarrier(RegGetBuf(visiableIndexBufferHandle), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-            pContext->TransitionBarrier(RegGetBufCounter(visiableIndexBufferHandle), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-            pContext->FlushResourceBarriers();
-            
-            pContext->SetRootSignature(pPatchNodeCullByDepthSignature2.get());
-            pContext->SetPipelineState(pPatchNodeCullByDepthPSO2.get());
-
-            struct RootIndexBuffer
-            {
-                UINT perframeBufferIndex;
-                UINT maxDepthPyramidIndex;
-                UINT terrainPatchNodeIndex;
-                UINT inputPatchNodeIdxBufferIndex;
-                UINT inputPatchNodeIdxCounterIndex;
-                UINT visiableIndexBufferIndex;
-            };
-
-            RootIndexBuffer rootIndexBuffer =
-                RootIndexBuffer {RegGetBufDefCBVIdx(perframeBufferHandle),
-                                 RegGetTexDefSRVIdx(lastMinDepthPyramidHandle),
-                                 RegGetBufDefSRVIdx(terrainPatchNodeHandle),
-                                 RegGetBufDefSRVIdx(inputIndexBufferHandle),
-                                 RegGetBufCounterSRVIdx(inputIndexBufferHandle),
-                                 RegGetBufDefUAVIdx(visiableIndexBufferHandle)};
-
-            pContext->SetConstantArray(0, sizeof(RootIndexBuffer) / sizeof(UINT), &rootIndexBuffer);
-
-            pContext->Dispatch1D(4096, 128);
-
-        });
-
-        cullPassInput.visiableIndexBufferHandle    = visiableIndexBufferHandle;
-    }
-    
-    void IndirectTerrainCullPass::genCullCommandSignature(RHI::RenderGraph& graph, DepthCommandSigGenInput& cmdBufferInput)
-    {
-        RHI::RenderPass& cameraCullingPass = graph.AddRenderPass("TerrainCommandSignaturePass");
-
-        RHI::RgResourceHandle visiableIndexBufferHandle = cmdBufferInput.inputIndexBufferHandle;
-        RHI::RgResourceHandle terrainCommandSigBufHandle = cmdBufferInput.terrainCommandSigBufHandle;
-
-        cameraCullingPass.Read(mainCommandSigUploadBufferHandle, true);
-        cameraCullingPass.Read(visiableIndexBufferHandle, true);
-        cameraCullingPass.Write(terrainCommandSigBufHandle, true);
-
-        cameraCullingPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
-            RHI::D3D12ComputeContext* pContext = context->GetComputeContext();
-
-            pContext->TransitionBarrier(RegGetBuf(mainCommandSigUploadBufferHandle), D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_GENERIC_READ);
-            pContext->TransitionBarrier(RegGetBufCounter(visiableIndexBufferHandle), D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_SOURCE);
-            pContext->TransitionBarrier(RegGetBuf(terrainCommandSigBufHandle), D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_DEST);
-            pContext->FlushResourceBarriers();
-
-            pContext->CopyBufferRegion(RegGetBuf(terrainCommandSigBufHandle), 0, RegGetBuf(mainCommandSigUploadBufferHandle), 0, sizeof(MoYu::TerrainToDrawCommandSignatureParams));
-            pContext->CopyBufferRegion(RegGetBuf(terrainCommandSigBufHandle), terrainInstanceCountOffset, RegGetBufCounter(visiableIndexBufferHandle), 0, sizeof(int));
-            
-            pContext->TransitionBarrier(RegGetBuf(terrainCommandSigBufHandle), D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT);
-            pContext->FlushResourceBarriers();
-
-        });
-
-        cmdBufferInput.terrainCommandSigBufHandle = terrainCommandSigBufHandle;
-    }
-
-    void IndirectTerrainCullPass::cullByLastFrameDepth(RHI::RenderGraph& graph, DepthCullIndexInput& input, DrawCallCommandBufferHandle& output)
-    {
-        RHI::RgResourceHandle terrainCommandSigBufHandle = GImport(graph, lastDepthCullRemainIndexBuffer.m_TerrainCommandSignatureBuffer.get()); 
-        RHI::RgResourceHandle visiableIndexBufferHandle = GImport(graph, lastDepthCullRemainIndexBuffer.m_PatchNodeVisiableIndexBuffer.get());
-        RHI::RgResourceHandle nonVisiableIndexBufferHandle = GImport(graph, lastDepthCullRemainIndexBuffer.m_PatchNodeNonVisiableIndexBuffer.get());
-
-        //=================================================================================
-        // 使用上一帧depth进行剪裁
-        //=================================================================================
-        DepthCullInput cullPassInput               = {};
-        cullPassInput.perframeBufferHandle         = input.perframeBufferHandle;
-        cullPassInput.minDepthPyramidHandle        = input.minDepthPyramidHandle;
-        cullPassInput.terrainPatchNodeHandle       = terrainPatchNodeHandle;
-        cullPassInput.inputIndexBufferHandle       = mainCamVisiableIndexHandle;
-        cullPassInput.nonVisiableIndexBufferHandle = nonVisiableIndexBufferHandle;
-        cullPassInput.visiableIndexBufferHandle    = visiableIndexBufferHandle;
-        cullingPassLastFrame(graph, cullPassInput);
-
-        //=================================================================================
-        // 主相机地形CommandSignature准备
-        //=================================================================================
-        DepthCommandSigGenInput cmdBufferInput = {};
-        cmdBufferInput.inputIndexBufferHandle  = cullPassInput.visiableIndexBufferHandle; 
-        cmdBufferInput.terrainCommandSigBufHandle = terrainCommandSigBufHandle;
-        genCullCommandSignature(graph, cmdBufferInput);
-
-        // 保存不可见index，用于给当前帧depth再做一次剪裁
-        lastFrameNonVisiableIndexBufferHandle = cullPassInput.nonVisiableIndexBufferHandle;
-
-        // 输出index和commandsignature
-        output.commandSigBufferHandle = cmdBufferInput.terrainCommandSigBufHandle;
-        output.indirectIndexBufferHandle = cmdBufferInput.inputIndexBufferHandle;
-    }
-
-    void IndirectTerrainCullPass::cullByCurrentFrameDepth(RHI::RenderGraph& graph, DepthCullIndexInput& input, DrawCallCommandBufferHandle& output)
-    {
-        RHI::RgResourceHandle terrainCommandSigBufHandle = GImport(graph, curDepthCullRemainIndexBuffer.m_TerrainCommandSignatureBuffer.get()); 
-        RHI::RgResourceHandle visiableIndexBufferHandle = GImport(graph, curDepthCullRemainIndexBuffer.m_PatchNodeVisiableIndexBuffer.get());
-        
-        //=================================================================================
-        // 使用上一帧depth进行剪裁
-        //=================================================================================
-        DepthCullInput cullPassInput               = {};
-        cullPassInput.perframeBufferHandle         = input.perframeBufferHandle;
-        cullPassInput.minDepthPyramidHandle        = input.minDepthPyramidHandle;
-        cullPassInput.terrainPatchNodeHandle       = terrainPatchNodeHandle;
-        cullPassInput.inputIndexBufferHandle       = lastFrameNonVisiableIndexBufferHandle;
-        cullPassInput.visiableIndexBufferHandle    = visiableIndexBufferHandle;
-        cullingPassCurFrame(graph, cullPassInput);
-
-        //=================================================================================
-        // 主相机地形CommandSignature准备
-        //=================================================================================
-        DepthCommandSigGenInput cmdBufferInput = {};
-        cmdBufferInput.inputIndexBufferHandle  = cullPassInput.visiableIndexBufferHandle; 
-        cmdBufferInput.terrainCommandSigBufHandle = terrainCommandSigBufHandle;
-        genCullCommandSignature(graph, cmdBufferInput);
-
-        // 输出index和commandsignature
-        output.commandSigBufferHandle = cmdBufferInput.terrainCommandSigBufHandle;
-        output.indirectIndexBufferHandle = cmdBufferInput.inputIndexBufferHandle;
-    }
-    */
     void IndirectTerrainCullPass::destroy()
     {
 
