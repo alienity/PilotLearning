@@ -274,15 +274,14 @@ namespace MoYu
             
             auto pDrawCallCommandSigBuffer = registry->GetD3D12Buffer(terrainCommandSigHandle);
 
-            //graphicContext->ExecuteIndirect(pIndirectTerrainGBufferCommandSignature.get(),
-            //                                pDrawCallCommandSigBuffer,
-            //                                0,
-            //                                clipTransCount,
-            //                                pDrawCallCommandSigBuffer->GetCounterBuffer().get(),
-            //                                0);
+            graphicContext->ExecuteIndirect(pIndirectTerrainGBufferCommandSignature.get(),
+                                            pDrawCallCommandSigBuffer,
+                                            0,
+                                            clipTransCount,
+                                            pDrawCallCommandSigBuffer->GetCounterBuffer().get(),
+                                            0);
 
         });
-
 
         passIndex += 1;
     }

@@ -104,7 +104,7 @@ namespace MoYu
                 RHI::D3D12Texture::Create2D(m_Device->GetLinkedDevice(),
                                             heightmapDesc.Width,
                                             heightmapDesc.Height,
-                                            8,
+                                            10,
                                             heightmapDesc.Format,
                                             RHI::RHISurfaceCreateRandomWrite | RHI::RHISurfaceCreateMipmap,
                                             1,
@@ -117,7 +117,7 @@ namespace MoYu
                 RHI::D3D12Texture::Create2D(m_Device->GetLinkedDevice(),
                                             heightmapDesc.Width,
                                             heightmapDesc.Height,
-                                            8,
+                                            10,
                                             heightmapDesc.Format,
                                             RHI::RHISurfaceCreateRandomWrite | RHI::RHISurfaceCreateMipmap,
                                             1,
@@ -336,6 +336,8 @@ namespace MoYu
         terrainMainCullingPass.Read(clipmapBaseCommandSighandle, true);
         terrainMainCullingPass.Read(clipmapTransformHandle, true);
         terrainMainCullingPass.Read(clipmapMeshCountHandle, true);
+        terrainMainCullingPass.Read(terrainMinHeightMapHandle, true);
+        terrainMainCullingPass.Read(terrainMaxHeightMapHandle, true);
         terrainMainCullingPass.Write(camVisableClipmapHandle, true);
 
         terrainMainCullingPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
@@ -349,6 +351,8 @@ namespace MoYu
             pContext->TransitionBarrier(RegGetBuf(clipmapMeshCountHandle), D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
             pContext->TransitionBarrier(RegGetBuf(clipmapBaseCommandSighandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
             pContext->TransitionBarrier(RegGetBuf(clipmapTransformHandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+            pContext->TransitionBarrier(RegGetTex(terrainMinHeightMapHandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+            pContext->TransitionBarrier(RegGetTex(terrainMaxHeightMapHandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
             pContext->TransitionBarrier(RegGetBuf(camVisableClipmapHandle), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
             pContext->TransitionBarrier(RegGetBufCounter(camVisableClipmapHandle), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
             pContext->FlushResourceBarriers();
@@ -362,6 +366,8 @@ namespace MoYu
                 uint32_t clipmapMeshCountIndex;
                 uint32_t transformBufferIndex;
                 uint32_t clipmapBaseCommandSigIndex;
+                uint32_t terrainMinHeightmapIndex;
+                uint32_t terrainMaxHeightmapIndex;
                 uint32_t clipmapVisableBufferIndex;
             };
 
@@ -369,6 +375,8 @@ namespace MoYu
                                                                RegGetBufDefCBVIdx(clipmapMeshCountHandle),
                                                                RegGetBufDefSRVIdx(clipmapTransformHandle),
                                                                RegGetBufDefSRVIdx(clipmapBaseCommandSighandle),
+                                                               RegGetTexDefSRVIdx(terrainMinHeightMapHandle),
+                                                               RegGetTexDefSRVIdx(terrainMaxHeightMapHandle),
                                                                RegGetBufDefUAVIdx(camVisableClipmapHandle)};
 
             pContext->SetConstantArray(0, sizeof(RootIndexBuffer) / sizeof(UINT), &rootIndexBuffer);
@@ -380,7 +388,6 @@ namespace MoYu
             pContext->TransitionBarrier(RegGetBufCounter(camVisableClipmapHandle), D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT);
             pContext->FlushResourceBarriers();
         });
-
 
 
         /*

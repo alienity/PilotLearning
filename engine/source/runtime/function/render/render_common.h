@@ -251,6 +251,7 @@ namespace MoYu
 
     struct InternalScratchMesh
     {
+        AxisAlignedBox              axis_aligned_box;
         InternalScratchIndexBuffer  scratch_index_buffer;
         InternalScratchVertexBuffer scratch_vertex_buffer;
     };

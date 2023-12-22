@@ -344,6 +344,8 @@ namespace HLSL
         D3D12_VERTEX_BUFFER_VIEW     VertexBuffer;
         D3D12_INDEX_BUFFER_VIEW      IndexBuffer;
         D3D12_DRAW_INDEXED_ARGUMENTS DrawIndexedArguments;
+        glm::int3                    _Padding_0;
+        BoundingBox                  ClipBoundingBox;
     };
 
     struct ToDrawCommandSignatureParams

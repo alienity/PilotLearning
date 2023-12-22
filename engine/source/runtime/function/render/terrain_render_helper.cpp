@@ -217,12 +217,18 @@ namespace MoYu
                     nullptr, base_mesh_buffer_size, sizeof(HLSL::ClipMeshCommandSigParams));
                 _clipmapInstanceBuffer->clip_base_mesh_command_buffer = _clip_base_mesh_buffer;
             }
-            void* _raw_mesh_buffer = _clip_base_mesh_buffer->GetCpuVirtualAddress();
+            HLSL::ClipMeshCommandSigParams* _raw_mesh_buffer =
+                _clip_base_mesh_buffer->GetCpuVirtualAddress<HLSL::ClipMeshCommandSigParams>();
             for (int i = 0; i < HLSL::GeoClipMeshType; i++)
             {
                 MoYu::InternalMesh& _clipmap_mesh = _terrain_clipmap->clipmap_mesh[i];
                 MoYu::InternalIndexBuffer& _index_buffer = _clipmap_mesh.index_buffer;
                 MoYu::InternalVertexBuffer& _vertex_buffer = _clipmap_mesh.vertex_buffer;
+                MoYu::AxisAlignedBox _axisAlignedBox = _clipmap_mesh.axis_aligned_box;
+                
+                HLSL::BoundingBox _clipBoundingBox {};
+                _clipBoundingBox.center  = _axisAlignedBox.getCenter();
+                _clipBoundingBox.extents = _axisAlignedBox.getHalfExtent();
 
                 D3D12_DRAW_INDEXED_ARGUMENTS _drawIndexedArguments = {};
                 _drawIndexedArguments.IndexCountPerInstance        = _index_buffer.index_count;
@@ -231,19 +237,14 @@ namespace MoYu
                 _drawIndexedArguments.BaseVertexLocation           = 0;
                 _drawIndexedArguments.StartInstanceLocation        = 0;
 
-                int t0 = sizeof(D3D12_VERTEX_BUFFER_VIEW);
-                int t1 = sizeof(D3D12_INDEX_BUFFER_VIEW);
-                int t2 = sizeof(D3D12_DRAW_INDEXED_ARGUMENTS);
-                int t3 = t0 + t1 + t2;
+                HLSL::ClipMeshCommandSigParams _cmdSigParam {};
+                _cmdSigParam.VertexBuffer = _vertex_buffer.vertex_buffer->GetVertexBufferView();
+                _cmdSigParam.IndexBuffer = _index_buffer.index_buffer->GetIndexBufferView();
+                _cmdSigParam.DrawIndexedArguments = _drawIndexedArguments;
+                _cmdSigParam.ClipBoundingBox      = _clipBoundingBox;
+                _cmdSigParam._Padding_0           = glm::int3(0, 0, 0);
 
-                char* cur_pos = (char*)_raw_mesh_buffer + t3 * i;
-
-                auto vv = _vertex_buffer.vertex_buffer->GetVertexBufferView();
-                auto ii = _index_buffer.index_buffer->GetIndexBufferView();
-
-                memcpy(cur_pos, (char*)(&vv), t1);
-                memcpy(cur_pos + t0, (char*)(&ii), t2);
-                memcpy(cur_pos + t0 + t1, (char*)(&_drawIndexedArguments), t3);
+                _raw_mesh_buffer[i] = _cmdSigParam;
             }
 
 
@@ -328,6 +329,8 @@ namespace MoYu
 
     void TerrainRenderHelper::UpdateClipPatchMesh(RenderResource* renderResource, InternalMesh* internalMesh, InternalScratchMesh* internalScratchMesh)
     {
+        internalMesh->axis_aligned_box = internalScratchMesh->axis_aligned_box;
+
         uint32_t vertex_buffer_stride = sizeof(D3D12MeshVertexPosition);
         uint32_t vertex_buffer_size = internalScratchMesh->scratch_vertex_buffer.vertex_buffer->GetBufferSize();
         if (internalMesh->vertex_buffer.vertex_buffer == nullptr)
@@ -366,6 +369,8 @@ namespace MoYu
 
     void TerrainRenderHelper::UpdateClipPatchScratchMesh(InternalScratchMesh* internalScratchMesh, GeoClipPatch geoPatch)
     {
+        internalScratchMesh->axis_aligned_box = geoPatch.aabb;
+
         InternalScratchVertexBuffer* scratch_vertex_buffer = &internalScratchMesh->scratch_vertex_buffer;
         std::uint32_t vertex_buffer_size = geoPatch.vertices.size() * sizeof(D3D12MeshVertexPosition);
         if (scratch_vertex_buffer->vertex_buffer == nullptr)
