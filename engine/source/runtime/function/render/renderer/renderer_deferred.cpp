@@ -368,25 +368,23 @@ namespace MoYu
         }
         mIndirectShadowPass->update(graph, mShadowmapIntputParams, mShadowmapOutputParams);
         //=================================================================================
-        /*
+        
         //=================================================================================
         // indirect terrain draw shadow
         IndirectTerrainShadowPass::ShadowInputParameters  mTerrainShadowmapIntputParams;
         IndirectTerrainShadowPass::ShadowOutputParameters mTerrainShadowmapOutputParams;
 
         mTerrainShadowmapIntputParams.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
-        mTerrainShadowmapIntputParams.terrainPatchNodeHandle = terrainCullOutput.terrainPatchNodeBufferHandle;
         mTerrainShadowmapIntputParams.terrainHeightmapHandle = terrainCullOutput.terrainHeightmapHandle;
-        for (int i = 0; i < terrainCullOutput.directionShadowmapHandles.size(); i++)
-        {
-            auto& _indexAndSigHandle = terrainCullOutput.directionShadowmapHandles[i];
-            mTerrainShadowmapIntputParams.dirShadowIndexAndSigHandle.push_back(
-                {_indexAndSigHandle.commandSigBufferHandle, _indexAndSigHandle.indirectIndexBufferHandle});
-        }
+        mTerrainShadowmapIntputParams.transformBufferHandle  = terrainCullOutput.transformBufferHandle;
+        mTerrainShadowmapIntputParams.dirCommandSigHandle.assign(terrainCullOutput.dirVisCommandSigHandles.begin(),
+                                                                 terrainCullOutput.dirVisCommandSigHandles.end());
+        
         mTerrainShadowmapOutputParams.directionalShadowmapHandle = mShadowmapOutputParams.directionalShadowmapHandle;
+
         mIndirectTerrainShadowPass->update(graph, mTerrainShadowmapIntputParams, mTerrainShadowmapOutputParams);
         //=================================================================================
-        */
+        
         //=================================================================================
         // shadowmap output
         RHI::RgResourceHandle directionalShadowmapHandle       = mShadowmapOutputParams.directionalShadowmapHandle;
@@ -412,13 +410,13 @@ namespace MoYu
         //=================================================================================
         
         //=================================================================================
-        // indirect terrain gbuffer for pass 1
+        // indirect terrain gbuffer
         IndirectTerrainGBufferPass::DrawInputParameters mTerrainGBufferIntput;
         mTerrainGBufferIntput.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
         mTerrainGBufferIntput.terrainHeightmapHandle = terrainCullOutput.terrainHeightmapHandle;
         mTerrainGBufferIntput.terrainNormalmapHandle = terrainCullOutput.terrainNormalmapHandle;
-        mTerrainGBufferIntput.terrainCommandSigHandle = terrainCullOutput.terrainCommandSigHandle;
         mTerrainGBufferIntput.transformBufferHandle   = terrainCullOutput.transformBufferHandle;
+        mTerrainGBufferIntput.terrainCommandSigHandle = terrainCullOutput.mainCamVisCommandSigHandle;
 
         mIndirectTerrainGBufferPass->update(graph, mTerrainGBufferIntput, mGBufferOutput);
         //=================================================================================

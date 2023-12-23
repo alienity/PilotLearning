@@ -58,8 +58,10 @@ namespace MoYu
             RHI::RgResourceHandle maxHeightmapPyramidHandle;
             RHI::RgResourceHandle minHeightmapPyramidHandle;
 
-            RHI::RgResourceHandle terrainCommandSigHandle;
             RHI::RgResourceHandle transformBufferHandle;
+
+            RHI::RgResourceHandle mainCamVisCommandSigHandle;
+            std::vector<RHI::RgResourceHandle> dirVisCommandSigHandles;
         };
 
         struct DepthCullIndexInput

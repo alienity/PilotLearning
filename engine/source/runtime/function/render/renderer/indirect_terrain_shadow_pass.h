@@ -17,19 +17,13 @@ namespace MoYu
             std::filesystem::path m_ShaderRootPath;
         };
 
-        struct DrawIndexAndCommandSigHandle
-        {
-            RHI::RgResourceHandle drawCallCommandSigBufferHandle;
-            RHI::RgResourceHandle drawIndexBufferHandle;
-        };
-
         struct ShadowInputParameters : public PassInput
         {
-            RHI::RgResourceHandle perframeBufferHandle = RHI::_DefaultRgResourceHandle;
-            RHI::RgResourceHandle terrainPatchNodeHandle = RHI::_DefaultRgResourceHandle;
-            RHI::RgResourceHandle terrainHeightmapHandle = RHI::_DefaultRgResourceHandle;
+            RHI::RgResourceHandle perframeBufferHandle;
+            RHI::RgResourceHandle terrainHeightmapHandle;
 
-            std::vector<DrawIndexAndCommandSigHandle> dirShadowIndexAndSigHandle;
+            RHI::RgResourceHandle transformBufferHandle;
+            std::vector<RHI::RgResourceHandle> dirCommandSigHandle;
         };
 
         struct ShadowOutputParameters : public PassOutput

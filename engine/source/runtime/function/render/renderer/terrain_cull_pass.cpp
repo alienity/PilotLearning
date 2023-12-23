@@ -202,7 +202,7 @@ namespace MoYu
                                                      RHI::RHIBufferRandomReadWrite | RHI::RHIBufferTargetStructured | RHI::RHIBufferTargetCounter,
                                                      clip_transform_counts,
                                                     sizeof(HLSL::ToDrawCommandSignatureParams),
-                                                     fmt::format(L"DirectionClipmapTransformBuffer_Cascade_{}", i));
+                                                     fmt::format(L"DirectionVisableClipmapBuffer_Cascade_{}", i));
 
                         dirVisableClipmapBuffers.m_VisableClipmapBuffers.push_back(shadowClipNodeVisiableBuffer);
                     }
@@ -243,6 +243,13 @@ namespace MoYu
 
         RHI::RgResourceHandle camVisableClipmapHandle = GImport(graph, camVisableClipmapBuffer.get());
         
+        std::vector<RHI::RgResourceHandle> dirVisableClipmapHandles {};
+        int dirVisableClipmapBufferCount = dirVisableClipmapBuffers.m_VisableClipmapBuffers.size();
+        for (int i = 0; i < dirVisableClipmapBufferCount; i++)
+        {
+            dirVisableClipmapHandles.push_back(GImport(graph, dirVisableClipmapBuffers.m_VisableClipmapBuffers[i].get()));
+        }
+
 
         RHI::RgResourceHandle perframeBufferHandle = passInput.perframeBufferHandle;
         
@@ -382,12 +389,84 @@ namespace MoYu
             pContext->SetConstantArray(0, sizeof(RootIndexBuffer) / sizeof(UINT), &rootIndexBuffer);
 
             pContext->Dispatch1D(256, 8);
-
-
-            pContext->TransitionBarrier(RegGetBuf(camVisableClipmapHandle), D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT);
-            pContext->TransitionBarrier(RegGetBufCounter(camVisableClipmapHandle), D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT);
-            pContext->FlushResourceBarriers();
         });
+
+        //=================================================================================
+        // π‚‘¥ShadowºÙ≤√
+        //=================================================================================
+        int dirShadowmapVisiableBufferCount = dirVisableClipmapBuffers.m_VisableClipmapBuffers.size();
+        if (dirShadowmapVisiableBufferCount != 0)
+        {
+            RHI::RenderPass& dirLightShadowCullPass = graph.AddRenderPass("DirectionLightTerrainCullingPass");
+
+            dirLightShadowCullPass.Read(perframeBufferHandle, true);
+            dirLightShadowCullPass.Read(clipmapBaseCommandSighandle, true);
+            dirLightShadowCullPass.Read(clipmapTransformHandle, true);
+            dirLightShadowCullPass.Read(clipmapMeshCountHandle, true);
+            dirLightShadowCullPass.Read(terrainMinHeightMapHandle, true);
+            dirLightShadowCullPass.Read(terrainMaxHeightMapHandle, true);  
+            for (int i = 0; i < dirShadowmapVisiableBufferCount; i++)
+            {
+                dirLightShadowCullPass.Write(dirVisableClipmapHandles[i], true);
+            }
+            dirLightShadowCullPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
+                RHI::D3D12ComputeContext* pContext = context->GetComputeContext();
+
+                for (int i = 0; i < dirShadowmapVisiableBufferCount; i++)
+                {
+                    pContext->TransitionBarrier(RegGetBufCounter(dirVisableClipmapHandles[i]), D3D12_RESOURCE_STATE_COPY_DEST);
+                }
+                pContext->FlushResourceBarriers();
+                for (int i = 0; i < dirShadowmapVisiableBufferCount; i++)
+                {
+                    pContext->ResetCounter(RegGetBufCounter(dirVisableClipmapHandles[i]));
+                }
+                pContext->TransitionBarrier(RegGetBuf(perframeBufferHandle), D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
+                pContext->TransitionBarrier(RegGetBuf(clipmapMeshCountHandle), D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
+                pContext->TransitionBarrier(RegGetBuf(clipmapBaseCommandSighandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+                pContext->TransitionBarrier(RegGetBuf(clipmapTransformHandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+                pContext->TransitionBarrier(RegGetTex(terrainMinHeightMapHandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+                pContext->TransitionBarrier(RegGetTex(terrainMaxHeightMapHandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+                for (int i = 0; i < dirShadowmapVisiableBufferCount; i++)
+                {
+                    pContext->TransitionBarrier(RegGetBuf(dirVisableClipmapHandles[i]), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+                    pContext->TransitionBarrier(RegGetBufCounter(dirVisableClipmapHandles[i]), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+                }
+                pContext->FlushResourceBarriers();
+
+                for (uint32_t i = 0; i < dirShadowmapVisiableBufferCount; i++)
+                {
+                    pContext->SetRootSignature(pDirVisClipmapSignature.get());
+                    pContext->SetPipelineState(pDirVisClipmapGenPSO.get());
+
+                    struct RootIndexBuffer
+                    {
+                        uint32_t cascadeLevel;
+                        uint32_t perFrameBufferIndex;
+                        uint32_t clipmapMeshCountIndex;
+                        uint32_t transformBufferIndex;
+                        uint32_t clipmapBaseCommandSigIndex;
+                        uint32_t terrainMinHeightmapIndex;
+                        uint32_t terrainMaxHeightmapIndex;
+                        uint32_t clipmapVisableBufferIndex;
+                    };
+
+                    RootIndexBuffer rootIndexBuffer = RootIndexBuffer {i,
+                                                                       RegGetBufDefCBVIdx(perframeBufferHandle),
+                                                                       RegGetBufDefCBVIdx(clipmapMeshCountHandle),
+                                                                       RegGetBufDefSRVIdx(clipmapTransformHandle),
+                                                                       RegGetBufDefSRVIdx(clipmapBaseCommandSighandle),
+                                                                       RegGetTexDefSRVIdx(terrainMinHeightMapHandle),
+                                                                       RegGetTexDefSRVIdx(terrainMaxHeightMapHandle),
+                                                                       RegGetBufDefUAVIdx(dirVisableClipmapHandles[i])};
+
+                    pContext->SetConstantArray(0, sizeof(RootIndexBuffer) / sizeof(UINT), &rootIndexBuffer);
+
+                    pContext->Dispatch1D(256, 8);
+                }
+            });
+        }
+
 
 
         /*
@@ -596,8 +675,11 @@ namespace MoYu
         passOutput.terrainNormalmapHandle    = terrainNormalmapHandle;
         passOutput.maxHeightmapPyramidHandle = terrainMaxHeightMapHandle;
         passOutput.minHeightmapPyramidHandle = terrainMinHeightMapHandle;
-        passOutput.terrainCommandSigHandle   = camVisableClipmapHandle;
+
         passOutput.transformBufferHandle     = clipmapTransformHandle;
+
+        passOutput.mainCamVisCommandSigHandle = camVisableClipmapHandle;
+        passOutput.dirVisCommandSigHandles.assign(dirVisableClipmapHandles.begin(), dirVisableClipmapHandles.end());
 
     }
 

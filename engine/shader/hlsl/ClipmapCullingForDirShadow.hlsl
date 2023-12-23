@@ -10,10 +10,25 @@ cbuffer RootConstants : register(b0, space0)
     uint clipmapMeshCountIndex;
     uint transformBufferIndex;
     uint clipmapBaseCommandSigIndex;
+    uint terrainMinHeightmapIndex;
+    uint terrainMaxHeightmapIndex;
     uint clipmapVisableBufferIndex;
 };
 
 SamplerState defaultSampler : register(s10);
+
+void GetMaxMinHeight(Texture2D<float4> minHeightmap, Texture2D<float4> maxHeightmap, 
+    float3 terrainPos, int2 heightSize, int mipLevel, float terrainMaxHeight, out float minHeight, out float maxHeight)
+{
+    float2 pivotUV = (terrainPos.xz + 1024 * heightSize.xy) / float2(heightSize.xy);
+    pivotUV = frac(pivotUV);
+    // fetch height from pyramid heightmap
+    minHeight = minHeightmap.SampleLevel(defaultSampler, pivotUV, mipLevel).b;
+    maxHeight = maxHeightmap.SampleLevel(defaultSampler, pivotUV, mipLevel).b;
+
+    minHeight = minHeight * terrainMaxHeight;
+    maxHeight = maxHeight * terrainMaxHeight;
+}
 
 [numthreads(8, 1, 1)]
 void CSMain(CSParams Params) {
@@ -22,6 +37,8 @@ void CSMain(CSParams Params) {
     ConstantBuffer<ClipmapMeshCount> clipmapMeshCount = ResourceDescriptorHeap[clipmapMeshCountIndex];
     StructuredBuffer<ClipmapTransform> clipTransformBuffer = ResourceDescriptorHeap[transformBufferIndex];
     StructuredBuffer<ClipMeshCommandSigParams> clipBaseMeshBuffer = ResourceDescriptorHeap[clipmapBaseCommandSigIndex];
+    Texture2D<float4> terrainMinHeightmap = ResourceDescriptorHeap[terrainMinHeightmapIndex];
+    Texture2D<float4> terrainMaxHeightmap = ResourceDescriptorHeap[terrainMaxHeightmapIndex];
     AppendStructuredBuffer<ToDrawCommandSignatureParams> toDrawCommandSigBuffer = ResourceDescriptorHeap[clipmapVisableBufferIndex];
 
     int totalCount = clipmapMeshCount.total_count;
@@ -29,43 +46,55 @@ void CSMain(CSParams Params) {
     if(Params.DispatchThreadID.x >= totalCount)
         return;
 
+    uint terrainWidth;
+    uint terrainHeight;
+    terrainMaxHeightmap.GetDimensions(terrainWidth, terrainHeight);
+
+    float terrainMaxHeight = mFrameUniforms.terrainUniform.terrainMaxHeight;
+
     uint index = Params.DispatchThreadID.x;
 
     ClipmapTransform clipTrans = clipTransformBuffer[index];
+    float4x4 tLocalTransform = clipTrans.transform;
     uint mesh_type = clipTrans.mesh_type;
 
     ClipMeshCommandSigParams clipSig = clipBaseMeshBuffer[mesh_type];
+    BoundingBox clipBoundingBox = clipSig.ClipBoundingBox;
 
-    ToDrawCommandSignatureParams toDrawCommandSig;
-    toDrawCommandSig.ClipIndex = index;
-    toDrawCommandSig.VertexBuffer = clipSig.VertexBuffer;
-    toDrawCommandSig.IndexBuffer = clipSig.IndexBuffer;
-    toDrawCommandSig.DrawIndexedArguments = clipSig.DrawIndexedArguments;
+    BoundingBox aabbView;
+    clipBoundingBox.Transform(tLocalTransform, aabbView);
 
-    toDrawCommandSigBuffer.Append(toDrawCommandSig);
+    float3 clipLocalPos = aabbView.Center;
+    float3 clipLocalExtents = aabbView.Extents; 
 
-    /*
-    float heightBias = 0.1f;
-    float3 boxMin = float3(patchNode.patchMinPos.x, patchNode.minHeight - heightBias, patchNode.patchMinPos.y);
-    float3 boxMax = float3(patchNode.patchMinPos.x + patchNode.nodeWidth, patchNode.maxHeight + heightBias, patchNode.patchMinPos.y + patchNode.nodeWidth);
+    float maxClipWidth = max(abs(clipLocalExtents.x), abs(clipLocalExtents.z)) * 2;
+    int clipMipLevel = clamp(ceil(log2(maxClipWidth)), 0, 8);
 
-    // boxMin.y += 1.5f;
-    // boxMax.y += 1.5f;
+    float minHeight, maxHeight;
+    GetMaxMinHeight(terrainMinHeightmap, terrainMaxHeightmap, clipLocalPos, 
+        int2(terrainWidth, terrainHeight), clipMipLevel, terrainMaxHeight, minHeight, maxHeight);
 
-    BoundingBox patchBox;
-    patchBox.Center = (boxMax + boxMin) * 0.5f;
-    patchBox.Extents = (boxMax - boxMin) * 0.5f;
+    float halfExtentY = (maxHeight - minHeight) * 0.5f + 0.1f;
+    float midHeight = (maxHeight + minHeight) * 0.5f + clipLocalPos.y;
+
+    aabbView.Center = float3(clipLocalPos.x, midHeight, clipLocalPos.z);
+    aabbView.Extents = float3(clipLocalExtents.x, halfExtentY, clipLocalExtents.z);
 
     float4x4 localToWorldMatrix = mFrameUniforms.terrainUniform.local2WorldMatrix;
-    BoundingBox aabb;
-    patchBox.Transform(localToWorldMatrix, aabb);
+    float4x4 clipFromWorldMatrix = mFrameUniforms.directionalLight.directionalLightShadowmap.light_proj_view[cascadeLevel];
+    float4x4 clipFromLocalMat = mul(clipFromWorldMatrix, localToWorldMatrix);
 
-    Frustum frustum = ExtractPlanesDX(mFrameUniforms.cameraUniform.curFrameUniform.clipFromWorldMatrix);
+    Frustum frustum = ExtractPlanesDX(clipFromLocalMat);
 
-    bool visible = FrustumContainsBoundingBox(frustum, aabb) != CONTAINMENT_DISJOINT;
+    bool visible = FrustumContainsBoundingBox(frustum, aabbView) != CONTAINMENT_DISJOINT;
     if (visible)
     {
-        terrainVisNodeIdxBuffer.Append(index);
+        ToDrawCommandSignatureParams toDrawCommandSig;
+        toDrawCommandSig.ClipIndex = index;
+        toDrawCommandSig.VertexBuffer = clipSig.VertexBuffer;
+        toDrawCommandSig.IndexBuffer = clipSig.IndexBuffer;
+        toDrawCommandSig.DrawIndexedArguments = clipSig.DrawIndexedArguments;
+
+        toDrawCommandSigBuffer.Append(toDrawCommandSig);
     }
-    */
 }

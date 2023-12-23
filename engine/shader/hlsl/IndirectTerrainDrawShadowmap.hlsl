@@ -3,18 +3,14 @@
 #include "CommonMath.hlsli"
 #include "InputTypes.hlsli"
 
-#define EAST 1
-#define SOUTH 2
-#define WEST 4
-#define NORTH 8
-
 cbuffer RootConstants : register(b0, space0) 
-{ 
+{
+    uint clipmapIndex;
+    
     uint cascadeLevel;
-    uint terrainPatchNodeIndex;
-    uint meshPerFrameBufferIndex;
+    uint transformBufferIndex;
+    uint perFrameBufferIndex;
     uint terrainHeightmapIndex;
-    uint terrainDrawIdxBufferIndex;
 };
 
 SamplerState defaultSampler : register(s10);
@@ -32,67 +28,45 @@ struct VertexInput
 
 struct VertexOutput
 {
-    float4 vertex_position : SV_POSITION;
-    float4 vertex_worldPosition : TEXCOORD0;
+    float4 cs_pos : SV_POSITION;
+    float4 ws_position : TEXCOORD0;
     float2 vertex_uv01 : TEXCOORD1;
 };
 
 VertexOutput VSMain(VertexInput input)
 {
-    StructuredBuffer<TerrainPatchNode> mTerrainPatchNodes = ResourceDescriptorHeap[terrainPatchNodeIndex];
-    ConstantBuffer<FrameUniforms> mFrameUniforms = ResourceDescriptorHeap[meshPerFrameBufferIndex];
-
+    ConstantBuffer<FrameUniforms> mFrameUniforms = ResourceDescriptorHeap[perFrameBufferIndex];
     Texture2D<float4> terrainHeightmap = ResourceDescriptorHeap[terrainHeightmapIndex];
+    StructuredBuffer<ClipmapTransform> clipmapTransformBuffers = ResourceDescriptorHeap[transformBufferIndex];
 
-    StructuredBuffer<uint> mDrawIdxBuffer = ResourceDescriptorHeap[terrainDrawIdxBufferIndex];
+    ClipmapTransform clipTransform = clipmapTransformBuffers[clipmapIndex];
 
-    uint patchNodeIndex = mDrawIdxBuffer[input.instanceID];
-
-    TerrainPatchNode _terrainPatchNode = mTerrainPatchNodes[patchNodeIndex];
+    float4x4 tLocalTransform = clipTransform.transform;
+    // int tMeshType = clipTransform.mesh_type;
 
     float4x4 localToWorldMatrix = mFrameUniforms.terrainUniform.local2WorldMatrix;
     float4x4 localToWorldMatrixInv = mFrameUniforms.terrainUniform.world2LocalMatrix;
-
     float4x4 projectionViewMatrix = mFrameUniforms.directionalLight.directionalLightShadowmap.light_proj_view[cascadeLevel];
+
+    float4x4 projectionMatrix         = mFrameUniforms.cameraUniform.curFrameUniform.clipFromViewMatrix;
+    float4x4 lastviewFromWorldMatrix  = mFrameUniforms.cameraUniform.lastFrameUniform.viewFromWorldMatrix;
+    float4x4 projectionViewMatrixPrev = mul(projectionMatrix, lastviewFromWorldMatrix);
 
     float terrainMaxHeight = mFrameUniforms.terrainUniform.terrainMaxHeight;
     float terrainSize = mFrameUniforms.terrainUniform.terrainSize;
 
     float3 localPosition = input.position;
-
-    float edgeOffsetScale = pow(2, max(0, _terrainPatchNode.mipLevel-1));
-
-    if(_terrainPatchNode.neighbor & EAST)
-    {
-        localPosition += float3(0, 0, -input.color.a) * edgeOffsetScale;
-    }
-    if(_terrainPatchNode.neighbor & SOUTH)
-    {
-        localPosition += float3(input.color.r, 0, 0) * edgeOffsetScale;
-    }
-    if(_terrainPatchNode.neighbor & WEST)
-    {
-        localPosition += float3(0, 0, input.color.b) * edgeOffsetScale;
-    }
-    if(_terrainPatchNode.neighbor & NORTH)
-    {
-        localPosition += float3(-input.color.g, 0, 0) * edgeOffsetScale;
-    }
-
-    localPosition = localPosition * _terrainPatchNode.nodeWidth + 
-        float3(_terrainPatchNode.patchMinPos.x, 0, _terrainPatchNode.patchMinPos.y);
-
-    float2 terrainUV = (localPosition.xz) / float2(terrainSize, terrainSize);
+    localPosition = mul(tLocalTransform, float4(localPosition, 1)).xyz;
+    float3 worldPosition = mul(localToWorldMatrix, float4(localPosition, 1)).xyz;
+    
+    float2 terrainUV = (worldPosition.xz) / float2(terrainSize, terrainSize);
     float curHeight = terrainHeightmap.SampleLevel(defaultSampler, terrainUV, 0).b;
 
-    localPosition.y = curHeight * terrainMaxHeight;
-
-    // localPosition.xyz *= 0.01f;
-    // localPosition.y += 1.5f;
+    worldPosition.y += curHeight * terrainMaxHeight;
 
     VertexOutput output;
-    output.vertex_worldPosition = mul(localToWorldMatrix, float4(localPosition, 1.0f));
-    output.vertex_position = mul(projectionViewMatrix, output.vertex_worldPosition);
+    output.ws_position = float4(worldPosition, 1.0f);
+    output.cs_pos = mul(projectionViewMatrix, output.ws_position);
     output.vertex_uv01 = terrainUV;
 
     return output;

@@ -57,8 +57,6 @@ namespace MoYu
                 (&pMaterialTillingBuffer[i])->normalTilling = terrainBaseTextures->normal_tilling;
             }
         }
-
-        passIndex = 0;
     }
 
 	void IndirectTerrainGBufferPass::initialize(const DrawPassInitInfo& init_info)
@@ -175,9 +173,7 @@ namespace MoYu
         RHI::RgResourceHandle terrainCommandSigHandle = passInput.terrainCommandSigHandle;
         RHI::RgResourceHandle transformBufferHandle   = passInput.transformBufferHandle;
 
-        InternalTerrainRenderer& internalTerrainRenderer =
-            m_render_scene->m_terrain_renderers[0].internalTerrainRenderer;
-
+        InternalTerrainRenderer& internalTerrainRenderer = m_render_scene->m_terrain_renderers[0].internalTerrainRenderer;
         uint32_t clipTransCount = internalTerrainRenderer.ref_terrain.terrain_clipmap.instance_buffer.clip_transform_counts;
 
         std::string_view passName = std::string_view("IndirectTerrainGBufferPass");
@@ -191,7 +187,7 @@ namespace MoYu
         drawpass.Read(passInput.terrainHeightmapHandle, false, RHIResourceState::RHI_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
         drawpass.Read(passInput.terrainNormalmapHandle, false, RHIResourceState::RHI_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
         
-        drawpass.Read(passInput.terrainCommandSigHandle, false, RHIResourceState::RHI_RESOURCE_STATE_INDIRECT_ARGUMENT);
+        drawpass.Read(passInput.terrainCommandSigHandle, false, RHIResourceState::RHI_RESOURCE_STATE_INDIRECT_ARGUMENT, RHIResourceState::RHI_RESOURCE_STATE_INDIRECT_ARGUMENT);
         drawpass.Read(passInput.transformBufferHandle, false, RHIResourceState::RHI_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 
         drawpass.Read(passOutput.albedoHandle, true);
@@ -282,8 +278,6 @@ namespace MoYu
                                             0);
 
         });
-
-        passIndex += 1;
     }
 
     void IndirectTerrainGBufferPass::destroy()
