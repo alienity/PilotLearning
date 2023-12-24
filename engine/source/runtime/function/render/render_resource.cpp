@@ -138,6 +138,8 @@ namespace MoYu
         _frameCameraUniform.unJitterProjectionMatrix = unjitter_proj_matrix;
         _frameCameraUniform.unJitterProjectionMatrixInv = glm::inverse(unjitter_proj_matrix);
 
+        _frameCameraUniform.zBufferParams = glm::float4();
+
         HLSL::FrameCameraUniform _lastFrameCameraUniform = _frameUniforms->cameraUniform.curFrameUniform;
 
         HLSL::CameraUniform _cameraUniform;

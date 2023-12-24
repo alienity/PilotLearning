@@ -121,6 +121,7 @@ namespace HLSL
         glm::float4   clipTransform;       // [sx, sy, tx, ty] only used by VERTEX_DOMAIN_DEVICE
         glm::float3   cameraPosition;      // camera world position
         glm::uint     jitterIndex;         // jitter index
+        glm::float4   zBufferParams; // xy - to 01 depth, zw - to eye depth
     };
 
     struct CameraUniform
