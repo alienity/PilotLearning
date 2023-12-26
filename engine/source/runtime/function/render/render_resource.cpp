@@ -113,11 +113,38 @@ namespace MoYu
         return true;
     }
 
+    // https://forum.unity.com/threads/decodedepthnormal-linear01depth-lineareyedepth-explanations.608452/
+    // 
+    //// Z buffer to linear depth
+    //inline float LinearEyeDepth( float z )
+    //{
+    //    return 1.0 / (_ZBufferParams.z * z + _ZBufferParams.w);
+    //}
+    // 
+    // Values used to linearize the Z buffer (http://www.humus.name/temp/Linearize%20depth.txt)
+    // x = 1-far/near
+    // y = far/near
+    // z = x/far
+    // w = y/far
+    // or in case of a reversed depth buffer (UNITY_REVERSED_Z is 1)
+    // x = -1+far/near
+    // y = 1
+    // z = x/far
+    // w = 1/far
+    glm::float4 calculateZBufferParams(float nearClipPlane, float farClipPlane)
+    {
+        float fpn = farClipPlane / nearClipPlane;
+        return glm::float4(fpn - 1.0f, 1.0f, (fpn - 1.0f) / farClipPlane, 1.0f / farClipPlane);
+    }
+
     void RenderResource::updateFrameUniforms(RenderScene* render_scene, RenderCamera* camera)
     {
         glm::float4x4 view_matrix     = camera->getViewMatrix();
         glm::float4x4 proj_matrix     = camera->getPersProjMatrix();
         glm::float3   camera_position = camera->position();
+
+        float _cn = camera->m_nearClipPlane;
+        float _cf = camera->m_farClipPlane;
 
         glm::float4x4 unjitter_proj_matrix = camera->getUnJitterPersProjMatrix();
         
@@ -138,7 +165,7 @@ namespace MoYu
         _frameCameraUniform.unJitterProjectionMatrix = unjitter_proj_matrix;
         _frameCameraUniform.unJitterProjectionMatrixInv = glm::inverse(unjitter_proj_matrix);
 
-        _frameCameraUniform.zBufferParams = glm::float4();
+        _frameCameraUniform.zBufferParams = calculateZBufferParams(_cn, _cf);
 
         HLSL::FrameCameraUniform _lastFrameCameraUniform = _frameUniforms->cameraUniform.curFrameUniform;
 

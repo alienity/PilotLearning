@@ -152,6 +152,7 @@ struct FrameCameraUniform
     float4   clipTransform;       // [sx, sy, tx, ty] only used by VERTEX_DOMAIN_DEVICE
     float3   cameraPosition;      // camera world position
     uint     jitterIndex;         // jitter index
+    float4   zBufferParams; // xy - to 01 depth, zw - to eye depth
 };
 
 struct CameraUniform
@@ -219,6 +220,10 @@ struct SSRUniform
     float ssrBias; // ssr bias, in world units
     float ssrDistance; // ssr world raycast distance, 0 when ssr is off
     float ssrStride; // ssr texel stride, >= 1.0
+
+    float4 jitterSizeAndOffset;
+    float4 noiseSize;
+
 };
 
 struct DirectionalLightShadowmap
