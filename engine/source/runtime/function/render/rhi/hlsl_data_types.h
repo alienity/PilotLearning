@@ -183,12 +183,19 @@ namespace HLSL
 
     struct SSRUniform
     {
-        glm::float4x4 ssrReprojection;
-        glm::float4x4 ssrUvFromViewMatrix;
-        float    ssrThickness; // ssr thickness, in world units
-        float    ssrBias;      // ssr bias, in world units
-        float    ssrDistance;  // ssr world raycast distance, 0 when ssr is off
-        float    ssrStride;    // ssr texel stride, >= 1.0
+        glm::float4 ScreenSize;
+        glm::float4 ResolveSize;
+        glm::float4 RayCastSize;
+        glm::float4 JitterSizeAndOffset;
+        glm::float4 NoiseSize;
+        float  BRDFBias;
+        float  TResponseMin;
+        float  TResponseMax;
+        float  TScale;
+        float  EdgeFactor;
+        float  Thickness;
+        int    NumSteps;
+        int    MaxMipMap;
     };
 
     struct DirectionalLightShadowmap

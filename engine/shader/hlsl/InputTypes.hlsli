@@ -214,16 +214,19 @@ struct IBLUniform
 
 struct SSRUniform
 {
-    float4x4 ssrReprojection;
-    float4x4 ssrUvFromViewMatrix;
-    float ssrThickness; // ssr thickness, in world units
-    float ssrBias; // ssr bias, in world units
-    float ssrDistance; // ssr world raycast distance, 0 when ssr is off
-    float ssrStride; // ssr texel stride, >= 1.0
-
-    float4 jitterSizeAndOffset;
-    float4 noiseSize;
-
+    float4 ScreenSize;
+    float4 ResolveSize;
+    float4 RayCastSize;
+    float4 JitterSizeAndOffset;
+    float4 NoiseSize;
+    float BRDFBias;
+    float TResponseMin;
+    float TResponseMax;
+    float TScale;
+    float EdgeFactor;
+    float Thickness;
+    int NumSteps;
+    int MaxMipMap;
 };
 
 struct DirectionalLightShadowmap

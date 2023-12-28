@@ -259,11 +259,11 @@ float3 isEvaluateSpecularIBL(const PixelParams pixel, const float3 n, const floa
             float LoH = saturate(dot(l, h));
 
             // PDF inverse (we must use D_GGX() here, which is used to generate samples)
-            float ipdf = (4.0 * LoH) / (D_GGX(roughness, NoH, h) * NoH);
+            float ipdf = (4.0 * LoH) / (D_GGX(roughness, NoH) * NoH);
             float mipLevel = prefilteredImportanceSampling(ipdf, omegaP);
             float3 L = decodeDataForIBL(textureLod(light_iblSpecular, l, mipLevel));
 
-            float D = distribution(roughness, NoH, h);
+            float D = distribution(roughness, NoH);
             float V = visibility(roughness, NoV, NoL);
             float3 F = fresnel(pixel.f0, LoH);
             float3 Fr = F * (D * V * NoL * ipdf * invNumSamples);

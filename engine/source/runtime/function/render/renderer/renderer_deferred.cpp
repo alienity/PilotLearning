@@ -231,6 +231,17 @@ namespace MoYu
             mAOPass->setCommonInfo(renderPassCommonInfo);
             mAOPass->initialize(aoPassInit); 
         }
+        // ssr pass
+        {
+            SSRPass::SSRInitInfo ssrPassInit;
+            ssrPassInit.m_ColorTexDesc   = colorTexDesc;
+            ssrPassInit.m_ShaderCompiler = pCompiler;
+            ssrPassInit.m_ShaderRootPath = g_runtime_global_context.m_config_manager->getShaderFolder();
+
+            mSSRPass = std::make_shared<SSRPass>();
+            mSSRPass->setCommonInfo(renderPassCommonInfo);
+            mSSRPass->initialize(ssrPassInit); 
+        }
         // postprocess pass
         {
             RHI::RgTextureDesc resolveColorTexDesc = colorTexDesc;
@@ -276,7 +287,7 @@ namespace MoYu
         mTerrainCullPass->prepareMeshData(render_resource);
         mIndirectTerrainGBufferPass->prepareMatBuffer(render_resource);
         mDepthPyramidPass->prepareMeshData(render_resource);
-
+        mSSRPass->prepareMetaData(render_resource);
         mPostprocessPasses->PreparePassData(render_resource);
 
         mIndirectCullPass->inflatePerframeBuffer(render_resource);
@@ -296,6 +307,7 @@ namespace MoYu
         mIndirectLightLoopPass       = nullptr;
         mIndirectOpaqueDrawPass      = nullptr;
         mAOPass                      = nullptr;
+        mSSRPass                     = nullptr;
         mSkyBoxPass                  = nullptr;
         mIndirectTransparentDrawPass = nullptr;
         mPostprocessPasses           = nullptr;
@@ -480,6 +492,14 @@ namespace MoYu
         mAOIntput.worldNormalHandle    = mGBufferOutput.worldNormalHandle;
         mAOIntput.depthHandle          = mGBufferOutput.depthHandle;
         mAOPass->update(graph, mAOIntput, mAOOutput);
+        //=================================================================================
+
+        //=================================================================================
+        // ssr
+        SSRPass::DrawInputParameters mSSRInput;
+        SSRPass::DrawOutputParameters mSSROutput;
+        mSSRInput.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
+        mSSRPass->update(graph, mSSRInput, mSSROutput);
         //=================================================================================
 
         //=================================================================================

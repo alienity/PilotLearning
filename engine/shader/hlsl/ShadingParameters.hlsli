@@ -527,7 +527,7 @@ void getPixelParams(const FrameUniforms frameUniforms, const CommonShadingStruct
 float3 isotropicLobe(const PixelParams pixel, const float3 h, float NoV, float NoL, float NoH, float LoH)
 {
 
-    float D = distribution(pixel.roughness, NoH, h);
+    float D = distribution(pixel.roughness, NoH);
     float V = visibility(pixel.roughness, NoV, NoL);
     float3 F = fresnel(pixel.f0, LoH);
 
@@ -556,7 +556,7 @@ float clearCoatLobe(const CommonShadingStruct commonShadingStruct,
     float clearCoatNoH = saturate(dot(commonShadingStruct.shading_clearCoatNormal, h));
 
     // clear coat specular lobe
-    float D = distributionClearCoat(pixel.clearCoatRoughness, clearCoatNoH, h);
+    float D = distributionClearCoat(pixel.clearCoatRoughness, clearCoatNoH);
     float V = visibilityClearCoat(LoH);
     float F = F_Schlick(0.04, 1.0, LoH) * pixel.clearCoat; // fix IOR to 1.5
 

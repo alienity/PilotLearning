@@ -51,7 +51,7 @@
 // Specular BRDF implementations
 //------------------------------------------------------------------------------
 
-float D_GGX(float roughness, float NoH, const float3 h)
+float D_GGX(float roughness, float NoH)
 {
     // Walter et al. 2007, "Microfacet Models for Refraction through Rough Surfaces"
 
@@ -163,10 +163,10 @@ float F_Schlick(float f0, float f90, float VoH)
 
 // https://learn.microsoft.com/zh-cn/windows/win32/direct3dhlsl/dx-graphics-hlsl-appendix-pre-if
 
-float distribution(float roughness, float NoH, const float3 h)
+float distribution(float roughness, float NoH)
 {
 #if BRDF_SPECULAR_D == SPECULAR_D_GGX
-    return D_GGX(roughness, NoH, h);
+    return D_GGX(roughness, NoH);
 #endif
 }
 
@@ -201,10 +201,10 @@ float visibilityAnisotropic(float roughness, float at, float ab,
 #endif
 }
 
-float distributionClearCoat(float roughness, float NoH, const float3 h)
+float distributionClearCoat(float roughness, float NoH)
 {
 #if BRDF_CLEAR_COAT_D == SPECULAR_D_GGX
-    return D_GGX(roughness, NoH, h);
+    return D_GGX(roughness, NoH);
 #endif
 }
 
