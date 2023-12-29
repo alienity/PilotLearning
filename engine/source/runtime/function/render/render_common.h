@@ -447,6 +447,11 @@ namespace MoYu
         std::vector<glm::float4> m_SH;
     };
 
+    struct BlueNoiseConfigs
+    {
+        std::shared_ptr<RHI::D3D12Texture> m_bluenoise_64x64_uni;
+    };
+
     //========================================================================
     // Render Desc
     //========================================================================

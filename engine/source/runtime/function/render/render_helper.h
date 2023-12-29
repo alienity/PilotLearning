@@ -74,6 +74,11 @@ namespace MoYu
 
     bool BoxIntersectsWithSphere(BoundingBox const& b, BoundingSphere const& s);
 
+    glm::float4 CalculateZBufferParams(float nearClipPlane, float farClipPlane);
+
+    float GetHaltonValue(int index, int radix); 
+    glm::float2 GenerateRandomOffset();
+
     //glm::mat4 CalculateDirectionalLightCamera(RenderScene& scene, RenderCamera& camera);
 
     namespace ibl

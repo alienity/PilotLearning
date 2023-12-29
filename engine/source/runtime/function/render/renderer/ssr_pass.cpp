@@ -2,6 +2,7 @@
 #include "runtime/resource/config_manager/config_manager.h"
 #include "runtime/function/render/rhi/rhi_core.h"
 #include "runtime/function/render/jitter_helper.h"
+#include "runtime/function/render/render_helper.h"
 
 #include <cassert>
 
@@ -19,7 +20,7 @@ namespace MoYu
 
 	void SSRPass::initialize(const SSRInitInfo& init_info)
 	{
-        reprojectionTexDesc = init_info.m_ColorTexDesc;
+        colorTexDesc = init_info.m_ColorTexDesc;
 
         ShaderCompiler*       m_ShaderCompiler = init_info.m_ShaderCompiler;
         std::filesystem::path m_ShaderRootPath = init_info.m_ShaderRootPath;
@@ -120,7 +121,38 @@ namespace MoYu
     {
         HLSL::FrameUniforms* _frameUniforms = &(render_resource->m_FrameUniforms);
 
-        HLSL::SSRUniform ssrUniform  = {};
+        glm::float2 costMapSize = glm::float2(colorTexDesc.Width, colorTexDesc.Height);
+        glm::float2 raycastSize = glm::float2(colorTexDesc.Width, colorTexDesc.Height);
+        glm::float2 resolveSize = glm::float2(colorTexDesc.Width, colorTexDesc.Height);
+
+        glm::float2 jitterSample = GenerateRandomOffset();
+
+        std::shared_ptr<RHI::D3D12Texture> pBlueNoiseUniMap = m_render_scene->m_bluenoise_map.m_bluenoise_64x64_uni;
+        float noiseWidth = pBlueNoiseUniMap->GetWidth();
+        float noiseHeight = pBlueNoiseUniMap->GetHeight();
+
+        const int kMaxLods = 12;
+        int lodCount = glm::log2((float)glm::min(colorTexDesc.Width, colorTexDesc.Height));
+        lodCount = glm::min(lodCount, kMaxLods);
+
+        HLSL::SSRUniform ssrUniform = {};
+
+        ssrUniform.ScreenSize = glm::float4(colorTexDesc.Width, colorTexDesc.Height, 1.0f / colorTexDesc.Width, 1.0f / colorTexDesc.Height);
+        ssrUniform.RayCastSize = glm::float4(raycastSize.x, raycastSize.y, 1.0f / raycastSize.x, 1.0f / raycastSize.y);
+        ssrUniform.ResolveSize = glm::float4(resolveSize.x, resolveSize.y, 1.0f / resolveSize.x, 1.0f / resolveSize.y);
+        ssrUniform.JitterSizeAndOffset = glm::float4((float)colorTexDesc.Width / (float)noiseWidth,
+                                                     (float)colorTexDesc.Height / (float)noiseHeight,
+                                                     jitterSample.x,
+                                                     jitterSample.y);
+
+        ssrUniform.SmoothnessRange = 1.0f;
+        ssrUniform.BRDFBias        = 0.7f;
+        ssrUniform.TResponseMin    = 0.85f;
+        ssrUniform.TResponseMax    = 1.0f;
+        ssrUniform.EdgeFactor      = 0.25f;
+        ssrUniform.Thickness       = 0.2f;
+        ssrUniform.NumSteps        = 70;
+        ssrUniform.MaxMipMap       = lodCount;
 
         // SSR Uniform
         _frameUniforms->ssrUniform = ssrUniform;
@@ -130,6 +162,10 @@ namespace MoYu
     void SSRPass::update(RHI::RenderGraph& graph, DrawInputParameters& passInput, DrawOutputParameters& passOutput)
     {
         
+
+
+
+
     }
 
     void SSRPass::destroy()

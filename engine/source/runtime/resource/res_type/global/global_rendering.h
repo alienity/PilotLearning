@@ -55,18 +55,26 @@ namespace MoYu
     };
     NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(IBLTexs, m_dfg_map, m_ld_map, m_irradians_map, m_SH)
 
+    struct BlueNoiseTexs
+    {
+        std::string m_bluenoise_map;
+    };
+    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(BlueNoiseTexs, m_bluenoise_map)
+
+
     struct GlobalRenderingRes
     {
-        bool         m_enable_fxaa {false};
-        CubeMap      m_skybox_irradiance_map;
-        CubeMap      m_skybox_specular_map;
-        IBLTexs      m_ibl_map;
-        std::string  m_brdf_map;
-        std::string  m_color_grading_map;
-        Color        m_sky_color;
-        Color        m_ambient_light;
-        CameraConfig m_camera_config;
-        DirLight     m_directional_light;
+        bool          m_enable_fxaa {false};
+        CubeMap       m_skybox_irradiance_map;
+        CubeMap       m_skybox_specular_map;
+        IBLTexs       m_ibl_map;
+        std::string   m_brdf_map;
+        std::string   m_color_grading_map;
+        Color         m_sky_color;
+        Color         m_ambient_light;
+        CameraConfig  m_camera_config;
+        DirLight      m_directional_light;
+        BlueNoiseTexs m_bluenoises;
     };
     NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(GlobalRenderingRes,
                                        m_enable_fxaa,
@@ -78,5 +86,6 @@ namespace MoYu
                                        m_sky_color,
                                        m_ambient_light,
                                        m_camera_config,
-                                       m_directional_light)
+                                       m_directional_light,
+                                       m_bluenoises)
 } // namespace MoYu

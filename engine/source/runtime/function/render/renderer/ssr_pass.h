@@ -75,9 +75,7 @@ namespace MoYu
         std::shared_ptr<RHI::D3D12RootSignature> pSSRTemporalSignature;
         std::shared_ptr<RHI::D3D12PipelineState> pSSRTemporalPSO;
 
-        RHI::RgTextureDesc reprojectionTexDesc;
-        std::shared_ptr<RHI::D3D12Texture> reprojectionBuffer[2];
-        std::shared_ptr<RHI::D3D12Texture> motionVectorBuffer;
+        RHI::RgTextureDesc colorTexDesc;
 	};
 }
 

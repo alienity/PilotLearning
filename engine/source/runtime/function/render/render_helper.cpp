@@ -259,6 +259,64 @@ namespace MoYu
 
         return true;
     }
+
+
+    // https://forum.unity.com/threads/decodedepthnormal-linear01depth-lineareyedepth-explanations.608452/
+    //
+    //// Z buffer to linear depth
+    // inline float LinearEyeDepth( float z )
+    //{
+    //     return 1.0 / (_ZBufferParams.z * z + _ZBufferParams.w);
+    // }
+    //
+    //  Values used to linearize the Z buffer (http://www.humus.name/temp/Linearize%20depth.txt)
+    //  x = 1-far/near
+    //  y = far/near
+    //  z = x/far
+    //  w = y/far
+    //  or in case of a reversed depth buffer (UNITY_REVERSED_Z is 1)
+    //  x = -1+far/near
+    //  y = 1
+    //  z = x/far
+    //  w = 1/far
+    glm::float4 CalculateZBufferParams(float nearClipPlane, float farClipPlane)
+    {
+        float fpn = farClipPlane / nearClipPlane;
+        return glm::float4(fpn - 1.0f, 1.0f, (fpn - 1.0f) / farClipPlane, 1.0f / farClipPlane);
+    }
+
+
+    int m_SampleIndex = 0;
+    const int k_SampleCount = 64;
+
+    float GetHaltonValue(int index, int radix)
+    {
+        float result   = 0.0f;
+        float fraction = 1.0f / (float)radix;
+
+        while (index > 0)
+        {
+            result += (float)(index % radix) * fraction;
+
+            index /= radix;
+            fraction /= (float)radix;
+        }
+
+        return result;
+    }
+
+    glm::float2 GenerateRandomOffset()
+    {
+        glm::float2 offset =
+            glm::float2(GetHaltonValue(m_SampleIndex & 1023, 2), GetHaltonValue(m_SampleIndex & 1023, 3));
+
+        if (++m_SampleIndex >= k_SampleCount)
+            m_SampleIndex = 0;
+
+        return offset;
+    }
+
+
     /*
     glm::mat4 CalculateDirectionalLightCamera(RenderScene& scene, RenderCamera& camera)
     {

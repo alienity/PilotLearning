@@ -188,10 +188,10 @@ namespace HLSL
         glm::float4 RayCastSize;
         glm::float4 JitterSizeAndOffset;
         glm::float4 NoiseSize;
+        float  SmoothnessRange;
         float  BRDFBias;
         float  TResponseMin;
         float  TResponseMax;
-        float  TScale;
         float  EdgeFactor;
         float  Thickness;
         int    NumSteps;

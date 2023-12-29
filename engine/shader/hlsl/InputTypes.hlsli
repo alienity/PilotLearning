@@ -219,14 +219,14 @@ struct SSRUniform
     float4 RayCastSize;
     float4 JitterSizeAndOffset;
     float4 NoiseSize;
-    float BRDFBias;
-    float TResponseMin;
-    float TResponseMax;
-    float TScale;
-    float EdgeFactor;
-    float Thickness;
-    int NumSteps;
-    int MaxMipMap;
+    float  SmoothnessRange;
+    float  BRDFBias;
+    float  TResponseMin;
+    float  TResponseMax;
+    float  EdgeFactor;
+    float  Thickness;
+    int    NumSteps;
+    int    MaxMipMap;
 };
 
 struct DirectionalLightShadowmap

@@ -33,6 +33,9 @@ namespace MoYu
         // ibl
         IBLConfigs m_ibl_map;
 
+        // bluenoise
+        BlueNoiseConfigs m_bluenoise_map;
+
         // all light
         InternalAmbientLight            m_ambient_light;
         InternalDirectionLight          m_directional_light;

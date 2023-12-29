@@ -120,5 +120,8 @@
     "m_terrain_map": {
         "m_height_map": "asset/texture/terrain/HeightMap.png",
         "m_normal_map": "asset/texture/terrain/NormalMap.png"
+    },
+    "m_bluenoises": {
+        "m_bluenoise_map": "asset/texture/global/output_64x64_uni.bmp"
     }
 }

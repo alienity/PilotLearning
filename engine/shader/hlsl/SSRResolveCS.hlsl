@@ -23,24 +23,6 @@ cbuffer RootConstants : register(b0, space0)
     uint ResolveResultIndex;
 };
 
-struct RaycastStruct
-{
-    float4 ScreenSize;
-    float4 ResolveSize;
-    float4 RayCastSize;
-    float4 JitterSizeAndOffset;
-    float4 NoiseSize;
-    float BRDFBias;
-    float TResponseMin;
-    float TResponseMax;
-    float TScale;
-    float EdgeFactor;
-    float Thickness;
-    int NumSteps;
-    int MaxMipMap;
-    int Normalization;
-};
-
 SamplerState defaultSampler : register(s10);
 
 groupshared uint rr_cacheR[(KERNEL_SIZE + RESOLVE_RAD2) * (KERNEL_SIZE + RESOLVE_RAD2)];
@@ -70,7 +52,6 @@ void LoadResolveData(uint index, out float4 raycast, out float4 mask)
 void CSResolve(uint3 groupId : SV_GroupId, uint groupIndex : SV_GroupIndex, uint3 groupThreadId : SV_GroupThreadID)
 {
     ConstantBuffer<FrameUniforms> mFrameUniforms = ResourceDescriptorHeap[perFrameBufferIndex];
-    ConstantBuffer<RaycastStruct> mRaycastStruct = ResourceDescriptorHeap[raycastStructIndex];
     Texture2D<float4> worldNormalMap = ResourceDescriptorHeap[worldNormalIndex];
     Texture2D<float4> worldTangentMap = ResourceDescriptorHeap[worldTangentIndex];
     Texture2D<float4> matNormalMap = ResourceDescriptorHeap[matNormalIndex];
@@ -83,8 +64,10 @@ void CSResolve(uint3 groupId : SV_GroupId, uint groupIndex : SV_GroupIndex, uint
     
     RWTexture2D<float4> ResolveResult = ResourceDescriptorHeap[ResolveResultIndex];
 
-    float4 ResolveSize = mRaycastStruct.ResolveSize;
-    float4 RayCastSize = mRaycastStruct.RayCastSize;
+    SSRUniform ssrUniform = mFrameUniforms.ssrUniform;
+
+    float4 ResolveSize = ssrUniform.ResolveSize;
+    float4 RayCastSize = ssrUniform.RayCastSize;
 
     uint2 uvInt = (groupId.xy * KERNEL_SIZE) + groupThreadId.xy - RESOLVE_RAD;
     float2 uv = (uvInt.xy + 0.5) * ResolveSize.zw;
@@ -112,12 +95,12 @@ void CSResolve(uint3 groupId : SV_GroupId, uint groupIndex : SV_GroupIndex, uint
     float3 viewDir = normalize(worldPos - cameraPosition);
 
     float NdotV = saturate(dot(worldNormal.xyz, -viewDir));
-    float coneTangent = lerp(0.0, roughness * (1.0 - mRaycastStruct.BRDFBias), NdotV * sqrt(roughness));
+    float coneTangent = lerp(0.0, roughness * (1.0 - ssrUniform.BRDFBias), NdotV * sqrt(roughness));
     coneTangent *= lerp(saturate(NdotV * 2), 1, sqrt(roughness));
 
-    float4 ScreenSize = mRaycastStruct.ScreenSize;
+    float4 ScreenSize = ssrUniform.ScreenSize;
 
-    float maxMipLevel = (float)mRaycastStruct.MaxMipMap - 1.0;
+    float maxMipLevel = (float)ssrUniform.MaxMipMap - 1.0;
     float4 hitSourcePacked = RaycastInput.SampleLevel(defaultSampler, uv, 0);
     float sourceMip = clamp(log2(coneTangent * length(hitSourcePacked.xy - uv) * max(ScreenSize.x, ScreenSize.y)), 0.0, maxMipLevel);
     float4 maskAndColorPacked = float4(ScreenInput.SampleLevel(defaultSampler, hitSourcePacked.xy, sourceMip).rgb, MaskInput.SampleLevel(defaultSampler, uv, 0).r);
@@ -165,7 +148,7 @@ void CSResolve(uint3 groupId : SV_GroupId, uint groupIndex : SV_GroupIndex, uint
 
         float4 sampleColor;
         sampleColor.rgb = maskScreenPacked.rgb;
-        sampleColor.a = RayAttenBorder(hitUV, mRaycastStruct.EdgeFactor) * hitMask;
+        sampleColor.a = RayAttenBorder(hitUV, ssrUniform.EdgeFactor) * hitMask;
 
         //fireflies
         sampleColor.rgb /= 1 + Luminance(sampleColor.rgb);

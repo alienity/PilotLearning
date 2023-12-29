@@ -86,6 +86,9 @@ namespace MoYu
         std::shared_ptr<MoYu::MoYuScratchImage> _ld_map  = loadImage(level_resource_desc.m_ibl_map.m_ld_map);
         std::shared_ptr<MoYu::MoYuScratchImage> _radians_map  = loadImage(level_resource_desc.m_ibl_map.m_irradians_map);
 
+        // load bluenoise texture
+        std::shared_ptr<MoYu::MoYuScratchImage> _bluenoise_map = loadImage(level_resource_desc.m_bluenoises.m_bluenoise_map);
+
         startUploadBatch();
         {
             // create irradiance cubemap
@@ -107,34 +110,14 @@ namespace MoYu
             // create ibl radians
             auto radians_tex = createTex(_radians_map);
             m_render_scene->m_ibl_map.m_radians = radians_tex;
+
+            // create blue noise
+            auto bluenoise_tex = createTex(_bluenoise_map);
+            m_render_scene->m_bluenoise_map.m_bluenoise_64x64_uni = bluenoise_tex;
         }
         endUploadBatch();
 
         return true;
-    }
-
-    // https://forum.unity.com/threads/decodedepthnormal-linear01depth-lineareyedepth-explanations.608452/
-    // 
-    //// Z buffer to linear depth
-    //inline float LinearEyeDepth( float z )
-    //{
-    //    return 1.0 / (_ZBufferParams.z * z + _ZBufferParams.w);
-    //}
-    // 
-    // Values used to linearize the Z buffer (http://www.humus.name/temp/Linearize%20depth.txt)
-    // x = 1-far/near
-    // y = far/near
-    // z = x/far
-    // w = y/far
-    // or in case of a reversed depth buffer (UNITY_REVERSED_Z is 1)
-    // x = -1+far/near
-    // y = 1
-    // z = x/far
-    // w = 1/far
-    glm::float4 calculateZBufferParams(float nearClipPlane, float farClipPlane)
-    {
-        float fpn = farClipPlane / nearClipPlane;
-        return glm::float4(fpn - 1.0f, 1.0f, (fpn - 1.0f) / farClipPlane, 1.0f / farClipPlane);
     }
 
     void RenderResource::updateFrameUniforms(RenderScene* render_scene, RenderCamera* camera)
@@ -165,7 +148,7 @@ namespace MoYu
         _frameCameraUniform.unJitterProjectionMatrix = unjitter_proj_matrix;
         _frameCameraUniform.unJitterProjectionMatrixInv = glm::inverse(unjitter_proj_matrix);
 
-        _frameCameraUniform.zBufferParams = calculateZBufferParams(_cn, _cf);
+        _frameCameraUniform.zBufferParams = CalculateZBufferParams(_cn, _cf);
 
         HLSL::FrameCameraUniform _lastFrameCameraUniform = _frameUniforms->cameraUniform.curFrameUniform;
 
