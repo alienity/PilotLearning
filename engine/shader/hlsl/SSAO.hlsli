@@ -59,10 +59,6 @@ float CustomSSAO(SSAOInput ssaoInput, float2 uv, uint2 screenSize)
     
     float3x3 normalMat = transpose((float3x3)ssaoInput.frameUniforms.cameraUniform.curFrameUniform.worldFromViewMatrix);
 
-    // Get the depth, normal and view position for this fragment
-    // float3 raw_norm_o = ssaoInput.worldNormalMap.Sample(ssaoInput.defaultSampler, uv).rgb * 2 - 1;
-    // float3 norm_o = mul(normalMat, raw_norm_o);
-
     float raw_depth_o = ssaoInput.depthTex.Sample(ssaoInput.defaultSampler, uv).r;
     float4 pos_ss = float4(uv.xy*2-1, raw_depth_o, 1.0f);
     float4 pos_view = mul(projMatInv, pos_ss);
@@ -70,7 +66,10 @@ float CustomSSAO(SSAOInput ssaoInput, float2 uv, uint2 screenSize)
     float3 vpos_o = pos_view.xyz / pos_view.w;
     float depth_o = vpos_o.z;
 
-    float3 norm_o = -normalize(cross(ddy(vpos_o), ddx(vpos_o)));
+    // float3 norm_o = -normalize(cross(ddy(vpos_o), ddx(vpos_o)));
+    float3 norm_o = ssaoInput.worldNormalMap.SampleLevel(ssaoInput.defaultSampler, uv, 0).rgb * 2 - 1;
+    norm_o = mul(normalMat, norm_o);
+    norm_o.y = -norm_o.y;
 
     // This was added to avoid a NVIDIA driver issue.
     float randAddon = uv.x * 1e-10;
