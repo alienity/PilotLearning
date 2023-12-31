@@ -59,8 +59,6 @@ namespace MoYu
         {
             albedoHandle.Invalidate();
             worldNormalHandle.Invalidate();
-            worldTangentHandle.Invalidate();
-            matNormalHandle.Invalidate();
             motionVectorHandle.Invalidate();
             metallic_Roughness_Reflectance_AO_Handle.Invalidate();
             clearCoat_ClearCoatRoughness_Anisotropy_Handle.Invalidate();
@@ -69,8 +67,6 @@ namespace MoYu
 
         RHI::RgResourceHandle albedoHandle;
         RHI::RgResourceHandle worldNormalHandle;
-        RHI::RgResourceHandle worldTangentHandle;
-        RHI::RgResourceHandle matNormalHandle;
         RHI::RgResourceHandle motionVectorHandle;
         RHI::RgResourceHandle metallic_Roughness_Reflectance_AO_Handle;
         RHI::RgResourceHandle clearCoat_ClearCoatRoughness_Anisotropy_Handle;

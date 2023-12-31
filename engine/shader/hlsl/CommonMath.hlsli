@@ -774,4 +774,19 @@ bool isPerspectiveProjection(const float4x4 clipFromViewMatrix)
     return transpose(clipFromViewMatrix)[2].w != 0.0;
 }
 
+float3x3 ToTBNMatrix(float3 N)
+{
+    float3 UpVector = abs(N.y) < 0.999 ? float3(0.0, 1.0, 0.0) : float3(0.0, 0.0, 1.0);
+    float3 T = normalize(cross(N, UpVector));
+    float3 B = cross(N, T);
+	return transpose(float3x3(T,B,N));
+}
+
+float4 TangentToWorld(float3 N, float4 H)
+{
+	float3x3 tbn = ToTBNMatrix(N);
+	float3 newN = mul(tbn, H.xyz);
+	return float4(newN.xyz, H.w);
+}
+
 #endif // __COMMON_MATH_HLSLI__

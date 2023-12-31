@@ -24,8 +24,6 @@ namespace MoYu
             RHI::RgResourceHandle perframeBufferHandle;
             RHI::RgResourceHandle albedoHandle;
             RHI::RgResourceHandle worldNormalHandle;
-            RHI::RgResourceHandle worldTangentHandle;
-            RHI::RgResourceHandle materialNormalHandle;
             RHI::RgResourceHandle ambientOcclusionHandle;
             RHI::RgResourceHandle metallic_Roughness_Reflectance_AO_Handle;
             RHI::RgResourceHandle clearCoat_ClearCoatRoughness_Anisotropy_Handle;

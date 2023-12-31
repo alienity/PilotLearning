@@ -11,11 +11,8 @@
 cbuffer RootConstants : register(b0, space0)
 {
     uint perFrameBufferIndex;
-    uint raycastStructIndex;
     uint worldNormalIndex;
-    uint worldTangentIndex;
-    uint matNormalIndex;
-    uint metallic_Roughness_Reflectance_AO_Index;
+    uint metallicRoughnessReflectanceAOIndex;
     uint minDepthBufferIndex;
     uint ScreenInputIndex;
     uint RaycastInputIndex;
@@ -24,6 +21,7 @@ cbuffer RootConstants : register(b0, space0)
 };
 
 SamplerState defaultSampler : register(s10);
+SamplerState minDepthSampler : register(s11);
 
 groupshared uint rr_cacheR[(KERNEL_SIZE + RESOLVE_RAD2) * (KERNEL_SIZE + RESOLVE_RAD2)];
 groupshared uint rr_cacheG[(KERNEL_SIZE + RESOLVE_RAD2) * (KERNEL_SIZE + RESOLVE_RAD2)];
@@ -53,9 +51,7 @@ void CSResolve(uint3 groupId : SV_GroupId, uint groupIndex : SV_GroupIndex, uint
 {
     ConstantBuffer<FrameUniforms> mFrameUniforms = ResourceDescriptorHeap[perFrameBufferIndex];
     Texture2D<float4> worldNormalMap = ResourceDescriptorHeap[worldNormalIndex];
-    Texture2D<float4> worldTangentMap = ResourceDescriptorHeap[worldTangentIndex];
-    Texture2D<float4> matNormalMap = ResourceDescriptorHeap[matNormalIndex];
-    Texture2D<float4> mrraMap = ResourceDescriptorHeap[metallic_Roughness_Reflectance_AO_Index];
+    Texture2D<float4> mrraMap = ResourceDescriptorHeap[metallicRoughnessReflectanceAOIndex];
     Texture2D<float4> minDepthMap = ResourceDescriptorHeap[minDepthBufferIndex];
 
     Texture2D<float4> ScreenInput = ResourceDescriptorHeap[ScreenInputIndex];
@@ -78,13 +74,8 @@ void CSResolve(uint3 groupId : SV_GroupId, uint groupIndex : SV_GroupIndex, uint
 
     float3 cameraPosition = mFrameUniforms.cameraUniform.curFrameUniform.cameraPosition;
 
-    float3 n = worldNormalMap.Sample(defaultSampler, uv).rgb * 2.0f - 1.0f;
-    float4 vertex_worldTangent = worldTangentMap.Sample(defaultSampler, uv).xyzw * 2.0f - 1.0f;
-    float3 t = vertex_worldTangent.xyz;
-    float3 b = cross(n, t) * vertex_worldTangent.w;
-    float3x3 tangentToWorld = transpose(float3x3(t, b, n));
-    float3 matNormal = matNormalMap.Sample(defaultSampler, uv).rgb * 2.0f - 1.0f;
-    float3 worldNormal = normalize(mul(tangentToWorld, matNormal));
+    float3 worldNormal = worldNormalMap.Sample(defaultSampler, uv).rgb * 2.0f - 1.0f;
+    worldNormal.y = -worldNormal.y;
 
     float roughness = mrraMap.SampleLevel(defaultSampler, uv, 0).y;
 

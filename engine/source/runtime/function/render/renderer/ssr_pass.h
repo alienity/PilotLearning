@@ -30,18 +30,11 @@ namespace MoYu
 
         struct DrawInputParameters : public PassInput
         {
-            DrawInputParameters()
-            {
-                perframeBufferHandle.Invalidate();
-                colorBufferHandle.Invalidate();
-                depthBufferHandle.Invalidate();
-                motionVectorHandle.Invalidate();
-            }
-
             RHI::RgResourceHandle perframeBufferHandle;
+            RHI::RgResourceHandle worldNormalHandle;
+            RHI::RgResourceHandle mrraMapHandle;
+            RHI::RgResourceHandle minDepthPtyramidHandle;
             RHI::RgResourceHandle colorBufferHandle;
-            RHI::RgResourceHandle depthBufferHandle;
-            RHI::RgResourceHandle motionVectorHandle;
         };
 
         struct DrawOutputParameters : public PassOutput
@@ -76,6 +69,10 @@ namespace MoYu
         std::shared_ptr<RHI::D3D12PipelineState> pSSRTemporalPSO;
 
         RHI::RgTextureDesc colorTexDesc;
+        RHI::RgTextureDesc raycastResultDesc;
+        RHI::RgTextureDesc raycastMaskDesc;
+
+        std::shared_ptr<RHI::D3D12Texture> m_bluenoise;
 	};
 }
 

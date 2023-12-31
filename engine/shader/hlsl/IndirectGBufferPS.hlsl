@@ -29,11 +29,9 @@ struct PSOutputGBuffer
 {
     float4 albedo : SV_Target0;
     float4 worldNormal : SV_Target1; // float3
-    float4 worldTangent : SV_Target2; // float4
-    float4 materialNormal : SV_Target3; // float3
-    float4 metallic_Roughness_Reflectance_AO : SV_Target4;
-    float4 clearCoat_ClearCoatRoughness_Anisotropy : SV_Target5; // float3
-    float4 motionVector : SV_Target6;
+    float4 metallic_Roughness_Reflectance_AO : SV_Target2;
+    float4 clearCoat_ClearCoatRoughness_Anisotropy : SV_Target3; // float3
+    float4 motionVector : SV_Target4;
 };
 
 VaringStruct VSMain(VertexInput input)
@@ -88,12 +86,12 @@ PSOutputGBuffer PSMain(VaringStruct varingStruct)
     computeShadingParams(g_FrameUniform, varingStruct, commonShadingStruct);
     prepareMaterial(materialInputs, commonShadingStruct);
 
+    float3 worldNormal = mul(commonShadingStruct.shading_tangentToWorld, materialInputs.normal.xyz);
+
     PSOutputGBuffer output;
 
     output.albedo = materialInputs.baseColor;
-    output.worldNormal = float4(varingStruct.ws_normal.xyz * 0.5 + 0.5f, 0);
-    output.worldTangent = float4(varingStruct.ws_tangent.xyzw * 0.5 + 0.5f);
-    output.materialNormal = float4(materialInputs.normal.xyz * 0.5f + 0.5f, 0);
+    output.worldNormal = float4(worldNormal.xyz * 0.5 + 0.5f, 0);
     output.metallic_Roughness_Reflectance_AO.xyzw = float4(materialInputs.metallic, materialInputs.roughness, materialInputs.reflectance, materialInputs.ambientOcclusion);
     output.clearCoat_ClearCoatRoughness_Anisotropy = float4(materialInputs.clearCoat, materialInputs.clearCoatRoughness, materialInputs.anisotropy, 0.0f);
     

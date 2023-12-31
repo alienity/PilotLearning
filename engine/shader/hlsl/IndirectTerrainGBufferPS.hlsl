@@ -46,11 +46,9 @@ struct PSOutputGBuffer
 {
     float4 albedo : SV_Target0;
     float4 worldNormal : SV_Target1; // float3
-    float4 worldTangent : SV_Target2; // float4
-    float4 materialNormal : SV_Target3; // float3
-    float4 metallic_Roughness_Reflectance_AO : SV_Target4;
-    float4 clearCoat_ClearCoatRoughness_Anisotropy : SV_Target5; // float3
-    float4 motionVector : SV_Target6;
+    float4 metallic_Roughness_Reflectance_AO : SV_Target2;
+    float4 clearCoat_ClearCoatRoughness_Anisotropy : SV_Target3; // float3
+    float4 motionVector : SV_Target4;
 };
 
 VaringStruct VSMain(VertexInput input)
@@ -112,10 +110,7 @@ VaringStruct VSMain(VertexInput input)
     output.vertex_uv01 = terrainUV;
 
     float3 localNormal = float3(0,1,0);
-    localNormal = normalize(localNormal * 2 - 1);
     float3 localTangent = float3(1,0,0);
-    float3 localBitangent = cross(localNormal, localTangent);
-    localTangent = cross(localBitangent, localNormal);
     float3x3 normalMat = transpose((float3x3)localToWorldMatrixInv);
 
     output.ws_normal      = normalize(mul(normalMat, localNormal));    
@@ -136,19 +131,9 @@ PSOutputGBuffer PSMain(VaringStruct varingStruct)
 
     Texture2D<float4> terrainNormalmap = ResourceDescriptorHeap[terrainNormalmapIndex];
 
-    float3 localNormal = terrainNormalmap.SampleLevel(defaultSampler, terrainUV, 0).rgb;
-    localNormal = normalize(mul(normalMat, (localNormal * 2 - 1)));
-    localNormal.z = -localNormal.z;
-    float3 localTangent = normalize(mul(normalMat, float3(1, 0, 0)));
-    float3 localBitangent = cross(localNormal, localTangent);
-    localTangent = cross(localBitangent, localNormal);
-
-    /*
-    int albedoIndex;
-    int armIndex;
-    int displacementIndex;
-    int normalIndex;
-    */
+    float3 localTerrainNormal = terrainNormalmap.SampleLevel(defaultSampler, terrainUV, 0).rgb * 2 - 1;
+    float3 worldTerrainNormal = normalize(mul(normalMat, localTerrainNormal));
+    float3x3 tbnWorld = ToTBNMatrix(worldTerrainNormal);
 
     StructuredBuffer<MaterialIndexStruct> mMaterialIndexBuffers = ResourceDescriptorHeap[terrainMatIndexBufferIndex];
     StructuredBuffer<MaterialTillingStruct> mMaterialTillingBuffers = ResourceDescriptorHeap[terrainMatTillingBufferIndex];
@@ -164,14 +149,14 @@ PSOutputGBuffer PSMain(VaringStruct varingStruct)
     float3 normal = normalTexture.Sample(defaultSampler, terrainUV * normalTilling).rgb*2-1;
     // normal.y = -normal.y;
 
+    float3 worldNormal = mul(tbnWorld, normal);
+
     PSOutputGBuffer output;
 
     // output.albedo = float4(0,0,0,1);
     // output.albedo = float4(varingStruct.vertex_uv01.x, varingStruct.vertex_uv01.y, 0, 1);
     output.albedo = float4(albedo.rgb, 1);
-    output.worldNormal = float4(localNormal.xyz * 0.5 + 0.5f, 0);
-    output.worldTangent = float4(localTangent.xyz, 1) * 0.5 + 0.5f;
-    output.materialNormal = float4(normal.xyz * 0.5 + 0.5f, 0);
+    output.worldNormal = float4(worldNormal.xyz * 0.5 + 0.5f, 0);
     output.metallic_Roughness_Reflectance_AO.xyzw = float4(aoRoughnessMetallic.z, aoRoughnessMetallic.y, 0, aoRoughnessMetallic.x);
     output.clearCoat_ClearCoatRoughness_Anisotropy = float4(0, 0, 0, 0.0f);
 

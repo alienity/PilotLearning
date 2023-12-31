@@ -8,6 +8,7 @@
 
 namespace MoYu
 {
+#define GImport(g, b) g.Import(b)
 #define RegGetBuf(h) registry->GetD3D12Buffer(h)
 #define RegGetBufCounter(h) registry->GetD3D12Buffer(h)->GetCounterBuffer().get()
 #define RegGetTex(h) registry->GetD3D12Texture(h)
@@ -21,6 +22,22 @@ namespace MoYu
 	void SSRPass::initialize(const SSRInitInfo& init_info)
 	{
         colorTexDesc = init_info.m_ColorTexDesc;
+
+        raycastResultDesc =
+            RHI::RgTextureDesc("RaycastResultMap")
+                .SetFormat(DXGI_FORMAT::DXGI_FORMAT_R32G32B32A32_FLOAT)
+                .SetExtent(colorTexDesc.Width, colorTexDesc.Height)
+                .SetSampleCount(colorTexDesc.SampleCount)
+                .SetAllowUnorderedAccess(true)
+                .SetClearValue(RHI::RgClearValue(0.0f, 0.0f, 0.0f, 0.0f, DXGI_FORMAT::DXGI_FORMAT_R32G32B32A32_FLOAT));
+
+        raycastMaskDesc =
+            RHI::RgTextureDesc("RaycastMaskMap")
+                .SetFormat(DXGI_FORMAT::DXGI_FORMAT_R32_FLOAT)
+                .SetExtent(colorTexDesc.Width, colorTexDesc.Height)
+                .SetSampleCount(colorTexDesc.SampleCount)
+                .SetAllowUnorderedAccess(true)
+                .SetClearValue(RHI::RgClearValue(0.0f, 0.0f, 0.0f, 0.0f, DXGI_FORMAT::DXGI_FORMAT_R32_FLOAT));
 
         ShaderCompiler*       m_ShaderCompiler = init_info.m_ShaderCompiler;
         std::filesystem::path m_ShaderRootPath = init_info.m_ShaderRootPath;
@@ -37,6 +54,11 @@ namespace MoYu
                     .AddStaticSampler<10, 0>(D3D12_FILTER::D3D12_FILTER_ANISOTROPIC,
                                              D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_WRAP,
                                              8)
+                    .AddStaticSampler<11, 0>(D3D12_FILTER::D3D12_FILTER_MIN_MAG_MIP_LINEAR,
+                                             D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_BORDER,
+                                             8,
+                                             D3D12_COMPARISON_FUNC_LESS_EQUAL,
+                                             D3D12_STATIC_BORDER_COLOR_OPAQUE_BLACK)
                     .AllowInputLayout()
                     .AllowResourceDescriptorHeapIndexing()
                     .AllowSampleDescriptorHeapIndexing();
@@ -67,6 +89,11 @@ namespace MoYu
                     .AddStaticSampler<10, 0>(D3D12_FILTER::D3D12_FILTER_ANISOTROPIC,
                                              D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_WRAP,
                                              8)
+                    .AddStaticSampler<11, 0>(D3D12_FILTER::D3D12_FILTER_MIN_MAG_MIP_LINEAR,
+                                             D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_BORDER,
+                                             8,
+                                             D3D12_COMPARISON_FUNC_LESS_EQUAL,
+                                             D3D12_STATIC_BORDER_COLOR_OPAQUE_BLACK)
                     .AllowInputLayout()
                     .AllowResourceDescriptorHeapIndexing()
                     .AllowSampleDescriptorHeapIndexing();
@@ -96,6 +123,11 @@ namespace MoYu
                     .AddStaticSampler<10, 0>(D3D12_FILTER::D3D12_FILTER_ANISOTROPIC,
                                              D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_WRAP,
                                              8)
+                    .AddStaticSampler<11, 0>(D3D12_FILTER::D3D12_FILTER_MIN_MAG_MIP_LINEAR,
+                                             D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_BORDER,
+                                             8,
+                                             D3D12_COMPARISON_FUNC_LESS_EQUAL,
+                                             D3D12_STATIC_BORDER_COLOR_OPAQUE_BLACK)
                     .AllowInputLayout()
                     .AllowResourceDescriptorHeapIndexing()
                     .AllowSampleDescriptorHeapIndexing();
@@ -114,11 +146,12 @@ namespace MoYu
             pSSRTemporalPSO = std::make_shared<RHI::D3D12PipelineState>(m_Device, L"SSRTemporalPSO", psoDesc);
         }
 
-
     }
 
     void SSRPass::prepareMetaData(std::shared_ptr<RenderResource> render_resource)
     {
+        m_bluenoise = m_render_scene->m_bluenoise_map.m_bluenoise_64x64_uni;
+
         HLSL::FrameUniforms* _frameUniforms = &(render_resource->m_FrameUniforms);
 
         glm::float2 costMapSize = glm::float2(colorTexDesc.Width, colorTexDesc.Height);
@@ -144,13 +177,13 @@ namespace MoYu
                                                      (float)colorTexDesc.Height / (float)noiseHeight,
                                                      jitterSample.x,
                                                      jitterSample.y);
-
+        ssrUniform.NoiseSize       = glm::float4(noiseWidth, noiseHeight, 1.0f / noiseWidth, 1.0f / noiseHeight);
         ssrUniform.SmoothnessRange = 1.0f;
         ssrUniform.BRDFBias        = 0.7f;
         ssrUniform.TResponseMin    = 0.85f;
         ssrUniform.TResponseMax    = 1.0f;
         ssrUniform.EdgeFactor      = 0.25f;
-        ssrUniform.Thickness       = 0.2f;
+        ssrUniform.Thickness       = 0.8f;
         ssrUniform.NumSteps        = 70;
         ssrUniform.MaxMipMap       = lodCount;
 
@@ -161,7 +194,82 @@ namespace MoYu
 
     void SSRPass::update(RHI::RenderGraph& graph, DrawInputParameters& passInput, DrawOutputParameters& passOutput)
     {
-        
+        RHI::RgResourceHandle perframeBufferHandle = passInput.perframeBufferHandle;
+        RHI::RgResourceHandle worldNormalHandle    = passInput.worldNormalHandle;
+        RHI::RgResourceHandle mrraMapHandle        = passInput.mrraMapHandle;
+        RHI::RgResourceHandle minDepthPtyramidHandle = passInput.minDepthPtyramidHandle;
+
+        RHI::RgResourceHandle blueNoiseHandle = GImport(graph, m_bluenoise.get());
+
+        RHI::RgResourceHandle raycastResultHandle = graph.Create<RHI::D3D12Texture>(raycastResultDesc);
+        RHI::RgResourceHandle raycastMaskHandle   = graph.Create<RHI::D3D12Texture>(raycastMaskDesc);
+
+        RHI::RenderPass& raycastPass = graph.AddRenderPass("SSRRaycastPass");
+
+        raycastPass.Read(perframeBufferHandle, true);
+        raycastPass.Read(worldNormalHandle, true);
+        raycastPass.Read(mrraMapHandle, true);
+        raycastPass.Read(minDepthPtyramidHandle, true);
+        raycastPass.Read(blueNoiseHandle, true);
+        raycastPass.Write(raycastResultHandle, true);
+        raycastPass.Write(raycastMaskHandle, true);
+
+        raycastPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
+            RHI::D3D12ComputeContext* pContext = context->GetComputeContext();
+
+            pContext->TransitionBarrier(RegGetBuf(perframeBufferHandle), D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
+            pContext->TransitionBarrier(RegGetTex(worldNormalHandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+            pContext->TransitionBarrier(RegGetTex(mrraMapHandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+            pContext->TransitionBarrier(RegGetTex(minDepthPtyramidHandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+            pContext->TransitionBarrier(RegGetTex(blueNoiseHandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+            pContext->TransitionBarrier(RegGetTex(raycastResultHandle), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+            pContext->TransitionBarrier(RegGetTex(raycastMaskHandle), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+            pContext->FlushResourceBarriers();
+
+            pContext->SetRootSignature(pSSRRaycastSignature.get());
+            pContext->SetPipelineState(pSSRRaycastPSO.get());
+
+            struct RootIndexBuffer
+            {
+                UINT perFrameBufferIndex;
+                UINT worldNormalIndex;
+                UINT metallicRoughnessReflectanceAOIndex;
+                UINT minDepthBufferIndex;
+                UINT blueNoiseIndex;
+                UINT RaycastResultIndex;
+                UINT MaskResultIndex;
+            };
+
+            D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc {};
+            srvDesc.Format                        = DXGI_FORMAT::DXGI_FORMAT_R8G8B8A8_UNORM;
+            srvDesc.Shader4ComponentMapping       = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+            srvDesc.ViewDimension                 = D3D12_SRV_DIMENSION::D3D12_SRV_DIMENSION_TEXTURE2D;
+            srvDesc.Texture2D.MostDetailedMip     = 0;
+            srvDesc.Texture2D.MipLevels           = 1;
+            srvDesc.Texture2D.PlaneSlice          = 0;
+            srvDesc.Texture2D.ResourceMinLODClamp = 0.0f;
+            std::shared_ptr<RHI::D3D12ShaderResourceView> blueNoiseSRV = m_bluenoise->CreateSRV(srvDesc);
+            UINT blueNoiseSRVIndex = blueNoiseSRV->GetIndex();
+
+
+            RootIndexBuffer rootIndexBuffer = RootIndexBuffer {RegGetBufDefCBVIdx(perframeBufferHandle),
+                                                               RegGetTexDefSRVIdx(worldNormalHandle),
+                                                               RegGetTexDefSRVIdx(mrraMapHandle),
+                                                               RegGetTexDefSRVIdx(minDepthPtyramidHandle),
+                                                               blueNoiseSRVIndex,
+                                                               RegGetTexDefUAVIdx(raycastResultHandle),
+                                                               RegGetTexDefUAVIdx(raycastMaskHandle)};
+
+            pContext->SetConstantArray(0, sizeof(RootIndexBuffer) / sizeof(UINT), &rootIndexBuffer);
+
+            pContext->Dispatch2D(raycastResultDesc.Width, raycastResultDesc.Height, 8, 8);
+        });
+
+        passOutput.ssrOutHandle = raycastMaskHandle;
+
+
+
+
 
 
 
@@ -170,6 +278,7 @@ namespace MoYu
 
     void SSRPass::destroy()
     {
+
         
 
 

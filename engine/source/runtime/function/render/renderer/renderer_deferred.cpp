@@ -135,8 +135,6 @@ namespace MoYu
             drawPassInit.albedoDesc = mIndirectGBufferPass->albedoDesc;
             drawPassInit.depthDesc  = mIndirectGBufferPass->depthDesc;
             drawPassInit.worldNormalDesc = mIndirectGBufferPass->worldNormalDesc;
-            drawPassInit.worldTangentDesc = mIndirectGBufferPass->worldTangentDesc;
-            drawPassInit.matNormalDesc    = mIndirectGBufferPass->matNormalDesc;
             drawPassInit.motionVectorDesc = mIndirectGBufferPass->motionVectorDesc;
             drawPassInit.metallic_Roughness_Reflectance_AO_Desc = mIndirectGBufferPass->metallic_Roughness_Reflectance_AO_Desc;
             drawPassInit.clearCoat_ClearCoatRoughness_AnisotropyDesc = mIndirectGBufferPass->clearCoat_ClearCoatRoughness_AnisotropyDesc;
@@ -499,6 +497,9 @@ namespace MoYu
         SSRPass::DrawInputParameters mSSRInput;
         SSRPass::DrawOutputParameters mSSROutput;
         mSSRInput.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
+        mSSRInput.worldNormalHandle    = mGBufferOutput.worldNormalHandle;
+        mSSRInput.mrraMapHandle        = mGBufferOutput.metallic_Roughness_Reflectance_AO_Handle;
+        mSSRInput.minDepthPtyramidHandle = mDepthPyramidOutput.minDepthPtyramidHandle;
         mSSRPass->update(graph, mSSRInput, mSSROutput);
         //=================================================================================
 
@@ -510,8 +511,6 @@ namespace MoYu
         mLightLoopIntput.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
         mLightLoopIntput.albedoHandle           = mGBufferOutput.albedoHandle;
         mLightLoopIntput.worldNormalHandle      = mGBufferOutput.worldNormalHandle;
-        mLightLoopIntput.worldTangentHandle     = mGBufferOutput.worldTangentHandle;
-        mLightLoopIntput.materialNormalHandle   = mGBufferOutput.matNormalHandle;
         mLightLoopIntput.ambientOcclusionHandle = mAOOutput.outputAOHandle;
         mLightLoopIntput.metallic_Roughness_Reflectance_AO_Handle =
             mGBufferOutput.metallic_Roughness_Reflectance_AO_Handle;
@@ -593,6 +592,7 @@ namespace MoYu
         DisplayPass::DisplayInputParameters  mDisplayIntputParams;
         DisplayPass::DisplayOutputParameters mDisplayOutputParams;
 
+        //mDisplayIntputParams.inputRTColorHandle = mSSROutput.ssrOutHandle;
         mDisplayIntputParams.inputRTColorHandle   = mPostprocessOutputParams.outputColorHandle;
         //mDisplayIntputParams.inputRTColorHandle   = mTerrainGBufferOutput.albedoHandle;
         //mDisplayIntputParams.inputRTColorHandle      = mAOOutput.outputAOHandle;

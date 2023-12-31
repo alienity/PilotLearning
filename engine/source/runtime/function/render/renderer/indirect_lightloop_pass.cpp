@@ -63,8 +63,6 @@ namespace MoYu
         drawpass.Read(passInput.albedoHandle, false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
         drawpass.Read(passInput.gbufferDepthHandle, false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
         drawpass.Read(passInput.worldNormalHandle, false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-        drawpass.Read(passInput.worldTangentHandle, false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-        drawpass.Read(passInput.materialNormalHandle, false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
         drawpass.Read(passInput.ambientOcclusionHandle, false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
         drawpass.Read(passInput.metallic_Roughness_Reflectance_AO_Handle, false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
         drawpass.Read(passInput.clearCoat_ClearCoatRoughness_Anisotropy_Handle, false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
@@ -74,8 +72,6 @@ namespace MoYu
         RHI::RgResourceHandle albedoHandle         = passInput.albedoHandle;
         RHI::RgResourceHandle depthHandle          = passInput.gbufferDepthHandle;
         RHI::RgResourceHandle worldNormalHandle    = passInput.worldNormalHandle;
-        RHI::RgResourceHandle worldTangentHandle   = passInput.worldTangentHandle;
-        RHI::RgResourceHandle materialNormalHandle = passInput.materialNormalHandle;
         RHI::RgResourceHandle ambientOcclusionHandle = passInput.ambientOcclusionHandle;
         RHI::RgResourceHandle metallic_Roughness_Reflectance_AO_Handle =
             passInput.metallic_Roughness_Reflectance_AO_Handle;
@@ -89,8 +85,6 @@ namespace MoYu
 
             RHI::D3D12ShaderResourceView* albedoSRV = registry->GetD3D12Texture(albedoHandle)->GetDefaultSRV().get();
             RHI::D3D12ShaderResourceView* worldNormalSRV  = registry->GetD3D12Texture(worldNormalHandle)->GetDefaultSRV().get();
-            RHI::D3D12ShaderResourceView* worldTangentSRV = registry->GetD3D12Texture(worldTangentHandle)->GetDefaultSRV().get();
-            RHI::D3D12ShaderResourceView* materialNormalSRV = registry->GetD3D12Texture(materialNormalHandle)->GetDefaultSRV().get();
             RHI::D3D12ShaderResourceView* ambientOcclusionSRV = registry->GetD3D12Texture(ambientOcclusionHandle)->GetDefaultSRV().get();
             RHI::D3D12ShaderResourceView* metallic_Roughness_Reflectance_AO_SRV = registry->GetD3D12Texture(metallic_Roughness_Reflectance_AO_Handle)->GetDefaultSRV().get();
             RHI::D3D12ShaderResourceView* clearCoat_ClearCoatRoughness_Anisotropy_SRV = registry->GetD3D12Texture(clearCoat_ClearCoatRoughness_Anisotropy_Handle)->GetDefaultSRV().get();
@@ -102,13 +96,11 @@ namespace MoYu
             pContext->SetPipelineState(pIndirectLightLoopPSO.get());
             pContext->SetConstant(0, 0, albedoSRV->GetIndex());
             pContext->SetConstant(0, 1, worldNormalSRV->GetIndex());
-            pContext->SetConstant(0, 2, worldTangentSRV->GetIndex());
-            pContext->SetConstant(0, 3, materialNormalSRV->GetIndex());
-            pContext->SetConstant(0, 4, ambientOcclusionSRV->GetIndex());
-            pContext->SetConstant(0, 5, metallic_Roughness_Reflectance_AO_SRV->GetIndex());
-            pContext->SetConstant(0, 6, clearCoat_ClearCoatRoughness_Anisotropy_SRV->GetIndex());
-            pContext->SetConstant(0, 7, depthSRV->GetIndex());
-            pContext->SetConstant(0, 8, outColorUAV->GetIndex());
+            pContext->SetConstant(0, 2, ambientOcclusionSRV->GetIndex());
+            pContext->SetConstant(0, 3, metallic_Roughness_Reflectance_AO_SRV->GetIndex());
+            pContext->SetConstant(0, 4, clearCoat_ClearCoatRoughness_Anisotropy_SRV->GetIndex());
+            pContext->SetConstant(0, 5, depthSRV->GetIndex());
+            pContext->SetConstant(0, 6, outColorUAV->GetIndex());
             pContext->SetConstantBuffer(1, registry->GetD3D12Buffer(perframeBufferHandle)->GetGpuVirtualAddress());
             
             pContext->Dispatch2D(colorTexDesc.Width, colorTexDesc.Height, 8, 8);
