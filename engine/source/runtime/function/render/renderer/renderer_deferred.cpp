@@ -642,8 +642,8 @@ namespace MoYu
         DisplayPass::DisplayInputParameters  mDisplayIntputParams;
         DisplayPass::DisplayOutputParameters mDisplayOutputParams;
 
-        //mDisplayIntputParams.inputRTColorHandle = mSSROutput.ssrOutHandle;
-        mDisplayIntputParams.inputRTColorHandle   = mPostprocessOutputParams.outputColorHandle;
+        mDisplayIntputParams.inputRTColorHandle = mSSROutput.ssrOutHandle;
+        //mDisplayIntputParams.inputRTColorHandle   = mPostprocessOutputParams.outputColorHandle;
         //mDisplayIntputParams.inputRTColorHandle   = mTerrainGBufferOutput.albedoHandle;
         //mDisplayIntputParams.inputRTColorHandle      = mAOOutput.outputAOHandle;
         mDisplayOutputParams.renderTargetColorHandle = renderTargetColorHandle;

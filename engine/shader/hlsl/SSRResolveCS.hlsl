@@ -46,7 +46,7 @@ void LoadResolveData(uint index, out float4 raycast, out float4 mask)
     mask = float4(f16tof32(rr >> 16), f16tof32(gg >> 16), f16tof32(bb >> 16), f16tof32(aa >> 16));
 }
 
-[numthreads( 8, 8, 1 )]
+[numthreads( KERNEL_SIZE + RESOLVE_RAD2, KERNEL_SIZE + RESOLVE_RAD2, 1 )]
 void CSResolve(uint3 groupId : SV_GroupId, uint groupIndex : SV_GroupIndex, uint3 groupThreadId : SV_GroupThreadID)
 {
     ConstantBuffer<FrameUniforms> mFrameUniforms = ResourceDescriptorHeap[perFrameBufferIndex];
@@ -152,6 +152,8 @@ void CSResolve(uint3 groupId : SV_GroupId, uint groupIndex : SV_GroupIndex, uint
 
     //fireflies
     result.rgb /= 1 - Luminance(result.rgb);
+
+    result.rgb *= result.a;
 
     ResolveResult[uvInt.xy] = max(1e-5, result);
 }

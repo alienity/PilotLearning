@@ -19,6 +19,10 @@ namespace MoYu
 #define RegGetTexDefSRVIdx(h) registry->GetD3D12Texture(h)->GetDefaultSRV()->GetIndex()
 #define RegGetTexDefUAVIdx(h) registry->GetD3D12Texture(h)->GetDefaultUAV()->GetIndex()
 
+#define MAX_MIN_Z_LEVELS 7
+#define KERNEL_SIZE 16
+
+
 	void SSRPass::initialize(const SSRInitInfo& init_info)
 	{
         colorTexDesc = init_info.m_ColorTexDesc;
@@ -271,7 +275,7 @@ namespace MoYu
 
             pContext->SetConstantArray(0, sizeof(RootIndexBuffer) / sizeof(UINT), &rootIndexBuffer);
 
-            pContext->Dispatch2D(raycastResultDesc.Width, raycastResultDesc.Height, 8, 8);
+            pContext->Dispatch2D(raycastResultDesc.Width, raycastResultDesc.Height, KERNEL_SIZE, KERNEL_SIZE);
         });
 
         //------------------------------------------------------------------------------------------------------
@@ -328,33 +332,18 @@ namespace MoYu
 
             pContext->SetConstantArray(0, sizeof(RootIndexBuffer) / sizeof(UINT), &rootIndexBuffer);
 
-            pContext->Dispatch2D(resolveResultDesc.Width, resolveResultDesc.Height, 8, 8);
+            pContext->Dispatch2D(resolveResultDesc.Width, resolveResultDesc.Height, KERNEL_SIZE, KERNEL_SIZE);
         });
-
-
-
 
 
 
         passOutput.ssrOutHandle = resolveHandle;
 
-
-
-
-
-
-
-
     }
 
     void SSRPass::destroy()
     {
-
         
-
-
-
-
     }
 
 }
