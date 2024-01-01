@@ -56,7 +56,7 @@ void CSResolve(uint3 groupId : SV_GroupId, uint groupIndex : SV_GroupIndex, uint
 
     Texture2D<float4> ScreenInput = ResourceDescriptorHeap[ScreenInputIndex];
     Texture2D<float4> RaycastInput = ResourceDescriptorHeap[RaycastInputIndex];
-    Texture2D<float4> MaskInput = ResourceDescriptorHeap[MaskInputIndex];
+    Texture2D<float> MaskInput = ResourceDescriptorHeap[MaskInputIndex];
     
     RWTexture2D<float4> ResolveResult = ResourceDescriptorHeap[ResolveResultIndex];
 
@@ -99,8 +99,8 @@ void CSResolve(uint3 groupId : SV_GroupId, uint groupIndex : SV_GroupIndex, uint
 
     GroupMemoryBarrierWithGroupSync();
 
-    bool border = groupThreadId.x < RESOLVE_RAD | groupThreadId.y < RESOLVE_RAD | groupThreadId.x >= KERNEL_SIZE + RESOLVE_RAD || groupThreadId.y >= KERNEL_SIZE + RESOLVE_RAD;
-    if (border) return;
+    bool isborder = groupThreadId.x < RESOLVE_RAD | groupThreadId.y < RESOLVE_RAD | groupThreadId.x >= KERNEL_SIZE + RESOLVE_RAD || groupThreadId.y >= KERNEL_SIZE + RESOLVE_RAD;
+    if (isborder) return;
 
     float3 viewNormal = normalize(mul((float3x3)worldToCameraMatrix, worldNormal));
 

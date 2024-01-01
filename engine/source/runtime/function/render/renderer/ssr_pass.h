@@ -34,7 +34,7 @@ namespace MoYu
             RHI::RgResourceHandle worldNormalHandle;
             RHI::RgResourceHandle mrraMapHandle;
             RHI::RgResourceHandle minDepthPtyramidHandle;
-            RHI::RgResourceHandle colorBufferHandle;
+            RHI::RgResourceHandle lastFrameColorHandle;
         };
 
         struct DrawOutputParameters : public PassOutput
@@ -71,6 +71,7 @@ namespace MoYu
         RHI::RgTextureDesc colorTexDesc;
         RHI::RgTextureDesc raycastResultDesc;
         RHI::RgTextureDesc raycastMaskDesc;
+        RHI::RgTextureDesc resolveResultDesc;
 
         std::shared_ptr<RHI::D3D12Texture> m_bluenoise;
 	};

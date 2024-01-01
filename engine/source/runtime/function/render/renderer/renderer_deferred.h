@@ -19,6 +19,7 @@
 #include "runtime/function/render/renderer/indirect_display_pass.h"
 #include "runtime/function/render/renderer/indirect_gbuffer_pass.h"
 #include "runtime/function/render/renderer/indirect_depth_pyramid_pass.h"
+#include "runtime/function/render/renderer/color_pyramid_pass.h"
 #include "runtime/function/render/renderer/indirect_terrain_gbuffer_pass.h"
 #include "runtime/function/render/renderer/indirect_lightloop_pass.h"
 
@@ -44,6 +45,9 @@ namespace MoYu
         virtual void PreRender(double deltaTime) override;
         virtual void PostRender(double deltaTime) override;
 
+        std::shared_ptr<RHI::D3D12Texture> GetCurrentFrameColorPyramid();
+        std::shared_ptr<RHI::D3D12Texture> GetLastFrameColorPyramid();
+
     public:
         uint32_t    backBufferWidth;
         uint32_t    backBufferHeight;
@@ -65,6 +69,7 @@ namespace MoYu
         std::shared_ptr<IndirectLightLoopPass>       mIndirectLightLoopPass;
         std::shared_ptr<IndirectDrawPass>            mIndirectOpaqueDrawPass;
         std::shared_ptr<DepthPyramidPass>            mDepthPyramidPass;
+        std::shared_ptr<ColorPyramidPass>            mColorPyramidPass;
         std::shared_ptr<SkyBoxPass>                  mSkyBoxPass;
         std::shared_ptr<IndirectDrawTransparentPass> mIndirectTransparentDrawPass;
         std::shared_ptr<AOPass>                      mAOPass;
@@ -73,6 +78,8 @@ namespace MoYu
         std::shared_ptr<DisplayPass>                 mDisplayPass;
         
         std::shared_ptr<RHI::D3D12Texture> p_RenderTargetTex;
+
+        std::shared_ptr<RHI::D3D12Texture> p_ColorPyramidRTs[2];
 
 	private:
         WindowSystem*  windowSystem;

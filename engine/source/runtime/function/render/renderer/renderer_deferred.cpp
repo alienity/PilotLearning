@@ -61,6 +61,22 @@ namespace MoYu
                                                         L"RenderTargetTexture",
                                                         D3D12_RESOURCE_STATE_COMMON,
                                                         renderTargetClearValue);
+
+        for (int i = 0; i < 2; i++)
+        {
+            std::wstring _name = fmt::format(L"ColorPyramid_{}", i);
+            p_ColorPyramidRTs[i] =
+                RHI::D3D12Texture::Create2D(pDevice->GetLinkedDevice(),
+                                            viewport.width,
+                                            viewport.height,
+                                            8,
+                                            DXGI_FORMAT_R32G32B32A32_FLOAT,
+                                            RHI::RHISurfaceCreateRandomWrite | RHI::RHISurfaceCreateMipmap,
+                                            1,
+                                            _name,
+                                            D3D12_RESOURCE_STATE_COMMON,
+                                            std::nullopt);
+        }
     }
 
     void DeferredRenderer::InitPass()
@@ -158,6 +174,18 @@ namespace MoYu
             mDepthPyramidPass = std::make_shared<DepthPyramidPass>();
             mDepthPyramidPass->setCommonInfo(renderPassCommonInfo);
             mDepthPyramidPass->initialize(depthDrawPassInit);
+        }
+        // Color Pyramid
+        {
+            ColorPyramidPass::DrawPassInitInfo colorPyramidPassInit;
+            colorPyramidPassInit.albedoTexDesc = mIndirectGBufferPass->albedoDesc;
+            
+            colorPyramidPassInit.m_ShaderCompiler = pCompiler;
+            colorPyramidPassInit.m_ShaderRootPath = g_runtime_global_context.m_config_manager->getShaderFolder();
+
+            mColorPyramidPass = std::make_shared<ColorPyramidPass>();
+            mColorPyramidPass->setCommonInfo(renderPassCommonInfo);
+            mColorPyramidPass->initialize(colorPyramidPassInit);
         }
         // LightLoop pass
         {
@@ -285,6 +313,7 @@ namespace MoYu
         mTerrainCullPass->prepareMeshData(render_resource);
         mIndirectTerrainGBufferPass->prepareMatBuffer(render_resource);
         mDepthPyramidPass->prepareMeshData(render_resource);
+        mColorPyramidPass->prepareMeshData(render_resource);
         mSSRPass->prepareMetaData(render_resource);
         mPostprocessPasses->PreparePassData(render_resource);
 
@@ -302,6 +331,7 @@ namespace MoYu
         mIndirectGBufferPass         = nullptr;
         mIndirectTerrainGBufferPass  = nullptr;
         mDepthPyramidPass            = nullptr;
+        mColorPyramidPass            = nullptr;
         mIndirectLightLoopPass       = nullptr;
         mIndirectOpaqueDrawPass      = nullptr;
         mAOPass                      = nullptr;
@@ -331,6 +361,11 @@ namespace MoYu
         // game view output
         RHI::RgResourceHandle renderTargetColorHandle = graph.Import(p_RenderTargetTex.get());
         
+        // last frame color buffer
+        RHI::RgResourceHandle curFrameColorRTHandle = graph.Import(GetCurrentFrameColorPyramid().get());
+        // current frame color buffer
+        RHI::RgResourceHandle lastFrameColorRTHandle = graph.Import(GetLastFrameColorPyramid().get());
+
         /**/
         //=================================================================================
         // 应该再给graph添加一个signal同步，目前先这样
@@ -500,6 +535,7 @@ namespace MoYu
         mSSRInput.worldNormalHandle    = mGBufferOutput.worldNormalHandle;
         mSSRInput.mrraMapHandle        = mGBufferOutput.metallic_Roughness_Reflectance_AO_Handle;
         mSSRInput.minDepthPtyramidHandle = mDepthPyramidOutput.minDepthPtyramidHandle;
+        mSSRInput.lastFrameColorHandle   = lastFrameColorRTHandle;
         mSSRPass->update(graph, mSSRInput, mSSROutput);
         //=================================================================================
 
@@ -512,13 +548,27 @@ namespace MoYu
         mLightLoopIntput.albedoHandle           = mGBufferOutput.albedoHandle;
         mLightLoopIntput.worldNormalHandle      = mGBufferOutput.worldNormalHandle;
         mLightLoopIntput.ambientOcclusionHandle = mAOOutput.outputAOHandle;
-        mLightLoopIntput.metallic_Roughness_Reflectance_AO_Handle =
-            mGBufferOutput.metallic_Roughness_Reflectance_AO_Handle;
-        mLightLoopIntput.clearCoat_ClearCoatRoughness_Anisotropy_Handle =
-            mGBufferOutput.clearCoat_ClearCoatRoughness_Anisotropy_Handle;
+        mLightLoopIntput.metallic_Roughness_Reflectance_AO_Handle = mGBufferOutput.metallic_Roughness_Reflectance_AO_Handle;
+        mLightLoopIntput.clearCoat_ClearCoatRoughness_Anisotropy_Handle = mGBufferOutput.clearCoat_ClearCoatRoughness_Anisotropy_Handle;
         mLightLoopIntput.gbufferDepthHandle = mGBufferOutput.depthHandle;
         mIndirectLightLoopPass->update(graph, mLightLoopIntput, mLightLoopOutput);
+
+        RHI::RgResourceHandle outColorHandle = mLightLoopOutput.colorHandle;
         //=================================================================================
+
+        //=================================================================================
+        // color pyramid
+        ColorPyramidPass::DrawInputParameters  mColorPyramidInput;
+        ColorPyramidPass::DrawOutputParameters mColorPyramidOutput;
+        mColorPyramidInput.colorHandle          = outColorHandle;
+        mColorPyramidInput.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
+        mColorPyramidOutput.colorPyramidHandle  = curFrameColorRTHandle;
+        mColorPyramidPass->update(graph, mColorPyramidInput, mColorPyramidOutput);
+
+        // 因为color pyramid必须在绘制transparent对象之前
+        outColorHandle = mColorPyramidOutput.colorHandle;
+        //=================================================================================
+
         /*
         //=================================================================================
         // indirect opaque draw
@@ -543,7 +593,7 @@ namespace MoYu
         SkyBoxPass::DrawOutputParameters mSkyboxOutputParams;
 
         mSkyboxIntputParams.perframeBufferHandle    = indirectCullOutput.perframeBufferHandle;
-        mSkyboxOutputParams.renderTargetColorHandle = mLightLoopOutput.colorHandle;
+        mSkyboxOutputParams.renderTargetColorHandle = outColorHandle;
         mSkyboxOutputParams.renderTargetDepthHandle = mGBufferOutput.depthHandle;
         //mSkyboxOutputParams.renderTargetColorHandle = mDrawOutputParams.renderTargetColorHandle;
         //mSkyboxOutputParams.renderTargetDepthHandle = mDrawOutputParams.renderTargetDepthHandle;
@@ -643,6 +693,19 @@ namespace MoYu
     void DeferredRenderer::PostRender(double deltaTime)
     {
 
+    }
+
+    std::shared_ptr<RHI::D3D12Texture> DeferredRenderer::GetCurrentFrameColorPyramid()
+    {
+        int curIndex = pDevice->GetLinkedDevice()->m_FrameIndex;
+        return p_ColorPyramidRTs[curIndex];
+    }
+
+    std::shared_ptr<RHI::D3D12Texture> DeferredRenderer::GetLastFrameColorPyramid()
+    {
+        int curIndex = pDevice->GetLinkedDevice()->m_FrameIndex;
+        curIndex     = (curIndex + 1) % 2;
+        return p_ColorPyramidRTs[curIndex];
     }
 
 }
