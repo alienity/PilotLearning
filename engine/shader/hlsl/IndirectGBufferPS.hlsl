@@ -86,7 +86,7 @@ PSOutputGBuffer PSMain(VaringStruct varingStruct)
     computeShadingParams(g_FrameUniform, varingStruct, commonShadingStruct);
     prepareMaterial(materialInputs, commonShadingStruct);
 
-    float3 worldNormal = mul(commonShadingStruct.shading_tangentToWorld, materialInputs.normal.xyz);
+    float3 worldNormal = normalize(mul(commonShadingStruct.shading_tangentToWorld, materialInputs.normal.xyz));
 
     PSOutputGBuffer output;
 

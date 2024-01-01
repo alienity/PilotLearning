@@ -149,7 +149,7 @@ PSOutputGBuffer PSMain(VaringStruct varingStruct)
     float3 normal = normalTexture.Sample(defaultSampler, terrainUV * normalTilling).rgb*2-1;
     // normal.y = -normal.y;
 
-    float3 worldNormal = mul(tbnWorld, normal);
+    float3 worldNormal = normalize(mul(tbnWorld, normal));
 
     PSOutputGBuffer output;
 
