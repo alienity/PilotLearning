@@ -153,8 +153,6 @@ void CSResolve(uint3 groupId : SV_GroupId, uint groupIndex : SV_GroupIndex, uint
     //fireflies
     result.rgb /= 1 - Luminance(result.rgb);
 
-    result.rgb *= result.a;
-
     ResolveResult[uvInt.xy] = max(1e-5, result);
 }
 

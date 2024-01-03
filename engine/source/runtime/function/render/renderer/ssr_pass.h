@@ -39,11 +39,6 @@ namespace MoYu
 
         struct DrawOutputParameters : public PassOutput
         {
-            DrawOutputParameters()
-            {
-                ssrOutHandle.Invalidate();
-            }
-
             RHI::RgResourceHandle ssrOutHandle;
         };
 
@@ -55,7 +50,12 @@ namespace MoYu
         void update(RHI::RenderGraph& graph, DrawInputParameters& passInput, DrawOutputParameters& passOutput);
         void destroy() override final;
 
+        std::shared_ptr<RHI::D3D12Texture> getCurTemporalResult();
+        std::shared_ptr<RHI::D3D12Texture> getPrevTemporalResult();
+
     private:
+        int passIndex;
+
         Shader SSRRaycastCS;
         std::shared_ptr<RHI::D3D12RootSignature> pSSRRaycastSignature;
         std::shared_ptr<RHI::D3D12PipelineState> pSSRRaycastPSO;
@@ -74,6 +74,7 @@ namespace MoYu
         RHI::RgTextureDesc resolveResultDesc;
 
         std::shared_ptr<RHI::D3D12Texture> m_bluenoise;
+        std::shared_ptr<RHI::D3D12Texture> p_temporalResults[2];
 	};
 }
 

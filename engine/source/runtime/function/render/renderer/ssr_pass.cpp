@@ -25,6 +25,8 @@ namespace MoYu
 
 	void SSRPass::initialize(const SSRInitInfo& init_info)
 	{
+        passIndex = 0;
+
         colorTexDesc = init_info.m_ColorTexDesc;
 
         raycastResultDesc =
@@ -176,7 +178,7 @@ namespace MoYu
         float noiseWidth = pBlueNoiseUniMap->GetWidth();
         float noiseHeight = pBlueNoiseUniMap->GetHeight();
 
-        const int kMaxLods = 12;
+        const int kMaxLods = 8;
         int lodCount = glm::log2((float)glm::min(colorTexDesc.Width, colorTexDesc.Height));
         lodCount = glm::min(lodCount, kMaxLods);
 
@@ -202,6 +204,24 @@ namespace MoYu
         // SSR Uniform
         _frameUniforms->ssrUniform = ssrUniform;
 
+
+        if (p_temporalResults[0] == nullptr)
+        {
+            for (int i = 0; i < 2; i++)
+            {
+                p_temporalResults[i] =
+                    RHI::D3D12Texture::Create2D(m_Device->GetLinkedDevice(),
+                                                colorTexDesc.Width,
+                                                colorTexDesc.Height,
+                                                1,
+                                                colorTexDesc.Format,
+                                                RHI::RHISurfaceCreateRandomWrite,
+                                                1,
+                                                fmt::format(L"SSRTemporalResult_{}", i),
+                                                D3D12_RESOURCE_STATE_COMMON,
+                                                std::nullopt);
+            }
+        }
     }
 
     void SSRPass::update(RHI::RenderGraph& graph, DrawInputParameters& passInput, DrawOutputParameters& passOutput)
@@ -213,6 +233,9 @@ namespace MoYu
         RHI::RgResourceHandle lastFrameColorHandle   = passInput.lastFrameColorHandle;
 
         RHI::RgResourceHandle blueNoiseHandle = GImport(graph, m_bluenoise.get());
+
+        RHI::RgResourceHandle curTemporalResult = GImport(graph, getCurTemporalResult().get());
+        RHI::RgResourceHandle prevTemporalResult = GImport(graph, getPrevTemporalResult().get());
 
         RHI::RgResourceHandle raycastResultHandle = graph.Create<RHI::D3D12Texture>(raycastResultDesc);
         RHI::RgResourceHandle raycastMaskHandle   = graph.Create<RHI::D3D12Texture>(raycastMaskDesc);
@@ -288,7 +311,7 @@ namespace MoYu
         resolvePass.Read(worldNormalHandle, true);
         resolvePass.Read(mrraMapHandle, true);
         resolvePass.Read(minDepthPtyramidHandle, true);
-        resolvePass.Read(lastFrameColorHandle, true); // TODO: 
+        resolvePass.Read(lastFrameColorHandle, true);
         resolvePass.Read(raycastResultHandle, true);
         resolvePass.Read(raycastMaskHandle, true);
         resolvePass.Write(resolveHandle, true);
@@ -303,7 +326,7 @@ namespace MoYu
             pContext->TransitionBarrier(RegGetTex(lastFrameColorHandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
             pContext->TransitionBarrier(RegGetTex(raycastResultHandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
             pContext->TransitionBarrier(RegGetTex(raycastMaskHandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-            pContext->TransitionBarrier(RegGetTex(resolveHandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+            pContext->TransitionBarrier(RegGetTex(resolveHandle), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
             pContext->FlushResourceBarriers();
 
             pContext->SetRootSignature(pSSRResolveSignature.get());
@@ -335,15 +358,73 @@ namespace MoYu
             pContext->Dispatch2D(resolveResultDesc.Width, resolveResultDesc.Height, KERNEL_SIZE, KERNEL_SIZE);
         });
 
+        RHI::RenderPass& temporalPass = graph.AddRenderPass("SSRTemporalPass");
 
+        temporalPass.Read(perframeBufferHandle, true);
+        temporalPass.Read(resolveHandle, true);
+        temporalPass.Read(raycastResultHandle, true);
+        temporalPass.Read(minDepthPtyramidHandle, true);
+        temporalPass.Read(prevTemporalResult, true);
+        temporalPass.Write(curTemporalResult, true);
 
-        passOutput.ssrOutHandle = resolveHandle;
+        temporalPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
+            RHI::D3D12ComputeContext* pContext = context->GetComputeContext();
 
+            pContext->TransitionBarrier(RegGetBuf(perframeBufferHandle), D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
+            pContext->TransitionBarrier(RegGetTex(resolveHandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+            pContext->TransitionBarrier(RegGetTex(raycastResultHandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+            pContext->TransitionBarrier(RegGetTex(minDepthPtyramidHandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+            pContext->TransitionBarrier(RegGetTex(prevTemporalResult), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+            pContext->TransitionBarrier(RegGetTex(curTemporalResult), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+            pContext->FlushResourceBarriers();
+
+            pContext->SetRootSignature(pSSRTemporalSignature.get());
+            pContext->SetPipelineState(pSSRTemporalPSO.get());
+
+            struct RootIndexBuffer
+            {
+                UINT perFrameBufferIndex;
+                UINT screenInputIndex;
+                UINT raycastInputIndex;
+                UINT minDepthBufferIndex;
+                UINT previousTemporalInputIndex;
+                UINT temporalResultIndex;
+            };
+
+            RootIndexBuffer rootIndexBuffer = RootIndexBuffer {RegGetBufDefCBVIdx(perframeBufferHandle),
+                                                               RegGetTexDefSRVIdx(resolveHandle),
+                                                               RegGetTexDefSRVIdx(raycastResultHandle),
+                                                               RegGetTexDefSRVIdx(minDepthPtyramidHandle),
+                                                               RegGetTexDefSRVIdx(prevTemporalResult),
+                                                               RegGetTexDefUAVIdx(curTemporalResult)};
+
+            pContext->SetConstantArray(0, sizeof(RootIndexBuffer) / sizeof(UINT), &rootIndexBuffer);
+
+            pContext->Dispatch2D(resolveResultDesc.Width, resolveResultDesc.Height, KERNEL_SIZE, KERNEL_SIZE);
+        });
+
+        passOutput.ssrOutHandle = curTemporalResult;
+
+        passIndex = (passIndex + 1) % 2;
     }
 
     void SSRPass::destroy()
     {
+
         
+
+
+    }
+
+    std::shared_ptr<RHI::D3D12Texture> SSRPass::getCurTemporalResult()
+    {
+        return p_temporalResults[passIndex];
+    }
+
+    std::shared_ptr<RHI::D3D12Texture> SSRPass::getPrevTemporalResult()
+    {
+        int prevIndex = (passIndex + 1) % 2;
+        return p_temporalResults[prevIndex];
     }
 
 }

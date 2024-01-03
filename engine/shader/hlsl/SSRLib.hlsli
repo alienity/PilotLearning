@@ -46,7 +46,10 @@ float RayAttenBorder(float2 pos, float value)
     return saturate(borderDist > value ? 1.0 : borderDist / value);
 }
 
-float Luminance(float3 linearRgb) { return dot(linearRgb, float3(0.2126729, 0.7151522, 0.0721750)); }
+float Luminance(float3 linearRgb)
+{
+    return dot(linearRgb, float3(0.2126729, 0.7151522, 0.0721750));
+}
 
 float BRDF_Weight(float3 V, float3 L, float3 N, float Roughness)
 {

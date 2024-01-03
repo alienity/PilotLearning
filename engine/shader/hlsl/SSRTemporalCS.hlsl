@@ -11,173 +11,161 @@
 cbuffer RootConstants : register(b0, space0)
 {
     uint perFrameBufferIndex;
-    uint raycastStructIndex;
-    uint worldNormalIndex;
-    uint worldTangentIndex;
-    uint matNormalIndex;
-    uint metallic_Roughness_Reflectance_AO_Index;
+    uint screenInputIndex;
+    uint raycastInputIndex;
     uint minDepthBufferIndex;
-    uint ScreenInputIndex;
-    uint RaycastInputIndex;
-    uint MaskInputIndex;
-    uint ResolveResultIndex;
-};
-
-struct RaycastStruct
-{
-    float4 ScreenSize;
-    float4 ResolveSize;
-    float4 RayCastSize;
-    float4 JitterSizeAndOffset;
-    float4 NoiseSize;
-    float BRDFBias;
-    float TResponseMin;
-    float TResponseMax;
-    float TScale;
-    float EdgeFactor;
-    float Thickness;
-    int NumSteps;
-    int MaxMipMap;
+    uint previousTemporalInputIndex;
+    uint temporalResultIndex;
 };
 
 SamplerState defaultSampler : register(s10);
+SamplerState minDepthSampler : register(s11);
 
-groupshared uint rr_cacheR[(KERNEL_SIZE + RESOLVE_RAD2) * (KERNEL_SIZE + RESOLVE_RAD2)];
-groupshared uint rr_cacheG[(KERNEL_SIZE + RESOLVE_RAD2) * (KERNEL_SIZE + RESOLVE_RAD2)];
-groupshared uint rr_cacheB[(KERNEL_SIZE + RESOLVE_RAD2) * (KERNEL_SIZE + RESOLVE_RAD2)];
-groupshared uint rr_cacheA[(KERNEL_SIZE + RESOLVE_RAD2) * (KERNEL_SIZE + RESOLVE_RAD2)];
+groupshared uint t_cacheR[(KERNEL_SIZE + 2) * (KERNEL_SIZE + 2)];
+groupshared uint t_cacheG[(KERNEL_SIZE + 2) * (KERNEL_SIZE + 2)];
+groupshared uint t_cacheB[(KERNEL_SIZE + 2) * (KERNEL_SIZE + 2)];
+groupshared uint t_cacheA[(KERNEL_SIZE + 2) * (KERNEL_SIZE + 2)];
 
-void StoreResolveData(uint index, float4 raycast,float4 mask)
+void Store1TPixel(uint index, float4 pixel)
 {
-    rr_cacheR[index] = f32tof16(raycast.r) | f32tof16(mask.r) << 16;
-    rr_cacheG[index] = f32tof16(raycast.g) | f32tof16(mask.g) << 16;
-    rr_cacheB[index] = f32tof16(raycast.b) | f32tof16(mask.b) << 16;
-    rr_cacheA[index] = f32tof16(raycast.a) | f32tof16(mask.a) << 16;
+    t_cacheR[index] = asuint(pixel.r);
+    t_cacheG[index] = asuint(pixel.g);
+    t_cacheB[index] = asuint(pixel.b);
+    t_cacheA[index] = asuint(pixel.a);
 }
 
-void LoadResolveData(uint index, out float4 raycast, out float4 mask)
+void Load1TPixel(uint index, out float4 pixel)
 {
-    uint rr = rr_cacheR[index];
-    uint gg = rr_cacheG[index];
-    uint bb = rr_cacheB[index];
-    uint aa = rr_cacheA[index];
-    raycast = float4(f16tof32(rr), f16tof32(gg), f16tof32(bb), f16tof32(aa));
-    mask = float4(f16tof32(rr >> 16), f16tof32(gg >> 16), f16tof32(bb >> 16), f16tof32(aa >> 16));
+    pixel = asfloat(uint4(t_cacheR[index], t_cacheG[index], t_cacheB[index], t_cacheA[index]));
 }
 
-[numthreads( 8, 8, 1 )]
-void CSTemporal(uint3 groupId : SV_GroupId, uint groupIndex : SV_GroupIndex, uint3 groupThreadId : SV_GroupThreadID)
+float4 clip_aabb(float3 aabb_min, float3 aabb_max, float4 p, float4 q)
+{
+    float3 p_clip = 0.5 * (aabb_max + aabb_min);
+    float3 e_clip = 0.5 * (aabb_max - aabb_min) + FLT_EPS;
+
+    float4 v_clip = q - float4(p_clip, p.w);
+    float3 v_unit = v_clip.xyz / e_clip;
+    float3 a_unit = abs(v_unit);
+    float ma_unit = max(a_unit.x, max(a_unit.y, a_unit.z));
+
+    if (ma_unit > 1.0)
+        return float4(p_clip, p.w) + v_clip / ma_unit;
+    else
+        return q; // point inside aabb
+}
+
+/*
+float3 GetViewRay(float2 uv)
+{
+    float4 _CamScreenDir = float4(1.0 / ProjectionMatrix[0][0], 1.0 / ProjectionMatrix[1][1], 1, 1);
+    float3 ray = float3(uv.x * 2 - 1, uv.y * 2 - 1, 1);
+    ray *= _CamScreenDir.xyz;
+    ray = ray * (ProjectionParams.z / ray.z);
+    return ray;
+}
+
+float2 CalculateMotion(float rawDepth, float2 inUV, float4 zBufferParams)
+{
+    float depth = Linear01Depth(rawDepth, zBufferParams);
+    float3 ray = GetViewRay(inUV);
+    float3 vPos = ray * depth;
+    float4 worldPos = mul(CameraToWorldMatrix, float4(vPos, 1.0));
+
+    float4 prevClipPos = mul(PrevViewProjectionMatrix, worldPos);
+    float4 curClipPos = mul(ViewProjectionMatrix, worldPos);
+
+    float2 prevHPos = prevClipPos.xy / prevClipPos.w;
+    float2 curHPos = curClipPos.xy / curClipPos.w;
+
+            // V is the viewport position at this pixel in the range 0 to 1.
+    float2 vPosPrev = (prevHPos.xy + 1.0f) / 2.0f;
+    float2 vPosCur = (curHPos.xy + 1.0f) / 2.0f;
+    return vPosCur - vPosPrev;
+}
+*/
+
+[numthreads(KERNEL_SIZE + 2, KERNEL_SIZE + 2, 1)]
+void CSTemporal(uint3 groupId : SV_GroupId, uint3 groupThreadId : SV_GroupThreadID)
 {
     ConstantBuffer<FrameUniforms> mFrameUniforms = ResourceDescriptorHeap[perFrameBufferIndex];
-    ConstantBuffer<RaycastStruct> mRaycastStruct = ResourceDescriptorHeap[raycastStructIndex];
-    Texture2D<float4> worldNormalMap = ResourceDescriptorHeap[worldNormalIndex];
-    Texture2D<float4> worldTangentMap = ResourceDescriptorHeap[worldTangentIndex];
-    Texture2D<float4> matNormalMap = ResourceDescriptorHeap[matNormalIndex];
-    Texture2D<float4> mrraMap = ResourceDescriptorHeap[metallic_Roughness_Reflectance_AO_Index];
+    SSRUniform ssrUniform = mFrameUniforms.ssrUniform;
+    float4 resolveSize = ssrUniform.ResolveSize;
+    float4 screenSize = ssrUniform.ScreenSize;
+    float TResponseMin = ssrUniform.TResponseMin;
+    float TResponseMax = ssrUniform.TResponseMax;
+
+    Texture2D<float4> screenInput = ResourceDescriptorHeap[screenInputIndex];
+    Texture2D<float4> raycastInput = ResourceDescriptorHeap[raycastInputIndex];
     Texture2D<float4> minDepthMap = ResourceDescriptorHeap[minDepthBufferIndex];
+    Texture2D<float4> previousTemporalInput = ResourceDescriptorHeap[previousTemporalInputIndex];
+    RWTexture2D<float4> temporalResult = ResourceDescriptorHeap[temporalResultIndex];
 
-    Texture2D<float4> ScreenInput = ResourceDescriptorHeap[ScreenInputIndex];
-    Texture2D<float4> RaycastInput = ResourceDescriptorHeap[RaycastInputIndex];
-    Texture2D<float4> MaskInput = ResourceDescriptorHeap[MaskInputIndex];
-    
-    RWTexture2D<float4> ResolveResult = ResourceDescriptorHeap[ResolveResultIndex];
-
-    float4 ResolveSize = mRaycastStruct.ResolveSize;
-    float4 RayCastSize = mRaycastStruct.RayCastSize;
-
-    uint2 uvInt = (groupId.xy * KERNEL_SIZE) + groupThreadId.xy - RESOLVE_RAD;
-    float2 uv = (uvInt.xy + 0.5) * ResolveSize.zw;
-
-    float4x4 worldToCameraMatrix = mFrameUniforms.cameraUniform.curFrameUniform.viewFromWorldMatrix;
-    float4x4 viewProjectionMatrixInv = mFrameUniforms.cameraUniform.curFrameUniform.worldFromClipMatrix;
-    float4x4 projectionMatrixInv = mFrameUniforms.cameraUniform.curFrameUniform.viewFromClipMatrix;
-
-    float3 cameraPosition = mFrameUniforms.cameraUniform.curFrameUniform.cameraPosition;
-
-    float3 n = worldNormalMap.Sample(defaultSampler, uv).rgb * 2.0f - 1.0f;
-    float4 vertex_worldTangent = worldTangentMap.Sample(defaultSampler, uv).xyzw * 2.0f - 1.0f;
-    float3 t = vertex_worldTangent.xyz;
-    float3 b = cross(n, t) * vertex_worldTangent.w;
-    float3x3 tangentToWorld = transpose(float3x3(t, b, n));
-    float3 matNormal = matNormalMap.Sample(defaultSampler, uv).rgb * 2.0f - 1.0f;
-    float3 worldNormal = normalize(mul(tangentToWorld, matNormal));
-
-    float roughness = mrraMap.SampleLevel(defaultSampler, uv, 0).y;
-
-    float depth = minDepthMap.SampleLevel(defaultSampler, uv, 0).r;
-    float3 screenPos = float3(uv * 2 - 1, depth);
-    float3 worldPos = getWorldPos(screenPos, viewProjectionMatrixInv);
-    float3 viewPos = getViewPos(screenPos, projectionMatrixInv);
-    float3 viewDir = normalize(worldPos - cameraPosition);
-
-    float NdotV = saturate(dot(worldNormal.xyz, -viewDir));
-    float coneTangent = lerp(0.0, roughness * (1.0 - mRaycastStruct.BRDFBias), NdotV * sqrt(roughness));
-    coneTangent *= lerp(saturate(NdotV * 2), 1, sqrt(roughness));
-
-    float4 ScreenSize = mRaycastStruct.ScreenSize;
-
-    float maxMipLevel = (float)mRaycastStruct.MaxMipMap - 1.0;
-    float4 hitSourcePacked = RaycastInput.SampleLevel(defaultSampler, uv, 0);
-    float sourceMip = clamp(log2(coneTangent * length(hitSourcePacked.xy - uv) * max(ScreenSize.x, ScreenSize.y)), 0.0, maxMipLevel);
-    float4 maskAndColorPacked = float4(ScreenInput.SampleLevel(defaultSampler, hitSourcePacked.xy, sourceMip).rgb, MaskInput.SampleLevel(defaultSampler, uv, 0).r);
-    StoreResolveData(groupIndex, hitSourcePacked, maskAndColorPacked);
-
+    uint2 uvInt = (groupId.xy * KERNEL_SIZE) + (groupThreadId.xy - 1);
+    float2 uv = saturate((uvInt.xy + 0.5f) * resolveSize.zw);
+    uint groupIndex = groupThreadId.y * (KERNEL_SIZE + 2) + groupThreadId.x;
+    float4 current = screenInput.SampleLevel(defaultSampler, uv, 0);
+    Store1TPixel(groupIndex, current);
     GroupMemoryBarrierWithGroupSync();
 
-    bool border = groupThreadId.x < RESOLVE_RAD | groupThreadId.y < RESOLVE_RAD | groupThreadId.x >= KERNEL_SIZE + RESOLVE_RAD || groupThreadId.y >= KERNEL_SIZE + RESOLVE_RAD;
-    if (border) return;
+    bool isborder = groupThreadId.x == 0 | groupThreadId.y == 0 | groupThreadId.x == KERNEL_SIZE + 1 || groupThreadId.y == KERNEL_SIZE + 1;
+    if (isborder) return;
 
-    float3 viewNormal = normalize(mul((float3x3)worldToCameraMatrix, worldNormal));
+    float4 hit = raycastInput.SampleLevel(defaultSampler,uv,0);
 
-    float4 result = 0.0;
-    float weightSum = 0.0;
-    float mul = ResolveSize.x / RayCastSize.x;
+    float depth = minDepthMap.SampleLevel(minDepthSampler,uv,0).x;
+    float hitDepth = minDepthMap.SampleLevel(minDepthSampler,hit.xy,0).x;
 
-    [unroll]
-    for (int i = 0; i < 4; i++)
+    // float2 reflectionCameraVelocity = CalculateMotion(hitDepth, uv);
+    // float2 hitCameraVelocity = CalculateMotion(hitDepth, hit.xy);
+    // float2 cameraVelocity = CalculateMotion(depth, uv);
+
+    float2 reflectionCameraVelocity = float2(0,0);
+    float2 hitCameraVelocity = float2(0,0);
+    float2 cameraVelocity = float2(0,0);
+
+    float2 velocityDiff = cameraVelocity;
+    float2 hitVelocityDiff = hitCameraVelocity;
+
+    float objectVelocityMask = saturate(dot(velocityDiff, velocityDiff) * screenSize.x * 100);
+    float hitObjectVelocityMask = saturate(dot(hitVelocityDiff, hitVelocityDiff) * screenSize.x * 100);
+
+    float2 reflectVelocity = (reflectionCameraVelocity * (1 - hitObjectVelocityMask)) * (1 - objectVelocityMask);
+    float2 velocity = reflectVelocity;
+    float2 prevUV = uv - velocity;
+		
+    float4 previous = previousTemporalInput.SampleLevel(defaultSampler, prevUV,0);
+
+    float4 currentMin = 100;
+    float4 currentMax = 0;
+    float4 currentAvarage = 0;
+
+	[unroll]
+    for (int i = 0; i < 9; i++)
     {
-        int2 offsetUV = offset[i] * mul * 2;
-
-        // "uv" is the location of the current (or "local") pixel. We want to resolve the local pixel using
-        // intersections spawned from neighboring pixels. The neighboring pixel is this one:
-        int2 neighborGroupThreadId = groupThreadId.xy + offsetUV;
-        uint neighborIndex = neighborGroupThreadId.y * (KERNEL_SIZE + RESOLVE_RAD2) + neighborGroupThreadId.x;
-
-        // Now we fetch the intersection point and the PDF that the neighbor's ray hit.
-        float4 hitPacked;
-        float4 maskScreenPacked;
-        LoadResolveData(neighborIndex, hitPacked, maskScreenPacked);
-        float2 hitUV = hitPacked.xy;
-        float hitZ = hitPacked.z;
-        float hitPDF = hitPacked.w;
-        float hitMask = maskScreenPacked.a;
-
-        float3 screenPos = float3(hitUV * 2 - 1, hitZ);
-        float3 hitViewPos = getViewPos(screenPos, projectionMatrixInv);
-
-		// We assume that the hit point of the neighbor's ray is also visible for our ray, and we blindly pretend
-		// that the current pixel shot that ray. To do that, we treat the hit point as a tiny light source. To calculate
-		// a lighting contribution from it, we evaluate the BRDF. Finally, we need to account for the probability of getting
-		// this specific position of the "light source", and that is approximately 1/PDF, where PDF comes from the neighbor.
-		// Finally, the weight is BRDF/PDF. BRDF uses the local pixel's normal and roughness, but PDF comes from the neighbor.
-        float weight = BRDF_Weight(normalize(-viewPos) /*V*/, normalize(hitViewPos - viewPos) /*L*/, viewNormal /*N*/, roughness) / max(1e-5, hitPDF);
-
-        float4 sampleColor;
-        sampleColor.rgb = maskScreenPacked.rgb;
-        sampleColor.a = RayAttenBorder(hitUV, mRaycastStruct.EdgeFactor) * hitMask;
-
-        //fireflies
-        sampleColor.rgb /= 1 + Luminance(sampleColor.rgb);
-
-        result += sampleColor * weight;
-        weightSum += weight;
+		uint2 uv = groupThreadId.xy + offset[i];
+        float4 val;
+        Load1TPixel(uv.y * (KERNEL_SIZE + 2) + uv.x, val);
+        currentMin = min(currentMin, val);
+        currentMax = max(currentMax, val);
+        currentAvarage += val;
     }
 
-    result /= weightSum;
+    currentAvarage /= 9.0;
 
-    //fireflies
-    result.rgb /= 1 - Luminance(result.rgb);
+    previous = clip_aabb(currentMin.xyz, currentMax.xyz, clamp(currentAvarage, currentMin, currentMax), previous);
 
-    ResolveResult[uvInt.xy] = max(1e-5, result);
+    float lum0 = Luminance(current.rgb);
+    float lum1 = Luminance(previous.rgb);
+
+    float unbiased_diff = abs(lum0 - lum1) / max(lum0, max(lum1, 0.2));
+    float unbiased_weight = 1.0 - unbiased_diff;
+    float unbiased_weight_sqr = unbiased_weight * unbiased_weight;
+    float k_feedback = lerp(TResponseMin, TResponseMax, unbiased_weight_sqr);
+
+    float4 tResult = lerp(current, previous, k_feedback);
+
+    tResult.rgb *= tResult.a;
+
+    temporalResult[uvInt.xy] = tResult;
 }
-

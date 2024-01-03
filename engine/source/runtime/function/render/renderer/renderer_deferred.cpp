@@ -531,9 +531,9 @@ namespace MoYu
         // ssr
         SSRPass::DrawInputParameters mSSRInput;
         SSRPass::DrawOutputParameters mSSROutput;
-        mSSRInput.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
-        mSSRInput.worldNormalHandle    = mGBufferOutput.worldNormalHandle;
-        mSSRInput.mrraMapHandle        = mGBufferOutput.metallic_Roughness_Reflectance_AO_Handle;
+        mSSRInput.perframeBufferHandle   = indirectCullOutput.perframeBufferHandle;
+        mSSRInput.worldNormalHandle      = mGBufferOutput.worldNormalHandle;
+        mSSRInput.mrraMapHandle          = mGBufferOutput.metallic_Roughness_Reflectance_AO_Handle;
         mSSRInput.minDepthPtyramidHandle = mDepthPyramidOutput.minDepthPtyramidHandle;
         mSSRInput.lastFrameColorHandle   = lastFrameColorRTHandle;
         mSSRPass->update(graph, mSSRInput, mSSROutput);
