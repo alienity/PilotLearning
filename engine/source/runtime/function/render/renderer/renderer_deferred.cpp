@@ -550,6 +550,7 @@ namespace MoYu
         mLightLoopIntput.ambientOcclusionHandle = mAOOutput.outputAOHandle;
         mLightLoopIntput.metallic_Roughness_Reflectance_AO_Handle = mGBufferOutput.metallic_Roughness_Reflectance_AO_Handle;
         mLightLoopIntput.clearCoat_ClearCoatRoughness_Anisotropy_Handle = mGBufferOutput.clearCoat_ClearCoatRoughness_Anisotropy_Handle;
+        mLightLoopIntput.ssrResolveHandle   = mSSROutput.ssrOutHandle;
         mLightLoopIntput.gbufferDepthHandle = mGBufferOutput.depthHandle;
         mIndirectLightLoopPass->update(graph, mLightLoopIntput, mLightLoopOutput);
 
@@ -642,8 +643,8 @@ namespace MoYu
         DisplayPass::DisplayInputParameters  mDisplayIntputParams;
         DisplayPass::DisplayOutputParameters mDisplayOutputParams;
 
-        mDisplayIntputParams.inputRTColorHandle = mSSROutput.ssrOutHandle;
-        //mDisplayIntputParams.inputRTColorHandle   = mPostprocessOutputParams.outputColorHandle;
+        //mDisplayIntputParams.inputRTColorHandle = mSSROutput.ssrOutHandle;
+        mDisplayIntputParams.inputRTColorHandle   = mPostprocessOutputParams.outputColorHandle;
         //mDisplayIntputParams.inputRTColorHandle   = mTerrainGBufferOutput.albedoHandle;
         //mDisplayIntputParams.inputRTColorHandle      = mAOOutput.outputAOHandle;
         mDisplayOutputParams.renderTargetColorHandle = renderTargetColorHandle;

@@ -7,6 +7,17 @@
 namespace MoYu
 {
 
+#define GImport(g, b) g.Import(b)
+#define RegGetBuf(h) registry->GetD3D12Buffer(h)
+#define RegGetBufCounter(h) registry->GetD3D12Buffer(h)->GetCounterBuffer().get()
+#define RegGetTex(h) registry->GetD3D12Texture(h)
+#define RegGetBufDefCBVIdx(h) registry->GetD3D12Buffer(h)->GetDefaultCBV()->GetIndex()
+#define RegGetBufDefSRVIdx(h) registry->GetD3D12Buffer(h)->GetDefaultSRV()->GetIndex()
+#define RegGetBufDefUAVIdx(h) registry->GetD3D12Buffer(h)->GetDefaultUAV()->GetIndex()
+#define RegGetBufCounterSRVIdx(h) registry->GetD3D12Buffer(h)->GetCounterBuffer()->GetDefaultSRV()->GetIndex()
+#define RegGetTexDefSRVIdx(h) registry->GetD3D12Texture(h)->GetDefaultSRV()->GetIndex()
+#define RegGetTexDefUAVIdx(h) registry->GetD3D12Texture(h)->GetDefaultUAV()->GetIndex()
+
 	void IndirectLightLoopPass::initialize(const DrawPassInitInfo& init_info)
 	{
         colorTexDesc = init_info.colorTexDesc;
@@ -66,6 +77,7 @@ namespace MoYu
         drawpass.Read(passInput.ambientOcclusionHandle, false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
         drawpass.Read(passInput.metallic_Roughness_Reflectance_AO_Handle, false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
         drawpass.Read(passInput.clearCoat_ClearCoatRoughness_Anisotropy_Handle, false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+        drawpass.Read(passInput.ssrResolveHandle, false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
         drawpass.Write(passOutput.colorHandle, false, RHIResourceState::RHI_RESOURCE_STATE_UNORDERED_ACCESS);
 
         RHI::RgResourceHandle perframeBufferHandle = passInput.perframeBufferHandle;
@@ -73,36 +85,52 @@ namespace MoYu
         RHI::RgResourceHandle depthHandle          = passInput.gbufferDepthHandle;
         RHI::RgResourceHandle worldNormalHandle    = passInput.worldNormalHandle;
         RHI::RgResourceHandle ambientOcclusionHandle = passInput.ambientOcclusionHandle;
-        RHI::RgResourceHandle metallic_Roughness_Reflectance_AO_Handle =
-            passInput.metallic_Roughness_Reflectance_AO_Handle;
-        RHI::RgResourceHandle clearCoat_ClearCoatRoughness_Anisotropy_Handle =
-            passInput.clearCoat_ClearCoatRoughness_Anisotropy_Handle;
+        RHI::RgResourceHandle metallic_Roughness_Reflectance_AO_Handle = passInput.metallic_Roughness_Reflectance_AO_Handle;
+        RHI::RgResourceHandle clearCoat_ClearCoatRoughness_Anisotropy_Handle = passInput.clearCoat_ClearCoatRoughness_Anisotropy_Handle;
+        RHI::RgResourceHandle ssrResolveHandle = passInput.ssrResolveHandle;
         RHI::RgResourceHandle outColorHandle = passOutput.colorHandle;
 
         drawpass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
 
             RHI::D3D12ComputeContext* pContext = context->GetComputeContext();
 
-            RHI::D3D12ShaderResourceView* albedoSRV = registry->GetD3D12Texture(albedoHandle)->GetDefaultSRV().get();
-            RHI::D3D12ShaderResourceView* worldNormalSRV  = registry->GetD3D12Texture(worldNormalHandle)->GetDefaultSRV().get();
-            RHI::D3D12ShaderResourceView* ambientOcclusionSRV = registry->GetD3D12Texture(ambientOcclusionHandle)->GetDefaultSRV().get();
-            RHI::D3D12ShaderResourceView* metallic_Roughness_Reflectance_AO_SRV = registry->GetD3D12Texture(metallic_Roughness_Reflectance_AO_Handle)->GetDefaultSRV().get();
-            RHI::D3D12ShaderResourceView* clearCoat_ClearCoatRoughness_Anisotropy_SRV = registry->GetD3D12Texture(clearCoat_ClearCoatRoughness_Anisotropy_Handle)->GetDefaultSRV().get();
-            RHI::D3D12ShaderResourceView* depthSRV = registry->GetD3D12Texture(depthHandle)->GetDefaultSRV().get();
-
-            RHI::D3D12UnorderedAccessView* outColorUAV = registry->GetD3D12Texture(outColorHandle)->GetDefaultUAV().get();
+            //RHI::D3D12ShaderResourceView* albedoSRV = registry->GetD3D12Texture(albedoHandle)->GetDefaultSRV().get();
+            //RHI::D3D12ShaderResourceView* worldNormalSRV  = registry->GetD3D12Texture(worldNormalHandle)->GetDefaultSRV().get();
+            //RHI::D3D12ShaderResourceView* ambientOcclusionSRV = registry->GetD3D12Texture(ambientOcclusionHandle)->GetDefaultSRV().get();
+            //RHI::D3D12ShaderResourceView* metallic_Roughness_Reflectance_AO_SRV = registry->GetD3D12Texture(metallic_Roughness_Reflectance_AO_Handle)->GetDefaultSRV().get();
+            //RHI::D3D12ShaderResourceView* clearCoat_ClearCoatRoughness_Anisotropy_SRV = registry->GetD3D12Texture(clearCoat_ClearCoatRoughness_Anisotropy_Handle)->GetDefaultSRV().get();
+            //RHI::D3D12ShaderResourceView* depthSRV = registry->GetD3D12Texture(depthHandle)->GetDefaultSRV().get();
+            //RHI::D3D12ShaderResourceView* ssrResolveSRV = registry->GetD3D12Texture(ssrResolveHandle)->GetDefaultSRV().get();
+            //RHI::D3D12UnorderedAccessView* outColorUAV = registry->GetD3D12Texture(outColorHandle)->GetDefaultUAV().get();
 
             pContext->SetRootSignature(pIndirectLightLoopSignature.get());
             pContext->SetPipelineState(pIndirectLightLoopPSO.get());
-            pContext->SetConstant(0, 0, albedoSRV->GetIndex());
-            pContext->SetConstant(0, 1, worldNormalSRV->GetIndex());
-            pContext->SetConstant(0, 2, ambientOcclusionSRV->GetIndex());
-            pContext->SetConstant(0, 3, metallic_Roughness_Reflectance_AO_SRV->GetIndex());
-            pContext->SetConstant(0, 4, clearCoat_ClearCoatRoughness_Anisotropy_SRV->GetIndex());
-            pContext->SetConstant(0, 5, depthSRV->GetIndex());
-            pContext->SetConstant(0, 6, outColorUAV->GetIndex());
-            pContext->SetConstantBuffer(1, registry->GetD3D12Buffer(perframeBufferHandle)->GetGpuVirtualAddress());
-            
+
+            struct RootIndexBuffer
+            {
+                uint32_t perFrameBufferIndex;
+                uint32_t albedoIndex;
+                uint32_t worldNormalIndex;
+                uint32_t ambientOcclusionIndex;
+                uint32_t metallic_Roughness_Reflectance_AOIndex;
+                uint32_t clearCoat_ClearCoatRoughness_AnisotropyIndex;
+                uint32_t depthIndex;
+                uint32_t ssrResolveIndex;
+                uint32_t outColorIndex;
+            };
+
+            RootIndexBuffer rootIndexBuffer = {RegGetBufDefCBVIdx(perframeBufferHandle),
+                                               RegGetTexDefSRVIdx(albedoHandle),
+                                               RegGetTexDefSRVIdx(worldNormalHandle),
+                                               RegGetTexDefSRVIdx(ambientOcclusionHandle),
+                                               RegGetTexDefSRVIdx(metallic_Roughness_Reflectance_AO_Handle),
+                                               RegGetTexDefSRVIdx(clearCoat_ClearCoatRoughness_Anisotropy_Handle),
+                                               RegGetTexDefSRVIdx(depthHandle),
+                                               RegGetTexDefSRVIdx(ssrResolveHandle),
+                                               RegGetTexDefUAVIdx(outColorHandle)};
+
+            pContext->SetConstantArray(0, sizeof(RootIndexBuffer) / sizeof(UINT), &rootIndexBuffer);
+
             pContext->Dispatch2D(colorTexDesc.Width, colorTexDesc.Height, 8, 8);
 
         });
