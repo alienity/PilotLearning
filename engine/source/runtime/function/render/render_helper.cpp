@@ -287,7 +287,7 @@ namespace MoYu
 
 
     int m_SampleIndex = 0;
-    const int k_SampleCount = 64;
+    const int k_SampleCount = 8;
 
     float GetHaltonValue(int index, int radix)
     {

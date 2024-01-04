@@ -12,7 +12,7 @@ cbuffer RootConstants : register(b0, space0)
     uint perFrameBufferIndex;
     uint worldNormalIndex;
     uint metallicRoughnessReflectanceAOIndex;
-    uint minDepthBufferIndex;
+    uint maxDepthBufferIndex;
     uint blueNoiseIndex;
     uint RaycastResultIndex;
     uint MaskResultIndex;
@@ -28,12 +28,12 @@ float clampDelta(float2 start, float2 end, float2 delta)
 }
 
 float4 rayMarch(float3 viewPos, float3 viewDir, float3 screenPos, float2 uv, int numSteps, float thickness, 
-    float4x4 projectionMatrix, float4 rayCastSize, float4 zBufferParams, Texture2D<float4> minDepthTex)
+    float4x4 projectionMatrix, float4 rayCastSize, float4 zBufferParams, Texture2D<float4> maxDepthTex)
 {
-    if(screenPos.z < DPETH_MIN_DELTA)
-    {
-        return float4(0,0,0,0);
-    }
+    // if(screenPos.z < DPETH_MIN_DELTA)
+    // {
+    //     return float4(0,0,0,0);
+    // }
 
     float4 rayProj = mul(projectionMatrix, float4(viewPos + viewDir, 1.0f));
     float3 rayDir = normalize(rayProj.xyz / rayProj.w - screenPos);
@@ -53,18 +53,18 @@ float4 rayMarch(float3 viewPos, float3 viewDir, float3 screenPos, float2 uv, int
         float3 nextSamplePos = samplePos + rayDir * distance;
 
         [flatten]
-        if(any(nextSamplePos.xy<0) || any(nextSamplePos.xy>1))
+        if(any(nextSamplePos.xy<0) || any(nextSamplePos.xy>=1))
         {
             return float4(samplePos, mask);
         }
 
-        float sampleMinDepth = minDepthTex.SampleLevel(minDepthSampler, nextSamplePos.xy, level).r;
+        float sampleMaxDepth = maxDepthTex.SampleLevel(minDepthSampler, nextSamplePos.xy, level).r;
         float nextDepth = nextSamplePos.z;
         
         [flatten]
-        if (sampleMinDepth < nextDepth)
+        if (sampleMaxDepth < nextDepth)
         {
-            level = min(level + 1, 6);
+            level = min(level + 1, 7);
             samplePos = nextSamplePos;
         }
         else
@@ -75,7 +75,7 @@ float4 rayMarch(float3 viewPos, float3 viewDir, float3 screenPos, float2 uv, int
         [branch]
         if (level < 0)
         {
-            float delta = abs(LinearEyeDepth(sampleMinDepth, zBufferParams) - LinearEyeDepth(samplePos.z, zBufferParams));
+            float delta = abs(LinearEyeDepth(sampleMaxDepth, zBufferParams) - LinearEyeDepth(samplePos.z, zBufferParams));
             mask = delta <= thickness && i > 0;
             return float4(samplePos, mask);
         }
@@ -112,7 +112,7 @@ void CSRaycast(uint3 id : SV_DispatchThreadID, uint groupIndex : SV_GroupIndex)
     ConstantBuffer<FrameUniforms> mFrameUniforms = ResourceDescriptorHeap[perFrameBufferIndex];
     Texture2D<float4> worldNormalMap = ResourceDescriptorHeap[worldNormalIndex];
     Texture2D<float4> mrraMap = ResourceDescriptorHeap[metallicRoughnessReflectanceAOIndex];
-    Texture2D<float4> minDepthMap = ResourceDescriptorHeap[minDepthBufferIndex];
+    Texture2D<float4> maxDepthMap = ResourceDescriptorHeap[maxDepthBufferIndex];
     Texture2D<float4> blueNoiseMap = ResourceDescriptorHeap[blueNoiseIndex];
 
     RWTexture2D<float4> RaycastResult = ResourceDescriptorHeap[RaycastResultIndex];
@@ -135,7 +135,7 @@ void CSRaycast(uint3 id : SV_DispatchThreadID, uint groupIndex : SV_GroupIndex)
 
     float roughness = mrraMap.SampleLevel(defaultSampler, uv, 0).y;
 
-    float depth = minDepthMap.SampleLevel(minDepthSampler, uv, 0).r;
+    float depth = maxDepthMap.SampleLevel(minDepthSampler, uv, 0).r;
     float3 screenPos = float3(uv * 2 - 1, depth);
     float3 viewPos = getViewPos(screenPos, projectionMatrixInv);
 
@@ -156,7 +156,7 @@ void CSRaycast(uint3 id : SV_DispatchThreadID, uint groupIndex : SV_GroupIndex)
     float thickness = ssrUniform.Thickness;
 
     float4 rayTrace = rayMarch(viewPos, dir, screenPos, uv, numSteps, thickness, 
-        projectionMatrix, rayCastSize, zBufferParams, minDepthMap);
+        projectionMatrix, rayCastSize, zBufferParams, maxDepthMap);
     
     float2 rayTraceHit = rayTrace.xy;
     float rayTraceZ = rayTrace.z;

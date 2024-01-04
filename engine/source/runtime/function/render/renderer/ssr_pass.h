@@ -33,7 +33,7 @@ namespace MoYu
             RHI::RgResourceHandle perframeBufferHandle;
             RHI::RgResourceHandle worldNormalHandle;
             RHI::RgResourceHandle mrraMapHandle;
-            RHI::RgResourceHandle minDepthPtyramidHandle;
+            RHI::RgResourceHandle maxDepthPtyramidHandle;
             RHI::RgResourceHandle lastFrameColorHandle;
         };
 

@@ -229,7 +229,7 @@ namespace MoYu
         RHI::RgResourceHandle perframeBufferHandle = passInput.perframeBufferHandle;
         RHI::RgResourceHandle worldNormalHandle    = passInput.worldNormalHandle;
         RHI::RgResourceHandle mrraMapHandle        = passInput.mrraMapHandle;
-        RHI::RgResourceHandle minDepthPtyramidHandle = passInput.minDepthPtyramidHandle;
+        RHI::RgResourceHandle maxDepthPtyramidHandle = passInput.maxDepthPtyramidHandle;
         RHI::RgResourceHandle lastFrameColorHandle   = passInput.lastFrameColorHandle;
 
         RHI::RgResourceHandle blueNoiseHandle = GImport(graph, m_bluenoise.get());
@@ -245,7 +245,7 @@ namespace MoYu
         raycastPass.Read(perframeBufferHandle, true);
         raycastPass.Read(worldNormalHandle, true);
         raycastPass.Read(mrraMapHandle, true);
-        raycastPass.Read(minDepthPtyramidHandle, true);
+        raycastPass.Read(maxDepthPtyramidHandle, true);
         raycastPass.Read(blueNoiseHandle, true);
         raycastPass.Write(raycastResultHandle, true);
         raycastPass.Write(raycastMaskHandle, true);
@@ -256,7 +256,7 @@ namespace MoYu
             pContext->TransitionBarrier(RegGetBuf(perframeBufferHandle), D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
             pContext->TransitionBarrier(RegGetTex(worldNormalHandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
             pContext->TransitionBarrier(RegGetTex(mrraMapHandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-            pContext->TransitionBarrier(RegGetTex(minDepthPtyramidHandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+            pContext->TransitionBarrier(RegGetTex(maxDepthPtyramidHandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
             pContext->TransitionBarrier(RegGetTex(blueNoiseHandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
             pContext->TransitionBarrier(RegGetTex(raycastResultHandle), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
             pContext->TransitionBarrier(RegGetTex(raycastMaskHandle), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
@@ -270,7 +270,7 @@ namespace MoYu
                 UINT perFrameBufferIndex;
                 UINT worldNormalIndex;
                 UINT metallicRoughnessReflectanceAOIndex;
-                UINT minDepthBufferIndex;
+                UINT maxDepthBufferIndex;
                 UINT blueNoiseIndex;
                 UINT RaycastResultIndex;
                 UINT MaskResultIndex;
@@ -291,7 +291,7 @@ namespace MoYu
             RootIndexBuffer rootIndexBuffer = RootIndexBuffer {RegGetBufDefCBVIdx(perframeBufferHandle),
                                                                RegGetTexDefSRVIdx(worldNormalHandle),
                                                                RegGetTexDefSRVIdx(mrraMapHandle),
-                                                               RegGetTexDefSRVIdx(minDepthPtyramidHandle),
+                                                               RegGetTexDefSRVIdx(maxDepthPtyramidHandle),
                                                                blueNoiseSRVIndex,
                                                                RegGetTexDefUAVIdx(raycastResultHandle),
                                                                RegGetTexDefUAVIdx(raycastMaskHandle)};
@@ -310,7 +310,7 @@ namespace MoYu
         resolvePass.Read(perframeBufferHandle, true);
         resolvePass.Read(worldNormalHandle, true);
         resolvePass.Read(mrraMapHandle, true);
-        resolvePass.Read(minDepthPtyramidHandle, true);
+        resolvePass.Read(maxDepthPtyramidHandle, true);
         resolvePass.Read(lastFrameColorHandle, true);
         resolvePass.Read(raycastResultHandle, true);
         resolvePass.Read(raycastMaskHandle, true);
@@ -322,7 +322,7 @@ namespace MoYu
             pContext->TransitionBarrier(RegGetBuf(perframeBufferHandle), D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
             pContext->TransitionBarrier(RegGetTex(worldNormalHandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
             pContext->TransitionBarrier(RegGetTex(mrraMapHandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-            pContext->TransitionBarrier(RegGetTex(minDepthPtyramidHandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+            pContext->TransitionBarrier(RegGetTex(maxDepthPtyramidHandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
             pContext->TransitionBarrier(RegGetTex(lastFrameColorHandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
             pContext->TransitionBarrier(RegGetTex(raycastResultHandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
             pContext->TransitionBarrier(RegGetTex(raycastMaskHandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
@@ -337,7 +337,7 @@ namespace MoYu
                 UINT perFrameBufferIndex;
                 UINT worldNormalIndex;
                 UINT metallicRoughnessReflectanceAOIndex;
-                UINT minDepthBufferIndex;
+                UINT maxDepthBufferIndex;
                 UINT ScreenInputIndex;
                 UINT RaycastInputIndex;
                 UINT MaskInputIndex;
@@ -347,7 +347,7 @@ namespace MoYu
             RootIndexBuffer rootIndexBuffer = RootIndexBuffer {RegGetBufDefCBVIdx(perframeBufferHandle),
                                                                RegGetTexDefSRVIdx(worldNormalHandle),
                                                                RegGetTexDefSRVIdx(mrraMapHandle),
-                                                               RegGetTexDefSRVIdx(minDepthPtyramidHandle),
+                                                               RegGetTexDefSRVIdx(maxDepthPtyramidHandle),
                                                                RegGetTexDefSRVIdx(lastFrameColorHandle),
                                                                RegGetTexDefSRVIdx(raycastResultHandle),
                                                                RegGetTexDefSRVIdx(raycastMaskHandle),
@@ -363,7 +363,7 @@ namespace MoYu
         temporalPass.Read(perframeBufferHandle, true);
         temporalPass.Read(resolveHandle, true);
         temporalPass.Read(raycastResultHandle, true);
-        temporalPass.Read(minDepthPtyramidHandle, true);
+        temporalPass.Read(maxDepthPtyramidHandle, true);
         temporalPass.Read(prevTemporalResult, true);
         temporalPass.Write(curTemporalResult, true);
 
@@ -373,7 +373,7 @@ namespace MoYu
             pContext->TransitionBarrier(RegGetBuf(perframeBufferHandle), D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
             pContext->TransitionBarrier(RegGetTex(resolveHandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
             pContext->TransitionBarrier(RegGetTex(raycastResultHandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-            pContext->TransitionBarrier(RegGetTex(minDepthPtyramidHandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+            pContext->TransitionBarrier(RegGetTex(maxDepthPtyramidHandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
             pContext->TransitionBarrier(RegGetTex(prevTemporalResult), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
             pContext->TransitionBarrier(RegGetTex(curTemporalResult), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
             pContext->FlushResourceBarriers();
@@ -386,7 +386,7 @@ namespace MoYu
                 UINT perFrameBufferIndex;
                 UINT screenInputIndex;
                 UINT raycastInputIndex;
-                UINT minDepthBufferIndex;
+                UINT maxDepthBufferIndex;
                 UINT previousTemporalInputIndex;
                 UINT temporalResultIndex;
             };
@@ -394,7 +394,7 @@ namespace MoYu
             RootIndexBuffer rootIndexBuffer = RootIndexBuffer {RegGetBufDefCBVIdx(perframeBufferHandle),
                                                                RegGetTexDefSRVIdx(resolveHandle),
                                                                RegGetTexDefSRVIdx(raycastResultHandle),
-                                                               RegGetTexDefSRVIdx(minDepthPtyramidHandle),
+                                                               RegGetTexDefSRVIdx(maxDepthPtyramidHandle),
                                                                RegGetTexDefSRVIdx(prevTemporalResult),
                                                                RegGetTexDefUAVIdx(curTemporalResult)};
 
@@ -411,7 +411,7 @@ namespace MoYu
     void SSRPass::destroy()
     {
 
-        
+
 
 
     }

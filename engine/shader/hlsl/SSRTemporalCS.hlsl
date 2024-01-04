@@ -13,7 +13,7 @@ cbuffer RootConstants : register(b0, space0)
     uint perFrameBufferIndex;
     uint screenInputIndex;
     uint raycastInputIndex;
-    uint minDepthBufferIndex;
+    uint maxDepthBufferIndex;
     uint previousTemporalInputIndex;
     uint temporalResultIndex;
 };
@@ -97,7 +97,7 @@ void CSTemporal(uint3 groupId : SV_GroupId, uint3 groupThreadId : SV_GroupThread
 
     Texture2D<float4> screenInput = ResourceDescriptorHeap[screenInputIndex];
     Texture2D<float4> raycastInput = ResourceDescriptorHeap[raycastInputIndex];
-    Texture2D<float4> minDepthMap = ResourceDescriptorHeap[minDepthBufferIndex];
+    Texture2D<float4> maxDepthMap = ResourceDescriptorHeap[maxDepthBufferIndex];
     Texture2D<float4> previousTemporalInput = ResourceDescriptorHeap[previousTemporalInputIndex];
     RWTexture2D<float4> temporalResult = ResourceDescriptorHeap[temporalResultIndex];
 
@@ -113,8 +113,8 @@ void CSTemporal(uint3 groupId : SV_GroupId, uint3 groupThreadId : SV_GroupThread
 
     float4 hit = raycastInput.SampleLevel(defaultSampler,uv,0);
 
-    float depth = minDepthMap.SampleLevel(minDepthSampler,uv,0).x;
-    float hitDepth = minDepthMap.SampleLevel(minDepthSampler,hit.xy,0).x;
+    float depth = maxDepthMap.SampleLevel(minDepthSampler,uv,0).x;
+    float hitDepth = maxDepthMap.SampleLevel(minDepthSampler,hit.xy,0).x;
 
     // float2 reflectionCameraVelocity = CalculateMotion(hitDepth, uv);
     // float2 hitCameraVelocity = CalculateMotion(hitDepth, hit.xy);

@@ -13,7 +13,7 @@ cbuffer RootConstants : register(b0, space0)
     uint perFrameBufferIndex;
     uint worldNormalIndex;
     uint metallicRoughnessReflectanceAOIndex;
-    uint minDepthBufferIndex;
+    uint maxDepthBufferIndex;
     uint ScreenInputIndex;
     uint RaycastInputIndex;
     uint MaskInputIndex;
@@ -52,7 +52,7 @@ void CSResolve(uint3 groupId : SV_GroupId, uint groupIndex : SV_GroupIndex, uint
     ConstantBuffer<FrameUniforms> mFrameUniforms = ResourceDescriptorHeap[perFrameBufferIndex];
     Texture2D<float4> worldNormalMap = ResourceDescriptorHeap[worldNormalIndex];
     Texture2D<float4> mrraMap = ResourceDescriptorHeap[metallicRoughnessReflectanceAOIndex];
-    Texture2D<float4> minDepthMap = ResourceDescriptorHeap[minDepthBufferIndex];
+    Texture2D<float4> maxDepthMap = ResourceDescriptorHeap[maxDepthBufferIndex];
 
     Texture2D<float4> ScreenInput = ResourceDescriptorHeap[ScreenInputIndex];
     Texture2D<float4> RaycastInput = ResourceDescriptorHeap[RaycastInputIndex];
@@ -75,11 +75,11 @@ void CSResolve(uint3 groupId : SV_GroupId, uint groupIndex : SV_GroupIndex, uint
     float3 cameraPosition = mFrameUniforms.cameraUniform.curFrameUniform.cameraPosition;
 
     float3 worldNormal = worldNormalMap.Sample(defaultSampler, uv).rgb * 2.0f - 1.0f;
-    worldNormal.y = -worldNormal.y;
+    // worldNormal.y = -worldNormal.y;
 
     float roughness = mrraMap.SampleLevel(defaultSampler, uv, 0).y;
 
-    float depth = minDepthMap.SampleLevel(defaultSampler, uv, 0).r;
+    float depth = maxDepthMap.SampleLevel(defaultSampler, uv, 0).r;
     float3 screenPos = float3(uv * 2 - 1, depth);
     float3 worldPos = getWorldPos(screenPos, viewProjectionMatrixInv);
     float3 viewPos = getViewPos(screenPos, projectionMatrixInv);
@@ -103,6 +103,7 @@ void CSResolve(uint3 groupId : SV_GroupId, uint groupIndex : SV_GroupIndex, uint
     if (isborder) return;
 
     float3 viewNormal = normalize(mul((float3x3)worldToCameraMatrix, worldNormal));
+    viewNormal.y = -viewNormal.y;
 
     float4 result = 0.0;
     float weightSum = 0.0;

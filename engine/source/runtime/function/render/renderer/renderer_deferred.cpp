@@ -534,7 +534,7 @@ namespace MoYu
         mSSRInput.perframeBufferHandle   = indirectCullOutput.perframeBufferHandle;
         mSSRInput.worldNormalHandle      = mGBufferOutput.worldNormalHandle;
         mSSRInput.mrraMapHandle          = mGBufferOutput.metallic_Roughness_Reflectance_AO_Handle;
-        mSSRInput.minDepthPtyramidHandle = mDepthPyramidOutput.minDepthPtyramidHandle;
+        mSSRInput.maxDepthPtyramidHandle = mDepthPyramidOutput.maxDepthPtyramidHandle;
         mSSRInput.lastFrameColorHandle   = lastFrameColorRTHandle;
         mSSRPass->update(graph, mSSRInput, mSSROutput);
         //=================================================================================
