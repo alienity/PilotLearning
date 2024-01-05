@@ -26,6 +26,8 @@ struct MaterialInputs
     float ambientOcclusion;
     float4 emissive;
 
+    float4 reflection;
+
     float clearCoat;
     float clearCoatRoughness;
 
@@ -65,6 +67,8 @@ struct PixelParams
     float roughness;
     float3 dfg;
     float3 energyCompensation;
+
+    float4 reflection;
 
     float clearCoat;
     float clearCoatPerceptualRoughness;
@@ -109,6 +113,7 @@ void initMaterial(inout MaterialInputs material)
     material.ambientOcclusion = 1.0;
 
     material.emissive = float4(0.0, 0.0, 0.0, 1.0);
+    material.reflection = float4(0, 0, 0, 0);
 
     material.clearCoat = 1.0;
     material.clearCoatRoughness = 0.0;
@@ -455,6 +460,8 @@ void getCommonPixelParams(const MaterialInputs material, inout PixelParams pixel
     // Assumes an interface from air to an IOR of 1.5 for dielectrics
     float reflectance = computeDielectricF0(material.reflectance);
     pixel.f0 = computeF0(baseColor, material.metallic, reflectance);
+
+    pixel.reflection = material.reflection;
 }
 
 void getClearCoatPixelParams(const MaterialInputs material, inout PixelParams pixel)
@@ -879,6 +886,8 @@ void evaluateIBL(
     float3 E = specularDFG(pixel);
     float3 r = getReflectedVector(params, pixel);
     Fr = E * prefilteredRadiance(frameUniforms, samplerStruct, r, pixel.perceptualRoughness);
+    Fr = lerp(Fr, pixel.reflection.rgb, pixel.reflection.a);
+
     Fr *= specularAO;
 
     // diffuse layer

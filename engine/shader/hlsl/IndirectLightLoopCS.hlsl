@@ -49,7 +49,8 @@ void CSMain( uint3 DTid : SV_DispatchThreadID )
         materialInputs.reflectance = mrra.b;
         materialInputs.ambientOcclusion = mrra.a;
         materialInputs.ambientOcclusion *= ambientCollusionTexture.Sample(defaultSampler, uv).r;
-        materialInputs.emissive = ssrResolveTexture.Sample(defaultSampler, uv).rgba;
+        materialInputs.emissive = float4(0,0,0,0);
+        materialInputs.reflection = ssrResolveTexture.Sample(defaultSampler, uv).rgba;
         float3 cra = clearCoat_ClearCoatRoughness_Anisotropy_Texture.Sample(defaultSampler, uv).rgb;
         materialInputs.clearCoat = cra.r;
         materialInputs.clearCoatRoughness = cra.g;
