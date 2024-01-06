@@ -197,7 +197,7 @@ namespace MoYu
         ssrUniform.TResponseMin    = 0.85f;
         ssrUniform.TResponseMax    = 1.0f;
         ssrUniform.EdgeFactor      = 0.25f;
-        ssrUniform.Thickness       = 0.5f;
+        ssrUniform.Thickness       = 0.001f;
         ssrUniform.NumSteps        = 60;
         ssrUniform.MaxMipMap       = lodCount;
 
@@ -410,7 +410,6 @@ namespace MoYu
 
     void SSRPass::destroy()
     {
-
 
 
 

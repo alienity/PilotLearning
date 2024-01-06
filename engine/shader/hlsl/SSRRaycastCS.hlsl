@@ -75,7 +75,7 @@ float4 rayMarch(float3 viewPos, float3 viewDir, float3 screenPos, float2 uv, int
         [branch]
         if (level < 0)
         {
-            float delta = (LinearEyeDepth(sampleMaxDepth, zBufferParams)) - (LinearEyeDepth(samplePos.z, zBufferParams));
+            float delta = (LinearEyeDepth(samplePos.z, zBufferParams)) - (LinearEyeDepth(sampleMaxDepth, zBufferParams));
             mask = delta <= thickness && i > 0;
             return float4(samplePos, mask);
         }
