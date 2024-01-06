@@ -132,6 +132,7 @@ PSOutputGBuffer PSMain(VaringStruct varingStruct)
     Texture2D<float4> terrainNormalmap = ResourceDescriptorHeap[terrainNormalmapIndex];
 
     float3 localTerrainNormal = terrainNormalmap.SampleLevel(defaultSampler, terrainUV, 0).rgb * 2 - 1;
+    localTerrainNormal.z = -localTerrainNormal.z;
     float3 worldTerrainNormal = normalize(mul(normalMat, localTerrainNormal));
     float3x3 tbnWorld = ToTBNMatrix(worldTerrainNormal);
 
