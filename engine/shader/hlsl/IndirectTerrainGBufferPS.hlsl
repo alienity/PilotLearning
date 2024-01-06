@@ -131,9 +131,11 @@ PSOutputGBuffer PSMain(VaringStruct varingStruct)
 
     Texture2D<float4> terrainNormalmap = ResourceDescriptorHeap[terrainNormalmapIndex];
 
-    float3 localTerrainNormal = terrainNormalmap.SampleLevel(defaultSampler, terrainUV, 0).rgb * 2 - 1;
-    localTerrainNormal.z = -localTerrainNormal.z;
-    float3 worldTerrainNormal = normalize(mul(normalMat, localTerrainNormal));
+    // float3 localTerrainNormal = terrainNormalmap.SampleLevel(defaultSampler, terrainUV, 0).rgb * 2 - 1;
+    // float3 worldTerrainNormal = normalize(mul(normalMat, localTerrainNormal));
+
+    float3 worldTerrainNormal = normalize(cross(ddy(varingStruct.ws_position.xyz), ddx(varingStruct.ws_position.xyz)));
+
     float3x3 tbnWorld = ToTBNMatrix(worldTerrainNormal);
 
     StructuredBuffer<MaterialIndexStruct> mMaterialIndexBuffers = ResourceDescriptorHeap[terrainMatIndexBufferIndex];
