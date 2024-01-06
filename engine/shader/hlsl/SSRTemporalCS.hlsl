@@ -165,7 +165,5 @@ void CSTemporal(uint3 groupId : SV_GroupId, uint3 groupThreadId : SV_GroupThread
 
     float4 tResult = lerp(current, previous, k_feedback);
 
-    tResult.rgb *= tResult.a;
-
     temporalResult[uvInt.xy] = tResult;
 }
