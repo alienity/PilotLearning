@@ -2,16 +2,11 @@
 #include "CommonMath.hlsli"
 #include "InputTypes.hlsli"
 
-cbuffer cb0 : register(b0)
-{
-    float2 g_inverseDimensions;
-}
-
-cbuffer cb0 : register(b1)
+cbuffer RootConstants : register(b0, space0)
 {
     uint m_InputBufIndex;
     uint m_ResultIndex;
-}
+};
 
 // The guassian blur weights (derived from Pascal's triangle)
 static const float Weights[5] = { 70.0f / 256.0f, 56.0f / 256.0f, 28.0f / 256.0f, 8.0f / 256.0f, 1.0f / 256.0f };
@@ -86,7 +81,7 @@ void BlurVertically(RWTexture2D<float3> Result, uint2 pixelCoord, uint topMostIn
 
 //[RootSignature(PostEffects_RootSig)]
 [numthreads( 8, 8, 1 )]
-void main( uint3 Gid : SV_GroupID, uint3 GTid : SV_GroupThreadID, uint3 DTid : SV_DispatchThreadID )
+void CSMain( uint3 Gid : SV_GroupID, uint3 GTid : SV_GroupThreadID, uint3 DTid : SV_DispatchThreadID )
 {
     Texture2D<float3>   InputBuf = ResourceDescriptorHeap[m_InputBufIndex];
     RWTexture2D<float3> Result   = ResourceDescriptorHeap[m_ResultIndex];

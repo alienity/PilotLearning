@@ -344,6 +344,26 @@ struct FrameUniforms
 };
 
 // =======================================
+// VolumeLight
+// =======================================
+struct VolumeLightParams
+{
+    // x: scattering coef, y: extinction coef, z: range w: skybox extinction coef
+    float4 volumetricLight;
+    // x: 1 - g^2, y: 1 + g^2, z: 2*g, w: 1/4pi
+    float4 mieG;
+    // x: scale, y: intensity, z: intensity offset
+    float4 noiseData;
+    // x: x velocity, y: z velocity
+    float4 noiseVelocity;
+    // x:  ground level, y: height scale, z: unused, w: unused
+    float4 heightFog;
+    float maxRayLength;
+    int sampleCount;
+    int2 _padding_0;
+};
+
+// =======================================
 // Terrain
 // =======================================
 

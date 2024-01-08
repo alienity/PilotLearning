@@ -11,25 +11,61 @@ namespace MoYu
 	void VolumeLightPass::initialize(const PassInitInfo& init_info)
 	{
         colorTexDesc = init_info.colorTexDesc;
-        depthTexDesc = init_info.depthTexDesc;
+
+        ShaderCompiler*       m_ShaderCompiler = init_info.m_ShaderCompiler;
+        std::filesystem::path m_ShaderRootPath = init_info.m_ShaderRootPath;
+
+        {
+            mGuassianBlurCS = m_ShaderCompiler->CompileShader(
+                RHI_SHADER_TYPE::Compute, m_ShaderRootPath / "hlsl/GuassianBlur.hlsl", ShaderCompileOptions(L"CSMain"));
+
+            RHI::RootSignatureDesc rootSigDesc =
+                RHI::RootSignatureDesc()
+                    .Add32BitConstants<0, 0>(12)
+                    .AddStaticSampler<10, 0>(D3D12_FILTER::D3D12_FILTER_ANISOTROPIC,
+                                             D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_WRAP,
+                                             8)
+                    .AddStaticSampler<11, 0>(D3D12_FILTER::D3D12_FILTER_MIN_MAG_MIP_LINEAR,
+                                             D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_BORDER,
+                                             8,
+                                             D3D12_COMPARISON_FUNC_LESS_EQUAL,
+                                             D3D12_STATIC_BORDER_COLOR_OPAQUE_BLACK)
+                    .AllowInputLayout()
+                    .AllowResourceDescriptorHeapIndexing()
+                    .AllowSampleDescriptorHeapIndexing();
+
+            pGuassianBlurSignature = std::make_shared<RHI::D3D12RootSignature>(m_Device, rootSigDesc);
+
+            struct PsoStream
+            {
+                PipelineStateStreamRootSignature RootSignature;
+                PipelineStateStreamCS            CS;
+            } psoStream;
+            psoStream.RootSignature         = PipelineStateStreamRootSignature(pGuassianBlurSignature.get());
+            psoStream.CS                    = &mGuassianBlurCS;
+            PipelineStateStreamDesc psoDesc = {sizeof(PsoStream), &psoStream};
+
+            pGuassianBlurPSO = std::make_shared<RHI::D3D12PipelineState>(m_Device, L"GuassianBlurPSO", psoDesc);
+        }
+
+        {
+
+
+
+        }
+
 	}
 
     void VolumeLightPass::prepareMeshData(std::shared_ptr<RenderResource> render_resource)
     {
-        std::shared_ptr<RHI::D3D12Texture> pSpecularTex = m_render_scene->m_skybox_map.m_skybox_specular_map;
 
-        specularIBLTexIndex = pSpecularTex->GetDefaultSRV()->GetIndex();
-        specularIBLTexLevel = 0.0f;
+
+
     }
 
     void VolumeLightPass::update(RHI::RenderGraph& graph, DrawInputParameters& passInput, DrawOutputParameters& passOutput)
     {
-
-        bool needClearRenderTarget = initializeRenderTarget(graph, &passOutput);
-
-        //DrawInputParameters*  drawPassInput  = &passInput;
-        //DrawOutputParameters* drawPassOutput = &passOutput;
-
+        /*
         RHI::RenderPass& drawpass = graph.AddRenderPass("SkyboxPass");
 
         RHI::RgResourceHandle perframeBufferHandle = passInput.perframeBufferHandle;
@@ -71,28 +107,13 @@ namespace MoYu
             
             graphicContext->Draw(3);
         });
+        */
     }
 
 
     void VolumeLightPass::destroy()
     {
 
-    }
-
-    bool VolumeLightPass::initializeRenderTarget(RHI::RenderGraph& graph, DrawOutputParameters* drawPassOutput)
-    {
-        bool needClearRenderTarget = false;
-        if (!drawPassOutput->renderTargetColorHandle.IsValid())
-        {
-            needClearRenderTarget                   = true;
-            drawPassOutput->renderTargetColorHandle = graph.Create<RHI::D3D12Texture>(colorTexDesc);
-        }
-        if (!drawPassOutput->renderTargetDepthHandle.IsValid())
-        {
-            needClearRenderTarget                   = true;
-            drawPassOutput->renderTargetDepthHandle = graph.Create<RHI::D3D12Texture>(depthTexDesc);
-        }
-        return needClearRenderTarget;
     }
 
 }

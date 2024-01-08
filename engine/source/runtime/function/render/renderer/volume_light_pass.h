@@ -14,6 +14,9 @@ namespace MoYu
         {
             RHI::RgTextureDesc colorTexDesc;
             RHI::RgTextureDesc depthTexDesc;
+
+            ShaderCompiler*       m_ShaderCompiler;
+            std::filesystem::path m_ShaderRootPath;
         };
 
         struct DrawInputParameters : public PassInput
@@ -41,13 +44,15 @@ namespace MoYu
         void update(RHI::RenderGraph& graph, DrawInputParameters& passInput, DrawOutputParameters& passOutput);
         void destroy() override final;
 
-    protected:
-        bool initializeRenderTarget(RHI::RenderGraph& graph, DrawOutputParameters* drawPassOutput);
-
     private:
         RHI::RgTextureDesc colorTexDesc;
         RHI::RgTextureDesc volume3DDesc;
 
+        Shader mGuassianBlurCS;
+        std::shared_ptr<RHI::D3D12RootSignature> pGuassianBlurSignature;
+        std::shared_ptr<RHI::D3D12PipelineState> pGuassianBlurPSO;
+
+
+
 	};
 }
-
