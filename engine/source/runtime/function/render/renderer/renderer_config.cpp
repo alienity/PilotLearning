@@ -21,4 +21,6 @@ namespace EngineConfig
     SHConfig g_SHConfig = SHConfig();
 
     AOConfig g_AOConfig = AOConfig();
+
+    VolumeLightConfig g_VolumeLightConfig = VolumeLightConfig();
 }

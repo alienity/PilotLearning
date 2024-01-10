@@ -314,17 +314,19 @@ namespace HLSL
 
     struct VolumeLightParams
     {
-        // x: scattering coef, y: extinction coef, z: range w: skybox extinction coef
-        glm::float4 volumetricLight;
-        // x: 1 - g^2, y: 1 + g^2, z: 2*g, w: 1/4pi
-        glm::float4 mieG;
-        // x: scale, y: intensity, z: intensity offset
-        glm::float4 noiseData;
-        // x: x velocity, y: z velocity
-        glm::float4 noiseVelocity;
-        // x:  ground level, y: height scale, z: unused, w: unused
-        glm::float4 heightFog;
-        // float4 _LightDir;
+        float scattering_coef;
+        float extinction_coef;
+        float volumetrix_range;
+        float skybox_extinction_coef;
+
+        float mieG; // x: 1 - g^2, y: 1 + g^2, z: 2*g, w: 1/4pi
+        float noise_scale;
+        float noise_intensity;
+        float noise_intensity_offset;
+
+        glm::float2 noise_velocity;
+        float ground_level;
+        float height_scale;
 
         float maxRayLength;
         int sampleCount;

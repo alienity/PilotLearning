@@ -123,6 +123,26 @@ namespace EngineConfig
     };
 
     extern AOConfig g_AOConfig;
+
+    struct VolumeLightConfig
+    {
+        int   mSampleCount = 24;
+        float mScatteringCoef = 0.127f;
+        float mExtinctionCoef = 0.01f;
+        float mSkyboxExtinctionCoef = 0.9f;
+        float mMieG = 0.319f;
+        bool  mHeightFog = true;
+        float mHeightScale = 0.114f;
+        float mGroundLevel = 0;
+        bool  mNoise = true;
+        float mNoiseSccale = 0.009f;
+        float mMoiseIntensity = 2.01f;
+        float mNoiseIntensityOffset = 0.3f;
+        glm::float2 mNoiseVelocity = glm::float2(11, 3);
+        float mMaxRayLength = 400;
+    };
+
+    extern VolumeLightConfig g_VolumeLightConfig;
 }
 
 // clang-format off
