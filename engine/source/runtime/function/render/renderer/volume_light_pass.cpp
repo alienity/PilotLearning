@@ -2,6 +2,7 @@
 #include "runtime/function/render/rhi/rendergraph/RenderGraph.h"
 #include "runtime/resource/config_manager/config_manager.h"
 #include "runtime/function/render/rhi/rhi_core.h"
+#include "runtime/function/render/renderer/renderer_config.h"
 
 #include <cassert>
 
@@ -49,17 +50,66 @@ namespace MoYu
         }
 
         {
+            mVolumeLightingCS = m_ShaderCompiler->CompileShader(
+                RHI_SHADER_TYPE::Compute, m_ShaderRootPath / "hlsl/VolumetricLighting.hlsl", ShaderCompileOptions(L"CSMain"));
 
+            RHI::RootSignatureDesc rootSigDesc =
+                RHI::RootSignatureDesc()
+                    .Add32BitConstants<0, 0>(12)
+                    .AddStaticSampler<10, 0>(D3D12_FILTER::D3D12_FILTER_ANISOTROPIC,
+                                             D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_WRAP,
+                                             8)
+                    .AddStaticSampler<11, 0>(D3D12_FILTER::D3D12_FILTER_MIN_MAG_MIP_LINEAR,
+                                             D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_BORDER,
+                                             8,
+                                             D3D12_COMPARISON_FUNC_LESS_EQUAL,
+                                             D3D12_STATIC_BORDER_COLOR_OPAQUE_BLACK)
+                    .AllowInputLayout()
+                    .AllowResourceDescriptorHeapIndexing()
+                    .AllowSampleDescriptorHeapIndexing();
 
+            pVolumeLightingSignature = std::make_shared<RHI::D3D12RootSignature>(m_Device, rootSigDesc);
 
+            struct PsoStream
+            {
+                PipelineStateStreamRootSignature RootSignature;
+                PipelineStateStreamCS            CS;
+            } psoStream;
+            psoStream.RootSignature         = PipelineStateStreamRootSignature(pVolumeLightingSignature.get());
+            psoStream.CS                    = &mVolumeLightingCS;
+            PipelineStateStreamDesc psoDesc = {sizeof(PsoStream), &psoStream};
+
+            pVolumeLightingPSO = std::make_shared<RHI::D3D12PipelineState>(m_Device, L"VolumeLightingPS", psoDesc);
         }
 
 	}
 
     void VolumeLightPass::prepareMeshData(std::shared_ptr<RenderResource> render_resource)
     {
+        m_bluenoise = m_render_scene->m_bluenoise_map.m_bluenoise_64x64_uni;
 
+        HLSL::FrameUniforms* _frameUniforms = &(render_resource->m_FrameUniforms);
 
+        HLSL::VolumeLightUniform volumeLightUniform = {};
+
+        volumeLightUniform.scattering_coef = EngineConfig::g_VolumeLightConfig.mScatteringCoef;
+        volumeLightUniform.extinction_coef = EngineConfig::g_VolumeLightConfig.mExtinctionCoef;
+        volumeLightUniform.volumetrix_range = 1.0f;
+        volumeLightUniform.skybox_extinction_coef = 1.0f - EngineConfig::g_VolumeLightConfig.mSkyboxExtinctionCoef;
+        
+        volumeLightUniform.mieG = EngineConfig::g_VolumeLightConfig.mMieG;
+        volumeLightUniform.noise_scale = EngineConfig::g_VolumeLightConfig.mNoiseSccale;
+        volumeLightUniform.noise_intensity = EngineConfig::g_VolumeLightConfig.mNoiseIntensity;
+        volumeLightUniform.noise_intensity_offset = EngineConfig::g_VolumeLightConfig.mNoiseIntensityOffset;
+
+        volumeLightUniform.noise_velocity = EngineConfig::g_VolumeLightConfig.mNoiseVelocity;
+        volumeLightUniform.ground_level = EngineConfig::g_VolumeLightConfig.mGroundLevel;
+        volumeLightUniform.height_scale = EngineConfig::g_VolumeLightConfig.mHeightScale;
+
+        volumeLightUniform.maxRayLength = EngineConfig::g_VolumeLightConfig.mMaxRayLength;
+        volumeLightUniform.sampleCount = EngineConfig::g_VolumeLightConfig.mSampleCount;
+
+        _frameUniforms->volumeLightUniform = volumeLightUniform;
 
     }
 

@@ -328,25 +328,10 @@ struct TerrainUniform
     float4x4 prevWorld2LocalMatrix;
 };
 
-struct FrameUniforms
-{
-    CameraUniform cameraUniform;
-    BaseUniform baseUniform;
-    TerrainUniform terrainUniform;
-    MeshUniform meshUniform;
-    AOUniform aoUniform;
-    TAAUniform taaUniform;
-    IBLUniform iblUniform;
-    SSRUniform ssrUniform;
-    DirectionalLightStruct directionalLight;
-    PointLightUniform pointLightUniform;
-    SpotLightUniform spotLightUniform;
-};
-
 // =======================================
 // VolumeLight
 // =======================================
-struct VolumeLightParams
+struct VolumeLightUniform
 {
     float scattering_coef;
     float extinction_coef;
@@ -366,6 +351,22 @@ struct VolumeLightParams
     float maxRayLength;
     int sampleCount;
     int2 _padding_0;
+};
+
+struct FrameUniforms
+{
+    CameraUniform cameraUniform;
+    BaseUniform baseUniform;
+    TerrainUniform terrainUniform;
+    MeshUniform meshUniform;
+    AOUniform aoUniform;
+    TAAUniform taaUniform;
+    IBLUniform iblUniform;
+    SSRUniform ssrUniform;
+    DirectionalLightStruct directionalLight;
+    PointLightUniform pointLightUniform;
+    SpotLightUniform spotLightUniform;
+    VolumeLightUniform volumeLightUniform;
 };
 
 // =======================================

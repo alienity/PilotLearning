@@ -187,6 +187,18 @@ namespace MoYu
             mColorPyramidPass->setCommonInfo(renderPassCommonInfo);
             mColorPyramidPass->initialize(colorPyramidPassInit);
         }
+        // VolumeLight Pass
+        {
+            VolumeLightPass::PassInitInfo passInitInfo;
+            passInitInfo.colorTexDesc = colorTexDesc;
+            passInitInfo.depthTexDesc = depthTexDesc;
+            passInitInfo.m_ShaderCompiler = pCompiler;
+            passInitInfo.m_ShaderRootPath = g_runtime_global_context.m_config_manager->getShaderFolder();
+
+            mVolumeLightPass = std::make_shared<VolumeLightPass>();
+            mVolumeLightPass->setCommonInfo(renderPassCommonInfo);
+            mVolumeLightPass->initialize(passInitInfo);
+        }
         // LightLoop pass
         {
             IndirectLightLoopPass::DrawPassInitInfo drawPassInit;
@@ -315,6 +327,7 @@ namespace MoYu
         mDepthPyramidPass->prepareMeshData(render_resource);
         mColorPyramidPass->prepareMeshData(render_resource);
         mSSRPass->prepareMetaData(render_resource);
+
         mPostprocessPasses->PreparePassData(render_resource);
 
         mIndirectCullPass->inflatePerframeBuffer(render_resource);
@@ -336,6 +349,7 @@ namespace MoYu
         mIndirectOpaqueDrawPass      = nullptr;
         mAOPass                      = nullptr;
         mSSRPass                     = nullptr;
+        mVolumeLightPass             = nullptr;
         mSkyBoxPass                  = nullptr;
         mIndirectTransparentDrawPass = nullptr;
         mPostprocessPasses           = nullptr;
@@ -464,6 +478,15 @@ namespace MoYu
         mTerrainGBufferIntput.terrainCommandSigHandle = terrainCullOutput.mainCamVisCommandSigHandle;
 
         mIndirectTerrainGBufferPass->update(graph, mTerrainGBufferIntput, mGBufferOutput);
+        //=================================================================================
+
+        //=================================================================================
+        // volume light
+        VolumeLightPass::DrawInputParameters mVolumeLightInput;
+        VolumeLightPass::DrawOutputParameters mVolumeLightOutput;
+        mVolumeLightInput.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
+
+        mVolumeLightPass->update(graph, mVolumeLightInput, mVolumeLightOutput);
         //=================================================================================
 
         //=================================================================================

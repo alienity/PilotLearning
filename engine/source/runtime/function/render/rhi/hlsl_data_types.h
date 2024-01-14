@@ -310,9 +310,10 @@ namespace HLSL
         DirectionalLightStruct directionalLight;
         PointLightUniform      pointLightUniform;
         SpotLightUniform       spotLightUniform;
+        VolumeLightUniform     volumeLightUniform;
     };
 
-    struct VolumeLightParams
+    struct VolumeLightUniform
     {
         float scattering_coef;
         float extinction_coef;

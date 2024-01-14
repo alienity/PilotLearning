@@ -7,6 +7,7 @@ cbuffer RootConstants : register(b0, space0)
     uint perFrameBufferIndex;
     uint volumetricParameterIndex; 
     uint noiseTextureIndex;
+    uint blueNoiseIndex;
     uint ditherTextureIndex;
     uint resultTextureIndex;
 };
@@ -111,13 +112,15 @@ float4 RayMarch(float2 screenPos, float3 rayStart, float3 rayDir, float rayLengt
     [loop]
     for (int i = 0; i < stepCount; ++i)
     {
-        float atten = GetLightAttenuation(currentPosition);
+        float light_attenuation = GetLightAttenuation(currentPosition);
         float density = GetDensity(currentPosition);
 
         float scattering = _VolumetricLight.x * stepSize * density;
         extinction += _VolumetricLight.y * stepSize * density;// +scattering;
 
-        float4 light = atten * scattering * exp(-extinction);
+        float transparency = exp(-extinction);
+
+        float4 light = transparency * light_attenuation * scattering;
 
         vlight += light;
 

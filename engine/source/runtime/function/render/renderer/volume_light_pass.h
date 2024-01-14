@@ -52,7 +52,10 @@ namespace MoYu
         std::shared_ptr<RHI::D3D12RootSignature> pGuassianBlurSignature;
         std::shared_ptr<RHI::D3D12PipelineState> pGuassianBlurPSO;
 
+        Shader mVolumeLightingCS;
+        std::shared_ptr<RHI::D3D12RootSignature> pVolumeLightingSignature;
+        std::shared_ptr<RHI::D3D12PipelineState> pVolumeLightingPSO;
 
-
+        std::shared_ptr<RHI::D3D12Texture> m_bluenoise;
 	};
 }
