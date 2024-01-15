@@ -801,4 +801,21 @@ float4 TangentToWorld(float3 N, float4 H)
 	return float4(newN.xyz, H.w);
 }
 
+// [start, end] -> [0, 1] : (x - start) / (end - start) = x * rcpLength - (start * rcpLength)
+float Remap01(float x, float rcpLength, float startTimesRcpLength)
+{
+	return saturate(x * rcpLength - startTimesRcpLength);
+}
+
+// [start, end] -> [1, 0] : (end - x) / (end - start) = (end * rcpLength) - x * rcpLength
+float Remap10(float x, float rcpLength, float endTimesRcpLength)
+{
+	return saturate(endTimesRcpLength - x * rcpLength);
+}
+
+float3 PositivePow(float3 base, float3 power)
+{
+	return pow(max(abs(base), float3(FLT_EPS, FLT_EPS, FLT_EPS)), power);
+}
+
 #endif // __COMMON_MATH_HLSLI__

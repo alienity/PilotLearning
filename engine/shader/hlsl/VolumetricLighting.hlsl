@@ -1,7 +1,6 @@
 #include "d3d12.hlsli"
 #include "CommonMath.hlsli"
 #include "InputTypes.hlsli"
-#include "VolumeRendering.hlsli"
 
 cbuffer RootConstants : register(b0, space0)
 {
@@ -69,10 +68,10 @@ float shadowSample_PCF_Low(Texture2D<float> shadowmap,
     v *= texelSize.y;
 
     float sum = 0.0;
-    sum += uw.x * vw.x * sampleDepth(shadowmap, shadowmapSampler, (base + float2(u.x, v.x)) * uv_scale + uv_offset, depth);
-    sum += uw.y * vw.x * sampleDepth(shadowmap, shadowmapSampler, (base + float2(u.y, v.x)) * uv_scale + uv_offset, depth);
-    sum += uw.x * vw.y * sampleDepth(shadowmap, shadowmapSampler, (base + float2(u.x, v.y)) * uv_scale + uv_offset, depth);
-    sum += uw.y * vw.y * sampleDepth(shadowmap, shadowmapSampler, (base + float2(u.y, v.y)) * uv_scale + uv_offset, depth);
+    sum += uw.x * vw.x * sampleDepth(shadowmap, (base + float2(u.x, v.x)) * uv_scale + uv_offset, depth);
+    sum += uw.y * vw.x * sampleDepth(shadowmap, (base + float2(u.y, v.x)) * uv_scale + uv_offset, depth);
+    sum += uw.x * vw.y * sampleDepth(shadowmap, (base + float2(u.x, v.y)) * uv_scale + uv_offset, depth);
+    sum += uw.y * vw.y * sampleDepth(shadowmap, (base + float2(u.y, v.y)) * uv_scale + uv_offset, depth);
     return sum * (1.0 / 16.0);
 }
 
@@ -122,6 +121,42 @@ float getVolumeDensity(float3 positionWS, float groundLevel, float heightScale)
 //-----------------------------------------------------------------------------------------
 // MieScattering
 //-----------------------------------------------------------------------------------------
+float CornetteShanksPhasePartConstant(float anisotropy)
+{
+    float g = anisotropy;
+
+    return (3 / (8 * PI)) * (1 - g * g) / (2 + g * g);
+}
+
+// Similar to the RayleighPhaseFunction.
+float CornetteShanksPhasePartSymmetrical(float cosTheta)
+{
+    float h = 1 + cosTheta * cosTheta;
+    return h;
+}
+
+float CornetteShanksPhasePartAsymmetrical(float anisotropy, float cosTheta)
+{
+    float g = anisotropy;
+    float x = 1 + g * g - 2 * g * cosTheta;
+    float f = rsqrt(max(x, FLT_EPS)); // x^(-1/2)
+    return f * f * f;                 // x^(-3/2)
+}
+
+float CornetteShanksPhasePartVarying(float anisotropy, float cosTheta)
+{
+    return CornetteShanksPhasePartSymmetrical(cosTheta) *
+           CornetteShanksPhasePartAsymmetrical(anisotropy, cosTheta); // h * x^(-3/2)
+}
+
+// A better approximation of the Mie phase function.
+// Ref: Henyey-Greenstein and Mie phase functions in Monte Carlo radiative transfer computations
+float CornetteShanksPhaseFunction(float anisotropy, float cosTheta)
+{
+    return CornetteShanksPhasePartConstant(anisotropy) *
+           CornetteShanksPhasePartVarying(anisotropy, cosTheta);
+}
+
 float mieScattering(float cosAngle, float g)
 {
     return CornetteShanksPhaseFunction(g, cosAngle);
@@ -131,7 +166,7 @@ float mieScattering(float cosAngle, float g)
 // RayMarch
 //-----------------------------------------------------------------------------------------
 void rayMarch(FrameUniforms frameUniform, Texture2D<float> shadowmapTex, Texture2D<float> depthBuffer, 
-    RWTexture3D<float> volumeResult, uint2 dtid, float rayOffset, float3 rayStart, float3 rayDir, float rayLength)
+    RWTexture3D<float4> volumeResult, uint2 dtid, float rayOffset, float3 rayStart, float3 rayDir, float rayLength)
 {
     DirectionalLightStruct _directionLight = frameUniform.directionalLight;
     VolumeLightUniform _volumeLightUniform = frameUniform.volumeLightUniform;
@@ -164,7 +199,7 @@ void rayMarch(FrameUniforms frameUniform, Texture2D<float> shadowmapTex, Texture
     float extinction = 0;
     float cosAngle = dot(lightDir.xyz, -rayDir);
 
-    float miePhase = MieScattering(cosAngle, mieG);
+    float miePhase = mieScattering(cosAngle, mieG);
 
     [loop]
     for (int i = 0; i < stepCount; ++i)
@@ -178,9 +213,9 @@ void rayMarch(FrameUniforms frameUniform, Texture2D<float> shadowmapTex, Texture
 
         float transparency = exp(-extinction);
 
-        float4 light = transparency * lightColor * light_attenuation * miePhase * scattering;
+        float3 light = transparency * lightColor * light_attenuation * miePhase * scattering;
 
-        vlight = max(vlight + light, 0);
+        vlight.rgb = max(vlight.rgb + light, 0);
         // use "proper" out-scattering/absorption for dir light 
         vlight.w = exp(-extinction);
 
@@ -214,7 +249,7 @@ void CSMain( uint3 Gid : SV_GroupID, uint3 GTid : SV_GroupThreadID, uint3 DTid :
     Texture2D<float3> blueNoiseTex = ResourceDescriptorHeap[blueNoiseIndex];
     Texture2D<float> depthBuffer = ResourceDescriptorHeap[depthBufferIndex];
     Texture2D<float> dirShadowmap = ResourceDescriptorHeap[g_FrameUniform.directionalLight.directionalLightShadowmap.shadowmap_srv_index];
-    RWTexture3D<float3> volume3DResult = ResourceDescriptorHeap[resultTextureIndex];
+    RWTexture3D<float4> volume3DResult = ResourceDescriptorHeap[resultTextureIndex];
 
     int width, height, depth;
     volume3DResult.GetDimensions(width, height, depth);
@@ -225,13 +260,13 @@ void CSMain( uint3 Gid : SV_GroupID, uint3 GTid : SV_GroupThreadID, uint3 DTid :
     float2 screenPos = DTid.xy + float2(0.5, 0.5);
 
     float2 uv = screenPos / float2(width, height);
-    float depthVal = depthBuffer.SampleLevel(uv, depthSampler, 0).r;
+    float depthVal = depthBuffer.SampleLevel(depthSampler, uv, 0).r;
 
     float4x4 clipToViewMatrix = g_FrameUniform.cameraUniform.curFrameUniform.viewFromClipMatrix;
     float4x4 clipToWorldMatrix = g_FrameUniform.cameraUniform.curFrameUniform.worldFromClipMatrix;
 
     float2 interleavedPos = (fmod(floor(screenPos.xy), 8.0));
-    float offset = blueNoiseTex.SampleLevel(interleavedPos / 8.0 + float2(0.5 / 8.0, 0.5 / 8.0), defaultSampler, 0).r;
+    float offset = blueNoiseTex.SampleLevel(defaultSampler, interleavedPos / 8.0 + float2(0.5 / 8.0, 0.5 / 8.0), 0).r;
 
     float3 targetPosition = getWorldPosition(float3(uv, depthVal), clipToWorldMatrix);
 

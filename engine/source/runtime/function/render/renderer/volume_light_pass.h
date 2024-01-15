@@ -46,7 +46,7 @@ namespace MoYu
 
     private:
         RHI::RgTextureDesc colorTexDesc;
-        RHI::RgTextureDesc volume3DDesc;
+        //RHI::RgTextureDesc volume3DDesc;
 
         Shader mGuassianBlurCS;
         std::shared_ptr<RHI::D3D12RootSignature> pGuassianBlurSignature;
@@ -57,5 +57,7 @@ namespace MoYu
         std::shared_ptr<RHI::D3D12PipelineState> pVolumeLightingPSO;
 
         std::shared_ptr<RHI::D3D12Texture> m_bluenoise;
+
+        std::shared_ptr<RHI::D3D12Texture> m_volume3d;
 	};
 }

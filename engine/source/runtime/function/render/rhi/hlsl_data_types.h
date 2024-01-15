@@ -297,6 +297,27 @@ namespace HLSL
         glm::float4x4 prevWorld2LocalMatrix;
     };
 
+    struct VolumeLightUniform
+    {
+        float scattering_coef;
+        float extinction_coef;
+        float volumetrix_range;
+        float skybox_extinction_coef;
+
+        float mieG; // x: 1 - g^2, y: 1 + g^2, z: 2*g, w: 1/4pi
+        float noise_scale;
+        float noise_intensity;
+        float noise_intensity_offset;
+
+        glm::float2 noise_velocity;
+        float       ground_level;
+        float       height_scale;
+
+        float     maxRayLength;
+        int       sampleCount;
+        glm::int2 _padding_0;
+    };
+
     struct FrameUniforms
     {
         CameraUniform          cameraUniform;
@@ -311,27 +332,6 @@ namespace HLSL
         PointLightUniform      pointLightUniform;
         SpotLightUniform       spotLightUniform;
         VolumeLightUniform     volumeLightUniform;
-    };
-
-    struct VolumeLightUniform
-    {
-        float scattering_coef;
-        float extinction_coef;
-        float volumetrix_range;
-        float skybox_extinction_coef;
-
-        float mieG; // x: 1 - g^2, y: 1 + g^2, z: 2*g, w: 1/4pi
-        float noise_scale;
-        float noise_intensity;
-        float noise_intensity_offset;
-
-        glm::float2 noise_velocity;
-        float ground_level;
-        float height_scale;
-
-        float maxRayLength;
-        int sampleCount;
-        glm::int2 _padding_0;
     };
 
     struct BitonicSortCommandSigParams

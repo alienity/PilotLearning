@@ -111,53 +111,44 @@ namespace MoYu
 
         _frameUniforms->volumeLightUniform = volumeLightUniform;
 
+        if (m_volume3d == nullptr)
+        {
+            m_volume3d = RHI::D3D12Texture::Create3D(m_Device->GetLinkedDevice(),
+                                                     colorTexDesc.Width,
+                                                     colorTexDesc.Height,
+                                                     volumeLightUniform.sampleCount,
+                                                     1,
+                                                     DXGI_FORMAT::DXGI_FORMAT_R32G32B32A32_FLOAT,
+                                                     RHI::RHISurfaceCreateRandomWrite,
+                                                     1,
+                                                     fmt::format(L"Volume3DTexture"),
+                                                     D3D12_RESOURCE_STATE_COMMON,
+                                                     std::nullopt);
+        }
+
     }
 
     void VolumeLightPass::update(RHI::RenderGraph& graph, DrawInputParameters& passInput, DrawOutputParameters& passOutput)
     {
-        /*
-        RHI::RenderPass& drawpass = graph.AddRenderPass("SkyboxPass");
+        RHI::RenderPass& volumeLightPass = graph.AddRenderPass("VolumeLightPass");
 
         RHI::RgResourceHandle perframeBufferHandle = passInput.perframeBufferHandle;
-        RHI::RgResourceHandle renderTargetColorHandle = passOutput.renderTargetColorHandle;
-        RHI::RgResourceHandle renderTargetDepthHandle = passOutput.renderTargetDepthHandle;
 
-        drawpass.Read(passInput.perframeBufferHandle, false, RHIResourceState::RHI_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
-        drawpass.Read(passOutput.renderTargetColorHandle, true);
-        drawpass.Read(passOutput.renderTargetDepthHandle, true);
+        volumeLightPass.Read(passInput.perframeBufferHandle, false, RHIResourceState::RHI_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
 
-        drawpass.Write(passOutput.renderTargetColorHandle, false, RHIResourceState::RHI_RESOURCE_STATE_RENDER_TARGET);
-        drawpass.Write(passOutput.renderTargetDepthHandle, false, RHIResourceState::RHI_RESOURCE_STATE_DEPTH_WRITE);
+        volumeLightPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
 
-        drawpass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
+            RHI::D3D12ComputeContext* pContext = context->GetComputeContext();
 
-            RHI::D3D12GraphicsContext* graphicContext = context->GetGraphicsContext();
 
-            RHI::D3D12Texture* pRenderTargetColor = registry->GetD3D12Texture(renderTargetColorHandle);
-            RHI::D3D12Texture* pRenderTargetDepth = registry->GetD3D12Texture(renderTargetDepthHandle);
 
-            RHI::D3D12RenderTargetView* renderTargetView = pRenderTargetColor->GetDefaultRTV().get();
-            RHI::D3D12DepthStencilView* depthStencilView = pRenderTargetDepth->GetDefaultDSV().get();
 
-            graphicContext->SetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-            graphicContext->SetViewport(RHIViewport {0.0f, 0.0f, (float)colorTexDesc.Width, (float)colorTexDesc.Height, 0.0f, 1.0f});
-            graphicContext->SetScissorRect(RHIRect {0, 0, (int)colorTexDesc.Width, (int)colorTexDesc.Height});
 
-            if (needClearRenderTarget)
-            {
-                graphicContext->ClearRenderTarget(renderTargetView, depthStencilView);
-            }
-            graphicContext->SetRenderTarget(renderTargetView, depthStencilView);
 
-            graphicContext->SetRootSignature(RootSignatures::pSkyBoxRootSignature.get());
-            graphicContext->SetPipelineState(PipelineStates::pSkyBoxPSO.get());
-            graphicContext->SetConstants(0, specularIBLTexIndex, specularIBLTexLevel);
-            //graphicContext->SetConstantBuffer(1, pPerframeBuffer->GetGpuVirtualAddress());
-            graphicContext->SetConstantBuffer(1, registry->GetD3D12Buffer(perframeBufferHandle)->GetGpuVirtualAddress());
-            
-            graphicContext->Draw(3);
+
+
         });
-        */
+
     }
 
 

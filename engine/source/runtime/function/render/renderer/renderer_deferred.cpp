@@ -327,7 +327,7 @@ namespace MoYu
         mDepthPyramidPass->prepareMeshData(render_resource);
         mColorPyramidPass->prepareMeshData(render_resource);
         mSSRPass->prepareMetaData(render_resource);
-
+        mVolumeLightPass->prepareMeshData(render_resource);
         mPostprocessPasses->PreparePassData(render_resource);
 
         mIndirectCullPass->inflatePerframeBuffer(render_resource);
