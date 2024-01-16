@@ -3,6 +3,7 @@
 #include "runtime/resource/config_manager/config_manager.h"
 #include "runtime/function/render/rhi/rhi_core.h"
 #include "runtime/function/render/renderer/renderer_config.h"
+#include "runtime/function/render/renderer/pass_helper.h"
 
 #include <cassert>
 
@@ -64,6 +65,11 @@ namespace MoYu
                                              8,
                                              D3D12_COMPARISON_FUNC_LESS_EQUAL,
                                              D3D12_STATIC_BORDER_COLOR_OPAQUE_BLACK)
+                    .AddStaticSampler<12, 0>(D3D12_FILTER::D3D12_FILTER_COMPARISON_ANISOTROPIC,
+                                             D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
+                                             8,
+                                             D3D12_COMPARISON_FUNC::D3D12_COMPARISON_FUNC_GREATER_EQUAL,
+                                             D3D12_STATIC_BORDER_COLOR_OPAQUE_BLACK)
                     .AllowInputLayout()
                     .AllowResourceDescriptorHeapIndexing()
                     .AllowSampleDescriptorHeapIndexing();
@@ -108,14 +114,19 @@ namespace MoYu
 
         volumeLightUniform.maxRayLength = EngineConfig::g_VolumeLightConfig.mMaxRayLength;
         volumeLightUniform.sampleCount = EngineConfig::g_VolumeLightConfig.mSampleCount;
+        volumeLightUniform.downscaleMip = EngineConfig::g_VolumeLightConfig.mDownScaleMip;
 
         _frameUniforms->volumeLightUniform = volumeLightUniform;
 
         if (m_volume3d == nullptr)
         {
+            int downScale = 1 << volumeLightUniform.downscaleMip;
+            int volumeWidth = colorTexDesc.Width / downScale;
+            int volumeHeight = colorTexDesc.Height / downScale;
+
             m_volume3d = RHI::D3D12Texture::Create3D(m_Device->GetLinkedDevice(),
-                                                     colorTexDesc.Width,
-                                                     colorTexDesc.Height,
+                                                     volumeWidth,
+                                                     volumeHeight,
                                                      volumeLightUniform.sampleCount,
                                                      1,
                                                      DXGI_FORMAT::DXGI_FORMAT_R32G32B32A32_FLOAT,
@@ -130,22 +141,65 @@ namespace MoYu
 
     void VolumeLightPass::update(RHI::RenderGraph& graph, DrawInputParameters& passInput, DrawOutputParameters& passOutput)
     {
+        int downScale    = 1 << EngineConfig::g_VolumeLightConfig.mDownScaleMip;
+        int volumeWidth  = colorTexDesc.Width / downScale;
+        int volumeHeight = colorTexDesc.Height / downScale;
+        
         RHI::RenderPass& volumeLightPass = graph.AddRenderPass("VolumeLightPass");
 
-        RHI::RgResourceHandle perframeBufferHandle = passInput.perframeBufferHandle;
+        RHI::RgResourceHandle blueNoiseHandle = GImport(graph, m_bluenoise.get());
+        RHI::RgResourceHandle volume3DHandle = GImport(graph, m_volume3d.get());
 
-        volumeLightPass.Read(passInput.perframeBufferHandle, false, RHIResourceState::RHI_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
+        RHI::RgResourceHandle perframeBufferHandle = passInput.perframeBufferHandle;
+        RHI::RgResourceHandle maxDepthPtyramidHandle = passInput.maxDepthPtyramidHandle;
+
+        volumeLightPass.Read(perframeBufferHandle, true);
+        volumeLightPass.Read(maxDepthPtyramidHandle, true);
+        volumeLightPass.Read(blueNoiseHandle, true);
+        volumeLightPass.Write(volume3DHandle, true);
 
         volumeLightPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
 
             RHI::D3D12ComputeContext* pContext = context->GetComputeContext();
 
+            pContext->TransitionBarrier(RegGetBuf(perframeBufferHandle), D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
+            pContext->TransitionBarrier(RegGetTex(maxDepthPtyramidHandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+            pContext->TransitionBarrier(RegGetTex(blueNoiseHandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+            pContext->TransitionBarrier(RegGetTex(volume3DHandle), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+            pContext->FlushResourceBarriers();
 
+            pContext->SetRootSignature(pVolumeLightingSignature.get());
+            pContext->SetPipelineState(pVolumeLightingPSO.get());
 
+            struct RootIndexBuffer
+            {
+                UINT perFrameBufferIndex;
+                UINT maxDepthBufferIndex;
+                UINT blueNoiseIndex;
+                UINT volume3DIndex;
+            };
 
+            D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc {};
+            srvDesc.Format                        = DXGI_FORMAT::DXGI_FORMAT_R8G8B8A8_UNORM;
+            srvDesc.Shader4ComponentMapping       = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+            srvDesc.ViewDimension                 = D3D12_SRV_DIMENSION::D3D12_SRV_DIMENSION_TEXTURE2D;
+            srvDesc.Texture2D.MostDetailedMip     = 0;
+            srvDesc.Texture2D.MipLevels           = 1;
+            srvDesc.Texture2D.PlaneSlice          = 0;
+            srvDesc.Texture2D.ResourceMinLODClamp = 0.0f;
+            std::shared_ptr<RHI::D3D12ShaderResourceView> blueNoiseSRV = m_bluenoise->CreateSRV(srvDesc);
+            UINT blueNoiseSRVIndex = blueNoiseSRV->GetIndex();
 
+            UINT volume3DUAVIndex = RegGetTexDefUAVIdx(volume3DHandle);
 
+            RootIndexBuffer rootIndexBuffer = RootIndexBuffer {RegGetBufDefCBVIdx(perframeBufferHandle),
+                                                               RegGetTexDefSRVIdx(maxDepthPtyramidHandle),
+                                                               blueNoiseSRVIndex,
+                                                               volume3DUAVIndex};
 
+            pContext->SetConstantArray(0, sizeof(RootIndexBuffer) / sizeof(UINT), &rootIndexBuffer);
+
+            pContext->Dispatch2D(volumeWidth, volumeHeight, 8, 8);
 
         });
 
@@ -154,6 +208,9 @@ namespace MoYu
 
     void VolumeLightPass::destroy()
     {
+
+        m_volume3d = nullptr;
+
 
     }
 

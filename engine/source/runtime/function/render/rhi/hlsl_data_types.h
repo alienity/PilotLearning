@@ -313,9 +313,10 @@ namespace HLSL
         float       ground_level;
         float       height_scale;
 
-        float     maxRayLength;
-        int       sampleCount;
-        glm::int2 _padding_0;
+        float maxRayLength;
+        int   sampleCount;
+        int   downscaleMip;
+        int   _padding_0;
     };
 
     struct FrameUniforms

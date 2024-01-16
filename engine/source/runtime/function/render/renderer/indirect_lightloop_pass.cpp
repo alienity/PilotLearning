@@ -1,22 +1,12 @@
 #include "runtime/function/render/renderer/indirect_lightloop_pass.h"
 #include "runtime/resource/config_manager/config_manager.h"
 #include "runtime/function/render/rhi/rhi_core.h"
+#include "runtime/function/render/renderer/pass_helper.h"
 
 #include <cassert>
 
 namespace MoYu
 {
-
-#define GImport(g, b) g.Import(b)
-#define RegGetBuf(h) registry->GetD3D12Buffer(h)
-#define RegGetBufCounter(h) registry->GetD3D12Buffer(h)->GetCounterBuffer().get()
-#define RegGetTex(h) registry->GetD3D12Texture(h)
-#define RegGetBufDefCBVIdx(h) registry->GetD3D12Buffer(h)->GetDefaultCBV()->GetIndex()
-#define RegGetBufDefSRVIdx(h) registry->GetD3D12Buffer(h)->GetDefaultSRV()->GetIndex()
-#define RegGetBufDefUAVIdx(h) registry->GetD3D12Buffer(h)->GetDefaultUAV()->GetIndex()
-#define RegGetBufCounterSRVIdx(h) registry->GetD3D12Buffer(h)->GetCounterBuffer()->GetDefaultSRV()->GetIndex()
-#define RegGetTexDefSRVIdx(h) registry->GetD3D12Texture(h)->GetDefaultSRV()->GetIndex()
-#define RegGetTexDefUAVIdx(h) registry->GetD3D12Texture(h)->GetDefaultUAV()->GetIndex()
 
 	void IndirectLightLoopPass::initialize(const DrawPassInitInfo& init_info)
 	{

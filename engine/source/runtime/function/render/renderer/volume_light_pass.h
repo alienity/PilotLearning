@@ -22,6 +22,7 @@ namespace MoYu
         struct DrawInputParameters : public PassInput
         {
             RHI::RgResourceHandle perframeBufferHandle;
+            RHI::RgResourceHandle maxDepthPtyramidHandle;
         };
 
         struct DrawOutputParameters : public PassOutput

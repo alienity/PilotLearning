@@ -126,7 +126,8 @@ namespace EngineConfig
 
     struct VolumeLightConfig
     {
-        int   mSampleCount = 128;
+        int   mDownScaleMip = 2;
+        int   mSampleCount = 64;
         float mScatteringCoef = 0.127f;
         float mExtinctionCoef = 0.01f;
         float mSkyboxExtinctionCoef = 0.9f;
@@ -139,7 +140,7 @@ namespace EngineConfig
         float mNoiseIntensity = 2.01f;
         float mNoiseIntensityOffset = 0.3f;
         glm::float2 mNoiseVelocity = glm::float2(11, 3);
-        float mMaxRayLength = 512;
+        float mMaxRayLength = 128;
     };
 
     extern VolumeLightConfig g_VolumeLightConfig;

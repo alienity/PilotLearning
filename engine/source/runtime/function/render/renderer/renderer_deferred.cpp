@@ -481,15 +481,6 @@ namespace MoYu
         //=================================================================================
 
         //=================================================================================
-        // volume light
-        VolumeLightPass::DrawInputParameters mVolumeLightInput;
-        VolumeLightPass::DrawOutputParameters mVolumeLightOutput;
-        mVolumeLightInput.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
-
-        mVolumeLightPass->update(graph, mVolumeLightInput, mVolumeLightOutput);
-        //=================================================================================
-
-        //=================================================================================
         // depth pyramid
         DepthPyramidPass::DrawInputParameters mDepthPyramidInput;
         DepthPyramidPass::DrawOutputParameters mDepthPyramidOutput;
@@ -538,6 +529,18 @@ namespace MoYu
         mDepthPyramidPass->update(graph, mDepthPyramidInput2, mDepthPyramidOutput2);
         //=================================================================================
         */
+
+
+        //=================================================================================
+        // volume light
+        VolumeLightPass::DrawInputParameters mVolumeLightInput;
+        VolumeLightPass::DrawOutputParameters mVolumeLightOutput;
+        mVolumeLightInput.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
+        mVolumeLightInput.maxDepthPtyramidHandle = mDepthPyramidOutput.maxDepthPtyramidHandle;
+
+        mVolumeLightPass->update(graph, mVolumeLightInput, mVolumeLightOutput);
+        //=================================================================================
+
 
         //=================================================================================
         // ambient occlusion

@@ -6,9 +6,6 @@
 
 namespace MoYu
 {
-
-    #define RegGetTex(h) registry->GetD3D12Texture(h)
-
 	void ColorPyramidPass::initialize(const DrawPassInitInfo& init_info)
 	{
         albedoTexDesc = init_info.albedoTexDesc;

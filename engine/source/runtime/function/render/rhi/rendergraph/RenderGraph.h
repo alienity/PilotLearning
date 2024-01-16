@@ -139,6 +139,17 @@ namespace RHI
         {
             auto& ImportedContainer = GetImportedContainer<T>();
 
+            for (int i = 0; i < ImportedContainer.size(); i++)
+            {
+                if (ImportedContainer[i] == ToBeImported)
+                {
+                    for (int j = 0; j < InGraphResHandle.size(); j++)
+                    {
+                        return InGraphResHandle[j];
+                    }
+                }
+            }
+
             RgResourceHandle Handle = {
                 RgResourceTraits<T>::Enum, RgResourceFlags::RG_RESOURCE_FLAG_IMPORTED, 0, ImportedContainer.size()};
             InGraphResHandle.push_back(Handle);

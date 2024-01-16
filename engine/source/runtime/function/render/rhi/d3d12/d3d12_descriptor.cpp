@@ -988,7 +988,7 @@ namespace RHI
                 ViewDesc.ViewDimension         = D3D12_UAV_DIMENSION_TEXTURE3D;
                 ViewDesc.Texture3D.MipSlice    = MipSlice;
                 ViewDesc.Texture3D.FirstWSlice = 0;
-                ViewDesc.Texture3D.WSize       = ArraySlice;
+                ViewDesc.Texture3D.WSize       = -1;
 
                 break;
             }

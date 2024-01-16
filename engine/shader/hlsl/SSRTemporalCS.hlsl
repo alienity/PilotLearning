@@ -163,7 +163,7 @@ void CSTemporal(uint3 groupId : SV_GroupId, uint3 groupThreadId : SV_GroupThread
     float unbiased_weight_sqr = unbiased_weight * unbiased_weight;
     float k_feedback = lerp(TResponseMin, TResponseMax, unbiased_weight_sqr);
 
-    float4 tResult = lerp(current, previous, k_feedback);
+    float4 tResult = lerp(current, previous, 1.0f-k_feedback);
 
     temporalResult[uvInt.xy] = tResult;
 }

@@ -7,7 +7,7 @@ cbuffer RootConstants : register(b0, space0)
     uint perFrameBufferIndex;
     uint depthBufferIndex;
     uint blueNoiseIndex;
-    uint resultTextureIndex;
+    uint volume3DIndex;
 };
 
 SamplerState defaultSampler : register(s10);
@@ -249,7 +249,7 @@ void CSMain( uint3 Gid : SV_GroupID, uint3 GTid : SV_GroupThreadID, uint3 DTid :
     Texture2D<float3> blueNoiseTex = ResourceDescriptorHeap[blueNoiseIndex];
     Texture2D<float> depthBuffer = ResourceDescriptorHeap[depthBufferIndex];
     Texture2D<float> dirShadowmap = ResourceDescriptorHeap[g_FrameUniform.directionalLight.directionalLightShadowmap.shadowmap_srv_index];
-    RWTexture3D<float4> volume3DResult = ResourceDescriptorHeap[resultTextureIndex];
+    RWTexture3D<float4> volume3DResult = ResourceDescriptorHeap[volume3DIndex];
 
     int width, height, depth;
     volume3DResult.GetDimensions(width, height, depth);
@@ -259,10 +259,12 @@ void CSMain( uint3 Gid : SV_GroupID, uint3 GTid : SV_GroupThreadID, uint3 DTid :
 
     float2 screenPos = DTid.xy + float2(0.5, 0.5);
 
-    float2 uv = screenPos / float2(width, height);
-    float depthVal = depthBuffer.SampleLevel(depthSampler, uv, 0).r;
+    int mipOffset = g_FrameUniform.volumeLightUniform.downscaleMip;
 
-    float4x4 clipToViewMatrix = g_FrameUniform.cameraUniform.curFrameUniform.viewFromClipMatrix;
+    float2 uv = screenPos / float2(width, height);
+    float depthVal = depthBuffer.SampleLevel(depthSampler, uv, mipOffset).r;
+
+    // float4x4 clipToViewMatrix = g_FrameUniform.cameraUniform.curFrameUniform.viewFromClipMatrix;
     float4x4 clipToWorldMatrix = g_FrameUniform.cameraUniform.curFrameUniform.worldFromClipMatrix;
 
     float2 interleavedPos = (fmod(floor(screenPos.xy), 8.0));

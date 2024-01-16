@@ -350,7 +350,8 @@ struct VolumeLightUniform
 
     float maxRayLength;
     int sampleCount;
-    int2 _padding_0;
+    int downscaleMip;
+    int _padding_0;
 };
 
 struct FrameUniforms

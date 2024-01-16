@@ -4,19 +4,13 @@
 #include "runtime/function/render/rhi/rhi_core.h"
 #include "runtime/core/math/moyu_math2.h"
 #include "runtime/function/render/rhi/d3d12/d3d12_graphicsCommon.h"
+#include "runtime/function/render/renderer/pass_helper.h"
 
 #include "fmt/core.h"
 #include <cassert>
 
 namespace MoYu
 {
-#define RegGetBuf(h) registry->GetD3D12Buffer(h)
-#define RegGetBufCounter(h) registry->GetD3D12Buffer(h)->GetCounterBuffer().get()
-#define RegGetTex(h) registry->GetD3D12Texture(h)
-#define RegGetBufDefCBVIdx(h) registry->GetD3D12Buffer(h)->GetDefaultCBV()->GetIndex()
-#define RegGetBufDefSRVIdx(h) registry->GetD3D12Buffer(h)->GetDefaultSRV()->GetIndex()
-#define RegGetBufDefUAVIdx(h) registry->GetD3D12Buffer(h)->GetDefaultUAV()->GetIndex()
-
 #define CreateCullingBuffer(numElement, elementSize, bufferName) \
     RHI::D3D12Buffer::Create(m_Device->GetLinkedDevice(), \
                              RHI::RHIBufferRandomReadWrite, \
