@@ -14,6 +14,7 @@ cbuffer RootConstants : register(b0, space0)
     uint clearCoat_ClearCoatRoughness_AnisotropyIndex;
     uint depthIndex;
     uint ssrResolveIndex;
+    uint volumeLight3DIndex;
     uint outColorIndex;
 };
 
@@ -31,6 +32,7 @@ void CSMain( uint3 DTid : SV_DispatchThreadID )
     Texture2D<float4> clearCoat_ClearCoatRoughness_Anisotropy_Texture = ResourceDescriptorHeap[clearCoat_ClearCoatRoughness_AnisotropyIndex];
     Texture2D<float4> depthTexture = ResourceDescriptorHeap[depthIndex];
     Texture2D<float4> ssrResolveTexture = ResourceDescriptorHeap[ssrResolveIndex];
+    Texture3D<float4> volumeLight3DTexture = ResourceDescriptorHeap[volumeLight3DIndex];
     RWTexture2D<float4> outColorTexture = ResourceDescriptorHeap[outColorIndex];
 
     uint width, height;
@@ -58,6 +60,8 @@ void CSMain( uint3 DTid : SV_DispatchThreadID )
         materialInputs.normal = float3(0,0,1);
     }
 
+    float4 volumeLightVal = float4(0, 0, 0, 0);
+
     CommonShadingStruct commonShadingStruct;
     // computeShadingParams(g_FrameUniform, varingStruct, commonShadingStruct);
     {
@@ -80,6 +84,11 @@ void CSMain( uint3 DTid : SV_DispatchThreadID )
         float4 vertexPos = mul(g_FrameUniform.cameraUniform.curFrameUniform.worldFromClipMatrix, float4(clipPos, 1.0f));
         commonShadingStruct.shading_position.xyz = vertexPos.xyz / vertexPos.w;
 
+        float4 ZBufferParams = g_FrameUniform.cameraUniform.curFrameUniform.zBufferParams;
+        float eyeDepth = 1.0f / (ZBufferParams.z * depth + ZBufferParams.w);
+        float volumeDepth = saturate(eyeDepth / g_FrameUniform.volumeLightUniform.maxRayLength);
+        volumeLightVal = volumeLight3DTexture.Sample(defaultSampler, float3(uv.xy, volumeDepth)).rgba;
+
         // With perspective camera, the view vector is cast from the fragment pos to the eye position,
         // With ortho camera, however, the view vector is the same for all fragments:
         float4x4 projectionMatrix = g_FrameUniform.cameraUniform.curFrameUniform.clipFromViewMatrix;
@@ -99,6 +108,8 @@ void CSMain( uint3 DTid : SV_DispatchThreadID )
 
     float4 fragColor = evaluateMaterial(g_FrameUniform, commonShadingStruct, materialInputs, samplerStruct);
 
+    fragColor.rgb = lerp(fragColor.rgb, volumeLightVal.rgb, 1.0f-volumeLightVal.a);
+    
     outColorTexture[DTid.xy] = fragColor;
     // outColorTexture[DTid.xy] = float4(commonShadingStruct.shading_geometricNormal.xyz, 1);
 }

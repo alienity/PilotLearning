@@ -578,6 +578,7 @@ namespace MoYu
         mLightLoopIntput.clearCoat_ClearCoatRoughness_Anisotropy_Handle = mGBufferOutput.clearCoat_ClearCoatRoughness_Anisotropy_Handle;
         mLightLoopIntput.ssrResolveHandle   = mSSROutput.ssrOutHandle;
         mLightLoopIntput.gbufferDepthHandle = mGBufferOutput.depthHandle;
+        mLightLoopIntput.volumeLight3DHandle = mVolumeLightOutput.volumeLightHandle;
         mIndirectLightLoopPass->update(graph, mLightLoopIntput, mLightLoopOutput);
 
         RHI::RgResourceHandle outColorHandle = mLightLoopOutput.colorHandle;

@@ -27,14 +27,7 @@ namespace MoYu
 
         struct DrawOutputParameters : public PassOutput
         {
-            DrawOutputParameters()
-            {
-                renderTargetColorHandle.Invalidate();
-                renderTargetDepthHandle.Invalidate();
-            }
-
-            RHI::RgResourceHandle renderTargetColorHandle;
-            RHI::RgResourceHandle renderTargetDepthHandle;
+            RHI::RgResourceHandle volumeLightHandle;
         };
 
     public:

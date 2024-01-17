@@ -68,6 +68,7 @@ namespace MoYu
         drawpass.Read(passInput.metallic_Roughness_Reflectance_AO_Handle, false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
         drawpass.Read(passInput.clearCoat_ClearCoatRoughness_Anisotropy_Handle, false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
         drawpass.Read(passInput.ssrResolveHandle, false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+        drawpass.Read(passInput.volumeLight3DHandle, false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
         drawpass.Write(passOutput.colorHandle, false, RHIResourceState::RHI_RESOURCE_STATE_UNORDERED_ACCESS);
 
         RHI::RgResourceHandle perframeBufferHandle = passInput.perframeBufferHandle;
@@ -78,6 +79,7 @@ namespace MoYu
         RHI::RgResourceHandle metallic_Roughness_Reflectance_AO_Handle = passInput.metallic_Roughness_Reflectance_AO_Handle;
         RHI::RgResourceHandle clearCoat_ClearCoatRoughness_Anisotropy_Handle = passInput.clearCoat_ClearCoatRoughness_Anisotropy_Handle;
         RHI::RgResourceHandle ssrResolveHandle = passInput.ssrResolveHandle;
+        RHI::RgResourceHandle volumeLight3DHandle = passInput.volumeLight3DHandle;
         RHI::RgResourceHandle outColorHandle = passOutput.colorHandle;
 
         drawpass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
@@ -106,6 +108,7 @@ namespace MoYu
                 uint32_t clearCoat_ClearCoatRoughness_AnisotropyIndex;
                 uint32_t depthIndex;
                 uint32_t ssrResolveIndex;
+                uint32_t volumeLight3DIndex;
                 uint32_t outColorIndex;
             };
 
@@ -117,6 +120,7 @@ namespace MoYu
                                                RegGetTexDefSRVIdx(clearCoat_ClearCoatRoughness_Anisotropy_Handle),
                                                RegGetTexDefSRVIdx(depthHandle),
                                                RegGetTexDefSRVIdx(ssrResolveHandle),
+                                               RegGetTexDefSRVIdx(volumeLight3DHandle),
                                                RegGetTexDefUAVIdx(outColorHandle)};
 
             pContext->SetConstantArray(0, sizeof(RootIndexBuffer) / sizeof(UINT), &rootIndexBuffer);

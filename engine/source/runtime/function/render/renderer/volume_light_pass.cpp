@@ -203,6 +203,7 @@ namespace MoYu
 
         });
 
+        passOutput.volumeLightHandle = volume3DHandle;
     }
 
 

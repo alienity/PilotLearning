@@ -29,6 +29,7 @@ namespace MoYu
             RHI::RgResourceHandle clearCoat_ClearCoatRoughness_Anisotropy_Handle;
             RHI::RgResourceHandle gbufferDepthHandle;
             RHI::RgResourceHandle ssrResolveHandle;
+            RHI::RgResourceHandle volumeLight3DHandle;
         };
 
         struct DrawOutputParameters : public PassOutput
