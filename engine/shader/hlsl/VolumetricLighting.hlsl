@@ -53,6 +53,8 @@ float shadowSample_PCF_Low(Texture2D<float> shadowmap,
     //  Castaño, 2013, "Shadow Mapping Summary Part 1"
     float depth = shadowPosition.z;
 
+    return sampleDepth(shadowmap, (shadowPosition.xy * uv_scale + uv_offset), depth);
+
     float2 offset = float2(0.5, 0.5);
     float2 uv = (shadowPosition.xy * shadowmap_size) + offset;
     float2 base = (floor(uv) - offset) * texelSize;
@@ -87,11 +89,14 @@ float getLightAttenuation(const Texture2D<float> shadowmap,
     getShadowCascade(light_view_matrix, positionWS, shadow_bounds, cascadeCount, cascadeLevel, shadow_bound_offset);
 
     if(cascadeLevel == 4)
-        return 1.0f;
+        return 0.0f;
     
     float uv_scale = 1.0f / log2(cascadeCount);
 
-    return shadowSample_PCF_Low(shadowmap, light_proj_view[cascadeLevel], shadowmap_size, shadow_bound_offset, uv_scale, positionWS);
+    float shadowWeights = shadowSample_PCF_Low(
+        shadowmap, light_proj_view[cascadeLevel], shadowmap_size, shadow_bound_offset, uv_scale, positionWS);
+
+    return shadowWeights;
 }
 
 //-----------------------------------------------------------------------------------------
@@ -166,7 +171,7 @@ float mieScattering(float cosAngle, float g)
 // RayMarch
 //-----------------------------------------------------------------------------------------
 void rayMarch(FrameUniforms frameUniform, Texture2D<float> shadowmapTex, Texture2D<float> depthBuffer, 
-    RWTexture3D<float4> volumeResult, uint2 dtid, float rayOffset, float3 rayStart, float3 rayDir, float rayLength)
+    RWTexture3D<float4> volumeResult, uint2 dtid, float rayOffset, float3 rayStart, float3 rayTarget, float rayLength)
 {
     DirectionalLightStruct _directionLight = frameUniform.directionalLight;
     VolumeLightUniform _volumeLightUniform = frameUniform.volumeLightUniform;
@@ -189,13 +194,15 @@ void rayMarch(FrameUniforms frameUniform, Texture2D<float> shadowmapTex, Texture
     // float2 interleavedPos = (fmod(floor(screenPos.xy), 8.0));
     // float offset = tex2D(blueNoiseTex, interleavedPos / 8.0 + float2(0.5 / 8.0, 0.5 / 8.0)).r;
 
+    float3 rayDir = rayTarget - rayStart;
+    
     float rayDepth = length(rayDir);
     rayDir = rayDir / rayDepth;
 
     float stepSize = rayLength / stepCount;
     float3 stepDir = rayDir * stepSize;
 
-    float3 currentPositionWS = rayStart + stepDir * rayOffset;
+    float3 currentPositionWS = rayStart + stepDir * rayOffset * stepSize;
 
     float4 vlight = 0;
 
@@ -229,6 +236,8 @@ void rayMarch(FrameUniforms frameUniform, Texture2D<float> shadowmapTex, Texture
         vlight.w = exp(-extinction);
 
         volumeResult[uint3(dtid.xy, i)] = vlight;
+        // float3 lightViewPos = mul(light_view_matrix, float4(currentPositionWS.xyz, 1.0f)).xyz;
+        // volumeResult[uint3(dtid.xy, i)] = float4(rayTarget.xyz, 1);
 
         currentPositionWS += stepDir;
     }
@@ -271,25 +280,32 @@ void CSMain( uint3 Gid : SV_GroupID, uint3 GTid : SV_GroupThreadID, uint3 DTid :
     int mipOffset = g_FrameUniform.volumeLightUniform.downscaleMip;
 
     float2 uv = screenPos / float2(width, height);
-    float depth = depthBuffer.SampleLevel(depthSampler, uv, mipOffset).r;
+    float depth = depthBuffer.SampleLevel(depthSampler, uv, 0).r;
 
-    // float4x4 clipToViewMatrix = g_FrameUniform.cameraUniform.curFrameUniform.viewFromClipMatrix;
+    float4x4 clipToViewMatrix = g_FrameUniform.cameraUniform.curFrameUniform.viewFromClipMatrix;
+    float4x4 viewToWorldMatrix = g_FrameUniform.cameraUniform.curFrameUniform.worldFromViewMatrix;
     float4x4 clipToWorldMatrix = g_FrameUniform.cameraUniform.curFrameUniform.worldFromClipMatrix;
+
+    // float curTime = g_FrameUniform.baseUniform.time;
 
     float2 interleavedPos = (fmod(floor(screenPos.xy), 8.0));
     float offset = blueNoiseTex.SampleLevel(defaultSampler, interleavedPos / 8.0 + float2(0.5 / 8.0, 0.5 / 8.0), 0).r;
 
-    float3 targetPosition = getWorldPosition(float3(uv, depth), clipToWorldMatrix);
+    // 只有在使用1-uv.y的时候，还原出来的世界空间顶点才是正确的，肯定是我前面哪里写错了
+    float3 targetPosition = getWorldPosition(float3(uv.x*2-1, (1-uv.y)*2-1, depth), clipToWorldMatrix);
+    float3 rayStart = getWorldPosition(float3(uv.x*2-1, (1-uv.y)*2-1, 1.0f), clipToWorldMatrix);
 
-    float3 rayStart = g_FrameUniform.cameraUniform.curFrameUniform.cameraPosition;
-    float3 rayDir = targetPosition - rayStart;
-
-    // float rayLength0 = length(rayDir);
-    // rayDir = rayDir / rayLength0;
     float rayLength = g_FrameUniform.volumeLightUniform.maxRayLength;
+ 
+    // [loop]
+    // for (int i = 0; i < g_FrameUniform.volumeLightUniform.sampleCount; ++i)
+    // {
+    //     float of = depth - finalPosition.z;
+    //     volume3DResult[uint3(DTid.xy, i)] = float4(targetPosition.xyz, 1);
+    //     // volume3DResult[uint3(DTid.xy, i)] = float4(finalPosition.z, finalPosition.z, finalPosition.z, 1);
+    //     // volume3DResult[uint3(DTid.xy, i)] = float4(targetPosition.z, targetPosition.z, targetPosition.z, 1);
+    //     // volume3DResult[uint3(DTid.xy, i)] = float4(of, of, of, 1);
+    // }
 
-    // float rayLength = length(rayDir);
-    // rayDir /= rayLength;
-
-    rayMarch(g_FrameUniform, dirShadowmap, depthBuffer, volume3DResult, DTid.xy, offset, rayStart, rayDir, rayLength);
+    rayMarch(g_FrameUniform, dirShadowmap, depthBuffer, volume3DResult, DTid.xy, offset, rayStart, targetPosition, rayLength);
 }

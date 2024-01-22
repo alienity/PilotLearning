@@ -140,7 +140,7 @@ namespace EngineConfig
         float mNoiseIntensity = 2.01f;
         float mNoiseIntensityOffset = 0.3f;
         glm::float2 mNoiseVelocity = glm::float2(11, 3);
-        float mMaxRayLength = 128;
+        float mMaxRayLength = 64;
     };
 
     extern VolumeLightConfig g_VolumeLightConfig;

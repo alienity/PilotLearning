@@ -58,17 +58,17 @@ namespace MoYu
                 RHI::RootSignatureDesc()
                     .Add32BitConstants<0, 0>(12)
                     .AddStaticSampler<10, 0>(D3D12_FILTER::D3D12_FILTER_ANISOTROPIC,
-                                             D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_WRAP,
+                                             D3D12_TEXTURE_ADDRESS_MODE_WRAP,
                                              8)
                     .AddStaticSampler<11, 0>(D3D12_FILTER::D3D12_FILTER_MIN_MAG_MIP_LINEAR,
-                                             D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_BORDER,
+                                             D3D12_TEXTURE_ADDRESS_MODE_BORDER,
                                              8,
                                              D3D12_COMPARISON_FUNC_LESS_EQUAL,
                                              D3D12_STATIC_BORDER_COLOR_OPAQUE_BLACK)
                     .AddStaticSampler<12, 0>(D3D12_FILTER::D3D12_FILTER_COMPARISON_ANISOTROPIC,
-                                             D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
+                                             D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
                                              8,
-                                             D3D12_COMPARISON_FUNC::D3D12_COMPARISON_FUNC_GREATER_EQUAL,
+                                             D3D12_COMPARISON_FUNC_GREATER_EQUAL,
                                              D3D12_STATIC_BORDER_COLOR_OPAQUE_BLACK)
                     .AllowInputLayout()
                     .AllowResourceDescriptorHeapIndexing()
@@ -209,8 +209,11 @@ namespace MoYu
 
     void VolumeLightPass::destroy()
     {
-
         m_volume3d = nullptr;
+
+
+
+
 
 
     }

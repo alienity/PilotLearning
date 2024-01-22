@@ -87,7 +87,7 @@ void CSMain( uint3 DTid : SV_DispatchThreadID )
         float4 ZBufferParams = g_FrameUniform.cameraUniform.curFrameUniform.zBufferParams;
         float eyeDepth = 1.0f / (ZBufferParams.z * depth + ZBufferParams.w);
         float volumeDepth = saturate(eyeDepth / g_FrameUniform.volumeLightUniform.maxRayLength);
-        volumeLightVal = volumeLight3DTexture.Sample(defaultSampler, float3(uv.xy, volumeDepth)).rgba;
+        volumeLightVal = volumeLight3DTexture.Sample(defaultSampler, float3(uv.x, uv.y, volumeDepth)).rgba;
 
         // With perspective camera, the view vector is cast from the fragment pos to the eye position,
         // With ortho camera, however, the view vector is the same for all fragments:
@@ -108,7 +108,9 @@ void CSMain( uint3 DTid : SV_DispatchThreadID )
 
     float4 fragColor = evaluateMaterial(g_FrameUniform, commonShadingStruct, materialInputs, samplerStruct);
 
-    fragColor.rgb = lerp(fragColor.rgb, volumeLightVal.rgb, 1.0f-volumeLightVal.a);
+    // fragColor.rgb = lerp(fragColor.rgb, volumeLightVal.rgb, 1.0f-volumeLightVal.a);
+    fragColor.rgb = volumeLightVal.rgb;
+    fragColor.a = 1.0f;
     
     outColorTexture[DTid.xy] = fragColor;
     // outColorTexture[DTid.xy] = float4(commonShadingStruct.shading_geometricNormal.xyz, 1);
