@@ -60,47 +60,42 @@ void CSMain( uint3 DTid : SV_DispatchThreadID )
         materialInputs.normal = float3(0,0,1);
     }
 
-    float4 volumeLightVal = float4(0, 0, 0, 0);
-
     CommonShadingStruct commonShadingStruct;
     // computeShadingParams(g_FrameUniform, varingStruct, commonShadingStruct);
-    {
-        // // http://www.mikktspace.com/
-        // float3 n = worldNormalTexture.Sample(defaultSampler, uv).rgb * 2.0f - 1.0f;
-        // float4 vertex_worldTangent = worldTangentTexture.Sample(defaultSampler, uv).xyzw * 2.0f - 1.0f;
-        // float3 t = vertex_worldTangent.xyz;
-        // float3 b = cross(n, t) * vertex_worldTangent.w;
+    // {
+    // // http://www.mikktspace.com/
+    // float3 n = worldNormalTexture.Sample(defaultSampler, uv).rgb * 2.0f - 1.0f;
+    // float4 vertex_worldTangent = worldTangentTexture.Sample(defaultSampler, uv).xyzw * 2.0f - 1.0f;
+    // float3 t = vertex_worldTangent.xyz;
+    // float3 b = cross(n, t) * vertex_worldTangent.w;
 
-        float3 n = worldNormalTexture.Sample(defaultSampler, uv).rgb * 2.0f - 1.0f;
-        float3x3 tbnMat = ToTBNMatrix(n);
+    float3 n = worldNormalTexture.Sample(defaultSampler, uv).rgb * 2.0f - 1.0f;
+    float3x3 tbnMat = ToTBNMatrix(n);
 
-        commonShadingStruct.shading_geometricNormal = normalize(n);
+    commonShadingStruct.shading_geometricNormal = normalize(n);
 
-        // We use unnormalized post-interpolation values, assuming mikktspace tangents
-        commonShadingStruct.shading_tangentToWorld = tbnMat;
+    // We use unnormalized post-interpolation values, assuming mikktspace tangents
+    commonShadingStruct.shading_tangentToWorld = tbnMat;
 
-        float depth = depthTexture.Sample(defaultSampler, uv).r;
-        float3 clipPos = float3(uv.x*2.0f-1.0f, (1-uv.y)*2.0f-1.0f, depth);
-        float4 vertexPos = mul(g_FrameUniform.cameraUniform.curFrameUniform.worldFromClipMatrix, float4(clipPos, 1.0f));
-        commonShadingStruct.shading_position.xyz = vertexPos.xyz / vertexPos.w;
+    float depth = depthTexture.Sample(defaultSampler, uv).r;
+    float3 clipPos = float3(uv.x*2.0f-1.0f, (1-uv.y)*2.0f-1.0f, depth);
+    float4 vertexPos = mul(g_FrameUniform.cameraUniform.curFrameUniform.worldFromClipMatrix, float4(clipPos, 1.0f));
+    commonShadingStruct.shading_position.xyz = vertexPos.xyz / vertexPos.w;
 
-        float4 ZBufferParams = g_FrameUniform.cameraUniform.curFrameUniform.zBufferParams;
-        float eyeDepth = 1.0f / (ZBufferParams.z * depth + ZBufferParams.w);
-        float volumeDepth = saturate(eyeDepth / g_FrameUniform.volumeLightUniform.maxRayLength);
-        volumeLightVal = volumeLight3DTexture.Sample(defaultSampler, float3(uv.x, uv.y, volumeDepth)).rgba;
+    float4 volumeLightVal = evaluateVolumeDepth(g_FrameUniform, volumeLight3DTexture, defaultSampler, uv.xy, depth);
 
-        // With perspective camera, the view vector is cast from the fragment pos to the eye position,
-        // With ortho camera, however, the view vector is the same for all fragments:
-        float4x4 projectionMatrix = g_FrameUniform.cameraUniform.curFrameUniform.clipFromViewMatrix;
-        float4x4 worldFromViewMatrix = g_FrameUniform.cameraUniform.curFrameUniform.worldFromViewMatrix;
-        float4x4 _worldFromViewMatrixTranspose = transpose(worldFromViewMatrix);
-        float3 sv = select(isPerspectiveProjection(projectionMatrix), 
-            (_worldFromViewMatrixTranspose[3].xyz - commonShadingStruct.shading_position), _worldFromViewMatrixTranspose[2].xyz); // ortho camera backward dir
-        commonShadingStruct.shading_view = normalize(sv);
-        commonShadingStruct.shading_normalizedViewportCoord = uv;
+    // With perspective camera, the view vector is cast from the fragment pos to the eye position,
+    // With ortho camera, however, the view vector is the same for all fragments:
+    float4x4 projectionMatrix = g_FrameUniform.cameraUniform.curFrameUniform.clipFromViewMatrix;
+    float4x4 worldFromViewMatrix = g_FrameUniform.cameraUniform.curFrameUniform.worldFromViewMatrix;
+    float4x4 _worldFromViewMatrixTranspose = transpose(worldFromViewMatrix);
+    float3 sv = select(isPerspectiveProjection(projectionMatrix), 
+        (_worldFromViewMatrixTranspose[3].xyz - commonShadingStruct.shading_position), _worldFromViewMatrixTranspose[2].xyz); // ortho camera backward dir
+    commonShadingStruct.shading_view = normalize(sv);
+    commonShadingStruct.shading_normalizedViewportCoord = uv;
 
-        prepareMaterial(materialInputs, commonShadingStruct);
-    }
+    prepareMaterial(materialInputs, commonShadingStruct);
+    // }
 
     SamplerStruct samplerStruct;
     samplerStruct.defSampler = defaultSampler;
@@ -108,9 +103,9 @@ void CSMain( uint3 DTid : SV_DispatchThreadID )
 
     float4 fragColor = evaluateMaterial(g_FrameUniform, commonShadingStruct, materialInputs, samplerStruct);
 
-    // fragColor.rgb = lerp(fragColor.rgb, volumeLightVal.rgb, 1.0f-volumeLightVal.a);
-    fragColor.rgb = volumeLightVal.rgb;
-    fragColor.a = 1.0f;
+    fragColor.rgb = lerp(fragColor.rgb, volumeLightVal.rgb, 1.0f-volumeLightVal.a);
+    // fragColor.rgb = volumeLightVal.rgb;
+    // fragColor.a = 1.0f;
     
     outColorTexture[DTid.xy] = fragColor;
     // outColorTexture[DTid.xy] = float4(commonShadingStruct.shading_geometricNormal.xyz, 1);

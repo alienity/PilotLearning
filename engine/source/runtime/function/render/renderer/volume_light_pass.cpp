@@ -115,6 +115,7 @@ namespace MoYu
         volumeLightUniform.maxRayLength = EngineConfig::g_VolumeLightConfig.mMaxRayLength;
         volumeLightUniform.sampleCount = EngineConfig::g_VolumeLightConfig.mSampleCount;
         volumeLightUniform.downscaleMip = EngineConfig::g_VolumeLightConfig.mDownScaleMip;
+        volumeLightUniform.minStepSize = EngineConfig::g_VolumeLightConfig.mMinStepSize;
 
         _frameUniforms->volumeLightUniform = volumeLightUniform;
 
@@ -123,11 +124,12 @@ namespace MoYu
             int downScale = 1 << volumeLightUniform.downscaleMip;
             int volumeWidth = colorTexDesc.Width / downScale;
             int volumeHeight = colorTexDesc.Height / downScale;
+            int volumeDpeth = volumeLightUniform.sampleCount;
 
             m_volume3d = RHI::D3D12Texture::Create3D(m_Device->GetLinkedDevice(),
                                                      volumeWidth,
                                                      volumeHeight,
-                                                     volumeLightUniform.sampleCount,
+                                                     volumeDpeth,
                                                      1,
                                                      DXGI_FORMAT::DXGI_FORMAT_R32G32B32A32_FLOAT,
                                                      RHI::RHISurfaceCreateRandomWrite,
@@ -210,8 +212,6 @@ namespace MoYu
     void VolumeLightPass::destroy()
     {
         m_volume3d = nullptr;
-
-
 
 
 

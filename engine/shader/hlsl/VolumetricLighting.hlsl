@@ -185,6 +185,7 @@ void rayMarch(FrameUniforms frameUniform, Texture2D<float> shadowmapTex, Texture
     const int stepCount = _volumeLightUniform.sampleCount;
     const float ground_level = _volumeLightUniform.ground_level;
     const float height_scale = _volumeLightUniform.height_scale;
+    const float minStepSize = _volumeLightUniform.minStepSize;
     const float4x4 light_view_matrix = _dirShadowmap.light_view_matrix;
     const float4x4 light_proj_view[4] = _dirShadowmap.light_proj_view; 
     const float4 shadow_bounds = _dirShadowmap.shadow_bounds;
@@ -199,10 +200,17 @@ void rayMarch(FrameUniforms frameUniform, Texture2D<float> shadowmapTex, Texture
     float rayDepth = length(rayDir);
     rayDir = rayDir / rayDepth;
 
-    float stepSize = rayLength / stepCount;
-    float3 stepDir = rayDir * stepSize;
+    int step1Count = stepCount * 0.5f;
+    int step2Count = stepCount - step1Count;
 
-    float3 currentPositionWS = rayStart + stepDir * rayOffset * stepSize;
+    float step1StepSize = minStepSize;
+    float step1Distance = step1StepSize * step1Count;
+    float step2StepSize = (rayLength - step1Distance) / step2Count;
+
+    // float stepSize = rayLength / stepCount;
+    // float3 stepDir = rayDir * step1StepSize;
+
+    float3 currentPositionWS = rayStart + rayOffset * rayDir * step1StepSize;
 
     float4 vlight = 0;
 
@@ -214,6 +222,10 @@ void rayMarch(FrameUniforms frameUniform, Texture2D<float> shadowmapTex, Texture
     [loop]
     for (int i = 0; i < stepCount; ++i)
     {
+        float stepSize = step1StepSize;
+        if(i > step1Count)
+            stepSize = step2StepSize;
+
         float light_attenuation = getLightAttenuation(
             shadowmapTex, light_view_matrix, light_proj_view, shadow_bounds, shadowmap_size, cascadeCount, currentPositionWS);
         float density = getVolumeDensity(currentPositionWS, ground_level, height_scale);
@@ -239,7 +251,7 @@ void rayMarch(FrameUniforms frameUniform, Texture2D<float> shadowmapTex, Texture
         // float3 lightViewPos = mul(light_view_matrix, float4(currentPositionWS.xyz, 1.0f)).xyz;
         // volumeResult[uint3(dtid.xy, i)] = float4(rayTarget.xyz, 1);
 
-        currentPositionWS += stepDir;
+        currentPositionWS += rayDir * stepSize;
     }
 }
 
@@ -280,16 +292,18 @@ void CSMain( uint3 Gid : SV_GroupID, uint3 GTid : SV_GroupThreadID, uint3 DTid :
     int mipOffset = g_FrameUniform.volumeLightUniform.downscaleMip;
 
     float2 uv = screenPos / float2(width, height);
-    float depth = depthBuffer.SampleLevel(depthSampler, uv, 0).r;
+    float depth = depthBuffer.SampleLevel(depthSampler, uv, mipOffset).r;
 
     float4x4 clipToViewMatrix = g_FrameUniform.cameraUniform.curFrameUniform.viewFromClipMatrix;
     float4x4 viewToWorldMatrix = g_FrameUniform.cameraUniform.curFrameUniform.worldFromViewMatrix;
     float4x4 clipToWorldMatrix = g_FrameUniform.cameraUniform.curFrameUniform.worldFromClipMatrix;
 
-    // float curTime = g_FrameUniform.baseUniform.time;
+    float curTime = g_FrameUniform.baseUniform.time;
 
     float2 interleavedPos = (fmod(floor(screenPos.xy), 8.0));
     float offset = blueNoiseTex.SampleLevel(defaultSampler, interleavedPos / 8.0 + float2(0.5 / 8.0, 0.5 / 8.0), 0).r;
+
+    offset = offset * (0.5f+0.5f*sin(curTime*20));
 
     // 只有在使用1-uv.y的时候，还原出来的世界空间顶点才是正确的，肯定是我前面哪里写错了
     float3 targetPosition = getWorldPosition(float3(uv.x*2-1, (1-uv.y)*2-1, depth), clipToWorldMatrix);
