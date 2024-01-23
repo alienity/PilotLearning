@@ -1,0 +1,141 @@
+﻿// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel kComputeTransmittanceShader
+#pragma kernel kComputeDirectIrradianceShader
+#pragma kernel kComputeSingleScatteringShader
+#pragma kernel kComputeScatteringDensityShader
+#pragma kernel kComputeIndirectIrradianceShader
+#pragma kernel kComputeMultipleScatteringShader
+#pragma kernel kComputeBlend2DShader
+#pragma kernel kComputeBlend3DShader
+
+#include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Common.hlsl"
+#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/ATDefinitions.hlsl"
+#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/ATFunctions.hlsl"
+
+
+RW_TEXTURE2D(float3, TransmittanceLUT);
+RW_TEXTURE2D(float3, Delta_irradianceLUT);
+RW_TEXTURE2D(float3, IrradianceLUT);
+RW_TEXTURE3D(float3, Delta_rayleighLUT);
+RW_TEXTURE3D(float3, Delta_mieLUT);
+RW_TEXTURE3D(float4, ScatteringLUT);
+RW_TEXTURE3D(float3, Delta_scattering_densityLUT);
+RW_TEXTURE3D(float3, Delta_multiple_scatteringLUT);
+//RW_TEXTURE3D(float3, Single_mie_scatteringLUT);
+
+TEXTURE2D(transmittance_texture);
+TEXTURE3D(single_rayleigh_scattering_texture);
+TEXTURE3D(single_mie_scattering_texture);
+TEXTURE3D(multiple_scattering_texture);
+TEXTURE2D(irradiance_texture);
+TEXTURE3D(scattering_density_texture);
+float4x4 luminance_from_radiance;
+int scattering_order;
+int layer;
+
+
+[numthreads(8, 8, 1)]
+void kComputeTransmittanceShader(uint3 id : SV_DispatchThreadID)
+{
+	AtmosphereParameters atmosphereParameters = GetAtmosphereParameters();
+	float3 transmittance = ComputeTransmittanceToTopAtmosphereBoundaryTexture(
+		atmosphereParameters, id.xy);
+	TransmittanceLUT[id.xy] = transmittance;
+}
+
+[numthreads(8, 8, 1)]
+void kComputeDirectIrradianceShader(uint3 id : SV_DispatchThreadID)
+{
+	AtmosphereParameters atmosphereParameters = GetAtmosphereParameters();
+	float3 delta_irradiance = ComputeDirectIrradianceTexture(atmosphereParameters, transmittance_texture, id.xy);
+	Delta_irradianceLUT[id.xy] = delta_irradiance;
+}
+
+[numthreads(8, 8, 8)]
+void kComputeSingleScatteringShader(uint3 id : SV_DispatchThreadID)
+{
+	float3 delta_rayleigh;
+	float3 delta_mie;
+
+	AtmosphereParameters atmosphereParameters = GetAtmosphereParameters();
+
+	float layer = id.z;
+
+	ComputeSingleScatteringTexture(
+		atmosphereParameters, transmittance_texture, float3(id.xy, layer + 0.5),
+		delta_rayleigh, delta_mie);
+	float4 scattering = float4(mul(luminance_from_radiance, float4(delta_rayleigh.rgb, 0)).rgb,
+		mul(luminance_from_radiance, float4(delta_mie, 0)).r);
+	float3 single_mie_scattering = mul(luminance_from_radiance, float4(delta_mie, 0)).rgb;
+
+	Delta_rayleighLUT[id.xyz] = delta_rayleigh;
+	Delta_mieLUT[id.xyz] = delta_mie;
+	ScatteringLUT[id.xyz] = scattering;
+	//Single_mie_scatteringLUT[id.xyz] = single_mie_scattering;
+}
+
+[numthreads(8, 8, 8)]
+void kComputeScatteringDensityShader(uint3 id : SV_DispatchThreadID)
+{
+	AtmosphereParameters atmosphereParameters = GetAtmosphereParameters();
+	float layer = id.z;
+	float3 scattering_density = ComputeScatteringDensityTexture(
+		atmosphereParameters, transmittance_texture, single_rayleigh_scattering_texture,
+		single_mie_scattering_texture, multiple_scattering_texture,
+		irradiance_texture, float3(id.xy, layer + 0.5),
+		scattering_order);
+
+	Delta_scattering_densityLUT[id.xyz] = scattering_density;
+}
+
+
+[numthreads(8, 8, 1)]
+void kComputeIndirectIrradianceShader(uint3 id : SV_DispatchThreadID)
+{
+	AtmosphereParameters atmosphereParameters = GetAtmosphereParameters();
+	float3 delta_irradiance = ComputeIndirectIrradianceTexture(
+		atmosphereParameters, single_rayleigh_scattering_texture,
+		single_mie_scattering_texture, multiple_scattering_texture,
+		id.xy, scattering_order);
+	float3 irradiance = mul((float3x3)luminance_from_radiance, delta_irradiance);
+
+	Delta_irradianceLUT[id.xy] = delta_irradiance;
+	IrradianceLUT[id.xy] = delta_irradiance;
+}
+
+[numthreads(8, 8, 8)]
+void kComputeMultipleScatteringShader(uint3 id : SV_DispatchThreadID)
+{
+	AtmosphereParameters atmosphereParameters = GetAtmosphereParameters();
+	float nu;
+	float layer = id.z;
+	float3 delta_multiple_scattering = ComputeMultipleScatteringTexture(
+		atmosphereParameters, transmittance_texture, scattering_density_texture,
+		float3(id.xy, layer + 0.5), nu);
+	float4 scattering = float4(
+		mul((float3x3)luminance_from_radiance,
+			delta_multiple_scattering.rgb / RayleighPhaseFunction(nu)),
+		0.0);
+
+	Delta_multiple_scatteringLUT[id.xyz] = delta_multiple_scattering;
+	ScatteringLUT[id.xyz] = scattering;
+}
+
+//-------------------------------------------------//
+//                     blend                       //
+//-------------------------------------------------//
+TEXTURE2D(_Input2D);
+RW_TEXTURE2D(float4, _Result2D);
+[numthreads(8, 8, 1)]
+void kComputeBlend2DShader(uint3 id : SV_DispatchThreadID)
+{
+	_Result2D[id.xy] = _Result2D[id.xy] + _Input2D[id.xy];
+}
+
+TEXTURE3D(_Input3D);
+RW_TEXTURE3D(float4, _Result3D);
+[numthreads(8, 8, 8)]
+void kComputeBlend3DShader(uint3 id : SV_DispatchThreadID)
+{
+	_Result3D[id.xyz] = _Result3D[id.xyz] + _Input3D[id.xyz];
+}
