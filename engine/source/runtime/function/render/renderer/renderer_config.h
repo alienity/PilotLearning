@@ -128,7 +128,7 @@ namespace EngineConfig
     {
         int   mDownScaleMip = 3;
         int   mSampleCount = 128;
-        float mScatteringCoef = 0.3f;//0.127f;
+        float mScatteringCoef = 0.127f;
         float mExtinctionCoef = 0.01f;
         float mSkyboxExtinctionCoef = 0.9f;
         float mMieG = 0.319f;

@@ -103,6 +103,7 @@ void CSMain( uint3 DTid : SV_DispatchThreadID )
 
     float4 fragColor = evaluateMaterial(g_FrameUniform, commonShadingStruct, materialInputs, samplerStruct);
 
+    // fragColor.rgb = lerp(fragColor.rgb, volumeLightVal.rgb, 1.0f-volumeLightVal.a);
     fragColor.rgb = lerp(fragColor.rgb, volumeLightVal.rgb, 1.0f-volumeLightVal.a);
     // fragColor.rgb = volumeLightVal.rgb;
     // fragColor.a = 1.0f;
