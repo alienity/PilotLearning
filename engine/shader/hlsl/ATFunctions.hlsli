@@ -3,8 +3,7 @@
 
 #define COMBINED_SCATTERING_TEXTURES 1
 
-#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/ATDefinitions.hlsl"
-#include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Common.hlsl"
+#include "ATDefinitions.hlsl"
 
 Number ClampCosine(Number mu) {
 	return clamp(mu, Number(-1.0), Number(1.0));

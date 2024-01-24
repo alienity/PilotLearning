@@ -1,8 +1,6 @@
 ﻿#ifndef ATMOSPHERIC_SCATTERING_DEFINITION_INCLUDE
 #define ATMOSPHERIC_SCATTERING_DEFINITION_INCLUDE
 
-#include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Common.hlsl"
-
 #define Length float
 #define Wavelength float
 #define Angle float
@@ -170,96 +168,99 @@ struct AtmosphereParameters {
 // ----------------------------------------------------------------------------------
 // Samplers
 
-SAMPLER(sampler_LinearClamp);
-SAMPLER(sampler_LinearRepeat);
-SAMPLER(sampler_PointClamp);
-SAMPLER(sampler_PointRepeat);
+// SAMPLER(sampler_LinearClamp);
+// SAMPLER(sampler_LinearRepeat);
+// SAMPLER(sampler_PointClamp);
+// SAMPLER(sampler_PointRepeat);
 
 // ----------------------------------------------------------------------------------
 // Uniform Parameters
 
-IrradianceSpectrum solar_irradiance;
-Angle sun_angular_radius;
-Length bottom_radius;
-Length top_radius;
+struct AtmosphereUniform
+{
+	IrradianceSpectrum solar_irradiance;
+	Angle sun_angular_radius;
+	Length bottom_radius;
+	Length top_radius;
 
-Length rayleigh_density_layers_0_width;
-Number rayleigh_density_layers_0_exp_term;
-InverseLength rayleigh_density_layers_0_exp_scale;
-InverseLength rayleigh_density_layers_0_linear_term;
-Number rayleigh_density_layers_0_constant_term;
+	Length rayleigh_density_layers_0_width;
+	Number rayleigh_density_layers_0_exp_term;
+	InverseLength rayleigh_density_layers_0_exp_scale;
+	InverseLength rayleigh_density_layers_0_linear_term;
+	Number rayleigh_density_layers_0_constant_term;
 
-Length rayleigh_density_layers_1_width;
-Number rayleigh_density_layers_1_exp_term;
-InverseLength rayleigh_density_layers_1_exp_scale;
-InverseLength rayleigh_density_layers_1_linear_term;
-Number rayleigh_density_layers_1_constant_term;
+	Length rayleigh_density_layers_1_width;
+	Number rayleigh_density_layers_1_exp_term;
+	InverseLength rayleigh_density_layers_1_exp_scale;
+	InverseLength rayleigh_density_layers_1_linear_term;
+	Number rayleigh_density_layers_1_constant_term;
 
-ScatteringSpectrum rayleigh_scattering;
+	ScatteringSpectrum rayleigh_scattering;
 
-Length mie_density_layers_0_width;
-Number mie_density_layers_0_exp_term;
-InverseLength mie_density_layers_0_exp_scale;
-InverseLength mie_density_layers_0_linear_term;
-Number mie_density_layers_0_constant_term;
+	Length mie_density_layers_0_width;
+	Number mie_density_layers_0_exp_term;
+	InverseLength mie_density_layers_0_exp_scale;
+	InverseLength mie_density_layers_0_linear_term;
+	Number mie_density_layers_0_constant_term;
 
-Length mie_density_layers_1_width;
-Number mie_density_layers_1_exp_term;
-InverseLength mie_density_layers_1_exp_scale;
-InverseLength mie_density_layers_1_linear_term;
-Number mie_density_layers_1_constant_term;
+	Length mie_density_layers_1_width;
+	Number mie_density_layers_1_exp_term;
+	InverseLength mie_density_layers_1_exp_scale;
+	InverseLength mie_density_layers_1_linear_term;
+	Number mie_density_layers_1_constant_term;
 
-ScatteringSpectrum mie_scattering;
-ScatteringSpectrum mie_extinction;
-Number mie_phase_function_g;
+	ScatteringSpectrum mie_scattering;
+	ScatteringSpectrum mie_extinction;
+	Number mie_phase_function_g;
 
-Length absorption_density_layers_0_width;
-Number absorption_density_layers_0_exp_term;
-InverseLength absorption_density_layers_0_exp_scale;
-InverseLength absorption_density_layers_0_linear_term;
-Number absorption_density_layers_0_constant_term;
+	Length absorption_density_layers_0_width;
+	Number absorption_density_layers_0_exp_term;
+	InverseLength absorption_density_layers_0_exp_scale;
+	InverseLength absorption_density_layers_0_linear_term;
+	Number absorption_density_layers_0_constant_term;
 
-Length absorption_density_layers_1_width;
-Number absorption_density_layers_1_exp_term;
-InverseLength absorption_density_layers_1_exp_scale;
-InverseLength absorption_density_layers_1_linear_term;
-Number absorption_density_layers_1_constant_term;
+	Length absorption_density_layers_1_width;
+	Number absorption_density_layers_1_exp_term;
+	InverseLength absorption_density_layers_1_exp_scale;
+	InverseLength absorption_density_layers_1_linear_term;
+	Number absorption_density_layers_1_constant_term;
 
-ScatteringSpectrum absorption_extinction;
+	ScatteringSpectrum absorption_extinction;
 
-DimensionlessSpectrum ground_albedo;
+	DimensionlessSpectrum ground_albedo;
 
-Number mu_s_min;
+	Number mu_s_min;
 
-int TRANSMITTANCE_TEXTURE_WIDTH;
-int TRANSMITTANCE_TEXTURE_HEIGHT;
-int SCATTERING_TEXTURE_R_SIZE;
-int SCATTERING_TEXTURE_MU_SIZE;
-int SCATTERING_TEXTURE_MU_S_SIZE;
-int SCATTERING_TEXTURE_NU_SIZE;
-int SCATTERING_TEXTURE_WIDTH;
-int SCATTERING_TEXTURE_HEIGHT;
-int SCATTERING_TEXTURE_DEPTH;
-int IRRADIANCE_TEXTURE_WIDTH;
-int IRRADIANCE_TEXTURE_HEIGHT;
-float3 SKY_SPECTRAL_RADIANCE_TO_LUMINANCE;
-float3 SUN_SPECTRAL_RADIANCE_TO_LUMINANCE;
+	int TRANSMITTANCE_TEXTURE_WIDTH;
+	int TRANSMITTANCE_TEXTURE_HEIGHT;
+	int SCATTERING_TEXTURE_R_SIZE;
+	int SCATTERING_TEXTURE_MU_SIZE;
+	int SCATTERING_TEXTURE_MU_S_SIZE;
+	int SCATTERING_TEXTURE_NU_SIZE;
+	int SCATTERING_TEXTURE_WIDTH;
+	int SCATTERING_TEXTURE_HEIGHT;
+	int SCATTERING_TEXTURE_DEPTH;
+	int IRRADIANCE_TEXTURE_WIDTH;
+	int IRRADIANCE_TEXTURE_HEIGHT;
+	float3 SKY_SPECTRAL_RADIANCE_TO_LUMINANCE;
+	float3 SUN_SPECTRAL_RADIANCE_TO_LUMINANCE;
+};
 
-AtmosphereParameters GetAtmosphereParameters() {
+AtmosphereParameters GetAtmosphereParameters(AtmosphereUniform atmosphereUniform) {
 	//-------------------------rayleigh_density---------------------------------
 	DensityProfileLayer rayleighProfileLayer0;
-	rayleighProfileLayer0.width = rayleigh_density_layers_0_width;
-	rayleighProfileLayer0.exp_term = rayleigh_density_layers_0_exp_term;
-	rayleighProfileLayer0.exp_scale = rayleigh_density_layers_0_exp_scale;
-	rayleighProfileLayer0.linear_term = rayleigh_density_layers_0_linear_term;
-	rayleighProfileLayer0.constant_term = rayleigh_density_layers_0_constant_term;
+	rayleighProfileLayer0.width = atmosphereUniform.rayleigh_density_layers_0_width;
+	rayleighProfileLayer0.exp_term = atmosphereUniform.rayleigh_density_layers_0_exp_term;
+	rayleighProfileLayer0.exp_scale = atmosphereUniform.rayleigh_density_layers_0_exp_scale;
+	rayleighProfileLayer0.linear_term = atmosphereUniform.rayleigh_density_layers_0_linear_term;
+	rayleighProfileLayer0.constant_term = atmosphereUniform.rayleigh_density_layers_0_constant_term;
 
 	DensityProfileLayer rayleighProfileLayer1;
-	rayleighProfileLayer1.width = rayleigh_density_layers_1_width;
-	rayleighProfileLayer1.exp_term = rayleigh_density_layers_1_exp_term;
-	rayleighProfileLayer1.exp_scale = rayleigh_density_layers_1_exp_scale;
-	rayleighProfileLayer1.linear_term = rayleigh_density_layers_1_linear_term;
-	rayleighProfileLayer1.constant_term = rayleigh_density_layers_1_constant_term;
+	rayleighProfileLayer1.width = atmosphereUniform.rayleigh_density_layers_1_width;
+	rayleighProfileLayer1.exp_term = atmosphereUniform.rayleigh_density_layers_1_exp_term;
+	rayleighProfileLayer1.exp_scale = atmosphereUniform.rayleigh_density_layers_1_exp_scale;
+	rayleighProfileLayer1.linear_term = atmosphereUniform.rayleigh_density_layers_1_linear_term;
+	rayleighProfileLayer1.constant_term = atmosphereUniform.rayleigh_density_layers_1_constant_term;
 
 	DensityProfile rayleigh_density;
 	rayleigh_density.layers[0] = rayleighProfileLayer0;
@@ -267,18 +268,18 @@ AtmosphereParameters GetAtmosphereParameters() {
 
 	//-------------------------mie_density---------------------------------
 	DensityProfileLayer absorptionProfileLayer0;
-	absorptionProfileLayer0.width = absorption_density_layers_0_width;
-	absorptionProfileLayer0.exp_term = absorption_density_layers_0_exp_term;
-	absorptionProfileLayer0.exp_scale = absorption_density_layers_0_exp_scale;
-	absorptionProfileLayer0.linear_term = absorption_density_layers_0_linear_term;
-	absorptionProfileLayer0.constant_term = absorption_density_layers_0_constant_term;
+	absorptionProfileLayer0.width = atmosphereUniform.absorption_density_layers_0_width;
+	absorptionProfileLayer0.exp_term = atmosphereUniform.absorption_density_layers_0_exp_term;
+	absorptionProfileLayer0.exp_scale = atmosphereUniform.absorption_density_layers_0_exp_scale;
+	absorptionProfileLayer0.linear_term = atmosphereUniform.absorption_density_layers_0_linear_term;
+	absorptionProfileLayer0.constant_term = atmosphereUniform.absorption_density_layers_0_constant_term;
 
 	DensityProfileLayer absorptionProfileLayer1;
-	absorptionProfileLayer1.width = absorption_density_layers_1_width;
-	absorptionProfileLayer1.exp_term = absorption_density_layers_1_exp_term;
-	absorptionProfileLayer1.exp_scale = absorption_density_layers_1_exp_scale;
-	absorptionProfileLayer1.linear_term = absorption_density_layers_1_linear_term;
-	absorptionProfileLayer1.constant_term = absorption_density_layers_1_constant_term;
+	absorptionProfileLayer1.width = atmosphereUniform.absorption_density_layers_1_width;
+	absorptionProfileLayer1.exp_term = atmosphereUniform.absorption_density_layers_1_exp_term;
+	absorptionProfileLayer1.exp_scale = atmosphereUniform.absorption_density_layers_1_exp_scale;
+	absorptionProfileLayer1.linear_term = atmosphereUniform.absorption_density_layers_1_linear_term;
+	absorptionProfileLayer1.constant_term = atmosphereUniform.absorption_density_layers_1_constant_term;
 
 	DensityProfile mie_density;
 	mie_density.layers[0] = absorptionProfileLayer0;
@@ -286,18 +287,18 @@ AtmosphereParameters GetAtmosphereParameters() {
 
 	//-------------------------absorption_density---------------------------------
 	DensityProfileLayer mieProfileLayer0;
-	mieProfileLayer0.width = mie_density_layers_0_width;
-	mieProfileLayer0.exp_term = mie_density_layers_0_exp_term;
-	mieProfileLayer0.exp_scale = mie_density_layers_0_exp_scale;
-	mieProfileLayer0.linear_term = mie_density_layers_0_linear_term;
-	mieProfileLayer0.constant_term = mie_density_layers_0_constant_term;
+	mieProfileLayer0.width = atmosphereUniform.mie_density_layers_0_width;
+	mieProfileLayer0.exp_term = atmosphereUniform.mie_density_layers_0_exp_term;
+	mieProfileLayer0.exp_scale = atmosphereUniform.mie_density_layers_0_exp_scale;
+	mieProfileLayer0.linear_term = atmosphereUniform.mie_density_layers_0_linear_term;
+	mieProfileLayer0.constant_term = atmosphereUniform.mie_density_layers_0_constant_term;
 
 	DensityProfileLayer mieProfileLayer1;
-	mieProfileLayer1.width = mie_density_layers_1_width;
-	mieProfileLayer1.exp_term = mie_density_layers_1_exp_term;
-	mieProfileLayer1.exp_scale = mie_density_layers_1_exp_scale;
-	mieProfileLayer1.linear_term = mie_density_layers_1_linear_term;
-	mieProfileLayer1.constant_term = mie_density_layers_1_constant_term;
+	mieProfileLayer1.width = atmosphereUniform.mie_density_layers_1_width;
+	mieProfileLayer1.exp_term = atmosphereUniform.mie_density_layers_1_exp_term;
+	mieProfileLayer1.exp_scale = atmosphereUniform.mie_density_layers_1_exp_scale;
+	mieProfileLayer1.linear_term = atmosphereUniform.mie_density_layers_1_linear_term;
+	mieProfileLayer1.constant_term = atmosphereUniform.mie_density_layers_1_constant_term;
 
 	DensityProfile absorption_density;
 	absorption_density.layers[0] = mieProfileLayer0;
@@ -306,20 +307,20 @@ AtmosphereParameters GetAtmosphereParameters() {
 
 	//-------------------------atmosphereParameters---------------------------------
 	AtmosphereParameters atmosphereParameters = (AtmosphereParameters)0;
-	atmosphereParameters.solar_irradiance = solar_irradiance;
-	atmosphereParameters.sun_angular_radius = sun_angular_radius;
-	atmosphereParameters.bottom_radius = bottom_radius;
-	atmosphereParameters.top_radius = top_radius;
+	atmosphereParameters.solar_irradiance = atmosphereUniform.solar_irradiance;
+	atmosphereParameters.sun_angular_radius = atmosphereUniform.sun_angular_radius;
+	atmosphereParameters.bottom_radius = atmosphereUniform.bottom_radius;
+	atmosphereParameters.top_radius = atmosphereUniform.top_radius;
 	atmosphereParameters.rayleigh_density = rayleigh_density;
-	atmosphereParameters.rayleigh_scattering = rayleigh_scattering;
+	atmosphereParameters.rayleigh_scattering = atmosphereUniform.rayleigh_scattering;
 	atmosphereParameters.mie_density = mie_density;
-	atmosphereParameters.mie_scattering = mie_scattering;
-	atmosphereParameters.mie_extinction = mie_extinction;
-	atmosphereParameters.mie_phase_function_g = mie_phase_function_g;
+	atmosphereParameters.mie_scattering = atmosphereUniform.mie_scattering;
+	atmosphereParameters.mie_extinction = atmosphereUniform.mie_extinction;
+	atmosphereParameters.mie_phase_function_g = atmosphereUniform.mie_phase_function_g;
 	atmosphereParameters.absorption_density = absorption_density;
-	atmosphereParameters.absorption_extinction = absorption_extinction;
-	atmosphereParameters.ground_albedo = ground_albedo;
-	atmosphereParameters.mu_s_min = mu_s_min;
+	atmosphereParameters.absorption_extinction = atmosphereUniform.absorption_extinction;
+	atmosphereParameters.ground_albedo = atmosphereUniform.ground_albedo;
+	atmosphereParameters.mu_s_min = atmosphereUniform.mu_s_min;
 
 	return atmosphereParameters;
 }
