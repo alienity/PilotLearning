@@ -55,6 +55,8 @@ IrradianceSpectrum GetSunAndSkyIrradiance(
 }
 */
 
+const static float3 kGroundAlbedo = float3(0.0, 0.0, 0.04);
+
 float4 PSMain(VSOutput vsOutput) : SV_Target0
 {
 	ConstantBuffer<FrameUniforms> mFrameUniforms = ResourceDescriptorHeap[_perFrameBuffer_index];
