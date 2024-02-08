@@ -3,6 +3,7 @@
 #include "runtime/function/render/render_pass.h"
 #include "runtime/function/global/global_context.h"
 #include "runtime/resource/config_manager/config_manager.h"
+#include "runtime/function/render/renderer/atmospheric_scattering_pass.h"
 
 namespace MoYu
 {
@@ -39,18 +40,15 @@ namespace MoYu
 
     private:
         RHI::RgTextureDesc colorTexDesc;
-        //RHI::RgTextureDesc volume3DDesc;
+        
+        Shader mAtmosphericScatteringVS;
+        Shader mAtmosphericScatteringPS;
+        std::shared_ptr<RHI::D3D12RootSignature> pAtmosphericScatteringSignature;
+        std::shared_ptr<RHI::D3D12PipelineState> pAtmosphericScatteringPSO;
 
-        Shader mGuassianBlurCS;
-        std::shared_ptr<RHI::D3D12RootSignature> pGuassianBlurSignature;
-        std::shared_ptr<RHI::D3D12PipelineState> pGuassianBlurPSO;
-
-        Shader mVolumeLightingCS;
-        std::shared_ptr<RHI::D3D12RootSignature> pVolumeLightingSignature;
-        std::shared_ptr<RHI::D3D12PipelineState> pVolumeLightingPSO;
-
-        std::shared_ptr<RHI::D3D12Texture> m_bluenoise;
-
-        std::shared_ptr<RHI::D3D12Texture> m_volume3d;
+        std::shared_ptr<RHI::D3D12Texture> m_transmittance2d;
+        std::shared_ptr<RHI::D3D12Texture> m_scattering3d;
+        std::shared_ptr<RHI::D3D12Texture> m_irradiance2d;
+        std::shared_ptr<RHI::D3D12Texture> m_singlemiescattering3d;
 	};
 }
