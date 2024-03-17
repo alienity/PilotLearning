@@ -185,7 +185,7 @@ namespace MoYu
     struct InternalMesh
     {
         bool enable_vertex_blending;
-        AxisAlignedBox axis_aligned_box;
+        AABB axis_aligned_box;
         InternalIndexBuffer index_buffer;
         InternalVertexBuffer vertex_buffer;
     };
@@ -251,7 +251,7 @@ namespace MoYu
 
     struct InternalScratchMesh
     {
-        AxisAlignedBox              axis_aligned_box;
+        AABB              axis_aligned_box;
         InternalScratchIndexBuffer  scratch_index_buffer;
         InternalScratchVertexBuffer scratch_vertex_buffer;
     };
@@ -726,7 +726,7 @@ namespace MoYu
 
     struct RenderMeshData
     {
-        AxisAlignedBox m_axis_aligned_box;
+        AABB m_axis_aligned_box;
         StaticMeshData m_static_mesh_data;
         std::shared_ptr<MoYuScratchBuffer> m_skeleton_binding_buffer;
     };

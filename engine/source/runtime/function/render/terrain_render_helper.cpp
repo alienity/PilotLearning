@@ -224,7 +224,7 @@ namespace MoYu
                 MoYu::InternalMesh& _clipmap_mesh = _terrain_clipmap->clipmap_mesh[i];
                 MoYu::InternalIndexBuffer& _index_buffer = _clipmap_mesh.index_buffer;
                 MoYu::InternalVertexBuffer& _vertex_buffer = _clipmap_mesh.vertex_buffer;
-                MoYu::AxisAlignedBox _axisAlignedBox = _clipmap_mesh.axis_aligned_box;
+                MoYu::AABB _axisAlignedBox = _clipmap_mesh.axis_aligned_box;
                 
                 HLSL::BoundingBox _clipBoundingBox {};
                 _clipBoundingBox.center  = _axisAlignedBox.getCenter();

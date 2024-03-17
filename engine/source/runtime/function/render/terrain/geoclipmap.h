@@ -11,7 +11,7 @@ namespace MoYu
 {
     struct GeoClipPatch
     {
-        AxisAlignedBox aabb;
+        AABB aabb;
         std::vector<glm::float3> vertices;
         std::vector<uint32_t> indices;
     };

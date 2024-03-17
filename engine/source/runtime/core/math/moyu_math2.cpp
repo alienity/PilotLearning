@@ -190,30 +190,333 @@ namespace MoYu
     }
 
     //------------------------------------------------------------------------------------------
+    AABB::AABB(const glm::float3& minpos, const glm::float3& maxpos)
+    {
+        m_min = minpos;
+        m_max = maxpos;
+    }
 
-    AxisAlignedBox::AxisAlignedBox(const glm::float3& center, const glm::float3& half_extent) { update(center, half_extent); }
+    AABB::AABB(const AABB& other)
+    {
+        m_min = other.m_min;
+        m_max = other.m_max;
+    }
 
-    void AxisAlignedBox::merge(const AxisAlignedBox& axis_aligned_box)
+    void AABB::merge(const AABB& axis_aligned_box)
     { 
         merge(axis_aligned_box.getMinCorner());
         merge(axis_aligned_box.getMaxCorner());
     }
 
-    void AxisAlignedBox::merge(const glm::float3& new_point)
+    void AABB::merge(const glm::float3& new_point)
     {
-        m_min_corner = glm::min(m_min_corner, new_point);
-        m_max_corner = glm::max(m_max_corner, new_point);
-
-        m_center      = 0.5f * (m_min_corner + m_max_corner);
-        m_half_extent = m_center - m_min_corner;
+        m_min = glm::min(m_min, new_point);
+        m_max = glm::max(m_max, new_point);
     }
 
-    void AxisAlignedBox::update(const glm::float3& center, const glm::float3& half_extent)
+    void AABB::update(const glm::float3& center, const glm::float3& half_extent)
     {
-        m_center      = center;
-        m_half_extent = half_extent;
-        m_min_corner  = center - half_extent;
-        m_max_corner  = center + half_extent;
+        m_min = center - half_extent;
+        m_max = center + half_extent;
+    }
+
+    float AABB::minDistanceFromPointSq(const glm::float3& point)
+    {
+        float dist = 0.0f;
+
+        if (point.x < m_min.x)
+        {
+           float d = point.x - m_min.x;
+           dist += d * d;
+        }
+        else if (point.x > m_max.x)
+        {
+           float d = point.x - m_max.x;
+           dist += d * d;
+        }
+
+        if (point.y < m_min.y)
+        {
+           float d = point.y - m_min.y;
+           dist += d * d;
+        }
+        else if (point.y > m_max.y)
+        {
+           float d = point.y - m_max.y;
+           dist += d * d;
+        }
+
+        if (point.z < m_min.z)
+        {
+           float d = point.z - m_min.z;
+           dist += d * d;
+        }
+        else if (point.z > m_max.z)
+        {
+           float d = point.z - m_max.z;
+           dist += d * d;
+        }
+
+        return dist;
+    }
+
+    float AABB::maxDistanceFromPointSq(const glm::float3& point)
+    {
+        float dist = 0.0f;
+        float k;
+
+        k = glm::max(fabsf(point.x - m_min.x), fabsf(point.x - m_max.x));
+        dist += k * k;
+
+        k = glm::max(fabsf(point.y - m_min.y), fabsf(point.y - m_max.y));
+        dist += k * k;
+
+        k = glm::max(fabsf(point.z - m_min.z), fabsf(point.z - m_max.z));
+        dist += k * k;
+
+        return dist;
+    }
+
+    bool AABB::isInsideSphereSq(const BSphere& other)
+    {
+        float radiusSq = other.radius * other.radius;
+        return maxDistanceFromPointSq(other.center) <= radiusSq;
+    }
+
+    bool AABB::intersects(const BSphere& other)
+    {
+        float radiusSq = other.radius * other.radius;
+        return minDistanceFromPointSq(other.center) <= radiusSq;
+    }
+
+    bool AABB::intersects(const AABB& other)
+    {
+        return !((other.m_max.x < this->m_min.x) || (other.m_min.x > this->m_max.x) || (other.m_max.y < this->m_min.y) ||
+                 (other.m_min.y > this->m_max.y) || (other.m_max.z < this->m_min.z) || (other.m_min.z > this->m_max.z));
+    }
+
+    bool AABB::intersectRay(const glm::float3 rayOrigin, const glm::float3 rayDirection, float& distance)
+    {
+        float tmin = -FLT_MAX; // set to -FLT_MAX to get first hit on line
+        float tmax = FLT_MAX;  // set to max distance ray can travel
+
+        float _rayOrigin[]    = {rayOrigin.x, rayOrigin.y, rayOrigin.z};
+        float _rayDirection[] = {rayDirection.x, rayDirection.y, rayDirection.z};
+        float _min[]          = {m_min.x, m_min.y, m_min.z};
+        float _max[]          = {m_max.x, m_max.y, m_max.z};
+
+        const float EPSILON = 1e-5f;
+
+        for (int i = 0; i < 3; i++)
+        {
+           if (fabsf(_rayDirection[i]) < EPSILON)
+           {
+               // Parallel to the plane
+               if (_rayOrigin[i] < _min[i] || _rayOrigin[i] > _max[i])
+               {
+                   // assert( !k );
+                   // hits1_false++;
+                   return false;
+               }
+           }
+           else
+           {
+               float ood = 1.0f / _rayDirection[i];
+               float t1  = (_min[i] - _rayOrigin[i]) * ood;
+               float t2  = (_max[i] - _rayOrigin[i]) * ood;
+
+               if (t1 > t2)
+                   std::swap(t1, t2);
+
+               if (t1 > tmin)
+                   tmin = t1;
+               if (t2 < tmax)
+                   tmax = t2;
+
+               if (tmin > tmax)
+               {
+                   // assert( !k );
+                   // hits1_false++;
+                   return false;
+               }
+           }
+        }
+
+        distance = tmin;
+
+        return true;
+    }
+
+    PlaneIntersectionFlag TestAABBToPlane(const AABB aabb, const Plane p)
+    {
+        glm::float3 center  = aabb.getCenter();
+        glm::float3 extents = aabb.getHalfExtent();
+
+        // Compute signed distance from plane to box center
+        float sd = glm::dot(center, p.normal) - p.offset;
+
+        // Compute the projection interval radius of b onto L(t) = b.Center + t * p.Normal
+        // Projection radii r_i of the 8 bounding box vertices
+        // r_i = dot((V_i - C), n)
+        // r_i = dot((C +- e0*u0 +- e1*u1 +- e2*u2 - C), n)
+        // Cancel C and distribute dot product
+        // r_i = +-(dot(e0*u0, n)) +-(dot(e1*u1, n)) +-(dot(e2*u2, n))
+        // We take the maximum position radius by taking the absolute value of the terms, we assume Extents to be
+        // positive r = e0*|dot(u0, n)| + e1*|dot(u1, n)| + e2*|dot(u2, n)| When the separating axis vector Normal is
+        // not a unit vector, we need to divide the radii by the length(Normal) u0,u1,u2 are the local axes of the box,
+        // which is = [(1,0,0), (0,1,0), (0,0,1)] respectively for axis aligned bb
+        float r = glm::dot(extents, abs(p.normal));
+
+        if (sd > r)
+        {
+           return PLANE_INTERSECTION_POSITIVE_HALFSPACE;
+        }
+        if (sd < -r)
+        {
+           return PLANE_INTERSECTION_NEGATIVE_HALFSPACE;
+        }
+        return PLANE_INTERSECTION_INTERSECTING;
+    }
+
+    PlaneIntersectionFlag TestBSphereToPlane(const BSphere bsphere, const Plane p)
+    {
+        // Compute signed distance from plane to sphere center
+        float sd = glm::dot(bsphere.center, p.normal) - p.offset;
+        if (sd > bsphere.radius)
+        {
+           return PLANE_INTERSECTION_POSITIVE_HALFSPACE;
+        }
+        if (sd < -bsphere.radius)
+        {
+           return PLANE_INTERSECTION_NEGATIVE_HALFSPACE;
+        }
+        return PLANE_INTERSECTION_INTERSECTING;
+    }
+
+    ContainmentFlag IsFrustumContainAABB(const Frustum f, const AABB& aabb)
+    {
+        int  p0         = TestAABBToPlane(aabb, f.Left);
+        int  p1         = TestAABBToPlane(aabb, f.Right);
+        int  p2         = TestAABBToPlane(aabb, f.Bottom);
+        int  p3         = TestAABBToPlane(aabb, f.Top);
+        int  p4         = TestAABBToPlane(aabb, f.Near);
+        int  p5         = TestAABBToPlane(aabb, f.Far);
+        bool anyOutside = p0 == PLANE_INTERSECTION_NEGATIVE_HALFSPACE;
+        anyOutside |= p1 == PLANE_INTERSECTION_NEGATIVE_HALFSPACE;
+        anyOutside |= p2 == PLANE_INTERSECTION_NEGATIVE_HALFSPACE;
+        anyOutside |= p3 == PLANE_INTERSECTION_NEGATIVE_HALFSPACE;
+        anyOutside |= p4 == PLANE_INTERSECTION_NEGATIVE_HALFSPACE;
+        anyOutside |= p5 == PLANE_INTERSECTION_NEGATIVE_HALFSPACE;
+        bool allInside = p0 == PLANE_INTERSECTION_POSITIVE_HALFSPACE;
+        allInside &= p1 == PLANE_INTERSECTION_POSITIVE_HALFSPACE;
+        allInside &= p2 == PLANE_INTERSECTION_POSITIVE_HALFSPACE;
+        allInside &= p3 == PLANE_INTERSECTION_POSITIVE_HALFSPACE;
+        allInside &= p4 == PLANE_INTERSECTION_POSITIVE_HALFSPACE;
+        allInside &= p5 == PLANE_INTERSECTION_POSITIVE_HALFSPACE;
+
+        if (anyOutside)
+        {
+           return CONTAINMENT_DISJOINT;
+        }
+
+        if (allInside)
+        {
+           return CONTAINMENT_CONTAINS;
+        }
+
+        return CONTAINMENT_INTERSECTS;
+    }
+
+    ContainmentFlag IsFrustumContainBSphere(const Frustum f, const BSphere& bsphere)
+    {
+        int  p0         = TestBSphereToPlane(bsphere, f.Left);
+        int  p1         = TestBSphereToPlane(bsphere, f.Right);
+        int  p2         = TestBSphereToPlane(bsphere, f.Bottom);
+        int  p3         = TestBSphereToPlane(bsphere, f.Top);
+        int  p4         = TestBSphereToPlane(bsphere, f.Near);
+        int  p5         = TestBSphereToPlane(bsphere, f.Far);
+        bool anyOutside = p0 == PLANE_INTERSECTION_NEGATIVE_HALFSPACE;
+        anyOutside |= p1 == PLANE_INTERSECTION_NEGATIVE_HALFSPACE;
+        anyOutside |= p2 == PLANE_INTERSECTION_NEGATIVE_HALFSPACE;
+        anyOutside |= p3 == PLANE_INTERSECTION_NEGATIVE_HALFSPACE;
+        anyOutside |= p4 == PLANE_INTERSECTION_NEGATIVE_HALFSPACE;
+        anyOutside |= p5 == PLANE_INTERSECTION_NEGATIVE_HALFSPACE;
+        bool allInside = p0 == PLANE_INTERSECTION_POSITIVE_HALFSPACE;
+        allInside &= p1 == PLANE_INTERSECTION_POSITIVE_HALFSPACE;
+        allInside &= p2 == PLANE_INTERSECTION_POSITIVE_HALFSPACE;
+        allInside &= p3 == PLANE_INTERSECTION_POSITIVE_HALFSPACE;
+        allInside &= p4 == PLANE_INTERSECTION_POSITIVE_HALFSPACE;
+        allInside &= p5 == PLANE_INTERSECTION_POSITIVE_HALFSPACE;
+
+        if (anyOutside)
+        {
+           return CONTAINMENT_DISJOINT;
+        }
+
+        if (allInside)
+        {
+           return CONTAINMENT_CONTAINS;
+        }
+
+        return CONTAINMENT_INTERSECTS;
+    }
+
+    Frustum ExtractPlanesDX(const glm::float4x4 mvp)
+    {
+        Frustum frustum;
+
+        // Left clipping plane
+        frustum.Left.normal.x = mvp[3][0] + mvp[0][0];
+        frustum.Left.normal.y = mvp[3][1] + mvp[0][1];
+        frustum.Left.normal.z = mvp[3][2] + mvp[0][2];
+        frustum.Left.offset   = -(mvp[3][3] + mvp[0][3]);
+        // Right clipping plane
+        frustum.Right.normal.x = mvp[3][0] - mvp[0][0];
+        frustum.Right.normal.y = mvp[3][1] - mvp[0][1];
+        frustum.Right.normal.z = mvp[3][2] - mvp[0][2];
+        frustum.Right.offset   = -(mvp[3][3] - mvp[0][3]);
+        // Bottom clipping plane
+        frustum.Bottom.normal.x = mvp[3][0] + mvp[1][0];
+        frustum.Bottom.normal.y = mvp[3][1] + mvp[1][1];
+        frustum.Bottom.normal.z = mvp[3][2] + mvp[1][2];
+        frustum.Bottom.offset   = -(mvp[3][3] + mvp[1][3]);
+        // Top clipping plane
+        frustum.Top.normal.x = mvp[3][0] - mvp[1][0];
+        frustum.Top.normal.y = mvp[3][1] - mvp[1][1];
+        frustum.Top.normal.z = mvp[3][2] - mvp[1][2];
+        frustum.Top.offset   = -(mvp[3][3] - mvp[1][3]);
+        // Far clipping plane
+        frustum.Far.normal.x = mvp[2][0];
+        frustum.Far.normal.y = mvp[2][1];
+        frustum.Far.normal.z = mvp[2][2];
+        frustum.Far.offset   = -(mvp[2][3]);
+        // Near clipping plane
+        frustum.Near.normal.x = mvp[3][0] - mvp[2][0];
+        frustum.Near.normal.y = mvp[3][1] - mvp[2][1];
+        frustum.Near.normal.z = mvp[3][2] - mvp[2][2];
+        frustum.Near.offset   = -(mvp[3][3] - mvp[2][3]);
+
+        return frustum;
+    }
+
+    Plane ComputePlane(glm::float3 a, glm::float3 b, glm::float3 c)
+    {
+        Plane plane;
+        plane.normal = normalize(cross(b - a, c - a));
+        plane.offset = dot(plane.normal, a);
+        return plane;
+    }
+
+    bool BSphere::Intersects(BSphere other)
+    {
+        // The distance between the sphere centers is computed and compared
+        // against the sum of the sphere radii. To avoid an square root operation, the
+        // squared distances are compared with squared sum radii instead.
+        glm::float3 d         = center - other.center;
+        float       dist2     = dot(d, d);
+        float       radiusSum = radius + other.radius;
+        float       r2        = radiusSum * radiusSum;
+        return dist2 <= r2;
     }
 
     //------------------------------------------------------------------------------------------

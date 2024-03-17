@@ -33,7 +33,7 @@ namespace MoYu
             return v;
         }
 
-        AxisAlignedBox ToAxisAlignedBox(const BasicMesh& basicMesh)
+        AABB ToAxisAlignedBox(const BasicMesh& basicMesh)
         {
             float _fmax = std::numeric_limits<float>::max();
             float _fmin = std::numeric_limits<float>::min();
@@ -52,10 +52,13 @@ namespace MoYu
             glm::vec3 _center = (_min + _max) * 0.5f;
             glm::vec3 _half_extent = (_max - _min) * 0.5f;
 
-            glm::float3 center      = _center;
-            glm::float3 half_extent = _half_extent;
+            //glm::float3 center      = _center;
+            //glm::float3 half_extent = _half_extent;
 
-            AxisAlignedBox _outBox = AxisAlignedBox(center, half_extent);
+            glm::float3 _minpos = _center - _half_extent * 0.5f;
+            glm::float3 _maxpos = _center + _half_extent * 0.5f;
+
+            AABB _outBox = AABB(_minpos, _maxpos);
 
             return _outBox;
         }
@@ -348,9 +351,9 @@ namespace MoYu
             AddQuadIndices16()
         }
 
-        AxisAlignedBox ToAxisAlignedBox(const TerrainPatchMesh& basicMesh)
+        AABB ToAxisAlignedBox(const TerrainPatchMesh& basicMesh)
         {
-            return AxisAlignedBox();
+            return AABB();
         }
 
         StaticMeshData ToStaticMesh(const TerrainPatchMesh& basicMesh)

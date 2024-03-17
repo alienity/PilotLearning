@@ -22,7 +22,7 @@ namespace MoYu
             std::vector<int>    indices;
         };
 
-        AxisAlignedBox ToAxisAlignedBox(const BasicMesh& basicMesh);
+        AABB ToAxisAlignedBox(const BasicMesh& basicMesh);
         StaticMeshData ToStaticMesh(const BasicMesh& basicMesh);
 
     }
@@ -66,7 +66,7 @@ namespace MoYu
             std::vector<int> indices;
         };
 
-        AxisAlignedBox ToAxisAlignedBox(const TerrainPatchMesh& basicMesh);
+        AABB ToAxisAlignedBox(const TerrainPatchMesh& basicMesh);
         StaticMeshData ToStaticMesh(const TerrainPatchMesh& basicMesh);
     }
     */

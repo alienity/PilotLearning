@@ -237,20 +237,20 @@ namespace MoYu
         return b_out;
     }
 
-    bool BoxIntersectsWithSphere(BoundingBox const& b, BoundingSphere const& s)
+    bool BoxIntersectsWithSphere(BoundingBox const& b, BSphere const& s)
     {
         for (size_t i = 0; i < 3; ++i)
         {
-            if (s.m_center[i] < b.min_bound[i])
+            if (s.center[i] < b.min_bound[i])
             {
-                if ((b.min_bound[i] - s.m_center[i]) > s.m_radius)
+                if ((b.min_bound[i] - s.center[i]) > s.radius)
                 {
                     return false;
                 }
             }
-            else if (s.m_center[i] > b.max_bound[i])
+            else if (s.center[i] > b.max_bound[i])
             {
-                if ((s.m_center[i] - b.max_bound[i]) > s.m_radius)
+                if ((s.center[i] - b.max_bound[i]) > s.radius)
                 {
                     return false;
                 }

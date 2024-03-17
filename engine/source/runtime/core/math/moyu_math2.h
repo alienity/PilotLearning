@@ -179,7 +179,7 @@ namespace MoYu
     constexpr float factorial(size_t n, size_t d = 1);
 
     struct Transform;
-    struct AxisAlignedBox;
+    struct AABB;
 
     namespace MYFloat2
     {
@@ -330,28 +330,93 @@ namespace MoYu
 
     //---------------------------------------------------------------------------------------------
 
-    struct AxisAlignedBox
+    enum PlaneIntersectionFlag
+    {
+        PLANE_INTERSECTION_POSITIVE_HALFSPACE = 0,
+        PLANE_INTERSECTION_NEGATIVE_HALFSPACE,
+        PLANE_INTERSECTION_INTERSECTING
+    };
+
+    enum ContainmentFlag
+    {
+        CONTAINMENT_DISJOINT = 0,
+        CONTAINMENT_INTERSECTS,
+        CONTAINMENT_CONTAINS
+    };
+
+#define FRUSTUM_PLANE_LEFT 0
+#define FRUSTUM_PLANE_RIGHT 1
+#define FRUSTUM_PLANE_BOTTOM 2
+#define FRUSTUM_PLANE_TOP 3
+#define FRUSTUM_PLANE_NEAR 4
+#define FRUSTUM_PLANE_FAR 5
+
+    struct Plane;
+    struct BSphere;
+
+    struct AABB
     {
     public:
-        AxisAlignedBox() {}
-        AxisAlignedBox(const glm::float3& center, const glm::float3& half_extent);
+        AABB() {}
+        AABB(const glm::float3& minpos, const glm::float3& maxpos);
+        AABB(const AABB& other);
 
-        void merge(const AxisAlignedBox& axis_aligned_box);
+        void merge(const AABB& axis_aligned_box);
         void merge(const glm::float3& new_point);
         void update(const glm::float3& center, const glm::float3& half_extent);
 
-        const glm::float3& getCenter() const { return m_center; }
-        const glm::float3& getHalfExtent() const { return m_half_extent; }
-        const glm::float3& getMinCorner() const { return m_min_corner; }
-        const glm::float3& getMaxCorner() const { return m_max_corner; }
+        float minDistanceFromPointSq(const glm::float3& point);
+        float maxDistanceFromPointSq(const glm::float3& point);
 
-    private:
-        glm::float3 m_center {MYFloat3::Zero};
-        glm::float3 m_half_extent {MYFloat3::Zero};
+        bool isInsideSphereSq(const BSphere& other);
+        bool intersects(const BSphere& other);
+        bool intersects(const AABB& other);
+        bool intersectRay(const glm::float3 rayOrigin, const glm::float3 rayDirection, float& distance);
+        
+        const glm::float3& getCenter() const { return (m_max + m_min) * 0.5f; }
+        const glm::float3& getHalfExtent() const { return (m_max - m_min) * 0.5f; }
+        const glm::float3& getMinCorner() const { return m_min; }
+        const glm::float3& getMaxCorner() const { return m_max; }
 
-        glm::float3 m_min_corner {FLT_MAX, FLT_MAX, FLT_MAX};
-        glm::float3 m_max_corner {-FLT_MAX, -FLT_MAX, -FLT_MAX};
+        glm::float3 m_min {FLT_MAX, FLT_MAX, FLT_MAX};
+        glm::float3 m_max {-FLT_MAX, -FLT_MAX, -FLT_MAX};
     };
+
+    // ax + by + cz = d where d = dot(n, P)
+    struct Plane
+    {
+        glm::float3 normal; // Plane normal. Points x on the plane satisfy dot(n, x) = d
+        float       offset; // d = dot(n, p) for a given point p on the plane
+    };
+
+    Plane ComputePlane(glm::float3 a, glm::float3 b, glm::float3 c);
+
+    struct Frustum
+    {
+        Plane Left;   // -x
+        Plane Right;  // +x
+        Plane Bottom; // -y
+        Plane Top;    // +y
+        Plane Near;   // -z
+        Plane Far;    // +z
+    };
+
+    struct BSphere
+    {
+        glm::float3 center;
+        float       radius;
+
+        bool Intersects(BSphere other);
+    };
+
+    PlaneIntersectionFlag TestAABBToPlane(const AABB aabb, const Plane p);
+    PlaneIntersectionFlag TestBSphereToPlane(const BSphere bsphere, const Plane p);
+
+    ContainmentFlag IsFrustumContainAABB(const Frustum f, const AABB& aabb);
+    ContainmentFlag IsFrustumContainBSphere(const Frustum f, const BSphere& bsphere);
+
+    // mvp row major storage
+    Frustum ExtractPlanesDX(const glm::float4x4 mvp);
 
     struct Color
     {

@@ -287,7 +287,7 @@ namespace MoYu
                 memcpy(_skeleton_buffer->GetBufferPointer(), bind_data->skeleton_bind.data(), skeleton_size);
                 ret.m_skeleton_binding_buffer = _skeleton_buffer;
                 
-                MoYu::AxisAlignedBox bounding_box;
+                MoYu::AABB bounding_box;
                 for (size_t i = 0; i < bind_data->vertex_buffer.size(); i++)
                 {
                     Vertex v = bind_data->vertex_buffer[i];
@@ -331,7 +331,7 @@ namespace MoYu
                 }
                 else
                 {
-                    MoYu::AxisAlignedBox bounding_box;
+                    MoYu::AABB bounding_box;
                     ret.m_static_mesh_data = LoadModel(mesh_file, bounding_box);
                     ret.m_axis_aligned_box = bounding_box;
                 }

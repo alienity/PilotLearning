@@ -28,7 +28,7 @@ std::vector<GeoClipPatch> GeoClipMap::generate(int p_size, int p_levels)
 	int CLIPMAP_VERT_RESOLUTION = CLIPMAP_RESOLUTION + 1;
 	int NUM_CLIPMAP_LEVELS = p_levels;
 
-    AxisAlignedBox aabb;
+    AABB aabb;
 
 	int n = 0;
 
@@ -66,7 +66,7 @@ std::vector<GeoClipPatch> GeoClipMap::generate(int p_size, int p_levels)
 
 		std::reverse(indices.begin(), indices.end());
 
-		aabb = AxisAlignedBox(glm::float3(0, 0, 0), glm::float3(PATCH_VERT_RESOLUTION, 0.1, PATCH_VERT_RESOLUTION));
+		aabb = AABB(glm::float3(0, 0, 0), glm::float3(PATCH_VERT_RESOLUTION, 0.1, PATCH_VERT_RESOLUTION));
         geoClipPatch_mesh[MeshType::TILE] = (GeoClipPatch {aabb, vertices, indices});
 	}
 

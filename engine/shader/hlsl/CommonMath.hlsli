@@ -338,12 +338,12 @@ struct Plane
 	float  Offset; // d = dot(n, p) for a given point p on the plane
 };
 
-struct BoundingSphere
+struct BSphere
 {
 	float3 Center;
 	float  Radius;
 
-	bool Intersects(BoundingSphere Other)
+	bool Intersects(BSphere Other)
 	{
 		// The distance between the sphere centers is computed and compared
 		// against the sum of the sphere radii. To avoid an square root operation, the
@@ -421,7 +421,7 @@ struct Frustum
 	Plane Far;	  // +z
 };
 
-int BoundingSphereToPlane(BoundingSphere s, Plane p)
+int BoundingSphereToPlane(BSphere s, Plane p)
 {
 	// Compute signed distance from plane to sphere center
 	float sd = dot(s.Center, p.Normal) - p.Offset;
@@ -464,7 +464,7 @@ int BoundingBoxToPlane(BoundingBox b, Plane p)
 	return PLANE_INTERSECTION_INTERSECTING;
 }
 
-int FrustumContainsBoundingSphere(Frustum f, BoundingSphere s)
+int FrustumContainsBoundingSphere(Frustum f, BSphere s)
 {
 	int	 p0			= BoundingSphereToPlane(s, f.Left);
 	int	 p1			= BoundingSphereToPlane(s, f.Right);

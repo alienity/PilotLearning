@@ -12,14 +12,14 @@ typedef MoYu::D3D12MeshVertexPositionNormalTangentTexture VertexDefine;
 
 struct ModelLoaderMesh
 {
-    MoYu::AxisAlignedBox      bounding_box_;
+    MoYu::AABB      bounding_box_;
     std::vector<VertexDefine>  vertexs_;
     std::vector<std::uint32_t> indices_;
 };
 
 struct MeshLoaderNode
 {
-    MoYu::AxisAlignedBox        bounding_box_;
+    MoYu::AABB        bounding_box_;
     std::vector<ModelLoaderMesh> meshes_;
     std::vector<MeshLoaderNode>  children_;
 };
@@ -62,7 +62,7 @@ void RecursiveLoad(MeshLoaderNode& meshes_, std::vector<VertexDefine>& vertexs_,
     }
 }
 
-MoYu::StaticMeshData LoadModel(std::string filename, MoYu::AxisAlignedBox& bounding_box)
+MoYu::StaticMeshData LoadModel(std::string filename, MoYu::AABB& bounding_box)
 {
     MeshLoaderNode meshes_ = {};
     LoadModelNormal(filename, meshes_);
@@ -115,7 +115,7 @@ void ProcessNode(aiNode* node, const aiScene* scene, MeshLoaderNode& meshes_)
 ModelLoaderMesh ProcessMesh(aiMesh* mesh)
 {
     // Data to fill
-    MoYu::AxisAlignedBox      bounding_box;
+    MoYu::AABB      bounding_box;
     std::vector<VertexDefine>  vertices;
     std::vector<std::uint32_t> indices;
 

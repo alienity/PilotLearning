@@ -49,12 +49,6 @@ namespace MoYu
         }
     };
 
-    struct BoundingSphere
-    {
-        glm::vec3 m_center;
-        float     m_radius;
-    };
-
     struct FrustumPoints
     {
         glm::vec3 m_frustum_points;
@@ -72,7 +66,7 @@ namespace MoYu
 
     BoundingBox BoundingBoxTransform(BoundingBox const& b, glm::mat4 const& m);
 
-    bool BoxIntersectsWithSphere(BoundingBox const& b, BoundingSphere const& s);
+    bool BoxIntersectsWithSphere(BoundingBox const& b, BSphere const& s);
 
     glm::float4 CalculateZBufferParams(float nearClipPlane, float farClipPlane);
 
