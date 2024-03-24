@@ -818,4 +818,27 @@ float3 PositivePow(float3 base, float3 power)
 	return pow(max(abs(base), float3(FLT_EPS, FLT_EPS, FLT_EPS)), power);
 }
 
+
+//------------------------------------------------------------------------------
+// Depth Transform
+//------------------------------------------------------------------------------
+// depthParams.x ==> (f-n)/(fn)
+// depthParams.y ==> 1/f
+// 如果使用columnmajor投影矩阵，其中Z是从reverseDepthBuffer中采样出来的，
+// viewDepth是viewspace下的朝着z轴负方向的长度，只表达数值，不表达方向
+// viewZ = (m[2][2]+Z)/(m[2][3]); 
+float ReverseDepthToViewDepth(float reverseDepth, float2 depthParams)
+{
+	float viewDepth = depthParams.x * reverseDepth + depthParams.y;
+	return viewDepth;
+}
+
+// depthParams.x ==> 1/(f-n)
+// depthParams.y ==> -n/(f-n)
+float ViewDepthToLinearDepth(float viewDepth, float2 depthParams)
+{
+	float linearDepth = depthParams.x * viewDepth + depthParams.y;
+	return linearDepth;
+}
+
 #endif // __COMMON_MATH_HLSLI__
