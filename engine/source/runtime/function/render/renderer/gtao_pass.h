@@ -4,6 +4,7 @@
 
 #include "runtime/function/global/global_context.h"
 #include "runtime/resource/config_manager/config_manager.h"
+#include "runtime/function/render/renderer/xeGTAO.h"
 
 namespace MoYu
 {
@@ -14,6 +15,7 @@ namespace MoYu
         struct AOInitInfo : public RenderPassInitInfo
         {
             RHI::RgTextureDesc colorTexDesc;
+            RHI::RgTextureDesc depthTexDesc;
 
             ShaderCompiler*       m_ShaderCompiler;
             std::filesystem::path m_ShaderRootPath;
@@ -37,9 +39,11 @@ namespace MoYu
         {
             DrawOutputParameters()
             {
+                outputViewDepthHandle.Invalidate();
                 outputAOHandle.Invalidate();
             }
 
+            RHI::RgResourceHandle outputViewDepthHandle;
             RHI::RgResourceHandle outputAOHandle;
         };
 
@@ -47,6 +51,7 @@ namespace MoYu
         ~GTAOPass() { destroy(); }
 
         void initialize(const AOInitInfo& init_info);
+        void updateConstantBuffer(std::shared_ptr<RenderResource> render_resource);
         void update(RHI::RenderGraph& graph, DrawInputParameters& passInput, DrawOutputParameters& passOutput);
         void destroy() override final;
 
@@ -54,15 +59,27 @@ namespace MoYu
         bool initializeRenderTarget(RHI::RenderGraph& graph, DrawOutputParameters* drawPassOutput);
 
         RHI::RgTextureDesc colorTexDesc;
+        RHI::RgTextureDesc depthTexDesc;
+
+        XeGTAO::GTAOConstants gtaoConstants;
+        XeGTAO::GTAOSettings  gtaoSettings;
+
+        int frameCounter = 0;
+
+        std::shared_ptr<RHI::D3D12Buffer> pGTAOConstants;
 
     private:
-        Shader SSAOCS;
-        std::shared_ptr<RHI::D3D12RootSignature> pSSAOSignature;
-        std::shared_ptr<RHI::D3D12PipelineState> pSSAOPSO;
+        Shader DepthPrefilterCS;
+        std::shared_ptr<RHI::D3D12RootSignature> pDepthPrefilterSignature;
+        std::shared_ptr<RHI::D3D12PipelineState> pDepthPrefilterPSO;
 
-        Shader HBAOCS;
-        std::shared_ptr<RHI::D3D12RootSignature> pHBAOSignature;
-        std::shared_ptr<RHI::D3D12PipelineState> pHBAOPSO;
+        Shader GTAOCS;
+        std::shared_ptr<RHI::D3D12RootSignature> pGTAOSignature;
+        std::shared_ptr<RHI::D3D12PipelineState> pGTAOPSO;
+
+        Shader DenoiseCS;
+        std::shared_ptr<RHI::D3D12RootSignature> pDenoiseSignature;
+        std::shared_ptr<RHI::D3D12PipelineState> pDenoisePSO;
 	};
 }
 

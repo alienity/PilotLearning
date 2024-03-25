@@ -158,9 +158,9 @@ float3 XeGTAO_R11G11B10_UNORM_to_FLOAT3( uint packedInput )
 uint XeGTAO_FLOAT3_to_R11G11B10_UNORM( float3 unpackedInput )
 {
     uint packedOutput;
-    packedOutput =( ( uint( VA_SATURATE( unpackedInput.x ) * 2047 + 0.5f ) ) |
-        ( uint( VA_SATURATE( unpackedInput.y ) * 2047 + 0.5f ) << 11 ) |
-        ( uint( VA_SATURATE( unpackedInput.z ) * 1023 + 0.5f ) << 22 ) );
+    packedOutput =( ( uint( saturate( unpackedInput.x ) * 2047 + 0.5f ) ) |
+        ( uint( saturate( unpackedInput.y ) * 2047 + 0.5f ) << 11 ) |
+        ( uint( saturate( unpackedInput.z ) * 1023 + 0.5f ) << 22 ) );
     return packedOutput;
 }
 //
@@ -187,9 +187,10 @@ uint XeGTAO_FLOAT4_to_R8G8B8A8_UNORM( lpfloat4 unpackedInput )
 // Inputs are screen XY and viewspace depth, output is viewspace position
 float3 XeGTAO_ComputeViewspacePosition( const float2 screenPos, const float viewspaceDepth, const GTAOConstants consts )
 {
+    // 因为viewpsace的z轴的朝向是指向相机的，
     float3 ret;
     ret.xy = (consts.NDCToViewMul * screenPos.xy + consts.NDCToViewAdd) * viewspaceDepth;
-    ret.z = viewspaceDepth;
+    ret.z = -viewspaceDepth;
     return ret;
 }
 
@@ -197,8 +198,13 @@ float XeGTAO_ScreenSpaceToViewSpaceDepth( const float screenDepth, const GTAOCon
 {
     float depthLinearizeMul = consts.DepthUnpackConsts.x;
     float depthLinearizeAdd = consts.DepthUnpackConsts.y;
-    // Optimised version of "-cameraClipNear / (cameraClipFar - projDepth * (cameraClipFar - cameraClipNear)) * cameraClipFar"
-    return depthLinearizeMul / (depthLinearizeAdd - screenDepth);
+    
+    // // Optimised version of "-cameraClipNear / (cameraClipFar - projDepth * (cameraClipFar - cameraClipNear)) * cameraClipFar"
+    // return depthLinearizeMul / (depthLinearizeAdd - screenDepth);
+
+    // 因为我们使用reverseZ，而且viewspace的z轴朝向是指向相机，所以算出来的z一定是负数
+    // Optimised version of "-[1/cameraClipFar + projDepth * (cameraClipFar - cameraClipNear) / (cameraClipFar * cameraClipNear)]"
+    return (depthLinearizeAdd + screenDepth * depthLinearizeMul);
 }
 
 lpfloat4 XeGTAO_CalculateEdges( const lpfloat centerZ, const lpfloat leftZ, const lpfloat rightZ, const lpfloat topZ, const lpfloat bottomZ )

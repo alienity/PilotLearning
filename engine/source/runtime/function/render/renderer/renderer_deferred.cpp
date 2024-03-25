@@ -269,6 +269,18 @@ namespace MoYu
             mAOPass->setCommonInfo(renderPassCommonInfo);
             mAOPass->initialize(aoPassInit); 
         }
+        // gtao pass
+        {
+            GTAOPass::AOInitInfo aoPassInit;
+            aoPassInit.colorTexDesc     = colorTexDesc;
+            aoPassInit.depthTexDesc     = depthTexDesc;
+            aoPassInit.m_ShaderCompiler = pCompiler;
+            aoPassInit.m_ShaderRootPath = g_runtime_global_context.m_config_manager->getShaderFolder();
+
+            mGTAOPass = std::make_shared<GTAOPass>();
+            mGTAOPass->setCommonInfo(renderPassCommonInfo);
+            mGTAOPass->initialize(aoPassInit); 
+        }
         // ssr pass
         {
             SSRPass::SSRInitInfo ssrPassInit;
@@ -330,6 +342,8 @@ namespace MoYu
         mVolumeLightPass->prepareMeshData(render_resource);
         mPostprocessPasses->PreparePassData(render_resource);
 
+        mGTAOPass->updateConstantBuffer(render_resource);
+
         mIndirectCullPass->inflatePerframeBuffer(render_resource);
     }
 
@@ -348,6 +362,7 @@ namespace MoYu
         mIndirectLightLoopPass       = nullptr;
         mIndirectOpaqueDrawPass      = nullptr;
         mAOPass                      = nullptr;
+        mGTAOPass                    = nullptr;
         mSSRPass                     = nullptr;
         mVolumeLightPass             = nullptr;
         mSkyBoxPass                  = nullptr;
@@ -541,7 +556,6 @@ namespace MoYu
         mVolumeLightPass->update(graph, mVolumeLightInput, mVolumeLightOutput);
         //=================================================================================
 
-
         //=================================================================================
         // ambient occlusion
         AOPass::DrawInputParameters mAOIntput;
@@ -551,6 +565,17 @@ namespace MoYu
         mAOIntput.worldNormalHandle    = mGBufferOutput.worldNormalHandle;
         mAOIntput.depthHandle          = mGBufferOutput.depthHandle;
         mAOPass->update(graph, mAOIntput, mAOOutput);
+        //=================================================================================
+        
+        //=================================================================================
+        // ambient occlusion
+        GTAOPass::DrawInputParameters  mGTAOIntput;
+        GTAOPass::DrawOutputParameters mGTAOOutput;
+
+        mGTAOIntput.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
+        mGTAOIntput.worldNormalHandle    = mGBufferOutput.worldNormalHandle;
+        mGTAOIntput.depthHandle          = mGBufferOutput.depthHandle;
+        mGTAOPass->update(graph, mGTAOIntput, mGTAOOutput);
         //=================================================================================
 
         //=================================================================================

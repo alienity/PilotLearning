@@ -48,20 +48,6 @@ namespace XeGTAO
         int                     NoiseIndex;                         // frameIndex % 64 if using TAA or 0 otherwise
     };
 
-    // This is used only for the development (ray traced ground truth).
-    struct ReferenceRTAOConstants
-    {
-        float                   TotalRaysLength     ;       // similar to Radius from GTAO
-        float                   Albedo              ;       // the assumption on the average material albedo
-        int                     MaxBounces          ;       // how many rays to recurse before stopping
-        int                     AccumulatedFrames   ;       // how many frames have we accumulated so far (after resetting/clearing). If 0 - this is the first.
-        int                     AccumulateFrameMax  ;       // how many frames are we aiming to accumulate; stop when we hit!
-        int                     Padding0;
-        int                     Padding1;
-        int                     Padding2;
-        ReferenceRTAOConstants( ) { TotalRaysLength = 1.0f; Albedo = 0.0f; MaxBounces = 1; AccumulatedFrames = 0; AccumulateFrameMax = 0; }
-    };
-
     #ifndef XE_GTAO_USE_DEFAULT_CONSTANTS
     #define XE_GTAO_USE_DEFAULT_CONSTANTS 1
     #endif
@@ -129,6 +115,7 @@ namespace XeGTAO
         consts.ViewportSize                 = { viewportWidth, viewportHeight };
         consts.ViewportPixelSize            = { 1.0f / (float)viewportWidth, 1.0f / (float)viewportHeight };
 
+        /*
         float depthLinearizeMul = (-projMatrix[3 * 4 + 2]);     // float depthLinearizeMul = ( clipFar * clipNear ) / ( clipFar - clipNear );
         float depthLinearizeAdd = ( projMatrix[2 * 4 + 2]);     // float depthLinearizeAdd = clipFar / ( clipFar - clipNear );
 
@@ -136,13 +123,18 @@ namespace XeGTAO
         if( depthLinearizeMul * depthLinearizeAdd < 0 )
             depthLinearizeAdd = -depthLinearizeAdd;
         consts.DepthUnpackConsts            = { depthLinearizeMul, depthLinearizeAdd };
+        */
+        float depthLinearizeMul = 1.0f / projMatrix[2 * 4 + 3];                  // float depthLinearizeMul = ( clipFar - clipNear ) / ( clipFar * clipNear );
+        float depthLinearizeAdd = projMatrix[2 * 4 + 2] / projMatrix[2 * 4 + 3]; // float depthLinearizeAdd = 1.0f / clipFar;
+
+        consts.DepthUnpackConsts = {depthLinearizeMul, depthLinearizeAdd};
 
         float tanHalfFOVY = 1.0f / (projMatrix[1 + 1 * 4]);    // = tanf( drawContext.Camera.GetYFOV( ) * 0.5f );
         float tanHalfFOVX = 1.0F / (projMatrix[0 + 0 * 4]);    // = tanHalfFOVY * drawContext.Camera.GetAspect( );
         consts.CameraTanHalfFOV             = { tanHalfFOVX, tanHalfFOVY };
 
-        consts.NDCToViewMul                 = { consts.CameraTanHalfFOV.x * 2.0f, consts.CameraTanHalfFOV.y * -2.0f };
-        consts.NDCToViewAdd                 = { consts.CameraTanHalfFOV.x * -1.0f, consts.CameraTanHalfFOV.y * 1.0f };
+        consts.NDCToViewMul                 = { 1.0f /consts.CameraTanHalfFOV.x, 1.0f / consts.CameraTanHalfFOV.y };
+        consts.NDCToViewAdd                 = { 0, 0 };
 
         consts.NDCToViewMul_x_PixelSize     = { consts.NDCToViewMul.x * consts.ViewportPixelSize.x, consts.NDCToViewMul.y * consts.ViewportPixelSize.y };
 
