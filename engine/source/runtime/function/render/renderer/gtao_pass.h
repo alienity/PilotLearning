@@ -40,10 +40,12 @@ namespace MoYu
             DrawOutputParameters()
             {
                 outputViewDepthHandle.Invalidate();
+                outputWorkingEdgeHandle.Invalidate();
                 outputAOHandle.Invalidate();
             }
 
             RHI::RgResourceHandle outputViewDepthHandle;
+            RHI::RgResourceHandle outputWorkingEdgeHandle;
             RHI::RgResourceHandle outputAOHandle;
         };
 

@@ -14,12 +14,13 @@
 // Version history: see XeGTAO.h
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#include "vaShared.hlsl"
+#include "InputTypes.hlsli"
 #include "vaNoise.hlsl"
 #include "XeGTAO.hlsli"
 
 cbuffer GTAOConstantBuffer : register( b0 )
 {
+    uint perfram_consts_index;
     uint gitao_consts_index;
     // input output textures for the second pass (XeGTAO_MainPass)
     uint srcWorkingDepth_index;     // viewspace depth with MIPs, output by XeGTAO_PrefilterDepths16x16 and consumed by XeGTAO_MainPass
@@ -31,9 +32,9 @@ cbuffer GTAOConstantBuffer : register( b0 )
 SamplerState g_samplerPointClamp : register(s10);
 
 // Engine-specific normal map loader
-lpfloat3 LoadNormal( int2 pos, Texture2D<uint> g_srcNormalmap )
+lpfloat3 LoadNormal( int2 pos, Texture2D<float3> g_srcNormalmap, float4x4 viewMatrix )
 {
-#if 1
+#if 0
     // special decoding for external normals stored in 11_11_10 unorm - modify appropriately to support your own encoding 
     uint packedInput = g_srcNormalmap.Load( int3(pos, 0) ).x;
     float3 unpackedOutput = XeGTAO_R11G11B10_UNORM_to_FLOAT3( packedInput );
@@ -44,8 +45,9 @@ lpfloat3 LoadNormal( int2 pos, Texture2D<uint> g_srcNormalmap )
     float3 normal = normalize(encodedNormal * 2.0.xxx - 1.0.xxx);
 #endif
 
-#if 0 // compute worldspace to viewspace here if your engine stores normals in worldspace; if generating normals from depth here, they're already in viewspace
-    normal = mul( (float3x3)g_globals.View, normal );
+#if 1 // compute worldspace to viewspace here if your engine stores normals in worldspace; if generating normals from depth here, they're already in viewspace
+    normal = mul( (float3x3)viewMatrix, normal );
+    normal.y = -normal.y;
 #endif
 
     return (lpfloat3)normal;
@@ -75,14 +77,17 @@ lpfloat2 SpatioTemporalNoise( uint2 pixCoord, uint temporalIndex )    // without
 [numthreads(XE_GTAO_NUMTHREADS_X, XE_GTAO_NUMTHREADS_Y, 1)]
 void CSGTAOHigh( const uint2 pixCoord : SV_DispatchThreadID )
 {
+    ConstantBuffer<FrameUniforms> g_PerframeBuffer = ResourceDescriptorHeap[perfram_consts_index];
     ConstantBuffer<GTAOConstants> g_GTAOConsts = ResourceDescriptorHeap[gitao_consts_index];
     Texture2D<lpfloat>       g_srcWorkingDepth   = ResourceDescriptorHeap[srcWorkingDepth_index];
-    Texture2D<uint>          g_srcNormalmap      = ResourceDescriptorHeap[srcNormalmap_index];
+    Texture2D<float3>        g_srcNormalmap      = ResourceDescriptorHeap[srcNormalmap_index];
     RWTexture2D<uint>        g_outWorkingAOTerm  = ResourceDescriptorHeap[g_outWorkingAOTerm_index];
     RWTexture2D<unorm float> g_outWorkingEdges   = ResourceDescriptorHeap[g_outWorkingEdges_index];
 
+    lpfloat3 viewspaceNormal = LoadNormal(pixCoord, g_srcNormalmap, g_PerframeBuffer.cameraUniform.curFrameUniform.clipFromViewMatrix);
+
     // g_samplerPointClamp is a sampler with D3D12_FILTER_MIN_MAG_MIP_POINT filter and D3D12_TEXTURE_ADDRESS_MODE_CLAMP addressing mode
-    XeGTAO_MainPass( pixCoord, 3, 3, SpatioTemporalNoise(pixCoord, g_GTAOConsts.NoiseIndex), LoadNormal(pixCoord, g_srcNormalmap), 
+    XeGTAO_MainPass( pixCoord, 3, 3, SpatioTemporalNoise(pixCoord, g_GTAOConsts.NoiseIndex), viewspaceNormal, 
         g_GTAOConsts, g_srcWorkingDepth, g_samplerPointClamp, g_outWorkingAOTerm, g_outWorkingEdges );
 }
 

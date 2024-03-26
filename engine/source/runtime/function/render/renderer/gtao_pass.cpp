@@ -32,7 +32,7 @@ namespace MoYu
                     .Add32BitConstants<0, 0>(16)
                     .AddStaticSampler<10, 0>(D3D12_FILTER::D3D12_FILTER_MIN_MAG_MIP_POINT,
                                              D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
-                                             1)
+                                             4)
                     .AllowInputLayout()
                     .AllowResourceDescriptorHeapIndexing()
                     .AllowSampleDescriptorHeapIndexing();
@@ -45,7 +45,7 @@ namespace MoYu
                     .Add32BitConstants<0, 0>(16)
                     .AddStaticSampler<10, 0>(D3D12_FILTER::D3D12_FILTER_MIN_MAG_MIP_POINT,
                                              D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
-                                             1)
+                                             4)
                     .AllowInputLayout()
                     .AllowResourceDescriptorHeapIndexing()
                     .AllowSampleDescriptorHeapIndexing();
@@ -154,6 +154,7 @@ namespace MoYu
         RHI::RgResourceHandle normalHandle = passInput.worldNormalHandle;
         RHI::RgResourceHandle depthHandle  = passInput.depthHandle;
         RHI::RgResourceHandle viewSpaceDepthHandle  = passOutput.outputViewDepthHandle;
+        RHI::RgResourceHandle workingEdgeHandle  = passOutput.outputWorkingEdgeHandle;
         RHI::RgResourceHandle outAOHandle  = passOutput.outputAOHandle;
 
         RHI::RgResourceHandle gtaoConstantsHandle = graph.Import<RHI::D3D12Buffer>(pGTAOConstants.get());
@@ -161,7 +162,7 @@ namespace MoYu
         RHI::RenderPass& prefilterpass = graph.AddRenderPass("GTAOPrefilterPass");
 
         prefilterpass.Read(gtaoConstantsHandle, false, RHIResourceState::RHI_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
-        prefilterpass.Read(passInput.depthHandle, false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+        prefilterpass.Read(depthHandle, false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
         prefilterpass.Write(viewSpaceDepthHandle, false, RHIResourceState::RHI_RESOURCE_STATE_UNORDERED_ACCESS);
 
         prefilterpass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
@@ -175,9 +176,8 @@ namespace MoYu
             RHI::D3D12ConstantBufferView* gtaoCBV = _GTAOBuffer->GetDefaultCBV().get();
             RHI::D3D12ShaderResourceView* depthSRV = _SrcDepthTexture->GetDefaultSRV().get();
             
-            #define ViewSpaceDepthUAVIndex(idx) \
-    _DstViewSpaceDepthTexture->CreateUAV(RHI::D3D12UnorderedAccessView::GetDesc(_DstViewSpaceDepthTexture, 0, idx)) \
-        ->GetIndex()
+            #define ViewSpaceDepthUAVDesc(idx) RHI::D3D12UnorderedAccessView::GetDesc(_DstViewSpaceDepthTexture, 0, idx)
+            #define ViewSpaceDepthUAVIndex(idx) _DstViewSpaceDepthTexture->CreateUAV(ViewSpaceDepthUAVDesc(idx))->GetIndex()
 
             __declspec(align(16)) struct
             {
@@ -188,7 +188,7 @@ namespace MoYu
                 uint32_t outWorkingDepthMIP2_index;
                 uint32_t outWorkingDepthMIP3_index;
                 uint32_t outWorkingDepthMIP4_index;
-            } GTAOConstantBuffer = {gtaoCBV->GetIndex(),
+            } gtaoConstantBuffer = {gtaoCBV->GetIndex(),
                                     depthSRV->GetIndex(),
                                     ViewSpaceDepthUAVIndex(0),
                                     ViewSpaceDepthUAVIndex(1),
@@ -198,16 +198,112 @@ namespace MoYu
 
             pContext->SetRootSignature(pDepthPrefilterSignature.get());
             pContext->SetPipelineState(pDepthPrefilterPSO.get());
-            pContext->SetConstantArray(0, 0, &GTAOConstantBuffer);
+            pContext->SetConstantArray(0, sizeof(gtaoConstantBuffer) / sizeof(uint32_t), &gtaoConstantBuffer);
             
-            //pContext->Dispatch2D(depthTexDesc.Width, depthTexDesc.Height, 8, 8);
+            uint32_t dispatchWidth = depthTexDesc.Width;
+            uint32_t dispatchHeight = depthTexDesc.Height;
+
+            pContext->Dispatch((dispatchWidth + 16 - 1) / 16, (dispatchHeight + 16 - 1) / 16, 1);
         });
-
+        
         //====================================================================================================
+         
+        RHI::RenderPass& mainpass = graph.AddRenderPass("GTAOMainPass");
 
-        //RHI::RenderPass& mainpass = graph.AddRenderPass("GTAOMainPass");
+        mainpass.Read(perframeBufferHandle, false, RHIResourceState::RHI_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
+        mainpass.Read(gtaoConstantsHandle, false, RHIResourceState::RHI_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
+        mainpass.Read(viewSpaceDepthHandle, false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+        mainpass.Read(normalHandle, false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+        mainpass.Write(workingEdgeHandle, false, RHIResourceState::RHI_RESOURCE_STATE_UNORDERED_ACCESS);
+        mainpass.Write(outAOHandle, false, RHIResourceState::RHI_RESOURCE_STATE_UNORDERED_ACCESS);
 
+        mainpass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
+            RHI::D3D12Buffer*  _PerFrameBuffer        = RegGetBuf(perframeBufferHandle);
+            RHI::D3D12Buffer*  _GTAOBuffer            = RegGetBuf(gtaoConstantsHandle);
+            RHI::D3D12Texture* _ViewSpaceDepthTexture = RegGetTex(viewSpaceDepthHandle);
+            RHI::D3D12Texture* _WorldNormalTexture    = RegGetTex(normalHandle);
+            RHI::D3D12Texture* _EdgeTexture           = RegGetTex(workingEdgeHandle);
+            RHI::D3D12Texture* _GTAOTexture           = RegGetTex(outAOHandle);
 
+            RHI::D3D12ComputeContext* pContext = context->GetComputeContext();
+
+            RHI::D3D12ConstantBufferView*  perframeCBV  = _PerFrameBuffer->GetDefaultCBV().get();
+            RHI::D3D12ConstantBufferView*  gtaoCBV      = _GTAOBuffer->GetDefaultCBV().get();
+            RHI::D3D12ShaderResourceView*  viewDepthSRV = _ViewSpaceDepthTexture->GetDefaultSRV().get();
+            RHI::D3D12ShaderResourceView*  normalSRV    = _WorldNormalTexture->GetDefaultSRV().get();
+            RHI::D3D12UnorderedAccessView* edgeUAV      = _EdgeTexture->GetDefaultUAV().get();
+            RHI::D3D12UnorderedAccessView* gtaoUAV      = _GTAOTexture->GetDefaultUAV().get();
+
+            __declspec(align(16)) struct
+            {
+                uint32_t perframe_consts_index;
+                uint32_t gitao_consts_index;
+                uint32_t workingDepth_index;
+                uint32_t normal_index;
+                uint32_t outWorkingAOTerm_index;
+                uint32_t outWorkingEdges_index;
+            } gtaoConstantBuffer = {perframeCBV->GetIndex(),
+                                    gtaoCBV->GetIndex(),
+                                    viewDepthSRV->GetIndex(),
+                                    normalSRV->GetIndex(),
+                                    gtaoUAV->GetIndex(),
+                                    edgeUAV->GetIndex()};
+
+            pContext->SetRootSignature(pGTAOSignature.get());
+            pContext->SetPipelineState(pGTAOPSO.get());
+            pContext->SetConstantArray(0, sizeof(gtaoConstantBuffer) / sizeof(uint32_t), &gtaoConstantBuffer);
+
+            pContext->Dispatch2D(colorTexDesc.Width, colorTexDesc.Height, 8, 8);
+        });
+         
+        //====================================================================================================
+        /*
+        RHI::RenderPass& denoisepass = graph.AddRenderPass("GTAODenoisePass");
+
+        denoisepass.Read(gtaoConstantsHandle, false, RHIResourceState::RHI_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
+        denoisepass.Read(viewSpaceDepthHandle, false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+        denoisepass.Read(normalHandle, false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+        denoisepass.Write(workingEdgeHandle, false, RHIResourceState::RHI_RESOURCE_STATE_UNORDERED_ACCESS);
+        denoisepass.Write(outAOHandle, false, RHIResourceState::RHI_RESOURCE_STATE_UNORDERED_ACCESS);
+
+        denoisepass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
+            RHI::D3D12Buffer*  _GTAOBuffer            = RegGetBuf(gtaoConstantsHandle);
+            RHI::D3D12Texture* _ViewSpaceDepthTexture = RegGetTex(viewSpaceDepthHandle);
+            RHI::D3D12Texture* _WorldNormalTexture    = RegGetTex(normalHandle);
+            RHI::D3D12Texture* _EdgeTexture           = RegGetTex(workingEdgeHandle);
+            RHI::D3D12Texture* _GTAOTexture           = RegGetTex(outAOHandle);
+
+            RHI::D3D12ComputeContext* pContext = context->GetComputeContext();
+
+            RHI::D3D12ConstantBufferView*  gtaoCBV      = _GTAOBuffer->GetDefaultCBV().get();
+            RHI::D3D12ShaderResourceView*  viewDepthSRV = _ViewSpaceDepthTexture->GetDefaultSRV().get();
+            RHI::D3D12ShaderResourceView*  normalSRV    = _WorldNormalTexture->GetDefaultSRV().get();
+            RHI::D3D12UnorderedAccessView* edgeUAV      = _EdgeTexture->GetDefaultUAV().get();
+            RHI::D3D12UnorderedAccessView* gtaoUAV      = _GTAOTexture->GetDefaultUAV().get();
+
+            __declspec(align(16)) struct
+            {
+                uint32_t gitao_consts_index;
+                uint32_t workingDepth_index;
+                uint32_t normal_index;
+                uint32_t outWorkingAOTerm_index;
+                uint32_t outWorkingEdges_index;
+            } gtaoConstantBuffer = {gtaoCBV->GetIndex(),
+                                    viewDepthSRV->GetIndex(),
+                                    normalSRV->GetIndex(),
+                                    gtaoUAV->GetIndex(),
+                                    edgeUAV->GetIndex()};
+
+            pContext->SetRootSignature(pGTAOSignature.get());
+            pContext->SetPipelineState(pGTAOPSO.get());
+            pContext->SetConstantArray(0, sizeof(gtaoConstantBuffer) / sizeof(uint32_t), &gtaoConstantBuffer);
+
+            pContext->Dispatch2D(colorTexDesc.Width, colorTexDesc.Height, 8, 8);
+        });
+        */
+        passOutput.outputViewDepthHandle = viewSpaceDepthHandle;
+        passOutput.outputWorkingEdgeHandle = workingEdgeHandle;
+        passOutput.outputAOHandle = outAOHandle;
     }
 
     void GTAOPass::destroy()
@@ -224,8 +320,8 @@ namespace MoYu
 
             RHI::RgTextureDesc _targetAODesc = colorTexDesc;
 
-            _targetAODesc.Name = "AOTex";
-            _targetAODesc.SetFormat(DXGI_FORMAT_R32G32B32A32_FLOAT);
+            _targetAODesc.Name = "GTAOTex";
+            _targetAODesc.SetFormat(DXGI_FORMAT_R32_UINT);
             _targetAODesc.SetAllowUnorderedAccess(true);
             
             drawPassOutput->outputAOHandle = graph.Create<RHI::D3D12Texture>(_targetAODesc);
@@ -241,6 +337,17 @@ namespace MoYu
             _viewDepthPyramidDesc.SetMipLevels(5);
 
             drawPassOutput->outputViewDepthHandle = graph.Create<RHI::D3D12Texture>(_viewDepthPyramidDesc);
+        }
+        if (!drawPassOutput->outputWorkingEdgeHandle.IsValid())
+        {
+            RHI::RgTextureDesc _viewEdgeDesc = depthTexDesc;
+
+            _viewEdgeDesc.Name = "EdgeTex";
+            _viewEdgeDesc.SetFormat(DXGI_FORMAT_R32_FLOAT);
+            _viewEdgeDesc.SetAllowUnorderedAccess(true);
+            _viewEdgeDesc.SetAllowDepthStencil(false);
+
+            drawPassOutput->outputWorkingEdgeHandle = graph.Create<RHI::D3D12Texture>(_viewEdgeDesc);
         }
 
         return false;

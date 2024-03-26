@@ -11,7 +11,7 @@
 #ifndef __VA_NOISE_HLSL__
 #define __VA_NOISE_HLSL__
 
-#include "vaShared.hlsl"
+#include "CommonMath.hlsli"
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Note: For more ideas on noise see "The Book of Shaders - Random": https://thebookofshaders.com/10/
