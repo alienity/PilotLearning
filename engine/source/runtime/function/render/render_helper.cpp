@@ -261,14 +261,27 @@ namespace MoYu
     }
     
     // https://forum.unity.com/threads/decodedepthnormal-linear01depth-lineareyedepth-explanations.608452/
-    // http://www.humus.name/temp/Linearize%20depth.txt
-    // 输出xy是ViewDepthToLinearDepth
-    // 输出zw是reverseDepthToViewDepth
+    //
+    //// Z buffer to linear depth
+    // inline float LinearEyeDepth( float z )
+    //{
+    //     return 1.0 / (_ZBufferParams.z * z + _ZBufferParams.w);
+    // }
+    //
+    //  Values used to linearize the Z buffer (http://www.humus.name/temp/Linearize%20depth.txt)
+    //  x = 1-far/near
+    //  y = far/near
+    //  z = x/far
+    //  w = y/far
+    //  or in case of a reversed depth buffer (UNITY_REVERSED_Z is 1)
+    //  x = -1+far/near
+    //  y = 1
+    //  z = x/far
+    //  w = 1/far
     glm::float4 CalculateZBufferParams(float nearClipPlane, float farClipPlane)
     {
-        float n = nearClipPlane;
-        float f = farClipPlane;
-        return glm::float4(1.0f / (f - n), -n / (f - n), (f - n) / (f * n), 1.0f / f);
+        float fpn = farClipPlane / nearClipPlane;
+        return glm::float4(fpn - 1.0f, 1.0f, (fpn - 1.0f) / farClipPlane, 1.0f / farClipPlane);
     }
 
 

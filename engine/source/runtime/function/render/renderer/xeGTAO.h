@@ -124,8 +124,8 @@ namespace XeGTAO
             depthLinearizeAdd = -depthLinearizeAdd;
         consts.DepthUnpackConsts            = { depthLinearizeMul, depthLinearizeAdd };
         */
-        float depthLinearizeMul = 1.0f / projMatrix[2 * 4 + 3];                  // float depthLinearizeMul = ( clipFar - clipNear ) / ( clipFar * clipNear );
-        float depthLinearizeAdd = projMatrix[2 * 4 + 2] / projMatrix[2 * 4 + 3]; // float depthLinearizeAdd = 1.0f / clipFar;
+        float depthLinearizeMul = projMatrix[2 * 4 + 3]; // float depthLinearizeMul = ( clipFar * clipNear ) / ( clipFar - clipNear );
+        float depthLinearizeAdd = projMatrix[2 * 4 + 2]; // float depthLinearizeAdd = clipNear / ( clipFar - clipNear );
 
         consts.DepthUnpackConsts = {depthLinearizeMul, depthLinearizeAdd};
 

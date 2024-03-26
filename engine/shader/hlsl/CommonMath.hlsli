@@ -822,23 +822,29 @@ float3 PositivePow(float3 base, float3 power)
 //------------------------------------------------------------------------------
 // Depth Transform
 //------------------------------------------------------------------------------
-// depthParams.x ==> (f-n)/(fn)
-// depthParams.y ==> 1/f
-// 如果使用columnmajor投影矩阵，其中Z是从reverseDepthBuffer中采样出来的，
-// viewDepth是viewspace下的朝着z轴负方向的长度，只表达数值，不表达方向
-// viewZ = (m[2][2]+Z)/(m[2][3]); 
-float ReverseDepthToViewDepth(float reverseDepth, float2 depthParams)
+// Values used to linearize the Z buffer (http://www.humus.name/temp/Linearize%20depth.txt)
+// x = 1-far/near
+// y = far/near
+// z = x/far
+// w = y/far
+// or in case of a reversed depth buffer (UNITY_REVERSED_Z is 1)
+// x = -1+far/near
+// y = 1
+// z = x/far
+// w = 1/far
+// https://forum.unity.com/threads/decodedepthnormal-linear01depth-lineareyedepth-explanations.608452/
+// float4 ZBufferParams
+
+// Z Buffer to 0~1 depth，起点是相机，终点是Z对应的位置
+float Linear01Depth(float z, float4 ZBufferParams)
 {
-	float viewDepth = depthParams.x * reverseDepth + depthParams.y;
-	return viewDepth;
+    return 1.0 / (ZBufferParams.x * z + ZBufferParams.y);
 }
 
-// depthParams.x ==> 1/(f-n)
-// depthParams.y ==> -n/(f-n)
-float ViewDepthToLinearDepth(float viewDepth, float2 depthParams)
+// Z buffer to linear depth，将reverseZ变换到viewspace depth值
+float LinearEyeDepth(float z, float4 ZBufferParams)
 {
-	float linearDepth = depthParams.x * viewDepth + depthParams.y;
-	return linearDepth;
+    return 1.0 / (ZBufferParams.z * z + ZBufferParams.w);
 }
 
 #endif // __COMMON_MATH_HLSLI__

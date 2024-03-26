@@ -966,7 +966,7 @@ float4 evaluateMaterial(const FrameUniforms frameUniforms,
 float4 evaluateVolumeDepth(const FrameUniforms frameUniforms, Texture3D<float4> volumeLight3DTexture, SamplerState defaultSampler, float2 uv, float depth)
 {
     float4 zBufferParams = frameUniforms.cameraUniform.curFrameUniform.zBufferParams;
-    float eyeDepth = ReverseDepthToViewDepth(depth, zBufferParams.zw);
+    float eyeDepth = LinearEyeDepth(depth, zBufferParams);
     int raySampleCount = frameUniforms.volumeLightUniform.sampleCount;
     float step1StepSize = frameUniforms.volumeLightUniform.minStepSize;
     float step1Distance = step1StepSize * raySampleCount * 0.5f;

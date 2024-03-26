@@ -203,8 +203,8 @@ float XeGTAO_ScreenSpaceToViewSpaceDepth( const float screenDepth, const GTAOCon
     // return depthLinearizeMul / (depthLinearizeAdd - screenDepth);
 
     // 因为我们使用reverseZ，而且viewspace的z轴朝向是指向相机，所以算出来的z一定是负数
-    // Optimised version of "-[1/cameraClipFar + projDepth * (cameraClipFar - cameraClipNear) / (cameraClipFar * cameraClipNear)]"
-    return (depthLinearizeAdd + screenDepth * depthLinearizeMul);
+    // Optimised version of "(cameraClipNear * cameraClipFar) / (cameraClipNear + projDepth * (cameraClipFar - cameraClipNear))"
+    return depthLinearizeMul / (depthLinearizeAdd + screenDepth);
 }
 
 lpfloat4 XeGTAO_CalculateEdges( const lpfloat centerZ, const lpfloat leftZ, const lpfloat rightZ, const lpfloat topZ, const lpfloat bottomZ )
