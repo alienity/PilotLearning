@@ -13,6 +13,7 @@
 #include "runtime/function/input/input_system.h"
 #include "runtime/function/render/render_system.h"
 #include "runtime/function/render/window_system.h"
+#include "runtime/function/render/render_config.h"
 
 namespace MoYu
 {
@@ -35,6 +36,8 @@ namespace MoYu
 
         m_window_system = std::make_shared<WindowSystem>();
         WindowCreateInfo window_create_info;
+        window_create_info.width = g_WindowConfig.width;
+        window_create_info.height = g_WindowConfig.height;
         m_window_system->initialize(window_create_info);
 
         m_input_system = std::make_shared<InputSystem>();

@@ -46,8 +46,8 @@ lpfloat3 LoadNormal( int2 pos, Texture2D<float3> g_srcNormalmap, float4x4 viewMa
 #endif
 
 #if 1 // compute worldspace to viewspace here if your engine stores normals in worldspace; if generating normals from depth here, they're already in viewspace
+    normal.xz = -normal.xz;
     normal = mul( (float3x3)viewMatrix, normal );
-    normal.y = -normal.y;
 #endif
 
     return (lpfloat3)normal;

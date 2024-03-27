@@ -641,28 +641,13 @@ void XeGTAO_PrefilterDepths16x16( uint2 dispatchThreadID /*: SV_DispatchThreadID
     // MIP 0
     const uint2 baseCoord = dispatchThreadID;
     const uint2 pixCoord = baseCoord * 2;
-    // // https://registry.khronos.org/OpenGL-Refpages/gl4/html/textureGatherOffset.xhtml
-    // // http://wojtsterna.blogspot.com/2018/02/directx-11-hlsl-gatherred.html
-    // float4 depths4 = sourceNDCDepth.GatherRed( depthSampler, float2( (pixCoord + float2(0.5,0.5)) * consts.ViewportPixelSize ) );
-    // lpfloat depth0 = XeGTAO_ClampDepth( XeGTAO_ScreenSpaceToViewSpaceDepth( depths4.w, consts ) );
-    // lpfloat depth1 = XeGTAO_ClampDepth( XeGTAO_ScreenSpaceToViewSpaceDepth( depths4.z, consts ) );
-    // lpfloat depth2 = XeGTAO_ClampDepth( XeGTAO_ScreenSpaceToViewSpaceDepth( depths4.x, consts ) );
-    // lpfloat depth3 = XeGTAO_ClampDepth( XeGTAO_ScreenSpaceToViewSpaceDepth( depths4.y, consts ) );
-    // outDepth0[ pixCoord + uint2(0, 0) ] = (lpfloat)depth0;
-    // outDepth0[ pixCoord + uint2(1, 0) ] = (lpfloat)depth1;
-    // outDepth0[ pixCoord + uint2(0, 1) ] = (lpfloat)depth2;
-    // outDepth0[ pixCoord + uint2(1, 1) ] = (lpfloat)depth3;
-
-    float rawdepth0 = sourceNDCDepth.Load(int3(pixCoord + uint2(0, 0), 0)).x;
-    float rawdepth1 = sourceNDCDepth.Load(int3(pixCoord + uint2(1, 0), 0)).x;
-    float rawdepth2 = sourceNDCDepth.Load(int3(pixCoord + uint2(0, 1), 0)).x;
-    float rawdepth3 = sourceNDCDepth.Load(int3(pixCoord + uint2(1, 1), 0)).x;
-
-    lpfloat depth0 = XeGTAO_ClampDepth( XeGTAO_ScreenSpaceToViewSpaceDepth( rawdepth0, consts ) );
-    lpfloat depth1 = XeGTAO_ClampDepth( XeGTAO_ScreenSpaceToViewSpaceDepth( rawdepth1, consts ) );
-    lpfloat depth2 = XeGTAO_ClampDepth( XeGTAO_ScreenSpaceToViewSpaceDepth( rawdepth2, consts ) );
-    lpfloat depth3 = XeGTAO_ClampDepth( XeGTAO_ScreenSpaceToViewSpaceDepth( rawdepth3, consts ) );
-
+    // https://registry.khronos.org/OpenGL-Refpages/gl4/html/textureGatherOffset.xhtml
+    // http://wojtsterna.blogspot.com/2018/02/directx-11-hlsl-gatherred.html
+    float4 depths4 = sourceNDCDepth.GatherRed( depthSampler, float2( pixCoord * consts.ViewportPixelSize ), int2(1,1) );
+    lpfloat depth0 = XeGTAO_ClampDepth( XeGTAO_ScreenSpaceToViewSpaceDepth( depths4.w, consts ) );
+    lpfloat depth1 = XeGTAO_ClampDepth( XeGTAO_ScreenSpaceToViewSpaceDepth( depths4.z, consts ) );
+    lpfloat depth2 = XeGTAO_ClampDepth( XeGTAO_ScreenSpaceToViewSpaceDepth( depths4.x, consts ) );
+    lpfloat depth3 = XeGTAO_ClampDepth( XeGTAO_ScreenSpaceToViewSpaceDepth( depths4.y, consts ) );
     outDepth0[ pixCoord + uint2(0, 0) ] = (lpfloat)depth0;
     outDepth0[ pixCoord + uint2(1, 0) ] = (lpfloat)depth1;
     outDepth0[ pixCoord + uint2(0, 1) ] = (lpfloat)depth2;

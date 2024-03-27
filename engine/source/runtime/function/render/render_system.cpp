@@ -3,6 +3,7 @@
 #include "runtime/core/base/macro.h"
 #include "runtime/function/global/global_context.h"
 #include "runtime/core/math/moyu_math2.h"
+#include "runtime/function/render/render_config.h"
 
 #include "runtime/resource/asset_manager/asset_manager.h"
 #include "runtime/resource/config_manager/config_manager.h"
@@ -82,9 +83,10 @@ namespace MoYu
         // setup render camera
         const CameraPose& camera_pose = global_rendering_res.m_camera_config.m_pose;
         m_render_camera = std::make_shared<RenderCamera>();
+        m_render_camera->setViewport(g_WindowConfig.width, g_WindowConfig.height);
         m_render_camera->lookAt(camera_pose.m_position, camera_pose.m_target, camera_pose.m_up);
-        m_render_camera->perspectiveProjection(global_rendering_res.m_camera_config.m_aspect.x,
-                                               global_rendering_res.m_camera_config.m_aspect.y,
+        m_render_camera->perspectiveProjection(g_WindowConfig.width,
+                                               g_WindowConfig.height,
                                                global_rendering_res.m_camera_config.m_z_near,
                                                global_rendering_res.m_camera_config.m_z_far,
                                                global_rendering_res.m_camera_config.m_fovY);

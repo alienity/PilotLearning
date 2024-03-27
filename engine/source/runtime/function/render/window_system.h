@@ -14,8 +14,8 @@ namespace MoYu
 {
     struct WindowCreateInfo
     {
-        int         width {1280};
-        int         height {720};
+        int         width {1366};
+        int         height {768};
         const char* title {"MoYu"};
         bool        is_fullscreen {false};
     };

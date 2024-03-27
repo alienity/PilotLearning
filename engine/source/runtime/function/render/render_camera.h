@@ -51,6 +51,8 @@ namespace MoYu
         void lookAt(const glm::float3& position, const glm::float3& target, const glm::float3& up);
         void perspectiveProjection(int width, int height, float znear, float zfar, float fovy);
 
+        inline void setViewport(int width, int height) { m_pixelWidth = width; m_pixelHeight = height; }
+
         glm::float3 position() const { return m_position; }
         glm::quat   rotation() const { return m_rotation; }
 
