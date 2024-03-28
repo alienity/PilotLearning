@@ -109,7 +109,7 @@ GPU Driven Terrain的流程
 
 ### GTAO
 <div style="display:inline-block">
-  <img src="https://raw.githubusercontent.com/alienity/PilotLearning/main/data/GPU 14_GpuId342_[Heap]_UAV_135.png" alt="GTAO" width="512">
+  <img src="https://raw.githubusercontent.com/alienity/PilotLearning/main/data/GTAO.png" alt="GTAO" width="512">
 </div>
 
 
