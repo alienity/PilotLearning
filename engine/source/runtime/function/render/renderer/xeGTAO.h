@@ -133,7 +133,7 @@ namespace XeGTAO
         float tanHalfFOVX = 1.0F / (projMatrix[0 + 0 * 4]);    // = tanHalfFOVY * drawContext.Camera.GetAspect( );
         consts.CameraTanHalfFOV             = { tanHalfFOVX, tanHalfFOVY };
 
-        consts.NDCToViewMul                 = { 1.0f /consts.CameraTanHalfFOV.x, 1.0f / consts.CameraTanHalfFOV.y };
+        consts.NDCToViewMul                 = { tanHalfFOVX, tanHalfFOVY };
         consts.NDCToViewAdd                 = { 0, 0 };
 
         consts.NDCToViewMul_x_PixelSize     = { consts.NDCToViewMul.x * consts.ViewportPixelSize.x, consts.NDCToViewMul.y * consts.ViewportPixelSize.y };
