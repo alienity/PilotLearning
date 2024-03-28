@@ -14,6 +14,8 @@
 // Version history: see XeGTAO.h
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+#define XE_GTAO_GENERATE_NORMALS_INPLACE
+
 #include "InputTypes.hlsli"
 #include "vaNoise.hlsl"
 #include "XeGTAO.hlsli"
@@ -46,7 +48,7 @@ lpfloat3 LoadNormal( int2 pos, Texture2D<float3> g_srcNormalmap, float4x4 viewMa
 #endif
 
 #if 1 // compute worldspace to viewspace here if your engine stores normals in worldspace; if generating normals from depth here, they're already in viewspace
-    normal.xz = -normal.xz;
+    normal.y = -normal.y;
     normal = mul( (float3x3)viewMatrix, normal );
 #endif
 

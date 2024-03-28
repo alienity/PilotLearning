@@ -245,6 +245,7 @@ float3 XeGTAO_CalculateNormal( const float4 edgesLRTB, float3 pixCenterPos, floa
                         + acceptedNormals.z * cross( pixRPos, pixBPos ) +
                         + acceptedNormals.w * cross( pixBPos, pixLPos );
     pixelNormal = normalize( pixelNormal );
+    pixelNormal.y = -pixelNormal.y;
 
     return pixelNormal;
 }
