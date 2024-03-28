@@ -14,8 +14,6 @@
 // Version history: see XeGTAO.h
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#define XE_GTAO_GENERATE_NORMALS_INPLACE
-
 #include "InputTypes.hlsli"
 #include "vaNoise.hlsl"
 #include "XeGTAO.hlsli"
@@ -48,8 +46,8 @@ lpfloat3 LoadNormal( int2 pos, Texture2D<float3> g_srcNormalmap, float4x4 viewMa
 #endif
 
 #if 1 // compute worldspace to viewspace here if your engine stores normals in worldspace; if generating normals from depth here, they're already in viewspace
-    normal.y = -normal.y;
     normal = mul( (float3x3)viewMatrix, normal );
+    // normal.y = -normal.y;
 #endif
 
     return (lpfloat3)normal;
@@ -86,7 +84,7 @@ void CSGTAOHigh( const uint2 pixCoord : SV_DispatchThreadID )
     RWTexture2D<uint>        g_outWorkingAOTerm  = ResourceDescriptorHeap[g_outWorkingAOTerm_index];
     RWTexture2D<unorm float> g_outWorkingEdges   = ResourceDescriptorHeap[g_outWorkingEdges_index];
 
-    lpfloat3 viewspaceNormal = LoadNormal(pixCoord, g_srcNormalmap, g_PerframeBuffer.cameraUniform.curFrameUniform.clipFromViewMatrix);
+    lpfloat3 viewspaceNormal = LoadNormal(pixCoord, g_srcNormalmap, g_PerframeBuffer.cameraUniform.curFrameUniform.viewFromWorldMatrix);
 
     // g_samplerPointClamp is a sampler with D3D12_FILTER_MIN_MAG_MIP_POINT filter and D3D12_TEXTURE_ADDRESS_MODE_CLAMP addressing mode
     XeGTAO_MainPass( pixCoord, 3, 3, SpatioTemporalNoise(pixCoord, g_GTAOConsts.NoiseIndex), viewspaceNormal, 

@@ -14,9 +14,9 @@
 // Version history: see XeGTAO.h
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#if defined( XE_GTAO_SHOW_NORMALS ) || defined( XE_GTAO_SHOW_EDGES ) || defined( XE_GTAO_SHOW_BENT_NORMALS )
-RWTexture2D<float4>         g_outputDbgImage    : register( u2 );
-#endif
+// #if defined( XE_GTAO_SHOW_NORMALS ) || defined( XE_GTAO_SHOW_EDGES ) || defined( XE_GTAO_SHOW_BENT_NORMALS )
+// RWTexture2D<float4>         g_outputDbgImage    : register( u2 );
+// #endif
 
 //===============================================================================================
 // Global consts that need to be visible from both shader and cpp side
