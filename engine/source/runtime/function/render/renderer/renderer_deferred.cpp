@@ -556,6 +556,7 @@ namespace MoYu
         mVolumeLightPass->update(graph, mVolumeLightInput, mVolumeLightOutput);
         //=================================================================================
 
+        /*
         //=================================================================================
         // ambient occlusion
         AOPass::DrawInputParameters mAOIntput;
@@ -566,7 +567,7 @@ namespace MoYu
         mAOIntput.depthHandle          = mGBufferOutput.depthHandle;
         mAOPass->update(graph, mAOIntput, mAOOutput);
         //=================================================================================
-        
+        */
         //=================================================================================
         // ambient occlusion
         GTAOPass::DrawInputParameters  mGTAOIntput;
@@ -598,7 +599,7 @@ namespace MoYu
         mLightLoopIntput.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
         mLightLoopIntput.albedoHandle           = mGBufferOutput.albedoHandle;
         mLightLoopIntput.worldNormalHandle      = mGBufferOutput.worldNormalHandle;
-        mLightLoopIntput.ambientOcclusionHandle = mAOOutput.outputAOHandle;
+        mLightLoopIntput.ambientOcclusionHandle = mGTAOOutput.outputAOHandle;
         mLightLoopIntput.metallic_Roughness_Reflectance_AO_Handle = mGBufferOutput.metallic_Roughness_Reflectance_AO_Handle;
         mLightLoopIntput.clearCoat_ClearCoatRoughness_Anisotropy_Handle = mGBufferOutput.clearCoat_ClearCoatRoughness_Anisotropy_Handle;
         mLightLoopIntput.ssrResolveHandle   = mSSROutput.ssrOutHandle;

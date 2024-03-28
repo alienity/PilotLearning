@@ -39,13 +39,15 @@ namespace MoYu
         {
             DrawOutputParameters()
             {
-                outputViewDepthHandle.Invalidate();
-                outputWorkingEdgeHandle.Invalidate();
+                workingEdgeHandle.Invalidate();
+                workingAOHandle.Invalidate();
+                workingViewDepthHandle.Invalidate();
                 outputAOHandle.Invalidate();
             }
 
-            RHI::RgResourceHandle outputViewDepthHandle;
-            RHI::RgResourceHandle outputWorkingEdgeHandle;
+            RHI::RgResourceHandle workingEdgeHandle;
+            RHI::RgResourceHandle workingAOHandle;
+            RHI::RgResourceHandle workingViewDepthHandle;
             RHI::RgResourceHandle outputAOHandle;
         };
 
@@ -62,6 +64,9 @@ namespace MoYu
 
         RHI::RgTextureDesc colorTexDesc;
         RHI::RgTextureDesc depthTexDesc;
+
+        RHI::RgTextureDesc workingEdgeDesc;
+        RHI::RgTextureDesc workingAODesc;
 
         XeGTAO::GTAOConstants gtaoConstants;
         XeGTAO::GTAOSettings  gtaoSettings;

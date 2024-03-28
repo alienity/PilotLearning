@@ -27,7 +27,7 @@ void CSMain( uint3 DTid : SV_DispatchThreadID )
     ConstantBuffer<FrameUniforms> g_FrameUniform = ResourceDescriptorHeap[perFrameBufferIndex];
     Texture2D<float4> albedoTexture = ResourceDescriptorHeap[albedoIndex];
     Texture2D<float4> worldNormalTexture = ResourceDescriptorHeap[worldNormalIndex];
-    Texture2D<float4> ambientCollusionTexture = ResourceDescriptorHeap[ambientOcclusionIndex];
+    Texture2D<uint> ambientCollusionTexture = ResourceDescriptorHeap[ambientOcclusionIndex];
     Texture2D<float4> metallic_Roughness_Reflectance_AO_Texture = ResourceDescriptorHeap[metallic_Roughness_Reflectance_AOIndex];
     Texture2D<float4> clearCoat_ClearCoatRoughness_Anisotropy_Texture = ResourceDescriptorHeap[clearCoat_ClearCoatRoughness_AnisotropyIndex];
     Texture2D<float4> depthTexture = ResourceDescriptorHeap[depthIndex];
@@ -50,7 +50,8 @@ void CSMain( uint3 DTid : SV_DispatchThreadID )
         materialInputs.roughness = mrra.g;
         materialInputs.reflectance = mrra.b;
         materialInputs.ambientOcclusion = mrra.a;
-        materialInputs.ambientOcclusion *= ambientCollusionTexture.Sample(defaultSampler, uv).r;
+        // materialInputs.ambientOcclusion *= (ambientCollusionTexture.Sample(defaultSampler, uv).r);
+        materialInputs.ambientOcclusion *= (max(ambientCollusionTexture.Load(int3(DTid.xy,0)).x-0.5f,0))/255.0f;
         materialInputs.emissive = float4(0,0,0,0);
         materialInputs.reflection = ssrResolveTexture.Sample(defaultSampler, uv).rgba;
         float3 cra = clearCoat_ClearCoatRoughness_Anisotropy_Texture.Sample(defaultSampler, uv).rgb;
