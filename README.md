@@ -9,8 +9,9 @@
 6. TAA
 7. SSAO
 8. HBAO
-9. Bloom
-10. ToneMapping
+9. GTAO
+10. Bloom
+11. ToneMapping
 
 # 编译
 本项目使用CMake管理代码，在win11系统下拉去代码，生成visualstudio项目，可以直接编译，可以运行的是MoYuEditor
@@ -104,6 +105,11 @@ GPU Driven Terrain的流程
 ### HBAO
 <div style="display:inline-block">
   <img src="https://raw.githubusercontent.com/alienity/PilotLearning/main/data/HBAO.png" alt="HBAO" width="512">
+</div>
+
+### GTAO
+<div style="display:inline-block">
+  <img src="https://raw.githubusercontent.com/alienity/PilotLearning/main/data/GPU 14_GpuId342_[Heap]_UAV_135.png" alt="GTAO" width="512">
 </div>
 
 
