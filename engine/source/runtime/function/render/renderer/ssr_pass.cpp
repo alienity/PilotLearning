@@ -185,7 +185,7 @@ namespace MoYu
         ssrUniform.SmoothnessRange = 1.0f;
         ssrUniform.BRDFBias        = 0.7f;
         ssrUniform.TResponseMin    = 0.85f;
-        ssrUniform.TResponseMax    = 0.90f;//1.0f;
+        ssrUniform.TResponseMax    = 0.99f;//1.0f;
         ssrUniform.EdgeFactor      = 0.25f;
         ssrUniform.Thickness       = 0.01f;
         ssrUniform.NumSteps        = 60;
