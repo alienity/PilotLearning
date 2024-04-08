@@ -49,7 +49,9 @@
 // A vector of 3 illuminance values.
 #define Illuminance3 float3
 
-#define TransmittanceTexture Texture2D
+#define Sampler(x) SamplerState x
+
+#define TransmittanceTexture Texture2D<float3>
 #define AbstractScatteringTexture Texture3D
 #define ReducedScatteringTexture Texture3D
 #define ScatteringTexture Texture3D
@@ -69,13 +71,12 @@ static const SolidAngle sr = 1.0;
 static const Power watt = 1.0;
 static const LuminousPower lm = 1.0;
 
-//static const float PI = 3.14159265358979323846f;
-//#define PI 3.14159265358979323846f
+static const float VAPI = 3.14159265358979323846f;
 
 static const Length km = 1000.0f * m;
 static const Area m2 = m * m;
 static const Volume m3 = m * m * m;
-static const Angle pi = PI * rad;
+static const Angle pi = VAPI * rad;
 static const Angle deg = pi / 180.0;
 static const Irradiance watt_per_square_meter = watt / m2;
 static const Radiance watt_per_square_meter_per_sr = watt / (m2 * sr);
@@ -165,8 +166,36 @@ struct AtmosphereParameters {
 	Number mu_s_min;
 };
 
+struct AtmosphereConstants
+{
+	int TRANSMITTANCE_TEXTURE_WIDTH;
+	int TRANSMITTANCE_TEXTURE_HEIGHT;
+	int SCATTERING_TEXTURE_R_SIZE;
+	int SCATTERING_TEXTURE_MU_SIZE;
+
+	int SCATTERING_TEXTURE_MU_S_SIZE;
+	int SCATTERING_TEXTURE_NU_SIZE;
+	int SCATTERING_TEXTURE_WIDTH;
+	int SCATTERING_TEXTURE_HEIGHT;
+
+	int SCATTERING_TEXTURE_DEPTH;
+	int IRRADIANCE_TEXTURE_WIDTH;
+	int IRRADIANCE_TEXTURE_HEIGHT;
+
+	float3 SKY_SPECTRAL_RADIANCE_TO_LUMINANCE;
+	float3 SUN_SPECTRAL_RADIANCE_TO_LUMINANCE;
+};
+
 // ----------------------------------------------------------------------------------
 // Samplers
+
+struct AtmosphereSampler
+{
+	SamplerState sampler_LinearClamp;
+	SamplerState sampler_LinearRepeat;
+	SamplerState sampler_PointClamp;
+	SamplerState sampler_PointRepeat;
+};
 
 // SAMPLER(sampler_LinearClamp);
 // SAMPLER(sampler_LinearRepeat);
@@ -180,6 +209,7 @@ struct AtmosphereUniform
 {
 	IrradianceSpectrum solar_irradiance;
 	Angle sun_angular_radius;
+
 	Length bottom_radius;
 	Length top_radius;
 
@@ -196,6 +226,10 @@ struct AtmosphereUniform
 	Number rayleigh_density_layers_1_constant_term;
 
 	ScatteringSpectrum rayleigh_scattering;
+	float _padding0;
+
+	float _padding1;
+	float _padding2;
 
 	Length mie_density_layers_0_width;
 	Number mie_density_layers_0_exp_term;
@@ -210,8 +244,12 @@ struct AtmosphereUniform
 	Number mie_density_layers_1_constant_term;
 
 	ScatteringSpectrum mie_scattering;
+	float _padding3;
 	ScatteringSpectrum mie_extinction;
 	Number mie_phase_function_g;
+
+	float _padding5;
+	float _padding6;
 
 	Length absorption_density_layers_0_width;
 	Number absorption_density_layers_0_exp_term;
@@ -226,6 +264,7 @@ struct AtmosphereUniform
 	Number absorption_density_layers_1_constant_term;
 
 	ScatteringSpectrum absorption_extinction;
+	float _padding7;
 
 	DimensionlessSpectrum ground_albedo;
 
@@ -235,18 +274,32 @@ struct AtmosphereUniform
 	int TRANSMITTANCE_TEXTURE_HEIGHT;
 	int SCATTERING_TEXTURE_R_SIZE;
 	int SCATTERING_TEXTURE_MU_SIZE;
+
 	int SCATTERING_TEXTURE_MU_S_SIZE;
 	int SCATTERING_TEXTURE_NU_SIZE;
 	int SCATTERING_TEXTURE_WIDTH;
 	int SCATTERING_TEXTURE_HEIGHT;
+
 	int SCATTERING_TEXTURE_DEPTH;
 	int IRRADIANCE_TEXTURE_WIDTH;
 	int IRRADIANCE_TEXTURE_HEIGHT;
+	int _padding8;
+
 	float3 SKY_SPECTRAL_RADIANCE_TO_LUMINANCE;
+	float _padding9;
 	float3 SUN_SPECTRAL_RADIANCE_TO_LUMINANCE;
+	float _padding10;
 };
 
-AtmosphereParameters GetAtmosphereParameters(AtmosphereUniform atmosphereUniform) {
+struct AtmosphereUniformCB
+{
+	AtmosphereUniform atmosphereUniform;
+};
+
+void InitAtmosphereParameters(
+	IN(AtmosphereUniform) atmosphereUniform, 
+	OUT(AtmosphereParameters) atmosphereParameters, 
+	OUT(AtmosphereConstants) atmosphereConstants) {
 	//-------------------------rayleigh_density---------------------------------
 	DensityProfileLayer rayleighProfileLayer0;
 	rayleighProfileLayer0.width = atmosphereUniform.rayleigh_density_layers_0_width;
@@ -306,7 +359,6 @@ AtmosphereParameters GetAtmosphereParameters(AtmosphereUniform atmosphereUniform
 
 
 	//-------------------------atmosphereParameters---------------------------------
-	AtmosphereParameters atmosphereParameters = (AtmosphereParameters)0;
 	atmosphereParameters.solar_irradiance = atmosphereUniform.solar_irradiance;
 	atmosphereParameters.sun_angular_radius = atmosphereUniform.sun_angular_radius;
 	atmosphereParameters.bottom_radius = atmosphereUniform.bottom_radius;
@@ -322,7 +374,33 @@ AtmosphereParameters GetAtmosphereParameters(AtmosphereUniform atmosphereUniform
 	atmosphereParameters.ground_albedo = atmosphereUniform.ground_albedo;
 	atmosphereParameters.mu_s_min = atmosphereUniform.mu_s_min;
 
-	return atmosphereParameters;
+	//-------------------------atmosphereConstants---------------------------------
+	atmosphereConstants.TRANSMITTANCE_TEXTURE_WIDTH = atmosphereUniform.TRANSMITTANCE_TEXTURE_WIDTH;
+	atmosphereConstants.TRANSMITTANCE_TEXTURE_HEIGHT = atmosphereUniform.TRANSMITTANCE_TEXTURE_HEIGHT;
+	atmosphereConstants.SCATTERING_TEXTURE_R_SIZE = atmosphereUniform.SCATTERING_TEXTURE_R_SIZE;
+	atmosphereConstants.SCATTERING_TEXTURE_MU_SIZE = atmosphereUniform.SCATTERING_TEXTURE_MU_SIZE;
+	atmosphereConstants.SCATTERING_TEXTURE_MU_S_SIZE = atmosphereUniform.SCATTERING_TEXTURE_MU_S_SIZE;
+	atmosphereConstants.SCATTERING_TEXTURE_NU_SIZE = atmosphereUniform.SCATTERING_TEXTURE_NU_SIZE;
+	atmosphereConstants.SCATTERING_TEXTURE_WIDTH = atmosphereUniform.SCATTERING_TEXTURE_WIDTH;
+	atmosphereConstants.SCATTERING_TEXTURE_HEIGHT = atmosphereUniform.SCATTERING_TEXTURE_HEIGHT;
+	atmosphereConstants.SCATTERING_TEXTURE_DEPTH = atmosphereUniform.SCATTERING_TEXTURE_DEPTH;
+	atmosphereConstants.IRRADIANCE_TEXTURE_WIDTH = atmosphereUniform.IRRADIANCE_TEXTURE_WIDTH;
+	atmosphereConstants.IRRADIANCE_TEXTURE_HEIGHT = atmosphereUniform.IRRADIANCE_TEXTURE_HEIGHT;
+	atmosphereConstants.SKY_SPECTRAL_RADIANCE_TO_LUMINANCE = atmosphereUniform.SKY_SPECTRAL_RADIANCE_TO_LUMINANCE;
+	atmosphereConstants.SUN_SPECTRAL_RADIANCE_TO_LUMINANCE = atmosphereUniform.SUN_SPECTRAL_RADIANCE_TO_LUMINANCE;
+}
+
+void InitAtmosphereSampler(
+	IN(Sampler(sampler_LinearClamp)),
+	IN(Sampler(sampler_LinearRepeat)),
+	IN(Sampler(sampler_PointClamp)),
+	IN(Sampler(sampler_PointRepeat)),
+	OUT(AtmosphereSampler) atmossampler)
+{
+	atmossampler.sampler_LinearClamp = sampler_LinearClamp;
+	atmossampler.sampler_LinearRepeat = sampler_LinearRepeat;
+	atmossampler.sampler_PointClamp = sampler_PointClamp;
+	atmossampler.sampler_PointRepeat = sampler_PointRepeat;
 }
 
 #endif

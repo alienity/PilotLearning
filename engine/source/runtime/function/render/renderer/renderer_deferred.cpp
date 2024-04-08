@@ -230,6 +230,17 @@ namespace MoYu
             mSkyBoxPass->setCommonInfo(renderPassCommonInfo);
             mSkyBoxPass->initialize(drawPassInit);
         }
+        // AtmosphericScattering pass
+        {
+            AtmosphericScatteringPass::PassInitInfo drawPassInit;
+            drawPassInit.colorTexDesc = colorTexDesc;
+            drawPassInit.m_ShaderCompiler = pCompiler;
+            drawPassInit.m_ShaderRootPath = g_runtime_global_context.m_config_manager->getShaderFolder();
+
+            mAtmosphericScatteringPass = std::make_shared<AtmosphericScatteringPass>();
+            mAtmosphericScatteringPass->setCommonInfo(renderPassCommonInfo);
+            mAtmosphericScatteringPass->initialize(drawPassInit);
+        }
         // Transparent drawing pass
         {
             IndirectDrawTransparentPass::DrawPassInitInfo drawPassInit;
@@ -342,6 +353,8 @@ namespace MoYu
         mVolumeLightPass->prepareMeshData(render_resource);
         mPostprocessPasses->PreparePassData(render_resource);
 
+        mAtmosphericScatteringPass->prepareMetaData(render_resource);
+
         mGTAOPass->updateConstantBuffer(render_resource);
 
         mIndirectCullPass->inflatePerframeBuffer(render_resource);
@@ -366,6 +379,7 @@ namespace MoYu
         mSSRPass                     = nullptr;
         mVolumeLightPass             = nullptr;
         mSkyBoxPass                  = nullptr;
+        mAtmosphericScatteringPass   = nullptr;
         mIndirectTransparentDrawPass = nullptr;
         mPostprocessPasses           = nullptr;
         mDisplayPass                 = nullptr;
@@ -654,6 +668,15 @@ namespace MoYu
         mSkyBoxPass->update(graph, mSkyboxIntputParams, mSkyboxOutputParams);
         //=================================================================================
 
+        //=================================================================================
+        // AtmosphericScattering draw
+        AtmosphericScatteringPass::DrawInputParameters mASIntputParams;
+        AtmosphericScatteringPass::DrawOutputParameters mASOutputParams;
+
+        mASIntputParams.perframeBufferHandle    = indirectCullOutput.perframeBufferHandle;
+        mASOutputParams.renderTargetColorHandle = outColorHandle;
+        mAtmosphericScatteringPass->update(graph, mASIntputParams, mASOutputParams);
+        //=================================================================================
 
         //=================================================================================
         // indirect transparent draw

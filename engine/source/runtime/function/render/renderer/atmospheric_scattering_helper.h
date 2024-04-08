@@ -8,6 +8,54 @@ namespace MoYu
 {
     namespace AtmosphereScattering
     {
+#define Length float
+#define Wavelength float
+#define Angle float
+#define SolidAngle float
+#define Power float
+#define LuminousPower float
+
+#define Number float
+#define InverseLength float
+#define Area float
+#define Volume float
+#define NumberDensity float
+#define Irradiance float
+#define Radiance float
+#define SpectralPower float
+#define SpectralIrradiance float
+#define SpectralRadiance float
+#define SpectralRadianceDensity float
+#define ScatteringCoefficient float
+#define InverseSolidAngle float
+#define LuminousIntensity float
+#define Luminance float
+#define Illuminance float
+
+// A generic function from Wavelength to some other type.
+#define AbstractSpectrum glm::float3
+// A function from Wavelength to Number.
+#define DimensionlessSpectrum glm::float3
+// A function from Wavelength to SpectralPower.
+#define PowerSpectrum glm::float3
+// A function from Wavelength to SpectralIrradiance.
+#define IrradianceSpectrum glm::float3
+// A function from Wavelength to SpectralRadiance.
+#define RadianceSpectrum glm::float3
+// A function from Wavelength to SpectralRadianceDensity.
+#define RadianceDensitySpectrum glm::float3
+// A function from Wavelength to ScaterringCoefficient.
+#define ScatteringSpectrum glm::float3
+
+// A position in 3D (3 length values).
+#define Position glm::float3
+// A unit direction vector in 3D (3 unitless values).
+#define Direction glm::float3
+// A vector of 3 luminance values.
+#define Luminance3 glm::float3
+// A vector of 3 illuminance values.
+#define Illuminance3 glm::float3
+
         constexpr int TRANSMITTANCE_TEXTURE_WIDTH  = 256;
         constexpr int TRANSMITTANCE_TEXTURE_HEIGHT = 64;
 
@@ -164,49 +212,131 @@ namespace MoYu
 
         struct AtmosphereParameters
         {
-            glm::float3    solar_irradiance;
-            double         sun_angular_radius;
-            double         bottom_radius;
-            double         top_radius;
-            DensityProfile rayleigh_density;
-            glm::float3    rayleigh_scattering;
-            DensityProfile mie_density;
-            glm::float3    mie_scattering;
-            glm::float3    mie_extinction;
-            double         mie_phase_function_g;
-            DensityProfile absorption_density;
-            glm::float3    absorption_extinction;
-            glm::float3    ground_albedo;
-            double         mu_s_min;
+            IrradianceSpectrum    solar_irradiance;
+            Angle                 sun_angular_radius;
+            Length                bottom_radius;
+            Length                top_radius;
+            DensityProfile        rayleigh_density;
+            ScatteringSpectrum    rayleigh_scattering;
+            DensityProfile        mie_density;
+            ScatteringSpectrum    mie_scattering;
+            ScatteringSpectrum    mie_extinction;
+            Number                mie_phase_function_g;
+            DensityProfile        absorption_density;
+            ScatteringSpectrum    absorption_extinction;
+            DimensionlessSpectrum ground_albedo;
+            Number                mu_s_min;
+        };
+
+        struct AtmosphereUniform
+        {
+            IrradianceSpectrum solar_irradiance;
+            Angle              sun_angular_radius;
+
+            Length bottom_radius;
+            Length top_radius;
+
+            Length        rayleigh_density_layers_0_width;
+            Number        rayleigh_density_layers_0_exp_term;
+            InverseLength rayleigh_density_layers_0_exp_scale;
+            InverseLength rayleigh_density_layers_0_linear_term;
+            Number        rayleigh_density_layers_0_constant_term;
+
+            Length        rayleigh_density_layers_1_width;
+            Number        rayleigh_density_layers_1_exp_term;
+            InverseLength rayleigh_density_layers_1_exp_scale;
+            InverseLength rayleigh_density_layers_1_linear_term;
+            Number        rayleigh_density_layers_1_constant_term;
+
+            ScatteringSpectrum rayleigh_scattering;
+            float              _padding0;
+
+            float _padding1;
+            float _padding2;
+
+            Length        mie_density_layers_0_width;
+            Number        mie_density_layers_0_exp_term;
+            InverseLength mie_density_layers_0_exp_scale;
+            InverseLength mie_density_layers_0_linear_term;
+            Number        mie_density_layers_0_constant_term;
+
+            Length        mie_density_layers_1_width;
+            Number        mie_density_layers_1_exp_term;
+            InverseLength mie_density_layers_1_exp_scale;
+            InverseLength mie_density_layers_1_linear_term;
+            Number        mie_density_layers_1_constant_term;
+
+            ScatteringSpectrum mie_scattering;
+            float              _padding3;
+            ScatteringSpectrum mie_extinction;
+            Number             mie_phase_function_g;
+
+            float _padding5;
+            float _padding6;
+
+            Length        absorption_density_layers_0_width;
+            Number        absorption_density_layers_0_exp_term;
+            InverseLength absorption_density_layers_0_exp_scale;
+            InverseLength absorption_density_layers_0_linear_term;
+            Number        absorption_density_layers_0_constant_term;
+
+            Length        absorption_density_layers_1_width;
+            Number        absorption_density_layers_1_exp_term;
+            InverseLength absorption_density_layers_1_exp_scale;
+            InverseLength absorption_density_layers_1_linear_term;
+            Number        absorption_density_layers_1_constant_term;
+
+            ScatteringSpectrum absorption_extinction;
+            float              _padding7;
+
+            DimensionlessSpectrum ground_albedo;
+
+            Number mu_s_min;
+
+            int TRANSMITTANCE_TEXTURE_WIDTH;
+            int TRANSMITTANCE_TEXTURE_HEIGHT;
+            int SCATTERING_TEXTURE_R_SIZE;
+            int SCATTERING_TEXTURE_MU_SIZE;
+
+            int SCATTERING_TEXTURE_MU_S_SIZE;
+            int SCATTERING_TEXTURE_NU_SIZE;
+            int SCATTERING_TEXTURE_WIDTH;
+            int SCATTERING_TEXTURE_HEIGHT;
+
+            int SCATTERING_TEXTURE_DEPTH;
+            int IRRADIANCE_TEXTURE_WIDTH;
+            int IRRADIANCE_TEXTURE_HEIGHT;
+            int _padding8;
+
+            glm::float3 SKY_SPECTRAL_RADIANCE_TO_LUMINANCE;
+            float       _padding9;
+            glm::float3 SUN_SPECTRAL_RADIANCE_TO_LUMINANCE;
+            float       _padding10;
         };
 
         class AtmosphericScatteringGenerator
         {
         public:
-            static AtmosphereParameters Init();
+            static AtmosphereUniform Init();
 
-            static AtmosphereParameters InitAtmosphereParameters(std::vector<double>              wavelengths,
-                                                                 std::vector<double>              solar_irradiance,
-                                                                 double                           kLambdaMin,
-                                                                 double                           kLambdaMax,
-                                                                 double                           sun_angular_radius,
-                                                                 double                           bottom_radius,
-                                                                 double                           top_radius,
-                                                                 std::vector<DensityProfileLayer> rayleigh_density,
-                                                                 std::vector<double>              rayleigh_scattering,
-                                                                 std::vector<DensityProfileLayer> mie_density,
-                                                                 std::vector<double>              mie_scattering,
-                                                                 std::vector<double>              mie_extinction,
-                                                                 double                           mie_phase_function_g,
-                                                                 std::vector<DensityProfileLayer> absorption_density,
-                                                                 std::vector<double>              absorption_extinction,
-                                                                 std::vector<double>              ground_albedo,
-                                                                 double                           max_sun_zenith_angle,
-                                                                 double length_unit_in_meters);
-
-            static void
-            Precompute(ComputeShader precomputeShader, bool combine_scattering_textures, int num_scattering_orders = 4);
-
+            static AtmosphereUniform InitAtmosphereUniform(std::vector<double>              wavelengths,
+                                                           std::vector<double>              solar_irradiance,
+                                                           double                           kLambdaMin,
+                                                           double                           kLambdaMax,
+                                                           double                           sun_angular_radius,
+                                                           double                           bottom_radius,
+                                                           double                           top_radius,
+                                                           std::vector<DensityProfileLayer> rayleigh_density,
+                                                           std::vector<double>              rayleigh_scattering,
+                                                           std::vector<DensityProfileLayer> mie_density,
+                                                           std::vector<double>              mie_scattering,
+                                                           std::vector<double>              mie_extinction,
+                                                           double                           mie_phase_function_g,
+                                                           std::vector<DensityProfileLayer> absorption_density,
+                                                           std::vector<double>              absorption_extinction,
+                                                           std::vector<double>              ground_albedo,
+                                                           double                           max_sun_zenith_angle,
+                                                           double                           length_unit_in_meters);
 
         private:
             static glm::float3 ToVector3(std::vector<double> wavelengths, std::vector<double> v, glm::float3 lambdas, double scale);

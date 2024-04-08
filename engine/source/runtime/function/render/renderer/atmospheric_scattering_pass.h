@@ -3,6 +3,7 @@
 #include "runtime/function/render/render_pass.h"
 #include "runtime/function/global/global_context.h"
 #include "runtime/resource/config_manager/config_manager.h"
+#include "runtime/function/render/renderer/atmospheric_scattering_helper.h"
 #include "runtime/function/render/renderer/atmospheric_scattering_pass.h"
 
 namespace MoYu
@@ -13,8 +14,7 @@ namespace MoYu
         struct PassInitInfo : public RenderPassInitInfo
         {
             RHI::RgTextureDesc colorTexDesc;
-            RHI::RgTextureDesc depthTexDesc;
-
+            
             ShaderCompiler*       m_ShaderCompiler;
             std::filesystem::path m_ShaderRootPath;
         };
@@ -22,33 +22,58 @@ namespace MoYu
         struct DrawInputParameters : public PassInput
         {
             RHI::RgResourceHandle perframeBufferHandle;
-            RHI::RgResourceHandle maxDepthPtyramidHandle;
         };
 
         struct DrawOutputParameters : public PassOutput
         {
-            RHI::RgResourceHandle volumeLightHandle;
+            RHI::RgResourceHandle renderTargetColorHandle;
         };
 
     public:
         ~AtmosphericScatteringPass() { destroy(); }
 
         void initialize(const PassInitInfo& init_info);
-        void prepareMeshData(std::shared_ptr<RenderResource> render_resource);
+        void prepareMetaData(std::shared_ptr<RenderResource> render_resource);
         void update(RHI::RenderGraph& graph, DrawInputParameters& passInput, DrawOutputParameters& passOutput);
         void destroy() override final;
 
-    private:
-        RHI::RgTextureDesc colorTexDesc;
-        
-        Shader mAtmosphericScatteringVS;
-        Shader mAtmosphericScatteringPS;
-        std::shared_ptr<RHI::D3D12RootSignature> pAtmosphericScatteringSignature;
-        std::shared_ptr<RHI::D3D12PipelineState> pAtmosphericScatteringPSO;
+        void preCompute(RHI::RenderGraph& graph);
 
-        std::shared_ptr<RHI::D3D12Texture> m_transmittance2d;
-        std::shared_ptr<RHI::D3D12Texture> m_scattering3d;
-        std::shared_ptr<RHI::D3D12Texture> m_irradiance2d;
-        std::shared_ptr<RHI::D3D12Texture> m_singlemiescattering3d;
+    private:
+        bool hasPrecomputed = false;
+
+        RHI::RgTextureDesc colorTexDesc;
+
+        std::shared_ptr<RHI::D3D12Buffer> mAtmosphereUniformBuffer;
+
+        std::shared_ptr<RHI::D3D12Texture> mTransmittance2D;
+        std::shared_ptr<RHI::D3D12Texture> mScattering3D;
+        std::shared_ptr<RHI::D3D12Texture> mIrradiance2D;
+        std::shared_ptr<RHI::D3D12Texture> mSingleMieScattering3D;
+
+        Shader mComputeTransmittanceCS;
+        std::shared_ptr<RHI::D3D12RootSignature> pComputeTransmittanceSignature;
+        std::shared_ptr<RHI::D3D12PipelineState> pComputeTransmittancePSO;
+
+        Shader mComputeDirectIrrdianceCS;
+        std::shared_ptr<RHI::D3D12RootSignature> pComputeDirectIrrdianceSignature;
+        std::shared_ptr<RHI::D3D12PipelineState> pComputeDirectIrrdiancePSO;
+
+        Shader mComputeSingleScatteringCS;
+        std::shared_ptr<RHI::D3D12RootSignature> pComputeSingleScatteringSignature;
+        std::shared_ptr<RHI::D3D12PipelineState> pComputeSingleScatteringPSO;
+
+        Shader mComputeScatteringDensityCS;
+        std::shared_ptr<RHI::D3D12RootSignature> pComputeScatteringDensitySignature;
+        std::shared_ptr<RHI::D3D12PipelineState> pComputeScatteringDensityPSO;
+
+        Shader mComputeIdirectIrradianceCS;
+        std::shared_ptr<RHI::D3D12RootSignature> pComputeIdirectIrradianceSignature;
+        std::shared_ptr<RHI::D3D12PipelineState> pComputeIdirectIrradiancePSO;
+
+        Shader mComputeMultipleScatteringCS;
+        std::shared_ptr<RHI::D3D12RootSignature> pComputeMultipleScatteringSignature;
+        std::shared_ptr<RHI::D3D12PipelineState> pComputeMultipleScatteringPSO;
+
 	};
 }

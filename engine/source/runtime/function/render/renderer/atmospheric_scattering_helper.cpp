@@ -86,7 +86,7 @@ namespace MoYu
             *k_b *= MAX_LUMINOUS_EFFICACY * dlambda;
         }
 
-        AtmosphereParameters AtmosphericScatteringGenerator::Init()
+        AtmosphereUniform AtmosphericScatteringGenerator::Init()
         {
             double kSunAngularRadius   = 0.00935 / 2.0;
             double kSunSolidAngle      = 3.1415926 * kSunAngularRadius * kSunAngularRadius;
@@ -168,47 +168,47 @@ namespace MoYu
                 ground_albedo.push_back(kGroundAlbedo);
             }
 
-            AtmosphereParameters _atmosphereParameters = InitAtmosphereParameters(wavelengths,
-                                                                                  solar_irradiance,
-                                                                                  kLambdaMin,
-                                                                                  kLambdaMax,
-                                                                                  kSunAngularRadius,
-                                                                                  kBottomRadius,
-                                                                                  kTopRadius,
-                                                                                  rayleigh_layer,
-                                                                                  rayleigh_scattering,
-                                                                                  mie_layer,
-                                                                                  mie_scattering,
-                                                                                  mie_extinction,
-                                                                                  kMiePhaseFunctionG,
-                                                                                  ozone_density,
-                                                                                  absorption_extinction,
-                                                                                  ground_albedo,
-                                                                                  max_sun_zenith_angle,
-                                                                                  kLengthUnitInMeters);
+            AtmosphereUniform atmosphereUniform = InitAtmosphereUniform(wavelengths,
+                                                                        solar_irradiance,
+                                                                        kLambdaMin,
+                                                                        kLambdaMax,
+                                                                        kSunAngularRadius,
+                                                                        kBottomRadius,
+                                                                        kTopRadius,
+                                                                        rayleigh_layer,
+                                                                        rayleigh_scattering,
+                                                                        mie_layer,
+                                                                        mie_scattering,
+                                                                        mie_extinction,
+                                                                        kMiePhaseFunctionG,
+                                                                        ozone_density,
+                                                                        absorption_extinction,
+                                                                        ground_albedo,
+                                                                        max_sun_zenith_angle,
+                                                                        kLengthUnitInMeters);
 
-            return _atmosphereParameters;
+            return atmosphereUniform;
         }
 
-        AtmosphereParameters
-        AtmosphericScatteringGenerator::InitAtmosphereParameters(std::vector<double>              wavelengths,
-                                                                 std::vector<double>              solar_irradiance,
-                                                                 double                           kLambdaMin,
-                                                                 double                           kLambdaMax,
-                                                                 double                           sun_angular_radius,
-                                                                 double                           bottom_radius,
-                                                                 double                           top_radius,
-                                                                 std::vector<DensityProfileLayer> rayleigh_density,
-                                                                 std::vector<double>              rayleigh_scattering,
-                                                                 std::vector<DensityProfileLayer> mie_density,
-                                                                 std::vector<double>              mie_scattering,
-                                                                 std::vector<double>              mie_extinction,
-                                                                 double                           mie_phase_function_g,
-                                                                 std::vector<DensityProfileLayer> absorption_density,
-                                                                 std::vector<double>              absorption_extinction,
-                                                                 std::vector<double>              ground_albedo,
-                                                                 double                           max_sun_zenith_angle,
-                                                                 double                           length_unit_in_meters)
+        AtmosphereUniform
+        AtmosphericScatteringGenerator::InitAtmosphereUniform(std::vector<double>              wavelengths,
+                                                              std::vector<double>              solar_irradiance,
+                                                              double                           kLambdaMin,
+                                                              double                           kLambdaMax,
+                                                              double                           sun_angular_radius,
+                                                              double                           bottom_radius,
+                                                              double                           top_radius,
+                                                              std::vector<DensityProfileLayer> rayleigh_density,
+                                                              std::vector<double>              rayleigh_scattering,
+                                                              std::vector<DensityProfileLayer> mie_density,
+                                                              std::vector<double>              mie_scattering,
+                                                              std::vector<double>              mie_extinction,
+                                                              double                           mie_phase_function_g,
+                                                              std::vector<DensityProfileLayer> absorption_density,
+                                                              std::vector<double>              absorption_extinction,
+                                                              std::vector<double>              ground_albedo,
+                                                              double                           max_sun_zenith_angle,
+                                                              double                           length_unit_in_meters)
         {
             double sky_k_r = 0.0, sky_k_g = 0.0, sky_k_b = 0.0;
             ComputeSpectralRadianceToLuminanceFactors(wavelengths, solar_irradiance, kLambdaMin, kLambdaMax,
@@ -247,10 +247,84 @@ namespace MoYu
                 ToVector3(wavelengths, absorption_extinction, kLambdas, length_unit_in_meters);
             atmosphereParameters.ground_albedo = ToVector3(wavelengths, ground_albedo, kLambdas, 1.0);
 
-            return atmosphereParameters;
+            // prepare atmosphereuniform
+            AtmosphereUniform atmosphereUniform = {};
+
+            atmosphereUniform.solar_irradiance   = atmosphereParameters.solar_irradiance;
+            atmosphereUniform.sun_angular_radius = atmosphereParameters.sun_angular_radius;
+
+            atmosphereUniform.bottom_radius = atmosphereParameters.bottom_radius;
+            atmosphereUniform.top_radius    = atmosphereParameters.top_radius;
+
+            atmosphereUniform.rayleigh_density_layers_0_width         = atmosphereParameters.rayleigh_density.layers0.width;
+            atmosphereUniform.rayleigh_density_layers_0_exp_term      = atmosphereParameters.rayleigh_density.layers0.exp_term;
+            atmosphereUniform.rayleigh_density_layers_0_exp_scale     = atmosphereParameters.rayleigh_density.layers0.exp_scale;
+            atmosphereUniform.rayleigh_density_layers_0_linear_term   = atmosphereParameters.rayleigh_density.layers0.linear_term;
+            atmosphereUniform.rayleigh_density_layers_0_constant_term = atmosphereParameters.rayleigh_density.layers0.constant_term;
+
+            atmosphereUniform.rayleigh_density_layers_1_width         = atmosphereParameters.rayleigh_density.layers1.width;
+            atmosphereUniform.rayleigh_density_layers_1_exp_term      = atmosphereParameters.rayleigh_density.layers1.exp_term;
+            atmosphereUniform.rayleigh_density_layers_1_exp_scale     = atmosphereParameters.rayleigh_density.layers1.exp_scale;
+            atmosphereUniform.rayleigh_density_layers_1_linear_term   = atmosphereParameters.rayleigh_density.layers1.linear_term;
+            atmosphereUniform.rayleigh_density_layers_1_constant_term = atmosphereParameters.rayleigh_density.layers1.constant_term;
+
+            atmosphereUniform.rayleigh_scattering = atmosphereParameters.rayleigh_scattering;
+
+            atmosphereUniform.mie_density_layers_0_width         = atmosphereParameters.mie_density.layers0.width;
+            atmosphereUniform.mie_density_layers_0_exp_term      = atmosphereParameters.mie_density.layers0.exp_term;
+            atmosphereUniform.mie_density_layers_0_exp_scale     = atmosphereParameters.mie_density.layers0.exp_scale;
+            atmosphereUniform.mie_density_layers_0_linear_term   = atmosphereParameters.mie_density.layers0.linear_term;
+            atmosphereUniform.mie_density_layers_0_constant_term = atmosphereParameters.mie_density.layers0.constant_term;
+
+            atmosphereUniform.mie_density_layers_1_width         = atmosphereParameters.mie_density.layers1.width;
+            atmosphereUniform.mie_density_layers_1_exp_term      = atmosphereParameters.mie_density.layers1.exp_term;
+            atmosphereUniform.mie_density_layers_1_exp_scale     = atmosphereParameters.mie_density.layers1.exp_scale;
+            atmosphereUniform.mie_density_layers_1_linear_term   = atmosphereParameters.mie_density.layers1.linear_term;
+            atmosphereUniform.mie_density_layers_1_constant_term = atmosphereParameters.mie_density.layers1.constant_term;
+
+            atmosphereUniform.mie_scattering       = atmosphereParameters.mie_scattering;
+            atmosphereUniform.mie_extinction       = atmosphereParameters.mie_extinction;
+            atmosphereUniform.mie_phase_function_g = atmosphereParameters.mie_phase_function_g;
+
+            atmosphereUniform.absorption_density_layers_0_width       = atmosphereParameters.absorption_density.layers0.width;
+            atmosphereUniform.absorption_density_layers_0_exp_term    = atmosphereParameters.absorption_density.layers0.exp_term;
+            atmosphereUniform.absorption_density_layers_0_exp_scale   = atmosphereParameters.absorption_density.layers0.exp_scale;
+            atmosphereUniform.absorption_density_layers_0_linear_term = atmosphereParameters.absorption_density.layers0.linear_term;
+            atmosphereUniform.absorption_density_layers_0_constant_term =
+                atmosphereParameters.absorption_density.layers0.constant_term;
+
+            atmosphereUniform.absorption_density_layers_1_width       = atmosphereParameters.absorption_density.layers1.width;
+            atmosphereUniform.absorption_density_layers_1_exp_term    = atmosphereParameters.absorption_density.layers1.exp_term;
+            atmosphereUniform.absorption_density_layers_1_exp_scale   = atmosphereParameters.absorption_density.layers1.exp_scale;
+            atmosphereUniform.absorption_density_layers_1_linear_term = atmosphereParameters.absorption_density.layers1.linear_term;
+            atmosphereUniform.absorption_density_layers_1_constant_term =
+                atmosphereParameters.absorption_density.layers1.constant_term;
+
+            atmosphereUniform.absorption_extinction = atmosphereParameters.absorption_extinction;
+
+            atmosphereUniform.ground_albedo = atmosphereParameters.ground_albedo;
+
+            atmosphereUniform.mu_s_min = atmosphereParameters.mu_s_min;
+
+            atmosphereUniform.TRANSMITTANCE_TEXTURE_WIDTH  = TRANSMITTANCE_TEXTURE_WIDTH;
+            atmosphereUniform.TRANSMITTANCE_TEXTURE_HEIGHT = TRANSMITTANCE_TEXTURE_HEIGHT;
+            atmosphereUniform.SCATTERING_TEXTURE_R_SIZE    = SCATTERING_TEXTURE_R_SIZE;
+            atmosphereUniform.SCATTERING_TEXTURE_MU_SIZE   = SCATTERING_TEXTURE_MU_SIZE;
+
+            atmosphereUniform.SCATTERING_TEXTURE_MU_S_SIZE = SCATTERING_TEXTURE_MU_S_SIZE;
+            atmosphereUniform.SCATTERING_TEXTURE_NU_SIZE   = SCATTERING_TEXTURE_NU_SIZE;
+            atmosphereUniform.SCATTERING_TEXTURE_WIDTH     = SCATTERING_TEXTURE_WIDTH;
+            atmosphereUniform.SCATTERING_TEXTURE_HEIGHT    = SCATTERING_TEXTURE_HEIGHT;
+
+            atmosphereUniform.SCATTERING_TEXTURE_DEPTH  = SCATTERING_TEXTURE_DEPTH;
+            atmosphereUniform.IRRADIANCE_TEXTURE_WIDTH  = IRRADIANCE_TEXTURE_WIDTH;
+            atmosphereUniform.IRRADIANCE_TEXTURE_HEIGHT = IRRADIANCE_TEXTURE_HEIGHT;
+
+            atmosphereUniform.SKY_SPECTRAL_RADIANCE_TO_LUMINANCE = glm::float3(sky_k_r, sky_k_g, sky_k_b);
+            atmosphereUniform.SUN_SPECTRAL_RADIANCE_TO_LUMINANCE = glm::float3(sun_k_r, sun_k_g, sun_k_b);
+
+            return atmosphereUniform;
         }
-
-
 
         glm::float3 AtmosphericScatteringGenerator::ToVector3(std::vector<double> wavelengths, std::vector<double> v, glm::float3 lambdas, double scale)
         {
@@ -262,12 +336,12 @@ namespace MoYu
 
         DensityProfileLayer AtmosphericScatteringGenerator::ToDensityLayer(double length_unit_in_meters, DensityProfileLayer layer)
         {
-            DensityProfileLayer layer = {layer.width / length_unit_in_meters,
+            DensityProfileLayer _layer = {layer.width / length_unit_in_meters,
                                          layer.exp_term,
                                          layer.exp_scale * length_unit_in_meters,
                                          layer.linear_term * length_unit_in_meters,
                                          layer.constant_term};
-            return layer;
+            return _layer;
         }
 
 
