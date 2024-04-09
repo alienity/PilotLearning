@@ -52,11 +52,11 @@
 #define Sampler(x) SamplerState x
 
 #define TransmittanceTexture Texture2D<float3>
-#define AbstractScatteringTexture Texture3D
-#define ReducedScatteringTexture Texture3D
-#define ScatteringTexture Texture3D
-#define ScatteringDensityTexture Texture3D
-#define IrradianceTexture Texture2D
+#define AbstractScatteringTexture Texture3D<float3>
+#define ReducedScatteringTexture Texture3D<float3>
+#define ScatteringTexture Texture3D<float3>
+#define ScatteringDensityTexture Texture3D<float3>
+#define IrradianceTexture Texture2D<float3>
 
 #define IN(x) x
 #define OUT(x) out x

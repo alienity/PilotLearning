@@ -29,14 +29,9 @@ void CSMain(uint2 dispatchThreadID : SV_DispatchThreadID, uint2 groupThreadID : 
 	AtmosphereSampler atmosphereSampler;
 	InitAtmosphereSampler(sampler_LinearClamp, sampler_LinearRepeat, sampler_PointClamp, sampler_PointRepeat, atmosphereSampler);
 
-	uint width = atmosphereConstants.TRANSMITTANCE_TEXTURE_WIDTH;
-	uint height = atmosphereConstants.TRANSMITTANCE_TEXTURE_HEIGHT;
-
-	if(any(dispatchThreadID.xy > uint2(width, height)))
-		return;
-
 	float2 coord = dispatchThreadID.xy + 0.5f.xx;
 
-	transmittanceTexture[dispatchThreadID.xy] = 
+    transmittanceTexture[dispatchThreadID.xy] = 
 		ComputeTransmittanceToTopAtmosphereBoundaryTexture(atmosphereParameters, atmosphereConstants, coord);
+		
 }

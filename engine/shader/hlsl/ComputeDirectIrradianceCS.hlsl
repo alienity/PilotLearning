@@ -7,9 +7,10 @@
 
 cbuffer Constants : register(b0)
 {
-    int atmosphereUniformIndex;
-	int transmittanceTextureIndex;
-	int deltaIrradianceTextureIndex;
+    int atmosphereUniformCBVIndex;
+	int transmittance2DSRVIndex;
+	int deltaIrradiance2DUAVIndex;
+	int irradiance2DUAVIndex;
 };
 
 SamplerState sampler_LinearClamp : register(s10);
@@ -20,10 +21,11 @@ SamplerState sampler_PointRepeat : register(s13);
 [numthreads(8, 8, 1)]
 void CSMain(uint2 dispatchThreadID : SV_DispatchThreadID, uint2 groupThreadID : SV_GroupThreadID)
 {
-	ConstantBuffer<AtmosphereUniformCB> atmosphereUniformCB = ResourceDescriptorHeap[atmosphereUniformIndex];
+	ConstantBuffer<AtmosphereUniformCB> atmosphereUniformCB = ResourceDescriptorHeap[atmosphereUniformCBVIndex];
 	AtmosphereUniform atmosphereUniform = atmosphereUniformCB.atmosphereUniform;
-	Texture2D<float3> transmittanceTexture = ResourceDescriptorHeap[transmittanceTextureIndex];
-	RWTexture2D<float3> deltaIrradianceTexture = ResourceDescriptorHeap[deltaIrradianceTextureIndex];
+	Texture2D<float3> transmittanceTexture = ResourceDescriptorHeap[transmittance2DSRVIndex];
+	RWTexture2D<float3> deltaIrradianceTexture = ResourceDescriptorHeap[deltaIrradiance2DUAVIndex];
+	RWTexture2D<float3> irradianceTexture = ResourceDescriptorHeap[irradiance2DUAVIndex];
 
 	AtmosphereParameters atmosphereParameters;
 	AtmosphereConstants atmosphereConstants;
@@ -31,11 +33,10 @@ void CSMain(uint2 dispatchThreadID : SV_DispatchThreadID, uint2 groupThreadID : 
 	AtmosphereSampler atmosphereSampler;
 	InitAtmosphereSampler(sampler_LinearClamp, sampler_LinearRepeat, sampler_PointClamp, sampler_PointRepeat, atmosphereSampler);
 
-	uint width, height;
-	deltaIrradianceTexture.GetDimensions(width, height);
-	float2 coord = (dispatchThreadID.xy + 0.5f.xx) / float2(width, height);
+	float2 coord = dispatchThreadID.xy + 0.5f.xx;
 
-	deltaIrradianceTexture[dispatchThreadID.xy] = 
-		ComputeDirectIrradianceTexture(atmosphereParameters, atmosphereConstants, atmosphereSampler, 
-			transmittanceTexture, coord);
+    deltaIrradianceTexture[dispatchThreadID.xy] =
+		ComputeDirectIrradianceTexture(atmosphereParameters, atmosphereConstants, atmosphereSampler, transmittanceTexture, coord);
+	
+	irradianceTexture[dispatchThreadID.xy] = 0.0f.xxx;
 }

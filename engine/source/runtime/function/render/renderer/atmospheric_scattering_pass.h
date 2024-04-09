@@ -44,12 +44,16 @@ namespace MoYu
 
         RHI::RgTextureDesc colorTexDesc;
 
+        RHI::RgTextureDesc deltaIrradiance2DDesc;
+        RHI::RgTextureDesc deltaRayleighScattering3DDesc;
+        RHI::RgTextureDesc deltaMieScattering3DDesc;
+        RHI::RgTextureDesc deltaScatteringDensity3DDesc;
+
         std::shared_ptr<RHI::D3D12Buffer> mAtmosphereUniformBuffer;
 
         std::shared_ptr<RHI::D3D12Texture> mTransmittance2D;
         std::shared_ptr<RHI::D3D12Texture> mScattering3D;
         std::shared_ptr<RHI::D3D12Texture> mIrradiance2D;
-        std::shared_ptr<RHI::D3D12Texture> mSingleMieScattering3D;
 
         Shader mComputeTransmittanceCS;
         std::shared_ptr<RHI::D3D12RootSignature> pComputeTransmittanceSignature;
