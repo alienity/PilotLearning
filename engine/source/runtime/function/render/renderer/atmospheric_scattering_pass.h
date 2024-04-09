@@ -38,6 +38,7 @@ namespace MoYu
         void destroy() override final;
 
         void preCompute(RHI::RenderGraph& graph);
+        void updateAtmosphere(RHI::RenderGraph& graph, DrawInputParameters& passInput, DrawOutputParameters& passOutput);
 
     private:
         bool hasPrecomputed = false;

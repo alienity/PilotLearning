@@ -55,6 +55,7 @@
 #define AbstractScatteringTexture Texture3D<float3>
 #define ReducedScatteringTexture Texture3D<float3>
 #define ScatteringTexture Texture3D<float3>
+#define CombinedScatteringTexture Texture3D<float4>
 #define ScatteringDensityTexture Texture3D<float3>
 #define IrradianceTexture Texture2D<float3>
 

@@ -1,8 +1,6 @@
 ﻿#ifndef ATMOSPHERIC_SCATTERING_FUNCTION_INCLUDE
 #define ATMOSPHERIC_SCATTERING_FUNCTION_INCLUDE
 
-#define COMBINED_SCATTERING_TEXTURES 1
-
 #include "ATDefinitions.hlsli"
 
 Number ClampCosine(Number mu) {
@@ -897,7 +895,6 @@ IrradianceSpectrum GetIrradiance(
 // which is only available with a GLSL compiler, Rayleigh and multiple scattering are stored in the RGB channels, 
 // and the red component of the single Mie scattering is stored in the alpha channel.
 
-#ifdef COMBINED_SCATTERING_TEXTURES
 float3 GetExtrapolatedSingleMieScattering(
 	IN(AtmosphereParameters) atmosphere, IN(float4) scattering) {
 	// Algebraically this can never be negative, but rounding errors can produce
@@ -909,14 +906,12 @@ float3 GetExtrapolatedSingleMieScattering(
 		(atmosphere.rayleigh_scattering.r / atmosphere.mie_scattering.r) *
 		(atmosphere.mie_scattering / atmosphere.rayleigh_scattering);
 }
-#endif
 
 IrradianceSpectrum GetCombinedScattering(
 	IN(AtmosphereParameters) atmosphere,
 	IN(AtmosphereConstants) atmoscons,
 	IN(AtmosphereSampler) atmossampler,
-	IN(ReducedScatteringTexture) scattering_texture,
-	IN(ReducedScatteringTexture) single_mie_scattering_texture,
+	IN(CombinedScatteringTexture) scattering_texture,
 	Length r, Number mu, Number mu_s, Number nu,
 	bool ray_r_mu_intersects_ground,
 	OUT(IrradianceSpectrum) single_mie_scattering) {
@@ -929,21 +924,12 @@ IrradianceSpectrum GetCombinedScattering(
 		uvwz.z, uvwz.w);
 	float3 uvw1 = float3((tex_x + 1.0 + uvwz.y) / Number(atmoscons.SCATTERING_TEXTURE_NU_SIZE),
 		uvwz.z, uvwz.w);
-#ifdef COMBINED_SCATTERING_TEXTURES
 	float4 combined_scattering =
 		scattering_texture.Sample(atmossampler.sampler_LinearClamp, uvw0) * (1.0 - lerp) + 
 		scattering_texture.Sample(atmossampler.sampler_LinearClamp, uvw1) * lerp;
 	IrradianceSpectrum scattering = IrradianceSpectrum(combined_scattering.xyz);
 	single_mie_scattering =
 		GetExtrapolatedSingleMieScattering(atmosphere, combined_scattering);
-#else
-	IrradianceSpectrum scattering = IrradianceSpectrum(
-		scattering_texture.Sample(atmossampler.sampler_LinearClamp, uvw0).rgb * (1.0 - lerp) + 
-		scattering_texture.Sample(atmossampler.sampler_LinearClamp, uvw1).rgb * lerp);
-	single_mie_scattering = IrradianceSpectrum(
-		single_mie_scattering_texture.Sample(atmossampler.sampler_LinearClamp, uvw0).rgb * (1.0 - lerp) +
-		single_mie_scattering_texture.Sample(atmossampler.sampler_LinearClamp, uvw1).rgb * lerp);
-#endif
 	return scattering;
 }
 
@@ -953,8 +939,7 @@ RadianceSpectrum GetSkyRadiance(
 	IN(AtmosphereConstants) atmoscons,
 	IN(AtmosphereSampler) atmossampler,
 	IN(TransmittanceTexture) transmittance_texture,
-	IN(ReducedScatteringTexture) scattering_texture,
-	IN(ReducedScatteringTexture) single_mie_scattering_texture,
+	IN(CombinedScatteringTexture) scattering_texture,
 	Position camera, IN(Direction) view_ray, Length shadow_length,
 	IN(Direction) sun_direction, OUT(DimensionlessSpectrum) transmittance) {
 	// Compute the distance to the top atmosphere boundary along the view ray,
@@ -989,7 +974,7 @@ RadianceSpectrum GetSkyRadiance(
 	IrradianceSpectrum scattering;
 	if (shadow_length == 0.0 * m) {
 		scattering = GetCombinedScattering(
-			atmosphere, atmoscons, atmossampler, scattering_texture, single_mie_scattering_texture,
+			atmosphere, atmoscons, atmossampler, scattering_texture, 
 			r, mu, mu_s, nu, ray_r_mu_intersects_ground,
 			single_mie_scattering);
 	}
@@ -1005,7 +990,7 @@ RadianceSpectrum GetSkyRadiance(
 		Number mu_s_p = (r * mu_s + d * nu) / r_p;
 
 		scattering = GetCombinedScattering(
-			atmosphere, atmoscons, atmossampler, scattering_texture, single_mie_scattering_texture,
+			atmosphere, atmoscons, atmossampler, scattering_texture, 
 			r_p, mu_p, mu_s_p, nu, ray_r_mu_intersects_ground,
 			single_mie_scattering);
 		DimensionlessSpectrum shadow_transmittance =
@@ -1024,8 +1009,7 @@ RadianceSpectrum GetSkyRadianceToPoint(
 	IN(AtmosphereConstants) atmoscons,
 	IN(AtmosphereSampler) atmossampler,
 	IN(TransmittanceTexture) transmittance_texture,
-	IN(ReducedScatteringTexture) scattering_texture,
-	IN(ReducedScatteringTexture) single_mie_scattering_texture,
+	IN(CombinedScatteringTexture) scattering_texture,
 	Position camera, IN(Position) _point, Length shadow_length,
 	IN(Direction) sun_direction, OUT(DimensionlessSpectrum) transmittance) {
 	// Compute the distance to the top atmosphere boundary along the view ray,
@@ -1056,7 +1040,7 @@ RadianceSpectrum GetSkyRadianceToPoint(
 
 	IrradianceSpectrum single_mie_scattering;
 	IrradianceSpectrum scattering = GetCombinedScattering(
-		atmosphere, atmoscons, atmossampler, scattering_texture, single_mie_scattering_texture,
+		atmosphere, atmoscons, atmossampler, scattering_texture, 
 		r, mu, mu_s, nu, ray_r_mu_intersects_ground,
 		single_mie_scattering);
 
@@ -1072,7 +1056,7 @@ RadianceSpectrum GetSkyRadianceToPoint(
 
 	IrradianceSpectrum single_mie_scattering_p;
 	IrradianceSpectrum scattering_p = GetCombinedScattering(
-		atmosphere, atmoscons, atmossampler, scattering_texture, single_mie_scattering_texture,
+		atmosphere, atmoscons, atmossampler, scattering_texture, 
 		r_p, mu_p, mu_s_p, nu, ray_r_mu_intersects_ground,
 		single_mie_scattering_p);
 
@@ -1086,10 +1070,9 @@ RadianceSpectrum GetSkyRadianceToPoint(
 	scattering = scattering - shadow_transmittance * scattering_p;
 	single_mie_scattering =
 		single_mie_scattering - shadow_transmittance * single_mie_scattering_p;
-#ifdef COMBINED_SCATTERING_TEXTURES
+	
 	single_mie_scattering = GetExtrapolatedSingleMieScattering(
 		atmosphere, float4(scattering, single_mie_scattering.r));
-#endif
 
 	// Hack to avoid rendering artifacts when the sun is below the horizon.
 	single_mie_scattering = single_mie_scattering *

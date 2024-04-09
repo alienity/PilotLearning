@@ -25,7 +25,7 @@ namespace MoYu
         deltaRayleighScattering3DDesc.SetExtent(AtmosphereScattering::SCATTERING_TEXTURE_WIDTH,
                                                 AtmosphereScattering::SCATTERING_TEXTURE_HEIGHT,
                                                 AtmosphereScattering::SCATTERING_TEXTURE_DEPTH);
-        deltaRayleighScattering3DDesc.SetFormat(DXGI_FORMAT_R32G32B32_FLOAT);
+        deltaRayleighScattering3DDesc.SetFormat(DXGI_FORMAT_R32G32B32A32_FLOAT);
         deltaRayleighScattering3DDesc.SetAllowUnorderedAccess(true);
 
         deltaMieScattering3DDesc = RHI::RgTextureDesc("DeltaMieScattering3D");
@@ -33,7 +33,7 @@ namespace MoYu
         deltaMieScattering3DDesc.SetExtent(AtmosphereScattering::SCATTERING_TEXTURE_WIDTH,
                                                 AtmosphereScattering::SCATTERING_TEXTURE_HEIGHT,
                                                 AtmosphereScattering::SCATTERING_TEXTURE_DEPTH);
-        deltaMieScattering3DDesc.SetFormat(DXGI_FORMAT_R32G32B32_FLOAT);
+        deltaMieScattering3DDesc.SetFormat(DXGI_FORMAT_R32G32B32A32_FLOAT);
         deltaMieScattering3DDesc.SetAllowUnorderedAccess(true);
 
         deltaScatteringDensity3DDesc = RHI::RgTextureDesc("DeltaScatteringDensity3D");
@@ -41,7 +41,7 @@ namespace MoYu
         deltaScatteringDensity3DDesc.SetExtent(AtmosphereScattering::SCATTERING_TEXTURE_WIDTH,
                                            AtmosphereScattering::SCATTERING_TEXTURE_HEIGHT,
                                            AtmosphereScattering::SCATTERING_TEXTURE_DEPTH);
-        deltaScatteringDensity3DDesc.SetFormat(DXGI_FORMAT_R32G32B32_FLOAT);
+        deltaScatteringDensity3DDesc.SetFormat(DXGI_FORMAT_R32G32B32A32_FLOAT);
         deltaScatteringDensity3DDesc.SetAllowUnorderedAccess(true);
 
 
@@ -216,10 +216,7 @@ namespace MoYu
     void AtmosphericScatteringPass::update(RHI::RenderGraph& graph, DrawInputParameters& passInput, DrawOutputParameters& passOutput)
     {
         preCompute(graph);
-
-
-
-
+        updateAtmosphere(graph, passInput, passOutput);
     }
 
     void AtmosphericScatteringPass::destroy()
@@ -232,9 +229,9 @@ namespace MoYu
 
     void AtmosphericScatteringPass::preCompute(RHI::RenderGraph& graph)
     {
-        //if (hasPrecomputed)
-        //    return;
-        //hasPrecomputed = true;
+        if (hasPrecomputed)
+            return;
+        hasPrecomputed = true;
 
         RHI::RgResourceHandle deltaIrradiance2DHandle = graph.Create<RHI::D3D12Texture>(deltaIrradiance2DDesc);
         RHI::RgResourceHandle deltaRayleighScattering3DHandle = graph.Create<RHI::D3D12Texture>(deltaRayleighScattering3DDesc);
@@ -322,6 +319,8 @@ namespace MoYu
             pContext->Dispatch((dispatchWidth + 8 - 1) / 8, (dispatchHeight + 8 - 1) / 8, 1);
         });
 
+        glm::float3x3 luminance_from_radiance {1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0};
+
         // Compute the rayleigh and mie single scattering, store them in
         // delta_rayleigh_scattering_texture and delta_mie_scattering_texture, and
         // either store them or accumulate them in scattering_texture_ and
@@ -347,8 +346,6 @@ namespace MoYu
             RHI::D3D12UnorderedAccessView* deltaRayleighScattering3DUAV = deltaRayleighScattering3DTexture->GetDefaultUAV().get();
             RHI::D3D12UnorderedAccessView* deltaMieScattering3DUAV = deltaMieScattering3DTexture->GetDefaultUAV().get();
             RHI::D3D12UnorderedAccessView* scattering3DUAV         = scattering3DTexture->GetDefaultUAV().get();
-
-            glm::float3x3 luminance_from_radiance {1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0};
 
             __declspec(align(16)) struct
             {
@@ -377,6 +374,9 @@ namespace MoYu
             pContext->Dispatch((dispatchWidth + 8 - 1) / 8, (dispatchHeight + 8 - 1) / 8, (dispatchDepth + 8 - 1) / 8);
         });
         
+        //RHI::RgResourceHandle deltaMultipleScattering3DHandle = deltaRayleighScattering3DHandle;
+        #define deltaMultipleScattering3DHandle deltaRayleighScattering3DHandle
+
         // Compute the 2nd, 3rd and 4th order of scattering, in sequence.
         uint32_t num_scattering_orders = 4;
         for (unsigned int scattering_order = 2; scattering_order <= num_scattering_orders; ++scattering_order)
@@ -390,6 +390,7 @@ namespace MoYu
                 scatteringDensityPass.Read(transmittance2DHandle, false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
                 scatteringDensityPass.Read(deltaRayleighScattering3DHandle, false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
                 scatteringDensityPass.Read(deltaMieScattering3DHandle, false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+                scatteringDensityPass.Read(deltaMultipleScattering3DHandle, false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
                 scatteringDensityPass.Read(deltaIrradiance2DHandle, false, RHIResourceState::RHI_RESOURCE_STATE_UNORDERED_ACCESS);
                 scatteringDensityPass.Write(deltaScatteringDensity3DHandle, false, RHIResourceState::RHI_RESOURCE_STATE_UNORDERED_ACCESS);
                 scatteringDensityPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
@@ -397,6 +398,7 @@ namespace MoYu
                     RHI::D3D12Texture* mTransmittance2DTexture          = RegGetTex(transmittance2DHandle);
                     RHI::D3D12Texture* deltaRayleighScattering3DTexture = RegGetTex(deltaRayleighScattering3DHandle);
                     RHI::D3D12Texture* deltaMieScattering3DTexture      = RegGetTex(deltaMieScattering3DHandle);
+                    RHI::D3D12Texture* deltaMultipleScattering3DTexture = RegGetTex(deltaMultipleScattering3DHandle);
                     RHI::D3D12Texture* deltaIrradiance2DTexture         = RegGetTex(deltaIrradiance2DHandle);
                     RHI::D3D12Texture* deltaScatteringDensity3DTexture  = RegGetTex(deltaScatteringDensity3DHandle);
 
@@ -406,6 +408,7 @@ namespace MoYu
                     RHI::D3D12ShaderResourceView*  transmittance2DSRV = mTransmittance2DTexture->GetDefaultSRV().get();
                     RHI::D3D12ShaderResourceView* deltaRayleighScattering3DSRV = deltaRayleighScattering3DTexture->GetDefaultSRV().get();
                     RHI::D3D12ShaderResourceView* deltaMieScattering3DSRV = deltaMieScattering3DTexture->GetDefaultSRV().get();
+                    RHI::D3D12ShaderResourceView* deltaMultipleScattering3DSRV = deltaMultipleScattering3DTexture->GetDefaultSRV().get();
                     RHI::D3D12ShaderResourceView* deltaIrradiance2DSRV = deltaIrradiance2DTexture->GetDefaultSRV().get();
                     RHI::D3D12UnorderedAccessView* deltaScatteringDensity3DUAV = deltaScatteringDensity3DTexture->GetDefaultUAV().get();
 
@@ -424,7 +427,7 @@ namespace MoYu
                              transmittance2DSRV->GetIndex(),
                              deltaRayleighScattering3DSRV->GetIndex(),
                              deltaMieScattering3DSRV->GetIndex(),
-                             deltaRayleighScattering3DSRV->GetIndex(),
+                             deltaMultipleScattering3DSRV->GetIndex(),
                              deltaIrradiance2DSRV->GetIndex(),
                              deltaScatteringDensity3DUAV->GetIndex(),
                              scattering_order};
@@ -444,25 +447,128 @@ namespace MoYu
             {
                 // Compute the indirect irradiance, store it in delta_irradiance_texture and
                 // accumulate it in irradiance_texture_.
+                RHI::RenderPass& indirectIrradiancePass = graph.AddRenderPass("ASComputeIndirectIrradiancePass");
 
+                indirectIrradiancePass.Read(atmosphereUniformBufferHandle, false, RHIResourceState::RHI_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
+                indirectIrradiancePass.Read(deltaRayleighScattering3DHandle, false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+                indirectIrradiancePass.Read(deltaMieScattering3DHandle, false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+                indirectIrradiancePass.Read(deltaMultipleScattering3DHandle, false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+                indirectIrradiancePass.Write(deltaIrradiance2DHandle, false, RHIResourceState::RHI_RESOURCE_STATE_UNORDERED_ACCESS);
+                indirectIrradiancePass.Write(irradiance2DHandle, false, RHIResourceState::RHI_RESOURCE_STATE_UNORDERED_ACCESS);
+                indirectIrradiancePass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
+                    RHI::D3D12Buffer*  mASUniformBuffer                 = RegGetBuf(atmosphereUniformBufferHandle);
+                    RHI::D3D12Texture* deltaRayleighScattering3DTexture = RegGetTex(deltaRayleighScattering3DHandle);
+                    RHI::D3D12Texture* deltaMieScattering3DTexture      = RegGetTex(deltaMieScattering3DHandle);
+                    RHI::D3D12Texture* deltaMultipleScattering3DTexture = RegGetTex(deltaMultipleScattering3DHandle);
+                    RHI::D3D12Texture* deltaIrradiance2DTexture         = RegGetTex(deltaIrradiance2DHandle);
+                    RHI::D3D12Texture* irradiance2DTexture              = RegGetTex(irradiance2DHandle);
 
+                    RHI::D3D12ComputeContext* pContext = context->GetComputeContext();
 
+                    RHI::D3D12ConstantBufferView*  asUniformCBV       = mASUniformBuffer->GetDefaultCBV().get();
+                    RHI::D3D12ShaderResourceView* deltaRayleighScattering3DSRV = deltaRayleighScattering3DTexture->GetDefaultSRV().get();
+                    RHI::D3D12ShaderResourceView* deltaMieScattering3DSRV = deltaMieScattering3DTexture->GetDefaultSRV().get();
+                    RHI::D3D12ShaderResourceView* deltaMultipleScattering3DSRV = deltaMultipleScattering3DTexture->GetDefaultSRV().get();
+                    RHI::D3D12ShaderResourceView* deltaIrradiance2DUAV = deltaIrradiance2DTexture->GetDefaultSRV().get();
+                    RHI::D3D12UnorderedAccessView* irradiance2DUAV = irradiance2DTexture->GetDefaultUAV().get();
 
+                    __declspec(align(16)) struct
+                    {
+                        uint32_t atmosphereUniformCBVIndex;
+                        uint32_t singleRayleighScattering3DSRVIndex;
+                        uint32_t singleMieScattering3DSRVIndex;
+                        uint32_t multipleScattering3DSRVIndex;
+                        uint32_t deltaIrradiance2DUAVIndex;
+                        uint32_t irradiance2DUAVIndex;
 
+                        glm::float3x3 luminance_from_radiance;
+                        int scattering_order;
+                    } mCB = {asUniformCBV->GetIndex(),
+                             deltaRayleighScattering3DSRV->GetIndex(),
+                             deltaMieScattering3DSRV->GetIndex(),
+                             deltaMultipleScattering3DSRV->GetIndex(),
+                             deltaIrradiance2DUAV->GetIndex(),
+                             irradiance2DUAV->GetIndex(),
+                             luminance_from_radiance,
+                             scattering_order - 1};
 
+                    pContext->SetRootSignature(pComputeIdirectIrradianceSignature.get());
+                    pContext->SetPipelineState(pComputeIdirectIrradiancePSO.get());
+                    pContext->SetConstantArray(0, sizeof(mCB) / sizeof(uint32_t), &mCB);
+
+                    uint32_t dispatchWidth  = AtmosphereScattering::IRRADIANCE_TEXTURE_WIDTH;
+                    uint32_t dispatchHeight = AtmosphereScattering::IRRADIANCE_TEXTURE_HEIGHT;
+
+                    pContext->Dispatch((dispatchWidth + 8 - 1) / 8, (dispatchHeight + 8 - 1) / 8, 1);
+                });
             }
 
             {
                 // Compute the multiple scattering, store it in
                 // delta_multiple_scattering_texture, and accumulate it in
                 // scattering_texture_.
+                RHI::RenderPass& multipleScatteringPass = graph.AddRenderPass("ASComputeMultipleScatteringPass");
 
+                multipleScatteringPass.Read(atmosphereUniformBufferHandle, false, RHIResourceState::RHI_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
+                multipleScatteringPass.Read(transmittance2DHandle, false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+                multipleScatteringPass.Read(deltaScatteringDensity3DHandle, false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+                multipleScatteringPass.Write(deltaMultipleScattering3DHandle, false, RHIResourceState::RHI_RESOURCE_STATE_UNORDERED_ACCESS);
+                multipleScatteringPass.Write(scattering3DHandle, false, RHIResourceState::RHI_RESOURCE_STATE_UNORDERED_ACCESS);
+                multipleScatteringPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
+                    RHI::D3D12Buffer*  mASUniformBuffer                 = RegGetBuf(atmosphereUniformBufferHandle);
+                    RHI::D3D12Texture* mTransmittance2DTexture          = RegGetTex(transmittance2DHandle);
+                    RHI::D3D12Texture* deltaScatteringDensity3DTexture  = RegGetTex(deltaScatteringDensity3DHandle);
+
+                    RHI::D3D12Texture* deltaMultipleScattering3DTexture = RegGetTex(deltaMultipleScattering3DHandle);
+                    RHI::D3D12Texture* scattering3DTexture              = RegGetTex(scattering3DHandle);
+
+                    RHI::D3D12ComputeContext* pContext = context->GetComputeContext();
+
+                    RHI::D3D12ConstantBufferView* asUniformCBV       = mASUniformBuffer->GetDefaultCBV().get();
+                    RHI::D3D12ShaderResourceView* transmittance2DSRV = mTransmittance2DTexture->GetDefaultSRV().get();
+                    RHI::D3D12ShaderResourceView* deltaScatteringDensity3DSRV = deltaScatteringDensity3DTexture->GetDefaultSRV().get();
+                    RHI::D3D12UnorderedAccessView* deltaMultipleScattering3DUAV = deltaMultipleScattering3DTexture->GetDefaultUAV().get();
+                    RHI::D3D12UnorderedAccessView* scattering3DUAV = scattering3DTexture->GetDefaultUAV().get();
+
+                    __declspec(align(16)) struct
+                    {
+                        uint32_t atmosphereUniformCBVIndex;
+                        uint32_t transmittance2DSRVIndex;
+                        uint32_t scatteringDensity3DSRVIndex;
+                        uint32_t deltaMultipleScattering3DUAVIndex;
+                        uint32_t scattering3DUAVIndex;
+
+                        int scattering_order;
+                        glm::float3x3 luminance_from_radiance;
+                    } mCB = {asUniformCBV->GetIndex(),
+                             transmittance2DSRV->GetIndex(),
+                             deltaScatteringDensity3DSRV->GetIndex(),
+                             deltaMultipleScattering3DUAV->GetIndex(),
+                             scattering3DUAV->GetIndex(),
+                             scattering_order,
+                             luminance_from_radiance};
+
+                    pContext->SetRootSignature(pComputeMultipleScatteringSignature.get());
+                    pContext->SetPipelineState(pComputeMultipleScatteringPSO.get());
+                    pContext->SetConstantArray(0, sizeof(mCB) / sizeof(uint32_t), &mCB);
+
+                    uint32_t dispatchWidth  = AtmosphereScattering::SCATTERING_TEXTURE_WIDTH;
+                    uint32_t dispatchHeight = AtmosphereScattering::SCATTERING_TEXTURE_HEIGHT;
+                    uint32_t dispatchDepth = AtmosphereScattering::SCATTERING_TEXTURE_DEPTH;
+
+                    pContext->Dispatch((dispatchWidth + 8 - 1) / 8, (dispatchHeight + 8 - 1) / 8, (dispatchDepth + 8 - 1) / 8);
+                });
 
             }
 
         }
 
+    }
 
+    void AtmosphericScatteringPass::updateAtmosphere(RHI::RenderGraph& graph, DrawInputParameters& passInput, DrawOutputParameters& passOutput)
+    {
+        if (!hasPrecomputed)
+            return;
 
 
 
