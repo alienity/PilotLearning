@@ -27,6 +27,15 @@ namespace MoYu
         struct DrawOutputParameters : public PassOutput
         {
             RHI::RgResourceHandle renderTargetColorHandle;
+            RHI::RgResourceHandle renderTargetDepthHandle;
+        };
+
+        struct ImportGraphHandle
+        {
+            RHI::RgResourceHandle atmosphereUniformBufferHandle;
+            RHI::RgResourceHandle transmittance2DHandle;
+            RHI::RgResourceHandle scattering3DHandle;
+            RHI::RgResourceHandle irradiance2DHandle;
         };
 
     public:
@@ -37,8 +46,8 @@ namespace MoYu
         void update(RHI::RenderGraph& graph, DrawInputParameters& passInput, DrawOutputParameters& passOutput);
         void destroy() override final;
 
-        void preCompute(RHI::RenderGraph& graph);
-        void updateAtmosphere(RHI::RenderGraph& graph, DrawInputParameters& passInput, DrawOutputParameters& passOutput);
+        void preCompute(RHI::RenderGraph& graph, ImportGraphHandle& graphHandle);
+        void updateAtmosphere(RHI::RenderGraph& graph, ImportGraphHandle& graphHandle, DrawInputParameters& passInput, DrawOutputParameters& passOutput);
 
     private:
         bool hasPrecomputed = false;
@@ -79,6 +88,10 @@ namespace MoYu
         Shader mComputeMultipleScatteringCS;
         std::shared_ptr<RHI::D3D12RootSignature> pComputeMultipleScatteringSignature;
         std::shared_ptr<RHI::D3D12PipelineState> pComputeMultipleScatteringPSO;
-
+        
+        Shader mAtmosphericSkyProceduralVS;
+        Shader mAtmosphericSkyProceduralPS;
+        std::shared_ptr<RHI::D3D12RootSignature> pAtmosphericSkyProceduralSignature;
+        std::shared_ptr<RHI::D3D12PipelineState> pAtmosphericSkyProceduralPSO;
 	};
 }

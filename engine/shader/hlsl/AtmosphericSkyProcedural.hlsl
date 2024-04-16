@@ -13,8 +13,8 @@ cbuffer PSConstants : register(b0)
     int scattering3DSRVIndex;
 	int irradiance2DSRVIndex;
 
-	float _Exposure;
-	float4 _White_point;
+	float exposure;
+	float3 white_point;
 };
 
 struct VSOutput
@@ -28,12 +28,31 @@ SamplerState sampler_LinearRepeat : register(s11);
 SamplerState sampler_PointClamp : register(s12);
 SamplerState sampler_PointRepeat : register(s13);
 
-RadianceSpectrum GetSolarRadiance(AtmosphereParameters atmosphere) {
+RadianceSpectrum GetSolarRadiance(AtmosphereParameters atmosphere)
+{
 	return atmosphere.solar_irradiance /
 		(PI * atmosphere.sun_angular_radius * atmosphere.sun_angular_radius);
 }
 
 const static float3 kGroundAlbedo = float3(0.0, 0.0, 0.04);
+
+VSOutput VSMain(uint VertID : SV_VertexID)
+{
+    ConstantBuffer<FrameUniforms> mPerFrameUniforms = ResourceDescriptorHeap[perFrameBufferIndex];
+	
+    float4x4 ProjInverse = mPerFrameUniforms.cameraUniform.curFrameUniform.viewFromClipMatrix;
+    float3x3 ViewInverse = (float3x3) mPerFrameUniforms.cameraUniform.curFrameUniform.worldFromViewMatrix;
+
+    float2 ScreenUV = float2(uint2(VertID, VertID << 1) & 2);
+    float4 ProjectedPos = float4(lerp(float2(-1, 1), float2(1, -1), ScreenUV), 0, 1);
+    float4 PosViewSpace = mul(ProjInverse, ProjectedPos);
+
+    VSOutput vsOutput;
+    vsOutput.position = ProjectedPos;
+    vsOutput.viewDir = mul(ViewInverse, PosViewSpace.xyz / PosViewSpace.w);
+
+    return vsOutput;
+}
 
 float4 PSMain(VSOutput vsOutput) : SV_Target0
 {
@@ -122,12 +141,12 @@ float4 PSMain(VSOutput vsOutput) : SV_Target0
     {
 		radiance = radiance + transmittance * GetSolarRadiance(atmosphereParameters);
 	}
-	radiance = lerp(radiance, ground_radiance, ground_alpha);
+	//radiance = lerp(radiance, ground_radiance, ground_alpha);
 	//radiance = mix(radiance, sphere_radiance, sphere_alpha);
 	float4 color;
-    color.rgb = abs(float3(1.0, 1.0, 1.0) - exp(-radiance / _White_point.rgb)) * _Exposure;
+    color.rgb = abs(float3(1.0, 1.0, 1.0) - exp(-radiance / white_point.rgb)) * exposure;
 	//pow(abs(float3(1.0, 1.0, 1.0) - exp(-radiance / _White_point * _Exposure)), float3(0.456, 0.456, 0.456));
 	color.a = 1.0;
-
+	
 	return color;
 }

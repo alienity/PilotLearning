@@ -13,8 +13,7 @@ cbuffer Constants : register(b0)
 	int multipleScattering3DSRVIndex;
 	int deltaIrradiance2DUAVIndex;
 	int irradiance2DUAVIndex;
-
-	float3x3 luminance_from_radiance;
+	
 	int scattering_order;
 };
 
@@ -47,8 +46,8 @@ void CSMain(uint3 dispatchThreadID : SV_DispatchThreadID, uint3 groupThreadID : 
 		singleMieScattering3DSRV, multipleScattering3DSRV,
 		float2(dispatchThreadID.xy + 0.5.xx), scattering_order);
 
-	float3 irradiance = mul(luminance_from_radiance, delta_irradiance);
-
     deltaIrradiance2DUAV[dispatchThreadID.xy] = delta_irradiance;
-    irradiance2DUAV[dispatchThreadID.xy] = irradiance;
+	
+    float3 irradiance = irradiance2DUAV[dispatchThreadID.xy];
+    irradiance2DUAV[dispatchThreadID.xy] = irradiance + delta_irradiance;
 }

@@ -338,9 +338,7 @@ struct RootSignatures
                 RHI::RootSignatureDesc()
                     .Add32BitConstants<0, 0>(2)
                     .AddConstantBufferView<1, 0>()
-                    .AddStaticSampler<10, 0>(D3D12_FILTER::D3D12_FILTER_ANISOTROPIC,
-                                       D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_WRAP,
-                                       8)
+                    .AddStaticSampler<10, 0>(D3D12_FILTER::D3D12_FILTER_ANISOTROPIC, D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_WRAP, 8)
                     .AllowResourceDescriptorHeapIndexing()
                     .AllowSampleDescriptorHeapIndexing();
 

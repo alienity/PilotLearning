@@ -50,5 +50,5 @@ void CSMain(uint3 dispatchThreadID : SV_DispatchThreadID, uint3 groupThreadID : 
 		irradiance2DSRV, float3(dispatchThreadID.xy + 0.5.xx, layer + 0.5),
 		scattering_order);
 
-    scatteringDensityUAV[uint3(dispatchThreadID.xy, layer)] = scattering_density;
+    scatteringDensityUAV[dispatchThreadID.xyz] = scattering_density;
 }

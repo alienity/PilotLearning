@@ -17,7 +17,7 @@ SamplerState sampler_PointClamp : register(s12);
 SamplerState sampler_PointRepeat : register(s13);
 
 [numthreads(8, 8, 1)]
-void CSMain(uint2 dispatchThreadID : SV_DispatchThreadID, uint2 groupThreadID : SV_GroupThreadID)
+void CSMain(uint3 dispatchThreadID : SV_DispatchThreadID)
 {
 	ConstantBuffer<AtmosphereUniformCB> atmosphereUniformCB = ResourceDescriptorHeap[atmosphereUniformCBVIndex];
 	AtmosphereUniform atmosphereUniform = atmosphereUniformCB.atmosphereUniform;

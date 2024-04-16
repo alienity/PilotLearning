@@ -655,6 +655,7 @@ namespace MoYu
         mIndirectOpaqueDrawPass->update(graph, mDrawIntputParams, mDrawOutputParams);
         //=================================================================================
         */
+        /*
         //=================================================================================
         // skybox draw
         SkyBoxPass::DrawInputParameters  mSkyboxIntputParams;
@@ -667,7 +668,7 @@ namespace MoYu
         //mSkyboxOutputParams.renderTargetDepthHandle = mDrawOutputParams.renderTargetDepthHandle;
         mSkyBoxPass->update(graph, mSkyboxIntputParams, mSkyboxOutputParams);
         //=================================================================================
-
+        */
         //=================================================================================
         // AtmosphericScattering draw
         AtmosphericScatteringPass::DrawInputParameters mASIntputParams;
@@ -675,6 +676,7 @@ namespace MoYu
 
         mASIntputParams.perframeBufferHandle    = indirectCullOutput.perframeBufferHandle;
         mASOutputParams.renderTargetColorHandle = outColorHandle;
+        mASOutputParams.renderTargetDepthHandle = mGBufferOutput.depthHandle;
         mAtmosphericScatteringPass->update(graph, mASIntputParams, mASOutputParams);
         //=================================================================================
 
@@ -692,8 +694,8 @@ namespace MoYu
         {
             mDrawTransIntputParams.spotShadowmapTexHandles.push_back(spotShadowmapHandle[i]);
         }
-        mDrawTransOutputParams.renderTargetColorHandle = mSkyboxOutputParams.renderTargetColorHandle;
-        mDrawTransOutputParams.renderTargetDepthHandle = mSkyboxOutputParams.renderTargetDepthHandle;
+        mDrawTransOutputParams.renderTargetColorHandle = mASOutputParams.renderTargetColorHandle;
+        mDrawTransOutputParams.renderTargetDepthHandle = mASOutputParams.renderTargetDepthHandle;
         mIndirectTransparentDrawPass->update(graph, mDrawTransIntputParams, mDrawTransOutputParams);
         //=================================================================================
 

@@ -12,8 +12,6 @@ cbuffer Constants : register(b0)
 	int deltaRayleighUAVIndex;
 	int deltaMieUAVIndex;
 	int scatteringUAVIndex;
-
-	float3x3 luminance_from_radiance;
 };
 
 SamplerState sampler_LinearClamp : register(s10);
@@ -42,10 +40,10 @@ void CSMain(uint3 dispatchThreadID : SV_DispatchThreadID, uint3 groupThreadID : 
 	float3 delta_rayleigh, delta_mie;
 	ComputeSingleScatteringTexture(atmosphereParameters, atmosphereConstants, atmosphereSampler, 
 		transmittanceTexture, float3(dispatchThreadID.xy + 0.5.xx, layer + 0.5), delta_rayleigh, delta_mie);
-	float4 scattering = float4(mul(luminance_from_radiance, delta_rayleigh.rgb), mul(luminance_from_radiance, delta_mie).r);
+    float4 scattering = float4(delta_rayleigh.rgb, delta_mie.r);
 	// float3 single_mie_scattering = mul(luminance_from_radiance, delta_mie);
 
-    deltaRayleighUAV[uint3(dispatchThreadID.xy, layer)] = delta_rayleigh;
-    deltaMieUAV[uint3(dispatchThreadID.xy, layer)] = delta_mie;
-	scatteringUAV[uint3(dispatchThreadID.xy, layer)] = scattering;
+    deltaRayleighUAV[dispatchThreadID.xyz] = delta_rayleigh;
+    deltaMieUAV[dispatchThreadID.xyz] = delta_mie;
+    scatteringUAV[dispatchThreadID.xyz] = scattering;
 }

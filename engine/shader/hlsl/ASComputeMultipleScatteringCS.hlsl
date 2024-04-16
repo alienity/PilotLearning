@@ -14,7 +14,6 @@ cbuffer Constants : register(b0)
     int scattering3DUAVIndex;
 
     int scattering_order;
-    float3x3 luminance_from_radiance;
 };
 
 SamplerState sampler_LinearClamp : register(s10);
@@ -23,7 +22,7 @@ SamplerState sampler_PointClamp : register(s12);
 SamplerState sampler_PointRepeat : register(s13);
 
 [numthreads(8, 8, 8)]
-void CSMain(uint3 dispatchThreadID : SV_DispatchThreadID, uint3 groupThreadID : SV_GroupThreadID)
+void CSMain(uint3 dispatchThreadID : SV_DispatchThreadID)
 {
     ConstantBuffer<AtmosphereUniformCB> atmosphereUniformCB = ResourceDescriptorHeap[atmosphereUniformIndex];
     AtmosphereUniform atmosphereUniform = atmosphereUniformCB.atmosphereUniform;
@@ -46,9 +45,9 @@ void CSMain(uint3 dispatchThreadID : SV_DispatchThreadID, uint3 groupThreadID : 
 		transmittanceTexture, scatteringDensity3DSRV,
 		float3(dispatchThreadID.xy + 0.5.xx, layer + 0.5), nu);
     
-    float4 scattering = float4(mul(luminance_from_radiance, 
-        delta_multiple_scattering.rgb / RayleighPhaseFunction(nu)), 0);
+    float4 scattering = float4(delta_multiple_scattering.rgb / RayleighPhaseFunction(nu), 0);
 
-    deltaMultipleScattering3DUAV[uint3(dispatchThreadID.xy, layer)] = delta_multiple_scattering;
-    scattering3DUAV[uint3(dispatchThreadID.xy, layer)] = scattering;
+    deltaMultipleScattering3DUAV[dispatchThreadID.xyz] = delta_multiple_scattering;
+    
+    scattering3DUAV[dispatchThreadID.xyz] = scattering3DUAV[dispatchThreadID.xyz].rgba + scattering;
 }

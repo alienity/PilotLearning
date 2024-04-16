@@ -50,7 +50,7 @@ namespace MoYu
 
         // Compute the transmittance, and store it in transmittance_texture_.
         mComputeTransmittanceCS = m_ShaderCompiler->CompileShader(RHI_SHADER_TYPE::Compute,
-                                                                  m_ShaderRootPath / "hlsl/ComputeTransmittanceCS.hlsl",
+                                                                  m_ShaderRootPath / "hlsl/ASComputeTransmittanceCS.hlsl",
                                                                   ShaderCompileOptions(L"CSMain"));
 
         // Compute the direct irradiance, store it in delta_irradiance_texture and,
@@ -59,7 +59,7 @@ namespace MoYu
         // irradiance_texture_, but only the irradiance from the sky).
         mComputeDirectIrrdianceCS =
             m_ShaderCompiler->CompileShader(RHI_SHADER_TYPE::Compute,
-                                                                  m_ShaderRootPath / "hlsl/ComputeDirectIrradianceCS.hlsl",
+                                                                  m_ShaderRootPath / "hlsl/ASComputeDirectIrradianceCS.hlsl",
                                                                   ShaderCompileOptions(L"CSMain"));
 
         // Compute the rayleigh and mie single scattering, store them in
@@ -68,7 +68,7 @@ namespace MoYu
         // optional_single_mie_scattering_texture_.
         mComputeSingleScatteringCS =
             m_ShaderCompiler->CompileShader(RHI_SHADER_TYPE::Compute,
-                                            m_ShaderRootPath / "hlsl/ComputeSingleScatteringCS.hlsl",
+                                            m_ShaderRootPath / "hlsl/ASComputeSingleScatteringCS.hlsl",
                                             ShaderCompileOptions(L"CSMain"));
 
         // Compute the 2nd, 3rd and 4th order of scattering, in sequence.
@@ -76,14 +76,14 @@ namespace MoYu
         // delta_scattering_density_texture.
         mComputeScatteringDensityCS =
             m_ShaderCompiler->CompileShader(RHI_SHADER_TYPE::Compute,
-                                            m_ShaderRootPath / "hlsl/ComputeScatteringDensityCS.hlsl",
+                                            m_ShaderRootPath / "hlsl/ASComputeScatteringDensityCS.hlsl",
                                             ShaderCompileOptions(L"CSMain"));
 
         // Compute the indirect irradiance, store it in delta_irradiance_texture and
         // accumulate it in irradiance_texture_.
         mComputeIdirectIrradianceCS = 
             m_ShaderCompiler->CompileShader(RHI_SHADER_TYPE::Compute,
-                                            m_ShaderRootPath / "hlsl/ComputeIdirectIrradianceCS.hlsl",
+                                            m_ShaderRootPath / "hlsl/ASComputeIdirectIrradianceCS.hlsl",
                                             ShaderCompileOptions(L"CSMain"));
 
         // Compute the multiple scattering, store it in
@@ -91,7 +91,7 @@ namespace MoYu
         // scattering_texture_.
         mComputeMultipleScatteringCS = 
             m_ShaderCompiler->CompileShader(RHI_SHADER_TYPE::Compute,
-                                            m_ShaderRootPath / "hlsl/ComputeMultipleScatteringCS.hlsl",
+                                            m_ShaderRootPath / "hlsl/ASComputeMultipleScatteringCS.hlsl",
                                             ShaderCompileOptions(L"CSMain"));
 
 #define CommonRootSigDesc(rootSigName) \
@@ -159,6 +159,61 @@ namespace MoYu
 
         }
 
+        {
+            CommonRootSigDesc(pAtmosphericSkyProceduralSignature)
+        }
+        {
+            mAtmosphericSkyProceduralVS =
+                m_ShaderCompiler->CompileShader(RHI_SHADER_TYPE::Vertex,
+                                                m_ShaderRootPath / "hlsl/AtmosphericSkyProcedural.hlsl",
+                                                ShaderCompileOptions(L"VSMain"));
+
+            mAtmosphericSkyProceduralPS =
+                m_ShaderCompiler->CompileShader(RHI_SHADER_TYPE::Pixel,
+                                                m_ShaderRootPath / "hlsl/AtmosphericSkyProcedural.hlsl",
+                                                ShaderCompileOptions(L"PSMain"));
+
+            RHI::D3D12InputLayout InputLayout = {};
+
+            RHIDepthStencilState DepthStencilState;
+            DepthStencilState.DepthEnable = true;
+            DepthStencilState.DepthWrite  = false;
+            DepthStencilState.DepthFunc   = RHI_COMPARISON_FUNC::GreaterEqual;
+
+            RHIRenderTargetState RenderTargetState;
+            RenderTargetState.RTFormats[0]     = DXGI_FORMAT_R32G32B32A32_FLOAT;
+            RenderTargetState.NumRenderTargets = 1;
+            RenderTargetState.DSFormat         = DXGI_FORMAT_D32_FLOAT;
+
+            RHISampleState SampleState;
+            SampleState.Count = 1;
+
+            struct PsoStream
+            {
+                PipelineStateStreamRootSignature     RootSignature;
+                PipelineStateStreamInputLayout       InputLayout;
+                PipelineStateStreamPrimitiveTopology PrimitiveTopologyType;
+                PipelineStateStreamVS                VS;
+                PipelineStateStreamPS                PS;
+                PipelineStateStreamDepthStencilState DepthStencilState;
+                PipelineStateStreamRenderTargetState RenderTargetState;
+                PipelineStateStreamSampleState       SampleState;
+            } psoStream;
+            psoStream.RootSignature = PipelineStateStreamRootSignature(pAtmosphericSkyProceduralSignature.get());
+            psoStream.InputLayout   = &InputLayout;
+            psoStream.PrimitiveTopologyType = RHI_PRIMITIVE_TOPOLOGY::Triangle;
+            psoStream.VS                    = &mAtmosphericSkyProceduralVS;
+            psoStream.PS                    = &mAtmosphericSkyProceduralPS;
+            psoStream.DepthStencilState     = DepthStencilState;
+            psoStream.RenderTargetState     = RenderTargetState;
+            psoStream.SampleState           = SampleState;
+
+            PipelineStateStreamDesc psoDesc = {sizeof(PsoStream), &psoStream};
+
+            pAtmosphericSkyProceduralPSO =
+                std::make_shared<RHI::D3D12PipelineState>(m_Device, L"AtmosphericSkyProcedural", psoDesc);
+        }
+
         mTransmittance2D = RHI::D3D12Texture::Create2D(m_Device->GetLinkedDevice(),
                                                        AtmosphereScattering::TRANSMITTANCE_TEXTURE_WIDTH,
                                                        AtmosphereScattering::TRANSMITTANCE_TEXTURE_HEIGHT,
@@ -215,8 +270,16 @@ namespace MoYu
 
     void AtmosphericScatteringPass::update(RHI::RenderGraph& graph, DrawInputParameters& passInput, DrawOutputParameters& passOutput)
     {
-        preCompute(graph);
-        updateAtmosphere(graph, passInput, passOutput);
+        RHI::RgResourceHandle atmosphereUniformBufferHandle = graph.Import<RHI::D3D12Buffer>(mAtmosphereUniformBuffer.get());
+        RHI::RgResourceHandle transmittance2DHandle = graph.Import<RHI::D3D12Texture>(mTransmittance2D.get());
+        RHI::RgResourceHandle scattering3DHandle    = graph.Import<RHI::D3D12Texture>(mScattering3D.get());
+        RHI::RgResourceHandle irradiance2DHandle    = graph.Import<RHI::D3D12Texture>(mIrradiance2D.get());
+
+        ImportGraphHandle graphHandle = {
+            atmosphereUniformBufferHandle, transmittance2DHandle, scattering3DHandle, irradiance2DHandle};
+
+        preCompute(graph, graphHandle);
+        updateAtmosphere(graph, graphHandle, passInput, passOutput);
     }
 
     void AtmosphericScatteringPass::destroy()
@@ -227,21 +290,21 @@ namespace MoYu
 
     }
 
-    void AtmosphericScatteringPass::preCompute(RHI::RenderGraph& graph)
+    void AtmosphericScatteringPass::preCompute(RHI::RenderGraph& graph, ImportGraphHandle& graphHandle)
     {
         if (hasPrecomputed)
             return;
         hasPrecomputed = true;
 
+        RHI::RgResourceHandle atmosphereUniformBufferHandle = graphHandle.atmosphereUniformBufferHandle;
+        RHI::RgResourceHandle transmittance2DHandle         = graphHandle.transmittance2DHandle;
+        RHI::RgResourceHandle scattering3DHandle            = graphHandle.scattering3DHandle;
+        RHI::RgResourceHandle irradiance2DHandle            = graphHandle.irradiance2DHandle;
+
         RHI::RgResourceHandle deltaIrradiance2DHandle = graph.Create<RHI::D3D12Texture>(deltaIrradiance2DDesc);
         RHI::RgResourceHandle deltaRayleighScattering3DHandle = graph.Create<RHI::D3D12Texture>(deltaRayleighScattering3DDesc);
         RHI::RgResourceHandle deltaMieScattering3DHandle = graph.Create<RHI::D3D12Texture>(deltaMieScattering3DDesc);
         RHI::RgResourceHandle deltaScatteringDensity3DHandle = graph.Create<RHI::D3D12Texture>(deltaScatteringDensity3DDesc);
-
-        RHI::RgResourceHandle atmosphereUniformBufferHandle = graph.Import<RHI::D3D12Buffer>(mAtmosphereUniformBuffer.get());
-        RHI::RgResourceHandle transmittance2DHandle = graph.Import<RHI::D3D12Texture>(mTransmittance2D.get());
-        RHI::RgResourceHandle scattering3DHandle    = graph.Import<RHI::D3D12Texture>(mScattering3D.get());
-        RHI::RgResourceHandle irradiance2DHandle    = graph.Import<RHI::D3D12Texture>(mIrradiance2D.get());
 
         // Compute the transmittance, and store it in transmittance_texture_.
         RHI::RenderPass& transmittancePass = graph.AddRenderPass("ASComputeTransmittancePass");
@@ -319,8 +382,6 @@ namespace MoYu
             pContext->Dispatch((dispatchWidth + 8 - 1) / 8, (dispatchHeight + 8 - 1) / 8, 1);
         });
 
-        glm::float3x3 luminance_from_radiance {1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0};
-
         // Compute the rayleigh and mie single scattering, store them in
         // delta_rayleigh_scattering_texture and delta_mie_scattering_texture, and
         // either store them or accumulate them in scattering_texture_ and
@@ -354,14 +415,11 @@ namespace MoYu
                 uint32_t deltaRayleighUAVIndex;
                 uint32_t deltaMieUAVIndex;
                 uint32_t scatteringUAVIndex;
-
-                glm::float3x3 luminance_from_radiance;
             } mCB = {asUniformCBV->GetIndex(),
                      transmittance2DSRV->GetIndex(),
                      deltaRayleighScattering3DUAV->GetIndex(),
                      deltaMieScattering3DUAV->GetIndex(),
-                     scattering3DUAV->GetIndex(),
-                     luminance_from_radiance};
+                     scattering3DUAV->GetIndex()};
 
             pContext->SetRootSignature(pComputeSingleScatteringSignature.get());
             pContext->SetPipelineState(pComputeSingleScatteringPSO.get());
@@ -376,7 +434,7 @@ namespace MoYu
         
         //RHI::RgResourceHandle deltaMultipleScattering3DHandle = deltaRayleighScattering3DHandle;
         #define deltaMultipleScattering3DHandle deltaRayleighScattering3DHandle
-
+        
         // Compute the 2nd, 3rd and 4th order of scattering, in sequence.
         uint32_t num_scattering_orders = 4;
         for (unsigned int scattering_order = 2; scattering_order <= num_scattering_orders; ++scattering_order)
@@ -453,6 +511,7 @@ namespace MoYu
                 indirectIrradiancePass.Read(deltaRayleighScattering3DHandle, false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
                 indirectIrradiancePass.Read(deltaMieScattering3DHandle, false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
                 indirectIrradiancePass.Read(deltaMultipleScattering3DHandle, false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+                indirectIrradiancePass.Read(irradiance2DHandle, true);
                 indirectIrradiancePass.Write(deltaIrradiance2DHandle, false, RHIResourceState::RHI_RESOURCE_STATE_UNORDERED_ACCESS);
                 indirectIrradiancePass.Write(irradiance2DHandle, false, RHIResourceState::RHI_RESOURCE_STATE_UNORDERED_ACCESS);
                 indirectIrradiancePass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
@@ -480,8 +539,6 @@ namespace MoYu
                         uint32_t multipleScattering3DSRVIndex;
                         uint32_t deltaIrradiance2DUAVIndex;
                         uint32_t irradiance2DUAVIndex;
-
-                        glm::float3x3 luminance_from_radiance;
                         int scattering_order;
                     } mCB = {asUniformCBV->GetIndex(),
                              deltaRayleighScattering3DSRV->GetIndex(),
@@ -489,7 +546,6 @@ namespace MoYu
                              deltaMultipleScattering3DSRV->GetIndex(),
                              deltaIrradiance2DUAV->GetIndex(),
                              irradiance2DUAV->GetIndex(),
-                             luminance_from_radiance,
                              scattering_order - 1};
 
                     pContext->SetRootSignature(pComputeIdirectIrradianceSignature.get());
@@ -512,6 +568,7 @@ namespace MoYu
                 multipleScatteringPass.Read(atmosphereUniformBufferHandle, false, RHIResourceState::RHI_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
                 multipleScatteringPass.Read(transmittance2DHandle, false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
                 multipleScatteringPass.Read(deltaScatteringDensity3DHandle, false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+                multipleScatteringPass.Read(scattering3DHandle, true);
                 multipleScatteringPass.Write(deltaMultipleScattering3DHandle, false, RHIResourceState::RHI_RESOURCE_STATE_UNORDERED_ACCESS);
                 multipleScatteringPass.Write(scattering3DHandle, false, RHIResourceState::RHI_RESOURCE_STATE_UNORDERED_ACCESS);
                 multipleScatteringPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
@@ -539,14 +596,12 @@ namespace MoYu
                         uint32_t scattering3DUAVIndex;
 
                         int scattering_order;
-                        glm::float3x3 luminance_from_radiance;
                     } mCB = {asUniformCBV->GetIndex(),
                              transmittance2DSRV->GetIndex(),
                              deltaScatteringDensity3DSRV->GetIndex(),
                              deltaMultipleScattering3DUAV->GetIndex(),
                              scattering3DUAV->GetIndex(),
-                             scattering_order,
-                             luminance_from_radiance};
+                             scattering_order};
 
                     pContext->SetRootSignature(pComputeMultipleScatteringSignature.get());
                     pContext->SetPipelineState(pComputeMultipleScatteringPSO.get());
@@ -562,17 +617,87 @@ namespace MoYu
             }
 
         }
-
+        
+        graphHandle.atmosphereUniformBufferHandle = atmosphereUniformBufferHandle;
+        graphHandle.transmittance2DHandle         = transmittance2DHandle;
+        graphHandle.scattering3DHandle            = scattering3DHandle;
+        graphHandle.irradiance2DHandle            = irradiance2DHandle;
     }
 
-    void AtmosphericScatteringPass::updateAtmosphere(RHI::RenderGraph& graph, DrawInputParameters& passInput, DrawOutputParameters& passOutput)
+    void AtmosphericScatteringPass::updateAtmosphere(RHI::RenderGraph& graph, ImportGraphHandle& graphHandle, DrawInputParameters& passInput, DrawOutputParameters& passOutput)
     {
         if (!hasPrecomputed)
             return;
 
+        RHI::RgResourceHandle atmosphereUniformBufferHandle = graphHandle.atmosphereUniformBufferHandle;
+        RHI::RgResourceHandle transmittance2DHandle         = graphHandle.transmittance2DHandle;
+        RHI::RgResourceHandle scattering3DHandle            = graphHandle.scattering3DHandle;
+        RHI::RgResourceHandle irradiance2DHandle            = graphHandle.irradiance2DHandle;
 
+        RHI::RenderPass& asProceduralPass = graph.AddRenderPass("AtmosphericSkyProceduralPass");
 
+        RHI::RgResourceHandle perframeBufferHandle    = passInput.perframeBufferHandle;
+        RHI::RgResourceHandle renderTargetColorHandle = passOutput.renderTargetColorHandle;
+        RHI::RgResourceHandle renderTargetDepthHandle = passOutput.renderTargetDepthHandle;
 
+        asProceduralPass.Read(perframeBufferHandle, false, RHIResourceState::RHI_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
+        asProceduralPass.Read(atmosphereUniformBufferHandle, false, RHIResourceState::RHI_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
+        asProceduralPass.Read(transmittance2DHandle, false, RHIResourceState::RHI_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+        asProceduralPass.Read(scattering3DHandle, false, RHIResourceState::RHI_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+        asProceduralPass.Read(irradiance2DHandle, false, RHIResourceState::RHI_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+        asProceduralPass.Read(renderTargetColorHandle, true);
+        asProceduralPass.Read(renderTargetDepthHandle, true);
+
+        asProceduralPass.Write(renderTargetColorHandle, false, RHIResourceState::RHI_RESOURCE_STATE_RENDER_TARGET);
+        asProceduralPass.Write(renderTargetDepthHandle, false, RHIResourceState::RHI_RESOURCE_STATE_DEPTH_WRITE);
+
+        asProceduralPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
+            RHI::D3D12Buffer*  mPerFrameBufferBuffer   = RegGetBuf(perframeBufferHandle);
+            RHI::D3D12Buffer*  mASUniformBuffer        = RegGetBuf(atmosphereUniformBufferHandle);
+            RHI::D3D12Texture* mTransmittance2DTexture = RegGetTex(transmittance2DHandle);
+            RHI::D3D12Texture* scattering3DTexture     = RegGetTex(scattering3DHandle);
+            RHI::D3D12Texture* irradiance2DTexture     = RegGetTex(irradiance2DHandle);
+
+            RHI::D3D12GraphicsContext* graphicContext = context->GetGraphicsContext();
+
+            RHI::D3D12Texture* pRenderTargetColor = registry->GetD3D12Texture(renderTargetColorHandle);
+            RHI::D3D12Texture* pRenderTargetDepth = registry->GetD3D12Texture(renderTargetDepthHandle);
+
+            RHI::D3D12RenderTargetView* renderTargetView = pRenderTargetColor->GetDefaultRTV().get();
+            RHI::D3D12DepthStencilView* depthStencilView = pRenderTargetDepth->GetDefaultDSV().get();
+
+            graphicContext->SetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+            graphicContext->SetViewport(RHIViewport {0.0f, 0.0f, (float)colorTexDesc.Width, (float)colorTexDesc.Height, 0.0f, 1.0f});
+            graphicContext->SetScissorRect(RHIRect {0, 0, (int)colorTexDesc.Width, (int)colorTexDesc.Height});
+            graphicContext->SetRenderTarget(renderTargetView, depthStencilView);
+
+            graphicContext->SetRootSignature(pAtmosphericSkyProceduralSignature.get());
+            graphicContext->SetPipelineState(pAtmosphericSkyProceduralPSO.get());
+
+            __declspec(align(16)) struct
+            {
+                uint32_t perFrameBufferIndex;
+                uint32_t atmosphereUniformIndex;
+                uint32_t transmittance2DSRVIndex;
+                uint32_t scattering3DSRVIndex;
+                uint32_t irradiance2DSRVIndex;
+                float exposure;
+                glm::float3 white_point;
+            } mCB = {mPerFrameBufferBuffer->GetDefaultCBV()->GetIndex(),
+                     mASUniformBuffer->GetDefaultCBV()->GetIndex(),
+                     mTransmittance2DTexture->GetDefaultSRV()->GetIndex(),
+                     scattering3DTexture->GetDefaultSRV()->GetIndex(),
+                     irradiance2DTexture->GetDefaultSRV()->GetIndex(),
+                     1.0f,
+                     glm::float3(1, 1, 1)};
+
+            graphicContext->SetConstantArray(0, sizeof(mCB) / sizeof(uint32_t), &mCB);
+
+            graphicContext->Draw(3);
+        });
+        
+        passOutput.renderTargetColorHandle = renderTargetColorHandle;
+        passOutput.renderTargetDepthHandle = renderTargetDepthHandle;
     }
 
 }
