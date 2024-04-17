@@ -674,24 +674,27 @@ namespace MoYu
             graphicContext->SetRootSignature(pAtmosphericSkyProceduralSignature.get());
             graphicContext->SetPipelineState(pAtmosphericSkyProceduralPSO.get());
 
-            __declspec(align(16)) struct
+            struct
             {
-                uint32_t perFrameBufferIndex;
-                uint32_t atmosphereUniformIndex;
-                uint32_t transmittance2DSRVIndex;
-                uint32_t scattering3DSRVIndex;
-                uint32_t irradiance2DSRVIndex;
+                int perFrameBufferIndex;
+                int atmosphereUniformIndex;
+                int transmittance2DSRVIndex;
+                int scattering3DSRVIndex;
+                int irradiance2DSRVIndex;
+
                 float exposure;
-                glm::float3 white_point;
+                float white_point_x;
+                float white_point_y;
+                float white_point_z;
             } mCB = {mPerFrameBufferBuffer->GetDefaultCBV()->GetIndex(),
                      mASUniformBuffer->GetDefaultCBV()->GetIndex(),
                      mTransmittance2DTexture->GetDefaultSRV()->GetIndex(),
                      scattering3DTexture->GetDefaultSRV()->GetIndex(),
                      irradiance2DTexture->GetDefaultSRV()->GetIndex(),
                      1.0f,
-                     glm::float3(1, 1, 1)};
+                     1.0f, 1.0f, 1.0f};
 
-            graphicContext->SetConstantArray(0, sizeof(mCB) / sizeof(uint32_t), &mCB);
+            graphicContext->SetConstantArray(0, sizeof(mCB) / sizeof(int), &mCB);
 
             graphicContext->Draw(3);
         });

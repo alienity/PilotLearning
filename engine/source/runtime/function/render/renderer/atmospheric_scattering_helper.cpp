@@ -88,7 +88,7 @@ namespace MoYu
 
         AtmosphereUniform AtmosphericScatteringGenerator::Init()
         {
-            double kSunAngularRadius   = 0.00935 / 2.0;
+            double kSunAngularRadius   = 0.0935 / 2.0;
             double kSunSolidAngle      = 3.1415926 * kSunAngularRadius * kSunAngularRadius;
             double kLengthUnitInMeters = 1000.0;
 

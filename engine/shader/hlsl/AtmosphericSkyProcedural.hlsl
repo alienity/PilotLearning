@@ -14,8 +14,12 @@ cbuffer PSConstants : register(b0)
 	int irradiance2DSRVIndex;
 
 	float exposure;
-	float3 white_point;
+	float white_point_x;
+    float white_point_y;
+    float white_point_z;
 };
+
+#define white_point float3(white_point_x, white_point_y, white_point_z)
 
 struct VSOutput
 {
@@ -69,7 +73,7 @@ float4 PSMain(VSOutput vsOutput) : SV_Target0
 	AtmosphereSampler atmosphereSampler;
 	InitAtmosphereSampler(sampler_LinearClamp, sampler_LinearRepeat, sampler_PointClamp, sampler_PointRepeat, atmosphereSampler);
 
-    float3 sunDirection = mPerFrameUniforms.directionalLight.lightDirection;
+    float3 sunDirection = -mPerFrameUniforms.directionalLight.lightDirection;
     float3 cameraPosWS = mPerFrameUniforms.cameraUniform.curFrameUniform.cameraPosition;
 
     float3 cameraPos = cameraPosWS / 1000.0f;
@@ -141,10 +145,11 @@ float4 PSMain(VSOutput vsOutput) : SV_Target0
     {
 		radiance = radiance + transmittance * GetSolarRadiance(atmosphereParameters);
 	}
-	//radiance = lerp(radiance, ground_radiance, ground_alpha);
+    radiance = lerp(radiance, ground_radiance, ground_alpha);
 	//radiance = mix(radiance, sphere_radiance, sphere_alpha);
+	
 	float4 color;
-    color.rgb = abs(float3(1.0, 1.0, 1.0) - exp(-radiance / white_point.rgb)) * exposure;
+    color.rgb = abs(float3(1.0f, 1.0f, 1.0f) - exp(-radiance / white_point * exposure));
 	//pow(abs(float3(1.0, 1.0, 1.0) - exp(-radiance / _White_point * _Exposure)), float3(0.456, 0.456, 0.456));
 	color.a = 1.0;
 	
