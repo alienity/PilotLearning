@@ -100,7 +100,7 @@ GPU Driven Terrain的流程
 
 #### 绘制阴影的示例
 <div style="display:inline-block">
-  <img src="https://raw.githubusercontent.com/alienity/PilotLearning/main/data/shadow_terrain.png" alt="shadow_terrain" width="512">
+  <img src="https://raw.githubusercontent.com/alienity/PilotLearning/main/data/DirectionCascadeShadowmap.png" alt="shadow_terrain" width="512">
 </div>
 
 ## Lighting
