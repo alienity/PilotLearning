@@ -1,17 +1,26 @@
 > 练习渲染技术和学习d3d12的渲染器，基于RenderGraph自动生成Pass层级，使用全bindless，将所有的几乎全部计算都在GPU上完成。参考Pilot渲染器，只使用了其资源和UI样式。
 
 # 实现模块
-1. RenderGraph
-2. Bindless
-3. GPU Culling
-4. GPU Driven Terrain
-5. FXAA
-6. TAA
-7. SSAO
-8. HBAO
-9. GTAO
-10. Bloom
-11. ToneMapping
+- RenderGraph
+- Bindless
+- GPU Culling
+  - GPU Driven Terrain
+- Lighting
+  - PBR Lighting
+  - SSR
+  - SH
+  - Volume Light
+  - AtmosphereScattering
+- AA
+  - FXAA
+  - TAA
+- AO
+  - SSAO
+  - HBAO
+  - GTAO
+- Postprocess
+  - Bloom
+- ToneMapping
 
 # 编译
 本项目使用CMake管理代码，在win11系统下拉去代码，生成visualstudio项目，可以直接编译，可以运行的是MoYuEditor
@@ -92,6 +101,26 @@ GPU Driven Terrain的流程
 #### 绘制阴影的示例
 <div style="display:inline-block">
   <img src="https://raw.githubusercontent.com/alienity/PilotLearning/main/data/shadow_terrain.png" alt="shadow_terrain" width="512">
+</div>
+
+## Lighting
+
+### SSR
+
+<div style="display:inline-block">
+  <img src="https://raw.githubusercontent.com/alienity/PilotLearning/main/data/SSR.png" alt="SSAO" width="512">
+</div>
+
+### VolumeLight
+
+<div style="display:inline-block">
+  <img src="https://raw.githubusercontent.com/alienity/PilotLearning/main/data/VolumeLight.png" alt="SSAO" width="512">
+</div>
+
+### AtmosphereScattering
+
+<div style="display:inline-block">
+  <img src="https://raw.githubusercontent.com/alienity/PilotLearning/main/data/AS.png" alt="SSAO" width="512">
 </div>
 
 ## AO
