@@ -287,14 +287,32 @@ namespace MoYu
         mTransmittance2D = nullptr;
         mScattering3D    = nullptr;
         mIrradiance2D    = nullptr;
+        mAtmosphereUniformBuffer = nullptr;
 
+        pComputeTransmittanceSignature = nullptr;
+        pComputeTransmittancePSO       = nullptr;
+
+        pComputeDirectIrrdianceSignature = nullptr;
+        pComputeDirectIrrdiancePSO       = nullptr;
+
+        pComputeSingleScatteringSignature = nullptr;
+        pComputeSingleScatteringPSO       = nullptr;
+        
+        pComputeScatteringDensitySignature = nullptr;
+        pComputeScatteringDensityPSO       = nullptr;
+        
+        pComputeIdirectIrradianceSignature = nullptr;
+        pComputeIdirectIrradiancePSO       = nullptr;
+        
+        pComputeMultipleScatteringSignature = nullptr;
+        pComputeMultipleScatteringPSO       = nullptr;
+        
+        pAtmosphericSkyProceduralSignature = nullptr;
+        pAtmosphericSkyProceduralPSO       = nullptr;
     }
 
     void AtmosphericScatteringPass::preCompute(RHI::RenderGraph& graph, ImportGraphHandle& graphHandle)
     {
-        if (hasPrecomputed)
-            return;
-        hasPrecomputed = true;
 
         RHI::RgResourceHandle atmosphereUniformBufferHandle = graphHandle.atmosphereUniformBufferHandle;
         RHI::RgResourceHandle transmittance2DHandle         = graphHandle.transmittance2DHandle;
@@ -305,6 +323,10 @@ namespace MoYu
         RHI::RgResourceHandle deltaRayleighScattering3DHandle = graph.Create<RHI::D3D12Texture>(deltaRayleighScattering3DDesc);
         RHI::RgResourceHandle deltaMieScattering3DHandle = graph.Create<RHI::D3D12Texture>(deltaMieScattering3DDesc);
         RHI::RgResourceHandle deltaScatteringDensity3DHandle = graph.Create<RHI::D3D12Texture>(deltaScatteringDensity3DDesc);
+
+        if (hasPrecomputed)
+            return;
+        hasPrecomputed = true;
 
         // Compute the transmittance, and store it in transmittance_texture_.
         RHI::RenderPass& transmittancePass = graph.AddRenderPass("ASComputeTransmittancePass");
