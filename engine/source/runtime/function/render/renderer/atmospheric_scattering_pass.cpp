@@ -713,7 +713,7 @@ namespace MoYu
                      mTransmittance2DTexture->GetDefaultSRV()->GetIndex(),
                      scattering3DTexture->GetDefaultSRV()->GetIndex(),
                      irradiance2DTexture->GetDefaultSRV()->GetIndex(),
-                     1.0f,
+                     2.6f,
                      1.0f, 1.0f, 1.0f};
 
             graphicContext->SetConstantArray(0, sizeof(mCB) / sizeof(int), &mCB);
