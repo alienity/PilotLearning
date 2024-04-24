@@ -43,7 +43,6 @@ struct MaterialInputs
 
 struct CommonShadingStruct
 {
-    float3x3 shading_tangentToWorld; // TBN matrix
     float3 shading_position; // position of the fragment in world space
     float3 shading_view; // normalized vector from the fragment to the eye
     float3 shading_normal; // normalized transformed normal, in world space
@@ -191,10 +190,7 @@ void computeShadingParams(const FrameUniforms frameUniforms, const VaringStruct 
     float3 b = cross(n, t) * varing.ws_tangent.w;
     
     commonShadingStruct.shading_geometricNormal = normalize(n);
-
-    // We use unnormalized post-interpolation values, assuming mikktspace tangents
-    commonShadingStruct.shading_tangentToWorld = transpose(float3x3(t, b, n));
-
+    
     commonShadingStruct.shading_position = varing.ws_position.xyz;
 
     // With perspective camera, the view vector is cast from the fragment pos to the eye position,
@@ -225,11 +221,11 @@ void computeShadingParams(const FrameUniforms frameUniforms, const VaringStruct 
  */
 void prepareMaterial(const MaterialInputs material, inout CommonShadingStruct commonShadingStruct)
 {
-    commonShadingStruct.shading_normal = normalize(mul(commonShadingStruct.shading_tangentToWorld, material.normal));
+    commonShadingStruct.shading_normal = normalize(material.normal);
     commonShadingStruct.shading_NoV = clampNoV(dot(commonShadingStruct.shading_normal, commonShadingStruct.shading_view));
     commonShadingStruct.shading_reflected = reflect(-commonShadingStruct.shading_view, commonShadingStruct.shading_normal);
-    commonShadingStruct.shading_bentNormal = normalize(mul(commonShadingStruct.shading_tangentToWorld, material.bentNormal));
-    commonShadingStruct.shading_clearCoatNormal = normalize(mul(commonShadingStruct.shading_tangentToWorld, material.clearCoatNormal));
+    commonShadingStruct.shading_bentNormal = normalize(material.bentNormal);
+    commonShadingStruct.shading_clearCoatNormal = normalize(material.clearCoatNormal);
 }
 
 //------------------------------------------------------------------------------
@@ -499,7 +495,7 @@ void getAnisotropyPixelParams(const CommonShadingStruct commonShadingStruct, con
 {
     float3 direction = material.anisotropyDirection;
     pixel.anisotropy = material.anisotropy;
-    pixel.anisotropicT = normalize(mul(commonShadingStruct.shading_tangentToWorld, direction));
+    pixel.anisotropicT = normalize(direction);
     pixel.anisotropicB = normalize(cross(commonShadingStruct.shading_geometricNormal, pixel.anisotropicT));
 }
 

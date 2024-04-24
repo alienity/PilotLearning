@@ -58,7 +58,7 @@ void CSMain( uint3 DTid : SV_DispatchThreadID )
         materialInputs.clearCoat = cra.r;
         materialInputs.clearCoatRoughness = cra.g;
         materialInputs.anisotropy = cra.b;
-        materialInputs.normal = float3(0,0,1);
+        materialInputs.normal = worldNormalTexture.Sample(defaultSampler, uv).rgb * 2.0f - 1.0f;
     }
 
     CommonShadingStruct commonShadingStruct;
@@ -69,15 +69,9 @@ void CSMain( uint3 DTid : SV_DispatchThreadID )
     // float4 vertex_worldTangent = worldTangentTexture.Sample(defaultSampler, uv).xyzw * 2.0f - 1.0f;
     // float3 t = vertex_worldTangent.xyz;
     // float3 b = cross(n, t) * vertex_worldTangent.w;
-
-    float3 n = worldNormalTexture.Sample(defaultSampler, uv).rgb * 2.0f - 1.0f;
-    float3x3 tbnMat = ToTBNMatrix(n);
-
-    commonShadingStruct.shading_geometricNormal = normalize(n);
-
-    // We use unnormalized post-interpolation values, assuming mikktspace tangents
-    commonShadingStruct.shading_tangentToWorld = tbnMat;
-
+    
+    commonShadingStruct.shading_geometricNormal = normalize(materialInputs.normal);
+    
     float depth = depthTexture.Sample(defaultSampler, uv).r;
     float3 clipPos = float3(uv.x*2.0f-1.0f, (1-uv.y)*2.0f-1.0f, depth);
     float4 vertexPos = mul(g_FrameUniform.cameraUniform.curFrameUniform.worldFromClipMatrix, float4(clipPos, 1.0f));
@@ -110,5 +104,4 @@ void CSMain( uint3 DTid : SV_DispatchThreadID )
     // fragColor.a = 1.0f;
     
     outColorTexture[DTid.xy] = fragColor;
-    // outColorTexture[DTid.xy] = float4(commonShadingStruct.shading_geometricNormal.xyz, 1);
 }

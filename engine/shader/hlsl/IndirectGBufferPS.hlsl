@@ -85,8 +85,16 @@ PSOutputGBuffer PSMain(VaringStruct varingStruct)
     CommonShadingStruct commonShadingStruct;
     computeShadingParams(g_FrameUniform, varingStruct, commonShadingStruct);
     prepareMaterial(materialInputs, commonShadingStruct);
-
-    float3 worldNormal = normalize(mul(commonShadingStruct.shading_tangentToWorld, materialInputs.normal.xyz));
+    
+    commonShadingStruct.shading_geometricNormal = normalize(varingStruct.ws_normal);
+    
+    // http://www.mikktspace.com/
+    float3 n = varingStruct.ws_normal;
+    float3 t = varingStruct.ws_tangent.xyz;
+    float3 b = cross(n, t) * varingStruct.ws_tangent.w;
+    float3x3 tangentToWorld = transpose(float3x3(t, b, n));
+    
+    float3 worldNormal = normalize(mul(tangentToWorld, materialInputs.normal.xyz));
 
     PSOutputGBuffer output;
 
