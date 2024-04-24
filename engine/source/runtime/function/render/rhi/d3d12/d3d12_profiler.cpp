@@ -133,7 +133,9 @@ namespace RHI
 
         // Insert the start timestamp
         UINT StartQueryIdx = ProfileIdx * 2;
-        CommandList->EndQuery(TimestampQueryHeap.Get(), D3D12_QUERY_TYPE_TIMESTAMP, StartQueryIdx);
+        //CommandList->EndQuery(TimestampQueryHeap.Get(), D3D12_QUERY_TYPE_TIMESTAMP, StartQueryIdx);
+
+        //PIXBeginEvent(CommandList, 0, std::string(Name).c_str());
 
         ProfileData.QueryStarted = true;
 
@@ -158,16 +160,18 @@ namespace RHI
         // Insert the end timestamp
         UINT StartIndex = Index * 2 + 0;
         UINT EndIndex   = Index * 2 + 1;
-        CommandList->EndQuery(TimestampQueryHeap.Get(), D3D12_QUERY_TYPE_TIMESTAMP, EndIndex);
+        //CommandList->EndQuery(TimestampQueryHeap.Get(), D3D12_QUERY_TYPE_TIMESTAMP, EndIndex);
 
         // Resolve the data
         UINT64 AlignedDestinationBufferOffset = (FrameIndex * MaxProfiles * 2 + StartIndex) * sizeof(UINT64);
-        CommandList->ResolveQueryData(TimestampQueryHeap.Get(),
-                                      D3D12_QUERY_TYPE_TIMESTAMP,
-                                      StartIndex,
-                                      2,
-                                      TimestampQueryReadback.Get(),
-                                      AlignedDestinationBufferOffset);
+        //CommandList->ResolveQueryData(TimestampQueryHeap.Get(),
+        //                              D3D12_QUERY_TYPE_TIMESTAMP,
+        //                              StartIndex,
+        //                              2,
+        //                              TimestampQueryReadback.Get(),
+        //                              AlignedDestinationBufferOffset);
+
+        //PIXEndEvent(CommandList);
 
         ProfileData.QueryStarted  = false;
         ProfileData.QueryFinished = true;
