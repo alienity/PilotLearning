@@ -46,7 +46,6 @@ struct CommonShadingStruct
     float3 shading_position; // position of the fragment in world space
     float3 shading_view; // normalized vector from the fragment to the eye
     float3 shading_normal; // normalized transformed normal, in world space
-    float3 shading_geometricNormal; // normalized geometric normal, in world space
     float3 shading_reflected; // reflection of view about normal
     float shading_NoV; // dot(normal, view), always strictly >= MIN_N_DOT_V
 
@@ -184,12 +183,10 @@ void inflateMaterial(
  */
 void computeShadingParams(const FrameUniforms frameUniforms, const VaringStruct varing, inout CommonShadingStruct commonShadingStruct)
 {
-    // http://www.mikktspace.com/
-    float3 n = varing.ws_normal;
-    float3 t = varing.ws_tangent.xyz;
-    float3 b = cross(n, t) * varing.ws_tangent.w;
-    
-    commonShadingStruct.shading_geometricNormal = normalize(n);
+    //// http://www.mikktspace.com/
+    //float3 n = varing.ws_normal;
+    //float3 t = varing.ws_tangent.xyz;
+    //float3 b = cross(n, t) * varing.ws_tangent.w;
     
     commonShadingStruct.shading_position = varing.ws_position.xyz;
 
@@ -198,10 +195,10 @@ void computeShadingParams(const FrameUniforms frameUniforms, const VaringStruct 
     float4x4 projectionMatrix = frameUniforms.cameraUniform.curFrameUniform.clipFromViewMatrix;
     float4x4 worldFromViewMatrix = frameUniforms.cameraUniform.curFrameUniform.worldFromViewMatrix;
     
-    float4x4 _worldFromViewMatrixTranspose = transpose(worldFromViewMatrix);
+    float4x4 worldFromViewMatrixTranspose = transpose(worldFromViewMatrix);
 
     float3 sv = select(isPerspectiveProjection(projectionMatrix), 
-        (_worldFromViewMatrixTranspose[3].xyz - commonShadingStruct.shading_position), _worldFromViewMatrixTranspose[2].xyz); // ortho camera backward dir
+        (worldFromViewMatrixTranspose[3].xyz - commonShadingStruct.shading_position), worldFromViewMatrixTranspose[2].xyz); // ortho camera backward dir
     commonShadingStruct.shading_view = normalize(sv);
 
     // we do this so we avoid doing (matrix multiply), but we burn 4 varyings:
@@ -310,7 +307,7 @@ float shadowSample_PCF(
     if(cascadeLevel == 4)
         return 1.0f;
     
-    float shadow_bias = max(0.0015f * exp2(cascadeLevel) * (1.0 - ndotl), 0.0003f);  
+    float shadow_bias = 0;//max(0.0015f * exp2(cascadeLevel) * (1.0 - ndotl), 0.0001f);  
     float uv_scale = 1.0f / log2(cascadeCount);
 
     return shadowSample_PCF_Low(shadowmap, shadowmapSampler, 
@@ -496,7 +493,7 @@ void getAnisotropyPixelParams(const CommonShadingStruct commonShadingStruct, con
     float3 direction = material.anisotropyDirection;
     pixel.anisotropy = material.anisotropy;
     pixel.anisotropicT = normalize(direction);
-    pixel.anisotropicB = normalize(cross(commonShadingStruct.shading_geometricNormal, pixel.anisotropicT));
+    pixel.anisotropicB = normalize(cross(commonShadingStruct.shading_normal, pixel.anisotropicT));
 }
 
 void getEnergyCompensationPixelParams(const FrameUniforms frameUniforms, const CommonShadingStruct params, const MaterialInputs materialInputs, const SamplerStruct samplerStruct, inout PixelParams pixel)

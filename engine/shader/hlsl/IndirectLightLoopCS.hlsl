@@ -70,8 +70,6 @@ void CSMain( uint3 DTid : SV_DispatchThreadID )
     // float3 t = vertex_worldTangent.xyz;
     // float3 b = cross(n, t) * vertex_worldTangent.w;
     
-    commonShadingStruct.shading_geometricNormal = normalize(materialInputs.normal);
-    
     float depth = depthTexture.Sample(defaultSampler, uv).r;
     float3 clipPos = float3(uv.x*2.0f-1.0f, (1-uv.y)*2.0f-1.0f, depth);
     float4 vertexPos = mul(g_FrameUniform.cameraUniform.curFrameUniform.worldFromClipMatrix, float4(clipPos, 1.0f));

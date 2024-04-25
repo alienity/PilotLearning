@@ -86,8 +86,6 @@ PSOutputGBuffer PSMain(VaringStruct varingStruct)
     computeShadingParams(g_FrameUniform, varingStruct, commonShadingStruct);
     prepareMaterial(materialInputs, commonShadingStruct);
     
-    commonShadingStruct.shading_geometricNormal = normalize(varingStruct.ws_normal);
-    
     // http://www.mikktspace.com/
     float3 n = varingStruct.ws_normal;
     float3 t = varingStruct.ws_tangent.xyz;
