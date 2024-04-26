@@ -241,6 +241,17 @@ namespace MoYu
             mAtmosphericScatteringPass->setCommonInfo(renderPassCommonInfo);
             mAtmosphericScatteringPass->initialize(drawPassInit);
         }
+        // VolumeCloud pass
+        {
+            VolumeCloudPass::PassInitInfo drawPassInit;
+            drawPassInit.colorTexDesc     = colorTexDesc;
+            drawPassInit.m_ShaderCompiler = pCompiler;
+            drawPassInit.m_ShaderRootPath = g_runtime_global_context.m_config_manager->getShaderFolder();
+
+            mVolumeCloudPass = std::make_shared<VolumeCloudPass>();
+            mVolumeCloudPass->setCommonInfo(renderPassCommonInfo);
+            mVolumeCloudPass->initialize(drawPassInit);
+        }
         // Transparent drawing pass
         {
             IndirectDrawTransparentPass::DrawPassInitInfo drawPassInit;
@@ -354,6 +365,7 @@ namespace MoYu
         mPostprocessPasses->PreparePassData(render_resource);
 
         mAtmosphericScatteringPass->prepareMetaData(render_resource);
+        mVolumeCloudPass->prepareMetaData(render_resource);
 
         mGTAOPass->updateConstantBuffer(render_resource);
 
@@ -380,6 +392,7 @@ namespace MoYu
         mVolumeLightPass             = nullptr;
         mSkyBoxPass                  = nullptr;
         mAtmosphericScatteringPass   = nullptr;
+        mVolumeCloudPass             = nullptr;
         mIndirectTransparentDrawPass = nullptr;
         mPostprocessPasses           = nullptr;
         mDisplayPass                 = nullptr;
@@ -678,6 +691,17 @@ namespace MoYu
         mASOutputParams.renderTargetColorHandle = outColorHandle;
         mASOutputParams.renderTargetDepthHandle = mGBufferOutput.depthHandle;
         mAtmosphericScatteringPass->update(graph, mASIntputParams, mASOutputParams);
+        //=================================================================================
+
+        //=================================================================================
+        // VolumeCloud draw
+        VolumeCloudPass::DrawInputParameters  mVCIntputParams;
+        VolumeCloudPass::DrawOutputParameters mVCOutputParams;
+
+        mVCIntputParams.perframeBufferHandle     = indirectCullOutput.perframeBufferHandle;
+        mVCOutputParams.renderTargetColorHandle = outColorHandle;
+        mVCOutputParams.renderTargetDepthHandle  = mGBufferOutput.depthHandle;
+        mVolumeCloudPass->update(graph, mVCIntputParams, mVCOutputParams);
         //=================================================================================
 
         //=================================================================================

@@ -13,6 +13,7 @@
 #include "runtime/function/render/renderer/indirect_draw_pass.h"
 #include "runtime/function/render/renderer/skybox_pass.h"
 #include "runtime/function/render/renderer/atmospheric_scattering_pass.h"
+#include "runtime/function/render/renderer/volume_cloud_pass.h"
 #include "runtime/function/render/renderer/indirect_draw_transparent_pass.h"
 #include "runtime/function/render/renderer/ssr_pass.h"
 #include "runtime/function/render/renderer/ao_pass.h"
@@ -75,6 +76,7 @@ namespace MoYu
         std::shared_ptr<ColorPyramidPass>            mColorPyramidPass;
         std::shared_ptr<SkyBoxPass>                  mSkyBoxPass;
         std::shared_ptr<AtmosphericScatteringPass>   mAtmosphericScatteringPass;
+        std::shared_ptr<VolumeCloudPass>             mVolumeCloudPass;
         std::shared_ptr<IndirectDrawTransparentPass> mIndirectTransparentDrawPass;
         std::shared_ptr<AOPass>                      mAOPass;
         std::shared_ptr<GTAOPass>                    mGTAOPass;

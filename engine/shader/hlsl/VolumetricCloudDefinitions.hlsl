@@ -16,9 +16,9 @@ struct CloudsConstants
     float DensityFactor;
     float DistanceToFadeFrom; // when to start fading
     float DistanceOfFade; // for how long to fade
-    float UpsampleRatio;
     float PlanetRadius;
-    float3 padding0;
+    float2 UpsampleRatio;
+    float2 padding0;
 };
 
 struct CloudsConstantsCB
