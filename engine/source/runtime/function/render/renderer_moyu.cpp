@@ -21,7 +21,7 @@ namespace MoYu
         p_SwapChain = nullptr;
         p_Device     = nullptr;
     }
-
+     
     void RendererManager::Initialize(RendererManagerInitInfo initialize_info)
     {
         p_Compiler = std::make_unique<ShaderCompiler>();

@@ -40,11 +40,13 @@ namespace MoYu
     private:
         RHI::RgTextureDesc colorTexDesc;
 
+        VolumeCloudSpace::CloudsConsCB mCloudsConsCB;
+
         std::shared_ptr<RHI::D3D12Buffer> mCloudConstantsBuffer;
 
-        std::shared_ptr<RHI::D3D12Texture> mTransmittance2D;
-        std::shared_ptr<RHI::D3D12Texture> mScattering3D;
-        std::shared_ptr<RHI::D3D12Texture> mIrradiance2D;
+        std::shared_ptr<RHI::D3D12Texture> mWeather2D;
+        std::shared_ptr<RHI::D3D12Texture> mCloud3D;
+        std::shared_ptr<RHI::D3D12Texture> mWorley3D;
 
         Shader mVolumeCloudCS;
         std::shared_ptr<RHI::D3D12RootSignature> pVolumeCloudSignature;
