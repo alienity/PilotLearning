@@ -83,7 +83,7 @@ namespace RHI
 
 	void RenderGraphDependencyLevel::Execute(RenderGraph* RenderGraph, D3D12CommandContext* Context)
 	{
-        //Context->FlushResourceBarriers();
+        Context->FlushResourceBarriers();
 
 		// Figure out all the barriers needed for each level
 		// Handle resource transitions for all registered resources
@@ -409,7 +409,12 @@ namespace RHI
         return true;
     }
 
-    bool RenderGraph::IsPassAvailable(std::vector<PassIdx>& passInSameLevel, InGraphPassIdx2ReadWriteHandle& pass2Handles, InGraphHandle2WritePassIdx& handle2WritePassIdx, RgResourceHandleExt& resource)
+    bool RenderGraph::IsPassAvailable(
+        std::vector<PassIdx>& passInSameLevel, 
+        InGraphPassIdx2ReadWriteHandle& pass2Handles, 
+        //InGraphHandle2ReadPassIdx& handle2ReadPassIdx, 
+        InGraphHandle2WritePassIdx& handle2WritePassIdx, 
+        RgResourceHandleExt& resource)
     {
         // 2.1 pass的reads没有被作为其他pass的write写过
         if (!handle2WritePassIdx[resource.rgHandle].empty())
@@ -417,17 +422,17 @@ namespace RHI
             return false;
         }
 
-        // 2.2 pass的reads跟前面遍历过的pass的reads的handle一样，但是读取状态不一样，也不能要
-        if (resource.rgTransFlag == RgBarrierFlag::NoneBarrier)
-            return true;
+        //if (resource.rgTransFlag == RgBarrierFlag::NoneBarrier)
+        //    return true;
 
+        // 2.2 pass的reads跟前面遍历过的pass的reads的handle一样，但是读取状态不一样，也不能要
         for (size_t i = 0; i < passInSameLevel.size(); i++)
         {
             PassIdx prevPassIdx = passInSameLevel[i];
-            auto& prevPassReads = pass2Handles[prevPassIdx].first;
+            std::vector<RgResourceHandleExt>& prevPassReads = pass2Handles[prevPassIdx].first;
             for (size_t j = 0; j < prevPassReads.size(); j++)
             {
-                auto& prevPassRead = prevPassReads[j];
+                RHI::RgResourceHandleExt& prevPassRead = prevPassReads[j];
                 if (prevPassRead.rgHandle == resource.rgHandle &&
                     prevPassRead.rgTransFlag == RgBarrierFlag::AutoBarrier)
                 {
@@ -439,6 +444,7 @@ namespace RHI
                 }
             }
         }
+
         return true;
     }
 
@@ -465,7 +471,7 @@ namespace RHI
             {
                 RHI::RgResourceHandleExt readHandleExt = pass->Reads[j];
                 readHandles[j] = readHandleExt;
-                //mHandle2ReadPassIdx[readHandle].insert(passIdx);
+                //mHandle2ReadPassIdx[readHandleExt.rgHandle].insert(passIdx);
             }
             for (size_t j = 0; j < pass->Writes.size(); j++)
             {
@@ -502,11 +508,11 @@ namespace RHI
                     continue;
                 }
 
-                // 2. 查找所有reads没有被其他pass做Write的pass
+                // 2. 查找所有reads没有被其他pass做Write，或者reads跟其他pass的reads状态不冲突的pass
                 bool isPassReadsClean = true;
                 for (size_t j = 0; j < mPassReads.size(); j++)
                 {
-                    if (!IsPassAvailable(passInSameLevel, mPassIdx2ReadWriteHandle, mHandle2WritePassIdx, mPassReads[j]))
+                    if (!IsPassAvailable(passInSameLevel, mPassIdx2ReadWriteHandle/*, mHandle2ReadPassIdx*/, mHandle2WritePassIdx, mPassReads[j]))
                     {
                         isPassReadsClean = false;
                         break;

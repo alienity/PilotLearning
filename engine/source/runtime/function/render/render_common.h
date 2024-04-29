@@ -438,6 +438,13 @@ namespace MoYu
         std::shared_ptr<RHI::D3D12Texture> m_skybox_specular_map;
     };
 
+    struct CloudConfigs
+    {
+        std::shared_ptr<RHI::D3D12Texture> m_weather2D;
+        std::shared_ptr<RHI::D3D12Texture> m_cloud3D;
+        std::shared_ptr<RHI::D3D12Texture> m_worley3D;
+    };
+
     struct IBLConfigs
     {
         std::shared_ptr<RHI::D3D12Texture> m_dfg;

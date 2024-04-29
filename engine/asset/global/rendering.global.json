@@ -123,5 +123,10 @@
     },
     "m_bluenoises": {
         "m_bluenoise_map": "asset/texture/global/output_64x64_uni.bmp"
+    },
+	"m_volume_clouds": {
+        "m_weather2d": "asset/texture/VolumetricClouds/weather.dds",
+        "m_cloud3d": "asset/texture/VolumetricClouds/cloud.dds",
+        "m_worley3d": "asset/texture/VolumetricClouds/worley.dds"
     }
 }

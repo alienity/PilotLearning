@@ -2,6 +2,7 @@
 #include <cassert>
 #include <stack>
 #include <deque>
+#include <map>
 
 #include "DgmlBuilder.h"
 #include "RenderGraphRegistry.h"
@@ -15,8 +16,8 @@ namespace RHI
 {
 #define PassIdx uint32_t
 
-    typedef std::map<PassIdx, std::pair<std::vector<RHI::RgResourceHandleExt>, std::vector<RHI::RgResourceHandleExt>>> InGraphPassIdx2ReadWriteHandle;
-    typedef std::map<RHI::RgResourceHandle, std::set<PassIdx>> InGraphHandle2ReadPassIdx, InGraphHandle2WritePassIdx;
+    typedef std::unordered_map<PassIdx, std::pair<std::vector<RHI::RgResourceHandleExt>, std::vector<RHI::RgResourceHandleExt>>> InGraphPassIdx2ReadWriteHandle;
+    typedef std::unordered_map<RHI::RgResourceHandle, std::set<PassIdx>> InGraphHandle2ReadPassIdx, InGraphHandle2WritePassIdx;
 
     class RenderPass;
     class RgResourceHandle;
@@ -197,8 +198,16 @@ namespace RHI
     private:
         void Setup();
 
-        bool IsPassAvailable(PassIdx passIdx, InGraphPassIdx2ReadWriteHandle& pass2Handles, InGraphHandle2WritePassIdx& handle2WritePassIdx);
-        bool IsPassAvailable(std::vector<PassIdx>& passInSameLevel, InGraphPassIdx2ReadWriteHandle& pass2Handles, InGraphHandle2WritePassIdx& handle2WritePassIdx, RgResourceHandleExt& resource);
+        bool IsPassAvailable(
+            PassIdx passIdx, 
+            InGraphPassIdx2ReadWriteHandle& pass2Handles, 
+            InGraphHandle2WritePassIdx& handle2WritePassIdx);
+        bool IsPassAvailable(
+            std::vector<PassIdx>& passInSameLevel, 
+            InGraphPassIdx2ReadWriteHandle& pass2Handles, 
+            //InGraphHandle2ReadPassIdx& handle2ReadPassIdx, 
+            InGraphHandle2WritePassIdx& handle2WritePassIdx, 
+            RgResourceHandleExt& resource);
 
         [[nodiscard]] std::string_view GetResourceName(RgResourceHandle Handle) const
         {

@@ -81,6 +81,12 @@ namespace MoYu
                                                                                   specular_pos_y_map,
                                                                                   specular_neg_y_map};
 
+        // create volume cloud
+        MoYu::VolumeCloudTexs volume_clouds_texs = level_resource_desc.m_volume_clouds;
+        std::shared_ptr<MoYu::MoYuScratchImage> weather2d_map = loadImage(volume_clouds_texs.m_weather2d);
+        std::shared_ptr<MoYu::MoYuScratchImage> cloud3d_map = loadImage(volume_clouds_texs.m_cloud3d);
+        std::shared_ptr<MoYu::MoYuScratchImage> worley3d_map = loadImage(volume_clouds_texs.m_worley3d);
+
         // load dfg texture
         std::shared_ptr<MoYu::MoYuScratchImage> _dfg_map = loadImage(level_resource_desc.m_ibl_map.m_dfg_map);
         std::shared_ptr<MoYu::MoYuScratchImage> _ld_map  = loadImage(level_resource_desc.m_ibl_map.m_ld_map);
@@ -98,6 +104,14 @@ namespace MoYu
             // create specular cubemap
             auto specular_tex = createCubeMap(specular_maps, DXGI_FORMAT::DXGI_FORMAT_R32G32B32A32_FLOAT, false, false, false, false);
             m_render_scene->m_skybox_map.m_skybox_specular_map = specular_tex;
+
+            // create volume cloud maps
+            auto weather2d_tex = createTex(weather2d_map);
+            auto cloud3d_tex = createTex(cloud3d_map);
+            auto worley3d_tex = createTex(worley3d_map);
+            m_render_scene->m_cloud_map.m_weather2D = weather2d_tex;
+            m_render_scene->m_cloud_map.m_cloud3D = cloud3d_tex;
+            m_render_scene->m_cloud_map.m_worley3D = worley3d_tex;
 
             // create ibl dfg
             auto dfg_tex = createTex(_dfg_map);
@@ -829,34 +843,36 @@ namespace MoYu
         }
         else if (_texMetaData.dimension == DirectX::TEX_DIMENSION::TEX_DIMENSION_TEXTURE3D)
         {
-            /*
             _rhiTex = RHI::D3D12Texture::Create3D(m_Device->GetLinkedDevice(),
                                                   _texMetaData.width,
                                                   _texMetaData.height,
-                                                  _texMetaData.arraySize,
+                                                  _texMetaData.depth,
                                                   _texMetaData.mipLevels,
                                                   _texMetaData.format,
                                                   RHI::RHISurfaceCreateFlags::RHISurfaceCreateMipmap);
 
             m_ResourceUpload->Transition(_rhiTex->GetResource(), D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COPY_DEST);
                 
-            int subresourceNumber = _texMetaData.mipLevels;
+            int mipLevelNum = _texMetaData.mipLevels;
+            int arraysliceNum = _texMetaData.arraySize;
+            int subresourceNumber = mipLevelNum * arraysliceNum;
 
-            D3D12_SUBRESOURCE_DATA resourceInitDatas[12];
-            for (size_t i = 0; i < subresourceNumber; i++)
+            D3D12_SUBRESOURCE_DATA resourceInitDatas[1024];
+            for (size_t i = 0; i < arraysliceNum; i++)
             {
-                const DirectX::Image* _image = _sratchimage.GetImage(i, 0, 0);
-                D3D12_SUBRESOURCE_DATA _resourceInitData;
-                _resourceInitData.pData = _image->pixels;
-                _resourceInitData.RowPitch = _image->rowPitch;
-                _resourceInitData.SlicePitch = _image->slicePitch;
-                resourceInitDatas[i] = _resourceInitData;
+                for (size_t j = 0; j < mipLevelNum; j++)
+                {
+                    const DirectX::Image* _image = _sratchimage.GetImage(j, 0, i);
+                    D3D12_SUBRESOURCE_DATA _resourceInitData;
+                    _resourceInitData.pData = _image->pixels;
+                    _resourceInitData.RowPitch = _image->rowPitch;
+                    _resourceInitData.SlicePitch = _image->slicePitch;
+                    resourceInitDatas[i * arraysliceNum + j] = _resourceInitData;
+                }
             }
-
             m_ResourceUpload->Upload(_rhiTex->GetResource(), 0, resourceInitDatas, subresourceNumber);
 
             m_ResourceUpload->Transition(_rhiTex->GetResource(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_COMMON);
-            */
         }
 
         if (batch)

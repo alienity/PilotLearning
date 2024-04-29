@@ -61,6 +61,14 @@ namespace MoYu
     };
     NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(BlueNoiseTexs, m_bluenoise_map)
 
+    struct VolumeCloudTexs
+    {
+        std::string m_weather2d;
+        std::string m_cloud3d;
+        std::string m_worley3d;
+    };
+    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(VolumeCloudTexs, m_weather2d, m_cloud3d, m_worley3d)
+
 
     struct GlobalRenderingRes
     {
@@ -75,6 +83,7 @@ namespace MoYu
         CameraConfig  m_camera_config;
         DirLight      m_directional_light;
         BlueNoiseTexs m_bluenoises;
+        VolumeCloudTexs m_volume_clouds;
     };
     NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(GlobalRenderingRes,
                                        m_enable_fxaa,
@@ -87,5 +96,6 @@ namespace MoYu
                                        m_ambient_light,
                                        m_camera_config,
                                        m_directional_light,
-                                       m_bluenoises)
+                                       m_bluenoises,
+                                       m_volume_clouds)
 } // namespace MoYu

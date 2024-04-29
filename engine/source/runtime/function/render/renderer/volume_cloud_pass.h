@@ -21,12 +21,13 @@ namespace MoYu
         struct DrawInputParameters : public PassInput
         {
             RHI::RgResourceHandle perframeBufferHandle;
+            RHI::RgResourceHandle renderTargetColorHandle;
+            RHI::RgResourceHandle renderTargetDepthHandle;
         };
 
         struct DrawOutputParameters : public PassOutput
         {
-            RHI::RgResourceHandle renderTargetColorHandle;
-            RHI::RgResourceHandle renderTargetDepthHandle;
+            RHI::RgResourceHandle outColorHandle;
         };
 
     public:

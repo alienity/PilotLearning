@@ -30,6 +30,9 @@ namespace MoYu
         // skybox
         SkyboxConfigs m_skybox_map;
 
+        // volume cloud
+        CloudConfigs m_cloud_map;
+
         // ibl
         IBLConfigs m_ibl_map;
 
