@@ -326,12 +326,12 @@ void CSMain( uint3 Gid : SV_GroupID, uint3 GTid : SV_GroupThreadID, uint3 DTid :
     float4 cloudsColor = float4(0.0, 0.0, 0.0, 0.0f);
     
     float4x4 InvProj = frameUniform.cameraUniform.curFrameUniform.unJitterProjectionMatrixInv;
-    float4x4 InvView = frameUniform.cameraUniform.curFrameUniform.viewFromClipMatrix;
+    float4x4 InvView = frameUniform.cameraUniform.curFrameUniform.worldFromViewMatrix;
     float3 cameraPos = frameUniform.cameraUniform.curFrameUniform.cameraPosition;
     
     float depth = sceneDepthTex.SampleLevel(simpleSampler, tex, 0).r;
     float3 worldPos = ReconstructWorldPosFromDepth(tex, depth, InvProj, InvView);
-    if (depth < 0.999f || worldPos.y < 0.0f)
+    if (depth > 0.00001f || worldPos.y < 0.0f)
     {
         outColorTex[DTid.xy] = baseColor;
         return;
@@ -344,6 +344,7 @@ void CSMain( uint3 Gid : SV_GroupID, uint3 GTid : SV_GroupThreadID, uint3 DTid :
     
     float3 worldDir = mul(InvView, rayView).xyz;
     worldDir = normalize(worldDir);
+    
     
     float3 startPos, endPos;
     float innerRadius = cloudCons.PlanetRadius + cloudCons.BottomHeight;

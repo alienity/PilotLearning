@@ -718,7 +718,8 @@ namespace MoYu
         {
             mDrawTransIntputParams.spotShadowmapTexHandles.push_back(spotShadowmapHandle[i]);
         }
-        mDrawTransOutputParams.renderTargetColorHandle = mASOutputParams.renderTargetColorHandle;
+        //mDrawTransOutputParams.renderTargetColorHandle = mASOutputParams.renderTargetColorHandle;
+        mDrawTransOutputParams.renderTargetColorHandle = mVCOutputParams.outColorHandle;
         mDrawTransOutputParams.renderTargetDepthHandle = mASOutputParams.renderTargetDepthHandle;
         mIndirectTransparentDrawPass->update(graph, mDrawTransIntputParams, mDrawTransOutputParams);
         //=================================================================================
