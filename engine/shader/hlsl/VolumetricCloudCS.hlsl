@@ -127,8 +127,8 @@ bool RaySphereIntersectionFromOriginPoint(float3 planetCenter, float3 rayOrigin,
 
 float GetHeightFraction(CloudsConstants cloudsConstants, float3 inPos)
 {
-    float innerRadius = cloudsConstants.PlanetRadius + cloudsConstants.BottomHeight;
-    float outerRadius = innerRadius + cloudsConstants.TopHeight;
+    float innerRadius = cloudsConstants.PlanetRadius + cloudsConstants.CloudsBottomHeight;
+    float outerRadius = innerRadius + cloudsConstants.CloudsTopHeight;
     return (length(inPos.y + cloudsConstants.PlanetRadius) - innerRadius) / (outerRadius - innerRadius);
 }
 
@@ -139,7 +139,7 @@ float Remap(float originalValue, float originalMin, float originalMax, float new
 
 float2 GetUVProjection(CloudsConstants cloudsConstants, float3 p)
 {
-    float innerRadius = cloudsConstants.PlanetRadius + cloudsConstants.BottomHeight;
+    float innerRadius = cloudsConstants.PlanetRadius + cloudsConstants.CloudsBottomHeight;
     return p.xz / innerRadius + 0.5f;
 }
 
@@ -321,24 +321,24 @@ void CSMain( uint3 Gid : SV_GroupID, uint3 GTid : SV_GroupThreadID, uint3 DTid :
     uint width, height;
     sceneColorTex.GetDimensions(width, height);
     
-    float2 tex = float2(DTid.xy + 0.5.xx) / float2(width / cloudCons.UpsampleRatio.x, height / cloudCons.UpsampleRatio.y);
-    float4 baseColor = sceneColorTex.SampleLevel(simpleSampler, tex, 0);
+    float2 texCoord = float2(DTid.xy + 0.5.xx) / float2(width / cloudCons.UpsampleRatio.x, height / cloudCons.UpsampleRatio.y);
+    float4 baseColor = sceneColorTex.SampleLevel(simpleSampler, texCoord, 0);
     float4 cloudsColor = float4(0.0, 0.0, 0.0, 0.0f);
     
     float4x4 InvProj = frameUniform.cameraUniform.curFrameUniform.unJitterProjectionMatrixInv;
     float4x4 InvView = frameUniform.cameraUniform.curFrameUniform.worldFromViewMatrix;
     float3 cameraPos = frameUniform.cameraUniform.curFrameUniform.cameraPosition;
     
-    float depth = sceneDepthTex.SampleLevel(simpleSampler, tex, 0).r;
-    float3 worldPos = ReconstructWorldPosFromDepth(tex, depth, InvProj, InvView);
+    float depth = sceneDepthTex.SampleLevel(simpleSampler, texCoord, 0).r;
+    float3 worldPos = ReconstructWorldPosFromDepth(texCoord, depth, InvProj, InvView);
     if (depth > 0.00001f || worldPos.y < 0.0f)
     {
         outColorTex[DTid.xy] = baseColor;
         return;
     }
-        
+    
 	//compute ray direction
-    float4 rayClipSpace = float4(toClipSpaceCoord(tex), 1.0);
+    float4 rayClipSpace = float4(toClipSpaceCoord(texCoord), 1.0);
     float4 rayView = mul(InvProj, rayClipSpace);
     rayView = float4(rayView.xy, -1.0, 0.0);
     
@@ -347,8 +347,8 @@ void CSMain( uint3 Gid : SV_GroupID, uint3 GTid : SV_GroupThreadID, uint3 DTid :
     
     
     float3 startPos, endPos;
-    float innerRadius = cloudCons.PlanetRadius + cloudCons.BottomHeight;
-    float outerRadius = innerRadius + cloudCons.TopHeight;
+    float innerRadius = cloudCons.PlanetRadius + cloudCons.CloudsBottomHeight;
+    float outerRadius = innerRadius + cloudCons.CloudsTopHeight;
     
     float3 planetCenter = float3(0, -cloudCons.PlanetRadius, 0);
     
@@ -387,7 +387,10 @@ void CSMain( uint3 Gid : SV_GroupID, uint3 GTid : SV_GroupThreadID, uint3 DTid :
     float3 ambientColor = float3(0.1, 0.1, 0.1);
     
     float4 cloudPos;
-    cloudsColor = RaymarchToCloud(cloudCons, cloudTex, cloudSamper, lightDir, lightColor, ambientColor, skyColor, tex, startPos, endPos, float2(width, height), cloudPos);
+    cloudsColor = RaymarchToCloud(
+        cloudCons, cloudTex, cloudSamper, 
+        lightDir, lightColor, ambientColor, skyColor, 
+        texCoord, startPos, endPos, float2(width, height), cloudPos);
     cloudsColor.rgb = cloudsColor.rgb * 1.8f - 0.1f;
 
     baseColor.rgb = lerp(baseColor.rgb, baseColor.rgb * (1.0f - cloudsColor.a) + cloudsColor.rgb, cloudsColor.a * 1.0);

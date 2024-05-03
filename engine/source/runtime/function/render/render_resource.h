@@ -62,7 +62,7 @@ namespace MoYu
         std::shared_ptr<RHI::D3D12Buffer> createStaticBuffer(std::shared_ptr<MoYu::MoYuScratchBuffer>& buffer_data, bool raw, bool batch = false);
 
         // MoYu::MoYuScratchImage 如果对应的是一整个对象就可以直接用于创建纹理或者buffer对象
-        std::shared_ptr<RHI::D3D12Texture> createTex(std::shared_ptr<MoYu::MoYuScratchImage> scratch_image, bool batch = false);
+        std::shared_ptr<RHI::D3D12Texture> createTex(std::shared_ptr<MoYu::MoYuScratchImage> scratch_image, std::wstring name, bool batch = false);
 
         std::shared_ptr<RHI::D3D12Texture> createTex2D(uint32_t width, uint32_t height, void* pixels, DXGI_FORMAT format, bool is_srgb, bool genMips = false, bool batch = false);
         std::shared_ptr<RHI::D3D12Texture> createTex2D(std::shared_ptr<MoYu::MoYuScratchImage>& tex2d_data, DXGI_FORMAT format, bool is_srgb, bool genMips = false, bool batch = false);

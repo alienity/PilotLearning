@@ -106,27 +106,27 @@ namespace MoYu
             m_render_scene->m_skybox_map.m_skybox_specular_map = specular_tex;
 
             // create volume cloud maps
-            auto weather2d_tex = createTex(weather2d_map);
-            auto cloud3d_tex = createTex(cloud3d_map);
-            auto worley3d_tex = createTex(worley3d_map);
+            auto weather2d_tex = createTex(weather2d_map, L"weather2d");
+            auto cloud3d_tex = createTex(cloud3d_map, L"cloud3d");
+            auto worley3d_tex = createTex(worley3d_map, L"worley3d");
             m_render_scene->m_cloud_map.m_weather2D = weather2d_tex;
             m_render_scene->m_cloud_map.m_cloud3D = cloud3d_tex;
             m_render_scene->m_cloud_map.m_worley3D = worley3d_tex;
 
             // create ibl dfg
-            auto dfg_tex = createTex(_dfg_map);
+            auto dfg_tex = createTex(_dfg_map, L"ibl_dfg");
             m_render_scene->m_ibl_map.m_dfg = dfg_tex;
 
             // create ibl ld
-            auto ld_tex = createTex(_ld_map);
+            auto ld_tex = createTex(_ld_map, L"ibl_ld");
             m_render_scene->m_ibl_map.m_ld = ld_tex;
 
             // create ibl radians
-            auto radians_tex = createTex(_radians_map);
+            auto radians_tex = createTex(_radians_map, L"ibl_radians");
             m_render_scene->m_ibl_map.m_radians = radians_tex;
 
             // create blue noise
-            auto bluenoise_tex = createTex(_bluenoise_map);
+            auto bluenoise_tex = createTex(_bluenoise_map, L"blue_noise");
             m_render_scene->m_bluenoise_map.m_bluenoise_64x64_uni = bluenoise_tex;
         }
         endUploadBatch();
@@ -752,7 +752,7 @@ namespace MoYu
         return cube_tex;
     }
 
-    std::shared_ptr<RHI::D3D12Texture> RenderResource::createTex(std::shared_ptr<MoYu::MoYuScratchImage> scratch_image, bool batch)
+    std::shared_ptr<RHI::D3D12Texture> RenderResource::createTex(std::shared_ptr<MoYu::MoYuScratchImage> scratch_image, std::wstring name, bool batch)
     {
         if (batch)
             this->startUploadBatch();
@@ -772,7 +772,7 @@ namespace MoYu
                                                       _texMetaData.height,
                                                       _texMetaData.mipLevels,
                                                       _texMetaData.format,
-                                                      RHI::RHISurfaceCreateFlags::RHISurfaceCreateMipmap);
+                                                      RHI::RHISurfaceCreateFlags::RHISurfaceCreateMipmap, 1, name);
 
                 m_ResourceUpload->Transition(_rhiTex->GetResource(), D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COPY_DEST);
                 
@@ -803,7 +803,7 @@ namespace MoYu
                                                                _texMetaData.height,
                                                                _texMetaData.mipLevels,
                                                                _texMetaData.format,
-                                                               RHI::RHISurfaceCreateFlags::RHISurfaceCreateMipmap);
+                                                               RHI::RHISurfaceCreateFlags::RHISurfaceCreateMipmap, 1, name);
                 }
                 else
                 {
@@ -813,7 +813,7 @@ namespace MoYu
                                                                _texMetaData.arraySize,
                                                                _texMetaData.mipLevels,
                                                                _texMetaData.format,
-                                                               RHI::RHISurfaceCreateFlags::RHISurfaceCreateMipmap);
+                                                               RHI::RHISurfaceCreateFlags::RHISurfaceCreateMipmap, 1, name);
                 }
                 m_ResourceUpload->Transition(_rhiTex->GetResource(), D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COPY_DEST);
                 
@@ -849,7 +849,7 @@ namespace MoYu
                                                   _texMetaData.depth,
                                                   _texMetaData.mipLevels,
                                                   _texMetaData.format,
-                                                  RHI::RHISurfaceCreateFlags::RHISurfaceCreateMipmap);
+                                                  RHI::RHISurfaceCreateFlags::RHISurfaceCreateMipmap, 1, name);
 
             m_ResourceUpload->Transition(_rhiTex->GetResource(), D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COPY_DEST);
                 

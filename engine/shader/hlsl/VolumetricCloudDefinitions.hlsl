@@ -11,8 +11,8 @@ struct CloudsConstants
     float Curliness;
     float Coverage;
     float Absorption;
-    float BottomHeight;
-    float TopHeight;
+    float CloudsBottomHeight;
+    float CloudsTopHeight;
     float DensityFactor;
     float DistanceToFadeFrom; // when to start fading
     float DistanceOfFade; // for how long to fade
