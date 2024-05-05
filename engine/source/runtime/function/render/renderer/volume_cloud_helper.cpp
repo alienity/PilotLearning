@@ -5,7 +5,7 @@ namespace MoYu
 	namespace VolumeCloudSpace
 	{
 
-		const float mWindSpeedMultiplier = 1750.0f;
+		const float mWindSpeedMultiplier = 175.0f;
 
 		CloudsConsCB InitDefaultCloudsCons(float time, glm::float3 wind)
 		{

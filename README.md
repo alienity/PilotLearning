@@ -11,6 +11,7 @@
   - SH
   - Volume Light
   - AtmosphereScattering
+  - VolumeCloud
 - AA
   - FXAA
   - TAA
@@ -121,6 +122,12 @@ GPU Driven Terrain的流程
 
 <div style="display:inline-block">
   <img src="https://raw.githubusercontent.com/alienity/PilotLearning/main/data/AS.png" alt="SSAO" width="512">
+</div>
+
+### VolumeCloud
+
+<div style="display:inline-block">
+  <img src="https://raw.githubusercontent.com/alienity/PilotLearning/main/data/volumecloud.png" alt="SSAO" width="512">
 </div>
 
 ## AO
