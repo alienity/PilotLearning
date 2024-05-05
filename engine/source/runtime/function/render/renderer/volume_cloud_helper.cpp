@@ -24,7 +24,7 @@ namespace MoYu
 			cloudsCons.DensityFactor = 0.006f;
 			cloudsCons.DistanceToFadeFrom = 58000.0f;
 			cloudsCons.DistanceOfFade = 10000.0f;
-			cloudsCons.PlanetRadius = 6360000.0f;
+			cloudsCons.PlanetRadius = 636000.0f;
 			cloudsCons.UpsampleRatio = glm::float2(1, 1);
 
 			return CloudsConsCB {cloudsCons};

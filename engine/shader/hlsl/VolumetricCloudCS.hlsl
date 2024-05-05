@@ -1,3 +1,6 @@
+// Volumetric clouds shader inspired by https://www.guerrilla-games.com/read/the-real-time-volumetric-cloudscapes-of-horizon-zero-dawn
+// Also inspired by https://github.com/fede-vaccaro/TerrainEngine-OpenGL
+
 #include "d3d12.hlsli"
 #include "CommonMath.hlsli"
 #include "InputTypes.hlsli"
