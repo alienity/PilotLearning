@@ -233,6 +233,12 @@ namespace MoYu
 
         _frameUniforms->iblUniform = _iblUniform;
 
+        // Sun Uniform
+        HLSL::VolumeCloudStruct volumeCloudUniform{};
+        volumeCloudUniform.sunlight_direction = render_scene->m_directional_light.m_direction;
+        _frameUniforms->volumeCloudUniform = volumeCloudUniform;
+
+        // DirectionLight Uniform
         HLSL::DirectionalLightStruct _directionalLightStruct;
         _directionalLightStruct.lightColorIntensity = glm::float4(
             render_scene->m_directional_light.m_color.toVector3(), render_scene->m_directional_light.m_intensity);
@@ -258,6 +264,7 @@ namespace MoYu
 
         _frameUniforms->directionalLight = _directionalLightStruct;
 
+        // PointLight Uniform
         HLSL::PointLightUniform _pointLightUniform;
         _pointLightUniform.pointLightCounts = render_scene->m_point_light_list.size();
         for (uint32_t i = 0; i < render_scene->m_point_light_list.size(); i++)
@@ -281,6 +288,7 @@ namespace MoYu
         }
         _frameUniforms->pointLightUniform = _pointLightUniform;
 
+        // SpotLight Uniform
         HLSL::SpotLightUniform _spotLightUniform;
         _spotLightUniform.spotLightCounts = render_scene->m_spot_light_list.size();
         for (uint32_t i = 0; i < render_scene->m_spot_light_list.size(); i++)

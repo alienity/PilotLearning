@@ -10,13 +10,14 @@
 cbuffer RootConstants : register(b0, space0)
 {
     uint perFrameBufferIndex;
-    uint sceneColorIndex;
-    uint sceneDepthIndex;
     uint weatherTexIndex;
     uint cloudTexIndex; // 3d
     uint worlyTexIndex; // 3d
     uint cloudConstBufferIndex; // constant buffer
-    uint outColorIndex;
+    uint outShadowIndex;
+    
+    uint shadowWidth;
+    uint shadowHeight;
 };
 
 struct CloudTextures
@@ -170,7 +171,7 @@ float SampleCloudDensity(
         return 0.0f;
 
     // low frequency sample
-    float4 lowFreqNoise = 
+    float4 lowFreqNoise =
         cloudTexs.cloudTexure.SampleLevel(cloudSam.colorSampler, float3(UV * cloudsCons.Crispiness, heightFraction), lod);
     float lowFreqFBM = dot(lowFreqNoise.gba, float3(0.625, 0.25, 0.125));
     float cloudSample = Remap(lowFreqNoise.r, -(1.0f - lowFreqFBM), 1.0f, 0.0f, 1.0f);
@@ -186,8 +187,8 @@ float SampleCloudDensity(
     // high frequency sample
     if (useHighFreq)
     {
-        float3 highFreqNoise = 
-            cloudTexs.worleyTexure.SampleLevel(cloudSam.colorSampler, 
+        float3 highFreqNoise =
+            cloudTexs.worleyTexure.SampleLevel(cloudSam.colorSampler,
                 float3(dynamicUV * cloudsCons.Crispiness, heightFraction) * cloudsCons.Curliness, lod).rgb;
         float highFreqFBM = dot(highFreqNoise.rgb, float3(0.625, 0.25, 0.125));
         float highFreqNoiseModifier = lerp(highFreqFBM, 1.0f - highFreqFBM, clamp(heightFraction * 10.0f, 0.0f, 1.0f));
@@ -198,56 +199,12 @@ float SampleCloudDensity(
     return clamp(cloudSampleWithCoverage, 0.0f, 1.0f);
 }
 
-float RaymarchToLight(
-    CloudsConstants cloudsCons, CloudTextures cloudTexs, CloudSamplers cloudSam, 
-    float3 origin, float stepSize, float3 lightDir, float originalDensity, float lightDotEye)
-{
-    float3 startPos = origin;
-    
-    float deltaStep = stepSize * 6.0f;
-    float3 rayStep = lightDir * deltaStep;
-    const float coneStep = 1.0f / 6.0f;
-    float coneRadius = 1.0f;
-    float coneDensity = 0.0;
-    
-    float density = 0.0;
-    const float densityThreshold = 0.3f;
-    
-    float invDepth = 1.0 / deltaStep;
-    float sigmaDeltaStep = -deltaStep * cloudsCons.Absorption;
-    float3 pos;
-
-    float finalTransmittance = 1.0;
-
-    for (int i = 0; i < 6; i++)
-    {
-        pos = startPos + coneRadius * NOISE_KERNEL_CONE_SAMPLING[i] * float(i);
-
-        float heightFraction = GetHeightFraction(cloudsCons, pos);
-        if (heightFraction >= 0)
-        {
-            float cloudDensity = SampleCloudDensity(cloudsCons, cloudTexs, cloudSam, pos, density > densityThreshold, i / 16.0f);
-            if (cloudDensity > 0.0)
-            {
-                float curTransmittance = exp(cloudDensity * sigmaDeltaStep);
-                finalTransmittance *= curTransmittance;
-                density += cloudDensity;
-            }
-        }
-        startPos += rayStep;
-        coneRadius += coneStep;
-    }
-    return finalTransmittance;
-}
-
-float4 RaymarchToCloud(
-    CloudsConstants cloudsCons, CloudTextures cloudTexs, CloudSamplers cloudSam, 
-    float3 lightDir, float3 lightColor, float3 ambientColor, float3 skyColor, 
-    float2 texCoord, float3 startPos, float3 endPos, float2 outputDim, out float4 cloudPos)
+float RaymarchToCloudTransmittance(
+    CloudsConstants cloudsCons, CloudTextures cloudTexs, CloudSamplers cloudSam,
+    float2 texCoord, float3 startPos, float3 endPos, float2 outputDim)
 {
     const float minTransmittance = 0.1f;
     const int steps = 64;
-    float4 finalColor = float4(0.0, 0.0, 0.0, 0.0);
     
     float3 path = endPos - startPos;
     float len = length(path);
@@ -262,31 +219,16 @@ float4 RaymarchToCloud(
     startPos += dir * BAYER_FILTER[a * 4 + b];
 
     float3 pos = startPos;
-    float LdotV = dot(normalize(lightDir.rgb), normalize(dir));
-
+    
     float finalTransmittance = 1.0f;
     float sigmaDeltaStep = -deltaStep * cloudsCons.DensityFactor;
-    bool entered = false;
     
     for (int i = 0; i < steps; ++i)
     {
         float densitySample = SampleCloudDensity(cloudsCons, cloudTexs, cloudSam, pos, true, i / 16.0f);
         if (densitySample > 0.0f)
         {
-            if (!entered)
-            {
-                cloudPos = float4(pos, 1.0);
-                entered = true;
-            }
-            //float height = GetHeightFraction(cloudsCons, pos);
-            float lightDensity = RaymarchToLight(cloudsCons, cloudTexs, cloudSam, pos, deltaStep * 0.1f, lightDir.rgb, densitySample, LdotV);
-            float scattering = max(lerp(HenyeyGreenstein(LdotV, -0.08f), HenyeyGreenstein(LdotV, 0.08f), clamp(LdotV * 0.5f + 0.5f, 0.0f, 1.0f)), 1.0f);
-            //float powderEffect = SugarPowder(densitySample);
-			
-            float3 S = 0.6f * (lerp(lerp(ambientColor.rgb * 1.8f, skyColor, 0.2f), scattering * lightColor.rgb, lightDensity)) * densitySample;
             float deltaTransmittance = exp(densitySample * sigmaDeltaStep);
-            float3 Sint = (S - S * deltaTransmittance) * (1.0f / densitySample);
-            finalColor.rgb += finalTransmittance * Sint;
             finalTransmittance *= deltaTransmittance;
         }
 
@@ -295,86 +237,39 @@ float4 RaymarchToCloud(
         
         pos += dir;
     }
-    finalColor.a = 1.0 - finalTransmittance;
-    return finalColor;
+    return finalTransmittance;
 }
 
-float3 ReconstructWorldPosFromDepth(float2 uv, float depth, float4x4 invProj, float4x4 invView)
-{
-    float ndcX = uv.x * 2 - 1;
-    float ndcY = 1 - uv.y * 2; // Remember to flip y!!!
-    float4 viewPos = mul(invProj, float4(ndcX, ndcY, depth, 1.0f));
-    viewPos = viewPos / viewPos.w;
-    return mul(invView, viewPos).xyz;
-}
-
-[numthreads( 8, 8, 1 )]
-void CSMain( uint3 Gid : SV_GroupID, uint3 GTid : SV_GroupThreadID, uint3 DTid : SV_DispatchThreadID )
+[numthreads(8, 8, 1)]
+void CSMain(uint3 Gid : SV_GroupID, uint3 GTid : SV_GroupThreadID, uint3 DTid : SV_DispatchThreadID)
 {
     ConstantBuffer<FrameUniforms> frameUniform = ResourceDescriptorHeap[perFrameBufferIndex];
     ConstantBuffer<CloudsConstantsCB> cloudConsCB = ResourceDescriptorHeap[cloudConstBufferIndex];
-    Texture2D<float4> sceneColorTex = ResourceDescriptorHeap[sceneColorIndex];
-    Texture2D<float> sceneDepthTex = ResourceDescriptorHeap[sceneDepthIndex];
     Texture2D<float3> weatherTex2D = ResourceDescriptorHeap[weatherTexIndex];
     Texture3D<float4> cloudTex3D = ResourceDescriptorHeap[cloudTexIndex];
     Texture3D<float4> worlyTex3D = ResourceDescriptorHeap[worlyTexIndex];
-    RWTexture2D<float4> outColorTex = ResourceDescriptorHeap[outColorIndex];
+    RWTexture2D<float> outShadowTex = ResourceDescriptorHeap[outShadowIndex];
     
     CloudsConstants cloudCons = cloudConsCB.cloudConstants;
     
-    uint width, height;
-    sceneColorTex.GetDimensions(width, height);
+    uint width = shadowWidth;
+    uint height = shadowHeight;
     
     float2 texCoord = float2(DTid.xy + 0.5.xx) / float2(width / cloudCons.UpsampleRatio.x, height / cloudCons.UpsampleRatio.y);
-    float4 baseColor = sceneColorTex.SampleLevel(simpleSampler, texCoord, 0);
-    float4 cloudsColor = float4(0.0, 0.0, 0.0, 0.0f);
     
-    float4x4 InvProj = frameUniform.cameraUniform.curFrameUniform.unJitterProjectionMatrixInv;
-    float4x4 InvView = frameUniform.cameraUniform.curFrameUniform.worldFromViewMatrix;
-    float3 cameraPos = frameUniform.cameraUniform.curFrameUniform.cameraPosition;
+    float3 lightDir = -frameUniform.directionalLight.lightDirection;
+    float3 lightPosition = float3(0, cloudCons.PlanetRadius * 1000, 0);
     
-    float depth = sceneDepthTex.SampleLevel(simpleSampler, texCoord, 0).r;
-    float3 worldPos = ReconstructWorldPosFromDepth(texCoord, depth, InvProj, InvView);
-    if (depth > FLT_MIN || worldPos.y < FLT_MIN)
-    {
-        outColorTex[DTid.xy] = baseColor;
-        return;
-    }
-    
-	//compute ray direction
-    float4 rayClipSpace = float4(toClipSpaceCoord(texCoord), 1.0);
-    float4 rayView = mul(InvProj, rayClipSpace);
-    rayView = float4(rayView.xy, -1.0, 0.0);
-    
-    float3 worldDir = mul(InvView, rayView).xyz;
-    worldDir = normalize(worldDir);
-    
-    
-    float3 startPos, endPos;
     float innerRadius = cloudCons.PlanetRadius + cloudCons.CloudsBottomHeight;
     float outerRadius = innerRadius + cloudCons.CloudsTopHeight;
     
     float3 planetCenter = float3(0, -cloudCons.PlanetRadius, 0);
     
-    if (cameraPos.y < innerRadius - cloudCons.PlanetRadius)
-    {
-        RaySphereIntersectionFromOriginPoint(planetCenter, cameraPos.xyz, worldDir, innerRadius, startPos);
-        RaySphereIntersectionFromOriginPoint(planetCenter, cameraPos.xyz, worldDir, outerRadius, endPos);
-    }
-    else if (cameraPos.y > innerRadius - cloudCons.PlanetRadius && cameraPos.y < outerRadius - cloudCons.PlanetRadius)
-    {
-        startPos = cameraPos.xyz;
-        RaySphereIntersectionFromOriginPoint(planetCenter, cameraPos.xyz, worldDir, outerRadius, endPos);
-    }
-    else
-    {
-        RaySphereIntersectionFromOriginPoint(planetCenter, cameraPos.xyz, worldDir, outerRadius, startPos);
-        RaySphereIntersectionFromOriginPoint(planetCenter, cameraPos.xyz, worldDir, innerRadius, endPos);
-    }
+    float3 startPos, endPos;
     
-    float3 skyColor = baseColor.rgb;
-    float3 outputColor = skyColor;
-
+    RaySphereIntersectionFromOriginPoint(planetCenter, lightPosition.xyz, lightDir, outerRadius, startPos);
+    RaySphereIntersectionFromOriginPoint(planetCenter, lightPosition.xyz, lightDir, innerRadius, endPos);
+    
     CloudTextures cloudTex;
     cloudTex.weatherTexure = weatherTex2D;
     cloudTex.cloudTexure = cloudTex3D;
@@ -384,29 +279,8 @@ void CSMain( uint3 Gid : SV_GroupID, uint3 GTid : SV_GroupThreadID, uint3 DTid :
     cloudSamper.colorSampler = colorSampler;
     cloudSamper.simpleSampler = simpleSampler;
     
-    float3 lightDir = -frameUniform.directionalLight.lightDirection;
-    float3 lightColor = frameUniform.directionalLight.lightColorIntensity.rgb;
-    float3 ambientColor = float3(0.1, 0.1, 0.1);
+    float transmittance = RaymarchToCloudTransmittance(
+        cloudCons, cloudTex, cloudSamper, texCoord, startPos, endPos, float2(width, height));
     
-    float4 cloudPos;
-    cloudsColor = RaymarchToCloud(
-        cloudCons, cloudTex, cloudSamper, 
-        lightDir, lightColor, ambientColor, skyColor, 
-        texCoord, startPos, endPos, float2(width, height), cloudPos);
-    cloudsColor.rgb = cloudsColor.rgb * 1.8f - 0.1f;
-
-    baseColor.rgb = lerp(baseColor.rgb, baseColor.rgb * (1.0f - cloudsColor.a) + cloudsColor.rgb, cloudsColor.a * 1.0);
-
-    float cloudToCameraDistance = distance(cameraPos.xyz, cloudPos.xyz);
-    if (cloudToCameraDistance <= cloudCons.DistanceToFadeFrom)
-    {
-        outputColor = baseColor.rgb;
-    }
-    else if (cloudToCameraDistance > cloudCons.DistanceToFadeFrom && cloudToCameraDistance <= cloudCons.DistanceToFadeFrom + cloudCons.DistanceOfFade)
-    {
-        float factor = (cloudToCameraDistance - cloudCons.DistanceToFadeFrom) / cloudCons.DistanceOfFade;
-        outputColor = lerp(baseColor.rgb, skyColor.rgb, factor);
-    }
-
-    outColorTex[DTid.xy] = float4(outputColor, 1.0f);
+    outShadowTex[DTid.xy] = transmittance;
 }

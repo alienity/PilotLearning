@@ -229,6 +229,18 @@ struct SSRUniform
     int    MaxMipMap;
 };
 
+struct VolumeCloudStruct
+{
+    float4x4 cloud_shadow_view_matrix;
+    float4x4 cloud_shadow_proj_matrix;
+    float4x4 cloud_shadow_proj_view_matrix;
+    uint cloud_shadowmap_srv_index;
+    uint cloud_shadowmap_size;
+    int2 cloud_shadowmap_bounds;
+    float3 sunlight_direction;
+    float1 _padding_0;
+};
+
 struct DirectionalLightShadowmap
 {
     uint shadowmap_srv_index; // shadowmap srv in descriptorheap index    
@@ -364,6 +376,7 @@ struct FrameUniforms
     TAAUniform taaUniform;
     IBLUniform iblUniform;
     SSRUniform ssrUniform;
+    VolumeCloudStruct volumeCloudUniform;
     DirectionalLightStruct directionalLight;
     PointLightUniform pointLightUniform;
     SpotLightUniform spotLightUniform;

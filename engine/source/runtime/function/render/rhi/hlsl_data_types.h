@@ -198,6 +198,18 @@ namespace HLSL
         int    MaxMipMap;
     };
 
+    struct VolumeCloudStruct
+    {
+        glm::float4x4 cloud_shadow_view_matrix;
+        glm::float4x4 cloud_shadow_proj_matrix;
+        glm::float4x4 cloud_shadow_proj_view_matrix;
+        glm::uint cloud_shadowmap_srv_index;
+        glm::uint cloud_shadowmap_size;
+        glm::uvec2 cloud_shadowmap_bounds;
+        glm::float3 sunlight_direction;
+        glm::float1 _padding_0;
+    };
+
     struct DirectionalLightShadowmap
     {
         glm::uint     shadowmap_srv_index; // shadowmap srv in descriptorheap index
@@ -329,6 +341,7 @@ namespace HLSL
         TAAuniform             taaUniform;
         IBLUniform             iblUniform;
         SSRUniform             ssrUniform;
+        VolumeCloudStruct      volumeCloudUniform;
         DirectionalLightStruct directionalLight;
         PointLightUniform      pointLightUniform;
         SpotLightUniform       spotLightUniform;

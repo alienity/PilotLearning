@@ -39,6 +39,9 @@ namespace MoYu
         void destroy() override final;
 
     private:
+        glm::int2 volumeCloudShadowMapSize;
+        glm::int2 volumeCloudShadowBounds;
+
         RHI::RgTextureDesc colorTexDesc;
 
         VolumeCloudSpace::CloudsConsCB mCloudsConsCB;
@@ -49,9 +52,15 @@ namespace MoYu
         std::shared_ptr<RHI::D3D12Texture> mCloud3D;
         std::shared_ptr<RHI::D3D12Texture> mWorley3D;
 
+        std::shared_ptr<RHI::D3D12Texture> mVolumeShadowmap;
+
         Shader mVolumeCloudCS;
         std::shared_ptr<RHI::D3D12RootSignature> pVolumeCloudSignature;
         std::shared_ptr<RHI::D3D12PipelineState> pVolumeCloudPSO;
+
+        Shader mVolumeShadowCS;
+        std::shared_ptr<RHI::D3D12RootSignature> pVolumeShadowSignature;
+        std::shared_ptr<RHI::D3D12PipelineState> pVolumeShadowPSO;
 
 	};
 }

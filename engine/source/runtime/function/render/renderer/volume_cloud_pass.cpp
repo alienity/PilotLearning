@@ -22,6 +22,7 @@ namespace MoYu
 
         // Compute the transmittance, and store it in transmittance_texture_.
         mVolumeCloudCS = m_ShaderCompiler->CompileShader(RHI_SHADER_TYPE::Compute, m_ShaderRootPath / "hlsl/VolumetricCloudCS.hlsl", ShaderCompileOptions(L"CSMain"));
+        mVolumeShadowCS = m_ShaderCompiler->CompileShader(RHI_SHADER_TYPE::Compute, m_ShaderRootPath / "hlsl/VolumetricCloudShadowCS.hlsl", ShaderCompileOptions(L"CSMain"));
 
         {
             RHI::RootSignatureDesc rootSigDesc =
@@ -34,6 +35,17 @@ namespace MoYu
                     .AllowSampleDescriptorHeapIndexing();
             pVolumeCloudSignature = std::make_shared<RHI::D3D12RootSignature>(m_Device, rootSigDesc);
         }
+        {
+            RHI::RootSignatureDesc rootSigDesc =
+                RHI::RootSignatureDesc()
+                .Add32BitConstants<0, 0>(16)
+                .AddStaticSampler<10, 0>(D3D12_FILTER::D3D12_FILTER_MIN_MAG_MIP_LINEAR, D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_WRAP, 4)
+                .AddStaticSampler<11, 0>(D3D12_FILTER::D3D12_FILTER_MIN_MAG_MIP_LINEAR, D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_WRAP, 4)
+                .AllowInputLayout()
+                .AllowResourceDescriptorHeapIndexing()
+                .AllowSampleDescriptorHeapIndexing();
+            pVolumeShadowSignature = std::make_shared<RHI::D3D12RootSignature>(m_Device, rootSigDesc);
+        }
 
         {
             struct PsoStream
@@ -45,6 +57,17 @@ namespace MoYu
             psoStream.CS                    = &mVolumeCloudCS;
             PipelineStateStreamDesc psoDesc = {sizeof(PsoStream), &psoStream};
             pVolumeCloudPSO                 = std::make_shared<RHI::D3D12PipelineState>(m_Device, L"VolumetricCloudPSO", psoDesc);
+        }
+        {
+            struct PsoStream
+            {
+                PipelineStateStreamRootSignature RootSignature;
+                PipelineStateStreamCS            CS;
+            } psoStream;
+            psoStream.RootSignature = PipelineStateStreamRootSignature(pVolumeShadowSignature.get());
+            psoStream.CS = &mVolumeShadowCS;
+            PipelineStateStreamDesc psoDesc = { sizeof(PsoStream), &psoStream };
+            pVolumeShadowPSO = std::make_shared<RHI::D3D12PipelineState>(m_Device, L"VolumetricCloudShadowPSO", psoDesc);
         }
 
         mWeather2D = m_render_scene->m_cloud_map.m_weather2D;
@@ -69,6 +92,44 @@ namespace MoYu
 
         memcpy(mCloudConstantsBuffer->GetCpuVirtualAddress<VolumeCloudSpace::CloudsConsCB>(),
             &mCloudsConsCB, sizeof(VolumeCloudSpace::CloudsConsCB));
+
+        volumeCloudShadowMapSize = glm::int2(1024, 1024);
+        volumeCloudShadowBounds = glm::int2(2048, 2048);
+
+        float shadow_near_plane = 0.1f;
+        float shadow_far_plane = 10000.0f;
+
+        if (mVolumeShadowmap == nullptr)
+        {
+            mVolumeShadowmap = RHI::D3D12Texture::Create2D(m_Device->GetLinkedDevice(),
+                volumeCloudShadowMapSize.x,
+                volumeCloudShadowMapSize.y,
+                1,
+                DXGI_FORMAT_D32_FLOAT,
+                RHI::RHISurfaceCreateShadowmap,
+                1,
+                L"VolumeCloudShadowmap",
+                D3D12_RESOURCE_STATE_COMMON,
+                CD3DX12_CLEAR_VALUE(DXGI_FORMAT_D32_FLOAT, 0, 1));
+        }
+
+        RenderResource* real_resource = (RenderResource*)render_resource.get();
+
+        glm::float3 m_translation = glm::float3(0, mCloudsConsCB.cloudsCons.CloudsTopHeight + 500, 0);
+        glm::float3 m_direction = real_resource->m_FrameUniforms.directionalLight.lightDirection;
+
+        glm::float4x4 sunLightViewMat =
+            MoYu::MYMatrix4x4::createLookAtMatrix(m_translation, m_translation + m_direction, MYFloat3::Up);
+        glm::float4x4 sunLightProjMat = MYMatrix4x4::createOrthographic(
+            volumeCloudShadowBounds.x, volumeCloudShadowBounds.y, shadow_near_plane, shadow_far_plane);
+
+        real_resource->m_FrameUniforms.volumeCloudUniform.cloud_shadow_view_matrix = sunLightViewMat;
+        real_resource->m_FrameUniforms.volumeCloudUniform.cloud_shadow_proj_matrix = sunLightProjMat;
+        real_resource->m_FrameUniforms.volumeCloudUniform.cloud_shadow_proj_view_matrix = sunLightProjMat * sunLightViewMat;
+        real_resource->m_FrameUniforms.volumeCloudUniform.cloud_shadowmap_srv_index = mVolumeShadowmap->GetDefaultSRV()->GetIndex();
+        real_resource->m_FrameUniforms.volumeCloudUniform.cloud_shadowmap_size = volumeCloudShadowMapSize.x;
+        real_resource->m_FrameUniforms.volumeCloudUniform.cloud_shadowmap_bounds = volumeCloudShadowBounds;
+        real_resource->m_FrameUniforms.volumeCloudUniform.sunlight_direction = m_direction;
     }
 
     void VolumeCloudPass::update(RHI::RenderGraph& graph, DrawInputParameters& passInput, DrawOutputParameters& passOutput)
@@ -158,6 +219,7 @@ namespace MoYu
         mWeather2D = nullptr;
         mCloud3D = nullptr;
         mWorley3D = nullptr;
+        mVolumeShadowmap = nullptr;
     }
 
 }
