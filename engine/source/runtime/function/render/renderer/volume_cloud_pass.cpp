@@ -94,7 +94,7 @@ namespace MoYu
             &mCloudsConsCB, sizeof(VolumeCloudSpace::CloudsConsCB));
 
         volumeCloudShadowMapSize = glm::int2(512, 512);
-        volumeCloudShadowBounds = glm::int2(8192, 8192);
+        volumeCloudShadowBounds = glm::int2(32768, 32768);
 
         float shadow_near_plane = 0.1f;
         float shadow_far_plane = 20000.0f;
