@@ -28,6 +28,7 @@ namespace MoYu
         struct DrawOutputParameters : public PassOutput
         {
             RHI::RgResourceHandle outColorHandle;
+            RHI::RgResourceHandle outCloudShadowHandle;
         };
 
     public:

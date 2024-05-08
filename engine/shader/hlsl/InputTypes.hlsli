@@ -238,7 +238,7 @@ struct VolumeCloudStruct
     uint cloud_shadowmap_size;
     int2 cloud_shadowmap_bounds;
     float3 sunlight_direction;
-    float1 _padding_0;
+    float sun_to_earth_distance;
 };
 
 struct DirectionalLightShadowmap

@@ -15,9 +15,6 @@ cbuffer RootConstants : register(b0, space0)
     uint worlyTexIndex; // 3d
     uint cloudConstBufferIndex; // constant buffer
     uint outShadowIndex;
-    
-    uint shadowWidth;
-    uint shadowHeight;
 };
 
 struct CloudTextures
@@ -201,7 +198,7 @@ float SampleCloudDensity(
 
 float RaymarchToCloudTransmittance(
     CloudsConstants cloudsCons, CloudTextures cloudTexs, CloudSamplers cloudSam,
-    float2 texCoord, float3 startPos, float3 endPos, float2 outputDim)
+    float2 fragCoord, float3 startPos, float3 endPos)
 {
     const float minTransmittance = 0.1f;
     const int steps = 64;
@@ -213,7 +210,8 @@ float RaymarchToCloudTransmittance(
     float3 dir = path / len;
     dir *= deltaStep;
     
-    float2 fragCoord = texCoord * outputDim / cloudsCons.UpsampleRatio;
+    fragCoord = fragCoord / cloudsCons.UpsampleRatio;
+    
     int a = int(fragCoord.x) % 4;
     int b = int(fragCoord.y) % 4;
     startPos += dir * BAYER_FILTER[a * 4 + b];
@@ -252,13 +250,19 @@ void CSMain(uint3 Gid : SV_GroupID, uint3 GTid : SV_GroupThreadID, uint3 DTid : 
     
     CloudsConstants cloudCons = cloudConsCB.cloudConstants;
     
-    uint width = shadowWidth;
-    uint height = shadowHeight;
+    float2 fragCoord = float2(DTid.xy) * float2(cloudCons.UpsampleRatio.xy);
     
-    float2 texCoord = float2(DTid.xy + 0.5.xx) / float2(width / cloudCons.UpsampleRatio.x, height / cloudCons.UpsampleRatio.y);
+    int shadowmapsize = frameUniform.volumeCloudUniform.cloud_shadowmap_size;
+    int2 shadowbounds = frameUniform.volumeCloudUniform.cloud_shadowmap_bounds;
+    float2 pixel2WorldScale = float2(shadowbounds) / float2(shadowmapsize, shadowmapsize);
+    
+    float3 worldPosition = 
+        float3((fragCoord.x + 0.5f) * pixel2WorldScale.x, 0, (fragCoord.y + 0.5f) * pixel2WorldScale.y) 
+        + float3(-shadowbounds.x * 0.5f, 0, -shadowbounds.y * 0.5f);
     
     float3 lightDir = -frameUniform.directionalLight.lightDirection;
-    float3 lightPosition = float3(0, cloudCons.PlanetRadius * 1000, 0);
+    float3 lightPosition = worldPosition + 
+        (cloudCons.PlanetRadius + cloudCons.CloudsTopHeight) * (frameUniform.directionalLight.lightDirection);
     
     float innerRadius = cloudCons.PlanetRadius + cloudCons.CloudsBottomHeight;
     float outerRadius = innerRadius + cloudCons.CloudsTopHeight;
@@ -279,8 +283,7 @@ void CSMain(uint3 Gid : SV_GroupID, uint3 GTid : SV_GroupThreadID, uint3 DTid : 
     cloudSamper.colorSampler = colorSampler;
     cloudSamper.simpleSampler = simpleSampler;
     
-    float transmittance = RaymarchToCloudTransmittance(
-        cloudCons, cloudTex, cloudSamper, texCoord, startPos, endPos, float2(width, height));
+    float transmittance = RaymarchToCloudTransmittance(cloudCons, cloudTex, cloudSamper, fragCoord, startPos, endPos);
     
-    outShadowTex[DTid.xy] = transmittance;
+    outShadowTex[DTid.xy] = 1 - transmittance;
 }

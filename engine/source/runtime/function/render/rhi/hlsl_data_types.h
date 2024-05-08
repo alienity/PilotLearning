@@ -207,7 +207,7 @@ namespace HLSL
         glm::uint cloud_shadowmap_size;
         glm::uvec2 cloud_shadowmap_bounds;
         glm::float3 sunlight_direction;
-        glm::float1 _padding_0;
+        float sun_to_earth_distance;
     };
 
     struct DirectionalLightShadowmap

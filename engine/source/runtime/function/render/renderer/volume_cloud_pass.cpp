@@ -93,11 +93,11 @@ namespace MoYu
         memcpy(mCloudConstantsBuffer->GetCpuVirtualAddress<VolumeCloudSpace::CloudsConsCB>(),
             &mCloudsConsCB, sizeof(VolumeCloudSpace::CloudsConsCB));
 
-        volumeCloudShadowMapSize = glm::int2(1024, 1024);
-        volumeCloudShadowBounds = glm::int2(2048, 2048);
+        volumeCloudShadowMapSize = glm::int2(512, 512);
+        volumeCloudShadowBounds = glm::int2(8192, 8192);
 
         float shadow_near_plane = 0.1f;
-        float shadow_far_plane = 10000.0f;
+        float shadow_far_plane = 20000.0f;
 
         if (mVolumeShadowmap == nullptr)
         {
@@ -105,21 +105,22 @@ namespace MoYu
                 volumeCloudShadowMapSize.x,
                 volumeCloudShadowMapSize.y,
                 1,
-                DXGI_FORMAT_D32_FLOAT,
-                RHI::RHISurfaceCreateShadowmap,
+                DXGI_FORMAT_R32_FLOAT,
+                RHI::RHISurfaceCreateRandomWrite,
                 1,
                 L"VolumeCloudShadowmap",
-                D3D12_RESOURCE_STATE_COMMON,
-                CD3DX12_CLEAR_VALUE(DXGI_FORMAT_D32_FLOAT, 0, 1));
+                D3D12_RESOURCE_STATE_COMMON);
         }
 
         RenderResource* real_resource = (RenderResource*)render_resource.get();
 
-        glm::float3 m_translation = glm::float3(0, mCloudsConsCB.cloudsCons.CloudsTopHeight + 500, 0);
-        glm::float3 m_direction = real_resource->m_FrameUniforms.directionalLight.lightDirection;
+        float sun_to_earth_distance = mCloudsConsCB.cloudsCons.PlanetRadius * 1000;
 
+        glm::float3 m_direction = real_resource->m_FrameUniforms.directionalLight.lightDirection;
+        glm::float3 m_translation = sun_to_earth_distance * m_direction;
+         
         glm::float4x4 sunLightViewMat =
-            MoYu::MYMatrix4x4::createLookAtMatrix(m_translation, m_translation + m_direction, MYFloat3::Up);
+            MoYu::MYMatrix4x4::createLookAtMatrix(m_translation, glm::float3(0, 0, 0), MYFloat3::Up);
         glm::float4x4 sunLightProjMat = MYMatrix4x4::createOrthographic(
             volumeCloudShadowBounds.x, volumeCloudShadowBounds.y, shadow_near_plane, shadow_far_plane);
 
@@ -130,6 +131,7 @@ namespace MoYu
         real_resource->m_FrameUniforms.volumeCloudUniform.cloud_shadowmap_size = volumeCloudShadowMapSize.x;
         real_resource->m_FrameUniforms.volumeCloudUniform.cloud_shadowmap_bounds = volumeCloudShadowBounds;
         real_resource->m_FrameUniforms.volumeCloudUniform.sunlight_direction = m_direction;
+        real_resource->m_FrameUniforms.volumeCloudUniform.sun_to_earth_distance = sun_to_earth_distance;
     }
 
     void VolumeCloudPass::update(RHI::RenderGraph& graph, DrawInputParameters& passInput, DrawOutputParameters& passOutput)
@@ -143,6 +145,8 @@ namespace MoYu
         RHI::RgResourceHandle mCloud3DHandle = graph.Import<RHI::D3D12Texture>(mCloud3D.get());
         RHI::RgResourceHandle mWorley3DHandle = graph.Import<RHI::D3D12Texture>(mWorley3D.get());
 
+        RHI::RgResourceHandle mVolumeShadowmapHandle = graph.Import<RHI::D3D12Texture>(mVolumeShadowmap.get());
+        
         RHI::RgResourceHandle mOutColorHandle = graph.Create<RHI::D3D12Texture>(colorTexDesc);
 
         // Compute the transmittance, and store it in transmittance_texture_.
@@ -210,9 +214,64 @@ namespace MoYu
             pContext->Dispatch((dispatchWidth + 8 - 1) / 8, (dispatchHeight + 8 - 1) / 8, 1);
         });
 
-        passOutput.outColorHandle = mOutColorHandle;
-    }
+        RHI::RenderPass& volumeCloudShadowPass = graph.AddRenderPass("VolumeCloudShadowPass");
 
+        volumeCloudShadowPass.Read(perframeBufferHandle, false, RHIResourceState::RHI_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
+        volumeCloudShadowPass.Read(cloudConstantsBufferHandle, false, RHIResourceState::RHI_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
+        volumeCloudShadowPass.Read(mWeather2DHandle, false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+        volumeCloudShadowPass.Read(mCloud3DHandle, false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+        volumeCloudShadowPass.Read(mWorley3DHandle, false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+        volumeCloudShadowPass.Write(mVolumeShadowmapHandle, false, RHIResourceState::RHI_RESOURCE_STATE_UNORDERED_ACCESS);
+
+        volumeCloudShadowPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
+
+            RHI::D3D12Buffer* mPerframeBuffer = RegGetBuf(perframeBufferHandle);
+            RHI::D3D12Buffer* mCloudConstantsBuffer = RegGetBuf(cloudConstantsBufferHandle);
+            RHI::D3D12Texture* mWeather2D = RegGetTex(mWeather2DHandle);
+            RHI::D3D12Texture* mCloud3D = RegGetTex(mCloud3DHandle);
+            RHI::D3D12Texture* mWorley3D = RegGetTex(mWorley3DHandle);
+            RHI::D3D12Texture* mVolumeShadowmap = RegGetTex(mVolumeShadowmapHandle);
+
+            RHI::D3D12ComputeContext* pContext = context->GetComputeContext();
+
+            RHI::D3D12ConstantBufferView* perframeBufferCBV = mPerframeBuffer->GetDefaultCBV().get();
+            RHI::D3D12ConstantBufferView* cloudConsBufferCBV = mCloudConstantsBuffer->GetDefaultCBV().get();
+            RHI::D3D12ShaderResourceView* weather2DSRV = mWeather2D->GetDefaultSRV().get();
+            RHI::D3D12ShaderResourceView* cloud3DSRV = mCloud3D->GetDefaultSRV().get();
+            RHI::D3D12ShaderResourceView* worly3DSRV = mWorley3D->GetDefaultSRV().get();
+            RHI::D3D12UnorderedAccessView* mVolumeShadowmapUAV = mVolumeShadowmap->GetDefaultUAV().get();
+
+            struct
+            {
+                int perFrameBufferIndex;
+                int weatherTexIndex;
+                int cloudTexIndex; // 3d
+                int worlyTexIndex; // 3d
+                int cloudConstBufferIndex; // constant buffer
+                int outShadowIndex;
+            } transmittanceCB = {
+                    perframeBufferCBV->GetIndex(),
+                    weather2DSRV->GetIndex(),
+                    cloud3DSRV->GetIndex(),
+                    worly3DSRV->GetIndex(),
+                    cloudConsBufferCBV->GetIndex(),
+                    mVolumeShadowmapUAV->GetIndex()
+            };
+
+            pContext->SetRootSignature(pVolumeShadowSignature.get());
+            pContext->SetPipelineState(pVolumeShadowPSO.get());
+            pContext->SetConstantArray(0, sizeof(transmittanceCB) / sizeof(uint32_t), &transmittanceCB);
+
+            uint32_t dispatchWidth = volumeCloudShadowMapSize.x;
+            uint32_t dispatchHeight = volumeCloudShadowMapSize.y;
+
+            pContext->Dispatch((dispatchWidth + 8 - 1) / 8, (dispatchHeight + 8 - 1) / 8, 1);
+        });
+         
+        passOutput.outColorHandle = mOutColorHandle;
+        passOutput.outCloudShadowHandle = mVolumeShadowmapHandle;
+    }
+    
     void VolumeCloudPass::destroy()
     {
         mCloudConstantsBuffer = nullptr;
