@@ -30,6 +30,9 @@ namespace MoYu
             RHI::RgResourceHandle gbufferDepthHandle;
             RHI::RgResourceHandle ssrResolveHandle;
             RHI::RgResourceHandle volumeLight3DHandle;
+            RHI::RgResourceHandle directionLightShadowmapHandle;
+            std::vector<RHI::RgResourceHandle> spotShadowmapHandles;
+            RHI::RgResourceHandle volumeCloudShadowmapHandle;
         };
 
         struct DrawOutputParameters : public PassOutput

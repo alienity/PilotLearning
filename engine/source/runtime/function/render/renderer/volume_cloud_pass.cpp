@@ -145,8 +145,6 @@ namespace MoYu
         RHI::RgResourceHandle mCloud3DHandle = graph.Import<RHI::D3D12Texture>(mCloud3D.get());
         RHI::RgResourceHandle mWorley3DHandle = graph.Import<RHI::D3D12Texture>(mWorley3D.get());
 
-        RHI::RgResourceHandle mVolumeShadowmapHandle = graph.Import<RHI::D3D12Texture>(mVolumeShadowmap.get());
-        
         RHI::RgResourceHandle mOutColorHandle = graph.Create<RHI::D3D12Texture>(colorTexDesc);
 
         // Compute the transmittance, and store it in transmittance_texture_.
@@ -214,6 +212,20 @@ namespace MoYu
             pContext->Dispatch((dispatchWidth + 8 - 1) / 8, (dispatchHeight + 8 - 1) / 8, 1);
         });
 
+        passOutput.outColorHandle = mOutColorHandle;
+    }
+    
+    void VolumeCloudPass::updateShadow(RHI::RenderGraph& graph, ShadowInputParameters& passInput, ShadowOutputParameters& passOutput)
+    {
+        RHI::RgResourceHandle perframeBufferHandle = passInput.perframeBufferHandle;
+
+        RHI::RgResourceHandle cloudConstantsBufferHandle = graph.Import<RHI::D3D12Buffer>(mCloudConstantsBuffer.get());
+        RHI::RgResourceHandle mWeather2DHandle = graph.Import<RHI::D3D12Texture>(mWeather2D.get());
+        RHI::RgResourceHandle mCloud3DHandle = graph.Import<RHI::D3D12Texture>(mCloud3D.get());
+        RHI::RgResourceHandle mWorley3DHandle = graph.Import<RHI::D3D12Texture>(mWorley3D.get());
+
+        RHI::RgResourceHandle mVolumeShadowmapHandle = graph.Import<RHI::D3D12Texture>(mVolumeShadowmap.get());
+
         RHI::RenderPass& volumeCloudShadowPass = graph.AddRenderPass("VolumeCloudShadowPass");
 
         volumeCloudShadowPass.Read(perframeBufferHandle, false, RHIResourceState::RHI_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
@@ -267,11 +279,10 @@ namespace MoYu
 
             pContext->Dispatch((dispatchWidth + 8 - 1) / 8, (dispatchHeight + 8 - 1) / 8, 1);
         });
-         
-        passOutput.outColorHandle = mOutColorHandle;
+
         passOutput.outCloudShadowHandle = mVolumeShadowmapHandle;
     }
-    
+
     void VolumeCloudPass::destroy()
     {
         mCloudConstantsBuffer = nullptr;

@@ -154,9 +154,11 @@ namespace MoYu
 
         RHI::RgResourceHandle perframeBufferHandle = passInput.perframeBufferHandle;
         RHI::RgResourceHandle maxDepthPtyramidHandle = passInput.maxDepthPtyramidHandle;
+        RHI::RgResourceHandle volumeCloudShadowHandle = passInput.volumeCloudShadowHandle;
 
         volumeLightPass.Read(perframeBufferHandle, true);
         volumeLightPass.Read(maxDepthPtyramidHandle, true);
+        volumeLightPass.Read(volumeCloudShadowHandle, true);
         volumeLightPass.Read(blueNoiseHandle, true);
         volumeLightPass.Write(volume3DHandle, true);
 
@@ -166,6 +168,7 @@ namespace MoYu
 
             pContext->TransitionBarrier(RegGetBuf(perframeBufferHandle), D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
             pContext->TransitionBarrier(RegGetTex(maxDepthPtyramidHandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+            pContext->TransitionBarrier(RegGetTex(volumeCloudShadowHandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
             pContext->TransitionBarrier(RegGetTex(blueNoiseHandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
             pContext->TransitionBarrier(RegGetTex(volume3DHandle), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
             pContext->FlushResourceBarriers();

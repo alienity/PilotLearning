@@ -69,6 +69,12 @@ namespace MoYu
         drawpass.Read(passInput.clearCoat_ClearCoatRoughness_Anisotropy_Handle, false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
         drawpass.Read(passInput.ssrResolveHandle, false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
         drawpass.Read(passInput.volumeLight3DHandle, false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+        drawpass.Read(passInput.directionLightShadowmapHandle, false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+        for (int i = 0; i < passInput.spotShadowmapHandles.size(); i++)
+        {
+            drawpass.Read(passInput.spotShadowmapHandles[i], false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+        }
+        drawpass.Read(passInput.volumeCloudShadowmapHandle, false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
         drawpass.Write(passOutput.colorHandle, false, RHIResourceState::RHI_RESOURCE_STATE_UNORDERED_ACCESS);
 
         RHI::RgResourceHandle perframeBufferHandle = passInput.perframeBufferHandle;

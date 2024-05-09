@@ -574,11 +574,21 @@ namespace MoYu
 
 
         //=================================================================================
+        // VolumeCloud Shadow draw
+        VolumeCloudPass::ShadowInputParameters  mVCSIntputParams;
+        VolumeCloudPass::ShadowOutputParameters mVCSOutputParams;
+
+        mVCSIntputParams.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
+        mVolumeCloudPass->updateShadow(graph, mVCSIntputParams, mVCSOutputParams);
+        //=================================================================================
+
+        //=================================================================================
         // volume light
         VolumeLightPass::DrawInputParameters mVolumeLightInput;
         VolumeLightPass::DrawOutputParameters mVolumeLightOutput;
         mVolumeLightInput.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
         mVolumeLightInput.maxDepthPtyramidHandle = mDepthPyramidOutput.maxDepthPtyramidHandle;
+        mVolumeLightInput.volumeCloudShadowHandle = mVCSOutputParams.outCloudShadowHandle;
 
         mVolumeLightPass->update(graph, mVolumeLightInput, mVolumeLightOutput);
         //=================================================================================
@@ -632,6 +642,9 @@ namespace MoYu
         mLightLoopIntput.ssrResolveHandle   = mSSROutput.ssrOutHandle;
         mLightLoopIntput.gbufferDepthHandle = mGBufferOutput.depthHandle;
         mLightLoopIntput.volumeLight3DHandle = mVolumeLightOutput.volumeLightHandle;
+        mLightLoopIntput.directionLightShadowmapHandle = directionalShadowmapHandle;
+        mLightLoopIntput.spotShadowmapHandles = std::vector<RHI::RgResourceHandle>(spotShadowmapHandle);
+        mLightLoopIntput.volumeCloudShadowmapHandle = mVCSOutputParams.outCloudShadowHandle;
         mIndirectLightLoopPass->update(graph, mLightLoopIntput, mLightLoopOutput);
 
         RHI::RgResourceHandle outColorHandle = mLightLoopOutput.colorHandle;

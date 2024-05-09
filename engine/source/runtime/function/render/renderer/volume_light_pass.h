@@ -23,6 +23,7 @@ namespace MoYu
         {
             RHI::RgResourceHandle perframeBufferHandle;
             RHI::RgResourceHandle maxDepthPtyramidHandle;
+            RHI::RgResourceHandle volumeCloudShadowHandle;
         };
 
         struct DrawOutputParameters : public PassOutput

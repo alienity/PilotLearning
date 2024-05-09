@@ -28,6 +28,15 @@ namespace MoYu
         struct DrawOutputParameters : public PassOutput
         {
             RHI::RgResourceHandle outColorHandle;
+        };
+
+        struct ShadowInputParameters : public PassInput
+        {
+            RHI::RgResourceHandle perframeBufferHandle;
+        };
+
+        struct ShadowOutputParameters : public PassOutput
+        {
             RHI::RgResourceHandle outCloudShadowHandle;
         };
 
@@ -37,6 +46,7 @@ namespace MoYu
         void initialize(const PassInitInfo& init_info);
         void prepareMetaData(std::shared_ptr<RenderResource> render_resource);
         void update(RHI::RenderGraph& graph, DrawInputParameters& passInput, DrawOutputParameters& passOutput);
+        void updateShadow(RHI::RenderGraph& graph, ShadowInputParameters& passInput, ShadowOutputParameters& passOutput);
         void destroy() override final;
 
     private:

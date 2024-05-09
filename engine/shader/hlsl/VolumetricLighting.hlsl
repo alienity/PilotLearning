@@ -77,10 +77,17 @@ float shadowSample_PCF_Low(Texture2D<float> shadowmap,
     return sum * (1.0 / 16.0);
 }
 
+float cloudShadowSample(const Texture2D<float> cloudShadowmap, const float3 positionWS, const float2 volumebounds)
+{
+    float2 coords = (positionWS.xz / volumebounds.xy) + 0.5.xx;
+    float attenuation = cloudShadowmap.SampleLevel(defaultSampler, coords, 0).r;
+    return 1 - attenuation;
+}
+
 //-----------------------------------------------------------------------------------------
 // GetLightAttenuation
 //-----------------------------------------------------------------------------------------
-float getLightAttenuation(const Texture2D<float> shadowmap, 
+float getLightAttenuation(const Texture2D<float> shadowmap, const Texture2D<float> cloudShadowmap, const float2 cloud_bounds,
     const float4x4 light_view_matrix, const float4x4 light_proj_view[4], 
     const float4 shadow_bounds, uint2 shadowmap_size, uint cascadeCount, const float3 positionWS)
 {
@@ -96,7 +103,9 @@ float getLightAttenuation(const Texture2D<float> shadowmap,
     float shadowWeights = shadowSample_PCF_Low(
         shadowmap, light_proj_view[cascadeLevel], shadowmap_size, shadow_bound_offset, uv_scale, positionWS);
 
-    return shadowWeights;
+    float cloudShadowWeights = cloudShadowSample(cloudShadowmap, positionWS, cloud_bounds);
+    
+    return shadowWeights * cloudShadowWeights;
 }
 
 //-----------------------------------------------------------------------------------------
@@ -170,7 +179,7 @@ float mieScattering(float cosAngle, float g)
 //-----------------------------------------------------------------------------------------
 // RayMarch
 //-----------------------------------------------------------------------------------------
-void rayMarch(FrameUniforms frameUniform, Texture2D<float> shadowmapTex, Texture2D<float> depthBuffer, 
+void rayMarch(FrameUniforms frameUniform, Texture2D<float> shadowmapTex, Texture2D<float> cloudShadowmap, Texture2D<float> depthBuffer,
     RWTexture3D<float4> volumeResult, uint2 dtid, float rayOffset, float3 rayStart, float3 rayTarget, float rayLength)
 {
     DirectionalLightStruct _directionLight = frameUniform.directionalLight;
@@ -191,6 +200,8 @@ void rayMarch(FrameUniforms frameUniform, Texture2D<float> shadowmapTex, Texture
     const float4 shadow_bounds = _dirShadowmap.shadow_bounds;
     const uint2 shadowmap_size = _dirShadowmap.shadowmap_size;
     const uint cascadeCount = _dirShadowmap.cascadeCount;
+    
+    const float2 cloudbounds = float2(frameUniform.volumeCloudUniform.cloud_shadowmap_bounds);
 
     // float2 interleavedPos = (fmod(floor(screenPos.xy), 8.0));
     // float offset = tex2D(blueNoiseTex, interleavedPos / 8.0 + float2(0.5 / 8.0, 0.5 / 8.0)).r;
@@ -227,7 +238,8 @@ void rayMarch(FrameUniforms frameUniform, Texture2D<float> shadowmapTex, Texture
             stepSize = step2StepSize;
 
         float light_attenuation = getLightAttenuation(
-            shadowmapTex, light_view_matrix, light_proj_view, shadow_bounds, shadowmap_size, cascadeCount, currentPositionWS);
+            shadowmapTex, cloudShadowmap, cloudbounds, 
+            light_view_matrix, light_proj_view, shadow_bounds, shadowmap_size, cascadeCount, currentPositionWS);
         float density = getVolumeDensity(currentPositionWS, ground_level, height_scale);
 
         float scattering = scattering_coef * stepSize * density;
@@ -279,6 +291,7 @@ void CSMain( uint3 Gid : SV_GroupID, uint3 GTid : SV_GroupThreadID, uint3 DTid :
     Texture2D<float3> blueNoiseTex = ResourceDescriptorHeap[blueNoiseIndex];
     Texture2D<float> depthBuffer = ResourceDescriptorHeap[depthBufferIndex];
     Texture2D<float> dirShadowmap = ResourceDescriptorHeap[g_FrameUniform.directionalLight.directionalLightShadowmap.shadowmap_srv_index];
+    Texture2D<float> cloudShadowmap = ResourceDescriptorHeap[g_FrameUniform.volumeCloudUniform.cloud_shadowmap_srv_index];
     RWTexture3D<float4> volume3DResult = ResourceDescriptorHeap[volume3DIndex];
 
     int width, height, depthLength;
@@ -321,5 +334,5 @@ void CSMain( uint3 Gid : SV_GroupID, uint3 GTid : SV_GroupThreadID, uint3 DTid :
     //     // volume3DResult[uint3(DTid.xy, i)] = float4(of, of, of, 1);
     // }
 
-    rayMarch(g_FrameUniform, dirShadowmap, depthBuffer, volume3DResult, DTid.xy, offset, rayStart, targetPosition, rayLength);
+    rayMarch(g_FrameUniform, dirShadowmap, cloudShadowmap, depthBuffer, volume3DResult, DTid.xy, offset, rayStart, targetPosition, rayLength);
 }
