@@ -144,10 +144,16 @@ namespace RHI
             {
                 if (ImportedContainer[i] == ToBeImported)
                 {
-                    for (int j = 0; j < InGraphResHandle.size(); j++)
-                    {
-                        return InGraphResHandle[j];
-                    }
+                    RgResourceHandle oldHandle = { 
+                        RgResourceTraits<T>::Enum, RgResourceFlags::RG_RESOURCE_FLAG_IMPORTED, 0, i };
+                    return oldHandle;
+                    //for (int j = 0; j < InGraphResHandle.size(); j++)
+                    //{
+                    //    if (InGraphResHandle[j].Id == i)
+                    //    {
+                    //        return InGraphResHandle[j];
+                    //    }
+                    //}
                 }
             }
 
