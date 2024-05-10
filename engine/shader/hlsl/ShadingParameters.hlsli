@@ -620,6 +620,16 @@ float3 surfaceShading(const CommonShadingStruct params, const PixelParams pixel,
 // Directional lights evaluation
 //------------------------------------------------------------------------------
 
+float cloudShadowSample(const FrameUniforms frameUniforms, const SamplerStruct samplerStruct, const float3 positionWS)
+{
+    Texture2D<float> cloudShadowmap = ResourceDescriptorHeap[frameUniforms.volumeCloudUniform.cloud_shadowmap_srv_index];    
+    float2 volumebounds = frameUniforms.volumeCloudUniform.cloud_shadowmap_bounds;
+    
+    float2 coords = (positionWS.xz / volumebounds.xy) + 0.5.xx;
+    float attenuation = cloudShadowmap.SampleLevel(samplerStruct.defSampler, coords, 0).r;
+    return 1 - attenuation * 0.5f;
+}
+
 Light getDirectionalLight(const CommonShadingStruct params, const FrameUniforms frameUniforms)
 {
     Light light;
@@ -659,6 +669,8 @@ void evaluateDirectionalLight(
             params.shading_position, 
             light.NoL);
     }
+    
+    visibility = visibility * cloudShadowSample(frameUniforms, samplerStruct, params.shading_position);
 
     color.rgb += surfaceShading(params, pixel, light, visibility);
 }
