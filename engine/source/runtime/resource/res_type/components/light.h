@@ -17,7 +17,7 @@ namespace MoYu
         glm::float2 shadow_bounds {512, 512};
         float   shadow_near_plane {0.1f};
         float   shadow_far_plane {200.0f};
-        glm::float2 shadowmap_size {512, 512};
+        glm::float2 shadowmap_size {2048, 2048};
     };
     NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(DirectionLightParameter,
                                                     color,

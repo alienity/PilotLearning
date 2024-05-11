@@ -347,7 +347,7 @@ namespace MoYu
         glm::float2 m_shadow_bounds {32, 32}; // cascade level 0
         float   m_shadow_near_plane {0.1f};
         float   m_shadow_far_plane {200.0f};
-        glm::float2 m_shadowmap_size {1024, 1024};
+        glm::float2 m_shadowmap_size {2048, 2048};
     };
 
     struct BasePointLight

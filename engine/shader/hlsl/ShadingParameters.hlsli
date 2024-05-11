@@ -307,7 +307,7 @@ float shadowSample_PCF(
     if(cascadeLevel == 4)
         return 1.0f;
     
-    float shadow_bias = 0;//max(0.0015f * exp2(cascadeLevel) * (1.0 - ndotl), 0.0001f);  
+    float shadow_bias = max(0.00015f * exp2(cascadeLevel) * (1.0 - ndotl), 0.0001f);
     float uv_scale = 1.0f / log2(cascadeCount);
 
     return shadowSample_PCF_Low(shadowmap, shadowmapSampler, 
@@ -627,7 +627,7 @@ float cloudShadowSample(const FrameUniforms frameUniforms, const SamplerStruct s
     
     float2 coords = (positionWS.xz / volumebounds.xy) + 0.5.xx;
     float attenuation = cloudShadowmap.SampleLevel(samplerStruct.defSampler, coords, 0).r;
-    return 1 - attenuation * 0.5f;
+    return 1 - attenuation * 0.8f;
 }
 
 Light getDirectionalLight(const CommonShadingStruct params, const FrameUniforms frameUniforms)
