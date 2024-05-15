@@ -1,6 +1,6 @@
 #pragma once
 
-#include "volume_cloud_pass.h"
+#include "subsurface_scattering_pass.h"
 #include "pass_helper.h"
 #include "platform/system/systemtime.h"
 #include <string>
@@ -10,7 +10,7 @@
 namespace MoYu
 {
     
-    void VolumeCloudPass::initialize(const PassInitInfo& init_info)
+    void SubsurfaceScatteringPass::initialize(const PassInitInfo& init_info)
     {
         colorTexDesc = init_info.colorTexDesc;
 
@@ -86,7 +86,7 @@ namespace MoYu
 
     }
 
-    void VolumeCloudPass::prepareMetaData(std::shared_ptr<RenderResource> render_resource)
+    void SubsurfaceScatteringPass::prepareMetaData(std::shared_ptr<RenderResource> render_resource)
     {
         mCloudsConsCB = VolumeCloudSpace::InitDefaultCloudsCons(g_SystemTime.GetTimeSecs(), glm::float3(1, 0, 1));
 
@@ -134,7 +134,7 @@ namespace MoYu
         real_resource->m_FrameUniforms.volumeCloudUniform.sun_to_earth_distance = sun_to_earth_distance;
     }
 
-    void VolumeCloudPass::update(RHI::RenderGraph& graph, DrawInputParameters& passInput, DrawOutputParameters& passOutput)
+    void SubsurfaceScatteringPass::update(RHI::RenderGraph& graph, DrawInputParameters& passInput, DrawOutputParameters& passOutput)
     {
         RHI::RgResourceHandle perframeBufferHandle = passInput.perframeBufferHandle;
         RHI::RgResourceHandle sceneColorHandle = passInput.renderTargetColorHandle;
@@ -215,75 +215,7 @@ namespace MoYu
         passOutput.outColorHandle = mOutColorHandle;
     }
     
-    void VolumeCloudPass::updateShadow(RHI::RenderGraph& graph, ShadowInputParameters& passInput, ShadowOutputParameters& passOutput)
-    {
-        RHI::RgResourceHandle perframeBufferHandle = passInput.perframeBufferHandle;
-
-        RHI::RgResourceHandle cloudConstantsBufferHandle = graph.Import<RHI::D3D12Buffer>(mCloudConstantsBuffer.get());
-        RHI::RgResourceHandle mWeather2DHandle = graph.Import<RHI::D3D12Texture>(mWeather2D.get());
-        RHI::RgResourceHandle mCloud3DHandle = graph.Import<RHI::D3D12Texture>(mCloud3D.get());
-        RHI::RgResourceHandle mWorley3DHandle = graph.Import<RHI::D3D12Texture>(mWorley3D.get());
-
-        RHI::RgResourceHandle mVolumeShadowmapHandle = graph.Import<RHI::D3D12Texture>(mVolumeShadowmap.get());
-
-        RHI::RenderPass& volumeCloudShadowPass = graph.AddRenderPass("VolumeCloudShadowPass");
-
-        volumeCloudShadowPass.Read(perframeBufferHandle, false, RHIResourceState::RHI_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
-        volumeCloudShadowPass.Read(cloudConstantsBufferHandle, false, RHIResourceState::RHI_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
-        volumeCloudShadowPass.Read(mWeather2DHandle, false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-        volumeCloudShadowPass.Read(mCloud3DHandle, false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-        volumeCloudShadowPass.Read(mWorley3DHandle, false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-        volumeCloudShadowPass.Write(mVolumeShadowmapHandle, false, RHIResourceState::RHI_RESOURCE_STATE_UNORDERED_ACCESS);
-
-        volumeCloudShadowPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
-
-            RHI::D3D12Buffer* mPerframeBuffer = RegGetBuf(perframeBufferHandle);
-            RHI::D3D12Buffer* mCloudConstantsBuffer = RegGetBuf(cloudConstantsBufferHandle);
-            RHI::D3D12Texture* mWeather2D = RegGetTex(mWeather2DHandle);
-            RHI::D3D12Texture* mCloud3D = RegGetTex(mCloud3DHandle);
-            RHI::D3D12Texture* mWorley3D = RegGetTex(mWorley3DHandle);
-            RHI::D3D12Texture* mVolumeShadowmap = RegGetTex(mVolumeShadowmapHandle);
-
-            RHI::D3D12ComputeContext* pContext = context->GetComputeContext();
-
-            RHI::D3D12ConstantBufferView* perframeBufferCBV = mPerframeBuffer->GetDefaultCBV().get();
-            RHI::D3D12ConstantBufferView* cloudConsBufferCBV = mCloudConstantsBuffer->GetDefaultCBV().get();
-            RHI::D3D12ShaderResourceView* weather2DSRV = mWeather2D->GetDefaultSRV().get();
-            RHI::D3D12ShaderResourceView* cloud3DSRV = mCloud3D->GetDefaultSRV().get();
-            RHI::D3D12ShaderResourceView* worly3DSRV = mWorley3D->GetDefaultSRV().get();
-            RHI::D3D12UnorderedAccessView* mVolumeShadowmapUAV = mVolumeShadowmap->GetDefaultUAV().get();
-
-            struct
-            {
-                int perFrameBufferIndex;
-                int weatherTexIndex;
-                int cloudTexIndex; // 3d
-                int worlyTexIndex; // 3d
-                int cloudConstBufferIndex; // constant buffer
-                int outShadowIndex;
-            } transmittanceCB = {
-                    perframeBufferCBV->GetIndex(),
-                    weather2DSRV->GetIndex(),
-                    cloud3DSRV->GetIndex(),
-                    worly3DSRV->GetIndex(),
-                    cloudConsBufferCBV->GetIndex(),
-                    mVolumeShadowmapUAV->GetIndex()
-            };
-
-            pContext->SetRootSignature(pVolumeShadowSignature.get());
-            pContext->SetPipelineState(pVolumeShadowPSO.get());
-            pContext->SetConstantArray(0, sizeof(transmittanceCB) / sizeof(uint32_t), &transmittanceCB);
-
-            uint32_t dispatchWidth = volumeCloudShadowMapSize.x;
-            uint32_t dispatchHeight = volumeCloudShadowMapSize.y;
-
-            pContext->Dispatch((dispatchWidth + 8 - 1) / 8, (dispatchHeight + 8 - 1) / 8, 1);
-        });
-
-        passOutput.outCloudShadowHandle = mVolumeShadowmapHandle;
-    }
-      
-    void VolumeCloudPass::destroy()
+    void SubsurfaceScatteringPass::destroy()
     {
         mCloudConstantsBuffer = nullptr;
         mWeather2D = nullptr;
