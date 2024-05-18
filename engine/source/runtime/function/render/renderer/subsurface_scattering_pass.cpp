@@ -111,7 +111,7 @@ namespace MoYu
                 L"VolumeCloudShadowmap",
                 D3D12_RESOURCE_STATE_COMMON);
         }
-
+             
         RenderResource* real_resource = (RenderResource*)render_resource.get();
 
         float sun_to_earth_distance = mCloudsConsCB.cloudsCons.PlanetRadius * 1000;
@@ -201,7 +201,7 @@ namespace MoYu
                     cloudConsBufferCBV->GetIndex(),
                     outColorUAV->GetIndex()
                 };
-
+              
             pContext->SetRootSignature(pVolumeCloudSignature.get());
             pContext->SetPipelineState(pVolumeCloudPSO.get());
             pContext->SetConstantArray(0, sizeof(transmittanceCB) / sizeof(uint32_t), &transmittanceCB);
@@ -214,7 +214,7 @@ namespace MoYu
 
         passOutput.outColorHandle = mOutColorHandle;
     }
-    
+     
     void SubsurfaceScatteringPass::destroy()
     {
         mCloudConstantsBuffer = nullptr;

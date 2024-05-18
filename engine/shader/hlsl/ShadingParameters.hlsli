@@ -39,6 +39,8 @@ struct MaterialInputs
     float3 normal;
     float3 bentNormal;
     float3 clearCoatNormal;
+    
+    float subsurfaceMask;
 };
 
 struct CommonShadingStruct
@@ -165,6 +167,7 @@ void inflateMaterial(
     float clearCoatFactor = materialParameterBuffer.clearCoatFactor;
     float clearCoatRoughnessFactor = materialParameterBuffer.clearCoatRoughnessFactor;
     float anisotropyFactor = materialParameterBuffer.anisotropyFactor;
+    float subsurfaceMaskFactor = materialParameterBuffer.subsurfaceMaskFactor;
     
     float2 base_color_tilling = materialParameterBuffer.base_color_tilling;
     float2 metallic_roughness_tilling = materialParameterBuffer.metallic_roughness_tilling;
@@ -189,6 +192,7 @@ void inflateMaterial(
     material.ambientOcclusion = occlusionTexture.Sample(materialSampler, uv * occlusion_tilling).r;
     material.emissive = emissionTexture.Sample(materialSampler, uv * base_color_tilling);
     material.normal = (normalTexture.Sample(materialSampler, uv * normal_tilling) * 2.0f - 1.0f);
+    material.subsurfaceMask = subsurfaceMaskFactor;
 }
 
 //-----------------------------------------------------------------------------
@@ -941,7 +945,7 @@ void evaluateIBL(
     const MaterialInputs material,
     const PixelParams pixel,
     const SamplerStruct samplerStruct, 
-    inout float3 color)
+    inout LightLoopOutput lightloopColor)
 {
     // ambient occlusion
     float ssao = material.ambientOcclusion;
@@ -969,7 +973,10 @@ void evaluateIBL(
     // Combine all terms
     // Note: iblLuminance is already premultiplied by the exposure
 
-    color.rgb += Fr + Fd;
+    //color.rgb += Fr + Fd;
+    
+    lightloopColor.diffuseLighting = Fd;
+    lightloopColor.specularLighting = Fr;
 }
 
 /**
@@ -991,23 +998,24 @@ float4 evaluateLights(const FrameUniforms frameUniforms,
     // Ideally we would keep the diffuse and specular components separate
     // until the very end but it costs more ALUs on mobile. The gains are
     // currently not worth the extra operations
-    float3 color = float3(0.0, 0.0, 0.0);
+    //float3 color = float3(0.0, 0.0, 0.0);
+    LightLoopOutput lightloopColor = { float3(0.0, 0.0, 0.0), float3(0.0, 0.0, 0.0) };
 
     // We always evaluate the IBL as not having one is going to be uncommon,
     // it also saves 1 shader variant
-    evaluateIBL(frameUniforms, commonShadingStruct, materialInputs, pixel, samplerStruct, color);
+    evaluateIBL(frameUniforms, commonShadingStruct, materialInputs, pixel, samplerStruct, lightloopColor);
 
-    evaluateDirectionalLight(frameUniforms, commonShadingStruct, pixel, samplerStruct, color);
+    evaluateDirectionalLight(frameUniforms, commonShadingStruct, pixel, samplerStruct, lightloopColor.specularLighting);
 
-    evaluatePunctualLights(frameUniforms, commonShadingStruct, pixel, samplerStruct, color);
+    evaluatePunctualLights(frameUniforms, commonShadingStruct, pixel, samplerStruct, lightloopColor.specularLighting);
 
     // // In fade mode we un-premultiply baseColor early on, so we need to
     // // premultiply again at the end (affects diffuse and specular lighting)
     // color *= materialInputs.baseColor.a;
 
-    // return color;
+    float3 outColor = lightloopColor.specularLighting + lightloopColor.diffuseLighting;
 
-    return float4(color.rgb, materialInputs.baseColor.a);
+    return float4(outColor.rgb, materialInputs.baseColor.a);
 }
 
 void addEmissive(const FrameUniforms frameUniforms, const MaterialInputs material, inout float4 color)
@@ -1054,7 +1062,23 @@ float4 evaluateVolumeDepth(const FrameUniforms frameUniforms, Texture3D<float4> 
     return volumeLightVal;
 }
 
+LightLoopOutput LightLoop(const FrameUniforms frameUniforms,
+    const CommonShadingStruct commonShadingStruct, const MaterialInputs materialInputs, const SamplerStruct samplerStruct)
+{
+    PixelParams pixel;
+    getPixelParams(frameUniforms, commonShadingStruct, materialInputs, samplerStruct, pixel);
+    
+    LightLoopOutput lightloopColor = { float3(0.0, 0.0, 0.0), float3(0.0, 0.0, 0.0) };
 
+    evaluateIBL(frameUniforms, commonShadingStruct, materialInputs, pixel, samplerStruct, lightloopColor);
+
+    evaluateDirectionalLight(frameUniforms, commonShadingStruct, pixel, samplerStruct, lightloopColor.specularLighting);
+
+    evaluatePunctualLights(frameUniforms, commonShadingStruct, pixel, samplerStruct, lightloopColor.specularLighting);
+
+    return lightloopColor;
+
+}
 
 
 

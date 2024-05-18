@@ -84,6 +84,12 @@ namespace MoYu
         RHI::RgResourceHandle depthHandle;
     };
 
+    enum StencilUsage
+    {
+        Clear = 0,
+
+        SubsurfaceScattering = (1 << 2),     //  SSS, Split Lighting
+    };
 
 }
 

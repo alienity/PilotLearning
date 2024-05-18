@@ -641,7 +641,6 @@ namespace MoYu
         mLightLoopIntput.clearCoat_ClearCoatRoughness_Anisotropy_Handle = mGBufferOutput.clearCoat_ClearCoatRoughness_Anisotropy_Handle;
         mLightLoopIntput.ssrResolveHandle   = mSSROutput.ssrOutHandle;
         mLightLoopIntput.gbufferDepthHandle = mGBufferOutput.depthHandle;
-        mLightLoopIntput.volumeLight3DHandle = mVolumeLightOutput.volumeLightHandle;
         mLightLoopIntput.directionLightShadowmapHandle = directionalShadowmapHandle;
         mLightLoopIntput.spotShadowmapHandles = std::vector<RHI::RgResourceHandle>(spotShadowmapHandle);
         mLightLoopIntput.volumeCloudShadowmapHandle = mVCSOutputParams.outCloudShadowHandle;

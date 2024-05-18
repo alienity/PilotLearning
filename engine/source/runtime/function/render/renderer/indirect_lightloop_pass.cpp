@@ -68,13 +68,13 @@ namespace MoYu
         drawpass.Read(passInput.metallic_Roughness_Reflectance_AO_Handle, false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
         drawpass.Read(passInput.clearCoat_ClearCoatRoughness_Anisotropy_Handle, false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
         drawpass.Read(passInput.ssrResolveHandle, false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-        drawpass.Read(passInput.volumeLight3DHandle, false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
         drawpass.Read(passInput.directionLightShadowmapHandle, false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
         for (int i = 0; i < passInput.spotShadowmapHandles.size(); i++)
         {
             drawpass.Read(passInput.spotShadowmapHandles[i], false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
         }
         drawpass.Read(passInput.volumeCloudShadowmapHandle, false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+        drawpass.Write(passOutput.sssDiffuseHandle, false, RHIResourceState::RHI_RESOURCE_STATE_UNORDERED_ACCESS);
         drawpass.Write(passOutput.colorHandle, false, RHIResourceState::RHI_RESOURCE_STATE_UNORDERED_ACCESS);
 
         RHI::RgResourceHandle perframeBufferHandle = passInput.perframeBufferHandle;
@@ -85,21 +85,12 @@ namespace MoYu
         RHI::RgResourceHandle metallic_Roughness_Reflectance_AO_Handle = passInput.metallic_Roughness_Reflectance_AO_Handle;
         RHI::RgResourceHandle clearCoat_ClearCoatRoughness_Anisotropy_Handle = passInput.clearCoat_ClearCoatRoughness_Anisotropy_Handle;
         RHI::RgResourceHandle ssrResolveHandle = passInput.ssrResolveHandle;
-        RHI::RgResourceHandle volumeLight3DHandle = passInput.volumeLight3DHandle;
+        RHI::RgResourceHandle outSSSDiffuseLightingHandle = passOutput.sssDiffuseHandle;
         RHI::RgResourceHandle outColorHandle = passOutput.colorHandle;
 
         drawpass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
 
             RHI::D3D12ComputeContext* pContext = context->GetComputeContext();
-
-            //RHI::D3D12ShaderResourceView* albedoSRV = registry->GetD3D12Texture(albedoHandle)->GetDefaultSRV().get();
-            //RHI::D3D12ShaderResourceView* worldNormalSRV  = registry->GetD3D12Texture(worldNormalHandle)->GetDefaultSRV().get();
-            //RHI::D3D12ShaderResourceView* ambientOcclusionSRV = registry->GetD3D12Texture(ambientOcclusionHandle)->GetDefaultSRV().get();
-            //RHI::D3D12ShaderResourceView* metallic_Roughness_Reflectance_AO_SRV = registry->GetD3D12Texture(metallic_Roughness_Reflectance_AO_Handle)->GetDefaultSRV().get();
-            //RHI::D3D12ShaderResourceView* clearCoat_ClearCoatRoughness_Anisotropy_SRV = registry->GetD3D12Texture(clearCoat_ClearCoatRoughness_Anisotropy_Handle)->GetDefaultSRV().get();
-            //RHI::D3D12ShaderResourceView* depthSRV = registry->GetD3D12Texture(depthHandle)->GetDefaultSRV().get();
-            //RHI::D3D12ShaderResourceView* ssrResolveSRV = registry->GetD3D12Texture(ssrResolveHandle)->GetDefaultSRV().get();
-            //RHI::D3D12UnorderedAccessView* outColorUAV = registry->GetD3D12Texture(outColorHandle)->GetDefaultUAV().get();
 
             pContext->SetRootSignature(pIndirectLightLoopSignature.get());
             pContext->SetPipelineState(pIndirectLightLoopPSO.get());
@@ -114,7 +105,7 @@ namespace MoYu
                 uint32_t clearCoat_ClearCoatRoughness_AnisotropyIndex;
                 uint32_t depthIndex;
                 uint32_t ssrResolveIndex;
-                uint32_t volumeLight3DIndex;
+                uint32_t outSSSDiffuseLightingIndex;
                 uint32_t outColorIndex;
             };
 
@@ -126,7 +117,7 @@ namespace MoYu
                                                RegGetTexDefSRVIdx(clearCoat_ClearCoatRoughness_Anisotropy_Handle),
                                                RegGetTexDefSRVIdx(depthHandle),
                                                RegGetTexDefSRVIdx(ssrResolveHandle),
-                                               RegGetTexDefSRVIdx(volumeLight3DHandle),
+                                               RegGetTexDefSRVIdx(outSSSDiffuseLightingHandle),
                                                RegGetTexDefUAVIdx(outColorHandle)};
 
             pContext->SetConstantArray(0, sizeof(RootIndexBuffer) / sizeof(UINT), &rootIndexBuffer);
@@ -150,11 +141,18 @@ namespace MoYu
         {
             needClearRenderTarget = true;
 
-            RHI::RgTextureDesc _targetColorDesc = colorTexDesc;
-            _targetColorDesc.SetAllowUnorderedAccess(true);
-            _targetColorDesc.SetAllowRenderTarget(true);
+            RHI::RgTextureDesc sssDiffuseDesc = colorTexDesc;
+            sssDiffuseDesc.SetAllowUnorderedAccess(true);
+            sssDiffuseDesc.SetAllowRenderTarget(true);
+            sssDiffuseDesc.Name = "SSSDiffuseLighting";
 
-            drawPassOutput->colorHandle = graph.Create<RHI::D3D12Texture>(_targetColorDesc);
+            RHI::RgTextureDesc targetColorDesc = colorTexDesc;
+            targetColorDesc.SetAllowUnorderedAccess(true);
+            targetColorDesc.SetAllowRenderTarget(true);
+            targetColorDesc.Name = "LightLoopColor";
+
+            drawPassOutput->sssDiffuseHandle = graph.Create<RHI::D3D12Texture>(sssDiffuseDesc);
+            drawPassOutput->colorHandle = graph.Create<RHI::D3D12Texture>(targetColorDesc);
         }
         return needClearRenderTarget;
     }

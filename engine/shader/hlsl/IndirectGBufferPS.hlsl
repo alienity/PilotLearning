@@ -96,9 +96,9 @@ PSOutputGBuffer PSMain(VaringStruct varingStruct)
 
     PSOutputGBuffer output;
 
-    output.albedo = materialInputs.baseColor;
+    output.albedo = float4(materialInputs.baseColor.rgb, materialInputs.subsurfaceMask);
     output.worldNormal = float4(worldNormal.xyz * 0.5 + 0.5f, 0);
-    output.metallic_Roughness_Reflectance_AO.xyzw = float4(materialInputs.metallic, materialInputs.roughness, materialInputs.reflectance, materialInputs.ambientOcclusion);
+    output.metallic_Roughness_Reflectance_AO.xyzw = float4(materialInputs.metallic, max(materialInputs.roughness, 0.0001f), materialInputs.reflectance, materialInputs.ambientOcclusion);
     output.clearCoat_ClearCoatRoughness_Anisotropy = float4(materialInputs.clearCoat, materialInputs.clearCoatRoughness, materialInputs.anisotropy, 0.0f);
     
     // compute velocity in ndc

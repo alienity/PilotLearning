@@ -72,7 +72,8 @@ struct PerMaterialParametersBuffer
     float clearCoatFactor;
     float clearCoatRoughnessFactor;
     float anisotropyFactor;
-    float2 _padding0;
+    float subsurfaceMaskFactor;
+    float _padding0;
 
     float2 base_color_tilling;
     float2 metallic_roughness_tilling;

@@ -49,7 +49,8 @@ namespace HLSL
         float clearCoatFactor {1.0f};
         float clearCoatRoughnessFactor {0.0f};
         float anisotropyFactor {0.0f};
-        glm::float2 _padding0;
+        float subsurfaceMaskFactor { 0.0f };
+        float _padding0;
 
         glm::float2 base_color_tilling {1.0f, 1.0f};
         glm::float2 metallic_roughness_tilling {1.0f, 1.0f};

@@ -549,6 +549,7 @@ namespace MoYu
         float   m_clearcoat_factor {1.0f};
         float   m_clearcoat_roughness_factor {1.0f};
         float   m_anisotropy_factor {0.0f};
+        float   m_subsurfaceMask_factor { 0.0f };
 
         MaterialImage m_base_color_texture_file {};
         MaterialImage m_metallic_roughness_texture_file {};

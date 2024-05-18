@@ -29,7 +29,6 @@ namespace MoYu
             RHI::RgResourceHandle clearCoat_ClearCoatRoughness_Anisotropy_Handle;
             RHI::RgResourceHandle gbufferDepthHandle;
             RHI::RgResourceHandle ssrResolveHandle;
-            RHI::RgResourceHandle volumeLight3DHandle;
             RHI::RgResourceHandle directionLightShadowmapHandle;
             std::vector<RHI::RgResourceHandle> spotShadowmapHandles;
             RHI::RgResourceHandle volumeCloudShadowmapHandle;
@@ -39,9 +38,11 @@ namespace MoYu
         {
             DrawOutputParameters()
             {
+                sssDiffuseHandle.Invalidate();
                 colorHandle.Invalidate();
             }
 
+            RHI::RgResourceHandle sssDiffuseHandle;
             RHI::RgResourceHandle colorHandle;
         };
 
