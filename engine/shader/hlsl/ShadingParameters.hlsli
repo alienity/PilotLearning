@@ -101,6 +101,24 @@ struct Light
     uint channels;
 };
 
+float3 toClipSpaceCoord(float2 tex)
+{
+    float2 ray;
+    ray.x = 2.0 * tex.x - 1.0;
+    ray.y = 1.0 - tex.y * 2.0;
+    
+    return float3(ray, 1.0);
+}
+
+float3 reconstructWorldPosFromDepth(float2 uv, float depth, float4x4 invViewProj)
+{
+    float ndcX = uv.x * 2 - 1;
+    float ndcY = 1 - uv.y * 2; // Remember to flip y!!!
+    float4 worldPos = mul(invViewProj, float4(ndcX, ndcY, depth, 1.0f));
+    worldPos = worldPos / worldPos.w;
+    return worldPos.xyz;
+}
+
 void initMaterial(inout MaterialInputs material)
 {
     material.baseColor = float4(1.0, 1.0, 1.0, 1.0);
@@ -173,6 +191,51 @@ void inflateMaterial(
     material.normal = (normalTexture.Sample(materialSampler, uv * normal_tilling) * 2.0f - 1.0f);
 }
 
+//-----------------------------------------------------------------------------
+// LightLoop Definition
+//-----------------------------------------------------------------------------
+
+struct LightLoopOutput
+{
+    float3 diffuseLighting;
+    float3 specularLighting;
+};
+
+//-----------------------------------------------------------------------------
+// Lighting structure for light accumulation
+//-----------------------------------------------------------------------------
+
+// These structure allow to accumulate lighting accross the Lit material
+// AggregateLighting is init to zero and transfer to EvaluateBSDF, but the LightLoop can't access its content.
+struct DirectLighting
+{
+    float3 diffuse;
+    float3 specular;
+};
+
+struct IndirectLighting
+{
+    float3 specularReflected;
+    float3 specularTransmitted;
+};
+
+struct AggregateLighting
+{
+    DirectLighting direct;
+    IndirectLighting indirect;
+};
+
+void AccumulateDirectLighting(DirectLighting src, inout AggregateLighting dst)
+{
+    dst.direct.diffuse += src.diffuse;
+    dst.direct.specular += src.specular;
+}
+
+void AccumulateIndirectLighting(IndirectLighting src, inout AggregateLighting dst)
+{
+    dst.indirect.specularReflected += src.specularReflected;
+    dst.indirect.specularTransmitted += src.specularTransmitted;
+}
 //------------------------------------------------------------------------------
 // Material evaluation
 //------------------------------------------------------------------------------
@@ -194,11 +257,11 @@ void computeShadingParams(const FrameUniforms frameUniforms, const VaringStruct 
     // With ortho camera, however, the view vector is the same for all fragments:
     float4x4 projectionMatrix = frameUniforms.cameraUniform.curFrameUniform.clipFromViewMatrix;
     float4x4 worldFromViewMatrix = frameUniforms.cameraUniform.curFrameUniform.worldFromViewMatrix;
-    
     float4x4 worldFromViewMatrixTranspose = transpose(worldFromViewMatrix);
-
-    float3 sv = select(isPerspectiveProjection(projectionMatrix), 
-        (worldFromViewMatrixTranspose[3].xyz - commonShadingStruct.shading_position), worldFromViewMatrixTranspose[2].xyz); // ortho camera backward dir
+    
+    float3 sv = select(isPerspectiveProjection(projectionMatrix),
+        (worldFromViewMatrixTranspose[3].xyz - commonShadingStruct.shading_position), 
+        worldFromViewMatrixTranspose[2].xyz); // ortho camera backward dir
     commonShadingStruct.shading_view = normalize(sv);
 
     // we do this so we avoid doing (matrix multiply), but we burn 4 varyings:
@@ -902,7 +965,7 @@ void evaluateIBL(
     float diffuseBRDF = 1.0f;
     float3 Fd = pixel.diffuseColor * _diffuseIrradiance * (1.0 - E) * diffuseBRDF;
     Fd *= diffuseAO;
-
+    
     // Combine all terms
     // Note: iblLuminance is already premultiplied by the exposure
 
