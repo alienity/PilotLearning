@@ -34,12 +34,12 @@ uint GetSubsurfaceScatteringTexturingMode(int diffusionProfile)
 // Ref: Advanced Techniques for Realistic Real-Time Skin Rendering.
 float3 ApplySubsurfaceScatteringTexturingMode(uint texturingMode, float3 color)
 {
-    switch (texturingMode)
-    {
-        case 2:  color = sqrt(color); break;
-        case 1:  color = 1;           break;
-        default: color = color;       break;
-    }
+    //switch (texturingMode)
+    //{
+    //    case 2:  color = sqrt(color); break;
+    //    case 1:  color = 1;           break;
+    //    default: color = color;       break;
+    //}
 
     return color;
 }
@@ -79,11 +79,11 @@ void DecodeFromSSSBuffer(float4 sssBuffer, uint2 positionSS, out SSSData sssData
 //    DecodeFromSSSBuffer(sssBuffer, positionSS, sssData);
 //}
 
-#define OUTPUT_SSSBUFFER(NAME) out SSSBufferType0 MERGE_NAME(NAME, 0)
+//#define OUTPUT_SSSBUFFER(NAME) out SSSBufferType0 MERGE_NAME(NAME, 0)
 
-#define ENCODE_INTO_SSSBUFFER(SURFACE_DATA, UNPOSITIONSS, NAME) EncodeIntoSSSBuffer(ConvertSurfaceDataToSSSData(SURFACE_DATA), UNPOSITIONSS, MERGE_NAME(NAME, 0))
+//#define ENCODE_INTO_SSSBUFFER(SURFACE_DATA, UNPOSITIONSS, NAME) EncodeIntoSSSBuffer(ConvertSurfaceDataToSSSData(SURFACE_DATA), UNPOSITIONSS, MERGE_NAME(NAME, 0))
 
-#define DECODE_FROM_SSSBUFFER(UNPOSITIONSS, SSS_DATA) DecodeFromSSSBuffer(UNPOSITIONSS, SSS_DATA)
+//#define DECODE_FROM_SSSBUFFER(UNPOSITIONSS, SSS_DATA) DecodeFromSSSBuffer(UNPOSITIONSS, SSS_DATA)
 
 // In order to support subsurface scattering, we need to know which pixels have an SSS material.
 // It can be accomplished by reading the stencil buffer.
@@ -148,7 +148,7 @@ bool TestLightingForSSS(float3 subsurfaceLighting)
 #define TRANSMISSION_WRAP_ANGLE (PI/12)
 #define TRANSMISSION_WRAP_LIGHT cos(PI/2 - TRANSMISSION_WRAP_ANGLE)
 
-#ifdef MATERIAL_INCLUDE_SUBSURFACESCATTERING
+//#ifdef MATERIAL_INCLUDE_SUBSURFACESCATTERING
 
 void FillMaterialSSS(uint diffusionProfileIndex, float subsurfaceMask, inout BSDFData bsdfData)
 {
@@ -171,9 +171,9 @@ float3 GetModifiedDiffuseColorForSSS(BSDFData bsdfData)
     return ApplySubsurfaceScatteringTexturingMode(texturingMode, bsdfData.diffuseColor);
 }
 
-#endif
+//#endif
 
-#ifdef MATERIAL_INCLUDE_TRANSMISSION
+//#ifdef MATERIAL_INCLUDE_TRANSMISSION
 
 // Assume that bsdfData.diffusionProfileIndex is init
 void FillMaterialTransmission(uint diffusionProfileIndex, float thickness, float transmissionMask, inout BSDFData bsdfData)
@@ -210,9 +210,9 @@ void FillMaterialTransmission(uint diffusionProfileIndex, float thickness, inout
     FillMaterialTransmission(diffusionProfileIndex, thickness, 1.0f, bsdfData);
 }
 
-#endif
+//#endif
 
-#if defined(MATERIAL_INCLUDE_SUBSURFACESCATTERING) || defined(MATERIAL_INCLUDE_TRANSMISSION)
+//#if defined(MATERIAL_INCLUDE_SUBSURFACESCATTERING) || defined(MATERIAL_INCLUDE_TRANSMISSION)
 
 uint FindDiffusionProfileIndex(uint diffusionProfileHash)
 {
@@ -235,4 +235,4 @@ uint FindDiffusionProfileIndex(uint diffusionProfileHash)
     return diffusionProfileIndex;
 }
 
-#endif
+//#endif

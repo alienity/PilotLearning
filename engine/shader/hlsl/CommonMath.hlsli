@@ -3,7 +3,6 @@
 #define __COMMON_MATH_HLSLI__
 
 #include "vaConversions.hlsli"
-#include "Random.hlsli"
 
 //------------------------------------------------------------------------------
 // Common math
@@ -51,6 +50,8 @@ static const float F_TAU      = 2.0 * F_PI;
 #define HALF_MAX 65504.0
 #define UINT_MAX 0xFFFFFFFFu
 #define INT_MAX  0x7FFFFFFF
+
+#include "Random.hlsli"
 
 #define VA_FLOAT_ONE_MINUS_EPSILON  (0x1.fffffep-1)                                         // biggest float smaller than 1 (see OneMinusEpsilon in pbrt book!)
 
@@ -440,9 +441,9 @@ float FastASin(float x)
 // input [0, infinity] and output [0, PI/2]
 float FastATanPos(float x)
 {
-    real t0 = (x < 1.0) ? x : 1.0 / x;
-    real t1 = t0 * t0;
-    real poly = 0.0872929;
+    float t0 = (x < 1.0) ? x : 1.0 / x;
+    float t1 = t0 * t0;
+    float poly = 0.0872929;
     poly = -0.301895 + poly * t1;
     poly = 1.0 + poly * t1;
     poly = poly * t0;
@@ -453,13 +454,18 @@ float FastATanPos(float x)
 // input [-infinity, infinity] and output [-PI/2, PI/2]
 float FastATan(float x)
 {
-    real t0 = FastATanPos(abs(x));
+    float t0 = FastATanPos(abs(x));
     return (x < 0.0) ? -t0 : t0;
 }
 
 float FastAtan2(float y, float x)
 {
     return FastATan(y / x) + (y >= 0.0 ? PI : -PI) * (x < 0.0);
+}
+
+uint FastLog2(uint x)
+{
+    return firstbithigh(x);
 }
 
 // Using pow often result to a warning like this
@@ -1708,17 +1714,17 @@ float4 TangentToWorld(float3 N, float4 H)
 	return float4(newN.xyz, H.w);
 }
 
-// [start, end] -> [0, 1] : (x - start) / (end - start) = x * rcpLength - (start * rcpLength)
-float Remap01(float x, float rcpLength, float startTimesRcpLength)
-{
-	return saturate(x * rcpLength - startTimesRcpLength);
-}
+//// [start, end] -> [0, 1] : (x - start) / (end - start) = x * rcpLength - (start * rcpLength)
+//float Remap01(float x, float rcpLength, float startTimesRcpLength)
+//{
+//	return saturate(x * rcpLength - startTimesRcpLength);
+//}
 
-// [start, end] -> [1, 0] : (end - x) / (end - start) = (end * rcpLength) - x * rcpLength
-float Remap10(float x, float rcpLength, float endTimesRcpLength)
-{
-	return saturate(endTimesRcpLength - x * rcpLength);
-}
+//// [start, end] -> [1, 0] : (end - x) / (end - start) = (end * rcpLength) - x * rcpLength
+//float Remap10(float x, float rcpLength, float endTimesRcpLength)
+//{
+//	return saturate(endTimesRcpLength - x * rcpLength);
+//}
 
 //float3 PositivePow(float3 base, float3 power)
 //{

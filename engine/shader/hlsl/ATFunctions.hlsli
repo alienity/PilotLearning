@@ -15,9 +15,9 @@ Length ClampRadius(IN(AtmosphereParameters) atmosphere, Length r) {
 	return clamp(r, atmosphere.bottom_radius, atmosphere.top_radius);
 }
 
-Length SafeSqrt(Area a) {
-	return sqrt(max(a, 0.0 * m2));
-}
+//Length SafeSqrt(Area a) {
+//	return sqrt(max(a, 0.0 * m2));
+//}
 
 //------------------------------------------------------------------------------------------------------------------
 // Transmittance

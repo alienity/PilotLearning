@@ -98,7 +98,7 @@ namespace MoYu
 
         float shadow_near_plane = 0.1f;
         float shadow_far_plane = 20000.0f;
-
+          
         if (mVolumeShadowmap == nullptr)
         {
             mVolumeShadowmap = RHI::D3D12Texture::Create2D(m_Device->GetLinkedDevice(),
