@@ -41,6 +41,7 @@ struct MaterialInputs
     float3 clearCoatNormal;
     
     float subsurfaceMask;
+    uint diffusionProfileIndex;
 };
 
 struct CommonShadingStruct
@@ -85,6 +86,17 @@ struct PixelParams
     float transmission;
     float uThickness;
     float3 absorption;
+    
+    
+    // Share for SSS and Transmission
+    uint materialFeatures;
+    uint diffusionProfile;
+     // For SSS
+    float3 fresnel0;
+    float subsurfaceMask;
+     // For transmission
+    bool useThickObjectMode;
+    float3 transmittance;
 };
 
 struct Light

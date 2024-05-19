@@ -25,6 +25,7 @@
 #include "runtime/function/render/renderer/color_pyramid_pass.h"
 #include "runtime/function/render/renderer/indirect_terrain_gbuffer_pass.h"
 #include "runtime/function/render/renderer/indirect_lightloop_pass.h"
+#include "runtime/function/render/renderer/subsurface_scattering_pass.h"
 #include "runtime/function/render/renderer/volume_light_pass.h"
 
 namespace MoYu
@@ -71,6 +72,7 @@ namespace MoYu
         std::shared_ptr<IndirectGBufferPass>         mIndirectGBufferPass;
         std::shared_ptr<IndirectTerrainGBufferPass>  mIndirectTerrainGBufferPass;
         std::shared_ptr<IndirectLightLoopPass>       mIndirectLightLoopPass;
+        std::shared_ptr<SubsurfaceScatteringPass>    mSubsurfaceScatteringPass;
         std::shared_ptr<IndirectDrawPass>            mIndirectOpaqueDrawPass;
         std::shared_ptr<DepthPyramidPass>            mDepthPyramidPass;
         std::shared_ptr<ColorPyramidPass>            mColorPyramidPass;

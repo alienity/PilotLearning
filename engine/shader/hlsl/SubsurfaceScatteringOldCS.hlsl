@@ -21,6 +21,10 @@
 #define TEXTURE_CACHE_SIZE_1D (GROUP_SIZE_1D + 2 * TEXTURE_CACHE_BORDER)
 #define TEXTURE_CACHE_SIZE_2D (TEXTURE_CACHE_SIZE_1D * TEXTURE_CACHE_SIZE_1D)
 
+// Check for support of typed UAV loads from FORMAT_R16G16B16A16_FLOAT.
+// TODO: query the format support more precisely.
+#define USE_INTERMEDIATE_BUFFER
+
 //--------------------------------------------------------------------------------------------------
 // Included headers
 //--------------------------------------------------------------------------------------------------
@@ -31,18 +35,18 @@
 // Inputs & outputs
 //--------------------------------------------------------------------------------------------------
 
-cbuffer RootConstants : register(b0, space0)
-{
-    uint perFrameBufferIndex;
-    uint depthTextureIndex; // Z-buffer
-    uint irradianceSourceIndex; // Includes transmitted light
-
-    uint outCameraFilteringTextureIndex; // Target texture
-};
-
-SamplerState defaultSampler : register(s10);
-
 int _SssSampleBudget;
+
+TEXTURE2D_X(_DepthTexture);                           // Z-buffer
+TEXTURE2D_X(_IrradianceSource);                       // Includes transmitted light
+
+StructuredBuffer<uint>  _CoarseStencilBuffer;
+
+#ifdef USE_INTERMEDIATE_BUFFER
+    RW_TEXTURE2D_X(float4, _CameraFilteringTexture);  // Target texture
+#else
+    RW_TEXTURE2D_X(float4, _CameraColorTexture);      // Target texture
+#endif
 
 //--------------------------------------------------------------------------------------------------
 // Implementation
@@ -214,7 +218,11 @@ void EvaluateSample(uint i, uint n, int2 pixelCoord, int2 cacheOffset,
 
 void StoreResult(uint2 pixelCoord, float3 irradiance)
 {
+#ifdef USE_INTERMEDIATE_BUFFER
     _CameraFilteringTexture[COORD_TEXTURE2D_X(pixelCoord)] = float4(irradiance, 1);
+#else
+    _CameraColorTexture[COORD_TEXTURE2D_X(pixelCoord)]    += float4(irradiance, 0);
+#endif
 }
 
 [numthreads(GROUP_SIZE_2D, 1, 1)]

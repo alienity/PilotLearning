@@ -210,6 +210,17 @@ namespace MoYu
             mIndirectLightLoopPass->setCommonInfo(renderPassCommonInfo);
             mIndirectLightLoopPass->initialize(drawPassInit);
         }
+        // SubsurfaceScattering pass
+        {
+            SubsurfaceScatteringPass::PassInitInfo drawPassInit;
+            drawPassInit.colorTexDesc = colorTexDesc;
+            drawPassInit.m_ShaderCompiler = pCompiler;
+            drawPassInit.m_ShaderRootPath = g_runtime_global_context.m_config_manager->getShaderFolder();
+
+            mSubsurfaceScatteringPass = std::make_shared<SubsurfaceScatteringPass>();
+            mSubsurfaceScatteringPass->setCommonInfo(renderPassCommonInfo);
+            mSubsurfaceScatteringPass->initialize(drawPassInit);
+        }
         // Opaque drawing pass
         {
             IndirectDrawPass::DrawPassInitInfo drawPassInit;
@@ -360,6 +371,7 @@ namespace MoYu
         mIndirectTerrainGBufferPass->prepareMatBuffer(render_resource);
         mDepthPyramidPass->prepareMeshData(render_resource);
         mColorPyramidPass->prepareMeshData(render_resource);
+        mSubsurfaceScatteringPass->prepareMetaData(render_resource);
         mSSRPass->prepareMetaData(render_resource);
         mVolumeLightPass->prepareMeshData(render_resource);
         mPostprocessPasses->PreparePassData(render_resource);
@@ -385,6 +397,7 @@ namespace MoYu
         mDepthPyramidPass            = nullptr;
         mColorPyramidPass            = nullptr;
         mIndirectLightLoopPass       = nullptr;
+        mSubsurfaceScatteringPass    = nullptr;
         mIndirectOpaqueDrawPass      = nullptr;
         mAOPass                      = nullptr;
         mGTAOPass                    = nullptr;
@@ -647,6 +660,14 @@ namespace MoYu
         mIndirectLightLoopPass->update(graph, mLightLoopIntput, mLightLoopOutput);
 
         RHI::RgResourceHandle outColorHandle = mLightLoopOutput.colorHandle;
+        //=================================================================================
+
+        //=================================================================================
+        // subsurface scattering pass
+        SubsurfaceScatteringPass::DrawInputParameters mSubsurfaceScatteringInput;
+        SubsurfaceScatteringPass::DrawOutputParameters mSubsurfaceScatteringOutput;
+
+        mSubsurfaceScatteringPass->update(graph, mSubsurfaceScatteringInput, mSubsurfaceScatteringOutput);
         //=================================================================================
 
         //=================================================================================

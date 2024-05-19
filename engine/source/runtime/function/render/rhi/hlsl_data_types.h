@@ -332,6 +332,18 @@ namespace HLSL
         float minStepSize;
     };
 
+    struct SSSUniform
+    {
+        glm::float4 _ShapeParamsAndMaxScatterDists[16]; // RGB = S = 1 / D, A = d = RgbMax(D)
+        glm::float4 _TransmissionTintsAndFresnel0[16];  // RGB = 1/4 * color, A = fresnel0
+        glm::float4 _WorldScalesAndFilterRadiiAndThicknessRemaps[16]; // X = meters per world unit, Y = filter radius (in mm), Z = remap start, W = end - start
+        glm::uvec4  _DiffusionProfileHashTable[16];
+        glm::uint _EnableSubsurfaceScattering; // Globally toggles subsurface and transmission scattering on/off
+        glm::uint _TexturingModeFlags;         // 1 bit/profile; 0 = PreAndPostScatter, 1 = PostScatter
+        glm::uint _TransmissionFlags;          // 1 bit/profile; 0 = regular, 1 = thin
+        glm::uint _DiffusionProfileCount;
+    };
+
     struct FrameUniforms
     {
         CameraUniform          cameraUniform;
@@ -347,6 +359,7 @@ namespace HLSL
         PointLightUniform      pointLightUniform;
         SpotLightUniform       spotLightUniform;
         VolumeLightUniform     volumeLightUniform;
+        SSSUniform             sssUniform;
     };
 
     struct BitonicSortCommandSigParams

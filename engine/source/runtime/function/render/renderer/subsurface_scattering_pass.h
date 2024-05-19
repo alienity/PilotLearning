@@ -4,6 +4,7 @@
 #include "runtime/function/global/global_context.h"
 #include "runtime/resource/config_manager/config_manager.h"
 #include "runtime/function/render/renderer/volume_cloud_helper.h"
+#include "runtime/function/render/renderer/diffusion_pfoile_settings.h"
 
 namespace MoYu
 {
@@ -36,16 +37,6 @@ namespace MoYu
             RHI::RgResourceHandle outColorHandle;
         };
 
-        struct ShadowInputParameters : public PassInput
-        {
-            RHI::RgResourceHandle perframeBufferHandle;
-        };
-
-        struct ShadowOutputParameters : public PassOutput
-        {
-            RHI::RgResourceHandle outCloudShadowHandle;
-        };
-
     public:
         ~SubsurfaceScatteringPass() { destroy(); }
 
@@ -55,28 +46,16 @@ namespace MoYu
         void destroy() override final;
 
     private:
-        glm::int2 volumeCloudShadowMapSize;
-        glm::int2 volumeCloudShadowBounds;
-
         RHI::RgTextureDesc colorTexDesc;
 
-        VolumeCloudSpace::CloudsConsCB mCloudsConsCB;
+        Shader mSubsurfaceScatteringCS;
+        std::shared_ptr<RHI::D3D12RootSignature> pSubsurfaceScatteringSignature;
+        std::shared_ptr<RHI::D3D12PipelineState> pSubsurfaceScatteringPSO;
 
-        std::shared_ptr<RHI::D3D12Buffer> mCloudConstantsBuffer;
+        Shader mCombineLightingCS;
+        std::shared_ptr<RHI::D3D12RootSignature> pCombineLightingSignature;
+        std::shared_ptr<RHI::D3D12PipelineState> pCombineLightingPSO;
 
-        std::shared_ptr<RHI::D3D12Texture> mWeather2D;
-        std::shared_ptr<RHI::D3D12Texture> mCloud3D;
-        std::shared_ptr<RHI::D3D12Texture> mWorley3D;
-
-        std::shared_ptr<RHI::D3D12Texture> mVolumeShadowmap;
-
-        Shader mVolumeCloudCS;
-        std::shared_ptr<RHI::D3D12RootSignature> pVolumeCloudSignature;
-        std::shared_ptr<RHI::D3D12PipelineState> pVolumeCloudPSO;
-
-        Shader mVolumeShadowCS;
-        std::shared_ptr<RHI::D3D12RootSignature> pVolumeShadowSignature;
-        std::shared_ptr<RHI::D3D12PipelineState> pVolumeShadowPSO;
-
+        DiffusionProfileSettings diffusionProfileSettings;
 	};
 }

@@ -367,6 +367,25 @@ struct VolumeLightUniform
     float minStepSize;
 };
 
+// =======================================
+// SubsurfaceScattering and Tranlucent
+// =======================================
+struct SSSUniform
+{
+    float4 _ShapeParamsAndMaxScatterDists[16]; // RGB = S = 1 / D, A = d = RgbMax(D)
+    float4 _TransmissionTintsAndFresnel0[16]; // RGB = 1/4 * color, A = fresnel0
+    float4 _WorldScalesAndFilterRadiiAndThicknessRemaps[16]; // X = meters per world unit, Y = filter radius (in mm), Z = remap start, W = end - start
+    uint4 _DiffusionProfileHashTable[16];
+    uint _EnableSubsurfaceScattering; // Globally toggles subsurface and transmission scattering on/off
+    uint _TexturingModeFlags;         // 1 bit/profile; 0 = PreAndPostScatter, 1 = PostScatter
+    uint _TransmissionFlags;          // 1 bit/profile; 0 = regular, 1 = thin
+    uint _DiffusionProfileCount;
+};
+
+// =======================================
+// FraneUniform
+// =======================================
+
 struct FrameUniforms
 {
     CameraUniform cameraUniform;
@@ -382,6 +401,7 @@ struct FrameUniforms
     PointLightUniform pointLightUniform;
     SpotLightUniform spotLightUniform;
     VolumeLightUniform volumeLightUniform;
+    SSSUniform sssUniform;
 };
 
 // =======================================
