@@ -148,6 +148,7 @@ bool TestLightingForSSS(float3 subsurfaceLighting)
 #define TRANSMISSION_WRAP_ANGLE (PI/12)
 #define TRANSMISSION_WRAP_LIGHT cos(PI/2 - TRANSMISSION_WRAP_ANGLE)
 
+/*
 //#ifdef MATERIAL_INCLUDE_SUBSURFACESCATTERING
 
 void FillMaterialSSS(uint diffusionProfileIndex, float subsurfaceMask, inout BSDFData bsdfData)
@@ -236,3 +237,4 @@ uint FindDiffusionProfileIndex(uint diffusionProfileHash)
 }
 
 //#endif
+*/

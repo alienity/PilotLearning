@@ -25,7 +25,13 @@
 // Included headers
 //--------------------------------------------------------------------------------------------------
 
+#include "d3d12.hlsli"
+#include "CommonMath.hlsli"
+#include "InputTypes.hlsli"
+#include "ShadingParameters.hlsli"
 #include "SubsurfaceScattering.hlsli"
+#include "Fibonacci.hlsl"
+#include "SpaceFillingCurves.hlsl"
 
 //--------------------------------------------------------------------------------------------------
 // Inputs & outputs
@@ -36,13 +42,22 @@ cbuffer RootConstants : register(b0, space0)
     uint perFrameBufferIndex;
     uint depthTextureIndex; // Z-buffer
     uint irradianceSourceIndex; // Includes transmitted light
+    uint sssTextureIndex; // SSSBuffer
 
     uint outCameraFilteringTextureIndex; // Target texture
+    
+    int _SssSampleBudget;
 };
 
 SamplerState defaultSampler : register(s10);
 
-int _SssSampleBudget;
+struct SubsurfaceTexStruct
+{
+    Texture2D<float4> sssBufferTexture;
+    Texture2D<float4> irradianceSource;
+    Texture2D<float> depthTexture;
+    RWTexture2D<float4> cameraFilteringTexture;
+};
 
 //--------------------------------------------------------------------------------------------------
 // Implementation
@@ -53,7 +68,7 @@ int _SssSampleBudget;
 groupshared float2 textureCache0[TEXTURE_CACHE_SIZE_2D]; // {irradiance.rg}
 groupshared float2 textureCache1[TEXTURE_CACHE_SIZE_2D]; // {irradiance.b, deviceDepth}
 #endif
-groupshared bool   processGroup;
+//groupshared bool   processGroup;
 
 #if SSS_USE_LDS_CACHE
 void StoreSampleToCacheMemory(float4 value, int2 cacheCoord)
@@ -73,16 +88,16 @@ float4 LoadSampleFromCacheMemory(int2 cacheCoord)
 }
 #endif
 
-float4 LoadSampleFromVideoMemory(int2 pixelCoord)
+float4 LoadSampleFromVideoMemory(int2 pixelCoord, SubsurfaceTexStruct subsurfaceStruct)
 {
-    float3 irradiance = LOAD_TEXTURE2D_X(_IrradianceSource, pixelCoord).rgb;
-    float  depth      = LOAD_TEXTURE2D_X(_DepthTexture,     pixelCoord).r;
-
+    float3 irradiance = subsurfaceStruct.irradianceSource.Load(int3(pixelCoord, 0)).rgb;
+    float depth = subsurfaceStruct.depthTexture.Load(int3(pixelCoord, 0)).r;
+    
     return float4(irradiance, depth);
 }
 
 // Returns {irradiance, linearDepth}.
-float4 LoadSample(int2 pixelCoord, int2 cacheOffset)
+float4 LoadSample(int2 pixelCoord, int2 cacheOffset, FrameUniforms framUniform, SubsurfaceTexStruct subsurfaceStruct)
 {
     float4 value;
 
@@ -99,11 +114,12 @@ float4 LoadSample(int2 pixelCoord, int2 cacheOffset)
     {
         // Always load both irradiance and depth.
         // Avoid dependent texture reads at the cost of extra bandwidth.
-        value = LoadSampleFromVideoMemory(pixelCoord);
+        value = LoadSampleFromVideoMemory(pixelCoord, subsurfaceStruct);
     }
 
-    value.a = LinearEyeDepth(value.a, _ZBufferParams);
-
+    float4 zBufferParams = framUniform.cameraUniform.curFrameUniform.zBufferParams;
+    value.a = LinearEyeDepth(value.a, zBufferParams);
+    
     return value;
 }
 
@@ -145,11 +161,12 @@ float3 ComputeBilateralWeight(float xy2, float z, float mmPerUnit, float3 S, flo
 void EvaluateSample(uint i, uint n, int2 pixelCoord, int2 cacheOffset,
                     float3 S, float d, float3 centerPosVS, float mmPerUnit, float pixelsPerMm,
                     float phase, float3 tangentX, float3 tangentY, float4x4 projMatrix,
-                    inout float3 totalIrradiance, inout float3 totalWeight, float linearDepth)
+                    inout float3 totalIrradiance, inout float3 totalWeight, float linearDepth,
+                    FrameUniforms framUniform, SubsurfaceTexStruct subsurfaceStruct)
 {
     // The sample count is loop-invariant.
-    const float scale  = rcp(n);
-    const float offset = rcp(n) * 0.5;
+    const float scale = rcp(float(n));
+    const float offset = rcp(float(n)) * 0.5;
 
     // The phase angle is loop-invariant.
     float sinPhase, cosPhase;
@@ -186,7 +203,7 @@ void EvaluateSample(uint i, uint n, int2 pixelCoord, int2 cacheOffset,
         xy2      = r * r;
     #endif
 
-    float4 textureSample = LoadSample(position, cacheOffset);
+    float4 textureSample = LoadSample(position, cacheOffset, framUniform, subsurfaceStruct);
     float3 irradiance    = textureSample.rgb;
 
     // Check the results of the stencil test.
@@ -212,9 +229,9 @@ void EvaluateSample(uint i, uint n, int2 pixelCoord, int2 cacheOffset,
     }
 }
 
-void StoreResult(uint2 pixelCoord, float3 irradiance)
+void StoreResult(uint2 pixelCoord, float3 irradiance, SubsurfaceTexStruct subsurfaceStruct)
 {
-    _CameraFilteringTexture[COORD_TEXTURE2D_X(pixelCoord)] = float4(irradiance, 1);
+    subsurfaceStruct.cameraFilteringTexture[pixelCoord] = float4(irradiance, 1);
 }
 
 [numthreads(GROUP_SIZE_2D, 1, 1)]
@@ -222,8 +239,14 @@ void SubsurfaceScattering(uint3 groupId          : SV_GroupID,
                           uint  groupThreadId    : SV_GroupThreadID,
                           uint3 dispatchThreadId : SV_DispatchThreadID)
 {
+    ConstantBuffer<FrameUniforms> frameUniform = ResourceDescriptorHeap[perFrameBufferIndex];
+    SubsurfaceTexStruct subsurfaceStruct;
+    subsurfaceStruct.sssBufferTexture = ResourceDescriptorHeap[sssTextureIndex];
+    subsurfaceStruct.depthTexture = ResourceDescriptorHeap[depthTextureIndex];
+    subsurfaceStruct.irradianceSource = ResourceDescriptorHeap[irradianceSourceIndex];
+    subsurfaceStruct.cameraFilteringTexture = ResourceDescriptorHeap[outCameraFilteringTextureIndex];
+    
     groupThreadId &= GROUP_SIZE_2D - 1; // Help the compiler
-    UNITY_XR_ASSIGN_VIEW_INDEX(dispatchThreadId.z);
 
     // Note: any factor of 64 is a suitable wave size for our algorithm.
     uint waveIndex = WaveReadLaneFirst(groupThreadId / 64);
@@ -236,39 +259,14 @@ void SubsurfaceScattering(uint3 groupId          : SV_GroupID,
     uint2 pixelCoord  = groupOffset + groupCoord;
     int2  cacheOffset = (int2)groupOffset - TEXTURE_CACHE_BORDER;
 
-    if (groupThreadId == 0)
-    {
-        uint stencilRef = STENCILUSAGE_SUBSURFACE_SCATTERING;
-
-        // Check whether the thread group needs to perform any work.
-        uint s00Address = Get1DAddressFromPixelCoord(2 * groupId.xy + uint2(0, 0), _CoarseStencilBufferSize.xy, groupId.z);
-        uint s10Address = Get1DAddressFromPixelCoord(2 * groupId.xy + uint2(1, 0), _CoarseStencilBufferSize.xy, groupId.z);
-        uint s01Address = Get1DAddressFromPixelCoord(2 * groupId.xy + uint2(0, 1), _CoarseStencilBufferSize.xy, groupId.z);
-        uint s11Address = Get1DAddressFromPixelCoord(2 * groupId.xy + uint2(1, 1), _CoarseStencilBufferSize.xy, groupId.z);
-
-        uint s00 = _CoarseStencilBuffer[s00Address];
-        uint s10 = _CoarseStencilBuffer[s10Address];
-        uint s01 = _CoarseStencilBuffer[s01Address];
-        uint s11 = _CoarseStencilBuffer[s11Address];
-
-        uint HTileValue = s00 | s10 | s01 | s11;
-        // Perform the stencil test (reject at the tile rate).
-        processGroup = ((HTileValue & stencilRef) != 0);
-    }
-
-    // Wait for the LDS.
-    GroupMemoryBarrierWithGroupSync();
-
-    if (!processGroup) { return; }
-
-    float3 centerIrradiance  = LOAD_TEXTURE2D_X(_IrradianceSource, pixelCoord).rgb;
+    float3 centerIrradiance  = subsurfaceStruct.irradianceSource[pixelCoord].rgb;
     float  centerDepth       = 0;
     bool   passedStencilTest = TestLightingForSSS(centerIrradiance);
 
     // Save some bandwidth by only loading depth values for SSS pixels.
     if (passedStencilTest)
     {
-        centerDepth = LOAD_TEXTURE2D_X(_DepthTexture, pixelCoord).r;
+        centerDepth = subsurfaceStruct.depthTexture[pixelCoord].r;
     }
 
 #if SSS_USE_LDS_CACHE
@@ -312,13 +310,13 @@ void SubsurfaceScattering(uint3 groupId          : SV_GroupID,
 
         uint2  cacheCoord2 = 2 * (startQuad + quadCoord) + DeinterleaveQuad(laneIndex);
         int2   pixelCoord2 = (int2)(groupOffset + cacheCoord2) - TEXTURE_CACHE_BORDER;
-        float3 irradiance2 = LOAD_TEXTURE2D_X(_IrradianceSource, pixelCoord2).rgb;
+        float3 irradiance2 = subsurfaceStruct.irradianceSource[pixelCoord2].rgb;
         float  depth2      = 0;
 
         // Save some bandwidth by only loading depth values for SSS pixels.
         if (TestLightingForSSS(irradiance2))
         {
-            depth2 = LOAD_TEXTURE2D_X(_DepthTexture, pixelCoord2).r;
+            depth2 = subsurfaceStruct.depthTexture[pixelCoord2].r;
         }
 
         // Populate the border region of the LDS cache.
@@ -331,24 +329,34 @@ void SubsurfaceScattering(uint3 groupId          : SV_GroupID,
 
     if (!passedStencilTest) { return; }
 
-    PositionInputs posInput = GetPositionInput(pixelCoord, _ScreenSize.zw);
-
+    uint screenWidth, screenHeight;
+    subsurfaceStruct.depthTexture.GetDimensions(screenWidth, screenHeight);
+    
+    float4 _ScreenSize = float4(float2(screenWidth, screenHeight), rcp(float2(screenWidth, screenHeight)));
+    
+    int2 positionSS = int2(pixelCoord);
+    float2 positionNDC = positionSS * _ScreenSize.zw;
+    
+    float4 sssBuffer = subsurfaceStruct.sssBufferTexture.Load(uint3(positionSS, 0));
+    
     // The result of the stencil test allows us to statically determine the material type (SSS).
     SSSData sssData;
-    DECODE_FROM_SSSBUFFER(posInput.positionSS, sssData);
+    DecodeFromSSSBuffer(sssBuffer, positionSS, sssData);
 
     int    profileIndex  = sssData.diffusionProfileIndex;
     float  distScale     = sssData.subsurfaceMask;
-    float3 S             = _ShapeParamsAndMaxScatterDists[profileIndex].rgb;
-    float  d             = _ShapeParamsAndMaxScatterDists[profileIndex].a;
-    float  metersPerUnit = _WorldScalesAndFilterRadiiAndThicknessRemaps[profileIndex].x;
-    float  filterRadius  = _WorldScalesAndFilterRadiiAndThicknessRemaps[profileIndex].y; // In millimeters
+    float3 S             = frameUniform.sssUniform._ShapeParamsAndMaxScatterDists[profileIndex].rgb;
+    float  d             = frameUniform.sssUniform._ShapeParamsAndMaxScatterDists[profileIndex].a;
+    float  metersPerUnit = frameUniform.sssUniform._WorldScalesAndFilterRadiiAndThicknessRemaps[profileIndex].x;
+    float  filterRadius  = frameUniform.sssUniform._WorldScalesAndFilterRadiiAndThicknessRemaps[profileIndex].y; // In millimeters
 
     // Reconstruct the view-space position corresponding to the central sample.
-    float2 centerPosNDC = posInput.positionNDC;
+    float4x4 projMatrixInv = frameUniform.cameraUniform.curFrameUniform.unJitterProjectionMatrixInv;
+    
+    float2 centerPosNDC = positionNDC;
     float2 cornerPosNDC = centerPosNDC + 0.5 * _ScreenSize.zw;
-    float3 centerPosVS  = ComputeViewSpacePosition(centerPosNDC, centerDepth, UNITY_MATRIX_I_P);
-    float3 cornerPosVS  = ComputeViewSpacePosition(cornerPosNDC, centerDepth, UNITY_MATRIX_I_P);
+    float3 centerPosVS = ComputeViewSpacePosition(centerPosNDC, centerDepth, projMatrixInv);
+    float3 cornerPosVS = ComputeViewSpacePosition(cornerPosNDC, centerDepth, projMatrixInv);
 
     // Rescaling the filter is equivalent to inversely scaling the world.
     float mmPerUnit  = MILLIMETERS_PER_METER * (metersPerUnit * rcp(distScale));
@@ -361,7 +369,7 @@ void SubsurfaceScattering(uint3 groupId          : SV_GroupID,
 
     // Area of a disk.
     float filterArea   = PI * Sq(filterRadius * pixelsPerMm);
-    uint  sampleCount  = (uint)(filterArea * rcp(SSS_PIXELS_PER_SAMPLE));
+    uint sampleCount = (uint) (filterArea * rcp(float(SSS_PIXELS_PER_SAMPLE)));
     uint  sampleBudget = (uint)_SssSampleBudget;
 
     uint   texturingMode = GetSubsurfaceScatteringTexturingMode(profileIndex);
@@ -373,7 +381,7 @@ void SubsurfaceScattering(uint3 groupId          : SV_GroupID,
         float3 green = float3(0, 1, 0);
         StoreResult(pixelCoord, green);
     #else
-        StoreResult(pixelCoord, albedo * centerIrradiance);
+        StoreResult(pixelCoord, albedo * centerIrradiance, subsurfaceStruct);
     #endif
         return;
     }
@@ -385,22 +393,13 @@ void SubsurfaceScattering(uint3 groupId          : SV_GroupID,
     return;
 #endif
 
-    float4x4 viewMatrix, projMatrix;
-    GetLeftHandedViewSpaceMatrices(viewMatrix, projMatrix);
-
+    float4x4 projMatrix = frameUniform.cameraUniform.curFrameUniform.unJitterProjectionMatrix;
+    
     // TODO: Since we have moved to forward SSS, we don't support anymore a bsdfData.normalWS.
     // Once we include normal+roughness rendering during the prepass, we will have a buffer to bind here and we will be able to reuse this part of the algorithm on demand.
-#if SSS_USE_TANGENT_PLANE
-    #error ThisWillNotCompile_SeeComment
-    // Compute the tangent frame in view space.
-    float3 normalVS = mul((float3x3)viewMatrix, bsdfData.normalWS);
-    float3 tangentX = GetLocalFrame(normalVS)[0] * unitsPerMm;
-    float3 tangentY = GetLocalFrame(normalVS)[1] * unitsPerMm;
-#else
     float3 normalVS = float3(0, 0, 0);
     float3 tangentX = float3(0, 0, 0);
     float3 tangentY = float3(0, 0, 0);
-#endif
 
 #if SSS_DEBUG_NORMAL_VS
     // We expect the normal to be front-facing.
@@ -426,18 +425,20 @@ void SubsurfaceScattering(uint3 groupId          : SV_GroupID,
     float3 totalIrradiance = 0;
     float3 totalWeight     = 0;
 
-    float linearDepth = LinearEyeDepth(centerDepth, _ZBufferParams);
+    float4 zBufferParams = frameUniform.cameraUniform.curFrameUniform.zBufferParams;
+    float linearDepth = LinearEyeDepth(centerDepth, zBufferParams);
     for (uint i = 0; i < n; i++)
     {
         // Integrate over the image or tangent plane in the view space.
         EvaluateSample(i, n, pixelCoord, cacheOffset,
                        S, d, centerPosVS, mmPerUnit, pixelsPerMm,
                        phase, tangentX, tangentY, projMatrix,
-                       totalIrradiance, totalWeight, linearDepth);
+                       totalIrradiance, totalWeight, linearDepth,
+                       frameUniform, subsurfaceStruct);
     }
 
     // Total weight is 0 for color channels without scattering.
     totalWeight = max(totalWeight, FLT_MIN);
 
-    StoreResult(pixelCoord, albedo * (totalIrradiance / totalWeight));
+    StoreResult(pixelCoord, albedo * (totalIrradiance / totalWeight), subsurfaceStruct);
 }

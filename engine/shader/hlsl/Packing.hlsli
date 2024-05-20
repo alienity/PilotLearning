@@ -42,7 +42,7 @@ float3 UnpackNormalOctRectEncode(float2 f)
     // Solve for {x, y, z} given {r, g}.
     float x = 0.5 + 0.5 * g - abs(r);
     float y = g - x;
-    float z = max(1.0 - abs(x) - abs(y), REAL_EPS); // EPS is absolutely crucial for anisotropy
+    float z = max(1.0 - abs(x) - abs(y), FLT_EPS); // EPS is absolutely crucial for anisotropy
 
     float3 p = float3(x, y, CopySign(z, r));
 
