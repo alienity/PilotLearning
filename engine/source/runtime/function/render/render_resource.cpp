@@ -485,6 +485,7 @@ namespace MoYu
                 material_uniform_buffer_info.clearCoatRoughnessFactor = m_mat_data.m_clearcoat_roughness_factor;
                 material_uniform_buffer_info.anisotropyFactor         = m_mat_data.m_anisotropy_factor;
                 material_uniform_buffer_info.subsurfaceMaskFactor = m_mat_data.m_subsurfaceMask_factor;
+                material_uniform_buffer_info.diffusionProfileIndex = m_mat_data.m_diffusionProfileIndex;
 
                 material_uniform_buffer_info.base_color_tilling = m_mat_data.m_base_color_texture_file.m_tilling;
                 material_uniform_buffer_info.metallic_roughness_tilling = m_mat_data.m_metallic_roughness_texture_file.m_tilling;

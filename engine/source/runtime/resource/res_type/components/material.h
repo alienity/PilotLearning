@@ -22,6 +22,7 @@ namespace MoYu
         float   m_clearcoat_roughness_factor {0.0f};
         float   m_anisotropy_factor {0.0f};
         float   m_subsurfaceScattering_factor {0.0f};
+        glm::uint m_diffusionProfileIndex{0};
 
         MaterialImage m_base_color_texture_file {};
         MaterialImage m_metallic_roughness_texture_file {};
@@ -43,6 +44,7 @@ namespace MoYu
                                        m_clearcoat_factor,
                                        m_clearcoat_roughness_factor,
                                        m_anisotropy_factor,
+                                       m_diffusionProfileIndex,
                                        m_base_color_texture_file,
                                        m_metallic_roughness_texture_file,
                                        m_normal_texture_file,

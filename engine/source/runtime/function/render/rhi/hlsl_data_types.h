@@ -50,7 +50,7 @@ namespace HLSL
         float clearCoatRoughnessFactor {0.0f};
         float anisotropyFactor {0.0f};
         float subsurfaceMaskFactor { 0.0f };
-        float _padding0;
+        glm::uint diffusionProfileIndex {0};
 
         glm::float2 base_color_tilling {1.0f, 1.0f};
         glm::float2 metallic_roughness_tilling {1.0f, 1.0f};
@@ -342,6 +342,8 @@ namespace HLSL
         glm::uint _TexturingModeFlags;         // 1 bit/profile; 0 = PreAndPostScatter, 1 = PostScatter
         glm::uint _TransmissionFlags;          // 1 bit/profile; 0 = regular, 1 = thin
         glm::uint _DiffusionProfileCount;
+        glm::uint _SssSampleBudget;
+        glm::uvec3 _padding_0;
     };
 
     struct FrameUniforms

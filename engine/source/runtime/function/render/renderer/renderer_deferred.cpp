@@ -658,8 +658,6 @@ namespace MoYu
         mLightLoopIntput.spotShadowmapHandles = std::vector<RHI::RgResourceHandle>(spotShadowmapHandle);
         mLightLoopIntput.volumeCloudShadowmapHandle = mVCSOutputParams.outCloudShadowHandle;
         mIndirectLightLoopPass->update(graph, mLightLoopIntput, mLightLoopOutput);
-
-        RHI::RgResourceHandle outColorHandle = mLightLoopOutput.colorHandle;
         //=================================================================================
 
         //=================================================================================
@@ -667,7 +665,15 @@ namespace MoYu
         SubsurfaceScatteringPass::DrawInputParameters mSubsurfaceScatteringInput;
         SubsurfaceScatteringPass::DrawOutputParameters mSubsurfaceScatteringOutput;
 
+        mSubsurfaceScatteringInput.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
+        mSubsurfaceScatteringInput.renderTargetDepthHandle = mDepthPyramidOutput.maxDepthPtyramidHandle;
+        mSubsurfaceScatteringInput.irradianceSourceHandle = mLightLoopOutput.sssDiffuseHandle;
+        mSubsurfaceScatteringInput.specularSourceHandle = mLightLoopOutput.colorHandle;
+        mSubsurfaceScatteringInput.sssBufferTexHandle = mGBufferOutput.albedoHandle;
+
         mSubsurfaceScatteringPass->update(graph, mSubsurfaceScatteringInput, mSubsurfaceScatteringOutput);
+
+        RHI::RgResourceHandle outColorHandle = mSubsurfaceScatteringOutput.cameraFilteringTexHandle;
         //=================================================================================
 
         //=================================================================================

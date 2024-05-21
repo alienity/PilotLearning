@@ -1,97 +1,37 @@
-Shader "Hidden/HDRP/CombineLighting"
+
+//--------------------------------------------------------------------------------------------------
+// Included headers
+//--------------------------------------------------------------------------------------------------
+
+//--------------------------------------------------------------------------------------------------
+// Inputs & outputs
+//--------------------------------------------------------------------------------------------------
+
+cbuffer RootConstants : register(b0, space0)
 {
-    Properties
-    {
-        [HideInInspector] _StencilMask("_StencilMask", Int) = 7
-        [HideInInspector] _StencilRef("_StencilRef", Int) = 1
-    }
+    uint irradianceSourceIndex;
+    uint outColorTextureIndex;
+};
 
-    SubShader
-    {
-        HLSLINCLUDE
-        #pragma target 4.5
-        #pragma only_renderers d3d11 playstation xboxone xboxseries vulkan metal switch
-        // #pragma enable_d3d11_debug_symbols
+SamplerState defaultSampler : register(s10);
 
-        #pragma vertex Vert
-        #pragma fragment Frag
+[numthreads(8, 8, 1)]
+void CombineLightingMain(uint3 groupId : SV_GroupID,
+                          uint groupThreadId : SV_GroupThreadID,
+                          uint3 dispatchThreadId : SV_DispatchThreadID)
+{
+    Texture2D<float4> irradianceSource = ResourceDescriptorHeap[irradianceSourceIndex];
+    RWTexture2D<float4> outColorTexture = ResourceDescriptorHeap[outColorTextureIndex];
+    
+    uint width, height;
+    irradianceSource.GetDimensions(width, height);
 
-        #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Common.hlsl"
-        #include "Packages/com.unity.render-pipelines.high-definition/Runtime/ShaderLibrary/ShaderVariables.hlsl"
-
-        TEXTURE2D_X(_IrradianceSource);
-
-        struct Attributes
-        {
-            uint vertexID : SV_VertexID;
-            UNITY_VERTEX_INPUT_INSTANCE_ID
-        };
-
-        struct Varyings
-        {
-            float4 positionCS : SV_Position;
-            UNITY_VERTEX_OUTPUT_STEREO
-        };
-
-        Varyings Vert(Attributes input)
-        {
-            Varyings output;
-            UNITY_SETUP_INSTANCE_ID(input);
-            UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(output);
-            output.positionCS = GetFullScreenTriangleVertexPosition(input.vertexID);
-            return output;
-        }
-        ENDHLSL
-
-        Tags{ "RenderPipeline" = "HDRenderPipeline" }
-        Pass
-        {
-            Stencil
-            {
-                ReadMask [_StencilMask]
-                Ref  [_StencilRef]
-                Comp Equal
-                Pass Keep
-            }
-
-            Cull   Off
-            ZTest  Less    // Required for XR occlusion mesh optimization
-            ZWrite Off
-            Blend  One One // Additive
-
-            HLSLPROGRAM
-
-            float4 Frag(Varyings input) : SV_Target
-            {
-                UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
-                return LOAD_TEXTURE2D_X(_IrradianceSource, input.positionCS.xy);
-            }
-            ENDHLSL
-        }
-
-        Pass
-        {
-            Stencil
-            {
-                ReadMask [_StencilMask]
-                Ref  [_StencilRef]
-                Comp Equal
-                Pass Keep
-            }
-
-            Cull   Off
-            ZTest  Less    // Required for XR occlusion mesh optimization
-            ZWrite Off
-            Blend  One One // Additive
-
-            HLSLPROGRAM
-            float4 Frag(Varyings input) : SV_Target
-            {
-                UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
-                return LOAD_TEXTURE2D_X(_IrradianceSource, input.positionCS.xy) * GetCurrentExposureMultiplier();
-            }
-            ENDHLSL
-        }
-    }
-    Fallback Off
+    float2 uv = (dispatchThreadId.xy + float2(0.5, 0.5)) / float2(width, height);
+    
+    float3 irradiance = irradianceSource.Sample(defaultSampler, uv).rgb;
+    float4 outColor = outColorTexture[dispatchThreadId.xy];
+    
+    outColor.rgb += irradiance;
+    
+    outColorTexture[dispatchThreadId.xy] = outColor;
 }

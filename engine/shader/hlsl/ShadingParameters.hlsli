@@ -205,6 +205,7 @@ void inflateMaterial(
     material.emissive = emissionTexture.Sample(materialSampler, uv * base_color_tilling);
     material.normal = (normalTexture.Sample(materialSampler, uv * normal_tilling) * 2.0f - 1.0f);
     material.subsurfaceMask = subsurfaceMaskFactor;
+    material.diffusionProfileIndex = materialParameterBuffer.diffusionProfileIndex;
 }
 
 //-----------------------------------------------------------------------------
@@ -1030,11 +1031,11 @@ float4 evaluateLights(const FrameUniforms frameUniforms,
     return float4(outColor.rgb, materialInputs.baseColor.a);
 }
 
-void addEmissive(const FrameUniforms frameUniforms, const MaterialInputs material, inout float4 color)
+void addEmissive(const FrameUniforms frameUniforms, const MaterialInputs material, inout float3 color)
 {
     float4 emissive = material.emissive;
     float attenuation = lerp(1.0, frameUniforms.cameraUniform.exposure, emissive.w);
-    color.rgb += emissive.rgb * (attenuation * color.a);
+    color.rgb += emissive.rgb * (attenuation/* * color.a*/);
 }
 
 /**
@@ -1047,7 +1048,7 @@ float4 evaluateMaterial(const FrameUniforms frameUniforms,
     const CommonShadingStruct commonShadingStruct, const MaterialInputs materialInputs, const SamplerStruct samplerStruct)
 {
     float4 color = evaluateLights(frameUniforms, commonShadingStruct, materialInputs, samplerStruct);
-    addEmissive(frameUniforms, materialInputs, color);
+    addEmissive(frameUniforms, materialInputs, color.rgb);
     return color;
 }
 
@@ -1088,6 +1089,8 @@ LightLoopOutput LightLoop(const FrameUniforms frameUniforms,
 
     evaluatePunctualLights(frameUniforms, commonShadingStruct, pixel, samplerStruct, lightloopColor.specularLighting);
 
+    addEmissive(frameUniforms, materialInputs, lightloopColor.specularLighting);
+    
     return lightloopColor;
 
 }

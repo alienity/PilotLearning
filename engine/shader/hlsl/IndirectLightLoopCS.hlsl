@@ -3,6 +3,7 @@
 #include "InputTypes.hlsli"
 #include "ShadingParameters.hlsli"
 #include "Quaternion.hlsli"
+#include "Packing.hlsli"
 
 cbuffer RootConstants : register(b0, space0)
 {

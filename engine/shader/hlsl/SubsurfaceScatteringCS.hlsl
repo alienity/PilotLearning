@@ -43,10 +43,7 @@ cbuffer RootConstants : register(b0, space0)
     uint depthTextureIndex; // Z-buffer
     uint irradianceSourceIndex; // Includes transmitted light
     uint sssTextureIndex; // SSSBuffer
-
     uint outCameraFilteringTextureIndex; // Target texture
-    
-    int _SssSampleBudget;
 };
 
 SamplerState defaultSampler : register(s10);
@@ -327,7 +324,11 @@ void SubsurfaceScattering(uint3 groupId          : SV_GroupID,
     GroupMemoryBarrierWithGroupSync();
 #endif
 
-    if (!passedStencilTest) { return; }
+    if (!passedStencilTest)
+    {
+        StoreResult(pixelCoord, centerIrradiance, subsurfaceStruct);
+        return;
+    }
 
     uint screenWidth, screenHeight;
     subsurfaceStruct.depthTexture.GetDimensions(screenWidth, screenHeight);
@@ -370,7 +371,7 @@ void SubsurfaceScattering(uint3 groupId          : SV_GroupID,
     // Area of a disk.
     float filterArea   = PI * Sq(filterRadius * pixelsPerMm);
     uint sampleCount = (uint) (filterArea * rcp(float(SSS_PIXELS_PER_SAMPLE)));
-    uint  sampleBudget = (uint)_SssSampleBudget;
+    uint sampleBudget = (uint) frameUniform.sssUniform._SssSampleBudget;
 
     uint   texturingMode = GetSubsurfaceScatteringTexturingMode(profileIndex);
     float3 albedo        = ApplySubsurfaceScatteringTexturingMode(texturingMode, sssData.diffuseColor);

@@ -28,13 +28,15 @@ namespace MoYu
         struct DrawInputParameters : public PassInput
         {
             RHI::RgResourceHandle perframeBufferHandle;
-            RHI::RgResourceHandle renderTargetColorHandle;
             RHI::RgResourceHandle renderTargetDepthHandle;
+            RHI::RgResourceHandle irradianceSourceHandle;
+            RHI::RgResourceHandle specularSourceHandle;
+            RHI::RgResourceHandle sssBufferTexHandle;
         };
 
         struct DrawOutputParameters : public PassOutput
         {
-            RHI::RgResourceHandle outColorHandle;
+            RHI::RgResourceHandle cameraFilteringTexHandle;
         };
 
     public:
@@ -46,7 +48,7 @@ namespace MoYu
         void destroy() override final;
 
     private:
-        RHI::RgTextureDesc colorTexDesc;
+        RHI::RgTextureDesc cameraFilteringTexDesc;
 
         Shader mSubsurfaceScatteringCS;
         std::shared_ptr<RHI::D3D12RootSignature> pSubsurfaceScatteringSignature;

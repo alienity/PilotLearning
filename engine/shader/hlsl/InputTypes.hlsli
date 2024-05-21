@@ -73,7 +73,7 @@ struct PerMaterialParametersBuffer
     float clearCoatRoughnessFactor;
     float anisotropyFactor;
     float subsurfaceMaskFactor;
-    float _padding0;
+    uint diffusionProfileIndex;
 
     float2 base_color_tilling;
     float2 metallic_roughness_tilling;
@@ -380,6 +380,8 @@ struct SSSUniform
     uint _TexturingModeFlags;         // 1 bit/profile; 0 = PreAndPostScatter, 1 = PostScatter
     uint _TransmissionFlags;          // 1 bit/profile; 0 = regular, 1 = thin
     uint _DiffusionProfileCount;
+    uint _SssSampleBudget;
+    uint3 _padding_0;
 };
 
 // =======================================

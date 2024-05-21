@@ -3,6 +3,7 @@
 #include "InputTypes.hlsli"
 #include "ShadingParameters.hlsli"
 #include "Quaternion.hlsli"
+#include "Packing.hlsli"
 
 cbuffer RootConstants : register(b0, space0)
 {
@@ -95,8 +96,8 @@ PSOutputGBuffer PSMain(VaringStruct varingStruct)
     float3 worldNormal = normalize(mul(tangentToWorld, materialInputs.normal.xyz));
 
     PSOutputGBuffer output;
-
-    output.albedo = float4(materialInputs.baseColor.rgb, materialInputs.subsurfaceMask);
+    output.albedo = float4(materialInputs.baseColor.rgb, PackFloatInt8bit(materialInputs.subsurfaceMask, materialInputs.diffusionProfileIndex, 16));
+    //output.albedo = float4(materialInputs.baseColor.rgb, materialInputs.subsurfaceMask);
     output.worldNormal = float4(worldNormal.xyz * 0.5 + 0.5f, 0);
     output.metallic_Roughness_Reflectance_AO.xyzw = float4(materialInputs.metallic, max(materialInputs.roughness, 0.0001f), materialInputs.reflectance, materialInputs.ambientOcclusion);
     output.clearCoat_ClearCoatRoughness_Anisotropy = float4(materialInputs.clearCoat, materialInputs.clearCoatRoughness, materialInputs.anisotropy, 0.0f);
