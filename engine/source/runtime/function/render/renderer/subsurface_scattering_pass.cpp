@@ -102,6 +102,7 @@ namespace MoYu
         RHI::RgResourceHandle sceneDepthHandle = passInput.renderTargetDepthHandle;
         RHI::RgResourceHandle irradianceHandle = passInput.irradianceSourceHandle;
         RHI::RgResourceHandle specularSourceHandle = passInput.specularSourceHandle;
+        RHI::RgResourceHandle volumeLight3DHandle = passInput.volumeLight3DHandle;
         RHI::RgResourceHandle sssBufferTexHandle = passInput.sssBufferTexHandle;
 
         RHI::RgResourceHandle mOutCameraFilteringHandle = graph.Create<RHI::D3D12Texture>(cameraFilteringTexDesc);
@@ -156,24 +157,39 @@ namespace MoYu
 
         RHI::RenderPass& combineLightingPass = graph.AddRenderPass("CombineLighting");
 
+        combineLightingPass.Read(perframeBufferHandle, false, RHIResourceState::RHI_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
+        combineLightingPass.Read(sceneDepthHandle, false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
         combineLightingPass.Read(specularSourceHandle, false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+        combineLightingPass.Read(volumeLight3DHandle, false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
         combineLightingPass.Read(mOutCameraFilteringHandle, true);
         combineLightingPass.Write(mOutCameraFilteringHandle, false, RHIResourceState::RHI_RESOURCE_STATE_UNORDERED_ACCESS);
 
         combineLightingPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
+            RHI::D3D12Buffer* mPerframeBuffer = RegGetBuf(perframeBufferHandle);
+            RHI::D3D12Texture* mSceneDepth = RegGetTex(sceneDepthHandle);
+            RHI::D3D12Texture* volumeLight3D = RegGetTex(volumeLight3DHandle);
             RHI::D3D12Texture* specularSource = RegGetTex(specularSourceHandle);
             RHI::D3D12Texture* mOutCameraFiltering = RegGetTex(mOutCameraFilteringHandle);
 
             RHI::D3D12ComputeContext* pContext = context->GetComputeContext();
 
+            RHI::D3D12ConstantBufferView* perframeBufferCBV = mPerframeBuffer->GetDefaultCBV().get();
+            RHI::D3D12ShaderResourceView* sceneDepthSRV = mSceneDepth->GetDefaultSRV().get();
+            RHI::D3D12ShaderResourceView* volumeLight3DSRV = volumeLight3D->GetDefaultSRV().get();
             RHI::D3D12ShaderResourceView* specularSourceSRV = specularSource->GetDefaultSRV().get();
             RHI::D3D12UnorderedAccessView* outCameraFilteringUAV = mOutCameraFiltering->GetDefaultUAV().get();
 
             struct
             {
-                int specularSourceSRV; // SSSBuffer
-                int outCameraFilteringIndex; // Target texture
+                int perFrameBufferIndex;
+                int depthTextureIndex;
+                int volumeLight3DIndex;
+                int specularSourceIndex;
+                int outColorTextureIndex;
             } combineLightingCB = {
+                    perframeBufferCBV->GetIndex(),
+                    sceneDepthSRV->GetIndex(),
+                    volumeLight3DSRV->GetIndex(),
                     specularSourceSRV->GetIndex(),
                     outCameraFilteringUAV->GetIndex(),
             };

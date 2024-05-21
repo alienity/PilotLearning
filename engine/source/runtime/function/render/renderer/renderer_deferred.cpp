@@ -670,6 +670,7 @@ namespace MoYu
         mSubsurfaceScatteringInput.irradianceSourceHandle = mLightLoopOutput.sssDiffuseHandle;
         mSubsurfaceScatteringInput.specularSourceHandle = mLightLoopOutput.colorHandle;
         mSubsurfaceScatteringInput.sssBufferTexHandle = mGBufferOutput.albedoHandle;
+        mSubsurfaceScatteringInput.volumeLight3DHandle = mVolumeLightOutput.volumeLightHandle;
 
         mSubsurfaceScatteringPass->update(graph, mSubsurfaceScatteringInput, mSubsurfaceScatteringOutput);
 

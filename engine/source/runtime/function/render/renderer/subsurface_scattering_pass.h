@@ -32,6 +32,7 @@ namespace MoYu
             RHI::RgResourceHandle irradianceSourceHandle;
             RHI::RgResourceHandle specularSourceHandle;
             RHI::RgResourceHandle sssBufferTexHandle;
+            RHI::RgResourceHandle volumeLight3DHandle;
         };
 
         struct DrawOutputParameters : public PassOutput
