@@ -173,4 +173,10 @@ void UpdateLightingHierarchyWeights(inout float hierarchyWeight, inout float wei
     weight -= saturate(accumulatedWeight - hierarchyWeight);
 }
 
+//-----------------------------------------------------------------------------
+// BuiltinData
+//-----------------------------------------------------------------------------
+
+#include "../Material/Builtin/BuiltinData.hlsl"
+
 #endif // MATERIAL_INCLUDED

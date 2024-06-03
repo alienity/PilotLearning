@@ -2,19 +2,19 @@
 #define __BUILTINGIUTILITIES_HLSL__
 
 // Include the IndirectDiffuseMode enum
-#include "Packages/com.unity.render-pipelines.high-definition/Runtime/Lighting/ScreenSpaceLighting/ScreenSpaceGlobalIllumination.cs.hlsl"
-#include "Packages/com.unity.render-pipelines.high-definition/Runtime/Lighting/ScreenSpaceLighting/ScreenSpaceReflection.cs.hlsl"
+#include "../Lighting/ScreenSpaceLighting/ScreenSpaceGlobalIllumination.hlsl"
+#include "../Lighting/ScreenSpaceLighting/ScreenSpaceReflection.hlsl"
 
 // We need to define this before including ProbeVolume.hlsl as that file expects this function to be defined.
 // AmbientProbe Data is fetch directly from a compute buffer to remain on GPU and is preconvolved with clamped cosinus
-real3 EvaluateAmbientProbe(real3 normalWS)
+float3 EvaluateAmbientProbe(float3 normalWS)
 {
     return SampleSH9(_AmbientProbeData, normalWS);
 }
 
-real3 EvaluateLightProbe(real3 normalWS)
+float3 EvaluateLightProbe(float3 normalWS)
 {
-    real4 SHCoefficients[7];
+    float4 SHCoefficients[7];
     SHCoefficients[0] = unity_SHAr;
     SHCoefficients[1] = unity_SHAg;
     SHCoefficients[2] = unity_SHAb;
