@@ -1,5 +1,210 @@
-#include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Macros.hlsl"
-#include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/BuiltinUtilities.hlsl"
+#include "../../ShaderLibrary/Macros.hlsl"
+#include "../../Material/BuiltinUtilities.hlsl"
+
+#ifndef LIGHTLOOP_CS_HLSL
+#define LIGHTLOOP_CS_HLSL
+//
+// UnityEngine.Rendering.HighDefinition.LightFeatureFlags:  static fields
+//
+#define LIGHTFEATUREFLAGS_PUNCTUAL (4096)
+#define LIGHTFEATUREFLAGS_AREA (8192)
+#define LIGHTFEATUREFLAGS_DIRECTIONAL (16384)
+#define LIGHTFEATUREFLAGS_ENV (32768)
+#define LIGHTFEATUREFLAGS_SKY (65536)
+#define LIGHTFEATUREFLAGS_SSREFRACTION (131072)
+#define LIGHTFEATUREFLAGS_SSREFLECTION (262144)
+
+//
+// UnityEngine.Rendering.HighDefinition.LightDefinitions:  static fields
+//
+#define VIEWPORT_SCALE_Z (1)
+#define USE_LEFT_HAND_CAMERA_SPACE (1)
+#define TILE_SIZE_FPTL (16)
+#define TILE_SIZE_CLUSTERED (32)
+#define TILE_SIZE_BIG_TILE (64)
+#define TILE_INDEX_MASK (32767)
+#define TILE_INDEX_SHIFT_X (0)
+#define TILE_INDEX_SHIFT_Y (15)
+#define TILE_INDEX_SHIFT_EYE (30)
+#define NUM_FEATURE_VARIANTS (29)
+#define LIGHT_FEATURE_MASK_FLAGS (16773120)
+#define LIGHT_FEATURE_MASK_FLAGS_OPAQUE (16642048)
+#define LIGHT_FEATURE_MASK_FLAGS_TRANSPARENT (16510976)
+#define MATERIAL_FEATURE_MASK_FLAGS (4095)
+#define RAY_TRACED_SCREEN_SPACE_SHADOW_FLAG (4096)
+#define SCREEN_SPACE_COLOR_SHADOW_FLAG (256)
+#define INVALID_SCREEN_SPACE_SHADOW (255)
+#define SCREEN_SPACE_SHADOW_INDEX_MASK (255)
+#define CONTACT_SHADOW_FADE_BITS (8)
+#define CONTACT_SHADOW_MASK_BITS (24)
+#define CONTACT_SHADOW_FADE_MASK (255)
+#define CONTACT_SHADOW_MASK_MASK (16777215)
+
+//
+// UnityEngine.Rendering.HighDefinition.LightVolumeType:  static fields
+//
+#define LIGHTVOLUMETYPE_CONE (0)
+#define LIGHTVOLUMETYPE_SPHERE (1)
+#define LIGHTVOLUMETYPE_BOX (2)
+#define LIGHTVOLUMETYPE_COUNT (3)
+
+//
+// UnityEngine.Rendering.HighDefinition.LightFeatureFlags:  static fields
+//
+#define LIGHTFEATUREFLAGS_PUNCTUAL (4096)
+#define LIGHTFEATUREFLAGS_AREA (8192)
+#define LIGHTFEATUREFLAGS_DIRECTIONAL (16384)
+#define LIGHTFEATUREFLAGS_ENV (32768)
+#define LIGHTFEATUREFLAGS_SKY (65536)
+#define LIGHTFEATUREFLAGS_SSREFRACTION (131072)
+#define LIGHTFEATUREFLAGS_SSREFLECTION (262144)
+
+//
+// UnityEngine.Rendering.HighDefinition.ClusterDebugMode:  static fields
+//
+#define CLUSTERDEBUGMODE_VISUALIZE_OPAQUE (0)
+#define CLUSTERDEBUGMODE_VISUALIZE_SLICE (1)
+
+//
+// UnityEngine.Rendering.HighDefinition.LightCategory:  static fields
+//
+#define LIGHTCATEGORY_PUNCTUAL (0)
+#define LIGHTCATEGORY_AREA (1)
+#define LIGHTCATEGORY_ENV (2)
+#define LIGHTCATEGORY_DECAL (3)
+#define LIGHTCATEGORY_COUNT (4)
+
+// Generated from UnityEngine.Rendering.HighDefinition.SFiniteLightBound
+// PackingRules = Exact
+struct SFiniteLightBound
+{
+    float3 boxAxisX;
+    float3 boxAxisY;
+    float3 boxAxisZ;
+    float3 center;
+    float scaleXY;
+    float radius;
+};
+
+// Generated from UnityEngine.Rendering.HighDefinition.LightVolumeData
+// PackingRules = Exact
+struct LightVolumeData
+{
+    float3 lightPos;
+    uint lightVolume;
+    float3 lightAxisX;
+    uint lightCategory;
+    float3 lightAxisY;
+    float radiusSq;
+    float3 lightAxisZ;
+    float cotan;
+    float3 boxInnerDist;
+    uint featureFlags;
+    float3 boxInvRange;
+    float unused2;
+};
+
+// Generated from UnityEngine.Rendering.HighDefinition.ShaderVariablesLightList
+// PackingRules = Exact
+struct ShaderVariablesLightList
+{
+    float4x4 g_mInvScrProjectionArr[2];
+    float4x4 g_mScrProjectionArr[2];
+    float4x4 g_mInvProjectionArr[2];
+    float4x4 g_mProjectionArr[2];
+    float4 g_screenSize;
+    int2 g_viDimensions;
+    int g_iNrVisibLights;
+    uint g_isOrthographic;
+    uint g_BaseFeatureFlags;
+    int g_iNumSamplesMSAA;
+    uint _EnvLightIndexShift;
+    uint _DecalIndexShift;  
+};
+
+//
+// Accessors for UnityEngine.Rendering.HighDefinition.SFiniteLightBound
+//
+float3 GetBoxAxisX(SFiniteLightBound value)
+{
+    return value.boxAxisX;
+}
+float3 GetBoxAxisY(SFiniteLightBound value)
+{
+    return value.boxAxisY;
+}
+float3 GetBoxAxisZ(SFiniteLightBound value)
+{
+    return value.boxAxisZ;
+}
+float3 GetCenter(SFiniteLightBound value)
+{
+    return value.center;
+}
+float GetScaleXY(SFiniteLightBound value)
+{
+    return value.scaleXY;
+}
+float GetRadius(SFiniteLightBound value)
+{
+    return value.radius;
+}
+//
+// Accessors for UnityEngine.Rendering.HighDefinition.LightVolumeData
+//
+float3 GetLightPos(LightVolumeData value)
+{
+    return value.lightPos;
+}
+uint GetLightVolume(LightVolumeData value)
+{
+    return value.lightVolume;
+}
+float3 GetLightAxisX(LightVolumeData value)
+{
+    return value.lightAxisX;
+}
+uint GetLightCategory(LightVolumeData value)
+{
+    return value.lightCategory;
+}
+float3 GetLightAxisY(LightVolumeData value)
+{
+    return value.lightAxisY;
+}
+float GetRadiusSq(LightVolumeData value)
+{
+    return value.radiusSq;
+}
+float3 GetLightAxisZ(LightVolumeData value)
+{
+    return value.lightAxisZ;
+}
+float GetCotan(LightVolumeData value)
+{
+    return value.cotan;
+}
+float3 GetBoxInnerDist(LightVolumeData value)
+{
+    return value.boxInnerDist;
+}
+uint GetFeatureFlags(LightVolumeData value)
+{
+    return value.featureFlags;
+}
+float3 GetBoxInvRange(LightVolumeData value)
+{
+    return value.boxInvRange;
+}
+float GetUnused2(LightVolumeData value)
+{
+    return value.unused2;
+}
+
+#endif
+
+#ifndef LIGHTLOOP_HLSL
+#define LIGHTLOOP_HLSL
 
 #ifndef SCALARIZE_LIGHT_LOOP
 // We perform scalarization only for forward rendering as for deferred loads will already be scalar since tiles will match waves and therefore all threads will read from the same tile.
@@ -13,78 +218,6 @@
 // LightLoop
 // ----------------------------------------------------------------------------
 
-void ApplyDebugToLighting(LightLoopContext context, inout BuiltinData builtinData, inout AggregateLighting aggregateLighting)
-{
-#ifdef DEBUG_DISPLAY
-    if (_DebugLightingMode >= DEBUGLIGHTINGMODE_DIFFUSE_LIGHTING && _DebugLightingMode <= DEBUGLIGHTINGMODE_EMISSIVE_LIGHTING)
-    {
-        if (_DebugLightingMode == DEBUGLIGHTINGMODE_SPECULAR_LIGHTING ||
-            _DebugLightingMode == DEBUGLIGHTINGMODE_DIRECT_SPECULAR_LIGHTING ||
-            _DebugLightingMode == DEBUGLIGHTINGMODE_INDIRECT_DIFFUSE_LIGHTING ||
-            _DebugLightingMode == DEBUGLIGHTINGMODE_REFLECTION_LIGHTING ||
-            _DebugLightingMode == DEBUGLIGHTINGMODE_REFRACTION_LIGHTING ||
-            _DebugLightingMode == DEBUGLIGHTINGMODE_EMISSIVE_LIGHTING)
-        {
-            aggregateLighting.direct.diffuse = real3(0.0, 0.0, 0.0);
-        }
-
-        if (_DebugLightingMode == DEBUGLIGHTINGMODE_DIFFUSE_LIGHTING ||
-            _DebugLightingMode == DEBUGLIGHTINGMODE_DIRECT_DIFFUSE_LIGHTING ||
-            _DebugLightingMode == DEBUGLIGHTINGMODE_INDIRECT_DIFFUSE_LIGHTING ||
-            _DebugLightingMode == DEBUGLIGHTINGMODE_REFLECTION_LIGHTING ||
-            _DebugLightingMode == DEBUGLIGHTINGMODE_REFRACTION_LIGHTING ||
-            _DebugLightingMode == DEBUGLIGHTINGMODE_EMISSIVE_LIGHTING)
-        {
-            aggregateLighting.direct.specular = real3(0.0, 0.0, 0.0);
-        }
-
-        if (_DebugLightingMode == DEBUGLIGHTINGMODE_DIFFUSE_LIGHTING ||
-            _DebugLightingMode == DEBUGLIGHTINGMODE_DIRECT_DIFFUSE_LIGHTING ||
-            _DebugLightingMode == DEBUGLIGHTINGMODE_DIRECT_SPECULAR_LIGHTING ||
-            _DebugLightingMode == DEBUGLIGHTINGMODE_INDIRECT_DIFFUSE_LIGHTING ||
-            _DebugLightingMode == DEBUGLIGHTINGMODE_REFRACTION_LIGHTING ||
-            _DebugLightingMode == DEBUGLIGHTINGMODE_EMISSIVE_LIGHTING)
-        {
-            aggregateLighting.indirect.specularReflected = real3(0.0, 0.0, 0.0);
-        }
-
-        // Note: specular transmission is the refraction and as it reflect lighting behind the object it
-        // must be displayed for both diffuse and specular mode, except if we ask for direct lighting only
-        if (_DebugLightingMode != DEBUGLIGHTINGMODE_REFRACTION_LIGHTING)
-        {
-            aggregateLighting.indirect.specularTransmitted = real3(0.0, 0.0, 0.0);
-        }
-
-        if (_DebugLightingMode == DEBUGLIGHTINGMODE_SPECULAR_LIGHTING ||
-            _DebugLightingMode == DEBUGLIGHTINGMODE_DIRECT_DIFFUSE_LIGHTING ||
-            _DebugLightingMode == DEBUGLIGHTINGMODE_DIRECT_SPECULAR_LIGHTING ||
-            _DebugLightingMode == DEBUGLIGHTINGMODE_REFLECTION_LIGHTING ||
-            _DebugLightingMode == DEBUGLIGHTINGMODE_REFRACTION_LIGHTING
-#if (SHADERPASS != SHADERPASS_DEFERRED_LIGHTING)
-            || _DebugLightingMode == DEBUGLIGHTINGMODE_EMISSIVE_LIGHTING // With deferred, Emissive is store in builtinData.bakeDiffuseLighting (See Lit.hlsl EncodeToGbuffer)
-#endif
-            )
-        {
-            builtinData.bakeDiffuseLighting = real3(0.0, 0.0, 0.0);
-        }
-
-        if (_DebugLightingMode != DEBUGLIGHTINGMODE_EMISSIVE_LIGHTING)
-        {
-            builtinData.emissiveColor = real3(0.0, 0.0, 0.0);
-        }
-    }
-
-    if (_DebugLightingMode == DEBUGLIGHTINGMODE_PROBE_VOLUME_SAMPLED_SUBDIVISION)
-    {
-        aggregateLighting.direct.diffuse = real3(0.0, 0.0, 0.0);
-        aggregateLighting.direct.specular = real3(0.0, 0.0, 0.0);
-        aggregateLighting.indirect.specularReflected = real3(0.0, 0.0, 0.0);
-        aggregateLighting.indirect.specularTransmitted = real3(0.0, 0.0, 0.0);
-        builtinData.emissiveColor = real3(0.0, 0.0, 0.0);
-    }
-#endif
-}
-
 bool UseScreenSpaceShadow(DirectionalLightData light, float3 normalWS)
 {
     // Two different options are possible here
@@ -94,94 +227,6 @@ bool UseScreenSpaceShadow(DirectionalLightData light, float3 normalWS)
     bool validScreenSpaceShadow = (light.screenSpaceShadowIndex & SCREEN_SPACE_SHADOW_INDEX_MASK) != INVALID_SCREEN_SPACE_SHADOW;
     bool rayTracedShadow = (light.screenSpaceShadowIndex & RAY_TRACED_SCREEN_SPACE_SHADOW_FLAG) != 0;
     return (validScreenSpaceShadow && ((rayTracedShadow && visibleLight) || !rayTracedShadow));
-}
-
-void ApplyDebug(LightLoopContext context, PositionInputs posInput, BSDFData bsdfData, inout LightLoopOutput lightLoopOutput)
-{
-#ifdef DEBUG_DISPLAY
-    if (_DebugLightingMode == DEBUGLIGHTINGMODE_LUX_METER)
-    {
-        lightLoopOutput.specularLighting = float3(0.0, 0.0, 0.0); // Disable specular lighting
-        // Take the luminance
-        lightLoopOutput.diffuseLighting = Luminance(lightLoopOutput.diffuseLighting).xxx;
-    }
-    else if (_DebugLightingMode == DEBUGLIGHTINGMODE_VISUALIZE_CASCADE)
-    {
-        lightLoopOutput.specularLighting = float3(0.0, 0.0, 0.0);
-
-        const float3 s_CascadeColors[] = {
-            kDebugColorShadowCascade0.rgb,
-            kDebugColorShadowCascade1.rgb,
-            kDebugColorShadowCascade2.rgb,
-            kDebugColorShadowCascade3.rgb,
-            float3(1.0, 1.0, 1.0)
-        };
-
-        lightLoopOutput.diffuseLighting = Luminance(lightLoopOutput.diffuseLighting);
-        if (_DirectionalShadowIndex >= 0)
-        {
-            real alpha;
-            int cascadeCount;
-
-            int shadowSplitIndex = EvalShadow_GetSplitIndex(context.shadowContext, _DirectionalShadowIndex, posInput.positionWS, alpha, cascadeCount);
-            if (shadowSplitIndex >= 0)
-            {
-                SHADOW_TYPE shadow = 1.0;
-                if (_DirectionalShadowIndex >= 0)
-                {
-                    DirectionalLightData light = _DirectionalLightDatas[_DirectionalShadowIndex];
-
-#if defined(SCREEN_SPACE_SHADOWS_ON) && !defined(_SURFACE_TYPE_TRANSPARENT)
-                    if (UseScreenSpaceShadow(light, bsdfData.normalWS))
-                    {
-                        shadow = GetScreenSpaceColorShadow(posInput, light.screenSpaceShadowIndex).SHADOW_TYPE_SWIZZLE;
-                    }
-                    else
-#endif
-                    {
-                        float3 L = -light.forward;
-                        shadow = GetDirectionalShadowAttenuation(context.shadowContext,
-                                                             posInput.positionSS, posInput.positionWS, GetNormalForShadowBias(bsdfData),
-                                                             light.shadowIndex, L);
-                    }
-                }
-
-                float3 cascadeShadowColor = lerp(s_CascadeColors[shadowSplitIndex], s_CascadeColors[shadowSplitIndex + 1], alpha);
-                // We can't mix with the lighting as it can be HDR and it is hard to find a good lerp operation for this case that is still compliant with
-                // exposure. So disable exposure instead and replace color.
-                lightLoopOutput.diffuseLighting = cascadeShadowColor * Luminance(lightLoopOutput.diffuseLighting) * shadow;
-            }
-
-        }
-    }
-    else if (_DebugLightingMode == DEBUGLIGHTINGMODE_MATCAP_VIEW)
-    {
-        lightLoopOutput.specularLighting = float3(0.0, 0.0, 0.0);
-        float3 normalVS = mul((float3x3)UNITY_MATRIX_V, bsdfData.normalWS).xyz;
-
-        float3 V = GetWorldSpaceNormalizeViewDir(posInput.positionWS);
-        float3 R = reflect(V, bsdfData.normalWS);
-
-        float2 UV = saturate(normalVS.xy * 0.5f + 0.5f);
-
-        float4 defaultColor = GetDiffuseOrDefaultColor(bsdfData, 1.0);
-
-        if (defaultColor.a == 1.0)
-        {
-            UV = saturate(R.xy * 0.5f + 0.5f);
-        }
-
-        lightLoopOutput.diffuseLighting = SAMPLE_TEXTURE2D_LOD(_DebugMatCapTexture, s_linear_repeat_sampler, UV, 0).rgb * (_MatcapMixAlbedo > 0  ? defaultColor.rgb * _MatcapViewScale : 1.0f);
-
-    #ifdef OUTPUT_SPLIT_LIGHTING // Work as matcap view is only call in forward, OUTPUT_SPLIT_LIGHTING isn't define in deferred.compute
-        if (_EnableSubsurfaceScattering != 0 && ShouldOutputSplitLighting(bsdfData))
-        {
-            lightLoopOutput.specularLighting = lightLoopOutput.diffuseLighting;
-        }
-    #endif
-
-    }
-#endif
 }
 
 void LightLoop( float3 V, PositionInputs posInput, PreLightData preLightData, BSDFData bsdfData, BuiltinData builtinData, uint featureFlags,
@@ -706,3 +751,5 @@ void LightLoop( float3 V, PositionInputs posInput, PreLightData preLightData, BS
 
     ApplyDebug(context, posInput, bsdfData, lightLoopOutput);
 }
+
+#endif
