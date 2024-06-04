@@ -3,16 +3,6 @@
 
 #ifndef LIGHTLOOP_CS_HLSL
 #define LIGHTLOOP_CS_HLSL
-//
-// UnityEngine.Rendering.HighDefinition.LightFeatureFlags:  static fields
-//
-#define LIGHTFEATUREFLAGS_PUNCTUAL (4096)
-#define LIGHTFEATUREFLAGS_AREA (8192)
-#define LIGHTFEATUREFLAGS_DIRECTIONAL (16384)
-#define LIGHTFEATUREFLAGS_ENV (32768)
-#define LIGHTFEATUREFLAGS_SKY (65536)
-#define LIGHTFEATUREFLAGS_SSREFRACTION (131072)
-#define LIGHTFEATUREFLAGS_SSREFLECTION (262144)
 
 //
 // UnityEngine.Rendering.HighDefinition.LightDefinitions:  static fields

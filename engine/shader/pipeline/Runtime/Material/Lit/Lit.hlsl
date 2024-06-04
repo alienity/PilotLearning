@@ -3,8 +3,6 @@
 //-----------------------------------------------------------------------------
 
 // SurfaceData is define in Lit.cs which generate Lit.cs.hlsl
-#ifndef LIT_CS_HLSL
-#define LIT_CS_HLSL
 //
 // UnityEngine.Rendering.HighDefinition.Lit+MaterialFeatureFlags:  static fields
 //
@@ -15,65 +13,6 @@
 #define MATERIALFEATUREFLAGS_LIT_ANISOTROPY (16)
 #define MATERIALFEATUREFLAGS_LIT_IRIDESCENCE (32)
 #define MATERIALFEATUREFLAGS_LIT_CLEAR_COAT (64)
-
-//
-// UnityEngine.Rendering.HighDefinition.Lit+SurfaceData:  static fields
-//
-#define DEBUGVIEW_LIT_SURFACEDATA_MATERIAL_FEATURES (1000)
-#define DEBUGVIEW_LIT_SURFACEDATA_BASE_COLOR (1001)
-#define DEBUGVIEW_LIT_SURFACEDATA_SPECULAR_OCCLUSION (1002)
-#define DEBUGVIEW_LIT_SURFACEDATA_NORMAL (1003)
-#define DEBUGVIEW_LIT_SURFACEDATA_NORMAL_VIEW_SPACE (1004)
-#define DEBUGVIEW_LIT_SURFACEDATA_SMOOTHNESS (1005)
-#define DEBUGVIEW_LIT_SURFACEDATA_AMBIENT_OCCLUSION (1006)
-#define DEBUGVIEW_LIT_SURFACEDATA_METALLIC (1007)
-#define DEBUGVIEW_LIT_SURFACEDATA_COAT_MASK (1008)
-#define DEBUGVIEW_LIT_SURFACEDATA_SPECULAR_COLOR (1009)
-#define DEBUGVIEW_LIT_SURFACEDATA_DIFFUSION_PROFILE_HASH (1010)
-#define DEBUGVIEW_LIT_SURFACEDATA_SUBSURFACE_MASK (1011)
-#define DEBUGVIEW_LIT_SURFACEDATA_TRANSMISSION_MASK (1012)
-#define DEBUGVIEW_LIT_SURFACEDATA_THICKNESS (1013)
-#define DEBUGVIEW_LIT_SURFACEDATA_TANGENT (1014)
-#define DEBUGVIEW_LIT_SURFACEDATA_ANISOTROPY (1015)
-#define DEBUGVIEW_LIT_SURFACEDATA_IRIDESCENCE_LAYER_THICKNESS (1016)
-#define DEBUGVIEW_LIT_SURFACEDATA_IRIDESCENCE_MASK (1017)
-#define DEBUGVIEW_LIT_SURFACEDATA_GEOMETRIC_NORMAL (1018)
-#define DEBUGVIEW_LIT_SURFACEDATA_GEOMETRIC_NORMAL_VIEW_SPACE (1019)
-#define DEBUGVIEW_LIT_SURFACEDATA_INDEX_OF_REFRACTION (1020)
-#define DEBUGVIEW_LIT_SURFACEDATA_TRANSMITTANCE_COLOR (1021)
-#define DEBUGVIEW_LIT_SURFACEDATA_TRANSMITTANCE_ABSORPTION_DISTANCE (1022)
-#define DEBUGVIEW_LIT_SURFACEDATA_TRANSMITTANCE_MASK (1023)
-
-//
-// UnityEngine.Rendering.HighDefinition.Lit+BSDFData:  static fields
-//
-#define DEBUGVIEW_LIT_BSDFDATA_MATERIAL_FEATURES (1050)
-#define DEBUGVIEW_LIT_BSDFDATA_DIFFUSE_COLOR (1051)
-#define DEBUGVIEW_LIT_BSDFDATA_FRESNEL0 (1052)
-#define DEBUGVIEW_LIT_BSDFDATA_AMBIENT_OCCLUSION (1053)
-#define DEBUGVIEW_LIT_BSDFDATA_SPECULAR_OCCLUSION (1054)
-#define DEBUGVIEW_LIT_BSDFDATA_NORMAL_WS (1055)
-#define DEBUGVIEW_LIT_BSDFDATA_NORMAL_VIEW_SPACE (1056)
-#define DEBUGVIEW_LIT_BSDFDATA_PERCEPTUAL_ROUGHNESS (1057)
-#define DEBUGVIEW_LIT_BSDFDATA_COAT_MASK (1058)
-#define DEBUGVIEW_LIT_BSDFDATA_DIFFUSION_PROFILE_INDEX (1059)
-#define DEBUGVIEW_LIT_BSDFDATA_SUBSURFACE_MASK (1060)
-#define DEBUGVIEW_LIT_BSDFDATA_THICKNESS (1061)
-#define DEBUGVIEW_LIT_BSDFDATA_USE_THICK_OBJECT_MODE (1062)
-#define DEBUGVIEW_LIT_BSDFDATA_TRANSMITTANCE (1063)
-#define DEBUGVIEW_LIT_BSDFDATA_TANGENT_WS (1064)
-#define DEBUGVIEW_LIT_BSDFDATA_BITANGENT_WS (1065)
-#define DEBUGVIEW_LIT_BSDFDATA_ROUGHNESS_T (1066)
-#define DEBUGVIEW_LIT_BSDFDATA_ROUGHNESS_B (1067)
-#define DEBUGVIEW_LIT_BSDFDATA_ANISOTROPY (1068)
-#define DEBUGVIEW_LIT_BSDFDATA_IRIDESCENCE_THICKNESS (1069)
-#define DEBUGVIEW_LIT_BSDFDATA_IRIDESCENCE_MASK (1070)
-#define DEBUGVIEW_LIT_BSDFDATA_COAT_ROUGHNESS (1071)
-#define DEBUGVIEW_LIT_BSDFDATA_GEOMETRIC_NORMAL (1072)
-#define DEBUGVIEW_LIT_BSDFDATA_GEOMETRIC_NORMAL_VIEW_SPACE (1073)
-#define DEBUGVIEW_LIT_BSDFDATA_IOR (1074)
-#define DEBUGVIEW_LIT_BSDFDATA_ABSORPTION_COEFFICIENT (1075)
-#define DEBUGVIEW_LIT_BSDFDATA_TRANSMITTANCE_MASK (1076)
 
 // Generated from UnityEngine.Rendering.HighDefinition.Lit+SurfaceData
 // PackingRules = Exact
@@ -134,192 +73,14 @@ struct BSDFData
     float transmittanceMask;
 };
 
-//
-// Debug functions
-//
-void GetGeneratedSurfaceDataDebug(uint paramId, SurfaceData surfacedata, inout float3 result, inout bool needLinearToSRGB)
-{
-    switch (paramId)
-    {
-        case DEBUGVIEW_LIT_SURFACEDATA_MATERIAL_FEATURES:
-            result = GetIndexColor(surfacedata.materialFeatures);
-            break;
-        case DEBUGVIEW_LIT_SURFACEDATA_BASE_COLOR:
-            result = surfacedata.baseColor;
-            needLinearToSRGB = true;
-            break;
-        case DEBUGVIEW_LIT_SURFACEDATA_SPECULAR_OCCLUSION:
-            result = surfacedata.specularOcclusion.xxx;
-            break;
-        case DEBUGVIEW_LIT_SURFACEDATA_NORMAL:
-            result = IsNormalized(surfacedata.normalWS) ? surfacedata.normalWS * 0.5 + 0.5 : float3(1.0, 0.0, 0.0);
-            break;
-        case DEBUGVIEW_LIT_SURFACEDATA_NORMAL_VIEW_SPACE:
-            result = IsNormalized(surfacedata.normalWS) ? surfacedata.normalWS * 0.5 + 0.5 : float3(1.0, 0.0, 0.0);
-            break;
-        case DEBUGVIEW_LIT_SURFACEDATA_SMOOTHNESS:
-            result = surfacedata.perceptualSmoothness.xxx;
-            break;
-        case DEBUGVIEW_LIT_SURFACEDATA_AMBIENT_OCCLUSION:
-            result = surfacedata.ambientOcclusion.xxx;
-            break;
-        case DEBUGVIEW_LIT_SURFACEDATA_METALLIC:
-            result = surfacedata.metallic.xxx;
-            break;
-        case DEBUGVIEW_LIT_SURFACEDATA_COAT_MASK:
-            result = surfacedata.coatMask.xxx;
-            break;
-        case DEBUGVIEW_LIT_SURFACEDATA_SPECULAR_COLOR:
-            result = surfacedata.specularColor;
-            needLinearToSRGB = true;
-            break;
-        case DEBUGVIEW_LIT_SURFACEDATA_DIFFUSION_PROFILE_HASH:
-            result = GetIndexColor(surfacedata.diffusionProfileHash);
-            break;
-        case DEBUGVIEW_LIT_SURFACEDATA_SUBSURFACE_MASK:
-            result = surfacedata.subsurfaceMask.xxx;
-            break;
-        case DEBUGVIEW_LIT_SURFACEDATA_TRANSMISSION_MASK:
-            result = surfacedata.transmissionMask.xxx;
-            break;
-        case DEBUGVIEW_LIT_SURFACEDATA_THICKNESS:
-            result = surfacedata.thickness.xxx;
-            break;
-        case DEBUGVIEW_LIT_SURFACEDATA_TANGENT:
-            result = surfacedata.tangentWS * 0.5 + 0.5;
-            break;
-        case DEBUGVIEW_LIT_SURFACEDATA_ANISOTROPY:
-            result = surfacedata.anisotropy.xxx;
-            break;
-        case DEBUGVIEW_LIT_SURFACEDATA_IRIDESCENCE_LAYER_THICKNESS:
-            result = surfacedata.iridescenceThickness.xxx;
-            break;
-        case DEBUGVIEW_LIT_SURFACEDATA_IRIDESCENCE_MASK:
-            result = surfacedata.iridescenceMask.xxx;
-            break;
-        case DEBUGVIEW_LIT_SURFACEDATA_GEOMETRIC_NORMAL:
-            result = IsNormalized(surfacedata.geomNormalWS) ? surfacedata.geomNormalWS * 0.5 + 0.5 : float3(1.0, 0.0, 0.0);
-            break;
-        case DEBUGVIEW_LIT_SURFACEDATA_GEOMETRIC_NORMAL_VIEW_SPACE:
-            result = IsNormalized(surfacedata.geomNormalWS) ? surfacedata.geomNormalWS * 0.5 + 0.5 : float3(1.0, 0.0, 0.0);
-            break;
-        case DEBUGVIEW_LIT_SURFACEDATA_INDEX_OF_REFRACTION:
-            result = surfacedata.ior.xxx;
-            break;
-        case DEBUGVIEW_LIT_SURFACEDATA_TRANSMITTANCE_COLOR:
-            result = surfacedata.transmittanceColor;
-            break;
-        case DEBUGVIEW_LIT_SURFACEDATA_TRANSMITTANCE_ABSORPTION_DISTANCE:
-            result = surfacedata.atDistance.xxx;
-            break;
-        case DEBUGVIEW_LIT_SURFACEDATA_TRANSMITTANCE_MASK:
-            result = surfacedata.transmittanceMask.xxx;
-            break;
-    }
-}
-
-//
-// Debug functions
-//
-void GetGeneratedBSDFDataDebug(uint paramId, BSDFData bsdfdata, inout float3 result, inout bool needLinearToSRGB)
-{
-    switch (paramId)
-    {
-        case DEBUGVIEW_LIT_BSDFDATA_MATERIAL_FEATURES:
-            result = GetIndexColor(bsdfdata.materialFeatures);
-            break;
-        case DEBUGVIEW_LIT_BSDFDATA_DIFFUSE_COLOR:
-            result = bsdfdata.diffuseColor;
-            needLinearToSRGB = true;
-            break;
-        case DEBUGVIEW_LIT_BSDFDATA_FRESNEL0:
-            result = bsdfdata.fresnel0;
-            break;
-        case DEBUGVIEW_LIT_BSDFDATA_AMBIENT_OCCLUSION:
-            result = bsdfdata.ambientOcclusion.xxx;
-            break;
-        case DEBUGVIEW_LIT_BSDFDATA_SPECULAR_OCCLUSION:
-            result = bsdfdata.specularOcclusion.xxx;
-            break;
-        case DEBUGVIEW_LIT_BSDFDATA_NORMAL_WS:
-            result = IsNormalized(bsdfdata.normalWS) ? bsdfdata.normalWS * 0.5 + 0.5 : float3(1.0, 0.0, 0.0);
-            break;
-        case DEBUGVIEW_LIT_BSDFDATA_NORMAL_VIEW_SPACE:
-            result = IsNormalized(bsdfdata.normalWS) ? bsdfdata.normalWS * 0.5 + 0.5 : float3(1.0, 0.0, 0.0);
-            break;
-        case DEBUGVIEW_LIT_BSDFDATA_PERCEPTUAL_ROUGHNESS:
-            result = bsdfdata.perceptualRoughness.xxx;
-            break;
-        case DEBUGVIEW_LIT_BSDFDATA_COAT_MASK:
-            result = bsdfdata.coatMask.xxx;
-            break;
-        case DEBUGVIEW_LIT_BSDFDATA_DIFFUSION_PROFILE_INDEX:
-            result = GetIndexColor(bsdfdata.diffusionProfileIndex);
-            break;
-        case DEBUGVIEW_LIT_BSDFDATA_SUBSURFACE_MASK:
-            result = bsdfdata.subsurfaceMask.xxx;
-            break;
-        case DEBUGVIEW_LIT_BSDFDATA_THICKNESS:
-            result = bsdfdata.thickness.xxx;
-            break;
-        case DEBUGVIEW_LIT_BSDFDATA_USE_THICK_OBJECT_MODE:
-            result = (bsdfdata.useThickObjectMode) ? float3(1.0, 1.0, 1.0) : float3(0.0, 0.0, 0.0);
-            break;
-        case DEBUGVIEW_LIT_BSDFDATA_TRANSMITTANCE:
-            result = bsdfdata.transmittance;
-            break;
-        case DEBUGVIEW_LIT_BSDFDATA_TANGENT_WS:
-            result = bsdfdata.tangentWS * 0.5 + 0.5;
-            break;
-        case DEBUGVIEW_LIT_BSDFDATA_BITANGENT_WS:
-            result = bsdfdata.bitangentWS * 0.5 + 0.5;
-            break;
-        case DEBUGVIEW_LIT_BSDFDATA_ROUGHNESS_T:
-            result = bsdfdata.roughnessT.xxx;
-            break;
-        case DEBUGVIEW_LIT_BSDFDATA_ROUGHNESS_B:
-            result = bsdfdata.roughnessB.xxx;
-            break;
-        case DEBUGVIEW_LIT_BSDFDATA_ANISOTROPY:
-            result = bsdfdata.anisotropy.xxx;
-            break;
-        case DEBUGVIEW_LIT_BSDFDATA_IRIDESCENCE_THICKNESS:
-            result = bsdfdata.iridescenceThickness.xxx;
-            break;
-        case DEBUGVIEW_LIT_BSDFDATA_IRIDESCENCE_MASK:
-            result = bsdfdata.iridescenceMask.xxx;
-            break;
-        case DEBUGVIEW_LIT_BSDFDATA_COAT_ROUGHNESS:
-            result = bsdfdata.coatRoughness.xxx;
-            break;
-        case DEBUGVIEW_LIT_BSDFDATA_GEOMETRIC_NORMAL:
-            result = IsNormalized(bsdfdata.geomNormalWS) ? bsdfdata.geomNormalWS * 0.5 + 0.5 : float3(1.0, 0.0, 0.0);
-            break;
-        case DEBUGVIEW_LIT_BSDFDATA_GEOMETRIC_NORMAL_VIEW_SPACE:
-            result = IsNormalized(bsdfdata.geomNormalWS) ? bsdfdata.geomNormalWS * 0.5 + 0.5 : float3(1.0, 0.0, 0.0);
-            break;
-        case DEBUGVIEW_LIT_BSDFDATA_IOR:
-            result = bsdfdata.ior.xxx;
-            break;
-        case DEBUGVIEW_LIT_BSDFDATA_ABSORPTION_COEFFICIENT:
-            result = bsdfdata.absorptionCoefficient;
-            break;
-        case DEBUGVIEW_LIT_BSDFDATA_TRANSMITTANCE_MASK:
-            result = bsdfdata.transmittanceMask.xxx;
-            break;
-    }
-}
-
-#endif
-
 
 // Those define allow to include desired SSS/Transmission functions
 #define MATERIAL_INCLUDE_SUBSURFACESCATTERING
 #define MATERIAL_INCLUDE_TRANSMISSION
 #include "../../Material/BuiltinGIUtilities.hlsl"
-#include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/SubsurfaceScattering/SubsurfaceScattering.hlsl"
-#include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/NormalBuffer.hlsl"
-#include "Packages/com.unity.render-pipelines.core/ShaderLibrary/VolumeRendering.hlsl"
+//#include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/SubsurfaceScattering/SubsurfaceScattering.hlsl"
+#include "../../Material/NormalBuffer.hlsl"
+//#include "Packages/com.unity.render-pipelines.core/ShaderLibrary/VolumeRendering.hlsl"
 
 //-----------------------------------------------------------------------------
 // Configuration
@@ -330,80 +91,54 @@ void GetGeneratedBSDFDataDebug(uint paramId, BSDFData bsdfdata, inout float3 res
 
 #define LIT_USE_GGX_ENERGY_COMPENSATION
 
-// Enable reference mode for IBL and area lights
-// Both reference define below can be define only if LightLoop is present, else we get a compile error
-#ifdef HAS_LIGHTLOOP
-// #define LIT_DISPLAY_REFERENCE_AREA
-// #define LIT_DISPLAY_REFERENCE_IBL
-#endif
+//// Enable reference mode for IBL and area lights
+//// Both reference define below can be define only if LightLoop is present, else we get a compile error
+//#ifdef HAS_LIGHTLOOP
+//// #define LIT_DISPLAY_REFERENCE_AREA
+//// #define LIT_DISPLAY_REFERENCE_IBL
+//#endif
 
 //-----------------------------------------------------------------------------
 // Texture and constant buffer declaration
 //-----------------------------------------------------------------------------
 
-// GBuffer texture declaration
-TEXTURE2D_X(_GBufferTexture0);
-TEXTURE2D_X(_GBufferTexture1);
-TEXTURE2D_X(_GBufferTexture2);
-TEXTURE2D_X(_GBufferTexture3); // Bake lighting and/or emissive
-TEXTURE2D_X(_GBufferTexture4); // VTFeedbakc or Light layer or shadow mask
-TEXTURE2D_X(_GBufferTexture5); // Light layer or shadow mask
-TEXTURE2D_X(_GBufferTexture6); // shadow mask
+//// GBuffer texture declaration
+//TEXTURE2D_X(_GBufferTexture0);
+//TEXTURE2D_X(_GBufferTexture1);
+//TEXTURE2D_X(_GBufferTexture2);
+//TEXTURE2D_X(_GBufferTexture3); // Bake lighting and/or emissive
+//TEXTURE2D_X(_GBufferTexture4); // VTFeedbakc or Light layer or shadow mask
+//TEXTURE2D_X(_GBufferTexture5); // Light layer or shadow mask
+//TEXTURE2D_X(_GBufferTexture6); // shadow mask
 
 
-TEXTURE2D_X(_LightLayersTexture);
-#ifdef SHADOWS_SHADOWMASK
-TEXTURE2D_X(_ShadowMaskTexture); // Alias for shadow mask, so we don't need to know which gbuffer is used for shadow mask
-#endif
+//TEXTURE2D_X(_LightLayersTexture);
+//#ifdef SHADOWS_SHADOWMASK
+//TEXTURE2D_X(_ShadowMaskTexture); // Alias for shadow mask, so we don't need to know which gbuffer is used for shadow mask
+//#endif
 
-#include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/LTCAreaLight/LTCAreaLight.hlsl"
-#include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/PreIntegratedFGD/PreIntegratedFGD.hlsl"
+//#include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/LTCAreaLight/LTCAreaLight.hlsl"
+#include "../../Material/PreIntegratedFGD/PreIntegratedFGD.hlsl"
 
 //-----------------------------------------------------------------------------
 // Definition
 //-----------------------------------------------------------------------------
 
-#ifdef UNITY_VIRTUAL_TEXTURING
-    #define OUT_GBUFFER_VTFEEDBACK outGBuffer4
-    #define OUT_GBUFFER_OPTIONAL_SLOT_1 outGBuffer5
-    #define OUT_GBUFFER_OPTIONAL_SLOT_2 outGBuffer6
-    #if (SHADERPASS == SHADERPASS_GBUFFER)
-        #if defined(SHADER_API_PSSL)
-            //For exact packing on pssl, we want to write exact 16 bit unorm (respect exact bit packing).
-            //In some sony platforms, the default is FMT_16_ABGR, which would incur in loss of precision.
-            //Thus, when VT is enabled, we force FMT_32_ABGR
-            #pragma PSSL_target_output_format(target 4 FMT_32_ABGR)
-        #endif
-    #endif
-#else
-    #define OUT_GBUFFER_OPTIONAL_SLOT_1 outGBuffer4
-    #define OUT_GBUFFER_OPTIONAL_SLOT_2 outGBuffer5
-#endif
-
-#if defined(LIGHT_LAYERS) && defined(SHADOWS_SHADOWMASK)
-#define OUT_GBUFFER_LIGHT_LAYERS OUT_GBUFFER_OPTIONAL_SLOT_1
-#define OUT_GBUFFER_SHADOWMASK OUT_GBUFFER_OPTIONAL_SLOT_2
-#elif defined(LIGHT_LAYERS)
-#define OUT_GBUFFER_LIGHT_LAYERS OUT_GBUFFER_OPTIONAL_SLOT_1
-#elif defined(SHADOWS_SHADOWMASK)
-#define OUT_GBUFFER_SHADOWMASK OUT_GBUFFER_OPTIONAL_SLOT_1
-#endif
-
 #define HAS_REFRACTION (defined(_REFRACTION_PLANE) || defined(_REFRACTION_SPHERE) || defined(_REFRACTION_THIN))
 
 // It is safe to include this file after the G-Buffer macros above.
-#include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/MaterialGBufferMacros.hlsl"
+#include "../../Material/MaterialGBufferMacros.hlsl"
 
 //-----------------------------------------------------------------------------
 // Light and material classification for the deferred rendering path
 // Configure what kind of combination is supported
 //-----------------------------------------------------------------------------
 
-// Lighting architecture and material are suppose to be decoupled files.
-// However as we use material classification it is hard to be fully separated
-// the dependecy is define in this include where there is shared define for material and lighting in case of deferred material.
-// If a user do a lighting architecture without material classification, this can be remove
-#include "Packages/com.unity.render-pipelines.high-definition/Runtime/Lighting/LightLoop/LightLoop.cs.hlsl"
+//// Lighting architecture and material are suppose to be decoupled files.
+//// However as we use material classification it is hard to be fully separated
+//// the dependecy is define in this include where there is shared define for material and lighting in case of deferred material.
+//// If a user do a lighting architecture without material classification, this can be remove
+//#include "Packages/com.unity.render-pipelines.high-definition/Runtime/Lighting/LightLoop/LightLoop.cs.hlsl"
 
 // Combination need to be define in increasing "comlexity" order as define by FeatureFlagsToTileVariant
 static const uint kFeatureVariantFlags[NUM_FEATURE_VARIANTS] =
@@ -520,11 +255,11 @@ float GetAmbientOcclusionForMicroShadowing(BSDFData bsdfData)
     return sourceAO;
 }
 
-#include "Packages/com.unity.render-pipelines.high-definition/Runtime/Lighting/LightDefinition.cs.hlsl"
-#include "Packages/com.unity.render-pipelines.high-definition/Runtime/Lighting/Reflection/VolumeProjection.hlsl"
-#include "Packages/com.unity.render-pipelines.high-definition/Runtime/Lighting/ScreenSpaceLighting/ScreenSpaceTracing.hlsl"
-#include "Packages/com.unity.render-pipelines.high-definition/Runtime/Lighting/ScreenSpaceLighting/ScreenSpaceLighting.hlsl"
-#include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Refraction.hlsl"
+//#include "Packages/com.unity.render-pipelines.high-definition/Runtime/Lighting/LightDefinition.cs.hlsl"
+//#include "Packages/com.unity.render-pipelines.high-definition/Runtime/Lighting/Reflection/VolumeProjection.hlsl"
+//#include "Packages/com.unity.render-pipelines.high-definition/Runtime/Lighting/ScreenSpaceLighting/ScreenSpaceTracing.hlsl"
+//#include "Packages/com.unity.render-pipelines.high-definition/Runtime/Lighting/ScreenSpaceLighting/ScreenSpaceLighting.hlsl"
+//#include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Refraction.hlsl"
 
 #if HAS_REFRACTION
     // Note that this option is referred as "Box" in the UI, we are keeping _REFRACTION_PLANE as shader define to avoid complication with already created materials.
@@ -578,87 +313,16 @@ void FillMaterialTransparencyData(float3 baseColor, float metallic, float ior, f
     bsdfData.thickness = max(thickness, 0.0001);
 }
 
-// This function is use to help with debugging and must be implemented by any lit material
-// Implementer must take into account what are the current override component and
-// adjust SurfaceData properties accordingdly
-void ApplyDebugToSurfaceData(float3x3 tangentToWorld, inout SurfaceData surfaceData)
-{
-#ifdef DEBUG_DISPLAY
-    // Override value if requested by user
-    // this can be use also in case of debug lighting mode like diffuse only
-    bool overrideAlbedo = _DebugLightingAlbedo.x != 0.0;
-    bool overrideSmoothness = _DebugLightingSmoothness.x != 0.0;
-    bool overrideNormal = _DebugLightingNormal.x != 0.0;
-    bool overrideAO = _DebugLightingAmbientOcclusion.x != 0.0;
+//SSSData ConvertSurfaceDataToSSSData(SurfaceData surfaceData)
+//{
+//    SSSData sssData;
 
-    if (overrideAlbedo)
-    {
-        float3 overrideAlbedoValue = _DebugLightingAlbedo.yzw;
-        surfaceData.baseColor = overrideAlbedoValue;
-    }
+//    sssData.diffuseColor = surfaceData.baseColor;
+//    sssData.subsurfaceMask = surfaceData.subsurfaceMask;
+//    sssData.diffusionProfileIndex = FindDiffusionProfileIndex(surfaceData.diffusionProfileHash);
 
-    if (overrideSmoothness)
-    {
-        float overrideSmoothnessValue = _DebugLightingSmoothness.y;
-        surfaceData.perceptualSmoothness = overrideSmoothnessValue;
-    }
-
-    if (overrideNormal)
-    {
-        surfaceData.normalWS = tangentToWorld[2];
-    }
-
-    if (overrideAO)
-    {
-        float overrideAOValue = _DebugLightingAmbientOcclusion.y;
-        surfaceData.ambientOcclusion = overrideAOValue;
-    }
-
-    // There is no metallic with SSS and specular color mode
-    float metallic = HasFlag(surfaceData.materialFeatures, MATERIALFEATUREFLAGS_LIT_SPECULAR_COLOR | MATERIALFEATUREFLAGS_LIT_SUBSURFACE_SCATTERING | MATERIALFEATUREFLAGS_LIT_TRANSMISSION) ? 0.0 : surfaceData.metallic;
-
-    float3 diffuseColor = ComputeDiffuseColor(surfaceData.baseColor, metallic);
-    bool specularWorkflow = HasFlag(surfaceData.materialFeatures, MATERIALFEATUREFLAGS_LIT_SPECULAR_COLOR);
-    float3 specularColor =  specularWorkflow ? surfaceData.specularColor : ComputeFresnel0(surfaceData.baseColor, surfaceData.metallic, DEFAULT_SPECULAR_VALUE);
-
-    if (_DebugFullScreenMode == FULLSCREENDEBUGMODE_VALIDATE_DIFFUSE_COLOR)
-    {
-        surfaceData.baseColor = pbrDiffuseColorValidate(diffuseColor, specularColor, metallic > 0.0, !specularWorkflow).xyz;
-    }
-    else if (_DebugFullScreenMode == FULLSCREENDEBUGMODE_VALIDATE_SPECULAR_COLOR)
-    {
-        surfaceData.baseColor = pbrSpecularColorValidate(diffuseColor, specularColor, metallic > 0.0, !specularWorkflow).xyz;
-    }
-
-#endif
-}
-
-// This function is similar to ApplyDebugToSurfaceData but for BSDFData
-void ApplyDebugToBSDFData(inout BSDFData bsdfData)
-{
-#ifdef DEBUG_DISPLAY
-    // Override value if requested by user
-    // this can be use also in case of debug lighting mode like specular only
-    bool overrideSpecularColor = _DebugLightingSpecularColor.x != 0.0;
-
-    if (overrideSpecularColor)
-    {
-        float3 overrideSpecularColor = _DebugLightingSpecularColor.yzw;
-        bsdfData.fresnel0 = overrideSpecularColor;
-    }
-#endif
-}
-
-SSSData ConvertSurfaceDataToSSSData(SurfaceData surfaceData)
-{
-    SSSData sssData;
-
-    sssData.diffuseColor = surfaceData.baseColor;
-    sssData.subsurfaceMask = surfaceData.subsurfaceMask;
-    sssData.diffusionProfileIndex = FindDiffusionProfileIndex(surfaceData.diffusionProfileHash);
-
-    return sssData;
-}
+//    return sssData;
+//}
 
 NormalData ConvertSurfaceDataToNormalData(SurfaceData surfaceData)
 {
@@ -729,17 +393,17 @@ BSDFData ConvertSurfaceDataToBSDFData(uint2 positionSS, SurfaceData surfaceData)
 
     bsdfData.diffusionProfileIndex = FindDiffusionProfileIndex(surfaceData.diffusionProfileHash);
 
-    if (HasFlag(surfaceData.materialFeatures, MATERIALFEATUREFLAGS_LIT_SUBSURFACE_SCATTERING))
-    {
-        // Assign profile id and overwrite fresnel0
-        FillMaterialSSS(bsdfData.diffusionProfileIndex, surfaceData.subsurfaceMask, bsdfData);
-    }
+    //if (HasFlag(surfaceData.materialFeatures, MATERIALFEATUREFLAGS_LIT_SUBSURFACE_SCATTERING))
+    //{
+    //    // Assign profile id and overwrite fresnel0
+    //    FillMaterialSSS(bsdfData.diffusionProfileIndex, surfaceData.subsurfaceMask, bsdfData);
+    //}
 
-    if (HasFlag(surfaceData.materialFeatures, MATERIALFEATUREFLAGS_LIT_TRANSMISSION))
-    {
-        // Assign profile id and overwrite fresnel0
-        FillMaterialTransmission(bsdfData.diffusionProfileIndex, surfaceData.thickness, surfaceData.transmissionMask, bsdfData);
-    }
+    //if (HasFlag(surfaceData.materialFeatures, MATERIALFEATUREFLAGS_LIT_TRANSMISSION))
+    //{
+    //    // Assign profile id and overwrite fresnel0
+    //    FillMaterialTransmission(bsdfData.diffusionProfileIndex, surfaceData.thickness, surfaceData.transmissionMask, bsdfData);
+    //}
 
     if (HasFlag(surfaceData.materialFeatures, MATERIALFEATUREFLAGS_LIT_ANISOTROPY))
     {
@@ -773,9 +437,7 @@ BSDFData ConvertSurfaceDataToBSDFData(uint2 positionSS, SurfaceData surfaceData)
     #endif
                                  surfaceData.transmittanceMask, bsdfData);
 #endif
-
-    ApplyDebugToBSDFData(bsdfData);
-
+    
     return bsdfData;
 }
 
@@ -868,28 +530,28 @@ void EncodeIntoGBuffer( SurfaceData surfaceData
 
     if (HasFlag(surfaceData.materialFeatures, MATERIALFEATUREFLAGS_LIT_SUBSURFACE_SCATTERING | MATERIALFEATUREFLAGS_LIT_TRANSMISSION))
     {
-        // Reminder that during GBuffer pass we know statically material materialFeatures
-        if ((surfaceData.materialFeatures & (MATERIALFEATUREFLAGS_LIT_SUBSURFACE_SCATTERING | MATERIALFEATUREFLAGS_LIT_TRANSMISSION)) == (MATERIALFEATUREFLAGS_LIT_SUBSURFACE_SCATTERING | MATERIALFEATUREFLAGS_LIT_TRANSMISSION))
-            materialFeatureId = GBUFFER_LIT_TRANSMISSION_SSS;
-        else if ((surfaceData.materialFeatures & MATERIALFEATUREFLAGS_LIT_SUBSURFACE_SCATTERING) == MATERIALFEATUREFLAGS_LIT_SUBSURFACE_SCATTERING)
-            materialFeatureId = GBUFFER_LIT_SSS;
-        else
-            materialFeatureId = GBUFFER_LIT_TRANSMISSION;
+        //// Reminder that during GBuffer pass we know statically material materialFeatures
+        //if ((surfaceData.materialFeatures & (MATERIALFEATUREFLAGS_LIT_SUBSURFACE_SCATTERING | MATERIALFEATUREFLAGS_LIT_TRANSMISSION)) == (MATERIALFEATUREFLAGS_LIT_SUBSURFACE_SCATTERING | MATERIALFEATUREFLAGS_LIT_TRANSMISSION))
+        //    materialFeatureId = GBUFFER_LIT_TRANSMISSION_SSS;
+        //else if ((surfaceData.materialFeatures & MATERIALFEATUREFLAGS_LIT_SUBSURFACE_SCATTERING) == MATERIALFEATUREFLAGS_LIT_SUBSURFACE_SCATTERING)
+        //    materialFeatureId = GBUFFER_LIT_SSS;
+        //else
+        //    materialFeatureId = GBUFFER_LIT_TRANSMISSION;
 
-        // We perform the same encoding for SSS and transmission even if not used as it is the same cost
-        // Note that regarding EncodeIntoSSSBuffer, as the lit.shader IS the deferred shader (and the SSS fullscreen pass is based on deferred encoding),
-        // it know the details of the encoding, so it is fine to assume here how SSSBuffer0 is encoded
+        //// We perform the same encoding for SSS and transmission even if not used as it is the same cost
+        //// Note that regarding EncodeIntoSSSBuffer, as the lit.shader IS the deferred shader (and the SSS fullscreen pass is based on deferred encoding),
+        //// it know the details of the encoding, so it is fine to assume here how SSSBuffer0 is encoded
 
-        // For the SSS feature, the alpha channel is overwritten with (diffusionProfile | subsurfaceMask).
-        // It is done so that the SSS pass only has to read a single G-Buffer 0.
-        // We move specular occlusion to the red channel of the G-Buffer 2.
-        SSSData sssData = ConvertSurfaceDataToSSSData(surfaceData);
-        EncodeIntoSSSBuffer(sssData, positionSS, outGBuffer0);
+        //// For the SSS feature, the alpha channel is overwritten with (diffusionProfile | subsurfaceMask).
+        //// It is done so that the SSS pass only has to read a single G-Buffer 0.
+        //// We move specular occlusion to the red channel of the G-Buffer 2.
+        //SSSData sssData = ConvertSurfaceDataToSSSData(surfaceData);
+        //EncodeIntoSSSBuffer(sssData, positionSS, outGBuffer0);
 
-        // We duplicate storage of diffusion profile in G-Buffer 2.
-        // It allows us to delay reading the G-Buffer 0 until the end of the deferred lighting shader.
-        float transmissionMaskProfile = PackFloatInt8bit(surfaceData.transmissionMask, sssData.diffusionProfileIndex, 16);
-        outGBuffer2.rgb = float3(encodedSpecularOcclusion, surfaceData.thickness, transmissionMaskProfile);
+        //// We duplicate storage of diffusion profile in G-Buffer 2.
+        //// It allows us to delay reading the G-Buffer 0 until the end of the deferred lighting shader.
+        //float transmissionMaskProfile = PackFloatInt8bit(surfaceData.transmissionMask, sssData.diffusionProfileIndex, 16);
+        //outGBuffer2.rgb = float3(encodedSpecularOcclusion, surfaceData.thickness, transmissionMaskProfile);
     }
     else if (HasFlag(surfaceData.materialFeatures, MATERIALFEATUREFLAGS_LIT_ANISOTROPY))
     {

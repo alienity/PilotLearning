@@ -75,8 +75,6 @@ PackedVaryingsToPS VertTesselation(VaryingsToDS input)
 #include "Packages/com.unity.render-pipelines.high-definition/Runtime/RenderPipeline/ShaderPass/TessellationShare.hlsl"
 #endif
 
-#include "Packages/com.unity.render-pipelines.high-definition/Runtime/Debug/DebugDisplayMaterial.hlsl"
-
 //NOTE: some shaders set target1 to be
 //   Blend 1 SrcAlpha OneMinusSrcAlpha
 //The reason for this blend mode is to let virtual texturing alpha dither work.
