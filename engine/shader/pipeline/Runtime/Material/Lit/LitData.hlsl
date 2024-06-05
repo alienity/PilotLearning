@@ -11,12 +11,8 @@
 //-------------------------------------------------------------------------------------
 // Fill SurfaceData/Builtin data function
 //-------------------------------------------------------------------------------------
-#include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Sampling/SampleUVMapping.hlsl"
-#include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/MaterialUtilities.hlsl"
-#ifndef SHADER_STAGE_RAY_TRACING
-#include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/Decal/DecalUtilities.hlsl"
-#include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/Lit/LitDecalData.hlsl"
-#endif
+#include "../../ShaderLibrary/Sampling/SampleUVMapping.hlsl"
+#include "../../Material/MaterialUtilities.hlsl"
 
 //#define PROJECTED_SPACE_NDF_FILTERING
 
@@ -75,12 +71,12 @@ void GenerateLayerTexCoordBasisTB(FragInputs input, inout LayerTexCoord layerTex
     // TODO: Optimize! The compiler will not be able to remove the tangent space that are not use because it can't know due to our UVMapping constant we use for both base and details
     // To solve this we should track which UVSet is use for normal mapping... Maybe not as simple as it sounds
     SurfaceGradientGenBasisTB(vertexNormalWS, sigmaX, sigmaY, flipSign, input.texCoord1.xy, layerTexCoord.vertexTangentWS1, layerTexCoord.vertexBitangentWS1);
-    #if defined(_REQUIRE_UV2) || defined(_REQUIRE_UV3)
+#if defined(_REQUIRE_UV2) || defined(_REQUIRE_UV3)
     SurfaceGradientGenBasisTB(vertexNormalWS, sigmaX, sigmaY, flipSign, input.texCoord2.xy, layerTexCoord.vertexTangentWS2, layerTexCoord.vertexBitangentWS2);
-    #endif
-    #if defined(_REQUIRE_UV3)
+#endif
+#if defined(_REQUIRE_UV3)
     SurfaceGradientGenBasisTB(vertexNormalWS, sigmaX, sigmaY, flipSign, input.texCoord3.xy, layerTexCoord.vertexTangentWS3, layerTexCoord.vertexBitangentWS3);
-    #endif
+#endif
 }
 #endif
 
@@ -186,10 +182,10 @@ void GetLayerTexCoord(FragInputs input, inout LayerTexCoord layerTexCoord)
 }
 
 #if !defined(SHADER_STAGE_RAY_TRACING)
-#include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/Lit/LitDataDisplacement.hlsl"
+#include "../../Material/Lit/LitDataDisplacement.hlsl"
 #endif
 
-#include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/Lit/LitBuiltinData.hlsl"
+#include "../../Material/Lit/LitBuiltinData.hlsl"
 
 void GetSurfaceAndBuiltinData(FragInputs input, float3 V, inout PositionInputs posInput, out SurfaceData surfaceData, out BuiltinData builtinData RAY_TRACING_OPTIONAL_PARAMETERS)
 {
@@ -333,6 +329,6 @@ void GetSurfaceAndBuiltinData(FragInputs input, float3 V, inout PositionInputs p
     RAY_TRACING_OPTIONAL_ALPHA_TEST_PASS
 }
 #if !defined(SHADER_STAGE_RAY_TRACING)
-    #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/Lit/LitDataMeshModification.hlsl"
+    #include "../../Material/Lit/LitDataMeshModification.hlsl"
 #endif
 #endif // #ifndef LAYERED_LIT_SHADER

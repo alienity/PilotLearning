@@ -728,9 +728,7 @@ void LightLoop( float3 V, PositionInputs posInput, PreLightData preLightData, BS
         }
     }
 #endif
-
-    ApplyDebugToLighting(context, builtinData, aggregateLighting);
-
+    
     // Note: We can't apply the IndirectDiffuseMultiplier here as with GBuffer, Emissive is part of the bakeDiffuseLighting.
     // so IndirectDiffuseMultiplier is apply in PostInitBuiltinData or related location (like for probe volume)
     aggregateLighting.indirect.specularReflected *= GetIndirectSpecularMultiplier(builtinData.renderingLayers);
@@ -738,8 +736,6 @@ void LightLoop( float3 V, PositionInputs posInput, PreLightData preLightData, BS
     // Also Apply indiret diffuse (GI)
     // PostEvaluateBSDF will perform any operation wanted by the material and sum everything into diffuseLighting and specularLighting
     PostEvaluateBSDF(context, V, posInput, preLightData, bsdfData, builtinData, aggregateLighting, lightLoopOutput);
-
-    ApplyDebug(context, posInput, bsdfData, lightLoopOutput);
 }
 
 #endif
