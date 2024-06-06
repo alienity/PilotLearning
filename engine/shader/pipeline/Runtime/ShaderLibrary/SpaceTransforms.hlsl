@@ -68,7 +68,7 @@ float3 GetCameraRelativePositionWS(float3 positionWS)
     return positionWS;
 }
 
-real GetOddNegativeScale()
+float GetOddNegativeScale()
 {
     // FIXME: We should be able to just return unity_WorldTransformParams.w, but it is not
     // properly set at the moment, when doing ray-tracing; once this has been fixed in cpp,
@@ -152,9 +152,9 @@ float3 TransformWorldToObjectDir(float3 dirWS, bool doNormalize = true)
 }
 
 // Transforms vector from world space to view space
-real3 TransformWorldToViewDir(real3 dirWS, bool doNormalize = false)
+float3 TransformWorldToViewDir(float3 dirWS, bool doNormalize = false)
 {
-    float3 dirVS = mul((real3x3)GetWorldToViewMatrix(), dirWS).xyz;
+    float3 dirVS = mul((float3x3)GetWorldToViewMatrix(), dirWS).xyz;
     if (doNormalize)
         return normalize(dirVS);
 
@@ -162,9 +162,9 @@ real3 TransformWorldToViewDir(real3 dirWS, bool doNormalize = false)
 }
 
 // Transforms vector from view space to world space
-real3 TransformViewToWorldDir(real3 dirVS, bool doNormalize = false)
+float3 TransformViewToWorldDir(float3 dirVS, bool doNormalize = false)
 {
-    float3 dirWS = mul((real3x3)GetViewToWorldMatrix(), dirVS).xyz;
+    float3 dirWS = mul((float3x3)GetViewToWorldMatrix(), dirVS).xyz;
     if (doNormalize)
         return normalize(dirWS);
 
@@ -172,23 +172,23 @@ real3 TransformViewToWorldDir(real3 dirVS, bool doNormalize = false)
 }
 
 // Transforms normal from world space to view space
-real3 TransformWorldToViewNormal(real3 normalWS, bool doNormalize = false)
+float3 TransformWorldToViewNormal(float3 normalWS, bool doNormalize = false)
 {
     // assuming view matrix is uniformly scaled, we can use direction transform
     return TransformWorldToViewDir(normalWS, doNormalize);
 }
 
 // Transforms normal from view space to world space
-real3 TransformViewToWorldNormal(real3 normalVS, bool doNormalize = false)
+float3 TransformViewToWorldNormal(float3 normalVS, bool doNormalize = false)
 {
     // assuming view matrix is uniformly scaled, we can use direction transform
     return TransformViewToWorldDir(normalVS, doNormalize);
 }
 
 // Transforms vector from world space to homogenous space
-real3 TransformWorldToHClipDir(real3 directionWS, bool doNormalize = false)
+float3 TransformWorldToHClipDir(float3 directionWS, bool doNormalize = false)
 {
-    float3 dirHCS = mul((real3x3)GetWorldToHClipMatrix(), directionWS).xyz;
+    float3 dirHCS = mul((float3x3)GetWorldToHClipMatrix(), directionWS).xyz;
     if (doNormalize)
         return normalize(dirHCS);
 
@@ -225,21 +225,21 @@ float3 TransformWorldToObjectNormal(float3 normalWS, bool doNormalize = true)
 #endif
 }
 
-real3x3 CreateTangentToWorld(real3 normal, real3 tangent, real flipSign)
+float3x3 CreateTangentToWorld(float3 normal, float3 tangent, float flipSign)
 {
     // For odd-negative scale transforms we need to flip the sign
-    real sgn = flipSign * GetOddNegativeScale();
-    real3 bitangent = cross(normal, tangent) * sgn;
+    float sgn = flipSign * GetOddNegativeScale();
+    float3 bitangent = cross(normal, tangent) * sgn;
 
-    return real3x3(tangent, bitangent, normal);
+    return float3x3(tangent, bitangent, normal);
 }
 
 // this function is intended to work on Normals (handles non-uniform scale)
 // tangentToWorld is the matrix representing the transformation of a normal from tangent to world space
-real3 TransformTangentToWorld(float3 normalTS, real3x3 tangentToWorld, bool doNormalize = false)
+float3 TransformTangentToWorld(float3 normalTS, float3x3 tangentToWorld, bool doNormalize = false)
 {
     // Note matrix is in row major convention with left multiplication as it is build on the fly
-    real3 result = mul(normalTS, tangentToWorld);
+    float3 result = mul(normalTS, tangentToWorld);
     if (doNormalize)
         return SafeNormalize(result);
     return result;
@@ -250,7 +250,7 @@ real3 TransformTangentToWorld(float3 normalTS, real3x3 tangentToWorld, bool doNo
 // also decribed within comments in mikktspace.h and it follows implicitly
 // from the scalar triple product (google it).
 // tangentToWorld is the matrix representing the transformation of a normal from tangent to world space
-real3 TransformWorldToTangent(real3 normalWS, real3x3 tangentToWorld, bool doNormalize = true)
+float3 TransformWorldToTangent(float3 normalWS, float3x3 tangentToWorld, bool doNormalize = true)
 {
     // Note matrix is in row major convention with left multiplication as it is build on the fly
     float3 row0 = tangentToWorld[0];
@@ -267,8 +267,8 @@ real3 TransformWorldToTangent(real3 normalWS, real3x3 tangentToWorld, bool doNor
     // inverse transposed but scaled by determinant
     // Will remove transpose part by using matrix as the first arg in the mul() below
     // this makes it the exact inverse of what TransformTangentToWorld() does.
-    real3x3 matTBN_I_T = real3x3(col0, col1, col2);
-    real3 result = mul(matTBN_I_T, normalWS);
+    float3x3 matTBN_I_T = float3x3(col0, col1, col2);
+    float3 result = mul(matTBN_I_T, normalWS);
     if (doNormalize)
     {
         float sgn = determinant < 0.0 ? (-1.0) : 1.0;
@@ -280,10 +280,10 @@ real3 TransformWorldToTangent(real3 normalWS, real3x3 tangentToWorld, bool doNor
 
 // this function is intended to work on Vectors/Directions
 // tangentToWorld is the matrix representing the transformation of a normal from tangent to world space
-real3 TransformWorldToTangentDir(real3 dirWS, real3x3 tangentToWorld, bool doNormalize = false)
+float3 TransformWorldToTangentDir(float3 dirWS, float3x3 tangentToWorld, bool doNormalize = false)
 {
     // Note matrix is in row major convention with left multiplication as it is build on the fly
-    real3 result = mul(tangentToWorld, dirWS);
+    float3 result = mul(tangentToWorld, dirWS);
     if (doNormalize)
         return SafeNormalize(result);
     return result;
@@ -292,7 +292,7 @@ real3 TransformWorldToTangentDir(real3 dirWS, real3x3 tangentToWorld, bool doNor
 // this function is intended to work on Vectors/Directions
 // This function does the exact inverse of TransformWorldToTangentDir()
 // tangentToWorld is the matrix representing the transformation of a normal from tangent to world space
-real3 TransformTangentToWorldDir(real3 dirWS, real3x3 tangentToWorld, bool doNormalize = false)
+float3 TransformTangentToWorldDir(float3 dirWS, float3x3 tangentToWorld, bool doNormalize = false)
 {
     // Note matrix is in row major convention with left multiplication as it is build on the fly
     float3 row0 = tangentToWorld[0];
@@ -309,8 +309,8 @@ real3 TransformTangentToWorldDir(real3 dirWS, real3x3 tangentToWorld, bool doNor
     // inverse transposed but scaled by determinant
     // Will remove transpose part by using matrix as the second arg in the mul() below
     // this makes it the exact inverse of what TransformWorldToTangentDir() does.
-    real3x3 matTBN_I_T = real3x3(col0, col1, col2);
-    real3 result = mul(dirWS, matTBN_I_T);
+    float3x3 matTBN_I_T = float3x3(col0, col1, col2);
+    float3 result = mul(dirWS, matTBN_I_T);
     if (doNormalize)
     {
         float sgn = determinant < 0.0 ? (-1.0) : 1.0;
@@ -321,15 +321,15 @@ real3 TransformTangentToWorldDir(real3 dirWS, real3x3 tangentToWorld, bool doNor
 }
 
 // tangentToWorld is the matrix representing the transformation of a normal from tangent to world space
-real3 TransformTangentToObject(real3 dirTS, real3x3 tangentToWorld)
+float3 TransformTangentToObject(float3 dirTS, float3x3 tangentToWorld)
 {
     // Note matrix is in row major convention with left multiplication as it is build on the fly
-    real3 normalWS = TransformTangentToWorld(dirTS, tangentToWorld);
+    float3 normalWS = TransformTangentToWorld(dirTS, tangentToWorld);
     return TransformWorldToObjectNormal(normalWS);
 }
 
 // tangentToWorld is the matrix representing the transformation of a normal from tangent to world space
-real3 TransformObjectToTangent(real3 dirOS, real3x3 tangentToWorld)
+float3 TransformObjectToTangent(float3 dirOS, float3x3 tangentToWorld)
 {
     // Note matrix is in row major convention with left multiplication as it is build on the fly
 

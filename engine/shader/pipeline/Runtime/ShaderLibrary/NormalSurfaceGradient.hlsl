@@ -29,7 +29,7 @@ float3 SurfaceGradientFromTBN(float2 deriv, float3 vT, float3 vB)
 float3 SurfaceGradientFromPerturbedNormal(float3 nrmVertexNormal, float3 v)
 {
     float3 n = nrmVertexNormal;
-    float s = 1.0 / max(REAL_EPS, abs(dot(n, v)));
+    float s = 1.0 / max(FLT_EPS, abs(dot(n, v)));
     return s * (dot(n, v) * n - v);
 }
 
@@ -69,7 +69,7 @@ float2 ConvertTangentSpaceNormalToHeightMapGradient(float2 normalXY, float rcpNo
 
 float3 SurfaceGradientFromTangentSpaceNormalAndFromTBN(float3 normalTS, float3 vT, float3 vB, float scale = 1.0)
 {
-    float2 deriv = ConvertTangentSpaceNormalToHeightMapGradient(normalTS.xy, rcp(max(normalTS.z, REAL_EPS)), scale);
+    float2 deriv = ConvertTangentSpaceNormalToHeightMapGradient(normalTS.xy, rcp(max(normalTS.z, FLT_EPS)), scale);
     return SurfaceGradientFromTBN(deriv, vT, vB);
 }
 
@@ -77,7 +77,7 @@ float3 SurfaceGradientFromTangentSpaceNormalAndFromTBN(float3 normalTS, float3 v
 float2 UnpackDerivativeNormalRGB(float4 packedNormal, float scale = 1.0)
 {
     float3 vT   = packedNormal.rgb * 2.0 - 1.0; // Unsigned to signed
-    float  rcpZ = rcp(max(vT.z, REAL_EPS));      // Clamp to avoid INF
+    float  rcpZ = rcp(max(vT.z, FLT_EPS));      // Clamp to avoid INF
 
     return ConvertTangentSpaceNormalToHeightMapGradient(vT.xy, rcpZ, scale);
 }
