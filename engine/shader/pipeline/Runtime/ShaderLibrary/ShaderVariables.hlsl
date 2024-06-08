@@ -110,15 +110,15 @@ struct UnityPerDraw
 
 // ----------------------------------------------------------------------------
 /*
-TEXTURE2D_X(_CameraDepthTexture);
+TEXTURE2D(_CameraDepthTexture);
 SAMPLER(sampler_CameraDepthTexture);
 
 // Color pyramid (width, height, lodcount, Unused)
-TEXTURE2D_X(_ColorPyramidTexture);
+TEXTURE2D(_ColorPyramidTexture);
 
 // Custom pass buffer
-TEXTURE2D_X(_CustomDepthTexture);
-TEXTURE2D_X(_CustomColorTexture);
+TEXTURE2D(_CustomDepthTexture);
+TEXTURE2D(_CustomColorTexture);
 
 // Main lightmap
 TEXTURE2D(unity_Lightmap);
@@ -153,7 +153,7 @@ TEXTURE2D(_PrevExposureTexture);
 // Currently it's an atlas and it's layout can be found at ComputePackedMipChainInfo in HDUtils.cs
 float LoadCameraDepth(uint2 pixelCoords)
 {
-    return LOAD_TEXTURE2D_X_LOD(_CameraDepthTexture, pixelCoords, 0).r;
+    return LOAD_TEXTURE2D_LOD(_CameraDepthTexture, pixelCoords, 0).r;
 }
 
 float SampleCameraDepth(float2 uv)
@@ -163,12 +163,12 @@ float SampleCameraDepth(float2 uv)
 
 float3 LoadCameraColor(uint2 pixelCoords, uint lod)
 {
-    return LOAD_TEXTURE2D_X_LOD(_ColorPyramidTexture, pixelCoords, lod).rgb;
+    return LOAD_TEXTURE2D_LOD(_ColorPyramidTexture, pixelCoords, lod).rgb;
 }
 
 float3 SampleCameraColor(float2 uv, float lod)
 {
-    return SAMPLE_TEXTURE2D_X_LOD(_ColorPyramidTexture, s_trilinear_clamp_sampler, uv * _RTHandleScaleHistory.xy, lod).rgb;
+    return SAMPLE_TEXTURE2D_LOD(_ColorPyramidTexture, s_trilinear_clamp_sampler, uv * _RTHandleScaleHistory.xy, lod).rgb;
 }
 
 float3 LoadCameraColor(uint2 pixelCoords)
@@ -183,17 +183,17 @@ float3 SampleCameraColor(float2 uv)
 
 float4 SampleCustomColor(float2 uv)
 {
-    return SAMPLE_TEXTURE2D_X_LOD(_CustomColorTexture, s_trilinear_clamp_sampler, uv * _RTHandleScale.xy, 0);
+    return SAMPLE_TEXTURE2D_LOD(_CustomColorTexture, s_trilinear_clamp_sampler, uv * _RTHandleScale.xy, 0);
 }
 
 float4 LoadCustomColor(uint2 pixelCoords)
 {
-    return LOAD_TEXTURE2D_X_LOD(_CustomColorTexture, pixelCoords, 0);
+    return LOAD_TEXTURE2D_LOD(_CustomColorTexture, pixelCoords, 0);
 }
 
 float LoadCustomDepth(uint2 pixelCoords)
 {
-    return LOAD_TEXTURE2D_X_LOD(_CustomDepthTexture, pixelCoords, 0).r;
+    return LOAD_TEXTURE2D_LOD(_CustomDepthTexture, pixelCoords, 0).r;
 }
 
 float SampleCustomDepth(float2 uv)
@@ -537,9 +537,9 @@ StructuredBuffer<float4> _AmbientProbeData;
 #define _FogColor           _FogColor
 
 // ShaderVariablesScreenSpaceLighting.hlsl
-TEXTURE2D_X(_AmbientOcclusionTexture);
-TEXTURE2D_X(_CameraMotionVectorsTexture);
-TEXTURE2D_X(_SsrLightingTexture);
+TEXTURE2D(_AmbientOcclusionTexture);
+TEXTURE2D(_CameraMotionVectorsTexture);
+TEXTURE2D(_SsrLightingTexture);
 
 // ShaderVariablesDecal.hlsl
 StructuredBuffer<DecalData> _DecalDatas;

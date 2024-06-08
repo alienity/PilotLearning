@@ -15,7 +15,7 @@ struct NormalData
 };
 
 // NormalBuffer texture declaration
-TEXTURE2D_X(_NormalBufferTexture);
+TEXTURE2D(_NormalBufferTexture);
 
 void EncodeIntoNormalBuffer(NormalData normalData, out float4 outNormalBuffer0)
 {
@@ -45,7 +45,7 @@ void DecodeFromNormalBuffer(float4 normalBuffer, out NormalData normalData)
 
 void DecodeFromNormalBuffer(uint2 positionSS, out NormalData normalData)
 {
-    float4 normalBuffer = LOAD_TEXTURE2D_X(_NormalBufferTexture, positionSS);
+    float4 normalBuffer = LOAD_TEXTURE2D(_NormalBufferTexture, positionSS);
     DecodeFromNormalBuffer(normalBuffer, normalData);
 }
 

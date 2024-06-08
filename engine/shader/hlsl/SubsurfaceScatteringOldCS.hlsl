@@ -37,15 +37,15 @@
 
 int _SssSampleBudget;
 
-TEXTURE2D_X(_DepthTexture);                           // Z-buffer
-TEXTURE2D_X(_IrradianceSource);                       // Includes transmitted light
+TEXTURE2D(_DepthTexture);                           // Z-buffer
+TEXTURE2D(_IrradianceSource);                       // Includes transmitted light
 
 StructuredBuffer<uint>  _CoarseStencilBuffer;
 
 #ifdef USE_INTERMEDIATE_BUFFER
-    RW_TEXTURE2D_X(float4, _CameraFilteringTexture);  // Target texture
+    RW_TEXTURE2D(float4, _CameraFilteringTexture);  // Target texture
 #else
-    RW_TEXTURE2D_X(float4, _CameraColorTexture);      // Target texture
+    RW_TEXTURE2D(float4, _CameraColorTexture);      // Target texture
 #endif
 
 //--------------------------------------------------------------------------------------------------
@@ -79,8 +79,8 @@ float4 LoadSampleFromCacheMemory(int2 cacheCoord)
 
 float4 LoadSampleFromVideoMemory(int2 pixelCoord)
 {
-    float3 irradiance = LOAD_TEXTURE2D_X(_IrradianceSource, pixelCoord).rgb;
-    float  depth      = LOAD_TEXTURE2D_X(_DepthTexture,     pixelCoord).r;
+    float3 irradiance = LOAD_TEXTURE2D(_IrradianceSource, pixelCoord).rgb;
+    float  depth      = LOAD_TEXTURE2D(_DepthTexture,     pixelCoord).r;
 
     return float4(irradiance, depth);
 }
@@ -219,9 +219,9 @@ void EvaluateSample(uint i, uint n, int2 pixelCoord, int2 cacheOffset,
 void StoreResult(uint2 pixelCoord, float3 irradiance)
 {
 #ifdef USE_INTERMEDIATE_BUFFER
-    _CameraFilteringTexture[COORD_TEXTURE2D_X(pixelCoord)] = float4(irradiance, 1);
+    _CameraFilteringTexture[COORD_TEXTURE2D(pixelCoord)] = float4(irradiance, 1);
 #else
-    _CameraColorTexture[COORD_TEXTURE2D_X(pixelCoord)]    += float4(irradiance, 0);
+    _CameraColorTexture[COORD_TEXTURE2D(pixelCoord)]    += float4(irradiance, 0);
 #endif
 }
 
@@ -269,14 +269,14 @@ void SubsurfaceScattering(uint3 groupId          : SV_GroupID,
 
     if (!processGroup) { return; }
 
-    float3 centerIrradiance  = LOAD_TEXTURE2D_X(_IrradianceSource, pixelCoord).rgb;
+    float3 centerIrradiance  = LOAD_TEXTURE2D(_IrradianceSource, pixelCoord).rgb;
     float  centerDepth       = 0;
     bool   passedStencilTest = TestLightingForSSS(centerIrradiance);
 
     // Save some bandwidth by only loading depth values for SSS pixels.
     if (passedStencilTest)
     {
-        centerDepth = LOAD_TEXTURE2D_X(_DepthTexture, pixelCoord).r;
+        centerDepth = LOAD_TEXTURE2D(_DepthTexture, pixelCoord).r;
     }
 
 #if SSS_USE_LDS_CACHE
@@ -320,13 +320,13 @@ void SubsurfaceScattering(uint3 groupId          : SV_GroupID,
 
         uint2  cacheCoord2 = 2 * (startQuad + quadCoord) + DeinterleaveQuad(laneIndex);
         int2   pixelCoord2 = (int2)(groupOffset + cacheCoord2) - TEXTURE_CACHE_BORDER;
-        float3 irradiance2 = LOAD_TEXTURE2D_X(_IrradianceSource, pixelCoord2).rgb;
+        float3 irradiance2 = LOAD_TEXTURE2D(_IrradianceSource, pixelCoord2).rgb;
         float  depth2      = 0;
 
         // Save some bandwidth by only loading depth values for SSS pixels.
         if (TestLightingForSSS(irradiance2))
         {
-            depth2 = LOAD_TEXTURE2D_X(_DepthTexture, pixelCoord2).r;
+            depth2 = LOAD_TEXTURE2D(_DepthTexture, pixelCoord2).r;
         }
 
         // Populate the border region of the LDS cache.

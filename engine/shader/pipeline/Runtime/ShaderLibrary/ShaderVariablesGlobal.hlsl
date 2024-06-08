@@ -17,6 +17,21 @@
 #define DEFAULT_RENDERING_LAYER_MASK (257)
 #define DEFAULT_DECAL_LAYERS (255)
 
+struct PerRenderableMeshData
+{
+    float4x4 worldFromModelMatrix;
+    float4x4 modelFromWorldMatrix;
+    float4x4 prevWorldFromModelMatrix;
+    float4x4 prevModelFromWorldMatrix;
+    D3D12_VERTEX_BUFFER_VIEW vertexBuffer;
+    D3D12_INDEX_BUFFER_VIEW indexBuffer;
+    D3D12_DRAW_INDEXED_ARGUMENTS drawIndexedArguments;
+    float3 _padding_drawArguments;
+    BoundingBox boundingBox;
+    uint perMaterialViewIndexBufferIndex;
+    uint3 _padding_materialIndex2;
+};
+
 struct ShaderVariablesGlobal
 {
     float4x4 _ViewMatrix;

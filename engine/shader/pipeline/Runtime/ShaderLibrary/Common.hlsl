@@ -1,6 +1,8 @@
 #ifndef COMMON_INCLUDED
 #define COMMON_INCLUDED
 
+#include "./API//D3D12.hlsl"
+
 #include "Macros.hlsl"
 #include "Random.hlsl"
 
@@ -1025,6 +1027,736 @@ float2 RepeatOctahedralUV(float u, float v)
     }
 
     return uv;
+}
+
+// ----------------------------------------------------------------------------
+// Custom utilities
+// ----------------------------------------------------------------------------
+
+float3x3 Cofactor(const float3x3 m)
+{
+    float a = m[0][0];
+    float b = m[1][0];
+    float c = m[2][0];
+    float d = m[0][1];
+    float e = m[1][1];
+    float f = m[2][1];
+    float g = m[0][2];
+    float h = m[1][2];
+    float i = m[2][2];
+
+    float3x3 cof;
+    cof[0][0] = e * i - f * h;
+    cof[0][1] = c * h - b * i;
+    cof[0][2] = b * f - c * e;
+    cof[1][0] = f * g - d * i;
+    cof[1][1] = a * i - c * g;
+    cof[1][2] = c * d - a * f;
+    cof[2][0] = d * h - e * g;
+    cof[2][1] = b * g - a * h;
+    cof[2][2] = a * e - b * d;
+    return cof;
+}
+
+float3 Faceforward(float3 n, float3 v)
+{
+    if(dot(n, v) < 0.0f)
+        return -n;
+    else
+        return n;
+}
+
+float SphericalTheta(float3 v)
+{
+    return acos(clamp(v.z, -1.0f, 1.0f));
+}
+
+float SphericalPhi(float3 v)
+{
+    float p = atan2(v.y, v.x);
+    if(p < 0)
+        return p + TWO_PI;
+    else
+        return p;
+}
+
+void CoordinateSystem(float3 v1, out float3 v2, out float3 v3)
+{
+    float sign = (v1.z >= 0.0f) * 2.0f - 1.0f; // copysign(1.0f, v1.z); // No HLSL support yet
+    float a	   = -1.0f / (sign + v1.z);
+    float b	   = v1.x * v1.y * a;
+    v2		   = float3(1.0f + sign * v1.x * v1.x * a, sign * b, -sign * v1.x);
+    v3		   = float3(b, sign + v1.y * v1.y * a, -v1.y);
+}
+
+struct Frame
+{
+    float3 x;
+    float3 y;
+    float3 z;
+
+    float3 ToWorld(float3 v) { return x * v.x + y * v.y + z * v.z; }
+    float3 ToLocal(float3 v) { return float3(dot(v, x), dot(v, y), dot(v, z)); }
+};
+
+Frame InitFrameFromZ(float3 z)
+{
+    Frame frame;
+    frame.z = z;
+    CoordinateSystem(frame.z, frame.x, frame.y);
+    return frame;
+}
+
+Frame InitFrameFromXY(float3 x, float3 y)
+{
+    Frame frame;
+    frame.x = x;
+    frame.y = y;
+    frame.z = cross(x, y);
+    return frame;
+}
+
+#define PLANE_INTERSECTION_POSITIVE_HALFSPACE 0
+#define PLANE_INTERSECTION_NEGATIVE_HALFSPACE 1
+#define PLANE_INTERSECTION_INTERSECTING		  2
+
+#define CONTAINMENT_DISJOINT				  0
+#define CONTAINMENT_INTERSECTS				  1
+#define CONTAINMENT_CONTAINS				  2
+
+// ax + by + cz = d where d = dot(n, P)
+struct Plane
+{
+    float3 Normal; // Plane normal. Points x on the plane satisfy dot(n, x) = d
+    float  Offset; // d = dot(n, p) for a given point p on the plane
+};
+
+struct BSphere
+{
+    float3 Center;
+    float  Radius;
+
+    bool Intersects(BSphere Other)
+    {
+        // The distance between the sphere centers is computed and compared
+        // against the sum of the sphere radii. To avoid an square root operation, the
+        // squared distances are compared with squared sum radii instead.
+        float3 d		 = Center - Other.Center;
+        float  dist2	 = dot(d, d);
+        float  radiusSum = Radius + Other.Radius;
+        float  r2		 = radiusSum * radiusSum;
+        return dist2 <= r2;
+    }
+};
+
+struct BoundingBox
+{
+    float3 Center;
+    float  _Padding_Center;
+    float3 Extents;
+    float  _Padding_Extents;
+
+    bool Intersects(BoundingBox Other)
+    {
+        float3 minA = Center - Extents;
+        float3 maxA = Center + Extents;
+
+        float3 minB = Other.Center - Other.Extents;
+        float3 maxB = Other.Center + Other.Extents;
+
+        // All axis needs to overlap for a intersection
+        return maxA.x >= minB.x && minA.x <= maxB.x && // Overlap on x-axis?
+               maxA.y >= minB.y && minA.y <= maxB.y && // Overlap on y-axis?
+               maxA.z >= minB.z && minA.z <= maxB.z;   // Overlap on z-axis?
+    }
+
+    // https://stackoverflow.com/questions/6053522/how-to-recalculate-axis-aligned-bounding-box-after-translate-rotate
+    void Transform(float4x4 m, inout BoundingBox b)
+    {
+        //float3 t = m[3].xyz;
+        float3 t = float3(m[0][3], m[1][3], m[2][3]);
+
+        b.Center  = t;
+        b.Extents = float3(0.0f, 0.0f, 0.0f);
+        for (int i = 0; i < 3; ++i)
+        {
+            for (int j = 0; j < 3; ++j)
+            {
+                b.Center[i] += m[i][j] * Center[j];
+                b.Extents[i] += abs(m[i][j]) * Extents[j];
+            }
+        }
+    }
+};
+
+Plane ComputePlane(float3 a, float3 b, float3 c)
+{
+    Plane plane;
+    plane.Normal = normalize(cross(b - a, c - a));
+    plane.Offset = dot(plane.Normal, a);
+    return plane;
+}
+
+struct Frustum
+{
+    Plane Left;	  // -x
+    Plane Right;  // +x
+    Plane Bottom; // -y
+    Plane Top;	  // +y
+    Plane Near;	  // -z
+    Plane Far;	  // +z
+};
+
+int BoundingSphereToPlane(BSphere s, Plane p)
+{
+    // Compute signed distance from plane to sphere center
+    float sd = dot(s.Center, p.Normal) - p.Offset;
+    if (sd > s.Radius)
+    {
+        return PLANE_INTERSECTION_POSITIVE_HALFSPACE;
+    }
+    if (sd < -s.Radius)
+    {
+        return PLANE_INTERSECTION_NEGATIVE_HALFSPACE;
+    }
+    return PLANE_INTERSECTION_INTERSECTING;
+}
+
+int BoundingBoxToPlane(BoundingBox b, Plane p)
+{
+	// Compute signed distance from plane to box center
+	float sd = dot(b.Center, p.Normal) - p.Offset;
+
+	// Compute the projection interval radius of b onto L(t) = b.Center + t * p.Normal
+	// Projection radii r_i of the 8 bounding box vertices
+	// r_i = dot((V_i - C), n)
+	// r_i = dot((C +- e0*u0 +- e1*u1 +- e2*u2 - C), n)
+	// Cancel C and distribute dot product
+	// r_i = +-(dot(e0*u0, n)) +-(dot(e1*u1, n)) +-(dot(e2*u2, n))
+	// We take the maximum position radius by taking the absolute value of the terms, we assume Extents to be positive
+	// r = e0*|dot(u0, n)| + e1*|dot(u1, n)| + e2*|dot(u2, n)|
+	// When the separating axis vector Normal is not a unit vector, we need to divide the radii by the length(Normal)
+	// u0,u1,u2 are the local axes of the box, which is = [(1,0,0), (0,1,0), (0,0,1)] respectively for axis aligned bb
+	float r = dot(b.Extents, abs(p.Normal));
+
+	if (sd > r)
+	{
+		return PLANE_INTERSECTION_POSITIVE_HALFSPACE;
+	}
+	if (sd < -r)
+	{
+		return PLANE_INTERSECTION_NEGATIVE_HALFSPACE;
+	}
+	return PLANE_INTERSECTION_INTERSECTING;
+}
+
+int FrustumContainsBoundingSphere(Frustum f, BSphere s)
+{
+	int	 p0			= BoundingSphereToPlane(s, f.Left);
+	int	 p1			= BoundingSphereToPlane(s, f.Right);
+	int	 p2			= BoundingSphereToPlane(s, f.Bottom);
+	int	 p3			= BoundingSphereToPlane(s, f.Top);
+	int	 p4			= BoundingSphereToPlane(s, f.Near);
+	int	 p5			= BoundingSphereToPlane(s, f.Far);
+	bool anyOutside = p0 == PLANE_INTERSECTION_NEGATIVE_HALFSPACE;
+	anyOutside |= p1 == PLANE_INTERSECTION_NEGATIVE_HALFSPACE;
+	anyOutside |= p2 == PLANE_INTERSECTION_NEGATIVE_HALFSPACE;
+	anyOutside |= p3 == PLANE_INTERSECTION_NEGATIVE_HALFSPACE;
+	anyOutside |= p4 == PLANE_INTERSECTION_NEGATIVE_HALFSPACE;
+	anyOutside |= p5 == PLANE_INTERSECTION_NEGATIVE_HALFSPACE;
+	bool allInside = p0 == PLANE_INTERSECTION_POSITIVE_HALFSPACE;
+	allInside &= p1 == PLANE_INTERSECTION_POSITIVE_HALFSPACE;
+	allInside &= p2 == PLANE_INTERSECTION_POSITIVE_HALFSPACE;
+	allInside &= p3 == PLANE_INTERSECTION_POSITIVE_HALFSPACE;
+	allInside &= p4 == PLANE_INTERSECTION_POSITIVE_HALFSPACE;
+	allInside &= p5 == PLANE_INTERSECTION_POSITIVE_HALFSPACE;
+
+	if (anyOutside)
+	{
+		return CONTAINMENT_DISJOINT;
+	}
+
+	if (allInside)
+	{
+		return CONTAINMENT_CONTAINS;
+	}
+
+	return CONTAINMENT_INTERSECTS;
+}
+
+int FrustumContainsBoundingBox(Frustum f, BoundingBox b)
+{
+	int	 p0			= BoundingBoxToPlane(b, f.Left);
+	int	 p1			= BoundingBoxToPlane(b, f.Right);
+	int	 p2			= BoundingBoxToPlane(b, f.Bottom);
+	int	 p3			= BoundingBoxToPlane(b, f.Top);
+	int	 p4			= BoundingBoxToPlane(b, f.Near);
+	int	 p5			= BoundingBoxToPlane(b, f.Far);
+	bool anyOutside = p0 == PLANE_INTERSECTION_NEGATIVE_HALFSPACE;
+	anyOutside |= p1 == PLANE_INTERSECTION_NEGATIVE_HALFSPACE;
+	anyOutside |= p2 == PLANE_INTERSECTION_NEGATIVE_HALFSPACE;
+	anyOutside |= p3 == PLANE_INTERSECTION_NEGATIVE_HALFSPACE;
+	anyOutside |= p4 == PLANE_INTERSECTION_NEGATIVE_HALFSPACE;
+	anyOutside |= p5 == PLANE_INTERSECTION_NEGATIVE_HALFSPACE;
+	bool allInside = p0 == PLANE_INTERSECTION_POSITIVE_HALFSPACE;
+	allInside &= p1 == PLANE_INTERSECTION_POSITIVE_HALFSPACE;
+	allInside &= p2 == PLANE_INTERSECTION_POSITIVE_HALFSPACE;
+	allInside &= p3 == PLANE_INTERSECTION_POSITIVE_HALFSPACE;
+	allInside &= p4 == PLANE_INTERSECTION_POSITIVE_HALFSPACE;
+	allInside &= p5 == PLANE_INTERSECTION_POSITIVE_HALFSPACE;
+
+	if (anyOutside)
+	{
+		return CONTAINMENT_DISJOINT;
+	}
+
+	if (allInside)
+	{
+		return CONTAINMENT_CONTAINS;
+	}
+
+	return CONTAINMENT_INTERSECTS;
+}
+
+Frustum ExtractPlanesDX(const float4x4 mvp)
+{
+    Frustum frustum;
+
+    // Left clipping plane
+    frustum.Left.Normal.x = mvp[3][0] + mvp[0][0];
+    frustum.Left.Normal.y = mvp[3][1] + mvp[0][1];
+    frustum.Left.Normal.z = mvp[3][2] + mvp[0][2];
+    frustum.Left.Offset   = -(mvp[3][3] + mvp[0][3]);
+    // Right clipping plane
+    frustum.Right.Normal.x = mvp[3][0] - mvp[0][0];
+    frustum.Right.Normal.y = mvp[3][1] - mvp[0][1];
+    frustum.Right.Normal.z = mvp[3][2] - mvp[0][2];
+    frustum.Right.Offset   = -(mvp[3][3] - mvp[0][3]);
+    // Bottom clipping plane
+    frustum.Bottom.Normal.x = mvp[3][0] + mvp[1][0];
+    frustum.Bottom.Normal.y = mvp[3][1] + mvp[1][1];
+    frustum.Bottom.Normal.z = mvp[3][2] + mvp[1][2];
+    frustum.Bottom.Offset   = -(mvp[3][3] + mvp[1][3]);
+    // Top clipping plane
+    frustum.Top.Normal.x = mvp[3][0] - mvp[1][0];
+    frustum.Top.Normal.y = mvp[3][1] - mvp[1][1];
+    frustum.Top.Normal.z = mvp[3][2] - mvp[1][2];
+    frustum.Top.Offset   = -(mvp[3][3] - mvp[1][3]);
+    // Far clipping plane
+    frustum.Far.Normal.x = mvp[2][0];
+    frustum.Far.Normal.y = mvp[2][1];
+    frustum.Far.Normal.z = mvp[2][2];
+    frustum.Far.Offset   = -(mvp[2][3]);
+    // Near clipping plane
+    frustum.Near.Normal.x = mvp[3][0] - mvp[2][0];
+    frustum.Near.Normal.y = mvp[3][1] - mvp[2][1];
+    frustum.Near.Normal.z = mvp[3][2] - mvp[2][2];
+    frustum.Near.Offset   = -(mvp[3][3] - mvp[2][3]);
+
+    return frustum;
+}
+
+#define PX  0     // left            +----+
+#define NX  1     // right           | PY |
+#define PY  2     // bottom     +----+----+----+----+
+#define NY  3     // top        | NX | PZ | PX | NZ |
+#define PZ  4     // back       +----+----+----+----+
+#define NZ  5     // front           | NY |
+                  //                 +----+
+
+#define Face uint
+
+struct CubemapAddress
+{
+    Face face;
+    float2 st;
+};
+
+float3 GetDirectionForCubemap(uint face, float2 uv)
+{
+    // map [0, dim] to [-1,1] with (-1,-1) at bottom left
+    float cx = (uv.x * 2.0) - 1;
+    float cy = 1 - (uv.y * 2.0);    // <- not entirely sure about this bit
+
+    float3 dir;
+    const float l = sqrt(cx * cx + cy * cy + 1);
+    switch (face) 
+    {
+    case 0:  dir = float3(   1, cy, -cx ); break;  // PX
+    case 1:  dir = float3(  -1, cy,  cx ); break;  // NX
+    case 2:  dir = float3(  cx,  1, -cy ); break;  // PY
+    case 3:  dir = float3(  cx, -1,  cy ); break;  // NY
+    case 4:  dir = float3(  cx, cy,   1 ); break;  // PZ
+    case 5:  dir = float3( -cx, cy,  -1 ); break;  // NZ
+    default: dir = float3(0, 0, 0); break;
+    }
+    return dir * (1 / l);
+}
+
+float3 GetDirectionForCubemap( uint cubeDim, uint face, uint ux, uint uy )
+{
+    return GetDirectionForCubemap( face, float2(ux+0.5,uy+0.5) / cubeDim.xx );
+}
+
+CubemapAddress GetAddressForCubemap(float3 r)
+{
+    CubemapAddress addr;
+    float sc, tc, ma;
+    const float rx = abs(r.x);
+    const float ry = abs(r.y);
+    const float rz = abs(r.z);
+    if (rx >= ry && rx >= rz)
+    {
+        ma = 1.0f / rx;
+        if (r.x >= 0)
+        {
+            addr.face = PX;
+            sc = -r.z;
+            tc = -r.y;
+        }
+        else
+        {
+            addr.face = NX;
+            sc = r.z;
+            tc = -r.y;
+        }
+    }
+    else if (ry >= rx && ry >= rz)
+    {
+        ma = 1.0f / ry;
+        if (r.y >= 0)
+        {
+            addr.face = PY;
+            sc = r.x;
+            tc = r.z;
+        }
+        else
+        {
+            addr.face = NY;
+            sc = r.x;
+            tc = -r.z;
+        }
+    }
+    else
+    {
+        ma = 1.0f / rz;
+        if (r.z >= 0)
+        {
+            addr.face = PZ;
+            sc = r.x;
+            tc = -r.y;
+        }
+        else
+        {
+            addr.face = NZ;
+            sc = -r.x;
+            tc = -r.y;
+        }
+    }
+    // ma is guaranteed to be >= sc and tc
+    addr.st = float2((sc * ma + 1.0f) * 0.5f, (tc * ma + 1.0f) * 0.5f);
+    return addr;
+}
+
+/*
+ * Area of a cube face's quadrant projected onto a sphere
+ *
+ *  1 +---+----------+
+ *    |   |          |
+ *    |---+----------|
+ *    |   |(x,y)     |
+ *    |   |          |
+ *    |   |          |
+ * -1 +---+----------+
+ *   -1              1
+ *
+ *
+ * The quadrant (-1,1)-(x,y) is projected onto the unit sphere
+ *
+ */
+float SphereQuadrantArea(float x, float y)
+{
+    return atan2(x*y, sqrt(x*x + y*y + 1));
+}
+
+//! computes the solid angle of a pixel of a face of a cubemap
+float SolidAngle(uint dim, uint u, uint v)
+{
+    const float iDim = 1.0f / dim;
+    float s = ((u + 0.5f) * 2 * iDim) - 1;
+    float t = ((v + 0.5f) * 2 * iDim) - 1;
+    const float x0 = s - iDim;
+    const float y0 = t - iDim;
+    const float x1 = s + iDim;
+    const float y1 = t + iDim;
+    float solidAngle =
+        SphereQuadrantArea(x0, y0) - SphereQuadrantArea(x0, y1) -
+        SphereQuadrantArea(x1, y0) + SphereQuadrantArea(x1, y1);
+    return solidAngle;
+}
+
+// for Texel to Vertex mapping (3x3 kernel, the texel centers are at quad vertices)
+float3 ComputeHeightmapNormal( float h00, float h10, float h20, float h01, float h11, float h21, float h02, float h12, float h22, const float3 pixelWorldSize )
+{
+    // Sobel 3x3
+    //    0,0 | 1,0 | 2,0
+    //    ----+-----+----
+    //    0,1 | 1,1 | 2,1
+    //    ----+-----+----
+    //    0,2 | 1,2 | 2,2
+
+    h00 -= h11;
+    h10 -= h11;
+    h20 -= h11;
+    h01 -= h11;
+    h21 -= h11;
+    h02 -= h11;
+    h12 -= h11;
+    h22 -= h11;
+   
+    // The Sobel X kernel is:
+    //
+    // [ 1.0  0.0  -1.0 ]
+    // [ 2.0  0.0  -2.0 ]
+    // [ 1.0  0.0  -1.0 ]
+	
+    float Gx = h00 - h20 + 2.0 * h01 - 2.0 * h21 + h02 - h22;
+				
+    // The Sobel Y kernel is:
+    //
+    // [  1.0    2.0    1.0 ]
+    // [  0.0    0.0    0.0 ]
+    // [ -1.0   -2.0   -1.0 ]
+	
+    float Gy = h00 + 2.0 * h10 + h20 - h02 - 2.0 * h12 - h22;
+	
+    // The 0.5f leading coefficient can be used to control
+    // how pronounced the bumps are - less than 1.0 enhances
+    // and greater than 1.0 smoothes.
+	
+    //return float4( 0, 0, 0, 0 );
+	
+    float stepX = pixelWorldSize.x;
+    float stepY = pixelWorldSize.y;
+    float sizeZ = pixelWorldSize.z;
+   
+    Gx = Gx * stepY * sizeZ;
+    Gy = Gy * stepX * sizeZ;
+	
+    float Gz = stepX * stepY * 8;
+	
+    return normalize( float3( Gx, Gy, Gz ) );
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// A couple of nice gradient for various visualization
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+// from https://www.shadertoy.com/view/lt2GDc - New Gradients from (0-1 float) Created by ChocoboBreeder in 2015-Jun-3
+float3 GradientPalette( in float t, in float3 a, in float3 b, in float3 c, in float3 d )
+{
+    return a + b*cos( 6.28318*(c*t+d) );
+}
+// rainbow gradient
+float3 GradientRainbow( in float t )
+{
+    return GradientPalette( t, float3(0.55,0.4,0.3), float3(0.50,0.51,0.35)+0.1, float3(0.8,0.75,0.8), float3(0.075,0.33,0.67)+0.21 );
+}
+// from https://www.shadertoy.com/view/llKGWG - Heat map, Created by joshliebe in 2016-Oct-15
+float3 GradientHeatMap( in float greyValue )
+{
+    float3 heat;      
+    heat.r = smoothstep(0.5, 0.8, greyValue);
+    if(greyValue >= 0.90) {
+        heat.r *= (1.1 - greyValue) * 5.0;
+    }
+    if(greyValue > 0.7) {
+        heat.g = smoothstep(1.0, 0.7, greyValue);
+    } else {
+        heat.g = smoothstep(0.0, 0.7, greyValue);
+    }    
+    heat.b = smoothstep(1.0, 0.0, greyValue);          
+    if(greyValue <= 0.3) {
+        heat.b *= greyValue / 0.3;     
+    }
+    return heat;
+}
+
+// Manual bilinear filter: input 'coords' is standard [0, 1] texture uv coords multiplied by [textureWidth, textureHeight] minus [0.5, 0.5]
+float BilinearFilter( float c00, float c10, float c01, float c11, float2 coords )
+{
+    float2 intPt    = floor(coords);
+    float2 fractPt  = frac(coords);
+    float top       = lerp( c00, c10, fractPt.x );
+    float bottom    = lerp( c01, c11, fractPt.x );
+    return lerp( top, bottom, fractPt.y );
+}
+//
+float3 BilinearFilter( float3 c00, float3 c10, float3 c01, float3 c11, float2 coords )
+{
+    float2 intPt    = floor(coords);
+    float2 fractPt  = frac(coords);
+    float3 top      = lerp( c00, c10, fractPt.x );
+    float3 bottom   = lerp( c01, c11, fractPt.x );
+    return lerp( top, bottom, fractPt.y );
+}
+//
+float4 BilinearFilter( float4 c00, float4 c10, float4 c01, float4 c11, float2 coords )
+{
+    float2 intPt    = floor(coords);
+    float2 fractPt  = frac(coords);
+    float4 top      = lerp( c00, c10, fractPt.x );
+    float4 bottom   = lerp( c01, c11, fractPt.x );
+    return lerp( top, bottom, fractPt.y );
+}
+
+float FLOAT_to_SRGB( float val )
+{
+    if( val < 0.0031308 )
+        val *= float( 12.92 );
+    else
+        val = float( 1.055 ) * pow( abs( val ), float( 1.0 ) / float( 2.4 ) ) - float( 0.055 );
+    return val;
+}
+//
+float3 FLOAT3_to_SRGB( float3 val )
+{
+    float3 outVal;
+    outVal.x = FLOAT_to_SRGB( val.x );
+    outVal.y = FLOAT_to_SRGB( val.y );
+    outVal.z = FLOAT_to_SRGB( val.z );
+    return outVal;
+}
+//
+float SRGB_to_FLOAT( float val )
+{
+    if( val < 0.04045 )
+        val /= float( 12.92 );
+    else
+        val = pow( abs( val + float( 0.055 ) ) / float( 1.055 ), float( 2.4 ) );
+    return val;
+}
+//
+float3 SRGB_to_FLOAT3( float3 val )
+{
+    float3 outVal;
+    outVal.x = SRGB_to_FLOAT( val.x );
+    outVal.y = SRGB_to_FLOAT( val.y );
+    outVal.z = SRGB_to_FLOAT( val.z );
+    return outVal;
+}
+
+// Interpolation between two uniformly distributed random values using Cumulative Distribution Function
+// (see page 4 http://cwyman.org/papers/i3d17_hashedAlpha.pdf or https://en.wikipedia.org/wiki/Cumulative_distribution_function)
+float LerpCDF( float lhs, float rhs, float s )
+{
+    // Interpolate alpha threshold from noise at two scales 
+    float x = (1-s)*lhs + s*rhs;
+
+    // Pass into CDF to compute uniformly distrib threshold 
+    float a = min( s, 1-s ); 
+    float3 cases = float3( x*x/(2*a*(1-a)), (x-0.5*a)/(1-a), 1.0-((1-x)*(1-x)/(2*a*(1-a))) );
+
+    // Find our final, uniformly distributed alpha threshold 
+    return (x < (1-a)) ? ((x < a) ? cases.x : cases.y) : cases.z;
+}
+
+// From DXT5_NM standard
+float3 UnpackNormalDXT5_NM( float4 packedNormal )
+{
+    float3 normal;
+    normal.xy = packedNormal.wy * 2.0 - 1.0;
+    normal.z = sqrt( 1.0 - normal.x*normal.x - normal.y * normal.y );
+    return normal;
+}
+
+float3 DisplayNormal( float3 normal )
+{
+    return normal * 0.5 + 0.5;
+}
+
+float3 DisplayNormalSRGB( float3 normal )
+{
+    return pow( abs( normal * 0.5 + 0.5 ), 2.2 );
+}
+
+float CalcLuminance( float3 color )
+{
+    // https://en.wikipedia.org/wiki/Relative_luminance - Rec. 709
+    return max( 0.0000001, dot(color, float3(0.2126f, 0.7152f, 0.0722f) ) );
+}
+//
+// color -> log luma conversion used for edge detection
+float RGBToLumaForEdges( float3 linearRGB )
+{
+#if 0
+    // this matches Miniengine luma path
+    float Luma = dot( linearRGB, float3(0.212671, 0.715160, 0.072169) );
+    return log2(1 + Luma * 15) / 4;
+#else
+    // this is what original FXAA (and consequently CMAA2) use by default - these coefficients correspond to Rec. 601 and those should be
+    // used on gamma-compressed components (see https://en.wikipedia.org/wiki/Luma_(video)#Rec._601_luma_versus_Rec._709_luma_coefficients), 
+    float luma = dot( sqrt( linearRGB.rgb ), float3( 0.299, 0.587, 0.114 ) );  // http://en.wikipedia.org/wiki/CCIR_601
+    // using sqrt luma for now but log luma like in miniengine provides a nicer curve on the low-end
+    return luma;
+#endif
+}
+
+// The following code is licensed under the MIT license: https://gist.github.com/TheRealMJP/bc503b0b87b643d3505d41eab8b332ae
+//
+// Samples a texture with Catmull-Rom filtering, using 9 texture fetches instead of 16.
+// See http://vec3.ca/bicubic-filtering-in-fewer-taps/ / https://gist.github.com/TheRealMJP/c83b8c0f46b63f3a88a5986f4fa982b1 for more details
+float4 SampleBicubic9(in Texture2D<float4> tex, in SamplerState linearSampler, in float2 uv) // a.k.a. SampleTextureCatmullRom
+{
+    float2 texSize; tex.GetDimensions( texSize.x, texSize.y );
+    float2 invTexSize = 1.f / texSize;
+
+    // We're going to sample a a 4x4 grid of texels surrounding the target UV coordinate. We'll do this by rounding
+    // down the sample location to get the exact center of our "starting" texel. The starting texel will be at
+    // location [1, 1] in the grid, where [0, 0] is the top left corner.
+    float2 samplePos = uv * texSize;
+    float2 texPos1 = floor(samplePos - 0.5f) + 0.5f;
+
+    // Compute the fractional offset from our starting texel to our original sample location, which we'll
+    // feed into the Catmull-Rom spline function to get our filter weights.
+    float2 f = samplePos - texPos1;
+
+    // Compute the Catmull-Rom weights using the fractional offset that we calculated earlier.
+    // These equations are pre-expanded based on our knowledge of where the texels will be located,
+    // which lets us avoid having to evaluate a piece-wise function.
+    float2 w0 = f * (-0.5f + f * (1.0f - 0.5f * f));
+    float2 w1 = 1.0f + f * f * (-2.5f + 1.5f * f);
+    float2 w2 = f * (0.5f + f * (2.0f - 1.5f * f));
+    float2 w3 = f * f * (-0.5f + 0.5f * f);
+
+    // Work out weighting factors and sampling offsets that will let us use bilinear filtering to
+    // simultaneously evaluate the middle 2 samples from the 4x4 grid.
+    float2 w12 = w1 + w2;
+    float2 offset12 = w2 / (w1 + w2);
+
+    // Compute the final UV coordinates we'll use for sampling the texture
+    float2 texPos0 = texPos1 - 1;
+    float2 texPos3 = texPos1 + 2;
+    float2 texPos12 = texPos1 + offset12;
+
+    texPos0  *= invTexSize;
+    texPos3  *= invTexSize;
+    texPos12 *= invTexSize;
+
+    float4 result = 0.0f;
+    result += tex.SampleLevel(linearSampler, float2(texPos0.x, texPos0.y), 0.0f) * w0.x * w0.y;     // apparently for 5-tap version it's ok to just remove these
+    result += tex.SampleLevel(linearSampler, float2(texPos12.x, texPos0.y), 0.0f) * w12.x * w0.y;
+    result += tex.SampleLevel(linearSampler, float2(texPos3.x, texPos0.y), 0.0f) * w3.x * w0.y;     // apparently for 5-tap version it's ok to just remove these
+
+    result += tex.SampleLevel(linearSampler, float2(texPos0.x, texPos12.y), 0.0f) * w0.x * w12.y;
+    result += tex.SampleLevel(linearSampler, float2(texPos12.x, texPos12.y), 0.0f) * w12.x * w12.y;
+    result += tex.SampleLevel(linearSampler, float2(texPos3.x, texPos12.y), 0.0f) * w3.x * w12.y;
+
+    result += tex.SampleLevel(linearSampler, float2(texPos0.x, texPos3.y), 0.0f) * w0.x * w3.y;     // apparently for 5-tap version it's ok to just remove these
+    result += tex.SampleLevel(linearSampler, float2(texPos12.x, texPos3.y), 0.0f) * w12.x * w3.y;
+    result += tex.SampleLevel(linearSampler, float2(texPos3.x, texPos3.y), 0.0f) * w3.x * w3.y;     // apparently for 5-tap version it's ok to just remove these
+
+    return result;
 }
 
 #endif // COMMON_INCLUDED

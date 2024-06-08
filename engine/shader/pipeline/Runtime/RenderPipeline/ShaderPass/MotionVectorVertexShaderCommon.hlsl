@@ -96,7 +96,7 @@ VaryingsPassToDS InterpolateWithBaryCoordsPassToDS(VaryingsPassToDS input0, Vary
 
 // We will use custom attributes for this pass
 #define VARYINGS_NEED_PASS
-#include "Packages/com.unity.render-pipelines.high-definition/Runtime/RenderPipeline/ShaderPass/VertMesh.hlsl"
+#include "../../RenderPipeline/ShaderPass/VertMesh.hlsl"
 
 void MotionVectorPositionZBias(VaryingsToPS input)
 {

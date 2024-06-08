@@ -103,18 +103,18 @@ struct BSDFData
 //-----------------------------------------------------------------------------
 
 //// GBuffer texture declaration
-//TEXTURE2D_X(_GBufferTexture0);
-//TEXTURE2D_X(_GBufferTexture1);
-//TEXTURE2D_X(_GBufferTexture2);
-//TEXTURE2D_X(_GBufferTexture3); // Bake lighting and/or emissive
-//TEXTURE2D_X(_GBufferTexture4); // VTFeedbakc or Light layer or shadow mask
-//TEXTURE2D_X(_GBufferTexture5); // Light layer or shadow mask
-//TEXTURE2D_X(_GBufferTexture6); // shadow mask
+//TEXTURE2D(_GBufferTexture0);
+//TEXTURE2D(_GBufferTexture1);
+//TEXTURE2D(_GBufferTexture2);
+//TEXTURE2D(_GBufferTexture3); // Bake lighting and/or emissive
+//TEXTURE2D(_GBufferTexture4); // VTFeedbakc or Light layer or shadow mask
+//TEXTURE2D(_GBufferTexture5); // Light layer or shadow mask
+//TEXTURE2D(_GBufferTexture6); // shadow mask
 
 
-//TEXTURE2D_X(_LightLayersTexture);
+//TEXTURE2D(_LightLayersTexture);
 //#ifdef SHADOWS_SHADOWMASK
-//TEXTURE2D_X(_ShadowMaskTexture); // Alias for shadow mask, so we don't need to know which gbuffer is used for shadow mask
+//TEXTURE2D(_ShadowMaskTexture); // Alias for shadow mask, so we don't need to know which gbuffer is used for shadow mask
 //#endif
 
 #include "../../Material/LTCAreaLight/LTCAreaLight.hlsl"
@@ -715,14 +715,14 @@ uint DecodeFromGBuffer(uint2 positionSS, uint tileFeatureFlags, out BSDFData bsd
     // Isolate material features.
     tileFeatureFlags &= MATERIAL_FEATURE_MASK_FLAGS;
 
-    GBufferType0 inGBuffer0 = LOAD_TEXTURE2D_X(_GBufferTexture0, positionSS);
-    GBufferType1 inGBuffer1 = LOAD_TEXTURE2D_X(_GBufferTexture1, positionSS);
-    GBufferType2 inGBuffer2 = LOAD_TEXTURE2D_X(_GBufferTexture2, positionSS);
+    GBufferType0 inGBuffer0 = LOAD_TEXTURE2D(_GBufferTexture0, positionSS);
+    GBufferType1 inGBuffer1 = LOAD_TEXTURE2D(_GBufferTexture1, positionSS);
+    GBufferType2 inGBuffer2 = LOAD_TEXTURE2D(_GBufferTexture2, positionSS);
 
     // Avoid to introduce a new variant for light layer as it is already long to compile
     if (_EnableLightLayers)
     {
-        float4 inGBuffer4 = LOAD_TEXTURE2D_X(_LightLayersTexture, positionSS);
+        float4 inGBuffer4 = LOAD_TEXTURE2D(_LightLayersTexture, positionSS);
         builtinData.renderingLayers = uint(inGBuffer4.w * 255.5);
     }
     else
@@ -732,7 +732,7 @@ uint DecodeFromGBuffer(uint2 positionSS, uint tileFeatureFlags, out BSDFData bsd
 
     // We know the GBufferType no need to use abstraction
 #ifdef SHADOWS_SHADOWMASK
-    float4 shadowMaskGbuffer = LOAD_TEXTURE2D_X(_ShadowMaskTexture, positionSS);
+    float4 shadowMaskGbuffer = LOAD_TEXTURE2D(_ShadowMaskTexture, positionSS);
     builtinData.shadowMask0 = shadowMaskGbuffer.x;
     builtinData.shadowMask1 = shadowMaskGbuffer.y;
     builtinData.shadowMask2 = shadowMaskGbuffer.z;
@@ -918,7 +918,7 @@ uint DecodeFromGBuffer(uint2 positionSS, uint tileFeatureFlags, out BSDFData bsd
     // When any SSGI/RTGI/Mixed effect is enabled it contain emissive only
     // When APV is enabled it contain lightmaps or emissive. We use builtinData.isLightmap to know if we are emissive only
     // In the regular case the lightmaps/lightprobe are multiply by AO before adding emissive
-    float3 gbuffer3 = LOAD_TEXTURE2D_X(_GBufferTexture3, positionSS).rgb;
+    float3 gbuffer3 = LOAD_TEXTURE2D(_GBufferTexture3, positionSS).rgb;
 
     // In deferred case, AO is apply during the EncodeToGbuffer pass on bakeDiffuseLighting data but not emissive
     // This cause quality issue because it prevent us to combine it correctly with SSAO (i.e min(SSAO, AO)) + SSAO is apply on emissive
@@ -1798,7 +1798,7 @@ IndirectLighting EvaluateBSDF_ScreenSpaceReflection(PositionInputs posInput,
     ZERO_INITIALIZE(IndirectLighting, lighting);
 
     // TODO: this texture is sparse (mostly black). Can we avoid reading every texel? How about using Hi-S?
-    float4 ssrLighting = LOAD_TEXTURE2D_X(_SsrLightingTexture, posInput.positionSS);
+    float4 ssrLighting = LOAD_TEXTURE2D(_SsrLightingTexture, posInput.positionSS);
     InversePreExposeSsrLighting(ssrLighting);
 
     // Apply the weight on the ssr contribution (if required)
@@ -1903,7 +1903,7 @@ IndirectLighting EvaluateBSDF_ScreenspaceRefraction(LightLoopContext lightLoopCo
     float refractionOffsetMultiplier = max(0.0f, 1.0f - preLightData.transparentSSMipLevel * 0.08f);
 
     // using LoadCameraDepth() here instead of hit.hitLinearDepth allow to fix an issue with VR single path instancing
-    // as it use the macro LOAD_TEXTURE2D_X_LOD
+    // as it use the macro LOAD_TEXTURE2D_LOD
     float hitDeviceDepth = LoadCameraDepth(hit.positionSS);
     float hitLinearDepth = LinearEyeDepth(hitDeviceDepth, _ZBufferParams);
 
@@ -1922,7 +1922,7 @@ IndirectLighting EvaluateBSDF_ScreenspaceRefraction(LightLoopContext lightLoopCo
     
     samplingUV.xy = min(samplingUV.xy, limit);
 
-    float3 preLD = SAMPLE_TEXTURE2D_X_LOD(_ColorPyramidTexture, s_trilinear_clamp_sampler, samplingUV, mipLevel).rgb;
+    float3 preLD = SAMPLE_TEXTURE2D_LOD(_ColorPyramidTexture, s_trilinear_clamp_sampler, samplingUV, mipLevel).rgb;
 
     // Inverse pre-exposure
     preLD *= GetInverseCurrentExposureMultiplier();

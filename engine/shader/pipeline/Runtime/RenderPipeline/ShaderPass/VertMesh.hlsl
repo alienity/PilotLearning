@@ -36,7 +36,6 @@ PackedVaryingsToPS PackVaryingsToPS(VaryingsToPS input)
     output.vpass = PackVaryingsPassToPS(input.vpass);
 #endif
 
-    UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(output);
     return output;
 }
 
@@ -69,11 +68,6 @@ VaryingsMeshType VertMesh(AttributesMesh input, float3 worldSpaceOffset)
 #if defined(USE_CUSTOMINTERP_SUBSTRUCT)
     ZERO_INITIALIZE(VaryingsMeshType, output); // Only required with custom interpolator to quiet the shader compiler about not fully initialized struct
 #endif
-
-    //// Deduce the actual instance ID of the current instance (it is then stored in unity_InstanceID)
-    //UNITY_SETUP_INSTANCE_ID(input);
-    //// Transfer the unprocessed instance ID to the next stage
-    //UNITY_TRANSFER_INSTANCE_ID(input, output);
 
 #ifdef HAVE_MESH_MODIFICATION
     input = ApplyMeshModification(input, _TimeParameters.xyz
