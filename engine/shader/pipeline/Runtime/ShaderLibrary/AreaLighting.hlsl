@@ -74,7 +74,7 @@ float DiffuseSphereLightIrradiance(float sinSqSigma, float cosOmega)
 
         float e = sinSqSigma * cosOmega;
 
-        UNITY_BRANCH
+        
         if (omega < HALF_PI - sigma)
         {
             // No horizon occlusion (case #1).
@@ -99,7 +99,7 @@ float DiffuseSphereLightIrradiance(float sinSqSigma, float cosOmega)
     #else // Ref: Moving Frostbite to Physically Based Rendering, page 47 (2015, optimized).
         float cosSqOmega = cosOmega * cosOmega;                     // y^2
 
-        UNITY_BRANCH
+        
         if (cosSqOmega > sinSqSigma)                                // (y^2)>x
         {
             return saturate(sinSqSigma * cosOmega);                 // Clip[x*y,{0,1}]

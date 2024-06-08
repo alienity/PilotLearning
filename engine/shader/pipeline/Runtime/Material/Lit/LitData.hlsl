@@ -133,7 +133,7 @@ void GenerateLayerTexCoordBasisTB(FragInputs input, inout LayerTexCoord layerTex
 #ifdef _BENTNORMALMAP
 #define _BENTNORMALMAP_IDX
 #endif
-#include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/Lit/LitDataIndividualLayer.hlsl"
+#include "../../Material/Lit/LitDataIndividualLayer.hlsl"
 
 // This maybe call directly by tessellation (domain) shader, thus all part regarding surface gradient must be done
 // in function with FragInputs input as parameters
@@ -187,7 +187,7 @@ void GetLayerTexCoord(FragInputs input, inout LayerTexCoord layerTexCoord)
 
 #include "../../Material/Lit/LitBuiltinData.hlsl"
 
-void GetSurfaceAndBuiltinData(FragInputs input, float3 V, inout PositionInputs posInput, out SurfaceData surfaceData, out BuiltinData builtinData RAY_TRACING_OPTIONAL_PARAMETERS)
+void GetSurfaceAndBuiltinData(FragInputs input, float3 V, inout PositionInputs posInput, out SurfaceData surfaceData, out BuiltinData builtinData)
 {
     // Fix case 1210058. With Lit.shader / LayeredLit.shader we always have UV1. But in the case of some SpeedTree mesh, there is no stream sent
     // and UV1 is corrupt when we use surface gradient. In case UV1 aren't required we set them to 0, so we ensure there is no garbage.
@@ -325,8 +325,7 @@ void GetSurfaceAndBuiltinData(FragInputs input, float3 V, inout PositionInputs p
     // Used for sharpening by alpha to mask
     builtinData.alphaClipTreshold = alphaCutoff;
 #endif
-
-    RAY_TRACING_OPTIONAL_ALPHA_TEST_PASS
+    
 }
 #if !defined(SHADER_STAGE_RAY_TRACING)
     #include "../../Material/Lit/LitDataMeshModification.hlsl"

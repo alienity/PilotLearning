@@ -117,7 +117,7 @@ struct BSDFData
 //TEXTURE2D_X(_ShadowMaskTexture); // Alias for shadow mask, so we don't need to know which gbuffer is used for shadow mask
 //#endif
 
-//#include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/LTCAreaLight/LTCAreaLight.hlsl"
+#include "../../Material/LTCAreaLight/LTCAreaLight.hlsl"
 #include "../../Material/PreIntegratedFGD/PreIntegratedFGD.hlsl"
 
 //-----------------------------------------------------------------------------
@@ -391,7 +391,7 @@ BSDFData ConvertSurfaceDataToBSDFData(uint2 positionSS, SurfaceData surfaceData)
     // However in practice we keep parity between deferred and forward, so we should constrain the various features.
     // The UI is in charge of setuping the constrain, not the code. So if users is forward only and want unleash power, it is easy to unleash by some UI change
 
-    bsdfData.diffusionProfileIndex = FindDiffusionProfileIndex(surfaceData.diffusionProfileHash);
+    //bsdfData.diffusionProfileIndex = FindDiffusionProfileIndex(surfaceData.diffusionProfileHash);
 
     //if (HasFlag(surfaceData.materialFeatures, MATERIALFEATUREFLAGS_LIT_SUBSURFACE_SCATTERING))
     //{
@@ -695,9 +695,6 @@ void EncodeIntoGBuffer( SurfaceData surfaceData
     OUT_GBUFFER_SHADOWMASK = BUILTIN_DATA_SHADOW_MASK;
 #endif
 
-#ifdef UNITY_VIRTUAL_TEXTURING
-    OUT_GBUFFER_VTFEEDBACK = PackVTFeedbackWithAlpha(builtinData.vtPackedFeedback, (float2)positionSS.xy, 1.0);
-#endif
 }
 
 // Fills the BSDFData. Also returns the (per-pixel) material feature flags inferred
@@ -1506,7 +1503,7 @@ DirectLighting EvaluateBSDF_Line(   LightLoopContext lightLoopContext,
         // See comment for specular magnitude, it apply to diffuse as well
         lighting.diffuse = preLightData.diffuseFGD * ltcValue;
 
-        UNITY_BRANCH if (HasFlag(bsdfData.materialFeatures, MATERIALFEATUREFLAGS_LIT_TRANSMISSION))
+         if (HasFlag(bsdfData.materialFeatures, MATERIALFEATUREFLAGS_LIT_TRANSMISSION))
         {
             // Flip the view vector and the normal. The bitangent stays the same.
             float3x3 flipMatrix = float3x3(-1,  0,  0,
@@ -1668,7 +1665,7 @@ DirectLighting EvaluateBSDF_Rect(   LightLoopContext lightLoopContext,
             // See comment for specular magnitude, it apply to diffuse as well
             lighting.diffuse = preLightData.diffuseFGD * ltcValue;
 
-            UNITY_BRANCH if (HasFlag(bsdfData.materialFeatures, MATERIALFEATUREFLAGS_LIT_TRANSMISSION))
+             if (HasFlag(bsdfData.materialFeatures, MATERIALFEATUREFLAGS_LIT_TRANSMISSION))
             {
                 // Flip the view vector and the normal. The bitangent stays the same.
                 float3x3 flipMatrix = float3x3(-1,  0,  0,

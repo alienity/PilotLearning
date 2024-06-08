@@ -103,106 +103,67 @@ void Frag(PackedVaryingsToPS packedInput
 
     // We need to skip lighting when doing debug pass because the debug pass is done before lighting so some buffers may not be properly initialized potentially causing crashes on PS4.
 
-#ifdef DEBUG_DISPLAY
-    // Init in debug display mode to quiet warning
-#ifdef OUTPUT_SPLIT_LIGHTING
-    // Always write 1.0 in alpha since blend mode could be active on this target as a side effect of VT feedback buffer
-    // Diffuse output is expected to be RGB10, so alpha must always be 1 to ensure it is written.
-    outDiffuseLighting = float4(0, 0, 0, 1);
-    ENCODE_INTO_SSSBUFFER(surfaceData, posInput.positionSS, outSSSBuffer);
-#endif
-
-    bool viewMaterial = GetMaterialDebugColor(outColor, input, builtinData, posInput, surfaceData, bsdfData);
-
-    if (!viewMaterial)
     {
-        if (_DebugFullScreenMode == FULLSCREENDEBUGMODE_VALIDATE_DIFFUSE_COLOR || _DebugFullScreenMode == FULLSCREENDEBUGMODE_VALIDATE_SPECULAR_COLOR)
-        {
-            float3 result = float3(0.0, 0.0, 0.0);
+#ifdef _SURFACE_TYPE_TRANSPARENT
+        uint featureFlags = LIGHT_FEATURE_MASK_FLAGS_TRANSPARENT;
+#else
+        uint featureFlags = LIGHT_FEATURE_MASK_FLAGS_OPAQUE;
+#endif
+        LightLoopOutput lightLoopOutput;
+        LightLoop(V, posInput, preLightData, bsdfData, builtinData, featureFlags, lightLoopOutput);
 
-            GetPBRValidatorDebug(surfaceData, result);
+        // Alias
+        float3 diffuseLighting = lightLoopOutput.diffuseLighting;
+        float3 specularLighting = lightLoopOutput.specularLighting;
 
-            outColor = float4(result, 1.0f);
-        }
-        else if (_DebugFullScreenMode == FULLSCREENDEBUGMODE_TRANSPARENCY_OVERDRAW)
+        diffuseLighting *= GetCurrentExposureMultiplier();
+        specularLighting *= GetCurrentExposureMultiplier();
+
+#ifdef OUTPUT_SPLIT_LIGHTING
+        if (_EnableSubsurfaceScattering != 0 && ShouldOutputSplitLighting(bsdfData))
         {
-            float4 result = _DebugTransparencyOverdrawWeight * float4(TRANSPARENCY_OVERDRAW_COST, TRANSPARENCY_OVERDRAW_COST, TRANSPARENCY_OVERDRAW_COST, TRANSPARENCY_OVERDRAW_A);
-            outColor = result;
+            outColor = float4(specularLighting, 1.0);
+            // Always write 1.0 in alpha since blend mode could be active on this target as a side effect of VT feedback buffer
+            // Diffuse output is expected to be RGB10, so alpha must always be 1 to ensure it is written.
+            outDiffuseLighting = float4(TagLightingForSSS(diffuseLighting), 1.0);
         }
         else
-#endif
         {
-#ifdef _SURFACE_TYPE_TRANSPARENT
-            uint featureFlags = LIGHT_FEATURE_MASK_FLAGS_TRANSPARENT;
+            outColor = float4(diffuseLighting + specularLighting, 1.0);
+            // Always write 1.0 in alpha since blend mode could be active on this target as a side effect of VT feedback buffer
+            // Diffuse output is expected to be RGB10, so alpha must always be 1 to ensure it is written.
+            outDiffuseLighting = float4(0, 0, 0, 1);
+        }
+        ENCODE_INTO_SSSBUFFER(surfaceData, posInput.positionSS, outSSSBuffer);
 #else
-            uint featureFlags = LIGHT_FEATURE_MASK_FLAGS_OPAQUE;
-#endif
-            LightLoopOutput lightLoopOutput;
-            LightLoop(V, posInput, preLightData, bsdfData, builtinData, featureFlags, lightLoopOutput);
-
-            // Alias
-            float3 diffuseLighting = lightLoopOutput.diffuseLighting;
-            float3 specularLighting = lightLoopOutput.specularLighting;
-
-            diffuseLighting *= GetCurrentExposureMultiplier();
-            specularLighting *= GetCurrentExposureMultiplier();
-
-#ifdef OUTPUT_SPLIT_LIGHTING
-            if (_EnableSubsurfaceScattering != 0 && ShouldOutputSplitLighting(bsdfData))
-            {
-                outColor = float4(specularLighting, 1.0);
-                // Always write 1.0 in alpha since blend mode could be active on this target as a side effect of VT feedback buffer
-                // Diffuse output is expected to be RGB10, so alpha must always be 1 to ensure it is written.
-                outDiffuseLighting = float4(TagLightingForSSS(diffuseLighting), 1.0);
-            }
-            else
-            {
-                outColor = float4(diffuseLighting + specularLighting, 1.0);
-                // Always write 1.0 in alpha since blend mode could be active on this target as a side effect of VT feedback buffer
-                // Diffuse output is expected to be RGB10, so alpha must always be 1 to ensure it is written.
-                outDiffuseLighting = float4(0, 0, 0, 1);
-            }
-            ENCODE_INTO_SSSBUFFER(surfaceData, posInput.positionSS, outSSSBuffer);
-#else
-            outColor = ApplyBlendMode(diffuseLighting, specularLighting, builtinData.opacity);
-            outColor = EvaluateAtmosphericScattering(posInput, V, outColor);
+        outColor = ApplyBlendMode(diffuseLighting, specularLighting, builtinData.opacity);
+        outColor = EvaluateAtmosphericScattering(posInput, V, outColor);
 #endif
 
 #ifdef _WRITE_TRANSPARENT_MOTION_VECTOR
-            VaryingsPassToPS inputPass = UnpackVaryingsPassToPS(packedInput.vpass);
-            bool forceNoMotion = any(unity_MotionVectorsParams.yw == 0.0);
-            // outMotionVec is already initialize at the value of forceNoMotion (see above)
+        VaryingsPassToPS inputPass = UnpackVaryingsPassToPS(packedInput.vpass);
+        bool forceNoMotion = any(unity_MotionVectorsParams.yw == 0.0);
+        // outMotionVec is already initialize at the value of forceNoMotion (see above)
 
-             //Motion vector is enabled in SG but not active in VFX
+            //Motion vector is enabled in SG but not active in VFX
 #if defined(HAVE_VFX_MODIFICATION) && !VFX_FEATURE_MOTION_VECTORS
-            forceNoMotion = true;
+        forceNoMotion = true;
 #endif
 
-            if (!forceNoMotion)
-            {
-                float2 motionVec = CalculateMotionVector(inputPass.positionCS, inputPass.previousPositionCS);
-                EncodeMotionVector(motionVec * 0.5, outMotionVec);
+        if (!forceNoMotion)
+        {
+            float2 motionVec = CalculateMotionVector(inputPass.positionCS, inputPass.previousPositionCS);
+            EncodeMotionVector(motionVec * 0.5, outMotionVec);
 
-                // Always write 1.0 in alpha since blend mode could be active on this target as a side effect of VT feedback buffer
-                // motion vector expected output format is RG16
-                outMotionVec.zw = 1.0;
-            }
-#endif
+            // Always write 1.0 in alpha since blend mode could be active on this target as a side effect of VT feedback buffer
+            // motion vector expected output format is RG16
+            outMotionVec.zw = 1.0;
         }
-
-#ifdef DEBUG_DISPLAY
-    }
 #endif
+    }
 
 #ifdef _DEPTHOFFSET_ON
     outputDepth = posInput.deviceDepth;
 #endif
-
-#ifdef UNITY_VIRTUAL_TEXTURING
-    float vtAlphaValue = builtinData.opacity;
-    #if defined(HAS_REFRACTION) && HAS_REFRACTION
-        vtAlphaValue = 1.0f - bsdfData.transmittanceMask;
-    #endif
-    outVTFeedback = PackVTFeedbackWithAlpha(builtinData.vtPackedFeedback, input.positionSS.xy, vtAlphaValue);
-#endif
+    
 }

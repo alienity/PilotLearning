@@ -49,9 +49,6 @@ struct BuiltinData
     uint isLightmap;
     uint renderingLayers;
     float depthOffset;
-#if defined(UNITY_VIRTUAL_TEXTURING)
-    float4 vtPackedFeedback;
-#endif
 };
 
 // Generated from UnityEngine.Rendering.HighDefinition.Builtin+LightTransportData
@@ -116,15 +113,9 @@ void GetGeneratedBuiltinDataDebug(uint paramId, BuiltinData builtindata, inout f
         case DEBUGVIEW_BUILTIN_BUILTINDATA_DEPTH_OFFSET:
             result = builtindata.depthOffset.xxx;
             break;
-#if defined(UNITY_VIRTUAL_TEXTURING)
-        case DEBUGVIEW_BUILTIN_BUILTINDATA_VT_PACKED_FEEDBACK:
-            result = builtindata.vtPackedFeedback.xyz;
-            break;
-#else
         case DEBUGVIEW_BUILTIN_BUILTINDATA_VT_PACKED_FEEDBACK:
             result = 0;
             break;
-#endif
     }
 }
 
@@ -148,11 +139,7 @@ void GetGeneratedBuiltinDataDebug(uint paramId, BuiltinData builtindata, inout f
 //-----------------------------------------------------------------------------
 
 #define BUILTIN_DATA_SHADOW_MASK                    float4(builtinData.shadowMask0, builtinData.shadowMask1, builtinData.shadowMask2, builtinData.shadowMask3)
-#ifdef UNITY_VIRTUAL_TEXTURING
-    #define ZERO_BUILTIN_INITIALIZE(builtinData)    ZERO_INITIALIZE(BuiltinData, builtinData); builtinData.vtPackedFeedback = float4(1.0f, 1.0f, 1.0f, 1.0f)
-#else
-    #define ZERO_BUILTIN_INITIALIZE(builtinData)    ZERO_INITIALIZE(BuiltinData, builtinData)
-#endif
+#define ZERO_BUILTIN_INITIALIZE(builtinData)    ZERO_INITIALIZE(BuiltinData, builtinData)
 
 //-----------------------------------------------------------------------------
 // common Encode/Decode functions

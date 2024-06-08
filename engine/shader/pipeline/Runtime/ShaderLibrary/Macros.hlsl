@@ -252,4 +252,12 @@
     void FunctionName(inout bool3  a, inout bool3  b) { bool3  t = a; a = b; b = t; } \
     void FunctionName(inout bool4  a, inout bool4  b) { bool4  t = a; a = b; b = t; }
 
+// MACRO from Legacy Untiy
+// Transforms 2D UV by scale/bias property
+#define TRANSFORM_TEX(tex, name) ((tex.xy) * name##_ST.xy + name##_ST.zw)
+#define GET_TEXELSIZE_NAME(name) (name##_TexelSize)
+
+# define COMPARE_DEVICE_DEPTH_CLOSER(shadowMapDepth, zDevice)      (shadowMapDepth >  zDevice)
+# define COMPARE_DEVICE_DEPTH_CLOSEREQUAL(shadowMapDepth, zDevice) (shadowMapDepth >= zDevice)
+
 #endif // MACROS_INCLUDED

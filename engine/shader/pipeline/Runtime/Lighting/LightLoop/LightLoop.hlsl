@@ -196,6 +196,8 @@ float GetUnused2(LightVolumeData value)
 #ifndef LIGHTLOOP_HLSL
 #define LIGHTLOOP_HLSL
 
+#define LIGHTLOOP_DISABLE_TILE_AND_CLUSTER
+
 #ifndef SCALARIZE_LIGHT_LOOP
 // We perform scalarization only for forward rendering as for deferred loads will already be scalar since tiles will match waves and therefore all threads will read from the same tile.
 // More info on scalarization: https://flashypixels.wordpress.com/2018/11/10/intro-to-gpu-scalarization-part-2-scalarize-all-the-lights/ .

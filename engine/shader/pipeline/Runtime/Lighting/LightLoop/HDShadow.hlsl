@@ -21,7 +21,6 @@
 #define FORCE_SHADOW_SCALAR_READ !defined(SHADOW_DATA_NOT_GUARANTEED_SCALAR) && !defined(SHADER_API_XBOXONE) && !defined(SHADER_API_GAMECORE) && (defined(PLATFORM_SUPPORTS_WAVE_INTRINSICS) && !defined(LIGHTLOOP_DISABLE_TILE_AND_CLUSTER))
 
 
-/*
 // normalWS is the vertex normal if available or shading normal use to bias the shadow position
 float GetDirectionalShadowAttenuation(inout HDShadowContext shadowContext, float2 positionSS, float3 positionWS, float3 normalWS, int shadowDataIndex, float3 L)
 {
@@ -113,6 +112,5 @@ float GetRectAreaShadowAttenuation(HDShadowContext shadowContext, float2 positio
         return EvalShadow_AreaDepth(sd, _ShadowmapAreaAtlas, positionSS, positionWS, normalWS, L, L_dist, true);
     }
 }
-*/
 
 #endif // LIGHTLOOP_HD_SHADOW_HLSL

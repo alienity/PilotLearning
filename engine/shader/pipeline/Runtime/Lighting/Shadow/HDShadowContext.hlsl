@@ -17,10 +17,9 @@ struct HDShadowContext
 #endif 
 };
 
-/*
 // HD shadow sampling bindings
-#include "Packages/com.unity.render-pipelines.high-definition/Runtime/Lighting/Shadow/HDShadowSampling.hlsl"
-#include "Packages/com.unity.render-pipelines.high-definition/Runtime/Lighting/Shadow/HDShadowAlgorithms.hlsl"
+#include "../../Lighting/Shadow/HDShadowSampling.hlsl"
+#include "../../Lighting/Shadow/HDShadowAlgorithms.hlsl"
 
 TEXTURE2D(_ShadowmapAtlas);
 TEXTURE2D(_CachedShadowmapAtlas);
@@ -45,6 +44,5 @@ HDShadowContext InitShadowContext()
 
     return sc;
 }
-*/
 
 #endif // HD_SHADOW_CONTEXT_HLSL
