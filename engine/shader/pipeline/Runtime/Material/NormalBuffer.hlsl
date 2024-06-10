@@ -14,8 +14,8 @@ struct NormalData
     float  perceptualRoughness;
 };
 
-// NormalBuffer texture declaration
-TEXTURE2D(_NormalBufferTexture);
+// // NormalBuffer texture declaration
+// TEXTURE2D(_NormalBufferTexture);
 
 void EncodeIntoNormalBuffer(NormalData normalData, out float4 outNormalBuffer0)
 {
@@ -43,9 +43,9 @@ void DecodeFromNormalBuffer(float4 normalBuffer, out NormalData normalData)
     normalData.perceptualRoughness = normalBuffer.a;
 }
 
-void DecodeFromNormalBuffer(uint2 positionSS, out NormalData normalData)
+void DecodeFromNormalBuffer(Texture2D<float4> normalBufferTexture, uint2 positionSS, out NormalData normalData)
 {
-    float4 normalBuffer = LOAD_TEXTURE2D(_NormalBufferTexture, positionSS);
+    float4 normalBuffer = LOAD_TEXTURE2D(normalBufferTexture, positionSS);
     DecodeFromNormalBuffer(normalBuffer, normalData);
 }
 

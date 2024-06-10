@@ -10,112 +10,99 @@
 // Note: we need to mask out only 8bits of the layer mask before encoding it as otherwise any value > 255 will map to all layers active if save in a buffer
 uint GetMeshRenderingLightLayer()
 {
-    return _EnableLightLayers ? (asuint(unity_RenderingLayer.x) & RENDERING_LIGHT_LAYERS_MASK) >> RENDERING_LIGHT_LAYERS_MASK_SHIFT : DEFAULT_LIGHT_LAYERS;
-}
-
-uint GetMeshRenderingDecalLayer()
-{
-    return _EnableDecalLayers ? ((asuint(unity_RenderingLayer.x) & RENDERING_DECAL_LAYERS_MASK) >> RENDERING_DECAL_LAYERS_MASK_SHIFT) : DEFAULT_DECAL_LAYERS;
+    return DEFAULT_LIGHT_LAYERS;
+    // return _EnableLightLayers ? (asuint(unity_RenderingLayer.x) & RENDERING_LIGHT_LAYERS_MASK) >> RENDERING_LIGHT_LAYERS_MASK_SHIFT : DEFAULT_LIGHT_LAYERS;
 }
 
 // Return absolute world position of current object
-float3 GetObjectAbsolutePositionWS()
+float3 GetObjectAbsolutePositionWS(RenderDataPerDraw renderDataPerDraw)
 {
-    float4x4 modelMatrix = UNITY_MATRIX_M;
-    return GetAbsolutePositionWS(modelMatrix._m03_m13_m23); // Translation object to world
+    float4x4 modelMatrix = UNITY_MATRIX_M(renderDataPerDraw);
+    return modelMatrix._m03_m13_m23; // Translation object to world
 }
 
-float3 GetPrimaryCameraPosition()
+float3 GetPrimaryCameraPosition(FrameUniforms frameUniform)
 {
-#if (SHADEROPTIONS_CAMERA_RELATIVE_RENDERING != 0)
-    return float3(0, 0, 0);
-#else
-    return _WorldSpaceCameraPos;
-#endif
+    return frameUniform.cameraUniform._CurFrameUniform._WorldSpaceCameraPos;
 }
 
 // Could be e.g. the position of a primary camera or a shadow-casting light.
-float3 GetCurrentViewPosition()
+float3 GetCurrentViewPosition(FrameUniforms frameUniform)
 {
-#if (defined(SHADERPASS) && (SHADERPASS != SHADERPASS_SHADOWS))
-    return GetPrimaryCameraPosition();
-#else
     // This is a generic solution.
     // However, using '_WorldSpaceCameraPos' is better for cache locality,
     // and in case we enable camera-relative rendering, we can statically set the position is 0.
-    return UNITY_MATRIX_I_V._14_24_34;
-#endif
+    return UNITY_MATRIX_I_V(frameUniform)._14_24_34;
 }
 
 // Returns the forward (central) direction of the current view in the world space.
-float3 GetViewForwardDir()
+float3 GetViewForwardDir(FrameUniforms frameUniform)
 {
-    float4x4 viewMat = GetWorldToViewMatrix();
+    float4x4 viewMat = GetWorldToViewMatrix(frameUniform);
     return -viewMat[2].xyz;
 }
 
 // Returns the forward (up) direction of the current view in the world space.
-float3 GetViewUpDir()
+float3 GetViewUpDir(FrameUniforms frameUniform)
 {
-    float4x4 viewMat = GetWorldToViewMatrix();
+    float4x4 viewMat = GetWorldToViewMatrix(frameUniform);
     return viewMat[1].xyz;
 }
 
 // Returns 'true' if the current view performs a perspective projection.
-bool IsPerspectiveProjection()
+bool IsPerspectiveProjection(FrameUniforms frameUniform)
 {
-#if defined(SHADERPASS) && (SHADERPASS != SHADERPASS_SHADOWS)
-    return (unity_OrthoParams.w == 0);
-#else
     // This is a generic solution.
     // However, using 'unity_OrthoParams' is better for cache locality.
     // TODO: set 'unity_OrthoParams' during the shadow pass.
-    return UNITY_MATRIX_P[3][3] == 0;
-#endif
+    return UNITY_MATRIX_P(frameUniform)[3][3] == 0;
 }
 
 // Computes the world space view direction (pointing towards the viewer).
-float3 GetWorldSpaceViewDir(float3 positionRWS)
+float3 GetWorldSpaceViewDir(FrameUniforms frameUniform, float3 positionRWS)
 {
-    if (IsPerspectiveProjection())
+    if (IsPerspectiveProjection(frameUniform))
     {
         // Perspective
-        return GetCurrentViewPosition() - positionRWS;
+        return GetCurrentViewPosition(frameUniform) - positionRWS;
     }
     else
     {
         // Orthographic
-        return -GetViewForwardDir();
+        return -GetViewForwardDir(frameUniform);
     }
 }
 
-float3 GetWorldSpaceNormalizeViewDir(float3 positionRWS)
+float3 GetWorldSpaceNormalizeViewDir(FrameUniforms frameUniform, float3 positionRWS)
 {
-    return normalize(GetWorldSpaceViewDir(positionRWS));
+    return normalize(GetWorldSpaceViewDir(frameUniform, positionRWS));
 }
 
 // UNITY_MATRIX_V defines a right-handed view space with the Z axis pointing towards the viewer.
 // This function reverses the direction of the Z axis (so that it points forward),
 // making the view space coordinate system left-handed.
-void GetLeftHandedViewSpaceMatrices(out float4x4 viewMatrix, out float4x4 projMatrix)
+void GetLeftHandedViewSpaceMatrices(FrameUniforms frameUniform, out float4x4 viewMatrix, out float4x4 projMatrix)
 {
-    viewMatrix = UNITY_MATRIX_V;
+    viewMatrix = UNITY_MATRIX_V(frameUniform);
     viewMatrix._31_32_33_34 = -viewMatrix._31_32_33_34;
 
-    projMatrix = UNITY_MATRIX_P;
+    projMatrix = UNITY_MATRIX_P(frameUniform);
     projMatrix._13_23_33_43 = -projMatrix._13_23_33_43;
 }
 
 // This method should be used for rendering any full screen quad that uses an auto-scaling Render Targets (see RTHandle/HDCamera)
 // It will account for the fact that the textures it samples are not necesarry using the full space of the render texture but only a partial viewport.
-float2 GetNormalizedFullScreenTriangleTexCoord(uint vertexID)
+float2 GetNormalizedFullScreenTriangleTexCoord(FrameUniforms frameUniform, uint vertexID)
 {
+    float4 _RTHandleScale = frameUniform.baseUniform._RTHandleScale;
     return GetFullScreenTriangleTexCoord(vertexID) * _RTHandleScale.xy;
 }
 
-float4 SampleSkyTexture(float3 texCoord, float lod, int sliceIndex)
+float4 SampleSkyTexture(ShaderVarablesData shaderVar, float3 texCoord, float lod, int sliceIndex)
 {
-    return SAMPLE_TEXTURECUBE_ARRAY_LOD(_SkyTexture, s_trilinear_clamp_sampler, texCoord, sliceIndex, lod);
+    Texture2D<float4> _SkyTexture = ResourceFromHeapIndex(shaderVar.frameUniforms.baseUniform._SkyTextureIndex);
+    SamplerState _TrilinearClampSampler = shaderVar.samplerStructs.STrilinearClampSampler;
+    return SAMPLE_TEXTURECUBE_ARRAY_LOD(_SkyTexture, _TrilinearClampSampler, texCoord, sliceIndex, lod);
 }
 
 // This function assumes the bitangent flip is encoded in tangentWS.w
@@ -141,20 +128,16 @@ float3x3 BuildTangentToWorld(float4 tangentWS, float3 normalWS)
 }
 
 // Transforms normal from object to world space
-float3 TransformPreviousObjectToWorldNormal(float3 normalOS)
+float3 TransformPreviousObjectToWorldNormal(RenderDataPerDraw renderDataPerDraw, float3 normalOS)
 {
-#ifdef UNITY_ASSUME_UNIFORM_SCALING
-    return normalize(mul((float3x3)UNITY_PREV_MATRIX_M, normalOS));
-#else
     // Normal need to be multiply by inverse transpose
-    return normalize(mul(normalOS, (float3x3)UNITY_PREV_MATRIX_I_M));
-#endif
+    return normalize(mul(normalOS, (float3x3)UNITY_PREV_MATRIX_I_M(renderDataPerDraw)));
 }
 
 // Transforms local position to camera relative world space
-float3 TransformPreviousObjectToWorld(float3 positionOS)
+float3 TransformPreviousObjectToWorld(RenderDataPerDraw renderDataPerDraw, float3 positionOS)
 {
-    return mul(UNITY_PREV_MATRIX_M,  float4(positionOS, 1.0)).xyz;
+    return mul(UNITY_PREV_MATRIX_M(renderDataPerDraw), float4(positionOS, 1.0)).xyz;
 }
 
 
@@ -219,21 +202,21 @@ uint ScalarizeElementIndex(uint v_elementIdx, bool fastPath)
 //-----------------------------------------------------------------------------
 
 // Helper for LODDitheringTransition.
-uint2 ComputeFadeMaskSeed(float3 V, uint2 positionSS)
+uint2 ComputeFadeMaskSeed(FrameUniforms frameUniform, float3 V, uint2 positionSS)
 {
     uint2 fadeMaskSeed;
 
-    if (IsPerspectiveProjection())
+    if (IsPerspectiveProjection(frameUniform))
     {
         // Start with the world-space direction V. It is independent from the orientation of the camera,
         // and only depends on the position of the camera and the position of the fragment.
         // Now, project and transform it into [-1, 1].
         float2 pv = PackNormalOctQuadEncode(V);
         // Rescale it to account for the resolution of the screen.
-        pv *= _ScreenSize.xy;
+        pv *= frameUniform.baseUniform._ScreenSize.xy;
         // The camera only sees a small portion of the sphere, limited by hFoV and vFoV.
         // Therefore, we must rescale again (before quantization), roughly, by 1/tan(FoV/2).
-        pv *= UNITY_MATRIX_P._m00_m11;
+        pv *= UNITY_MATRIX_P(frameUniform)._m00_m11;
         // Truncate and quantize.
         fadeMaskSeed = asuint((int2)pv);
     }

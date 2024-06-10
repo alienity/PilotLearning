@@ -21,6 +21,9 @@ struct D3D12_DRAW_INDEXED_ARGUMENTS
     uint StartIndexLocation;
     int	 BaseVertexLocation;
     uint StartInstanceLocation;
+#if _CPP_CODE_
+    uint3 _padding_drawArguments;
+#endif
 };
 
 struct D3D12_DISPATCH_ARGUMENTS

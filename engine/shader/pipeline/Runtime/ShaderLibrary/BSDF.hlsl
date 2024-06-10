@@ -102,7 +102,7 @@ float F_FresnelDielectric(float ior, float u)
     float g = sqrt(Sq(ior) + Sq(u) - 1.0);
 
     // The "1.0 - saturate(1.0 - result)" formulation allows to recover form cases where g is undefined, for IORs < 1
-    return 1.0 - saturate(1.0 - 0.5 * Sq((g - u) / (g + u)) * (1.0 + Sq(((g + u) * u - 1.0) / ((g - u) * u + 1.0))));
+    return 1.0 - saturate(1.0 - 0.5 * Sq((g - u) / (g + u)) * (1.0 + Sq(((g + u) * u - 1.0f) / ((g - u) * u + 1.0f))));
 }
 
 // Fresnel dieletric / conductor
@@ -167,7 +167,7 @@ float3 GetIorN(float3 f0, float3 edgeTint)
 
 float3 getIorK2(float3 f0, float3 n)
 {
-    float3 nf0 = Sq(n + 1.0) * f0 - Sq(f0 - 1.0);
+    float3 nf0 = Sq(n + 1.0f) * f0 - Sq(f0 - 1.0f);
     return nf0 / (1.0 - f0);
 }
 

@@ -1,236 +1,172 @@
 #ifndef UNITY_SPACE_TRANSFORMS_INCLUDED
 #define UNITY_SPACE_TRANSFORMS_INCLUDED
 
-#if SHADER_API_MOBILE || SHADER_API_GLES || SHADER_API_GLES3 || SHADER_API_SWITCH
-#pragma warning (disable : 3205) // conversion of larger type to smaller
-#endif
-
-// Caution: For HDRP, adding a function in this file requires adding the appropriate #define in PickingSpaceTransforms.hlsl
-
 // Return the PreTranslated ObjectToWorld Matrix (i.e matrix with _WorldSpaceCameraPos apply to it if we use camera relative rendering)
-float4x4 GetObjectToWorldMatrix()
+float4x4 GetObjectToWorldMatrix(RenderDataPerDraw renderDataPerDraw)
 {
-    return UNITY_MATRIX_M;
+    return UNITY_MATRIX_M(renderDataPerDraw);
 }
 
-float4x4 GetWorldToObjectMatrix()
+float4x4 GetWorldToObjectMatrix(RenderDataPerDraw renderDataPerDraw)
 {
-    return UNITY_MATRIX_I_M;
+    return UNITY_MATRIX_I_M(renderDataPerDraw);
 }
 
-float4x4 GetPrevObjectToWorldMatrix()
+float4x4 GetPrevObjectToWorldMatrix(RenderDataPerDraw renderDataPerDraw)
 {
-    return UNITY_PREV_MATRIX_M;
+    return UNITY_PREV_MATRIX_M(renderDataPerDraw);
 }
 
-float4x4 GetPrevWorldToObjectMatrix()
+float4x4 GetPrevWorldToObjectMatrix(RenderDataPerDraw renderDataPerDraw)
 {
-    return UNITY_PREV_MATRIX_I_M;
+    return UNITY_PREV_MATRIX_I_M(renderDataPerDraw);
 }
 
-float4x4 GetWorldToViewMatrix()
+float4x4 GetWorldToViewMatrix(FrameUniforms frameUniform)
 {
-    return UNITY_MATRIX_V;
+    return UNITY_MATRIX_V(frameUniform);
 }
 
-float4x4 GetViewToWorldMatrix()
+float4x4 GetViewToWorldMatrix(FrameUniforms frameUniform)
 {
-    return UNITY_MATRIX_I_V;
-}
-
-// Transform to homogenous clip space
-float4x4 GetWorldToHClipMatrix()
-{
-    return UNITY_MATRIX_VP;
+    return UNITY_MATRIX_I_V(frameUniform);
 }
 
 // Transform to homogenous clip space
-float4x4 GetViewToHClipMatrix()
+float4x4 GetWorldToHClipMatrix(FrameUniforms frameUniform)
 {
-    return UNITY_MATRIX_P;
+    return UNITY_MATRIX_VP(frameUniform);
 }
 
-// This function always return the absolute position in WS
-float3 GetAbsolutePositionWS(float3 positionRWS)
+// Transform to homogenous clip space
+float4x4 GetViewToHClipMatrix(FrameUniforms frameUniform)
 {
-#if (SHADEROPTIONS_CAMERA_RELATIVE_RENDERING != 0)
-    positionRWS += _WorldSpaceCameraPos.xyz;
-#endif
-    return positionRWS;
+    return UNITY_MATRIX_P(frameUniform);
 }
 
-// This function return the camera relative position in WS
-float3 GetCameraRelativePositionWS(float3 positionWS)
+float3 TransformObjectToWorld(RenderDataPerDraw renderDataPerDraw, float3 positionOS)
 {
-#if (SHADEROPTIONS_CAMERA_RELATIVE_RENDERING != 0)
-    positionWS -= _WorldSpaceCameraPos.xyz;
-#endif
-    return positionWS;
+    return mul(GetObjectToWorldMatrix(renderDataPerDraw), float4(positionOS, 1.0)).xyz;
 }
 
-float GetOddNegativeScale()
+float3 TransformWorldToObject(RenderDataPerDraw renderDataPerDraw, float3 positionWS)
 {
-    // FIXME: We should be able to just return unity_WorldTransformParams.w, but it is not
-    // properly set at the moment, when doing ray-tracing; once this has been fixed in cpp,
-    // we can revert back to the former implementation.
-    return unity_WorldTransformParams.w >= 0.0 ? 1.0 : -1.0;
+    return mul(GetWorldToObjectMatrix(renderDataPerDraw), float4(positionWS, 1.0)).xyz;
 }
 
-float3 TransformObjectToWorld(float3 positionOS)
+float3 TransformWorldToView(FrameUniforms frameUniform, float3 positionWS)
 {
-    #if defined(SHADER_STAGE_RAY_TRACING)
-    return mul(ObjectToWorld3x4(), float4(positionOS, 1.0)).xyz;
-    #else
-    return mul(GetObjectToWorldMatrix(), float4(positionOS, 1.0)).xyz;
-    #endif
+    return mul(GetWorldToViewMatrix(frameUniform), float4(positionWS, 1.0)).xyz;
 }
 
-float3 TransformWorldToObject(float3 positionWS)
+float3 TransformViewToWorld(FrameUniforms frameUniform, float3 positionVS)
 {
-    #if defined(SHADER_STAGE_RAY_TRACING)
-    return mul(WorldToObject3x4(), float4(positionWS, 1.0)).xyz;
-    #else
-    return mul(GetWorldToObjectMatrix(), float4(positionWS, 1.0)).xyz;
-    #endif
-}
-
-float3 TransformWorldToView(float3 positionWS)
-{
-    return mul(GetWorldToViewMatrix(), float4(positionWS, 1.0)).xyz;
-}
-
-float3 TransformViewToWorld(float3 positionVS)
-{
-    return mul(GetViewToWorldMatrix(), float4(positionVS, 1.0)).xyz;
+    return mul(GetViewToWorldMatrix(frameUniform), float4(positionVS, 1.0)).xyz;
 }
 
 // Transforms position from object space to homogenous space
-float4 TransformObjectToHClip(float3 positionOS)
+float4 TransformObjectToHClip(FrameUniforms frameUniform, RenderDataPerDraw renderDataPerDraw, float3 positionOS)
 {
     // More efficient than computing M*VP matrix product
-    return mul(GetWorldToHClipMatrix(), mul(GetObjectToWorldMatrix(), float4(positionOS, 1.0)));
+    return mul(GetWorldToHClipMatrix(frameUniform), mul(GetObjectToWorldMatrix(renderDataPerDraw), float4(positionOS, 1.0)));
 }
 
 // Transforms position from world space to homogenous space
-float4 TransformWorldToHClip(float3 positionWS)
+float4 TransformWorldToHClip(FrameUniforms frameUniform, float3 positionWS)
 {
-    return mul(GetWorldToHClipMatrix(), float4(positionWS, 1.0));
+    return mul(GetWorldToHClipMatrix(frameUniform), float4(positionWS, 1.0));
 }
 
 // Transforms position from view space to homogenous space
-float4 TransformWViewToHClip(float3 positionVS)
+float4 TransformWViewToHClip(FrameUniforms frameUniform, float3 positionVS)
 {
-    return mul(GetViewToHClipMatrix(), float4(positionVS, 1.0));
+    return mul(GetViewToHClipMatrix(frameUniform), float4(positionVS, 1.0));
 }
 
 // Normalize to support uniform scaling
-float3 TransformObjectToWorldDir(float3 dirOS, bool doNormalize = true)
+float3 TransformObjectToWorldDir(RenderDataPerDraw renderDataPerDraw, float3 dirOS, bool doNormalize = true)
 {
-    #ifndef SHADER_STAGE_RAY_TRACING
-    float3 dirWS = mul((float3x3)GetObjectToWorldMatrix(), dirOS);
-    #else
-    float3 dirWS = mul((float3x3)ObjectToWorld3x4(), dirOS);
-    #endif
+    float3 dirWS = mul((float3x3)GetObjectToWorldMatrix(renderDataPerDraw), dirOS);
     if (doNormalize)
         return SafeNormalize(dirWS);
-
     return dirWS;
 }
 
 // Normalize to support uniform scaling
-float3 TransformWorldToObjectDir(float3 dirWS, bool doNormalize = true)
+float3 TransformWorldToObjectDir(RenderDataPerDraw renderDataPerDraw, float3 dirWS, bool doNormalize = true)
 {
-    #ifndef SHADER_STAGE_RAY_TRACING
-    float3 dirOS = mul((float3x3)GetWorldToObjectMatrix(), dirWS);
-    #else
-    float3 dirOS = mul((float3x3)WorldToObject3x4(), dirWS);
-    #endif
+    float3 dirOS = mul((float3x3)GetWorldToObjectMatrix(renderDataPerDraw), dirWS);
     if (doNormalize)
         return normalize(dirOS);
-
     return dirOS;
 }
 
 // Transforms vector from world space to view space
-float3 TransformWorldToViewDir(float3 dirWS, bool doNormalize = false)
+float3 TransformWorldToViewDir(FrameUniforms frameUniform, float3 dirWS, bool doNormalize = false)
 {
-    float3 dirVS = mul((float3x3)GetWorldToViewMatrix(), dirWS).xyz;
+    float3 dirVS = mul((float3x3)GetWorldToViewMatrix(frameUniform), dirWS).xyz;
     if (doNormalize)
         return normalize(dirVS);
-
     return dirVS;
 }
 
 // Transforms vector from view space to world space
-float3 TransformViewToWorldDir(float3 dirVS, bool doNormalize = false)
+float3 TransformViewToWorldDir(FrameUniforms frameUniform, float3 dirVS, bool doNormalize = false)
 {
-    float3 dirWS = mul((float3x3)GetViewToWorldMatrix(), dirVS).xyz;
+    float3 dirWS = mul((float3x3)GetViewToWorldMatrix(frameUniform), dirVS).xyz;
     if (doNormalize)
         return normalize(dirWS);
-
     return dirWS;
 }
 
 // Transforms normal from world space to view space
-float3 TransformWorldToViewNormal(float3 normalWS, bool doNormalize = false)
+float3 TransformWorldToViewNormal(FrameUniforms frameUniform, float3 normalWS, bool doNormalize = false)
 {
     // assuming view matrix is uniformly scaled, we can use direction transform
-    return TransformWorldToViewDir(normalWS, doNormalize);
+    return TransformWorldToViewDir(frameUniform, normalWS, doNormalize);
 }
 
 // Transforms normal from view space to world space
-float3 TransformViewToWorldNormal(float3 normalVS, bool doNormalize = false)
+float3 TransformViewToWorldNormal(FrameUniforms frameUniform, float3 normalVS, bool doNormalize = false)
 {
     // assuming view matrix is uniformly scaled, we can use direction transform
-    return TransformViewToWorldDir(normalVS, doNormalize);
+    return TransformViewToWorldDir(frameUniform, normalVS, doNormalize);
 }
 
 // Transforms vector from world space to homogenous space
-float3 TransformWorldToHClipDir(float3 directionWS, bool doNormalize = false)
+float3 TransformWorldToHClipDir(FrameUniforms frameUniform, float3 directionWS, bool doNormalize = false)
 {
-    float3 dirHCS = mul((float3x3)GetWorldToHClipMatrix(), directionWS).xyz;
+    float3 dirHCS = mul((float3x3)GetWorldToHClipMatrix(frameUniform), directionWS).xyz;
     if (doNormalize)
         return normalize(dirHCS);
-
     return dirHCS;
 }
 
 // Transforms normal from object to world space
-float3 TransformObjectToWorldNormal(float3 normalOS, bool doNormalize = true)
+float3 TransformObjectToWorldNormal(RenderDataPerDraw renderDataPerDraw, float3 normalOS, bool doNormalize = true)
 {
-#ifdef UNITY_ASSUME_UNIFORM_SCALING
-    return TransformObjectToWorldDir(normalOS, doNormalize);
-#else
     // Normal need to be multiply by inverse transpose
-    float3 normalWS = mul(normalOS, (float3x3)GetWorldToObjectMatrix());
+    float3 normalWS = mul(normalOS, (float3x3)GetWorldToObjectMatrix(renderDataPerDraw));
     if (doNormalize)
         return SafeNormalize(normalWS);
-
     return normalWS;
-#endif
 }
 
 // Transforms normal from world to object space
-float3 TransformWorldToObjectNormal(float3 normalWS, bool doNormalize = true)
+float3 TransformWorldToObjectNormal(RenderDataPerDraw renderDataPerDraw, float3 normalWS, bool doNormalize = true)
 {
-#ifdef UNITY_ASSUME_UNIFORM_SCALING
-    return TransformWorldToObjectDir(normalWS, doNormalize);
-#else
     // Normal need to be multiply by inverse transpose
-    float3 normalOS = mul(normalWS, (float3x3)GetObjectToWorldMatrix());
+    float3 normalOS = mul(normalWS, (float3x3)GetObjectToWorldMatrix(renderDataPerDraw));
     if (doNormalize)
         return SafeNormalize(normalOS);
-
     return normalOS;
-#endif
 }
 
 float3x3 CreateTangentToWorld(float3 normal, float3 tangent, float flipSign)
 {
     // For odd-negative scale transforms we need to flip the sign
-    float sgn = flipSign * GetOddNegativeScale();
+    float sgn = flipSign;
     float3 bitangent = cross(normal, tangent) * sgn;
-
     return float3x3(tangent, bitangent, normal);
 }
 
@@ -321,27 +257,23 @@ float3 TransformTangentToWorldDir(float3 dirWS, float3x3 tangentToWorld, bool do
 }
 
 // tangentToWorld is the matrix representing the transformation of a normal from tangent to world space
-float3 TransformTangentToObject(float3 dirTS, float3x3 tangentToWorld)
+float3 TransformTangentToObject(RenderDataPerDraw renderDataPerDraw, float3 dirTS, float3x3 tangentToWorld)
 {
     // Note matrix is in row major convention with left multiplication as it is build on the fly
     float3 normalWS = TransformTangentToWorld(dirTS, tangentToWorld);
-    return TransformWorldToObjectNormal(normalWS);
+    return TransformWorldToObjectNormal(renderDataPerDraw, normalWS);
 }
 
 // tangentToWorld is the matrix representing the transformation of a normal from tangent to world space
-float3 TransformObjectToTangent(float3 dirOS, float3x3 tangentToWorld)
+float3 TransformObjectToTangent(RenderDataPerDraw renderDataPerDraw, float3 dirOS, float3x3 tangentToWorld)
 {
     // Note matrix is in row major convention with left multiplication as it is build on the fly
 
     // don't normalize, as normalWS will be normalized after TransformWorldToTangent
-    float3 normalWS = TransformObjectToWorldNormal(dirOS, false);
+    float3 normalWS = TransformObjectToWorldNormal(renderDataPerDraw, dirOS, false);
 
     // transform from world to tangent
     return TransformWorldToTangent(normalWS, tangentToWorld);
 }
-
-#if SHADER_API_MOBILE || SHADER_API_GLES || SHADER_API_GLES3 || SHADER_API_SWITCH
-#pragma warning (enable : 3205) // conversion of larger type to smaller
-#endif
 
 #endif

@@ -1151,10 +1151,8 @@ struct BSphere
 
 struct BoundingBox
 {
-    float3 Center;
-    float  _Padding_Center;
-    float3 Extents;
-    float  _Padding_Extents;
+    float4 Center;
+    float4 Extents;
 
     bool Intersects(BoundingBox Other)
     {
@@ -1173,11 +1171,10 @@ struct BoundingBox
     // https://stackoverflow.com/questions/6053522/how-to-recalculate-axis-aligned-bounding-box-after-translate-rotate
     void Transform(float4x4 m, inout BoundingBox b)
     {
-        //float3 t = m[3].xyz;
         float3 t = float3(m[0][3], m[1][3], m[2][3]);
 
-        b.Center  = t;
-        b.Extents = float3(0.0f, 0.0f, 0.0f);
+        b.Center  = float4(t, 0);
+        b.Extents = float4(0.0f, 0.0f, 0.0f, 0.0f);
         for (int i = 0; i < 3; ++i)
         {
             for (int j = 0; j < 3; ++j)
@@ -1683,7 +1680,7 @@ float3 DisplayNormalSRGB( float3 normal )
 float CalcLuminance( float3 color )
 {
     // https://en.wikipedia.org/wiki/Relative_luminance - Rec. 709
-    return max( 0.0000001, dot(color, float3(0.2126f, 0.7152f, 0.0722f) ) );
+    return max( FLT_MIN, dot(color, float3(0.2126f, 0.7152f, 0.0722f) ) );
 }
 //
 // color -> log luma conversion used for edge detection

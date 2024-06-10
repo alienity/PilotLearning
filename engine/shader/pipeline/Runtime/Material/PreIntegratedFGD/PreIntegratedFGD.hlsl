@@ -1,16 +1,17 @@
 #define FGDTEXTURE_RESOLUTION (64)
 
-TEXTURE2D(_PreIntegratedFGD_GGXDisneyDiffuse);
+// TEXTURE2D(_PreIntegratedFGD_GGXDisneyDiffuse);
 
 // For image based lighting, a part of the BSDF is pre-integrated.
 // This is done both for specular GGX height-correlated and DisneyDiffuse
 // reflectivity is  Integral{(BSDF_GGX / F) - use for multiscattering
-void GetPreIntegratedFGDGGXAndDisneyDiffuse(float NdotV, float perceptualRoughness, float3 fresnel0, out float3 specularFGD, out float diffuseFGD, out float reflectivity)
+void GetPreIntegratedFGDGGXAndDisneyDiffuse(Texture2D<float4> preIntegratedFGD_GGXDisneyDiffuse, SamplerState sLinearClampSampler,
+    float NdotV, float perceptualRoughness, float3 fresnel0, out float3 specularFGD, out float diffuseFGD, out float reflectivity)
 {
     // We want the LUT to contain the entire [0, 1] range, without losing half a texel at each side.
     float2 coordLUT = Remap01ToHalfTexelCoord(float2(sqrt(NdotV), perceptualRoughness), FGDTEXTURE_RESOLUTION);
 
-    float3 preFGD = SAMPLE_TEXTURE2D_LOD(_PreIntegratedFGD_GGXDisneyDiffuse, s_linear_clamp_sampler, coordLUT, 0).xyz;
+    float3 preFGD = SAMPLE_TEXTURE2D_LOD(preIntegratedFGD_GGXDisneyDiffuse, sLinearClampSampler, coordLUT, 0).xyz;
 
     // Pre-integrate GGX FGD
     // Integral{BSDF * <N,L> dw} =
@@ -27,18 +28,21 @@ void GetPreIntegratedFGDGGXAndDisneyDiffuse(float NdotV, float perceptualRoughne
     reflectivity = preFGD.y;
 }
 
-void GetPreIntegratedFGDGGXAndLambert(float NdotV, float perceptualRoughness, float3 fresnel0, out float3 specularFGD, out float diffuseFGD, out float reflectivity)
+void GetPreIntegratedFGDGGXAndLambert(Texture2D<float4> preIntegratedFGD_GGXDisneyDiffuse, SamplerState sLinearClampSampler,
+    float NdotV, float perceptualRoughness, float3 fresnel0, out float3 specularFGD, out float diffuseFGD, out float reflectivity)
 {
-    GetPreIntegratedFGDGGXAndDisneyDiffuse(NdotV, perceptualRoughness, fresnel0, specularFGD, diffuseFGD, reflectivity);
+    GetPreIntegratedFGDGGXAndDisneyDiffuse(preIntegratedFGD_GGXDisneyDiffuse, sLinearClampSampler,
+        NdotV, perceptualRoughness, fresnel0, specularFGD, diffuseFGD, reflectivity);
     diffuseFGD = 1.0;
 }
 
-TEXTURE2D(_PreIntegratedFGD_CharlieAndFabric);
+// TEXTURE2D(_PreIntegratedFGD_CharlieAndFabric);
 
-void GetPreIntegratedFGDCharlieAndFabricLambert(float NdotV, float perceptualRoughness, float3 fresnel0, out float3 specularFGD, out float diffuseFGD, out float reflectivity)
+void GetPreIntegratedFGDCharlieAndFabricLambert(Texture2D<float4> preIntegratedFGD_CharlieAndFabric, SamplerState sLinearClampSampler,
+    float NdotV, float perceptualRoughness, float3 fresnel0, out float3 specularFGD, out float diffuseFGD, out float reflectivity)
 {
     // Read the texture
-    float3 preFGD = SAMPLE_TEXTURE2D_LOD(_PreIntegratedFGD_CharlieAndFabric, s_linear_clamp_sampler, float2(NdotV, perceptualRoughness), 0).xyz;
+    float3 preFGD = SAMPLE_TEXTURE2D_LOD(preIntegratedFGD_CharlieAndFabric, sLinearClampSampler, float2(NdotV, perceptualRoughness), 0).xyz;
 
     specularFGD = lerp(preFGD.xxx, preFGD.yyy, fresnel0) * 2.0f * PI;
 

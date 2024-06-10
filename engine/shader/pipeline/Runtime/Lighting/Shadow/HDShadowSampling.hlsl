@@ -11,7 +11,7 @@
 //  PCF Filtering methods
 // ------------------------------------------------------------------
 
-float SampleShadow_Gather_PCF(float4 shadowAtlasSize, float3 coord, Texture2D tex, SamplerComparisonState compSamp, float depthBias)
+float SampleShadow_Gather_PCF(float4 shadowAtlasSize, float3 coord, Texture2D tex, SamplerState sPointClampSampler, SamplerComparisonState compSamp, float depthBias)
 {
 #if SHADOW_USE_DEPTH_BIAS == 1
     // add the depth bias
@@ -20,7 +20,7 @@ float SampleShadow_Gather_PCF(float4 shadowAtlasSize, float3 coord, Texture2D te
 
     float2 f = frac(coord.xy * shadowAtlasSize.zw - 0.5f);
 
-    float4 shadowMapTaps = GATHER_TEXTURE2D(tex, s_point_clamp_sampler, coord.xy);
+    float4 shadowMapTaps = GATHER_TEXTURE2D(tex, sPointClampSampler, coord.xy);
     float4 shadowResults = (coord.z > shadowMapTaps.x);
 
     return lerp(lerp(shadowResults.w, shadowResults.z, f.x),
@@ -65,7 +65,6 @@ float SampleShadow_PCF_Tent_5x5(float4 shadowAtlasSize, float3 coord, Texture2D 
 #if SHADOW_OPTIMIZE_REGISTER_USAGE == 1
     // the loops are only there to prevent the compiler form coalescing all 9 texture fetches which increases register usage
     int i;
-    UNITY_LOOP
     for (i = 0; i < 1; i++)
     {
         shadow += fetchesWeights[ 0] * SAMPLE_TEXTURE2D_SHADOW(tex, compSamp, float3(fetchesUV[ 0].xy, coord.z)).x;
@@ -74,7 +73,6 @@ float SampleShadow_PCF_Tent_5x5(float4 shadowAtlasSize, float3 coord, Texture2D 
         shadow += fetchesWeights[ 3] * SAMPLE_TEXTURE2D_SHADOW(tex, compSamp, float3(fetchesUV[ 3].xy, coord.z)).x;
     }
 
-    UNITY_LOOP
     for (i = 0; i < 1; i++)
     {
         shadow += fetchesWeights[ 4] * SAMPLE_TEXTURE2D_SHADOW(tex, compSamp, float3(fetchesUV[ 4].xy, coord.z)).x;
@@ -112,7 +110,6 @@ float SampleShadow_PCF_Tent_7x7(float4 shadowAtlasSize, float3 coord, Texture2D 
 #if SHADOW_OPTIMIZE_REGISTER_USAGE == 1
     // the loops are only there to prevent the compiler form coalescing all 16 texture fetches which increases register usage
     int i;
-    UNITY_LOOP
     for (i = 0; i < 1; i++)
     {
         shadow += fetchesWeights[ 0] * SAMPLE_TEXTURE2D_SHADOW(tex, compSamp, float3(fetchesUV[ 0].xy, coord.z)).x;
@@ -120,7 +117,6 @@ float SampleShadow_PCF_Tent_7x7(float4 shadowAtlasSize, float3 coord, Texture2D 
         shadow += fetchesWeights[ 2] * SAMPLE_TEXTURE2D_SHADOW(tex, compSamp, float3(fetchesUV[ 2].xy, coord.z)).x;
         shadow += fetchesWeights[ 3] * SAMPLE_TEXTURE2D_SHADOW(tex, compSamp, float3(fetchesUV[ 3].xy, coord.z)).x;
     }
-    UNITY_LOOP
     for (i = 0; i < 1; i++)
     {
         shadow += fetchesWeights[ 4] * SAMPLE_TEXTURE2D_SHADOW(tex, compSamp, float3(fetchesUV[ 4].xy, coord.z)).x;
@@ -128,7 +124,6 @@ float SampleShadow_PCF_Tent_7x7(float4 shadowAtlasSize, float3 coord, Texture2D 
         shadow += fetchesWeights[ 6] * SAMPLE_TEXTURE2D_SHADOW(tex, compSamp, float3(fetchesUV[ 6].xy, coord.z)).x;
         shadow += fetchesWeights[ 7] * SAMPLE_TEXTURE2D_SHADOW(tex, compSamp, float3(fetchesUV[ 7].xy, coord.z)).x;
     }
-    UNITY_LOOP
     for (i = 0; i < 1; i++)
     {
         shadow += fetchesWeights[ 8] * SAMPLE_TEXTURE2D_SHADOW(tex, compSamp, float3(fetchesUV[ 8].xy, coord.z)).x;
@@ -136,7 +131,6 @@ float SampleShadow_PCF_Tent_7x7(float4 shadowAtlasSize, float3 coord, Texture2D 
         shadow += fetchesWeights[10] * SAMPLE_TEXTURE2D_SHADOW(tex, compSamp, float3(fetchesUV[10].xy, coord.z)).x;
         shadow += fetchesWeights[11] * SAMPLE_TEXTURE2D_SHADOW(tex, compSamp, float3(fetchesUV[11].xy, coord.z)).x;
     }
-    UNITY_LOOP
     for (i = 0; i < 1; i++)
     {
         shadow += fetchesWeights[12] * SAMPLE_TEXTURE2D_SHADOW(tex, compSamp, float3(fetchesUV[12].xy, coord.z)).x;
@@ -285,14 +279,15 @@ float SampleShadow_MSM_1tap(float3 tcs, float lightLeakBias, float momentBias, f
 //                  PCSS sampling
 //
 // Note shadowAtlasInfo contains: x: resolution, y: the inverse of atlas resolution
-float SampleShadow_PCSS(float3 tcs, float2 posSS, float2 scale, float2 offset, float shadowSoftness, float minFilterRadius, int blockerSampleCount, int filterSampleCount, Texture2D tex, SamplerComparisonState compSamp, SamplerState samp, float depthBias, float4 zParams, bool isPerspective, float2 shadowAtlasInfo)
+float SampleShadow_PCSS(float3 tcs, float2 posSS, float2 scale, float2 offset, float shadowSoftness, float minFilterRadius, int blockerSampleCount, int filterSampleCount, Texture2D tex, SamplerComparisonState compSamp, SamplerState samp, float depthBias, float4 zParams, bool isPerspective, float2 shadowAtlasInfo, int inTaaFrameIndex)
 {
 #if SHADOW_USE_DEPTH_BIAS == 1
     // add the depth bias
     tcs.z += depthBias;
 #endif
 
-    uint taaFrameIndex = _TaaFrameInfo.z;
+    // uint taaFrameIndex = _TaaFrameInfo.z;
+    uint taaFrameIndex = inTaaFrameIndex;
     float sampleJitterAngle = InterleavedGradientNoise(posSS.xy, taaFrameIndex) * 2.0 * PI;
     float2 sampleJitter = float2(sin(sampleJitterAngle), cos(sampleJitterAngle));
 
@@ -339,7 +334,7 @@ float SampleShadow_PCSS(float3 tcs, float2 posSS, float2 scale, float2 offset, f
 
 
 // TODO: This PCSS variant works for other types of lights as well, but is not well tested there, so we're introducing it only for area lights for now.
-float SampleShadow_PCSS_Area(float3 posTCAtlas, float2 posSS, float2 shadowmapInAtlasScale, float2 shadowmapInAtlasOffset, float shadowSoftness, float minFilterRadius, int blockerSampleCount, int filterSampleCount, Texture2D tex, SamplerComparisonState compSamp, SamplerState samp, float depthBias, float4 zParams, bool isPerspective, float2 shadowAtlasInfo)
+float SampleShadow_PCSS_Area(float3 posTCAtlas, float2 posSS, float2 shadowmapInAtlasScale, float2 shadowmapInAtlasOffset, float shadowSoftness, float minFilterRadius, int blockerSampleCount, int filterSampleCount, Texture2D tex, SamplerComparisonState compSamp, SamplerState samp, float depthBias, float4 zParams, bool isPerspective, float2 shadowAtlasInfo, int inTaaFrameIndex)
 {
 #if SHADOW_USE_DEPTH_BIAS == 1
     posTCAtlas.z += depthBias;
@@ -366,7 +361,8 @@ float SampleShadow_PCSS_Area(float3 posTCAtlas, float2 posSS, float2 shadowmapIn
     maxSampleZDistance *= 4096.0 / shadowmapWidth;
     // TODO: move all the softness aka max distance rescaling to c#
 
-    uint taaFrameIndex = _TaaFrameInfo.z;
+    // uint taaFrameIndex = _TaaFrameInfo.z;
+    uint taaFrameIndex = inTaaFrameIndex;
     float sampleJitterAngle = InterleavedGradientNoise(posSS.xy, taaFrameIndex) * 2.0 * PI;
     float2 sampleJitter = float2(sin(sampleJitterAngle), cos(sampleJitterAngle));
 

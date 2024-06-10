@@ -21,22 +21,22 @@ struct HDShadowContext
 #include "../../Lighting/Shadow/HDShadowSampling.hlsl"
 #include "../../Lighting/Shadow/HDShadowAlgorithms.hlsl"
 
-TEXTURE2D(_ShadowmapAtlas);
-TEXTURE2D(_CachedShadowmapAtlas);
-TEXTURE2D(_ShadowmapCascadeAtlas);
-TEXTURE2D(_ShadowmapAreaAtlas);
-TEXTURE2D(_CachedAreaLightShadowmapAtlas);
+// TEXTURE2D(_ShadowmapAtlas);
+// TEXTURE2D(_CachedShadowmapAtlas);
+// TEXTURE2D(_ShadowmapCascadeAtlas);
+// TEXTURE2D(_ShadowmapAreaAtlas);
+// TEXTURE2D(_CachedAreaLightShadowmapAtlas);
 
-StructuredBuffer<HDShadowData>              _HDShadowDatas;
-// Only the first element is used since we only support one directional light
-StructuredBuffer<HDDirectionalShadowData>   _HDDirectionalShadowData;
+// StructuredBuffer<HDShadowData>              _HDShadowDatas;
+// // Only the first element is used since we only support one directional light
+// StructuredBuffer<HDDirectionalShadowData>   _HDDirectionalShadowData;
 
 HDShadowContext InitShadowContext()
 {
     HDShadowContext         sc;
 
-    sc.shadowDatas = _HDShadowDatas;
-    sc.directionalShadowData = _HDDirectionalShadowData[0];
+    // sc.shadowDatas = _HDShadowDatas;
+    // sc.directionalShadowData = _HDDirectionalShadowData[0];
 #ifdef SHADOWS_SHADOWMASK
     sc.shadowSplitIndex = -1;
     sc.fade = 0.0;
