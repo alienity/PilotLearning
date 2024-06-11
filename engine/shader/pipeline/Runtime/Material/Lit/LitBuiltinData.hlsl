@@ -7,9 +7,9 @@ void GetBuiltinData(FragInputs input, float3 V, inout PositionInputs posInput, S
 
     builtinData.emissiveColor = emissiveColor;
 
-    // Inverse pre-expose using _EmissiveExposureWeight weight
-    float3 emissiveRcpExposure = builtinData.emissiveColor * GetInverseCurrentExposureMultiplier();
-    builtinData.emissiveColor = lerp(emissiveRcpExposure, builtinData.emissiveColor, _EmissiveExposureWeight);
+    // // Inverse pre-expose using _EmissiveExposureWeight weight
+    // float3 emissiveRcpExposure = builtinData.emissiveColor * GetInverseCurrentExposureMultiplier();
+    // builtinData.emissiveColor = lerp(emissiveRcpExposure, builtinData.emissiveColor, _EmissiveExposureWeight);
 
     builtinData.depthOffset = depthOffset;
 
@@ -18,7 +18,8 @@ void GetBuiltinData(FragInputs input, float3 V, inout PositionInputs posInput, S
 
 float3 GetEmissiveColor(SurfaceData surfaceData)
 {
-    return _EmissiveColor * lerp(float3(1.0, 1.0, 1.0), surfaceData.baseColor.rgb, _AlbedoAffectEmissive);
+    return float3(0,0,0);
+    // return _EmissiveColor * lerp(float3(1.0, 1.0, 1.0), surfaceData.baseColor.rgb, _AlbedoAffectEmissive);
 }
 
 #ifdef _EMISSIVE_COLOR_MAP

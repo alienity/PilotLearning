@@ -77,15 +77,15 @@ void Frag(PackedVaryingsToPS packedInput
     //UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(packedInput);
     FragInputs input = UnpackVaryingsToFragInputs(packedInput);
 
-    AdjustFragInputsToOffScreenRendering(input, _OffScreenRendering > 0, _OffScreenDownsampleFactor);
+    // AdjustFragInputsToOffScreenRendering(input, _OffScreenRendering > 0, _OffScreenDownsampleFactor);
 
     uint2 tileIndex = uint2(input.positionSS.xy) / GetTileSize();
 
     // input.positionSS is SV_Position
-    PositionInputs posInput = GetPositionInput(input.positionSS.xy, _ScreenSize.zw, input.positionSS.z, input.positionSS.w, input.positionRWS.xyz, tileIndex);
+    // PositionInputs posInput = GetPositionInput(input.positionSS.xy, _ScreenSize.zw, input.positionSS.z, input.positionSS.w, input.positionRWS.xyz, tileIndex);
 
 #ifdef VARYINGS_NEED_POSITION_WS
-    float3 V = GetWorldSpaceNormalizeViewDir(input.positionRWS);
+    // float3 V = GetWorldSpaceNormalizeViewDir(input.positionRWS);
 #else
     // Unused
     float3 V = float3(1.0, 1.0, 1.0); // Avoid the division by 0
@@ -93,11 +93,11 @@ void Frag(PackedVaryingsToPS packedInput
 
     SurfaceData surfaceData;
     BuiltinData builtinData;
-    GetSurfaceAndBuiltinData(input, V, posInput, surfaceData, builtinData);
+    // GetSurfaceAndBuiltinData(input, V, posInput, surfaceData, builtinData);
 
-    BSDFData bsdfData = ConvertSurfaceDataToBSDFData(input.positionSS.xy, surfaceData);
-
-    PreLightData preLightData = GetPreLightData(V, posInput, bsdfData);
+    // BSDFData bsdfData = ConvertSurfaceDataToBSDFData(input.positionSS.xy, surfaceData);
+    //
+    // PreLightData preLightData = GetPreLightData(V, posInput, bsdfData);
 
     outColor = float4(0.0, 0.0, 0.0, 0.0);
 
@@ -110,14 +110,14 @@ void Frag(PackedVaryingsToPS packedInput
         uint featureFlags = LIGHT_FEATURE_MASK_FLAGS_OPAQUE;
 #endif
         LightLoopOutput lightLoopOutput;
-        LightLoop(V, posInput, preLightData, bsdfData, builtinData, featureFlags, lightLoopOutput);
+        // LightLoop(V, posInput, preLightData, bsdfData, builtinData, featureFlags, lightLoopOutput);
 
         // Alias
         float3 diffuseLighting = lightLoopOutput.diffuseLighting;
         float3 specularLighting = lightLoopOutput.specularLighting;
 
-        diffuseLighting *= GetCurrentExposureMultiplier();
-        specularLighting *= GetCurrentExposureMultiplier();
+        // diffuseLighting *= GetCurrentExposureMultiplier();
+        // specularLighting *= GetCurrentExposureMultiplier();
 
 #ifdef OUTPUT_SPLIT_LIGHTING
         if (_EnableSubsurfaceScattering != 0 && ShouldOutputSplitLighting(bsdfData))
@@ -137,7 +137,7 @@ void Frag(PackedVaryingsToPS packedInput
         ENCODE_INTO_SSSBUFFER(surfaceData, posInput.positionSS, outSSSBuffer);
 #else
         outColor = ApplyBlendMode(diffuseLighting, specularLighting, builtinData.opacity);
-        outColor = EvaluateAtmosphericScattering(posInput, V, outColor);
+        // outColor = EvaluateAtmosphericScattering(posInput, V, outColor);
 #endif
 
 #ifdef _WRITE_TRANSPARENT_MOTION_VECTOR

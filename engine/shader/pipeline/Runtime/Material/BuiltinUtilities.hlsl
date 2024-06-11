@@ -127,8 +127,8 @@ void PostInitBuiltinData(   float3 V, PositionInputs posInput, SurfaceData surfa
     // Apply control from the indirect lighting volume settings - This is apply here so we don't affect emissive
     // color in case of lit deferred for example and avoid material to have to deal with it
     // This is applied only on bakeDiffuseLighting as ModifyBakedDiffuseLighting combine both bakeDiffuseLighting and backBakeDiffuseLighting
-    float multiplier = GetIndirectDiffuseMultiplier(builtinData.renderingLayers);
-    builtinData.bakeDiffuseLighting *= multiplier;
+    // float multiplier = GetIndirectDiffuseMultiplier(builtinData.renderingLayers);
+    // builtinData.bakeDiffuseLighting *= multiplier;
 
     ApplyDebugToBuiltinData(builtinData);
 }

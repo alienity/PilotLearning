@@ -83,6 +83,6 @@ void GetNormalWS_SrcWS(FragInputs input, float3 srcNormalWS, out float3 normalWS
 // This function converts an object space normal to world space + applies a correction to the normal if it is not pointing towards the near plane.
 void GetNormalWS_SrcOS(FragInputs input, float3 srcNormalOS, out float3 normalWS, float3 doubleSidedConstants)
 {
-    float3 srcNormalWS = TransformObjectToWorldNormal(srcNormalOS);
-    GetNormalWS_SrcWS(input, srcNormalWS, normalWS, doubleSidedConstants);
+    // float3 srcNormalWS = TransformObjectToWorldNormal(srcNormalOS);
+    // GetNormalWS_SrcWS(input, srcNormalWS, normalWS, doubleSidedConstants);
 }

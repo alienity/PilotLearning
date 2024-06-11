@@ -30,6 +30,7 @@
 #include "../../Material/Material.hlsl"
 #include "../../Lighting/Lighting.hlsl"
 
+#define HAS_LIGHTLOOP
 #include "../../Lighting/LightLoop/LightLoopDef.hlsl"
 #include "../../Material/Lit/Lit.hlsl"
 #include "../../Lighting/LightLoop/LightLoop.hlsl"

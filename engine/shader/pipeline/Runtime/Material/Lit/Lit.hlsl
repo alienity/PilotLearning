@@ -75,10 +75,13 @@ struct BSDFData
 
 
 // Those define allow to include desired SSS/Transmission functions
+#define SKIP_RASTERIZED_AREA_SHADOWS
+#define LIGHT_EVALUATION_NO_COOKIE
+#define LIGHT_EVALUATION_NO_HEIGHT_FOG
 // #define MATERIAL_INCLUDE_SUBSURFACESCATTERING
 // #define MATERIAL_INCLUDE_TRANSMISSION
 #include "../../Material/BuiltinGIUtilities.hlsl"
-//#include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/SubsurfaceScattering/SubsurfaceScattering.hlsl"
+#include "../../Material/SubsurfaceScattering/SubsurfaceScattering.hlsl"
 #include "../../Material/NormalBuffer.hlsl"
 //#include "Packages/com.unity.render-pipelines.core/ShaderLibrary/VolumeRendering.hlsl"
 
@@ -1293,7 +1296,7 @@ CBSDF EvaluateBSDF(float3 V, float3 L, PreLightData preLightData, BSDFData bsdfD
         // Note: coat F is scalar as it is a dieletric
         float coatF = F_Schlick(CLEAR_COAT_F0, LdotH) * bsdfData.coatMask;
         // Scale base specular
-        specTerm *= Sq(1.0 - coatF);
+        specTerm *= Sq(1.0f - coatF);
 
         // Add top specular
         // TODO: Should we call just D_GGX here ?
@@ -1326,9 +1329,9 @@ CBSDF EvaluateBSDF(float3 V, float3 L, PreLightData preLightData, BSDFData bsdfD
 // Surface shading (all light types) below
 //-----------------------------------------------------------------------------
 
-#include "Packages/com.unity.render-pipelines.high-definition/Runtime/Lighting/LightEvaluation.hlsl"
-#include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/MaterialEvaluation.hlsl"
-#include "Packages/com.unity.render-pipelines.high-definition/Runtime/Lighting/SurfaceShading.hlsl"
+#include "../../Lighting/LightEvaluation.hlsl"
+#include "../../Material/MaterialEvaluation.hlsl"
+#include "../../Lighting/SurfaceShading.hlsl"
 
 //-----------------------------------------------------------------------------
 // EvaluateBSDF_Directional
@@ -1354,7 +1357,7 @@ DirectLighting EvaluateBSDF_Punctual(LightLoopContext lightLoopContext,
     return ShadeSurface_Punctual(lightLoopContext, posInput, builtinData, preLightData, lightData, bsdfData, V);
 }
 
-#include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/Lit/LitReference.hlsl"
+#include "../../Material/Lit/LitReference.hlsl"
 
 //-----------------------------------------------------------------------------
 // EvaluateBSDF_Line - Approximation with Linearly Transformed Cosines
@@ -1571,14 +1574,14 @@ DirectLighting EvaluateBSDF_Rect(   LightLoopContext lightLoopContext,
 #endif
             ltcValue *= lightData.diffuseDimmer;
 
-            // Only apply cookie if there is one
-            if ( lightData.cookieMode != COOKIEMODE_NONE )
-            {
-#ifndef APPROXIMATE_POLY_LIGHT_AS_SPHERE_LIGHT
-                formFactorD = PolygonFormFactor(LD);
-#endif
-                ltcValue *= SampleAreaLightCookie(lightData.cookieScaleOffset, LD, formFactorD);
-            }
+//             // Only apply cookie if there is one
+//             if ( lightData.cookieMode != COOKIEMODE_NONE )
+//             {
+// #ifndef APPROXIMATE_POLY_LIGHT_AS_SPHERE_LIGHT
+//                 formFactorD = PolygonFormFactor(LD);
+// #endif
+//                 ltcValue *= SampleAreaLightCookie(lightData.cookieScaleOffset, LD, formFactorD);
+//             }
 
             // We don't multiply by 'bsdfData.diffuseColor' here. It's done only once in PostEvaluateBSDF().
             // See comment for specular magnitude, it apply to diffuse as well
@@ -1601,13 +1604,13 @@ DirectLighting EvaluateBSDF_Rect(   LightLoopContext lightLoopContext,
                 ltcValue  = PolygonIrradiance(LTD);
                 ltcValue *= lightData.diffuseDimmer;
 
-                // Only apply cookie if there is one
-                if ( lightData.cookieMode != COOKIEMODE_NONE )
-                {
-                    // Compute the cookie data for the transmission diffuse term
-                    float3 formFactorTD = PolygonFormFactor(LTD);
-                    ltcValue *= SampleAreaLightCookie(lightData.cookieScaleOffset, LTD, formFactorTD);
-                }
+                // // Only apply cookie if there is one
+                // if ( lightData.cookieMode != COOKIEMODE_NONE )
+                // {
+                //     // Compute the cookie data for the transmission diffuse term
+                //     float3 formFactorTD = PolygonFormFactor(LTD);
+                //     ltcValue *= SampleAreaLightCookie(lightData.cookieScaleOffset, LTD, formFactorTD);
+                // }
 
                 // We use diffuse lighting for accumulation since it is going to be blurred during the SSS pass.
                 // We don't multiply by 'bsdfData.diffuseColor' here. It's done only once in PostEvaluateBSDF().
@@ -1626,15 +1629,15 @@ DirectLighting EvaluateBSDF_Rect(   LightLoopContext lightLoopContext,
 #endif
             ltcValue *= lightData.specularDimmer;
 
-            // Only apply cookie if there is one
-            if ( lightData.cookieMode != COOKIEMODE_NONE)
-            {
-                // Compute the cookie data for the specular term
-#ifndef APPROXIMATE_POLY_LIGHT_AS_SPHERE_LIGHT
-                formFactorS =  PolygonFormFactor(LS);
-#endif
-                ltcValue *= SampleAreaLightCookie(lightData.cookieScaleOffset, LS, formFactorS, bsdfData.perceptualRoughness);
-            }
+//             // Only apply cookie if there is one
+//             if ( lightData.cookieMode != COOKIEMODE_NONE)
+//             {
+//                 // Compute the cookie data for the specular term
+// #ifndef APPROXIMATE_POLY_LIGHT_AS_SPHERE_LIGHT
+//                 formFactorS =  PolygonFormFactor(LS);
+// #endif
+//                 ltcValue *= SampleAreaLightCookie(lightData.cookieScaleOffset, LS, formFactorS, bsdfData.perceptualRoughness);
+//             }
 
             // We need to multiply by the magnitude of the integral of the BRDF
             // ref: http://advances.floattimerendering.com/s2016/s2016_ltc_fresnel.pdf
@@ -1648,12 +1651,12 @@ DirectLighting EvaluateBSDF_Rect(   LightLoopContext lightLoopContext,
                 ltcValue = PolygonIrradiance(LSCC);
                 ltcValue *= lightData.specularDimmer;
                 // Only apply cookie if there is one
-                if ( lightData.cookieMode != COOKIEMODE_NONE )
-                {
-                    // Compute the cookie data for the specular term
-                    float3 formFactorS =  PolygonFormFactor(LSCC);
-                    ltcValue *= SampleAreaLightCookie(lightData.cookieScaleOffset, LSCC, formFactorS);
-                }
+                // if ( lightData.cookieMode != COOKIEMODE_NONE )
+                // {
+                //     // Compute the cookie data for the specular term
+                //     float3 formFactorS =  PolygonFormFactor(LSCC);
+                //     ltcValue *= SampleAreaLightCookie(lightData.cookieScaleOffset, LSCC, formFactorS);
+                // }
                 // For clear coat we don't fetch specularFGD we can use directly the perfect fresnel coatIblF
                 lighting.diffuse *= (1.0 - preLightData.coatIblF);
                 lighting.specular *= (1.0 - preLightData.coatIblF);
@@ -1716,12 +1719,14 @@ IndirectLighting EvaluateBSDF_ScreenSpaceReflection(PositionInputs posInput,
     IndirectLighting lighting;
     ZERO_INITIALIZE(IndirectLighting, lighting);
 
-    // TODO: this texture is sparse (mostly black). Can we avoid reading every texel? How about using Hi-S?
-    float4 ssrLighting = LOAD_TEXTURE2D(_SsrLightingTexture, posInput.positionSS);
-    InversePreExposeSsrLighting(ssrLighting);
+    // // TODO: this texture is sparse (mostly black). Can we avoid reading every texel? How about using Hi-S?
+    // float4 ssrLighting = LOAD_TEXTURE2D(_SsrLightingTexture, posInput.positionSS);
+    // InversePreExposeSsrLighting(ssrLighting);
 
-    // Apply the weight on the ssr contribution (if required)
-    ApplyScreenSpaceReflectionWeight(ssrLighting);
+    float4 ssrLighting = float4(0, 0, 0, 0);
+
+    // // Apply the weight on the ssr contribution (if required)
+    // ApplyScreenSpaceReflectionWeight(ssrLighting);
 
     // TODO: we should multiply all indirect lighting by the FGD value only ONCE.
 
@@ -1864,140 +1869,140 @@ IndirectLighting EvaluateBSDF_ScreenspaceRefraction(LightLoopContext lightLoopCo
 // EvaluateBSDF_Env
 // ----------------------------------------------------------------------------
 // _preIntegratedFGD and _CubemapLD are unique for each BRDF
-IndirectLighting EvaluateBSDF_Env(  LightLoopContext lightLoopContext,
-                                    float3 V, PositionInputs posInput,
-                                    inout PreLightData preLightData, // inout, see preLightData.coatReflectionWeight
-                                    EnvLightData lightData, BSDFData bsdfData,
-                                    int influenceShapeType, int GPUImageBasedLightingType,
-                                    inout float hierarchyWeight)
-{
-    IndirectLighting lighting;
-    ZERO_INITIALIZE(IndirectLighting, lighting);
-#if !HAS_REFRACTION
-    if (GPUImageBasedLightingType == GPUIMAGEBASEDLIGHTINGTYPE_REFRACTION)
-        return lighting;
-#endif
-
-    float3 envLighting;
-    float3 positionWS = posInput.positionWS;
-    float weight = 1.0;
-
-#ifdef LIT_DISPLAY_REFERENCE_IBL
-
-    envLighting = IntegrateSpecularGGXIBLRef(lightLoopContext, V, preLightData, lightData, bsdfData);
-
-    // TODO: Do refraction reference (is it even possible ?)
-    // TODO: handle clear coat
-
-
-//    #ifdef USE_DIFFUSE_LAMBERT_BRDF
-//    envLighting += IntegrateLambertIBLRef(lightData, V, bsdfData);
-//    #else
-//    envLighting += IntegrateDisneyDiffuseIBLRef(lightLoopContext, V, preLightData, lightData, bsdfData);
-//    #endif
-
-#else
-
-    float3 R = preLightData.iblR;
-
-#if HAS_REFRACTION
-    if (GPUImageBasedLightingType == GPUIMAGEBASEDLIGHTINGTYPE_REFRACTION)
-    {
-        positionWS = preLightData.transparentPositionWS;
-        R = preLightData.transparentRefractV;
-    }
-    else
-#endif
-    {
-        if (!IsEnvIndexTexture2D(lightData.envIndex)) // ENVCACHETYPE_CUBEMAP
-        {
-            R = GetSpecularDominantDir(bsdfData.normalWS, R, preLightData.iblPerceptualRoughness, ClampNdotV(preLightData.NdotV));
-            // When we are rough, we tend to see outward shifting of the reflection when at the boundary of the projection volume
-            // Also it appear like more sharp. To avoid these artifact and at the same time get better match to reference we lerp to original unmodified reflection.
-            // Formula is empirical.
-            float roughness = PerceptualRoughnessToRoughness(preLightData.iblPerceptualRoughness);
-            R = lerp(R, preLightData.iblR, saturate(smoothstep(0, 1, roughness * roughness)));
-        }
-    }
-
-    // Note: using influenceShapeType and projectionShapeType instead of (lightData|proxyData).shapeType allow to make compiler optimization in case the type is know (like for sky)
-    float intersectionDistance = EvaluateLight_EnvIntersection(positionWS, bsdfData.normalWS, lightData, influenceShapeType, R, weight);
-
-    // Don't do clear coating for refraction
-    float3 coatR = preLightData.coatIblR;
-    if (GPUImageBasedLightingType == GPUIMAGEBASEDLIGHTINGTYPE_REFLECTION && HasFlag(bsdfData.materialFeatures, MATERIALFEATUREFLAGS_LIT_CLEAR_COAT))
-    {
-        float unusedWeight = 0.0;
-        EvaluateLight_EnvIntersection(positionWS, bsdfData.normalWS, lightData, influenceShapeType, coatR, unusedWeight);
-    }
-
-    float3 F = preLightData.specularFGD;
-
-    float4 preLD = SampleEnvWithDistanceBaseRoughness(lightLoopContext, posInput, lightData, R, preLightData.iblPerceptualRoughness, intersectionDistance);
-    weight *= preLD.a; // Used by planar reflection to discard pixel
-
-    if (GPUImageBasedLightingType == GPUIMAGEBASEDLIGHTINGTYPE_REFLECTION)
-    {
-        envLighting = F * preLD.rgb;
-
-        // Note: we have the same EnvIntersection weight used for the coat, but NOT the same headroom left to be used in the
-        // hierarchy, so we saved the intersection weight here:
-        float coatWeight = weight;
-
-        // Apply the main lobe weight and update main reflection hierarchyWeight:
-        UpdateLightingHierarchyWeights(hierarchyWeight, weight);
-        envLighting *= weight;
-
-        // Evaluate the Clear Coat component if needed
-        if (HasFlag(bsdfData.materialFeatures, MATERIALFEATUREFLAGS_LIT_CLEAR_COAT))
-        {
-            // No correction needed for coatR as it is smooth
-            // Note: coat F is scalar as it is a dieletric
-            envLighting *= Sq(1.0 - preLightData.coatIblF);
-
-            // Evaluate the Clear Coat color
-            float4 preLD = SampleEnv(lightLoopContext, lightData.envIndex, coatR, 0.0, lightData.rangeCompressionFactorCompensation, posInput.positionNDC);
-
-            // We adjust the EnvIntersection weight according to "headroom" left < 1 in the coatReflectionWeight and use that weight for the
-            // additionnal (to SSR) coat contribution, if any:
-            UpdateLightingHierarchyWeights(preLightData.coatReflectionWeight, coatWeight);
-            // Note: PreLightData is made inout because of this update to preLightData.coatReflectionWeight.
-            // This is because of an edge case when we mix eg two probes for the main hierarchyWeight, we will be called back again
-            // with another probe after the first one has contributed, and we must thus keep track of the updated coatReflectionWeight too.
-
-            envLighting += preLightData.coatIblF * preLD.rgb * coatWeight;
-
-            // Can't attenuate diffuse lighting here, may try to apply something on bakeLighting in PostEvaluateBSDF
-        }
-    }
-#if HAS_REFRACTION
-    else
-    {
-        // No clear coat support with refraction
-
-        // specular transmisted lighting is the remaining of the reflection (let's use this approx)
-        // With refraction, we don't care about the clear coat value, only about the Fresnel, thus why we use 'envLighting ='
-        envLighting = (1.0 - F) * preLD.rgb * preLightData.transparentTransmittance;
-
-        // Apply the main lobe weight and update reflection hierarchyWeight:
-        UpdateLightingHierarchyWeights(hierarchyWeight, weight);
-        envLighting *= weight;
-    }
-#endif
-
-#endif // LIT_DISPLAY_REFERENCE_IBL
-
-    envLighting *= lightData.multiplier;
-
-    if (GPUImageBasedLightingType == GPUIMAGEBASEDLIGHTINGTYPE_REFLECTION)
-        lighting.specularReflected = envLighting;
-#if HAS_REFRACTION
-    else
-        lighting.specularTransmitted = envLighting;
-#endif
-
-    return lighting;
-}
+// IndirectLighting EvaluateBSDF_Env(  LightLoopContext lightLoopContext,
+//                                     float3 V, PositionInputs posInput,
+//                                     inout PreLightData preLightData, // inout, see preLightData.coatReflectionWeight
+//                                     EnvLightData lightData, BSDFData bsdfData,
+//                                     int influenceShapeType, int GPUImageBasedLightingType,
+//                                     inout float hierarchyWeight)
+// {
+//     IndirectLighting lighting;
+//     ZERO_INITIALIZE(IndirectLighting, lighting);
+// #if !HAS_REFRACTION
+//     if (GPUImageBasedLightingType == GPUIMAGEBASEDLIGHTINGTYPE_REFRACTION)
+//         return lighting;
+// #endif
+//
+//     float3 envLighting;
+//     float3 positionWS = posInput.positionWS;
+//     float weight = 1.0;
+//
+// #ifdef LIT_DISPLAY_REFERENCE_IBL
+//
+//     envLighting = IntegrateSpecularGGXIBLRef(lightLoopContext, V, preLightData, lightData, bsdfData);
+//
+//     // TODO: Do refraction reference (is it even possible ?)
+//     // TODO: handle clear coat
+//
+//
+// //    #ifdef USE_DIFFUSE_LAMBERT_BRDF
+// //    envLighting += IntegrateLambertIBLRef(lightData, V, bsdfData);
+// //    #else
+// //    envLighting += IntegrateDisneyDiffuseIBLRef(lightLoopContext, V, preLightData, lightData, bsdfData);
+// //    #endif
+//
+// #else
+//
+//     float3 R = preLightData.iblR;
+//
+// #if HAS_REFRACTION
+//     if (GPUImageBasedLightingType == GPUIMAGEBASEDLIGHTINGTYPE_REFRACTION)
+//     {
+//         positionWS = preLightData.transparentPositionWS;
+//         R = preLightData.transparentRefractV;
+//     }
+//     else
+// #endif
+//     {
+//         if (!IsEnvIndexTexture2D(lightData.envIndex)) // ENVCACHETYPE_CUBEMAP
+//         {
+//             R = GetSpecularDominantDir(bsdfData.normalWS, R, preLightData.iblPerceptualRoughness, ClampNdotV(preLightData.NdotV));
+//             // When we are rough, we tend to see outward shifting of the reflection when at the boundary of the projection volume
+//             // Also it appear like more sharp. To avoid these artifact and at the same time get better match to reference we lerp to original unmodified reflection.
+//             // Formula is empirical.
+//             float roughness = PerceptualRoughnessToRoughness(preLightData.iblPerceptualRoughness);
+//             R = lerp(R, preLightData.iblR, saturate(smoothstep(0, 1, roughness * roughness)));
+//         }
+//     }
+//
+//     // Note: using influenceShapeType and projectionShapeType instead of (lightData|proxyData).shapeType allow to make compiler optimization in case the type is know (like for sky)
+//     float intersectionDistance = EvaluateLight_EnvIntersection(positionWS, bsdfData.normalWS, lightData, influenceShapeType, R, weight);
+//
+//     // Don't do clear coating for refraction
+//     float3 coatR = preLightData.coatIblR;
+//     if (GPUImageBasedLightingType == GPUIMAGEBASEDLIGHTINGTYPE_REFLECTION && HasFlag(bsdfData.materialFeatures, MATERIALFEATUREFLAGS_LIT_CLEAR_COAT))
+//     {
+//         float unusedWeight = 0.0;
+//         EvaluateLight_EnvIntersection(positionWS, bsdfData.normalWS, lightData, influenceShapeType, coatR, unusedWeight);
+//     }
+//
+//     float3 F = preLightData.specularFGD;
+//
+//     float4 preLD = SampleEnvWithDistanceBaseRoughness(lightLoopContext, posInput, lightData, R, preLightData.iblPerceptualRoughness, intersectionDistance);
+//     weight *= preLD.a; // Used by planar reflection to discard pixel
+//
+//     if (GPUImageBasedLightingType == GPUIMAGEBASEDLIGHTINGTYPE_REFLECTION)
+//     {
+//         envLighting = F * preLD.rgb;
+//
+//         // Note: we have the same EnvIntersection weight used for the coat, but NOT the same headroom left to be used in the
+//         // hierarchy, so we saved the intersection weight here:
+//         float coatWeight = weight;
+//
+//         // Apply the main lobe weight and update main reflection hierarchyWeight:
+//         UpdateLightingHierarchyWeights(hierarchyWeight, weight);
+//         envLighting *= weight;
+//
+//         // Evaluate the Clear Coat component if needed
+//         if (HasFlag(bsdfData.materialFeatures, MATERIALFEATUREFLAGS_LIT_CLEAR_COAT))
+//         {
+//             // No correction needed for coatR as it is smooth
+//             // Note: coat F is scalar as it is a dieletric
+//             envLighting *= Sq(1.0f - preLightData.coatIblF);
+//
+//             // Evaluate the Clear Coat color
+//             float4 preLD = SampleEnv(lightLoopContext, lightData.envIndex, coatR, 0.0, lightData.rangeCompressionFactorCompensation, posInput.positionNDC);
+//
+//             // We adjust the EnvIntersection weight according to "headroom" left < 1 in the coatReflectionWeight and use that weight for the
+//             // additionnal (to SSR) coat contribution, if any:
+//             UpdateLightingHierarchyWeights(preLightData.coatReflectionWeight, coatWeight);
+//             // Note: PreLightData is made inout because of this update to preLightData.coatReflectionWeight.
+//             // This is because of an edge case when we mix eg two probes for the main hierarchyWeight, we will be called back again
+//             // with another probe after the first one has contributed, and we must thus keep track of the updated coatReflectionWeight too.
+//
+//             envLighting += preLightData.coatIblF * preLD.rgb * coatWeight;
+//
+//             // Can't attenuate diffuse lighting here, may try to apply something on bakeLighting in PostEvaluateBSDF
+//         }
+//     }
+// #if HAS_REFRACTION
+//     else
+//     {
+//         // No clear coat support with refraction
+//
+//         // specular transmisted lighting is the remaining of the reflection (let's use this approx)
+//         // With refraction, we don't care about the clear coat value, only about the Fresnel, thus why we use 'envLighting ='
+//         envLighting = (1.0 - F) * preLD.rgb * preLightData.transparentTransmittance;
+//
+//         // Apply the main lobe weight and update reflection hierarchyWeight:
+//         UpdateLightingHierarchyWeights(hierarchyWeight, weight);
+//         envLighting *= weight;
+//     }
+// #endif
+//
+// #endif // LIT_DISPLAY_REFERENCE_IBL
+//
+//     envLighting *= lightData.multiplier;
+//
+//     if (GPUImageBasedLightingType == GPUIMAGEBASEDLIGHTINGTYPE_REFLECTION)
+//         lighting.specularReflected = envLighting;
+// #if HAS_REFRACTION
+//     else
+//         lighting.specularTransmitted = envLighting;
+// #endif
+//
+//     return lighting;
+// }
 
 //-----------------------------------------------------------------------------
 // PostEvaluateBSDF
@@ -2010,21 +2015,21 @@ void PostEvaluateBSDF(  LightLoopContext lightLoopContext,
 {
     AmbientOcclusionFactor aoFactor;
     // Use GTAOMultiBounce approximation for ambient occlusion (allow to get a tint from the baseColor)
-#if 0
-    GetScreenSpaceAmbientOcclusion(posInput.positionSS, preLightData.NdotV, bsdfData.perceptualRoughness, bsdfData.ambientOcclusion, bsdfData.specularOcclusion, aoFactor);
-#else
-    GetScreenSpaceAmbientOcclusionMultibounce(posInput.positionSS, preLightData.NdotV, bsdfData.perceptualRoughness, bsdfData.ambientOcclusion, bsdfData.specularOcclusion, bsdfData.diffuseColor, bsdfData.fresnel0, aoFactor);
-#endif
+// #if 0
+//     GetScreenSpaceAmbientOcclusion(posInput.positionSS, preLightData.NdotV, bsdfData.perceptualRoughness, bsdfData.ambientOcclusion, bsdfData.specularOcclusion, aoFactor);
+// #else
+//     GetScreenSpaceAmbientOcclusionMultibounce(posInput.positionSS, preLightData.NdotV, bsdfData.perceptualRoughness, bsdfData.ambientOcclusion, bsdfData.specularOcclusion, bsdfData.diffuseColor, bsdfData.fresnel0, aoFactor);
+// #endif
 
     ApplyAmbientOcclusionFactor(aoFactor, builtinData, lighting);
 
     // Subsurface scattering mode
-    float3 modifiedDiffuseColor = GetModifiedDiffuseColorForSSS(bsdfData);
+    // float3 modifiedDiffuseColor = GetModifiedDiffuseColorForSSS(bsdfData);
 
-    // Apply the albedo to the direct diffuse lighting (only once). The indirect (baked)
-    // diffuse lighting has already multiply the albedo in ModifyBakedDiffuseLighting().
-    // Note: In deferred bakeDiffuseLighting also contain emissive and in this case emissiveColor is 0
-    lightLoopOutput.diffuseLighting = modifiedDiffuseColor * lighting.direct.diffuse + builtinData.bakeDiffuseLighting + builtinData.emissiveColor;
+    // // Apply the albedo to the direct diffuse lighting (only once). The indirect (baked)
+    // // diffuse lighting has already multiply the albedo in ModifyBakedDiffuseLighting().
+    // // Note: In deferred bakeDiffuseLighting also contain emissive and in this case emissiveColor is 0
+    // lightLoopOutput.diffuseLighting = modifiedDiffuseColor * lighting.direct.diffuse + builtinData.bakeDiffuseLighting + builtinData.emissiveColor;
 
     // If refraction is enable we use the transmittanceMask to lerp between current diffuse lighting and refraction value
     // Physically speaking, transmittanceMask should be 1, but for artistic reasons, we let the value vary

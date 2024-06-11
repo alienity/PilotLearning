@@ -133,7 +133,7 @@ void GenerateLayerTexCoordBasisTB(FragInputs input, inout LayerTexCoord layerTex
 #ifdef _BENTNORMALMAP
 #define _BENTNORMALMAP_IDX
 #endif
-#include "../../Material/Lit/LitDataIndividualLayer.hlsl"
+// #include "../../Material/Lit/LitDataIndividualLayer.hlsl"
 
 // This maybe call directly by tessellation (domain) shader, thus all part regarding surface gradient must be done
 // in function with FragInputs input as parameters
@@ -144,13 +144,13 @@ void GetLayerTexCoord(float2 texCoord0, float2 texCoord1, float2 texCoord2, floa
     layerTexCoord.vertexNormalWS = vertexNormalWS;
     float objectSpaceMapping = false;
     float3 normalToComputeWeights = layerTexCoord.vertexNormalWS;
-#ifndef LAYERED_LIT_SHADER
-    objectSpaceMapping = _ObjectSpaceUVMapping;
-    if (objectSpaceMapping)
-    {
-        normalToComputeWeights = TransformWorldToObjectNormal(normalToComputeWeights);
-    }
-#endif
+// #ifndef LAYERED_LIT_SHADER
+//     objectSpaceMapping = _ObjectSpaceUVMapping;
+//     if (objectSpaceMapping)
+//     {
+//         normalToComputeWeights = TransformWorldToObjectNormal(normalToComputeWeights);
+//     }
+// #endif
 
     layerTexCoord.triplanarWeights = ComputeTriplanarWeights(normalToComputeWeights);
 
@@ -162,11 +162,11 @@ void GetLayerTexCoord(float2 texCoord0, float2 texCoord1, float2 texCoord2, floa
 #endif
 
 
-    // Be sure that the compiler is aware that we don't use UV1 to UV3 for main layer so it can optimize code
-    ComputeLayerTexCoord(   texCoord0, texCoord1, texCoord2, texCoord3, _UVMappingMask, _UVDetailsMappingMask,
-                            _BaseColorMap_ST.xy, _BaseColorMap_ST.zw, _DetailMap_ST.xy, _DetailMap_ST.zw, 1.0, _LinkDetailsWithBase,
-                            positionRWS, _TexWorldScale,
-                            mappingType, objectSpaceMapping, layerTexCoord);
+    // // Be sure that the compiler is aware that we don't use UV1 to UV3 for main layer so it can optimize code
+    // ComputeLayerTexCoord(   texCoord0, texCoord1, texCoord2, texCoord3, _UVMappingMask, _UVDetailsMappingMask,
+    //                         _BaseColorMap_ST.xy, _BaseColorMap_ST.zw, _DetailMap_ST.xy, _DetailMap_ST.zw, 1.0, _LinkDetailsWithBase,
+    //                         positionRWS, _TexWorldScale,
+    //                         mappingType, objectSpaceMapping, layerTexCoord);
 }
 
 // This is call only in this file
@@ -193,9 +193,9 @@ void GetSurfaceAndBuiltinData(FragInputs input, float3 V, inout PositionInputs p
     // and UV1 is corrupt when we use surface gradient. In case UV1 aren't required we set them to 0, so we ensure there is no garbage.
     // When using lightmaps, the uv1 is always valid but we don't update _UVMappingMask.y to 1
     // So when we are using them, we just need to keep the UVs as is.
-#if !defined(LIGHTMAP_ON) && defined(SURFACE_GRADIENT)
-    input.texCoord1 = (_UVMappingMask.y + _UVDetailsMappingMask.y + _UVMappingMaskEmissive.y) > 0 ? input.texCoord1 : 0;
-#endif
+// #if !defined(LIGHTMAP_ON) && defined(SURFACE_GRADIENT)
+//     input.texCoord1 = (_UVMappingMask.y + _UVDetailsMappingMask.y + _UVMappingMaskEmissive.y) > 0 ? input.texCoord1 : 0;
+// #endif
 
 // Don't dither if displaced tessellation (we're fading out the displacement instead to match the next LOD)
 #if !defined(SHADER_STAGE_RAY_TRACING) && !defined(_TESSELLATION_DISPLACEMENT)
@@ -245,7 +245,7 @@ void GetSurfaceAndBuiltinData(FragInputs input, float3 V, inout PositionInputs p
     float3 normalTS;
     float3 bentNormalTS;
     float3 bentNormalWS;
-    float alpha = GetSurfaceData(input, layerTexCoord, surfaceData, normalTS, bentNormalTS);
+    // float alpha = GetSurfaceData(input, layerTexCoord, surfaceData, normalTS, bentNormalTS);
 
     // This need to be init here to quiet the compiler in case of decal, but can be override later.
     surfaceData.geomNormalWS = input.tangentToWorld[2];
@@ -319,7 +319,7 @@ void GetSurfaceAndBuiltinData(FragInputs input, float3 V, inout PositionInputs p
 #endif
 
     // Caution: surfaceData must be fully initialize before calling GetBuiltinData
-    GetBuiltinData(input, V, posInput, surfaceData, alpha, bentNormalWS, depthOffset, layerTexCoord.base, builtinData);
+    // GetBuiltinData(input, V, posInput, surfaceData, alpha, bentNormalWS, depthOffset, layerTexCoord.base, builtinData);
 
 #ifdef _ALPHATEST_ON
     // Used for sharpening by alpha to mask

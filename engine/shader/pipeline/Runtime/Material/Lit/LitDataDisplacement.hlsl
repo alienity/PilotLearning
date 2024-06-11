@@ -10,12 +10,12 @@ float3 GetDisplacementObjectScale(bool vertexDisplacement)
     float4x4 worldTransform;
     if (vertexDisplacement)
     {
-        worldTransform = GetObjectToWorldMatrix();
+        // worldTransform = GetObjectToWorldMatrix();
     }
 
     else
     {
-        worldTransform = GetWorldToObjectMatrix();
+        // worldTransform = GetWorldToObjectMatrix();
     }
 
     objectScale.x = length(float3(worldTransform._m00, worldTransform._m01, worldTransform._m02));
@@ -66,12 +66,12 @@ struct PerPixelHeightDisplacementParam
     float2 uv;
 };
 
-float ComputePerPixelHeightDisplacement(float2 texOffsetCurrent, float lod, PerPixelHeightDisplacementParam param)
-{
-    // Note: No multiply by amplitude here. This is include in the maxHeight provide to POM
-    // Tiling is automatically handled correctly here.
-    return SAMPLE_TEXTURE2D_LOD(_HeightMap, sampler_HeightMap, param.uv + texOffsetCurrent, lod).r;
-}
+// float ComputePerPixelHeightDisplacement(float2 texOffsetCurrent, float lod, PerPixelHeightDisplacementParam param)
+// {
+//     // Note: No multiply by amplitude here. This is include in the maxHeight provide to POM
+//     // Tiling is automatically handled correctly here.
+//     return SAMPLE_TEXTURE2D_LOD(_HeightMap, sampler_HeightMap, param.uv + texOffsetCurrent, lod).r;
+// }
 
 #include "../../ShaderLibrary/PerPixelDisplacement.hlsl"
 
