@@ -98,12 +98,12 @@ float2 GetNormalizedFullScreenTriangleTexCoord(FrameUniforms frameUniform, uint 
     return GetFullScreenTriangleTexCoord(vertexID) * _RTHandleScale.xy;
 }
 
-float4 SampleSkyTexture(ShaderVarablesData shaderVar, float3 texCoord, float lod, int sliceIndex)
-{
-    Texture2D<float4> _SkyTexture = ResourceFromHeapIndex(shaderVar.frameUniforms.baseUniform._SkyTextureIndex);
-    SamplerState _TrilinearClampSampler = shaderVar.samplerStructs.STrilinearClampSampler;
-    return SAMPLE_TEXTURECUBE_ARRAY_LOD(_SkyTexture, _TrilinearClampSampler, texCoord, sliceIndex, lod);
-}
+// float4 SampleSkyTexture(ShaderVarablesData shaderVar, float3 texCoord, float lod, int sliceIndex)
+// {
+//     Texture2D<float4> _SkyTexture = ResourceFromHeapIndex(shaderVar.frameUniforms.baseUniform._SkyTextureIndex);
+//     SamplerState _TrilinearClampSampler = shaderVar.samplerStructs.STrilinearClampSampler;
+//     return SAMPLE_TEXTURECUBE_ARRAY_LOD(_SkyTexture, _TrilinearClampSampler, texCoord, sliceIndex, lod);
+// }
 
 // This function assumes the bitangent flip is encoded in tangentWS.w
 float3x3 BuildTangentToWorld(float4 tangentWS, float3 normalWS)

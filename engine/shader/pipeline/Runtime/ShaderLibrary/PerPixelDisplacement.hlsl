@@ -7,21 +7,13 @@
 // viewDirTS is view vector in texture space matching the UVSet
 // ref: https://www.gamedev.net/resources/_/technical/graphics-programming-and-theory/a-closer-look-at-parallax-occlusion-mapping-r3262
 
-#ifndef POM_USER_DATA_PARAMETERS
-    #define POM_USER_DATA_PARAMETERS
-#endif
-
-#ifndef POM_USER_DATA_ARGUMENTS
-    #define POM_USER_DATA_ARGUMENTS
-#endif
-
 float2
 #ifdef POM_NAME_ID
 MERGE_NAME(ParallaxOcclusionMapping,POM_NAME_ID)
 #else
 ParallaxOcclusionMapping
 #endif
-(float lod, float lodThreshold, int numSteps, float3 viewDirTS, PerPixelHeightDisplacementParam ppdParam, out float outHeight POM_USER_DATA_PARAMETERS)
+(float lod, float lodThreshold, int numSteps, float3 viewDirTS, PerPixelHeightDisplacementParam ppdParam, out float outHeight)
 {
 //     // Convention: 1.0 is top, 0.0 is bottom - POM is always inward, no extrusion
 //     float stepSize = 1.0 / (float)numSteps;
@@ -125,5 +117,8 @@ ParallaxOcclusionMapping
 //     offset *= (1.0 - saturate(lod - lodThreshold));
 //
 //     return offset;
+
+    outHeight = 0;
+    
     return float2(0, 0);
 }

@@ -157,85 +157,85 @@ SAMPLER(samplerunity_ProbeVolumeSH);
 TEXTURE2D(_ExposureTexture);
 TEXTURE2D(_PrevExposureTexture);
 */
-// Note: To sample camera depth in HDRP we provide these utils functions because the way we store the depth mips can change
-// Currently it's an atlas and it's layout can be found at ComputePackedMipChainInfo in HDUtils.cs
-float LoadCameraDepth(ShaderVarablesData shaderVar, uint2 pixelCoords)
-{
-    int cameraDepthTextureIndex = shaderVar.frameUniforms.baseUniform._CameraDepthTextureIndex;
-    Texture2D<float> _CameraDepthTexture = ResourceFromHeapIndex(cameraDepthTextureIndex);
-    return LOAD_TEXTURE2D_LOD(_CameraDepthTexture, pixelCoords, 0).r;
-}
-
-float SampleCameraDepth(ShaderVarablesData shaderVar, float2 uv)
-{
-    int cameraDepthTextureIndex = shaderVar.frameUniforms.baseUniform._CameraDepthTextureIndex;
-    float4 _ScreenSize = shaderVar.frameUniforms.baseUniform._ScreenSize;
-    Texture2D<float> _CameraDepthTexture = ResourceFromHeapIndex(cameraDepthTextureIndex);
-    return LoadCameraDepth(_CameraDepthTexture, uint2(uv * _ScreenSize.xy));
-}
-
-float3 LoadCameraColor(ShaderVarablesData shaderVar, uint2 pixelCoords, uint lod)
-{
-    int colorPyramidTextureIndex = shaderVar.frameUniforms.baseUniform._ColorPyramidTextureIndex;
-    Texture2D<float4> _ColorPyramidTexture = ResourceFromHeapIndex(colorPyramidTextureIndex);
-    return LOAD_TEXTURE2D_LOD(_ColorPyramidTexture, pixelCoords, lod).rgb;
-}
-
-float3 SampleCameraColor(ShaderVarablesData shaderVar, float2 uv, float lod)
-{
-    int colorPyramidTextureIndex = shaderVar.frameUniforms.baseUniform._ColorPyramidTextureIndex;
-    SamplerState _TrilinearClampSampler = shaderVar.samplerStructs.STrilinearClampSampler;
-    float4 _RTHandleScaleHistory = shaderVar.frameUniforms.baseUniform._RTHandleScaleHistory;
-    Texture2D<float4> _ColorPyramidTexture = ResourceFromHeapIndex(colorPyramidTextureIndex);
-    return SAMPLE_TEXTURE2D_LOD(_ColorPyramidTexture, _TrilinearClampSampler, uv * _RTHandleScaleHistory.xy, lod).rgb;
-}
-
-float3 LoadCameraColor(ShaderVarablesData shaderVar, uint2 pixelCoords)
-{
-    int colorPyramidTextureIndex = shaderVar.frameUniforms.baseUniform._ColorPyramidTextureIndex;
-    Texture2D<float4> _ColorPyramidTexture = ResourceFromHeapIndex(colorPyramidTextureIndex);
-    return LoadCameraColor(_ColorPyramidTexture, pixelCoords, 0);
-}
-
-float3 SampleCameraColor(ShaderVarablesData shaderVar, float2 uv)
-{
-    int colorPyramidTextureIndex = shaderVar.frameUniforms.baseUniform._ColorPyramidTextureIndex;
-    Texture2D<float4> _ColorPyramidTexture = ResourceFromHeapIndex(colorPyramidTextureIndex);
-    SamplerState _TrilinearClampSampler = shaderVar.samplerStructs.STrilinearClampSampler;
-    float4 _RTHandleScaleHistory = shaderVar.frameUniforms.baseUniform._RTHandleScaleHistory;
-    return SampleCameraColor(_ColorPyramidTexture, _TrilinearClampSampler, _RTHandleScaleHistory, uv, 0);
-}
-
-float4 SampleCustomColor(ShaderVarablesData shaderVar, float2 uv)
-{
-    int customColorTextureIndex = shaderVar.frameUniforms.baseUniform._CustomColorTextureIndex;
-    Texture2D<float4> _CustomColorTexture = ResourceFromHeapIndex(customColorTextureIndex);
-    SamplerState _TrilinearClampSampler = shaderVar.samplerStructs.STrilinearClampSampler;
-    float4 _RTHandleScale = shaderVar.frameUniforms.baseUniform._RTHandleScale;
-    return SAMPLE_TEXTURE2D_LOD(_CustomColorTexture, _TrilinearClampSampler, uv * _RTHandleScale.xy, 0);
-}
-
-float4 LoadCustomColor(ShaderVarablesData shaderVar, uint2 pixelCoords)
-{
-    int customColorTextureIndex = shaderVar.frameUniforms.baseUniform._CustomColorTextureIndex;
-    Texture2D<float4> _CustomColorTexture = ResourceFromHeapIndex(customColorTextureIndex);
-    return LOAD_TEXTURE2D_LOD(_CustomColorTexture, pixelCoords, 0);
-}
-
-float LoadCustomDepth(ShaderVarablesData shaderVar, uint2 pixelCoords)
-{
-    int customDepthTextureIndex = shaderVar.frameUniforms.baseUniform._CustomDepthTextureIndex;
-    Texture2D<float4> _CustomDepthTexture = ResourceFromHeapIndex(customDepthTextureIndex);
-    return LOAD_TEXTURE2D_LOD(_CustomDepthTexture, pixelCoords, 0).r;
-}
-
-float SampleCustomDepth(ShaderVarablesData shaderVar, float2 uv)
-{
-    int customDepthTextureIndex = shaderVar.frameUniforms.baseUniform._CustomDepthTextureIndex;
-    Texture2D<float4> _CustomDepthTexture = ResourceFromHeapIndex(customDepthTextureIndex);
-    float4 _ScreenSize = shaderVar.frameUniforms.baseUniform._ScreenSize;
-    return LoadCustomDepth(_CustomDepthTexture, uint2(uv * _ScreenSize.xy));
-}
+// // Note: To sample camera depth in HDRP we provide these utils functions because the way we store the depth mips can change
+// // Currently it's an atlas and it's layout can be found at ComputePackedMipChainInfo in HDUtils.cs
+// float LoadCameraDepth(ShaderVarablesData shaderVar, uint2 pixelCoords)
+// {
+//     int cameraDepthTextureIndex = shaderVar.frameUniforms.baseUniform._CameraDepthTextureIndex;
+//     Texture2D<float> _CameraDepthTexture = ResourceFromHeapIndex(cameraDepthTextureIndex);
+//     return LOAD_TEXTURE2D_LOD(_CameraDepthTexture, pixelCoords, 0).r;
+// }
+//
+// float SampleCameraDepth(ShaderVarablesData shaderVar, float2 uv)
+// {
+//     int cameraDepthTextureIndex = shaderVar.frameUniforms.baseUniform._CameraDepthTextureIndex;
+//     float4 _ScreenSize = shaderVar.frameUniforms.baseUniform._ScreenSize;
+//     Texture2D<float> _CameraDepthTexture = ResourceFromHeapIndex(cameraDepthTextureIndex);
+//     return LoadCameraDepth(_CameraDepthTexture, uint2(uv * _ScreenSize.xy));
+// }
+//
+// float3 LoadCameraColor(ShaderVarablesData shaderVar, uint2 pixelCoords, uint lod)
+// {
+//     int colorPyramidTextureIndex = shaderVar.frameUniforms.baseUniform._ColorPyramidTextureIndex;
+//     Texture2D<float4> _ColorPyramidTexture = ResourceFromHeapIndex(colorPyramidTextureIndex);
+//     return LOAD_TEXTURE2D_LOD(_ColorPyramidTexture, pixelCoords, lod).rgb;
+// }
+//
+// float3 SampleCameraColor(ShaderVarablesData shaderVar, float2 uv, float lod)
+// {
+//     int colorPyramidTextureIndex = shaderVar.frameUniforms.baseUniform._ColorPyramidTextureIndex;
+//     SamplerState _TrilinearClampSampler = shaderVar.samplerStructs.STrilinearClampSampler;
+//     float4 _RTHandleScaleHistory = shaderVar.frameUniforms.baseUniform._RTHandleScaleHistory;
+//     Texture2D<float4> _ColorPyramidTexture = ResourceFromHeapIndex(colorPyramidTextureIndex);
+//     return SAMPLE_TEXTURE2D_LOD(_ColorPyramidTexture, _TrilinearClampSampler, uv * _RTHandleScaleHistory.xy, lod).rgb;
+// }
+//
+// float3 LoadCameraColor(ShaderVarablesData shaderVar, uint2 pixelCoords)
+// {
+//     int colorPyramidTextureIndex = shaderVar.frameUniforms.baseUniform._ColorPyramidTextureIndex;
+//     Texture2D<float4> _ColorPyramidTexture = ResourceFromHeapIndex(colorPyramidTextureIndex);
+//     return LoadCameraColor(_ColorPyramidTexture, pixelCoords, 0);
+// }
+//
+// float3 SampleCameraColor(ShaderVarablesData shaderVar, float2 uv)
+// {
+//     int colorPyramidTextureIndex = shaderVar.frameUniforms.baseUniform._ColorPyramidTextureIndex;
+//     Texture2D<float4> _ColorPyramidTexture = ResourceFromHeapIndex(colorPyramidTextureIndex);
+//     SamplerState _TrilinearClampSampler = shaderVar.samplerStructs.STrilinearClampSampler;
+//     float4 _RTHandleScaleHistory = shaderVar.frameUniforms.baseUniform._RTHandleScaleHistory;
+//     return SampleCameraColor(_ColorPyramidTexture, _TrilinearClampSampler, _RTHandleScaleHistory, uv, 0);
+// }
+//
+// float4 SampleCustomColor(ShaderVarablesData shaderVar, float2 uv)
+// {
+//     int customColorTextureIndex = shaderVar.frameUniforms.baseUniform._CustomColorTextureIndex;
+//     Texture2D<float4> _CustomColorTexture = ResourceFromHeapIndex(customColorTextureIndex);
+//     SamplerState _TrilinearClampSampler = shaderVar.samplerStructs.STrilinearClampSampler;
+//     float4 _RTHandleScale = shaderVar.frameUniforms.baseUniform._RTHandleScale;
+//     return SAMPLE_TEXTURE2D_LOD(_CustomColorTexture, _TrilinearClampSampler, uv * _RTHandleScale.xy, 0);
+// }
+//
+// float4 LoadCustomColor(ShaderVarablesData shaderVar, uint2 pixelCoords)
+// {
+//     int customColorTextureIndex = shaderVar.frameUniforms.baseUniform._CustomColorTextureIndex;
+//     Texture2D<float4> _CustomColorTexture = ResourceFromHeapIndex(customColorTextureIndex);
+//     return LOAD_TEXTURE2D_LOD(_CustomColorTexture, pixelCoords, 0);
+// }
+//
+// float LoadCustomDepth(ShaderVarablesData shaderVar, uint2 pixelCoords)
+// {
+//     int customDepthTextureIndex = shaderVar.frameUniforms.baseUniform._CustomDepthTextureIndex;
+//     Texture2D<float4> _CustomDepthTexture = ResourceFromHeapIndex(customDepthTextureIndex);
+//     return LOAD_TEXTURE2D_LOD(_CustomDepthTexture, pixelCoords, 0).r;
+// }
+//
+// float SampleCustomDepth(ShaderVarablesData shaderVar, float2 uv)
+// {
+//     int customDepthTextureIndex = shaderVar.frameUniforms.baseUniform._CustomDepthTextureIndex;
+//     Texture2D<float4> _CustomDepthTexture = ResourceFromHeapIndex(customDepthTextureIndex);
+//     float4 _ScreenSize = shaderVar.frameUniforms.baseUniform._ScreenSize;
+//     return LoadCustomDepth(_CustomDepthTexture, uint2(uv * _ScreenSize.xy));
+// }
 
 bool IsSky(float deviceDepth)
 {
@@ -244,13 +244,14 @@ bool IsSky(float deviceDepth)
 
 bool IsSky(ShaderVarablesData shaderVar, uint2 pixelCoord)
 {
-    float deviceDepth = LoadCameraDepth(shaderVar, pixelCoord);
-    return IsSky(deviceDepth);
+    // float deviceDepth = LoadCameraDepth(shaderVar, pixelCoord);
+    // return IsSky(deviceDepth);
+    return false;
 }
 
-bool IsSky(float4 _ScreenSize, float2 uv)
+bool IsSky(ShaderVarablesData shaderVar, float4 _ScreenSize, float2 uv)
 {
-    return IsSky(uint2(uv * _ScreenSize.xy));
+    return IsSky(shaderVar , uint2(uv * _ScreenSize.xy));
 }
 
 float4x4 OptimizeProjectionMatrix(float4x4 M)

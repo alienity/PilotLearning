@@ -427,7 +427,8 @@ uint FetchIndexWithBoundsCheck(uint start, uint count, uint i)
 
 LightData FetchLight(uint start, uint i)
 {
-    return LightData{};
+    LightData lightData = (LightData)0;
+    return lightData;
     
     // uint j = FetchIndex(start, i);
     //
@@ -436,13 +437,17 @@ LightData FetchLight(uint start, uint i)
 
 LightData FetchLight(uint index)
 {
-    return LightData{};
+    LightData lightData = (LightData)0;
+    return lightData;
+    
     // return _LightDatas[index];
 }
 
 EnvLightData FetchEnvLight(uint start, uint i)
 {
-    return EnvLightData{};
+    EnvLightData lightData = (EnvLightData)0;
+    return lightData;
+    
     // int j = FetchIndex(start, i);
     //
     // return _EnvLightDatas[j];
@@ -450,7 +455,9 @@ EnvLightData FetchEnvLight(uint start, uint i)
 
 EnvLightData FetchEnvLight(uint index)
 {
-    return EnvLightData{};
+    EnvLightData lightData = (EnvLightData)0;
+    return lightData;
+    
     // return _EnvLightDatas[index];
 }
 

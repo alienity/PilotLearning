@@ -1156,11 +1156,11 @@ struct BoundingBox
 
     bool Intersects(BoundingBox Other)
     {
-        float3 minA = Center - Extents;
-        float3 maxA = Center + Extents;
+        float3 minA = Center.xyz - Extents.xyz;
+        float3 maxA = Center.xyz + Extents.xyz;
 
-        float3 minB = Other.Center - Other.Extents;
-        float3 maxB = Other.Center + Other.Extents;
+        float3 minB = Other.Center.xyz - Other.Extents.xyz;
+        float3 maxB = Other.Center.xyz + Other.Extents.xyz;
 
         // All axis needs to overlap for a intersection
         return maxA.x >= minB.x && minA.x <= maxB.x && // Overlap on x-axis?
@@ -1222,7 +1222,7 @@ int BoundingSphereToPlane(BSphere s, Plane p)
 int BoundingBoxToPlane(BoundingBox b, Plane p)
 {
 	// Compute signed distance from plane to box center
-	float sd = dot(b.Center, p.Normal) - p.Offset;
+	float sd = dot(b.Center.xyz, p.Normal.xyz) - p.Offset;
 
 	// Compute the projection interval radius of b onto L(t) = b.Center + t * p.Normal
 	// Projection radii r_i of the 8 bounding box vertices
@@ -1234,7 +1234,7 @@ int BoundingBoxToPlane(BoundingBox b, Plane p)
 	// r = e0*|dot(u0, n)| + e1*|dot(u1, n)| + e2*|dot(u2, n)|
 	// When the separating axis vector Normal is not a unit vector, we need to divide the radii by the length(Normal)
 	// u0,u1,u2 are the local axes of the box, which is = [(1,0,0), (0,1,0), (0,0,1)] respectively for axis aligned bb
-	float r = dot(b.Extents, abs(p.Normal));
+	float r = dot(b.Extents.xyz, abs(p.Normal.xyz));
 
 	if (sd > r)
 	{

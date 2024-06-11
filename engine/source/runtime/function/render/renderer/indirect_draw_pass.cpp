@@ -13,6 +13,70 @@ namespace MoYu
 	{
         colorTexDesc = init_info.colorTexDesc;
         depthTexDesc = init_info.depthTexDesc;
+
+	    ShaderCompiler*       m_ShaderCompiler = init_info.m_ShaderCompiler;
+	    std::filesystem::path m_ShaderRootPath = init_info.m_ShaderRootPath;
+
+	    indirectDrawVS = m_ShaderCompiler->CompileShader(
+            RHI_SHADER_TYPE::Vertex, m_ShaderRootPath / "pipeline/Runtime/Material/Lit/LitShader.hlsl", ShaderCompileOptions(L"Vert"));
+	    indirectDrawPS = m_ShaderCompiler->CompileShader(
+            RHI_SHADER_TYPE::Pixel, m_ShaderRootPath / "pipeline/Runtime/Material/Lit/LitShader.hlsl", ShaderCompileOptions(L"Frag"));
+
+	    {
+            RHI::RootSignatureDesc rootSigDesc =
+                RHI::RootSignatureDesc()
+                    .Add32BitConstants<0, 0>(32)
+                    .AddConstantBufferView<1, 0>()
+                    .AddStaticSampler<10, 0>(D3D12_FILTER_ANISOTROPIC, D3D12_TEXTURE_ADDRESS_MODE_WRAP, 8)
+                    .AddStaticSampler<11, 0>(D3D12_FILTER_COMPARISON_ANISOTROPIC, D3D12_TEXTURE_ADDRESS_MODE_CLAMP, 8, D3D12_COMPARISON_FUNC_GREATER_EQUAL, D3D12_STATIC_BORDER_COLOR_OPAQUE_BLACK)
+                    .AllowInputLayout()
+                    .AllowResourceDescriptorHeapIndexing()
+                    .AllowSampleDescriptorHeapIndexing();
+            pIndirectDrawSignature = std::make_shared<RHI::D3D12RootSignature>(m_Device, rootSigDesc);
+	    }
+
+	    //{
+     //       RHI::D3D12InputLayout InputLayout = MoYu::D3D12MeshVertexPositionNormalTangentTexture::InputLayout;
+     //       
+     //       RHIDepthStencilState DepthStencilState;
+     //       DepthStencilState.DepthEnable = true;
+     //       DepthStencilState.DepthFunc   = RHI_COMPARISON_FUNC::GreaterEqual;
+
+     //       RHIRenderTargetState RenderTargetState;
+     //       RenderTargetState.RTFormats[0]     = DXGI_FORMAT_R32G32B32A32_FLOAT; // DXGI_FORMAT_R32G32B32A32_FLOAT;
+     //       RenderTargetState.NumRenderTargets = 1;
+     //       RenderTargetState.DSFormat         = DXGI_FORMAT_D32_FLOAT; // DXGI_FORMAT_D32_FLOAT;
+
+     //       RHISampleState SampleState;
+     //       SampleState.Count = EngineConfig::g_AntialiasingMode == EngineConfig::MSAA ? EngineConfig::g_MASSConfig.m_MSAASampleCount : 1;
+
+     //       struct PsoStream
+     //       {
+     //           PipelineStateStreamRootSignature     RootSignature;
+     //           PipelineStateStreamInputLayout       InputLayout;
+     //           PipelineStateStreamPrimitiveTopology PrimitiveTopologyType;
+     //           PipelineStateStreamRasterizerState   RasterrizerState;
+     //           PipelineStateStreamVS                VS;
+     //           PipelineStateStreamPS                PS;
+     //           PipelineStateStreamDepthStencilState DepthStencilState;
+     //           PipelineStateStreamRenderTargetState RenderTargetState;
+     //           PipelineStateStreamSampleState       SampleState;
+     //       } psoStream;
+     //       psoStream.RootSignature         = PipelineStateStreamRootSignature(pIndirectDrawSignature.get());
+     //       psoStream.InputLayout           = &InputLayout;
+     //       psoStream.PrimitiveTopologyType = RHI_PRIMITIVE_TOPOLOGY::Triangle;
+     //       psoStream.RasterrizerState      = RHIRasterizerState();
+     //       psoStream.VS                    = &indirectDrawVS;
+     //       psoStream.PS                    = &indirectDrawPS;
+     //       psoStream.DepthStencilState     = DepthStencilState;
+     //       psoStream.RenderTargetState     = RenderTargetState;
+     //       psoStream.SampleState           = SampleState;
+
+     //       PipelineStateStreamDesc psoDesc = {sizeof(PsoStream), &psoStream};
+     //       pIndirectDrawPSO = std::make_shared<RHI::D3D12PipelineState>(m_Device, L"IndirectDraw", psoDesc);
+     //   }
+
+	    
 	}
 
     void IndirectDrawPass::update(RHI::RenderGraph& graph, DrawInputParameters& passInput, DrawOutputParameters& passOutput)

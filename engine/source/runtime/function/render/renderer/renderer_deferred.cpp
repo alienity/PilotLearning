@@ -226,6 +226,8 @@ namespace MoYu
             IndirectDrawPass::DrawPassInitInfo drawPassInit;
             drawPassInit.colorTexDesc = colorTexDesc;
             drawPassInit.depthTexDesc = depthTexDesc;
+            drawPassInit.m_ShaderCompiler = pCompiler;
+            drawPassInit.m_ShaderRootPath = g_runtime_global_context.m_config_manager->getShaderFolder();
 
             mIndirectOpaqueDrawPass = std::make_shared<IndirectDrawPass>();
             mIndirectOpaqueDrawPass->setCommonInfo(renderPassCommonInfo);
