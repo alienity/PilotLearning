@@ -98,12 +98,14 @@ float2 GetNormalizedFullScreenTriangleTexCoord(FrameUniforms frameUniform, uint 
     return GetFullScreenTriangleTexCoord(vertexID) * _RTHandleScale.xy;
 }
 
-// float4 SampleSkyTexture(ShaderVarablesData shaderVar, float3 texCoord, float lod, int sliceIndex)
-// {
-//     Texture2D<float4> _SkyTexture = ResourceFromHeapIndex(shaderVar.frameUniforms.baseUniform._SkyTextureIndex);
-//     SamplerState _TrilinearClampSampler = shaderVar.samplerStructs.STrilinearClampSampler;
-//     return SAMPLE_TEXTURECUBE_ARRAY_LOD(_SkyTexture, _TrilinearClampSampler, texCoord, sliceIndex, lod);
-// }
+float4 SampleSkyTexture(ShaderVarablesData shaderVar, float3 texCoord, float lod)
+{
+    uint _SkyTextureIndex = shaderVar.frameUniforms.baseUniform._SkyTextureIndex;
+    TextureCube<float4> _SkyTexture = ResourceFromHeapIndex(_SkyTextureIndex);
+    SamplerState _TrilinearClampSampler = shaderVar.samplerStructs.STrilinearClampSampler;
+    // return SAMPLE_TEXTURECUBE_ARRAY_LOD(_SkyTexture, _TrilinearClampSampler, texCoord, sliceIndex, lod);
+    return SAMPLE_TEXTURECUBE_LOD(_SkyTexture, _TrilinearClampSampler, texCoord, lod);
+}
 
 // This function assumes the bitangent flip is encoded in tangentWS.w
 float3x3 BuildTangentToWorld(float4 tangentWS, float3 normalWS)
@@ -166,12 +168,6 @@ bool IsFastPath(uint lightStart, out uint lightStartLane0)
 uint ScalarizeElementIndex(uint v_elementIdx, bool fastPath)
 {
     uint s_elementIdx = v_elementIdx;
-#ifdef PLATFORM_SUPPORTS_WAVE_INTRINSICS
-
-#if NEED_TO_CHECK_HELPER_LANE
-    if (WaveIsHelperLane()) return -1;
-#endif
-
     if (fastPath)
     {
         // s_elementIdx by construction is scalar if fast path, however the compiler seems to insist to move it in a vector register after a WaveReadLaneFirst inside the  if (s_elementIdx != -1) branch.
@@ -190,10 +186,7 @@ uint ScalarizeElementIndex(uint v_elementIdx, bool fastPath)
         {
             s_elementIdx = WaveReadLaneFirst(s_elementIdx);
         }
-
     }
-
-#endif
     return s_elementIdx;
 }
 

@@ -3,13 +3,6 @@
 // This structure gather all possible varying/interpolator for this shader.
 //-------------------------------------------------------------------------------------
 
-#ifndef FRAG_INPUTS_ENABLE_STRIPPING
-    #define FRAG_INPUTS_USE_TEXCOORD0
-    #define FRAG_INPUTS_USE_TEXCOORD1
-    #define FRAG_INPUTS_USE_TEXCOORD2
-    #define FRAG_INPUTS_USE_TEXCOORD3
-#endif
-
 struct FragInputs
 {
     // Contain value return by SV_POSITION (That is name positionCS in PackedVarying).
