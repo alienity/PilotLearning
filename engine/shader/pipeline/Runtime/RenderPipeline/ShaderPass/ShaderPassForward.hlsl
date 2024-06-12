@@ -2,43 +2,16 @@
 #error SHADERPASS_is_not_correctly_define
 #endif
 
-
-#ifdef _WRITE_TRANSPARENT_MOTION_VECTOR
-#include "../../RenderPipeline/ShaderPass/MotionVectorVertexShaderCommon.hlsl"
-
-PackedVaryingsType Vert(AttributesMesh inputMesh, AttributesPass inputPass)
-{
-    VaryingsType varyingsType;
-    varyingsType.vmesh = VertMesh(inputMesh);
-    return MotionVectorVS(varyingsType, inputMesh, inputPass);
-}
-#else // _WRITE_TRANSPARENT_MOTION_VECTOR
-
 #include "../../RenderPipeline/ShaderPass/VertMesh.hlsl"
 
 PackedVaryingsType Vert(AttributesMesh inputMesh)
 {
     VaryingsType varyingsType;
 
-// #if defined(HAVE_RECURSIVE_RENDERING)
-    // If we have a recursive raytrace object, we will not render it.
-    // As we don't want to rely on renderqueue to exclude the object from the list,
-    // we cull it by settings position to NaN value.
-    // TODO: provide a solution to filter dyanmically recursive raytrace object in the DrawRenderer
-    // if (_EnableRecursiveRayTracing && _RayTracing > 0.0)
-    {
-        ZERO_INITIALIZE(VaryingsType, varyingsType); // Divide by 0 should produce a NaN and thus cull the primitive.
-    }
-    // else
-// #endif
-//     {
-//         varyingsType.vmesh = VertMesh(inputMesh);
-//     }
+    varyingsType.vmesh = VertMesh(inputMesh);
 
     return PackVaryingsType(varyingsType);
 }
-
-#endif // _WRITE_TRANSPARENT_MOTION_VECTOR
 
 
 //NOTE: some shaders set target1 to be

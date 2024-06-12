@@ -12,6 +12,20 @@ namespace MoYu
         albedoDesc = init_info.albedoTexDesc;
         depthDesc = init_info.depthTexDesc;
 
+
+        ShaderCompiler* m_ShaderCompiler = init_info.m_ShaderCompiler;
+        std::filesystem::path m_ShaderRootPath = init_info.m_ShaderRootPath;
+
+        indirectGBufferVS = m_ShaderCompiler->CompileShader(
+            RHI_SHADER_TYPE::Vertex, m_ShaderRootPath / "hlsl/IndirectGBufferPS.hlsl", ShaderCompileOptions(L"VSMain"));
+        indirectGBufferPS = m_ShaderCompiler->CompileShader(
+            RHI_SHADER_TYPE::Pixel, m_ShaderRootPath / "hlsl/IndirectGBufferPS.hlsl", ShaderCompileOptions(L"PSMain"));
+
+        drawGBufferVS = m_ShaderCompiler->CompileShader(
+            RHI_SHADER_TYPE::Vertex, m_ShaderRootPath / "pipeline/Runtime/Material/Lit/GBufferShader.hlsl", ShaderCompileOptions(L"Vert"));
+        drawGBufferPS = m_ShaderCompiler->CompileShader(
+            RHI_SHADER_TYPE::Pixel, m_ShaderRootPath / "pipeline/Runtime/Material/Lit/GBufferShader.hlsl", ShaderCompileOptions(L"Frag"));
+
         worldNormalDesc =
             RHI::RgTextureDesc("WorldNormal")
                 .SetFormat(DXGI_FORMAT::DXGI_FORMAT_R32G32B32A32_FLOAT)
@@ -37,14 +51,6 @@ namespace MoYu
         clearCoat_ClearCoatRoughness_AnisotropyDesc.SetFormat(DXGI_FORMAT::DXGI_FORMAT_R32G32B32A32_FLOAT);
         clearCoat_ClearCoatRoughness_AnisotropyDesc.SetClearValue(
             RHI::RgClearValue(0.0f, 0.0f, 0.0f, 0.0f, clearCoat_ClearCoatRoughness_AnisotropyDesc.Format));
-
-        ShaderCompiler*       m_ShaderCompiler = init_info.m_ShaderCompiler;
-        std::filesystem::path m_ShaderRootPath = init_info.m_ShaderRootPath;
-
-        indirectGBufferVS = m_ShaderCompiler->CompileShader(
-            RHI_SHADER_TYPE::Vertex, m_ShaderRootPath / "hlsl/IndirectGBufferPS.hlsl", ShaderCompileOptions(L"VSMain"));
-        indirectGBufferPS = m_ShaderCompiler->CompileShader(
-            RHI_SHADER_TYPE::Pixel, m_ShaderRootPath / "hlsl/IndirectGBufferPS.hlsl", ShaderCompileOptions(L"PSMain"));
 
         {
             RHI::RootSignatureDesc rootSigDesc =

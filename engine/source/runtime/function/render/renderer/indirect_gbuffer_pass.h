@@ -51,6 +51,11 @@ namespace MoYu
         std::shared_ptr<RHI::D3D12RootSignature> pIndirectGBufferSignature;
         std::shared_ptr<RHI::D3D12PipelineState> pIndirectGBufferPSO;
         std::shared_ptr<RHI::D3D12CommandSignature> pIndirectGBufferCommandSignature;
+
+        Shader drawGBufferVS;
+        Shader drawGBufferPS;
+        std::shared_ptr<RHI::D3D12RootSignature> pDrawGBufferSignature;
+        std::shared_ptr<RHI::D3D12PipelineState> pDrawGBufferPSO;
 	};
 }
 

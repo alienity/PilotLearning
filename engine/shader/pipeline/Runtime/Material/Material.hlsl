@@ -18,13 +18,6 @@
 // - _ENABLE_FOG_ON_TRANSPARENT if fog is enable on transparent surface
 // - _DISABLE_DECALS if the material don't support decals
 
-#define HAVE_DECALS ( (defined(DECALS_3RT) || defined(DECALS_4RT)) && !defined(_DISABLE_DECALS) )
-
-// If decals require surface gradients, we will use gradients too
-#if HAVE_DECALS && defined(DECAL_SURFACE_GRADIENT)
-#define DECAL_NORMAL_BLENDING
-#endif
-
 #define APPLY_FOG_ON_SKY_REFLECTIONS
 
 //-----------------------------------------------------------------------------

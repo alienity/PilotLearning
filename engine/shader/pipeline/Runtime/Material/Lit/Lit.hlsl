@@ -141,7 +141,7 @@ struct BSDFData
 //// However as we use material classification it is hard to be fully separated
 //// the dependecy is define in this include where there is shared define for material and lighting in case of deferred material.
 //// If a user do a lighting architecture without material classification, this can be remove
-//#include "Packages/com.unity.render-pipelines.high-definition/Runtime/Lighting/LightLoop/LightLoop.cs.hlsl"
+#include "../../Lighting/LightLoop/LightLoopMacros.hlsl"
 
 // Combination need to be define in increasing "comlexity" order as define by FeatureFlagsToTileVariant
 static const uint kFeatureVariantFlags[NUM_FEATURE_VARIANTS] =
@@ -693,7 +693,6 @@ void EncodeIntoGBuffer( SurfaceData surfaceData
 #ifdef SHADOWS_SHADOWMASK
     OUT_GBUFFER_SHADOWMASK = BUILTIN_DATA_SHADOW_MASK;
 #endif
-
 }
 
 // Fills the BSDFData. Also returns the (per-pixel) material feature flags inferred

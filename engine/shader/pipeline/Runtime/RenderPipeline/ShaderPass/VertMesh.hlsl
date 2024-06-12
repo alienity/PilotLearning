@@ -1,41 +1,17 @@
 struct VaryingsToPS
 {
     VaryingsMeshToPS vmesh;
-#ifdef VARYINGS_NEED_PASS
-    VaryingsPassToPS vpass;
-#endif
 };
 
 struct PackedVaryingsToPS
 {
-#ifdef VARYINGS_NEED_PASS
-    PackedVaryingsPassToPS vpass;
-#endif
-
     PackedVaryingsMeshToPS vmesh;
-
-    // SGVs must be packed after all non-SGVs have been packed.
-    // If there are several SGVs, they are packed in the order of HLSL declaration.
-    
-#if defined(PLATFORM_SUPPORTS_PRIMITIVE_ID_IN_PIXEL_SHADER) && SHADER_STAGE_FRAGMENT
-#if (defined(VARYINGS_NEED_PRIMITIVEID) || (SHADERPASS == SHADERPASS_FULL_SCREEN_DEBUG))
-    uint primitiveID : SV_PrimitiveID;
-#endif
-#endif
-
-#if defined(VARYINGS_NEED_CULLFACE) && SHADER_STAGE_FRAGMENT
-    FRONT_FACE_TYPE cullFace : FRONT_FACE_SEMANTIC;
-#endif
 };
 
 PackedVaryingsToPS PackVaryingsToPS(VaryingsToPS input)
 {
     PackedVaryingsToPS output;
     output.vmesh = PackVaryingsMeshToPS(input.vmesh);
-#ifdef VARYINGS_NEED_PASS
-    output.vpass = PackVaryingsPassToPS(input.vpass);
-#endif
-
     return output;
 }
 
@@ -65,9 +41,9 @@ FragInputs UnpackVaryingsToFragInputs(PackedVaryingsToPS packedInput)
 VaryingsMeshType VertMesh(AttributesMesh input, float3 worldSpaceOffset)
 {
     VaryingsMeshType output;
-#if defined(USE_CUSTOMINTERP_SUBSTRUCT)
+//#if defined(USE_CUSTOMINTERP_SUBSTRUCT)
     ZERO_INITIALIZE(VaryingsMeshType, output); // Only required with custom interpolator to quiet the shader compiler about not fully initialized struct
-#endif
+//#endif
 
 #ifdef HAVE_MESH_MODIFICATION
     input = ApplyMeshModification(input, _TimeParameters.xyz
