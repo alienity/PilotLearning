@@ -31,6 +31,8 @@
 #include "../../Material/Lit/ShaderPass/LitSharePass.hlsl"
 #include "../../Material/Lit/LitData.hlsl"
 
+#include "../../CustomInput/CustomInput.hlsl"
+
 #include "../../RenderPipeline/ShaderPass/ShaderPassGBuffer.hlsl"
 
 //#pragma vertex Vert

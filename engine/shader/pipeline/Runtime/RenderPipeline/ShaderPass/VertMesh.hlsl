@@ -41,9 +41,9 @@ FragInputs UnpackVaryingsToFragInputs(PackedVaryingsToPS packedInput)
 VaryingsMeshType VertMesh(AttributesMesh input, float3 worldSpaceOffset)
 {
     VaryingsMeshType output;
-//#if defined(USE_CUSTOMINTERP_SUBSTRUCT)
+#if defined(USE_CUSTOMINTERP_SUBSTRUCT)
     ZERO_INITIALIZE(VaryingsMeshType, output); // Only required with custom interpolator to quiet the shader compiler about not fully initialized struct
-//#endif
+#endif
 
 #ifdef HAVE_MESH_MODIFICATION
     input = ApplyMeshModification(input, _TimeParameters.xyz
@@ -54,13 +54,13 @@ VaryingsMeshType VertMesh(AttributesMesh input, float3 worldSpaceOffset)
     );
 #endif
 
-//     // This return the camera relative position (if enable)
-//     float3 positionRWS = TransformObjectToWorld(input.positionOS) + worldSpaceOffset;
-// #ifdef ATTRIBUTES_NEED_NORMAL
-//     float3 normalWS = TransformObjectToWorldNormal(input.normalOS);
-// #else
-//     float3 normalWS = float3(0.0, 0.0, 0.0); // We need this case to be able to compile ApplyVertexModification that doesn't use normal.
-// #endif
+    // This return the camera relative position (if enable)
+    float3 positionRWS = TransformObjectToWorld(input.positionOS) + worldSpaceOffset;
+#ifdef ATTRIBUTES_NEED_NORMAL
+    float3 normalWS = TransformObjectToWorldNormal(input.normalOS);
+#else
+    float3 normalWS = float3(0.0, 0.0, 0.0); // We need this case to be able to compile ApplyVertexModification that doesn't use normal.
+#endif
 
 // #ifdef ATTRIBUTES_NEED_TANGENT
 //     float4 tangentWS = float4(TransformObjectToWorldDir(input.tangentOS.xyz), input.tangentOS.w);

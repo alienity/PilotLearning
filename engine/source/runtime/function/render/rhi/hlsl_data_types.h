@@ -11,6 +11,9 @@
 
 #include <glm/glm.hpp>
 
+#include "../shader/pipeline/Runtime/ShaderLibrary/ShaderVariablesGlobal.hlsl"
+#include "../shader/pipeline/Runtime/Material/Lit/LitProperties.hlsl"
+
 #define ConstantBufferStruct struct alignas(alignof(float))
 
 // datas map to hlsl

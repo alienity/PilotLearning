@@ -22,12 +22,10 @@ struct RenderDataPerDraw
     float4x4 WorldToObjectMatrix;
     float4x4 prevObjectToWorldMatrix;
     float4x4 prevWorldToObjectMatrix;
-    D3D12_VERTEX_BUFFER_VIEW vertexBuffer;
-    D3D12_INDEX_BUFFER_VIEW indexBuffer;
-    D3D12_DRAW_INDEXED_ARGUMENTS drawIndexedArguments;
-    BoundingBox rendererBounds;
-    uint perDrawBufferIndex;
-    uint3 _padding_materialIndex2;
+    float4 vertexBuffer; // D3D12_VERTEX_BUFFER_VIEW 16
+    float4 indexBuffer; // D3D12_INDEX_BUFFER_VIEW 16
+    float4x2 drawIndexedArguments; // D3D12_DRAW_INDEXED_ARGUMENTS 20, LightPropertyBufferIndexOffset 4, Empty 8
+    float4x2 rendererBounds; // BoundingBox 8
 };
 
 struct CameraDataBuffer
