@@ -47,8 +47,12 @@ namespace MoYu
             void               addVertices(const float v1[3], const float v2[3], const float v3[3]);
             void               addNormal(float nx, float ny, float nz);
             void               addNormals(const float n1[3], const float n2[3], const float n3[3]);
+            void               addTangent(float tx, float ty, float tz, float tw);
+            void               addTangents(const float t1[4], const float t2[4], const float n3[4]);
             void               addTexCoord(float s, float t);
             void               addTexCoords(const float t1[2], const float t2[2], const float t3[2]);
+            void               addColor(float r, float g, float b, float a);
+            void               addColors(const float t1[4], const float t2[4], const float t3[4]);
             void               addIndices(unsigned int i1, unsigned int i2, unsigned int i3);
             unsigned int       addSubVertexAttribs(const float v[3], const float n[3], const float t[2]);
 
@@ -58,7 +62,9 @@ namespace MoYu
             bool                      _smooth;
             std::vector<float>        _vertices;
             std::vector<float>        _normals;
+            std::vector<float>        _tangents;
             std::vector<float>        _texCoords;
+            std::vector<float>        _colors;
             std::vector<unsigned int> _indices;
             std::map<std::pair<float, float>, unsigned int>
                 _sharedIndices; // indices of shared vertices, key is tex coord (s,t)

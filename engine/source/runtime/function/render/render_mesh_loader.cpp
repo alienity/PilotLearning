@@ -8,7 +8,7 @@
 #include <assimp/scene.h>           // Output data structure
 #include <assimp/postprocess.h>     // Post processing flags
 
-typedef MoYu::D3D12MeshVertexPositionNormalTangentTexture VertexDefine;
+typedef MoYu::D3D12MeshVertexStandard VertexDefine;
 
 struct ModelLoaderMesh
 {
@@ -128,17 +128,32 @@ ModelLoaderMesh ProcessMesh(aiMesh* mesh)
         vertex.position.y = mesh->mVertices[i].y;
         vertex.position.z = mesh->mVertices[i].z;
 
-        if (mesh->mTextureCoords[0])
-        {
-            vertex.texcoord.x = mesh->mTextureCoords[0][i].x;
-            vertex.texcoord.y = mesh->mTextureCoords[0][i].y;
-        }
-
         if (mesh->HasNormals())
         {
             vertex.normal.x = mesh->mNormals[i].x;
             vertex.normal.y = mesh->mNormals[i].y;
             vertex.normal.z = mesh->mNormals[i].z;
+        }
+        if (mesh->HasTangentsAndBitangents())
+        {
+            vertex.tangent.x = mesh->mTangents[i].x;
+            vertex.tangent.y = mesh->mTangents[i].y;
+            vertex.tangent.z = mesh->mTangents[i].z;
+            vertex.tangent.w = 1;
+        }
+
+        if (mesh->mTextureCoords[0])
+        {
+            vertex.uv0.x = mesh->mTextureCoords[0][i].x;
+            vertex.uv0.y = mesh->mTextureCoords[0][i].y;
+        }
+
+        if (mesh->HasVertexColors(0))
+        {
+            vertex.color.r = mesh->mColors[0]->r;
+            vertex.color.g = mesh->mColors[0]->g;
+            vertex.color.b = mesh->mColors[0]->b;
+            vertex.color.a = mesh->mColors[0]->a;
         }
 
         vertices.push_back(vertex);
@@ -235,8 +250,8 @@ void MittTangentsHelper::get_tex_coords(const SMikkTSpaceContext* context, float
     auto index  = get_vertex_index(context, iFace, iVert);
     auto vertex = working_mesh->vertexs_[index];
 
-    outuv[0] = vertex.texcoord.x;
-    outuv[1] = vertex.texcoord.y;
+    outuv[0] = vertex.uv0.x;
+    outuv[1] = vertex.uv0.y;
 }
 
 void MittTangentsHelper::set_tspace_basic(const SMikkTSpaceContext* context, const float* tangentu, const float fSign, const int iFace, const int iVert)

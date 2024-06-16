@@ -11,6 +11,10 @@
 
 #include <glm/glm.hpp>
 
+#ifndef _CPP_MACRO_
+#define _CPP_MACRO_
+#endif
+
 #include "../shader/pipeline/Runtime/ShaderLibrary/ShaderVariablesGlobal.hlsl"
 #include "../shader/pipeline/Runtime/Material/Lit/LitProperties.hlsl"
 
@@ -30,18 +34,8 @@ namespace HLSL
 
     static uint32_t const m_mesh_per_drawcall_max_instance_count = 64;
     static uint32_t const m_mesh_vertex_blending_max_joint_count = 1024;
-    static uint32_t const m_max_point_light_count                = 16;
-    static uint32_t const m_max_spot_light_count                 = 16;
 
-    struct BoundingBox
-    {
-        glm::float3 center;
-        float       _Padding_Center;
-        glm::float3 extents;
-        float       _Padding_Extents;
-    };
-
-
+    /*
     struct PerMaterialParametersBuffer
     {
         glm::float4 baseColorFactor {1.0f, 1.0f, 1.0f, 1.0f};
@@ -64,7 +58,7 @@ namespace HLSL
         glm::uint  is_blend {0};
         glm::uint is_double_sided {0};
     };
-
+    
     struct PerMaterialViewIndexBuffer
     {
         glm::uint parametersBufferIndex;
@@ -111,7 +105,7 @@ namespace HLSL
         glm::uint  perMaterialViewIndexBufferIndex;
         glm::uvec3 _padding_materialIndex2;
     };
-
+    
     struct FrameCameraUniform
     {
         glm::float4x4 viewFromWorldMatrix; // clip    view <- world    : view matrix
@@ -127,7 +121,7 @@ namespace HLSL
         glm::uint     jitterIndex;         // jitter index
         glm::float4   zBufferParams; // xy - to 01 depth, zw - to eye depth
     };
-
+    
     struct CameraUniform
     {
         FrameCameraUniform curFrameUniform;
@@ -237,7 +231,7 @@ namespace HLSL
 
         DirectionalLightShadowmap directionalLightShadowmap;
     };
-
+    
     struct PointLightShadowmap
     {
         glm::uint     shadowmap_srv_index; // shadowmap srv in descriptorheap index
@@ -366,7 +360,7 @@ namespace HLSL
         VolumeLightUniform     volumeLightUniform;
         SSSUniform             sssUniform;
     };
-
+    */
     struct BitonicSortCommandSigParams
     {
         glm::uint  MeshIndex;
@@ -408,7 +402,7 @@ namespace HLSL
         D3D12_INDEX_BUFFER_VIEW      IndexBuffer;
         D3D12_DRAW_INDEXED_ARGUMENTS DrawIndexedArguments;
         glm::int3                    _Padding_0;
-        BoundingBox                  ClipBoundingBox;
+        glm::float4x2                ClipBoundingBox;
     };
 
     struct ToDrawCommandSignatureParams
@@ -430,12 +424,12 @@ namespace HLSL
 
     struct TerrainPatchNode
     {
-        glm::float2 patchMinPos; // node�����½Ƕ���
-        float       maxHeight;   // ��ǰnode���߶�
-        float       minHeight;   // ��ǰnode��С�߶�
-        float       nodeWidth;   // patchnode�Ŀ���
-        int         mipLevel;    // ��ǰnode��mip�ȼ�
-        uint32_t    neighbor;    // ����һ��mip��Ϊ�ھӵı�ʶ
+        glm::float2 patchMinPos;
+        float       maxHeight;
+        float       minHeight;
+        float       nodeWidth;
+        int         mipLevel;
+        uint32_t    neighbor;
     };
 
     // 512 * 512

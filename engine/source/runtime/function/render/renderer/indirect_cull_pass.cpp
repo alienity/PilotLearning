@@ -55,18 +55,17 @@ namespace MoYu
         depthDesc  = init_info.depthTexDesc;
 
         // create default buffer
-        pFrameUniformBuffer = CreateCullingBuffer(1, MoYu::AlignUp(sizeof(HLSL::FrameUniforms), 256), L"FrameUniformBuffer");
-        pMaterialViewIndexBuffer = CreateCullingBuffer(HLSL::MaterialLimit, sizeof(HLSL::PerMaterialViewIndexBuffer), L"MaterialViewIndexBuffer");
-        pRenderableMeshBuffer = CreateCullingBuffer(HLSL::MeshLimit, sizeof(HLSL::PerRenderableMeshData), L"PerRenderableMeshBuffer");
-
+        pFrameUniformBuffer = CreateCullingBuffer(1, MoYu::AlignUp(sizeof(FrameUniforms), 256), L"FrameUniforms");
+        pRenderDataPerDrawBuffer = CreateCullingBuffer(HLSL::MaterialLimit, sizeof(RenderDataPerDraw), L"RenderDataPerDraw");
+        pPropertiesPerMaterialBuffer = CreateCullingBuffer(HLSL::MaterialLimit, sizeof(PropertiesPerMaterial), L"PropertiesPerMaterial");
+        
         // create upload buffer
-        pUploadFrameUniformBuffer = CreateUploadBuffer(1, MoYu::AlignUp(sizeof(HLSL::FrameUniforms), 256), L"UploadFrameUniformBuffer");
-        pUploadMaterialViewIndexBuffer = CreateUploadBuffer(HLSL::MaterialLimit, sizeof(HLSL::PerMaterialViewIndexBuffer), L"UploadMaterialViewIndexBuffer");
-        pUploadRenderableMeshBuffer = CreateUploadBuffer(HLSL::MeshLimit, sizeof(HLSL::PerRenderableMeshData), L"UploadPerRenderableMeshBuffer");
-
+        pUploadFrameUniformBuffer = CreateUploadBuffer(1, MoYu::AlignUp(sizeof(FrameUniforms), 256), L"UploadFrameUniforms");
+        pUploadRenderDataPerDrawBuffer = CreateUploadBuffer(HLSL::MaterialLimit, sizeof(RenderDataPerDraw), L"UploadRenderDataPerDraw");
+        pUploadPropertiesPerMaterialBuffer = CreateUploadBuffer(HLSL::MaterialLimit, sizeof(PropertiesPerMaterial), L"UploadPropertiesPerMaterial");
+        
         sortDispatchArgsBufferDesc = CreateArgBufferDesc("SortDispatchArgs", 22 * 23 / 2);
         grabDispatchArgsBufferDesc = CreateArgBufferDesc("GrabDispatchArgs", 22 * 23 / 2);
-
 
         // buffer for opaque draw
         commandBufferForOpaqueDraw.p_IndirectIndexCommandBuffer = CreateIndexBuffer(L"OpaqueIndexBuffer");
@@ -79,21 +78,15 @@ namespace MoYu
 
     void IndirectCullPass::inflatePerframeBuffer(std::shared_ptr<RenderResource> render_resource)
     {
-        //// update per-frame buffer
-        //render_resource->updatePerFrameBuffer(m_render_scene, m_render_camera);
-
-        memcpy(pUploadFrameUniformBuffer->GetCpuVirtualAddress<HLSL::FrameUniforms>(),
-               &render_resource->m_FrameUniforms,
-               sizeof(HLSL::FrameUniforms));
+        memcpy(pUploadFrameUniformBuffer->GetCpuVirtualAddress<FrameUniforms>(), &render_resource->m_FrameUniforms, sizeof(FrameUniforms));
     }
 
     void IndirectCullPass::prepareMeshData(std::shared_ptr<RenderResource> render_resource)
     {
         std::vector<CachedMeshRenderer>& _mesh_renderers = m_render_scene->m_mesh_renderers;
 
-        HLSL::PerMaterialViewIndexBuffer* pMaterialViewIndexBuffer = pUploadMaterialViewIndexBuffer->GetCpuVirtualAddress<HLSL::PerMaterialViewIndexBuffer>();
-        HLSL::PerRenderableMeshData* pRenderableMeshBuffer = pUploadRenderableMeshBuffer->GetCpuVirtualAddress<HLSL::PerRenderableMeshData>();
-
+        RenderDataPerDraw* pUploadRenderDataPerDraw = pUploadRenderDataPerDrawBuffer->GetCpuVirtualAddress<RenderDataPerDraw>();
+        
         uint32_t numMeshes = _mesh_renderers.size();
         ASSERT(numMeshes < HLSL::MeshLimit);
         for (size_t i = 0; i < numMeshes; i++)
@@ -103,71 +96,37 @@ namespace MoYu
             InternalMesh& temp_ref_mesh = temp_mesh_renderer.ref_mesh;
             InternalMaterial& temp_ref_material = temp_mesh_renderer.ref_material;
 
-            //std::shared_ptr<RHI::D3D12ShaderResourceView> defaultWhiteView = real_resource->m_default_resource._white_texture2d_image->GetDefaultSRV();
-            //std::shared_ptr<RHI::D3D12ShaderResourceView> defaultBlackView = real_resource->m_default_resource._black_texture2d_image->GetDefaultSRV();
+            D3D12_DRAW_INDEXED_ARGUMENTS curDrawIndexedArguments = {};
+            curDrawIndexedArguments.IndexCountPerInstance        = temp_ref_mesh.index_buffer.index_count; // temp_node.ref_mesh->mesh_index_count;
+            curDrawIndexedArguments.InstanceCount                = 1;
+            curDrawIndexedArguments.StartIndexLocation           = 0;
+            curDrawIndexedArguments.BaseVertexLocation           = 0;
+            curDrawIndexedArguments.StartInstanceLocation        = 0;
 
-            //std::shared_ptr<RHI::D3D12ShaderResourceView> defaultWhiteView = RHI::GetDefaultTexture(RHI::eDefaultTexture::kWhiteOpaque2D)->GetDefaultSRV();
-            //std::shared_ptr<RHI::D3D12ShaderResourceView> defaultBlackView = RHI::GetDefaultTexture(RHI::eDefaultTexture::kBlackOpaque2D)->GetDefaultSRV();
+            glm::float3 boundingBoxCenter = temp_ref_mesh.axis_aligned_box.getCenter(); // temp_node.bounding_box.center;
+            glm::float3 boundingBoxExtents = temp_ref_mesh.axis_aligned_box.getHalfExtent();//temp_node.bounding_box.extent;
 
-            std::shared_ptr<RHI::D3D12ShaderResourceView> defaultWhiteView =
-                render_resource->_Default2TexMap[DefaultTexType::White]->GetDefaultSRV();
-            std::shared_ptr<RHI::D3D12ShaderResourceView> defaultBlackView =
-                render_resource->_Default2TexMap[DefaultTexType::Black]->GetDefaultSRV();
-            std::shared_ptr<RHI::D3D12ShaderResourceView> defaultNormalView =
-                render_resource->_Default2TexMap[DefaultTexType::TangentNormal]->GetDefaultSRV();
+            D3D12_VERTEX_BUFFER_VIEW curVertexBufferView = temp_ref_mesh.vertex_buffer.vertex_buffer->GetVertexBufferView();
+            D3D12_INDEX_BUFFER_VIEW curIndexBufferView = temp_ref_mesh.index_buffer.index_buffer->GetIndexBufferView();
 
+            RenderDataPerDraw curRenderDataPerDraw = {};
+            memset(&curRenderDataPerDraw, 0, sizeof(RenderDataPerDraw));
 
-            std::shared_ptr<RHI::D3D12ShaderResourceView> uniformBufferView = temp_ref_material.m_intenral_pbr_mat.material_uniform_buffer->GetDefaultSRV();
-            //std::shared_ptr<RHI::D3D12ShaderResourceView> baseColorView = temp_ref_material.m_intenral_pbr_mat.base_color_texture_image->GetDefaultSRV();
-            //std::shared_ptr<RHI::D3D12ShaderResourceView> metallicRoughnessView = temp_ref_material.m_intenral_pbr_mat.metallic_roughness_texture_image->GetDefaultSRV();
-            //std::shared_ptr<RHI::D3D12ShaderResourceView> normalView   = temp_ref_material.m_intenral_pbr_mat.normal_texture_image->GetDefaultSRV();
-            //std::shared_ptr<RHI::D3D12ShaderResourceView> emissionView = temp_ref_material.m_intenral_pbr_mat.emissive_texture_image->GetDefaultSRV();
+            curRenderDataPerDraw.objectToWorldMatrix = temp_mesh_renderer.model_matrix; // temp_node.model_matrix;
+            curRenderDataPerDraw.worldToObjectMatrix = temp_mesh_renderer.model_matrix_inverse;//temp_node.model_matrix_inverse;
+            curRenderDataPerDraw.prevObjectToWorldMatrix = temp_mesh_renderer.prev_model_matrix;
+            curRenderDataPerDraw.prevWorldToObjectMatrix = temp_mesh_renderer.prev_model_matrix_inverse;
+            memcpy(&curRenderDataPerDraw.vertexBufferView, &curVertexBufferView, sizeof(D3D12_VERTEX_BUFFER_VIEW));//temp_node.ref_mesh->p_mesh_vertex_buffer->GetVertexBufferView();
+            memcpy(&curRenderDataPerDraw.indexBufferView, &curIndexBufferView, sizeof(D3D12_INDEX_BUFFER_VIEW));//temp_node.ref_mesh->p_mesh_vertex_buffer->GetIndexBufferView();
+            memcpy(&curRenderDataPerDraw.drawIndexedArguments, &curDrawIndexedArguments, sizeof(D3D12_DRAW_INDEXED_ARGUMENTS));
+            char* pLightPropertyBufferIndex = (char*)&curRenderDataPerDraw.drawIndexedArguments + sizeof(D3D12_DRAW_INDEXED_ARGUMENTS);
+            memcpy(pLightPropertyBufferIndex, &i, sizeof(UINT32));
+            char* pLightPropertyBufferIndexOffset = pLightPropertyBufferIndex + sizeof(void*);
+            memcpy(pLightPropertyBufferIndexOffset, &i, sizeof(UINT32));
+            curRenderDataPerDraw.rendererBounds[0] = glm::float4(boundingBoxCenter, 0);
+            curRenderDataPerDraw.rendererBounds[1] = glm::float4(boundingBoxExtents, 0);
 
-            #define Tex2ViewIndex(toIndex, replaceTexView, fromTex)\
-            if (fromTex == nullptr)\
-                toIndex = replaceTexView->GetIndex();\
-            else\
-                toIndex = fromTex->GetDefaultSRV()->GetIndex();\
-
-            HLSL::PerMaterialViewIndexBuffer curMatViewIndexBuffer = {};
-            curMatViewIndexBuffer.parametersBufferIndex = uniformBufferView->GetIndex();            
-            Tex2ViewIndex(curMatViewIndexBuffer.baseColorIndex, defaultWhiteView, temp_ref_material.m_intenral_pbr_mat.base_color_texture_image)
-            Tex2ViewIndex(curMatViewIndexBuffer.metallicRoughnessIndex, defaultWhiteView, temp_ref_material.m_intenral_pbr_mat.metallic_roughness_texture_image)
-            Tex2ViewIndex(curMatViewIndexBuffer.normalIndex, defaultNormalView, temp_ref_material.m_intenral_pbr_mat.normal_texture_image)
-            Tex2ViewIndex(curMatViewIndexBuffer.occlusionIndex, defaultWhiteView, temp_ref_material.m_intenral_pbr_mat.occlusion_texture_image)
-            Tex2ViewIndex(curMatViewIndexBuffer.emissionIndex, defaultBlackView, temp_ref_material.m_intenral_pbr_mat.emissive_texture_image)
-
-            //curMatInstance.baseColorViewIndex = baseColorView->IsValid() ? baseColorView->GetIndex() : defaultWhiteView->GetIndex();
-            //curMatInstance.metallicRoughnessViewIndex = metallicRoughnessView->IsValid() ? metallicRoughnessView->GetIndex() : defaultBlackView->GetIndex();
-            //curMatInstance.normalViewIndex = normalView->IsValid() ? normalView->GetIndex() : defaultWhiteView->GetIndex();
-            //curMatInstance.emissionViewIndex = emissionView->IsValid() ? emissionView->GetIndex() : defaultBlackView->GetIndex();
-
-            pMaterialViewIndexBuffer[i] = curMatViewIndexBuffer;
-
-            D3D12_DRAW_INDEXED_ARGUMENTS drawIndexedArguments = {};
-            drawIndexedArguments.IndexCountPerInstance        = temp_ref_mesh.index_buffer.index_count; // temp_node.ref_mesh->mesh_index_count;
-            drawIndexedArguments.InstanceCount                = 1;
-            drawIndexedArguments.StartIndexLocation           = 0;
-            drawIndexedArguments.BaseVertexLocation           = 0;
-            drawIndexedArguments.StartInstanceLocation        = 0;
-
-            HLSL::BoundingBox boundingBox = {};
-            boundingBox.center = temp_ref_mesh.axis_aligned_box.getCenter(); // temp_node.bounding_box.center;
-            boundingBox.extents = temp_ref_mesh.axis_aligned_box.getHalfExtent();//temp_node.bounding_box.extent;
-
-            HLSL::PerRenderableMeshData curRenderableMeshData = {};
-            curRenderableMeshData.enableVertexBlending = temp_ref_mesh.enable_vertex_blending; // temp_node.enable_vertex_blending;
-            curRenderableMeshData.worldFromModelMatrix = temp_mesh_renderer.model_matrix; // temp_node.model_matrix;
-            curRenderableMeshData.modelFromWorldMatrix = temp_mesh_renderer.model_matrix_inverse;//temp_node.model_matrix_inverse;
-            curRenderableMeshData.prevWorldFromModelMatrix = temp_mesh_renderer.prev_model_matrix;
-            curRenderableMeshData.prevModelFromWorldMatrix = temp_mesh_renderer.prev_model_matrix_inverse;
-            curRenderableMeshData.vertexBuffer         = temp_ref_mesh.vertex_buffer.vertex_buffer->GetVertexBufferView();//temp_node.ref_mesh->p_mesh_vertex_buffer->GetVertexBufferView();
-            curRenderableMeshData.indexBuffer          = temp_ref_mesh.index_buffer.index_buffer->GetIndexBufferView();//temp_node.ref_mesh->p_mesh_index_buffer->GetIndexBufferView();
-            curRenderableMeshData.drawIndexedArguments = drawIndexedArguments;
-            curRenderableMeshData.boundingBox          = boundingBox;
-            curRenderableMeshData.perMaterialViewIndexBufferIndex = i;
-
-            pRenderableMeshBuffer[i] = curRenderableMeshData;
+            pUploadRenderDataPerDraw[i] = curRenderDataPerDraw;
         }
 
         prepareBuffer();

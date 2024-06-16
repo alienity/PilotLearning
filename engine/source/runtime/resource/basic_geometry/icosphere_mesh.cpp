@@ -47,8 +47,8 @@ namespace MoYu
                         int indices_index = iFace * 3 + iVert;
                         int index = working_mesh->indices[indices_index];
                         auto vertex = working_mesh->vertices[index];
-                        fvTexcOut[0] = vertex.texcoord.x;
-                        fvTexcOut[1] = vertex.texcoord.y;
+                        fvTexcOut[0] = vertex.uv0.x;
+                        fvTexcOut[1] = vertex.uv0.y;
                     };
                 iface.m_setTSpaceBasic = [](const SMikkTSpaceContext* pContext,
                                             const float               fvTangent[],
@@ -90,10 +90,11 @@ namespace MoYu
             for (int i = 0; i < verticeCount; ++i)
             {
                 Vertex _vert = {};
-                _vert.position = glm::vec3(_vertices[i * 3], _vertices[i * 3 + 1], _vertices[i * 3 + 2]);
-                _vert.normal   = glm::vec3(_normals[i * 3], _normals[i * 3 + 1], _normals[i * 3 + 2]);
-                _vert.texcoord = glm::vec2(_texCoords[i * 2], _texCoords[i * 2 + 1]);
-
+                _vert.position = glm::float3(_vertices[i * 3], _vertices[i * 3 + 1], _vertices[i * 3 + 2]);
+                _vert.normal   = glm::float3(_normals[i * 3], _normals[i * 3 + 1], _normals[i * 3 + 2]);
+                _vert.tangent  = glm::float4(_tangents[i * 4], _tangents[i * 4 + 1], _tangents[i * 4 + 2], _tangents[i * 4 + 3]);
+                _vert.uv0      = glm::float2(_texCoords[i * 2], _texCoords[i * 2 + 1]);
+                _vert.color    = glm::float4(_colors[i * 4], _colors[i * 4 + 1], _colors[i * 4 + 2], _colors[i * 4 + 3]);
                 vertices.push_back(_vert);
             }
         }
@@ -870,6 +871,36 @@ namespace MoYu
         }
 
         ///////////////////////////////////////////////////////////////////////////////
+        // add 3 tangents of a triangle to array
+        ///////////////////////////////////////////////////////////////////////////////
+        void Icosphere::addTangent(float tx, float ty, float tz, float tw)
+        {
+            _tangents.push_back(tx);
+            _tangents.push_back(ty);
+            _tangents.push_back(tz);
+            _tangents.push_back(tw);
+        }
+
+        ///////////////////////////////////////////////////////////////////////////////
+        // add 3 tangents of a triangle to array
+        ///////////////////////////////////////////////////////////////////////////////
+        void Icosphere::addTangents(const float t1[4], const float t2[4], const float t3[4])
+        {
+            _tangents.push_back(t1[0]);
+            _tangents.push_back(t1[1]);
+            _tangents.push_back(t1[2]);
+            _tangents.push_back(t1[3]);
+            _tangents.push_back(t2[0]);
+            _tangents.push_back(t2[1]);
+            _tangents.push_back(t2[2]);
+            _tangents.push_back(t2[3]);
+            _tangents.push_back(t3[0]);
+            _tangents.push_back(t3[1]);
+            _tangents.push_back(t3[2]);
+            _tangents.push_back(t3[3]);
+        }
+
+        ///////////////////////////////////////////////////////////////////////////////
         // add single texture coord to array
         ///////////////////////////////////////////////////////////////////////////////
         void Icosphere::addTexCoord(float s, float t)
@@ -889,6 +920,30 @@ namespace MoYu
             _texCoords.push_back(t2[1]);
             _texCoords.push_back(t3[0]);
             _texCoords.push_back(t3[1]);
+        }
+
+        void Icosphere::addColor(float r, float g, float b, float a)
+        {
+            _colors.push_back(r);
+            _colors.push_back(g);
+            _colors.push_back(b);
+            _colors.push_back(a);
+        }
+
+        void Icosphere::addColors(const float t1[4], const float t2[4], const float t3[4])
+        {
+            _colors.push_back(t1[0]);
+            _colors.push_back(t1[1]);
+            _colors.push_back(t1[2]);
+            _colors.push_back(t1[3]);
+            _colors.push_back(t2[0]);
+            _colors.push_back(t2[1]);
+            _colors.push_back(t2[2]);
+            _colors.push_back(t2[3]);
+            _colors.push_back(t3[0]);
+            _colors.push_back(t3[1]);
+            _colors.push_back(t3[2]);
+            _colors.push_back(t3[3]);
         }
 
         ///////////////////////////////////////////////////////////////////////////////

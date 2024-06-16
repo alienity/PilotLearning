@@ -10,7 +10,7 @@ namespace MoYu
 {
     namespace Geometry
     {
-        typedef D3D12MeshVertexPositionNormalTangentTexture Vertex;
+        typedef D3D12MeshVertexStandard Vertex;
 
         Vertex VertexInterpolate(Vertex& v0, Vertex& v1, float t);
         Vertex VertexVectorBuild(Vertex& init, Vertex& temp);

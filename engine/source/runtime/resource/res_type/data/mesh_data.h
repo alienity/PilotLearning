@@ -41,8 +41,7 @@ namespace MoYu
     {
         std::vector<Vertex>          vertex_buffer;
         std::vector<uint32_t>        index_buffer;
-        std::vector<SkeletonBinding> skeleton_bind;
     };
-    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(MeshData, vertex_buffer, index_buffer, skeleton_bind)
+    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(MeshData, vertex_buffer, index_buffer)
 
 } // namespace MoYu

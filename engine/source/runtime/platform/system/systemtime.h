@@ -20,6 +20,7 @@ public:
     double Tick();
     
     int64_t GetTicks();
+    double  GetPrevTimeSecs();
     double  GetTimeSecs();
     double  GetTimeMillisecs();
     double  GetDeltaTimeSecs();
@@ -27,6 +28,7 @@ public:
 
 private:
     int64_t m_StartTick;
+    int64_t m_PrevFrameTick;
     int64_t m_LastFrameTick;
     int64_t m_DeltaTicks;
 

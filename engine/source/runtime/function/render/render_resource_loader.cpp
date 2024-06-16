@@ -263,8 +263,7 @@ namespace MoYu
                 std::shared_ptr<MeshData> bind_data = std::make_shared<MeshData>();
                 asset_manager->loadAsset<MeshData>(mesh_file, *bind_data);
 
-                ret.m_static_mesh_data.m_InputElementDefinition =
-                    D3D12MeshVertexPositionNormalTangentTextureJointBinding::InputElementDefinition;
+                ret.m_static_mesh_data.m_InputElementDefinition = D3D12MeshVertexStandard::InputElementDefinition;
 
                 // vertex buffer
                 size_t vertex_size = bind_data->vertex_buffer.size() * sizeof(Vertex);
@@ -280,13 +279,6 @@ namespace MoYu
                 memcpy(_index_buffer->GetBufferPointer(), bind_data->index_buffer.data(), index_size);
                 ret.m_static_mesh_data.m_index_buffer = _index_buffer;
 
-                // skeleton binding buffer
-                size_t skeleton_size = bind_data->skeleton_bind.size() * sizeof(SkeletonBinding);
-                auto _skeleton_buffer = std::make_shared<MoYuScratchBuffer>();
-                _skeleton_buffer->Initialize(skeleton_size);
-                memcpy(_skeleton_buffer->GetBufferPointer(), bind_data->skeleton_bind.data(), skeleton_size);
-                ret.m_skeleton_binding_buffer = _skeleton_buffer;
-                
                 MoYu::AABB bounding_box;
                 for (size_t i = 0; i < bind_data->vertex_buffer.size(); i++)
                 {

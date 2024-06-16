@@ -402,8 +402,8 @@ uint Get1DAddressFromPixelCoord(uint2 pixCoord, uint2 screenSize)
 // Define Model Matrix Macro
 // Note: In order to be able to define our macro to forbid usage of unity_ObjectToWorld/unity_WorldToObject/unity_MatrixPreviousM/unity_MatrixPreviousMI
 // We need to declare inline function. Using uniform directly mean they are expand with the macro
-float4x4 GetRawUnityObjectToWorld(RenderDataPerDraw renderDataPerDraw)     { return renderDataPerDraw.ObjectToWorldMatrix; }
-float4x4 GetRawUnityWorldToObject(RenderDataPerDraw renderDataPerDraw)     { return renderDataPerDraw.WorldToObjectMatrix; }
+float4x4 GetRawUnityObjectToWorld(RenderDataPerDraw renderDataPerDraw)     { return renderDataPerDraw.objectToWorldMatrix; }
+float4x4 GetRawUnityWorldToObject(RenderDataPerDraw renderDataPerDraw)     { return renderDataPerDraw.worldToObjectMatrix; }
 float4x4 GetRawUnityPrevObjectToWorld(RenderDataPerDraw renderDataPerDraw) { return renderDataPerDraw.prevObjectToWorldMatrix; }
 float4x4 GetRawUnityPrevWorldToObject(RenderDataPerDraw renderDataPerDraw) { return renderDataPerDraw.prevWorldToObjectMatrix; }
 

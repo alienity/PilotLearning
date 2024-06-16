@@ -9,9 +9,11 @@ namespace MoYu
         Vertex VertexInterpolate(Vertex& v0, Vertex& v1, float t)
         {
             Vertex v;
-            v.position  = glm::mix(v0.position, v1.position, t);
-            v.normal    = glm::mix(v0.normal, v1.normal, t);
-            v.texcoord = glm::mix(v0.texcoord, v1.texcoord, t);
+            v.position = glm::mix(v0.position, v1.position, t);
+            v.normal   = glm::mix(v0.normal, v1.normal, t);
+            v.tangent  = glm::mix(v0.tangent, v1.tangent, t);
+            v.uv0      = glm::mix(v0.uv0, v1.uv0, t);
+            v.color    = glm::mix(v0.color, v1.color, t);
             return v;
         }
 
@@ -20,7 +22,9 @@ namespace MoYu
             Vertex v;
             v.position  = temp.position - init.position;
             v.normal    = temp.normal - init.normal;
-            v.texcoord = temp.texcoord - init.texcoord;
+            v.tangent   = temp.tangent - init.tangent;
+            v.uv0       = temp.uv0 - init.uv0;
+            v.color     = temp.color - init.color;
             return v;
         }
 
@@ -28,8 +32,6 @@ namespace MoYu
         {
             Vertex v;
             v.position  = matrix * glm::vec4(v0.position, 1);
-            v.normal    = matrix * glm::vec4(v0.normal, 0);
-            v.texcoord = v0.texcoord;
             return v;
         }
 
@@ -38,19 +40,19 @@ namespace MoYu
             float _fmax = std::numeric_limits<float>::max();
             float _fmin = std::numeric_limits<float>::min();
 
-            glm::vec3 _min = glm::vec3(_fmax, _fmax, _fmax);
-            glm::vec3 _max = glm::vec3(_fmin, _fmin, _fmin);
+            glm::float3 _min = glm::float3(_fmax, _fmax, _fmax);
+            glm::float3 _max = glm::float3(_fmin, _fmin, _fmin);
 
             for (size_t i = 0; i < basicMesh.vertices.size(); i++)
             {
-                glm::vec3 _cutpos = basicMesh.vertices[i].position;
+                glm::float3 _cutpos = basicMesh.vertices[i].position;
 
                 _min = glm::min(_cutpos, _min);
                 _max = glm::max(_cutpos, _max);
             }
 
-            glm::vec3 _center = (_min + _max) * 0.5f;
-            glm::vec3 _half_extent = (_max - _min) * 0.5f;
+            glm::float3 _center = (_min + _max) * 0.5f;
+            glm::float3 _half_extent = (_max - _min) * 0.5f;
 
             //glm::float3 center      = _center;
             //glm::float3 half_extent = _half_extent;
@@ -91,17 +93,23 @@ namespace MoYu
         TriangleMesh::TriangleMesh(float width)
         {
             Vertex _t;
-            _t.position = glm::vec3(-1, -1, 0) * width;
-            _t.normal   = glm::vec3(0, 0, 1);
-            _t.texcoord = glm::uvec2(0, 0);
+            _t.position = glm::float3(-1, -1, 0) * width;
+            _t.normal   = glm::float3(0, 0, 1);
+            _t.tangent  = glm::float4(1, 0, 0, 1);
+            _t.uv0      = glm::float2(0, 0);
+            _t.color    = glm::float4(0, 0, 0, 0);
             vertices.push_back(_t);
-            _t.position = glm::vec3(1, -1, 0) * width;
-            _t.normal   = glm::vec3(0, 0, 1);
-            _t.texcoord = glm::uvec2(1, 0);
+            _t.position = glm::float3(1, -1, 0) * width;
+            _t.normal   = glm::float3(0, 0, 1);
+            _t.tangent  = glm::float4(1, 0, 0, 1);
+            _t.uv0      = glm::float2(1, 0);
+            _t.color    = glm::float4(0, 0, 0, 0);
             vertices.push_back(_t);
-            _t.position = glm::vec3(1, 1, 0) * width;
-            _t.normal   = glm::vec3(0, 0, 1);
-            _t.texcoord = glm::uvec2(1, 1);
+            _t.position = glm::float3(1, 1, 0) * width;
+            _t.normal   = glm::float3(0, 0, 1);
+            _t.tangent  = glm::float4(1, 0, 0, 1);
+            _t.uv0      = glm::float2(1, 1);
+            _t.color    = glm::float4(0, 0, 0, 0);
             vertices.push_back(_t);
 
             indices.push_back(0);
@@ -151,8 +159,8 @@ namespace MoYu
                         int indices_index = iFace * 3 + iVert;
                         int index = working_mesh->indices[indices_index];
                         auto vertex = working_mesh->vertices[index];
-                        fvTexcOut[0] = vertex.texcoord.x;
-                        fvTexcOut[1] = vertex.texcoord.y;
+                        fvTexcOut[0] = vertex.uv0.x;
+                        fvTexcOut[1] = vertex.uv0.y;
                     };
                 iface.m_setTSpaceBasic = [](const SMikkTSpaceContext* pContext,
                                             const float               fvTangent[],
@@ -182,29 +190,41 @@ namespace MoYu
         SquareMesh::SquareMesh(float width)
         {
             Vertex _t;
-            _t.position = glm::vec3(-1, -1, 0) * width;
-            _t.normal   = glm::vec3(0, 0, 1);
-            _t.texcoord = glm::uvec2(0, 0);
+            _t.position = glm::float3(-1, -1, 0) * width;
+            _t.normal   = glm::float3(0, 0, 1);
+            _t.tangent  = glm::float4(0, 0, 0, 1);
+            _t.uv0      = glm::float2(0, 0);
+            _t.color    = glm::float4(0, 0, 0, 0);
             vertices.push_back(_t);
-            _t.position = glm::vec3(1, -1, 0) * width;
-            _t.normal   = glm::vec3(0, 0, 1);
-            _t.texcoord = glm::uvec2(1, 0);
+            _t.position = glm::float3(1, -1, 0) * width;
+            _t.normal   = glm::float3(0, 0, 1);
+            _t.tangent  = glm::float4(0, 0, 0, 1);
+            _t.uv0      = glm::float2(1, 0);
+            _t.color    = glm::float4(0, 0, 0, 0);
             vertices.push_back(_t);
-            _t.position = glm::vec3(1, 1, 0) * width;
-            _t.normal   = glm::vec3(0, 0, 1);
-            _t.texcoord = glm::uvec2(1, 1);
+            _t.position = glm::float3(1, 1, 0) * width;
+            _t.normal   = glm::float3(0, 0, 1);
+            _t.tangent  = glm::float4(0, 0, 0, 1);
+            _t.uv0      = glm::float2(1, 1);
+            _t.color    = glm::float4(0, 0, 0, 0);
             vertices.push_back(_t);
-            _t.position = glm::vec3(1, 1, 0) * width;
-            _t.normal   = glm::vec3(0, 0, 1);
-            _t.texcoord = glm::uvec2(1, 1);
+            _t.position = glm::float3(1, 1, 0) * width;
+            _t.normal   = glm::float3(0, 0, 1);
+            _t.tangent  = glm::float4(0, 0, 0, 1);
+            _t.uv0      = glm::float2(1, 1);
+            _t.color    = glm::float4(0, 0, 0, 0);
             vertices.push_back(_t);
-            _t.position = glm::vec3(-1, 1, 0) * width;
-            _t.normal   = glm::vec3(0, 0, 1);
-            _t.texcoord = glm::uvec2(0, 1);
+            _t.position = glm::float3(-1, 1, 0) * width;
+            _t.normal   = glm::float3(0, 0, 1);
+            _t.tangent  = glm::float4(0, 0, 0, 1);
+            _t.uv0      = glm::float2(0, 1);
+            _t.color    = glm::float4(0, 0, 0, 0);
             vertices.push_back(_t);
-            _t.position = glm::vec3(-1, -1, 0) * width;
-            _t.normal   = glm::vec3(0, 0, 1);
-            _t.texcoord = glm::uvec2(0, 0);
+            _t.position = glm::float3(-1, -1, 0) * width;
+            _t.normal   = glm::float3(0, 0, 1);
+            _t.tangent  = glm::float4(0, 0, 0, 1);
+            _t.uv0      = glm::float2(0, 0);
+            _t.color    = glm::float4(0, 0, 0, 0);
             vertices.push_back(_t);
 
             indices.push_back(0);
@@ -257,8 +277,8 @@ namespace MoYu
                         int indices_index = iFace * 3 + iVert;
                         int index = working_mesh->indices[indices_index];
                         auto vertex = working_mesh->vertices[index];
-                        fvTexcOut[0] = vertex.texcoord.x;
-                        fvTexcOut[1] = vertex.texcoord.y;
+                        fvTexcOut[0] = vertex.uv0.x;
+                        fvTexcOut[1] = vertex.uv0.y;
                     };
                 iface.m_setTSpaceBasic = [](const SMikkTSpaceContext* pContext,
                                             const float               fvTangent[],
@@ -296,7 +316,7 @@ namespace MoYu
             _t.position  = position;
             _t.texcoord0 = coord;
             _t.color     = color;
-            _t.normal    = glm::vec3(0, 1, 0);
+            _t.normal    = glm::float3(0, 1, 0);
             _t.tangent   = glm::vec4(1, 0, 0, 1);
             return _t;
         }
@@ -310,35 +330,35 @@ namespace MoYu
             this->localTreePosBit = bitOffset;
             this->localOffset     = localOffset;
 
-            vertices.push_back(CreatePatch(glm::vec3(0.0, 0, 0.0), glm::vec2(0, 0), glm::vec4(0, 0, 0, 0)));
-            vertices.push_back(CreatePatch(glm::vec3(0.25, 0, 0.0), glm::vec2(0.25, 0), glm::vec4(1, 0, 0, 0)));
-            vertices.push_back(CreatePatch(glm::vec3(0.5, 0, 0.0), glm::vec2(0.5, 0), glm::vec4(0, 0, 0, 0)));
-            vertices.push_back(CreatePatch(glm::vec3(0.75, 0, 0.0), glm::vec2(0.75, 0), glm::vec4(1, 0, 0, 0)));
-            vertices.push_back(CreatePatch(glm::vec3(1.0, 0, 0.0), glm::vec2(1.0, 0), glm::vec4(0, 0, 0, 0)));
+            vertices.push_back(CreatePatch(glm::float3(0.0, 0, 0.0), glm::vec2(0, 0), glm::vec4(0, 0, 0, 0)));
+            vertices.push_back(CreatePatch(glm::float3(0.25, 0, 0.0), glm::vec2(0.25, 0), glm::vec4(1, 0, 0, 0)));
+            vertices.push_back(CreatePatch(glm::float3(0.5, 0, 0.0), glm::vec2(0.5, 0), glm::vec4(0, 0, 0, 0)));
+            vertices.push_back(CreatePatch(glm::float3(0.75, 0, 0.0), glm::vec2(0.75, 0), glm::vec4(1, 0, 0, 0)));
+            vertices.push_back(CreatePatch(glm::float3(1.0, 0, 0.0), glm::vec2(1.0, 0), glm::vec4(0, 0, 0, 0)));
 
-            vertices.push_back(CreatePatch(glm::vec3(0.0, 0, 0.25),  glm::vec2(0, 0.25), glm::vec4(0, 0, 1, 0)));
-            vertices.push_back(CreatePatch(glm::vec3(0.25, 0, 0.25), glm::vec2(0.25, 0.25), glm::vec4(0, 0, 0, 0)));
-            vertices.push_back(CreatePatch(glm::vec3(0.5, 0, 0.25), glm::vec2(0.5, 0.25), glm::vec4(0, 0, 0, 0)));
-            vertices.push_back(CreatePatch(glm::vec3(0.75, 0, 0.25), glm::vec2(0.75, 0.25), glm::vec4(0, 0, 0, 0)));
-            vertices.push_back(CreatePatch(glm::vec3(1.0, 0, 0.25), glm::vec2(1.0, 0.25), glm::vec4(0, 0, 0, 1)));
+            vertices.push_back(CreatePatch(glm::float3(0.0, 0, 0.25),  glm::vec2(0, 0.25), glm::vec4(0, 0, 1, 0)));
+            vertices.push_back(CreatePatch(glm::float3(0.25, 0, 0.25), glm::vec2(0.25, 0.25), glm::vec4(0, 0, 0, 0)));
+            vertices.push_back(CreatePatch(glm::float3(0.5, 0, 0.25), glm::vec2(0.5, 0.25), glm::vec4(0, 0, 0, 0)));
+            vertices.push_back(CreatePatch(glm::float3(0.75, 0, 0.25), glm::vec2(0.75, 0.25), glm::vec4(0, 0, 0, 0)));
+            vertices.push_back(CreatePatch(glm::float3(1.0, 0, 0.25), glm::vec2(1.0, 0.25), glm::vec4(0, 0, 0, 1)));
 
-            vertices.push_back(CreatePatch(glm::vec3(0.0, 0, 0.5), glm::vec2(0, 0.5), glm::vec4(0, 0, 0, 0)));
-            vertices.push_back(CreatePatch(glm::vec3(0.25, 0, 0.5), glm::vec2(0.25, 0.5), glm::vec4(0, 0, 0, 0)));
-            vertices.push_back(CreatePatch(glm::vec3(0.5, 0, 0.5), glm::vec2(0.5, 0.5), glm::vec4(0, 0, 0, 0)));
-            vertices.push_back(CreatePatch(glm::vec3(0.75, 0, 0.5), glm::vec2(0.75, 0.5), glm::vec4(0, 0, 0, 0)));
-            vertices.push_back(CreatePatch(glm::vec3(1.0, 0, 0.5), glm::vec2(1.0, 0.5), glm::vec4(0, 0, 0, 0)));
+            vertices.push_back(CreatePatch(glm::float3(0.0, 0, 0.5), glm::vec2(0, 0.5), glm::vec4(0, 0, 0, 0)));
+            vertices.push_back(CreatePatch(glm::float3(0.25, 0, 0.5), glm::vec2(0.25, 0.5), glm::vec4(0, 0, 0, 0)));
+            vertices.push_back(CreatePatch(glm::float3(0.5, 0, 0.5), glm::vec2(0.5, 0.5), glm::vec4(0, 0, 0, 0)));
+            vertices.push_back(CreatePatch(glm::float3(0.75, 0, 0.5), glm::vec2(0.75, 0.5), glm::vec4(0, 0, 0, 0)));
+            vertices.push_back(CreatePatch(glm::float3(1.0, 0, 0.5), glm::vec2(1.0, 0.5), glm::vec4(0, 0, 0, 0)));
 
-            vertices.push_back(CreatePatch(glm::vec3(0.0, 0, 0.75),  glm::vec2(0, 0.75), glm::vec4(0, 0, 1, 0)));
-            vertices.push_back(CreatePatch(glm::vec3(0.25, 0, 0.75),  glm::vec2(0.25, 0.75), glm::vec4(0, 0, 0, 0)));
-            vertices.push_back(CreatePatch(glm::vec3(0.5, 0, 0.75),  glm::vec2(0.5, 0.75), glm::vec4(0, 0, 0, 0)));
-            vertices.push_back(CreatePatch(glm::vec3(0.75, 0, 0.75),  glm::vec2(0.75, 0.75), glm::vec4(0, 0, 0, 0)));
-            vertices.push_back(CreatePatch(glm::vec3(1.0, 0, 0.75),  glm::vec2(1.0, 0.75), glm::vec4(0, 0, 0, 1)));
+            vertices.push_back(CreatePatch(glm::float3(0.0, 0, 0.75),  glm::vec2(0, 0.75), glm::vec4(0, 0, 1, 0)));
+            vertices.push_back(CreatePatch(glm::float3(0.25, 0, 0.75),  glm::vec2(0.25, 0.75), glm::vec4(0, 0, 0, 0)));
+            vertices.push_back(CreatePatch(glm::float3(0.5, 0, 0.75),  glm::vec2(0.5, 0.75), glm::vec4(0, 0, 0, 0)));
+            vertices.push_back(CreatePatch(glm::float3(0.75, 0, 0.75),  glm::vec2(0.75, 0.75), glm::vec4(0, 0, 0, 0)));
+            vertices.push_back(CreatePatch(glm::float3(1.0, 0, 0.75),  glm::vec2(1.0, 0.75), glm::vec4(0, 0, 0, 1)));
 
-            vertices.push_back(CreatePatch(glm::vec3(0.0, 0, 1.0),   glm::vec2(0, 1.0), glm::vec4(0, 0, 0, 0)));
-            vertices.push_back(CreatePatch(glm::vec3(0.25, 0, 1.0),   glm::vec2(0.25, 1.0), glm::vec4(0, 1, 0, 0)));
-            vertices.push_back(CreatePatch(glm::vec3(0.5, 0, 1.0),   glm::vec2(0.5, 1.0), glm::vec4(0, 0, 0, 0)));
-            vertices.push_back(CreatePatch(glm::vec3(0.75, 0, 1.0),   glm::vec2(0.75, 1.0), glm::vec4(0, 1, 0, 0)));
-            vertices.push_back(CreatePatch(glm::vec3(1.0, 0, 1.0),   glm::vec2(1.0, 1.0), glm::vec4(0, 0, 0, 0)));
+            vertices.push_back(CreatePatch(glm::float3(0.0, 0, 1.0),   glm::vec2(0, 1.0), glm::vec4(0, 0, 0, 0)));
+            vertices.push_back(CreatePatch(glm::float3(0.25, 0, 1.0),   glm::vec2(0.25, 1.0), glm::vec4(0, 1, 0, 0)));
+            vertices.push_back(CreatePatch(glm::float3(0.5, 0, 1.0),   glm::vec2(0.5, 1.0), glm::vec4(0, 0, 0, 0)));
+            vertices.push_back(CreatePatch(glm::float3(0.75, 0, 1.0),   glm::vec2(0.75, 1.0), glm::vec4(0, 1, 0, 0)));
+            vertices.push_back(CreatePatch(glm::float3(1.0, 0, 1.0),   glm::vec2(1.0, 1.0), glm::vec4(0, 0, 0, 0)));
 
             #define AddTriIndices(a, b, c) indices.push_back(a); indices.push_back(b); indices.push_back(c);
 

@@ -49,6 +49,7 @@ SystemTime::SystemTime()
     SystemTime::Initialize();
 
     m_StartTick   = SystemTime::GetCurrentTick();
+    m_PrevFrameTick = m_StartTick;
     m_LastFrameTick = m_StartTick;
     
     m_DeltaTicks   = 0;
@@ -59,6 +60,7 @@ double SystemTime::Tick()
 {
     int64_t currentTick = SystemTime::GetCurrentTick();
     m_DeltaTicks = currentTick - m_LastFrameTick;
+    m_PrevFrameTick = m_LastFrameTick;
     m_LastFrameTick = currentTick;
 
     m_DeltaSecs = SystemTime::TicksToSeconds(m_DeltaTicks);
@@ -70,6 +72,11 @@ double SystemTime::Tick()
 int64_t SystemTime::GetTicks()
 {
     return m_LastFrameTick;
+}
+
+double SystemTime::GetPrevTimeSecs()
+{
+    return SystemTime::TicksToSeconds(m_PrevFrameTick);
 }
 
 double SystemTime::GetTimeSecs()

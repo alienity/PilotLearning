@@ -139,68 +139,90 @@ namespace MoYu
         glm::float4x4 view_matrix     = camera->getViewMatrix();
         glm::float4x4 proj_matrix     = camera->getPersProjMatrix();
         glm::float3   camera_position = camera->position();
-
+        
         float _cn = camera->m_nearClipPlane;
         float _cf = camera->m_farClipPlane;
+
+        int _cw = camera->m_pixelWidth;
+        int _ch = camera->m_pixelHeight;
+
+        double _t = g_SystemTime.GetTimeSecs();
+        double _pt = g_SystemTime.GetPrevTimeSecs();
+        double _dt = g_SystemTime.GetDeltaTimeSecs();
 
         glm::float4x4 unjitter_proj_matrix = camera->getUnJitterPersProjMatrix();
         
         // FrameUniforms
-        HLSL::FrameUniforms* _frameUniforms = &m_FrameUniforms;
+        FrameUniforms* _frameUniforms = &m_FrameUniforms;
 
         // Camera Uniform
-        HLSL::FrameCameraUniform _frameCameraUniform;
-        _frameCameraUniform.viewFromWorldMatrix = view_matrix;
-        _frameCameraUniform.worldFromViewMatrix = glm::inverse(_frameCameraUniform.viewFromWorldMatrix);
-        _frameCameraUniform.clipFromViewMatrix  = proj_matrix;
-        _frameCameraUniform.viewFromClipMatrix  = glm::inverse(_frameCameraUniform.clipFromViewMatrix);
-        _frameCameraUniform.clipFromWorldMatrix = proj_matrix * view_matrix;
-        _frameCameraUniform.worldFromClipMatrix = glm::inverse(_frameCameraUniform.clipFromWorldMatrix);
-        _frameCameraUniform.clipTransform       = glm::float4(1, 1, 1, 1);
-        _frameCameraUniform.cameraPosition      = camera_position;
+        CameraDataBuffer _frameCameraData;
+        _frameCameraData.viewFromWorldMatrix  = view_matrix;
+        _frameCameraData.worldFromViewMatrix  = glm::inverse(_frameCameraData.viewFromWorldMatrix);
+        _frameCameraData.clipFromViewMatrix   = proj_matrix;
+        _frameCameraData.viewFromClipMatrix   = glm::inverse(_frameCameraData.clipFromViewMatrix);
+        _frameCameraData.clipFromWorldMatrix  = proj_matrix * view_matrix;
+        _frameCameraData.worldFromClipMatrix  = glm::inverse(_frameCameraData.clipFromWorldMatrix);
+        _frameCameraData.clipTransform        = glm::float4(1, 1, 1, 1);
+        _frameCameraData._WorldSpaceCameraPos = camera_position;
         // update camera taa parameters
-        _frameCameraUniform.unJitterProjectionMatrix = unjitter_proj_matrix;
-        _frameCameraUniform.unJitterProjectionMatrixInv = glm::inverse(unjitter_proj_matrix);
+        _frameCameraData.unJitterProjectionMatrix = unjitter_proj_matrix;
+        _frameCameraData.unJitterProjectionMatrixInv = glm::inverse(unjitter_proj_matrix);
 
-        _frameCameraUniform.zBufferParams = CalculateZBufferParams(_cn, _cf);
+        _frameCameraData._ZBufferParams = CalculateZBufferParams(_cn, _cf);
 
-        HLSL::FrameCameraUniform _lastFrameCameraUniform = _frameUniforms->cameraUniform.curFrameUniform;
+        CameraDataBuffer _prevFrameCameraData = _frameUniforms->cameraUniform._CurFrameUniform;
 
-        HLSL::CameraUniform _cameraUniform;
-        _cameraUniform.lastFrameUniform = _lastFrameCameraUniform;
-        _cameraUniform.curFrameUniform = _frameCameraUniform;
-
-        _cameraUniform.resolution = glm::float4(
-            camera->m_pixelWidth, camera->m_pixelHeight, 1.0f / camera->m_pixelWidth, 1.0f / camera->m_pixelHeight);
-        _cameraUniform.logicalViewportScale = glm::float2(1.0f, 1.0f);
-        _cameraUniform.logicalViewportOffset = glm::float2(0.0f, 0.0f);
-
-        _cameraUniform.cameraNear = camera->m_nearClipPlane;
-        _cameraUniform.cameraFar = camera->m_farClipPlane;
-
-        _cameraUniform.exposure = 1.0f;
-        _cameraUniform.ev100 = 1.0f;
+        CameraUniform _cameraUniform;
+        _cameraUniform._PrevFrameUniform = _prevFrameCameraData;
+        _cameraUniform._CurFrameUniform = _frameCameraData;
+        _cameraUniform._Resolution = glm::float4(_cw, _ch, 1.0f / _cw, 1.0f / _ch);
+        _cameraUniform._LogicalViewportScale = glm::float2(1.0f, 1.0f);
+        _cameraUniform._LogicalViewportOffset = glm::float2(0.0f, 0.0f);
+        _cameraUniform._CameraNear = _cn;
+        _cameraUniform._CameraFar = _cf;
 
         _frameUniforms->cameraUniform = _cameraUniform;
 
 
         // Base Uniform
-        HLSL::BaseUniform _baseUniform;
-        _baseUniform.time     = g_SystemTime.GetTimeSecs();
-        _baseUniform.userTime = glm::float4(g_SystemTime.GetDeltaTimeSecs(), 0, 0, 0);
-        _baseUniform.lodBias  = 0;
+        BaseUniform _baseUniform;
+        _baseUniform._ScreenSize = glm::float4(_cw, _ch, 1.0f / _cw, 1.0f / _ch);
+        _baseUniform._PostProcessScreenSize = glm::float4(_cw, _ch, 1.0f / _cw, 1.0f / _ch);
+        _baseUniform._RTHandleScale = glm::float4(1.0f);
+        _baseUniform._RTHandleScaleHistory = glm::float4(1.0f);
+        _baseUniform._RTHandlePostProcessScale = glm::float4(1.0f);
+        _baseUniform._RTHandlePostProcessScaleHistory = glm::float4(1.0f);
+        _baseUniform._DynamicResolutionFullscreenScale = glm::float4(1.0f);
+        _baseUniform._Time = glm::float4(_t / 20, _t, _t * 2, _t * 3); // (t/20, t, t*2, t*3)
+        _baseUniform._SinTime = glm::float4(glm::sin(_t / 8), glm::sin(_t / 4), glm::sin(_t / 2), glm::sin(_t)); // sin(t/8), sin(t/4), sin(t/2), sin(t)
+        _baseUniform._CosTime = glm::float4(glm::cos(_t / 8), glm::cos(_t / 4), glm::cos(_t / 2), glm::cos(_t)); // cos(t/8), cos(t/4), cos(t/2), cos(t)
+        _baseUniform._DeltaTime = glm::float4(_dt, 1.0f / _dt, _dt, 1.0f / _dt); // dt, 1/dt, smoothdt, 1/smoothdt
+        _baseUniform._TimeParameters = glm::float4(_t, glm::sin(_t), glm::cos(_t), 0); // t, sin(t), cos(t)
+        _baseUniform._LastTimeParameters = glm::float4(_pt, glm::sin(_pt), glm::cos(_pt), 0); // t, sin(t), cos(t)
+        _baseUniform.temporalNoise = glm::float4(0);
+
+        _baseUniform.needsAlphaChannel = 1;
+        _baseUniform.lodBias = 0;
+        _baseUniform.refractionLodOffset = 0;
+        _baseUniform.baseReserved0 = 0;
+
+        _baseUniform._IndirectDiffuseLightingMultiplier = 1;
+        _baseUniform._IndirectDiffuseLightingLayers = 0;
+        _baseUniform._ReflectionLightingMultiplier = 1;
+        _baseUniform._ReflectionLightingLayers = 0;
 
         _frameUniforms->baseUniform = _baseUniform;
 
+
         // terrain Uniform
-        HLSL::TerrainUniform _terrainUniform;
+        TerrainUniform _terrainUniform;
         _terrainUniform.terrainSize = 1024;
         _terrainUniform.terrainMaxHeight = 1024;
         if (render_scene->m_terrain_renderers.size() != 0)
         {
             _terrainUniform.prevLocal2WorldMatrix = _frameUniforms->terrainUniform.local2WorldMatrix;
             _terrainUniform.local2WorldMatrix = render_scene->m_terrain_renderers[0].internalTerrainRenderer.model_matrix;
-            //_terrainUniform.prevLocal2WorldMatrix = render_scene->m_terrain_renderers[0].internalTerrainRenderer.prev_model_matrix;
         }
         else
         {
@@ -212,14 +234,16 @@ namespace MoYu
 
         _frameUniforms->terrainUniform = _terrainUniform;
 
+
         // mesh Uniform
-        HLSL::MeshUniform _meshUniform;
+        MeshUniform _meshUniform;
         _meshUniform.totalMeshCount = render_scene->m_mesh_renderers.size();
 
         _frameUniforms->meshUniform = _meshUniform;
+        
 
         // IBL Uniform
-        HLSL::IBLUniform _iblUniform;
+        IBLUniform _iblUniform;
         //_iblUniform.iblSH
         _iblUniform.iblRoughnessOneLevel = 4;
         _iblUniform.dfg_lut_srv_index    = render_scene->m_ibl_map.m_dfg->GetDefaultSRV()->GetIndex();
@@ -233,13 +257,15 @@ namespace MoYu
 
         _frameUniforms->iblUniform = _iblUniform;
 
+
         // Sun Uniform
-        HLSL::VolumeCloudStruct volumeCloudUniform{};
+        VolumeCloudStruct volumeCloudUniform{};
         volumeCloudUniform.sunlight_direction = render_scene->m_directional_light.m_direction;
         _frameUniforms->volumeCloudUniform = volumeCloudUniform;
 
+
         // DirectionLight Uniform
-        HLSL::DirectionalLightStruct _directionalLightStruct;
+        DirectionalLightStruct _directionalLightStruct;
         _directionalLightStruct.lightColorIntensity = glm::float4(
             render_scene->m_directional_light.m_color.toVector3(), render_scene->m_directional_light.m_intensity);
         _directionalLightStruct.lightPosition = render_scene->m_directional_light.m_position;
@@ -248,7 +274,7 @@ namespace MoYu
         _directionalLightStruct.shadowType = render_scene->m_directional_light.m_shadowmap ? 1 : 0;
         _directionalLightStruct.lightFarAttenuationParams = glm::float2(100, 0.0001);
 
-        HLSL::DirectionalLightShadowmap _directionalLightShadowmap;
+        DirectionalLightShadowmap _directionalLightShadowmap;
         _directionalLightShadowmap.cascadeCount = render_scene->m_directional_light.m_cascade;
         _directionalLightShadowmap.shadowmap_size = glm::uvec2(render_scene->m_directional_light.m_shadowmap_size.x,
                                                                 render_scene->m_directional_light.m_shadowmap_size.y);
@@ -257,15 +283,14 @@ namespace MoYu
         {
             _directionalLightShadowmap.shadow_bounds[i] = (int)render_scene->m_directional_light.m_shadow_bounds.x << i;
             _directionalLightShadowmap.light_proj_matrix[i] = render_scene->m_directional_light.m_shadow_proj_mats[i];
-            _directionalLightShadowmap.light_proj_view_matrix[i] =
-                render_scene->m_directional_light.m_shadow_view_proj_mats[i];
+            _directionalLightShadowmap.light_proj_view[i] = render_scene->m_directional_light.m_shadow_view_proj_mats[i];
         }
         _directionalLightStruct.directionalLightShadowmap = _directionalLightShadowmap;
 
         _frameUniforms->directionalLight = _directionalLightStruct;
 
         // PointLight Uniform
-        HLSL::PointLightUniform _pointLightUniform;
+        PointLightUniform _pointLightUniform;
         _pointLightUniform.pointLightCounts = render_scene->m_point_light_list.size();
         for (uint32_t i = 0; i < render_scene->m_point_light_list.size(); i++)
         {
@@ -275,21 +300,21 @@ namespace MoYu
             float radius = render_scene->m_point_light_list[i].m_radius;
             Color color  = render_scene->m_point_light_list[i].m_color;
 
-            HLSL::PointLightStruct _pointLightStruct;
+            PointLightStruct _pointLightStruct;
             _pointLightStruct.lightPosition = point_light_position;
             _pointLightStruct.lightRadius = radius;
             _pointLightStruct.lightIntensity = glm::float4(glm::float3(color.r, color.g, color.b), point_light_intensity);
             _pointLightStruct.shadowType = 0;
             _pointLightStruct.falloff    = 1.0f / radius;
 
-            _pointLightStruct.pointLightShadowmap = HLSL::PointLightShadowmap {};
+            _pointLightStruct.pointLightShadowmap = PointLightShadowmap {};
 
             _pointLightUniform.pointLightStructs[i] = _pointLightStruct;
         }
         _frameUniforms->pointLightUniform = _pointLightUniform;
 
         // SpotLight Uniform
-        HLSL::SpotLightUniform _spotLightUniform;
+        SpotLightUniform _spotLightUniform;
         _spotLightUniform.spotLightCounts = render_scene->m_spot_light_list.size();
         for (uint32_t i = 0; i < render_scene->m_spot_light_list.size(); i++)
         {
@@ -300,7 +325,7 @@ namespace MoYu
             float radius = render_scene->m_spot_light_list[i].m_radius;
             Color color  = render_scene->m_spot_light_list[i].m_color;
 
-            HLSL::SpotLightStruct _spotLightStruct;
+            SpotLightStruct _spotLightStruct;
             _spotLightStruct.lightPosition = spot_light_position;
             _spotLightStruct.lightRadius   = radius;
             _spotLightStruct.lightIntensity = glm::float4(glm::float3(color.r, color.g, color.b), spot_light_intensity);
@@ -310,14 +335,14 @@ namespace MoYu
             _spotLightStruct.shadowType   = render_scene->m_spot_light_list[i].m_shadowmap;
             _spotLightStruct.falloff        = 1.0f / radius;
 
-            HLSL::SpotLightShadowmap _spotLightSgadowmap;
+            SpotLightShadowmap _spotLightSgadowmap;
             _spotLightSgadowmap.shadowmap_size = glm::uvec2(render_scene->m_spot_light_list[i].m_shadowmap_size.x,
                                                              render_scene->m_spot_light_list[i].m_shadowmap_size.y);
             _spotLightSgadowmap.light_proj_view = render_scene->m_spot_light_list[i].m_shadow_view_proj_mat;
 
             _spotLightStruct.spotLightShadowmap = _spotLightSgadowmap;
 
-            _spotLightUniform.scene_spot_lights[i] = _spotLightStruct;
+            _spotLightUniform.spotLightStructs[i] = _spotLightStruct;
         }
         _frameUniforms->spotLightUniform = _spotLightUniform;
     }
@@ -445,121 +470,94 @@ namespace MoYu
     {
         internal_material.m_shader_name = scene_material.m_shader_name;
 
-        ScenePBRMaterial m_mat_data = scene_material.m_mat_data;
-        ScenePBRMaterial m_cached_mat_data = cached_material.m_mat_data;
+        StandardLightMaterial m_mat_data = scene_material.m_mat_data;
+        StandardLightMaterial m_cached_mat_data = cached_material.m_mat_data;
 
         this->startUploadBatch();
 
-        InternalPBRMaterial& now_material = internal_material.m_intenral_pbr_mat;
+        InternalStandardLightMaterial& now_material = internal_material.m_intenral_light_mat;
         {
-            now_material.m_blend        = m_mat_data.m_blend;
-            now_material.m_double_sided = m_mat_data.m_double_sided;
-        }
-        {
-            bool is_uniform_same = m_mat_data.m_blend == m_cached_mat_data.m_blend;
-            is_uniform_same &= m_mat_data.m_double_sided == m_cached_mat_data.m_double_sided;
-            is_uniform_same &= m_mat_data.m_base_color_factor == m_cached_mat_data.m_base_color_factor;
-            is_uniform_same &= m_mat_data.m_metallic_factor == m_cached_mat_data.m_metallic_factor;
-            is_uniform_same &= m_mat_data.m_roughness_factor == m_cached_mat_data.m_roughness_factor;
-            is_uniform_same &= m_mat_data.m_reflectance_factor == m_cached_mat_data.m_reflectance_factor;
-            is_uniform_same &= m_mat_data.m_clearcoat_factor == m_cached_mat_data.m_clearcoat_factor;
-            is_uniform_same &= m_mat_data.m_clearcoat_roughness_factor == m_cached_mat_data.m_clearcoat_roughness_factor;
-            is_uniform_same &= m_mat_data.m_anisotropy_factor == m_cached_mat_data.m_anisotropy_factor;
-            is_uniform_same &= m_mat_data.m_base_color_texture_file.m_tilling == m_cached_mat_data.m_base_color_texture_file.m_tilling;
-            is_uniform_same &= m_mat_data.m_metallic_roughness_texture_file.m_tilling == m_cached_mat_data.m_metallic_roughness_texture_file.m_tilling;
-            is_uniform_same &= m_mat_data.m_normal_texture_file.m_tilling == m_cached_mat_data.m_normal_texture_file.m_tilling;
-            is_uniform_same &= m_mat_data.m_occlusion_texture_file.m_tilling == m_cached_mat_data.m_occlusion_texture_file.m_tilling;
-            is_uniform_same &= m_mat_data.m_emissive_texture_file.m_tilling == m_cached_mat_data.m_emissive_texture_file.m_tilling;
+#define UpdateInternalMaterialAssign(Name) now_material.Name = m_mat_data.Name;
 
-            if (!is_uniform_same || !has_initialized)
-            {
-                HLSL::PerMaterialParametersBuffer material_uniform_buffer_info;
-                material_uniform_buffer_info.is_blend          = m_mat_data.m_blend;
-                material_uniform_buffer_info.is_double_sided   = m_mat_data.m_double_sided;
-                material_uniform_buffer_info.baseColorFactor   = m_mat_data.m_base_color_factor;
-                material_uniform_buffer_info.metallicFactor    = m_mat_data.m_metallic_factor;
-                material_uniform_buffer_info.roughnessFactor   = m_mat_data.m_roughness_factor;
-                material_uniform_buffer_info.reflectanceFactor = m_mat_data.m_reflectance_factor;
+            UpdateInternalMaterialAssign(_BaseColor)
+            UpdateInternalMaterialAssign(_Metallic)
+            UpdateInternalMaterialAssign(_BaseColor)
+            UpdateInternalMaterialAssign(_Metallic)
+            UpdateInternalMaterialAssign(_Smoothness)
+            UpdateInternalMaterialAssign(_MetallicRemapMin)
+            UpdateInternalMaterialAssign(_MetallicRemapMax)
+            UpdateInternalMaterialAssign(_SmoothnessRemapMin)
+            UpdateInternalMaterialAssign(_SmoothnessRemapMax)
+            UpdateInternalMaterialAssign(_AlphaRemapMin)
+            UpdateInternalMaterialAssign(_AlphaRemapMax)
+            UpdateInternalMaterialAssign(_AORemapMin)
+            UpdateInternalMaterialAssign(_AORemapMax)
+            UpdateInternalMaterialAssign(_NormalScale)
+            UpdateInternalMaterialAssign(_HeightAmplitude)
+            UpdateInternalMaterialAssign(_HeightCenter)
+            UpdateInternalMaterialAssign(_DetailAlbedoScale)
+            UpdateInternalMaterialAssign(_DetailNormalScale)
+            UpdateInternalMaterialAssign(_DetailSmoothnessScale)
+            UpdateInternalMaterialAssign(_Anisotropy)
+            UpdateInternalMaterialAssign(_SubsurfaceMasks)
+            UpdateInternalMaterialAssign(_TransmissionMask)
+            UpdateInternalMaterialAssign(_Thickness)
+            UpdateInternalMaterialAssign(_ThicknessRemap)
+            UpdateInternalMaterialAssign(_IridescenceThickness)
+            UpdateInternalMaterialAssign(_IridescenceThicknessRemap)
+            UpdateInternalMaterialAssign(_IridescenceMask)
+            UpdateInternalMaterialAssign(_CoatMask)
+            UpdateInternalMaterialAssign(_EnergyConservingSpecularColor)
+            UpdateInternalMaterialAssign(_SpecularColor)
+            UpdateInternalMaterialAssign(_SpecularOcclusionMode)
+            UpdateInternalMaterialAssign(_EmissiveColor)
+            UpdateInternalMaterialAssign(_AlbedoAffectEmissive)
+            UpdateInternalMaterialAssign(_EmissiveExposureWeight)
+            UpdateInternalMaterialAssign(_UseShadowThreshold)
+            UpdateInternalMaterialAssign(_AlphaCutoff)
+            UpdateInternalMaterialAssign(_AlphaCutoffShadow)
+            UpdateInternalMaterialAssign(_AlphaCutoffPrepass)
+            UpdateInternalMaterialAssign(_AlphaCutoffPostpass)
+            UpdateInternalMaterialAssign(_Ior)
+            UpdateInternalMaterialAssign(_TransmittanceColor)
+            UpdateInternalMaterialAssign(_ATDistance)
+            UpdateInternalMaterialAssign(_SurfaceType)
+            UpdateInternalMaterialAssign(_BlendMode)
+            UpdateInternalMaterialAssign(_EnableBlendModePreserveSpecularLighting)
+            UpdateInternalMaterialAssign(_DoubleSidedEnable)
+            UpdateInternalMaterialAssign(_ObjectSpaceUVMapping)
+            UpdateInternalMaterialAssign(_InvTilingScale)
+            UpdateInternalMaterialAssign(_TexWorldScale)
+            UpdateInternalMaterialAssign(_UVMappingMask)
+            UpdateInternalMaterialAssign(_PPDMinSamples)
+            UpdateInternalMaterialAssign(_PPDMaxSamples)
+            UpdateInternalMaterialAssign(_PPDLodThreshold)
+        }
+        {
+#define UpdateInternalMaterialMapCheck(MapName) if (!(m_mat_data.MapName.m_image == m_cached_mat_data.MapName.m_image) || !has_initialized) { now_material.MapName = SceneImageToTexture(m_mat_data.MapName.m_image); }
 
-                material_uniform_buffer_info.clearCoatFactor          = m_mat_data.m_clearcoat_factor;
-                material_uniform_buffer_info.clearCoatRoughnessFactor = m_mat_data.m_clearcoat_roughness_factor;
-                material_uniform_buffer_info.anisotropyFactor         = m_mat_data.m_anisotropy_factor;
-                material_uniform_buffer_info.subsurfaceMaskFactor = m_mat_data.m_subsurfaceMask_factor;
-                material_uniform_buffer_info.diffusionProfileIndex = m_mat_data.m_diffusionProfileIndex;
-
-                material_uniform_buffer_info.base_color_tilling = m_mat_data.m_base_color_texture_file.m_tilling;
-                material_uniform_buffer_info.metallic_roughness_tilling = m_mat_data.m_metallic_roughness_texture_file.m_tilling;
-                material_uniform_buffer_info.normal_tilling     = m_mat_data.m_normal_texture_file.m_tilling;
-                material_uniform_buffer_info.occlusion_tilling  = m_mat_data.m_occlusion_texture_file.m_tilling;
-                material_uniform_buffer_info.emissive_tilling   = m_mat_data.m_emissive_texture_file.m_tilling;
-
-                if (now_material.material_uniform_buffer == nullptr)
-                {
-                    uint32_t buffer_size = sizeof(HLSL::PerMaterialParametersBuffer);
-                    auto uniform_buffer = createStaticBuffer(&material_uniform_buffer_info, buffer_size, buffer_size, false, false);
-                    now_material.material_uniform_buffer = uniform_buffer;
-                }
-                else
-                {
-                    now_material.material_uniform_buffer->InflateBuffer((BYTE*)&material_uniform_buffer_info, sizeof(HLSL::PerMaterialParametersBuffer));
-                }
-            }
-        }
-        {
-            //if (!IsImageSame(m_base_color_texture_file) || !has_initialized)
-            if (!(m_mat_data.m_base_color_texture_file.m_image == m_cached_mat_data.m_base_color_texture_file.m_image) || !has_initialized)
-            {
-                SceneImage base_color_image = m_mat_data.m_base_color_texture_file.m_image;
-                if (now_material.base_color_texture_image != nullptr)
-                    now_material.base_color_texture_image = nullptr;
-                auto _tex = SceneImageToTexture(base_color_image);
-                now_material.base_color_texture_image = _tex == nullptr ? _Default2TexMap[BaseColor] : _tex;
-            }
-        }
-        {
-            if (!(m_mat_data.m_metallic_roughness_texture_file.m_image == m_cached_mat_data.m_metallic_roughness_texture_file.m_image) || !has_initialized)
-            {
-                SceneImage metallic_roughness_image = m_mat_data.m_metallic_roughness_texture_file.m_image;
-                if (now_material.metallic_roughness_texture_image != nullptr)
-                    now_material.metallic_roughness_texture_image = nullptr;
-                auto _tex = SceneImageToTexture(metallic_roughness_image);
-                now_material.metallic_roughness_texture_image = _tex == nullptr ? _Default2TexMap[MetallicAndRoughness] : _tex;
-            }
-        }
-        {
-            if (!(m_mat_data.m_normal_texture_file.m_image == m_cached_mat_data.m_normal_texture_file.m_image) || !has_initialized)
-            {
-                SceneImage normal_image = m_mat_data.m_normal_texture_file.m_image;
-                if (now_material.normal_texture_image != nullptr)
-                    now_material.normal_texture_image = nullptr;
-                auto _tex = SceneImageToTexture(normal_image);
-                now_material.normal_texture_image = _tex == nullptr ? _Default2TexMap[TangentNormal] : _tex;
-            }
-        }
-        {
-            if (!(m_mat_data.m_occlusion_texture_file.m_image == m_cached_mat_data.m_occlusion_texture_file.m_image) || !has_initialized)
-            {
-                SceneImage occlusion_image = m_mat_data.m_occlusion_texture_file.m_image;
-                if (now_material.occlusion_texture_image != nullptr)
-                    now_material.occlusion_texture_image = nullptr;
-                auto _tex = SceneImageToTexture(occlusion_image);
-                now_material.occlusion_texture_image = _tex == nullptr ? _Default2TexMap[White] : _tex;
-            }
-        }
-        {
-            if (!(m_mat_data.m_emissive_texture_file.m_image == m_cached_mat_data.m_emissive_texture_file.m_image) || !has_initialized)
-            {
-                SceneImage emissive_image = m_mat_data.m_emissive_texture_file.m_image;
-                if (now_material.emissive_texture_image != nullptr)
-                    now_material.emissive_texture_image = nullptr;
-                auto _tex = SceneImageToTexture(emissive_image);
-                now_material.emissive_texture_image = _tex == nullptr ? _Default2TexMap[Black] : _tex;
-            }
+            UpdateInternalMaterialMapCheck(_BaseColorMap)
+            UpdateInternalMaterialMapCheck(_NormalMap)
+            UpdateInternalMaterialMapCheck(_NormalMapOS)
+            UpdateInternalMaterialMapCheck(_BentNormalMap)
+            UpdateInternalMaterialMapCheck(_BentNormalMapOS)
+            UpdateInternalMaterialMapCheck(_DetailMap)
+            UpdateInternalMaterialMapCheck(_TangentMap)
+            UpdateInternalMaterialMapCheck(_TangentMapOS)
+            UpdateInternalMaterialMapCheck(_AnisotropyMap)
+            UpdateInternalMaterialMapCheck(_SubsurfaceMaskMap)
+            UpdateInternalMaterialMapCheck(_TransmissionMaskMap)
+            UpdateInternalMaterialMapCheck(_ThicknessMap)
+            UpdateInternalMaterialMapCheck(_IridescenceThicknessMap)
+            UpdateInternalMaterialMapCheck(_IridescenceMaskMap)
+            UpdateInternalMaterialMapCheck(_CoatMaskMap)
+            UpdateInternalMaterialMapCheck(_SpecularColorMap)
+            UpdateInternalMaterialMapCheck(_TransmittanceColorMap)
         }
 
         this->endUploadBatch();
 
-        internal_material.m_intenral_pbr_mat = now_material;
+        internal_material.m_intenral_light_mat = now_material;
 
         cached_material = scene_material;
 
@@ -912,7 +910,7 @@ namespace MoYu
 
     InternalMesh RenderResource::createInternalMesh(RenderMeshData mesh_data)
     {
-        InternalVertexBuffer vertex_buffer = createVertexBuffer<D3D12MeshVertexPositionNormalTangentTexture>(
+        InternalVertexBuffer vertex_buffer = createVertexBuffer<D3D12MeshVertexStandard>(
             mesh_data.m_static_mesh_data.m_InputElementDefinition, mesh_data.m_static_mesh_data.m_vertex_buffer);
 
         InternalIndexBuffer index_buffer = createIndexBuffer<uint32_t>(mesh_data.m_static_mesh_data.m_index_buffer);

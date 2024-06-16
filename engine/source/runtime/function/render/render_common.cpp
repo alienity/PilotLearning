@@ -3,67 +3,169 @@
 
 namespace MoYu
 {
+    SceneImage DefaultSceneImageWhite{ true, false, 1, "asset/texture/default/white.tga"};
+    SceneImage DefaultSceneImageBlack{ true, false, 1, "asset/texture/default/black.tga"};
+    SceneImage DefaultSceneImageGrey { true, false, 1, "asset/texture/default/grey.tga"};
+    SceneImage DefaultSceneImageRed  { true, false, 1, "asset/texture/default/red.tga"};
+    SceneImage DefaultSceneImageGreen{ true, false, 1, "asset/texture/default/green.tga"};
+    SceneImage DefaultSceneImageBlue { true, false, 1, "asset/texture/default/blue.tga"};
+
+    MaterialImage DefaultMaterialImageWhite{ DefaultSceneImageWhite, glm::float2(1,1) };
+    MaterialImage DefaultMaterialImageBlack{ DefaultSceneImageBlack, glm::float2(1,1) };
+    MaterialImage DefaultMaterialImageGrey{ DefaultSceneImageGrey, glm::float2(1,1) };
+    MaterialImage DefaultMaterialImageRed{ DefaultSceneImageRed, glm::float2(1,1) };
+    MaterialImage DefaultMaterialImageGreen{ DefaultSceneImageGreen, glm::float2(1,1) };
+    MaterialImage DefaultMaterialImageBlue{ DefaultSceneImageBlue, glm::float2(1,1) };
+
     SceneCommonIdentifier _UndefCommonIdentifier {K_Invalid_Object_Id, K_Invalid_Component_Id};
 
-    ScenePBRMaterial _DefaultScenePBRMaterial = {
-        false,
-        false,
-        {1.0f, 1.0f, 1.0f, 1.0f},
-        {1.0f},
-        {1.0f},
-        {1.0f},
-        {1.0f},
-        {1.0f},
-        {0.0f},
-        {0.0f},
-        {0},
-        {{true, true, 0, "asset/objects/_textures/white.tga"}, MYFloat2::One},
-        {{false, true, 0, "asset/objects/_textures/mr.tga"}, MYFloat2::One},
-        {{false, true, 0, "asset/objects/_textures/n.tga"}, MYFloat2::One},
-        {{false, true, 0, ""}, MYFloat2::One},
-        {{false, true, 0, ""}, MYFloat2::One},
-    };
-
-    MaterialRes ToMaterialRes(const ScenePBRMaterial& pbrMaterial, const std::string shaderName)
+    MaterialRes ToMaterialRes(const StandardLightMaterial& pbrMaterial, const std::string shaderName)
     {
-        MaterialRes m_mat_data = {shaderName,
-                                  pbrMaterial.m_blend,
-                                  pbrMaterial.m_double_sided,
-                                  pbrMaterial.m_base_color_factor,
-                                  pbrMaterial.m_metallic_factor,
-                                  pbrMaterial.m_roughness_factor,
-                                  pbrMaterial.m_reflectance_factor,
-                                  pbrMaterial.m_clearcoat_factor,
-                                  pbrMaterial.m_clearcoat_roughness_factor,
-                                  pbrMaterial.m_anisotropy_factor,
-                                  pbrMaterial.m_subsurfaceMask_factor,
-                                  pbrMaterial.m_diffusionProfileIndex,
-                                  pbrMaterial.m_base_color_texture_file,
-                                  pbrMaterial.m_metallic_roughness_texture_file,
-                                  pbrMaterial.m_normal_texture_file,
-                                  pbrMaterial.m_occlusion_texture_file,
-                                  pbrMaterial.m_emissive_texture_file};
+        MaterialRes m_mat_data = { shaderName,
+                                   pbrMaterial._BaseColor,
+                                   pbrMaterial._BaseColorMap,
+                                   pbrMaterial._Metallic,
+                                   pbrMaterial._Smoothness,
+                                   pbrMaterial._MetallicRemapMin,
+                                   pbrMaterial._MetallicRemapMax,
+                                   pbrMaterial._SmoothnessRemapMin,
+                                   pbrMaterial._SmoothnessRemapMax,
+                                   pbrMaterial._AlphaRemapMin,
+                                   pbrMaterial._AlphaRemapMax,
+                                   pbrMaterial._AORemapMin,
+                                   pbrMaterial._AORemapMax,
+                                   pbrMaterial._NormalMap,
+                                   pbrMaterial._NormalMapOS,
+                                   pbrMaterial._NormalScale,
+                                   pbrMaterial._BentNormalMap,
+                                   pbrMaterial._BentNormalMapOS,
+                                   pbrMaterial._HeightMap,
+                                   pbrMaterial._HeightAmplitude,
+                                   pbrMaterial._HeightCenter,
+                                   pbrMaterial._DetailMap,
+                                   pbrMaterial._DetailAlbedoScale,
+                                   pbrMaterial._DetailNormalScale,
+                                   pbrMaterial._DetailSmoothnessScale,
+                                   pbrMaterial._TangentMap,
+                                   pbrMaterial._TangentMapOS,
+                                   pbrMaterial._Anisotropy,
+                                   pbrMaterial._AnisotropyMap,
+                                   pbrMaterial._SubsurfaceMasks,
+                                   pbrMaterial._SubsurfaceMaskMap,
+                                   pbrMaterial._TransmissionMask,
+                                   pbrMaterial._TransmissionMaskMap,
+                                   pbrMaterial._Thickness,
+                                   pbrMaterial._ThicknessMap,
+                                   pbrMaterial._ThicknessRemap,
+                                   pbrMaterial._IridescenceThickness,
+                                   pbrMaterial._IridescenceThicknessMap,
+                                   pbrMaterial._IridescenceThicknessRemap,
+                                   pbrMaterial._IridescenceMask,
+                                   pbrMaterial._IridescenceMaskMap,
+                                   pbrMaterial._CoatMask,
+                                   pbrMaterial._CoatMaskMap,
+                                   pbrMaterial._EnergyConservingSpecularColor,
+                                   pbrMaterial._SpecularColor,
+                                   pbrMaterial._SpecularColorMap,
+                                   pbrMaterial._SpecularOcclusionMode,
+                                   pbrMaterial._EmissiveColor,
+                                   pbrMaterial._AlbedoAffectEmissive,
+                                   pbrMaterial._EmissiveExposureWeight,
+                                   pbrMaterial._UseShadowThreshold,
+                                   pbrMaterial._AlphaCutoff,
+                                   pbrMaterial._AlphaCutoffShadow,
+                                   pbrMaterial._AlphaCutoffPrepass,
+                                   pbrMaterial._AlphaCutoffPostpass,
+                                   pbrMaterial._Ior,
+                                   pbrMaterial._TransmittanceColor,
+                                   pbrMaterial._TransmittanceColorMap,
+                                   pbrMaterial._ATDistance,
+                                   pbrMaterial._SurfaceType,
+                                   pbrMaterial._BlendMode,
+                                   pbrMaterial._EnableBlendModePreserveSpecularLighting,
+                                   pbrMaterial._DoubleSidedEnable,
+                                   pbrMaterial._ObjectSpaceUVMapping,
+                                   pbrMaterial._InvTilingScale,
+                                   pbrMaterial._TexWorldScale,
+                                   pbrMaterial._UVMappingMask,
+                                   pbrMaterial._PPDMinSamples,
+                                   pbrMaterial._PPDMaxSamples,
+                                   pbrMaterial._PPDLodThreshold };
         return m_mat_data;
     }
 
-    ScenePBRMaterial ToPBRMaterial(const MaterialRes& materialRes)
+    StandardLightMaterial ToPBRMaterial(const MaterialRes& materialRes)
     {
-        ScenePBRMaterial m_mat_data = {materialRes.m_blend,
-                                       materialRes.m_double_sided,
-                                       materialRes.m_base_color_factor,
-                                       materialRes.m_metallic_factor,
-                                       materialRes.m_roughness_factor,
-                                       materialRes.m_reflectance_factor,
-                                       materialRes.m_clearcoat_factor,
-                                       materialRes.m_clearcoat_roughness_factor,
-                                       materialRes.m_anisotropy_factor,
-                                       materialRes.m_subsurfaceScattering_factor,
-                                       materialRes.m_diffusionProfileIndex,
-                                       materialRes.m_base_color_texture_file,
-                                       materialRes.m_metallic_roughness_texture_file,
-                                       materialRes.m_normal_texture_file,
-                                       materialRes.m_occlusion_texture_file,
-                                       materialRes.m_emissive_texture_file};
+        StandardLightMaterial m_mat_data = {
+                                    materialRes._BaseColor,
+                                    materialRes._BaseColorMap,
+                                    materialRes._Metallic,
+                                    materialRes._Smoothness,
+                                    materialRes._MetallicRemapMin,
+                                    materialRes._MetallicRemapMax,
+                                    materialRes._SmoothnessRemapMin,
+                                    materialRes._SmoothnessRemapMax,
+                                    materialRes._AlphaRemapMin,
+                                    materialRes._AlphaRemapMax,
+                                    materialRes._AORemapMin,
+                                    materialRes._AORemapMax,
+                                    materialRes._NormalMap,
+                                    materialRes._NormalMapOS,
+                                    materialRes._NormalScale,
+                                    materialRes._BentNormalMap,
+                                    materialRes._BentNormalMapOS,
+                                    materialRes._HeightMap,
+                                    materialRes._HeightAmplitude,
+                                    materialRes._HeightCenter,
+                                    materialRes._DetailMap,
+                                    materialRes._DetailAlbedoScale,
+                                    materialRes._DetailNormalScale,
+                                    materialRes._DetailSmoothnessScale,
+                                    materialRes._TangentMap,
+                                    materialRes._TangentMapOS,
+                                    materialRes._Anisotropy,
+                                    materialRes._AnisotropyMap,
+                                    materialRes._SubsurfaceMasks,
+                                    materialRes._SubsurfaceMaskMap,
+                                    materialRes._TransmissionMask,
+                                    materialRes._TransmissionMaskMap,
+                                    materialRes._Thickness,
+                                    materialRes._ThicknessMap,
+                                    materialRes._ThicknessRemap,
+                                    materialRes._IridescenceThickness,
+                                    materialRes._IridescenceThicknessMap,
+                                    materialRes._IridescenceThicknessRemap,
+                                    materialRes._IridescenceMask,
+                                    materialRes._IridescenceMaskMap,
+                                    materialRes._CoatMask,
+                                    materialRes._CoatMaskMap,
+                                    materialRes._EnergyConservingSpecularColor,
+                                    materialRes._SpecularColor,
+                                    materialRes._SpecularColorMap,
+                                    materialRes._SpecularOcclusionMode,
+                                    materialRes._EmissiveColor,
+                                    materialRes._AlbedoAffectEmissive,
+                                    materialRes._EmissiveExposureWeight,
+                                    materialRes._UseShadowThreshold,
+                                    materialRes._AlphaCutoff,
+                                    materialRes._AlphaCutoffShadow,
+                                    materialRes._AlphaCutoffPrepass,
+                                    materialRes._AlphaCutoffPostpass,
+                                    materialRes._Ior,
+                                    materialRes._TransmittanceColor,
+                                    materialRes._TransmittanceColorMap,
+                                    materialRes._ATDistance,
+                                    materialRes._SurfaceType,
+                                    materialRes._BlendMode,
+                                    materialRes._EnableBlendModePreserveSpecularLighting,
+                                    materialRes._DoubleSidedEnable,
+                                    materialRes._ObjectSpaceUVMapping,
+                                    materialRes._InvTilingScale,
+                                    materialRes._TexWorldScale,
+                                    materialRes._UVMappingMask,
+                                    materialRes._PPDMinSamples,
+                                    materialRes._PPDMaxSamples,
+                                    materialRes._PPDLodThreshold };
         return m_mat_data;
     }
 
@@ -129,6 +231,21 @@ namespace MoYu
     const RHI::D3D12InputLayout D3D12MeshVertexPositionNormalTangentTextureJointBinding::InputLayout = 
         RHI::D3D12InputLayout( D3D12MeshVertexPositionNormalTangentTextureJointBinding::InputElements, 
             D3D12MeshVertexPositionNormalTangentTextureJointBinding::InputElementCount);
+
+    //--------------------------------------------------------------------------------------
+    const D3D12_INPUT_ELEMENT_DESC D3D12MeshVertexStandard::InputElements[] =
+    {
+        { "POSITION",    0, DXGI_FORMAT_R32G32B32_FLOAT,    0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+        { "NORMAL",      0, DXGI_FORMAT_R32G32B32_FLOAT,    0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+        { "TANGENT",     0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+        { "TEXCOORD0",   0, DXGI_FORMAT_R32G32_FLOAT,       0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+        { "COLOR",       0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+    };
+
+    static_assert(sizeof(D3D12MeshVertexStandard) == 64, "Vertex struct/layout mismatch");
+
+    const RHI::D3D12InputLayout D3D12MeshVertexStandard::InputLayout = 
+        RHI::D3D12InputLayout(D3D12MeshVertexStandard::InputElements, D3D12MeshVertexStandard::InputElementCount);
 
     //--------------------------------------------------------------------------------------
     // Vertex struct holding position, normal, tangent and texture mapping information.

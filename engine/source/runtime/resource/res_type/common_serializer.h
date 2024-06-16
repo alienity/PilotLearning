@@ -11,6 +11,32 @@ using json = nlohmann::json;
 namespace glm
 {
     //**********************************************************************************
+    inline void to_json(json& j, const glm::float2& P) { j = { {"x", P.x}, {"y", P.y} }; }
+    inline void from_json(const json& j, glm::float2& P)
+    {
+        P.x = j.at("x").get<float>();
+        P.y = j.at("y").get<float>();
+    }
+
+    inline void to_json(json& j, const glm::float3& P) { j = { {"x", P.x}, {"y", P.y}, {"z", P.z} }; }
+    inline void from_json(const json& j, glm::float3& P)
+    {
+        P.x = j.at("x").get<float>();
+        P.y = j.at("y").get<float>();
+        P.z = j.at("z").get<float>();
+    }
+
+    inline void to_json(json& j, const glm::float4& P) { j = { {"x", P.x}, {"y", P.y}, {"z", P.z}, {"w", P.w} }; }
+    inline void from_json(const json& j, glm::float4& P)
+    {
+        P.x = j.at("x").get<float>();
+        P.y = j.at("y").get<float>();
+        P.z = j.at("z").get<float>();
+        P.w = j.at("w").get<float>();
+    }
+    //**********************************************************************************
+
+    //**********************************************************************************
     inline void to_json(json& j, const glm::uvec1& P) { j = {{"x", P.x}}; }
     inline void from_json(const json& j, glm::uvec1& P) { P.x = j.at("x").get<glm::uint>(); }
 

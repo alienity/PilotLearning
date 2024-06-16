@@ -119,6 +119,25 @@ namespace MoYu
         static const D3D12_INPUT_ELEMENT_DESC InputElements[InputElementCount];
     };
 
+    struct D3D12MeshVertexStandard
+    {
+        glm::float3 position;
+        glm::float3 normal;
+        glm::float4 tangent;
+        glm::float2 uv0;
+        glm::float4 color;
+
+        static const RHI::D3D12InputLayout InputLayout;
+
+        static const InputDefinition InputElementDefinition = 
+            InputDefinition::POSITION | InputDefinition::NORMAL |
+            InputDefinition::TANGENT | InputDefinition::TEXCOORD0 | InputDefinition::COLOR;
+
+    private:
+        static constexpr unsigned int         InputElementCount = 5;
+        static const D3D12_INPUT_ELEMENT_DESC InputElements[InputElementCount];
+    };
+
     //************************************************************
     // TerrainPatchCluster
     //************************************************************
@@ -190,6 +209,109 @@ namespace MoYu
         InternalVertexBuffer vertex_buffer;
     };
 
+    struct InternalStandardLightMaterial
+    {
+#define InteralMaterialImageMacro(TexName) std::shared_ptr<RHI::D3D12Texture> TexName = nullptr;
+
+        glm::float4 _BaseColor{ 1, 1, 1, 1 };
+        InteralMaterialImageMacro(_BaseColorMap)
+
+        float _Metallic{ 0 };
+        float _Smoothness{ 0.5f };
+        float _MetallicRemapMin{ 0.0f };
+        float _MetallicRemapMax{ 1.0f };
+        float _SmoothnessRemapMin{ 0.0f };
+        float _SmoothnessRemapMax{ 1.0f };
+        float _AlphaRemapMin{ 0.0f };
+        float _AlphaRemapMax{ 1.0f };
+        float _AORemapMin{ 0.0f };
+        float _AORemapMax{ 1.0f };
+
+        InteralMaterialImageMacro(_NormalMap)   // Tangent space normal map
+        InteralMaterialImageMacro(_NormalMapOS) // Object space normal map - no good default value
+        float _NormalScale{ 1.0f };
+
+        InteralMaterialImageMacro(_BentNormalMap)
+        InteralMaterialImageMacro(_BentNormalMapOS)
+
+        InteralMaterialImageMacro(_HeightMap)
+        float _HeightAmplitude{ 0.02f };
+        float _HeightCenter{ 0.5f };
+
+        InteralMaterialImageMacro(_DetailMap)
+        float _DetailAlbedoScale{ 1.0f };
+        float _DetailNormalScale{ 1.0f };
+        float _DetailSmoothnessScale{ 1.0f };
+
+        InteralMaterialImageMacro(_TangentMap)
+        InteralMaterialImageMacro(_TangentMapOS)
+        float _Anisotropy{ 0 };
+        InteralMaterialImageMacro(_AnisotropyMap)
+
+        float _SubsurfaceMasks{ 1.0f };
+        InteralMaterialImageMacro(_SubsurfaceMaskMap)
+        float _TransmissionMask{ 1.0f };
+        InteralMaterialImageMacro(_TransmissionMaskMap)
+        float _Thickness{ 1.0f };
+        InteralMaterialImageMacro(_ThicknessMap)
+        glm::float4 _ThicknessRemap{ 0,1,0,0 };
+
+        float _IridescenceThickness{ 1.0f };
+        InteralMaterialImageMacro(_IridescenceThicknessMap)
+        glm::float4 _IridescenceThicknessRemap{ 0, 1, 0, 0 };
+        float _IridescenceMask{ 1.0f };
+        InteralMaterialImageMacro(_IridescenceMaskMap)
+
+        float _CoatMask{ 0.0f };
+        InteralMaterialImageMacro(_CoatMaskMap)
+
+        float _EnergyConservingSpecularColor{ 1.0f };
+        glm::float4 _SpecularColor{ 1,1,1,1 };
+        InteralMaterialImageMacro(_SpecularColorMap)
+
+        int _SpecularOcclusionMode{ 1 };
+
+        glm::float3 _EmissiveColor{ 0,0,0 };
+        float _AlbedoAffectEmissive{ 0.0f };
+        float _EmissiveExposureWeight{ 1.0f };
+
+        float _UseShadowThreshold{ 0.0f };
+        float _AlphaCutoff{ 0.5f };
+        float _AlphaCutoffShadow{ 0.5f };
+        float _AlphaCutoffPrepass{ 0.5f };
+        float _AlphaCutoffPostpass{ 0.5f };
+
+        // Transparency
+        float _Ior{ 1.5f };
+        glm::float3 _TransmittanceColor{ 1.0, 1.0, 1.0 };
+        InteralMaterialImageMacro(_TransmittanceColorMap)
+        float _ATDistance{ 1.0f };
+
+        // Blending state
+        float _SurfaceType{ 0.0f };
+        float _BlendMode{ 0.0f };
+
+        float _EnableBlendModePreserveSpecularLighting{ 1.0 };
+
+        float _DoubleSidedEnable{ 0.0f };
+
+        float _ObjectSpaceUVMapping{ 0.0f };
+        float _InvTilingScale{ 1.0f };
+        float _TexWorldScale{ 1.0f };
+        glm::float4 _UVMappingMask{ 1,0,0,0 };
+
+        float _PPDMinSamples{ 5 };
+        float _PPDMaxSamples{ 15 };
+        int _PPDLodThreshold{ 5 };
+    };
+
+    struct InternalMaterial
+    {
+        std::string m_shader_name;
+        InternalStandardLightMaterial m_intenral_light_mat;
+    };
+
+    /*
     struct InternalPBRMaterial
     {
         // Factors
@@ -197,14 +319,13 @@ namespace MoYu
         bool m_double_sided;
 
         // 
-        /*
         glm::float4 m_base_color_factor;
         float   m_metallic_factor;
         float   m_roughness_factor;
         float   m_normal_scale;
         float   m_occlusion_strength;
         glm::float3 m_emissive_factor;
-        */
+
         // Textures
         std::shared_ptr<RHI::D3D12Texture> base_color_texture_image;
         std::shared_ptr<RHI::D3D12Texture> metallic_roughness_texture_image;
@@ -219,12 +340,11 @@ namespace MoYu
         std::string m_shader_name;
         InternalPBRMaterial m_intenral_pbr_mat;
     };
+    */
 
     struct InternalMeshRenderer
     {
         SceneCommonIdentifier m_identifier;
-
-        bool enable_vertex_blending = false;
 
         glm::float4x4 model_matrix;
         glm::float4x4 model_matrix_inverse;
@@ -536,52 +656,202 @@ namespace MoYu
     {
         return lhs.m_tilling == rhs.m_tilling && lhs.m_image == rhs.m_image;
     }
+    
+    extern SceneImage DefaultSceneImageWhite;
+    extern SceneImage DefaultSceneImageBlack;
+    extern SceneImage DefaultSceneImageGrey;
+    extern SceneImage DefaultSceneImageRed;
+    extern SceneImage DefaultSceneImageGreen;
+    extern SceneImage DefaultSceneImageBlue;
 
-    struct ScenePBRMaterial
+    extern MaterialImage DefaultMaterialImageWhite;
+    extern MaterialImage DefaultMaterialImageBlack;
+    extern MaterialImage DefaultMaterialImageGrey;
+    extern MaterialImage DefaultMaterialImageRed;
+    extern MaterialImage DefaultMaterialImageGreen;
+    extern MaterialImage DefaultMaterialImageBlue;
+
+    struct StandardLightMaterial
     {
-        bool m_blend {false};
-        bool m_double_sided {false};
+        glm::float4 _BaseColor{ 1, 1, 1, 1 };
+        MaterialImage _BaseColorMap{ DefaultMaterialImageWhite };
 
-        glm::float4 m_base_color_factor {1.0f, 1.0f, 1.0f, 1.0f};
-        float   m_metallic_factor {1.0f};
-        float   m_roughness_factor {1.0f};
-        float   m_reflectance_factor {1.0f};
-        float   m_clearcoat_factor {1.0f};
-        float   m_clearcoat_roughness_factor {1.0f};
-        float   m_anisotropy_factor {0.0f};
-        float   m_subsurfaceMask_factor { 0.0f };
-        glm::uint m_diffusionProfileIndex { 0 };
+        float _Metallic{ 0 };
+        float _Smoothness{ 0.5f };
+        float _MetallicRemapMin{ 0.0f };
+        float _MetallicRemapMax{ 1.0f };
+        float _SmoothnessRemapMin{ 0.0f };
+        float _SmoothnessRemapMax{ 1.0f };
+        float _AlphaRemapMin{ 0.0f };
+        float _AlphaRemapMax{ 1.0f };
+        float _AORemapMin{ 0.0f };
+        float _AORemapMax{ 1.0f };
 
-        MaterialImage m_base_color_texture_file {};
-        MaterialImage m_metallic_roughness_texture_file {};
-        MaterialImage m_normal_texture_file {};
-        MaterialImage m_occlusion_texture_file {};
-        MaterialImage m_emissive_texture_file {};
+        MaterialImage _NormalMap{ DefaultMaterialImageGrey }; // Tangent space normal map
+        MaterialImage _NormalMapOS{ DefaultMaterialImageWhite }; // Object space normal map - no good default value
+        float _NormalScale{ 1.0f };
+
+        MaterialImage _BentNormalMap{ DefaultMaterialImageGrey };
+        MaterialImage _BentNormalMapOS{ DefaultMaterialImageWhite };
+
+        MaterialImage _HeightMap{ DefaultMaterialImageBlack };
+        float _HeightAmplitude{ 0.02f };
+        float _HeightCenter{ 0.5f };
+
+        MaterialImage _DetailMap{ DefaultMaterialImageGrey };
+        float _DetailAlbedoScale{ 1.0f };
+        float _DetailNormalScale{ 1.0f };
+        float _DetailSmoothnessScale{ 1.0f };
+
+        MaterialImage _TangentMap{ DefaultMaterialImageGrey };
+        MaterialImage _TangentMapOS{ DefaultMaterialImageWhite };
+        float _Anisotropy{ 0 };
+        MaterialImage _AnisotropyMap{ DefaultMaterialImageWhite };
+
+        float _SubsurfaceMasks{ 1.0f };
+        MaterialImage _SubsurfaceMaskMap{ DefaultMaterialImageWhite };
+        float _TransmissionMask{ 1.0f };
+        MaterialImage _TransmissionMaskMap{ DefaultMaterialImageWhite };
+        float _Thickness{ 1.0f };
+        MaterialImage _ThicknessMap{ DefaultMaterialImageWhite };
+        glm::float4 _ThicknessRemap{ 0,1,0,0 };
+
+        float _IridescenceThickness{ 1.0f };
+        MaterialImage _IridescenceThicknessMap{ DefaultMaterialImageWhite };
+        glm::float4 _IridescenceThicknessRemap{ 0, 1, 0, 0 };
+        float _IridescenceMask{ 1.0f };
+        MaterialImage _IridescenceMaskMap{ DefaultMaterialImageWhite };
+
+        float _CoatMask{ 0.0f };
+        MaterialImage _CoatMaskMap{ DefaultMaterialImageWhite };
+
+        float _EnergyConservingSpecularColor{1.0f};
+        glm::float4 _SpecularColor{ 1,1,1,1 };
+        MaterialImage _SpecularColorMap{ DefaultMaterialImageWhite };
+
+        int _SpecularOcclusionMode{ 1 };
+
+        glm::float3 _EmissiveColor{ 0,0,0 };
+        float _AlbedoAffectEmissive{ 0.0f };
+        float _EmissiveExposureWeight{ 1.0f };
+
+        float _UseShadowThreshold{ 0.0f };
+        float _AlphaCutoff{ 0.5f };
+        float _AlphaCutoffShadow{ 0.5f };
+        float _AlphaCutoffPrepass { 0.5f };
+        float _AlphaCutoffPostpass{ 0.5f };
+
+        // Transparency
+        float _Ior{ 1.5f };
+        glm::float3 _TransmittanceColor{ 1.0, 1.0, 1.0 };
+        MaterialImage _TransmittanceColorMap{ DefaultMaterialImageWhite };
+        float _ATDistance{ 1.0f };
+
+        // Blending state
+        float _SurfaceType{ 0.0f };
+        float _BlendMode{ 0.0f };
+
+        float _EnableBlendModePreserveSpecularLighting{ 1.0 };
+
+        float _DoubleSidedEnable{ 0.0f };
+
+        float _ObjectSpaceUVMapping{ 0.0f };
+        float _InvTilingScale{ 1.0f };
+        float _TexWorldScale{ 1.0f };
+        glm::float4 _UVMappingMask{ 1,0,0,0 };
+
+        float _PPDMinSamples{ 5 };
+        float _PPDMaxSamples{ 15 };
+        int _PPDLodThreshold{ 5 };
     };
 
-    inline bool operator==(const ScenePBRMaterial& lhs, const ScenePBRMaterial& rhs)
+    inline bool operator==(const StandardLightMaterial& lhs, const StandardLightMaterial& rhs)
     {
         #define CompareVal(Val) lhs.Val == rhs.Val
 
-        return CompareVal(m_blend) && CompareVal(m_double_sided) && CompareVal(m_base_color_factor) &&
-               CompareVal(m_metallic_factor) && CompareVal(m_roughness_factor) && CompareVal(m_reflectance_factor) &&
-               CompareVal(m_clearcoat_factor) && CompareVal(m_clearcoat_roughness_factor) && CompareVal(m_anisotropy_factor) &&
-               CompareVal(m_base_color_texture_file) && CompareVal(m_metallic_roughness_texture_file) &&
-               CompareVal(m_normal_texture_file) && CompareVal(m_occlusion_texture_file) &&
-               CompareVal(m_emissive_texture_file);
+        return
+            CompareVal(_BaseColor) &&
+            CompareVal(_BaseColorMap) &&
+            CompareVal(_Metallic) &&
+            CompareVal(_Smoothness) &&
+            CompareVal(_MetallicRemapMin) &&
+            CompareVal(_MetallicRemapMax) &&
+            CompareVal(_SmoothnessRemapMin) &&
+            CompareVal(_SmoothnessRemapMax) &&
+            CompareVal(_AlphaRemapMin) &&
+            CompareVal(_AlphaRemapMax) &&
+            CompareVal(_AORemapMin) &&
+            CompareVal(_AORemapMax) &&
+            CompareVal(_NormalMap) &&
+            CompareVal(_NormalMapOS) &&
+            CompareVal(_NormalScale) &&
+            CompareVal(_BentNormalMap) &&
+            CompareVal(_BentNormalMapOS) &&
+            CompareVal(_HeightMap) &&
+            CompareVal(_HeightAmplitude) &&
+            CompareVal(_HeightCenter) &&
+            CompareVal(_DetailMap) &&
+            CompareVal(_DetailAlbedoScale) &&
+            CompareVal(_DetailNormalScale) &&
+            CompareVal(_DetailSmoothnessScale) &&
+            CompareVal(_TangentMap) &&
+            CompareVal(_TangentMapOS) &&
+            CompareVal(_Anisotropy) &&
+            CompareVal(_AnisotropyMap) &&
+            CompareVal(_SubsurfaceMasks) &&
+            CompareVal(_SubsurfaceMaskMap) &&
+            CompareVal(_TransmissionMask) &&
+            CompareVal(_TransmissionMaskMap) &&
+            CompareVal(_Thickness) &&
+            CompareVal(_ThicknessMap) &&
+            CompareVal(_ThicknessRemap) &&
+            CompareVal(_IridescenceThickness) &&
+            CompareVal(_IridescenceThicknessMap) &&
+            CompareVal(_IridescenceThicknessRemap) &&
+            CompareVal(_IridescenceMask) &&
+            CompareVal(_IridescenceMaskMap) &&
+            CompareVal(_CoatMask) &&
+            CompareVal(_CoatMaskMap) &&
+            CompareVal(_EnergyConservingSpecularColor) &&
+            CompareVal(_SpecularColor) &&
+            CompareVal(_SpecularColorMap) &&
+            CompareVal(_SpecularOcclusionMode) &&
+            CompareVal(_EmissiveColor) &&
+            CompareVal(_AlbedoAffectEmissive) &&
+            CompareVal(_EmissiveExposureWeight) &&
+            CompareVal(_UseShadowThreshold) &&
+            CompareVal(_AlphaCutoff) &&
+            CompareVal(_AlphaCutoffShadow) &&
+            CompareVal(_AlphaCutoffPrepass) &&
+            CompareVal(_AlphaCutoffPostpass) &&
+            CompareVal(_Ior) &&
+            CompareVal(_TransmittanceColor) &&
+            CompareVal(_TransmittanceColorMap) &&
+            CompareVal(_ATDistance) &&
+            CompareVal(_SurfaceType) &&
+            CompareVal(_BlendMode) &&
+            CompareVal(_EnableBlendModePreserveSpecularLighting) &&
+            CompareVal(_DoubleSidedEnable) &&
+            CompareVal(_InvTilingScale) &&
+            CompareVal(_TexWorldScale) &&
+            CompareVal(_UVMappingMask) &&
+            CompareVal(_PPDMinSamples) &&
+            CompareVal(_PPDMaxSamples) &&
+            CompareVal(_PPDLodThreshold);
+;
     }
 
     struct MaterialRes;
 
-    MaterialRes ToMaterialRes(const ScenePBRMaterial& pbrMaterial, const std::string shaderName);
-    ScenePBRMaterial ToPBRMaterial(const MaterialRes& materialRes);
+    MaterialRes ToMaterialRes(const StandardLightMaterial& pbrMaterial, const std::string shaderName);
+    StandardLightMaterial ToPBRMaterial(const MaterialRes& materialRes);
 
-    extern ScenePBRMaterial _DefaultScenePBRMaterial;
+    extern StandardLightMaterial _DefaultScenePBRMaterial;
 
     struct SceneMaterial
     {
         std::string m_shader_name;
-        ScenePBRMaterial m_mat_data;
+        StandardLightMaterial m_mat_data;
     };
 
     struct SceneMeshRenderer
@@ -737,7 +1007,6 @@ namespace MoYu
     {
         AABB m_axis_aligned_box;
         StaticMeshData m_static_mesh_data;
-        std::shared_ptr<MoYuScratchBuffer> m_skeleton_binding_buffer;
     };
 
 } // namespace MoYu
