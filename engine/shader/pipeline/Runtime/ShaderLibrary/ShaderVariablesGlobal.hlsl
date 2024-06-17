@@ -30,9 +30,40 @@ struct RenderDataPerDraw
     PREMACRO(float4x4) prevWorldToObjectMatrix;
     PREMACRO(float4)   vertexBufferView; // D3D12_VERTEX_BUFFER_VIEW 16
     PREMACRO(float4)   indexBufferView; // D3D12_INDEX_BUFFER_VIEW 16
-    PREMACRO(float4x2) drawIndexedArguments; // D3D12_DRAW_INDEXED_ARGUMENTS 20, LightPropertyBufferIndex 4, LightPropertyBufferIndexOffset 4, Empty 4
-    PREMACRO(float4x2) rendererBounds; // BoundingBox 32
+    PREMACRO(float2x4) drawIndexedArguments; // D3D12_DRAW_INDEXED_ARGUMENTS 20, LightPropertyBufferIndex 4, LightPropertyBufferIndexOffset 4, Empty 4
+    PREMACRO(float2x4) rendererBounds; // BoundingBox 32
 };
+
+D3D12_DRAW_INDEXED_ARGUMENTS GetDrawIndexedArguments(RenderDataPerDraw renderDataPerDraw)
+{
+    D3D12_DRAW_INDEXED_ARGUMENTS drawIndexArguments = (D3D12_DRAW_INDEXED_ARGUMENTS)0;
+    drawIndexArguments.IndexCountPerInstance = renderDataPerDraw.drawIndexedArguments[0][0];
+    drawIndexArguments.InstanceCount = renderDataPerDraw.drawIndexedArguments[0][1];
+    drawIndexArguments.StartIndexLocation = renderDataPerDraw.drawIndexedArguments[0][2];
+    drawIndexArguments.BaseVertexLocation = renderDataPerDraw.drawIndexedArguments[0][3];
+    drawIndexArguments.StartInstanceLocation = renderDataPerDraw.drawIndexedArguments[1][0];
+    return drawIndexArguments;
+}
+
+uint GetLightPropertyBufferIndex(RenderDataPerDraw renderDataPerDraw)
+{
+    uint lightPropertyBufferIndex = (uint)renderDataPerDraw.drawIndexedArguments[1][1];
+    return lightPropertyBufferIndex;
+}
+
+uint GetLightPropertyBufferIndexOffset(RenderDataPerDraw renderDataPerDraw)
+{
+    uint lightPropertyBufferIndexOffset = (uint)renderDataPerDraw.drawIndexedArguments[1][2];
+    return lightPropertyBufferIndexOffset;
+}
+
+BoundingBox GetRendererBounds(RenderDataPerDraw renderDataPerDraw)
+{
+    BoundingBox boundingBox = (BoundingBox)0;
+    boundingBox.Center = renderDataPerDraw.rendererBounds[0];
+    boundingBox.Extents = renderDataPerDraw.rendererBounds[1];
+    return boundingBox;
+}
 
 struct CameraDataBuffer
 {

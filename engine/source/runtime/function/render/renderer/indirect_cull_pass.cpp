@@ -85,6 +85,8 @@ namespace MoYu
     {
         std::vector<CachedMeshRenderer>& _mesh_renderers = m_render_scene->m_mesh_renderers;
 
+        PropertiesPerMaterial* pPropertiesPerMaterial = pUploadPropertiesPerMaterialBuffer->GetCpuVirtualAddress<PropertiesPerMaterial>();
+
         RenderDataPerDraw* pUploadRenderDataPerDraw = pUploadRenderDataPerDrawBuffer->GetCpuVirtualAddress<RenderDataPerDraw>();
         
         uint32_t numMeshes = _mesh_renderers.size();
@@ -95,6 +97,8 @@ namespace MoYu
 
             InternalMesh& temp_ref_mesh = temp_mesh_renderer.ref_mesh;
             InternalMaterial& temp_ref_material = temp_mesh_renderer.ref_material;
+
+            //------------------------------------------------------
 
             D3D12_DRAW_INDEXED_ARGUMENTS curDrawIndexedArguments = {};
             curDrawIndexedArguments.IndexCountPerInstance        = temp_ref_mesh.index_buffer.index_count; // temp_node.ref_mesh->mesh_index_count;
@@ -109,6 +113,8 @@ namespace MoYu
             D3D12_VERTEX_BUFFER_VIEW curVertexBufferView = temp_ref_mesh.vertex_buffer.vertex_buffer->GetVertexBufferView();
             D3D12_INDEX_BUFFER_VIEW curIndexBufferView = temp_ref_mesh.index_buffer.index_buffer->GetIndexBufferView();
 
+            uint32_t pPropertiesBufferAddress = pPropertiesPerMaterialBuffer->GetDefaultSRV()->GetIndex();
+
             RenderDataPerDraw curRenderDataPerDraw = {};
             memset(&curRenderDataPerDraw, 0, sizeof(RenderDataPerDraw));
 
@@ -120,13 +126,110 @@ namespace MoYu
             memcpy(&curRenderDataPerDraw.indexBufferView, &curIndexBufferView, sizeof(D3D12_INDEX_BUFFER_VIEW));//temp_node.ref_mesh->p_mesh_vertex_buffer->GetIndexBufferView();
             memcpy(&curRenderDataPerDraw.drawIndexedArguments, &curDrawIndexedArguments, sizeof(D3D12_DRAW_INDEXED_ARGUMENTS));
             char* pLightPropertyBufferIndex = (char*)&curRenderDataPerDraw.drawIndexedArguments + sizeof(D3D12_DRAW_INDEXED_ARGUMENTS);
-            memcpy(pLightPropertyBufferIndex, &i, sizeof(UINT32));
+            memcpy(pLightPropertyBufferIndex, &pPropertiesBufferAddress, sizeof(UINT32));
             char* pLightPropertyBufferIndexOffset = pLightPropertyBufferIndex + sizeof(void*);
             memcpy(pLightPropertyBufferIndexOffset, &i, sizeof(UINT32));
             curRenderDataPerDraw.rendererBounds[0] = glm::float4(boundingBoxCenter, 0);
             curRenderDataPerDraw.rendererBounds[1] = glm::float4(boundingBoxExtents, 0);
 
             pUploadRenderDataPerDraw[i] = curRenderDataPerDraw;
+
+            //------------------------------------------------------
+
+            InternalStandardLightMaterial& m_InteralMat = temp_ref_material.m_intenral_light_mat;
+
+            PropertiesPerMaterial curPropertiesPerMaterial = {};
+
+            curPropertiesPerMaterial._EmissiveColorMapIndex = m_InteralMat._EmissiveColorMap->GetDefaultSRV()->GetIndex();
+            curPropertiesPerMaterial._BaseColorMapIndex = m_InteralMat._BaseColorMap->GetDefaultSRV()->GetIndex();
+            curPropertiesPerMaterial._MaskMapIndex = m_InteralMat._MaskMap->GetDefaultSRV()->GetIndex();
+            curPropertiesPerMaterial._BentNormalMapIndex = m_InteralMat._BentNormalMap->GetDefaultSRV()->GetIndex();
+            curPropertiesPerMaterial._BentNormalMapOSIndex = m_InteralMat._BentNormalMapOS->GetDefaultSRV()->GetIndex();
+            curPropertiesPerMaterial._NormalMapIndex = m_InteralMat._NormalMap->GetDefaultSRV()->GetIndex();
+            curPropertiesPerMaterial._NormalMapOSIndex = m_InteralMat._NormalMapOS->GetDefaultSRV()->GetIndex();
+            curPropertiesPerMaterial._DetailMapIndex = m_InteralMat._DetailMap->GetDefaultSRV()->GetIndex();
+            curPropertiesPerMaterial._HeightMapIndex = m_InteralMat._HeightMap->GetDefaultSRV()->GetIndex();
+            curPropertiesPerMaterial._TangentMapIndex = m_InteralMat._TangentMap->GetDefaultSRV()->GetIndex();
+            curPropertiesPerMaterial._TangentMapOSIndex = m_InteralMat._TangentMapOS->GetDefaultSRV()->GetIndex();
+            curPropertiesPerMaterial._AnisotropyMapIndex = m_InteralMat._AnisotropyMap->GetDefaultSRV()->GetIndex();
+            curPropertiesPerMaterial._SubsurfaceMaskMapIndex = m_InteralMat._SubsurfaceMaskMap->GetDefaultSRV()->GetIndex();
+            curPropertiesPerMaterial._TransmissionMaskMapIndex = m_InteralMat._TransmissionMaskMap->GetDefaultSRV()->GetIndex();
+            curPropertiesPerMaterial._ThicknessMapIndex = m_InteralMat._ThicknessMap->GetDefaultSRV()->GetIndex();
+            curPropertiesPerMaterial._IridescenceThicknessMapIndex = m_InteralMat._IridescenceThicknessMap->GetDefaultSRV()->GetIndex();
+            curPropertiesPerMaterial._IridescenceMaskMapIndex = m_InteralMat._IridescenceMaskMap->GetDefaultSRV()->GetIndex();
+            curPropertiesPerMaterial._SpecularColorMapIndex = m_InteralMat._SpecularColorMap->GetDefaultSRV()->GetIndex();
+            curPropertiesPerMaterial._TransmittanceColorMapIndex = m_InteralMat._TransmittanceColorMap->GetDefaultSRV()->GetIndex();
+            curPropertiesPerMaterial._CoatMaskMapIndex = m_InteralMat._CoatMaskMap->GetDefaultSRV()->GetIndex();
+
+            curPropertiesPerMaterial._AlphaCutoff = m_InteralMat._AlphaCutoff;
+            curPropertiesPerMaterial._UseShadowThreshold = m_InteralMat._UseShadowThreshold;
+            curPropertiesPerMaterial._AlphaCutoffShadow = m_InteralMat._AlphaCutoffShadow;
+            curPropertiesPerMaterial._AlphaCutoffPrepass = m_InteralMat._AlphaCutoffPrepass;
+
+            curPropertiesPerMaterial._AlphaCutoffPostpass = m_InteralMat._AlphaCutoffPostpass;
+
+            curPropertiesPerMaterial._BlendMode = m_InteralMat._BlendMode;
+            curPropertiesPerMaterial._EnableBlendModePreserveSpecularLighting = m_InteralMat._EnableBlendModePreserveSpecularLighting;
+            curPropertiesPerMaterial._PPDMaxSamples = m_InteralMat._PPDMaxSamples;
+            curPropertiesPerMaterial._PPDMinSamples = m_InteralMat._PPDMinSamples;
+
+            curPropertiesPerMaterial._PPDLodThreshold = m_InteralMat._PPDLodThreshold;
+            curPropertiesPerMaterial._PPDPrimitiveLength = m_InteralMat._PPDPrimitiveLength;
+            curPropertiesPerMaterial._PPDPrimitiveWidth = m_InteralMat._PPDPrimitiveWidth;
+            curPropertiesPerMaterial._InvPrimScale = m_InteralMat._InvPrimScale;
+
+            curPropertiesPerMaterial._EmissiveColor = m_InteralMat._EmissiveColor;
+
+            curPropertiesPerMaterial._AlbedoAffectEmissive = m_InteralMat._AlbedoAffectEmissive;
+            curPropertiesPerMaterial._EmissiveExposureWeight = m_InteralMat._EmissiveExposureWeight;
+            curPropertiesPerMaterial._SpecularOcclusionMode = m_InteralMat._SpecularOcclusionMode;
+            curPropertiesPerMaterial._Ior = m_InteralMat._Ior;
+
+            curPropertiesPerMaterial._TransmittanceColor = m_InteralMat._TransmittanceColor;
+            curPropertiesPerMaterial._ATDistance = m_InteralMat._ATDistance;
+
+            curPropertiesPerMaterial._BaseColor = m_InteralMat._BaseColor;
+            curPropertiesPerMaterial._Metallic = m_InteralMat._Metallic;
+            curPropertiesPerMaterial._MetallicRemapMin = m_InteralMat._MetallicRemapMin;
+            curPropertiesPerMaterial._MetallicRemapMax = m_InteralMat._MetallicRemapMax;
+            curPropertiesPerMaterial._Smoothness = m_InteralMat._Smoothness;
+            curPropertiesPerMaterial._SmoothnessRemapMin = m_InteralMat._SmoothnessRemapMin;
+            curPropertiesPerMaterial._SmoothnessRemapMax = m_InteralMat._SmoothnessRemapMax;
+            curPropertiesPerMaterial._AlphaRemapMin = m_InteralMat._AlphaRemapMin;
+            curPropertiesPerMaterial._AlphaRemapMax = m_InteralMat._AlphaRemapMax;
+            curPropertiesPerMaterial._AORemapMin = m_InteralMat._AORemapMin;
+            curPropertiesPerMaterial._AORemapMax = m_InteralMat._AORemapMax;
+            curPropertiesPerMaterial._NormalScale = m_InteralMat._NormalScale;
+            curPropertiesPerMaterial._DetailAlbedoScale = m_InteralMat._DetailAlbedoScale;
+            curPropertiesPerMaterial._DetailNormalScale = m_InteralMat._DetailNormalScale;
+            curPropertiesPerMaterial._DetailSmoothnessScale = m_InteralMat._DetailSmoothnessScale;
+            curPropertiesPerMaterial._HeightAmplitude = m_InteralMat._HeightAmplitude;
+            curPropertiesPerMaterial._HeightCenter = m_InteralMat._HeightCenter;
+            curPropertiesPerMaterial._Anisotropy = m_InteralMat._Anisotropy;
+
+            curPropertiesPerMaterial._SubsurfaceMask = m_InteralMat._SubsurfaceMask;
+            curPropertiesPerMaterial._TransmissionMask = m_InteralMat._TransmissionMask;
+            curPropertiesPerMaterial._Thickness = m_InteralMat._Thickness;
+            curPropertiesPerMaterial._Thickness = m_InteralMat._Thickness;
+            
+            curPropertiesPerMaterial._ThicknessRemap = m_InteralMat._ThicknessRemap;
+            curPropertiesPerMaterial._IridescenceThicknessRemap = m_InteralMat._IridescenceThicknessRemap;
+
+            curPropertiesPerMaterial._SurfaceType = m_InteralMat._SurfaceType;
+            curPropertiesPerMaterial._IridescenceThickness = m_InteralMat._IridescenceThickness;
+            curPropertiesPerMaterial._IridescenceMask = m_InteralMat._IridescenceMask;
+            curPropertiesPerMaterial._CoatMask = m_InteralMat._CoatMask;
+            curPropertiesPerMaterial._EnergyConservingSpecularColor = m_InteralMat._EnergyConservingSpecularColor;
+
+            curPropertiesPerMaterial._SpecularColor = m_InteralMat._SpecularColor;
+            curPropertiesPerMaterial._UVMappingMask = m_InteralMat._UVMappingMask;
+            curPropertiesPerMaterial._UVDetailsMappingMask = m_InteralMat._UVDetailsMappingMask;
+
+            curPropertiesPerMaterial._TexWorldScale = m_InteralMat._TexWorldScale;
+            curPropertiesPerMaterial._InvTilingScale = m_InteralMat._InvTilingScale;
+            curPropertiesPerMaterial._ObjectSpaceUVMapping = m_InteralMat._ObjectSpaceUVMapping;
+
+            pPropertiesPerMaterial[i] = curPropertiesPerMaterial;
         }
 
         prepareBuffer();
@@ -337,16 +440,16 @@ namespace MoYu
     void IndirectCullPass::update(RHI::RenderGraph& graph, IndirectCullOutput& cullOutput)
     {
         RHI::RgResourceHandle uploadFrameUniformHandle = GImport(graph, pUploadFrameUniformBuffer.get());
-        RHI::RgResourceHandle uploadMaterialViewIndexHandle = GImport(graph, pUploadMaterialViewIndexBuffer.get());
-        RHI::RgResourceHandle uploadMeshBufferHandle     = GImport(graph, pUploadRenderableMeshBuffer.get());
+        RHI::RgResourceHandle uploadRenderDataPerDrawHandle = GImport(graph, pUploadRenderDataPerDrawBuffer.get());
+        RHI::RgResourceHandle uploadPropertiesPerMaterialHandle = GImport(graph, pUploadPropertiesPerMaterialBuffer.get());
 
         RHI::RgResourceHandle sortDispatchArgsHandle = graph.Create<RHI::D3D12Buffer>(sortDispatchArgsBufferDesc);
         RHI::RgResourceHandle grabDispatchArgsHandle = graph.Create<RHI::D3D12Buffer>(grabDispatchArgsBufferDesc);
 
         // import buffers
         cullOutput.perframeBufferHandle = GImport(graph, pFrameUniformBuffer.get());
-        cullOutput.materialBufferHandle = GImport(graph, pMaterialViewIndexBuffer.get());
-        cullOutput.meshBufferHandle     = GImport(graph, pRenderableMeshBuffer.get());
+        cullOutput.renderDataPerDrawHandle = GImport(graph, pRenderDataPerDrawBuffer.get());
+        cullOutput.propertiesPerMaterialHandle = GImport(graph, pPropertiesPerMaterialBuffer.get());
 
         cullOutput.opaqueDrawHandle = DrawCallCommandBufferHandle {
             GImport(graph, commandBufferForOpaqueDraw.p_IndirectIndexCommandBuffer.get()),
@@ -373,10 +476,10 @@ namespace MoYu
         }
 
         // reset pass
-        auto mPerframeBufferHandle  = cullOutput.perframeBufferHandle;
-        auto mMaterialBufferHandle  = cullOutput.materialBufferHandle;
-        auto mMeshBufferHandle      = cullOutput.meshBufferHandle;
-        auto mOpaqueDrawHandle      = cullOutput.opaqueDrawHandle;
+        auto mPerframeBufferHandle = cullOutput.perframeBufferHandle;
+        auto mRenderDataPerDrawHandle = cullOutput.renderDataPerDrawHandle;
+        auto mPropertiesPerMaterialHandle = cullOutput.propertiesPerMaterialHandle;
+        auto mOpaqueDrawHandle = cullOutput.opaqueDrawHandle;
         auto mTransparentDrawHandle = cullOutput.transparentDrawHandle;
         auto mDirShadowmapHandles(cullOutput.directionShadowmapHandles);
         auto mSpotShadowmapHandles(cullOutput.spotShadowmapHandles);
@@ -385,12 +488,12 @@ namespace MoYu
             RHI::RenderPass& resetPass = graph.AddRenderPass("ResetPass");
 
             resetPass.Read(uploadFrameUniformHandle, true);
-            resetPass.Read(uploadMaterialViewIndexHandle, true);
-            resetPass.Read(uploadMeshBufferHandle, true);
+            resetPass.Read(uploadPropertiesPerMaterialHandle, true);
+            resetPass.Read(uploadRenderDataPerDrawHandle, true);
 
             resetPass.Write(cullOutput.perframeBufferHandle, true);
-            resetPass.Write(cullOutput.materialBufferHandle, true);
-            resetPass.Write(cullOutput.meshBufferHandle, true);
+            resetPass.Write(cullOutput.propertiesPerMaterialHandle, true);
+            resetPass.Write(cullOutput.renderDataPerDrawHandle, true);
             resetPass.Write(cullOutput.opaqueDrawHandle.indirectIndexBufferHandle, true);
             resetPass.Write(cullOutput.opaqueDrawHandle.indirectSortBufferHandle, true);
             resetPass.Write(cullOutput.transparentDrawHandle.indirectIndexBufferHandle, true);
@@ -423,8 +526,8 @@ namespace MoYu
                     pCopyContext->TransitionBarrier(RegGetBufCounter(mSpotShadowmapHandles[i].indirectSortBufferHandle), D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_DEST);
                 }
                 pCopyContext->TransitionBarrier(RegGetBuf(mPerframeBufferHandle), D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_DEST);
-                pCopyContext->TransitionBarrier(RegGetBuf(mMaterialBufferHandle), D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_DEST);
-                pCopyContext->TransitionBarrier(RegGetBuf(mMeshBufferHandle), D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_DEST);
+                pCopyContext->TransitionBarrier(RegGetBuf(mPropertiesPerMaterialHandle), D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_DEST);
+                pCopyContext->TransitionBarrier(RegGetBuf(mRenderDataPerDrawHandle), D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_DEST);
                 pCopyContext->FlushResourceBarriers();
 
                 pCopyContext->ResetCounter(RegGetBufCounter(mOpaqueDrawHandle.indirectIndexBufferHandle));
@@ -443,14 +546,14 @@ namespace MoYu
                 }
 
                 pCopyContext->CopyBuffer(RegGetBuf(mPerframeBufferHandle), RegGetBuf(uploadFrameUniformHandle));
-                pCopyContext->CopyBuffer(RegGetBuf(mMaterialBufferHandle), RegGetBuf(uploadMaterialViewIndexHandle));
-                pCopyContext->CopyBuffer(RegGetBuf(mMeshBufferHandle), RegGetBuf(uploadMeshBufferHandle));
+                pCopyContext->CopyBuffer(RegGetBuf(mPropertiesPerMaterialHandle), RegGetBuf(uploadPropertiesPerMaterialHandle));
+                pCopyContext->CopyBuffer(RegGetBuf(mRenderDataPerDrawHandle), RegGetBuf(uploadRenderDataPerDrawHandle));
 
                 // transition buffer state
                 {
                     pCopyContext->TransitionBarrier(RegGetBuf(mPerframeBufferHandle), D3D12_RESOURCE_STATE_GENERIC_READ);
-                    pCopyContext->TransitionBarrier(RegGetBuf(mMaterialBufferHandle), D3D12_RESOURCE_STATE_GENERIC_READ);
-                    pCopyContext->TransitionBarrier(RegGetBuf(mMeshBufferHandle), D3D12_RESOURCE_STATE_GENERIC_READ);
+                    pCopyContext->TransitionBarrier(RegGetBuf(mPropertiesPerMaterialHandle), D3D12_RESOURCE_STATE_GENERIC_READ);
+                    pCopyContext->TransitionBarrier(RegGetBuf(mRenderDataPerDrawHandle), D3D12_RESOURCE_STATE_GENERIC_READ);
 
                     // transition vertex and index buffer state
                     std::vector<CachedMeshRenderer>& _mesh_renderers = m_render_scene->m_mesh_renderers;
@@ -489,8 +592,8 @@ namespace MoYu
                 RHI::RenderPass& cullingPass = graph.AddRenderPass("OpaqueTransCullingPass");
 
                 cullingPass.Read(cullOutput.perframeBufferHandle, true);
-                cullingPass.Read(cullOutput.meshBufferHandle, true);
-                cullingPass.Read(cullOutput.materialBufferHandle, true);
+                cullingPass.Read(cullOutput.renderDataPerDrawHandle, true);
+                cullingPass.Read(cullOutput.propertiesPerMaterialHandle, true);
 
                 cullingPass.Write(cullOutput.opaqueDrawHandle.indirectIndexBufferHandle, true);
                 cullingPass.Write(cullOutput.transparentDrawHandle.indirectIndexBufferHandle, true);
@@ -499,8 +602,8 @@ namespace MoYu
                     RHI::D3D12ComputeContext* pAsyncCompute = context->GetComputeContext();
 
                     pAsyncCompute->TransitionBarrier(RegGetBuf(mPerframeBufferHandle), D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
-                    pAsyncCompute->TransitionBarrier(RegGetBuf(mMeshBufferHandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-                    pAsyncCompute->TransitionBarrier(RegGetBuf(mMaterialBufferHandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+                    pAsyncCompute->TransitionBarrier(RegGetBuf(mRenderDataPerDrawHandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+                    pAsyncCompute->TransitionBarrier(RegGetBuf(mPropertiesPerMaterialHandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
                     pAsyncCompute->TransitionBarrier(RegGetBuf(mOpaqueDrawHandle.indirectIndexBufferHandle), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
                     pAsyncCompute->TransitionBarrier(RegGetBufCounter(mOpaqueDrawHandle.indirectIndexBufferHandle), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
                     pAsyncCompute->TransitionBarrier(RegGetBuf(mTransparentDrawHandle.indirectIndexBufferHandle), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
@@ -513,17 +616,17 @@ namespace MoYu
 
                     struct RootIndexBuffer
                     {
-                        UINT meshPerFrameBufferIndex;
-                        UINT meshInstanceBufferIndex;
-                        UINT materialIndexBufferIndex;
+                        UINT perFrameBufferIndex;
+                        UINT renderDataPerDrawIndex;
+                        UINT propertiesPerMaterialIndex;
                         UINT opaqueSortIndexDisBufferIndex;
                         UINT transSortIndexDisBufferIndex;
                     };
 
                     RootIndexBuffer rootIndexBuffer =
                         RootIndexBuffer {RegGetBufDefCBVIdx(mPerframeBufferHandle),
-                                         RegGetBufDefSRVIdx(mMeshBufferHandle),
-                                         RegGetBufDefSRVIdx(mMaterialBufferHandle),
+                                         RegGetBufDefSRVIdx(mRenderDataPerDrawHandle),
+                                         RegGetBufDefSRVIdx(mPropertiesPerMaterialHandle),
                                          RegGetBufDefUAVIdx(mOpaqueDrawHandle.indirectIndexBufferHandle),
                                          RegGetBufDefUAVIdx(mTransparentDrawHandle.indirectIndexBufferHandle)};
 

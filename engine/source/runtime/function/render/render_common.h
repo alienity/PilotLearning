@@ -216,6 +216,7 @@ namespace MoYu
         glm::float4 _BaseColor{ 1, 1, 1, 1 };
         InteralMaterialImageMacro(_BaseColorMap)
 
+        InteralMaterialImageMacro(_MaskMap) // MaskMap is RGBA: Metallic, Ambient Occlusion (Optional), detail Mask (Optional), Smoothness
         float _Metallic{ 0 };
         float _Smoothness{ 0.5f };
         float _MetallicRemapMin{ 0.0f };
@@ -248,7 +249,7 @@ namespace MoYu
         float _Anisotropy{ 0 };
         InteralMaterialImageMacro(_AnisotropyMap)
 
-        float _SubsurfaceMasks{ 1.0f };
+        float _SubsurfaceMask{ 1.0f };
         InteralMaterialImageMacro(_SubsurfaceMaskMap)
         float _TransmissionMask{ 1.0f };
         InteralMaterialImageMacro(_TransmissionMaskMap)
@@ -272,6 +273,8 @@ namespace MoYu
         int _SpecularOcclusionMode{ 1 };
 
         glm::float3 _EmissiveColor{ 0,0,0 };
+        InteralMaterialImageMacro(_EmissiveColorMap)
+
         float _AlbedoAffectEmissive{ 0.0f };
         float _EmissiveExposureWeight{ 1.0f };
 
@@ -299,10 +302,14 @@ namespace MoYu
         float _InvTilingScale{ 1.0f };
         float _TexWorldScale{ 1.0f };
         glm::float4 _UVMappingMask{ 1,0,0,0 };
+        glm::float4 _UVDetailsMappingMask{ 1,0,0,0 };
 
         float _PPDMinSamples{ 5 };
         float _PPDMaxSamples{ 15 };
-        int _PPDLodThreshold{ 5 };
+        float _PPDLodThreshold{ 5 };
+        float _PPDPrimitiveLength{ 1 };
+        float _PPDPrimitiveWidth{ 1 };
+        glm::float4 _InvPrimScale{ 1, 1, 0, 0 };
     };
 
     struct InternalMaterial
@@ -676,6 +683,7 @@ namespace MoYu
         glm::float4 _BaseColor{ 1, 1, 1, 1 };
         MaterialImage _BaseColorMap{ DefaultMaterialImageWhite };
 
+        MaterialImage _MaskMap{ DefaultMaterialImageWhite };
         float _Metallic{ 0 };
         float _Smoothness{ 0.5f };
         float _MetallicRemapMin{ 0.0f };
@@ -708,7 +716,7 @@ namespace MoYu
         float _Anisotropy{ 0 };
         MaterialImage _AnisotropyMap{ DefaultMaterialImageWhite };
 
-        float _SubsurfaceMasks{ 1.0f };
+        float _SubsurfaceMask{ 1.0f };
         MaterialImage _SubsurfaceMaskMap{ DefaultMaterialImageWhite };
         float _TransmissionMask{ 1.0f };
         MaterialImage _TransmissionMaskMap{ DefaultMaterialImageWhite };
@@ -732,6 +740,7 @@ namespace MoYu
         int _SpecularOcclusionMode{ 1 };
 
         glm::float3 _EmissiveColor{ 0,0,0 };
+        MaterialImage _EmissiveColorMap{ DefaultMaterialImageBlack };
         float _AlbedoAffectEmissive{ 0.0f };
         float _EmissiveExposureWeight{ 1.0f };
 
@@ -759,10 +768,14 @@ namespace MoYu
         float _InvTilingScale{ 1.0f };
         float _TexWorldScale{ 1.0f };
         glm::float4 _UVMappingMask{ 1,0,0,0 };
+        glm::float4 _UVDetailsMappingMask{ 1,0,0,0 };
 
         float _PPDMinSamples{ 5 };
         float _PPDMaxSamples{ 15 };
-        int _PPDLodThreshold{ 5 };
+        float _PPDLodThreshold{ 5 };
+        float _PPDPrimitiveLength{ 1 };
+        float _PPDPrimitiveWidth{ 1 };
+        glm::float4 _InvPrimScale{ 1, 1, 0, 0 };
     };
 
     inline bool operator==(const StandardLightMaterial& lhs, const StandardLightMaterial& rhs)
@@ -772,6 +785,7 @@ namespace MoYu
         return
             CompareVal(_BaseColor) &&
             CompareVal(_BaseColorMap) &&
+            CompareVal(_MaskMap) &&
             CompareVal(_Metallic) &&
             CompareVal(_Smoothness) &&
             CompareVal(_MetallicRemapMin) &&
@@ -798,7 +812,7 @@ namespace MoYu
             CompareVal(_TangentMapOS) &&
             CompareVal(_Anisotropy) &&
             CompareVal(_AnisotropyMap) &&
-            CompareVal(_SubsurfaceMasks) &&
+            CompareVal(_SubsurfaceMask) &&
             CompareVal(_SubsurfaceMaskMap) &&
             CompareVal(_TransmissionMask) &&
             CompareVal(_TransmissionMaskMap) &&
@@ -817,6 +831,7 @@ namespace MoYu
             CompareVal(_SpecularColorMap) &&
             CompareVal(_SpecularOcclusionMode) &&
             CompareVal(_EmissiveColor) &&
+            CompareVal(_EmissiveColorMap) &&
             CompareVal(_AlbedoAffectEmissive) &&
             CompareVal(_EmissiveExposureWeight) &&
             CompareVal(_UseShadowThreshold) &&
@@ -835,9 +850,13 @@ namespace MoYu
             CompareVal(_InvTilingScale) &&
             CompareVal(_TexWorldScale) &&
             CompareVal(_UVMappingMask) &&
+            CompareVal(_UVDetailsMappingMask) &&
             CompareVal(_PPDMinSamples) &&
             CompareVal(_PPDMaxSamples) &&
-            CompareVal(_PPDLodThreshold);
+            CompareVal(_PPDLodThreshold) &&
+            CompareVal(_PPDPrimitiveLength) &&
+            CompareVal(_PPDPrimitiveWidth) &&
+            CompareVal(_InvPrimScale);
 ;
     }
 

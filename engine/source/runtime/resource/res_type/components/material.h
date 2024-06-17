@@ -14,6 +14,7 @@ namespace MoYu
         glm::float4 _BaseColor{ 1, 1, 1, 1 };
         MaterialImage _BaseColorMap{};
 
+        MaterialImage _MaskMap{};
         float _Metallic{ 0 };
         float _Smoothness{ 0.5f };
         float _MetallicRemapMin{ 0.0f };
@@ -46,7 +47,7 @@ namespace MoYu
         float _Anisotropy{ 0 };
         MaterialImage _AnisotropyMap{};
 
-        float _SubsurfaceMasks{ 1.0f };
+        float _SubsurfaceMask{ 1.0f };
         MaterialImage _SubsurfaceMaskMap{};
         float _TransmissionMask{ 1.0f };
         MaterialImage _TransmissionMaskMap{};
@@ -70,6 +71,7 @@ namespace MoYu
         int _SpecularOcclusionMode{ 1 };
 
         glm::float3 _EmissiveColor{ 0,0,0 };
+        MaterialImage _EmissiveColorMap{};
         float _AlbedoAffectEmissive{ 0.0f };
         float _EmissiveExposureWeight{ 1.0f };
 
@@ -97,10 +99,15 @@ namespace MoYu
         float _InvTilingScale{ 1.0f };
         float _TexWorldScale{ 1.0f };
         glm::float4 _UVMappingMask{ 1,0,0,0 };
+        glm::float4 _UVDetailsMappingMask{ 1,0,0,0 };
 
         float _PPDMinSamples{ 5 };
         float _PPDMaxSamples{ 15 };
-        int _PPDLodThreshold{ 5 };
+        float _PPDLodThreshold{ 5 };
+        float _PPDPrimitiveLength{ 1 };
+        float _PPDPrimitiveWidth{ 1 };
+        glm::float4 _InvPrimScale{ 1, 1, 0, 0 };
+
     };
 
     inline void to_json(json& j, const MaterialRes& P)
@@ -135,7 +142,7 @@ namespace MoYu
             MaterialResJsonPair(_TangentMapOS),
             MaterialResJsonPair(_Anisotropy),
             MaterialResJsonPair(_AnisotropyMap),
-            MaterialResJsonPair(_SubsurfaceMasks),
+            MaterialResJsonPair(_SubsurfaceMask),
             MaterialResJsonPair(_SubsurfaceMaskMap),
             MaterialResJsonPair(_TransmissionMask),
             MaterialResJsonPair(_TransmissionMaskMap),
@@ -154,6 +161,7 @@ namespace MoYu
             MaterialResJsonPair(_SpecularColorMap),
             MaterialResJsonPair(_SpecularOcclusionMode),
             MaterialResJsonPair(_EmissiveColor),
+            MaterialResJsonPair(_EmissiveColorMap),
             MaterialResJsonPair(_AlbedoAffectEmissive),
             MaterialResJsonPair(_EmissiveExposureWeight),
             MaterialResJsonPair(_UseShadowThreshold),
@@ -173,9 +181,13 @@ namespace MoYu
             MaterialResJsonPair(_InvTilingScale),
             MaterialResJsonPair(_TexWorldScale),
             MaterialResJsonPair(_UVMappingMask),
+            MaterialResJsonPair(_UVDetailsMappingMask),
             MaterialResJsonPair(_PPDMinSamples),
             MaterialResJsonPair(_PPDMaxSamples),
-            MaterialResJsonPair(_PPDLodThreshold)
+            MaterialResJsonPair(_PPDLodThreshold),
+            MaterialResJsonPair(_PPDPrimitiveLength),
+            MaterialResJsonPair(_PPDPrimitiveWidth),
+            MaterialResJsonPair(_InvPrimScale)
         };
     }
 
@@ -211,7 +223,7 @@ namespace MoYu
         MaterialResJsonPair2(_TangentMapOS, MaterialImage);
         MaterialResJsonPair2(_Anisotropy, float);
         MaterialResJsonPair2(_AnisotropyMap, MaterialImage);
-        MaterialResJsonPair2(_SubsurfaceMasks, float);
+        MaterialResJsonPair2(_SubsurfaceMask, float);
         MaterialResJsonPair2(_SubsurfaceMaskMap, MaterialImage);
         MaterialResJsonPair2(_TransmissionMask, float);
         MaterialResJsonPair2(_TransmissionMaskMap, MaterialImage);
@@ -230,6 +242,7 @@ namespace MoYu
         MaterialResJsonPair2(_SpecularColorMap, MaterialImage);
         MaterialResJsonPair2(_SpecularOcclusionMode, int);
         MaterialResJsonPair2(_EmissiveColor, glm::float3);
+        MaterialResJsonPair2(_EmissiveColorMap, MaterialImage);
         MaterialResJsonPair2(_AlbedoAffectEmissive, float);
         MaterialResJsonPair2(_EmissiveExposureWeight, float);
         MaterialResJsonPair2(_UseShadowThreshold, float);
@@ -249,9 +262,13 @@ namespace MoYu
         MaterialResJsonPair2(_InvTilingScale, float);
         MaterialResJsonPair2(_TexWorldScale, float);
         MaterialResJsonPair2(_UVMappingMask, glm::float4);
+        MaterialResJsonPair2(_UVDetailsMappingMask, glm::float4);
         MaterialResJsonPair2(_PPDMinSamples, float);
         MaterialResJsonPair2(_PPDMaxSamples, float);
-        MaterialResJsonPair2(_PPDLodThreshold, int);
+        MaterialResJsonPair2(_PPDLodThreshold, float);
+        MaterialResJsonPair2(_PPDPrimitiveLength, float);
+        MaterialResJsonPair2(_PPDPrimitiveWidth, float);
+        MaterialResJsonPair2(_InvPrimScale, glm::float4);
     }
 
 } // namespace MoYu
