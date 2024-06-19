@@ -1169,10 +1169,10 @@ struct BoundingBox
     }
 
     // https://stackoverflow.com/questions/6053522/how-to-recalculate-axis-aligned-bounding-box-after-translate-rotate
-    void Transform(float4x4 m, inout BoundingBox b)
+    BoundingBox Transform(float4x4 m)
     {
+        BoundingBox b = (BoundingBox)0;
         float3 t = float3(m[0][3], m[1][3], m[2][3]);
-
         b.Center  = float4(t, 0);
         b.Extents = float4(0.0f, 0.0f, 0.0f, 0.0f);
         for (int i = 0; i < 3; ++i)
@@ -1183,6 +1183,7 @@ struct BoundingBox
                 b.Extents[i] += abs(m[i][j]) * Extents[j];
             }
         }
+        return b;
     }
 };
 

@@ -153,10 +153,10 @@ namespace MoYu
         glm::float4x4 unjitter_proj_matrix = camera->getUnJitterPersProjMatrix();
         
         // FrameUniforms
-        FrameUniforms* _frameUniforms = &m_FrameUniforms;
+        HLSL::FrameUniforms* _frameUniforms = &m_FrameUniforms;
 
         // Camera Uniform
-        CameraDataBuffer _frameCameraData;
+        HLSL::CameraDataBuffer _frameCameraData;
         _frameCameraData.viewFromWorldMatrix  = view_matrix;
         _frameCameraData.worldFromViewMatrix  = glm::inverse(_frameCameraData.viewFromWorldMatrix);
         _frameCameraData.clipFromViewMatrix   = proj_matrix;
@@ -171,9 +171,9 @@ namespace MoYu
 
         _frameCameraData._ZBufferParams = CalculateZBufferParams(_cn, _cf);
 
-        CameraDataBuffer _prevFrameCameraData = _frameUniforms->cameraUniform._CurFrameUniform;
+        HLSL::CameraDataBuffer _prevFrameCameraData = _frameUniforms->cameraUniform._CurFrameUniform;
 
-        CameraUniform _cameraUniform;
+        HLSL::CameraUniform _cameraUniform;
         _cameraUniform._PrevFrameUniform = _prevFrameCameraData;
         _cameraUniform._CurFrameUniform = _frameCameraData;
         _cameraUniform._Resolution = glm::float4(_cw, _ch, 1.0f / _cw, 1.0f / _ch);
@@ -186,7 +186,7 @@ namespace MoYu
 
 
         // Base Uniform
-        BaseUniform _baseUniform;
+        HLSL::BaseUniform _baseUniform;
         _baseUniform._ScreenSize = glm::float4(_cw, _ch, 1.0f / _cw, 1.0f / _ch);
         _baseUniform._PostProcessScreenSize = glm::float4(_cw, _ch, 1.0f / _cw, 1.0f / _ch);
         _baseUniform._RTHandleScale = glm::float4(1.0f);
@@ -216,7 +216,7 @@ namespace MoYu
 
 
         // terrain Uniform
-        TerrainUniform _terrainUniform;
+        HLSL::TerrainUniform _terrainUniform;
         _terrainUniform.terrainSize = 1024;
         _terrainUniform.terrainMaxHeight = 1024;
         if (render_scene->m_terrain_renderers.size() != 0)
@@ -236,14 +236,14 @@ namespace MoYu
 
 
         // mesh Uniform
-        MeshUniform _meshUniform;
+        HLSL::MeshUniform _meshUniform;
         _meshUniform.totalMeshCount = render_scene->m_mesh_renderers.size();
 
         _frameUniforms->meshUniform = _meshUniform;
         
 
         // IBL Uniform
-        IBLUniform _iblUniform;
+        HLSL::IBLUniform _iblUniform;
         //_iblUniform.iblSH
         _iblUniform.iblRoughnessOneLevel = 4;
         _iblUniform.dfg_lut_srv_index    = render_scene->m_ibl_map.m_dfg->GetDefaultSRV()->GetIndex();
@@ -259,13 +259,13 @@ namespace MoYu
 
 
         // Sun Uniform
-        VolumeCloudStruct volumeCloudUniform{};
+        HLSL::VolumeCloudStruct volumeCloudUniform{};
         volumeCloudUniform.sunlight_direction = render_scene->m_directional_light.m_direction;
         _frameUniforms->volumeCloudUniform = volumeCloudUniform;
 
 
         // DirectionLight Uniform
-        DirectionalLightStruct _directionalLightStruct;
+        HLSL::DirectionalLightStruct _directionalLightStruct;
         _directionalLightStruct.lightColorIntensity = glm::float4(
             render_scene->m_directional_light.m_color.toVector3(), render_scene->m_directional_light.m_intensity);
         _directionalLightStruct.lightPosition = render_scene->m_directional_light.m_position;
@@ -274,7 +274,7 @@ namespace MoYu
         _directionalLightStruct.shadowType = render_scene->m_directional_light.m_shadowmap ? 1 : 0;
         _directionalLightStruct.lightFarAttenuationParams = glm::float2(100, 0.0001);
 
-        DirectionalLightShadowmap _directionalLightShadowmap;
+        HLSL::DirectionalLightShadowmap _directionalLightShadowmap;
         _directionalLightShadowmap.cascadeCount = render_scene->m_directional_light.m_cascade;
         _directionalLightShadowmap.shadowmap_size = glm::uvec2(render_scene->m_directional_light.m_shadowmap_size.x,
                                                                 render_scene->m_directional_light.m_shadowmap_size.y);
@@ -290,7 +290,7 @@ namespace MoYu
         _frameUniforms->directionalLight = _directionalLightStruct;
 
         // PointLight Uniform
-        PointLightUniform _pointLightUniform;
+        HLSL::PointLightUniform _pointLightUniform;
         _pointLightUniform.pointLightCounts = render_scene->m_point_light_list.size();
         for (uint32_t i = 0; i < render_scene->m_point_light_list.size(); i++)
         {
@@ -300,21 +300,21 @@ namespace MoYu
             float radius = render_scene->m_point_light_list[i].m_radius;
             Color color  = render_scene->m_point_light_list[i].m_color;
 
-            PointLightStruct _pointLightStruct;
+            HLSL::PointLightStruct _pointLightStruct;
             _pointLightStruct.lightPosition = point_light_position;
             _pointLightStruct.lightRadius = radius;
             _pointLightStruct.lightIntensity = glm::float4(glm::float3(color.r, color.g, color.b), point_light_intensity);
             _pointLightStruct.shadowType = 0;
             _pointLightStruct.falloff    = 1.0f / radius;
 
-            _pointLightStruct.pointLightShadowmap = PointLightShadowmap {};
+            _pointLightStruct.pointLightShadowmap = HLSL::PointLightShadowmap {};
 
             _pointLightUniform.pointLightStructs[i] = _pointLightStruct;
         }
         _frameUniforms->pointLightUniform = _pointLightUniform;
 
         // SpotLight Uniform
-        SpotLightUniform _spotLightUniform;
+        HLSL::SpotLightUniform _spotLightUniform;
         _spotLightUniform.spotLightCounts = render_scene->m_spot_light_list.size();
         for (uint32_t i = 0; i < render_scene->m_spot_light_list.size(); i++)
         {
@@ -325,7 +325,7 @@ namespace MoYu
             float radius = render_scene->m_spot_light_list[i].m_radius;
             Color color  = render_scene->m_spot_light_list[i].m_color;
 
-            SpotLightStruct _spotLightStruct;
+            HLSL::SpotLightStruct _spotLightStruct;
             _spotLightStruct.lightPosition = spot_light_position;
             _spotLightStruct.lightRadius   = radius;
             _spotLightStruct.lightIntensity = glm::float4(glm::float3(color.r, color.g, color.b), spot_light_intensity);
@@ -335,7 +335,7 @@ namespace MoYu
             _spotLightStruct.shadowType   = render_scene->m_spot_light_list[i].m_shadowmap;
             _spotLightStruct.falloff        = 1.0f / radius;
 
-            SpotLightShadowmap _spotLightSgadowmap;
+            HLSL::SpotLightShadowmap _spotLightSgadowmap;
             _spotLightSgadowmap.shadowmap_size = glm::uvec2(render_scene->m_spot_light_list[i].m_shadowmap_size.x,
                                                              render_scene->m_spot_light_list[i].m_shadowmap_size.y);
             _spotLightSgadowmap.light_proj_view = render_scene->m_spot_light_list[i].m_shadow_view_proj_mat;
@@ -499,7 +499,7 @@ namespace MoYu
             UpdateInternalMaterialAssign(_DetailNormalScale)
             UpdateInternalMaterialAssign(_DetailSmoothnessScale)
             UpdateInternalMaterialAssign(_Anisotropy)
-            UpdateInternalMaterialAssign(_SubsurfaceMasks)
+            UpdateInternalMaterialAssign(_SubsurfaceMask)
             UpdateInternalMaterialAssign(_TransmissionMask)
             UpdateInternalMaterialAssign(_Thickness)
             UpdateInternalMaterialAssign(_ThicknessRemap)

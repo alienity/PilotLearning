@@ -55,14 +55,14 @@ namespace MoYu
         depthDesc  = init_info.depthTexDesc;
 
         // create default buffer
-        pFrameUniformBuffer = CreateCullingBuffer(1, MoYu::AlignUp(sizeof(FrameUniforms), 256), L"FrameUniforms");
-        pRenderDataPerDrawBuffer = CreateCullingBuffer(HLSL::MaterialLimit, sizeof(RenderDataPerDraw), L"RenderDataPerDraw");
-        pPropertiesPerMaterialBuffer = CreateCullingBuffer(HLSL::MaterialLimit, sizeof(PropertiesPerMaterial), L"PropertiesPerMaterial");
+        pFrameUniformBuffer = CreateCullingBuffer(1, MoYu::AlignUp(sizeof(HLSL::FrameUniforms), 256), L"FrameUniforms");
+        pRenderDataPerDrawBuffer = CreateCullingBuffer(HLSL::MaterialLimit, sizeof(HLSL::RenderDataPerDraw), L"RenderDataPerDraw");
+        pPropertiesPerMaterialBuffer = CreateCullingBuffer(HLSL::MaterialLimit, sizeof(HLSL::PropertiesPerMaterial), L"PropertiesPerMaterial");
         
         // create upload buffer
-        pUploadFrameUniformBuffer = CreateUploadBuffer(1, MoYu::AlignUp(sizeof(FrameUniforms), 256), L"UploadFrameUniforms");
-        pUploadRenderDataPerDrawBuffer = CreateUploadBuffer(HLSL::MaterialLimit, sizeof(RenderDataPerDraw), L"UploadRenderDataPerDraw");
-        pUploadPropertiesPerMaterialBuffer = CreateUploadBuffer(HLSL::MaterialLimit, sizeof(PropertiesPerMaterial), L"UploadPropertiesPerMaterial");
+        pUploadFrameUniformBuffer = CreateUploadBuffer(1, MoYu::AlignUp(sizeof(HLSL::FrameUniforms), 256), L"UploadFrameUniforms");
+        pUploadRenderDataPerDrawBuffer = CreateUploadBuffer(HLSL::MaterialLimit, sizeof(HLSL::RenderDataPerDraw), L"UploadRenderDataPerDraw");
+        pUploadPropertiesPerMaterialBuffer = CreateUploadBuffer(HLSL::MaterialLimit, sizeof(HLSL::PropertiesPerMaterial), L"UploadPropertiesPerMaterial");
         
         sortDispatchArgsBufferDesc = CreateArgBufferDesc("SortDispatchArgs", 22 * 23 / 2);
         grabDispatchArgsBufferDesc = CreateArgBufferDesc("GrabDispatchArgs", 22 * 23 / 2);
@@ -78,16 +78,16 @@ namespace MoYu
 
     void IndirectCullPass::inflatePerframeBuffer(std::shared_ptr<RenderResource> render_resource)
     {
-        memcpy(pUploadFrameUniformBuffer->GetCpuVirtualAddress<FrameUniforms>(), &render_resource->m_FrameUniforms, sizeof(FrameUniforms));
+        memcpy(pUploadFrameUniformBuffer->GetCpuVirtualAddress<HLSL::FrameUniforms>(), &render_resource->m_FrameUniforms, sizeof(HLSL::FrameUniforms));
     }
 
     void IndirectCullPass::prepareMeshData(std::shared_ptr<RenderResource> render_resource)
     {
         std::vector<CachedMeshRenderer>& _mesh_renderers = m_render_scene->m_mesh_renderers;
 
-        PropertiesPerMaterial* pPropertiesPerMaterial = pUploadPropertiesPerMaterialBuffer->GetCpuVirtualAddress<PropertiesPerMaterial>();
+        HLSL::PropertiesPerMaterial* pPropertiesPerMaterial = pUploadPropertiesPerMaterialBuffer->GetCpuVirtualAddress<HLSL::PropertiesPerMaterial>();
 
-        RenderDataPerDraw* pUploadRenderDataPerDraw = pUploadRenderDataPerDrawBuffer->GetCpuVirtualAddress<RenderDataPerDraw>();
+        HLSL::RenderDataPerDraw* pUploadRenderDataPerDraw = pUploadRenderDataPerDrawBuffer->GetCpuVirtualAddress<HLSL::RenderDataPerDraw>();
         
         uint32_t numMeshes = _mesh_renderers.size();
         ASSERT(numMeshes < HLSL::MeshLimit);
@@ -115,8 +115,8 @@ namespace MoYu
 
             uint32_t pPropertiesBufferAddress = pPropertiesPerMaterialBuffer->GetDefaultSRV()->GetIndex();
 
-            RenderDataPerDraw curRenderDataPerDraw = {};
-            memset(&curRenderDataPerDraw, 0, sizeof(RenderDataPerDraw));
+            HLSL::RenderDataPerDraw curRenderDataPerDraw = {};
+            memset(&curRenderDataPerDraw, 0, sizeof(HLSL::RenderDataPerDraw));
 
             curRenderDataPerDraw.objectToWorldMatrix = temp_mesh_renderer.model_matrix; // temp_node.model_matrix;
             curRenderDataPerDraw.worldToObjectMatrix = temp_mesh_renderer.model_matrix_inverse;//temp_node.model_matrix_inverse;
@@ -138,7 +138,7 @@ namespace MoYu
 
             InternalStandardLightMaterial& m_InteralMat = temp_ref_material.m_intenral_light_mat;
 
-            PropertiesPerMaterial curPropertiesPerMaterial = {};
+            HLSL::PropertiesPerMaterial curPropertiesPerMaterial = {};
 
             curPropertiesPerMaterial._EmissiveColorMapIndex = m_InteralMat._EmissiveColorMap->GetDefaultSRV()->GetIndex();
             curPropertiesPerMaterial._BaseColorMapIndex = m_InteralMat._BaseColorMap->GetDefaultSRV()->GetIndex();
@@ -391,7 +391,7 @@ namespace MoYu
     }
 
     void IndirectCullPass::grabObject(RHI::D3D12ComputeContext* context,
-                                      RHI::D3D12Buffer*         meshBuffer,
+                                      RHI::D3D12Buffer*         renderDataPerDraw,
                                       RHI::D3D12Buffer*         indirectIndexBuffer,
                                       RHI::D3D12Buffer*         indirectSortBuffer,
                                       RHI::D3D12Buffer*         grabDispatchArgBuffer) // pSortDispatchArgs
@@ -413,7 +413,7 @@ namespace MoYu
             context->Dispatch(1, 1, 1);
         }
         {
-            context->TransitionBarrier(meshBuffer, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+            context->TransitionBarrier(renderDataPerDraw, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
             context->TransitionBarrier(indirectIndexBuffer->GetCounterBuffer().get(), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
             context->TransitionBarrier(indirectIndexBuffer, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
             context->TransitionBarrier(grabDispatchArgBuffer, D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT);
@@ -424,7 +424,7 @@ namespace MoYu
             context->SetPipelineState(PipelineStates::pIndirectCullGrab.get());
             context->SetRootSignature(RootSignatures::pIndirectCullGrab.get());
 
-            context->SetBufferSRV(0, meshBuffer);
+            context->SetBufferSRV(0, renderDataPerDraw);
             context->SetBufferSRV(1, indirectIndexBuffer->GetCounterBuffer().get());
             context->SetBufferSRV(2, indirectIndexBuffer);
             context->SetDescriptorTable(3, indirectSortBuffer->GetDefaultUAV()->GetGpuHandle());
@@ -610,7 +610,6 @@ namespace MoYu
                     pAsyncCompute->TransitionBarrier(RegGetBufCounter(mTransparentDrawHandle.indirectIndexBufferHandle), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
                     pAsyncCompute->FlushResourceBarriers();
 
-                    /**/
                     pAsyncCompute->SetRootSignature(RootSignatures::pIndirectCullForSort.get());
                     pAsyncCompute->SetPipelineState(PipelineStates::pIndirectCullForSort.get());
 
@@ -631,19 +630,6 @@ namespace MoYu
                                          RegGetBufDefUAVIdx(mTransparentDrawHandle.indirectIndexBufferHandle)};
 
                     pAsyncCompute->SetConstantArray(0, sizeof(RootIndexBuffer) / sizeof(UINT), &rootIndexBuffer);
-                    
-
-                    /*
-                    pAsyncCompute->SetRootSignature(RootSignatures::pIndirectCull.get());
-                    pAsyncCompute->SetPipelineState(PipelineStates::pIndirectCull.get());
-
-                    pAsyncCompute->SetConstantBuffer(0, RegGetBuf(mPerframeBufferHandle)->GetGpuVirtualAddress());
-                    pAsyncCompute->SetBufferSRV(1, RegGetBuf(mMeshBufferHandle));
-                    pAsyncCompute->SetBufferSRV(2, RegGetBuf(mMaterialBufferHandle));
-                    pAsyncCompute->SetDescriptorTable(3, RegGetBuf(mOpaqueDrawHandle.indirectIndexBufferHandle)->GetDefaultUAV()->GetGpuHandle());
-                    pAsyncCompute->SetDescriptorTable(4, RegGetBuf(mTransparentDrawHandle.indirectIndexBufferHandle)->GetDefaultUAV()->GetGpuHandle());
-                    */
-
                     pAsyncCompute->Dispatch1D(numMeshes, 128);
                 });
             }
@@ -689,7 +675,7 @@ namespace MoYu
             {
                 RHI::RenderPass& grabOpaquePass = graph.AddRenderPass("GrabOpaquePass");
 
-                grabOpaquePass.Read(cullOutput.meshBufferHandle, true);
+                grabOpaquePass.Read(cullOutput.renderDataPerDrawHandle, true);
                 grabOpaquePass.Read(cullOutput.opaqueDrawHandle.indirectIndexBufferHandle, true);
 
                 grabOpaquePass.Write(grabDispatchArgsHandle, true);
@@ -698,23 +684,23 @@ namespace MoYu
                 grabOpaquePass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
                     RHI::D3D12ComputeContext* pAsyncCompute = context->GetComputeContext();
 
-                    RHI::D3D12Buffer* meshBufferPtr          = RegGetBuf(mMeshBufferHandle);
+                    RHI::D3D12Buffer* renderDataPerDrawPtr   = RegGetBuf(mRenderDataPerDrawHandle);
                     RHI::D3D12Buffer* indirectIndexBufferPtr = RegGetBuf(mOpaqueDrawHandle.indirectIndexBufferHandle);
                     RHI::D3D12Buffer* indirectSortBufferPtr  = RegGetBuf(mOpaqueDrawHandle.indirectSortBufferHandle);
                     RHI::D3D12Buffer* grabDispatchArgsPtr    = RegGetBuf(grabDispatchArgsHandle);
 
                     grabObject(pAsyncCompute,
-                               meshBufferPtr,
-                               indirectIndexBufferPtr,
-                               indirectSortBufferPtr,
-                               grabDispatchArgsPtr);
+                        renderDataPerDrawPtr,
+                        indirectIndexBufferPtr,
+                        indirectSortBufferPtr,
+                        grabDispatchArgsPtr);
                 });
             }
 
             {
                 RHI::RenderPass& grabTransPass = graph.AddRenderPass("GrabTransPass");
 
-                grabTransPass.Read(cullOutput.meshBufferHandle, true);
+                grabTransPass.Read(cullOutput.renderDataPerDrawHandle, true);
                 grabTransPass.Read(cullOutput.transparentDrawHandle.indirectIndexBufferHandle, true);
 
                 grabTransPass.Write(grabDispatchArgsHandle, true);
@@ -723,18 +709,16 @@ namespace MoYu
                 grabTransPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
                     RHI::D3D12ComputeContext* pAsyncCompute = context->GetComputeContext();
 
-                    RHI::D3D12Buffer* meshBufferPtr = RegGetBuf(mMeshBufferHandle);
-                    RHI::D3D12Buffer* indirectIndexBufferPtr =
-                        RegGetBuf(mTransparentDrawHandle.indirectIndexBufferHandle);
-                    RHI::D3D12Buffer* indirectSortBufferPtr =
-                        RegGetBuf(mTransparentDrawHandle.indirectSortBufferHandle);
+                    RHI::D3D12Buffer* renderDataPerDrawPtr = RegGetBuf(mRenderDataPerDrawHandle);
+                    RHI::D3D12Buffer* indirectIndexBufferPtr = RegGetBuf(mTransparentDrawHandle.indirectIndexBufferHandle);
+                    RHI::D3D12Buffer* indirectSortBufferPtr = RegGetBuf(mTransparentDrawHandle.indirectSortBufferHandle);
                     RHI::D3D12Buffer* grabDispatchArgsPtr = RegGetBuf(grabDispatchArgsHandle);
 
                     grabObject(pAsyncCompute,
-                               meshBufferPtr,
-                               indirectIndexBufferPtr,
-                               indirectSortBufferPtr,
-                               grabDispatchArgsPtr);
+                        renderDataPerDrawPtr,
+                        indirectIndexBufferPtr,
+                        indirectSortBufferPtr,
+                        grabDispatchArgsPtr);
                 });
             }
         }
@@ -744,8 +728,8 @@ namespace MoYu
             RHI::RenderPass& dirLightShadowCullPass = graph.AddRenderPass("DirectionLightShadowCullPass");
 
             dirLightShadowCullPass.Read(cullOutput.perframeBufferHandle, true);
-            dirLightShadowCullPass.Read(cullOutput.meshBufferHandle, true);
-            dirLightShadowCullPass.Read(cullOutput.materialBufferHandle, true);
+            dirLightShadowCullPass.Read(cullOutput.renderDataPerDrawHandle, true);
+            dirLightShadowCullPass.Read(cullOutput.propertiesPerMaterialHandle, true);
 
             for (size_t i = 0; i < cullOutput.directionShadowmapHandles.size(); i++)
             {
@@ -756,8 +740,8 @@ namespace MoYu
                 RHI::D3D12ComputeContext* pAsyncCompute = context->GetComputeContext();
 
                 pAsyncCompute->TransitionBarrier(RegGetBuf(mPerframeBufferHandle), D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
-                pAsyncCompute->TransitionBarrier(RegGetBuf(mMeshBufferHandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-                pAsyncCompute->TransitionBarrier(RegGetBuf(mMaterialBufferHandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+                pAsyncCompute->TransitionBarrier(RegGetBuf(mRenderDataPerDrawHandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+                pAsyncCompute->TransitionBarrier(RegGetBuf(mPropertiesPerMaterialHandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
                 for (size_t i = 0; i < mDirShadowmapHandles.size(); i++)
                 {
                     pAsyncCompute->TransitionBarrier(RegGetBuf(mDirShadowmapHandles[i].indirectSortBufferHandle), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
@@ -775,8 +759,8 @@ namespace MoYu
 
                     pAsyncCompute->SetConstant(0, 0, RHI::DWParam(i));
                     pAsyncCompute->SetConstantBuffer(1, RegGetBuf(mPerframeBufferHandle)->GetGpuVirtualAddress());
-                    pAsyncCompute->SetBufferSRV(2, RegGetBuf(mMeshBufferHandle));
-                    pAsyncCompute->SetBufferSRV(3, RegGetBuf(mMaterialBufferHandle));
+                    pAsyncCompute->SetBufferSRV(2, RegGetBuf(mRenderDataPerDrawHandle));
+                    pAsyncCompute->SetBufferSRV(3, RegGetBuf(mPropertiesPerMaterialHandle));
                     pAsyncCompute->SetDescriptorTable(4, RegGetBuf(mDirShadowmapHandles[i].indirectSortBufferHandle)->GetDefaultUAV()->GetGpuHandle());
                 
                     pAsyncCompute->Dispatch1D(numMeshes, 128);
@@ -793,8 +777,8 @@ namespace MoYu
             RHI::RenderPass& spotLightShadowCullPass = graph.AddRenderPass("SpotLightShadowCullPass");
 
             spotLightShadowCullPass.Read(cullOutput.perframeBufferHandle, true);
-            spotLightShadowCullPass.Read(cullOutput.meshBufferHandle, true);
-            spotLightShadowCullPass.Read(cullOutput.materialBufferHandle, true);
+            spotLightShadowCullPass.Read(cullOutput.renderDataPerDrawHandle, true);
+            spotLightShadowCullPass.Read(cullOutput.propertiesPerMaterialHandle, true);
 
             std::vector<uint32_t> _spotlightIndex;
             for (size_t i = 0; i < cullOutput.spotShadowmapHandles.size(); i++)
@@ -807,8 +791,8 @@ namespace MoYu
                 RHI::D3D12ComputeContext* pAsyncCompute = context->GetComputeContext();
 
                 pAsyncCompute->TransitionBarrier(RegGetBuf(mPerframeBufferHandle), D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
-                pAsyncCompute->TransitionBarrier(RegGetBuf(mMeshBufferHandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-                pAsyncCompute->TransitionBarrier(RegGetBuf(mMaterialBufferHandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+                pAsyncCompute->TransitionBarrier(RegGetBuf(mRenderDataPerDrawHandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+                pAsyncCompute->TransitionBarrier(RegGetBuf(mPropertiesPerMaterialHandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
                 for (size_t i = 0; i < mSpotShadowmapHandles.size(); i++)
                 {
                     pAsyncCompute->TransitionBarrier(RegGetBuf(mSpotShadowmapHandles[i].indirectSortBufferHandle), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
@@ -825,8 +809,8 @@ namespace MoYu
 
                     pAsyncCompute->SetConstant(0, 0, _spotlightIndex[i]);
                     pAsyncCompute->SetConstantBuffer(1, RegGetBuf(mPerframeBufferHandle)->GetGpuVirtualAddress());
-                    pAsyncCompute->SetBufferSRV(2, RegGetBuf(mMeshBufferHandle));
-                    pAsyncCompute->SetBufferSRV(3, RegGetBuf(mMaterialBufferHandle));
+                    pAsyncCompute->SetBufferSRV(2, RegGetBuf(mRenderDataPerDrawHandle));
+                    pAsyncCompute->SetBufferSRV(3, RegGetBuf(mPropertiesPerMaterialHandle));
                     pAsyncCompute->SetDescriptorTable(4, RegGetBuf(mSpotShadowmapHandles[i].indirectSortBufferHandle)->GetDefaultUAV()->GetGpuHandle());
 
                     pAsyncCompute->Dispatch1D(numMeshes, 128);
@@ -842,12 +826,12 @@ namespace MoYu
     void IndirectCullPass::destroy()
     {
         pUploadFrameUniformBuffer      = nullptr;
-        pUploadMaterialViewIndexBuffer = nullptr;
-        pUploadRenderableMeshBuffer    = nullptr;
+        pUploadRenderDataPerDrawBuffer = nullptr;
+        pUploadPropertiesPerMaterialBuffer = nullptr;
 
         pFrameUniformBuffer      = nullptr;
-        pMaterialViewIndexBuffer = nullptr;
-        pRenderableMeshBuffer    = nullptr;
+        pRenderDataPerDrawBuffer = nullptr;
+        pPropertiesPerMaterialBuffer = nullptr;
 
         commandBufferForOpaqueDraw.ResetBuffer();
         commandBufferForTransparentDraw.ResetBuffer();

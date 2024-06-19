@@ -211,12 +211,31 @@ namespace MoYu
 
     struct InternalStandardLightMaterial
     {
-#define InteralMaterialImageMacro(TexName) std::shared_ptr<RHI::D3D12Texture> TexName = nullptr;
+        //=======================Texture=======================
+        std::shared_ptr<RHI::D3D12Texture> _BaseColorMap { nullptr }; // white
+        std::shared_ptr<RHI::D3D12Texture> _MaskMap { nullptr }; // MaskMap is RGBA: Metallic, Ambient Occlusion (Optional), detail Mask (Optional), Smoothness
+        std::shared_ptr<RHI::D3D12Texture> _NormalMap { nullptr }; // bump. Tangent space normal map
+        std::shared_ptr<RHI::D3D12Texture> _NormalMapOS { nullptr }; // white. Object space normal map - no good default value    
+        std::shared_ptr<RHI::D3D12Texture> _BentNormalMap { nullptr }; // bump. Tangent space normal map
+        std::shared_ptr<RHI::D3D12Texture> _BentNormalMapOS { nullptr }; // white. Object space normal map - no good default value
+        std::shared_ptr<RHI::D3D12Texture> _HeightMap { nullptr }; // black
+        std::shared_ptr<RHI::D3D12Texture> _DetailMap { nullptr }; // linearGrey
+        std::shared_ptr<RHI::D3D12Texture> _TangentMap { nullptr }; // bump
+        std::shared_ptr<RHI::D3D12Texture> _TangentMapOS { nullptr }; // white
+        std::shared_ptr<RHI::D3D12Texture> _AnisotropyMap { nullptr }; // white
+        std::shared_ptr<RHI::D3D12Texture> _SubsurfaceMaskMap { nullptr }; // white. Subsurface Radius Map
+        std::shared_ptr<RHI::D3D12Texture> _TransmissionMaskMap { nullptr }; // white. Transmission Mask Map
+        std::shared_ptr<RHI::D3D12Texture> _ThicknessMap { nullptr }; // white. Thickness Map
+        std::shared_ptr<RHI::D3D12Texture> _IridescenceThicknessMap { nullptr }; // white. Iridescence Thickness Map
+        std::shared_ptr<RHI::D3D12Texture> _IridescenceMaskMap { nullptr }; // white. Iridescence Mask Map
+        std::shared_ptr<RHI::D3D12Texture> _CoatMaskMap { nullptr }; // white
+        std::shared_ptr<RHI::D3D12Texture> _SpecularColorMap { nullptr }; // white
+        std::shared_ptr<RHI::D3D12Texture> _EmissiveColorMap { nullptr }; // white
+        std::shared_ptr<RHI::D3D12Texture> _TransmittanceColorMap{ nullptr }; // white
+        //=====================================================
 
+        //=======================Properties====================
         glm::float4 _BaseColor{ 1, 1, 1, 1 };
-        InteralMaterialImageMacro(_BaseColorMap)
-
-        InteralMaterialImageMacro(_MaskMap) // MaskMap is RGBA: Metallic, Ambient Occlusion (Optional), detail Mask (Optional), Smoothness
         float _Metallic{ 0 };
         float _Smoothness{ 0.5f };
         float _MetallicRemapMin{ 0.0f };
@@ -227,89 +246,90 @@ namespace MoYu
         float _AlphaRemapMax{ 1.0f };
         float _AORemapMin{ 0.0f };
         float _AORemapMax{ 1.0f };
-
-        InteralMaterialImageMacro(_NormalMap)   // Tangent space normal map
-        InteralMaterialImageMacro(_NormalMapOS) // Object space normal map - no good default value
         float _NormalScale{ 1.0f };
-
-        InteralMaterialImageMacro(_BentNormalMap)
-        InteralMaterialImageMacro(_BentNormalMapOS)
-
-        InteralMaterialImageMacro(_HeightMap)
-        float _HeightAmplitude{ 0.02f };
-        float _HeightCenter{ 0.5f };
-
-        InteralMaterialImageMacro(_DetailMap)
+        float _HeightAmplitude{ 0.02f }; // Height Amplitude. In world units. Default value of _HeightAmplitude must be (_HeightMax - _HeightMin) * 0.01
+        float _HeightCenter{ 0.5f }; // Height Center. In texture space
+        int _HeightMapParametrization{ 0 }; // Heightmap Parametrization. MinMax, 0, Amplitude, 1
+        // These parameters are for vertex displacement/Tessellation
+        float _HeightOffset{ 0 }; // Height Offset
+        // MinMax mode
+        float _HeightMin{ -1 }; // Heightmap Min
+        float _HeightMax{ 1 }; // Heightmap Max
+        // Amplitude mode
+        float _HeightTessAmplitude{ 2.0f }; // in Centimeters
+        float _HeightTessCenter{ 0.5f }; // In texture space
+        // These parameters are for pixel displacement
+        float _HeightPoMAmplitude{ 2.0f }; // Height Amplitude. In centimeters
         float _DetailAlbedoScale{ 1.0f };
         float _DetailNormalScale{ 1.0f };
         float _DetailSmoothnessScale{ 1.0f };
-
-        InteralMaterialImageMacro(_TangentMap)
-        InteralMaterialImageMacro(_TangentMapOS)
         float _Anisotropy{ 0 };
-        InteralMaterialImageMacro(_AnisotropyMap)
-
-        float _SubsurfaceMask{ 1.0f };
-        InteralMaterialImageMacro(_SubsurfaceMaskMap)
-        float _TransmissionMask{ 1.0f };
-        InteralMaterialImageMacro(_TransmissionMaskMap)
+        float _DiffusionProfileHash{ 0 };
+        float _SubsurfaceMask{ 1.0f }; // Subsurface Radius
+        float _TransmissionMask{ 1.0f }; // Transmission Mask
         float _Thickness{ 1.0f };
-        InteralMaterialImageMacro(_ThicknessMap)
-        glm::float4 _ThicknessRemap{ 0,1,0,0 };
-
-        float _IridescenceThickness{ 1.0f };
-        InteralMaterialImageMacro(_IridescenceThicknessMap)
+        glm::float4 _ThicknessRemap{ 0, 1, 0, 0 };
         glm::float4 _IridescenceThicknessRemap{ 0, 1, 0, 0 };
+        float _IridescenceThickness{ 1.0f };
         float _IridescenceMask{ 1.0f };
-        InteralMaterialImageMacro(_IridescenceMaskMap)
-
-        float _CoatMask{ 0.0f };
-        InteralMaterialImageMacro(_CoatMaskMap)
-
+        float _CoatMask{ 0 };
         float _EnergyConservingSpecularColor{ 1.0f };
-        glm::float4 _SpecularColor{ 1,1,1,1 };
-        InteralMaterialImageMacro(_SpecularColorMap)
-
-        int _SpecularOcclusionMode{ 1 };
-
-        glm::float3 _EmissiveColor{ 0,0,0 };
-        InteralMaterialImageMacro(_EmissiveColorMap)
-
-        float _AlbedoAffectEmissive{ 0.0f };
-        float _EmissiveExposureWeight{ 1.0f };
-
-        float _UseShadowThreshold{ 0.0f };
+        glm::float4 _SpecularColor{ 1, 1, 1, 1 };
+        int _SpecularOcclusionMode{ 1 }; // Off, 0, From Ambient Occlusion, 1, From AO and Bent Normals, 2
+        glm::float3 _EmissiveColor{ 0, 0, 0 };
+        float _AlbedoAffectEmissive{ 0 }; // Albedo Affect Emissive
+        int _EmissiveIntensityUnit{ 0 }; // Emissive Mode
+        int _UseEmissiveIntensity{ 0 }; // Use Emissive Intensity
+        float _EmissiveIntensity{ 1.0f }; // Emissive Intensity
+        float _EmissiveExposureWeight{ 1.0f }; // Emissive Pre Exposure
+        float _UseShadowThreshold{ 0 };
+        float _AlphaCutoffEnable{ 0 };
         float _AlphaCutoff{ 0.5f };
         float _AlphaCutoffShadow{ 0.5f };
         float _AlphaCutoffPrepass{ 0.5f };
         float _AlphaCutoffPostpass{ 0.5f };
-
+        float _TransparentDepthPrepassEnable{ 0 };
+        float _TransparentBackfaceEnable{ 0 };
+        float _TransparentDepthPostpassEnable{ 0 };
+        float _TransparentSortPriority{ 0 };
         // Transparency
+        int _RefractionModel{ 0 }; // None, 0, Planar, 1, Sphere, 2, Thin, 3
         float _Ior{ 1.5f };
-        glm::float3 _TransmittanceColor{ 1.0, 1.0, 1.0 };
-        InteralMaterialImageMacro(_TransmittanceColorMap)
+        glm::float3 _TransmittanceColor{ 1.0f, 1.0f, 1.0f };
         float _ATDistance{ 1.0f };
-
+        float _TransparentWritingMotionVec{ 0 };
         // Blending state
-        float _SurfaceType{ 0.0f };
-        float _BlendMode{ 0.0f };
-
-        float _EnableBlendModePreserveSpecularLighting{ 1.0 };
-
-        float _DoubleSidedEnable{ 0.0f };
-
-        float _ObjectSpaceUVMapping{ 0.0f };
-        float _InvTilingScale{ 1.0f };
-        float _TexWorldScale{ 1.0f };
-        glm::float4 _UVMappingMask{ 1,0,0,0 };
-        glm::float4 _UVDetailsMappingMask{ 1,0,0,0 };
-
-        float _PPDMinSamples{ 5 };
-        float _PPDMaxSamples{ 15 };
-        float _PPDLodThreshold{ 5 };
-        float _PPDPrimitiveLength{ 1 };
-        float _PPDPrimitiveWidth{ 1 };
-        glm::float4 _InvPrimScale{ 1, 1, 0, 0 };
+        float _SurfaceType{ 0 };
+        float _BlendMode{ 0 };
+        float _SrcBlend{ 1.0f };
+        float _DstBlend{ 0 };
+        float _AlphaSrcBlend{ 1.0f };
+        float _AlphaDstBlend{ 0 };
+        float _EnableFogOnTransparent{ 1.0f }; // Enable Fog
+        float _EnableBlendModePreserveSpecularLighting{ 1.0f }; // Enable Blend Mode Preserve Specular Lighting
+        float _DoubleSidedEnable{ 0 }; // Double sided enable
+        float _DoubleSidedNormalMode{ 1 }; // Flip, 0, Mirror, 1, None, 2
+        glm::float4 _DoubleSidedConstants{ 1, 1, -1, 0 };
+        float _DoubleSidedGIMode{ 0 }; // Auto, 0, On, 1, Off, 2
+        float _UVBase{ 0 }; // UV0, 0, UV1, 1, UV2, 2, UV3, 3, Planar, 4, Triplanar, 5
+        float _ObjectSpaceUVMapping{ 0 }; // WorldSpace, 0, ObjectSpace, 1
+        float _TexWorldScale{ 1 }; // Scale to apply on world coordinate
+        glm::float4 _UVMappingMask{ 1, 0, 0, 0 };
+        float _NormalMapSpace{ 0 }; // TangentSpace, 0, ObjectSpace, 1
+        int _MaterialID{ 1 }; // Subsurface Scattering, 0, Standard, 1, Anisotropy, 2, Iridescence, 3, Specular Color, 4, Translucent, 5
+        float _TransmissionEnable{ 1 };
+        float _PPDMinSamples{ 5 }; // Min sample for POM
+        float _PPDMaxSamples{ 15 }; // Max sample for POM
+        float _PPDLodThreshold{ 5 }; // Start lod to fade out the POM effect
+        float _PPDPrimitiveLength{ 1 }; // Primitive length for POM
+        float _PPDPrimitiveWidth{ 1 }; // Primitive width for POM
+        glm::float4 _InvPrimScale{ 1, 1, 0, 0 }; // Inverse primitive scale for non-planar POM
+        glm::float4 _UVDetailsMappingMask{ 1, 0, 0, 0 };
+        float _UVDetail{ 0 }; // UV0, 0, UV1, 1, UV2, 2, UV3, 3. UV Set for detail
+        float _LinkDetailsWithBase{ 1.0f };
+        float _EmissiveColorMode{ 1 }; // Use Emissive Color, 0, Use Emissive Mask, 1. Emissive color mode
+        float _UVEmissive{ 0 }; // UV0, 0, UV1, 1, UV2, 2, UV3, 3, Planar, 4, Triplanar, 5, Same as Base, 6. UV Set for emissive
+        //=====================================================
     };
 
     struct InternalMaterial
@@ -317,37 +337,6 @@ namespace MoYu
         std::string m_shader_name;
         InternalStandardLightMaterial m_intenral_light_mat;
     };
-
-    /*
-    struct InternalPBRMaterial
-    {
-        // Factors
-        bool m_blend;
-        bool m_double_sided;
-
-        // 
-        glm::float4 m_base_color_factor;
-        float   m_metallic_factor;
-        float   m_roughness_factor;
-        float   m_normal_scale;
-        float   m_occlusion_strength;
-        glm::float3 m_emissive_factor;
-
-        // Textures
-        std::shared_ptr<RHI::D3D12Texture> base_color_texture_image;
-        std::shared_ptr<RHI::D3D12Texture> metallic_roughness_texture_image;
-        std::shared_ptr<RHI::D3D12Texture> normal_texture_image;
-        std::shared_ptr<RHI::D3D12Texture> occlusion_texture_image;
-        std::shared_ptr<RHI::D3D12Texture> emissive_texture_image;
-        std::shared_ptr<RHI::D3D12Buffer>  material_uniform_buffer;
-    };
-
-    struct InternalMaterial
-    {
-        std::string m_shader_name;
-        InternalPBRMaterial m_intenral_pbr_mat;
-    };
-    */
 
     struct InternalMeshRenderer
     {
@@ -680,10 +669,28 @@ namespace MoYu
 
     struct StandardLightMaterial
     {
+        //=======================Texture=======================
+        MaterialImage _BaseColorMap{ DefaultMaterialImageWhite }; // white
+        MaterialImage _MaskMap{ DefaultMaterialImageWhite }; // MaskMap is RGBA: Metallic, Ambient Occlusion (Optional), detail Mask (Optional), Smoothness
+        MaterialImage _NormalMap{ DefaultMaterialImageGrey }; // bump. Tangent space normal map
+        MaterialImage _NormalMapOS{ DefaultMaterialImageWhite }; // white. Object space normal map - no good default value    
+        MaterialImage _BentNormalMap{ DefaultMaterialImageGrey }; // bump. Tangent space normal map
+        MaterialImage _BentNormalMapOS{ DefaultMaterialImageWhite }; // white. Object space normal map - no good default value
+        MaterialImage _HeightMap{ DefaultMaterialImageBlack }; // black
+        MaterialImage _DetailMap{ DefaultMaterialImageGrey }; // linearGrey
+        MaterialImage _TangentMap{ DefaultMaterialImageGrey }; // bump
+        MaterialImage _TangentMapOS{ DefaultMaterialImageWhite }; // white
+        MaterialImage _AnisotropyMap{ DefaultMaterialImageWhite }; // white
+        MaterialImage _SubsurfaceMaskMap{ DefaultMaterialImageWhite }; // white. Subsurface Radius Map
+        MaterialImage _TransmissionMaskMap{ DefaultMaterialImageWhite }; // white. Transmission Mask Map
+        MaterialImage _ThicknessMap{ DefaultMaterialImageWhite }; // white. Thickness Map
+        MaterialImage _IridescenceThicknessMap{ DefaultMaterialImageWhite }; // white. Iridescence Thickness Map
+        MaterialImage _IridescenceMaskMap{ DefaultMaterialImageWhite }; // white. Iridescence Mask Map
+        MaterialImage _CoatMaskMap{ DefaultMaterialImageWhite }; // white
+        MaterialImage _SpecularColorMap{ DefaultMaterialImageWhite }; // white
+        MaterialImage _EmissiveColorMap{ DefaultMaterialImageBlack }; // white
+        MaterialImage _TransmittanceColorMap{ DefaultMaterialImageWhite }; // white
         glm::float4 _BaseColor{ 1, 1, 1, 1 };
-        MaterialImage _BaseColorMap{ DefaultMaterialImageWhite };
-
-        MaterialImage _MaskMap{ DefaultMaterialImageWhite };
         float _Metallic{ 0 };
         float _Smoothness{ 0.5f };
         float _MetallicRemapMin{ 0.0f };
@@ -694,170 +701,202 @@ namespace MoYu
         float _AlphaRemapMax{ 1.0f };
         float _AORemapMin{ 0.0f };
         float _AORemapMax{ 1.0f };
-
-        MaterialImage _NormalMap{ DefaultMaterialImageGrey }; // Tangent space normal map
-        MaterialImage _NormalMapOS{ DefaultMaterialImageWhite }; // Object space normal map - no good default value
         float _NormalScale{ 1.0f };
-
-        MaterialImage _BentNormalMap{ DefaultMaterialImageGrey };
-        MaterialImage _BentNormalMapOS{ DefaultMaterialImageWhite };
-
-        MaterialImage _HeightMap{ DefaultMaterialImageBlack };
-        float _HeightAmplitude{ 0.02f };
-        float _HeightCenter{ 0.5f };
-
-        MaterialImage _DetailMap{ DefaultMaterialImageGrey };
+        float _HeightAmplitude{ 0.02f }; // Height Amplitude. In world units. Default value of _HeightAmplitude must be (_HeightMax - _HeightMin) * 0.01
+        float _HeightCenter{ 0.5f }; // Height Center. In texture space
+        int _HeightMapParametrization{ 0 }; // Heightmap Parametrization. MinMax, 0, Amplitude, 1
+        // These parameters are for vertex displacement/Tessellation
+        float _HeightOffset{ 0 }; // Height Offset
+        // MinMax mode
+        float _HeightMin{ -1 }; // Heightmap Min
+        float _HeightMax{ 1 }; // Heightmap Max
+        // Amplitude mode
+        float _HeightTessAmplitude{ 2.0f }; // in Centimeters
+        float _HeightTessCenter{ 0.5f }; // In texture space
+        // These parameters are for pixel displacement
+        float _HeightPoMAmplitude{ 2.0f }; // Height Amplitude. In centimeters
         float _DetailAlbedoScale{ 1.0f };
         float _DetailNormalScale{ 1.0f };
         float _DetailSmoothnessScale{ 1.0f };
-
-        MaterialImage _TangentMap{ DefaultMaterialImageGrey };
-        MaterialImage _TangentMapOS{ DefaultMaterialImageWhite };
         float _Anisotropy{ 0 };
-        MaterialImage _AnisotropyMap{ DefaultMaterialImageWhite };
-
-        float _SubsurfaceMask{ 1.0f };
-        MaterialImage _SubsurfaceMaskMap{ DefaultMaterialImageWhite };
-        float _TransmissionMask{ 1.0f };
-        MaterialImage _TransmissionMaskMap{ DefaultMaterialImageWhite };
+        float _DiffusionProfileHash{ 0 };
+        float _SubsurfaceMask{ 1.0f }; // Subsurface Radius
+        float _TransmissionMask{ 1.0f }; // Transmission Mask
         float _Thickness{ 1.0f };
-        MaterialImage _ThicknessMap{ DefaultMaterialImageWhite };
-        glm::float4 _ThicknessRemap{ 0,1,0,0 };
-
-        float _IridescenceThickness{ 1.0f };
-        MaterialImage _IridescenceThicknessMap{ DefaultMaterialImageWhite };
+        glm::float4 _ThicknessRemap{ 0, 1, 0, 0 };
         glm::float4 _IridescenceThicknessRemap{ 0, 1, 0, 0 };
+        float _IridescenceThickness{ 1.0f };
         float _IridescenceMask{ 1.0f };
-        MaterialImage _IridescenceMaskMap{ DefaultMaterialImageWhite };
-
-        float _CoatMask{ 0.0f };
-        MaterialImage _CoatMaskMap{ DefaultMaterialImageWhite };
-
-        float _EnergyConservingSpecularColor{1.0f};
-        glm::float4 _SpecularColor{ 1,1,1,1 };
-        MaterialImage _SpecularColorMap{ DefaultMaterialImageWhite };
-
-        int _SpecularOcclusionMode{ 1 };
-
-        glm::float3 _EmissiveColor{ 0,0,0 };
-        MaterialImage _EmissiveColorMap{ DefaultMaterialImageBlack };
-        float _AlbedoAffectEmissive{ 0.0f };
-        float _EmissiveExposureWeight{ 1.0f };
-
-        float _UseShadowThreshold{ 0.0f };
+        float _CoatMask{ 0 };
+        float _EnergyConservingSpecularColor{ 1.0f };
+        glm::float4 _SpecularColor{ 1, 1, 1, 1 };
+        int _SpecularOcclusionMode{ 1 }; // Off, 0, From Ambient Occlusion, 1, From AO and Bent Normals, 2
+        glm::float3 _EmissiveColor{ 0, 0, 0 };
+        float _AlbedoAffectEmissive{ 0 }; // Albedo Affect Emissive
+        int _EmissiveIntensityUnit{ 0 }; // Emissive Mode
+        int _UseEmissiveIntensity{ 0 }; // Use Emissive Intensity
+        float _EmissiveIntensity{ 1.0f }; // Emissive Intensity
+        float _EmissiveExposureWeight{ 1.0f }; // Emissive Pre Exposure
+        float _UseShadowThreshold{ 0 };
+        float _AlphaCutoffEnable{ 0 };
         float _AlphaCutoff{ 0.5f };
         float _AlphaCutoffShadow{ 0.5f };
-        float _AlphaCutoffPrepass { 0.5f };
+        float _AlphaCutoffPrepass{ 0.5f };
         float _AlphaCutoffPostpass{ 0.5f };
-
+        float _TransparentDepthPrepassEnable{ 0 };
+        float _TransparentBackfaceEnable{ 0 };
+        float _TransparentDepthPostpassEnable{ 0 };
+        float _TransparentSortPriority{ 0 };
         // Transparency
+        int _RefractionModel{ 0 }; // None, 0, Planar, 1, Sphere, 2, Thin, 3
         float _Ior{ 1.5f };
-        glm::float3 _TransmittanceColor{ 1.0, 1.0, 1.0 };
-        MaterialImage _TransmittanceColorMap{ DefaultMaterialImageWhite };
+        glm::float3 _TransmittanceColor{ 1.0f, 1.0f, 1.0f };
         float _ATDistance{ 1.0f };
-
+        float _TransparentWritingMotionVec{ 0 };
         // Blending state
-        float _SurfaceType{ 0.0f };
-        float _BlendMode{ 0.0f };
-
-        float _EnableBlendModePreserveSpecularLighting{ 1.0 };
-
-        float _DoubleSidedEnable{ 0.0f };
-
-        float _ObjectSpaceUVMapping{ 0.0f };
-        float _InvTilingScale{ 1.0f };
-        float _TexWorldScale{ 1.0f };
-        glm::float4 _UVMappingMask{ 1,0,0,0 };
-        glm::float4 _UVDetailsMappingMask{ 1,0,0,0 };
-
-        float _PPDMinSamples{ 5 };
-        float _PPDMaxSamples{ 15 };
-        float _PPDLodThreshold{ 5 };
-        float _PPDPrimitiveLength{ 1 };
-        float _PPDPrimitiveWidth{ 1 };
-        glm::float4 _InvPrimScale{ 1, 1, 0, 0 };
+        float _SurfaceType{ 0 };
+        float _BlendMode{ 0 };
+        float _SrcBlend{ 1.0f };
+        float _DstBlend{ 0 };
+        float _AlphaSrcBlend{ 1.0f };
+        float _AlphaDstBlend{ 0 };
+        float _EnableFogOnTransparent{ 1.0f }; // Enable Fog
+        float _EnableBlendModePreserveSpecularLighting{ 1.0f }; // Enable Blend Mode Preserve Specular Lighting
+        float _DoubleSidedEnable{ 0 }; // Double sided enable
+        float _DoubleSidedNormalMode{ 1 }; // Flip, 0, Mirror, 1, None, 2
+        glm::float4 _DoubleSidedConstants{ 1, 1, -1, 0 };
+        float _DoubleSidedGIMode{ 0 }; // Auto, 0, On, 1, Off, 2
+        float _UVBase{ 0 }; // UV0, 0, UV1, 1, UV2, 2, UV3, 3, Planar, 4, Triplanar, 5
+        float _ObjectSpaceUVMapping{ 0 }; // WorldSpace, 0, ObjectSpace, 1
+        float _TexWorldScale{ 1 }; // Scale to apply on world coordinate
+        glm::float4 _UVMappingMask{ 1, 0, 0, 0 };
+        float _NormalMapSpace{ 0 }; // TangentSpace, 0, ObjectSpace, 1
+        int _MaterialID{ 1 }; // Subsurface Scattering, 0, Standard, 1, Anisotropy, 2, Iridescence, 3, Specular Color, 4, Translucent, 5
+        float _TransmissionEnable{ 1 };
+        float _PPDMinSamples{ 5 }; // Min sample for POM
+        float _PPDMaxSamples{ 15 }; // Max sample for POM
+        float _PPDLodThreshold{ 5 }; // Start lod to fade out the POM effect
+        float _PPDPrimitiveLength{ 1 }; // Primitive length for POM
+        float _PPDPrimitiveWidth{ 1 }; // Primitive width for POM
+        glm::float4 _InvPrimScale{ 1, 1, 0, 0 }; // Inverse primitive scale for non-planar POM
+        glm::float4 _UVDetailsMappingMask{ 1, 0, 0, 0 };
+        float _UVDetail{ 0 }; // UV0, 0, UV1, 1, UV2, 2, UV3, 3. UV Set for detail
+        float _LinkDetailsWithBase{ 1.0f };
+        float _EmissiveColorMode{ 1 }; // Use Emissive Color, 0, Use Emissive Mask, 1. Emissive color mode
+        float _UVEmissive{ 0 }; // UV0, 0, UV1, 1, UV2, 2, UV3, 3, Planar, 4, Triplanar, 5, Same as Base, 6. UV Set for emissive
     };
 
     inline bool operator==(const StandardLightMaterial& lhs, const StandardLightMaterial& rhs)
     {
-        #define CompareVal(Val) lhs.Val == rhs.Val
-
         return
-            CompareVal(_BaseColor) &&
-            CompareVal(_BaseColorMap) &&
-            CompareVal(_MaskMap) &&
-            CompareVal(_Metallic) &&
-            CompareVal(_Smoothness) &&
-            CompareVal(_MetallicRemapMin) &&
-            CompareVal(_MetallicRemapMax) &&
-            CompareVal(_SmoothnessRemapMin) &&
-            CompareVal(_SmoothnessRemapMax) &&
-            CompareVal(_AlphaRemapMin) &&
-            CompareVal(_AlphaRemapMax) &&
-            CompareVal(_AORemapMin) &&
-            CompareVal(_AORemapMax) &&
-            CompareVal(_NormalMap) &&
-            CompareVal(_NormalMapOS) &&
-            CompareVal(_NormalScale) &&
-            CompareVal(_BentNormalMap) &&
-            CompareVal(_BentNormalMapOS) &&
-            CompareVal(_HeightMap) &&
-            CompareVal(_HeightAmplitude) &&
-            CompareVal(_HeightCenter) &&
-            CompareVal(_DetailMap) &&
-            CompareVal(_DetailAlbedoScale) &&
-            CompareVal(_DetailNormalScale) &&
-            CompareVal(_DetailSmoothnessScale) &&
-            CompareVal(_TangentMap) &&
-            CompareVal(_TangentMapOS) &&
-            CompareVal(_Anisotropy) &&
-            CompareVal(_AnisotropyMap) &&
-            CompareVal(_SubsurfaceMask) &&
-            CompareVal(_SubsurfaceMaskMap) &&
-            CompareVal(_TransmissionMask) &&
-            CompareVal(_TransmissionMaskMap) &&
-            CompareVal(_Thickness) &&
-            CompareVal(_ThicknessMap) &&
-            CompareVal(_ThicknessRemap) &&
-            CompareVal(_IridescenceThickness) &&
-            CompareVal(_IridescenceThicknessMap) &&
-            CompareVal(_IridescenceThicknessRemap) &&
-            CompareVal(_IridescenceMask) &&
-            CompareVal(_IridescenceMaskMap) &&
-            CompareVal(_CoatMask) &&
-            CompareVal(_CoatMaskMap) &&
-            CompareVal(_EnergyConservingSpecularColor) &&
-            CompareVal(_SpecularColor) &&
-            CompareVal(_SpecularColorMap) &&
-            CompareVal(_SpecularOcclusionMode) &&
-            CompareVal(_EmissiveColor) &&
-            CompareVal(_EmissiveColorMap) &&
-            CompareVal(_AlbedoAffectEmissive) &&
-            CompareVal(_EmissiveExposureWeight) &&
-            CompareVal(_UseShadowThreshold) &&
-            CompareVal(_AlphaCutoff) &&
-            CompareVal(_AlphaCutoffShadow) &&
-            CompareVal(_AlphaCutoffPrepass) &&
-            CompareVal(_AlphaCutoffPostpass) &&
-            CompareVal(_Ior) &&
-            CompareVal(_TransmittanceColor) &&
-            CompareVal(_TransmittanceColorMap) &&
-            CompareVal(_ATDistance) &&
-            CompareVal(_SurfaceType) &&
-            CompareVal(_BlendMode) &&
-            CompareVal(_EnableBlendModePreserveSpecularLighting) &&
-            CompareVal(_DoubleSidedEnable) &&
-            CompareVal(_InvTilingScale) &&
-            CompareVal(_TexWorldScale) &&
-            CompareVal(_UVMappingMask) &&
-            CompareVal(_UVDetailsMappingMask) &&
-            CompareVal(_PPDMinSamples) &&
-            CompareVal(_PPDMaxSamples) &&
-            CompareVal(_PPDLodThreshold) &&
-            CompareVal(_PPDPrimitiveLength) &&
-            CompareVal(_PPDPrimitiveWidth) &&
-            CompareVal(_InvPrimScale);
-;
+            lhs._BaseColorMap == rhs._BaseColorMap &&
+            lhs._MaskMap == rhs._MaskMap &&
+            lhs._NormalMap == rhs._NormalMap &&
+            lhs._NormalMapOS == rhs._NormalMapOS &&
+            lhs._BentNormalMap == rhs._BentNormalMap &&
+            lhs._BentNormalMapOS == rhs._BentNormalMapOS &&
+            lhs._HeightMap == rhs._HeightMap &&
+            lhs._DetailMap == rhs._DetailMap &&
+            lhs._TangentMap == rhs._TangentMap &&
+            lhs._TangentMapOS == rhs._TangentMapOS &&
+            lhs._AnisotropyMap == rhs._AnisotropyMap &&
+            lhs._SubsurfaceMaskMap == rhs._SubsurfaceMaskMap &&
+            lhs._TransmissionMaskMap == rhs._TransmissionMaskMap &&
+            lhs._ThicknessMap == rhs._ThicknessMap &&
+            lhs._IridescenceThicknessMap == rhs._IridescenceThicknessMap &&
+            lhs._IridescenceMaskMap == rhs._IridescenceMaskMap &&
+            lhs._CoatMaskMap == rhs._CoatMaskMap &&
+            lhs._SpecularColorMap == rhs._SpecularColorMap &&
+            lhs._EmissiveColorMap == rhs._EmissiveColorMap &&
+            lhs._TransmittanceColorMap == rhs._TransmittanceColorMap &&
+            lhs._BaseColor == rhs._BaseColor &&
+            lhs._Metallic == rhs._Metallic &&
+            lhs._Smoothness == rhs._Smoothness &&
+            lhs._MetallicRemapMin == rhs._MetallicRemapMin &&
+            lhs._MetallicRemapMax == rhs._MetallicRemapMax &&
+            lhs._SmoothnessRemapMin == rhs._SmoothnessRemapMin &&
+            lhs._SmoothnessRemapMax == rhs._SmoothnessRemapMax &&
+            lhs._AlphaRemapMin == rhs._AlphaRemapMin &&
+            lhs._AlphaRemapMax == rhs._AlphaRemapMax &&
+            lhs._AORemapMin == rhs._AORemapMin &&
+            lhs._AORemapMax == rhs._AORemapMax &&
+            lhs._NormalScale == rhs._NormalScale &&
+            lhs._HeightAmplitude == rhs._HeightAmplitude &&
+            lhs._HeightCenter == rhs._HeightCenter &&
+            lhs._HeightMapParametrization == rhs._HeightMapParametrization &&
+            lhs._HeightOffset == rhs._HeightOffset &&
+            lhs._HeightMin == rhs._HeightMin &&
+            lhs._HeightMax == rhs._HeightMax &&
+            lhs._HeightTessAmplitude == rhs._HeightTessAmplitude &&
+            lhs._HeightTessCenter == rhs._HeightTessCenter &&
+            lhs._HeightPoMAmplitude == rhs._HeightPoMAmplitude &&
+            lhs._DetailAlbedoScale == rhs._DetailAlbedoScale &&
+            lhs._DetailNormalScale == rhs._DetailNormalScale &&
+            lhs._DetailSmoothnessScale == rhs._DetailSmoothnessScale &&
+            lhs._Anisotropy == rhs._Anisotropy &&
+            lhs._DiffusionProfileHash == rhs._DiffusionProfileHash &&
+            lhs._SubsurfaceMask == rhs._SubsurfaceMask &&
+            lhs._TransmissionMask == rhs._TransmissionMask &&
+            lhs._Thickness == rhs._Thickness &&
+            lhs._ThicknessRemap == rhs._ThicknessRemap &&
+            lhs._IridescenceThicknessRemap == rhs._IridescenceThicknessRemap &&
+            lhs._IridescenceThickness == rhs._IridescenceThickness &&
+            lhs._IridescenceMask == rhs._IridescenceMask &&
+            lhs._CoatMask == rhs._CoatMask &&
+            lhs._EnergyConservingSpecularColor == rhs._EnergyConservingSpecularColor &&
+            lhs._SpecularColor == rhs._SpecularColor &&
+            lhs._SpecularOcclusionMode == rhs._SpecularOcclusionMode &&
+            lhs._EmissiveColor == rhs._EmissiveColor &&
+            lhs._AlbedoAffectEmissive == rhs._AlbedoAffectEmissive &&
+            lhs._EmissiveIntensityUnit == rhs._EmissiveIntensityUnit &&
+            lhs._UseEmissiveIntensity == rhs._UseEmissiveIntensity &&
+            lhs._EmissiveIntensity == rhs._EmissiveIntensity &&
+            lhs._EmissiveExposureWeight == rhs._EmissiveExposureWeight &&
+            lhs._UseShadowThreshold == rhs._UseShadowThreshold &&
+            lhs._AlphaCutoffEnable == rhs._AlphaCutoffEnable &&
+            lhs._AlphaCutoff == rhs._AlphaCutoff &&
+            lhs._AlphaCutoffShadow == rhs._AlphaCutoffShadow &&
+            lhs._AlphaCutoffPrepass == rhs._AlphaCutoffPrepass &&
+            lhs._AlphaCutoffPostpass == rhs._AlphaCutoffPostpass &&
+            lhs._TransparentDepthPrepassEnable == rhs._TransparentDepthPrepassEnable &&
+            lhs._TransparentBackfaceEnable == rhs._TransparentBackfaceEnable &&
+            lhs._TransparentDepthPostpassEnable == rhs._TransparentDepthPostpassEnable &&
+            lhs._TransparentSortPriority == rhs._TransparentSortPriority &&
+            lhs._RefractionModel == rhs._RefractionModel &&
+            lhs._Ior == rhs._Ior &&
+            lhs._TransmittanceColor == rhs._TransmittanceColor &&
+            lhs._ATDistance == rhs._ATDistance &&
+            lhs._TransparentWritingMotionVec == rhs._TransparentWritingMotionVec &&
+            lhs._SurfaceType == rhs._SurfaceType &&
+            lhs._BlendMode == rhs._BlendMode &&
+            lhs._SrcBlend == rhs._SrcBlend &&
+            lhs._DstBlend == rhs._DstBlend &&
+            lhs._AlphaSrcBlend == rhs._AlphaSrcBlend &&
+            lhs._AlphaDstBlend == rhs._AlphaDstBlend &&
+            lhs._EnableFogOnTransparent == rhs._EnableFogOnTransparent &&
+            lhs._EnableBlendModePreserveSpecularLighting == rhs._EnableBlendModePreserveSpecularLighting &&
+            lhs._DoubleSidedEnable == rhs._DoubleSidedEnable &&
+            lhs._DoubleSidedNormalMode == rhs._DoubleSidedNormalMode &&
+            lhs._DoubleSidedConstants == rhs._DoubleSidedConstants &&
+            lhs._DoubleSidedGIMode == rhs._DoubleSidedGIMode &&
+            lhs._UVBase == rhs._UVBase &&
+            lhs._ObjectSpaceUVMapping == rhs._ObjectSpaceUVMapping &&
+            lhs._TexWorldScale == rhs._TexWorldScale &&
+            lhs._UVMappingMask == rhs._UVMappingMask &&
+            lhs._NormalMapSpace == rhs._NormalMapSpace &&
+            lhs._MaterialID == rhs._MaterialID &&
+            lhs._TransmissionEnable == rhs._TransmissionEnable &&
+            lhs._PPDMinSamples == rhs._PPDMinSamples &&
+            lhs._PPDMaxSamples == rhs._PPDMaxSamples &&
+            lhs._PPDLodThreshold == rhs._PPDLodThreshold &&
+            lhs._PPDPrimitiveLength == rhs._PPDPrimitiveLength &&
+            lhs._PPDPrimitiveWidth == rhs._PPDPrimitiveWidth &&
+            lhs._InvPrimScale == rhs._InvPrimScale &&
+            lhs._UVDetailsMappingMask == rhs._UVDetailsMappingMask &&
+            lhs._UVDetail == rhs._UVDetail &&
+            lhs._LinkDetailsWithBase == rhs._LinkDetailsWithBase &&
+            lhs._EmissiveColorMode == rhs._EmissiveColorMode &&
+            lhs._UVEmissive == rhs._UVEmissive;
     }
 
     struct MaterialRes;
@@ -893,10 +932,11 @@ namespace MoYu
 
     inline bool operator==(const TerrainBaseTex& lhs, const TerrainBaseTex& rhs)
     {
-    #define CompareVal(Val) lhs.Val == rhs.Val
-
-        return CompareVal(m_albedo_file) && CompareVal(m_ao_roughness_metallic_file) &&
-               CompareVal(m_displacement_file) && CompareVal(m_normal_file);
+        return
+            lhs.m_albedo_file == rhs.m_albedo_file &&
+            lhs.m_ao_roughness_metallic_file == rhs.m_ao_roughness_metallic_file &&
+            lhs.m_displacement_file == rhs.m_displacement_file &&
+            lhs.m_normal_file == rhs.m_normal_file;
     }
 
     struct TerrainMaterial
@@ -905,8 +945,9 @@ namespace MoYu
     };
     inline bool operator==(const TerrainMaterial& lhs, const TerrainMaterial& rhs)
     {
-    #define CompareVal(Val) lhs.Val == rhs.Val
-        return CompareVal(m_base_texs[0]) && CompareVal(m_base_texs[1]);
+        return
+            lhs.m_base_texs[0] == rhs.m_base_texs[0] &&
+            lhs.m_base_texs[1] == rhs.m_base_texs[1];
     }
 
     struct SceneTerrainRenderer

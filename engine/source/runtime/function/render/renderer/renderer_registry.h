@@ -117,20 +117,20 @@ struct Shaders
             CS::Bitonic64InnerSortCS  = Compiler->CompileShader(RHI_SHADER_TYPE::Compute, ShaderPath / "hlsl/Bitonic64InnerSortCS.hlsl", ShaderCompileOptions(g_CSSortEntryPoint));
             CS::Bitonic64OuterSortCS  = Compiler->CompileShader(RHI_SHADER_TYPE::Compute, ShaderPath / "hlsl/Bitonic64OuterSortCS.hlsl", ShaderCompileOptions(g_CSSortEntryPoint));
 
-            CS::IndirectCullForSort = Compiler->CompileShader(RHI_SHADER_TYPE::Compute, ShaderPath / "hlsl/IndirectCullForSort.hlsl", ShaderCompileOptions(g_CSEntryPoint));
+            CS::IndirectCullForSort = Compiler->CompileShader(RHI_SHADER_TYPE::Compute, ShaderPath / "pipeline/Runtime/Tools/Culling/IndirectCullForSort.hlsl", ShaderCompileOptions(g_CSEntryPoint));
 
             ShaderCompileOptions meshCSOption(g_CSEntryPoint);
-            CS::IndirectCull = Compiler->CompileShader(RHI_SHADER_TYPE::Compute, ShaderPath / "hlsl/IndirectCull.hlsl", meshCSOption);
-            CS::IndirectCullArgs = Compiler->CompileShader(RHI_SHADER_TYPE::Compute, ShaderPath / "hlsl/IndirectCullArgsCS.hlsl", meshCSOption);
-            CS::IndirectCullGrab = Compiler->CompileShader(RHI_SHADER_TYPE::Compute, ShaderPath / "hlsl/IndirectCullGrabCS.hlsl", meshCSOption);
+            CS::IndirectCull = Compiler->CompileShader(RHI_SHADER_TYPE::Compute, ShaderPath / "pipeline/Runtime/Tools/Culling/IndirectCull.hlsl", meshCSOption);
+            CS::IndirectCullArgs = Compiler->CompileShader(RHI_SHADER_TYPE::Compute, ShaderPath / "pipeline/Runtime/Tools/Culling/IndirectCullArgsCS.hlsl", meshCSOption);
+            CS::IndirectCullGrab = Compiler->CompileShader(RHI_SHADER_TYPE::Compute, ShaderPath / "pipeline/Runtime/Tools/Culling/IndirectCullGrabCS.hlsl", meshCSOption);
 
             ShaderCompileOptions directionCSOption(g_CSEntryPoint);
             directionCSOption.SetDefine({L"DIRECTIONSHADOW"}, {L"1"});
-            CS::IndirectCullDirectionShadowmap = Compiler->CompileShader(RHI_SHADER_TYPE::Compute, ShaderPath / "hlsl/IndirectCullShadowmap.hlsl", directionCSOption);
+            CS::IndirectCullDirectionShadowmap = Compiler->CompileShader(RHI_SHADER_TYPE::Compute, ShaderPath / "pipeline/Runtime/Tools/Culling/IndirectCullShadowmap.hlsl", directionCSOption);
 
             ShaderCompileOptions spotCSOption(g_CSEntryPoint);
             spotCSOption.SetDefine({L"SPOTSHADOW"}, {L"1"});
-            CS::IndirectCullSpotShadowmap = Compiler->CompileShader(RHI_SHADER_TYPE::Compute, ShaderPath / "hlsl/IndirectCullShadowmap.hlsl", spotCSOption);
+            CS::IndirectCullSpotShadowmap = Compiler->CompileShader(RHI_SHADER_TYPE::Compute, ShaderPath / "pipeline/Runtime/Tools/Culling/IndirectCullShadowmap.hlsl", spotCSOption);
 
             {
             #define GetCompiledShader(ShaderName) Compiler->CompileShader(RHI_SHADER_TYPE::Compute, ShaderPath / ShaderName, ShaderCompileOptions(L"main"));

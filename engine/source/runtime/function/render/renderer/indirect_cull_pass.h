@@ -105,7 +105,7 @@ namespace MoYu
                          bool                           sortAscending);
 
         void grabObject(RHI::D3D12ComputeContext* context,
-                        RHI::D3D12Buffer*         meshBuffer,
+                        RHI::D3D12Buffer*         renderDataPerDraw,
                         RHI::D3D12Buffer*         indirectIndexBuffer,
                         RHI::D3D12Buffer*         indirectSortBuffer,
                         RHI::D3D12Buffer*         grabDispatchArgBuffer);
