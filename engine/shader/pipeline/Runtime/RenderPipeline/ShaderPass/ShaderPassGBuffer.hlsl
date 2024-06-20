@@ -8,7 +8,8 @@ PackedVaryingsType Vert(AttributesMesh inputMesh)
 {
     VaryingsType varyingsType;
 
-    varyingsType.vmesh = VertMesh(inputMesh);
+    RenderDataPerDraw renderData = GetRenderDataPerDraw();
+    varyingsType.vmesh = VertMesh(renderData, inputMesh);
 
     return PackVaryingsType(varyingsType);
 }

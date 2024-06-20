@@ -38,7 +38,7 @@ FragInputs UnpackVaryingsToFragInputs(PackedVaryingsToPS packedInput)
 #define PackVaryingsType PackVaryingsToPS
 
 // TODO: Here we will also have all the vertex deformation (GPU skinning, vertex animation, morph target...) or we will need to generate a compute shaders instead (better! but require work to deal with unpacking like fp16)
-VaryingsMeshType VertMesh(AttributesMesh input, float3 worldSpaceOffset)
+VaryingsMeshType VertMesh(RenderDataPerDraw renderData, AttributesMesh input, float3 worldSpaceOffset)
 {
     VaryingsMeshType output;
 #if defined(USE_CUSTOMINTERP_SUBSTRUCT)
@@ -55,9 +55,9 @@ VaryingsMeshType VertMesh(AttributesMesh input, float3 worldSpaceOffset)
 #endif
 
     // This return the camera relative position (if enable)
-    float3 positionRWS = TransformObjectToWorld(input.positionOS) + worldSpaceOffset;
+    float3 positionRWS = TransformObjectToWorld(renderData, input.positionOS) + worldSpaceOffset;
 #ifdef ATTRIBUTES_NEED_NORMAL
-    float3 normalWS = TransformObjectToWorldNormal(input.normalOS);
+    float3 normalWS = TransformObjectToWorldNormal(renderData, input.normalOS);
 #else
     float3 normalWS = float3(0.0, 0.0, 0.0); // We need this case to be able to compile ApplyVertexModification that doesn't use normal.
 #endif
@@ -107,7 +107,7 @@ VaryingsMeshType VertMesh(AttributesMesh input, float3 worldSpaceOffset)
     return output;
 }
 
-VaryingsMeshType VertMesh(AttributesMesh input)
+VaryingsMeshType VertMesh(RenderDataPerDraw renderData, AttributesMesh input)
 {
-    return VertMesh(input, 0.0f);
+    return VertMesh(renderData, input, 0.0f);
 }

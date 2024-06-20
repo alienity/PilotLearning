@@ -39,7 +39,7 @@ void CSMain(uint GroupIndex : SV_GroupIndex, uint3 GroupID : SV_GroupID) {
         if (visible)
         {
             float3 cameraPos  = mFrameUniforms.cameraUniform._CurFrameUniform._WorldSpaceCameraPos;
-            float3 aabbCenter = worldAABB.Center;
+            float3 aabbCenter = worldAABB.Center.xyz;
 
             float meshDistance = distance(cameraPos, aabbCenter);
 

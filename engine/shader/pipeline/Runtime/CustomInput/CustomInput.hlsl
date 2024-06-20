@@ -16,4 +16,24 @@ SamplerState s_trilinear_clamp_sampler  : register(s13);
 SamplerState s_trilinear_repeat_sampler : register(s14);
 SamplerComparisonState s_linear_clamp_compare_sampler : register(s15);
 
+RenderDataPerDraw GetRenderDataPerDraw()
+{
+    StructuredBuffer<RenderDataPerDraw> renderDataPerDrawBuffer = ResourceDescriptorHeap[renderDataPerDrawIndex];
+    RenderDataPerDraw renderData = renderDataPerDrawBuffer[0];
+    return renderData;
+}
+
+PropertiesPerMaterial GetPropertiesPerMaterial(uint meshMatOffset)
+{
+    StructuredBuffer<PropertiesPerMaterial> propertiesPerMaterialBuffer = ResourceDescriptorHeap[propertiesPerMaterialIndex];
+    PropertiesPerMaterial propertiesPerMaterial = propertiesPerMaterialBuffer[meshMatOffset];
+    return propertiesPerMaterial;
+}
+
+FrameUniforms GetFrameUniforms()
+{
+    ConstantBuffer<FrameUniforms> frameUniform = ResourceDescriptorHeap[frameUniformIndex];
+    return frameUniform;
+}
+
 #endif
