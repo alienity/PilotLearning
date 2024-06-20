@@ -71,7 +71,7 @@ namespace MoYu
         // FrameUniforms
         HLSL::FrameUniforms* _frameUniforms = &(render_resource->m_FrameUniforms);
 
-        HLSL::TAAuniform taaUniform  = {};
+        HLSL::TAAUniform taaUniform  = {};
         taaUniform.projectionExtents = projectionExtents;
         taaUniform.jitterUV          = jitterUV;
         taaUniform.feedbackMin       = m_frustumJitter->feedbackMin;

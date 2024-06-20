@@ -140,15 +140,14 @@ namespace MoYu
 
             HLSL::PropertiesPerMaterial curPropertiesPerMaterial = {};
 
-            curPropertiesPerMaterial._EmissiveColorMapIndex = m_InteralMat._EmissiveColorMap->GetDefaultSRV()->GetIndex();
             curPropertiesPerMaterial._BaseColorMapIndex = m_InteralMat._BaseColorMap->GetDefaultSRV()->GetIndex();
             curPropertiesPerMaterial._MaskMapIndex = m_InteralMat._MaskMap->GetDefaultSRV()->GetIndex();
-            curPropertiesPerMaterial._BentNormalMapIndex = m_InteralMat._BentNormalMap->GetDefaultSRV()->GetIndex();
-            curPropertiesPerMaterial._BentNormalMapOSIndex = m_InteralMat._BentNormalMapOS->GetDefaultSRV()->GetIndex();
             curPropertiesPerMaterial._NormalMapIndex = m_InteralMat._NormalMap->GetDefaultSRV()->GetIndex();
             curPropertiesPerMaterial._NormalMapOSIndex = m_InteralMat._NormalMapOS->GetDefaultSRV()->GetIndex();
-            curPropertiesPerMaterial._DetailMapIndex = m_InteralMat._DetailMap->GetDefaultSRV()->GetIndex();
+            curPropertiesPerMaterial._BentNormalMapIndex = m_InteralMat._BentNormalMap->GetDefaultSRV()->GetIndex();
+            curPropertiesPerMaterial._BentNormalMapOSIndex = m_InteralMat._BentNormalMapOS->GetDefaultSRV()->GetIndex();
             curPropertiesPerMaterial._HeightMapIndex = m_InteralMat._HeightMap->GetDefaultSRV()->GetIndex();
+            curPropertiesPerMaterial._DetailMapIndex = m_InteralMat._DetailMap->GetDefaultSRV()->GetIndex();
             curPropertiesPerMaterial._TangentMapIndex = m_InteralMat._TangentMap->GetDefaultSRV()->GetIndex();
             curPropertiesPerMaterial._TangentMapOSIndex = m_InteralMat._TangentMapOS->GetDefaultSRV()->GetIndex();
             curPropertiesPerMaterial._AnisotropyMapIndex = m_InteralMat._AnisotropyMap->GetDefaultSRV()->GetIndex();
@@ -157,42 +156,16 @@ namespace MoYu
             curPropertiesPerMaterial._ThicknessMapIndex = m_InteralMat._ThicknessMap->GetDefaultSRV()->GetIndex();
             curPropertiesPerMaterial._IridescenceThicknessMapIndex = m_InteralMat._IridescenceThicknessMap->GetDefaultSRV()->GetIndex();
             curPropertiesPerMaterial._IridescenceMaskMapIndex = m_InteralMat._IridescenceMaskMap->GetDefaultSRV()->GetIndex();
-            curPropertiesPerMaterial._SpecularColorMapIndex = m_InteralMat._SpecularColorMap->GetDefaultSRV()->GetIndex();
-            curPropertiesPerMaterial._TransmittanceColorMapIndex = m_InteralMat._TransmittanceColorMap->GetDefaultSRV()->GetIndex();
             curPropertiesPerMaterial._CoatMaskMapIndex = m_InteralMat._CoatMaskMap->GetDefaultSRV()->GetIndex();
-
-            curPropertiesPerMaterial._AlphaCutoff = m_InteralMat._AlphaCutoff;
-            curPropertiesPerMaterial._UseShadowThreshold = m_InteralMat._UseShadowThreshold;
-            curPropertiesPerMaterial._AlphaCutoffShadow = m_InteralMat._AlphaCutoffShadow;
-            curPropertiesPerMaterial._AlphaCutoffPrepass = m_InteralMat._AlphaCutoffPrepass;
-
-            curPropertiesPerMaterial._AlphaCutoffPostpass = m_InteralMat._AlphaCutoffPostpass;
-
-            curPropertiesPerMaterial._BlendMode = m_InteralMat._BlendMode;
-            curPropertiesPerMaterial._EnableBlendModePreserveSpecularLighting = m_InteralMat._EnableBlendModePreserveSpecularLighting;
-            curPropertiesPerMaterial._PPDMaxSamples = m_InteralMat._PPDMaxSamples;
-            curPropertiesPerMaterial._PPDMinSamples = m_InteralMat._PPDMinSamples;
-
-            curPropertiesPerMaterial._PPDLodThreshold = m_InteralMat._PPDLodThreshold;
-            curPropertiesPerMaterial._PPDPrimitiveLength = m_InteralMat._PPDPrimitiveLength;
-            curPropertiesPerMaterial._PPDPrimitiveWidth = m_InteralMat._PPDPrimitiveWidth;
-            curPropertiesPerMaterial._InvPrimScale = m_InteralMat._InvPrimScale;
-
-            curPropertiesPerMaterial._EmissiveColor = m_InteralMat._EmissiveColor;
-
-            curPropertiesPerMaterial._AlbedoAffectEmissive = m_InteralMat._AlbedoAffectEmissive;
-            curPropertiesPerMaterial._EmissiveExposureWeight = m_InteralMat._EmissiveExposureWeight;
-            curPropertiesPerMaterial._SpecularOcclusionMode = m_InteralMat._SpecularOcclusionMode;
-            curPropertiesPerMaterial._Ior = m_InteralMat._Ior;
-
-            curPropertiesPerMaterial._TransmittanceColor = m_InteralMat._TransmittanceColor;
-            curPropertiesPerMaterial._ATDistance = m_InteralMat._ATDistance;
+            curPropertiesPerMaterial._SpecularColorMapIndex = m_InteralMat._SpecularColorMap->GetDefaultSRV()->GetIndex();
+            curPropertiesPerMaterial._EmissiveColorMapIndex = m_InteralMat._EmissiveColorMap->GetDefaultSRV()->GetIndex();
+            curPropertiesPerMaterial._TransmittanceColorMapIndex = m_InteralMat._TransmittanceColorMap->GetDefaultSRV()->GetIndex();
 
             curPropertiesPerMaterial._BaseColor = m_InteralMat._BaseColor;
             curPropertiesPerMaterial._Metallic = m_InteralMat._Metallic;
+            curPropertiesPerMaterial._Smoothness = m_InteralMat._Smoothness;
             curPropertiesPerMaterial._MetallicRemapMin = m_InteralMat._MetallicRemapMin;
             curPropertiesPerMaterial._MetallicRemapMax = m_InteralMat._MetallicRemapMax;
-            curPropertiesPerMaterial._Smoothness = m_InteralMat._Smoothness;
             curPropertiesPerMaterial._SmoothnessRemapMin = m_InteralMat._SmoothnessRemapMin;
             curPropertiesPerMaterial._SmoothnessRemapMax = m_InteralMat._SmoothnessRemapMax;
             curPropertiesPerMaterial._AlphaRemapMin = m_InteralMat._AlphaRemapMin;
@@ -200,34 +173,82 @@ namespace MoYu
             curPropertiesPerMaterial._AORemapMin = m_InteralMat._AORemapMin;
             curPropertiesPerMaterial._AORemapMax = m_InteralMat._AORemapMax;
             curPropertiesPerMaterial._NormalScale = m_InteralMat._NormalScale;
+            curPropertiesPerMaterial._HeightAmplitude = m_InteralMat._HeightAmplitude;
+            curPropertiesPerMaterial._HeightCenter = m_InteralMat._HeightCenter;
+            curPropertiesPerMaterial._HeightMapParametrization = m_InteralMat._HeightMapParametrization;
+            curPropertiesPerMaterial._HeightOffset = m_InteralMat._HeightOffset;
+            curPropertiesPerMaterial._HeightMin = m_InteralMat._HeightMin;
+            curPropertiesPerMaterial._HeightMax = m_InteralMat._HeightMax;
+            curPropertiesPerMaterial._HeightTessAmplitude = m_InteralMat._HeightTessAmplitude;
+            curPropertiesPerMaterial._HeightTessCenter = m_InteralMat._HeightTessCenter;
+            curPropertiesPerMaterial._HeightPoMAmplitude = m_InteralMat._HeightPoMAmplitude;
             curPropertiesPerMaterial._DetailAlbedoScale = m_InteralMat._DetailAlbedoScale;
             curPropertiesPerMaterial._DetailNormalScale = m_InteralMat._DetailNormalScale;
             curPropertiesPerMaterial._DetailSmoothnessScale = m_InteralMat._DetailSmoothnessScale;
-            curPropertiesPerMaterial._HeightAmplitude = m_InteralMat._HeightAmplitude;
-            curPropertiesPerMaterial._HeightCenter = m_InteralMat._HeightCenter;
             curPropertiesPerMaterial._Anisotropy = m_InteralMat._Anisotropy;
-
+            curPropertiesPerMaterial._DiffusionProfileHash = m_InteralMat._DiffusionProfileHash;
             curPropertiesPerMaterial._SubsurfaceMask = m_InteralMat._SubsurfaceMask;
             curPropertiesPerMaterial._TransmissionMask = m_InteralMat._TransmissionMask;
             curPropertiesPerMaterial._Thickness = m_InteralMat._Thickness;
-            curPropertiesPerMaterial._Thickness = m_InteralMat._Thickness;
-            
             curPropertiesPerMaterial._ThicknessRemap = m_InteralMat._ThicknessRemap;
             curPropertiesPerMaterial._IridescenceThicknessRemap = m_InteralMat._IridescenceThicknessRemap;
-
-            curPropertiesPerMaterial._SurfaceType = m_InteralMat._SurfaceType;
             curPropertiesPerMaterial._IridescenceThickness = m_InteralMat._IridescenceThickness;
             curPropertiesPerMaterial._IridescenceMask = m_InteralMat._IridescenceMask;
             curPropertiesPerMaterial._CoatMask = m_InteralMat._CoatMask;
             curPropertiesPerMaterial._EnergyConservingSpecularColor = m_InteralMat._EnergyConservingSpecularColor;
-
             curPropertiesPerMaterial._SpecularColor = m_InteralMat._SpecularColor;
-            curPropertiesPerMaterial._UVMappingMask = m_InteralMat._UVMappingMask;
-            curPropertiesPerMaterial._UVDetailsMappingMask = m_InteralMat._UVDetailsMappingMask;
-
-            curPropertiesPerMaterial._TexWorldScale = m_InteralMat._TexWorldScale;
-            curPropertiesPerMaterial._InvTilingScale = m_InteralMat._InvTilingScale;
+            curPropertiesPerMaterial._SpecularOcclusionMode = m_InteralMat._SpecularOcclusionMode;
+            curPropertiesPerMaterial._EmissiveColor = m_InteralMat._EmissiveColor;
+            curPropertiesPerMaterial._AlbedoAffectEmissive = m_InteralMat._AlbedoAffectEmissive;
+            curPropertiesPerMaterial._EmissiveIntensityUnit = m_InteralMat._EmissiveIntensityUnit;
+            curPropertiesPerMaterial._UseEmissiveIntensity = m_InteralMat._UseEmissiveIntensity;
+            curPropertiesPerMaterial._EmissiveIntensity = m_InteralMat._EmissiveIntensity;
+            curPropertiesPerMaterial._EmissiveExposureWeight = m_InteralMat._EmissiveExposureWeight;
+            curPropertiesPerMaterial._UseShadowThreshold = m_InteralMat._UseShadowThreshold;
+            curPropertiesPerMaterial._AlphaCutoffEnable = m_InteralMat._AlphaCutoffEnable;
+            curPropertiesPerMaterial._AlphaCutoff = m_InteralMat._AlphaCutoff;
+            curPropertiesPerMaterial._AlphaCutoffShadow = m_InteralMat._AlphaCutoffShadow;
+            curPropertiesPerMaterial._AlphaCutoffPrepass = m_InteralMat._AlphaCutoffPrepass;
+            curPropertiesPerMaterial._AlphaCutoffPostpass = m_InteralMat._AlphaCutoffPostpass;
+            curPropertiesPerMaterial._TransparentDepthPrepassEnable = m_InteralMat._TransparentDepthPrepassEnable;
+            curPropertiesPerMaterial._TransparentBackfaceEnable = m_InteralMat._TransparentBackfaceEnable;
+            curPropertiesPerMaterial._TransparentDepthPostpassEnable = m_InteralMat._TransparentDepthPostpassEnable;
+            curPropertiesPerMaterial._TransparentSortPriority = m_InteralMat._TransparentSortPriority;
+            curPropertiesPerMaterial._RefractionModel = m_InteralMat._RefractionModel;
+            curPropertiesPerMaterial._Ior = m_InteralMat._Ior;
+            curPropertiesPerMaterial._TransmittanceColor = m_InteralMat._TransmittanceColor;
+            curPropertiesPerMaterial._ATDistance = m_InteralMat._ATDistance;
+            curPropertiesPerMaterial._TransparentWritingMotionVec = m_InteralMat._TransparentWritingMotionVec;
+            curPropertiesPerMaterial._SurfaceType = m_InteralMat._SurfaceType;
+            curPropertiesPerMaterial._BlendMode = m_InteralMat._BlendMode;
+            curPropertiesPerMaterial._SrcBlend = m_InteralMat._SrcBlend;
+            curPropertiesPerMaterial._DstBlend = m_InteralMat._DstBlend;
+            curPropertiesPerMaterial._AlphaSrcBlend = m_InteralMat._AlphaSrcBlend;
+            curPropertiesPerMaterial._AlphaDstBlend = m_InteralMat._AlphaDstBlend;
+            curPropertiesPerMaterial._EnableFogOnTransparent = m_InteralMat._EnableFogOnTransparent;
+            curPropertiesPerMaterial._EnableBlendModePreserveSpecularLighting = m_InteralMat._EnableBlendModePreserveSpecularLighting;
+            curPropertiesPerMaterial._DoubleSidedEnable = m_InteralMat._DoubleSidedEnable;
+            curPropertiesPerMaterial._DoubleSidedNormalMode = m_InteralMat._DoubleSidedNormalMode;
+            curPropertiesPerMaterial._DoubleSidedConstants = m_InteralMat._DoubleSidedConstants;
+            curPropertiesPerMaterial._DoubleSidedGIMode = m_InteralMat._DoubleSidedGIMode;
+            curPropertiesPerMaterial._UVBase = m_InteralMat._UVBase;
             curPropertiesPerMaterial._ObjectSpaceUVMapping = m_InteralMat._ObjectSpaceUVMapping;
+            curPropertiesPerMaterial._TexWorldScale = m_InteralMat._TexWorldScale;
+            curPropertiesPerMaterial._UVMappingMask = m_InteralMat._UVMappingMask;
+            curPropertiesPerMaterial._NormalMapSpace = m_InteralMat._NormalMapSpace;
+            curPropertiesPerMaterial._MaterialID = m_InteralMat._MaterialID;
+            curPropertiesPerMaterial._TransmissionEnable = m_InteralMat._TransmissionEnable;
+            curPropertiesPerMaterial._PPDMinSamples = m_InteralMat._PPDMinSamples;
+            curPropertiesPerMaterial._PPDMaxSamples = m_InteralMat._PPDMaxSamples;
+            curPropertiesPerMaterial._PPDLodThreshold = m_InteralMat._PPDLodThreshold;
+            curPropertiesPerMaterial._PPDPrimitiveLength = m_InteralMat._PPDPrimitiveLength;
+            curPropertiesPerMaterial._PPDPrimitiveWidth = m_InteralMat._PPDPrimitiveWidth;
+            curPropertiesPerMaterial._InvPrimScale = m_InteralMat._InvPrimScale;
+            curPropertiesPerMaterial._UVDetailsMappingMask = m_InteralMat._UVDetailsMappingMask;
+            curPropertiesPerMaterial._UVDetail = m_InteralMat._UVDetail;
+            curPropertiesPerMaterial._LinkDetailsWithBase = m_InteralMat._LinkDetailsWithBase;
+            curPropertiesPerMaterial._EmissiveColorMode = m_InteralMat._EmissiveColorMode;
+            curPropertiesPerMaterial._UVEmissive = m_InteralMat._UVEmissive;
 
             pPropertiesPerMaterial[i] = curPropertiesPerMaterial;
         }

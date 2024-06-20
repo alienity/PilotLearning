@@ -222,9 +222,9 @@ namespace MoYu
             m_mat_res = mat_res_data;
         }
 
-        ScenePBRMaterial m_mat_data = ToPBRMaterial(m_mat_res);
+        StandardLightMaterial m_mat_data = ToStandardMaterial(m_mat_res);
 
-        m_material.m_shader_name = m_mat_res.shader_name;
+        m_material.m_shader_name = m_mat_res._ShaderName;
         m_material.m_mat_data    = m_mat_data;
 
         markDirty();
@@ -251,9 +251,9 @@ namespace MoYu
         MaterialManager* m_mat_manager_ptr = g_runtime_global_context.m_material_manager.get();
         MaterialRes m_mat_res = m_mat_manager_ptr->loadMaterialRes(m_mesh_renderer_res.m_material_res.m_material_file);
 
-        ScenePBRMaterial m_mat_data = ToPBRMaterial(m_mat_res);
+        StandardLightMaterial m_mat_data = ToStandardMaterial(m_mat_res);
 
-        m_material.m_shader_name = m_mat_res.shader_name;
+        m_material.m_shader_name = m_mat_res._ShaderName;
         m_material.m_mat_data    = m_mat_data;
 
         markDirty();

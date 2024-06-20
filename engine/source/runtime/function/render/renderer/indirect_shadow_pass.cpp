@@ -113,7 +113,7 @@ namespace MoYu
 
                     if (curShadowmapIndex != -1)
                     {
-                        real_resource->m_FrameUniforms.spotLightUniform.scene_spot_lights[i]
+                        real_resource->m_FrameUniforms.spotLightUniform.spotLightStructs[i]
                             .spotLightShadowmap.shadowmap_srv_index =
                             m_SpotShadowmaps[curShadowmapIndex].p_LightShadowmap->GetDefaultSRV()->GetIndex();
                     }

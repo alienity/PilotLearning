@@ -902,7 +902,7 @@ namespace MoYu
     struct MaterialRes;
 
     MaterialRes ToMaterialRes(const StandardLightMaterial& pbrMaterial, const std::string shaderName);
-    StandardLightMaterial ToPBRMaterial(const MaterialRes& materialRes);
+    StandardLightMaterial ToStandardMaterial(const MaterialRes& materialRes);
 
     extern StandardLightMaterial _DefaultScenePBRMaterial;
 

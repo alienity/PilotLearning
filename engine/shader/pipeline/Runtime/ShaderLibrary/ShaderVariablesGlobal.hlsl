@@ -393,7 +393,7 @@ struct ClipMeshCommandSigParams
 {
     float4   VertexBuffer; // D3D12_VERTEX_BUFFER_VIEW 16
     float4   IndexBuffer; // D3D12_INDEX_BUFFER_VIEW 16
-    float2x4 DrawIndexedArguments; // D3D12_DRAW_INDEXED_ARGUMENTS 20, Emoty 12
+    float2x4 DrawIndexedArguments; // D3D12_DRAW_INDEXED_ARGUMENTS 20, Empty 12
     float2x4 ClipBoundingBox; // BoundingBox 32
 };
 
@@ -401,7 +401,7 @@ struct ToDrawCommandSignatureParams
 {
     float4   VertexBuffer; // D3D12_VERTEX_BUFFER_VIEW 16
     float4   IndexBuffer; // D3D12_INDEX_BUFFER_VIEW 16
-    float2x4 DrawIndexedArguments; // D3D12_DRAW_INDEXED_ARGUMENTS 20, ClipIndex 4, Emoty 8
+    float2x4 DrawIndexedArguments; // D3D12_DRAW_INDEXED_ARGUMENTS 20, ClipIndex 4, Empty 8
 };
 
 struct TerrainPatchNode

@@ -134,7 +134,7 @@ namespace MoYu
         return m_mat_data;
     }
 
-    StandardLightMaterial ToPBRMaterial(const MaterialRes& materialRes)
+    StandardLightMaterial ToStandardMaterial(const MaterialRes& materialRes)
     {
         StandardLightMaterial m_mat_data = {
             materialRes._BaseColorMap,

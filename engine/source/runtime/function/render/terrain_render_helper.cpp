@@ -226,9 +226,13 @@ namespace MoYu
                 MoYu::InternalVertexBuffer& _vertex_buffer = _clipmap_mesh.vertex_buffer;
                 MoYu::AABB _axisAlignedBox = _clipmap_mesh.axis_aligned_box;
                 
-                HLSL::BoundingBox _clipBoundingBox {};
-                _clipBoundingBox.center  = _axisAlignedBox.getCenter();
-                _clipBoundingBox.extents = _axisAlignedBox.getHalfExtent();
+                glm::float2x4 _clipBoundingBox{};
+                _clipBoundingBox[0] = glm::float4(_axisAlignedBox.getCenter(), 0);
+                _clipBoundingBox[1] = glm::float4(_axisAlignedBox.getHalfExtent(), 0);
+
+                //HLSL::BoundingBox _clipBoundingBox {};
+                //_clipBoundingBox.center  = _axisAlignedBox.getCenter();
+                //_clipBoundingBox.extents = _axisAlignedBox.getHalfExtent();
 
                 D3D12_DRAW_INDEXED_ARGUMENTS _drawIndexedArguments = {};
                 _drawIndexedArguments.IndexCountPerInstance        = _index_buffer.index_count;
@@ -237,12 +241,15 @@ namespace MoYu
                 _drawIndexedArguments.BaseVertexLocation           = 0;
                 _drawIndexedArguments.StartInstanceLocation        = 0;
 
+                D3D12_VERTEX_BUFFER_VIEW vertexBufferView = _vertex_buffer.vertex_buffer->GetVertexBufferView();
+                D3D12_INDEX_BUFFER_VIEW indexBufferView = _index_buffer.index_buffer->GetIndexBufferView();
+
                 HLSL::ClipMeshCommandSigParams _cmdSigParam {};
-                _cmdSigParam.VertexBuffer = _vertex_buffer.vertex_buffer->GetVertexBufferView();
-                _cmdSigParam.IndexBuffer = _index_buffer.index_buffer->GetIndexBufferView();
-                _cmdSigParam.DrawIndexedArguments = _drawIndexedArguments;
-                _cmdSigParam.ClipBoundingBox      = _clipBoundingBox;
-                _cmdSigParam._Padding_0           = glm::int3(0, 0, 0);
+                memcpy(&_cmdSigParam.VertexBuffer, &vertexBufferView, sizeof(D3D12_VERTEX_BUFFER_VIEW));
+                memcpy(&_cmdSigParam.IndexBuffer, &_index_buffer, sizeof(D3D12_INDEX_BUFFER_VIEW));
+                memcpy(&_cmdSigParam.DrawIndexedArguments, &_drawIndexedArguments, sizeof(D3D12_DRAW_INDEXED_ARGUMENTS));
+                memcpy(&_cmdSigParam.DrawIndexedArguments, &_clipBoundingBox, sizeof(_clipBoundingBox));
+
 
                 _raw_mesh_buffer[i] = _cmdSigParam;
             }
