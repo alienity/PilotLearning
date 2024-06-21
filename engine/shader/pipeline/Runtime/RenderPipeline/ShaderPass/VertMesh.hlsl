@@ -38,7 +38,7 @@ FragInputs UnpackVaryingsToFragInputs(PackedVaryingsToPS packedInput)
 #define PackVaryingsType PackVaryingsToPS
 
 // TODO: Here we will also have all the vertex deformation (GPU skinning, vertex animation, morph target...) or we will need to generate a compute shaders instead (better! but require work to deal with unpacking like fp16)
-VaryingsMeshType VertMesh(RenderDataPerDraw renderData, AttributesMesh input, float3 worldSpaceOffset)
+VaryingsMeshType VertMesh(FrameUniforms frameUniform, RenderDataPerDraw renderData, AttributesMesh input, float3 worldSpaceOffset)
 {
     VaryingsMeshType output;
 #if defined(USE_CUSTOMINTERP_SUBSTRUCT)
@@ -62,27 +62,27 @@ VaryingsMeshType VertMesh(RenderDataPerDraw renderData, AttributesMesh input, fl
     float3 normalWS = float3(0.0, 0.0, 0.0); // We need this case to be able to compile ApplyVertexModification that doesn't use normal.
 #endif
 
-// #ifdef ATTRIBUTES_NEED_TANGENT
-//     float4 tangentWS = float4(TransformObjectToWorldDir(input.tangentOS.xyz), input.tangentOS.w);
-// #endif
+#ifdef ATTRIBUTES_NEED_TANGENT
+    float4 tangentWS = float4(TransformObjectToWorldDir(renderData, input.tangentOS.xyz), input.tangentOS.w);
+#endif
 
     // Do vertex modification in camera relative space (if enable)
 #if defined(HAVE_VERTEX_MODIFICATION)
     ApplyVertexModification(input, normalWS, positionRWS, _TimeParameters.xyz);
 #endif
 
-// #ifdef VARYINGS_NEED_POSITION_WS
-//     output.positionRWS = positionRWS;
-// #endif
+#ifdef VARYINGS_NEED_POSITION_WS
+    output.positionRWS = positionRWS;
+#endif
 #ifdef VARYINGS_NEED_POSITIONPREDISPLACEMENT_WS
     output.positionPredisplacementRWS = positionRWS;
 #endif
 
-//     output.positionCS = TransformWorldToHClip(positionRWS);
-// #ifdef VARYINGS_NEED_TANGENT_TO_WORLD
-//     output.normalWS = normalWS;
-//     output.tangentWS = tangentWS;
-// #endif
+     output.positionCS = TransformWorldToHClip(frameUniform, positionRWS);
+#ifdef VARYINGS_NEED_TANGENT_TO_WORLD
+    output.normalWS = normalWS;
+    output.tangentWS = tangentWS;
+#endif
 #if !defined(SHADER_API_METAL) && defined(SHADERPASS) && (SHADERPASS == SHADERPASS_FULL_SCREEN_DEBUG)
     if (_DebugFullScreenMode == FULLSCREENDEBUGMODE_VERTEX_DENSITY)
         IncrementVertexDensityCounter(output.positionCS);
@@ -107,7 +107,7 @@ VaryingsMeshType VertMesh(RenderDataPerDraw renderData, AttributesMesh input, fl
     return output;
 }
 
-VaryingsMeshType VertMesh(RenderDataPerDraw renderData, AttributesMesh input)
+VaryingsMeshType VertMesh(FrameUniforms frameUniform, RenderDataPerDraw renderData, AttributesMesh input)
 {
-    return VertMesh(renderData, input, 0.0f);
+    return VertMesh(frameUniform, renderData, input, 0.0f);
 }

@@ -9,7 +9,8 @@ PackedVaryingsType Vert(AttributesMesh inputMesh)
     VaryingsType varyingsType;
 
     RenderDataPerDraw renderData = GetRenderDataPerDraw();
-    varyingsType.vmesh = VertMesh(renderData, inputMesh);
+    FrameUniforms frameUniform = GetFrameUniforms();
+    varyingsType.vmesh = VertMesh(frameUniform, renderData, inputMesh);
 
     return PackVaryingsType(varyingsType);
 }

@@ -10,26 +10,26 @@ namespace MoYu
     struct MaterialRes
     {
         std::string _ShaderName{ "" };
-        MaterialImage _BaseColorMap; // white
-        MaterialImage _MaskMap; // MaskMap is RGBA: Metallic, Ambient Occlusion (Optional, float) detail Mask (Optional, float) Smoothness
-        MaterialImage _NormalMap; // bump. Tangent space normal map
-        MaterialImage _NormalMapOS; // white. Object space normal map - no good default value    
-        MaterialImage _BentNormalMap; // bump. Tangent space normal map
-        MaterialImage _BentNormalMapOS; // white. Object space normal map - no good default value
-        MaterialImage _HeightMap; // black
-        MaterialImage _DetailMap; // linearGrey
-        MaterialImage _TangentMap; // bump
-        MaterialImage _TangentMapOS; // white
-        MaterialImage _AnisotropyMap; // white
-        MaterialImage _SubsurfaceMaskMap; // white. Subsurface Radius Map
-        MaterialImage _TransmissionMaskMap; // white. Transmission Mask Map
-        MaterialImage _ThicknessMap; // white. Thickness Map
-        MaterialImage _IridescenceThicknessMap; // white. Iridescence Thickness Map
-        MaterialImage _IridescenceMaskMap; // white. Iridescence Mask Map
-        MaterialImage _CoatMaskMap; // white
-        MaterialImage _SpecularColorMap; // white
-        MaterialImage _EmissiveColorMap; // white
-        MaterialImage _TransmittanceColorMap; // white
+        MaterialImage _BaseColorMap{ DefaultMaterialImageWhite }; // white
+        MaterialImage _MaskMap{ DefaultMaterialImageWhite }; // MaskMap is RGBA: Metallic, Ambient Occlusion (Optional, float) detail Mask (Optional, float) Smoothness
+        MaterialImage _NormalMap{ DefaultMaterialImageGrey }; // bump. Tangent space normal map
+        MaterialImage _NormalMapOS{ DefaultMaterialImageWhite }; // white. Object space normal map - no good default value    
+        MaterialImage _BentNormalMap{ DefaultMaterialImageGrey }; // bump. Tangent space normal map
+        MaterialImage _BentNormalMapOS{ DefaultMaterialImageWhite }; // white. Object space normal map - no good default value
+        MaterialImage _HeightMap{ DefaultMaterialImageBlack }; // black
+        MaterialImage _DetailMap{ DefaultMaterialImageGrey }; // linearGrey
+        MaterialImage _TangentMap{ DefaultMaterialImageGrey }; // bump
+        MaterialImage _TangentMapOS{ DefaultMaterialImageWhite }; // white
+        MaterialImage _AnisotropyMap{ DefaultMaterialImageWhite }; // white
+        MaterialImage _SubsurfaceMaskMap{ DefaultMaterialImageWhite }; // white. Subsurface Radius Map
+        MaterialImage _TransmissionMaskMap{ DefaultMaterialImageWhite }; // white. Transmission Mask Map
+        MaterialImage _ThicknessMap{ DefaultMaterialImageWhite }; // white. Thickness Map
+        MaterialImage _IridescenceThicknessMap{ DefaultMaterialImageWhite }; // white. Iridescence Thickness Map
+        MaterialImage _IridescenceMaskMap{ DefaultMaterialImageWhite }; // white. Iridescence Mask Map
+        MaterialImage _CoatMaskMap{ DefaultMaterialImageWhite }; // white
+        MaterialImage _SpecularColorMap{ DefaultMaterialImageWhite }; // white
+        MaterialImage _EmissiveColorMap{ DefaultMaterialImageBlack }; // white
+        MaterialImage _TransmittanceColorMap{ DefaultMaterialImageWhite }; // white
         glm::float4 _BaseColor{ 1, 1, 1, 1 };
         float _Metallic{ 0 };
         float _Smoothness{ 0.5f };
