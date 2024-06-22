@@ -174,18 +174,19 @@ namespace MoYu
             }
 
             // update clipmap mesh count buffer
-            const auto& transform_instance = mTerrain3D->get_transform_instance();
+            const TransformInstance& transform_instance = mTerrain3D->get_transform_instance();
 
             int total_count = transform_instance.tiles.size() + transform_instance.fillers.size() +
                               transform_instance.trims.size() + transform_instance.seams.size() + 1;
 
-            HLSL::ClipmapMeshCount _clipmapMeshCount = {transform_instance.tiles.size(),
-                                                        transform_instance.fillers.size(),
-                                                        transform_instance.trims.size(),
-                                                        transform_instance.seams.size(),
-                                                        1,
-                                                        total_count};
-
+            HLSL::ClipmapMeshCount _clipmapMeshCount{};
+            _clipmapMeshCount.tile_count = transform_instance.tiles.size();
+            _clipmapMeshCount.filler_count = transform_instance.fillers.size();
+            _clipmapMeshCount.trim_count = transform_instance.trims.size();
+            _clipmapMeshCount.cross_cunt = 1;
+            _clipmapMeshCount.seam_count = transform_instance.seams.size();
+            _clipmapMeshCount.total_count = total_count;
+            
             std::shared_ptr<RHI::D3D12Buffer> _clip_mesh_count_buffer = _clipmapInstanceBuffer->clip_mesh_count_buffer;
             if (_clip_mesh_count_buffer == nullptr)
             {
@@ -226,10 +227,6 @@ namespace MoYu
                 MoYu::InternalVertexBuffer& _vertex_buffer = _clipmap_mesh.vertex_buffer;
                 MoYu::AABB _axisAlignedBox = _clipmap_mesh.axis_aligned_box;
                 
-                glm::float2x4 _clipBoundingBox{};
-                _clipBoundingBox[0] = glm::float4(_axisAlignedBox.getCenter(), 0);
-                _clipBoundingBox[1] = glm::float4(_axisAlignedBox.getHalfExtent(), 0);
-
                 //HLSL::BoundingBox _clipBoundingBox {};
                 //_clipBoundingBox.center  = _axisAlignedBox.getCenter();
                 //_clipBoundingBox.extents = _axisAlignedBox.getHalfExtent();
@@ -245,11 +242,12 @@ namespace MoYu
                 D3D12_INDEX_BUFFER_VIEW indexBufferView = _index_buffer.index_buffer->GetIndexBufferView();
 
                 HLSL::ClipMeshCommandSigParams _cmdSigParam {};
-                memcpy(&_cmdSigParam.VertexBuffer, &vertexBufferView, sizeof(D3D12_VERTEX_BUFFER_VIEW));
-                memcpy(&_cmdSigParam.IndexBuffer, &_index_buffer, sizeof(D3D12_INDEX_BUFFER_VIEW));
-                memcpy(&_cmdSigParam.DrawIndexedArguments, &_drawIndexedArguments, sizeof(D3D12_DRAW_INDEXED_ARGUMENTS));
-                memcpy(&_cmdSigParam.DrawIndexedArguments, &_clipBoundingBox, sizeof(_clipBoundingBox));
-
+                memcpy(&_cmdSigParam.vertexBufferView, &vertexBufferView, sizeof(D3D12_VERTEX_BUFFER_VIEW));
+                memcpy(&_cmdSigParam.indexBufferView, &_index_buffer, sizeof(D3D12_INDEX_BUFFER_VIEW));
+                memcpy(&_cmdSigParam.drawIndexedArguments0, &_drawIndexedArguments, sizeof(glm::float4));
+                memcpy(&_cmdSigParam.drawIndexedArguments0, ((char*)&_drawIndexedArguments + 4), sizeof(float));
+                _cmdSigParam.clipBoundingBoxCenter = glm::float4(_axisAlignedBox.getCenter(), 0);
+                _cmdSigParam.clipBoundingBoxExtents = glm::float4(_axisAlignedBox.getHalfExtent(), 0);
 
                 _raw_mesh_buffer[i] = _cmdSigParam;
             }

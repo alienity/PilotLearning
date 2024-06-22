@@ -117,20 +117,18 @@ namespace MoYu
 
             HLSL::RenderDataPerDraw curRenderDataPerDraw = {};
             memset(&curRenderDataPerDraw, 0, sizeof(HLSL::RenderDataPerDraw));
-
             curRenderDataPerDraw.objectToWorldMatrix = temp_mesh_renderer.model_matrix; // temp_node.model_matrix;
             curRenderDataPerDraw.worldToObjectMatrix = temp_mesh_renderer.model_matrix_inverse;//temp_node.model_matrix_inverse;
             curRenderDataPerDraw.prevObjectToWorldMatrix = temp_mesh_renderer.prev_model_matrix;
             curRenderDataPerDraw.prevWorldToObjectMatrix = temp_mesh_renderer.prev_model_matrix_inverse;
             memcpy(&curRenderDataPerDraw.vertexBufferView, &curVertexBufferView, sizeof(D3D12_VERTEX_BUFFER_VIEW));//temp_node.ref_mesh->p_mesh_vertex_buffer->GetVertexBufferView();
             memcpy(&curRenderDataPerDraw.indexBufferView, &curIndexBufferView, sizeof(D3D12_INDEX_BUFFER_VIEW));//temp_node.ref_mesh->p_mesh_vertex_buffer->GetIndexBufferView();
-            memcpy(&curRenderDataPerDraw.drawIndexedArguments, &curDrawIndexedArguments, sizeof(D3D12_DRAW_INDEXED_ARGUMENTS));
-            char* pLightPropertyBufferIndex = (char*)&curRenderDataPerDraw.drawIndexedArguments + sizeof(D3D12_DRAW_INDEXED_ARGUMENTS);
-            memcpy(pLightPropertyBufferIndex, &pPropertiesBufferAddress, sizeof(UINT32));
-            char* pLightPropertyBufferIndexOffset = pLightPropertyBufferIndex + sizeof(void*);
-            memcpy(pLightPropertyBufferIndexOffset, &i, sizeof(UINT32));
-            curRenderDataPerDraw.rendererBounds[0] = glm::float4(boundingBoxCenter, 0);
-            curRenderDataPerDraw.rendererBounds[1] = glm::float4(boundingBoxExtents, 0);
+            memcpy(&curRenderDataPerDraw.drawIndexedArguments0, &curDrawIndexedArguments, sizeof(glm::float4));
+            memcpy(&curRenderDataPerDraw.drawIndexedArguments1, ((char*)&curDrawIndexedArguments + 4), sizeof(float));
+            memcpy(((char*)&curRenderDataPerDraw.drawIndexedArguments1 + 1), &pPropertiesBufferAddress, sizeof(UINT32));
+            memcpy(((char*)&curRenderDataPerDraw.drawIndexedArguments1 + 2), &i, sizeof(UINT32));
+            curRenderDataPerDraw.boundingBoxCenter = glm::float4(boundingBoxCenter, 0);
+            curRenderDataPerDraw.boundingBoxExtents = glm::float4(boundingBoxExtents, 0);
 
             pUploadRenderDataPerDraw[i] = curRenderDataPerDraw;
 

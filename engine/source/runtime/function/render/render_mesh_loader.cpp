@@ -148,14 +148,6 @@ ModelLoaderMesh ProcessMesh(aiMesh* mesh)
             vertex.uv0.y = mesh->mTextureCoords[0][i].y;
         }
 
-        if (mesh->HasVertexColors(0))
-        {
-            vertex.color.r = mesh->mColors[0]->r;
-            vertex.color.g = mesh->mColors[0]->g;
-            vertex.color.b = mesh->mColors[0]->b;
-            vertex.color.a = mesh->mColors[0]->a;
-        }
-
         vertices.push_back(vertex);
         bounding_box.merge(glm::float3(vertex.position.x, vertex.position.y, vertex.position.z));
     }

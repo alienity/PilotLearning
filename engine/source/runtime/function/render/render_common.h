@@ -125,16 +125,15 @@ namespace MoYu
         glm::float3 normal;
         glm::float4 tangent;
         glm::float2 uv0;
-        glm::float4 color;
 
         static const RHI::D3D12InputLayout InputLayout;
 
         static const InputDefinition InputElementDefinition = 
             InputDefinition::POSITION | InputDefinition::NORMAL |
-            InputDefinition::TANGENT | InputDefinition::TEXCOORD0 | InputDefinition::COLOR;
+            InputDefinition::TANGENT | InputDefinition::TEXCOORD0;
 
     private:
-        static constexpr unsigned int         InputElementCount = 5;
+        static constexpr unsigned int         InputElementCount = 4;
         static const D3D12_INPUT_ELEMENT_DESC InputElements[InputElementCount];
     };
 

@@ -420,71 +420,69 @@ namespace MoYu
 
     void DeferredRenderer::OnRender(RHI::D3D12CommandContext* context)
     {
-
-
         ////IndirectCullPass::IndirectCullOutput indirectCullOutput;
         ////mIndirectCullPass->cullMeshs(context, &renderGraphRegistry, indirectCullOutput);
 
-        //RHI::RenderGraph graph(renderGraphAllocator, renderGraphRegistry);
-        //// backbuffer output
-        //RHI::D3D12Texture* pBackBufferResource = pSwapChain->GetCurrentBackBufferResource();
-        //RHI::RgResourceHandle backBufColorHandle = graph.Import(pBackBufferResource);
-        //// game view output
-        //RHI::RgResourceHandle renderTargetColorHandle = graph.Import(p_RenderTargetTex.get());
-        //
-        //// last frame color buffer
-        //RHI::RgResourceHandle curFrameColorRTHandle = graph.Import(GetCurrentFrameColorPyramid().get());
-        //// current frame color buffer
-        //RHI::RgResourceHandle lastFrameColorRTHandle = graph.Import(GetLastFrameColorPyramid().get());
+        RHI::RenderGraph graph(renderGraphAllocator, renderGraphRegistry);
+        // backbuffer output
+        RHI::D3D12Texture* pBackBufferResource = pSwapChain->GetCurrentBackBufferResource();
+        RHI::RgResourceHandle backBufColorHandle = graph.Import(pBackBufferResource);
+        // game view output
+        RHI::RgResourceHandle renderTargetColorHandle = graph.Import(p_RenderTargetTex.get());
+        
+        // last frame color buffer
+        RHI::RgResourceHandle curFrameColorRTHandle = graph.Import(GetCurrentFrameColorPyramid().get());
+        // current frame color buffer
+        RHI::RgResourceHandle lastFrameColorRTHandle = graph.Import(GetLastFrameColorPyramid().get());
 
-        ///**/
-        ////=================================================================================
-        //// 应该再给graph添加一个signal同步，目前先这样
-        //IndirectCullPass::IndirectCullOutput indirectCullOutput;
-        //mIndirectCullPass->update(graph, indirectCullOutput);
-        ////=================================================================================
-        //
-        ////=================================================================================
-        //// Terrain剪裁Pass
-        //RHI::RgResourceHandle lastFrameMinDepthPyramidHandle =
-        //    graph.Import(mDepthPyramidPass->GetLastFrameMinDepthPyramid().get());
+        /**/
+        //=================================================================================
+        // 应该再给graph添加一个signal同步，目前先这样
+        IndirectCullPass::IndirectCullOutput indirectCullOutput;
+        mIndirectCullPass->update(graph, indirectCullOutput);
+        //=================================================================================
+        
+        //=================================================================================
+        // Terrain剪裁Pass
+        RHI::RgResourceHandle lastFrameMinDepthPyramidHandle =
+            graph.Import(mDepthPyramidPass->GetLastFrameMinDepthPyramid().get());
 
-        //IndirectTerrainCullPass::TerrainCullInput terrainCullInput;
-        //IndirectTerrainCullPass::TerrainCullOutput terrainCullOutput;
-        //terrainCullInput.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
-        //
-        //mTerrainCullPass->update(graph, terrainCullInput, terrainCullOutput);
-        ////=================================================================================
-        ///*
-        ////=================================================================================
-        //// Terrain使用上一帧depth剪裁Pass
-        //IndirectTerrainCullPass::DepthCullIndexInput _input = {};
-        //_input.minDepthPyramidHandle  = lastFrameMinDepthPyramidHandle;
-        //_input.perframeBufferHandle   = indirectCullOutput.perframeBufferHandle;
-        //IndirectTerrainCullPass::DrawCallCommandBufferHandle _output = {};
+        IndirectTerrainCullPass::TerrainCullInput terrainCullInput;
+        IndirectTerrainCullPass::TerrainCullOutput terrainCullOutput;
+        terrainCullInput.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
+        
+        mTerrainCullPass->update(graph, terrainCullInput, terrainCullOutput);
+        //=================================================================================
+        /*
+        //=================================================================================
+        // Terrain使用上一帧depth剪裁Pass
+        IndirectTerrainCullPass::DepthCullIndexInput _input = {};
+        _input.minDepthPyramidHandle  = lastFrameMinDepthPyramidHandle;
+        _input.perframeBufferHandle   = indirectCullOutput.perframeBufferHandle;
+        IndirectTerrainCullPass::DrawCallCommandBufferHandle _output = {};
 
-        //mTerrainCullPass->cullByLastFrameDepth(graph, _input, _output);
-        ////=================================================================================
-        //*/
-        ////=================================================================================
-        //// indirect draw shadow
-        //IndirectShadowPass::ShadowInputParameters  mShadowmapIntputParams;
-        //IndirectShadowPass::ShadowOutputParameters mShadowmapOutputParams;
+        mTerrainCullPass->cullByLastFrameDepth(graph, _input, _output);
+        //=================================================================================
+        */
+        //=================================================================================
+        // indirect draw shadow
+        IndirectShadowPass::ShadowInputParameters  mShadowmapIntputParams;
+        IndirectShadowPass::ShadowOutputParameters mShadowmapOutputParams;
 
-        //mShadowmapIntputParams.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
-        //mShadowmapIntputParams.meshBufferHandle     = indirectCullOutput.meshBufferHandle;
-        //mShadowmapIntputParams.materialBufferHandle = indirectCullOutput.materialBufferHandle;
-        //for (size_t i = 0; i < indirectCullOutput.directionShadowmapHandles.size(); i++)
-        //{
-        //    mShadowmapIntputParams.dirIndirectSortBufferHandles.push_back(indirectCullOutput.directionShadowmapHandles[i].indirectSortBufferHandle);
-        //}
-        //for (size_t i = 0; i < indirectCullOutput.spotShadowmapHandles.size(); i++)
-        //{
-        //    mShadowmapIntputParams.spotsIndirectSortBufferHandles.push_back(indirectCullOutput.spotShadowmapHandles[i].indirectSortBufferHandle);
-        //}
-        //mIndirectShadowPass->update(graph, mShadowmapIntputParams, mShadowmapOutputParams);
-        ////=================================================================================
-        //
+        mShadowmapIntputParams.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
+        mShadowmapIntputParams.renderDataPerDrawHandle     = indirectCullOutput.renderDataPerDrawHandle;
+        mShadowmapIntputParams.propertiesPerMaterialHandle = indirectCullOutput.propertiesPerMaterialHandle;
+        for (size_t i = 0; i < indirectCullOutput.directionShadowmapHandles.size(); i++)
+        {
+            mShadowmapIntputParams.dirIndirectSortBufferHandles.push_back(indirectCullOutput.directionShadowmapHandles[i].indirectSortBufferHandle);
+        }
+        for (size_t i = 0; i < indirectCullOutput.spotShadowmapHandles.size(); i++)
+        {
+            mShadowmapIntputParams.spotsIndirectSortBufferHandles.push_back(indirectCullOutput.spotShadowmapHandles[i].indirectSortBufferHandle);
+        }
+        mIndirectShadowPass->update(graph, mShadowmapIntputParams, mShadowmapOutputParams);
+        //=================================================================================
+        
         ////=================================================================================
         //// indirect terrain draw shadow
         //IndirectTerrainShadowPass::ShadowInputParameters  mTerrainShadowmapIntputParams;
@@ -796,30 +794,30 @@ namespace MoYu
         ////mDisplayOutputParams.renderTargetColorHandle = backBufColorHandle;
         //mDisplayPass->update(graph, mDisplayIntputParams, mDisplayOutputParams);
         ////=================================================================================
-        //
-        ////=================================================================================
-        //if (mUIPass != nullptr)
-        //{
-        //    UIPass::UIInputParameters mUIIntputParams;
-        //    UIPass::UIOutputParameters mUIOutputParams;
+        
+        //=================================================================================
+        if (mUIPass != nullptr)
+        {
+            UIPass::UIInputParameters mUIIntputParams;
+            UIPass::UIOutputParameters mUIOutputParams;
 
-        //    //mUIIntputParams.renderTargetColorHandle = renderTargetColorHandle;
-        //    mUIIntputParams.renderTargetColorHandle = mDisplayOutputParams.renderTargetColorHandle;
-        //    mUIOutputParams.backBufColorHandle = backBufColorHandle;
-        //    
-        //    mUIPass->update(graph, mUIIntputParams, mUIOutputParams);
-        //}
-        ////=================================================================================
+            mUIIntputParams.renderTargetColorHandle = renderTargetColorHandle;
+            //mUIIntputParams.renderTargetColorHandle = mDisplayOutputParams.renderTargetColorHandle;
+            mUIOutputParams.backBufColorHandle = backBufColorHandle;
+            
+            mUIPass->update(graph, mUIIntputParams, mUIOutputParams);
+        }
+        //=================================================================================
 
-        //graph.Execute(context);
+        graph.Execute(context);
 
-        //{
-        //    // Transfer the state of the backbuffer to Present
-        //    context->TransitionBarrier(pBackBufferResource,
-        //                              D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_PRESENT,
-        //                              D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES,
-        //                              true);
-        //}
+        {
+            // Transfer the state of the backbuffer to Present
+            context->TransitionBarrier(pBackBufferResource,
+                                      D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_PRESENT,
+                                      D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES,
+                                      true);
+        }
 
         ////DgmlBuilder Builder("Render Graph");
         ////graph.ExportDgml(Builder);

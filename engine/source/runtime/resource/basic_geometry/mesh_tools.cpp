@@ -13,7 +13,6 @@ namespace MoYu
             v.normal   = glm::mix(v0.normal, v1.normal, t);
             v.tangent  = glm::mix(v0.tangent, v1.tangent, t);
             v.uv0      = glm::mix(v0.uv0, v1.uv0, t);
-            v.color    = glm::mix(v0.color, v1.color, t);
             return v;
         }
 
@@ -24,7 +23,6 @@ namespace MoYu
             v.normal    = temp.normal - init.normal;
             v.tangent   = temp.tangent - init.tangent;
             v.uv0       = temp.uv0 - init.uv0;
-            v.color     = temp.color - init.color;
             return v;
         }
 
@@ -97,19 +95,16 @@ namespace MoYu
             _t.normal   = glm::float3(0, 0, 1);
             _t.tangent  = glm::float4(1, 0, 0, 1);
             _t.uv0      = glm::float2(0, 0);
-            _t.color    = glm::float4(0, 0, 0, 0);
             vertices.push_back(_t);
             _t.position = glm::float3(1, -1, 0) * width;
             _t.normal   = glm::float3(0, 0, 1);
             _t.tangent  = glm::float4(1, 0, 0, 1);
             _t.uv0      = glm::float2(1, 0);
-            _t.color    = glm::float4(0, 0, 0, 0);
             vertices.push_back(_t);
             _t.position = glm::float3(1, 1, 0) * width;
             _t.normal   = glm::float3(0, 0, 1);
             _t.tangent  = glm::float4(1, 0, 0, 1);
             _t.uv0      = glm::float2(1, 1);
-            _t.color    = glm::float4(0, 0, 0, 0);
             vertices.push_back(_t);
 
             indices.push_back(0);
@@ -194,37 +189,31 @@ namespace MoYu
             _t.normal   = glm::float3(0, 0, 1);
             _t.tangent  = glm::float4(0, 0, 0, 1);
             _t.uv0      = glm::float2(0, 0);
-            _t.color    = glm::float4(0, 0, 0, 0);
             vertices.push_back(_t);
             _t.position = glm::float3(1, -1, 0) * width;
             _t.normal   = glm::float3(0, 0, 1);
             _t.tangent  = glm::float4(0, 0, 0, 1);
             _t.uv0      = glm::float2(1, 0);
-            _t.color    = glm::float4(0, 0, 0, 0);
             vertices.push_back(_t);
             _t.position = glm::float3(1, 1, 0) * width;
             _t.normal   = glm::float3(0, 0, 1);
             _t.tangent  = glm::float4(0, 0, 0, 1);
             _t.uv0      = glm::float2(1, 1);
-            _t.color    = glm::float4(0, 0, 0, 0);
             vertices.push_back(_t);
             _t.position = glm::float3(1, 1, 0) * width;
             _t.normal   = glm::float3(0, 0, 1);
             _t.tangent  = glm::float4(0, 0, 0, 1);
             _t.uv0      = glm::float2(1, 1);
-            _t.color    = glm::float4(0, 0, 0, 0);
             vertices.push_back(_t);
             _t.position = glm::float3(-1, 1, 0) * width;
             _t.normal   = glm::float3(0, 0, 1);
             _t.tangent  = glm::float4(0, 0, 0, 1);
             _t.uv0      = glm::float2(0, 1);
-            _t.color    = glm::float4(0, 0, 0, 0);
             vertices.push_back(_t);
             _t.position = glm::float3(-1, -1, 0) * width;
             _t.normal   = glm::float3(0, 0, 1);
             _t.tangent  = glm::float4(0, 0, 0, 1);
             _t.uv0      = glm::float2(0, 0);
-            _t.color    = glm::float4(0, 0, 0, 0);
             vertices.push_back(_t);
 
             indices.push_back(0);

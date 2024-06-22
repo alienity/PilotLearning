@@ -85,11 +85,11 @@ struct Shaders
 
             ShaderCompileOptions DrawDirectionOptions(g_VSEntryPoint);
             DrawDirectionOptions.SetDefine({L"DIRECTIONSHADOW"}, {L"1"});
-            VS::IndirectDrawDirectionShadowmapVS = Compiler->CompileShader(RHI_SHADER_TYPE::Vertex, ShaderPath / "hlsl/IndirectDrawShadowmap.hlsl", DrawDirectionOptions);
+            VS::IndirectDrawDirectionShadowmapVS = Compiler->CompileShader(RHI_SHADER_TYPE::Vertex, ShaderPath / "pipeline/Runtime/Tools/Shadow/IndirectDrawShadowmap.hlsl", DrawDirectionOptions);
 
             ShaderCompileOptions DrawSpotOptions(g_VSEntryPoint);
             DrawSpotOptions.SetDefine({L"SPOTSHADOW"}, {L"1"});
-            VS::IndirectDrawSpotShadowmapVS = Compiler->CompileShader(RHI_SHADER_TYPE::Vertex, ShaderPath / "hlsl/IndirectDrawShadowmap.hlsl", DrawSpotOptions);
+            VS::IndirectDrawSpotShadowmapVS = Compiler->CompileShader(RHI_SHADER_TYPE::Vertex, ShaderPath / "pipeline/Runtime/Tools/Shadow/IndirectDrawShadowmap.hlsl", DrawSpotOptions);
 
             ShaderCompileOptions DrawSkyBoxOptions(g_VSEntryPoint);
             VS::SkyBoxVS = Compiler->CompileShader(RHI_SHADER_TYPE::Vertex, ShaderPath / "hlsl/SkyBoxVS.hlsl", DrawSkyBoxOptions);
@@ -101,7 +101,7 @@ struct Shaders
             PS::PresentSDRPS = Compiler->CompileShader(RHI_SHADER_TYPE::Pixel, ShaderPath / "hlsl/PresentSDRPS.hlsl", Options);
             PS::IndirectDrawPS = Compiler->CompileShader(RHI_SHADER_TYPE::Pixel, ShaderPath / "hlsl/IndirectDraw.hlsl", Options);
             PS::IndirectDrawPS_BRDF = Compiler->CompileShader(RHI_SHADER_TYPE::Pixel, ShaderPath / "hlsl/IndirectDrawPS.hlsl", Options);
-            PS::IndirectDrawShadowmapPS = Compiler->CompileShader(RHI_SHADER_TYPE::Pixel, ShaderPath / "hlsl/IndirectDrawShadowmap.hlsl", Options);
+            PS::IndirectDrawShadowmapPS = Compiler->CompileShader(RHI_SHADER_TYPE::Pixel, ShaderPath / "pipeline/Runtime/Tools/Shadow/IndirectDrawShadowmap.hlsl", Options);
             PS::SkyBoxPS = Compiler->CompileShader(RHI_SHADER_TYPE::Pixel, ShaderPath / "hlsl/SkyBoxPS.hlsl", Options);
         }
 
@@ -109,13 +109,13 @@ struct Shaders
         {
             constexpr LPCWSTR g_CSSortEntryPoint = L"main";
 
-            CS::BitonicIndirectArgsCS = Compiler->CompileShader(RHI_SHADER_TYPE::Compute, ShaderPath / "hlsl/BitonicIndirectArgsCS.hlsl", ShaderCompileOptions(g_CSSortEntryPoint));
-            CS::Bitonic32PreSortCS    = Compiler->CompileShader(RHI_SHADER_TYPE::Compute, ShaderPath / "hlsl/Bitonic32PreSortCS.hlsl", ShaderCompileOptions(g_CSSortEntryPoint));
-            CS::Bitonic32InnerSortCS  = Compiler->CompileShader(RHI_SHADER_TYPE::Compute, ShaderPath / "hlsl/Bitonic32InnerSortCS.hlsl", ShaderCompileOptions(g_CSSortEntryPoint));
-            CS::Bitonic32OuterSortCS  = Compiler->CompileShader(RHI_SHADER_TYPE::Compute, ShaderPath / "hlsl/Bitonic32OuterSortCS.hlsl", ShaderCompileOptions(g_CSSortEntryPoint));
-            CS::Bitonic64PreSortCS    = Compiler->CompileShader(RHI_SHADER_TYPE::Compute, ShaderPath / "hlsl/Bitonic64PreSortCS.hlsl", ShaderCompileOptions(g_CSSortEntryPoint));
-            CS::Bitonic64InnerSortCS  = Compiler->CompileShader(RHI_SHADER_TYPE::Compute, ShaderPath / "hlsl/Bitonic64InnerSortCS.hlsl", ShaderCompileOptions(g_CSSortEntryPoint));
-            CS::Bitonic64OuterSortCS  = Compiler->CompileShader(RHI_SHADER_TYPE::Compute, ShaderPath / "hlsl/Bitonic64OuterSortCS.hlsl", ShaderCompileOptions(g_CSSortEntryPoint));
+            CS::BitonicIndirectArgsCS = Compiler->CompileShader(RHI_SHADER_TYPE::Compute, ShaderPath / "pipeline/Runtime/Tools/Sort/BitonicIndirectArgsCS.hlsl", ShaderCompileOptions(g_CSSortEntryPoint));
+            CS::Bitonic32PreSortCS    = Compiler->CompileShader(RHI_SHADER_TYPE::Compute, ShaderPath / "pipeline/Runtime/Tools/Sort/Bitonic32PreSortCS.hlsl", ShaderCompileOptions(g_CSSortEntryPoint));
+            CS::Bitonic32InnerSortCS  = Compiler->CompileShader(RHI_SHADER_TYPE::Compute, ShaderPath / "pipeline/Runtime/Tools/Sort/Bitonic32InnerSortCS.hlsl", ShaderCompileOptions(g_CSSortEntryPoint));
+            CS::Bitonic32OuterSortCS  = Compiler->CompileShader(RHI_SHADER_TYPE::Compute, ShaderPath / "pipeline/Runtime/Tools/Sort/Bitonic32OuterSortCS.hlsl", ShaderCompileOptions(g_CSSortEntryPoint));
+            CS::Bitonic64PreSortCS    = Compiler->CompileShader(RHI_SHADER_TYPE::Compute, ShaderPath / "pipeline/Runtime/Tools/Sort/Bitonic64PreSortCS.hlsl", ShaderCompileOptions(g_CSSortEntryPoint));
+            CS::Bitonic64InnerSortCS  = Compiler->CompileShader(RHI_SHADER_TYPE::Compute, ShaderPath / "pipeline/Runtime/Tools/Sort/Bitonic64InnerSortCS.hlsl", ShaderCompileOptions(g_CSSortEntryPoint));
+            CS::Bitonic64OuterSortCS  = Compiler->CompileShader(RHI_SHADER_TYPE::Compute, ShaderPath / "pipeline/Runtime/Tools/Sort/Bitonic64OuterSortCS.hlsl", ShaderCompileOptions(g_CSSortEntryPoint));
 
             CS::IndirectCullForSort = Compiler->CompileShader(RHI_SHADER_TYPE::Compute, ShaderPath / "pipeline/Runtime/Tools/Culling/IndirectCullForSort.hlsl", ShaderCompileOptions(g_CSEntryPoint));
 
@@ -635,7 +635,7 @@ struct PipelineStates
             pIndirectCullSpotShadowmap = std::make_shared<RHI::D3D12PipelineState>(pDevice, L"IndirectCullSpotShadowmap", psoDesc);
         }
         {
-            RHI::D3D12InputLayout InputLayout = MoYu::D3D12MeshVertexPositionNormalTangentTexture::InputLayout;
+            RHI::D3D12InputLayout InputLayout = MoYu::D3D12MeshVertexStandard::InputLayout;
             
             RHIDepthStencilState DepthStencilState;
             DepthStencilState.DepthEnable = true;
@@ -675,7 +675,7 @@ struct PipelineStates
             pIndirectDraw = std::make_shared<RHI::D3D12PipelineState>(pDevice, L"IndirectDraw", psoDesc);
         }
         {
-            RHI::D3D12InputLayout InputLayout = MoYu::D3D12MeshVertexPositionNormalTangentTexture::InputLayout;
+            RHI::D3D12InputLayout InputLayout = MoYu::D3D12MeshVertexStandard::InputLayout;
             
             RHIDepthStencilState DepthStencilState;
             DepthStencilState.DepthEnable = true;
@@ -716,7 +716,7 @@ struct PipelineStates
         }
         {
             //IndirectDrawTransparent
-            RHI::D3D12InputLayout InputLayout = MoYu::D3D12MeshVertexPositionNormalTangentTexture::InputLayout;
+            RHI::D3D12InputLayout InputLayout = MoYu::D3D12MeshVertexStandard::InputLayout;
 
             RHIDepthStencilState DepthStencilState;
             DepthStencilState.DepthEnable = true;
@@ -766,7 +766,7 @@ struct PipelineStates
             pIndirectDrawTransparent = std::make_shared<RHI::D3D12PipelineState>(pDevice, L"IndirectDrawTransparent", psoDesc);
         }
         {
-            RHI::D3D12InputLayout InputLayout = MoYu::D3D12MeshVertexPositionNormalTangentTexture::InputLayout;
+            RHI::D3D12InputLayout InputLayout = MoYu::D3D12MeshVertexStandard::InputLayout;
 
             RHIDepthStencilState DepthStencilState;
             DepthStencilState.DepthEnable = true;
@@ -798,7 +798,7 @@ struct PipelineStates
             pIndirectDrawDirectionShadowmap = std::make_shared<RHI::D3D12PipelineState>(pDevice, L"IndirectDrawDirectionShadowmap", psoDesc);
         }
         {
-            RHI::D3D12InputLayout InputLayout = MoYu::D3D12MeshVertexPositionNormalTangentTexture::InputLayout;
+            RHI::D3D12InputLayout InputLayout = MoYu::D3D12MeshVertexStandard::InputLayout;
 
             RHIDepthStencilState DepthStencilState;
             DepthStencilState.DepthEnable = true;

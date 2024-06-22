@@ -93,7 +93,6 @@ namespace MoYu
                 _vert.position = glm::float3(_vertices[i * 3], _vertices[i * 3 + 1], _vertices[i * 3 + 2]);
                 _vert.normal   = glm::float3(_normals[i * 3], _normals[i * 3 + 1], _normals[i * 3 + 2]);
                 _vert.uv0      = glm::float2(_texCoords[i * 2], _texCoords[i * 2 + 1]);
-                _vert.color    = glm::float4(0, 0, 0, 0);
                 vertices.push_back(_vert);
             }
 

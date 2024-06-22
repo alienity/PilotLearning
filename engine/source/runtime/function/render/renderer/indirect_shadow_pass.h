@@ -16,9 +16,9 @@ namespace MoYu
 
         struct ShadowInputParameters : public PassInput
         {
-            RHI::RgResourceHandle perframeBufferHandle        = RHI::_DefaultRgResourceHandle;
-            RHI::RgResourceHandle meshBufferHandle            = RHI::_DefaultRgResourceHandle;
-            RHI::RgResourceHandle materialBufferHandle        = RHI::_DefaultRgResourceHandle;
+            RHI::RgResourceHandle perframeBufferHandle = RHI::_DefaultRgResourceHandle;
+            RHI::RgResourceHandle renderDataPerDrawHandle = RHI::_DefaultRgResourceHandle;
+            RHI::RgResourceHandle propertiesPerMaterialHandle = RHI::_DefaultRgResourceHandle;
 
             std::vector<RHI::RgResourceHandle> dirIndirectSortBufferHandles;
 

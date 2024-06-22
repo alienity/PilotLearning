@@ -137,8 +137,8 @@ namespace MoYu
         //ShadowInputParameters  drawPassInput  = passInput;
         //ShadowOutputParameters drawPassOutput = passOutput;
 
-        RHI::RgResourceHandle meshBufferHandle     = passInput.meshBufferHandle;
-        RHI::RgResourceHandle materialBufferHandle = passInput.materialBufferHandle;
+        RHI::RgResourceHandle renderDataPerDrawHandle = passInput.renderDataPerDrawHandle;
+        RHI::RgResourceHandle propertiesPerMaterialHandle = passInput.propertiesPerMaterialHandle;
         RHI::RgResourceHandle perframeBufferHandle = passInput.perframeBufferHandle;
 
         std::vector<RHI::RgResourceHandle> dirIndirectSortBufferHandles(passInput.dirIndirectSortBufferHandles);
@@ -147,8 +147,8 @@ namespace MoYu
         RHI::RenderPass& shadowpass = graph.AddRenderPass("IndirectShadowPass");
 
         shadowpass.Read(perframeBufferHandle, false, RHIResourceState::RHI_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
-        shadowpass.Read(meshBufferHandle, false, RHIResourceState::RHI_RESOURCE_STATE_ALL_SHADER_RESOURCE);
-        shadowpass.Read(materialBufferHandle, false, RHIResourceState::RHI_RESOURCE_STATE_ALL_SHADER_RESOURCE);
+        shadowpass.Read(renderDataPerDrawHandle, false, RHIResourceState::RHI_RESOURCE_STATE_ALL_SHADER_RESOURCE);
+        shadowpass.Read(propertiesPerMaterialHandle, false, RHIResourceState::RHI_RESOURCE_STATE_ALL_SHADER_RESOURCE);
 
         for (size_t i = 0; i < dirIndirectSortBufferHandles.size(); i++)
         {
@@ -205,8 +205,8 @@ namespace MoYu
                 glm::float2 shadowmap_size = m_DirectionalShadowmap.m_shadowmap_size;
 
                 graphicContext->SetConstantBuffer(1, registry->GetD3D12Buffer(perframeBufferHandle)->GetGpuVirtualAddress());
-                graphicContext->SetBufferSRV(2, registry->GetD3D12Buffer(meshBufferHandle));
-                graphicContext->SetBufferSRV(3, registry->GetD3D12Buffer(materialBufferHandle));
+                graphicContext->SetBufferSRV(2, registry->GetD3D12Buffer(renderDataPerDrawHandle));
+                graphicContext->SetBufferSRV(3, registry->GetD3D12Buffer(propertiesPerMaterialHandle));
 
                 for (uint32_t i = 0; i < m_DirectionalShadowmap.m_casccade; i++)
                 {
@@ -255,8 +255,8 @@ namespace MoYu
 
                 graphicContext->SetConstant(0, 1, spot_index);
                 graphicContext->SetConstantBuffer(1, registry->GetD3D12Buffer(perframeBufferHandle)->GetGpuVirtualAddress());
-                graphicContext->SetBufferSRV(2, registry->GetD3D12Buffer(meshBufferHandle));
-                graphicContext->SetBufferSRV(3, registry->GetD3D12Buffer(materialBufferHandle));
+                graphicContext->SetBufferSRV(2, registry->GetD3D12Buffer(renderDataPerDrawHandle));
+                graphicContext->SetBufferSRV(3, registry->GetD3D12Buffer(propertiesPerMaterialHandle));
 
                 graphicContext->ClearRenderTarget(nullptr, shadowmapStencilView);
                 graphicContext->SetRenderTarget(nullptr, shadowmapStencilView);
