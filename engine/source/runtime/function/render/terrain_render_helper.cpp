@@ -227,10 +227,6 @@ namespace MoYu
                 MoYu::InternalVertexBuffer& _vertex_buffer = _clipmap_mesh.vertex_buffer;
                 MoYu::AABB _axisAlignedBox = _clipmap_mesh.axis_aligned_box;
                 
-                //HLSL::BoundingBox _clipBoundingBox {};
-                //_clipBoundingBox.center  = _axisAlignedBox.getCenter();
-                //_clipBoundingBox.extents = _axisAlignedBox.getHalfExtent();
-
                 D3D12_DRAW_INDEXED_ARGUMENTS _drawIndexedArguments = {};
                 _drawIndexedArguments.IndexCountPerInstance        = _index_buffer.index_count;
                 _drawIndexedArguments.InstanceCount                = 1;
@@ -244,8 +240,7 @@ namespace MoYu
                 HLSL::ClipMeshCommandSigParams _cmdSigParam {};
                 memcpy(&_cmdSigParam.vertexBufferView, &vertexBufferView, sizeof(D3D12_VERTEX_BUFFER_VIEW));
                 memcpy(&_cmdSigParam.indexBufferView, &_index_buffer, sizeof(D3D12_INDEX_BUFFER_VIEW));
-                memcpy(&_cmdSigParam.drawIndexedArguments0, &_drawIndexedArguments, sizeof(glm::float4));
-                memcpy(&_cmdSigParam.drawIndexedArguments0, ((char*)&_drawIndexedArguments + 4), sizeof(float));
+                memcpy(&_cmdSigParam.drawIndexedArguments, &_drawIndexedArguments, sizeof(D3D12_DRAW_INDEXED_ARGUMENTS));
                 _cmdSigParam.clipBoundingBoxCenter = glm::float4(_axisAlignedBox.getCenter(), 0);
                 _cmdSigParam.clipBoundingBoxExtents = glm::float4(_axisAlignedBox.getHalfExtent(), 0);
 

@@ -31,15 +31,15 @@ void CSMain(uint GroupIndex : SV_GroupIndex, uint3 GroupID : SV_GroupID) {
         
         PropertiesPerMaterial propertiesPerMaterial = propertiesPerMaterialBuffer[lightPropertyBufferIndexOffset];
 
-        BoundingBox worldAABB = aabb.Transform(renderData.objectToWorldMatrix);
+        aabb.Transform(renderData.objectToWorldMatrix);
 
         Frustum frustum = ExtractPlanesDX(mFrameUniforms.cameraUniform._CurFrameUniform.clipFromWorldMatrix);
 
-        bool visible = FrustumContainsBoundingBox(frustum, worldAABB) != CONTAINMENT_DISJOINT;
+        bool visible = FrustumContainsBoundingBox(frustum, aabb) != CONTAINMENT_DISJOINT;
         if (visible)
         {
             float3 cameraPos  = mFrameUniforms.cameraUniform._CurFrameUniform._WorldSpaceCameraPos;
-            float3 aabbCenter = worldAABB.Center.xyz;
+            float3 aabbCenter = aabb.Center.xyz;
 
             float meshDistance = distance(cameraPos, aabbCenter);
 

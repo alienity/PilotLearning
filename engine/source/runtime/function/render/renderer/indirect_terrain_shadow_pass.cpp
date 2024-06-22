@@ -13,7 +13,7 @@ namespace MoYu
 
         indirectTerrainShadowmapVS =
             m_ShaderCompiler->CompileShader(
-            RHI_SHADER_TYPE::Vertex, m_ShaderRootPath / "hlsl/IndirectTerrainDrawShadowmap.hlsl", ShaderCompileOptions(L"VSMain"));
+            RHI_SHADER_TYPE::Vertex, m_ShaderRootPath / "pipeline/Runtime/Tools/Shadow/IndirectTerrainDrawShadowmap.hlsl", ShaderCompileOptions(L"VSMain"));
         
         {
             RHI::RootSignatureDesc rootSigDesc =
@@ -25,7 +25,7 @@ namespace MoYu
                     .AllowSampleDescriptorHeapIndexing();
 
             pIndirectTerrainShadowmapSignature = std::make_shared<RHI::D3D12RootSignature>(m_Device, rootSigDesc);
-        }
+        } 
         {
             RHI::CommandSignatureDesc mBuilder(4);
             mBuilder.AddConstant(0, 0, 1);
@@ -37,7 +37,7 @@ namespace MoYu
                 m_Device, mBuilder, pIndirectTerrainShadowmapSignature->GetApiHandle());
         }
         {
-            RHI::D3D12InputLayout inputLayout = MoYu::D3D12TerrainPatch::InputLayout;
+            RHI::D3D12InputLayout inputLayout = MoYu::D3D12MeshVertexPosition::InputLayout;
 
             RHIDepthStencilState depthStencilState;
             depthStencilState.DepthEnable = true;
@@ -104,7 +104,7 @@ namespace MoYu
 
             RHI::D3D12GraphicsContext* graphicContext = context->GetGraphicsContext();
 
-            #define RegGetBufCounter(h) registry->GetD3D12Buffer(h)->GetCounterBuffer().get()
+            //#define RegGetBufCounter(h) registry->GetD3D12Buffer(h)->GetCounterBuffer().get()
             
             //if (m_DirectionalShadowmap.m_identifier != UndefCommonIdentifier)
             {
@@ -153,7 +153,7 @@ namespace MoYu
                     graphicContext->SetConstantArray(0, 1, sizeof(RootIndexBuffer) / sizeof(UINT), &rootIndexBuffer);
             
                     auto pDrawCallCommandSigBuffer = registry->GetD3D12Buffer(dirCommandSigHandle[i]);
-
+                     
                     graphicContext->ExecuteIndirect(pIndirectTerrainShadowmapCommandSignature.get(),
                                                     pDrawCallCommandSigBuffer,
                                                     0,

@@ -36,7 +36,7 @@ void CSMain(uint3 GroupID : SV_GroupID, uint GroupIndex : SV_GroupIndex) {
         
         PropertiesPerMaterial propertiesPerMaterial = g_MaterialsInstance[lightPropertyBufferIndexOffset];
 
-        BoundingBox worldAABB = aabb.Transform(renderData.objectToWorldMatrix);
+        aabb.Transform(renderData.objectToWorldMatrix);
 
 #if defined(DIRECTIONSHADOW)
         Frustum frustum = ExtractPlanesDX(g_FrameUniforms.directionalLight.directionalLightShadowmap.light_proj_view[cascadeLevel]);
@@ -46,16 +46,16 @@ void CSMain(uint3 GroupID : SV_GroupID, uint GroupIndex : SV_GroupIndex) {
         Frustum frustum = ExtractPlanesDX(g_FrameUniforms.cameraUniform._CurFrameUniform.clipFromWorldMatrix);
 #endif
 
-        bool visible = FrustumContainsBoundingBox(frustum, worldAABB) != CONTAINMENT_DISJOINT;
+        bool visible = FrustumContainsBoundingBox(frustum, aabb) != CONTAINMENT_DISJOINT;
         if (visible)
         {
             if (propertiesPerMaterial._BlendMode != 1)
             {
                 CommandSignatureParams command;
                 command.MeshIndex            = index;
-                command.VertexBuffer         = GetVertexBufferView(renderData);
-                command.IndexBuffer          = GetIndexBufferView(renderData);
-                command.DrawIndexedArguments = GetDrawIndexedArguments(renderData);
+                command.VertexBuffer         = ParamsToVertexBufferView(renderData.vertexBufferView);
+                command.IndexBuffer          = ParamsToIndexBufferView(renderData.indexBufferView);
+                command.DrawIndexedArguments = ParamsToDrawIndexedArgumens(renderData.drawIndexedArguments0, renderData.drawIndexedArguments1.x);
                 g_DrawSceneCommandBuffer.Append(command);
             }
         }

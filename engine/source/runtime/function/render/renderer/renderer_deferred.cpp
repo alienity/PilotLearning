@@ -483,27 +483,27 @@ namespace MoYu
         mIndirectShadowPass->update(graph, mShadowmapIntputParams, mShadowmapOutputParams);
         //=================================================================================
         
-        ////=================================================================================
-        //// indirect terrain draw shadow
-        //IndirectTerrainShadowPass::ShadowInputParameters  mTerrainShadowmapIntputParams;
-        //IndirectTerrainShadowPass::ShadowOutputParameters mTerrainShadowmapOutputParams;
+        //=================================================================================
+        // indirect terrain draw shadow
+        IndirectTerrainShadowPass::ShadowInputParameters  mTerrainShadowmapIntputParams;
+        IndirectTerrainShadowPass::ShadowOutputParameters mTerrainShadowmapOutputParams;
 
-        //mTerrainShadowmapIntputParams.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
-        //mTerrainShadowmapIntputParams.terrainHeightmapHandle = terrainCullOutput.terrainHeightmapHandle;
-        //mTerrainShadowmapIntputParams.transformBufferHandle  = terrainCullOutput.transformBufferHandle;
-        //mTerrainShadowmapIntputParams.dirCommandSigHandle.assign(terrainCullOutput.dirVisCommandSigHandles.begin(),
-        //                                                         terrainCullOutput.dirVisCommandSigHandles.end());
-        //
-        //mTerrainShadowmapOutputParams.directionalShadowmapHandle = mShadowmapOutputParams.directionalShadowmapHandle;
+        mTerrainShadowmapIntputParams.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
+        mTerrainShadowmapIntputParams.terrainHeightmapHandle = terrainCullOutput.terrainHeightmapHandle;
+        mTerrainShadowmapIntputParams.transformBufferHandle  = terrainCullOutput.transformBufferHandle;
+        mTerrainShadowmapIntputParams.dirCommandSigHandle.assign(terrainCullOutput.dirVisCommandSigHandles.begin(),
+                                                                 terrainCullOutput.dirVisCommandSigHandles.end());
+        
+        mTerrainShadowmapOutputParams.directionalShadowmapHandle = mShadowmapOutputParams.directionalShadowmapHandle;
 
-        //mIndirectTerrainShadowPass->update(graph, mTerrainShadowmapIntputParams, mTerrainShadowmapOutputParams);
-        ////=================================================================================
-        //
-        ////=================================================================================
-        //// shadowmap output
-        //RHI::RgResourceHandle directionalShadowmapHandle       = mShadowmapOutputParams.directionalShadowmapHandle;
-        //std::vector<RHI::RgResourceHandle> spotShadowmapHandle = mShadowmapOutputParams.spotShadowmapHandle;
-        ////=================================================================================
+        mIndirectTerrainShadowPass->update(graph, mTerrainShadowmapIntputParams, mTerrainShadowmapOutputParams);
+        //=================================================================================
+        
+        //=================================================================================
+        // shadowmap output
+        RHI::RgResourceHandle directionalShadowmapHandle       = mShadowmapOutputParams.directionalShadowmapHandle;
+        std::vector<RHI::RgResourceHandle> spotShadowmapHandle = mShadowmapOutputParams.spotShadowmapHandle;
+        //=================================================================================
 
         ////=================================================================================
         //// prepare gbuffer output

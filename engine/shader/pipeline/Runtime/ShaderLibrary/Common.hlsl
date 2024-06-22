@@ -1,7 +1,7 @@
 #ifndef COMMON_INCLUDED
 #define COMMON_INCLUDED
 
-#include "./API//D3D12.hlsl"
+#include "./API/D3D12.hlsl"
 
 #include "Macros.hlsl"
 #include "Random.hlsl"
@@ -1169,7 +1169,7 @@ struct BoundingBox
     }
 
     // https://stackoverflow.com/questions/6053522/how-to-recalculate-axis-aligned-bounding-box-after-translate-rotate
-    BoundingBox Transform(float4x4 m)
+    void Transform(float4x4 m)
     {
         BoundingBox b = (BoundingBox)0;
         float3 t = float3(m[0][3], m[1][3], m[2][3]);
@@ -1183,7 +1183,8 @@ struct BoundingBox
                 b.Extents[i] += abs(m[i][j]) * Extents[j];
             }
         }
-        return b;
+        Center = b.Center;
+        Extents = b.Extents;
     }
 };
 

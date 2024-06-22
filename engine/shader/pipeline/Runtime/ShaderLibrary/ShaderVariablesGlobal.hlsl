@@ -393,21 +393,19 @@ struct ClipmapMeshCount
 
 struct ClipMeshCommandSigParams
 {
-    float4 vertexBufferView; // D3D12_VERTEX_BUFFER_VIEW 16
-    float4 indexBufferView; // D3D12_INDEX_BUFFER_VIEW 16
-    float4 drawIndexedArguments0; // D3D12_DRAW_INDEXED_ARGUMENTS 16
-    float4 drawIndexedArguments1; // // D3D12_DRAW_INDEXED_ARGUMENTS 4, Emoty 12
+    D3D12_VERTEX_BUFFER_VIEW vertexBufferView; // D3D12_VERTEX_BUFFER_VIEW 16
+    D3D12_INDEX_BUFFER_VIEW indexBufferView; // D3D12_INDEX_BUFFER_VIEW 16
+    D3D12_DRAW_INDEXED_ARGUMENTS drawIndexedArguments; // D3D12_DRAW_INDEXED_ARGUMENTS 16
     float4 clipBoundingBoxCenter; // BoundingBox 16
     float4 clipBoundingBoxExtents; // BoundingBox 16
 };
 
 struct ToDrawCommandSignatureParams
 {
-    uint4  clipIndex; // ClipIndex 4, Empty 12 
-    float4 vertexBufferView; // D3D12_VERTEX_BUFFER_VIEW 16
-    float4 indexBufferView; // D3D12_INDEX_BUFFER_VIEW 16
-    float4 drawIndexedArguments0; // D3D12_DRAW_INDEXED_ARGUMENTS 16
-    float4 drawIndexedArguments1; // // D3D12_DRAW_INDEXED_ARGUMENTS 4, Empty 12
+    uint clipIndex; // ClipIndex 4
+    D3D12_VERTEX_BUFFER_VIEW vertexBufferView; // D3D12_VERTEX_BUFFER_VIEW 16
+    D3D12_INDEX_BUFFER_VIEW indexBufferView; // D3D12_INDEX_BUFFER_VIEW 16
+    D3D12_DRAW_INDEXED_ARGUMENTS drawIndexedArguments; // D3D12_DRAW_INDEXED_ARGUMENTS 20
 };
 
 struct TerrainPatchNode
@@ -438,34 +436,60 @@ struct SamplerStruct
 };
 
 //==============================RenderDataPerDraw=================================
-
-D3D12_VERTEX_BUFFER_VIEW GetVertexBufferView(RenderDataPerDraw renderDataPerDraw)
+D3D12_VERTEX_BUFFER_VIEW ParamsToVertexBufferView(float4 params)
 {
     D3D12_VERTEX_BUFFER_VIEW vertexBufferView = (D3D12_VERTEX_BUFFER_VIEW) 0;
-    vertexBufferView.BufferLocation = asuint(renderDataPerDraw.vertexBufferView.xy);
-    vertexBufferView.SizeInBytes = asuint(renderDataPerDraw.vertexBufferView.z);
-    vertexBufferView.StrideInBytes = asuint(renderDataPerDraw.vertexBufferView.w);
+    vertexBufferView.BufferLocation = asuint(params.xy);
+    vertexBufferView.SizeInBytes = asuint(params.z);
+    vertexBufferView.StrideInBytes = asuint(params.w);
     return vertexBufferView;
 }
 
-D3D12_INDEX_BUFFER_VIEW GetIndexBufferView(RenderDataPerDraw renderDataPerDraw)
+D3D12_INDEX_BUFFER_VIEW ParamsToIndexBufferView(float4 params)
 {
     D3D12_INDEX_BUFFER_VIEW indexBufferView = (D3D12_INDEX_BUFFER_VIEW) 0;
-    indexBufferView.BufferLocation = asuint(renderDataPerDraw.indexBufferView.xy);
-    indexBufferView.SizeInBytes = asuint(renderDataPerDraw.indexBufferView.z);
-    indexBufferView.Format = asuint(renderDataPerDraw.indexBufferView.w);
+    indexBufferView.BufferLocation = asuint(params.xy);
+    indexBufferView.SizeInBytes = asuint(params.z);
+    indexBufferView.Format = asuint(params.w);
     return indexBufferView;
 }
 
-D3D12_DRAW_INDEXED_ARGUMENTS GetDrawIndexedArguments(RenderDataPerDraw renderDataPerDraw)
+D3D12_DRAW_INDEXED_ARGUMENTS ParamsToDrawIndexedArgumens(float4 params0, float params2)
 {
     D3D12_DRAW_INDEXED_ARGUMENTS drawIndexArguments = (D3D12_DRAW_INDEXED_ARGUMENTS) 0;
-    drawIndexArguments.IndexCountPerInstance = asuint(renderDataPerDraw.drawIndexedArguments0[0]);
-    drawIndexArguments.InstanceCount = asuint(renderDataPerDraw.drawIndexedArguments0[1]);
-    drawIndexArguments.StartIndexLocation = asuint(renderDataPerDraw.drawIndexedArguments0[2]);
-    drawIndexArguments.BaseVertexLocation = asint(renderDataPerDraw.drawIndexedArguments0[3]);
-    drawIndexArguments.StartInstanceLocation = asuint(renderDataPerDraw.drawIndexedArguments1[0]);
+    drawIndexArguments.IndexCountPerInstance = asuint(params0[0]);
+    drawIndexArguments.InstanceCount = asuint(params0[1]);
+    drawIndexArguments.StartIndexLocation = asuint(params0[2]);
+    drawIndexArguments.BaseVertexLocation = asint(params0[3]);
+    drawIndexArguments.StartInstanceLocation = asuint(params2);
     return drawIndexArguments;
+}
+
+float4 VertexBufferViewToParams(D3D12_VERTEX_BUFFER_VIEW vertexBufferView)
+{
+    float4 outParams = (float4)0;
+    outParams.xy = vertexBufferView.BufferLocation;
+    outParams.z = vertexBufferView.SizeInBytes;
+    outParams.w = vertexBufferView.StrideInBytes;
+    return outParams;
+}
+
+float4 IndexBufferViewToParams(D3D12_INDEX_BUFFER_VIEW indexBufferView)
+{
+    float4 outParams = (float4)0;
+    outParams.xy = indexBufferView.BufferLocation;
+    outParams.z = indexBufferView.SizeInBytes;
+    outParams.w = indexBufferView.Format;
+    return outParams;
+}
+
+void DrawIndexedArgumentsToParams(D3D12_DRAW_INDEXED_ARGUMENTS drawIndexedArguments, out float4 params0, out float params1)
+{
+    params0.x = drawIndexedArguments.IndexCountPerInstance;
+    params0.y = drawIndexedArguments.InstanceCount;
+    params0.z = drawIndexedArguments.StartIndexLocation;
+    params0.w = drawIndexedArguments.BaseVertexLocation;
+    params1 = drawIndexedArguments.StartInstanceLocation;
 }
 
 uint GetLightPropertyBufferIndex(RenderDataPerDraw renderDataPerDraw)
@@ -492,35 +516,6 @@ BoundingBox GetRendererBounds(RenderDataPerDraw renderDataPerDraw)
 
 //==============================ClipMeshCommandSigParams=================================
 
-D3D12_VERTEX_BUFFER_VIEW GetVertexBufferView(ClipMeshCommandSigParams clipMeshCommandSigParams)
-{
-    D3D12_VERTEX_BUFFER_VIEW vertexBufferView = (D3D12_VERTEX_BUFFER_VIEW) 0;
-    vertexBufferView.BufferLocation = asuint(clipMeshCommandSigParams.vertexBufferView.xy);
-    vertexBufferView.SizeInBytes = asuint(clipMeshCommandSigParams.vertexBufferView.z);
-    vertexBufferView.StrideInBytes = asuint(clipMeshCommandSigParams.vertexBufferView.w);
-    return vertexBufferView;
-}
-
-D3D12_INDEX_BUFFER_VIEW GetIndexBufferView(ClipMeshCommandSigParams clipMeshCommandSigParams)
-{
-    D3D12_INDEX_BUFFER_VIEW indexBufferView = (D3D12_INDEX_BUFFER_VIEW) 0;
-    indexBufferView.BufferLocation = asuint(clipMeshCommandSigParams.indexBufferView.xy);
-    indexBufferView.SizeInBytes = asuint(clipMeshCommandSigParams.indexBufferView.z);
-    indexBufferView.Format = asuint(clipMeshCommandSigParams.indexBufferView.w);
-    return indexBufferView;
-}
-
-D3D12_DRAW_INDEXED_ARGUMENTS GetDrawIndexedArguments(ClipMeshCommandSigParams clipMeshCommandSigParams)
-{
-    D3D12_DRAW_INDEXED_ARGUMENTS drawIndexArguments = (D3D12_DRAW_INDEXED_ARGUMENTS) 0;
-    drawIndexArguments.IndexCountPerInstance = asuint(clipMeshCommandSigParams.drawIndexedArguments0[0]);
-    drawIndexArguments.InstanceCount = asuint(clipMeshCommandSigParams.drawIndexedArguments0[1]);
-    drawIndexArguments.StartIndexLocation = asuint(clipMeshCommandSigParams.drawIndexedArguments0[2]);
-    drawIndexArguments.BaseVertexLocation = asint(clipMeshCommandSigParams.drawIndexedArguments0[3]);
-    drawIndexArguments.StartInstanceLocation = asuint(clipMeshCommandSigParams.drawIndexedArguments1[0]);
-    return drawIndexArguments;
-}
-
 BoundingBox GetRendererBounds(ClipMeshCommandSigParams clipMeshCommandSigParams)
 {
     BoundingBox boundingBox = (BoundingBox) 0;
@@ -530,44 +525,6 @@ BoundingBox GetRendererBounds(ClipMeshCommandSigParams clipMeshCommandSigParams)
 }
 
 //==============================ClipMeshCommandSigParams=================================
-
-//==============================ToDrawCommandSignatureParams=================================
-
-uint GetClipIndex(ToDrawCommandSignatureParams toDrawCommandSignatureParams)
-{
-    return toDrawCommandSignatureParams.clipIndex[0];
-}
-
-D3D12_VERTEX_BUFFER_VIEW GetVertexBufferView(ToDrawCommandSignatureParams toDrawCommandSignatureParams)
-{
-    D3D12_VERTEX_BUFFER_VIEW vertexBufferView = (D3D12_VERTEX_BUFFER_VIEW) 0;
-    vertexBufferView.BufferLocation = asuint(toDrawCommandSignatureParams.vertexBufferView.xy);
-    vertexBufferView.SizeInBytes = asuint(toDrawCommandSignatureParams.vertexBufferView.z);
-    vertexBufferView.StrideInBytes = asuint(toDrawCommandSignatureParams.vertexBufferView.w);
-    return vertexBufferView;
-}
-
-D3D12_INDEX_BUFFER_VIEW GetIndexBufferView(ToDrawCommandSignatureParams toDrawCommandSignatureParams)
-{
-    D3D12_INDEX_BUFFER_VIEW indexBufferView = (D3D12_INDEX_BUFFER_VIEW) 0;
-    indexBufferView.BufferLocation = asuint(toDrawCommandSignatureParams.indexBufferView.xy);
-    indexBufferView.SizeInBytes = asuint(toDrawCommandSignatureParams.indexBufferView.z);
-    indexBufferView.Format = asuint(toDrawCommandSignatureParams.indexBufferView.w);
-    return indexBufferView;
-}
-
-D3D12_DRAW_INDEXED_ARGUMENTS GetDrawIndexedArguments(ToDrawCommandSignatureParams toDrawCommandSignatureParams)
-{
-    D3D12_DRAW_INDEXED_ARGUMENTS drawIndexArguments = (D3D12_DRAW_INDEXED_ARGUMENTS) 0;
-    drawIndexArguments.IndexCountPerInstance = asuint(toDrawCommandSignatureParams.drawIndexedArguments0[0]);
-    drawIndexArguments.InstanceCount = asuint(toDrawCommandSignatureParams.drawIndexedArguments0[1]);
-    drawIndexArguments.StartIndexLocation = asuint(toDrawCommandSignatureParams.drawIndexedArguments0[2]);
-    drawIndexArguments.BaseVertexLocation = asint(toDrawCommandSignatureParams.drawIndexedArguments0[3]);
-    drawIndexArguments.StartInstanceLocation = asuint(toDrawCommandSignatureParams.drawIndexedArguments1[0]);
-    return drawIndexArguments;
-}
-
-//==============================ToDrawCommandSignatureParams=================================
 
 
 

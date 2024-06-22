@@ -31,9 +31,9 @@ void CSMain(uint3 GroupID : SV_GroupID, uint GroupIndex : SV_GroupIndex) {
         
         CommandSignatureParams command;
         command.MeshIndex            = meshIndex;
-        command.VertexBuffer         = GetVertexBufferView(renderData);
-        command.IndexBuffer          = GetIndexBufferView(renderData);
-        command.DrawIndexedArguments = GetDrawIndexedArguments(renderData);
+        command.VertexBuffer         = ParamsToVertexBufferView(renderData.vertexBufferView);
+        command.IndexBuffer          = ParamsToIndexBufferView(renderData.indexBufferView);
+        command.DrawIndexedArguments = ParamsToDrawIndexedArgumens(renderData.drawIndexedArguments0, renderData.drawIndexedArguments1.x);
 
         g_DrawCommandBuffer.Append(command);
     }
