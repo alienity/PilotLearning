@@ -393,9 +393,10 @@ struct ClipmapMeshCount
 
 struct ClipMeshCommandSigParams
 {
-    D3D12_VERTEX_BUFFER_VIEW vertexBufferView; // D3D12_VERTEX_BUFFER_VIEW 16
-    D3D12_INDEX_BUFFER_VIEW indexBufferView; // D3D12_INDEX_BUFFER_VIEW 16
-    D3D12_DRAW_INDEXED_ARGUMENTS drawIndexedArguments; // D3D12_DRAW_INDEXED_ARGUMENTS 16
+    float4 vertexBufferView; // D3D12_VERTEX_BUFFER_VIEW 16
+    float4 indexBufferView; // D3D12_INDEX_BUFFER_VIEW 16
+    float4 drawIndexedArguments0; // D3D12_DRAW_INDEXED_ARGUMENTS 16
+    float4 drawIndexedArguments1; // D3D12_DRAW_INDEXED_ARGUMENTS 4, Empty 12
     float4 clipBoundingBoxCenter; // BoundingBox 16
     float4 clipBoundingBoxExtents; // BoundingBox 16
 };

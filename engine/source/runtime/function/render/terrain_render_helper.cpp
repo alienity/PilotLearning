@@ -240,7 +240,7 @@ namespace MoYu
                 HLSL::ClipMeshCommandSigParams _cmdSigParam {};
                 memcpy(&_cmdSigParam.vertexBufferView, &vertexBufferView, sizeof(D3D12_VERTEX_BUFFER_VIEW));
                 memcpy(&_cmdSigParam.indexBufferView, &_index_buffer, sizeof(D3D12_INDEX_BUFFER_VIEW));
-                memcpy(&_cmdSigParam.drawIndexedArguments, &_drawIndexedArguments, sizeof(D3D12_DRAW_INDEXED_ARGUMENTS));
+                memcpy(&_cmdSigParam.drawIndexedArguments0, &_drawIndexedArguments, sizeof(D3D12_DRAW_INDEXED_ARGUMENTS));
                 _cmdSigParam.clipBoundingBoxCenter = glm::float4(_axisAlignedBox.getCenter(), 0);
                 _cmdSigParam.clipBoundingBoxExtents = glm::float4(_axisAlignedBox.getHalfExtent(), 0);
 

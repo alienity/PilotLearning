@@ -88,9 +88,9 @@ void CSMain(uint3 DispatchThreadID : SV_DispatchThreadID) {
     {
         ToDrawCommandSignatureParams toDrawCommandSig = (ToDrawCommandSignatureParams)0;
         toDrawCommandSig.clipIndex = index;
-        toDrawCommandSig.vertexBufferView = clipSig.vertexBufferView;
-        toDrawCommandSig.indexBufferView = clipSig.indexBufferView;
-        toDrawCommandSig.drawIndexedArguments = clipSig.drawIndexedArguments;
+        toDrawCommandSig.vertexBufferView = ParamsToVertexBufferView(clipSig.vertexBufferView);
+        toDrawCommandSig.indexBufferView = ParamsToIndexBufferView(clipSig.indexBufferView);
+        toDrawCommandSig.drawIndexedArguments = ParamsToDrawIndexedArgumens(clipSig.drawIndexedArguments0, clipSig.drawIndexedArguments1.x);
         
         toDrawCommandSigBuffer.Append(toDrawCommandSig);
     }
