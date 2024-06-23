@@ -9,7 +9,7 @@
 #define ATTRIBUTES_NEED_TANGENT // Always present as we require it also in case of anisotropic lighting
 #define ATTRIBUTES_NEED_TEXCOORD0
 // #define ATTRIBUTES_NEED_TEXCOORD1
-#define ATTRIBUTES_NEED_COLOR
+// #define ATTRIBUTES_NEED_COLOR
 
 #if defined(_REQUIRE_UV2) || defined(_REQUIRE_UV3) || defined(DYNAMICLIGHTMAP_ON) || defined(DEBUG_DISPLAY) || (SHADERPASS == SHADERPASS_LIGHT_TRANSPORT)
 #define ATTRIBUTES_NEED_TEXCOORD2

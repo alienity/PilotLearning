@@ -13,7 +13,7 @@ namespace MoYu
     public:
         struct DrawPassInitInfo : public RenderPassInitInfo
         {
-            RHI::RgTextureDesc albedoTexDesc;
+            RHI::RgTextureDesc colorTexDesc;
             RHI::RgTextureDesc depthTexDesc;
 
             ShaderCompiler*       m_ShaderCompiler;
@@ -23,8 +23,8 @@ namespace MoYu
         struct DrawInputParameters : public PassInput
         {
             RHI::RgResourceHandle perframeBufferHandle;
-            RHI::RgResourceHandle meshBufferHandle;
-            RHI::RgResourceHandle materialBufferHandle;
+            RHI::RgResourceHandle renderDataPerDrawHandle;
+            RHI::RgResourceHandle propertiesPerMaterialHandle;
             RHI::RgResourceHandle opaqueDrawHandle;
         };
 
@@ -37,25 +37,19 @@ namespace MoYu
 
         bool initializeRenderTarget(RHI::RenderGraph& graph, GBufferOutput* drawPassOutput);
 
-        RHI::RgTextureDesc albedoDesc;                                  // float4
-        RHI::RgTextureDesc worldNormalDesc;                             // float3
-        //RHI::RgTextureDesc clearCoatNormalDesc;                       // float3
-        RHI::RgTextureDesc motionVectorDesc;                            // float
-        RHI::RgTextureDesc metallic_Roughness_Reflectance_AO_Desc;      // float4
-        RHI::RgTextureDesc clearCoat_ClearCoatRoughness_AnisotropyDesc; // float3
-        RHI::RgTextureDesc depthDesc;                                   // float
+        RHI::RgTextureDesc gbufferDesc; // float4
+        RHI::RgTextureDesc gbuffer0Desc; // float4
+        RHI::RgTextureDesc gbuffer1Desc; // float4
+        RHI::RgTextureDesc gbuffer2Desc; // float4
+        RHI::RgTextureDesc gbuffer3Desc; // float4
+        RHI::RgTextureDesc depthDesc;   // float
 
     private:
-        Shader indirectGBufferVS;
-        Shader indirectGBufferPS;
-        std::shared_ptr<RHI::D3D12RootSignature> pIndirectGBufferSignature;
-        std::shared_ptr<RHI::D3D12PipelineState> pIndirectGBufferPSO;
-        std::shared_ptr<RHI::D3D12CommandSignature> pIndirectGBufferCommandSignature;
-
         Shader drawGBufferVS;
         Shader drawGBufferPS;
         std::shared_ptr<RHI::D3D12RootSignature> pDrawGBufferSignature;
         std::shared_ptr<RHI::D3D12PipelineState> pDrawGBufferPSO;
+        std::shared_ptr<RHI::D3D12CommandSignature> pGBufferCommandSignature;
 	};
 }
 

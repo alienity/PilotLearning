@@ -151,6 +151,7 @@ namespace MoYu
 
     void IndirectTerrainGBufferPass::update(RHI::RenderGraph& graph, DrawInputParameters& passInput, GBufferOutput& passOutput)
     {
+        /*
         RHI::RgResourceHandle terrainMatIndexHandle = GImport(graph, pMatTextureIndexBuffer.get());
         RHI::RgResourceHandle terrainMatTillingHandle = GImport(graph, pMatTextureTillingBuffer.get());
 
@@ -256,6 +257,7 @@ namespace MoYu
                                             0);
 
         });
+        */
     }
 
     void IndirectTerrainGBufferPass::destroy()

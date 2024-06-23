@@ -135,7 +135,7 @@ namespace MoYu
         // GBuffer pass
         {
             IndirectGBufferPass::DrawPassInitInfo drawPassInit;
-            drawPassInit.albedoTexDesc = colorTexDesc;
+            drawPassInit.colorTexDesc = colorTexDesc;
             drawPassInit.depthTexDesc = depthTexDesc;
             drawPassInit.m_ShaderCompiler = pCompiler;
             drawPassInit.m_ShaderRootPath = g_runtime_global_context.m_config_manager->getShaderFolder();
@@ -148,12 +148,12 @@ namespace MoYu
         {
             //mIndirectTerrainGBufferPass
             IndirectTerrainGBufferPass::DrawPassInitInfo drawPassInit;
-            drawPassInit.albedoDesc = mIndirectGBufferPass->albedoDesc;
-            drawPassInit.depthDesc  = mIndirectGBufferPass->depthDesc;
-            drawPassInit.worldNormalDesc = mIndirectGBufferPass->worldNormalDesc;
-            drawPassInit.motionVectorDesc = mIndirectGBufferPass->motionVectorDesc;
-            drawPassInit.metallic_Roughness_Reflectance_AO_Desc = mIndirectGBufferPass->metallic_Roughness_Reflectance_AO_Desc;
-            drawPassInit.clearCoat_ClearCoatRoughness_AnisotropyDesc = mIndirectGBufferPass->clearCoat_ClearCoatRoughness_AnisotropyDesc;
+            drawPassInit.albedoDesc = mIndirectGBufferPass->gbuffer0Desc;
+            drawPassInit.worldNormalDesc = mIndirectGBufferPass->gbuffer0Desc;
+            drawPassInit.motionVectorDesc = mIndirectGBufferPass->gbuffer0Desc;
+            drawPassInit.metallic_Roughness_Reflectance_AO_Desc = mIndirectGBufferPass->gbuffer0Desc;
+            drawPassInit.clearCoat_ClearCoatRoughness_AnisotropyDesc = mIndirectGBufferPass->gbuffer0Desc;
+            drawPassInit.depthDesc = mIndirectGBufferPass->depthDesc;
             
             drawPassInit.m_ShaderCompiler = pCompiler;
             drawPassInit.m_ShaderRootPath = g_runtime_global_context.m_config_manager->getShaderFolder();
@@ -165,7 +165,7 @@ namespace MoYu
         // Depth Pyramid
         {
             DepthPyramidPass::DrawPassInitInfo depthDrawPassInit;
-            depthDrawPassInit.albedoTexDesc = mIndirectGBufferPass->albedoDesc;
+            depthDrawPassInit.albedoTexDesc = mIndirectGBufferPass->gbuffer0Desc;
             depthDrawPassInit.depthTexDesc  = mIndirectGBufferPass->depthDesc;
 
             depthDrawPassInit.m_ShaderCompiler = pCompiler;
@@ -178,7 +178,7 @@ namespace MoYu
         // Color Pyramid
         {
             ColorPyramidPass::DrawPassInitInfo colorPyramidPassInit;
-            colorPyramidPassInit.albedoTexDesc = mIndirectGBufferPass->albedoDesc;
+            colorPyramidPassInit.albedoTexDesc = mIndirectGBufferPass->gbuffer0Desc;
             
             colorPyramidPassInit.m_ShaderCompiler = pCompiler;
             colorPyramidPassInit.m_ShaderRootPath = g_runtime_global_context.m_config_manager->getShaderFolder();
@@ -483,6 +483,7 @@ namespace MoYu
         mIndirectShadowPass->update(graph, mShadowmapIntputParams, mShadowmapOutputParams);
         //=================================================================================
         
+        /*
         //=================================================================================
         // indirect terrain draw shadow
         IndirectTerrainShadowPass::ShadowInputParameters  mTerrainShadowmapIntputParams;
@@ -498,31 +499,32 @@ namespace MoYu
 
         mIndirectTerrainShadowPass->update(graph, mTerrainShadowmapIntputParams, mTerrainShadowmapOutputParams);
         //=================================================================================
-        
+        */
+
         //=================================================================================
         // shadowmap output
         RHI::RgResourceHandle directionalShadowmapHandle       = mShadowmapOutputParams.directionalShadowmapHandle;
         std::vector<RHI::RgResourceHandle> spotShadowmapHandle = mShadowmapOutputParams.spotShadowmapHandle;
         //=================================================================================
 
-        ////=================================================================================
-        //// prepare gbuffer output
-        //GBufferOutput mGBufferOutput;
-        //mIndirectGBufferPass->initializeRenderTarget(graph, &mGBufferOutput);
+        //=================================================================================
+        // prepare gbuffer output
+        GBufferOutput mGBufferOutput;
+        mIndirectGBufferPass->initializeRenderTarget(graph, &mGBufferOutput);
 
-        ////=================================================================================
+        //=================================================================================
 
-        ////=================================================================================
-        //// indirect gbuffer
-        //IndirectGBufferPass::DrawInputParameters mGBufferIntput;
-        //
-        //mGBufferIntput.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
-        //mGBufferIntput.meshBufferHandle     = indirectCullOutput.meshBufferHandle;
-        //mGBufferIntput.materialBufferHandle = indirectCullOutput.materialBufferHandle;
-        //mGBufferIntput.opaqueDrawHandle     = indirectCullOutput.opaqueDrawHandle.indirectSortBufferHandle;
-        //mIndirectGBufferPass->update(graph, mGBufferIntput, mGBufferOutput);
-        ////=================================================================================
-        //
+        //=================================================================================
+        // indirect gbuffer
+        IndirectGBufferPass::DrawInputParameters mGBufferIntput;
+        
+        mGBufferIntput.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
+        mGBufferIntput.renderDataPerDrawHandle = indirectCullOutput.renderDataPerDrawHandle;
+        mGBufferIntput.propertiesPerMaterialHandle = indirectCullOutput.propertiesPerMaterialHandle;
+        mGBufferIntput.opaqueDrawHandle = indirectCullOutput.opaqueDrawHandle.indirectSortBufferHandle;
+        mIndirectGBufferPass->update(graph, mGBufferIntput, mGBufferOutput);
+        //=================================================================================
+        
         ////=================================================================================
         //// indirect terrain gbuffer
         //IndirectTerrainGBufferPass::DrawInputParameters mTerrainGBufferIntput;
@@ -781,19 +783,20 @@ namespace MoYu
         ////outputRTColorHandle = mPostprocessOutputParams.outputColorHandle;
         ////=================================================================================
 
-        ////=================================================================================
-        //// display
-        //DisplayPass::DisplayInputParameters  mDisplayIntputParams;
-        //DisplayPass::DisplayOutputParameters mDisplayOutputParams;
+        //=================================================================================
+        // display
+        DisplayPass::DisplayInputParameters  mDisplayIntputParams;
+        DisplayPass::DisplayOutputParameters mDisplayOutputParams;
 
-        ////mDisplayIntputParams.inputRTColorHandle = mSSROutput.ssrOutHandle;
+        //mDisplayIntputParams.inputRTColorHandle = mSSROutput.ssrOutHandle;
         //mDisplayIntputParams.inputRTColorHandle   = mPostprocessOutputParams.outputColorHandle;
-        ////mDisplayIntputParams.inputRTColorHandle   = mTerrainGBufferOutput.albedoHandle;
-        ////mDisplayIntputParams.inputRTColorHandle      = mAOOutput.outputAOHandle;
-        //mDisplayOutputParams.renderTargetColorHandle = renderTargetColorHandle;
-        ////mDisplayOutputParams.renderTargetColorHandle = backBufColorHandle;
-        //mDisplayPass->update(graph, mDisplayIntputParams, mDisplayOutputParams);
-        ////=================================================================================
+        //mDisplayIntputParams.inputRTColorHandle   = mTerrainGBufferOutput.albedoHandle;
+        //mDisplayIntputParams.inputRTColorHandle      = mAOOutput.outputAOHandle;
+        mDisplayIntputParams.inputRTColorHandle = mGBufferOutput.gbuffer0Handle;
+        mDisplayOutputParams.renderTargetColorHandle = renderTargetColorHandle;
+        //mDisplayOutputParams.renderTargetColorHandle = backBufColorHandle;
+        mDisplayPass->update(graph, mDisplayIntputParams, mDisplayOutputParams);
+        //=================================================================================
         
         //=================================================================================
         if (mUIPass != nullptr)
@@ -801,8 +804,8 @@ namespace MoYu
             UIPass::UIInputParameters mUIIntputParams;
             UIPass::UIOutputParameters mUIOutputParams;
 
-            mUIIntputParams.renderTargetColorHandle = renderTargetColorHandle;
-            //mUIIntputParams.renderTargetColorHandle = mDisplayOutputParams.renderTargetColorHandle;
+            //mUIIntputParams.renderTargetColorHandle = renderTargetColorHandle;
+            mUIIntputParams.renderTargetColorHandle = mDisplayOutputParams.renderTargetColorHandle;
             mUIOutputParams.backBufColorHandle = backBufColorHandle;
             
             mUIPass->update(graph, mUIIntputParams, mUIOutputParams);

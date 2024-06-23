@@ -19,7 +19,7 @@ SamplerComparisonState s_linear_clamp_compare_sampler : register(s15);
 RenderDataPerDraw GetRenderDataPerDraw()
 {
     StructuredBuffer<RenderDataPerDraw> renderDataPerDrawBuffer = ResourceDescriptorHeap[renderDataPerDrawIndex];
-    RenderDataPerDraw renderData = renderDataPerDrawBuffer[0];
+    RenderDataPerDraw renderData = renderDataPerDrawBuffer[meshIndex];
     return renderData;
 }
 

@@ -19,9 +19,10 @@ void Frag(  PackedVaryingsToPS packedInput,
             OUTPUT_GBUFFER(outGBuffer)
             )
 {
-    // FrameUniforms frameUniform = (FrameUniforms)0;
-    //
-    // FragInputs input = UnpackVaryingsToFragInputs(packedInput);
+    RenderDataPerDraw renderData = GetRenderDataPerDraw();
+    FrameUniforms frameUniform = GetFrameUniforms();
+
+    FragInputs input = UnpackVaryingsToFragInputs(packedInput);
     //
     // float4 _ScreenSize = frameUniform.baseUniform._ScreenSize;
     //
@@ -35,8 +36,8 @@ void Frag(  PackedVaryingsToPS packedInput,
     // GetSurfaceAndBuiltinData(input, V, posInput, surfaceData, builtinData);
     //
     // ENCODE_INTO_GBUFFER(surfaceData, builtinData, posInput.positionSS, outGBuffer);
-    
-    outGBuffer0 = float4(0, 0, 0, 0);
+
+    outGBuffer0 = float4(input.texCoord0.xy, 1, 0);
     outGBuffer1 = float4(0, 0, 0, 0);
     outGBuffer2 = float4(0, 0, 0, 0);
     outGBuffer3 = float4(0, 0, 0, 0);

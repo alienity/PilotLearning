@@ -68,19 +68,17 @@ namespace MoYu
     {
         GBufferOutput()
         {
-            albedoHandle.Invalidate();
-            worldNormalHandle.Invalidate();
-            motionVectorHandle.Invalidate();
-            metallic_Roughness_Reflectance_AO_Handle.Invalidate();
-            clearCoat_ClearCoatRoughness_Anisotropy_Handle.Invalidate();
+            gbuffer0Handle.Invalidate();
+            gbuffer1Handle.Invalidate();
+            gbuffer2Handle.Invalidate();
+            gbuffer3Handle.Invalidate();
             depthHandle.Invalidate();
         }
 
-        RHI::RgResourceHandle albedoHandle;
-        RHI::RgResourceHandle worldNormalHandle;
-        RHI::RgResourceHandle motionVectorHandle;
-        RHI::RgResourceHandle metallic_Roughness_Reflectance_AO_Handle;
-        RHI::RgResourceHandle clearCoat_ClearCoatRoughness_Anisotropy_Handle;
+        RHI::RgResourceHandle gbuffer0Handle;
+        RHI::RgResourceHandle gbuffer1Handle;
+        RHI::RgResourceHandle gbuffer2Handle;
+        RHI::RgResourceHandle gbuffer3Handle;
         RHI::RgResourceHandle depthHandle;
     };
 
