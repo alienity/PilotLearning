@@ -20,25 +20,27 @@ void Frag(  PackedVaryingsToPS packedInput,
             )
 {
     RenderDataPerDraw renderData = GetRenderDataPerDraw();
+    PropertiesPerMaterial matProperties = GetPropertiesPerMaterial(GetLightPropertyBufferIndexOffset(renderData));
     FrameUniforms frameUniform = GetFrameUniforms();
+    SamplerStruct samplerStruct = GetSamplerStruct();
 
     FragInputs input = UnpackVaryingsToFragInputs(packedInput);
-    //
-    // float4 _ScreenSize = frameUniform.baseUniform._ScreenSize;
-    //
-    // // input.positionSS is SV_Position
-    // PositionInputs posInput = GetPositionInput(input.positionSS.xy, _ScreenSize.zw, input.positionSS.z, input.positionSS.w, input.positionRWS);
-    //
-    // float3 V = GetWorldSpaceNormalizeViewDir(frameUniform, input.positionRWS);
-    //
-    // SurfaceData surfaceData;
-    // BuiltinData builtinData;
-    // GetSurfaceAndBuiltinData(input, V, posInput, surfaceData, builtinData);
-    //
-    // ENCODE_INTO_GBUFFER(surfaceData, builtinData, posInput.positionSS, outGBuffer);
+    
+    float4 _ScreenSize = frameUniform.baseUniform._ScreenSize;
+    
+    // input.positionSS is SV_Position
+    PositionInputs posInput = GetPositionInput(input.positionSS.xy, _ScreenSize.zw, input.positionSS.z, input.positionSS.w, input.positionRWS);
+    
+    float3 V = GetWorldSpaceNormalizeViewDir(frameUniform, input.positionRWS);
+    
+    SurfaceData surfaceData;
+    BuiltinData builtinData;
+    GetSurfaceAndBuiltinData(frameUniform, renderData, matProperties, samplerStruct, input, V, posInput, surfaceData, builtinData);
+    
+    ENCODE_INTO_GBUFFER(surfaceData, builtinData, posInput.positionSS, outGBuffer);
 
-    outGBuffer0 = float4(input.texCoord0.xy, 1, 0);
-    outGBuffer1 = float4(0, 0, 0, 0);
-    outGBuffer2 = float4(0, 0, 0, 0);
-    outGBuffer3 = float4(0, 0, 0, 0);
+    // outGBuffer0 = float4(input.texCoord0.xy, 1, 0);
+    // outGBuffer1 = float4(0, 0, 0, 0);
+    // outGBuffer2 = float4(0, 0, 0, 0);
+    // outGBuffer3 = float4(0, 0, 0, 0);
 }

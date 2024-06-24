@@ -1,6 +1,6 @@
 // Using this function instead of accessing the constant directly allows for overrides, in particular
 // in Path Tracing where we want to change the sidedness behaviour based on the transparency mode.
-float3 GetDoubleSidedConstants()
+float3 GetDoubleSidedConstants(PropertiesPerMaterial matProperties)
 {
 #ifdef _DOUBLESIDED_ON
 
@@ -14,7 +14,7 @@ float3 GetDoubleSidedConstants()
 
     #else // SHADERPASS_PATH_TRACING
 
-        return _DoubleSidedConstants.xyz;
+        return matProperties._DoubleSidedConstants.xyz;
 
     #endif // SHADERPASS_PATH_TRACING
 

@@ -36,4 +36,16 @@ FrameUniforms GetFrameUniforms()
     return frameUniform;
 }
 
+SamplerStruct GetSamplerStruct()
+{
+    SamplerStruct mSamplerStruct;
+    mSamplerStruct.SPointClampSampler = s_point_clamp_sampler;
+    mSamplerStruct.SLinearClampSampler = s_linear_clamp_sampler;
+    mSamplerStruct.SLinearRepeatSampler = s_linear_repeat_sampler;
+    mSamplerStruct.STrilinearClampSampler = s_trilinear_clamp_sampler;
+    mSamplerStruct.STrilinearRepeatSampler = s_trilinear_repeat_sampler;
+    mSamplerStruct.SLinearClampCompareSampler = s_linear_clamp_compare_sampler;
+    return mSamplerStruct;
+}
+
 #endif
