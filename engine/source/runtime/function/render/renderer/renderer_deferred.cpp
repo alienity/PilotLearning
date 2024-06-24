@@ -470,7 +470,7 @@ namespace MoYu
         IndirectShadowPass::ShadowOutputParameters mShadowmapOutputParams;
 
         mShadowmapIntputParams.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
-        mShadowmapIntputParams.renderDataPerDrawHandle     = indirectCullOutput.renderDataPerDrawHandle;
+        mShadowmapIntputParams.renderDataPerDrawHandle = indirectCullOutput.renderDataPerDrawHandle;
         mShadowmapIntputParams.propertiesPerMaterialHandle = indirectCullOutput.propertiesPerMaterialHandle;
         for (size_t i = 0; i < indirectCullOutput.directionShadowmapHandles.size(); i++)
         {
@@ -483,7 +483,6 @@ namespace MoYu
         mIndirectShadowPass->update(graph, mShadowmapIntputParams, mShadowmapOutputParams);
         //=================================================================================
         
-        /*
         //=================================================================================
         // indirect terrain draw shadow
         IndirectTerrainShadowPass::ShadowInputParameters  mTerrainShadowmapIntputParams;
@@ -499,7 +498,6 @@ namespace MoYu
 
         mIndirectTerrainShadowPass->update(graph, mTerrainShadowmapIntputParams, mTerrainShadowmapOutputParams);
         //=================================================================================
-        */
 
         //=================================================================================
         // shadowmap output

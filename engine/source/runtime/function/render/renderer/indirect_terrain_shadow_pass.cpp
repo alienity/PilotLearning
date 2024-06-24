@@ -53,7 +53,6 @@ namespace MoYu
                 PipelineStateStreamInputLayout       InputLayout;
                 PipelineStateStreamPrimitiveTopology PrimitiveTopologyType;
                 PipelineStateStreamVS                VS;
-                PipelineStateStreamPS                PS;
                 PipelineStateStreamDepthStencilState DepthStencilState;
                 PipelineStateStreamRenderTargetState RenderTargetState;
             } psoStream;
