@@ -529,28 +529,28 @@ void EncodeIntoGBuffer( SurfaceData surfaceData
 
     if (HasFlag(surfaceData.materialFeatures, MATERIALFEATUREFLAGS_LIT_SUBSURFACE_SCATTERING | MATERIALFEATUREFLAGS_LIT_TRANSMISSION))
     {
-        //// Reminder that during GBuffer pass we know statically material materialFeatures
-        //if ((surfaceData.materialFeatures & (MATERIALFEATUREFLAGS_LIT_SUBSURFACE_SCATTERING | MATERIALFEATUREFLAGS_LIT_TRANSMISSION)) == (MATERIALFEATUREFLAGS_LIT_SUBSURFACE_SCATTERING | MATERIALFEATUREFLAGS_LIT_TRANSMISSION))
-        //    materialFeatureId = GBUFFER_LIT_TRANSMISSION_SSS;
-        //else if ((surfaceData.materialFeatures & MATERIALFEATUREFLAGS_LIT_SUBSURFACE_SCATTERING) == MATERIALFEATUREFLAGS_LIT_SUBSURFACE_SCATTERING)
-        //    materialFeatureId = GBUFFER_LIT_SSS;
-        //else
-        //    materialFeatureId = GBUFFER_LIT_TRANSMISSION;
+        // Reminder that during GBuffer pass we know statically material materialFeatures
+        if ((surfaceData.materialFeatures & (MATERIALFEATUREFLAGS_LIT_SUBSURFACE_SCATTERING | MATERIALFEATUREFLAGS_LIT_TRANSMISSION)) == (MATERIALFEATUREFLAGS_LIT_SUBSURFACE_SCATTERING | MATERIALFEATUREFLAGS_LIT_TRANSMISSION))
+            materialFeatureId = GBUFFER_LIT_TRANSMISSION_SSS;
+        else if ((surfaceData.materialFeatures & MATERIALFEATUREFLAGS_LIT_SUBSURFACE_SCATTERING) == MATERIALFEATUREFLAGS_LIT_SUBSURFACE_SCATTERING)
+            materialFeatureId = GBUFFER_LIT_SSS;
+        else
+            materialFeatureId = GBUFFER_LIT_TRANSMISSION;
 
-        //// We perform the same encoding for SSS and transmission even if not used as it is the same cost
-        //// Note that regarding EncodeIntoSSSBuffer, as the lit.shader IS the deferred shader (and the SSS fullscreen pass is based on deferred encoding),
-        //// it know the details of the encoding, so it is fine to assume here how SSSBuffer0 is encoded
+        // We perform the same encoding for SSS and transmission even if not used as it is the same cost
+        // Note that regarding EncodeIntoSSSBuffer, as the lit.shader IS the deferred shader (and the SSS fullscreen pass is based on deferred encoding),
+        // it know the details of the encoding, so it is fine to assume here how SSSBuffer0 is encoded
 
-        //// For the SSS feature, the alpha channel is overwritten with (diffusionProfile | subsurfaceMask).
-        //// It is done so that the SSS pass only has to read a single G-Buffer 0.
-        //// We move specular occlusion to the red channel of the G-Buffer 2.
-        //SSSData sssData = ConvertSurfaceDataToSSSData(surfaceData);
-        //EncodeIntoSSSBuffer(sssData, positionSS, outGBuffer0);
+        // For the SSS feature, the alpha channel is overwritten with (diffusionProfile | subsurfaceMask).
+        // It is done so that the SSS pass only has to read a single G-Buffer 0.
+        // We move specular occlusion to the red channel of the G-Buffer 2.
+        SSSData sssData = ConvertSurfaceDataToSSSData(surfaceData);
+        EncodeIntoSSSBuffer(sssData, positionSS, outGBuffer0);
 
-        //// We duplicate storage of diffusion profile in G-Buffer 2.
-        //// It allows us to delay reading the G-Buffer 0 until the end of the deferred lighting shader.
-        //float transmissionMaskProfile = PackFloatInt8bit(surfaceData.transmissionMask, sssData.diffusionProfileIndex, 16);
-        //outGBuffer2.rgb = float3(encodedSpecularOcclusion, surfaceData.thickness, transmissionMaskProfile);
+        // We duplicate storage of diffusion profile in G-Buffer 2.
+        // It allows us to delay reading the G-Buffer 0 until the end of the deferred lighting shader.
+        float transmissionMaskProfile = PackFloatInt8bit(surfaceData.transmissionMask, sssData.diffusionProfileIndex, 16);
+        outGBuffer2.rgb = float3(encodedSpecularOcclusion, surfaceData.thickness, transmissionMaskProfile);
     }
     else if (HasFlag(surfaceData.materialFeatures, MATERIALFEATUREFLAGS_LIT_ANISOTROPY))
     {

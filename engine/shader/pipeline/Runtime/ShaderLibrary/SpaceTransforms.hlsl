@@ -44,6 +44,24 @@ float4x4 GetViewToHClipMatrix(FrameUniforms frameUniform)
     return UNITY_MATRIX_P(frameUniform);
 }
 
+// This function always return the absolute position in WS
+float3 GetAbsolutePositionWS(float3 positionRWS)
+{
+#if (SHADEROPTIONS_CAMERA_RELATIVE_RENDERING != 0)
+    positionRWS += _WorldSpaceCameraPos.xyz;
+#endif
+    return positionRWS;
+}
+
+// This function return the camera relative position in WS
+float3 GetCameraRelativePositionWS(float3 positionWS)
+{
+#if (SHADEROPTIONS_CAMERA_RELATIVE_RENDERING != 0)
+    positionWS -= _WorldSpaceCameraPos.xyz;
+#endif
+    return positionWS;
+}
+
 float3 TransformObjectToWorld(RenderDataPerDraw renderDataPerDraw, float3 positionOS)
 {
     return mul(GetObjectToWorldMatrix(renderDataPerDraw), float4(positionOS, 1.0)).xyz;

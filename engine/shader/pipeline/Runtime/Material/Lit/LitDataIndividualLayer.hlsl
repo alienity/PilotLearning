@@ -1,4 +1,7 @@
-void ADD_IDX(ComputeLayerTexCoord)( // Uv related parameters
+void ADD_IDX(ComputeLayerTexCoord)(
+                                    // Input parameters
+                                    FrameUniforms frameUniform, RenderDataPerDraw renderData, PropertiesPerMaterial matProperties,
+                                    // Uv related parameters
                                     float2 texCoord0, float2 texCoord1, float2 texCoord2, float2 texCoord3, float4 uvMappingMask, float4 uvMappingMaskDetails,
                                     // scale and bias for base and detail + global tiling factor (for layered lit only)
                                     float2 texScale, float2 texBias, float2 texScaleDetails, float2 texBiasDetails, float additionalTiling, float linkDetailsWithBase,
@@ -38,7 +41,7 @@ void ADD_IDX(ComputeLayerTexCoord)( // Uv related parameters
     float3 posForTriplanar = GetAbsolutePositionWS(positionRWS) * worldScale;
     if (objectSpaceMapping)
     {
-        posForTriplanar = TransformWorldToObject(positionRWS);
+        posForTriplanar = TransformWorldToObject(renderData, positionRWS);
     }
     GetTriplanarCoordinate(posForTriplanar, uvXZ, uvXY, uvZY);
 
@@ -189,7 +192,9 @@ float3 ADD_IDX(GetBentNormalTS)(FragInputs input, LayerTexCoord layerTexCoord, f
 }
 
 // Return opacity
-float ADD_IDX(GetSurfaceData)(FragInputs input, LayerTexCoord layerTexCoord, out SurfaceData surfaceData, out float3 normalTS, out float3 bentNormalTS)
+float ADD_IDX(GetSurfaceData)(
+    FrameUniforms frameUniform, RenderDataPerDraw renderData, PropertiesPerMaterial matProperties, SamplerStruct samplerStruct,
+    FragInputs input, LayerTexCoord layerTexCoord, out SurfaceData surfaceData, out float3 normalTS, out float3 bentNormalTS)
 {
     float3 detailNormalTS = float3(0.0, 0.0, 0.0);
     float detailMask = 0.0;
@@ -206,10 +211,13 @@ float ADD_IDX(GetSurfaceData)(FragInputs input, LayerTexCoord layerTexCoord, out
     detailNormalTS = SAMPLE_UVMAPPING_NORMALMAP_AG(ADD_IDX(_DetailMap), SAMPLER_DETAILMAP_IDX, ADD_IDX(layerTexCoord.details), ADD_IDX(_DetailNormalScale));
 #endif
 
-    float4 color = SAMPLE_UVMAPPING_TEXTURE2D(ADD_IDX(_BaseColorMap), ADD_ZERO_IDX(sampler_BaseColorMap), ADD_IDX(layerTexCoord.base)).rgba * ADD_IDX(_BaseColor).rgba;
+    TEXTURE2D(_BaseColorMap) = ResourceFromHeapIndex(matProperties._BaseColorMapIndex);
+    SAMPLER(sampler_BaseColorMap) = samplerStruct.SLinearClampSampler;
+
+    float4 color = SAMPLE_UVMAPPING_TEXTURE2D(ADD_IDX(_BaseColorMap), ADD_ZERO_IDX(sampler_BaseColorMap), ADD_IDX(layerTexCoord.base)).rgba * ADD_IDX(matProperties._BaseColor).rgba;
     surfaceData.baseColor = color.rgb;
     float alpha = color.a;
-    alpha = lerp(ADD_IDX(_AlphaRemapMin), ADD_IDX(_AlphaRemapMax), alpha);
+    alpha = lerp(ADD_IDX(matProperties._AlphaRemapMin), ADD_IDX(matProperties._AlphaRemapMax), alpha);
 
 #ifdef _DETAIL_MAP_IDX
     // Goal: we want the detail albedo map to be able to darken down to black and brighten up to white the surface albedo.
@@ -235,7 +243,7 @@ float ADD_IDX(GetSurfaceData)(FragInputs input, LayerTexCoord layerTexCoord, out
     surfaceData.perceptualSmoothness = SAMPLE_UVMAPPING_TEXTURE2D(ADD_IDX(_MaskMap), SAMPLER_MASKMAP_IDX, ADD_IDX(layerTexCoord.base)).a;
     surfaceData.perceptualSmoothness = lerp(ADD_IDX(_SmoothnessRemapMin), ADD_IDX(_SmoothnessRemapMax), surfaceData.perceptualSmoothness);
 #else
-    surfaceData.perceptualSmoothness = ADD_IDX(_Smoothness);
+    surfaceData.perceptualSmoothness = ADD_IDX(matProperties._Smoothness);
 #endif
 
 #ifdef _DETAIL_MAP_IDX
@@ -253,13 +261,13 @@ float ADD_IDX(GetSurfaceData)(FragInputs input, LayerTexCoord layerTexCoord, out
     surfaceData.ambientOcclusion = SAMPLE_UVMAPPING_TEXTURE2D(ADD_IDX(_MaskMap), SAMPLER_MASKMAP_IDX, ADD_IDX(layerTexCoord.base)).g;
     surfaceData.ambientOcclusion = lerp(ADD_IDX(_AORemapMin), ADD_IDX(_AORemapMax), surfaceData.ambientOcclusion);
 #else
-    surfaceData.metallic = ADD_IDX(_Metallic);
+    surfaceData.metallic = ADD_IDX(matProperties._Metallic);
     surfaceData.ambientOcclusion = 1.0;
 #endif
 
-    surfaceData.diffusionProfileHash = asuint(ADD_IDX(_DiffusionProfileHash));
-    surfaceData.subsurfaceMask = ADD_IDX(_SubsurfaceMask);
-    surfaceData.transmissionMask = ADD_IDX(_TransmissionMask);
+    surfaceData.diffusionProfileHash = asuint(ADD_IDX(matProperties._DiffusionProfileHash));
+    surfaceData.subsurfaceMask = ADD_IDX(matProperties._SubsurfaceMask);
+    surfaceData.transmissionMask = ADD_IDX(matProperties._TransmissionMask);
 
 #ifdef _SUBSURFACE_MASK_MAP_IDX
     surfaceData.subsurfaceMask *= SAMPLE_UVMAPPING_TEXTURE2D(ADD_IDX(_SubsurfaceMaskMap), SAMPLER_SUBSURFACE_MASK_MAP_IDX, ADD_IDX(layerTexCoord.base)).r;
@@ -272,7 +280,7 @@ float ADD_IDX(GetSurfaceData)(FragInputs input, LayerTexCoord layerTexCoord, out
     surfaceData.thickness = SAMPLE_UVMAPPING_TEXTURE2D(ADD_IDX(_ThicknessMap), SAMPLER_THICKNESSMAP_IDX, ADD_IDX(layerTexCoord.base)).r;
     surfaceData.thickness = ADD_IDX(_ThicknessRemap).x + ADD_IDX(_ThicknessRemap).y * surfaceData.thickness;
 #else
-    surfaceData.thickness = ADD_IDX(_Thickness);
+    surfaceData.thickness = ADD_IDX(matProperties._Thickness);
 #endif
 
 
@@ -322,9 +330,9 @@ float ADD_IDX(GetSurfaceData)(FragInputs input, LayerTexCoord layerTexCoord, out
 #else
     surfaceData.anisotropy = 1.0;
 #endif
-    surfaceData.anisotropy *= ADD_IDX(_Anisotropy);
+    surfaceData.anisotropy *= ADD_IDX(matProperties._Anisotropy);
 
-    surfaceData.specularColor = _SpecularColor.rgb;
+    surfaceData.specularColor = matProperties._SpecularColor.rgb;
 #ifdef _SPECULARCOLORMAP
     surfaceData.specularColor *= SAMPLE_UVMAPPING_TEXTURE2D(_SpecularColorMap, sampler_SpecularColorMap, layerTexCoord.base).rgb;
 #endif

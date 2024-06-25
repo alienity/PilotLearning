@@ -43,6 +43,9 @@ struct PropertiesPerMaterial
     
     //=======================Properties====================
     float4 _BaseColor;
+    float4 _BaseColorMap_ST;
+    float4 _BaseColorMap_TexelSize;
+    float4 _BaseColorMap_MipInfo;
     float _Metallic;
     float _Smoothness;
     float _MetallicRemapMin;
@@ -67,6 +70,7 @@ struct PropertiesPerMaterial
     float _HeightTessCenter; // In texture space
     // These parameters are for pixel displacement
     float _HeightPoMAmplitude; // Height Amplitude. In centimeters
+    float4 _DetailMap_ST;
     float _DetailAlbedoScale;
     float _DetailNormalScale;
     float _DetailSmoothnessScale;

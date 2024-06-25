@@ -1,10 +1,12 @@
 // Note: positionWS can be either in camera relative space or not
-float3 GetVertexDisplacement(float3 positionRWS, float3 normalWS, float2 texCoord0, float2 texCoord1, float2 texCoord2, float2 texCoord3, float4 vertexColor)
+float3 GetVertexDisplacement(
+    FrameUniforms frameUniform, RenderDataPerDraw renderData, PropertiesPerMaterial matProperties,
+    float3 positionRWS, float3 normalWS, float2 texCoord0, float2 texCoord1, float2 texCoord2, float2 texCoord3, float4 vertexColor)
 {
     // This call will work for both LayeredLit and Lit shader
     LayerTexCoord layerTexCoord;
     ZERO_INITIALIZE(LayerTexCoord, layerTexCoord);
-    GetLayerTexCoord(texCoord0, texCoord1, texCoord2, texCoord3, positionRWS, normalWS, layerTexCoord);
+    GetLayerTexCoord(frameUniform, renderData, matProperties, texCoord0, texCoord1, texCoord2, texCoord3, positionRWS, normalWS, layerTexCoord);
 
     // TODO: do this algorithm for lod fetching as lod not available in vertex/domain shader
     // http://www.sebastiansylvan.com/post/the-problem-with-tessellation-in-directx-11/

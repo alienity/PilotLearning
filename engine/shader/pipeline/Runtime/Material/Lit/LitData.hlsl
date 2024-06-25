@@ -133,24 +133,26 @@ void GenerateLayerTexCoordBasisTB(FragInputs input, inout LayerTexCoord layerTex
 #ifdef _BENTNORMALMAP
 #define _BENTNORMALMAP_IDX
 #endif
-// #include "../../Material/Lit/LitDataIndividualLayer.hlsl"
+#include "../../Material/Lit/LitDataIndividualLayer.hlsl"
 
 // This maybe call directly by tessellation (domain) shader, thus all part regarding surface gradient must be done
 // in function with FragInputs input as parameters
 // layerTexCoord must have been initialize to 0 outside of this function
-void GetLayerTexCoord(float2 texCoord0, float2 texCoord1, float2 texCoord2, float2 texCoord3,
-                      float3 positionRWS, float3 vertexNormalWS, inout LayerTexCoord layerTexCoord)
+void GetLayerTexCoord(
+    FrameUniforms frameUniform, RenderDataPerDraw renderData, PropertiesPerMaterial matProperties,
+    float2 texCoord0, float2 texCoord1, float2 texCoord2, float2 texCoord3,
+    float3 positionRWS, float3 vertexNormalWS, inout LayerTexCoord layerTexCoord)
 {
     layerTexCoord.vertexNormalWS = vertexNormalWS;
     float objectSpaceMapping = false;
     float3 normalToComputeWeights = layerTexCoord.vertexNormalWS;
-// #ifndef LAYERED_LIT_SHADER
-//     objectSpaceMapping = _ObjectSpaceUVMapping;
-//     if (objectSpaceMapping)
-//     {
-//         normalToComputeWeights = TransformWorldToObjectNormal(normalToComputeWeights);
-//     }
-// #endif
+#ifndef LAYERED_LIT_SHADER
+    objectSpaceMapping = matProperties._ObjectSpaceUVMapping;
+    if (objectSpaceMapping)
+    {
+        normalToComputeWeights = TransformWorldToObjectNormal(renderData, normalToComputeWeights);
+    }
+#endif
 
     layerTexCoord.triplanarWeights = ComputeTriplanarWeights(normalToComputeWeights);
 
@@ -162,23 +164,30 @@ void GetLayerTexCoord(float2 texCoord0, float2 texCoord1, float2 texCoord2, floa
 #endif
 
 
-    // // Be sure that the compiler is aware that we don't use UV1 to UV3 for main layer so it can optimize code
-    // ComputeLayerTexCoord(   texCoord0, texCoord1, texCoord2, texCoord3, _UVMappingMask, _UVDetailsMappingMask,
-    //                         _BaseColorMap_ST.xy, _BaseColorMap_ST.zw, _DetailMap_ST.xy, _DetailMap_ST.zw, 1.0, _LinkDetailsWithBase,
-    //                         positionRWS, _TexWorldScale,
-    //                         mappingType, objectSpaceMapping, layerTexCoord);
+    // Be sure that the compiler is aware that we don't use UV1 to UV3 for main layer so it can optimize code
+    ComputeLayerTexCoord(frameUniform, renderData, matProperties, texCoord0, texCoord1, texCoord2, texCoord3,
+                         matProperties._UVMappingMask, matProperties._UVDetailsMappingMask,
+                         matProperties._BaseColorMap_ST.xy, matProperties._BaseColorMap_ST.zw,
+                         matProperties._DetailMap_ST.xy, matProperties._DetailMap_ST.zw,
+                         1.0, matProperties._LinkDetailsWithBase,
+                         positionRWS, matProperties._TexWorldScale,
+                         mappingType, objectSpaceMapping, layerTexCoord);
 }
 
 // This is call only in this file
 // layerTexCoord must have been initialize to 0 outside of this function
-void GetLayerTexCoord(FragInputs input, inout LayerTexCoord layerTexCoord)
+void GetLayerTexCoord(
+    FrameUniforms frameUniform, RenderDataPerDraw renderData, PropertiesPerMaterial matProperties,
+    FragInputs input, inout LayerTexCoord layerTexCoord)
 {
 #ifdef SURFACE_GRADIENT
     GenerateLayerTexCoordBasisTB(input, layerTexCoord);
 #endif
 
-    GetLayerTexCoord(   input.texCoord0.xy, input.texCoord1.xy, input.texCoord2.xy, input.texCoord3.xy,
-                        input.positionRWS, input.tangentToWorld[2].xyz, layerTexCoord);
+    GetLayerTexCoord(
+        frameUniform, renderData, matProperties,
+        input.texCoord0.xy, input.texCoord1.xy, input.texCoord2.xy, input.texCoord3.xy,
+        input.positionRWS, input.tangentToWorld[2].xyz, layerTexCoord);
 }
 
 #if !defined(SHADER_STAGE_RAY_TRACING)
@@ -212,15 +221,11 @@ void GetSurfaceAndBuiltinData(
 
     LayerTexCoord layerTexCoord;
     ZERO_INITIALIZE(LayerTexCoord, layerTexCoord);
-    GetLayerTexCoord(input, layerTexCoord);
+    GetLayerTexCoord(frameUniform, renderData, matProperties, input, layerTexCoord);
 
-#if !defined(SHADER_STAGE_RAY_TRACING)
     float depthOffset = ApplyPerPixelDisplacement(input, V, layerTexCoord);
-    #ifdef _DEPTHOFFSET_ON
+#ifdef _DEPTHOFFSET_ON
     ApplyDepthOffsetPositionInput(V, depthOffset, GetViewForwardDir(), GetWorldToHClipMatrix(), posInput);
-    #endif
-#else
-    float depthOffset = 0.0;
 #endif
 
 #if defined(_ALPHATEST_ON)
@@ -247,7 +252,7 @@ void GetSurfaceAndBuiltinData(
     float3 normalTS;
     float3 bentNormalTS;
     float3 bentNormalWS;
-    // float alpha = GetSurfaceData(input, layerTexCoord, surfaceData, normalTS, bentNormalTS);
+    float alpha = GetSurfaceData(frameUniform, renderData, matProperties, samplerStruct, input, layerTexCoord, surfaceData, normalTS, bentNormalTS);
 
     // This need to be init here to quiet the compiler in case of decal, but can be override later.
     surfaceData.geomNormalWS = input.tangentToWorld[2];
@@ -309,7 +314,7 @@ void GetSurfaceAndBuiltinData(
 #endif
 
     // Caution: surfaceData must be fully initialize before calling GetBuiltinData
-    // GetBuiltinData(input, V, posInput, surfaceData, alpha, bentNormalWS, depthOffset, layerTexCoord.base, builtinData);
+    GetBuiltinData(input, V, posInput, surfaceData, alpha, bentNormalWS, depthOffset, layerTexCoord.base, builtinData);
 
 #ifdef _ALPHATEST_ON
     // Used for sharpening by alpha to mask
