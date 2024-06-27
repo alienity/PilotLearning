@@ -4,6 +4,7 @@
 
 // Use surface gradient normal mapping as it handle correctly triplanar normal mapping and multiple UVSet
 // Not used in rtx as it requires derivatives
+#define SURFACE_GRADIENT
 
 //-------------------------------------------------------------------------------------
 // Fill SurfaceData/Builtin data function
