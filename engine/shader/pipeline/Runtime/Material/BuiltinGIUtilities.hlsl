@@ -81,10 +81,6 @@ void SampleBakedGI(
 
 //     // We only want to apply the ray tracing ambient probe dimmer on the ambient probe
 //     // and legacy light probes (and obviously only in the ray tracing shaders).
-// #if defined(SHADER_STAGE_RAY_TRACING)
-//     bakeDiffuseLighting *= _RayTracingAmbientProbeDimmer;
-//     backBakeDiffuseLighting *= _RayTracingAmbientProbeDimmer;
-// #endif
 // #endif
 }
 

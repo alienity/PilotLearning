@@ -155,7 +155,6 @@ namespace MoYu
             curPropertiesPerMaterial._IridescenceThicknessMapIndex = m_InteralMat._IridescenceThicknessMap->GetDefaultSRV()->GetIndex();
             curPropertiesPerMaterial._IridescenceMaskMapIndex = m_InteralMat._IridescenceMaskMap->GetDefaultSRV()->GetIndex();
             curPropertiesPerMaterial._CoatMaskMapIndex = m_InteralMat._CoatMaskMap->GetDefaultSRV()->GetIndex();
-            curPropertiesPerMaterial._SpecularColorMapIndex = m_InteralMat._SpecularColorMap->GetDefaultSRV()->GetIndex();
             curPropertiesPerMaterial._EmissiveColorMapIndex = m_InteralMat._EmissiveColorMap->GetDefaultSRV()->GetIndex();
             curPropertiesPerMaterial._TransmittanceColorMapIndex = m_InteralMat._TransmittanceColorMap->GetDefaultSRV()->GetIndex();
 
@@ -194,7 +193,6 @@ namespace MoYu
             curPropertiesPerMaterial._IridescenceMask = m_InteralMat._IridescenceMask;
             curPropertiesPerMaterial._CoatMask = m_InteralMat._CoatMask;
             curPropertiesPerMaterial._EnergyConservingSpecularColor = m_InteralMat._EnergyConservingSpecularColor;
-            curPropertiesPerMaterial._SpecularColor = m_InteralMat._SpecularColor;
             curPropertiesPerMaterial._SpecularOcclusionMode = m_InteralMat._SpecularOcclusionMode;
             curPropertiesPerMaterial._EmissiveColor = m_InteralMat._EmissiveColor;
             curPropertiesPerMaterial._AlbedoAffectEmissive = m_InteralMat._AlbedoAffectEmissive;

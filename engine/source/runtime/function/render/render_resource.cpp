@@ -514,7 +514,6 @@ namespace MoYu
             UpdateInternalMaterialAssign(_IridescenceMask)
             UpdateInternalMaterialAssign(_CoatMask)
             UpdateInternalMaterialAssign(_EnergyConservingSpecularColor)
-            UpdateInternalMaterialAssign(_SpecularColor)
             UpdateInternalMaterialAssign(_SpecularOcclusionMode)
             UpdateInternalMaterialAssign(_EmissiveColor)
             UpdateInternalMaterialAssign(_AlbedoAffectEmissive)
@@ -590,7 +589,6 @@ namespace MoYu
             UpdateInternalMaterialMapCheck(_IridescenceThicknessMap)
             UpdateInternalMaterialMapCheck(_IridescenceMaskMap)
             UpdateInternalMaterialMapCheck(_CoatMaskMap)
-            UpdateInternalMaterialMapCheck(_SpecularColorMap)
             UpdateInternalMaterialMapCheck(_EmissiveColorMap)
             UpdateInternalMaterialMapCheck(_TransmittanceColorMap)
 

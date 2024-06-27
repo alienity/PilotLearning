@@ -7,7 +7,6 @@
 // UnityEngine.Rendering.HighDefinition.Lit+MaterialFeatureFlags:  static fields
 //
 #define MATERIALFEATUREFLAGS_LIT_STANDARD (1)
-#define MATERIALFEATUREFLAGS_LIT_SPECULAR_COLOR (2)
 #define MATERIALFEATUREFLAGS_LIT_SUBSURFACE_SCATTERING (4)
 #define MATERIALFEATUREFLAGS_LIT_TRANSMISSION (8)
 #define MATERIALFEATUREFLAGS_LIT_ANISOTROPY (16)
@@ -26,7 +25,6 @@ struct SurfaceData
     float ambientOcclusion;
     float metallic;
     float coatMask;
-    float3 specularColor;
     uint diffusionProfileHash;
     float subsurfaceMask;
     float transmissionMask;
@@ -383,10 +381,10 @@ BSDFData ConvertSurfaceDataToBSDFData(uint2 positionSS, SurfaceData surfaceData)
     bsdfData.perceptualRoughness = PerceptualSmoothnessToPerceptualRoughness(surfaceData.perceptualSmoothness);
 
     // There is no metallic with SSS and specular color mode
-    float metallic = HasFlag(surfaceData.materialFeatures, MATERIALFEATUREFLAGS_LIT_SPECULAR_COLOR | MATERIALFEATUREFLAGS_LIT_SUBSURFACE_SCATTERING | MATERIALFEATUREFLAGS_LIT_TRANSMISSION) ? 0.0 : surfaceData.metallic;
+    float metallic = HasFlag(surfaceData.materialFeatures, MATERIALFEATUREFLAGS_LIT_SUBSURFACE_SCATTERING | MATERIALFEATUREFLAGS_LIT_TRANSMISSION) ? 0.0 : surfaceData.metallic;
 
     bsdfData.diffuseColor = ComputeDiffuseColor(surfaceData.baseColor, metallic);
-    bsdfData.fresnel0     = HasFlag(surfaceData.materialFeatures, MATERIALFEATUREFLAGS_LIT_SPECULAR_COLOR) ? surfaceData.specularColor : ComputeFresnel0(surfaceData.baseColor, surfaceData.metallic, DEFAULT_SPECULAR_VALUE);
+    bsdfData.fresnel0     = ComputeFresnel0(surfaceData.baseColor, surfaceData.metallic, DEFAULT_SPECULAR_VALUE);
 
     // Note: we have ZERO_INITIALIZE the struct so bsdfData.anisotropy == 0.0
     // Note: DIFFUSION_PROFILE_NEUTRAL_ID is 0
@@ -627,16 +625,10 @@ void EncodeIntoGBuffer( FrameUniforms frameUniform
         // so decoding is more efficient (it allow better optimization for the compiler and save VGPR)
         // This mean that on the decode side, MATERIALFEATUREFLAGS_LIT_SPECULAR_COLOR doesn't exist anymore
         materialFeatureId = GBUFFER_LIT_STANDARD;
-
-        float3 diffuseColor = surfaceData.baseColor;
-        float3 fresnel0     = surfaceData.specularColor;
-
-        if (!HasFlag(surfaceData.materialFeatures, MATERIALFEATUREFLAGS_LIT_SPECULAR_COLOR))
-        {
-            // Convert from the metallic parametrization.
-            diffuseColor = ComputeDiffuseColor(surfaceData.baseColor, surfaceData.metallic);
-            fresnel0     = ComputeFresnel0(surfaceData.baseColor, surfaceData.metallic, DEFAULT_SPECULAR_VALUE);
-        }
+        
+        // Convert from the metallic parametrization.
+        float3 diffuseColor = ComputeDiffuseColor(surfaceData.baseColor, surfaceData.metallic);
+        float3 fresnel0     = ComputeFresnel0(surfaceData.baseColor, surfaceData.metallic, DEFAULT_SPECULAR_VALUE);
 
         outGBuffer0.rgb = diffuseColor;               // sRGB RT
         // outGBuffer2 is not sRGB, so use a fast encode/decode sRGB to keep precision

@@ -4,9 +4,6 @@
 
 // Use surface gradient normal mapping as it handle correctly triplanar normal mapping and multiple UVSet
 // Not used in rtx as it requires derivatives
-#ifndef SHADER_STAGE_RAY_TRACING
-#define SURFACE_GRADIENT
-#endif
 
 //-------------------------------------------------------------------------------------
 // Fill SurfaceData/Builtin data function
@@ -190,9 +187,7 @@ void GetLayerTexCoord(
         input.positionRWS, input.tangentToWorld[2].xyz, layerTexCoord);
 }
 
-#if !defined(SHADER_STAGE_RAY_TRACING)
 #include "../../Material/Lit/LitDataDisplacement.hlsl"
-#endif
 
 #include "../../Material/Lit/LitBuiltinData.hlsl"
 
@@ -209,10 +204,8 @@ void GetSurfaceAndBuiltinData(
 // #endif
 
 // Don't dither if displaced tessellation (we're fading out the displacement instead to match the next LOD)
-#if !defined(SHADER_STAGE_RAY_TRACING) && !defined(_TESSELLATION_DISPLACEMENT)
 #ifdef LOD_FADE_CROSSFADE // enable dithering LOD transition if user select CrossFade transition in LOD group
     LODDitheringTransition(ComputeFadeMaskSeed(V, posInput.positionSS), unity_LODFade.x);
-#endif
 #endif
 
     float3 doubleSidedConstants = GetDoubleSidedConstants(matProperties);
@@ -304,7 +297,7 @@ void GetSurfaceAndBuiltinData(
     // This is use with anisotropic material
     surfaceData.tangentWS = Orthonormalize(surfaceData.tangentWS, surfaceData.normalWS);
 
-#if defined(_ENABLE_GEOMETRIC_SPECULAR_AA) && !defined(SHADER_STAGE_RAY_TRACING)
+#if defined(_ENABLE_GEOMETRIC_SPECULAR_AA)
     // Specular AA
     #ifdef PROJECTED_SPACE_NDF_FILTERING
     surfaceData.perceptualSmoothness = ProjectedSpaceGeometricNormalFiltering(surfaceData.perceptualSmoothness, input.tangentToWorld[2], _SpecularAAScreenSpaceVariance, _SpecularAAThreshold);
@@ -322,7 +315,7 @@ void GetSurfaceAndBuiltinData(
 #endif
     
 }
-#if !defined(SHADER_STAGE_RAY_TRACING)
-    #include "../../Material/Lit/LitDataMeshModification.hlsl"
-#endif
+
+#include "../../Material/Lit/LitDataMeshModification.hlsl"
+
 #endif // #ifndef LAYERED_LIT_SHADER

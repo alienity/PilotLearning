@@ -305,9 +305,6 @@ float ADD_IDX(GetSurfaceData)(
 #ifdef _MATERIAL_FEATURE_IRIDESCENCE
     surfaceData.materialFeatures |= MATERIALFEATUREFLAGS_LIT_IRIDESCENCE;
 #endif
-#ifdef _MATERIAL_FEATURE_SPECULAR_COLOR
-    surfaceData.materialFeatures |= MATERIALFEATUREFLAGS_LIT_SPECULAR_COLOR;
-#endif
 
 #ifdef _TANGENTMAP
     #ifdef _NORMALMAP_TANGENT_SPACE_IDX // Normal and tangent use same space
@@ -331,17 +328,6 @@ float ADD_IDX(GetSurfaceData)(
     surfaceData.anisotropy = 1.0;
 #endif
     surfaceData.anisotropy *= ADD_IDX(matProperties._Anisotropy);
-
-    surfaceData.specularColor = matProperties._SpecularColor.rgb;
-#ifdef _SPECULARCOLORMAP
-    surfaceData.specularColor *= SAMPLE_UVMAPPING_TEXTURE2D(_SpecularColorMap, sampler_SpecularColorMap, layerTexCoord.base).rgb;
-#endif
-#ifdef _MATERIAL_FEATURE_SPECULAR_COLOR
-    // Require to have setup baseColor
-    // Reproduce the energy conservation done in legacy Unity. Not ideal but better for compatibility and users can unchek it
-    surfaceData.baseColor *= _EnergyConservingSpecularColor > 0.0 ? (1.0 - Max3(surfaceData.specularColor.r, surfaceData.specularColor.g, surfaceData.specularColor.b)) : 1.0;
-#endif
-
 
 #if HAS_REFRACTION
     if (_EnableSSRefraction)
@@ -405,7 +391,6 @@ float ADD_IDX(GetSurfaceData)(
     // Note: any parameters set here must also be set in GetSurfaceAndBuiltinData() layer version
     surfaceData.tangentWS = float3(0.0, 0.0, 0.0);
     surfaceData.anisotropy = 0.0;
-    surfaceData.specularColor = float3(0.0, 0.0, 0.0);
     surfaceData.iridescenceThickness = 0.0;
     surfaceData.iridescenceMask = 0.0;
     surfaceData.coatMask = 0.0;

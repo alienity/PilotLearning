@@ -36,9 +36,9 @@ struct PropertiesPerMaterial
     uint _IridescenceThicknessMapIndex; // white. Iridescence Thickness Map
     uint _IridescenceMaskMapIndex; // white. Iridescence Mask Map
     uint _CoatMaskMapIndex; // white
-    uint _SpecularColorMapIndex; // white
     uint _EmissiveColorMapIndex; // white
     uint _TransmittanceColorMapIndex; // white
+    uint _PaddingIndex0;
     //=====================================================
     
     //=======================Properties====================
@@ -85,7 +85,6 @@ struct PropertiesPerMaterial
     float _IridescenceMask;
     float _CoatMask;
     float _EnergyConservingSpecularColor;
-    float4 _SpecularColor;
     int _SpecularOcclusionMode; // Off, 0, From Ambient Occlusion, 1, From AO and Bent Normals, 2
     float3 _EmissiveColor;
     float _AlbedoAffectEmissive; // Albedo Affect Emissive

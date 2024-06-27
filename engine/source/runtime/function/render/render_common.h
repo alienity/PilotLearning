@@ -228,7 +228,6 @@ namespace MoYu
         std::shared_ptr<RHI::D3D12Texture> _IridescenceThicknessMap { nullptr }; // white. Iridescence Thickness Map
         std::shared_ptr<RHI::D3D12Texture> _IridescenceMaskMap { nullptr }; // white. Iridescence Mask Map
         std::shared_ptr<RHI::D3D12Texture> _CoatMaskMap { nullptr }; // white
-        std::shared_ptr<RHI::D3D12Texture> _SpecularColorMap { nullptr }; // white
         std::shared_ptr<RHI::D3D12Texture> _EmissiveColorMap { nullptr }; // white
         std::shared_ptr<RHI::D3D12Texture> _TransmittanceColorMap{ nullptr }; // white
         //=====================================================
@@ -273,7 +272,6 @@ namespace MoYu
         float _IridescenceMask{ 1.0f };
         float _CoatMask{ 0 };
         float _EnergyConservingSpecularColor{ 1.0f };
-        glm::float4 _SpecularColor{ 1, 1, 1, 1 };
         int _SpecularOcclusionMode{ 1 }; // Off, 0, From Ambient Occlusion, 1, From AO and Bent Normals, 2
         glm::float3 _EmissiveColor{ 0, 0, 0 };
         float _AlbedoAffectEmissive{ 0 }; // Albedo Affect Emissive
@@ -686,7 +684,6 @@ namespace MoYu
         MaterialImage _IridescenceThicknessMap{ DefaultMaterialImageWhite }; // white. Iridescence Thickness Map
         MaterialImage _IridescenceMaskMap{ DefaultMaterialImageWhite }; // white. Iridescence Mask Map
         MaterialImage _CoatMaskMap{ DefaultMaterialImageWhite }; // white
-        MaterialImage _SpecularColorMap{ DefaultMaterialImageWhite }; // white
         MaterialImage _EmissiveColorMap{ DefaultMaterialImageBlack }; // white
         MaterialImage _TransmittanceColorMap{ DefaultMaterialImageWhite }; // white
         glm::float4 _BaseColor{ 1, 1, 1, 1 };
@@ -728,7 +725,6 @@ namespace MoYu
         float _IridescenceMask{ 1.0f };
         float _CoatMask{ 0 };
         float _EnergyConservingSpecularColor{ 1.0f };
-        glm::float4 _SpecularColor{ 1, 1, 1, 1 };
         int _SpecularOcclusionMode{ 1 }; // Off, 0, From Ambient Occlusion, 1, From AO and Bent Normals, 2
         glm::float3 _EmissiveColor{ 0, 0, 0 };
         float _AlbedoAffectEmissive{ 0 }; // Albedo Affect Emissive
@@ -805,7 +801,6 @@ namespace MoYu
             lhs._IridescenceThicknessMap == rhs._IridescenceThicknessMap &&
             lhs._IridescenceMaskMap == rhs._IridescenceMaskMap &&
             lhs._CoatMaskMap == rhs._CoatMaskMap &&
-            lhs._SpecularColorMap == rhs._SpecularColorMap &&
             lhs._EmissiveColorMap == rhs._EmissiveColorMap &&
             lhs._TransmittanceColorMap == rhs._TransmittanceColorMap &&
             lhs._BaseColor == rhs._BaseColor &&
@@ -843,7 +838,6 @@ namespace MoYu
             lhs._IridescenceMask == rhs._IridescenceMask &&
             lhs._CoatMask == rhs._CoatMask &&
             lhs._EnergyConservingSpecularColor == rhs._EnergyConservingSpecularColor &&
-            lhs._SpecularColor == rhs._SpecularColor &&
             lhs._SpecularOcclusionMode == rhs._SpecularOcclusionMode &&
             lhs._EmissiveColor == rhs._EmissiveColor &&
             lhs._AlbedoAffectEmissive == rhs._AlbedoAffectEmissive &&

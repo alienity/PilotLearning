@@ -27,7 +27,6 @@ namespace MoYu
         MaterialImage _IridescenceThicknessMap{ DefaultMaterialImageWhite }; // white. Iridescence Thickness Map
         MaterialImage _IridescenceMaskMap{ DefaultMaterialImageWhite }; // white. Iridescence Mask Map
         MaterialImage _CoatMaskMap{ DefaultMaterialImageWhite }; // white
-        MaterialImage _SpecularColorMap{ DefaultMaterialImageWhite }; // white
         MaterialImage _EmissiveColorMap{ DefaultMaterialImageBlack }; // white
         MaterialImage _TransmittanceColorMap{ DefaultMaterialImageWhite }; // white
         glm::float4 _BaseColor{ 1, 1, 1, 1 };
@@ -69,7 +68,6 @@ namespace MoYu
         float _IridescenceMask{ 1.0f };
         float _CoatMask{ 0 };
         float _EnergyConservingSpecularColor{ 1.0f };
-        glm::float4 _SpecularColor{ 1, 1, 1, 1 };
         int _SpecularOcclusionMode{ 1 }; // Off, 0, From Ambient Occlusion, 1, From AO and Bent Normals, 2
         glm::float3 _EmissiveColor{ 0, 0, 0 };
         float _AlbedoAffectEmissive{ 0 }; // Albedo Affect Emissive
@@ -148,7 +146,6 @@ namespace MoYu
             MaterialResJsonPair(_IridescenceThicknessMap),
             MaterialResJsonPair(_IridescenceMaskMap),
             MaterialResJsonPair(_CoatMaskMap),
-            MaterialResJsonPair(_SpecularColorMap),
             MaterialResJsonPair(_EmissiveColorMap),
             MaterialResJsonPair(_TransmittanceColorMap),
             MaterialResJsonPair(_BaseColor),
@@ -186,7 +183,6 @@ namespace MoYu
             MaterialResJsonPair(_IridescenceMask),
             MaterialResJsonPair(_CoatMask),
             MaterialResJsonPair(_EnergyConservingSpecularColor),
-            MaterialResJsonPair(_SpecularColor),
             MaterialResJsonPair(_SpecularOcclusionMode),
             MaterialResJsonPair(_EmissiveColor),
             MaterialResJsonPair(_AlbedoAffectEmissive),
@@ -264,7 +260,6 @@ namespace MoYu
         MaterialResJsonPair2(_IridescenceThicknessMap, MaterialImage)
         MaterialResJsonPair2(_IridescenceMaskMap, MaterialImage)
         MaterialResJsonPair2(_CoatMaskMap, MaterialImage)
-        MaterialResJsonPair2(_SpecularColorMap, MaterialImage)
         MaterialResJsonPair2(_EmissiveColorMap, MaterialImage)
         MaterialResJsonPair2(_TransmittanceColorMap, MaterialImage)
         MaterialResJsonPair2(_BaseColor, glm::float4)
@@ -302,7 +297,6 @@ namespace MoYu
         MaterialResJsonPair2(_IridescenceMask, float)
         MaterialResJsonPair2(_CoatMask, float)
         MaterialResJsonPair2(_EnergyConservingSpecularColor, float)
-        MaterialResJsonPair2(_SpecularColor, glm::float4)
         MaterialResJsonPair2(_SpecularOcclusionMode, int)
         MaterialResJsonPair2(_EmissiveColor, glm::float3)
         MaterialResJsonPair2(_AlbedoAffectEmissive, float)

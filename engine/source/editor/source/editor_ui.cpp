@@ -525,7 +525,6 @@ namespace MoYu
             if (ImGui::DragFloat("_IridescenceMask", &mat_res_ptr->_IridescenceMask, 0.02f, 0.0f, 1.0f)) isDirty = true;
             if (ImGui::DragFloat("_CoatMask", &mat_res_ptr->_CoatMask, 0.02f, 0.0f, 1.0f)) isDirty = true;
             if (ImGui::DragFloat("_EnergyConservingSpecularColor", &mat_res_ptr->_EnergyConservingSpecularColor, 0.02f, 0.0f, 1.0f)) isDirty = true;
-            if (ImGui::ColorEdit4("_SpecularColor", &mat_res_ptr->_SpecularColor.x)) isDirty = true;
             if (ImGui::DragInt("_SpecularOcclusionMode", &mat_res_ptr->_SpecularOcclusionMode, 1, 0, 2)) isDirty = true;
             if (ImGui::ColorEdit3("_EmissiveColor", &mat_res_ptr->_EmissiveColor.x)) isDirty = true;
             if (ImGui::DragFloat("_AlbedoAffectEmissive", &mat_res_ptr->_AlbedoAffectEmissive, 0.02f, 0.0f, 1.0f)) isDirty = true;
@@ -596,7 +595,6 @@ namespace MoYu
             m_editor_ui_creator["MaterialImage"]("_IridescenceThicknessMap", isDirty, &mat_res_ptr->_IridescenceThicknessMap);
             m_editor_ui_creator["MaterialImage"]("_IridescenceMaskMap", isDirty, &mat_res_ptr->_IridescenceMaskMap);
             m_editor_ui_creator["MaterialImage"]("_CoatMaskMap", isDirty, &mat_res_ptr->_CoatMaskMap);
-            m_editor_ui_creator["MaterialImage"]("_SpecularColorMap", isDirty, &mat_res_ptr->_SpecularColorMap);
             m_editor_ui_creator["MaterialImage"]("_EmissiveColorMap", isDirty, &mat_res_ptr->_EmissiveColorMap);
             m_editor_ui_creator["MaterialImage"]("_TransmittanceColorMap", isDirty, &mat_res_ptr->_TransmittanceColorMap);
 
