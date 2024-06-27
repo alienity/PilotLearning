@@ -316,16 +316,17 @@ void FillMaterialClearCoatData(float coatMask, inout BSDFData bsdfData)
 //     bsdfData.thickness = max(thickness, 0.0001);
 // }
 
-//SSSData ConvertSurfaceDataToSSSData(SurfaceData surfaceData)
-//{
-//    SSSData sssData;
+SSSData ConvertSurfaceDataToSSSData(SurfaceData surfaceData)
+{
+    SSSData sssData;
 
-//    sssData.diffuseColor = surfaceData.baseColor;
-//    sssData.subsurfaceMask = surfaceData.subsurfaceMask;
-//    sssData.diffusionProfileIndex = FindDiffusionProfileIndex(surfaceData.diffusionProfileHash);
-
-//    return sssData;
-//}
+    sssData.diffuseColor = surfaceData.baseColor;
+    sssData.subsurfaceMask = surfaceData.subsurfaceMask;
+    // sssData.diffusionProfileIndex = FindDiffusionProfileIndex(surfaceData.diffusionProfileHash);
+    sssData.diffusionProfileIndex = 0;
+    
+    return sssData;
+}
 
 NormalData ConvertSurfaceDataToNormalData(SurfaceData surfaceData)
 {
@@ -495,7 +496,8 @@ BSDFData ConvertSurfaceDataToBSDFData(uint2 positionSS, SurfaceData surfaceData)
 
 // Encode SurfaceData (BSDF parameters) into GBuffer
 // Must be in sync with RT declared in HDRenderPipeline.cs ::Rebuild
-void EncodeIntoGBuffer( SurfaceData surfaceData
+void EncodeIntoGBuffer( FrameUniforms frameUniform
+                        , SurfaceData surfaceData
                         , BuiltinData builtinData
                         , uint2 positionSS
                         , out GBufferType0 outGBuffer0
@@ -672,7 +674,7 @@ void EncodeIntoGBuffer( SurfaceData surfaceData
     // Extra hack: In this last case, if emissiveColor is 0 then we store AO inside the buffer with a tag.
     outGBuffer3 = float4(builtinData.bakeDiffuseLighting * surfaceData.ambientOcclusion + builtinData.emissiveColor, 0.0);
     // Pre-expose lighting buffer
-    // outGBuffer3.rgb *= GetCurrentExposureMultiplier();
+    outGBuffer3.rgb *= GetCurrentExposureMultiplier(frameUniform);
 
     // If this is 0 it mean that both bakeDiffuseLighting and emissiveColor are 0 and we are potentially in case of one effect
     // so store AO instead. It doesn't matter if it is a false positive as result will be correct, this is to reduce code divergence
@@ -819,42 +821,42 @@ uint DecodeFromGBuffer(
         bsdfData.fresnel0     = FastSRGBToLinear(inGBuffer2.rgb); // Later possibly overwritten by SSS
     }
 
-    // if (HasFlag(pixelFeatureFlags, MATERIALFEATUREFLAGS_LIT_SUBSURFACE_SCATTERING | MATERIALFEATUREFLAGS_LIT_TRANSMISSION))
-    // {
-    //     SSSData sssData;
-    //     float transmissionMask;
-    //
-    //     #ifdef DEBUG_DISPLAY
-    //     // Note that we don't use sssData.subsurfaceMask here. But it is still assign so we can have
-    //     // the information in the material debug view.
-    //     UnpackFloatInt8bit(inGBuffer0.a, 16, sssData.subsurfaceMask, sssData.diffusionProfileIndex);
-    //     #else
-    //     sssData.subsurfaceMask = 0.0f; // Initialize to prevent compiler error, but value is never used
-    //     #endif
-    //
-    //     // Overwrite the diffusion profile extracted just above.
-    //     // We must do this so the compiler can optimize away the read from the G-Buffer 0 to the very end (in PostEvaluateBSDF)
-    //     UnpackFloatInt8bit(inGBuffer2.b, 16, transmissionMask, sssData.diffusionProfileIndex);
-    //
-    //     // Reminder: when using SSS we exchange specular occlusion and subsurfaceMask/profileID
-    //     bsdfData.specularOcclusion = inGBuffer2.r;
-    //
-    //     // Note: both function assign profile and overwrite fresnel0 (both SSS and Transmission)
-    //     // in case one feature is enabled and not the other.
-    //
-    //     // The neutral value of subsurfaceMask is 0 (handled by ZERO_INITIALIZE).
-    //     if (HasFlag(pixelFeatureFlags, MATERIALFEATUREFLAGS_LIT_SUBSURFACE_SCATTERING))
-    //     {
-    //         FillMaterialSSS(sssData.diffusionProfileIndex, sssData.subsurfaceMask, bsdfData);
-    //     }
-    //
-    //     // The neutral value of thickness and transmittance is 0 (handled by ZERO_INITIALIZE).
-    //     if (HasFlag(pixelFeatureFlags, MATERIALFEATUREFLAGS_LIT_TRANSMISSION))
-    //     {
-    //         FillMaterialTransmission(sssData.diffusionProfileIndex, inGBuffer2.g, transmissionMask, bsdfData);
-    //     }
-    // }
-    // else
+    if (HasFlag(pixelFeatureFlags, MATERIALFEATUREFLAGS_LIT_SUBSURFACE_SCATTERING | MATERIALFEATUREFLAGS_LIT_TRANSMISSION))
+    {
+        SSSData sssData;
+        float transmissionMask;
+    
+        #ifdef DEBUG_DISPLAY
+        // Note that we don't use sssData.subsurfaceMask here. But it is still assign so we can have
+        // the information in the material debug view.
+        UnpackFloatInt8bit(inGBuffer0.a, 16, sssData.subsurfaceMask, sssData.diffusionProfileIndex);
+        #else
+        sssData.subsurfaceMask = 0.0f; // Initialize to prevent compiler error, but value is never used
+        #endif
+    
+        // Overwrite the diffusion profile extracted just above.
+        // We must do this so the compiler can optimize away the read from the G-Buffer 0 to the very end (in PostEvaluateBSDF)
+        UnpackFloatInt8bit(inGBuffer2.b, 16, transmissionMask, sssData.diffusionProfileIndex);
+    
+        // Reminder: when using SSS we exchange specular occlusion and subsurfaceMask/profileID
+        bsdfData.specularOcclusion = inGBuffer2.r;
+    
+        // Note: both function assign profile and overwrite fresnel0 (both SSS and Transmission)
+        // in case one feature is enabled and not the other.
+    
+        // The neutral value of subsurfaceMask is 0 (handled by ZERO_INITIALIZE).
+        if (HasFlag(pixelFeatureFlags, MATERIALFEATUREFLAGS_LIT_SUBSURFACE_SCATTERING))
+        {
+            // FillMaterialSSS(sssData.diffusionProfileIndex, sssData.subsurfaceMask, bsdfData);
+        }
+    
+        // The neutral value of thickness and transmittance is 0 (handled by ZERO_INITIALIZE).
+        if (HasFlag(pixelFeatureFlags, MATERIALFEATUREFLAGS_LIT_TRANSMISSION))
+        {
+            // FillMaterialTransmission(sssData.diffusionProfileIndex, inGBuffer2.g, transmissionMask, bsdfData);
+        }
+    }
+    else
     {
         bsdfData.specularOcclusion = inGBuffer0.a;
     }
