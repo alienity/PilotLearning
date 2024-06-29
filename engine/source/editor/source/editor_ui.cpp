@@ -554,7 +554,6 @@ namespace MoYu
             if (ImGui::DragFloat("_AlphaSrcBlend", &mat_res_ptr->_AlphaSrcBlend, 0.02f, 0.0f, 1.0f)) isDirty = true;
             if (ImGui::DragFloat("_AlphaDstBlend", &mat_res_ptr->_AlphaDstBlend, 0.02f, 0.0f, 1.0f)) isDirty = true;
             if (ImGui::DragFloat("_EnableFogOnTransparent", &mat_res_ptr->_EnableFogOnTransparent, 0.02f, 0.0f, 1.0f)) isDirty = true;
-            if (ImGui::DragFloat("_EnableBlendModePreserveSpecularLighting", &mat_res_ptr->_EnableBlendModePreserveSpecularLighting, 0.02f, 0.0f, 1.0f)) isDirty = true;
             if (ImGui::DragFloat("_DoubleSidedEnable", &mat_res_ptr->_DoubleSidedEnable, 0.02f, 0.0f, 1.0f)) isDirty = true;
             if (ImGui::DragFloat("_DoubleSidedNormalMode", &mat_res_ptr->_DoubleSidedNormalMode, 0.02f, 0.0f, 1.0f)) isDirty = true;
             if (ImGui::DragFloat4("_DoubleSidedConstants", &mat_res_ptr->_DoubleSidedConstants.x, 0.02f, -1.0f, 1.0f)) isDirty = true;

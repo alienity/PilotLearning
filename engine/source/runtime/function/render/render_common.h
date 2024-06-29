@@ -303,7 +303,6 @@ namespace MoYu
         float _AlphaSrcBlend{ 1.0f };
         float _AlphaDstBlend{ 0 };
         float _EnableFogOnTransparent{ 1.0f }; // Enable Fog
-        float _EnableBlendModePreserveSpecularLighting{ 1.0f }; // Enable Blend Mode Preserve Specular Lighting
         float _DoubleSidedEnable{ 0 }; // Double sided enable
         float _DoubleSidedNormalMode{ 1 }; // Flip, 0, Mirror, 1, None, 2
         glm::float4 _DoubleSidedConstants{ 1, 1, -1, 0 };
@@ -756,7 +755,6 @@ namespace MoYu
         float _AlphaSrcBlend{ 1.0f };
         float _AlphaDstBlend{ 0 };
         float _EnableFogOnTransparent{ 1.0f }; // Enable Fog
-        float _EnableBlendModePreserveSpecularLighting{ 1.0f }; // Enable Blend Mode Preserve Specular Lighting
         float _DoubleSidedEnable{ 0 }; // Double sided enable
         float _DoubleSidedNormalMode{ 1 }; // Flip, 0, Mirror, 1, None, 2
         glm::float4 _DoubleSidedConstants{ 1, 1, -1, 0 };
@@ -867,7 +865,6 @@ namespace MoYu
             lhs._AlphaSrcBlend == rhs._AlphaSrcBlend &&
             lhs._AlphaDstBlend == rhs._AlphaDstBlend &&
             lhs._EnableFogOnTransparent == rhs._EnableFogOnTransparent &&
-            lhs._EnableBlendModePreserveSpecularLighting == rhs._EnableBlendModePreserveSpecularLighting &&
             lhs._DoubleSidedEnable == rhs._DoubleSidedEnable &&
             lhs._DoubleSidedNormalMode == rhs._DoubleSidedNormalMode &&
             lhs._DoubleSidedConstants == rhs._DoubleSidedConstants &&

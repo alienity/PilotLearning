@@ -116,7 +116,7 @@ struct PropertiesPerMaterial
     float _AlphaSrcBlend;
     float _AlphaDstBlend;
     float _EnableFogOnTransparent; // Enable Fog
-    float _EnableBlendModePreserveSpecularLighting; // Enable Blend Mode Preserve Specular Lighting
+    float _Padding1;
     float _DoubleSidedEnable; // Double sided enable
     float _DoubleSidedNormalMode; // Flip, 0, Mirror, 1, None, 2
     float4 _DoubleSidedConstants;

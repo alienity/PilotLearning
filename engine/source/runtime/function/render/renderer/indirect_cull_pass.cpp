@@ -222,7 +222,6 @@ namespace MoYu
             curPropertiesPerMaterial._AlphaSrcBlend = m_InteralMat._AlphaSrcBlend;
             curPropertiesPerMaterial._AlphaDstBlend = m_InteralMat._AlphaDstBlend;
             curPropertiesPerMaterial._EnableFogOnTransparent = m_InteralMat._EnableFogOnTransparent;
-            curPropertiesPerMaterial._EnableBlendModePreserveSpecularLighting = m_InteralMat._EnableBlendModePreserveSpecularLighting;
             curPropertiesPerMaterial._DoubleSidedEnable = m_InteralMat._DoubleSidedEnable;
             curPropertiesPerMaterial._DoubleSidedNormalMode = m_InteralMat._DoubleSidedNormalMode;
             curPropertiesPerMaterial._DoubleSidedConstants = m_InteralMat._DoubleSidedConstants;

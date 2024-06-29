@@ -543,7 +543,6 @@ namespace MoYu
             UpdateInternalMaterialAssign(_AlphaSrcBlend)
             UpdateInternalMaterialAssign(_AlphaDstBlend)
             UpdateInternalMaterialAssign(_EnableFogOnTransparent)
-            UpdateInternalMaterialAssign(_EnableBlendModePreserveSpecularLighting)
             UpdateInternalMaterialAssign(_DoubleSidedEnable)
             UpdateInternalMaterialAssign(_DoubleSidedNormalMode)
             UpdateInternalMaterialAssign(_DoubleSidedConstants)
