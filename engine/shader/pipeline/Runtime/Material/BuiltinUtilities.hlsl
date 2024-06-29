@@ -56,13 +56,6 @@ void InitBuiltinData(PositionInputs posInput, float alpha, float3 normalWS, floa
     // SampleBakedGI(  posInput, normalWS, backNormalWS, builtinData.renderingLayers, texCoord1.xy, texCoord2.xy,
     //                 builtinData.bakeDiffuseLighting, builtinData.backBakeDiffuseLighting);
 
-    builtinData.isLightmap =
-#if defined(LIGHTMAP_ON) || defined(DYNAMICLIGHTMAP_ON)
-        1;
-#else
-        0;
-#endif
-
 #ifdef SHADOWS_SHADOWMASK
     float4 shadowMask = SampleShadowMask(posInput.positionWS, texCoord1.xy);
     builtinData.shadowMask0 = shadowMask.x;
@@ -97,30 +90,29 @@ void ApplyDebugToBuiltinData(inout BuiltinData builtinData)
 }
 
 #ifdef MODIFY_BAKED_DIFFUSE_LIGHTING
-void ModifyBakedDiffuseLighting(float3 V, PositionInputs posInput, SurfaceData surfaceData, inout BuiltinData builtinData)
+void ModifyBakedDiffuseLighting(
+    FrameUniforms frameUniform, RenderDataPerDraw renderData, PropertiesPerMaterial matProperties, SamplerStruct samplerStruct,
+    float3 V, PositionInputs posInput, SurfaceData surfaceData, inout BuiltinData builtinData)
 {
     // Since this is called early at PostInitBuiltinData and we need some fields from bsdfData and preLightData,
     // we get the whole structures redundantly earlier here - compiler should optimize out everything.
     BSDFData bsdfData = ConvertSurfaceDataToBSDFData(posInput.positionSS, surfaceData);
-    PreLightData preLightData = GetPreLightData(V, posInput, bsdfData);
+    PreLightData preLightData = GetPreLightData(frameUniform, renderData, matProperties, samplerStruct, V, posInput, bsdfData);
     ModifyBakedDiffuseLighting(V, posInput, preLightData, bsdfData, builtinData);
 }
 #endif
 
 // InitBuiltinData must be call before calling PostInitBuiltinData
-void PostInitBuiltinData(   float3 V, PositionInputs posInput, SurfaceData surfaceData,
-                            inout BuiltinData builtinData)
+void PostInitBuiltinData(
+    FrameUniforms frameUniform, RenderDataPerDraw renderData, PropertiesPerMaterial matProperties, SamplerStruct samplerStruct,
+    float3 V, PositionInputs posInput, SurfaceData surfaceData, inout BuiltinData builtinData)
 {
     // For APV (non lightmap case) and SSGI/RTGI/Mixed bakeDiffuseLighting is 0 and below code will not have any effect.
     // ModifyBakedDiffuseLighting, GetIndirectDiffuseMultiplier and ApplyDebugToBuiltinData will be done in lightloop for those cases
 
 #ifdef MODIFY_BAKED_DIFFUSE_LIGHTING
 
-#ifdef DEBUG_DISPLAY
-    // When the lux meter is enabled, we don't want the albedo of the material to modify the diffuse baked lighting
-    if (_DebugLightingMode != DEBUGLIGHTINGMODE_LUX_METER)
-#endif
-        ModifyBakedDiffuseLighting(V, posInput, surfaceData, builtinData);
+    // ModifyBakedDiffuseLighting(frameUniform, renderData, matProperties, samplerStruct, V, posInput, surfaceData, builtinData);
 
 #endif
 
@@ -130,7 +122,7 @@ void PostInitBuiltinData(   float3 V, PositionInputs posInput, SurfaceData surfa
     // float multiplier = GetIndirectDiffuseMultiplier(builtinData.renderingLayers);
     // builtinData.bakeDiffuseLighting *= multiplier;
 
-    ApplyDebugToBuiltinData(builtinData);
+    // ApplyDebugToBuiltinData(builtinData);
 }
 
 #endif //__BUILTINUTILITIES_HLSL__

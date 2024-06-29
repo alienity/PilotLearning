@@ -17,9 +17,6 @@ uint GetSubsurfaceScatteringTexturingMode(FrameUniforms frameUniform, int diffus
     bool enableSss = true;
     // SSS in HDRP is a screen space effect thus, it is not available for the lighting-based ray tracing passes (RTR, RTGI and RR). Thus we need to disable
     // the feature if we are in a ray tracing pass.
-#elif defined(SHADERPASS) && ((SHADERPASS == SHADERPASS_RAYTRACING_INDIRECT) || (SHADERPASS == SHADERPASS_RAYTRACING_FORWARD))
-    // If the SSS pass is executed, we know we have SSS enabled.
-    bool enableSss = false;
 #else
     bool enableSss = frameUniform.sssUniform._EnableSubsurfaceScattering != 0;
 #endif

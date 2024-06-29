@@ -28,8 +28,6 @@ float3 GetDisplacementObjectScale(bool vertexDisplacement)
     return objectScale;
 }
 
-#ifndef LAYERED_LIT_SHADER
-
 // Note: This function is call by both Per vertex and Per pixel displacement
 float GetMaxDisplacement()
 {
@@ -225,5 +223,3 @@ float3 ComputePerVertexDisplacement(LayerTexCoord layerTexCoord, float4 vertexCo
     return height.xxx;
 #endif
 }
-
-#endif // #ifndef LAYERED_LIT_SHADER

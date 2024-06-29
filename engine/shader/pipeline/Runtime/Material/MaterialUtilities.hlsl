@@ -4,20 +4,8 @@ float3 GetDoubleSidedConstants(PropertiesPerMaterial matProperties)
 {
 #ifdef _DOUBLESIDED_ON
 
-    #if (SHADERPASS == SHADERPASS_PATH_TRACING)
-
-        #if defined(_SURFACE_TYPE_TRANSPARENT) && (defined(_REFRACTION_PLANE) || defined(_REFRACTION_SPHERE))
-            return 1.0; // Force to 'None'
-        #else
-            return _DoubleSidedConstants.z > 0.0 ? -1.0 : _DoubleSidedConstants.xyz; // Force to 'Flip' or 'Mirror'
-        #endif
-
-    #else // SHADERPASS_PATH_TRACING
-
-        return matProperties._DoubleSidedConstants.xyz;
-
-    #endif // SHADERPASS_PATH_TRACING
-
+    return matProperties._DoubleSidedConstants.xyz;
+    
 #else // _DOUBLESIDED_ON
 
     return 1.0;

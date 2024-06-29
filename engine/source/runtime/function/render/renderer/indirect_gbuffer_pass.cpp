@@ -27,9 +27,9 @@ namespace MoYu
         std::filesystem::path m_ShaderRootPath = init_info.m_ShaderRootPath;
 
         drawGBufferVS = m_ShaderCompiler->CompileShader(
-            RHI_SHADER_TYPE::Vertex, m_ShaderRootPath / "pipeline/Runtime/Material/Lit/GBufferShader.hlsl", ShaderCompileOptions(L"Vert"));
+            RHI_SHADER_TYPE::Vertex, m_ShaderRootPath / "pipeline/Runtime/Material/Lit/LightGBufferShader.hlsl", ShaderCompileOptions(L"Vert"));
         drawGBufferPS = m_ShaderCompiler->CompileShader(
-            RHI_SHADER_TYPE::Pixel, m_ShaderRootPath / "pipeline/Runtime/Material/Lit/GBufferShader.hlsl", ShaderCompileOptions(L"Frag"));
+            RHI_SHADER_TYPE::Pixel, m_ShaderRootPath / "pipeline/Runtime/Material/Lit/LightGBufferShader.hlsl", ShaderCompileOptions(L"Frag"));
 
         {
             RHI::RootSignatureDesc rootSigDesc =

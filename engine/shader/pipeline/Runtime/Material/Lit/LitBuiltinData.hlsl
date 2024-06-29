@@ -1,25 +1,27 @@
 #include "../../Material/BuiltinUtilities.hlsl"
 
-void GetBuiltinData(FragInputs input, float3 V, inout PositionInputs posInput, SurfaceData surfaceData, float alpha, float3 bentNormalWS, float depthOffset, float3 emissiveColor, out BuiltinData builtinData)
+void GetBuiltinData(
+    FrameUniforms frameUniform, RenderDataPerDraw renderData, PropertiesPerMaterial matProperties, SamplerStruct samplerStruct,
+    FragInputs input, float3 V, inout PositionInputs posInput, SurfaceData surfaceData, float alpha,
+    float3 bentNormalWS, float depthOffset, float3 emissiveColor, out BuiltinData builtinData)
 {
     // For back lighting we use the oposite vertex normal
     InitBuiltinData(posInput, alpha, bentNormalWS, -input.tangentToWorld[2], input.texCoord1, input.texCoord2, builtinData);
 
     builtinData.emissiveColor = emissiveColor;
 
-    // // Inverse pre-expose using _EmissiveExposureWeight weight
-    // float3 emissiveRcpExposure = builtinData.emissiveColor * GetInverseCurrentExposureMultiplier();
-    // builtinData.emissiveColor = lerp(emissiveRcpExposure, builtinData.emissiveColor, _EmissiveExposureWeight);
+    // Inverse pre-expose using _EmissiveExposureWeight weight
+    float3 emissiveRcpExposure = builtinData.emissiveColor * GetInverseCurrentExposureMultiplier(frameUniform);
+    builtinData.emissiveColor = lerp(emissiveRcpExposure, builtinData.emissiveColor, matProperties._EmissiveExposureWeight);
 
     builtinData.depthOffset = depthOffset;
 
-    PostInitBuiltinData(V, posInput, surfaceData, builtinData);
+    PostInitBuiltinData(frameUniform, renderData, matProperties, samplerStruct, V, posInput, surfaceData, builtinData);
 }
 
-float3 GetEmissiveColor(SurfaceData surfaceData)
+float3 GetEmissiveColor(PropertiesPerMaterial matProperties, SurfaceData surfaceData)
 {
-    return float3(0,0,0);
-    // return _EmissiveColor * lerp(float3(1.0, 1.0, 1.0), surfaceData.baseColor.rgb, _AlbedoAffectEmissive);
+    return matProperties._EmissiveColor * lerp(float3(1.0, 1.0, 1.0), surfaceData.baseColor.rgb, matProperties._AlbedoAffectEmissive);
 }
 
 #ifdef _EMISSIVE_COLOR_MAP
@@ -31,7 +33,9 @@ float3 GetEmissiveColor(SurfaceData surfaceData, UVMapping emissiveMapMapping)
 }
 #endif // _EMISSIVE_COLOR_MAP
 
-void GetBuiltinData(FragInputs input, float3 V, inout PositionInputs posInput, SurfaceData surfaceData, float alpha, float3 bentNormalWS, float depthOffset, out BuiltinData builtinData)
+void GetBuiltinData(
+    FrameUniforms frameUniform, RenderDataPerDraw renderData, PropertiesPerMaterial matProperties, SamplerStruct samplerStruct,
+    FragInputs input, float3 V, inout PositionInputs posInput, SurfaceData surfaceData, float alpha, float3 bentNormalWS, float depthOffset, out BuiltinData builtinData)
 {
 #ifdef _EMISSIVE_COLOR_MAP
     // Use layer0 of LayerTexCoord to retrieve emissive color mapping information
@@ -39,11 +43,11 @@ void GetBuiltinData(FragInputs input, float3 V, inout PositionInputs posInput, S
     ZERO_INITIALIZE(LayerTexCoord, layerTexCoord);
     layerTexCoord.vertexNormalWS = input.tangentToWorld[2].xyz;
     bool objectSpaceMapping = false;
-#ifndef LAYERED_LIT_SHADER
+
     objectSpaceMapping = _ObjectSpaceUVMappingEmissive;
     if (objectSpaceMapping)
         layerTexCoord.vertexNormalWS = TransformWorldToObjectNormal(layerTexCoord.vertexNormalWS);
-#endif
+
     layerTexCoord.triplanarWeights = ComputeTriplanarWeights(layerTexCoord.vertexNormalWS);
 
     int mappingType = UV_MAPPING_UVSET;
@@ -54,33 +58,30 @@ void GetBuiltinData(FragInputs input, float3 V, inout PositionInputs posInput, S
     #endif
 
     // Be sure that the compiler is aware that we don't use UV1 to UV3 for main layer so it can optimize code
-    #ifndef LAYERED_LIT_SHADER
     ComputeLayerTexCoord(
-    #else
-    ComputeLayerTexCoord0(
-    #endif
                             input.texCoord0.xy, input.texCoord1.xy, input.texCoord2.xy, input.texCoord3.xy, _UVMappingMaskEmissive, _UVMappingMaskEmissive,
                             _EmissiveColorMap_ST.xy, _EmissiveColorMap_ST.zw, float2(0.0, 0.0), float2(0.0, 0.0), 1.0, false,
                             input.positionRWS, _TexWorldScaleEmissive,
                             mappingType, objectSpaceMapping, layerTexCoord);
-
-    #ifndef LAYERED_LIT_SHADER
+    
     UVMapping emissiveMapMapping = layerTexCoord.base;
-    #else
-    UVMapping emissiveMapMapping = layerTexCoord.base0;
-    #endif
 
     GetBuiltinData(input, V, posInput, surfaceData, alpha, bentNormalWS, depthOffset, GetEmissiveColor(surfaceData, emissiveMapMapping), builtinData);
 #else
-    GetBuiltinData(input, V, posInput, surfaceData, alpha, bentNormalWS, depthOffset, GetEmissiveColor(surfaceData), builtinData);
+    GetBuiltinData(frameUniform, renderData, matProperties, samplerStruct,
+        input, V, posInput, surfaceData, alpha, bentNormalWS, depthOffset, GetEmissiveColor(matProperties, surfaceData), builtinData);
 #endif
 }
 
-void GetBuiltinData(FragInputs input, float3 V, inout PositionInputs posInput, SurfaceData surfaceData, float alpha, float3 bentNormalWS, float depthOffset, UVMapping emissiveMapMapping, out BuiltinData builtinData)
+void GetBuiltinData(
+    FrameUniforms frameUniform, RenderDataPerDraw renderData, PropertiesPerMaterial matProperties, SamplerStruct samplerStruct,
+    FragInputs input, float3 V, inout PositionInputs posInput, SurfaceData surfaceData, float alpha,
+    float3 bentNormalWS, float depthOffset, UVMapping emissiveMapMapping, out BuiltinData builtinData)
 {
 #ifdef _EMISSIVE_MAPPING_BASE
     GetBuiltinData(input, V, posInput, surfaceData, alpha, bentNormalWS, depthOffset, GetEmissiveColor(surfaceData, emissiveMapMapping), builtinData);
 #else
-    GetBuiltinData(input, V, posInput, surfaceData, alpha, bentNormalWS, depthOffset, builtinData);
+    GetBuiltinData(frameUniform, renderData, matProperties, samplerStruct,
+        input, V, posInput, surfaceData, alpha, bentNormalWS, depthOffset, builtinData);
 #endif
 }

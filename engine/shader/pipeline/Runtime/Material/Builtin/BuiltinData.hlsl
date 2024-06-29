@@ -46,7 +46,6 @@ struct BuiltinData
     float2 motionVector;
     float2 distortion;
     float distortionBlur;
-    uint isLightmap;
     uint renderingLayers;
     float depthOffset;
 };

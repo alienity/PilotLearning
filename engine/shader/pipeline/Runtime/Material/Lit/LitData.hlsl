@@ -18,24 +18,8 @@
 // This is use to abstract the mapping that can differ on layers
 struct LayerTexCoord
 {
-#ifndef LAYERED_LIT_SHADER
     UVMapping base;
     UVMapping details;
-#else
-    // Regular texcoord
-    UVMapping base0;
-    UVMapping base1;
-    UVMapping base2;
-    UVMapping base3;
-
-    UVMapping details0;
-    UVMapping details1;
-    UVMapping details2;
-    UVMapping details3;
-
-    // Dedicated for blend mask
-    UVMapping blendMask;
-#endif
 
     // Store information that will be share by all UVMapping
     float3 vertexNormalWS; // TODO: store also object normal map for object triplanar
@@ -78,30 +62,28 @@ void GenerateLayerTexCoordBasisTB(FragInputs input, inout LayerTexCoord layerTex
 }
 #endif
 
-#ifndef LAYERED_LIT_SHADER
-
 // Want to use only one sampler for normalmap/bentnormalmap either we use OS or TS. And either we have normal map or bent normal or both.
-#ifdef _NORMALMAP_TANGENT_SPACE
-    #if defined(_NORMALMAP)
-    #define SAMPLER_NORMALMAP_IDX sampler_NormalMap
-    #elif defined(_BENTNORMALMAP)
-    #define SAMPLER_NORMALMAP_IDX sampler_BentNormalMap
-    #endif
-#else
-    #if defined(_NORMALMAP)
-    #define SAMPLER_NORMALMAP_IDX sampler_NormalMapOS
-    #elif defined(_BENTNORMALMAP)
-    #define SAMPLER_NORMALMAP_IDX sampler_BentNormalMapOS
-    #endif
-#endif
+// #ifdef _NORMALMAP_TANGENT_SPACE
+//     #if defined(_NORMALMAP)
+//     #define SAMPLER_NORMALMAP_IDX sampler_NormalMap
+//     #elif defined(_BENTNORMALMAP)
+//     #define SAMPLER_NORMALMAP_IDX sampler_BentNormalMap
+//     #endif
+// #else
+//     #if defined(_NORMALMAP)
+//     #define SAMPLER_NORMALMAP_IDX sampler_NormalMapOS
+//     #elif defined(_BENTNORMALMAP)
+//     #define SAMPLER_NORMALMAP_IDX sampler_BentNormalMapOS
+//     #endif
+// #endif
 
-#define SAMPLER_DETAILMAP_IDX sampler_DetailMap
-#define SAMPLER_MASKMAP_IDX sampler_MaskMap
-#define SAMPLER_HEIGHTMAP_IDX sampler_HeightMap
-
-#define SAMPLER_SUBSURFACE_MASK_MAP_IDX sampler_SubsurfaceMaskMap
-#define SAMPLER_TRANSMISSION_MASK_MAP_IDX sampler_TransmissionMaskMap
-#define SAMPLER_THICKNESSMAP_IDX sampler_ThicknessMap
+// #define SAMPLER_DETAILMAP_IDX sampler_DetailMap
+// #define SAMPLER_MASKMAP_IDX sampler_MaskMap
+// #define SAMPLER_HEIGHTMAP_IDX sampler_HeightMap
+//
+// #define SAMPLER_SUBSURFACE_MASK_MAP_IDX sampler_SubsurfaceMaskMap
+// #define SAMPLER_TRANSMISSION_MASK_MAP_IDX sampler_TransmissionMaskMap
+// #define SAMPLER_THICKNESSMAP_IDX sampler_ThicknessMap
 
 // include LitDataIndividualLayer to define GetSurfaceData
 #define LAYER_INDEX 0
@@ -144,13 +126,12 @@ void GetLayerTexCoord(
     layerTexCoord.vertexNormalWS = vertexNormalWS;
     float objectSpaceMapping = false;
     float3 normalToComputeWeights = layerTexCoord.vertexNormalWS;
-#ifndef LAYERED_LIT_SHADER
+
     objectSpaceMapping = matProperties._ObjectSpaceUVMapping;
     if (objectSpaceMapping)
     {
         normalToComputeWeights = TransformWorldToObjectNormal(renderData, normalToComputeWeights);
     }
-#endif
 
     layerTexCoord.triplanarWeights = ComputeTriplanarWeights(normalToComputeWeights);
 
@@ -200,9 +181,9 @@ void GetSurfaceAndBuiltinData(
     // and UV1 is corrupt when we use surface gradient. In case UV1 aren't required we set them to 0, so we ensure there is no garbage.
     // When using lightmaps, the uv1 is always valid but we don't update _UVMappingMask.y to 1
     // So when we are using them, we just need to keep the UVs as is.
-// #if !defined(LIGHTMAP_ON) && defined(SURFACE_GRADIENT)
-//     input.texCoord1 = (_UVMappingMask.y + _UVDetailsMappingMask.y + _UVMappingMaskEmissive.y) > 0 ? input.texCoord1 : 0;
-// #endif
+#if defined(SURFACE_GRADIENT)
+    input.texCoord1 = (matProperties._UVMappingMask.y + matProperties._UVDetailsMappingMask.y) > 0 ? input.texCoord1 : 0;
+#endif
 
 // Don't dither if displaced tessellation (we're fading out the displacement instead to match the next LOD)
 #ifdef LOD_FADE_CROSSFADE // enable dithering LOD transition if user select CrossFade transition in LOD group
@@ -232,7 +213,7 @@ void GetSurfaceAndBuiltinData(
     float alphaCutoff = _AlphaCutoffPrepass;
     #elif SHADERPASS == SHADERPASS_TRANSPARENT_DEPTH_POSTPASS
     float alphaCutoff = _AlphaCutoffPostpass;
-    #elif (SHADERPASS == SHADERPASS_SHADOWS) || (SHADERPASS == SHADERPASS_RAYTRACING_VISIBILITY)
+    #elif (SHADERPASS == SHADERPASS_SHADOWS)
     float alphaCutoff = _UseShadowThreshold ? _AlphaCutoffShadow : _AlphaCutoff;
     #else
     float alphaCutoff = _AlphaCutoff;
@@ -308,7 +289,8 @@ void GetSurfaceAndBuiltinData(
 #endif
 
     // Caution: surfaceData must be fully initialize before calling GetBuiltinData
-    GetBuiltinData(input, V, posInput, surfaceData, alpha, bentNormalWS, depthOffset, layerTexCoord.base, builtinData);
+    GetBuiltinData(frameUniform, renderData, matProperties, samplerStruct,
+        input, V, posInput, surfaceData, alpha, bentNormalWS, depthOffset, layerTexCoord.base, builtinData);
 
 #ifdef _ALPHATEST_ON
     // Used for sharpening by alpha to mask
@@ -318,5 +300,3 @@ void GetSurfaceAndBuiltinData(
 }
 
 #include "../../Material/Lit/LitDataMeshModification.hlsl"
-
-#endif // #ifndef LAYERED_LIT_SHADER

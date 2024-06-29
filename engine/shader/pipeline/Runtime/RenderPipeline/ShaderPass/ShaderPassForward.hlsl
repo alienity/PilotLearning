@@ -50,8 +50,6 @@ void Frag(PackedVaryingsToPS packedInput
     //UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(packedInput);
     FragInputs input = UnpackVaryingsToFragInputs(packedInput);
 
-    // AdjustFragInputsToOffScreenRendering(input, _OffScreenRendering > 0, _OffScreenDownsampleFactor);
-
     uint2 tileIndex = uint2(input.positionSS.xy) / GetTileSize();
 
     // input.positionSS is SV_Position

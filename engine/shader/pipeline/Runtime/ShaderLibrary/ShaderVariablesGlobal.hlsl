@@ -40,7 +40,10 @@ struct RenderDataPerDraw
     float4 vertexBufferView; // D3D12_VERTEX_BUFFER_VIEW 16
     float4 indexBufferView; // D3D12_INDEX_BUFFER_VIEW 16
     float4 drawIndexedArguments0; // D3D12_DRAW_INDEXED_ARGUMENTS 16
-    float4 drawIndexedArguments1; // D3D12_DRAW_INDEXED_ARGUMENTS 4, LightPropertyBufferIndex 4, lightPropertyBufferOffset 4, Empty 4
+    float drawIndexedArguments1; // D3D12_DRAW_INDEXED_ARGUMENTS 4
+    uint lightPropertyBufferIndex; // LightPropertyBufferIndex 4
+    uint lightPropertyBufferOffset; // lightPropertyBufferOffset 4
+    uint Padding0;
     float4 boundingBoxCenter; // BoundingBox 16
     float4 boundingBoxExtents; // BoundingBox 16
 };
@@ -166,7 +169,9 @@ struct IBLUniform
     int   dfg_lut_srv_index;    // specular lut dfg
     int   ld_lut_srv_index;     // specular lut ld
     int   radians_srv_index;    // diffuse
-    float3 __Reserved0;
+    uint _PreIntegratedFGD_GGXDisneyDiffuseIndex;
+    uint _PreIntegratedFGD_CharlieAndFabricIndex;
+    uint _Padding0;
 };
 
 struct SSRUniform
@@ -495,13 +500,13 @@ void DrawIndexedArgumentsToParams(D3D12_DRAW_INDEXED_ARGUMENTS drawIndexedArgume
 
 uint GetLightPropertyBufferIndex(RenderDataPerDraw renderDataPerDraw)
 {
-    uint lightPropertyBufferIndex = asuint(renderDataPerDraw.drawIndexedArguments1[1]);
+    uint lightPropertyBufferIndex = renderDataPerDraw.lightPropertyBufferIndex;
     return lightPropertyBufferIndex;
 }
 
 uint GetLightPropertyBufferIndexOffset(RenderDataPerDraw renderDataPerDraw)
 {
-    uint lightPropertyBufferIndexOffset = asuint(renderDataPerDraw.drawIndexedArguments1[2]);
+    uint lightPropertyBufferIndexOffset = renderDataPerDraw.lightPropertyBufferOffset;
     return lightPropertyBufferIndexOffset;
 }
 

@@ -91,6 +91,8 @@ namespace MoYu
         std::shared_ptr<MoYu::MoYuScratchImage> _dfg_map = loadImage(level_resource_desc.m_ibl_map.m_dfg_map);
         std::shared_ptr<MoYu::MoYuScratchImage> _ld_map  = loadImage(level_resource_desc.m_ibl_map.m_ld_map);
         std::shared_ptr<MoYu::MoYuScratchImage> _radians_map  = loadImage(level_resource_desc.m_ibl_map.m_irradians_map);
+        std::shared_ptr<MoYu::MoYuScratchImage> _PreIntegratedFGD_GGXDisneyDiffuse = loadImage(level_resource_desc.m_ibl_map._PreIntegratedFGD_GGXDisneyDiffuse);
+        std::shared_ptr<MoYu::MoYuScratchImage> _PreIntegratedFGD_CharlieAndFabric = loadImage(level_resource_desc.m_ibl_map._PreIntegratedFGD_CharlieAndFabric);
 
         // load bluenoise texture
         std::shared_ptr<MoYu::MoYuScratchImage> _bluenoise_map = loadImage(level_resource_desc.m_bluenoises.m_bluenoise_map);
@@ -125,6 +127,12 @@ namespace MoYu
             auto radians_tex = createTex(_radians_map, L"ibl_radians");
             m_render_scene->m_ibl_map.m_radians = radians_tex;
 
+            auto preIntegratedFGD_GGXDisneyDiffuse = createTex(_ld_map/*_PreIntegratedFGD_GGXDisneyDiffuse*/, L"PreIntegratedFGD_GGXDisneyDiffuse");
+            m_render_scene->m_ibl_map._PreIntegratedFGD_GGXDisneyDiffuseIndex = preIntegratedFGD_GGXDisneyDiffuse;
+
+            auto PreIntegratedFGD_CharlieAndFabric = createTex(_ld_map/*_PreIntegratedFGD_CharlieAndFabric*/, L"PreIntegratedFGD_CharlieAndFabric");
+            m_render_scene->m_ibl_map._PreIntegratedFGD_CharlieAndFabricIndex = PreIntegratedFGD_CharlieAndFabric;
+            
             // create blue noise
             auto bluenoise_tex = createTex(_bluenoise_map, L"blue_noise");
             m_render_scene->m_bluenoise_map.m_bluenoise_64x64_uni = bluenoise_tex;
@@ -249,6 +257,9 @@ namespace MoYu
         _iblUniform.dfg_lut_srv_index    = render_scene->m_ibl_map.m_dfg->GetDefaultSRV()->GetIndex();
         _iblUniform.ld_lut_srv_index     = render_scene->m_ibl_map.m_ld->GetDefaultSRV()->GetIndex();
         _iblUniform.radians_srv_index    = render_scene->m_ibl_map.m_radians->GetDefaultSRV()->GetIndex();
+        _iblUniform._PreIntegratedFGD_GGXDisneyDiffuseIndex = render_scene->m_ibl_map._PreIntegratedFGD_GGXDisneyDiffuseIndex->GetDefaultSRV()->GetIndex();
+        _iblUniform._PreIntegratedFGD_CharlieAndFabricIndex = render_scene->m_ibl_map._PreIntegratedFGD_CharlieAndFabricIndex->GetDefaultSRV()->GetIndex();
+        
         for (size_t i = 0; i < 7; i++)
         {
             _iblUniform.iblSH[i] = EngineConfig::g_SHConfig._GSH[i];

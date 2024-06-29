@@ -304,8 +304,7 @@ void LightLoop( float3 V, PositionInputs posInput, PreLightData preLightData, BS
 //             replaceBakeDiffuseLighting = true;
 // #endif
 // #if defined(PROBE_VOLUMES_L1) || defined(PROBE_VOLUMES_L2)
-//         if (!builtinData.isLightmap)
-//             replaceBakeDiffuseLighting = true;
+//         replaceBakeDiffuseLighting = true;
 // #endif
 //
 //         if (replaceBakeDiffuseLighting)

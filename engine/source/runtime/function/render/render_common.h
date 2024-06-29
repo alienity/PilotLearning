@@ -563,6 +563,9 @@ namespace MoYu
         std::shared_ptr<RHI::D3D12Texture> m_ld;
         std::shared_ptr<RHI::D3D12Texture> m_radians;
 
+        std::shared_ptr<RHI::D3D12Texture> _PreIntegratedFGD_GGXDisneyDiffuseIndex;
+        std::shared_ptr<RHI::D3D12Texture> _PreIntegratedFGD_CharlieAndFabricIndex;
+        
         std::vector<glm::float4> m_SH;
     };
 
@@ -667,7 +670,7 @@ namespace MoYu
     {
         //=======================Texture=======================
         MaterialImage _BaseColorMap{ DefaultMaterialImageWhite }; // white
-        MaterialImage _MaskMap{ DefaultMaterialImageWhite }; // MaskMap is RGBA: Metallic, Ambient Occlusion (Optional), detail Mask (Optional), Smoothness
+        MaterialImage _MaskMap{ DefaultMaterialImageBlack }; // MaskMap is RGBA: Metallic, Ambient Occlusion (Optional), detail Mask (Optional), Smoothness
         MaterialImage _NormalMap{ DefaultMaterialImageGrey }; // bump. Tangent space normal map
         MaterialImage _NormalMapOS{ DefaultMaterialImageWhite }; // white. Object space normal map - no good default value    
         MaterialImage _BentNormalMap{ DefaultMaterialImageGrey }; // bump. Tangent space normal map

@@ -76,8 +76,8 @@ struct BSDFData
 #define SKIP_RASTERIZED_AREA_SHADOWS
 #define LIGHT_EVALUATION_NO_COOKIE
 #define LIGHT_EVALUATION_NO_HEIGHT_FOG
-// #define MATERIAL_INCLUDE_SUBSURFACESCATTERING
-// #define MATERIAL_INCLUDE_TRANSMISSION
+#define MATERIAL_INCLUDE_SUBSURFACESCATTERING
+#define MATERIAL_INCLUDE_TRANSMISSION
 #include "../../Material/BuiltinGIUtilities.hlsl"
 #include "../../Material/SubsurfaceScattering/SubsurfaceScattering.hlsl"
 #include "../../Material/NormalBuffer.hlsl"
@@ -393,19 +393,19 @@ BSDFData ConvertSurfaceDataToBSDFData(uint2 positionSS, SurfaceData surfaceData)
     // However in practice we keep parity between deferred and forward, so we should constrain the various features.
     // The UI is in charge of setuping the constrain, not the code. So if users is forward only and want unleash power, it is easy to unleash by some UI change
 
-    //bsdfData.diffusionProfileIndex = FindDiffusionProfileIndex(surfaceData.diffusionProfileHash);
+    bsdfData.diffusionProfileIndex = FindDiffusionProfileIndex(surfaceData.diffusionProfileHash);
 
-    //if (HasFlag(surfaceData.materialFeatures, MATERIALFEATUREFLAGS_LIT_SUBSURFACE_SCATTERING))
-    //{
-    //    // Assign profile id and overwrite fresnel0
-    //    FillMaterialSSS(bsdfData.diffusionProfileIndex, surfaceData.subsurfaceMask, bsdfData);
-    //}
+    if (HasFlag(surfaceData.materialFeatures, MATERIALFEATUREFLAGS_LIT_SUBSURFACE_SCATTERING))
+    {
+        // Assign profile id and overwrite fresnel0
+        FillMaterialSSS(bsdfData.diffusionProfileIndex, surfaceData.subsurfaceMask, bsdfData);
+    }
 
-    //if (HasFlag(surfaceData.materialFeatures, MATERIALFEATUREFLAGS_LIT_TRANSMISSION))
-    //{
-    //    // Assign profile id and overwrite fresnel0
-    //    FillMaterialTransmission(bsdfData.diffusionProfileIndex, surfaceData.thickness, surfaceData.transmissionMask, bsdfData);
-    //}
+    if (HasFlag(surfaceData.materialFeatures, MATERIALFEATUREFLAGS_LIT_TRANSMISSION))
+    {
+        // Assign profile id and overwrite fresnel0
+        FillMaterialTransmission(bsdfData.diffusionProfileIndex, surfaceData.thickness, surfaceData.transmissionMask, bsdfData);
+    }
 
     if (HasFlag(surfaceData.materialFeatures, MATERIALFEATUREFLAGS_LIT_ANISOTROPY))
     {
@@ -428,17 +428,17 @@ BSDFData ConvertSurfaceDataToBSDFData(uint2 positionSS, SurfaceData surfaceData)
     // perceptualRoughness can be modify by FillMaterialClearCoatData, so ConvertAnisotropyToClampRoughness must be call after
     ConvertAnisotropyToRoughness(bsdfData.perceptualRoughness, bsdfData.anisotropy, bsdfData.roughnessT, bsdfData.roughnessB);
 
-// #if HAS_REFRACTION
-//     // Note: Reuse thickness of transmission's property set
-//     FillMaterialTransparencyData(surfaceData.baseColor, surfaceData.metallic, surfaceData.ior, surfaceData.transmittanceColor,
-//     #ifdef _REFRACTION_THIN
-//                                  // We set both atDistance and thickness to the same, small value
-//                                  REFRACTION_THIN_DISTANCE, REFRACTION_THIN_DISTANCE,
-//     #else
-//                                  surfaceData.atDistance, surfaceData.thickness,
-//     #endif
-//                                  surfaceData.transmittanceMask, bsdfData);
-// #endif
+#if HAS_REFRACTION
+    // Note: Reuse thickness of transmission's property set
+    FillMaterialTransparencyData(surfaceData.baseColor, surfaceData.metallic, surfaceData.ior, surfaceData.transmittanceColor,
+    #ifdef _REFRACTION_THIN
+                                 // We set both atDistance and thickness to the same, small value
+                                 REFRACTION_THIN_DISTANCE, REFRACTION_THIN_DISTANCE,
+    #else
+                                 surfaceData.atDistance, surfaceData.thickness,
+    #endif
+                                 surfaceData.transmittanceMask, bsdfData);
+#endif
     
     return bsdfData;
 }
@@ -1003,7 +1003,9 @@ void ClampRoughness(inout PreLightData preLightData, inout BSDFData bsdfData, fl
     bsdfData.coatRoughness = max(minRoughness, bsdfData.coatRoughness);
 }
 
-PreLightData GetPreLightData(float3 V, PositionInputs posInput, inout BSDFData bsdfData)
+PreLightData GetPreLightData(
+    FrameUniforms frameUniform, RenderDataPerDraw renderData, PropertiesPerMaterial matProperties, SamplerStruct samplerStruct,
+    float3 V, PositionInputs posInput, inout BSDFData bsdfData)
 {
     PreLightData preLightData;
     ZERO_INITIALIZE(PreLightData, preLightData);
@@ -1050,7 +1052,10 @@ PreLightData GetPreLightData(float3 V, PositionInputs posInput, inout BSDFData b
     // Handle IBL + area light + multiscattering.
     // Note: use the not modified by anisotropy iblPerceptualRoughness here.
     float specularReflectivity = 0.0f;
-    // GetPreIntegratedFGDGGXAndDisneyDiffuse(clampedNdotV, preLightData.iblPerceptualRoughness, bsdfData.fresnel0, preLightData.specularFGD, preLightData.diffuseFGD, specularReflectivity);
+    Texture2D<float4> preIntegratedFGD_GGXDisneyDiffuse = ResourceFromHeapIndex(frameUniform.iblUniform._PreIntegratedFGD_GGXDisneyDiffuseIndex);
+    SamplerState sLinearClampSampler = samplerStruct.SLinearClampSampler;
+    GetPreIntegratedFGDGGXAndDisneyDiffuse(preIntegratedFGD_GGXDisneyDiffuse, sLinearClampSampler,
+        clampedNdotV, preLightData.iblPerceptualRoughness, bsdfData.fresnel0, preLightData.specularFGD, preLightData.diffuseFGD, specularReflectivity);
 #ifdef USE_DIFFUSE_LAMBERT_BRDF
     preLightData.diffuseFGD = 1.0;
 #endif
@@ -1105,10 +1110,10 @@ PreLightData GetPreLightData(float3 V, PositionInputs posInput, inout BSDFData b
     preLightData.ltcTransformDiffuse._m00_m02_m11_m20 = SAMPLE_TEXTURE2D_ARRAY_LOD(_LtcData, s_linear_clamp_sampler, uv, LTCLIGHTINGMODEL_DISNEY_DIFFUSE, 0);
 #endif
 
-    // Get the inverse LTC matrix for GGX
-    // Note we load the matrix transpose (avoid to have to transpose it in shader)
-    preLightData.ltcTransformSpecular      = 0.0;
-    preLightData.ltcTransformSpecular._m22 = 1.0;
+    // // Get the inverse LTC matrix for GGX
+    // // Note we load the matrix transpose (avoid to have to transpose it in shader)
+    // preLightData.ltcTransformSpecular      = 0.0;
+    // preLightData.ltcTransformSpecular._m22 = 1.0;
     // preLightData.ltcTransformSpecular._m00_m02_m11_m20 = SAMPLE_TEXTURE2D_ARRAY_LOD(_LtcData, s_linear_clamp_sampler, uv, LTCLIGHTINGMODEL_GGX, 0);
 
     // Construct a right-handed view-dependent orthogonal basis around the normal
@@ -1166,9 +1171,9 @@ void ModifyBakedDiffuseLighting(float3 V, PositionInputs posInput, PreLightData 
         // bsdfData.diffuseColor = GetModifiedDiffuseColorForSSS(bsdfData);
     }
 
-    // // Premultiply (back) bake diffuse lighting information with DisneyDiffuse pre-integration
-    // // Note: When baking reflection probes, we approximate the diffuse with the fresnel0
-    // builtinData.bakeDiffuseLighting *= preLightData.diffuseFGD * GetDiffuseOrDefaultColor(bsdfData, _ReplaceDiffuseForIndirect).rgb;
+    // Premultiply (back) bake diffuse lighting information with DisneyDiffuse pre-integration
+    // Note: When baking reflection probes, we approximate the diffuse with the fresnel0
+    builtinData.bakeDiffuseLighting *= preLightData.diffuseFGD * GetDiffuseOrDefaultColor(bsdfData, 0/*_ReplaceDiffuseForIndirect*/).rgb;
 }
 
 //-----------------------------------------------------------------------------

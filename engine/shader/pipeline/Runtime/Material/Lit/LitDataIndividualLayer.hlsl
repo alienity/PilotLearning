@@ -102,7 +102,9 @@ void ADD_IDX(ComputeLayerTexCoord)(
 }
 
 // Caution: Duplicate from GetBentNormalTS - keep in sync!
-float3 ADD_IDX(GetNormalTS)(FragInputs input, LayerTexCoord layerTexCoord, float3 detailNormalTS, float detailMask)
+float3 ADD_IDX(GetNormalTS)(
+    FrameUniforms frameUniform, RenderDataPerDraw renderData, PropertiesPerMaterial matProperties, SamplerStruct samplerStruct,
+    FragInputs input, LayerTexCoord layerTexCoord, float3 detailNormalTS, float detailMask)
 {
     float3 normalTS;
 
@@ -115,9 +117,11 @@ float3 ADD_IDX(GetNormalTS)(FragInputs input, LayerTexCoord layerTexCoord, float
         // Note: There is no such a thing like triplanar with object space normal, so we call directly 2D function
         #ifdef SURFACE_GRADIENT
         // /We need to decompress the normal ourselve here as UnpackNormalRGB will return a surface gradient
-        float3 normalOS = SAMPLE_TEXTURE2D(ADD_IDX(_NormalMapOS), SAMPLER_NORMALMAP_IDX, ADD_IDX(layerTexCoord.base).uv).xyz * 2.0 - 1.0;
+        TEXTURE2D(_NormalMapOS) = ResourceFromHeapIndex(matProperties._NormalMapOSIndex);
+        SAMPLER(sampler_NormalMapOS) = samplerStruct.SLinearClampSampler;
+        float3 normalOS = SAMPLE_TEXTURE2D(ADD_IDX(_NormalMapOS), sampler_NormalMapOS, ADD_IDX(layerTexCoord.base).uv).xyz * 2.0 - 1.0;
         // no need to renormalize normalOS for SurfaceGradientFromPerturbedNormal
-        normalTS = SurfaceGradientFromPerturbedNormal(input.tangentToWorld[2], TransformObjectToWorldNormal(normalOS));
+        normalTS = SurfaceGradientFromPerturbedNormal(input.tangentToWorld[2], TransformObjectToWorldNormal(renderData, normalOS));
         #else
         float3 normalOS = UnpackNormalRGB(SAMPLE_TEXTURE2D(ADD_IDX(_NormalMapOS), SAMPLER_NORMALMAP_IDX, ADD_IDX(layerTexCoord.base).uv), 1.0);
         normalTS = TransformObjectToTangent(normalOS, input.tangentToWorld);
@@ -154,7 +158,9 @@ float3 ADD_IDX(GetNormalTS)(FragInputs input, LayerTexCoord layerTexCoord, float
 }
 
 // Caution: Duplicate from GetNormalTS - keep in sync!
-float3 ADD_IDX(GetBentNormalTS)(FragInputs input, LayerTexCoord layerTexCoord, float3 normalTS, float3 detailNormalTS, float detailMask)
+float3 ADD_IDX(GetBentNormalTS)(
+    FrameUniforms frameUniform, RenderDataPerDraw renderData, PropertiesPerMaterial matProperties, SamplerStruct samplerStruct,
+    FragInputs input, LayerTexCoord layerTexCoord, float3 normalTS, float3 detailNormalTS, float detailMask)
 {
     float3 bentNormalTS;
 
@@ -213,7 +219,6 @@ float ADD_IDX(GetSurfaceData)(
 
     TEXTURE2D(_BaseColorMap) = ResourceFromHeapIndex(matProperties._BaseColorMapIndex);
     SAMPLER(sampler_BaseColorMap) = samplerStruct.SLinearClampSampler;
-
     float4 color = SAMPLE_UVMAPPING_TEXTURE2D(ADD_IDX(_BaseColorMap), ADD_ZERO_IDX(sampler_BaseColorMap), ADD_IDX(layerTexCoord.base)).rgba * ADD_IDX(matProperties._BaseColor).rgba;
     surfaceData.baseColor = color.rgb;
     float alpha = color.a;
@@ -236,12 +241,14 @@ float ADD_IDX(GetSurfaceData)(
     surfaceData.normalWS = float3(0.0, 0.0, 0.0); // Need to init this to keep quiet the compiler, but this is overriden later (0, 0, 0) so if we forget to override the compiler may comply.
     surfaceData.geomNormalWS = float3(0.0, 0.0, 0.0); // Not used, just to keep compiler quiet.
 
-    normalTS = ADD_IDX(GetNormalTS)(input, layerTexCoord, detailNormalTS, detailMask);
-    bentNormalTS = ADD_IDX(GetBentNormalTS)(input, layerTexCoord, normalTS, detailNormalTS, detailMask);
+    normalTS = ADD_IDX(GetNormalTS)(frameUniform, renderData, matProperties, samplerStruct, input, layerTexCoord, detailNormalTS, detailMask);
+    bentNormalTS = ADD_IDX(GetBentNormalTS)(frameUniform, renderData, matProperties, samplerStruct, input, layerTexCoord, normalTS, detailNormalTS, detailMask);
 
 #if defined(_MASKMAP_IDX)
-    surfaceData.perceptualSmoothness = SAMPLE_UVMAPPING_TEXTURE2D(ADD_IDX(_MaskMap), SAMPLER_MASKMAP_IDX, ADD_IDX(layerTexCoord.base)).a;
-    surfaceData.perceptualSmoothness = lerp(ADD_IDX(_SmoothnessRemapMin), ADD_IDX(_SmoothnessRemapMax), surfaceData.perceptualSmoothness);
+    TEXTURE2D(_MaskMap) = ResourceFromHeapIndex(matProperties._MaskMapIndex);
+    SAMPLER(sampler_MaskMap) = samplerStruct.SLinearClampSampler;
+    surfaceData.perceptualSmoothness = SAMPLE_UVMAPPING_TEXTURE2D(ADD_IDX(_MaskMap), sampler_MaskMap, ADD_IDX(layerTexCoord.base)).a;
+    surfaceData.perceptualSmoothness = lerp(ADD_IDX(matProperties._SmoothnessRemapMin), ADD_IDX(matProperties._SmoothnessRemapMax), surfaceData.perceptualSmoothness);
 #else
     surfaceData.perceptualSmoothness = ADD_IDX(matProperties._Smoothness);
 #endif
@@ -256,10 +263,10 @@ float ADD_IDX(GetSurfaceData)(
 
     // MaskMap is RGBA: Metallic, Ambient Occlusion (Optional), detail Mask (Optional), Smoothness
 #ifdef _MASKMAP_IDX
-    surfaceData.metallic = SAMPLE_UVMAPPING_TEXTURE2D(ADD_IDX(_MaskMap), SAMPLER_MASKMAP_IDX, ADD_IDX(layerTexCoord.base)).r;
-    surfaceData.metallic = lerp(ADD_IDX(_MetallicRemapMin), ADD_IDX(_MetallicRemapMax), surfaceData.metallic);
-    surfaceData.ambientOcclusion = SAMPLE_UVMAPPING_TEXTURE2D(ADD_IDX(_MaskMap), SAMPLER_MASKMAP_IDX, ADD_IDX(layerTexCoord.base)).g;
-    surfaceData.ambientOcclusion = lerp(ADD_IDX(_AORemapMin), ADD_IDX(_AORemapMax), surfaceData.ambientOcclusion);
+    surfaceData.metallic = SAMPLE_UVMAPPING_TEXTURE2D(ADD_IDX(_MaskMap), sampler_MaskMap, ADD_IDX(layerTexCoord.base)).r;
+    surfaceData.metallic = lerp(ADD_IDX(matProperties._MetallicRemapMin), ADD_IDX(matProperties._MetallicRemapMax), surfaceData.metallic);
+    surfaceData.ambientOcclusion = SAMPLE_UVMAPPING_TEXTURE2D(ADD_IDX(_MaskMap), sampler_MaskMap, ADD_IDX(layerTexCoord.base)).g;
+    surfaceData.ambientOcclusion = lerp(ADD_IDX(matProperties._AORemapMin), ADD_IDX(matProperties._AORemapMax), surfaceData.ambientOcclusion);
 #else
     surfaceData.metallic = ADD_IDX(matProperties._Metallic);
     surfaceData.ambientOcclusion = 1.0;
@@ -282,11 +289,7 @@ float ADD_IDX(GetSurfaceData)(
 #else
     surfaceData.thickness = ADD_IDX(matProperties._Thickness);
 #endif
-
-
-    // This part of the code is not used in case of layered shader but we keep the same macro system for simplicity
-#if !defined(LAYERED_LIT_SHADER)
-
+    
     // These static material feature allow compile time optimization
     surfaceData.materialFeatures = MATERIALFEATUREFLAGS_LIT_STANDARD;
 
@@ -379,29 +382,6 @@ float ADD_IDX(GetSurfaceData)(
     surfaceData.iridescenceThickness = 0.0;
     surfaceData.iridescenceMask = 0.0;
 #endif
-
-#else // #if !defined(LAYERED_LIT_SHADER)
-
-    // Mandatory to setup value to keep compiler quiet
-
-    // Layered shader material feature are define outside of this call
-    surfaceData.materialFeatures = 0;
-
-    // All these parameters are ignore as they are re-setup outside of the layers function
-    // Note: any parameters set here must also be set in GetSurfaceAndBuiltinData() layer version
-    surfaceData.tangentWS = float3(0.0, 0.0, 0.0);
-    surfaceData.anisotropy = 0.0;
-    surfaceData.iridescenceThickness = 0.0;
-    surfaceData.iridescenceMask = 0.0;
-    surfaceData.coatMask = 0.0;
-
-    // Transparency
-    surfaceData.ior = 1.0;
-    surfaceData.transmittanceColor = float3(1.0, 1.0, 1.0);
-    surfaceData.atDistance = 1000000.0;
-    surfaceData.transmittanceMask = 0.0;
-
-#endif // #if !defined(LAYERED_LIT_SHADER)
 
     return alpha;
 }

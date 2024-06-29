@@ -123,10 +123,9 @@ namespace MoYu
             curRenderDataPerDraw.prevWorldToObjectMatrix = temp_mesh_renderer.prev_model_matrix_inverse;
             memcpy(&curRenderDataPerDraw.vertexBufferView, &curVertexBufferView, sizeof(D3D12_VERTEX_BUFFER_VIEW));//temp_node.ref_mesh->p_mesh_vertex_buffer->GetVertexBufferView();
             memcpy(&curRenderDataPerDraw.indexBufferView, &curIndexBufferView, sizeof(D3D12_INDEX_BUFFER_VIEW));//temp_node.ref_mesh->p_mesh_vertex_buffer->GetIndexBufferView();
-            memcpy(&curRenderDataPerDraw.drawIndexedArguments0, &curDrawIndexedArguments, sizeof(glm::float4));
-            memcpy(&curRenderDataPerDraw.drawIndexedArguments1, ((char*)&curDrawIndexedArguments + 4), sizeof(float));
-            memcpy(((char*)&curRenderDataPerDraw.drawIndexedArguments1 + 1), &pPropertiesBufferAddress, sizeof(UINT32));
-            memcpy(((char*)&curRenderDataPerDraw.drawIndexedArguments1 + 2), &i, sizeof(UINT32));
+            memcpy(&curRenderDataPerDraw.drawIndexedArguments0, &curDrawIndexedArguments, sizeof(D3D12_DRAW_INDEXED_ARGUMENTS));
+            curRenderDataPerDraw.lightPropertyBufferIndex = pPropertiesBufferAddress;
+            curRenderDataPerDraw.lightPropertyBufferOffset = i;
             curRenderDataPerDraw.boundingBoxCenter = glm::float4(boundingBoxCenter, 0);
             curRenderDataPerDraw.boundingBoxExtents = glm::float4(boundingBoxExtents, 0);
 

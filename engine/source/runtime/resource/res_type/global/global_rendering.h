@@ -50,10 +50,13 @@ namespace MoYu
         std::string m_dfg_map;
         std::string m_ld_map;
         std::string m_irradians_map;
+        std::string _PreIntegratedFGD_GGXDisneyDiffuse;
+        std::string _PreIntegratedFGD_CharlieAndFabric;
 
         std::vector<glm::float4> m_SH;
     };
-    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(IBLTexs, m_dfg_map, m_ld_map, m_irradians_map, m_SH)
+    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(IBLTexs, m_dfg_map, m_ld_map, m_irradians_map,
+        _PreIntegratedFGD_GGXDisneyDiffuse, _PreIntegratedFGD_CharlieAndFabric, m_SH)
 
     struct BlueNoiseTexs
     {
