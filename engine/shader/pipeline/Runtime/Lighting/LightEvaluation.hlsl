@@ -169,10 +169,6 @@
 //     // Remap the texture coordinates from [-1, 1]^2 to [0, 1]^2.
 //     float2 positionNDC = positionCS * 0.5 + 0.5;
 //
-//     // Tile texture for cookie in repeat mode
-//     if (light.cookieMode == COOKIEMODE_REPEAT)
-//         positionNDC = frac(positionNDC);
-//
 //     // We let the sampler handle clamping to border.
 //     return SampleCookie2D(positionNDC, light.cookieScaleOffset);
 // }
@@ -235,16 +231,6 @@ float4 EvaluateLight_Directional(LightLoopContext lightLoopContext, PositionInpu
     //     }
     // }
 
-#endif
-
-#ifndef LIGHT_EVALUATION_NO_COOKIE
-    if (light.cookieMode != COOKIEMODE_NONE)
-    {
-        float3 lightToSample = posInput.positionWS - light.positionRWS;
-        float3 cookie = EvaluateCookie_Directional(lightLoopContext, light, lightToSample);
-
-        color.rgb *= cookie;
-    }
 #endif
 
     return color;
@@ -420,17 +406,6 @@ float4 EvaluateLight_Directional(LightLoopContext lightLoopContext, PositionInpu
 //                                           fragmentHeight, distances.x);
 //     }
 // #endif
-//
-//     // Projector lights (box, pyramid) always have cookies, so we can perform clipping inside the if().
-//     // Thus why we don't disable the code here based on LIGHT_EVALUATION_NO_COOKIE but we do it
-//     // inside the EvaluateCookie_Punctual call
-//     if (light.cookieMode != COOKIEMODE_NONE)
-//     {
-//         float3 lightToSample = posInput.positionWS - light.positionRWS;
-//         float4 cookie = EvaluateCookie_Punctual(lightLoopContext, light, lightToSample);
-//
-//         color *= cookie;
-//     }
 //
 //     return color;
 // }

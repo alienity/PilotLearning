@@ -56,6 +56,21 @@
 #define GPULIGHTTYPE_RECTANGLE (6)
 #define GPULIGHTTYPE_DISC (7)
 
+#ifdef _CPP_MACRO_
+#define uint glm::uint
+#define uint2 glm::uvec2
+#define uint3 glm::uvec3
+#define uint4 glm::uvec4
+#define int2 glm::int2
+#define int3 glm::int3
+#define int4 glm::int4
+#define float2 glm::fvec2
+#define float3 glm::fvec3
+#define float4 glm::fvec4
+#define float4x4 glm::float4x4
+#endif
+
+
 // Generated from UnityEngine.Rendering.HighDefinition.EnvLightData
 // PackingRules = Exact
 struct EnvLightData
@@ -109,13 +124,11 @@ struct LightData
     float3 right;
     float penumbraTint;
     float range;
-    int cookieMode;
     int shadowIndex;
     float3 up;
     float rangeAttenuationScale;
     float3 color;
     float rangeAttenuationBias;
-    float4 cookieScaleOffset;
     float3 shadowTint;
     float shadowDimmer;
     float volumetricShadowDimmer;
@@ -144,43 +157,67 @@ struct EnvLightReflectionData
 
 // Generated from UnityEngine.Rendering.HighDefinition.DirectionalLightData
 // PackingRules = Exact
+// Make sure to respect the 16-byte alignment
 struct DirectionalLightData
 {
     float3 positionRWS;
     uint lightLayers;
+    
     float lightDimmer;
-    float volumetricLightDimmer;
+    float volumetricLightDimmer; // Replaces 'lightDimmer'
     float3 forward;
-    int cookieMode;
-    float4 cookieScaleOffset;
-    float3 right;
-    int shadowIndex;
-    float3 up;
-    int contactShadowIndex;
+    float3 right; // Rescaled by (2 / shapeWidth)
+    
+    int shadowIndex; // -1 if unused (TODO: 16 bit)
+    float3 up; // Rescaled by (2 / shapeHeight)
+    
+    int contactShadowIndex; // -1 if unused (TODO: 16 bit)
     float3 color;
-    int contactShadowMask;
-    float3 shadowTint;
+    
+    int contactShadowMask; // 0 if unused (TODO: 16 bit)
+    float3 shadowTint; // Use to tint shadow color
+    
     float shadowDimmer;
-    float volumetricShadowDimmer;
-    int nonLightMappedOnly;
-    float minRoughness;
-    int screenSpaceShadowIndex;
-    float4 shadowMaskSelector;
+    float volumetricShadowDimmer; // Replaces 'shadowDimmer'
+    int nonLightMappedOnly; // Used with ShadowMask (TODO: use a bitfield)
+    float minRoughness; // Hack
+    
+    int screenSpaceShadowIndex; // -1 if unused (TODO: 16 bit)
+    float3 __unused__;
+    
+    float4 shadowMaskSelector; // Used with ShadowMask feature
+    
     float diffuseDimmer;
     float specularDimmer;
     float penumbraTint;
     float isRayTracedContactShadow;
-    float distanceFromCamera;
-    float angularDiameter;
+    
+    float distanceFromCamera; // -1 -> no sky interaction
+    float angularDiameter; // Units: radians
     float flareFalloff;
     float flareCosInner;
+    
     float flareCosOuter;
-    float __unused__;
     float3 flareTint;
-    float flareSize;
+    
+    float flareSize; // Units: radians
     float3 surfaceTint;
-    float4 surfaceTextureScaleOffset;
+    
+    float4 surfaceTextureScaleOffset; // -1 if unused (TODO: 16 bit)
 };
 
+#ifdef _CPP_MACRO_
+#undef uint
+#undef uint2
+#undef uint3
+#undef uint4
+#undef int2
+#undef int3
+#undef int4
+#undef float2
+#undef float3
+#undef float4
+#undef float4x4
+#endif
 
 #endif

@@ -8,6 +8,6 @@
 #include "../ShaderLibrary/ImageBasedLighting.hlsl"
 
 #include "../Lighting/LightDefinition.hlsl"
-// #include "../Lighting/LightLoop/HDShadow.hlsl"
+#include "../Lighting/LightLoop/HDShadow.hlsl"
 
 #endif // UNITY_LIGHTING_INCLUDED

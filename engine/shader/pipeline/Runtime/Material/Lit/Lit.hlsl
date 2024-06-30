@@ -1572,15 +1572,6 @@ DirectLighting EvaluateBSDF_Rect(   LightLoopContext lightLoopContext,
 #endif
             ltcValue *= lightData.diffuseDimmer;
 
-//             // Only apply cookie if there is one
-//             if ( lightData.cookieMode != COOKIEMODE_NONE )
-//             {
-// #ifndef APPROXIMATE_POLY_LIGHT_AS_SPHERE_LIGHT
-//                 formFactorD = PolygonFormFactor(LD);
-// #endif
-//                 ltcValue *= SampleAreaLightCookie(lightData.cookieScaleOffset, LD, formFactorD);
-//             }
-
             // We don't multiply by 'bsdfData.diffuseColor' here. It's done only once in PostEvaluateBSDF().
             // See comment for specular magnitude, it apply to diffuse as well
             lighting.diffuse = preLightData.diffuseFGD * ltcValue;
@@ -1602,14 +1593,6 @@ DirectLighting EvaluateBSDF_Rect(   LightLoopContext lightLoopContext,
                 ltcValue  = PolygonIrradiance(LTD);
                 ltcValue *= lightData.diffuseDimmer;
 
-                // // Only apply cookie if there is one
-                // if ( lightData.cookieMode != COOKIEMODE_NONE )
-                // {
-                //     // Compute the cookie data for the transmission diffuse term
-                //     float3 formFactorTD = PolygonFormFactor(LTD);
-                //     ltcValue *= SampleAreaLightCookie(lightData.cookieScaleOffset, LTD, formFactorTD);
-                // }
-
                 // We use diffuse lighting for accumulation since it is going to be blurred during the SSS pass.
                 // We don't multiply by 'bsdfData.diffuseColor' here. It's done only once in PostEvaluateBSDF().
                 lighting.diffuse += bsdfData.transmittance * ltcValue;
@@ -1627,16 +1610,6 @@ DirectLighting EvaluateBSDF_Rect(   LightLoopContext lightLoopContext,
 #endif
             ltcValue *= lightData.specularDimmer;
 
-//             // Only apply cookie if there is one
-//             if ( lightData.cookieMode != COOKIEMODE_NONE)
-//             {
-//                 // Compute the cookie data for the specular term
-// #ifndef APPROXIMATE_POLY_LIGHT_AS_SPHERE_LIGHT
-//                 formFactorS =  PolygonFormFactor(LS);
-// #endif
-//                 ltcValue *= SampleAreaLightCookie(lightData.cookieScaleOffset, LS, formFactorS, bsdfData.perceptualRoughness);
-//             }
-
             // We need to multiply by the magnitude of the integral of the BRDF
             // ref: http://advances.floattimerendering.com/s2016/s2016_ltc_fresnel.pdf
             // This value is what we store in specularFGD, so reuse it
@@ -1648,13 +1621,6 @@ DirectLighting EvaluateBSDF_Rect(   LightLoopContext lightLoopContext,
                 float4x3 LSCC = mul(lightVerts, preLightData.ltcTransformCoat);
                 ltcValue = PolygonIrradiance(LSCC);
                 ltcValue *= lightData.specularDimmer;
-                // Only apply cookie if there is one
-                // if ( lightData.cookieMode != COOKIEMODE_NONE )
-                // {
-                //     // Compute the cookie data for the specular term
-                //     float3 formFactorS =  PolygonFormFactor(LSCC);
-                //     ltcValue *= SampleAreaLightCookie(lightData.cookieScaleOffset, LSCC, formFactorS);
-                // }
                 // For clear coat we don't fetch specularFGD we can use directly the perfect fresnel coatIblF
                 lighting.diffuse *= (1.0 - preLightData.coatIblF);
                 lighting.specular *= (1.0 - preLightData.coatIblF);

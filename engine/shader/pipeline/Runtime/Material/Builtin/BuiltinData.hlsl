@@ -8,8 +8,6 @@
 // Note: These parameters can be store in GBuffer if the writer wants
 //-----------------------------------------------------------------------------
 
-#ifndef BUILTINDATA_CS_HLSL
-#define BUILTINDATA_CS_HLSL
 //
 // UnityEngine.Rendering.HighDefinition.Builtin+BuiltinData:  static fields
 //
@@ -57,9 +55,6 @@ struct LightTransportData
     float3 diffuseColor;
     float3 emissiveColor;
 };
-
-#endif
-
 
 //-----------------------------------------------------------------------------
 // Modification Options
