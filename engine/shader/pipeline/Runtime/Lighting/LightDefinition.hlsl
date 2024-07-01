@@ -32,13 +32,6 @@
 #define GPUIMAGEBASEDLIGHTINGTYPE_REFRACTION (1)
 
 //
-// UnityEngine.Rendering.HighDefinition.CookieMode:  static fields
-//
-#define COOKIEMODE_NONE (0)
-#define COOKIEMODE_CLAMP (1)
-#define COOKIEMODE_REPEAT (2)
-
-//
 // UnityEngine.Rendering.HighDefinition.EnvLightReflectionData:  static fields
 //
 #define MAX_PLANAR_REFLECTIONS (16)
@@ -67,7 +60,7 @@
 #define float2 glm::fvec2
 #define float3 glm::fvec3
 #define float4 glm::fvec4
-#define float4x4 glm::float4x4
+#define float4x4 glm::mat4x4
 #endif
 
 
@@ -75,36 +68,58 @@
 // PackingRules = Exact
 struct EnvLightData
 {
-    uint lightLayers;
-    float3 capturePositionRWS;
+    uint lightLayers; // Packing order depends on chronological access to avoid cache misses
+    float3 capturePositionRWS; // Proxy properties
+    
     int influenceShapeType;
+    // Box: extents = box extents
+    // Sphere: extents.x = sphere radius
     float3 proxyExtents;
+    
     float minProjectionDistance;
     float3 proxyPositionRWS;
+    
     float3 proxyForward;
+    float __unused__0;
     float3 proxyUp;
+    float __unused__1;
     float3 proxyRight;
+    float __unused__2;
     float3 influencePositionRWS;
+    float __unused__3;
+    
     float3 influenceForward;
+    float __unused__4;
     float3 influenceUp;
+    float __unused__5;
     float3 influenceRight;
+    float __unused__6;
     float3 influenceExtents;
+    float __unused__7;
+    
     float3 blendDistancePositive;
+    float __unused__8;
     float3 blendDistanceNegative;
+    float __unused__9;
     float3 blendNormalDistancePositive;
+    float __unused__10;
     float3 blendNormalDistanceNegative;
+    float __unused__11;
+    
     float3 boxSideFadePositive;
-    float3 boxSideFadeNegative;
     float weight;
+    float3 boxSideFadeNegative;
     float multiplier;
+    
     float rangeCompressionFactorCompensation;
-    float roughReflections;
-    float distanceBasedRoughness;
-    int envIndex;
-    float4 L0L1;
-    float4 L2_1;
-    float L2_2;
-    int normalizeWithAPV;
+    float roughReflections; // Only used for planar reflections to drop all mips below mip0
+    float distanceBasedRoughness; // Only used for reflection probes to avoid using the proxy for distance based roughness.
+    int envIndex; // Sampling properties
+    
+    float4 L0L1; // The luma SH for irradiance at probe location.
+    float4 L2_1; // First 4 coeffs of L2 {-2, -1, 0, 1}
+    float L2_2; // Last L2 coeff {2}
+    int normalizeWithAPV; // Whether the probe is normalized by probe volume content.
     float2 padding;
 };
 
@@ -114,33 +129,45 @@ struct LightData
 {
     float3 positionRWS;
     uint lightLayers;
+    
     float lightDimmer;
-    float volumetricLightDimmer;
-    float angleScale;
-    float angleOffset;
+    float volumetricLightDimmer; // Replaces 'lightDimer'
+    float angleScale;  // Spot light
+    float angleOffset; // Spot light
+    
     float3 forward;
-    float iesCut;
+    float iesCut; // Spot light
+    
     int lightType;
     float3 right;
+    
     float penumbraTint;
     float range;
     int shadowIndex;
+    float __unused__0;
+    
     float3 up;
     float rangeAttenuationScale;
+    
     float3 color;
     float rangeAttenuationBias;
-    float3 shadowTint;
+    
+    float3 shadowTint; // Use to tint shadow color
     float shadowDimmer;
-    float volumetricShadowDimmer;
-    int nonLightMappedOnly;
-    float minRoughness;
-    int screenSpaceShadowIndex;
-    float4 shadowMaskSelector;
-    float4 size;
-    int contactShadowMask;
+    
+    float volumetricShadowDimmer; // Replaces 'shadowDimmer'
+    int nonLightMappedOnly; // Used with ShadowMask feature (TODO: use a bitfield)
+    float minRoughness; // This is use to give a small "area" to punctual light, as if we have a light with a radius.
+    int screenSpaceShadowIndex; // -1 if unused (TODO: 16 bit)
+    
+    float4 shadowMaskSelector; // Used with ShadowMask feature
+    float4 size; // Used by area (X = length or width, Y = height, Z = CosBarnDoorAngle, W = BarnDoorLength) and punctual lights (X = radius)
+    
+    int contactShadowMask; // negative if unused (TODO: 16 bit)
     float diffuseDimmer;
     float specularDimmer;
     float __unused__;
+    
     float2 padding;
     float isRayTracedContactShadow;
     float boxLightSafeExtent;
@@ -164,8 +191,8 @@ struct DirectionalLightData
     uint lightLayers;
     
     float lightDimmer;
-    float volumetricLightDimmer; // Replaces 'lightDimmer'
     float3 forward;
+    float volumetricLightDimmer; // Replaces 'lightDimmer'
     float3 right; // Rescaled by (2 / shapeWidth)
     
     int shadowIndex; // -1 if unused (TODO: 16 bit)

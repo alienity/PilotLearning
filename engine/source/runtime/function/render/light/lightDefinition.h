@@ -19,23 +19,8 @@ namespace HLSL
 {
 #include "../shader/pipeline/Runtime/Lighting/LightDefinition.hlsl"
 
-    enum GPULightType
-    {
-        Directional,
-        Point,
-        Spot,
-        ProjectorPyramid,
-        ProjectorBox,
-
-        // AreaLight
-        Tube, // Keep Line lights before Rectangle. This is needed because of a compiler bug (see LightLoop.hlsl)
-        Rectangle,
-        // Currently not supported in real time (just use for reference)
-        Disc,
-        // Sphere,
-    };
-
-
+    
+    
 
 
 

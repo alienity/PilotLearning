@@ -47,7 +47,8 @@ void LightLoop(
 #endif
 
     // Initialize the contactShadow and contactShadowFade fields
-    InitContactShadow(posInput, context);
+    // InitContactShadow(posInput, context);
+    InvalidateConctactShadow(posInput, context);
 
     // First of all we compute the shadow value of the directional light to reduce the VGPR pressure
     if (featureFlags & LIGHTFEATUREFLAGS_DIRECTIONAL)
