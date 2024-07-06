@@ -1,6 +1,9 @@
 #ifndef UNITY_SHADER_VARIABLES_GLOBAL_INCLUDED
 #define UNITY_SHADER_VARIABLES_GLOBAL_INCLUDED
 
+#include "../../Lighting/LightDefinition.hlsl"
+#include "../../Lighting/Shadow/HDShadowManager.hlsl"
+
 #ifdef _CPP_MACRO_
 #define uint glm::uint
 #define uint2 glm::uvec2
@@ -30,6 +33,9 @@
 
 #define RENDERING_MAX_POINT_LIGHT_COUNT (16)
 #define RENDERING_MAX_SPOT_LIGHT_COUNT (16)
+#define RENDERING_MAX_LIGHT_COUNT (64)
+
+#define RENDERING_MAX_ENV_LIGHT_COUNT (16)
 
 struct RenderDataPerDraw
 {
@@ -203,85 +209,98 @@ struct VolumeCloudStruct
     float sun_to_earth_distance;
 };
 
-struct DirectionalLightShadowmap
+// struct DirectionalLightShadowmap
+// {
+//     uint shadowmap_srv_index; // shadowmap srv in descriptorheap index    
+//     uint cascadeCount; // how many cascade level, default 4
+//     uint2 shadowmap_size; // shadowmap size
+//     uint4 shadow_bounds; // shadow bounds for each cascade level
+//     float4x4 light_view_matrix; // direction light view matrix
+//     float4x4 light_proj_matrix[4];
+//     float4x4 light_proj_view[4];
+// };
+//
+// struct DirectionalLightStruct
+// {
+//     float4 lightColorIntensity; // directional light rgb - color, a - intensity
+//     float3 lightPosition; // directional light position
+//     float lightRadius; // sun radius
+//     float3 lightDirection; // directional light direction
+//     uint shadowType; // 1 use shadowmap
+//     float2 lightFarAttenuationParams; // a, a/far (a=1/pct-of-far)
+//     float2 _padding_0;
+//     
+//     DirectionalLightShadowmap directionalLightShadowmap;
+// };
+//
+// struct PointLightShadowmap
+// {
+//     uint shadowmap_srv_index; // shadowmap srv in descriptorheap index
+//     uint2 shadowmap_size;
+//     float _padding_shadowmap;
+//     float4x4 light_proj_view[6];
+// };
+//
+// struct PointLightStruct
+// {
+//     float3 lightPosition;
+//     float lightRadius;
+//     float4 lightIntensity; // point light rgb - color, a - intensity
+//     uint shadowType;
+//     float falloff; // default 1.0f
+//     uint2 _padding_0;
+//
+//     PointLightShadowmap pointLightShadowmap;
+// };
+//
+// struct PointLightUniform
+// {
+//     uint pointLightCounts;
+//     float3 _padding_0;
+//     PointLightStruct pointLightStructs[RENDERING_MAX_POINT_LIGHT_COUNT];
+// };
+//
+// struct SpotLightShadowmap
+// {
+//     uint shadowmap_srv_index; // shadowmap srv in descriptorheap index
+//     uint2 shadowmap_size;
+//     float _padding_0;
+//     float4x4 light_proj_view;
+// };
+//
+// struct SpotLightStruct
+// {
+//     float3 lightPosition;
+//     float lightRadius;
+//     float4 lightIntensity; // spot light rgb - color, a - intensity
+//     float3 lightDirection;
+//     float inner_radians;
+//     float outer_radians;
+//     uint shadowType;
+//     float falloff; // default 1.0f
+//     float _padding_0;
+//
+//     SpotLightShadowmap spotLightShadowmap;
+// };
+//
+// struct SpotLightUniform
+// {
+//     uint spotLightCounts;
+//     float3 _padding_0;
+//     SpotLightStruct spotLightStructs[RENDERING_MAX_SPOT_LIGHT_COUNT];
+// };
+
+struct LightDataUniform
 {
-    uint shadowmap_srv_index; // shadowmap srv in descriptorheap index    
-    uint cascadeCount; // how many cascade level, default 4
-    uint2 shadowmap_size; // shadowmap size
-    uint4 shadow_bounds; // shadow bounds for each cascade level
-    float4x4 light_view_matrix; // direction light view matrix
-    float4x4 light_proj_matrix[4];
-    float4x4 light_proj_view[4];
-};
+    HDShadowData shadowDatas[RENDERING_MAX_LIGHT_COUNT];
+    HDDirectionalShadowData directionalShadowData;
 
-struct DirectionalLightStruct
-{
-    float4 lightColorIntensity; // directional light rgb - color, a - intensity
-    float3 lightPosition; // directional light position
-    float lightRadius; // sun radius
-    float3 lightDirection; // directional light direction
-    uint shadowType; // 1 use shadowmap
-    float2 lightFarAttenuationParams; // a, a/far (a=1/pct-of-far)
-    float2 _padding_0;
-    
-    DirectionalLightShadowmap directionalLightShadowmap;
-};
+    EnvLightData envData;
+    LightData lightData[RENDERING_MAX_LIGHT_COUNT];
+    DirectionalLightData directionalLightData;
 
-struct PointLightShadowmap
-{
-    uint shadowmap_srv_index; // shadowmap srv in descriptorheap index
-    uint2 shadowmap_size;
-    float _padding_shadowmap;
-    float4x4 light_proj_view[6];
-};
-
-struct PointLightStruct
-{
-    float3 lightPosition;
-    float lightRadius;
-    float4 lightIntensity; // point light rgb - color, a - intensity
-    uint shadowType;
-    float falloff; // default 1.0f
-    uint2 _padding_0;
-
-    PointLightShadowmap pointLightShadowmap;
-};
-
-struct PointLightUniform
-{
-    uint pointLightCounts;
-    float3 _padding_0;
-    PointLightStruct pointLightStructs[RENDERING_MAX_POINT_LIGHT_COUNT];
-};
-
-struct SpotLightShadowmap
-{
-    uint shadowmap_srv_index; // shadowmap srv in descriptorheap index
-    uint2 shadowmap_size;
-    float _padding_0;
-    float4x4 light_proj_view;
-};
-
-struct SpotLightStruct
-{
-    float3 lightPosition;
-    float lightRadius;
-    float4 lightIntensity; // spot light rgb - color, a - intensity
-    float3 lightDirection;
-    float inner_radians;
-    float outer_radians;
-    uint shadowType;
-    float falloff; // default 1.0f
-    float _padding_0;
-
-    SpotLightShadowmap spotLightShadowmap;
-};
-
-struct SpotLightUniform
-{
-    uint spotLightCounts;
-    float3 _padding_0;
-    SpotLightStruct spotLightStructs[RENDERING_MAX_SPOT_LIGHT_COUNT];
+    uint _PunctualLightCount;
+    uint3 _unused_;
 };
 
 struct MeshUniform
@@ -368,9 +387,7 @@ struct FrameUniforms
     IBLUniform iblUniform;
     SSRUniform ssrUniform;
     VolumeCloudStruct volumeCloudUniform;
-    DirectionalLightStruct directionalLight;
-    PointLightUniform pointLightUniform;
-    SpotLightUniform spotLightUniform;
+    LightDataUniform lightDataUniform;
     VolumeLightUniform volumeLightUniform;
     SSSUniform sssUniform;
     ExposureUniform exposureUniform;

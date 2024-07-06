@@ -33,7 +33,7 @@ namespace MoYu
         ~RenderResource();
 
         void updateFrameUniforms(RenderScene* render_scene, RenderCamera* camera);
-        
+        void updateLightUniforms(RenderScene* render_scene);
         bool updateGlobalRenderResource(RenderScene* m_render_scene, GlobalRenderingRes level_resource_desc);
 
         bool updateInternalMaterial(SceneMaterial scene_material, SceneMaterial& cached_material, InternalMaterial& internal_material, bool has_initialized = false);
@@ -41,14 +41,24 @@ namespace MoYu
         bool updateInternalMeshRenderer(SceneMeshRenderer scene_mesh_renderer, 
             SceneMeshRenderer& cached_mesh_renderer, InternalMeshRenderer& internal_mesh_renderer, bool has_initialized = false);
 
+        // transient textures
+        std::shared_ptr<RHI::D3D12Texture> CreateTransientTexture(
+            RHI::RHIRenderSurfaceBaseDesc desc,
+            std::wstring name = L"TransientTexture",
+            D3D12_RESOURCE_STATES initState = D3D12_RESOURCE_STATE_COMMON);
+        void ReleaseTransientResources(); // run at the end of the frame
+
+        struct DescTexturePair
+        {
+            RHI::RHIRenderSurfaceBaseDesc desc;
+            std::shared_ptr<RHI::D3D12Texture> rt;
+        };
+        std::list<DescTexturePair> _AvailableDescRTs;
+        std::list<DescTexturePair> _AllocatedDescRTs;
+        
         // bindless objects
         HLSL::FrameUniforms m_FrameUniforms;
-        //HLSL::MeshPointLightShadowPerframeStorageBufferObject m_mesh_point_light_shadow_perframe_storage_buffer_object;
-        //HLSL::MeshSpotLightShadowPerframeStorageBufferObject  m_mesh_spot_light_shadow_perframe_storage_buffer_object;
-        //HLSL::MeshDirectionalLightShadowPerframeStorageBufferObject m_mesh_directional_light_shadow_perframe_storage_buffer_object;
-        //HLSL::MeshInstance m_all_mesh_buffer_object;
 
-    public:
         void InitDefaultTextures();
         void ReleaseAllTextures();
 
@@ -61,7 +71,7 @@ namespace MoYu
         std::shared_ptr<RHI::D3D12Buffer> createStaticBuffer(void* buffer_data, uint32_t buffer_size, uint32_t buffer_stride, bool raw, bool batch = false);
         std::shared_ptr<RHI::D3D12Buffer> createStaticBuffer(std::shared_ptr<MoYu::MoYuScratchBuffer>& buffer_data, bool raw, bool batch = false);
 
-        // MoYu::MoYuScratchImage 如果对应的是一整个对象就可以直接用于创建纹理或者buffer对象
+        // MoYu::MoYuScratchImage 濡傛灉瀵瑰簲鐨勬槸涓�鏁翠釜瀵硅薄灏卞彲浠ョ洿鎺ョ敤浜庡垱寤虹汗鐞嗘垨鑰卋uffer瀵硅薄
         std::shared_ptr<RHI::D3D12Texture> createTex(std::shared_ptr<MoYu::MoYuScratchImage> scratch_image, std::wstring name, bool batch = false);
 
         std::shared_ptr<RHI::D3D12Texture> createTex2D(uint32_t width, uint32_t height, void* pixels, DXGI_FORMAT format, bool is_srgb, bool genMips = false, bool batch = false);

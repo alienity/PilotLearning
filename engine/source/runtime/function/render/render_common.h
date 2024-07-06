@@ -3,6 +3,7 @@
 #include "runtime/core/math/moyu_math2.h"
 #include "runtime/function/framework/object/object_id_allocator.h"
 #include "runtime/function/render/rhi/hlsl_data_types.h"
+#include "runtime/function/render/light/lightDefinition.h"
 
 #include "DirectXTex.h"
 #include "DirectXTex.inl"
@@ -446,13 +447,32 @@ namespace MoYu
 
     struct BaseAmbientLight
     {
-        Color m_color;
+        glm::float3 position{ 0.0f, 0.0f, 0.0f };
+        glm::float3 forward{ 0.0f, 0.0f, -1.0f };
+        glm::float3 up{ 0.0f, 1.0f, 0.0f };
+        glm::float3 right{ 1.0f, 0.0f, 0.0f };
+
+        Color m_color{ 1.0f, 1.0f, 1.0f, 1.0f };
     };
 
     struct BaseDirectionLight
     {
+        glm::float3 position{ 0.0f, 0.0f, 0.0f };
+        glm::float3 forward{ 0.0f, 0.0f, -1.0f };
+        glm::float3 up{ 0.0f, 1.0f, 0.0f };
+        glm::float3 right{ 1.0f, 0.0f, 0.0f };
+
         Color   m_color {1.0f, 1.0f, 1.0f, 1.0f};
         float   m_intensity {1.0f};
+
+        float maxShadowDistance{ 500.0f };
+        float cascadeShadowSplit0{ 0.05f };
+        float cascadeShadowSplit1{ 0.15f };
+        float cascadeShadowSplit2{ 0.3f };
+        float cascadeShadowBorder0{ 0.2f };
+        float cascadeShadowBorder1{ 0.2f };
+        float cascadeShadowBorder2{ 0.2f };
+        float cascadeShadowBorder3{ 0.2f };
 
         bool    m_shadowmap {false};
         int     m_cascade {4};
@@ -464,18 +484,28 @@ namespace MoYu
 
     struct BasePointLight
     {
-        Color m_color;
+        glm::float3 position{ 0.0f, 0.0f, 0.0f };
+        glm::float3 forward{ 0.0f, 0.0f, -1.0f };
+        glm::float3 up{ 0.0f, 1.0f, 0.0f };
+        glm::float3 right{ 1.0f, 0.0f, 0.0f };
+
+        Color m_color{ 1.0f, 1.0f, 1.0f , 1.0f };
         float m_intensity {1.0f};
-        float m_radius;
+        float m_radius{ 1.0f };
     };
 
     struct BaseSpotLight
     {
-        Color m_color;
-        float m_intensity;
-        float m_radius;
-        float m_inner_degree;
-        float m_outer_degree;
+        glm::float3 position{ 0.0f, 0.0f, 0.0f };
+        glm::float3 forward{ 0.0f, 0.0f, -1.0f };
+        glm::float3 up{ 0.0f, 1.0f, 0.0f };
+        glm::float3 right{ 1.0f, 0.0f, 0.0f };
+
+        Color m_color{ 1.0f, 1.0f, 1.0f , 1.0f };
+        float m_intensity{ 1.0f };
+        float m_radius{ 1.0f };
+        float m_inner_degree{ 0.0f };
+        float m_outer_degree{ 0.5f };
 
         bool    m_shadowmap {false};
         glm::float2 m_shadow_bounds {128, 128};
@@ -495,6 +525,7 @@ namespace MoYu
     {
         SceneCommonIdentifier m_identifier;
 
+        glm::float3   m_position_delation;
         glm::float3   m_position;
         glm::float3   m_direction;
         glm::float4x4 m_shadow_view_mat;
@@ -513,8 +544,11 @@ namespace MoYu
     {
         SceneCommonIdentifier m_identifier;
 
+        glm::float3   m_position_delation;
         glm::float3   m_position;
         glm::float3   m_direction;
+        glm::float4x4 m_shadow_view_mat;
+        glm::float4x4 m_shadow_proj_mats;
         glm::float4x4 m_shadow_view_proj_mat;
     };
 

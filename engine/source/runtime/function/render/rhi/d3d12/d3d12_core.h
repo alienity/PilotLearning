@@ -464,11 +464,11 @@ namespace RHI
         }
         bool operator!=(const RHIBufferDesc& o) const { return !(*this == o); }
 
-        UINT            size   = 0;                   // bufferµÄ×Ö½ÚÊı
-        UINT            number = 0;                   // elementµÄÊıÁ¿
-        UINT32          stride = 0;                   // index/vertex/structµÄ´óĞ¡
-        RHIBufferTarget target = RHIBufferTargetNone; // bufferÊ¹ÓÃÀ´¸ÉÉ¶
-        RHIBufferMode mode = RHIBufferModeImmutable;  // ¸üĞÂÄ£Ê½£¬ÊÇ¾²Ì¬µÄ£¬¶¯Ì¬µÄ£¬»òÕßÊÇ¿É¶Á»ØµÄ
+        UINT            size   = 0;                   // bufferçš„å­—èŠ‚æ•°
+        UINT            number = 0;                   // elementçš„æ•°é‡
+        UINT32          stride = 0;                   // index/vertex/structçš„å¤§å°
+        RHIBufferTarget target = RHIBufferTargetNone; // bufferä½¿ç”¨æ¥å¹²å•¥
+        RHIBufferMode mode = RHIBufferModeImmutable;  // æ›´æ–°æ¨¡å¼ï¼Œæ˜¯é™æ€çš„ï¼ŒåŠ¨æ€çš„ï¼Œæˆ–è€…æ˜¯å¯è¯»å›çš„
     };
 
     struct RHIBufferData
@@ -493,7 +493,7 @@ namespace RHI
     };
     DEFINE_ENUM_FLAG_OPERATORS(RHISurfaceCreateFlags);
 
-    // ×î´óÔÊĞíµÄmipmapÊıÊÇ12
+    // æœ€å¤§å…è®¸çš„mipmapæ•°æ˜¯12
     #define MAXMIPLEVELS 12
 
     enum RHITextureDimension
@@ -527,9 +527,45 @@ namespace RHI
         RHISurfaceCreateFlags flags;
         RHITextureDimension   dim;
         DXGI_FORMAT           graphicsFormat;
-        DXGI_FORMAT           clearFormat;
+        D3D12_CLEAR_VALUE     clearValue;
         bool                  colorSurface;
         bool                  backBuffer;
+        
+        bool operator==(const RHIRenderSurfaceBaseDesc& o) const
+        {
+            return
+                width == o.width &&
+                height == o.height &&
+                depthOrArray == o.depthOrArray &&
+                samples == o.samples &&
+                mipCount == o.mipCount &&
+                flags == o.flags &&
+                dim == o.dim &&
+                graphicsFormat == o.graphicsFormat &&
+                clearValue == o.clearValue &&
+                colorSurface == o.colorSurface &&
+                backBuffer == o.backBuffer;
+        }
+        bool operator!=(const RHIRenderSurfaceBaseDesc& o) const { return !(*this == o); }
+        bool operator<(const RHIRenderSurfaceBaseDesc& o) const
+        {
+            return
+                width < o.width &&
+                height < o.height &&
+                depthOrArray < o.depthOrArray &&
+                samples < o.samples &&
+                mipCount < o.mipCount &&
+                flags < o.flags &&
+                dim < o.dim &&
+                graphicsFormat < o.graphicsFormat &&
+                clearValue.Format < o.clearValue.Format &&
+                clearValue.Color[0] < o.clearValue.Color[0] &&
+                clearValue.Color[1] < o.clearValue.Color[1] &&
+                clearValue.Color[2] < o.clearValue.Color[2] &&
+                clearValue.Color[3] < o.clearValue.Color[3] &&
+                colorSurface < o.colorSurface &&
+                backBuffer < o.backBuffer;
+        }
     };
 
 }
@@ -614,7 +650,7 @@ namespace RHI
             return *this;
         }
 
-        // ¸ù¾İFenceÊÇ·ñÎª¿Õ£¬À´ÅĞ¶Ïµ±Ç°SyncHandleÊÇ·ñÊÇ¿ÉÓÃµÄ£¬²»¿ÉÓÃµÄÊ±ºò¿ÉÒÔ²»×ö¼ì²éÖ±½Ó°Ñ¶ÔÏó¸øÊÍ·Åµô
+        // æ ¹æ®Fenceæ˜¯å¦ä¸ºç©ºï¼Œæ¥åˆ¤æ–­å½“å‰SyncHandleæ˜¯å¦æ˜¯å¯ç”¨çš„ï¼Œä¸å¯ç”¨çš„æ—¶å€™å¯ä»¥ä¸åšæ£€æŸ¥ç›´æ¥æŠŠå¯¹è±¡ç»™é‡Šæ”¾æ‰
         explicit operator bool() const noexcept;
 
         [[nodiscard]] auto GetValue() const noexcept -> UINT64;

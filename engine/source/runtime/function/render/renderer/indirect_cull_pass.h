@@ -122,6 +122,14 @@ namespace MoYu
         std::shared_ptr<RHI::D3D12Buffer> pRenderDataPerDrawBuffer;
         std::shared_ptr<RHI::D3D12Buffer> pPropertiesPerMaterialBuffer;
 
+        // light data for later draw
+        std::shared_ptr<RHI::D3D12Buffer> pHDShadowDataStructureBuffer;
+        std::shared_ptr<RHI::D3D12Buffer> pHDDirectionalShadowDataStructureBuffer;
+        std::shared_ptr<RHI::D3D12Buffer> pDirectionalLightDataStructureBuffer;
+        std::shared_ptr<RHI::D3D12Buffer> pLightDataStructureBuffer;
+        std::shared_ptr<RHI::D3D12Buffer> pEnvLightDataStructureBuffer;
+        std::shared_ptr<RHI::D3D12Buffer> pEnvLightReflectionDataStructureBuffer;
+
         // desc
         RHI::RgTextureDesc albedoDesc;
         RHI::RgTextureDesc depthDesc;

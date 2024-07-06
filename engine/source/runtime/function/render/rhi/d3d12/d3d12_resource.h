@@ -331,7 +331,6 @@ namespace RHI
                                                     RHIRenderSurfaceBaseDesc desc,
                                                     const std::wstring       name      = L"Texture",
                                                     D3D12_RESOURCE_STATES    initState = D3D12_RESOURCE_STATE_COMMON,
-                                                    std::optional<CD3DX12_CLEAR_VALUE>  clearValue = std::nullopt,
                                                     std::vector<D3D12_SUBRESOURCE_DATA> initDatas  = {});
 
         static std::shared_ptr<D3D12Texture> Create2D(D3D12LinkedDevice*     Parent,

@@ -937,7 +937,6 @@ namespace RHI
                                                        RHIRenderSurfaceBaseDesc            desc,
                                                        const std::wstring                  name,
                                                        D3D12_RESOURCE_STATES               initState,
-                                                       std::optional<CD3DX12_CLEAR_VALUE>  clearValue,
                                                        std::vector<D3D12_SUBRESOURCE_DATA> initDatas)
     {
         D3D12_RESOURCE_FLAGS resourceFlags = D3D12_RESOURCE_FLAG_NONE;
@@ -986,6 +985,8 @@ namespace RHI
         CD3DX12_HEAP_PROPERTIES resourceHeapProperties =
             CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT, Parent->GetNodeMask(), Parent->GetNodeMask());
 
+        CD3DX12_CLEAR_VALUE clearValue = CD3DX12_CLEAR_VALUE(desc.clearValue);
+        
         std::shared_ptr<D3D12Texture> pSurfaceD3D12 = std::make_shared<D3D12Texture>(
             Parent, resourceDesc, resourceHeapProperties, clearValue, initState, isCubeMap);
         pSurfaceD3D12->SetResourceName(name);
@@ -1020,11 +1021,12 @@ namespace RHI
                                                          std::optional<CD3DX12_CLEAR_VALUE> clearValue,
                                                          D3D12_SUBRESOURCE_DATA             initData)
     {
-        DXGI_FORMAT clearFormat = clearValue != std::nullopt ? clearValue.value().Format : format;
-        RHIRenderSurfaceBaseDesc desc = {width, height, 1, sampleCount, numMips, flags, RHITexDim2D, format, clearFormat, true, false};
+        CD3DX12_CLEAR_VALUE inClearValue = clearValue != std::nullopt ? clearValue.value() : CD3DX12_CLEAR_VALUE();
+        RHIRenderSurfaceBaseDesc desc =
+            {width, height, 1, sampleCount, numMips, flags, RHITexDim2D, format, inClearValue, true, false};
         std::vector<D3D12_SUBRESOURCE_DATA> subDatas = {};
         if (initData.pData != nullptr) subDatas.push_back(initData);
-        return Create(Parent, desc, name, initState, clearValue, subDatas);
+        return Create(Parent, desc, name, initState, subDatas);
     }
 
     std::shared_ptr<D3D12Texture> D3D12Texture::Create2DArray(D3D12LinkedDevice*                  Parent,
@@ -1040,9 +1042,9 @@ namespace RHI
                                                               std::optional<CD3DX12_CLEAR_VALUE>  clearValue,
                                                               std::vector<D3D12_SUBRESOURCE_DATA> initDatas)
     {
-        DXGI_FORMAT clearFormat = clearValue != std::nullopt ? clearValue.value().Format : format;
-        RHIRenderSurfaceBaseDesc desc = {width, height, arraySize, sampleCount, numMips, flags, RHITexDim2DArray, format, clearFormat, true, false};
-        return Create(Parent, desc, name, initState, clearValue, initDatas);
+        CD3DX12_CLEAR_VALUE inClearValue = clearValue != std::nullopt ? clearValue.value() : CD3DX12_CLEAR_VALUE();
+        RHIRenderSurfaceBaseDesc desc = {width, height, arraySize, sampleCount, numMips, flags, RHITexDim2DArray, format, inClearValue, true, false};
+        return Create(Parent, desc, name, initState, initDatas);
     }
 
     std::shared_ptr<D3D12Texture> D3D12Texture::CreateCubeMap(D3D12LinkedDevice*                  Parent,
@@ -1057,10 +1059,10 @@ namespace RHI
                                                               std::optional<CD3DX12_CLEAR_VALUE>  clearValue,
                                                               std::vector<D3D12_SUBRESOURCE_DATA> initDatas)
     {
-        DXGI_FORMAT clearFormat = clearValue != std::nullopt ? clearValue.value().Format : format;
+        CD3DX12_CLEAR_VALUE inClearValue = clearValue != std::nullopt ? clearValue.value() : CD3DX12_CLEAR_VALUE();
         UINT cubeFaces = 6;
-        RHIRenderSurfaceBaseDesc desc = {width, height, cubeFaces, sampleCount, numMips, flags, RHITexDimCube, format, clearFormat, true, false};
-        return Create(Parent, desc, name, initState, clearValue, initDatas);
+        RHIRenderSurfaceBaseDesc desc = {width, height, cubeFaces, sampleCount, numMips, flags, RHITexDimCube, format, inClearValue, true, false};
+        return Create(Parent, desc, name, initState, initDatas);
     }
 
     std::shared_ptr<D3D12Texture> D3D12Texture::CreateCubeMapArray(D3D12LinkedDevice*                  Parent,
@@ -1076,11 +1078,11 @@ namespace RHI
                                                                    std::optional<CD3DX12_CLEAR_VALUE>  clearValue,
                                                                    std::vector<D3D12_SUBRESOURCE_DATA> initDatas)
     {
-        DXGI_FORMAT clearFormat = clearValue != std::nullopt ? clearValue.value().Format : format;
+        CD3DX12_CLEAR_VALUE inClearValue = clearValue != std::nullopt ? clearValue.value() : CD3DX12_CLEAR_VALUE();
         UINT cubeFaces = 6;
         UINT cubeArrayFaces = cubeFaces * arraySize;
-        RHIRenderSurfaceBaseDesc desc = {width, height, cubeArrayFaces, sampleCount, numMips, flags, RHITexDimCubeArray, format, clearFormat, true, false};
-        return Create(Parent, desc, name, initState, clearValue, initDatas);
+        RHIRenderSurfaceBaseDesc desc = {width, height, cubeArrayFaces, sampleCount, numMips, flags, RHITexDimCubeArray, format, inClearValue, true, false};
+        return Create(Parent, desc, name, initState, initDatas);
     }
 
     std::shared_ptr<D3D12Texture> D3D12Texture::Create3D(D3D12LinkedDevice*                 Parent,
@@ -1096,12 +1098,12 @@ namespace RHI
                                                          std::optional<CD3DX12_CLEAR_VALUE> clearValue,
                                                          D3D12_SUBRESOURCE_DATA             initData)
     {
-        DXGI_FORMAT clearFormat = clearValue != std::nullopt ? clearValue.value().Format : format;
+        CD3DX12_CLEAR_VALUE inClearValue = clearValue != std::nullopt ? clearValue.value() : CD3DX12_CLEAR_VALUE();
         UINT cubeFaces = 6;
-        RHIRenderSurfaceBaseDesc desc = {width, height, depth, sampleCount, numMips, flags, RHITexDim3D, format, clearFormat, true, false};
+        RHIRenderSurfaceBaseDesc desc = {width, height, depth, sampleCount, numMips, flags, RHITexDim3D, format, inClearValue, true, false};
         std::vector<D3D12_SUBRESOURCE_DATA> subDatas = {};
         if (initData.pData != nullptr) subDatas.push_back(initData);
-        return Create(Parent, desc, name, initState, clearValue, subDatas);
+        return Create(Parent, desc, name, initState, subDatas);
     }
 
     std::shared_ptr<D3D12Texture> D3D12Texture::CreateFromSwapchain(D3D12LinkedDevice*                     Parent,

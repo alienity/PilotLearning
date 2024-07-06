@@ -1296,7 +1296,6 @@ struct HDShadowData
     float4 shadowMapSize;
     float4 shadowFilterParams0;
     float3 cacheTranslationDelta;
-    float isInCachedAtlas;
     float4x4 shadowToWorld;
 };
 

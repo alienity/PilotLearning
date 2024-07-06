@@ -21,6 +21,8 @@ namespace HLSL
 {
 
 #include "../shader/pipeline/Runtime/ShaderLibrary/API/D3D12.hlsl"
+#include "../shader/pipeline/Runtime/Lighting/LightDefinition.hlsl"
+#include "../shader/pipeline/Runtime/Lighting/Shadow/HDShadowManager.hlsl"
 #include "../shader/pipeline/Runtime/ShaderLibrary/ShaderVariablesGlobal.hlsl"
 #include "../shader/pipeline/Runtime/Material/Lit/LitProperties.hlsl"
 

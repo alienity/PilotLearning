@@ -43,9 +43,6 @@ namespace MoYu
                     ShadowOutputParameters&     passOutput);
         void destroy() override final;
 
-    //private:
-        DirectionShadowmapStruct m_DirectionalShadowmap;
-        std::vector<SpotShadowmapStruct> m_SpotShadowmaps;
 	};
 }
 

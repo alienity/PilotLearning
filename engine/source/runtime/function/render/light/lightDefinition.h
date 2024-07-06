@@ -23,10 +23,10 @@ namespace HLSL
 #include "../shader/pipeline/Runtime/Lighting/Shadow/HDShadowManager.hlsl"
 
 
-    bool PrepareLightData(std::vector<LightData>& InOutLightDatas, std::vector<HDShadowData>& InOutLightShadows);
+    //bool PrepareLightData(std::vector<LightData>& InOutLightDatas, std::vector<HDShadowData>& InOutLightShadows);
 
-    bool PrepareDirectionLightData(std::vector<DirectionalLightData>& InOutDirLightDatas, std::vector<HDDirectionalShadowData>& InOutDirShadows);
+    //bool PrepareDirectionLightData(std::vector<DirectionalLightData>& InOutDirLightDatas, std::vector<HDDirectionalShadowData>& InOutDirShadows);
 
 
 
-} // namespace MoYu
+} // namespace HLSL

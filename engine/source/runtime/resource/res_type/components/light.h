@@ -12,6 +12,15 @@ namespace MoYu
         Color color = Color::White;
         float intensity {1.0f};
         
+        float maxShadowDistance{ 500.0f };
+        float cascadeShadowSplit0{ 0.05f };
+        float cascadeShadowSplit1{ 0.15f };
+        float cascadeShadowSplit2{ 0.3f };
+        float cascadeShadowBorder0{ 0.2f };
+        float cascadeShadowBorder1{ 0.2f };
+        float cascadeShadowBorder2{ 0.2f };
+        float cascadeShadowBorder3{ 0.2f };
+
         bool    shadows {false};
         int     cascade {4};
         glm::float2 shadow_bounds {512, 512};
@@ -22,6 +31,14 @@ namespace MoYu
     NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(DirectionLightParameter,
                                                     color,
                                                     intensity,
+                                                    maxShadowDistance,
+                                                    cascadeShadowSplit0,
+                                                    cascadeShadowSplit1,
+                                                    cascadeShadowSplit2,
+                                                    cascadeShadowBorder0,
+                                                    cascadeShadowBorder1,
+                                                    cascadeShadowBorder2,
+                                                    cascadeShadowBorder3,
                                                     shadows,
                                                     cascade,
                                                     shadow_bounds,

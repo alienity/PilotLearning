@@ -80,31 +80,19 @@ struct EnvLightData
     float3 proxyPositionRWS;
     
     float3 proxyForward;
-    float __unused__0;
     float3 proxyUp;
-    float __unused__1;
     float3 proxyRight;
-    float __unused__2;
     float3 influencePositionRWS;
-    float __unused__3;
     
     float3 influenceForward;
-    float __unused__4;
     float3 influenceUp;
-    float __unused__5;
     float3 influenceRight;
-    float __unused__6;
     float3 influenceExtents;
-    float __unused__7;
     
     float3 blendDistancePositive;
-    float __unused__8;
     float3 blendDistanceNegative;
-    float __unused__9;
     float3 blendNormalDistancePositive;
-    float __unused__10;
     float3 blendNormalDistanceNegative;
-    float __unused__11;
     
     float3 boxSideFadePositive;
     float weight;
@@ -130,10 +118,10 @@ struct LightData
     float3 positionRWS;
     uint lightLayers;
     
-    float lightDimmer;
+    float lightDimmer; // Multiplies the intensity of the Light by the given number.
     float volumetricLightDimmer; // Replaces 'lightDimer'
-    float angleScale;  // Spot light
-    float angleOffset; // Spot light
+    float angleInner;  // Spot light
+    float angleOuter; // Spot light
     
     float3 forward;
     float iesCut; // Spot light
@@ -143,7 +131,7 @@ struct LightData
     
     float penumbraTint;
     float range;
-    int shadowIndex;
+    int shadowDataIndex;
     float __unused__0;
     
     float3 up;
@@ -160,17 +148,12 @@ struct LightData
     float minRoughness; // This is use to give a small "area" to punctual light, as if we have a light with a radius.
     int screenSpaceShadowIndex; // -1 if unused (TODO: 16 bit)
     
-    float4 shadowMaskSelector; // Used with ShadowMask feature
     float4 size; // Used by area (X = length or width, Y = height, Z = CosBarnDoorAngle, W = BarnDoorLength) and punctual lights (X = radius)
     
     int contactShadowMask; // negative if unused (TODO: 16 bit)
     float diffuseDimmer;
     float specularDimmer;
     float __unused__;
-    
-    float2 padding;
-    float isRayTracedContactShadow;
-    float boxLightSafeExtent;
 };
 
 // Generated from UnityEngine.Rendering.HighDefinition.EnvLightReflectionData
@@ -190,12 +173,12 @@ struct DirectionalLightData
     float3 positionRWS;
     uint lightLayers;
     
-    float lightDimmer;
+    float lightDimmer; // Multiplies the intensity of the Light by the given number.
     float3 forward;
     float volumetricLightDimmer; // Replaces 'lightDimmer'
     float3 right; // Rescaled by (2 / shapeWidth)
     
-    int shadowIndex; // -1 if unused (TODO: 16 bit)
+    int shadowIndex; // -1 if unused (TODO: 16 bit), else be the offset in HDShadowDataStructureBuffer
     float3 up; // Rescaled by (2 / shapeHeight)
     
     int contactShadowIndex; // -1 if unused (TODO: 16 bit)

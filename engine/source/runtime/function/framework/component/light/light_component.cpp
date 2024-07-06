@@ -79,6 +79,15 @@ namespace MoYu
 
             BaseDirectionLight direction_light = {};
 
+            direction_light.maxShadowDistance = m_light_res_ptr->m_DirectionLightParam.maxShadowDistance;
+            direction_light.cascadeShadowSplit0 = m_light_res_ptr->m_DirectionLightParam.cascadeShadowSplit0;
+            direction_light.cascadeShadowSplit1 = m_light_res_ptr->m_DirectionLightParam.cascadeShadowSplit1;
+            direction_light.cascadeShadowSplit2 = m_light_res_ptr->m_DirectionLightParam.cascadeShadowSplit2;
+            direction_light.cascadeShadowBorder0 = m_light_res_ptr->m_DirectionLightParam.cascadeShadowBorder0;
+            direction_light.cascadeShadowBorder1 = m_light_res_ptr->m_DirectionLightParam.cascadeShadowBorder1;
+            direction_light.cascadeShadowBorder2 = m_light_res_ptr->m_DirectionLightParam.cascadeShadowBorder2;
+            direction_light.cascadeShadowBorder3 = m_light_res_ptr->m_DirectionLightParam.cascadeShadowBorder3;
+
             direction_light.m_color             = m_light_res_ptr->m_DirectionLightParam.color;
             direction_light.m_intensity         = m_light_res_ptr->m_DirectionLightParam.intensity;
             direction_light.m_shadowmap         = m_light_res_ptr->m_DirectionLightParam.shadows;

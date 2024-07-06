@@ -58,6 +58,7 @@ namespace MoYu
         pFrameUniformBuffer = CreateCullingBuffer(1, MoYu::AlignUp(sizeof(HLSL::FrameUniforms), 256), L"FrameUniforms");
         pRenderDataPerDrawBuffer = CreateCullingBuffer(HLSL::MaterialLimit, sizeof(HLSL::RenderDataPerDraw), L"RenderDataPerDraw");
         pPropertiesPerMaterialBuffer = CreateCullingBuffer(HLSL::MaterialLimit, sizeof(HLSL::PropertiesPerMaterial), L"PropertiesPerMaterial");
+        pHDShadowDataStructureBuffer = CreateCullingBuffer(1, MoYu::AlignUp(sizeof(HLSL::FrameUniforms), 256), L"FrameUniforms");
         
         // create upload buffer
         pUploadFrameUniformBuffer = CreateUploadBuffer(1, MoYu::AlignUp(sizeof(HLSL::FrameUniforms), 256), L"UploadFrameUniforms");

@@ -1,7 +1,5 @@
 #include "runtime/function/render/renderer/indirect_shadow_pass.h"
-
 #include "runtime/resource/config_manager/config_manager.h"
-
 #include "runtime/function/render/rhi/rhi_core.h"
 
 namespace MoYu
@@ -22,114 +20,7 @@ namespace MoYu
 
     void IndirectShadowPass::prepareShadowmaps(std::shared_ptr<RenderResource> render_resource)
     {
-        RenderResource* real_resource = (RenderResource*)render_resource.get();
-
-        if (m_render_scene->m_directional_light.m_identifier != UndefCommonIdentifier && m_render_scene->m_directional_light.m_shadowmap)
-        {
-            m_DirectionalShadowmap.m_identifier = m_render_scene->m_directional_light.m_identifier;
-            m_DirectionalShadowmap.m_shadowmap_size = m_render_scene->m_directional_light.m_shadowmap_size;
-            m_DirectionalShadowmap.m_casccade = m_render_scene->m_directional_light.m_cascade;
-            if (m_DirectionalShadowmap.p_LightShadowmap == nullptr)
-            {
-                glm::float2 shadowmap_size = m_render_scene->m_directional_light.m_shadowmap_size;
-                //Vector2 cascade_shadowmap_size = shadowmap_size * 2;
-
-                m_DirectionalShadowmap.p_LightShadowmap =
-                    RHI::D3D12Texture::Create2D(m_Device->GetLinkedDevice(),
-                                                shadowmap_size.x,
-                                                shadowmap_size.y,
-                                                1,
-                                                DXGI_FORMAT_D32_FLOAT,
-                                                RHI::RHISurfaceCreateShadowmap,
-                                                1,
-                                                L"DirectionShadowmapCascade4",
-                                                D3D12_RESOURCE_STATE_COMMON,
-                                                CD3DX12_CLEAR_VALUE(DXGI_FORMAT_D32_FLOAT, 0, 1));
-
-            }
-
-            real_resource->m_FrameUniforms.directionalLight.directionalLightShadowmap.shadowmap_srv_index =
-                m_DirectionalShadowmap.p_LightShadowmap->GetDefaultSRV()->GetIndex();
-        }
-        else
-        {
-            m_DirectionalShadowmap.Reset();
-        }
-
-        if (m_render_scene->m_spot_light_list.size() != 0)
-        {
-            for (size_t i = 0; i < m_render_scene->m_spot_light_list.size(); i++)
-            {
-                auto& curSpotLightDesc = m_render_scene->m_spot_light_list[i];
-                
-                bool curSpotLighShaodwmaptExist = false;
-                int  curShadowmapIndex  = -1;
-                for (size_t j = 0; j < m_SpotShadowmaps.size(); j++)
-                {
-                    if (m_SpotShadowmaps[j].m_identifier == curSpotLightDesc.m_identifier)
-                    {
-                        curShadowmapIndex = j;
-                        curSpotLighShaodwmaptExist = true;
-                        break;
-                    }
-                }
-                
-                // if current light does not have shadowmap, but shadowmap exist
-                if (!curSpotLightDesc.m_shadowmap && curSpotLighShaodwmaptExist)
-                {
-                    m_SpotShadowmaps.erase(m_SpotShadowmaps.begin() + curShadowmapIndex);
-                    curShadowmapIndex = -1;
-                }
-
-                // if shadowmap does not exist, but current light has shadowmap
-                if (curSpotLightDesc.m_shadowmap)
-                {
-                    if (!curSpotLighShaodwmaptExist)
-                    {
-                        glm::float2 shadowmap_size = curSpotLightDesc.m_shadowmap_size;
-                    
-                        std::shared_ptr<RHI::D3D12Texture> p_SpotLightShadowmap =
-                            RHI::D3D12Texture::Create2D(m_Device->GetLinkedDevice(),
-                                                        shadowmap_size.x,
-                                                        shadowmap_size.y,
-                                                        1,
-                                                        DXGI_FORMAT_D32_FLOAT,
-                                                        RHI::RHISurfaceCreateShadowmap,
-                                                        1,
-                                                        L"SpotLightShadowmap",
-                                                        D3D12_RESOURCE_STATE_COMMON,
-                                                        CD3DX12_CLEAR_VALUE(DXGI_FORMAT_D32_FLOAT, 0, 1));
-
-                        SpotShadowmapStruct spotShadow = {};
-                        spotShadow.m_identifier        = curSpotLightDesc.m_identifier;
-                        spotShadow.m_spot_index        = i;
-                        spotShadow.m_shadowmap_size    = shadowmap_size;
-                        spotShadow.p_LightShadowmap    = p_SpotLightShadowmap;
-
-                        m_SpotShadowmaps.push_back(spotShadow);
-
-                        curShadowmapIndex = m_SpotShadowmaps.size() - 1;
-                    }
-
-                    if (curShadowmapIndex != -1)
-                    {
-                        real_resource->m_FrameUniforms.spotLightUniform.spotLightStructs[i]
-                            .spotLightShadowmap.shadowmap_srv_index =
-                            m_SpotShadowmaps[curShadowmapIndex].p_LightShadowmap->GetDefaultSRV()->GetIndex();
-                    }
-
-                }
-            }
-        }
-        else
-        {
-            for (size_t i = 0; i < m_SpotShadowmaps.size(); i++)
-            {
-                m_SpotShadowmaps[i].Reset();
-            }
-            m_SpotShadowmaps.clear();
-        }
-
+        
     }
 
     void IndirectShadowPass::update(RHI::RenderGraph& graph, ShadowInputParameters& passInput, ShadowOutputParameters& passOutput)

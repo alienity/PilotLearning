@@ -51,6 +51,12 @@ namespace MoYu
         glm::float4     m_perspective;
         glm::decompose(model_matrix, m_scale, m_orientation, m_translation, m_skew, m_perspective);
 
+        glm::mat3 RotationMatrix = glm::toMat3(m_orientation);
+
+        glm::float3 forward = glm::float3(RotationMatrix * MYFloat3::Forward);
+        glm::float3 up = glm::float3(RotationMatrix * MYFloat3::Up);
+        glm::float3 right = glm::float3(RotationMatrix * MYFloat3::Right);
+
         glm::float3 direction = m_orientation * MYFloat3::Forward;
 
         if (sceneLight.m_light_type == LightType::AmbientLight)
@@ -59,13 +65,24 @@ namespace MoYu
 
             m_ambient_light.m_identifier = sceneLight.m_identifier;
             m_ambient_light.m_position   = m_translation;
+
+            m_ambient_light.position = m_translation;
+            m_ambient_light.forward = forward;
+            m_ambient_light.right = right;
+            m_ambient_light.up = up;
         }
         else if (sceneLight.m_light_type == LightType::DirectionLight)
-        {
+          {
             glm::float4x4 dirLightViewMat =
                 MoYu::MYMatrix4x4::createLookAtMatrix(m_translation, m_translation + direction, MYFloat3::Up);
-
+            
             m_directional_light.m_shadow_view_mat = dirLightViewMat;
+
+            m_directional_light.m_position_delation = (m_translation - m_directional_light.position);
+            m_directional_light.position = m_translation;
+            m_directional_light.forward = forward;
+            m_directional_light.right = right;
+            m_directional_light.up = up;
 
             int   shadow_bounds_width  = sceneLight.direction_light.m_shadow_bounds.x;
             int   shadow_bounds_height = sceneLight.direction_light.m_shadow_bounds.y;
@@ -107,24 +124,29 @@ namespace MoYu
                     break;
                 }
             }
+
+            InternalPointLight* pInternalPointLight;
+
             if (index_finded == -1)
             {
-                InternalPointLight internalPointLight = {};
-                internalPointLight.m_identifier       = sceneLight.m_identifier;
-                internalPointLight.m_position         = m_translation;
-                internalPointLight.m_color            = sceneLight.point_light.m_color;
-                internalPointLight.m_intensity        = sceneLight.point_light.m_intensity;
-                internalPointLight.m_radius           = sceneLight.point_light.m_radius;
-                m_point_light_list.push_back(internalPointLight);
+                InternalPointLight& internalPointLight = m_point_light_list.emplace_back();
+                pInternalPointLight = &internalPointLight;
             }
             else
             {
-                m_point_light_list[index_finded].m_identifier = sceneLight.m_identifier;
-                m_point_light_list[index_finded].m_position   = m_translation;
-                m_point_light_list[index_finded].m_color      = sceneLight.point_light.m_color;
-                m_point_light_list[index_finded].m_intensity  = sceneLight.point_light.m_intensity;
-                m_point_light_list[index_finded].m_radius     = sceneLight.point_light.m_radius;
+                pInternalPointLight = &m_point_light_list[index_finded];
             }
+
+            pInternalPointLight->m_identifier = sceneLight.m_identifier;
+            pInternalPointLight->m_position = m_translation;
+            pInternalPointLight->m_color = sceneLight.point_light.m_color;
+            pInternalPointLight->m_intensity = sceneLight.point_light.m_intensity;
+            pInternalPointLight->m_radius = sceneLight.point_light.m_radius;
+
+            pInternalPointLight->position = m_translation;
+            pInternalPointLight->forward = forward;
+            pInternalPointLight->right = right;
+            pInternalPointLight->up = up;
         }
         else if (sceneLight.m_light_type == LightType::SpotLight)
         {
@@ -146,46 +168,41 @@ namespace MoYu
             glm::float4x4 spotLightProjMat = MYMatrix4x4::createPerspectiveFieldOfView(_spotOutRadians, 1, _spotNearPlane, _spotFarPlane);
             glm::float4x4 spotLightViewProjMat = spotLightProjMat * spotLightViewMat;
 
+            InternalSpotLight* pInternalSpotLight;
+
             if (index_finded == -1)
             {
-                InternalSpotLight internalSpotLight      = {};
-                internalSpotLight.m_identifier           = sceneLight.m_identifier;
-                internalSpotLight.m_position             = m_translation;
-                internalSpotLight.m_direction            = direction;
-                internalSpotLight.m_shadow_view_proj_mat = spotLightViewProjMat;
-                
-                internalSpotLight.m_color                = sceneLight.spot_light.m_color;
-                internalSpotLight.m_intensity            = sceneLight.spot_light.m_intensity;
-                internalSpotLight.m_radius               = sceneLight.spot_light.m_radius;
-                internalSpotLight.m_inner_degree         = sceneLight.spot_light.m_inner_degree;
-                internalSpotLight.m_outer_degree         = sceneLight.spot_light.m_outer_degree;
-                internalSpotLight.m_shadowmap            = sceneLight.spot_light.m_shadowmap;
-                internalSpotLight.m_shadow_bounds        = sceneLight.spot_light.m_shadow_bounds;
-                internalSpotLight.m_shadow_near_plane    = sceneLight.spot_light.m_shadow_near_plane;
-                internalSpotLight.m_shadow_far_plane     = sceneLight.spot_light.m_shadow_far_plane;
-                internalSpotLight.m_shadowmap_size       = sceneLight.spot_light.m_shadowmap_size;
-
-
-                m_spot_light_list.push_back(internalSpotLight);
+                InternalSpotLight& internalSpotLight = m_spot_light_list.emplace_back();
+                pInternalSpotLight = &internalSpotLight;
             }
             else
             {
-                m_spot_light_list[index_finded].m_identifier           = sceneLight.m_identifier;
-                m_spot_light_list[index_finded].m_position             = m_translation;
-                m_spot_light_list[index_finded].m_direction            = direction;
-                m_spot_light_list[index_finded].m_shadow_view_proj_mat = spotLightViewProjMat;
-
-                m_spot_light_list[index_finded].m_color                = sceneLight.spot_light.m_color;
-                m_spot_light_list[index_finded].m_intensity            = sceneLight.spot_light.m_intensity;
-                m_spot_light_list[index_finded].m_radius               = sceneLight.spot_light.m_radius;
-                m_spot_light_list[index_finded].m_inner_degree         = sceneLight.spot_light.m_inner_degree;
-                m_spot_light_list[index_finded].m_outer_degree         = sceneLight.spot_light.m_outer_degree;
-                m_spot_light_list[index_finded].m_shadowmap            = sceneLight.spot_light.m_shadowmap;
-                m_spot_light_list[index_finded].m_shadow_bounds        = sceneLight.spot_light.m_shadow_bounds;
-                m_spot_light_list[index_finded].m_shadow_near_plane    = sceneLight.spot_light.m_shadow_near_plane;
-                m_spot_light_list[index_finded].m_shadow_far_plane     = sceneLight.spot_light.m_shadow_far_plane;
-                m_spot_light_list[index_finded].m_shadowmap_size       = sceneLight.spot_light.m_shadowmap_size;
+                pInternalSpotLight = &m_spot_light_list[index_finded];
             }
+
+            pInternalSpotLight->m_position_delation = (m_translation - pInternalSpotLight->m_position);;
+
+            pInternalSpotLight->m_identifier           = sceneLight.m_identifier;
+            pInternalSpotLight->m_position             = m_translation;
+            pInternalSpotLight->m_direction            = direction;
+            pInternalSpotLight->m_shadow_view_mat      = spotLightViewMat;
+            pInternalSpotLight->m_shadow_proj_mats     = spotLightProjMat;
+            pInternalSpotLight->m_shadow_view_proj_mat = spotLightViewProjMat;
+            pInternalSpotLight->m_color                = sceneLight.spot_light.m_color;
+            pInternalSpotLight->m_intensity            = sceneLight.spot_light.m_intensity;
+            pInternalSpotLight->m_radius               = sceneLight.spot_light.m_radius;
+            pInternalSpotLight->m_inner_degree         = sceneLight.spot_light.m_inner_degree;
+            pInternalSpotLight->m_outer_degree         = sceneLight.spot_light.m_outer_degree;
+            pInternalSpotLight->m_shadowmap            = sceneLight.spot_light.m_shadowmap;
+            pInternalSpotLight->m_shadow_bounds        = sceneLight.spot_light.m_shadow_bounds;
+            pInternalSpotLight->m_shadow_near_plane    = sceneLight.spot_light.m_shadow_near_plane;
+            pInternalSpotLight->m_shadow_far_plane     = sceneLight.spot_light.m_shadow_far_plane;
+            pInternalSpotLight->m_shadowmap_size       = sceneLight.spot_light.m_shadowmap_size;
+
+            pInternalSpotLight->position = m_translation;
+            pInternalSpotLight->forward = forward;
+            pInternalSpotLight->right = right;
+            pInternalSpotLight->up = up;
         }
     }
 

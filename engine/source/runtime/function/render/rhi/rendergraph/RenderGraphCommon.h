@@ -129,14 +129,14 @@ namespace RHI
 	struct RgClearValue
 	{
         RgClearValue() noexcept = default;
-        const RgClearValue(const std::float_t Color[4], DXGI_FORMAT Format = DXGI_FORMAT_UNKNOWN)
-        {
-            this->Color[0] = Color[0];
-            this->Color[1] = Color[1];
-            this->Color[2] = Color[2];
-            this->Color[3] = Color[3];
-            this->ClearFormat = Format;
-        }
+		const RgClearValue(const std::float_t Color[4], DXGI_FORMAT Format = DXGI_FORMAT_UNKNOWN)
+		{
+			this->Color[0] = Color[0];
+			this->Color[1] = Color[1];
+			this->Color[2] = Color[2];
+			this->Color[3] = Color[3];
+			this->ClearFormat = Format;
+		}
         const RgClearValue(float r, float g, float b, float a, DXGI_FORMAT Format = DXGI_FORMAT_UNKNOWN)
         {
             this->Color[0] = r;
