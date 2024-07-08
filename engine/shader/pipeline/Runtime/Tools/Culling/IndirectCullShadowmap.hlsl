@@ -39,9 +39,14 @@ void CSMain(uint3 GroupID : SV_GroupID, uint GroupIndex : SV_GroupIndex) {
         aabb.Transform(renderData.objectToWorldMatrix);
 
 #if defined(DIRECTIONSHADOW)
-        Frustum frustum = ExtractPlanesDX(g_FrameUniforms.directionalLight.directionalLightShadowmap.light_proj_view[cascadeLevel]);
+        HDDirectionalShadowData dirShadowData = g_FrameUniforms.lightDataUniform.directionalShadowData;
+        float4x4 light_proj_view = dirShadowData.viewprojMatrix[cascadeLevel];
+        Frustum frustum = ExtractPlanesDX(light_proj_view);
 #elif defined(SPOTSHADOW)
-        Frustum frustum = ExtractPlanesDX(g_FrameUniforms.spotLightUniform.spotLightStructs[spotIndex].spotLightShadowmap.light_proj_view);
+        LightData lightData = g_FrameUniforms.lightDataUniform.lightData[spotIndex];
+        HDShadowData shadowData = g_FrameUniforms.lightDataUniform.shadowDatas[lightData.shadowDataIndex];
+        float4x4 light_proj_view = shadowData.viewProjMatrix;
+        Frustum frustum = ExtractPlanesDX(light_proj_view);
 #else
         Frustum frustum = ExtractPlanesDX(g_FrameUniforms.cameraUniform._CurFrameUniform.clipFromWorldMatrix);
 #endif

@@ -94,7 +94,7 @@ namespace RHI
             }
 
 			RHISurfaceCreateFlags textureFlags = RHISurfaceCreateFlagNone;
-            std::optional<CD3DX12_CLEAR_VALUE> pClearValue;
+            CD3DX12_CLEAR_VALUE pClearValue;
             //CD3DX12_CLEAR_VALUE clearValue = CD3DX12_CLEAR_VALUE();
 
             if (Desc.AllowRenderTarget)
@@ -118,8 +118,6 @@ namespace RHI
                 textureFlags |= RHISurfaceCreateRandomWrite;
             }
 
-			DXGI_FORMAT clearFormat = pClearValue.has_value() ? pClearValue->Format : Desc.Format;
-
 			RHIRenderSurfaceBaseDesc textureDesc = {Desc.Width,
                                                     Desc.Height,
                                                     Desc.DepthOrArraySize,
@@ -128,14 +126,14 @@ namespace RHI
                                                     textureFlags,
                                                     textureDim,
                                                     Desc.Format,
-                                                    clearFormat,
+                                                    pClearValue,
                                                     true,
                                                     false};
 
 			std::wstring textureName = std::wstring(RgTexture.Desc.Name.begin(), RgTexture.Desc.Name.end());
 
 			 pTextures[i] = D3D12Texture::Create(
-                Device->GetLinkedDevice(), textureDesc, textureName, D3D12_RESOURCE_STATE_COMMON, pClearValue);
+                Device->GetLinkedDevice(), textureDesc, textureName, D3D12_RESOURCE_STATE_COMMON);
 		}
 
 		for (size_t i = 0; i < Graph->Buffers.size(); ++i)

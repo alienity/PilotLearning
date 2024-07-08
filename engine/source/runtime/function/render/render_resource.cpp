@@ -274,242 +274,11 @@ namespace MoYu
         volumeCloudUniform.sunlight_direction = render_scene->m_directional_light.m_direction;
         _frameUniforms->volumeCloudUniform = volumeCloudUniform;
 
-        // Update Light Uniforms
-        updateLightUniforms(render_scene);
     }
 
     void RenderResource::updateLightUniforms(RenderScene* render_scene)
     {
-        // FrameUniforms
-        HLSL::FrameUniforms* _frameUniforms = &m_FrameUniforms;
         
-        // Light Uniform
-        HLSL::LightDataUniform _lightDataUniform;
-
-        // EnvLight
-        {
-            HLSL::EnvLightData m_EnvLightData{};
-            m_EnvLightData.lightLayers = 0xFFFFFFFF;
-            m_EnvLightData.influenceShapeType = ENVSHAPETYPE_SKY;
-            m_EnvLightData.influenceForward = glm::float3(0.0, 0.0, -1.0);
-            m_EnvLightData.influenceUp = glm::float3(0.0, 1.0, 0.0);
-            m_EnvLightData.influenceRight = glm::float3(1.0, 0.0, 0.0);
-            m_EnvLightData.influencePositionRWS = glm::float3(0.0, 0.0, 0.0);
-            m_EnvLightData.weight = 1.0f;
-            m_EnvLightData.multiplier = 0.0f;
-            m_EnvLightData.roughReflections = 1.0f;
-            m_EnvLightData.distanceBasedRoughness = 0.0f;
-            m_EnvLightData.proxyForward = glm::float3(0.0, 0.0, -1.0);
-            m_EnvLightData.proxyUp = glm::float3(0.0, 1.0, 0.0);
-            m_EnvLightData.proxyRight = glm::float3(1.0, 0.0, 0.0);
-            m_EnvLightData.minProjectionDistance = 65504.0f;
-            
-            _lightDataUniform.envData = m_EnvLightData;
-        }
-
-        int puntualLightCount = 0;
-        int shadowDataCount = 0;
-        // SpotLight
-        int spotLightCounts = render_scene->m_spot_light_list.size();
-        for (uint32_t i = 0; i < spotLightCounts; i++)
-        {
-            glm::float3 spot_light_position = render_scene->m_spot_light_list[i].m_position;
-            glm::float3 spot_light_up = render_scene->m_spot_light_list[i].up;
-            glm::float3 spot_light_right = render_scene->m_spot_light_list[i].right;
-            glm::float3 spot_light_direction = render_scene->m_spot_light_list[i].m_direction;
-            float spot_light_intensity = render_scene->m_spot_light_list[i].m_intensity;
-            float radius = render_scene->m_spot_light_list[i].m_radius;
-            Color color = render_scene->m_spot_light_list[i].m_color;
-            bool useShadowMap = render_scene->m_spot_light_list[i].m_shadowmap;
-
-            float inner_degree = render_scene->m_spot_light_list[i].m_inner_degree;
-            float outer_degree = render_scene->m_spot_light_list[i].m_outer_degree;
-
-            HLSL::LightData curLightData{};
-            curLightData.positionRWS = spot_light_position;
-            curLightData.lightLayers = 0xFFFFFFFF;
-            curLightData.forward = spot_light_direction;
-            curLightData.up = spot_light_up;
-            curLightData.right = spot_light_right;
-            curLightData.lightType = GPULIGHTTYPE_SPOT;
-            curLightData.shadowDataIndex = shadowDataCount;
-            curLightData.lightDimmer = spot_light_intensity;
-            curLightData.angleInner = MoYu::degreesToRadians(inner_degree);
-            curLightData.angleOuter = MoYu::degreesToRadians(outer_degree);
-            curLightData.color = glm::float3(color.r, color.g, color.b);
-            curLightData.range = radius;
-            curLightData.rangeAttenuationScale = 1.0f / (radius * radius);
-            curLightData.rangeAttenuationBias = 1.0f;
-            curLightData.diffuseDimmer = 1.0f;
-            curLightData.specularDimmer = 1.0f;
-            curLightData.size = glm::float4(radius * radius, 0, 0, 0);
-            
-            _lightDataUniform.lightData[puntualLightCount] = curLightData;
-            puntualLightCount += 1;
-
-            glm::int2 shadowmap_size = render_scene->m_spot_light_list[i].m_shadowmap_size;
-
-            RHI::RHIRenderSurfaceBaseDesc rtDesc{};
-            rtDesc.width = shadowmap_size.x;
-            rtDesc.height = shadowmap_size.y;
-            rtDesc.depthOrArray = 1;
-            rtDesc.samples = 1;
-            rtDesc.mipCount = 1;
-            rtDesc.flags = RHI::RHISurfaceCreateShadowmap;
-            rtDesc.dim = RHI::RHITextureDimension::RHITexDim2D;
-            rtDesc.graphicsFormat = DXGI_FORMAT_D32_FLOAT;
-            rtDesc.clearValue = CD3DX12_CLEAR_VALUE(DXGI_FORMAT_D32_FLOAT, 0, 1);
-            rtDesc.colorSurface = true;
-            rtDesc.backBuffer = false;
-            std::shared_ptr<RHI::D3D12Texture> p_LightShadowmap = CreateTransientTexture(rtDesc, L"SpotLightShadowMap", D3D12_RESOURCE_STATE_COMMON);
-
-            glm::float4x4 viewMatrix = render_scene->m_spot_light_list[i].m_shadow_view_mat;
-            glm::float4x4 projMatrix = render_scene->m_spot_light_list[i].m_shadow_proj_mats;
-            glm::float4x4 viewProjMatrix = render_scene->m_spot_light_list[i].m_shadow_view_proj_mat;
-            glm::int2 viewportSize = render_scene->m_spot_light_list[i].m_shadowmap_size;
-            float dn = render_scene->m_spot_light_list[i].m_shadow_near_plane;
-            float df = render_scene->m_spot_light_list[i].m_shadow_far_plane;
-            glm::float3 m_translationDelta = render_scene->m_spot_light_list[i].m_position_delation;
-
-            HLSL::HDShadowData _shadowDara;
-            _shadowDara.shadowmapIndex = p_LightShadowmap->GetDefaultSRV()->GetIndex();
-            _shadowDara.worldTexelSize = 2.0f / projMatrix[0][0] / viewportSize.x * glm::sqrt(2.0f);
-            _shadowDara.normalBias = 0.75f;
-            _shadowDara.cascadeNumber = 1;
-            _shadowDara.rot0 = glm::float3(viewMatrix[0][0], viewMatrix[0][1], viewMatrix[0][2]);
-            _shadowDara.rot1 = glm::float3(viewMatrix[1][0], viewMatrix[1][1], viewMatrix[1][2]);
-            _shadowDara.rot2 = glm::float3(viewMatrix[2][0], viewMatrix[2][1], viewMatrix[2][2]);
-            _shadowDara.pos = glm::float3(viewMatrix[0][3], viewMatrix[1][3], viewMatrix[2][3]);
-            _shadowDara.proj = glm::float4(projMatrix[0][0], projMatrix[1][1], projMatrix[2][2], projMatrix[2][3]);
-            _shadowDara.zBufferParam = glm::float4((df - dn) / dn, 1.0f, (df - dn) / (dn * df), 1.0f / df);
-            _shadowDara.shadowMapSize = glm::float4(viewportSize.x, viewportSize.y, 1.0f / viewportSize.x, 1.0f / viewportSize.y);
-            _shadowDara.cacheTranslationDelta = glm::float4(m_translationDelta, 0);
-            _shadowDara.shadowToWorld = glm::inverse(viewProjMatrix);
-
-            _lightDataUniform.shadowDatas[shadowDataCount] = _shadowDara;
-            shadowDataCount += 1;
-        }
-
-        // PointLight
-        int pointLightCounts = render_scene->m_point_light_list.size();
-        for (uint32_t i = 0; i < pointLightCounts; i++)
-        {
-            glm::float3 point_light_position = render_scene->m_point_light_list[i].m_position;
-            glm::float3 point_light_forward = render_scene->m_point_light_list[i].forward;
-            glm::float3 point_light_up = render_scene->m_point_light_list[i].up;
-            glm::float3 point_light_right = render_scene->m_point_light_list[i].right;
-
-            float point_light_intensity = render_scene->m_point_light_list[i].m_intensity;
-            float radius = render_scene->m_point_light_list[i].m_radius;
-            Color color = render_scene->m_point_light_list[i].m_color;
-
-            HLSL::LightData curLightData{};
-            curLightData.positionRWS = point_light_position;
-            curLightData.lightLayers = 0xFFFFFFFF;
-            curLightData.forward = point_light_forward;
-            curLightData.up = point_light_up;
-            curLightData.right = point_light_right;
-            curLightData.lightType = GPULIGHTTYPE_POINT;
-            curLightData.shadowDataIndex = -1;
-            curLightData.lightDimmer = point_light_intensity;
-            curLightData.color = glm::float3(color.r, color.g, color.b);
-            curLightData.range = radius;
-            curLightData.rangeAttenuationScale = 1.0f / (radius * radius);
-            curLightData.rangeAttenuationBias = 1.0f;
-            curLightData.diffuseDimmer = 1.0f;
-            curLightData.specularDimmer = 1.0f;
-            curLightData.size = glm::float4(radius * radius, 0, 0, 0);
-
-            _lightDataUniform.lightData[puntualLightCount] = curLightData;
-            puntualLightCount += 1;
-        }
-        
-        _lightDataUniform._PunctualLightCount = puntualLightCount;
-
-        // DirectionLight
-        {
-            glm::float3 light_position = render_scene->m_directional_light.m_position;
-            glm::float3 light_up = render_scene->m_directional_light.up;
-            glm::float3 light_right = render_scene->m_directional_light.right;
-            glm::float3 light_forward = render_scene->m_directional_light.forward;
-            float dir_light_intensity = render_scene->m_directional_light.m_intensity;
-            Color color = render_scene->m_directional_light.m_color;
-
-            HLSL::DirectionalLightData directionalLightData{};
-            directionalLightData.positionRWS = light_position;
-            directionalLightData.lightLayers = 0xFFFFFFFF;
-            directionalLightData.forward = light_forward;
-            directionalLightData.up = light_up;
-            directionalLightData.right = light_right;
-            directionalLightData.shadowIndex = shadowDataCount;
-            directionalLightData.lightDimmer = dir_light_intensity;
-            directionalLightData.color = glm::float3(color.r, color.g, color.b);
-            directionalLightData.diffuseDimmer = 1.0f;
-            directionalLightData.specularDimmer = 1.0f;
-
-            _lightDataUniform.directionalLightData = directionalLightData;
-
-            glm::float4x4 viewMatrix = render_scene->m_directional_light.m_shadow_view_mat;
-            glm::float4x4 projMatrix = render_scene->m_directional_light.m_shadow_proj_mats[0];
-            glm::float4x4 viewProjMatrix = render_scene->m_directional_light.m_shadow_view_proj_mats[0];
-            glm::int2 viewportSize = render_scene->m_directional_light.m_shadowmap_size;
-            float dn = render_scene->m_directional_light.m_shadow_near_plane;
-            float df = render_scene->m_directional_light.m_shadow_far_plane;
-            glm::float3 m_translationDelta = render_scene->m_directional_light.m_position_delation;
-            glm::int2 cascade_shadowmap_size = viewportSize * 2;
-            
-            RHI::RHIRenderSurfaceBaseDesc rtDesc{};
-            rtDesc.width = cascade_shadowmap_size.x;
-            rtDesc.height = cascade_shadowmap_size.y;
-            rtDesc.depthOrArray = 1;
-            rtDesc.samples = 1;
-            rtDesc.mipCount = 1;
-            rtDesc.flags = RHI::RHISurfaceCreateShadowmap;
-            rtDesc.dim = RHI::RHITextureDimension::RHITexDim2D;
-            rtDesc.graphicsFormat = DXGI_FORMAT_D32_FLOAT;
-            rtDesc.clearValue = CD3DX12_CLEAR_VALUE(DXGI_FORMAT_D32_FLOAT, 0, 1);
-            rtDesc.colorSurface = true;
-            rtDesc.backBuffer = false;
-            std::shared_ptr<RHI::D3D12Texture> p_LightShadowmap = CreateTransientTexture(rtDesc, L"DirectionShadowmapCascade4", D3D12_RESOURCE_STATE_COMMON);
-            
-            HLSL::HDShadowData _shadowDara;
-            _shadowDara.shadowmapIndex = p_LightShadowmap->GetDefaultSRV()->GetIndex();
-            _shadowDara.worldTexelSize = 2.0f / projMatrix[0][0] / viewportSize.x * glm::sqrt(2.0f);
-            _shadowDara.normalBias = 0.75f;
-            _shadowDara.cascadeNumber = 4;
-            _shadowDara.rot0 = glm::float3(viewMatrix[0][0], viewMatrix[0][1], viewMatrix[0][2]);
-            _shadowDara.rot1 = glm::float3(viewMatrix[1][0], viewMatrix[1][1], viewMatrix[1][2]);
-            _shadowDara.rot2 = glm::float3(viewMatrix[2][0], viewMatrix[2][1], viewMatrix[2][2]);
-            _shadowDara.pos = glm::float3(viewMatrix[0][3], viewMatrix[1][3], viewMatrix[2][3]);
-            _shadowDara.proj = glm::float4(projMatrix[0][0], projMatrix[1][1], projMatrix[2][2], projMatrix[2][3]);
-            _shadowDara.zBufferParam = glm::float4((df - dn) / dn, 1.0f, (df - dn) / (dn * df), 1.0f / df);
-            _shadowDara.shadowMapSize = glm::float4(viewportSize.x, viewportSize.y, 1.0f / viewportSize.x, 1.0f / viewportSize.y);
-            _shadowDara.cacheTranslationDelta = glm::float4(m_translationDelta, 0);
-            _shadowDara.shadowToWorld = glm::inverse(viewProjMatrix);
-
-            _lightDataUniform.shadowDatas[shadowDataCount] = _shadowDara;
-            shadowDataCount += 1;
-
-            float maxShadowDis = render_scene->m_directional_light.maxShadowDistance;
-            float cascadeShadowSplit0 = render_scene->m_directional_light.cascadeShadowSplit0;
-            float cascadeShadowSplit1 = render_scene->m_directional_light.cascadeShadowSplit1;
-            float cascadeShadowSplit2 = render_scene->m_directional_light.cascadeShadowSplit2;
-            float cascadeShadowSplit3 = 1.0f;
-
-            HLSL::HDDirectionalShadowData _dirShadowData;
-            _dirShadowData.sphereCascades[0] = glm::float4(light_position - light_forward * cascadeShadowSplit0 * maxShadowDis, 0);
-            _dirShadowData.sphereCascades[1] = glm::float4(light_position - light_forward * cascadeShadowSplit1 * maxShadowDis, 0);
-            _dirShadowData.sphereCascades[2] = glm::float4(light_position - light_forward * cascadeShadowSplit2 * maxShadowDis, 0);
-            _dirShadowData.sphereCascades[3] = glm::float4(light_position - light_forward * cascadeShadowSplit3 * maxShadowDis, 0);
-            _dirShadowData.cascadeDirection = glm::float4(-light_forward, 4);
-            _dirShadowData.cascadeBorders[0] = render_scene->m_directional_light.cascadeShadowBorder0;
-            _dirShadowData.cascadeBorders[1] = render_scene->m_directional_light.cascadeShadowBorder1;
-            _dirShadowData.cascadeBorders[2] = render_scene->m_directional_light.cascadeShadowBorder2;
-            _dirShadowData.cascadeBorders[3] = render_scene->m_directional_light.cascadeShadowBorder3;
-
-            _lightDataUniform.directionalShadowData = _dirShadowData;
-        }
-        _frameUniforms->lightDataUniform = _lightDataUniform;
     }
 
     bool RenderResource::updateInternalMeshRenderer(SceneMeshRenderer scene_mesh_renderer, SceneMeshRenderer& cached_mesh_renderer, InternalMeshRenderer& internal_mesh_renderer, bool has_initialized)
@@ -537,11 +306,13 @@ namespace MoYu
             }            
         }
 
-        if(nRT != nullptr)
+        if(nRT == nullptr)
         {
             nRT = RHI::D3D12Texture::Create(m_Device->GetLinkedDevice(), desc, name, initState);   
         }
         _AllocatedDescRTs.push_back(DescTexturePair{ desc, nRT });
+
+        return nRT;
     }
 
     void RenderResource::ReleaseTransientResources()

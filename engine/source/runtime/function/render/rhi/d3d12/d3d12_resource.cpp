@@ -939,16 +939,19 @@ namespace RHI
                                                        D3D12_RESOURCE_STATES               initState,
                                                        std::vector<D3D12_SUBRESOURCE_DATA> initDatas)
     {
+        bool shouldHaveClearValue = false;
         D3D12_RESOURCE_FLAGS resourceFlags = D3D12_RESOURCE_FLAG_NONE;
         if (desc.flags & RHISurfaceCreateRenderTarget)
         {
             ASSERT(!(desc.flags & RHISurfaceCreateDepthStencil));
             resourceFlags |= D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
+            shouldHaveClearValue = true;
         }
         else if (desc.flags & (RHISurfaceCreateDepthStencil | RHISurfaceCreateShadowmap))
         {
             ASSERT(!(desc.flags & RHISurfaceCreateRenderTarget));
             resourceFlags |= D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
+            shouldHaveClearValue = true;
         }
 
         if (desc.flags & RHISurfaceCreateRandomWrite)
@@ -985,7 +988,11 @@ namespace RHI
         CD3DX12_HEAP_PROPERTIES resourceHeapProperties =
             CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT, Parent->GetNodeMask(), Parent->GetNodeMask());
 
-        CD3DX12_CLEAR_VALUE clearValue = CD3DX12_CLEAR_VALUE(desc.clearValue);
+        std::optional<CD3DX12_CLEAR_VALUE> clearValue = std::nullopt;
+        if (shouldHaveClearValue)
+        {
+            clearValue = CD3DX12_CLEAR_VALUE(desc.clearValue);
+        }
         
         std::shared_ptr<D3D12Texture> pSurfaceD3D12 = std::make_shared<D3D12Texture>(
             Parent, resourceDesc, resourceHeapProperties, clearValue, initState, isCubeMap);

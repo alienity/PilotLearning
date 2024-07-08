@@ -35,7 +35,9 @@ VertexOutput VSMain(VertexInput input)
     float4x4 tLocalTransform = clipTransform.transform;
     
     float4x4 localToWorldMatrix = mFrameUniforms.terrainUniform.local2WorldMatrix;
-    float4x4 projectionViewMatrix = mFrameUniforms.directionalLight.directionalLightShadowmap.light_proj_view[cascadeLevel];
+
+    HDDirectionalShadowData dirShadowData = mFrameUniforms.lightDataUniform.directionalShadowData;
+    float4x4 viewProjMatrix = dirShadowData.viewprojMatrix[cascadeLevel];
     
     float terrainMaxHeight = mFrameUniforms.terrainUniform.terrainMaxHeight;
     float terrainSize = mFrameUniforms.terrainUniform.terrainSize;
@@ -50,7 +52,7 @@ VertexOutput VSMain(VertexInput input)
     worldPosition.y += curHeight * terrainMaxHeight;
     
     VertexOutput output;
-    output.cs_pos = mul(projectionViewMatrix, float4(worldPosition, 1.0f));
+    output.cs_pos = mul(viewProjMatrix, float4(worldPosition, 1.0f));
     
     return output;
 }

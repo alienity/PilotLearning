@@ -1,9 +1,6 @@
 #ifndef UNITY_SHADER_VARIABLES_GLOBAL_INCLUDED
 #define UNITY_SHADER_VARIABLES_GLOBAL_INCLUDED
 
-#include "../../Lighting/LightDefinition.hlsl"
-#include "../../Lighting/Shadow/HDShadowManager.hlsl"
-
 #ifdef _CPP_MACRO_
 #define uint glm::uint
 #define uint2 glm::uvec2
@@ -17,6 +14,9 @@
 #define float4 glm::fvec4
 #define float4x4 glm::float4x4
 #define float2x4 glm::float2x4
+#else
+#include "../../Lighting/LightDefinition.hlsl"
+#include "../../Lighting/Shadow/HDShadowManager.hlsl"
 #endif
 
 // ----------------------------------------------------------------------------
@@ -300,7 +300,9 @@ struct LightDataUniform
     DirectionalLightData directionalLightData;
 
     uint _PunctualLightCount;
-    uint3 _unused_;
+    uint _PointLightCount;
+    uint _SpotLightCount;
+    uint _unused_;
 };
 
 struct MeshUniform

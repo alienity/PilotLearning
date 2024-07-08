@@ -20,7 +20,6 @@ namespace MoYu
     struct DirectionShadowmapStruct
     {
         SceneCommonIdentifier m_identifier {UndefCommonIdentifier};
-        glm::float2 m_shadowmap_bounds;
         glm::float2 m_shadowmap_size;
         uint32_t m_casccade;
 
@@ -30,7 +29,6 @@ namespace MoYu
         {
             m_identifier       = UndefCommonIdentifier;
             p_LightShadowmap   = nullptr;
-            m_shadowmap_bounds = MYFloat2::One;
             m_shadowmap_size   = MYFloat2::One;
             m_casccade         = 4;
         }

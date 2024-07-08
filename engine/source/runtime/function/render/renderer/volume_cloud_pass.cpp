@@ -116,7 +116,7 @@ namespace MoYu
 
         float sun_to_earth_distance = mCloudsConsCB.cloudsCons.PlanetRadius * 1000;
 
-        glm::float3 m_direction = real_resource->m_FrameUniforms.directionalLight.lightDirection;
+        glm::float3 m_direction = real_resource->m_FrameUniforms.lightDataUniform.directionalLightData.forward;
         glm::float3 m_translation = sun_to_earth_distance * m_direction;
          
         glm::float4x4 sunLightViewMat =

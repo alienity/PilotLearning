@@ -19,7 +19,7 @@
 #define float4x4 glm::mat4x4
 #endif
 
-// Generated from UnityEngine.Rendering.HighDefinition.HDShadowData
+// Generated from UnityEngine.Rendering.HighDefinition.DShadowData
 // PackingRules = Exact
 struct HDShadowData
 {
@@ -27,11 +27,9 @@ struct HDShadowData
     float worldTexelSize; // 2.0f / shadowRequest.deviceProjectionYFlip.m00 / viewportSize.x * Mathf.Sqrt(2.0f);
     float normalBias; // Controls the bias this Light applies along the normal of surfaces it illuminates.
     uint cascadeNumber; // cascade shadow count
-    float3 rot0; // viewMatrix[0].xyz
-    float3 rot1; // viewMatrix[1].xyz
-    float3 rot2; // viewMatrix[2].xyz
-    float3 pos;  // float3(viewMatrix[0].w, viewMatrix[1].w, viewMatrix[2].w)
-    float4 proj; // projectionMatrix m00 m11 m22 m23
+    float4x4 viewMatrix; // viewMatrix for light
+    float4x4 projMatrix; // projectionMatrix
+    float4x4 viewProjMatrix;
     float4 zBufferParam; // float4((f - n) / n, 1.0f, (f - n) / (n * f), 1.0f / f);
     float4 shadowMapSize; // float4(viewport.width, viewport.height, 1.0f / viewport.width, 1.0f / viewport.height);
     float4 cacheTranslationDelta; // cameraPos - m_CachedViewPositions[index];
@@ -42,9 +40,9 @@ struct HDShadowData
 // PackingRules = Exact
 struct HDDirectionalShadowData
 {
-    float4 sphereCascades[4];
-    float4 cascadeDirection;
-    float cascadeBorders[4];
+    float4x4 viewMatrix[4];
+    float4x4 projMatrix[4];
+    float4x4 viewprojMatrix[4];
 };
 
 #ifdef _CPP_MACRO_

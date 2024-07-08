@@ -79,7 +79,8 @@ void CSMain(uint3 DispatchThreadID : SV_DispatchThreadID) {
     clipBoundingBox.Extents = float4(clipLocalExtents.x, halfExtentY, clipLocalExtents.z, 0);
 
     float4x4 localToWorldMatrix = mFrameUniforms.terrainUniform.local2WorldMatrix;
-    float4x4 clipFromWorldMatrix = mFrameUniforms.directionalLight.directionalLightShadowmap.light_proj_view[cascadeLevel];
+    HDDirectionalShadowData dirShadowData = mFrameUniforms.lightDataUniform.directionalShadowData;
+    float4x4 clipFromWorldMatrix = dirShadowData.viewprojMatrix[cascadeLevel];
     float4x4 clipFromLocalMat = mul(clipFromWorldMatrix, localToWorldMatrix);
 
     Frustum frustum = ExtractPlanesDX(clipFromLocalMat);

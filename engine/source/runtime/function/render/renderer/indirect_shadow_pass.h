@@ -21,7 +21,6 @@ namespace MoYu
             RHI::RgResourceHandle propertiesPerMaterialHandle = RHI::_DefaultRgResourceHandle;
 
             std::vector<RHI::RgResourceHandle> dirIndirectSortBufferHandles;
-
             std::vector<RHI::RgResourceHandle> spotsIndirectSortBufferHandles;
         };
 
@@ -42,7 +41,10 @@ namespace MoYu
                     ShadowInputParameters&      passInput,
                     ShadowOutputParameters&     passOutput);
         void destroy() override final;
-
+    
+    private:
+        DirectionShadowmapStruct m_DirectionalShadowmap;
+        std::vector<SpotShadowmapStruct> m_SpotShadowmaps;
 	};
 }
 

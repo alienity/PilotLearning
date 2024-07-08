@@ -42,9 +42,12 @@ VertexOutput VSMain(VertexInput input)
     RenderDataPerDraw meshData = g_RenderDatas[meshIndex];
 
 	#if defined(DIRECTIONSHADOW)
-    float4x4 view_proj_mat = g_FramUniforms.directionalLight.directionalLightShadowmap.light_proj_view[cascadeLevel];
+    HDDirectionalShadowData dirShadowData = g_FramUniforms.lightDataUniform.directionalShadowData;
+    float4x4 view_proj_mat = dirShadowData.viewprojMatrix[cascadeLevel];
     #elif defined(SPOTSHADOW)
-    float4x4 view_proj_mat = g_FramUniforms.spotLightUniform.spotLightStructs[spotIndex].spotLightShadowmap.light_proj_view;
+    LightData lightData = g_FramUniforms.lightDataUniform.lightData[spotIndex];
+    HDShadowData shadowData = g_FramUniforms.lightDataUniform.shadowDatas[lightData.shadowDataIndex];
+    float4x4 view_proj_mat = shadowData.viewProjMatrix;
     #else
     float4x4 view_proj_mat = g_FramUniforms.cameraUniform._CurFrameUniform.clipFromWorldMatrix;
     #endif

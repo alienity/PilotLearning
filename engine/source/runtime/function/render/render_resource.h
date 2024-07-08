@@ -52,6 +52,11 @@ namespace MoYu
         {
             RHI::RHIRenderSurfaceBaseDesc desc;
             std::shared_ptr<RHI::D3D12Texture> rt;
+
+            bool operator==(const DescTexturePair& rhs) const
+            {
+                return desc == rhs.desc && rt == rhs.rt;
+            }
         };
         std::list<DescTexturePair> _AvailableDescRTs;
         std::list<DescTexturePair> _AllocatedDescRTs;
