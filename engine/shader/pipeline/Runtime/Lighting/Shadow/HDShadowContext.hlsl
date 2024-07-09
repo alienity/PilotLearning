@@ -9,8 +9,8 @@
 
 struct HDShadowContext
 {
-    StructuredBuffer<HDShadowData>  shadowDatas;
-    HDDirectionalShadowData         directionalShadowData;
+    HDShadowData shadowDatas[64];
+    HDDirectionalShadowData directionalShadowData;
 #ifdef SHADOWS_SHADOWMASK
     int shadowSplitIndex;
     float fade;
@@ -31,12 +31,12 @@ struct HDShadowContext
 // // Only the first element is used since we only support one directional light
 // StructuredBuffer<HDDirectionalShadowData>   _HDDirectionalShadowData;
 
-HDShadowContext InitShadowContext()
+HDShadowContext InitShadowContext(FrameUniforms frameUniforms)
 {
     HDShadowContext         sc;
 
-    sc.shadowDatas = _HDShadowDatas;
-    sc.directionalShadowData = _HDDirectionalShadowData[0];
+    sc.shadowDatas = frameUniforms.lightDataUniform.shadowDatas;
+    sc.directionalShadowData = frameUniforms.lightDataUniform.directionalShadowData;
 #ifdef SHADOWS_SHADOWMASK
     sc.shadowSplitIndex = -1;
     sc.fade = 0.0;

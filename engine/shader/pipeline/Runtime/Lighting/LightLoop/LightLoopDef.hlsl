@@ -28,8 +28,8 @@ struct LightLoopContext
 
     HDShadowContext shadowContext;
 
-    uint contactShadow;         // a bit mask of 24 bits that tell if the pixel is in a contact shadow or not
-    float contactShadowFade;     // combined fade factor of all contact shadows
+    // uint contactShadow;         // a bit mask of 24 bits that tell if the pixel is in a contact shadow or not
+    // float contactShadowFade;     // combined fade factor of all contact shadows
     SHADOW_TYPE shadowValue;    // Stores the value of the cascade shadow map
     float splineVisibility;      // Stores the value of the cascade shadow map (unbiased for splines)
 };
@@ -211,11 +211,6 @@ float4 SampleEnv(LightLoopContext lightLoopContext, int index, float3 texCoord, 
 // Single Pass and Tile Pass
 // ----------------------------------------------------------------------------
 
-uint GetTileSize()
-{
-    return 1;
-}
-
 uint FetchIndex(uint lightStart, uint lightOffset)
 {
     return lightStart + lightOffset;
@@ -269,67 +264,67 @@ EnvLightData FetchEnvLight(uint index)
     // return _EnvLightDatas[index];
 }
 
-// In the first bits of the target we store the max fade of the contact shadows as a byte.
-//By default its 8 bits for the fade and 24 for the mask, please check the LightLoop.cs definitions.
-void UnpackContactShadowData(uint contactShadowData, out float fade, out uint mask)
-{
-    fade = float(contactShadowData >> CONTACT_SHADOW_MASK_BITS) / ((float)CONTACT_SHADOW_FADE_MASK);
-    mask = contactShadowData & CONTACT_SHADOW_MASK_MASK; // store only the first 24 bits which represent
-}
+// // In the first bits of the target we store the max fade of the contact shadows as a byte.
+// //By default its 8 bits for the fade and 24 for the mask, please check the LightLoop.cs definitions.
+// void UnpackContactShadowData(uint contactShadowData, out float fade, out uint mask)
+// {
+//     fade = float(contactShadowData >> CONTACT_SHADOW_MASK_BITS) / ((float)CONTACT_SHADOW_FADE_MASK);
+//     mask = contactShadowData & CONTACT_SHADOW_MASK_MASK; // store only the first 24 bits which represent
+// }
+//
+// uint PackContactShadowData(float fade, uint mask)
+// {
+//     uint fadeAsByte = (uint(saturate(fade) * CONTACT_SHADOW_FADE_MASK) << CONTACT_SHADOW_MASK_BITS);
+//
+//     return fadeAsByte | mask;
+// }
 
-uint PackContactShadowData(float fade, uint mask)
-{
-    uint fadeAsByte = (uint(saturate(fade) * CONTACT_SHADOW_FADE_MASK) << CONTACT_SHADOW_MASK_BITS);
+// // We always fetch the screen space shadow texture to reduce the number of shader variant, overhead is negligible,
+// // it is a 1x1 white texture if deferred directional shadow and/or contact shadow are disabled
+// // We perform a single featch a the beginning of the lightloop
+// void InitContactShadow(PositionInputs posInput, inout LightLoopContext context)
+// {
+//     // Note: When we ImageLoad outside of texture size, the value returned by Load is 0 (Note: On Metal maybe it clamp to value of texture which is also fine)
+//     // We use this property to have a neutral value for contact shadows that doesn't consume a sampler and work also with compute shader (i.e use ImageLoad)
+//     // We store inverse contact shadow so neutral is white. So either we sample inside or outside the texture it return 1 in case of neutral
+//     uint packedContactShadow = LOAD_TEXTURE2D(_ContactShadowTexture, posInput.positionSS).x;
+//     UnpackContactShadowData(packedContactShadow, context.contactShadowFade, context.contactShadow);
+// }
+//
+// void InvalidateConctactShadow(PositionInputs posInput, inout LightLoopContext context)
+// {
+//     context.contactShadowFade = 0.0;
+//     context.contactShadow = 0;
+// }
+//
+// float GetContactShadow(LightLoopContext lightLoopContext, int contactShadowMask, float rayTracedShadow)
+// {
+//     return 1.0f;
+//     // bool occluded = (lightLoopContext.contactShadow & contactShadowMask) != 0;
+//     // return 1.0 - occluded * lerp(lightLoopContext.contactShadowFade, 1.0, rayTracedShadow) * _ContactShadowOpacity;
+// }
 
-    return fadeAsByte | mask;
-}
-
-// We always fetch the screen space shadow texture to reduce the number of shader variant, overhead is negligible,
-// it is a 1x1 white texture if deferred directional shadow and/or contact shadow are disabled
-// We perform a single featch a the beginning of the lightloop
-void InitContactShadow(PositionInputs posInput, inout LightLoopContext context)
-{
-    // Note: When we ImageLoad outside of texture size, the value returned by Load is 0 (Note: On Metal maybe it clamp to value of texture which is also fine)
-    // We use this property to have a neutral value for contact shadows that doesn't consume a sampler and work also with compute shader (i.e use ImageLoad)
-    // We store inverse contact shadow so neutral is white. So either we sample inside or outside the texture it return 1 in case of neutral
-    uint packedContactShadow = LOAD_TEXTURE2D(_ContactShadowTexture, posInput.positionSS).x;
-    UnpackContactShadowData(packedContactShadow, context.contactShadowFade, context.contactShadow);
-}
-
-void InvalidateConctactShadow(PositionInputs posInput, inout LightLoopContext context)
-{
-    context.contactShadowFade = 0.0;
-    context.contactShadow = 0;
-}
-
-float GetContactShadow(LightLoopContext lightLoopContext, int contactShadowMask, float rayTracedShadow)
-{
-    return 1.0f;
-    // bool occluded = (lightLoopContext.contactShadow & contactShadowMask) != 0;
-    // return 1.0 - occluded * lerp(lightLoopContext.contactShadowFade, 1.0, rayTracedShadow) * _ContactShadowOpacity;
-}
-
-float GetScreenSpaceShadow(PositionInputs posInput, uint shadowIndex)
-{
-    return 1.0f;
-    // uint slot = shadowIndex / 4;
-    // uint channel = shadowIndex & 0x3;
-    // return LOAD_TEXTURE2D_ARRAY(_ScreenSpaceShadowsTexture, posInput.positionSS, INDEX_TEXTURE2D_ARRAY_X(slot))[channel];
-}
-
-float2 GetScreenSpaceShadowArea(PositionInputs posInput, uint shadowIndex)
-{
-    return float2(1, 1);
-    // uint slot = shadowIndex / 4;
-    // uint channel = shadowIndex & 0x3;
-    // return float2(LOAD_TEXTURE2D_ARRAY(_ScreenSpaceShadowsTexture, posInput.positionSS, INDEX_TEXTURE2D_ARRAY_X(slot))[channel], LOAD_TEXTURE2D_ARRAY(_ScreenSpaceShadowsTexture, posInput.positionSS, INDEX_TEXTURE2D_ARRAY_X(slot))[channel + 1]);
-}
-
-float3 GetScreenSpaceColorShadow(PositionInputs posInput, int shadowIndex)
-{
-    return float3(1, 1, 1);
-    // float4 res = LOAD_TEXTURE2D_ARRAY(_ScreenSpaceShadowsTexture, posInput.positionSS, INDEX_TEXTURE2D_ARRAY_X(shadowIndex & SCREEN_SPACE_SHADOW_INDEX_MASK));
-    // return (SCREEN_SPACE_COLOR_SHADOW_FLAG & shadowIndex) ? res.xyz : res.xxx;
-}
+// float GetScreenSpaceShadow(PositionInputs posInput, uint shadowIndex)
+// {
+//     return 1.0f;
+//     // uint slot = shadowIndex / 4;
+//     // uint channel = shadowIndex & 0x3;
+//     // return LOAD_TEXTURE2D_ARRAY(_ScreenSpaceShadowsTexture, posInput.positionSS, INDEX_TEXTURE2D_ARRAY_X(slot))[channel];
+// }
+//
+// float2 GetScreenSpaceShadowArea(PositionInputs posInput, uint shadowIndex)
+// {
+//     return float2(1, 1);
+//     // uint slot = shadowIndex / 4;
+//     // uint channel = shadowIndex & 0x3;
+//     // return float2(LOAD_TEXTURE2D_ARRAY(_ScreenSpaceShadowsTexture, posInput.positionSS, INDEX_TEXTURE2D_ARRAY_X(slot))[channel], LOAD_TEXTURE2D_ARRAY(_ScreenSpaceShadowsTexture, posInput.positionSS, INDEX_TEXTURE2D_ARRAY_X(slot))[channel + 1]);
+// }
+//
+// float3 GetScreenSpaceColorShadow(PositionInputs posInput, int shadowIndex)
+// {
+//     return float3(1, 1, 1);
+//     // float4 res = LOAD_TEXTURE2D_ARRAY(_ScreenSpaceShadowsTexture, posInput.positionSS, INDEX_TEXTURE2D_ARRAY_X(shadowIndex & SCREEN_SPACE_SHADOW_INDEX_MASK));
+//     // return (SCREEN_SPACE_COLOR_SHADOW_FLAG & shadowIndex) ? res.xyz : res.xxx;
+// }
 
 #endif // UNITY_LIGHT_LOOP_DEF_INCLUDED

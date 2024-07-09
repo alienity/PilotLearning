@@ -2125,7 +2125,7 @@ void LightLoop(float3 V, PositionInputs posInput, PreLightData preLightData, BSD
             float4 posClip = TransformWorldToHClip(objPos);
             posClip.xyz = posClip.xyz / posClip.w;
 
-            uint2 tileObj = (saturate(posClip.xy * 0.5f + 0.5f) * _ScreenSize.xy) / GetTileSize();
+            uint2 tileObj = (saturate(posClip.xy * 0.5f + 0.5f) * _ScreenSize.xy);
 
             uint envLightStart, envLightCount;
 

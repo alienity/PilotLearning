@@ -104,7 +104,7 @@ float3 EvalShadow_GetTexcoordsAtlas(HDShadowData sd, float2 atlasSizeRcp, float3
 
     // calc TCs
     float3 posTC = float3(saturate(posNDC.xy * 0.5 + 0.5), posNDC.z);
-    posTC.xy = posTC.xy * sd.shadowMapSize.xy * atlasSizeRcp + sd.atlasOffset;
+    posTC.xy = posTC.xy * sd.shadowMapSize.xy * atlasSizeRcp;
 
     return posTC;
 }
@@ -198,50 +198,41 @@ float EvalShadow_AreaDepth(HDShadowData sd, Texture2D tex, float2 positionSS, fl
 //  Directional shadows (cascaded shadow map)
 //
 
-int EvalShadow_GetSplitIndex(HDShadowContext shadowContext, int index, float3 positionWS, out float alpha, out int cascadeCount)
+int EvalShadow_GetSplitIndex(HDShadowContext shadowContext, int index, float3 positionWS) 
 {
-    int    shadowSplitIndex = -1;
-    float  relDistance = 0.0;
-    float3 wposDir = 0, splitSphere;
+    // float4x4 viewMatrix, float3 worldPosition, uint4 shadow_bounds
+    HDShadowData shadowData = shadowContext.shadowDatas[index];
+    HDDirectionalShadowData dirShadowData = shadowContext.directionalShadowData;
 
-    HDDirectionalShadowData dsd = shadowContext.directionalShadowData;
+    float4 sizeScale = pow(2, dirShadowData.shadowSizePowScale);
+    float4 shadowBoundsX = shadowData.shadowBounds.x * sizeScale;
+    float4 shadowBoundsY = shadowData.shadowBounds.y * sizeScale;
+    
+    float3 positionVS = mul(shadowData.viewMatrix, float4(positionWS, 1)).xyz;
+    float2 maxDistance = float2(abs(positionVS.x), abs(positionVS.y));
 
-// Hack for metal compiler to correctly compute the split index (no idea why unroll on uniform loop fixes the issue).
-#if defined(SHADER_API_METAL)
-    [unroll]
-#endif
-    // find the current cascade
-    for (uint i = 0; i < _CascadeShadowCount; i++)
+    int cascadeLevel = -1;
+    if(all(maxDistance > float2(shadowBoundsX[3], shadowBoundsY[3])))
     {
-        float4  sphere  = dsd.sphereCascades[i];
-                wposDir = -sphere.xyz + positionWS;
-        float   distSq  = dot(wposDir, wposDir);
-        relDistance = distSq / sphere.w;
-        if (relDistance > 0.0 && relDistance <= 1.0)
-        {
-            splitSphere = sphere.xyz;
-            wposDir    /= sqrt(distSq);
-            shadowSplitIndex = i;
-            break;
-        }
+        cascadeLevel = -1;
     }
-
-    cascadeCount = dsd.cascadeDirection.w;
-    float border = dsd.cascadeBorders[shadowSplitIndex];
-    alpha = border <= 0.0 ? 0.0 : saturate((relDistance - (1.0 - border)) / border);
-
-    // The above code will generate transitions on the whole cascade sphere boundary.
-    // It means that depending on the light and camera direction, sometimes the transition appears on the wrong side of the cascade
-    // To avoid that we attenuate the effect (lerp very sharply to 0.0) when view direction and cascade center to pixel vector face opposite directions.
-    // This way you only get fade out on the right side of the cascade.
-    float3 viewDir = GetWorldSpaceViewDir(positionWS);
-
-    float  cascDot = dot(viewDir, wposDir);
-    // At high border sizes the sharp lerp is noticeable, hence we need to lerp how sharpenss factor
-    // if we are below 80% we keep the very sharp transition.
-    float lerpSharpness = 8.0f + 512.0f * smoothstep(1.0f, 0.7f, border);// lerp(1024.0f, 8.0f, saturate(border - 0.8) / 0.2f);
-    alpha = lerp(alpha, 0.0, saturate(cascDot * lerpSharpness));
-    return shadowSplitIndex;
+    else if(all(maxDistance > float2(shadowBoundsX[2], shadowBoundsY[2])))
+    {
+        cascadeLevel = 3;
+    }
+    else if(all(maxDistance > float2(shadowBoundsX[1], shadowBoundsY[1])))
+    {
+        cascadeLevel = 2;
+    }
+    else if(all(maxDistance > float2(shadowBoundsX[0], shadowBoundsY[0])))
+    {
+        cascadeLevel = 1;
+    }
+    else
+    {
+        cascadeLevel = 0;
+    }
+    return cascadeLevel;
 }
 
 void LoadDirectionalShadowDatas(inout HDShadowData sd, HDShadowContext shadowContext, int index)
@@ -249,7 +240,6 @@ void LoadDirectionalShadowDatas(inout HDShadowData sd, HDShadowContext shadowCon
     sd.proj = shadowContext.shadowDatas[index].proj;
     sd.pos = shadowContext.shadowDatas[index].pos;
     sd.worldTexelSize = shadowContext.shadowDatas[index].worldTexelSize;
-    sd.atlasOffset = shadowContext.shadowDatas[index].atlasOffset;
 #if defined(SHADOW_HIGH)
     sd.shadowFilterParams0.x = shadowContext.shadowDatas[index].shadowFilterParams0.x;
     sd.zBufferParam = shadowContext.shadowDatas[index].zBufferParam;
@@ -259,18 +249,13 @@ void LoadDirectionalShadowDatas(inout HDShadowData sd, HDShadowContext shadowCon
 
 float EvalShadow_CascadedDepth_Blend_SplitIndex(inout HDShadowContext shadowContext, Texture2D tex, SamplerComparisonState samp, float2 positionSS, float3 positionWS, float3 normalWS, int index, float3 L, out int shadowSplitIndex)
 {
-    float   alpha;
-    int     cascadeCount;
-    float   shadow = 1.0;
-    shadowSplitIndex = EvalShadow_GetSplitIndex(shadowContext, index, positionWS, alpha, cascadeCount);
-#ifdef SHADOWS_SHADOWMASK
-    shadowContext.shadowSplitIndex = shadowSplitIndex;
-    shadowContext.fade = alpha;
-#endif
+    float2 shadowBounds;
+    float shadow = 1.0;
+    shadowSplitIndex = EvalShadow_GetSplitIndex(shadowContext, index, positionWS, shadowBounds);
 
     float3 basePositionWS = positionWS;
 
-    if (shadowSplitIndex >= 0.0)
+    if (shadowSplitIndex >= 0)
     {
         HDShadowData sd = shadowContext.shadowDatas[index];
         LoadDirectionalShadowDatas(sd, shadowContext, index + shadowSplitIndex);
@@ -321,19 +306,10 @@ float EvalShadow_CascadedDepth_Blend(inout HDShadowContext shadowContext, Textur
     return EvalShadow_CascadedDepth_Blend_SplitIndex(shadowContext, tex, samp, positionSS, positionWS, normalWS, index, L, unusedSplitIndex);
 }
 
-float EvalShadow_CascadedDepth_Dither_SplitIndex(inout HDShadowContext shadowContext, Texture2D tex, SamplerComparisonState samp, float2 positionSS, float3 positionWS, float3 normalWS, int index, float3 L, out int shadowSplitIndex)
+float EvalShadow_CascadedDepth_Dither_SplitIndex(inout HDShadowContext shadowContext, SamplerComparisonState samp, float2 positionSS, float3 positionWS, float3 normalWS, int index, float3 L, int shadowSplitIndex)
 {
-    float   alpha;
-    int     cascadeCount;
     float   shadow = 1.0;
-    shadowSplitIndex = EvalShadow_GetSplitIndex(shadowContext, index, positionWS, alpha, cascadeCount);
-#ifdef SHADOWS_SHADOWMASK
-    shadowContext.shadowSplitIndex = shadowSplitIndex;
-    shadowContext.fade = alpha;
-#endif
-
-    // Forcing the alpha to zero allows us to avoid the dithering as it requires the screen space position and an additional
-    // shadow read wich can be avoided in this case.
+    shadowSplitIndex = EvalShadow_GetSplitIndex(shadowContext, index, positionWS);
 
     float3 basePositionWS = positionWS;
 
@@ -347,17 +323,17 @@ float EvalShadow_CascadedDepth_Dither_SplitIndex(inout HDShadowContext shadowCon
         float worldTexelSize = sd.worldTexelSize;
         float3 normalBias = EvalShadow_NormalBiasOrtho(worldTexelSize, sd.normalBias, normalWS);
 
-        /* We select what split we need to sample from */
-        float nextSplit = min(shadowSplitIndex + 1, cascadeCount - 1);
-        bool evalNextCascade = nextSplit != shadowSplitIndex && alpha > 0 && step(InterleavedGradientNoise(positionSS.xy, _TaaFrameInfo.z), alpha);
-
-        if (evalNextCascade)
-        {
-            LoadDirectionalShadowDatas(sd, shadowContext, index + nextSplit);
-            positionWS = basePositionWS + sd.cacheTranslationDelta.xyz;
-            float biasModifier = (sd.worldTexelSize / worldTexelSize);
-            normalBias *= biasModifier;
-        }
+        // /* We select what split we need to sample from */
+        // float nextSplit = min(shadowSplitIndex + 1, cascadeCount - 1);
+        // bool evalNextCascade = nextSplit != shadowSplitIndex;
+        //
+        // if (evalNextCascade)
+        // {
+        //     LoadDirectionalShadowDatas(sd, shadowContext, index + nextSplit);
+        //     positionWS = basePositionWS + sd.cacheTranslationDelta.xyz;
+        //     float biasModifier = (sd.worldTexelSize / worldTexelSize);
+        //     normalBias *= biasModifier;
+        // }
 
         positionWS += normalBias;
         float3 posTC = EvalShadow_GetTexcoordsAtlas(sd, _CascadeShadowAtlasSize.zw, positionWS, false);
@@ -369,10 +345,10 @@ float EvalShadow_CascadedDepth_Dither_SplitIndex(inout HDShadowContext shadowCon
     return shadow;
 }
 
-float EvalShadow_CascadedDepth_Dither(inout HDShadowContext shadowContext, Texture2D tex, SamplerComparisonState samp, float2 positionSS, float3 positionWS, float3 normalWS, int index, float3 L)
+float EvalShadow_CascadedDepth_Dither(inout HDShadowContext shadowContext, SamplerComparisonState samp, float2 positionSS, float3 positionWS, float3 normalWS, int index, float3 L)
 {
     int unusedSplitIndex;
-    return EvalShadow_CascadedDepth_Dither_SplitIndex(shadowContext, tex, samp, positionSS, positionWS, normalWS, index, L, unusedSplitIndex);
+    return EvalShadow_CascadedDepth_Dither_SplitIndex(shadowContext, samp, positionSS, positionWS, normalWS, index, L, unusedSplitIndex);
 }
 
 // TODO: optimize this using LinearEyeDepth() to avoid having to pass the shadowToWorld matrix

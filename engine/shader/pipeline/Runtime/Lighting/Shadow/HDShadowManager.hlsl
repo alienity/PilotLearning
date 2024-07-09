@@ -31,6 +31,7 @@ struct HDShadowData
     float4x4 projMatrix; // projectionMatrix
     float4x4 viewProjMatrix;
     float4 zBufferParam; // float4((f - n) / n, 1.0f, (f - n) / (n * f), 1.0f / f);
+    float4 shadowBounds; // float4(width, height, 0, 0)
     float4 shadowMapSize; // float4(viewport.width, viewport.height, 1.0f / viewport.width, 1.0f / viewport.height);
     float4 cacheTranslationDelta; // cameraPos - m_CachedViewPositions[index];
     float4x4 shadowToWorld; // transpose(invViewProjection)
@@ -40,6 +41,8 @@ struct HDShadowData
 // PackingRules = Exact
 struct HDDirectionalShadowData
 {
+    float4 shdowCenterOffset;
+    float4 shadowSizePowScale;
     float4x4 viewMatrix[4];
     float4x4 projMatrix[4];
     float4x4 viewprojMatrix[4];

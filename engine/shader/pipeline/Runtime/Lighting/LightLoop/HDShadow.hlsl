@@ -20,15 +20,19 @@
 // Normal light loop is guaranteed to be scalar, but not always we sample shadows with said guarantee. In those cases we define SHADOW_DATA_NOT_GUARANTEED_SCALAR to skip the forcing into scalar.
 #define FORCE_SHADOW_SCALAR_READ !defined(SHADOW_DATA_NOT_GUARANTEED_SCALAR) && !defined(SHADER_API_XBOXONE) && !defined(SHADER_API_GAMECORE) && (defined(PLATFORM_SUPPORTS_WAVE_INTRINSICS) && !defined(LIGHTLOOP_DISABLE_TILE_AND_CLUSTER))
 
-
 // normalWS is the vertex normal if available or shading normal use to bias the shadow position
-float GetDirectionalShadowAttenuation(inout HDShadowContext shadowContext, float2 positionSS, float3 positionWS, float3 normalWS, int shadowDataIndex, float3 L)
+float GetDirectionalShadowAttenuation(inout HDShadowContext shadowContext,
+    FrameUniforms frameUniform, RenderDataPerDraw renderData, PropertiesPerMaterial matProperties, SamplerStruct samplerStruct,
+    float2 positionSS, float3 positionWS, float3 normalWS, int shadowDataIndex, float3 L)
 {
 #if SHADOW_AUTO_FLIP_NORMAL
     normalWS *= FastSign(dot(normalWS, L));
 #endif
 #if defined(SHADOW_ULTRA_LOW) || defined(SHADOW_LOW) || defined(SHADOW_MEDIUM)
-    return EvalShadow_CascadedDepth_Dither(shadowContext, _ShadowmapCascadeAtlas, s_linear_clamp_compare_sampler, positionSS, positionWS, normalWS, shadowDataIndex, L);
+
+    int unusedSplitIndex = 0;
+    // return EvalShadow_CascadedDepth_Dither_SplitIndex(shadowContext, tex, samp, positionSS, positionWS, normalWS, index, L, unusedSplitIndex);
+    return EvalShadow_CascadedDepth_Dither(shadowContext, samplerStruct.SLinearClampCompareSampler, positionSS, positionWS, normalWS, shadowDataIndex, L);
 #else
     return EvalShadow_CascadedDepth_Blend(shadowContext, _ShadowmapCascadeAtlas, s_linear_clamp_compare_sampler, positionSS, positionWS, normalWS, shadowDataIndex, L);
 #endif

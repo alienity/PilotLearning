@@ -792,7 +792,8 @@ namespace MoYu
         //mDisplayIntputParams.inputRTColorHandle   = mPostprocessOutputParams.outputColorHandle;
         //mDisplayIntputParams.inputRTColorHandle   = mTerrainGBufferOutput.albedoHandle;
         //mDisplayIntputParams.inputRTColorHandle      = mAOOutput.outputAOHandle;
-        mDisplayIntputParams.inputRTColorHandle = mGBufferOutput.gbuffer0Handle;
+        //mDisplayIntputParams.inputRTColorHandle = mGBufferOutput.gbuffer0Handle;
+        mDisplayIntputParams.inputRTColorHandle = mTerrainShadowmapOutputParams.directionalShadowmapHandle;
         mDisplayOutputParams.renderTargetColorHandle = renderTargetColorHandle;
         //mDisplayOutputParams.renderTargetColorHandle = backBufColorHandle;
         mDisplayPass->update(graph, mDisplayIntputParams, mDisplayOutputParams);

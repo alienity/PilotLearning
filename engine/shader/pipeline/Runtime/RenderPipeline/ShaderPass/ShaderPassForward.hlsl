@@ -56,7 +56,7 @@ void Frag(PackedVaryingsToPS packedInput
     
     FragInputs input = UnpackVaryingsToFragInputs(packedInput);
 
-    uint2 tileIndex = uint2(input.positionSS.xy) / GetTileSize();
+    uint2 tileIndex = uint2(input.positionSS.xy);
 
     float4 _ScreenSize = frameUniform.baseUniform._ScreenSize;
     

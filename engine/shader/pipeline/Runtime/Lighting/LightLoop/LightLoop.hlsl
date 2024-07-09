@@ -17,16 +17,16 @@
 // LightLoop
 // ----------------------------------------------------------------------------
 
-bool UseScreenSpaceShadow(DirectionalLightData light, float3 normalWS)
-{
-    // Two different options are possible here
-    // - We have a ray trace shadow in which case we have no valid signal for a transmission and we need to fallback on the rasterized shadow
-    // - We have a screen space shadow and it already contains the transmission shadow and we can use it straight away
-    bool visibleLight = dot(normalWS, -light.forward) > 0.0;
-    bool validScreenSpaceShadow = (light.screenSpaceShadowIndex & SCREEN_SPACE_SHADOW_INDEX_MASK) != INVALID_SCREEN_SPACE_SHADOW;
-    bool rayTracedShadow = (light.screenSpaceShadowIndex & RAY_TRACED_SCREEN_SPACE_SHADOW_FLAG) != 0;
-    return (validScreenSpaceShadow && ((rayTracedShadow && visibleLight) || !rayTracedShadow));
-}
+// bool UseScreenSpaceShadow(DirectionalLightData light, float3 normalWS)
+// {
+//     // Two different options are possible here
+//     // - We have a ray trace shadow in which case we have no valid signal for a transmission and we need to fallback on the rasterized shadow
+//     // - We have a screen space shadow and it already contains the transmission shadow and we can use it straight away
+//     bool visibleLight = dot(normalWS, -light.forward) > 0.0;
+//     bool validScreenSpaceShadow = (light.screenSpaceShadowIndex & SCREEN_SPACE_SHADOW_INDEX_MASK) != INVALID_SCREEN_SPACE_SHADOW;
+//     bool rayTracedShadow = (light.screenSpaceShadowIndex & RAY_TRACED_SCREEN_SPACE_SHADOW_FLAG) != 0;
+//     return (validScreenSpaceShadow && ((rayTracedShadow && visibleLight) || !rayTracedShadow));
+// }
 
 void LightLoop(
     FrameUniforms frameUniform, RenderDataPerDraw renderData, PropertiesPerMaterial matProperties, SamplerStruct samplerStruct,
@@ -38,7 +38,7 @@ void LightLoop(
 
     LightLoopContext context;
 
-    context.shadowContext    = InitShadowContext();
+    context.shadowContext    = InitShadowContext(frameUniform);
     context.shadowValue      = 1;
     context.sampleReflection = 0;
     context.splineVisibility = -1;
@@ -48,15 +48,15 @@ void LightLoop(
 
     // Initialize the contactShadow and contactShadowFade fields
     // InitContactShadow(posInput, context);
-    InvalidateConctactShadow(posInput, context);
+    // InvalidateConctactShadow(posInput, context);
 
     // First of all we compute the shadow value of the directional light to reduce the VGPR pressure
     if (featureFlags & LIGHTFEATUREFLAGS_DIRECTIONAL)
     {
         // Evaluate sun shadows.
-        if (_DirectionalShadowIndex >= 0)
+        // if (_DirectionalShadowIndex >= 0)
         {
-            DirectionalLightData light = _DirectionalLightDatas[_DirectionalShadowIndex];
+            DirectionalLightData light = frameUniform.lightDataUniform.directionalLightData;
 
 #if defined(SCREEN_SPACE_SHADOWS_ON) && !defined(_SURFACE_TYPE_TRANSPARENT)
             if (UseScreenSpaceShadow(light, bsdfData.normalWS))
@@ -76,19 +76,8 @@ void LightLoop(
                 {
                     float3 positionWS = posInput.positionWS;
 
-#ifdef LIGHT_EVALUATION_SPLINE_SHADOW_BIAS
-                    positionWS += L * GetSplineOffsetForShadowBias(bsdfData);
-#endif
-                    context.shadowValue = GetDirectionalShadowAttenuation(context.shadowContext,
-                                                                          posInput.positionSS, positionWS, GetNormalForShadowBias(bsdfData),
-                                                                          light.shadowIndex, L);
-
-#ifdef LIGHT_EVALUATION_SPLINE_SHADOW_VISIBILITY_SAMPLE
-                    // Tap the shadow a second time for strand visibility term.
-                    context.splineVisibility = GetDirectionalShadowAttenuation(context.shadowContext,
-                                                                               posInput.positionSS, posInput.positionWS, GetNormalForShadowBias(bsdfData),
-                                                                               light.shadowIndex, L);
-#endif
+                    context.shadowValue = GetDirectionalShadowAttenuation(context.shadowContext, frameUniform, renderData, matProperties, samplerStruct,
+                                                                          posInput.positionSS, positionWS, GetNormalForShadowBias(bsdfData), light.shadowIndex, L);
                 }
             }
         }
@@ -226,7 +215,7 @@ void LightLoop(
 //             float4 posClip = TransformWorldToHClip(objPos);
 //             posClip.xyz = posClip.xyz / posClip.w;
 //
-//             uint2 tileObj = (saturate(posClip.xy * 0.5f + 0.5f) * _ScreenSize.xy) / GetTileSize();
+//             uint2 tileObj = (saturate(posClip.xy * 0.5f + 0.5f) * _ScreenSize.xy);
 //
 //             uint envLightStart, envLightCount;
 //

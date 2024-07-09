@@ -73,11 +73,6 @@ namespace MoYu
         }
         else if (sceneLight.m_light_type == LightType::DirectionLight)
           {
-            glm::float4x4 dirLightViewMat =
-                MoYu::MYMatrix4x4::createLookAtMatrix(m_translation, m_translation + direction, MYFloat3::Up);
-            
-            m_directional_light.m_shadow_view_mat = dirLightViewMat;
-
             m_directional_light.m_position_delation = (m_translation - m_directional_light.position);
             m_directional_light.position = m_translation;
             m_directional_light.forward = forward;
@@ -89,15 +84,22 @@ namespace MoYu
             float shadow_near_plane    = sceneLight.direction_light.m_shadow_near_plane;
             float shadow_far_plane     = sceneLight.direction_light.m_shadow_far_plane;
 
+            m_directional_light.m_shadowOffset = glm::float4(0, 10, 50, 100);
+            m_directional_light.m_shadowPowScale = glm::int4(0, 1, 2, 3);
+            
             for (size_t i = 0; i < sceneLight.direction_light.m_cascade; i++)
             {
-                int shadow_bounds_width_scale  = shadow_bounds_width << i;
-                int shadow_bounds_height_scale = shadow_bounds_height << i;
+                int powScale = m_directional_light.m_shadowPowScale[i];
+                float shadow_bounds_width_scale  = shadow_bounds_width << powScale;
+                float shadow_bounds_height_scale = shadow_bounds_height << powScale;
 
-                glm::float4x4 dirLightProjMat = MYMatrix4x4::createOrthographic(
-                    shadow_bounds_width_scale, shadow_bounds_height_scale, shadow_near_plane, shadow_far_plane);
+                glm::float3 m_new_translation = m_translation;// -direction * m_directional_light.m_shadowOffset[i];
+                
+                glm::float4x4 dirLightViewMat = MYMatrix4x4::createLookAtMatrix(m_new_translation, m_new_translation + direction, MYFloat3::Up);
+                glm::float4x4 dirLightProjMat = MYMatrix4x4::createOrthographic(shadow_bounds_width_scale, shadow_bounds_height_scale, shadow_near_plane, shadow_far_plane);
                 glm::float4x4 dirLightViewProjMat = dirLightProjMat * dirLightViewMat;
-
+                
+                m_directional_light.m_shadow_view_mat[i] = dirLightViewMat;
                 m_directional_light.m_shadow_proj_mats[i] = dirLightProjMat;
                 m_directional_light.m_shadow_view_proj_mats[i] = dirLightViewProjMat;
             }

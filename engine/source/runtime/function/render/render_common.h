@@ -528,7 +528,9 @@ namespace MoYu
         glm::float3   m_position_delation;
         glm::float3   m_position;
         glm::float3   m_direction;
-        glm::float4x4 m_shadow_view_mat;
+        glm::float4   m_shadowOffset;
+        glm::int4   m_shadowPowScale;
+        glm::float4x4 m_shadow_view_mat[4];
         glm::float4x4 m_shadow_proj_mats[4];
         glm::float4x4 m_shadow_view_proj_mats[4];
     };
