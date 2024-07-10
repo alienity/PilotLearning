@@ -43,7 +43,9 @@ VertexOutput VSMain(VertexInput input)
 
 	#if defined(DIRECTIONSHADOW)
     HDDirectionalShadowData dirShadowData = g_FramUniforms.lightDataUniform.directionalShadowData;
-    float4x4 view_proj_mat = dirShadowData.viewprojMatrix[cascadeLevel];
+    uint shadowCascadeIndex = dirShadowData.shadowDataIndex[cascadeLevel];
+    HDShadowData shadowData = g_FramUniforms.lightDataUniform.shadowDatas[shadowCascadeIndex];
+    float4x4 view_proj_mat = shadowData.viewProjMatrix;
     #elif defined(SPOTSHADOW)
     LightData lightData = g_FramUniforms.lightDataUniform.lightData[spotIndex];
     HDShadowData shadowData = g_FramUniforms.lightDataUniform.shadowDatas[lightData.shadowDataIndex];

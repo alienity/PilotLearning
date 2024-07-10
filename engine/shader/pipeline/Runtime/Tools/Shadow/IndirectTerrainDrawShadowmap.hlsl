@@ -35,9 +35,11 @@ VertexOutput VSMain(VertexInput input)
     float4x4 tLocalTransform = clipTransform.transform;
     
     float4x4 localToWorldMatrix = mFrameUniforms.terrainUniform.local2WorldMatrix;
-
+    
     HDDirectionalShadowData dirShadowData = mFrameUniforms.lightDataUniform.directionalShadowData;
-    float4x4 viewProjMatrix = dirShadowData.viewprojMatrix[cascadeLevel];
+    uint shadowCascadeIndex = dirShadowData.shadowDataIndex[cascadeLevel];
+    HDShadowData shadowData = mFrameUniforms.lightDataUniform.shadowDatas[shadowCascadeIndex];
+    float4x4 viewProjMatrix = shadowData.viewProjMatrix;
     
     float terrainMaxHeight = mFrameUniforms.terrainUniform.terrainMaxHeight;
     float terrainSize = mFrameUniforms.terrainUniform.terrainSize;

@@ -121,6 +121,9 @@ namespace MoYu
             _shadowDara.worldTexelSize = 2.0f / projMatrix[0][0] / viewportSize.x * glm::sqrt(2.0f);
             _shadowDara.normalBias = 0.75f;
             _shadowDara.cascadeNumber = 1;
+            _shadowDara.cascadeLevel = glm::int4(0, -1, -1, -1);
+            _shadowDara.shdowCenterOffset = glm::float4(0, 0, 0, 0);
+            _shadowDara.shadowSizePower = glm::int4(0, 0, 0, 0);
             _shadowDara.viewMatrix = viewMatrix;
             _shadowDara.projMatrix = projMatrix;
             _shadowDara.viewProjMatrix = viewProjMatrix;
@@ -194,10 +197,7 @@ namespace MoYu
             directionalLightData.specularDimmer = 1.0f;
 
             _lightDataUniform.directionalLightData = directionalLightData;
-
-            glm::float4x4 viewMatrix = m_render_scene->m_directional_light.m_shadow_view_mat[0];
-            glm::float4x4 projMatrix = m_render_scene->m_directional_light.m_shadow_proj_mats[0];
-            glm::float4x4 viewProjMatrix = m_render_scene->m_directional_light.m_shadow_view_proj_mats[0];
+            
             glm::float2 shadowBounds = m_render_scene->m_directional_light.m_shadow_bounds;
             glm::int2 viewportSize = m_render_scene->m_directional_light.m_shadowmap_size;
             float dn = m_render_scene->m_directional_light.m_shadow_near_plane;
@@ -224,40 +224,47 @@ namespace MoYu
             m_DirectionalShadowmap.m_casccade = 4;
             m_DirectionalShadowmap.p_LightShadowmap = p_LightShadowmap;
 
-            HLSL::HDShadowData _shadowDara;
-            _shadowDara.shadowmapIndex = p_LightShadowmap->GetDefaultSRV()->GetIndex();
-            _shadowDara.worldTexelSize = 2.0f / projMatrix[0][0] / viewportSize.x * glm::sqrt(2.0f);
-            _shadowDara.normalBias = 0.75f;
-            _shadowDara.cascadeNumber = 4;
-            _shadowDara.viewMatrix = viewMatrix;
-            _shadowDara.projMatrix = projMatrix;
-            _shadowDara.viewProjMatrix = viewProjMatrix;
-            _shadowDara.zBufferParam = glm::float4((df - dn) / dn, 1.0f, (df - dn) / (dn * df), 1.0f / df);
-            _shadowDara.shadowBounds = glm::float4(shadowBounds.x, shadowBounds.y, 0, 0);
-            _shadowDara.shadowMapSize = glm::float4(viewportSize.x, viewportSize.y, 1.0f / viewportSize.x, 1.0f / viewportSize.y);
-            _shadowDara.cacheTranslationDelta = glm::float4(m_translationDelta, 0);
-            _shadowDara.shadowToWorld = glm::inverse(viewProjMatrix);
-
-            _lightDataUniform.shadowDatas[shadowDataCount] = _shadowDara;
-            shadowDataCount += 1;
-
             HLSL::HDDirectionalShadowData _dirShadowData;
+            _dirShadowData.shadowDataIndex = glm::int4(shadowDataCount + 0, shadowDataCount + 1, shadowDataCount + 2, shadowDataCount + 3);
+            
+            _lightDataUniform.directionalShadowData = _dirShadowData;
+            
             for (int i = 0; i < 4; i++)
             {
-                glm::float4x4 _viewMatrix = m_render_scene->m_directional_light.m_shadow_view_mat[i];
-                glm::float4x4 _projMatrix = m_render_scene->m_directional_light.m_shadow_proj_mats[i];
-                glm::float4x4 _viewProjMatrix = m_render_scene->m_directional_light.m_shadow_view_proj_mats[i];
+                glm::float4x4 viewMatrix = m_render_scene->m_directional_light.m_shadow_view_mat[i];
+                glm::float4x4 projMatrix = m_render_scene->m_directional_light.m_shadow_proj_mats[i];
+                glm::float4x4 viewProjMatrix = m_render_scene->m_directional_light.m_shadow_view_proj_mats[i];
 
-                _dirShadowData.viewMatrix[i] = _viewMatrix;
-                _dirShadowData.projMatrix[i] = _projMatrix;
-                _dirShadowData.viewprojMatrix[i] = _viewProjMatrix;
+                glm::float4 shadowCenterOffset = m_render_scene->m_directional_light.shadowCenterOffset;
+                glm::int4 shadowSizePower = m_render_scene->m_directional_light.shadowPowerScale;
+
+                glm::uint sizePower = (glm::uint)shadowSizePower[i];
+                float powerScale = glm::pow(2, sizePower);
+                 
+                HLSL::HDShadowData _shadowDara;
+                _shadowDara.shadowmapIndex = p_LightShadowmap->GetDefaultSRV()->GetIndex();
+                _shadowDara.worldTexelSize = 2.0f / projMatrix[0][0] / viewportSize.x * glm::sqrt(2.0f);
+                _shadowDara.normalBias = 0.75f;
+                _shadowDara.cascadeNumber = 4;
+                _shadowDara.cascadeLevel = glm::int4(i, -1, -1, -1);
+                _shadowDara.shdowCenterOffset = shadowCenterOffset;
+                _shadowDara.shadowSizePower =  shadowSizePower;
+                _shadowDara.viewMatrix = viewMatrix;
+                _shadowDara.projMatrix = projMatrix;
+                _shadowDara.viewProjMatrix = viewProjMatrix;
+                _shadowDara.zBufferParam = glm::float4((df - dn) / dn, 1.0f, (df - dn) / (dn * df), 1.0f / df);
+                _shadowDara.shadowBounds = glm::float4(shadowBounds.x * powerScale, shadowBounds.y * powerScale, 0, 0);
+                _shadowDara.shadowMapSize = glm::float4(viewportSize.x, viewportSize.y, 1.0f / viewportSize.x, 1.0f / viewportSize.y);
+                _shadowDara.cacheTranslationDelta = glm::float4(m_translationDelta, 0);
+                _shadowDara.shadowToWorld = glm::inverse(viewProjMatrix);
+
+                _lightDataUniform.shadowDatas[shadowDataCount] = _shadowDara;
+                shadowDataCount += 1;
             }
-
-            _lightDataUniform.directionalShadowData = _dirShadowData;
         }
         _frameUniforms->lightDataUniform = _lightDataUniform;
     }
-
+    
     void IndirectShadowPass::update(RHI::RenderGraph& graph, ShadowInputParameters& passInput, ShadowOutputParameters& passOutput)
     {
 

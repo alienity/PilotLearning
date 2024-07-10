@@ -84,8 +84,8 @@ namespace MoYu
             float shadow_near_plane    = sceneLight.direction_light.m_shadow_near_plane;
             float shadow_far_plane     = sceneLight.direction_light.m_shadow_far_plane;
 
-            m_directional_light.m_shadowOffset = glm::float4(0, 10, 50, 100);
-            m_directional_light.m_shadowPowScale = glm::int4(0, 1, 2, 3);
+            m_directional_light.m_shadowOffset = sceneLight.direction_light.shadowCenterOffset;
+            m_directional_light.m_shadowPowScale = sceneLight.direction_light.shadowPowerScale;
             
             for (size_t i = 0; i < sceneLight.direction_light.m_cascade; i++)
             {
@@ -93,7 +93,7 @@ namespace MoYu
                 float shadow_bounds_width_scale  = shadow_bounds_width << powScale;
                 float shadow_bounds_height_scale = shadow_bounds_height << powScale;
 
-                glm::float3 m_new_translation = m_translation;// -direction * m_directional_light.m_shadowOffset[i];
+                glm::float3 m_new_translation = m_translation - direction * m_directional_light.m_shadowOffset[i];
                 
                 glm::float4x4 dirLightViewMat = MYMatrix4x4::createLookAtMatrix(m_new_translation, m_new_translation + direction, MYFloat3::Up);
                 glm::float4x4 dirLightProjMat = MYMatrix4x4::createOrthographic(shadow_bounds_width_scale, shadow_bounds_height_scale, shadow_near_plane, shadow_far_plane);

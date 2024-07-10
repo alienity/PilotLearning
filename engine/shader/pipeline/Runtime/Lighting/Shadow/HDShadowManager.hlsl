@@ -10,9 +10,9 @@
 #define uint2 glm::uvec2
 #define uint3 glm::uvec3
 #define uint4 glm::uvec4
-#define int2 glm::int2
-#define int3 glm::int3
-#define int4 glm::int4
+#define int2 glm::ivec2
+#define int3 glm::ivec3
+#define int4 glm::ivec4
 #define float2 glm::fvec2
 #define float3 glm::fvec3
 #define float4 glm::fvec4
@@ -27,6 +27,9 @@ struct HDShadowData
     float worldTexelSize; // 2.0f / shadowRequest.deviceProjectionYFlip.m00 / viewportSize.x * Mathf.Sqrt(2.0f);
     float normalBias; // Controls the bias this Light applies along the normal of surfaces it illuminates.
     uint cascadeNumber; // cascade shadow count
+    int4 cascadeLevel; // x - current cascade level
+    float4 shdowCenterOffset; // offset from the light position along the negative forward
+    int4 shadowSizePower; // pow(2, power)
     float4x4 viewMatrix; // viewMatrix for light
     float4x4 projMatrix; // projectionMatrix
     float4x4 viewProjMatrix;
@@ -41,11 +44,12 @@ struct HDShadowData
 // PackingRules = Exact
 struct HDDirectionalShadowData
 {
-    float4 shdowCenterOffset;
-    float4 shadowSizePowScale;
-    float4x4 viewMatrix[4];
-    float4x4 projMatrix[4];
-    float4x4 viewprojMatrix[4];
+    uint4 shadowDataIndex; // x - cascade 0, y - casecade 1, z - cascade 2, w - cascade 3
+    // float4 shdowCenterOffset;
+    // float4 shadowSizePowScale;
+    // float4x4 viewMatrix[4];
+    // float4x4 projMatrix[4];
+    // float4x4 viewprojMatrix[4];
 };
 
 #ifdef _CPP_MACRO_

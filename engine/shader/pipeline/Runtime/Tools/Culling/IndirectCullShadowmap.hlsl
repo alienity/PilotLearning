@@ -40,7 +40,9 @@ void CSMain(uint3 GroupID : SV_GroupID, uint GroupIndex : SV_GroupIndex) {
 
 #if defined(DIRECTIONSHADOW)
         HDDirectionalShadowData dirShadowData = g_FrameUniforms.lightDataUniform.directionalShadowData;
-        float4x4 light_proj_view = dirShadowData.viewprojMatrix[cascadeLevel];
+        uint shadowCascadeIndex = dirShadowData.shadowDataIndex[cascadeLevel];
+        HDShadowData shadowData = g_FrameUniforms.lightDataUniform.shadowDatas[shadowCascadeIndex];
+        float4x4 light_proj_view = shadowData.viewProjMatrix;
         Frustum frustum = ExtractPlanesDX(light_proj_view);
 #elif defined(SPOTSHADOW)
         LightData lightData = g_FrameUniforms.lightDataUniform.lightData[spotIndex];
