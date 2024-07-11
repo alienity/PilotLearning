@@ -83,7 +83,9 @@ namespace MoYu
         RHI::RgResourceHandle transformBufferHandle  = passInput.transformBufferHandle;
         std::vector<RHI::RgResourceHandle> dirCommandSigHandle = std::vector<RHI::RgResourceHandle>(passInput.dirCommandSigHandle);
 
-        RHI::RgResourceHandle directionalShadowmapHandle = passOutput.directionalShadowmapHandle;
+        std::vector<RHI::RgResourceHandle> directionalShadowmapHandles = std::vector<RHI::RgResourceHandle>(passOutput.directionalShadowmapHandles);
+
+        //RHI::RgResourceHandle directionalShadowmapHandle = passOutput.directionalShadowmapHandles;
         
         InternalTerrainRenderer& internalTerrainRenderer = m_render_scene->m_terrain_renderers[0].internalTerrainRenderer;
         uint32_t clipTransCount = internalTerrainRenderer.ref_terrain.terrain_clipmap.instance_buffer.clip_transform_counts;
@@ -97,7 +99,10 @@ namespace MoYu
         {
             shadowpass.Read(dirCommandSigHandle[i], false, RHIResourceState::RHI_RESOURCE_STATE_INDIRECT_ARGUMENT, RHIResourceState::RHI_RESOURCE_STATE_INDIRECT_ARGUMENT);
         }
-        shadowpass.Write(passOutput.directionalShadowmapHandle, false, RHIResourceState::RHI_RESOURCE_STATE_DEPTH_WRITE);
+        for (int i = 0; i < passOutput.directionalShadowmapHandles.size(); i++)
+        {
+            shadowpass.Write(passOutput.directionalShadowmapHandles[i], false, RHIResourceState::RHI_RESOURCE_STATE_DEPTH_WRITE);
+        }
 
         shadowpass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
 
@@ -106,8 +111,9 @@ namespace MoYu
             //#define RegGetBufCounter(h) registry->GetD3D12Buffer(h)->GetCounterBuffer().get()
             
             //if (m_DirectionalShadowmap.m_identifier != UndefCommonIdentifier)
+            for (int i = 0; i < directionalShadowmapHandles.size(); i++)
             {
-                RHI::D3D12Texture* pShadowmapStencilTex = registry->GetD3D12Texture(directionalShadowmapHandle);
+                RHI::D3D12Texture* pShadowmapStencilTex = registry->GetD3D12Texture(directionalShadowmapHandles[i]);
 
                 RHI::D3D12DepthStencilView* shadowmapStencilView = pShadowmapStencilTex->GetDefaultDSV().get();
 
@@ -121,45 +127,42 @@ namespace MoYu
 
                 glm::float2 shadowmap_size = m_shadowmap_size;
                 
-                for (uint32_t i = 0; i < m_casccade; i++)
+                //RHIViewport _viewport = {};
+                //_viewport.MinDepth = 0.0f;
+                //_viewport.MaxDepth = 1.0f;
+                //_viewport.Width    = 0.5 * shadowmap_size.x;
+                //_viewport.Height   = 0.5 * shadowmap_size.y;
+                //_viewport.TopLeftX = 0.5 * shadowmap_size.x * ((i & 0x1) != 0 ? 1 : 0);
+                //_viewport.TopLeftY = 0.5 * shadowmap_size.y * ((i & 0x2) != 0 ? 1 : 0);
+
+                graphicContext->SetViewport(RHIViewport{ 0.0f, 0.0f, (float)shadowmap_size.x, (float)shadowmap_size.y, 0.0f, 1.0f });
+                graphicContext->SetScissorRect(RHIRect{ 0, 0, (int)shadowmap_size.x, (int)shadowmap_size.y });
+                //graphicContext->SetViewport(RHIViewport {_viewport.TopLeftX, _viewport.TopLeftY, (float)_viewport.Width, (float)_viewport.Height, _viewport.MinDepth, _viewport.MaxDepth});
+                //graphicContext->SetScissorRect(RHIRect {0, 0, (int)shadowmap_size.x, (int)shadowmap_size.y});
+
+                struct RootIndexBuffer
                 {
-                     RHIViewport _viewport = {};
+                    uint32_t cascadeLevel;
+                    uint32_t transformBufferIndex;
+                    uint32_t perFrameBufferIndex;
+                    uint32_t terrainHeightmapIndex;
+                };
 
-                    _viewport.MinDepth = 0.0f;
-                    _viewport.MaxDepth = 1.0f;
-                    _viewport.Width    = 0.5 * shadowmap_size.x;
-                    _viewport.Height   = 0.5 * shadowmap_size.y;
+                RootIndexBuffer rootIndexBuffer = RootIndexBuffer{ (uint32_t)i,
+                                                                    RegGetBufDefSRVIdx(transformBufferHandle),
+                                                                    RegGetBufDefCBVIdx(perframeBufferHandle),
+                                                                    RegGetTexDefSRVIdx(terrainHeightmapHandle) };
 
-                    _viewport.TopLeftX = 0.5 * shadowmap_size.x * ((i & 0x1) != 0 ? 1 : 0);
-                    _viewport.TopLeftY = 0.5 * shadowmap_size.y * ((i & 0x2) != 0 ? 1 : 0);
-
-                    graphicContext->SetViewport(RHIViewport {_viewport.TopLeftX, _viewport.TopLeftY, (float)_viewport.Width, (float)_viewport.Height, _viewport.MinDepth, _viewport.MaxDepth});
-                    graphicContext->SetScissorRect(RHIRect {0, 0, (int)shadowmap_size.x, (int)shadowmap_size.y});
-
-                    struct RootIndexBuffer
-                    {
-                        uint32_t cascadeLevel;
-                        uint32_t transformBufferIndex;
-                        uint32_t perFrameBufferIndex;
-                        uint32_t terrainHeightmapIndex;
-                    };
-
-                    RootIndexBuffer rootIndexBuffer = RootIndexBuffer {i,
-                                                                       RegGetBufDefSRVIdx(transformBufferHandle),
-                                                                       RegGetBufDefCBVIdx(perframeBufferHandle),
-                                                                       RegGetTexDefSRVIdx(terrainHeightmapHandle)};
-
-                    graphicContext->SetConstantArray(0, 1, sizeof(RootIndexBuffer) / sizeof(UINT), &rootIndexBuffer);
+                graphicContext->SetConstantArray(0, 1, sizeof(RootIndexBuffer) / sizeof(UINT), &rootIndexBuffer);
             
-                    auto pDrawCallCommandSigBuffer = registry->GetD3D12Buffer(dirCommandSigHandle[i]);
+                auto pDrawCallCommandSigBuffer = registry->GetD3D12Buffer(dirCommandSigHandle[i]);
                      
-                    graphicContext->ExecuteIndirect(pIndirectTerrainShadowmapCommandSignature.get(),
-                                                    pDrawCallCommandSigBuffer,
-                                                    0,
-                                                    clipTransCount,
-                                                    pDrawCallCommandSigBuffer->GetCounterBuffer().get(),
-                                                    0);
-                }
+                graphicContext->ExecuteIndirect(pIndirectTerrainShadowmapCommandSignature.get(),
+                                                pDrawCallCommandSigBuffer,
+                                                0,
+                                                clipTransCount,
+                                                pDrawCallCommandSigBuffer->GetCounterBuffer().get(),
+                                                0);
             }
              
         });

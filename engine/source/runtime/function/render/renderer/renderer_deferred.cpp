@@ -496,14 +496,14 @@ namespace MoYu
         mTerrainShadowmapIntputParams.dirCommandSigHandle.assign(terrainCullOutput.dirVisCommandSigHandles.begin(),
                                                                  terrainCullOutput.dirVisCommandSigHandles.end());
         
-        mTerrainShadowmapOutputParams.directionalShadowmapHandle = mShadowmapOutputParams.directionalShadowmapHandle;
+        mTerrainShadowmapOutputParams.directionalShadowmapHandles = mShadowmapOutputParams.directionalShadowmapHandles;
 
         mIndirectTerrainShadowPass->update(graph, mTerrainShadowmapIntputParams, mTerrainShadowmapOutputParams);
         //=================================================================================
 
         //=================================================================================
         // shadowmap output
-        RHI::RgResourceHandle directionalShadowmapHandle       = mShadowmapOutputParams.directionalShadowmapHandle;
+        std::vector<RHI::RgResourceHandle> directionalShadowmapHandles = mShadowmapOutputParams.directionalShadowmapHandles;
         std::vector<RHI::RgResourceHandle> spotShadowmapHandle = mShadowmapOutputParams.spotShadowmapHandle;
         //=================================================================================
 
@@ -793,7 +793,7 @@ namespace MoYu
         //mDisplayIntputParams.inputRTColorHandle   = mTerrainGBufferOutput.albedoHandle;
         //mDisplayIntputParams.inputRTColorHandle      = mAOOutput.outputAOHandle;
         //mDisplayIntputParams.inputRTColorHandle = mGBufferOutput.gbuffer0Handle;
-        mDisplayIntputParams.inputRTColorHandle = mTerrainShadowmapOutputParams.directionalShadowmapHandle;
+        mDisplayIntputParams.inputRTColorHandle = mTerrainShadowmapOutputParams.directionalShadowmapHandles[0];
         mDisplayOutputParams.renderTargetColorHandle = renderTargetColorHandle;
         //mDisplayOutputParams.renderTargetColorHandle = backBufColorHandle;
         mDisplayPass->update(graph, mDisplayIntputParams, mDisplayOutputParams);

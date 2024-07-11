@@ -26,8 +26,7 @@ namespace MoYu
 
         struct ShadowOutputParameters : public PassOutput
         {
-            RHI::RgResourceHandle directionalShadowmapHandle = RHI::_DefaultRgResourceHandle;
-
+            std::vector<RHI::RgResourceHandle> directionalShadowmapHandles;
             std::vector<RHI::RgResourceHandle> spotShadowmapHandle;
         };
 
