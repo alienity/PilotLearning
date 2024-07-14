@@ -151,7 +151,7 @@ namespace MoYu
         bool needClearRenderTarget = initializeRenderTarget(graph, &passOutput);
 
         RHI::RgResourceHandle perframeBufferHandle = passInput.perframeBufferHandle;
-        RHI::RgResourceHandle normalHandle = passInput.worldNormalHandle;
+        RHI::RgResourceHandle packedNormalHandle = passInput.packedNormalHandle;
         RHI::RgResourceHandle depthHandle  = passInput.depthHandle;
         RHI::RgResourceHandle finalAOHandle  = passOutput.outputAOHandle;
 
@@ -215,7 +215,7 @@ namespace MoYu
         mainpass.Read(perframeBufferHandle, false, RHIResourceState::RHI_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
         mainpass.Read(gtaoConstantsHandle, false, RHIResourceState::RHI_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
         mainpass.Read(workingViewDepthHandle, false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-        mainpass.Read(normalHandle, false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+        mainpass.Read(packedNormalHandle, false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
         mainpass.Write(workingEdgeHandle, false, RHIResourceState::RHI_RESOURCE_STATE_UNORDERED_ACCESS);
         mainpass.Write(workingAOHandle, false, RHIResourceState::RHI_RESOURCE_STATE_UNORDERED_ACCESS);
 
@@ -223,31 +223,31 @@ namespace MoYu
             RHI::D3D12Buffer*  _PerFrameBuffer        = RegGetBuf(perframeBufferHandle);
             RHI::D3D12Buffer*  _GTAOBuffer            = RegGetBuf(gtaoConstantsHandle);
             RHI::D3D12Texture* _ViewSpaceDepthTexture = RegGetTex(workingViewDepthHandle);
-            RHI::D3D12Texture* _WorldNormalTexture    = RegGetTex(normalHandle);
+            RHI::D3D12Texture* _PackedNormalTexture   = RegGetTex(packedNormalHandle);
             RHI::D3D12Texture* _EdgeTexture           = RegGetTex(workingEdgeHandle);
             RHI::D3D12Texture* _GTAOTexture           = RegGetTex(workingAOHandle);
 
             RHI::D3D12ComputeContext* pContext = context->GetComputeContext();
 
-            RHI::D3D12ConstantBufferView*  perframeCBV  = _PerFrameBuffer->GetDefaultCBV().get();
-            RHI::D3D12ConstantBufferView*  gtaoCBV      = _GTAOBuffer->GetDefaultCBV().get();
-            RHI::D3D12ShaderResourceView*  viewDepthSRV = _ViewSpaceDepthTexture->GetDefaultSRV().get();
-            RHI::D3D12ShaderResourceView*  normalSRV    = _WorldNormalTexture->GetDefaultSRV().get();
-            RHI::D3D12UnorderedAccessView* edgeUAV      = _EdgeTexture->GetDefaultUAV().get();
-            RHI::D3D12UnorderedAccessView* gtaoUAV      = _GTAOTexture->GetDefaultUAV().get();
+            RHI::D3D12ConstantBufferView*  perframeCBV     = _PerFrameBuffer->GetDefaultCBV().get();
+            RHI::D3D12ConstantBufferView*  gtaoCBV         = _GTAOBuffer->GetDefaultCBV().get();
+            RHI::D3D12ShaderResourceView*  viewDepthSRV    = _ViewSpaceDepthTexture->GetDefaultSRV().get();
+            RHI::D3D12ShaderResourceView*  packedNormalSRV = _PackedNormalTexture->GetDefaultSRV().get();
+            RHI::D3D12UnorderedAccessView* edgeUAV         = _EdgeTexture->GetDefaultUAV().get();
+            RHI::D3D12UnorderedAccessView* gtaoUAV         = _GTAOTexture->GetDefaultUAV().get();
 
             __declspec(align(16)) struct
             {
                 uint32_t perframe_consts_index;
                 uint32_t gitao_consts_index;
                 uint32_t workingDepth_index;
-                uint32_t normal_index;
+                uint32_t packedNormal_index;
                 uint32_t outWorkingAOTerm_index;
                 uint32_t outWorkingEdges_index;
             } gtaoConstantBuffer = {perframeCBV->GetIndex(),
                                     gtaoCBV->GetIndex(),
                                     viewDepthSRV->GetIndex(),
-                                    normalSRV->GetIndex(),
+                                    packedNormalSRV->GetIndex(),
                                     gtaoUAV->GetIndex(),
                                     edgeUAV->GetIndex()};
 

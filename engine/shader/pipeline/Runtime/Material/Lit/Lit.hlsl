@@ -2006,8 +2006,8 @@ void PostEvaluateBSDF(  LightLoopContext lightLoopContext,
 #endif
 
     lightLoopOutput.specularLighting = lighting.direct.specular + lighting.indirect.specularReflected;
-    // Rescale the GGX to account for the multiple scattering.
-    lightLoopOutput.specularLighting *= 1.0f + bsdfData.fresnel0 * preLightData.energyCompensation;
+    // // Rescale the GGX to account for the multiple scattering.
+    // lightLoopOutput.specularLighting *= 1.0f + bsdfData.fresnel0 * preLightData.energyCompensation;
 }
 
 #endif // #ifdef HAS_LIGHTLOOP

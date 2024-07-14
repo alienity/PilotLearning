@@ -19,12 +19,12 @@ namespace MoYu
         struct DrawInputParameters : public PassInput
         {
             RHI::RgResourceHandle perframeBufferHandle;
-            RHI::RgResourceHandle meshBufferHandle;
-            RHI::RgResourceHandle materialBufferHandle;
+            RHI::RgResourceHandle renderDataPerDrawHandle;
+            RHI::RgResourceHandle propertiesPerMaterialHandle;
             RHI::RgResourceHandle transparentDrawHandle;
 
             // shadowmap input
-            RHI::RgResourceHandle directionalShadowmapTexHandle;
+            std::vector<RHI::RgResourceHandle> directionalShadowmapTexHandles;
             std::vector<RHI::RgResourceHandle> spotShadowmapTexHandles;
         };
 

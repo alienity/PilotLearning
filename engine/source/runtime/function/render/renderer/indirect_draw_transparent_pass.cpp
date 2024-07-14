@@ -20,11 +20,8 @@ namespace MoYu
 
         bool needClearRenderTarget = initializeRenderTarget(graph, &passOutput);
 
-        //DrawInputParameters  drawPassInput  = passInput;
-        //DrawOutputParameters drawPassOutput = passOutput;
-
-        RHI::RgResourceHandle meshBufferHandle      = passInput.meshBufferHandle;
-        RHI::RgResourceHandle materialBufferHandle  = passInput.materialBufferHandle;
+        RHI::RgResourceHandle renderDataPerDrawHandle = passInput.renderDataPerDrawHandle;
+        RHI::RgResourceHandle propertiesPerMaterialHandle = passInput.propertiesPerMaterialHandle;
         RHI::RgResourceHandle perframeBufferHandle = passInput.perframeBufferHandle;
         RHI::RgResourceHandle transparentDrawHandle = passInput.transparentDrawHandle;
 
@@ -33,16 +30,16 @@ namespace MoYu
 
         RHI::RenderPass& drawpass = graph.AddRenderPass("IndirectDrawTransparentPass");
 
-        if (passInput.directionalShadowmapTexHandle.IsValid())
+        for (int i = 0; i < passInput.directionalShadowmapTexHandles.size(); i++)
         {
-            drawpass.Read(passInput.directionalShadowmapTexHandle, false, RHIResourceState::RHI_RESOURCE_STATE_ALL_SHADER_RESOURCE);
+            drawpass.Read(passInput.directionalShadowmapTexHandles[i], false, RHIResourceState::RHI_RESOURCE_STATE_ALL_SHADER_RESOURCE);
         }
-        for (size_t i = 0; i < passInput.spotShadowmapTexHandles.size(); i++)
+        for (int i = 0; i < passInput.spotShadowmapTexHandles.size(); i++)
         {
             drawpass.Read(passInput.spotShadowmapTexHandles[i], false, RHIResourceState::RHI_RESOURCE_STATE_ALL_SHADER_RESOURCE);
         }
-        drawpass.Read(passInput.meshBufferHandle, false, RHIResourceState::RHI_RESOURCE_STATE_ALL_SHADER_RESOURCE);
-        drawpass.Read(passInput.materialBufferHandle, false, RHIResourceState::RHI_RESOURCE_STATE_ALL_SHADER_RESOURCE);
+        drawpass.Read(passInput.renderDataPerDrawHandle, false, RHIResourceState::RHI_RESOURCE_STATE_ALL_SHADER_RESOURCE);
+        drawpass.Read(passInput.propertiesPerMaterialHandle, false, RHIResourceState::RHI_RESOURCE_STATE_ALL_SHADER_RESOURCE);
         drawpass.Read(passInput.perframeBufferHandle, false, RHIResourceState::RHI_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
         drawpass.Read(passInput.transparentDrawHandle, false, RHIResourceState::RHI_RESOURCE_STATE_INDIRECT_ARGUMENT, RHIResourceState::RHI_RESOURCE_STATE_INDIRECT_ARGUMENT);
         drawpass.Read(passOutput.renderTargetColorHandle, true);
@@ -75,12 +72,8 @@ namespace MoYu
             graphicContext->SetPipelineState(PipelineStates::pIndirectDrawTransparent.get());
 
             graphicContext->SetConstantBuffer(1, registry->GetD3D12Buffer(perframeBufferHandle)->GetGpuVirtualAddress());
-            graphicContext->SetBufferSRV(2, registry->GetD3D12Buffer(meshBufferHandle));
-            graphicContext->SetBufferSRV(3, registry->GetD3D12Buffer(materialBufferHandle));
-
-            //graphicContext->SetConstantBuffer(1, pPerframeBuffer->GetGpuVirtualAddress());
-            //graphicContext->SetBufferSRV(2, pMeshBuffer.get());
-            //graphicContext->SetBufferSRV(3, pMaterialBuffer.get());
+            graphicContext->SetBufferSRV(2, registry->GetD3D12Buffer(renderDataPerDrawHandle));
+            graphicContext->SetBufferSRV(3, registry->GetD3D12Buffer(propertiesPerMaterialHandle));
 
             auto pIndirectCommandBuffer = registry->GetD3D12Buffer(transparentDrawHandle);
 

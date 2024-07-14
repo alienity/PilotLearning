@@ -26,12 +26,12 @@ namespace MoYu
             DrawInputParameters()
             {
                 perframeBufferHandle.Invalidate();
-                worldNormalHandle.Invalidate();
+                packedNormalHandle.Invalidate();
                 depthHandle.Invalidate();
             }
 
             RHI::RgResourceHandle perframeBufferHandle;
-            RHI::RgResourceHandle worldNormalHandle;
+            RHI::RgResourceHandle packedNormalHandle;
             RHI::RgResourceHandle depthHandle;
         };
 

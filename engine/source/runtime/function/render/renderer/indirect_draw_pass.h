@@ -22,12 +22,12 @@ namespace MoYu
         struct DrawInputParameters : public PassInput
         {
             RHI::RgResourceHandle perframeBufferHandle;
-            RHI::RgResourceHandle meshBufferHandle;
-            RHI::RgResourceHandle materialBufferHandle;
+            RHI::RgResourceHandle renderDataPerDrawHandle;
+            RHI::RgResourceHandle propertiesPerMaterialHandle;
             RHI::RgResourceHandle opaqueDrawHandle;
 
             // shadowmap input
-            RHI::RgResourceHandle directionalShadowmapTexHandle;
+            std::vector<RHI::RgResourceHandle> directionalShadowmapTexHandles;
             std::vector<RHI::RgResourceHandle> spotShadowmapTexHandles;
         };
 
@@ -63,6 +63,7 @@ namespace MoYu
         Shader indirectDrawPS;
         std::shared_ptr<RHI::D3D12RootSignature> pIndirectDrawSignature;
         std::shared_ptr<RHI::D3D12PipelineState> pIndirectDrawPSO;
+        std::shared_ptr<RHI::D3D12CommandSignature> pIndirectDrawCommandSignature;
 	};
 }
 

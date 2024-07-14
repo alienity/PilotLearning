@@ -279,6 +279,7 @@ namespace MoYu
         exposureUniform._ProbeExposureScale = 1.0f;
         _frameUniforms->exposureUniform = exposureUniform;
 
+
     }
 
     void RenderResource::updateLightUniforms(RenderScene* render_scene)
