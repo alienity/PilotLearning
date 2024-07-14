@@ -120,8 +120,8 @@ struct LightData
     
     float lightDimmer; // Multiplies the intensity of the Light by the given number.
     float volumetricLightDimmer; // Replaces 'lightDimer'
-    float angleInner;  // Spot light
-    float angleOuter; // Spot light
+    float angleScale;
+    float angleOffset;
     
     float3 forward;
     float iesCut; // Spot light

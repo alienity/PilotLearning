@@ -1335,24 +1335,24 @@ CBSDF EvaluateBSDF(float3 V, float3 L, PreLightData preLightData, BSDFData bsdfD
 // EvaluateBSDF_Directional
 //-----------------------------------------------------------------------------
 
-DirectLighting EvaluateBSDF_Directional(LightLoopContext lightLoopContext,
+DirectLighting EvaluateBSDF_Directional(SamplerStruct sampleStruct, LightLoopContext lightLoopContext,
                                         float3 V, PositionInputs posInput,
                                         PreLightData preLightData, DirectionalLightData lightData,
                                         BSDFData bsdfData, BuiltinData builtinData)
 {
-    return ShadeSurface_Directional(lightLoopContext, posInput, builtinData, preLightData, lightData, bsdfData, V);
+    return ShadeSurface_Directional(sampleStruct, lightLoopContext, posInput, builtinData, preLightData, lightData, bsdfData, V);
 }
 
 //-----------------------------------------------------------------------------
 // EvaluateBSDF_Punctual (supports spot, point and projector lights)
 //-----------------------------------------------------------------------------
 
-DirectLighting EvaluateBSDF_Punctual(LightLoopContext lightLoopContext,
+DirectLighting EvaluateBSDF_Punctual(SamplerStruct sampleStruct, LightLoopContext lightLoopContext,
                                      float3 V, PositionInputs posInput,
                                      PreLightData preLightData, LightData lightData,
                                      BSDFData bsdfData, BuiltinData builtinData)
 {
-    return ShadeSurface_Punctual(lightLoopContext, posInput, builtinData, preLightData, lightData, bsdfData, V);
+    return ShadeSurface_Punctual(sampleStruct, lightLoopContext, posInput, builtinData, preLightData, lightData, bsdfData, V);
 }
 
 #include "../../Material/Lit/LitReference.hlsl"
@@ -1978,14 +1978,14 @@ void PostEvaluateBSDF(  LightLoopContext lightLoopContext,
                         out LightLoopOutput lightLoopOutput)
 {
     AmbientOcclusionFactor aoFactor;
-    // Use GTAOMultiBounce approximation for ambient occlusion (allow to get a tint from the baseColor)
+//     // Use GTAOMultiBounce approximation for ambient occlusion (allow to get a tint from the baseColor)
 // #if 0
 //     GetScreenSpaceAmbientOcclusion(posInput.positionSS, preLightData.NdotV, bsdfData.perceptualRoughness, bsdfData.ambientOcclusion, bsdfData.specularOcclusion, aoFactor);
 // #else
 //     GetScreenSpaceAmbientOcclusionMultibounce(posInput.positionSS, preLightData.NdotV, bsdfData.perceptualRoughness, bsdfData.ambientOcclusion, bsdfData.specularOcclusion, bsdfData.diffuseColor, bsdfData.fresnel0, aoFactor);
 // #endif
 
-    ApplyAmbientOcclusionFactor(aoFactor, builtinData, lighting);
+    // ApplyAmbientOcclusionFactor(aoFactor, builtinData, lighting);
 
     // Subsurface scattering mode
     // float3 modifiedDiffuseColor = GetModifiedDiffuseColorForSSS(bsdfData);
@@ -2007,11 +2007,7 @@ void PostEvaluateBSDF(  LightLoopContext lightLoopContext,
 
     lightLoopOutput.specularLighting = lighting.direct.specular + lighting.indirect.specularReflected;
     // Rescale the GGX to account for the multiple scattering.
-    lightLoopOutput.specularLighting *= 1.0 + bsdfData.fresnel0 * preLightData.energyCompensation;
-
-#ifdef DEBUG_DISPLAY
-    PostEvaluateBSDFDebugDisplay(aoFactor, builtinData, lighting, bsdfData.diffuseColor, lightLoopOutput);
-#endif
+    lightLoopOutput.specularLighting *= 1.0f + bsdfData.fresnel0 * preLightData.energyCompensation;
 }
 
 #endif // #ifdef HAS_LIGHTLOOP

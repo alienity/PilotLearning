@@ -17,10 +17,10 @@ namespace MoYu
 	    ShaderCompiler*       m_ShaderCompiler = init_info.m_ShaderCompiler;
 	    std::filesystem::path m_ShaderRootPath = init_info.m_ShaderRootPath;
 
-	    //indirectDrawVS = m_ShaderCompiler->CompileShader(
-     //       RHI_SHADER_TYPE::Vertex, m_ShaderRootPath / "pipeline/Runtime/Material/Lit/LitShader.hlsl", ShaderCompileOptions(L"Vert"));
-	    //indirectDrawPS = m_ShaderCompiler->CompileShader(
-     //       RHI_SHADER_TYPE::Pixel, m_ShaderRootPath / "pipeline/Runtime/Material/Lit/LitShader.hlsl", ShaderCompileOptions(L"Frag"));
+	    indirectDrawVS = m_ShaderCompiler->CompileShader(
+            RHI_SHADER_TYPE::Vertex, m_ShaderRootPath / "pipeline/Runtime/Material/Lit/LitForwardShader.hlsl", ShaderCompileOptions(L"Vert"));
+	    indirectDrawPS = m_ShaderCompiler->CompileShader(
+            RHI_SHADER_TYPE::Pixel, m_ShaderRootPath / "pipeline/Runtime/Material/Lit/LitForwardShader.hlsl", ShaderCompileOptions(L"Frag"));
 
 	    {
             RHI::RootSignatureDesc rootSigDesc =

@@ -28,8 +28,6 @@ struct LightLoopContext
 
     HDShadowContext shadowContext;
 
-    // uint contactShadow;         // a bit mask of 24 bits that tell if the pixel is in a contact shadow or not
-    // float contactShadowFade;     // combined fade factor of all contact shadows
     SHADOW_TYPE shadowValue;    // Stores the value of the cascade shadow map
     float splineVisibility;      // Stores the value of the cascade shadow map (unbiased for splines)
 };

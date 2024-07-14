@@ -71,8 +71,8 @@ namespace MoYu
             curLightData.lightType = GPULIGHTTYPE_SPOT;
             curLightData.shadowDataIndex = shadowDataCount;
             curLightData.lightDimmer = spot_light_intensity;
-            curLightData.angleInner = MoYu::degreesToRadians(inner_degree);
-            curLightData.angleOuter = MoYu::degreesToRadians(outer_degree);
+            curLightData.angleScale = glm::cos(glm::radians(outer_degree));
+            curLightData.angleOffset = 0;
             curLightData.color = glm::float3(color.r, color.g, color.b);
             curLightData.range = radius;
             curLightData.rangeAttenuationScale = 1.0f / (radius * radius);
@@ -130,6 +130,7 @@ namespace MoYu
             _shadowDara.zBufferParam = glm::float4((df - dn) / dn, 1.0f, (df - dn) / (dn * df), 1.0f / df);
             _shadowDara.shadowBounds = glm::float4(shadowBounds.x, shadowBounds.y, 0, 0);
             _shadowDara.shadowMapSize = glm::float4(viewportSize.x, viewportSize.y, 1.0f / viewportSize.x, 1.0f / viewportSize.y);
+            _shadowDara.atlasOffset = glm::float4(0, 0, 0, 0);
             _shadowDara.cacheTranslationDelta = glm::float4(m_translationDelta, 0);
             _shadowDara.shadowToWorld = glm::inverse(viewProjMatrix);
 
@@ -255,6 +256,7 @@ namespace MoYu
                 _shadowDara.zBufferParam = glm::float4((df - dn) / dn, 1.0f, (df - dn) / (dn * df), 1.0f / df);
                 _shadowDara.shadowBounds = glm::float4(shadowBounds.x * powerScale, shadowBounds.y * powerScale, 0, 0);
                 _shadowDara.shadowMapSize = glm::float4(shadowmapSize.x, shadowmapSize.y, 1.0f / shadowmapSize.x, 1.0f / shadowmapSize.y);
+                _shadowDara.atlasOffset = glm::float4(0, 0, 0, 0);
                 _shadowDara.cacheTranslationDelta = glm::float4(m_translationDelta, 0);
                 _shadowDara.shadowToWorld = glm::inverse(viewProjMatrix);
 

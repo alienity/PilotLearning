@@ -274,6 +274,11 @@ namespace MoYu
         volumeCloudUniform.sunlight_direction = render_scene->m_directional_light.m_direction;
         _frameUniforms->volumeCloudUniform = volumeCloudUniform;
 
+        // Exposure Uniform
+        HLSL::ExposureUniform exposureUniform{};
+        exposureUniform._ProbeExposureScale = 1.0f;
+        _frameUniforms->exposureUniform = exposureUniform;
+
     }
 
     void RenderResource::updateLightUniforms(RenderScene* render_scene)

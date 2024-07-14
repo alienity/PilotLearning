@@ -235,247 +235,71 @@ float4 EvaluateLight_Directional(LightLoopContext lightLoopContext, PositionInpu
 
     return color;
 }
-//
-// SHADOW_TYPE EvaluateShadow_Directional( LightLoopContext lightLoopContext, PositionInputs posInput,
-//                                         DirectionalLightData light, BuiltinData builtinData, float3 N)
-// {
-// #ifndef LIGHT_EVALUATION_NO_SHADOWS
-//     SHADOW_TYPE shadow  = 1.0;
-//     float shadowMask    = 1.0;
-//     float NdotL         = dot(N, -light.forward); // Disable contact shadow and shadow mask when facing away from light (i.e transmission)
-//
-// #ifdef SHADOWS_SHADOWMASK
-//     // shadowMaskSelector.x is -1 if there is no shadow mask
-//     // Note that we override shadow value (in case we don't have any dynamic shadow)
-//     shadow = shadowMask = (light.shadowMaskSelector.x >= 0.0 && NdotL > 0.0) ? dot(BUILTIN_DATA_SHADOW_MASK, light.shadowMaskSelector) : 1.0;
-// #endif
-//
-//     if ((light.shadowIndex >= 0) && (light.shadowDimmer > 0))
-//     {
-//         shadow = lightLoopContext.shadowValue;
-//
-//     #ifdef SHADOWS_SHADOWMASK
-//         float3 camToPixel = posInput.positionWS - GetPrimaryCameraPosition();
-//         float distanceCamToPixel2 = dot(camToPixel, camToPixel);
-//
-//         int shadowSplitIndex = lightLoopContext.shadowContext.shadowSplitIndex;
-//         if (shadowSplitIndex < 0)
-//         {
-//             shadow = shadowMask;
-//         }
-//         else if (shadowSplitIndex == int(_CascadeShadowCount) - 1)
-//         {
-//             float fade = lightLoopContext.shadowContext.fade;
-//             // In the transition code (both dithering and blend) we use shadow = lerp( shadow, 1.0, fade ) for last transition
-//             // mean if we expend the code we have (shadow * (1 - fade) + fade). Here to make transition with shadow mask
-//             // we will remove fade and add fade * shadowMask which mean we do a lerp with shadow mask
-//             shadow = shadow - fade + fade * shadowMask;
-//         }
-//
-//         // See comment in EvaluateBSDF_Punctual
-//         shadow = light.nonLightMappedOnly ? min(shadowMask, shadow) : shadow;
-//     #endif
-//
-//         shadow = lerp(shadowMask.SHADOW_TYPE_REPLICATE, shadow, light.shadowDimmer);
-//     }
-//
-//     // Transparents have no contact shadow information
-// #if !defined(_SURFACE_TYPE_TRANSPARENT) && !defined(LIGHT_EVALUATION_NO_CONTACT_SHADOWS)
-// {
-//     // In certain cases (like hair) we allow to force the contact shadow sample.
-//     #ifdef LIGHT_EVALUATION_CONTACT_SHADOW_DISABLE_NDOTL
-//         const bool allowContactShadow = true;
-//     #else
-//         const bool allowContactShadow = NdotL > 0.0;
-//     #endif
-//
-//     shadow = min(shadow, allowContactShadow ? GetContactShadow(lightLoopContext, light.contactShadowMask, light.isRayTracedContactShadow) : 1.0);
-// }
-// #endif
-//
-// #ifdef DEBUG_DISPLAY
-//     if (_DebugShadowMapMode == SHADOWMAPDEBUGMODE_SINGLE_SHADOW && light.shadowIndex == _DebugSingleShadowIndex)
-//         g_DebugShadowAttenuation = shadow;
-// #endif
-//
-//     return shadow;
-// #else // LIGHT_EVALUATION_NO_SHADOWS
-//     return 1.0;
-// #endif
-// }
-//
-// //-----------------------------------------------------------------------------
-// // Punctual Light evaluation helper
-// //-----------------------------------------------------------------------------
-//
-// #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Lighting/PunctualLightCommon.hlsl"
-//
-// float4 EvaluateCookie_Punctual(LightLoopContext lightLoopContext, LightData light,
-//                                float3 lightToSample, float lod = 0)
-// {
-// #ifndef LIGHT_EVALUATION_NO_COOKIE
-//     int lightType = light.lightType;
-//
-//     // Translate and rotate 'positionWS' into the light space.
-//     // 'light.right' and 'light.up' are pre-scaled on CPU.
-//     float3x3 lightToWorld = float3x3(light.right, light.up, light.forward);
-//     float3   positionLS   = mul(lightToSample, transpose(lightToWorld));
-//
-//     float4 cookie;
-//
-//     UNITY_BRANCH if (lightType == GPULIGHTTYPE_POINT)
-//     {
-//         cookie.rgb = SamplePointCookie(mul(lightToWorld, lightToSample), light.cookieScaleOffset);
-//         cookie.a   = 1;
-//     }
-//     else
-//     {
-//         // Perform orthographic or perspective projection.
-//         float  perspectiveZ = (lightType != GPULIGHTTYPE_PROJECTOR_BOX) ? positionLS.z : 1.0;
-//         float2 positionCS   = positionLS.xy / perspectiveZ;
-//
-//         float z = positionLS.z;
-//         float r = light.range;
-//
-//         // Box lights have no range attenuation, so we must clip manually.
-//         bool isInBounds = Max3(abs(positionCS.x), abs(positionCS.y), abs(z - 0.5 * r) - 0.5 * r + 1) <= light.boxLightSafeExtent;
-//         if (lightType != GPULIGHTTYPE_PROJECTOR_PYRAMID && lightType != GPULIGHTTYPE_PROJECTOR_BOX)
-//         {
-//             isInBounds = isInBounds && (dot(positionCS, positionCS) <= light.iesCut * light.iesCut);
-//         }
-//
-//         float2 positionNDC = positionCS * 0.5 + 0.5;
-//
-//         // Manually clamp to border (black).
-//         cookie.rgb = SampleCookie2D(positionNDC, light.cookieScaleOffset, lod);
-//         cookie.a   = isInBounds ? 1.0 : 0.0;
-//     }
-//
-// #else
-//
-//     // When we disable cookie, we must still perform border attenuation for pyramid and box
-//     // as by default we always bind a cookie white texture for them to mimic it.
-//     float4 cookie = float4(1.0, 1.0, 1.0, 1.0);
-//
-//     int lightType = light.lightType;
-//
-//     if (lightType == GPULIGHTTYPE_PROJECTOR_PYRAMID || lightType == GPULIGHTTYPE_PROJECTOR_BOX)
-//     {
-//         // Translate and rotate 'positionWS' into the light space.
-//         // 'light.right' and 'light.up' are pre-scaled on CPU.
-//         float3x3 lightToWorld = float3x3(light.right, light.up, light.forward);
-//         float3 positionLS     = mul(lightToSample, transpose(lightToWorld));
-//
-//         // Perform orthographic or perspective projection.
-//         float  perspectiveZ = (lightType != GPULIGHTTYPE_PROJECTOR_BOX) ? positionLS.z : 1.0;
-//         float2 positionCS   = positionLS.xy / perspectiveZ;
-//
-//         float z = positionLS.z;
-//         float r = light.range;
-//
-//         // Box lights have no range attenuation, so we must clip manually.
-//         bool isInBounds = Max3(abs(positionCS.x), abs(positionCS.y), abs(z - 0.5 * r) - 0.5 * r + 1) <= light.boxLightSafeExtent;
-//
-//         // Manually clamp to border (black).
-//         cookie.a = isInBounds ? 1.0 : 0.0;
-//     }
-// #endif
-//
-//     return cookie;
-// }
-//
-// // Returns unassociated (non-premultiplied) color with alpha (attenuation).
-// // The calling code must perform alpha-compositing.
-// // distances = {d, d^2, 1/d, d_proj}, where d_proj = dot(lightToSample, light.forward).
-// float4 EvaluateLight_Punctual(LightLoopContext lightLoopContext, PositionInputs posInput,
-//     LightData light, float3 L, float4 distances)
-// {
-//     float4 color = float4(light.color, 1.0);
-//
-//     color.a *= PunctualLightAttenuation(distances, light.rangeAttenuationScale, light.rangeAttenuationBias,
-//                                         light.angleScale, light.angleOffset);
-//
-// #ifndef LIGHT_EVALUATION_NO_HEIGHT_FOG
-//     // Height fog attenuation.
-//     // TODO: add an if()?
-//     {
-//         float cosZenithAngle = L.y;
-//         float fragmentHeight = posInput.positionWS.y;
-//         color.a *= TransmittanceHeightFog(_HeightFogBaseExtinction, _HeightFogBaseHeight,
-//                                           _HeightFogExponents, cosZenithAngle,
-//                                           fragmentHeight, distances.x);
-//     }
-// #endif
-//
-//     return color;
-// }
-//
-// // distances = {d, d^2, 1/d, d_proj}, where d_proj = dot(lightToSample, light.forward).
-// SHADOW_TYPE EvaluateShadow_Punctual(LightLoopContext lightLoopContext, PositionInputs posInput,
-//                                     LightData light, BuiltinData builtinData, float3 N, float3 L, float4 distances)
-// {
-// #ifndef LIGHT_EVALUATION_NO_SHADOWS
-//     float shadow        = 1.0;
-//     float shadowMask    = 1.0;
-//     float NdotL         = dot(N, L); // Disable contact shadow and shadow mask when facing away from light (i.e transmission)
-//
-// #ifdef SHADOWS_SHADOWMASK
-//     // shadowMaskSelector.x is -1 if there is no shadow mask
-//     // Note that we override shadow value (in case we don't have any dynamic shadow)
-//     shadow = shadowMask = (light.shadowMaskSelector.x >= 0.0 && NdotL > 0.0) ? dot(BUILTIN_DATA_SHADOW_MASK, light.shadowMaskSelector) : 1.0;
-// #endif
-//
-// #if defined(SCREEN_SPACE_SHADOWS_ON) && !defined(_SURFACE_TYPE_TRANSPARENT)
-//     if ((light.screenSpaceShadowIndex & SCREEN_SPACE_SHADOW_INDEX_MASK) != INVALID_SCREEN_SPACE_SHADOW)
-//     {
-//         shadow = GetScreenSpaceShadow(posInput, light.screenSpaceShadowIndex);
-//         shadow = lerp(shadowMask, shadow, light.shadowDimmer);
-//     }
-//     else
-// #endif
-//     if ((light.shadowIndex >= 0) && (light.shadowDimmer > 0))
-//     {
-//         shadow = GetPunctualShadowAttenuation(lightLoopContext.shadowContext, posInput.positionSS, posInput.positionWS, N, light.shadowIndex, L, distances.x, light.lightType == GPULIGHTTYPE_POINT, light.lightType != GPULIGHTTYPE_PROJECTOR_BOX);
-//
-// #ifdef SHADOWS_SHADOWMASK
-//         // Note: Legacy Unity have two shadow mask mode. ShadowMask (ShadowMask contain static objects shadow and ShadowMap contain only dynamic objects shadow, final result is the minimun of both value)
-//         // and ShadowMask_Distance (ShadowMask contain static objects shadow and ShadowMap contain everything and is blend with ShadowMask based on distance (Global distance setup in QualitySettigns)).
-//         // HDRenderPipeline change this behavior. Only ShadowMask mode is supported but we support both blend with distance AND minimun of both value. Distance is control by light.
-//         // The following code do this.
-//         // The min handle the case of having only dynamic objects in the ShadowMap
-//         // The second case for blend with distance is handled with ShadowDimmer. ShadowDimmer is define manually and by shadowDistance by light.
-//         // With distance, ShadowDimmer become one and only the ShadowMask appear, we get the blend with distance behavior.
-//         shadow = light.nonLightMappedOnly ? min(shadowMask, shadow) : shadow;
-//     #endif
-//
-//         shadow = lerp(shadowMask, shadow, light.shadowDimmer);
-//     }
-//
-//     // Transparents have no contact shadow information
-// #if !defined(_SURFACE_TYPE_TRANSPARENT) && !defined(LIGHT_EVALUATION_NO_CONTACT_SHADOWS)
-//     {
-//     // In certain cases (like hair) we allow to force the contact shadow sample.
-//     #ifdef LIGHT_EVALUATION_CONTACT_SHADOW_DISABLE_NDOTL
-//         const bool allowContactShadow = true;
-//     #else
-//         const bool allowContactShadow = NdotL > 0.0;
-//     #endif
-//
-//         shadow = min(shadow, allowContactShadow ? GetContactShadow(lightLoopContext, light.contactShadowMask, light.isRayTracedContactShadow) : 1.0);
-//     }
-// #endif
-//
-// #ifdef DEBUG_DISPLAY
-//     if (_DebugShadowMapMode == SHADOWMAPDEBUGMODE_SINGLE_SHADOW && light.shadowIndex == _DebugSingleShadowIndex)
-//         g_DebugShadowAttenuation = shadow;
-// #endif
-//     return shadow;
-// #else // LIGHT_EVALUATION_NO_SHADOWS
-//     return 1.0;
-// #endif
-// }
-//
-//
+
+SHADOW_TYPE EvaluateShadow_Directional( LightLoopContext lightLoopContext, PositionInputs posInput,
+                                        DirectionalLightData light, BuiltinData builtinData, float3 N)
+{
+#ifndef LIGHT_EVALUATION_NO_SHADOWS
+    SHADOW_TYPE shadow  = 1.0;
+    float shadowMask    = 1.0;
+    float NdotL         = dot(N, -light.forward); // Disable contact shadow and shadow mask when facing away from light (i.e transmission)
+
+    if ((light.shadowIndex >= 0) && (light.shadowDimmer > 0))
+    {
+        shadow = lightLoopContext.shadowValue;
+        shadow = lerp(shadowMask.SHADOW_TYPE_REPLICATE, shadow, light.shadowDimmer);
+    }
+
+    shadow = min(shadow, 1.0);
+
+    return shadow;
+#else // LIGHT_EVALUATION_NO_SHADOWS
+    return 1.0;
+#endif
+}
+
+//-----------------------------------------------------------------------------
+// Punctual Light evaluation helper
+//-----------------------------------------------------------------------------
+
+#include "../../Lighting/PunctualLightCommon.hlsl"
+
+// Returns unassociated (non-premultiplied) color with alpha (attenuation).
+// The calling code must perform alpha-compositing.
+// distances = {d, d^2, 1/d, d_proj}, where d_proj = dot(lightToSample, light.forward).
+float4 EvaluateLight_Punctual(LightLoopContext lightLoopContext, PositionInputs posInput,
+    LightData light, float3 L, float4 distances)
+{
+    float4 color = float4(light.color, 1.0);
+
+    color.a *= PunctualLightAttenuation(distances, light.rangeAttenuationScale, light.rangeAttenuationBias,
+                                        light.angleScale, light.angleOffset);
+
+    return color;
+}
+
+// distances = {d, d^2, 1/d, d_proj}, where d_proj = dot(lightToSample, light.forward).
+SHADOW_TYPE EvaluateShadow_Punctual(SamplerStruct samplerStruct, LightLoopContext lightLoopContext, PositionInputs posInput,
+                                    LightData light, BuiltinData builtinData, float3 N, float3 L, float4 distances)
+{
+#ifndef LIGHT_EVALUATION_NO_SHADOWS
+    float shadow        = 1.0;
+    float shadowMask    = 1.0;
+    float NdotL         = dot(N, L); // Disable contact shadow and shadow mask when facing away from light (i.e transmission)
+
+    if (light.shadowDataIndex >= 0)
+    {
+        shadow = GetPunctualShadowAttenuation(samplerStruct, lightLoopContext.shadowContext, posInput.positionSS, posInput.positionWS, N,
+            light.shadowDataIndex, L, distances.x, light.lightType == GPULIGHTTYPE_POINT, light.lightType != GPULIGHTTYPE_PROJECTOR_BOX);
+    }
+
+    return shadow;
+#else // LIGHT_EVALUATION_NO_SHADOWS
+    return 1.0;
+#endif
+}
+
+
 // SHADOW_TYPE EvaluateShadow_RectArea( LightLoopContext lightLoopContext, PositionInputs posInput,
 //                                      LightData light, BuiltinData builtinData, float3 N, float3 L, float dist)
 // {
