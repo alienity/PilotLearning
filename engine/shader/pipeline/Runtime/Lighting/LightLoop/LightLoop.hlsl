@@ -30,11 +30,10 @@ void LightLoop(
     context.shadowContext    = InitShadowContext(frameUniform);
     context.shadowValue      = 1;
     context.sampleReflection = 0;
-    context.splineVisibility = -1;
 #ifdef APPLY_FOG_ON_SKY_REFLECTIONS
     context.positionWS       = posInput.positionWS;
 #endif
-
+    
     // First of all we compute the shadow value of the directional light to reduce the VGPR pressure
     if (featureFlags & LIGHTFEATUREFLAGS_DIRECTIONAL)
     {
@@ -57,7 +56,7 @@ void LightLoop(
             }
         }
     }
-
+    
     // This struct is define in the material. the Lightloop must not access it
     // PostEvaluateBSDF call at the end will convert Lighting to diffuse and specular lighting
     AggregateLighting aggregateLighting;
@@ -66,7 +65,7 @@ void LightLoop(
     if (featureFlags & LIGHTFEATUREFLAGS_PUNCTUAL)
     {
         uint lightCount, lightStart;
-
+    
         lightCount = frameUniform.lightDataUniform._PunctualLightCount;
         lightStart = 0;
         
@@ -77,16 +76,16 @@ void LightLoop(
         // Note that the above is valid only if wave intriniscs are supported.
         uint v_lightListOffset = 0;
         uint v_lightIdx = lightStart;
-
+    
         while (v_lightListOffset < lightCount)
         {
             v_lightIdx = lightStart + v_lightListOffset;
             uint s_lightIdx = v_lightIdx;
             if (s_lightIdx == -1)
                 break;
-
+    
             LightData s_lightData = frameUniform.lightDataUniform.lightData[s_lightIdx];
-
+    
             // If current scalar and vector light index match, we process the light. The v_lightListOffset for current thread is increased.
             // Note that the following should really be ==, however, since helper lanes are not considered by WaveActiveMin, such helper lanes could
             // end up with a unique v_lightIdx value that is smaller than s_lightIdx hence being stuck in a loop. All the active lanes will not have this problem.
@@ -121,6 +120,7 @@ void LightLoop(
     // Also Apply indiret diffuse (GI)
     // PostEvaluateBSDF will perform any operation wanted by the material and sum everything into diffuseLighting and specularLighting
     PostEvaluateBSDF(context, V, posInput, preLightData, bsdfData, builtinData, aggregateLighting, lightLoopOutput);
+    
 }
 
 #endif

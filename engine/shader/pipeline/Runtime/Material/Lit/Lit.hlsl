@@ -1988,12 +1988,12 @@ void PostEvaluateBSDF(  LightLoopContext lightLoopContext,
     // ApplyAmbientOcclusionFactor(aoFactor, builtinData, lighting);
 
     // Subsurface scattering mode
-    // float3 modifiedDiffuseColor = GetModifiedDiffuseColorForSSS(bsdfData);
+    float3 modifiedDiffuseColor = GetModifiedDiffuseColorForSSS(bsdfData);
 
-    // // Apply the albedo to the direct diffuse lighting (only once). The indirect (baked)
-    // // diffuse lighting has already multiply the albedo in ModifyBakedDiffuseLighting().
-    // // Note: In deferred bakeDiffuseLighting also contain emissive and in this case emissiveColor is 0
-    // lightLoopOutput.diffuseLighting = modifiedDiffuseColor * lighting.direct.diffuse + builtinData.bakeDiffuseLighting + builtinData.emissiveColor;
+    // Apply the albedo to the direct diffuse lighting (only once). The indirect (baked)
+    // diffuse lighting has already multiply the albedo in ModifyBakedDiffuseLighting().
+    // Note: In deferred bakeDiffuseLighting also contain emissive and in this case emissiveColor is 0
+    lightLoopOutput.diffuseLighting = modifiedDiffuseColor * lighting.direct.diffuse + builtinData.bakeDiffuseLighting + builtinData.emissiveColor;
 
     // If refraction is enable we use the transmittanceMask to lerp between current diffuse lighting and refraction value
     // Physically speaking, transmittanceMask should be 1, but for artistic reasons, we let the value vary

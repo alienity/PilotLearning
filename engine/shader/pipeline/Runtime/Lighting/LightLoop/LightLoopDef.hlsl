@@ -29,7 +29,6 @@ struct LightLoopContext
     HDShadowContext shadowContext;
 
     SHADOW_TYPE shadowValue;    // Stores the value of the cascade shadow map
-    float splineVisibility;      // Stores the value of the cascade shadow map (unbiased for splines)
 };
 
 // LightLoopOutput is the output of the LightLoop fuction call.
@@ -85,10 +84,10 @@ EnvLightData InitSkyEnvLightData(int envIndex)
     // 31 bit index, 1 bit cache type
     output.envIndex = envIndex;
 
-    output.influenceForward = float3(0.0, 0.0, 1.0);
-    output.influenceUp = float3(0.0, 1.0, 0.0);
-    output.influenceRight = float3(1.0, 0.0, 0.0);
-    output.influencePositionRWS = float3(0.0, 0.0, 0.0);
+    output.influenceForward = float4(0.0, 0.0, 1.0, 0);
+    output.influenceUp = float4(0.0, 1.0, 0.0, 0);
+    output.influenceRight = float4(1.0, 0.0, 0.0, 0);
+    output.influencePositionRWS = float4(0.0, 0.0, 0.0, 0);
 
     output.weight = 1.0;
     output.multiplier = 0.0;
@@ -96,9 +95,9 @@ EnvLightData InitSkyEnvLightData(int envIndex)
     output.distanceBasedRoughness = 0.0;
 
     // proxy
-    output.proxyForward = float3(0.0, 0.0, 1.0);
-    output.proxyUp = float3(0.0, 1.0, 0.0);
-    output.proxyRight = float3(1.0, 0.0, 0.0);
+    output.proxyForward = float4(0.0, 0.0, 1.0, 0);
+    output.proxyUp = float4(0.0, 1.0, 0.0, 0);
+    output.proxyRight = float4(1.0, 0.0, 0.0, 0);
     output.minProjectionDistance = 65504.0f;
 
     return output;

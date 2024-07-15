@@ -28,17 +28,17 @@ namespace MoYu
             HLSL::EnvLightData m_EnvLightData{};
             m_EnvLightData.lightLayers = 0xFFFFFFFF;
             m_EnvLightData.influenceShapeType = ENVSHAPETYPE_SKY;
-            m_EnvLightData.influenceForward = glm::float3(0.0, 0.0, -1.0);
-            m_EnvLightData.influenceUp = glm::float3(0.0, 1.0, 0.0);
-            m_EnvLightData.influenceRight = glm::float3(1.0, 0.0, 0.0);
-            m_EnvLightData.influencePositionRWS = glm::float3(0.0, 0.0, 0.0);
+            m_EnvLightData.influenceForward = glm::float4(0.0, 0.0, -1.0, 0);
+            m_EnvLightData.influenceUp = glm::float4(0.0, 1.0, 0.0, 0);
+            m_EnvLightData.influenceRight = glm::float4(1.0, 0.0, 0.0, 0);
+            m_EnvLightData.influencePositionRWS = glm::float4(0.0, 0.0, 0.0, 0);
             m_EnvLightData.weight = 1.0f;
             m_EnvLightData.multiplier = 0.0f;
             m_EnvLightData.roughReflections = 1.0f;
             m_EnvLightData.distanceBasedRoughness = 0.0f;
-            m_EnvLightData.proxyForward = glm::float3(0.0, 0.0, -1.0);
-            m_EnvLightData.proxyUp = glm::float3(0.0, 1.0, 0.0);
-            m_EnvLightData.proxyRight = glm::float3(1.0, 0.0, 0.0);
+            m_EnvLightData.proxyForward = glm::float4(0.0, 0.0, -1.0, 0);
+            m_EnvLightData.proxyUp = glm::float4(0.0, 1.0, 0.0, 0);
+            m_EnvLightData.proxyRight = glm::float4(1.0, 0.0, 0.0, 0);
             m_EnvLightData.minProjectionDistance = 65504.0f;
 
             _lightDataUniform.envData = m_EnvLightData;
@@ -80,6 +80,9 @@ namespace MoYu
             curLightData.diffuseDimmer = 1.0f;
             curLightData.specularDimmer = 1.0f;
             curLightData.size = glm::float4(radius * radius, 0, 0, 0);
+            curLightData.shadowTint = glm::float3(0, 0, 0);
+            curLightData.shadowDimmer = 1.0f;
+            curLightData.penumbraTint = 0;
 
             _lightDataUniform.lightData[puntualLightCount] = curLightData;
             puntualLightCount += 1;
@@ -167,6 +170,9 @@ namespace MoYu
             curLightData.diffuseDimmer = 1.0f;
             curLightData.specularDimmer = 1.0f;
             curLightData.size = glm::float4(radius * radius, 0, 0, 0);
+            curLightData.shadowTint = glm::float3(0, 0, 0);
+            curLightData.shadowDimmer = 1.0f;
+            curLightData.penumbraTint = 0;
 
             _lightDataUniform.lightData[puntualLightCount] = curLightData;
             puntualLightCount += 1;
@@ -196,6 +202,7 @@ namespace MoYu
             directionalLightData.color = glm::float3(color.r, color.g, color.b);
             directionalLightData.diffuseDimmer = 1.0f;
             directionalLightData.specularDimmer = 1.0f;
+            directionalLightData.shadowDimmer = 1.0f;
 
             _lightDataUniform.directionalLightData = directionalLightData;
 
@@ -372,7 +379,7 @@ namespace MoYu
                         0);
                 }
             }
-
+             
             for (size_t i = 0; i < m_SpotShadowmaps.size(); i++)
             {
                 RHI::D3D12Texture* pShadowmapDepthTex = registry->GetD3D12Texture(spotShadowmapHandles[i]);

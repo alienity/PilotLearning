@@ -50,12 +50,12 @@ DirectLighting ShadeSurface_Directional(SamplerStruct sampleStruct, LightLoopCon
         float4 lightColor = EvaluateLight_Directional(lightLoopContext, posInput, light);
         lightColor.rgb *= lightColor.a; // Composite
 
-        {
-            SHADOW_TYPE shadow = EvaluateShadow_Directional(lightLoopContext, posInput, light, builtinData, GetNormalForShadowBias(bsdfData));
-            float NdotL  = dot(bsdfData.normalWS, L); // No microshadowing when facing away from light (use for thin transmission as well)
-            shadow *= NdotL >= 0.0 ? ComputeMicroShadowing(GetAmbientOcclusionForMicroShadowing(bsdfData), NdotL, 1) : 1.0;
-            lightColor.rgb *= ComputeShadowColor(shadow, light.shadowTint, light.penumbraTint);
-        }
+        // {
+        //     SHADOW_TYPE shadow = EvaluateShadow_Directional(lightLoopContext, posInput, light, builtinData, GetNormalForShadowBias(bsdfData));
+        //     float NdotL  = dot(bsdfData.normalWS, L); // No microshadowing when facing away from light (use for thin transmission as well)
+        //     shadow *= NdotL >= 0.0 ? ComputeMicroShadowing(GetAmbientOcclusionForMicroShadowing(bsdfData), NdotL, 1) : 1.0;
+        //     lightColor.rgb *= ComputeShadowColor(shadow, light.shadowTint, light.penumbraTint);
+        // }
 
         // Simulate a sphere/disk light with this hack.
         // Note that it is not correct with our precomputation of PartLambdaV
@@ -85,13 +85,13 @@ DirectLighting ShadeSurface_Punctual(SamplerStruct samplerStruct, LightLoopConte
     float3 L;
     float4 distances; // {d, d^2, 1/d, d_proj}
     GetPunctualLightVectors(posInput.positionWS, light, L, distances);
-
+    
     // Is it worth evaluating the light?
     if ((light.lightDimmer > 0) && IsNonZeroBSDF(V, L, preLightData, bsdfData))
     {
         float4 lightColor = EvaluateLight_Punctual(lightLoopContext, posInput, light, L, distances);
         lightColor.rgb *= lightColor.a; // Composite
-
+    
         {
             PositionInputs shadowPositionInputs = posInput;
             
@@ -99,13 +99,13 @@ DirectLighting ShadeSurface_Punctual(SamplerStruct samplerStruct, LightLoopConte
             SHADOW_TYPE shadow = EvaluateShadow_Punctual(samplerStruct, lightLoopContext, shadowPositionInputs, light, builtinData, GetNormalForShadowBias(bsdfData), L, distances);
             lightColor.rgb *= ComputeShadowColor(shadow, light.shadowTint, light.penumbraTint);
         }
-
+    
         // Simulate a sphere/disk light with this hack.
         // Note that it is not correct with our precomputation of PartLambdaV
         // (means if we disable the optimization it will not have the
         // same result) but we don't care as it is a hack anyway.
         ClampRoughness(preLightData, bsdfData, light.minRoughness);
-
+    
         lighting = ShadeSurface_Infinitesimal(preLightData, bsdfData, V, L, lightColor.rgb,
                                               light.diffuseDimmer, light.specularDimmer);
     }

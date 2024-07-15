@@ -79,20 +79,20 @@ struct EnvLightData
     float minProjectionDistance;
     float3 proxyPositionRWS;
     
-    float3 proxyForward;
-    float3 proxyUp;
-    float3 proxyRight;
-    float3 influencePositionRWS;
+    float4 proxyForward;
+    float4 proxyUp;
+    float4 proxyRight;
+    float4 influencePositionRWS;
     
-    float3 influenceForward;
-    float3 influenceUp;
-    float3 influenceRight;
-    float3 influenceExtents;
+    float4 influenceForward;
+    float4 influenceUp;
+    float4 influenceRight;
+    float4 influenceExtents;
     
-    float3 blendDistancePositive;
-    float3 blendDistanceNegative;
-    float3 blendNormalDistancePositive;
-    float3 blendNormalDistanceNegative;
+    float4 blendDistancePositive;
+    float4 blendDistanceNegative;
+    float4 blendNormalDistancePositive;
+    float4 blendNormalDistanceNegative;
     
     float3 boxSideFadePositive;
     float weight;
