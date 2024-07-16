@@ -839,13 +839,13 @@ uint DecodeFromGBuffer(
         // The neutral value of subsurfaceMask is 0 (handled by ZERO_INITIALIZE).
         if (HasFlag(pixelFeatureFlags, MATERIALFEATUREFLAGS_LIT_SUBSURFACE_SCATTERING))
         {
-            // FillMaterialSSS(sssData.diffusionProfileIndex, sssData.subsurfaceMask, bsdfData);
+            FillMaterialSSS(sssData.diffusionProfileIndex, sssData.subsurfaceMask, bsdfData);
         }
     
         // The neutral value of thickness and transmittance is 0 (handled by ZERO_INITIALIZE).
         if (HasFlag(pixelFeatureFlags, MATERIALFEATUREFLAGS_LIT_TRANSMISSION))
         {
-            // FillMaterialTransmission(sssData.diffusionProfileIndex, inGBuffer2.g, transmissionMask, bsdfData);
+            FillMaterialTransmission(sssData.diffusionProfileIndex, inGBuffer2.g, transmissionMask, bsdfData);
         }
     }
     else
@@ -1052,7 +1052,7 @@ PreLightData GetPreLightData(
     // Handle IBL + area light + multiscattering.
     // Note: use the not modified by anisotropy iblPerceptualRoughness here.
     float specularReflectivity = 0.0f;
-    Texture2D<float4> preIntegratedFGD_GGXDisneyDiffuse = ResourceFromHeapIndex(frameUniform.iblUniform._PreIntegratedFGD_GGXDisneyDiffuseIndex);
+    Texture2D<float4> preIntegratedFGD_GGXDisneyDiffuse = ResourceDescriptorHeap[frameUniform.iblUniform._PreIntegratedFGD_GGXDisneyDiffuseIndex];
     SamplerState sLinearClampSampler = samplerStruct.SLinearClampSampler;
     GetPreIntegratedFGDGGXAndDisneyDiffuse(preIntegratedFGD_GGXDisneyDiffuse, sLinearClampSampler,
         clampedNdotV, preLightData.iblPerceptualRoughness, bsdfData.fresnel0, preLightData.specularFGD, preLightData.diffuseFGD, specularReflectivity);

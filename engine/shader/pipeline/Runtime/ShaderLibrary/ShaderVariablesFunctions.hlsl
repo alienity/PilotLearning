@@ -101,7 +101,7 @@ float2 GetNormalizedFullScreenTriangleTexCoord(FrameUniforms frameUniform, uint 
 float4 SampleSkyTexture(ShaderVarablesData shaderVar, float3 texCoord, float lod)
 {
     uint _SkyTextureIndex = shaderVar.frameUniforms.baseUniform._SkyTextureIndex;
-    TextureCube<float4> _SkyTexture = ResourceFromHeapIndex(_SkyTextureIndex);
+    TextureCube<float4> _SkyTexture = ResourceDescriptorHeap[_SkyTextureIndex];
     SamplerState _TrilinearClampSampler = shaderVar.samplerStructs.STrilinearClampSampler;
     // return SAMPLE_TEXTURECUBE_ARRAY_LOD(_SkyTexture, _TrilinearClampSampler, texCoord, sliceIndex, lod);
     return SAMPLE_TEXTURECUBE_LOD(_SkyTexture, _TrilinearClampSampler, texCoord, lod);

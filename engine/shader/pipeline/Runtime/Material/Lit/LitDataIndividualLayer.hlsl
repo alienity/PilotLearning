@@ -117,7 +117,7 @@ float3 ADD_IDX(GetNormalTS)(
         // Note: There is no such a thing like triplanar with object space normal, so we call directly 2D function
         #ifdef SURFACE_GRADIENT
         // /We need to decompress the normal ourselve here as UnpackNormalRGB will return a surface gradient
-        TEXTURE2D(_NormalMapOS) = ResourceFromHeapIndex(matProperties._NormalMapOSIndex);
+        TEXTURE2D(_NormalMapOS) = ResourceDescriptorHeap[matProperties._NormalMapOSIndex];
         SAMPLER(sampler_NormalMapOS) = samplerStruct.SLinearClampSampler;
         float3 normalOS = SAMPLE_TEXTURE2D(ADD_IDX(_NormalMapOS), sampler_NormalMapOS, ADD_IDX(layerTexCoord.base).uv).xyz * 2.0 - 1.0;
         // no need to renormalize normalOS for SurfaceGradientFromPerturbedNormal
@@ -217,7 +217,7 @@ float ADD_IDX(GetSurfaceData)(
     detailNormalTS = SAMPLE_UVMAPPING_NORMALMAP_AG(ADD_IDX(_DetailMap), SAMPLER_DETAILMAP_IDX, ADD_IDX(layerTexCoord.details), ADD_IDX(_DetailNormalScale));
 #endif
 
-    TEXTURE2D(_BaseColorMap) = ResourceFromHeapIndex(matProperties._BaseColorMapIndex);
+    TEXTURE2D(_BaseColorMap) = ResourceDescriptorHeap[matProperties._BaseColorMapIndex];
     SAMPLER(sampler_BaseColorMap) = samplerStruct.SLinearClampSampler;
     float4 color = SAMPLE_UVMAPPING_TEXTURE2D(ADD_IDX(_BaseColorMap), ADD_ZERO_IDX(sampler_BaseColorMap), ADD_IDX(layerTexCoord.base)).rgba * ADD_IDX(matProperties._BaseColor).rgba;
     surfaceData.baseColor = color.rgb;
@@ -245,7 +245,7 @@ float ADD_IDX(GetSurfaceData)(
     bentNormalTS = ADD_IDX(GetBentNormalTS)(frameUniform, renderData, matProperties, samplerStruct, input, layerTexCoord, normalTS, detailNormalTS, detailMask);
 
 #if defined(_MASKMAP_IDX)
-    TEXTURE2D(_MaskMap) = ResourceFromHeapIndex(matProperties._MaskMapIndex);
+    TEXTURE2D(_MaskMap) = ResourceDescriptorHeap[matProperties._MaskMapIndex];
     SAMPLER(sampler_MaskMap) = samplerStruct.SLinearClampSampler;
     surfaceData.perceptualSmoothness = SAMPLE_UVMAPPING_TEXTURE2D(ADD_IDX(_MaskMap), sampler_MaskMap, ADD_IDX(layerTexCoord.base)).a;
     surfaceData.perceptualSmoothness = lerp(ADD_IDX(matProperties._SmoothnessRemapMin), ADD_IDX(matProperties._SmoothnessRemapMax), surfaceData.perceptualSmoothness);
@@ -262,15 +262,15 @@ float ADD_IDX(GetSurfaceData)(
 #endif
 
     // MaskMap is RGBA: Metallic, Ambient Occlusion (Optional), detail Mask (Optional), Smoothness
-#ifdef _MASKMAP_IDX
-    surfaceData.metallic = SAMPLE_UVMAPPING_TEXTURE2D(ADD_IDX(_MaskMap), sampler_MaskMap, ADD_IDX(layerTexCoord.base)).r;
-    surfaceData.metallic = lerp(ADD_IDX(matProperties._MetallicRemapMin), ADD_IDX(matProperties._MetallicRemapMax), surfaceData.metallic);
-    surfaceData.ambientOcclusion = SAMPLE_UVMAPPING_TEXTURE2D(ADD_IDX(_MaskMap), sampler_MaskMap, ADD_IDX(layerTexCoord.base)).g;
-    surfaceData.ambientOcclusion = lerp(ADD_IDX(matProperties._AORemapMin), ADD_IDX(matProperties._AORemapMax), surfaceData.ambientOcclusion);
-#else
+// #ifdef _MASKMAP_IDX
+//     surfaceData.metallic = SAMPLE_UVMAPPING_TEXTURE2D(ADD_IDX(_MaskMap), sampler_MaskMap, ADD_IDX(layerTexCoord.base)).r;
+//     surfaceData.metallic = lerp(ADD_IDX(matProperties._MetallicRemapMin), ADD_IDX(matProperties._MetallicRemapMax), surfaceData.metallic);
+//     surfaceData.ambientOcclusion = SAMPLE_UVMAPPING_TEXTURE2D(ADD_IDX(_MaskMap), sampler_MaskMap, ADD_IDX(layerTexCoord.base)).g;
+//     surfaceData.ambientOcclusion = lerp(ADD_IDX(matProperties._AORemapMin), ADD_IDX(matProperties._AORemapMax), surfaceData.ambientOcclusion);
+// #else
     surfaceData.metallic = ADD_IDX(matProperties._Metallic);
     surfaceData.ambientOcclusion = 1.0;
-#endif
+// #endif
 
     surfaceData.diffusionProfileHash = asuint(ADD_IDX(matProperties._DiffusionProfileHash));
     surfaceData.subsurfaceMask = ADD_IDX(matProperties._SubsurfaceMask);

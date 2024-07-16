@@ -19,8 +19,6 @@
 
 // ----------------------------------------------------------------------------
 
-#define ResourceFromHeapIndex(TexIndex) ResourceDescriptorHeap[TexIndex]
-
 // struct UnityPerDraw
 // {
 //     float4x4 unity_ObjectToWorld;
@@ -157,7 +155,7 @@ TEXTURE2D(_PrevExposureTexture);
 float LoadCameraDepth(ShaderVarablesData shaderVar, uint2 pixelCoords)
 {
     int cameraDepthTextureIndex = shaderVar.frameUniforms.baseUniform._CameraDepthTextureIndex;
-    Texture2D<float> _CameraDepthTexture = ResourceFromHeapIndex(cameraDepthTextureIndex);
+    Texture2D<float> _CameraDepthTexture = ResourceDescriptorHeap[cameraDepthTextureIndex];
     return LOAD_TEXTURE2D_LOD(_CameraDepthTexture, pixelCoords, 0).r;
 }
 
@@ -170,7 +168,7 @@ float SampleCameraDepth(ShaderVarablesData shaderVar, float2 uv)
 float3 LoadCameraColor(ShaderVarablesData shaderVar, uint2 pixelCoords, uint lod)
 {
     int colorPyramidTextureIndex = shaderVar.frameUniforms.baseUniform._ColorPyramidTextureIndex;
-    Texture2D<float4> _ColorPyramidTexture = ResourceFromHeapIndex(colorPyramidTextureIndex);
+    Texture2D<float4> _ColorPyramidTexture = ResourceDescriptorHeap[colorPyramidTextureIndex];
     return LOAD_TEXTURE2D_LOD(_ColorPyramidTexture, pixelCoords, lod).rgb;
 }
 
@@ -179,7 +177,7 @@ float3 SampleCameraColor(ShaderVarablesData shaderVar, float2 uv, float lod)
     int colorPyramidTextureIndex = shaderVar.frameUniforms.baseUniform._ColorPyramidTextureIndex;
     SamplerState _TrilinearClampSampler = shaderVar.samplerStructs.STrilinearClampSampler;
     float4 _RTHandleScaleHistory = shaderVar.frameUniforms.baseUniform._RTHandleScaleHistory;
-    Texture2D<float4> _ColorPyramidTexture = ResourceFromHeapIndex(colorPyramidTextureIndex);
+    Texture2D<float4> _ColorPyramidTexture = ResourceDescriptorHeap[colorPyramidTextureIndex];
     return SAMPLE_TEXTURE2D_LOD(_ColorPyramidTexture, _TrilinearClampSampler, uv * _RTHandleScaleHistory.xy, lod).rgb;
 }
 
@@ -196,7 +194,7 @@ float3 SampleCameraColor(ShaderVarablesData shaderVar, float2 uv)
 float4 SampleCustomColor(ShaderVarablesData shaderVar, float2 uv)
 {
     int customColorTextureIndex = shaderVar.frameUniforms.baseUniform._CustomColorTextureIndex;
-    Texture2D<float4> _CustomColorTexture = ResourceFromHeapIndex(customColorTextureIndex);
+    Texture2D<float4> _CustomColorTexture = ResourceDescriptorHeap[customColorTextureIndex];
     SamplerState _TrilinearClampSampler = shaderVar.samplerStructs.STrilinearClampSampler;
     float4 _RTHandleScale = shaderVar.frameUniforms.baseUniform._RTHandleScale;
     return SAMPLE_TEXTURE2D_LOD(_CustomColorTexture, _TrilinearClampSampler, uv * _RTHandleScale.xy, 0);
@@ -205,14 +203,14 @@ float4 SampleCustomColor(ShaderVarablesData shaderVar, float2 uv)
 float4 LoadCustomColor(ShaderVarablesData shaderVar, uint2 pixelCoords)
 {
     int customColorTextureIndex = shaderVar.frameUniforms.baseUniform._CustomColorTextureIndex;
-    Texture2D<float4> _CustomColorTexture = ResourceFromHeapIndex(customColorTextureIndex);
+    Texture2D<float4> _CustomColorTexture = ResourceDescriptorHeap[customColorTextureIndex];
     return LOAD_TEXTURE2D_LOD(_CustomColorTexture, pixelCoords, 0);
 }
 
 float LoadCustomDepth(ShaderVarablesData shaderVar, uint2 pixelCoords)
 {
     int customDepthTextureIndex = shaderVar.frameUniforms.baseUniform._CustomDepthTextureIndex;
-    Texture2D<float4> _CustomDepthTexture = ResourceFromHeapIndex(customDepthTextureIndex);
+    Texture2D<float4> _CustomDepthTexture = ResourceDescriptorHeap[customDepthTextureIndex];
     return LOAD_TEXTURE2D_LOD(_CustomDepthTexture, pixelCoords, 0).r;
 }
 

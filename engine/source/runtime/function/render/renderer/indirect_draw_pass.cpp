@@ -145,8 +145,7 @@ namespace MoYu
             {
                 graphicContext->ClearRenderTarget(renderTargetView, depthStencilView);
             }
-            
-
+             
             graphicContext->SetRootSignature(pIndirectDrawSignature.get());
             graphicContext->SetPipelineState(pIndirectDrawPSO.get());
 
@@ -154,7 +153,7 @@ namespace MoYu
             graphicContext->SetConstant(0, 2, registry->GetD3D12Buffer(propertiesPerMaterialHandle)->GetDefaultSRV()->GetIndex());
             graphicContext->SetConstant(0, 3, registry->GetD3D12Buffer(perframeBufferHandle)->GetDefaultCBV()->GetIndex());
 
-            auto pIndirectCommandBuffer = registry->GetD3D12Buffer(opaqueDrawHandle);
+            RHI::D3D12Buffer* pIndirectCommandBuffer = registry->GetD3D12Buffer(opaqueDrawHandle);
 
             graphicContext->ExecuteIndirect(pIndirectDrawCommandSignature.get(),
                                             pIndirectCommandBuffer,
