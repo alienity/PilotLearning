@@ -194,9 +194,10 @@ int EvalShadow_GetSplitIndex(HDShadowContext shadowContext, int index, float3 po
         int sizePowerOffset = shadowSizePower[i] - shadowSizePower[currentLevel];
         int powerScale = pow(2, sizePowerOffset);
         float2 newShadowBoudns = shadowBoudns * powerScale;
-        if (all(maxDistance < shadowData.shadowBounds.xy))
+        if (all(maxDistance < newShadowBoudns.xy))
         {
             cascadeLevel = i - currentLevel;
+            break;
         }
     }
     return cascadeLevel;
