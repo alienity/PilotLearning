@@ -238,7 +238,7 @@ float EvalShadow_CascadedDepth_Dither_SplitIndex(inout HDShadowContext shadowCon
         positionWS += normalBias;
         float3 posTC = EvalShadow_GetTexcoordsAtlas(sd, _CascadeShadowAtlasSize.zw, positionWS, false);
         Texture2D<float4> tex = ResourceDescriptorHeap[sd.shadowmapIndex];
-        shadow = DIRECTIONAL_FILTER_ALGORITHM(sd, positionSS, posTC, tex, samp, FIXED_UNIFORM_BIAS);
+        shadow = DIRECTIONAL_FILTER_ALGORITHM(sd, positionSS, float3(posTC.x, 1-posTC.y, posTC.z), tex, samp, FIXED_UNIFORM_BIAS);
     }
 
     return shadow;
