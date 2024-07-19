@@ -110,7 +110,9 @@ float3 ADD_IDX(GetNormalTS)(
 
 #ifdef _NORMALMAP_IDX
     #ifdef _NORMALMAP_TANGENT_SPACE_IDX
-        normalTS = SAMPLE_UVMAPPING_NORMALMAP(ADD_IDX(_NormalMap), SAMPLER_NORMALMAP_IDX, ADD_IDX(layerTexCoord.base), ADD_IDX(_NormalScale));
+        TEXTURE2D(_NormalMap) = ResourceDescriptorHeap[matProperties._NormalMapIndex];
+        SAMPLER(sampler_NormalMap) = samplerStruct.SLinearClampSampler;
+        normalTS = SAMPLE_UVMAPPING_NORMALMAP(ADD_IDX(_NormalMap), sampler_NormalMap, ADD_IDX(layerTexCoord.base), ADD_IDX(matProperties._NormalScale));
     #else // Object space
         // We forbid scale in case of object space as it make no sense
         // To be able to combine object space normal with detail map then later we will re-transform it to world space.

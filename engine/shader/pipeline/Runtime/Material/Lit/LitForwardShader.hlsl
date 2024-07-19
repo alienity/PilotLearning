@@ -26,8 +26,10 @@
 #define SCREEN_SPACE_SHADOWS_OFF
 #define SHADERPASS SHADERPASS_FORWARD
 #define _NORMALMAP
+#define _NORMALMAP_TANGENT_SPACE
 #define _MASKMAP
 #define SHADOW_LOW
+#define UNITY_NO_DXT5nm
 
 #include "../../Material/Material.hlsl"
 #include "../../Lighting/Lighting.hlsl"
