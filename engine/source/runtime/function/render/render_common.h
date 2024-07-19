@@ -697,6 +697,7 @@ namespace MoYu
     extern SceneImage DefaultSceneImageRed;
     extern SceneImage DefaultSceneImageGreen;
     extern SceneImage DefaultSceneImageBlue;
+    extern SceneImage DefaultSceneImageBump;
 
     extern MaterialImage DefaultMaterialImageWhite;
     extern MaterialImage DefaultMaterialImageBlack;
@@ -704,16 +705,17 @@ namespace MoYu
     extern MaterialImage DefaultMaterialImageRed;
     extern MaterialImage DefaultMaterialImageGreen;
     extern MaterialImage DefaultMaterialImageBlue;
+    extern MaterialImage DefaultMaterialImageBump;
 
     struct StandardLightMaterial
     {
         //=======================Texture=======================
         MaterialImage _BaseColorMap{ DefaultMaterialImageWhite }; // white
         MaterialImage _MaskMap{ DefaultMaterialImageBlack }; // MaskMap is RGBA: Metallic, Ambient Occlusion (Optional), detail Mask (Optional), Smoothness
-        MaterialImage _NormalMap{ DefaultMaterialImageGrey }; // bump. Tangent space normal map
-        MaterialImage _NormalMapOS{ DefaultMaterialImageWhite }; // white. Object space normal map - no good default value    
-        MaterialImage _BentNormalMap{ DefaultMaterialImageGrey }; // bump. Tangent space normal map
-        MaterialImage _BentNormalMapOS{ DefaultMaterialImageWhite }; // white. Object space normal map - no good default value
+        MaterialImage _NormalMap{ DefaultMaterialImageBump }; // bump. Tangent space normal map
+        MaterialImage _NormalMapOS{ DefaultMaterialImageBump }; // white. Object space normal map - no good default value    
+        MaterialImage _BentNormalMap{ DefaultMaterialImageBump }; // bump. Tangent space normal map
+        MaterialImage _BentNormalMapOS{ DefaultMaterialImageBump }; // white. Object space normal map - no good default value
         MaterialImage _HeightMap{ DefaultMaterialImageBlack }; // black
         MaterialImage _DetailMap{ DefaultMaterialImageGrey }; // linearGrey
         MaterialImage _TangentMap{ DefaultMaterialImageGrey }; // bump

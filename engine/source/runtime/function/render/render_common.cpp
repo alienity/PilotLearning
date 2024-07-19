@@ -9,6 +9,7 @@ namespace MoYu
     SceneImage DefaultSceneImageRed  { true, false, 1, "asset/texture/default/red.tga"};
     SceneImage DefaultSceneImageGreen{ true, false, 1, "asset/texture/default/green.tga"};
     SceneImage DefaultSceneImageBlue { true, false, 1, "asset/texture/default/blue.tga"};
+    SceneImage DefaultSceneImageBump { false, false, 1, "asset/texture/default/bump.tga" };
 
     MaterialImage DefaultMaterialImageWhite{ DefaultSceneImageWhite, glm::float2(1,1) };
     MaterialImage DefaultMaterialImageBlack{ DefaultSceneImageBlack, glm::float2(1,1) };
@@ -16,6 +17,7 @@ namespace MoYu
     MaterialImage DefaultMaterialImageRed{ DefaultSceneImageRed, glm::float2(1,1) };
     MaterialImage DefaultMaterialImageGreen{ DefaultSceneImageGreen, glm::float2(1,1) };
     MaterialImage DefaultMaterialImageBlue{ DefaultSceneImageBlue, glm::float2(1,1) };
+    MaterialImage DefaultMaterialImageBump{ DefaultSceneImageBump, glm::float2(1,1) };
 
     SceneCommonIdentifier _UndefCommonIdentifier {K_Invalid_Object_Id, K_Invalid_Component_Id};
 

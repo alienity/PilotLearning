@@ -27,6 +27,7 @@
 #define SHADERPASS SHADERPASS_FORWARD
 #define _NORMALMAP
 #define _MASKMAP
+#define SHADOW_LOW
 
 #include "../../Material/Material.hlsl"
 #include "../../Lighting/Lighting.hlsl"

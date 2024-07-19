@@ -29,11 +29,11 @@ float GetDirectionalShadowAttenuation(
 #if SHADOW_AUTO_FLIP_NORMAL
     normalWS *= FastSign(dot(normalWS, L));
 #endif
-// #if defined(SHADOW_ULTRA_LOW) || defined(SHADOW_LOW) || defined(SHADOW_MEDIUM)
+#if defined(SHADOW_ULTRA_LOW) || defined(SHADOW_LOW) || defined(SHADOW_MEDIUM)
     return EvalShadow_CascadedDepth_Dither(shadowContext, samplerStruct.SLinearClampCompareSampler, positionSS, positionWS, normalWS, shadowDataIndex, L);
-// #else
-//     return EvalShadow_CascadedDepth_Blend(shadowContext, _ShadowmapCascadeAtlas, s_linear_clamp_compare_sampler, positionSS, positionWS, normalWS, shadowDataIndex, L);
-// #endif
+#else
+    return EvalShadow_CascadedDepth_Blend(shadowContext, _ShadowmapCascadeAtlas, s_linear_clamp_compare_sampler, positionSS, positionWS, normalWS, shadowDataIndex, L);
+#endif
 }
 
 float GetPunctualShadowAttenuation(SamplerStruct samplerStruct, HDShadowContext shadowContext, 
