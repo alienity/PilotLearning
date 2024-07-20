@@ -85,7 +85,7 @@ namespace MoYu
             curLightData.rangeAttenuationBias = 1.0f;
             curLightData.diffuseDimmer = 1.0f;
             curLightData.specularDimmer = 1.0f;
-            curLightData.size = glm::float4(radius * radius, 0, 0, 0);
+            curLightData.size = glm::float4(0, 0, 0, 0);
             curLightData.shadowTint = glm::float3(0, 0, 0);
             curLightData.shadowDimmer = 1.0f;
             curLightData.penumbraTint = 0;
@@ -178,7 +178,7 @@ namespace MoYu
             curLightData.rangeAttenuationBias = 1.0f;
             curLightData.diffuseDimmer = 1.0f;
             curLightData.specularDimmer = 1.0f;
-            curLightData.size = glm::float4(radius * radius, 0, 0, 0);
+            curLightData.size = glm::float4(0, 0, 0, 0);
             curLightData.shadowTint = glm::float3(0, 0, 0);
             curLightData.shadowDimmer = 1.0f;
             curLightData.penumbraTint = 0;

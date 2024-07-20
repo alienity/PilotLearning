@@ -162,7 +162,7 @@ namespace MoYu
                 }
             }
 
-            float _spotOutRadians = MoYu::degreesToRadians(sceneLight.spot_light.spotAngle);
+            float _spotOutRadians = glm::radians(sceneLight.spot_light.spotAngle);
             float _spotNearPlane  = sceneLight.spot_light.m_shadow_near_plane;
             float _spotFarPlane   = sceneLight.spot_light.m_shadow_far_plane;
             
