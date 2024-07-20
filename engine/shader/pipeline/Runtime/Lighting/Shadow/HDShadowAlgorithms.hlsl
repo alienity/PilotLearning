@@ -170,7 +170,12 @@ float EvalShadow_PunctualDepth(HDShadowData sd, SamplerComparisonState samp, flo
     float3 normalBias = EvalShadow_NormalBiasProj(sd.worldTexelSize, sd.normalBias, normalWS, perspective ? L_dist : 1.0f);
     float3 posTC;
 
-    return EvalShadow_PositionTC(sd, texelSize, positionWS, normalBias, perspective, posTC) ? PUNCTUAL_FILTER_ALGORITHM(sd, positionSS, posTC, tex, samp, FIXED_UNIFORM_BIAS) : 1.0f;
+    float shadowVal = 1.0f;
+    if(EvalShadow_PositionTC(sd, texelSize, positionWS, normalBias, perspective, posTC))
+    {
+        shadowVal = PUNCTUAL_FILTER_ALGORITHM(sd, positionSS, float3(posTC.x, 1-posTC.y, posTC.z), tex, samp, FIXED_UNIFORM_BIAS);
+    }
+    return shadowVal;
 }
 
 //

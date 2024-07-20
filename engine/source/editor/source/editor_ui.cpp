@@ -359,8 +359,8 @@ namespace MoYu
             m_editor_ui_creator["Color"]("color", isDirty, &light_ptr->color);
             m_editor_ui_creator["float"]("intensity", isDirty, &light_ptr->intensity);
             m_editor_ui_creator["float"]("falloff_radius", isDirty, &light_ptr->falloff_radius);
-            m_editor_ui_creator["float"]("inner_angle", isDirty, &light_ptr->inner_angle);
-            m_editor_ui_creator["float"]("outer_angle", isDirty, &light_ptr->outer_angle);
+            m_editor_ui_creator["float"]("spotAngle", isDirty, &light_ptr->spotAngle);
+            m_editor_ui_creator["float"]("innerSpotPercent", isDirty, &light_ptr->innerSpotPercent);
             m_editor_ui_creator["bool"]("shadows", isDirty, &light_ptr->shadows);
             m_editor_ui_creator["glm::float2"]("shadow_bounds", isDirty, &light_ptr->shadow_bounds);
             m_editor_ui_creator["float"]("shadow_near_plane", isDirty, &light_ptr->shadow_near_plane);

@@ -507,8 +507,11 @@ namespace MoYu
         Color m_color{ 1.0f, 1.0f, 1.0f , 1.0f };
         float m_intensity{ 1.0f };
         float m_radius{ 1.0f };
-        float m_inner_degree{ 0.0f };
-        float m_outer_degree{ 0.5f };
+        //float m_inner_degree{ 0.0f };
+        //float m_outer_degree{ 0.5f };
+
+        float spotAngle{ 120.0f };
+        float innerSpotPercent{ 0.9f };
 
         bool    m_shadowmap {false};
         glm::float2 m_shadow_bounds {128, 128};

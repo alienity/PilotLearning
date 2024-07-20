@@ -59,8 +59,14 @@ namespace MoYu
             Color color = m_render_scene->m_spot_light_list[i].m_color;
             bool useShadowMap = m_render_scene->m_spot_light_list[i].m_shadowmap;
 
-            float inner_degree = m_render_scene->m_spot_light_list[i].m_inner_degree;
-            float outer_degree = m_render_scene->m_spot_light_list[i].m_outer_degree;
+            float spotAngle = m_render_scene->m_spot_light_list[i].spotAngle;
+            float innerSpotPercent01 = m_render_scene->m_spot_light_list[i].innerSpotPercent;
+
+            float cosSpotOuterHalfAngle = glm::clamp(glm::cos(glm::radians(spotAngle * 0.5f)), 0.0f, 1.0f);
+            float sinSpotOuterHalfAngle = glm::sqrt(1.0f - cosSpotOuterHalfAngle * cosSpotOuterHalfAngle);
+            float cosSpotInnerHalfAngle = glm::clamp(glm::cos(glm::radians(spotAngle * 0.5f * innerSpotPercent01)), 0.0f, 1.0f);
+
+            float val = glm::max(0.0001f, (cosSpotInnerHalfAngle - cosSpotOuterHalfAngle));
 
             HLSL::LightData curLightData{};
             curLightData.positionRWS = spot_light_position;
@@ -71,8 +77,8 @@ namespace MoYu
             curLightData.lightType = GPULIGHTTYPE_SPOT;
             curLightData.shadowDataIndex = shadowDataCount;
             curLightData.lightDimmer = spot_light_intensity;
-            curLightData.angleScale = glm::cos(glm::radians(outer_degree));
-            curLightData.angleOffset = 0;
+            curLightData.angleScale = 1.0f / val;
+            curLightData.angleOffset = -cosSpotOuterHalfAngle * curLightData.angleScale;
             curLightData.color = glm::float3(color.r, color.g, color.b);
             curLightData.range = radius;
             curLightData.rangeAttenuationScale = 1.0f / (radius * radius);
@@ -164,6 +170,8 @@ namespace MoYu
             curLightData.lightType = GPULIGHTTYPE_POINT;
             curLightData.shadowDataIndex = -1;
             curLightData.lightDimmer = point_light_intensity;
+            curLightData.angleOffset = 1;
+            curLightData.angleScale = 0;
             curLightData.color = glm::float3(color.r, color.g, color.b);
             curLightData.range = radius;
             curLightData.rangeAttenuationScale = 1.0f / (radius * radius);

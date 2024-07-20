@@ -162,7 +162,7 @@ namespace MoYu
                 }
             }
 
-            float _spotOutRadians = MoYu::degreesToRadians(sceneLight.spot_light.m_outer_degree);
+            float _spotOutRadians = MoYu::degreesToRadians(sceneLight.spot_light.spotAngle);
             float _spotNearPlane  = sceneLight.spot_light.m_shadow_near_plane;
             float _spotFarPlane   = sceneLight.spot_light.m_shadow_far_plane;
             
@@ -193,8 +193,8 @@ namespace MoYu
             pInternalSpotLight->m_color                = sceneLight.spot_light.m_color;
             pInternalSpotLight->m_intensity            = sceneLight.spot_light.m_intensity;
             pInternalSpotLight->m_radius               = sceneLight.spot_light.m_radius;
-            pInternalSpotLight->m_inner_degree         = sceneLight.spot_light.m_inner_degree;
-            pInternalSpotLight->m_outer_degree         = sceneLight.spot_light.m_outer_degree;
+            pInternalSpotLight->spotAngle              = sceneLight.spot_light.spotAngle;
+            pInternalSpotLight->innerSpotPercent       = sceneLight.spot_light.innerSpotPercent;
             pInternalSpotLight->m_shadowmap            = sceneLight.spot_light.m_shadowmap;
             pInternalSpotLight->m_shadow_bounds        = sceneLight.spot_light.m_shadow_bounds;
             pInternalSpotLight->m_shadow_near_plane    = sceneLight.spot_light.m_shadow_near_plane;

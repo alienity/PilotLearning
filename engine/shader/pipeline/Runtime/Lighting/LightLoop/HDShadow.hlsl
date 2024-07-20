@@ -46,6 +46,14 @@ float GetPunctualShadowAttenuation(SamplerStruct samplerStruct, HDShadowContext 
     // Note: Here we assume that all the shadow map cube faces have been added contiguously in the buffer to retreive the shadow information
     HDShadowData sd = shadowContext.shadowDatas[shadowDataIndex];
 
+    // if (pointLight)
+    // {
+    //     sd.rot0 = shadowContext.shadowDatas[shadowDataIndex + CubeMapFaceID(-L)].rot0;
+    //     sd.rot1 = shadowContext.shadowDatas[shadowDataIndex + CubeMapFaceID(-L)].rot1;
+    //     sd.rot2 = shadowContext.shadowDatas[shadowDataIndex + CubeMapFaceID(-L)].rot2;
+    //     sd.atlasOffset = shadowContext.shadowDatas[shadowDataIndex + CubeMapFaceID(-L)].atlasOffset;
+    // }
+    
     return EvalShadow_PunctualDepth(sd, samplerStruct.SLinearClampCompareSampler, positionSS, positionWS, normalWS, L, L_dist, perspecive);
 }
 

@@ -117,8 +117,8 @@ namespace MoYu
             spot_light.m_color             = m_light_res_ptr->m_SpotLightParam.color;
             spot_light.m_intensity         = m_light_res_ptr->m_SpotLightParam.intensity;
             spot_light.m_radius            = m_light_res_ptr->m_SpotLightParam.falloff_radius;
-            spot_light.m_inner_degree      = m_light_res_ptr->m_SpotLightParam.inner_angle;
-            spot_light.m_outer_degree      = m_light_res_ptr->m_SpotLightParam.outer_angle;
+            spot_light.spotAngle           = m_light_res_ptr->m_SpotLightParam.spotAngle;
+            spot_light.innerSpotPercent    = m_light_res_ptr->m_SpotLightParam.innerSpotPercent;
             spot_light.m_shadowmap         = m_light_res_ptr->m_SpotLightParam.shadows;
             spot_light.m_shadow_bounds     = m_light_res_ptr->m_SpotLightParam.shadow_bounds;
             spot_light.m_shadow_near_plane = m_light_res_ptr->m_SpotLightParam.shadow_near_plane;

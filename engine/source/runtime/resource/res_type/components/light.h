@@ -61,8 +61,9 @@ namespace MoYu
         float intensity {1.0f};
 
         float falloff_radius {5.0f};
-        float inner_angle {45.0f};
-        float outer_angle {60.0f};
+
+        float spotAngle {120.0f};
+        float innerSpotPercent{0.9f};
 
         bool    shadows {false};
         glm::float2 shadow_bounds {32, 32};
@@ -74,8 +75,8 @@ namespace MoYu
                                        color,
                                        intensity,
                                        falloff_radius,
-                                       inner_angle,
-                                       outer_angle,
+                                       spotAngle,
+                                       innerSpotPercent,
                                        shadows,
                                        shadow_bounds,
                                        shadow_near_plane,
