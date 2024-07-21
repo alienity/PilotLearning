@@ -22,37 +22,32 @@ namespace MoYu
         struct DrawInputParameters : public PassInput
         {
             RHI::RgResourceHandle perframeBufferHandle;
-            RHI::RgResourceHandle albedoHandle;
-            RHI::RgResourceHandle worldNormalHandle;
-            RHI::RgResourceHandle ambientOcclusionHandle;
-            RHI::RgResourceHandle metallic_Roughness_Reflectance_AO_Handle;
-            RHI::RgResourceHandle clearCoat_ClearCoatRoughness_Anisotropy_Handle;
+
+            RHI::RgResourceHandle gbuffer0Handle;
+            RHI::RgResourceHandle gbuffer1Handle;
+            RHI::RgResourceHandle gbuffer2Handle;
+            RHI::RgResourceHandle gbuffer3Handle;
             RHI::RgResourceHandle gbufferDepthHandle;
-            RHI::RgResourceHandle ssrResolveHandle;
-            RHI::RgResourceHandle directionLightShadowmapHandle;
+
+            std::vector<RHI::RgResourceHandle> directionLightShadowmapHandle;
             std::vector<RHI::RgResourceHandle> spotShadowmapHandles;
-            RHI::RgResourceHandle volumeCloudShadowmapHandle;
         };
 
         struct DrawOutputParameters : public PassOutput
         {
             DrawOutputParameters()
             {
-                sssDiffuseHandle.Invalidate();
-                colorHandle.Invalidate();
+                specularLightinghandle.Invalidate();
             }
 
-            RHI::RgResourceHandle sssDiffuseHandle;
-            RHI::RgResourceHandle colorHandle;
+            RHI::RgResourceHandle specularLightinghandle;
         };
 
     public:
         ~IndirectLightLoopPass() { destroy(); }
 
         void initialize(const DrawPassInitInfo& init_info);
-        void update(RHI::RenderGraph&         graph,
-                    DrawInputParameters&      passInput,
-                    DrawOutputParameters&     passOutput);
+        void update(RHI::RenderGraph& graph, DrawInputParameters& passInput, DrawOutputParameters& passOutput);
         void destroy() override final;
 
     protected:

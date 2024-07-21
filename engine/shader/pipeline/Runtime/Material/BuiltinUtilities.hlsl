@@ -97,7 +97,7 @@ void ModifyBakedDiffuseLighting(
     // Since this is called early at PostInitBuiltinData and we need some fields from bsdfData and preLightData,
     // we get the whole structures redundantly earlier here - compiler should optimize out everything.
     BSDFData bsdfData = ConvertSurfaceDataToBSDFData(posInput.positionSS, surfaceData);
-    PreLightData preLightData = GetPreLightData(frameUniform, renderData, matProperties, samplerStruct, V, posInput, bsdfData);
+    PreLightData preLightData = GetPreLightData(frameUniform, samplerStruct, V, posInput, bsdfData);
     ModifyBakedDiffuseLighting(V, posInput, preLightData, bsdfData, builtinData);
 }
 #endif

@@ -76,7 +76,7 @@ void Frag(PackedVaryingsToPS packedInput
 
     BSDFData bsdfData = ConvertSurfaceDataToBSDFData(input.positionSS.xy, surfaceData);
     
-    PreLightData preLightData = GetPreLightData(frameUniform, renderData, matProperties, samplerStruct, V, posInput, bsdfData);
+    PreLightData preLightData = GetPreLightData(frameUniform, samplerStruct, V, posInput, bsdfData);
 
     outColor = float4(0.0, 0.0, 0.0, 0.0);
 
@@ -89,7 +89,7 @@ void Frag(PackedVaryingsToPS packedInput
         uint featureFlags = LIGHT_FEATURE_MASK_FLAGS_OPAQUE;
 #endif
         LightLoopOutput lightLoopOutput;
-        LightLoop(frameUniform, renderData, matProperties, samplerStruct, V, posInput, preLightData, bsdfData, builtinData, featureFlags, lightLoopOutput);
+        LightLoop(frameUniform, samplerStruct, V, posInput, preLightData, bsdfData, builtinData, featureFlags, lightLoopOutput);
 
         // Alias
         float3 diffuseLighting = lightLoopOutput.diffuseLighting;

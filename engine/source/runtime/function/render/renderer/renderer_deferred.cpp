@@ -645,24 +645,21 @@ namespace MoYu
         //mSSRPass->update(graph, mSSRInput, mSSROutput);
         ////=================================================================================
 
-        ////=================================================================================
-        //// light loop pass
-        //IndirectLightLoopPass::DrawInputParameters mLightLoopIntput;
-        //IndirectLightLoopPass::DrawOutputParameters mLightLoopOutput;
+        //=================================================================================
+        // light loop pass
+        IndirectLightLoopPass::DrawInputParameters mLightLoopIntput;
+        IndirectLightLoopPass::DrawOutputParameters mLightLoopOutput;
 
-        //mLightLoopIntput.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
-        //mLightLoopIntput.albedoHandle           = mGBufferOutput.albedoHandle;
-        //mLightLoopIntput.worldNormalHandle      = mGBufferOutput.worldNormalHandle;
-        //mLightLoopIntput.ambientOcclusionHandle = mGTAOOutput.outputAOHandle;
-        //mLightLoopIntput.metallic_Roughness_Reflectance_AO_Handle = mGBufferOutput.metallic_Roughness_Reflectance_AO_Handle;
-        //mLightLoopIntput.clearCoat_ClearCoatRoughness_Anisotropy_Handle = mGBufferOutput.clearCoat_ClearCoatRoughness_Anisotropy_Handle;
-        //mLightLoopIntput.ssrResolveHandle   = mSSROutput.ssrOutHandle;
-        //mLightLoopIntput.gbufferDepthHandle = mGBufferOutput.depthHandle;
-        //mLightLoopIntput.directionLightShadowmapHandle = directionalShadowmapHandle;
-        //mLightLoopIntput.spotShadowmapHandles = std::vector<RHI::RgResourceHandle>(spotShadowmapHandle);
-        //mLightLoopIntput.volumeCloudShadowmapHandle = mVCSOutputParams.outCloudShadowHandle;
-        //mIndirectLightLoopPass->update(graph, mLightLoopIntput, mLightLoopOutput);
-        ////=================================================================================
+        mLightLoopIntput.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
+        mLightLoopIntput.gbuffer0Handle = mGBufferOutput.gbuffer0Handle;
+        mLightLoopIntput.gbuffer1Handle = mGBufferOutput.gbuffer1Handle;
+        mLightLoopIntput.gbuffer2Handle = mGBufferOutput.gbuffer2Handle;
+        mLightLoopIntput.gbuffer3Handle = mGBufferOutput.gbuffer3Handle;
+        mLightLoopIntput.gbufferDepthHandle = mGBufferOutput.depthHandle;
+        mLightLoopIntput.directionLightShadowmapHandle = directionalShadowmapHandles;
+        mLightLoopIntput.spotShadowmapHandles = spotShadowmapHandle;
+        mIndirectLightLoopPass->update(graph, mLightLoopIntput, mLightLoopOutput);
+        //=================================================================================
 
         ////=================================================================================
         //// subsurface scattering pass
@@ -694,7 +691,7 @@ namespace MoYu
         //outColorHandle = mColorPyramidOutput.colorHandle;
         ////=================================================================================
 
-        
+        /*
         //=================================================================================
         // indirect opaque draw
         IndirectDrawPass::DrawInputParameters  mDrawIntputParams;
@@ -711,7 +708,8 @@ namespace MoYu
         }
         mIndirectOpaqueDrawPass->update(graph, mDrawIntputParams, mDrawOutputParams);
         //=================================================================================
-        
+        */
+
         ///*
         ////=================================================================================
         //// skybox draw
@@ -758,13 +756,9 @@ namespace MoYu
         mDrawTransIntputParams.propertiesPerMaterialHandle = indirectCullOutput.propertiesPerMaterialHandle;
         mDrawTransIntputParams.transparentDrawHandle = indirectCullOutput.transparentDrawHandle.indirectSortBufferHandle;
         mDrawTransIntputParams.directionalShadowmapTexHandles = directionalShadowmapHandles;
-        for (size_t i = 0; i < spotShadowmapHandle.size(); i++)
-        {
-            mDrawTransIntputParams.spotShadowmapTexHandles.push_back(spotShadowmapHandle[i]);
-        }
-        ////mDrawTransOutputParams.renderTargetColorHandle = mASOutputParams.renderTargetColorHandle;
-        mDrawTransOutputParams.renderTargetColorHandle = mDrawOutputParams.renderTargetColorHandle;
-        mDrawTransOutputParams.renderTargetDepthHandle = mDrawOutputParams.renderTargetDepthHandle;
+        mDrawTransIntputParams.spotShadowmapTexHandles = spotShadowmapHandle;
+        mDrawTransOutputParams.renderTargetColorHandle = mLightLoopOutput.specularLightinghandle;
+        mDrawTransOutputParams.renderTargetDepthHandle = mGBufferOutput.depthHandle;
         mIndirectTransparentDrawPass->update(graph, mDrawTransIntputParams, mDrawTransOutputParams);
         //=================================================================================
 

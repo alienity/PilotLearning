@@ -18,7 +18,7 @@
 // ----------------------------------------------------------------------------
 
 void LightLoop(
-    FrameUniforms frameUniform, RenderDataPerDraw renderData, PropertiesPerMaterial matProperties, SamplerStruct samplerStruct,
+    FrameUniforms frameUniform, SamplerStruct samplerStruct,
     float3 V, PositionInputs posInput, PreLightData preLightData, BSDFData bsdfData, BuiltinData builtinData, uint featureFlags,
     out LightLoopOutput lightLoopOutput)
 {
@@ -50,8 +50,8 @@ void LightLoop(
                 {
                     float3 positionWS = posInput.positionWS;
 
-                    context.shadowValue = GetDirectionalShadowAttenuation(context.shadowContext, frameUniform, renderData, matProperties, samplerStruct,
-                                                                          posInput.positionSS, positionWS, GetNormalForShadowBias(bsdfData), light.shadowIndex, L);
+                    context.shadowValue = GetDirectionalShadowAttenuation(context.shadowContext,
+                        samplerStruct, posInput.positionSS, positionWS, GetNormalForShadowBias(bsdfData), light.shadowIndex, L);
                 }
             }
         }

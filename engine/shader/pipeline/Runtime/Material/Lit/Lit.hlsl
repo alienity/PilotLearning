@@ -1004,7 +1004,7 @@ void ClampRoughness(inout PreLightData preLightData, inout BSDFData bsdfData, fl
 }
 
 PreLightData GetPreLightData(
-    FrameUniforms frameUniform, RenderDataPerDraw renderData, PropertiesPerMaterial matProperties, SamplerStruct samplerStruct,
+    FrameUniforms frameUniform, SamplerStruct samplerStruct,
     float3 V, PositionInputs posInput, inout BSDFData bsdfData)
 {
     PreLightData preLightData;

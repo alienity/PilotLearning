@@ -16,17 +16,18 @@ namespace MoYu
         std::filesystem::path m_ShaderRootPath = init_info.m_ShaderRootPath;
 
         indirectLightLoopCS = m_ShaderCompiler->CompileShader(
-            RHI_SHADER_TYPE::Compute, m_ShaderRootPath / "hlsl/IndirectLightLoopCS.hlsl", ShaderCompileOptions(L"CSMain"));
+            RHI_SHADER_TYPE::Compute, m_ShaderRootPath / "pipeline/Runtime/Lighting/LightLoop/DeferredLightLoop.hlsl", ShaderCompileOptions(L"SHADE_OPAQUE_ENTRY"));
 
         {
             RHI::RootSignatureDesc rootSigDesc =
                 RHI::RootSignatureDesc()
-                    .Add32BitConstants<0, 0>(32)
-                    .AddConstantBufferView<1, 0>()
-                    .AddStaticSampler<10, 0>(D3D12_FILTER::D3D12_FILTER_ANISOTROPIC,
-                                             D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_WRAP,
-                                             8)
-                    .AddStaticSampler<11, 0>(D3D12_FILTER::D3D12_FILTER_COMPARISON_ANISOTROPIC,
+                    .Add32BitConstants<0, 0>(16)
+                    .AddStaticSampler<10, 0>(D3D12_FILTER::D3D12_FILTER_MIN_MAG_MIP_POINT, D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_CLAMP, 8)
+                    .AddStaticSampler<11, 0>(D3D12_FILTER::D3D12_FILTER_MIN_MAG_LINEAR_MIP_POINT, D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_CLAMP, 8)
+                    .AddStaticSampler<12, 0>(D3D12_FILTER::D3D12_FILTER_MIN_MAG_LINEAR_MIP_POINT, D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_WRAP, 8)
+                    .AddStaticSampler<13, 0>(D3D12_FILTER::D3D12_FILTER_MIN_MAG_MIP_LINEAR, D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_CLAMP, 8)
+                    .AddStaticSampler<14, 0>(D3D12_FILTER::D3D12_FILTER_MIN_MAG_MIP_LINEAR, D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_WRAP, 8)
+                    .AddStaticSampler<15, 0>(D3D12_FILTER::D3D12_FILTER_COMPARISON_ANISOTROPIC,
                                              D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
                                              8,
                                              D3D12_COMPARISON_FUNC::D3D12_COMPARISON_FUNC_GREATER_EQUAL,
@@ -61,32 +62,28 @@ namespace MoYu
         RHI::RenderPass& drawpass = graph.AddRenderPass("LightLoopPass");
 
         drawpass.Read(passInput.perframeBufferHandle, false, RHIResourceState::RHI_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
-        drawpass.Read(passInput.albedoHandle, false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+        drawpass.Read(passInput.gbuffer0Handle, false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+        drawpass.Read(passInput.gbuffer1Handle, false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+        drawpass.Read(passInput.gbuffer2Handle, false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+        drawpass.Read(passInput.gbuffer3Handle, false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
         drawpass.Read(passInput.gbufferDepthHandle, false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-        drawpass.Read(passInput.worldNormalHandle, false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-        drawpass.Read(passInput.ambientOcclusionHandle, false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-        drawpass.Read(passInput.metallic_Roughness_Reflectance_AO_Handle, false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-        drawpass.Read(passInput.clearCoat_ClearCoatRoughness_Anisotropy_Handle, false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-        drawpass.Read(passInput.ssrResolveHandle, false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-        drawpass.Read(passInput.directionLightShadowmapHandle, false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+        for (int i = 0; i < passInput.directionLightShadowmapHandle.size(); i++)
+        {
+            drawpass.Read(passInput.directionLightShadowmapHandle[i], false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+        }
         for (int i = 0; i < passInput.spotShadowmapHandles.size(); i++)
         {
             drawpass.Read(passInput.spotShadowmapHandles[i], false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
         }
-        drawpass.Read(passInput.volumeCloudShadowmapHandle, false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-        drawpass.Write(passOutput.sssDiffuseHandle, false, RHIResourceState::RHI_RESOURCE_STATE_UNORDERED_ACCESS);
-        drawpass.Write(passOutput.colorHandle, false, RHIResourceState::RHI_RESOURCE_STATE_UNORDERED_ACCESS);
+        drawpass.Write(passOutput.specularLightinghandle, false, RHIResourceState::RHI_RESOURCE_STATE_UNORDERED_ACCESS);
 
         RHI::RgResourceHandle perframeBufferHandle = passInput.perframeBufferHandle;
-        RHI::RgResourceHandle albedoHandle         = passInput.albedoHandle;
-        RHI::RgResourceHandle depthHandle          = passInput.gbufferDepthHandle;
-        RHI::RgResourceHandle worldNormalHandle    = passInput.worldNormalHandle;
-        RHI::RgResourceHandle ambientOcclusionHandle = passInput.ambientOcclusionHandle;
-        RHI::RgResourceHandle metallic_Roughness_Reflectance_AO_Handle = passInput.metallic_Roughness_Reflectance_AO_Handle;
-        RHI::RgResourceHandle clearCoat_ClearCoatRoughness_Anisotropy_Handle = passInput.clearCoat_ClearCoatRoughness_Anisotropy_Handle;
-        RHI::RgResourceHandle ssrResolveHandle = passInput.ssrResolveHandle;
-        RHI::RgResourceHandle outSSSDiffuseLightingHandle = passOutput.sssDiffuseHandle;
-        RHI::RgResourceHandle outColorHandle = passOutput.colorHandle;
+        RHI::RgResourceHandle gbuffer0Handle = passInput.gbuffer0Handle;
+        RHI::RgResourceHandle gbuffer1Handle = passInput.gbuffer1Handle;
+        RHI::RgResourceHandle gbuffer2Handle = passInput.gbuffer2Handle;
+        RHI::RgResourceHandle gbuffer3Handle = passInput.gbuffer3Handle;
+        
+        RHI::RgResourceHandle specularLightinghandle = passOutput.specularLightinghandle;
 
         drawpass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
 
@@ -97,28 +94,20 @@ namespace MoYu
 
             struct RootIndexBuffer
             {
-                uint32_t perFrameBufferIndex;
-                uint32_t albedoIndex;
-                uint32_t worldNormalIndex;
-                uint32_t ambientOcclusionIndex;
-                uint32_t metallic_Roughness_Reflectance_AOIndex;
-                uint32_t clearCoat_ClearCoatRoughness_AnisotropyIndex;
-                uint32_t depthIndex;
-                uint32_t ssrResolveIndex;
-                uint32_t outSSSDiffuseLightingIndex;
-                uint32_t outColorIndex;
+                uint32_t frameUniformIndex;
+                uint32_t inGBuffer0Index;
+                uint32_t inGBuffer1Index;
+                uint32_t inGBuffer2Index;
+                uint32_t inGBuffer3Index;
+                uint32_t specularLightingUAVIndex; // float4
             };
 
             RootIndexBuffer rootIndexBuffer = {RegGetBufDefCBVIdx(perframeBufferHandle),
-                                               RegGetTexDefSRVIdx(albedoHandle),
-                                               RegGetTexDefSRVIdx(worldNormalHandle),
-                                               RegGetTexDefSRVIdx(ambientOcclusionHandle),
-                                               RegGetTexDefSRVIdx(metallic_Roughness_Reflectance_AO_Handle),
-                                               RegGetTexDefSRVIdx(clearCoat_ClearCoatRoughness_Anisotropy_Handle),
-                                               RegGetTexDefSRVIdx(depthHandle),
-                                               RegGetTexDefSRVIdx(ssrResolveHandle),
-                                               RegGetTexDefSRVIdx(outSSSDiffuseLightingHandle),
-                                               RegGetTexDefUAVIdx(outColorHandle)};
+                                               RegGetTexDefSRVIdx(gbuffer0Handle),
+                                               RegGetTexDefSRVIdx(gbuffer1Handle),
+                                               RegGetTexDefSRVIdx(gbuffer2Handle),
+                                               RegGetTexDefSRVIdx(gbuffer3Handle),
+                                               RegGetTexDefUAVIdx(specularLightinghandle)};
 
             pContext->SetConstantArray(0, sizeof(RootIndexBuffer) / sizeof(UINT), &rootIndexBuffer);
 
@@ -137,22 +126,16 @@ namespace MoYu
     bool IndirectLightLoopPass::initializeRenderTarget(RHI::RenderGraph& graph, DrawOutputParameters* drawPassOutput)
     {
         bool needClearRenderTarget = false;
-        if (!drawPassOutput->colorHandle.IsValid())
+        if (!drawPassOutput->specularLightinghandle.IsValid())
         {
             needClearRenderTarget = true;
-
-            RHI::RgTextureDesc sssDiffuseDesc = colorTexDesc;
-            sssDiffuseDesc.SetAllowUnorderedAccess(true);
-            sssDiffuseDesc.SetAllowRenderTarget(true);
-            sssDiffuseDesc.Name = "SSSDiffuseLighting";
 
             RHI::RgTextureDesc targetColorDesc = colorTexDesc;
             targetColorDesc.SetAllowUnorderedAccess(true);
             targetColorDesc.SetAllowRenderTarget(true);
             targetColorDesc.Name = "LightLoopColor";
 
-            drawPassOutput->sssDiffuseHandle = graph.Create<RHI::D3D12Texture>(sssDiffuseDesc);
-            drawPassOutput->colorHandle = graph.Create<RHI::D3D12Texture>(targetColorDesc);
+            drawPassOutput->specularLightinghandle = graph.Create<RHI::D3D12Texture>(targetColorDesc);
         }
         return needClearRenderTarget;
     }
