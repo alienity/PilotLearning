@@ -14,6 +14,9 @@ namespace MoYu
         {
             RHI::RgTextureDesc colorTexDesc;
             RHI::RgTextureDesc depthTexDesc;
+
+            ShaderCompiler* m_ShaderCompiler;
+            std::filesystem::path m_ShaderRootPath;
         };
 
         struct DrawInputParameters : public PassInput
@@ -55,6 +58,12 @@ namespace MoYu
     private:
         RHI::RgTextureDesc colorTexDesc;
         RHI::RgTextureDesc depthTexDesc;
+
+        Shader indirectDrawTransparentVS;
+        Shader indirectDrawTransparentPS;
+        std::shared_ptr<RHI::D3D12RootSignature> pIndirectDrawTransparentSignature;
+        std::shared_ptr<RHI::D3D12PipelineState> pIndirectDrawTransparentPSO;
+        std::shared_ptr<RHI::D3D12CommandSignature> pIndirectDrawTransparentCommandSignature;
 	};
 }
 

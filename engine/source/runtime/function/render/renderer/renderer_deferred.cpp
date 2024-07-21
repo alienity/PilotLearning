@@ -270,6 +270,8 @@ namespace MoYu
             IndirectDrawTransparentPass::DrawPassInitInfo drawPassInit;
             drawPassInit.colorTexDesc = colorTexDesc;
             drawPassInit.depthTexDesc = depthTexDesc;
+            drawPassInit.m_ShaderCompiler = pCompiler;
+            drawPassInit.m_ShaderRootPath = g_runtime_global_context.m_config_manager->getShaderFolder();
 
             mIndirectTransparentDrawPass = std::make_shared<IndirectDrawTransparentPass>();
             mIndirectTransparentDrawPass->setCommonInfo(renderPassCommonInfo);
@@ -746,25 +748,26 @@ namespace MoYu
         //mVolumeCloudPass->update(graph, mVCIntputParams, mVCOutputParams);
         ////=================================================================================
 
-        ////=================================================================================
-        //// indirect transparent draw
-        //IndirectDrawTransparentPass::DrawInputParameters  mDrawTransIntputParams;
-        //IndirectDrawTransparentPass::DrawOutputParameters mDrawTransOutputParams;
+        //=================================================================================
+        // indirect transparent draw
+        IndirectDrawTransparentPass::DrawInputParameters  mDrawTransIntputParams;
+        IndirectDrawTransparentPass::DrawOutputParameters mDrawTransOutputParams;
 
-        //mDrawTransIntputParams.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
-        //mDrawTransIntputParams.renderDataPerDrawHandle = indirectCullOutput.renderDataPerDrawHandle;
-        //mDrawTransIntputParams.propertiesPerMaterialHandle = indirectCullOutput.propertiesPerMaterialHandle;
-        //mDrawTransIntputParams.transparentDrawHandle = indirectCullOutput.opaqueDrawHandle.indirectSortBufferHandle;
-        //mDrawTransIntputParams.directionalShadowmapTexHandles = directionalShadowmapHandles;
-        //for (size_t i = 0; i < spotShadowmapHandle.size(); i++)
-        //{
-        //    mDrawTransIntputParams.spotShadowmapTexHandles.push_back(spotShadowmapHandle[i]);
-        //}
-        //////mDrawTransOutputParams.renderTargetColorHandle = mASOutputParams.renderTargetColorHandle;
-        ////mDrawTransOutputParams.renderTargetColorHandle = mVCOutputParams.outColorHandle;
-        ////mDrawTransOutputParams.renderTargetDepthHandle = mASOutputParams.renderTargetDepthHandle;
-        //mIndirectTransparentDrawPass->update(graph, mDrawTransIntputParams, mDrawTransOutputParams);
-        ////=================================================================================
+        mDrawTransIntputParams.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
+        mDrawTransIntputParams.renderDataPerDrawHandle = indirectCullOutput.renderDataPerDrawHandle;
+        mDrawTransIntputParams.propertiesPerMaterialHandle = indirectCullOutput.propertiesPerMaterialHandle;
+        mDrawTransIntputParams.transparentDrawHandle = indirectCullOutput.transparentDrawHandle.indirectSortBufferHandle;
+        mDrawTransIntputParams.directionalShadowmapTexHandles = directionalShadowmapHandles;
+        for (size_t i = 0; i < spotShadowmapHandle.size(); i++)
+        {
+            mDrawTransIntputParams.spotShadowmapTexHandles.push_back(spotShadowmapHandle[i]);
+        }
+        ////mDrawTransOutputParams.renderTargetColorHandle = mASOutputParams.renderTargetColorHandle;
+        mDrawTransOutputParams.renderTargetColorHandle = mDrawOutputParams.renderTargetColorHandle;
+        mDrawTransOutputParams.renderTargetDepthHandle = mDrawOutputParams.renderTargetDepthHandle;
+        mIndirectTransparentDrawPass->update(graph, mDrawTransIntputParams, mDrawTransOutputParams);
+        //=================================================================================
+
 
 
         ////=================================================================================
@@ -794,7 +797,7 @@ namespace MoYu
         //mDisplayIntputParams.inputRTColorHandle      = mAOOutput.outputAOHandle;
         //mDisplayIntputParams.inputRTColorHandle = mGBufferOutput.gbuffer0Handle;
         //mDisplayIntputParams.inputRTColorHandle = mTerrainShadowmapOutputParams.directionalShadowmapHandles[3];
-        mDisplayIntputParams.inputRTColorHandle = mDrawOutputParams.renderTargetColorHandle;
+        mDisplayIntputParams.inputRTColorHandle = mDrawTransOutputParams.renderTargetColorHandle;
         mDisplayOutputParams.renderTargetColorHandle = renderTargetColorHandle;
         //mDisplayOutputParams.renderTargetColorHandle = backBufColorHandle;
         mDisplayPass->update(graph, mDisplayIntputParams, mDisplayOutputParams);

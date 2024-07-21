@@ -490,6 +490,14 @@ namespace MoYu
 
             StandardLightMaterial* mat_res_ptr = static_cast<StandardLightMaterial*>(value_ptr);
 
+            {
+                const char* blendModeItems[] = { "Opaque", "Transparent" };
+                int curItemIndex = (int)mat_res_ptr->_BlendMode;
+                if (ImGui::Combo("combo", &curItemIndex, blendModeItems, IM_ARRAYSIZE(blendModeItems))) isDirty = true;
+                mat_res_ptr->_BlendMode = curItemIndex;
+                //if (ImGui::Combo("_BlendMode", &mat_res_ptr->_BlendMode, 0.02f, 0.0f, 1.0f)) isDirty = true;
+            }
+
             if (ImGui::ColorEdit4("_BaseColor", &mat_res_ptr->_BaseColor.x)) isDirty = true;
             if (ImGui::DragFloat("_Metallic", &mat_res_ptr->_Metallic, 0.02f, 0.0f, 1.0f)) isDirty = true;
             if (ImGui::DragFloat("_Smoothness", &mat_res_ptr->_Smoothness, 0.02f, 0.0f, 1.0f)) isDirty = true;
@@ -548,7 +556,6 @@ namespace MoYu
             if (ImGui::DragFloat("_ATDistance", &mat_res_ptr->_ATDistance, 0.02f, 0.0f, 1.0f)) isDirty = true;
             if (ImGui::DragFloat("_TransparentWritingMotionVec", &mat_res_ptr->_TransparentWritingMotionVec, 0.02f, 0.0f, 1.0f)) isDirty = true;
             if (ImGui::DragFloat("_SurfaceType", &mat_res_ptr->_SurfaceType, 0.02f, 0.0f, 1.0f)) isDirty = true;
-            if (ImGui::DragFloat("_BlendMode", &mat_res_ptr->_BlendMode, 0.02f, 0.0f, 1.0f)) isDirty = true;
             if (ImGui::DragFloat("_SrcBlend", &mat_res_ptr->_SrcBlend, 0.02f, 0.0f, 1.0f)) isDirty = true;
             if (ImGui::DragFloat("_DstBlend", &mat_res_ptr->_DstBlend, 0.02f, 0.0f, 1.0f)) isDirty = true;
             if (ImGui::DragFloat("_AlphaSrcBlend", &mat_res_ptr->_AlphaSrcBlend, 0.02f, 0.0f, 1.0f)) isDirty = true;
