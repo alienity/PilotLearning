@@ -89,6 +89,10 @@ namespace MoYu
 
             RHI::D3D12ComputeContext* pContext = context->GetComputeContext();
 
+            RHI::D3D12Texture* pRenderTargetColor = registry->GetD3D12Texture(specularLightinghandle);
+
+            pContext->ClearUAV(pRenderTargetColor);
+
             pContext->SetRootSignature(pIndirectLightLoopSignature.get());
             pContext->SetPipelineState(pIndirectLightLoopPSO.get());
 

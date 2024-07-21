@@ -105,12 +105,12 @@ void SHADE_OPAQUE_ENTRY(uint3 dispatchThreadId : SV_DispatchThreadID, uint2 grou
     PositionInputs posInput = GetPositionInput(pixelCoord.xy, screenSize.zw, depth,
         UNITY_MATRIX_I_VP(frameUniform), UNITY_MATRIX_V(frameUniform), tileCoord);
 
-    // For indirect case: we can still overlap inside a tile with the sky/background, reject it
-    // Can't rely on stencil as we are in compute shader
-    if (depth == UNITY_RAW_FAR_CLIP_VALUE)
-    {
-        return;
-    }
+    // // For indirect case: we can still overlap inside a tile with the sky/background, reject it
+    // // Can't rely on stencil as we are in compute shader
+    // if (depth == UNITY_RAW_FAR_CLIP_VALUE)
+    // {
+    //     return;
+    // }
 
     // // This is required for camera stacking and other cases where we might have a valid depth value in the depth buffer, but the pixel was not covered by this camera
     // uint stencilVal = GetStencilValue(LOAD_TEXTURE2D_X(_StencilTexture, pixelCoord.xy));
