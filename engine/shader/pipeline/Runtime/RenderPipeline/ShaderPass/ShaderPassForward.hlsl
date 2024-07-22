@@ -61,7 +61,8 @@ void Frag(PackedVaryingsToPS packedInput
     float4 _ScreenSize = frameUniform.baseUniform._ScreenSize;
     
     // input.positionSS is SV_Position
-    PositionInputs posInput = GetPositionInput(input.positionSS.xy, _ScreenSize.zw, input.positionSS.z, input.positionSS.w, input.positionRWS.xyz, tileIndex);
+    PositionInputs posInput = GetPositionInput(input.positionSS.xy, _ScreenSize.zw,
+        input.positionSS.z, input.positionSS.w, input.positionRWS.xyz, tileIndex);
 
 #ifdef VARYINGS_NEED_POSITION_WS
     float3 V = GetWorldSpaceNormalizeViewDir(frameUniform, input.positionRWS);

@@ -112,6 +112,29 @@ namespace MoYu
 
 	}
 
+    void IndirectGBufferPass::prepareMatBuffer(std::shared_ptr<RenderResource> render_resource)
+    {
+        RHI::RHIRenderSurfaceBaseDesc rtDesc{};
+        rtDesc.width = depthDesc.Width;
+        rtDesc.height = depthDesc.Height;
+        rtDesc.depthOrArray = 1;
+        rtDesc.samples = 1;
+        rtDesc.mipCount = 1;
+        rtDesc.flags = RHI::RHISurfaceCreateDepthStencil;
+        rtDesc.dim = RHI::RHITextureDimension::RHITexDim2D;
+        rtDesc.graphicsFormat = DXGI_FORMAT_D32_FLOAT;
+        rtDesc.clearValue = CD3DX12_CLEAR_VALUE(DXGI_FORMAT_D32_FLOAT, 0, 1);
+        rtDesc.colorSurface = true;
+        rtDesc.backBuffer = false;
+        pGBufferDepth = render_resource->CreateTransientTexture(rtDesc, L"GBufferDepth", D3D12_RESOURCE_STATE_COMMON);
+
+        HLSL::FrameUniforms* _frameUniforms = &render_resource->m_FrameUniforms;
+
+        _frameUniforms->baseUniform._CameraDepthTextureIndex = pGBufferDepth->GetDefaultSRV()->GetIndex();
+
+    }
+
+
     void IndirectGBufferPass::update(RHI::RenderGraph& graph, DrawInputParameters& passInput, GBufferOutput& passOutput)
     {
         bool needClearRenderTarget = initializeRenderTarget(graph, &passOutput);
@@ -121,8 +144,9 @@ namespace MoYu
         RHI::RgResourceHandle perframeBufferHandle = passInput.perframeBufferHandle;
         RHI::RgResourceHandle opaqueDrawHandle = passInput.opaqueDrawHandle;
 
-        RHI::RenderPass& drawpass = graph.AddRenderPass("IndirectGBufferPass");
+        passOutput.depthHandle = graph.Import<RHI::D3D12Texture>(pGBufferDepth.get());
 
+        RHI::RenderPass& drawpass = graph.AddRenderPass("IndirectGBufferPass");
 
         drawpass.Read(passInput.renderDataPerDrawHandle, false, RHIResourceState::RHI_RESOURCE_STATE_ALL_SHADER_RESOURCE);
         drawpass.Read(passInput.propertiesPerMaterialHandle, false, RHIResourceState::RHI_RESOURCE_STATE_ALL_SHADER_RESOURCE);
@@ -179,9 +203,10 @@ namespace MoYu
         });
     }
 
-
     void IndirectGBufferPass::destroy()
     {
+        pGBufferDepth = nullptr;
+
         pDrawGBufferSignature = nullptr;
         pDrawGBufferPSO = nullptr;
         pGBufferCommandSignature = nullptr;

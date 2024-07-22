@@ -375,6 +375,7 @@ namespace MoYu
         mSkyBoxPass->prepareMeshData(render_resource);
         mTerrainCullPass->prepareMeshData(render_resource);
         mIndirectTerrainGBufferPass->prepareMatBuffer(render_resource);
+        mIndirectGBufferPass->prepareMatBuffer(render_resource);
         mDepthPyramidPass->prepareMeshData(render_resource);
         mColorPyramidPass->prepareMeshData(render_resource);
         mSubsurfaceScatteringPass->prepareMetaData(render_resource);
@@ -510,15 +511,9 @@ namespace MoYu
         //=================================================================================
 
         //=================================================================================
-        // prepare gbuffer output
-        GBufferOutput mGBufferOutput;
-        mIndirectGBufferPass->initializeRenderTarget(graph, &mGBufferOutput);
-
-        //=================================================================================
-
-        //=================================================================================
         // indirect gbuffer
         IndirectGBufferPass::DrawInputParameters mGBufferIntput;
+        GBufferOutput mGBufferOutput;
         
         mGBufferIntput.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
         mGBufferIntput.renderDataPerDrawHandle = indirectCullOutput.renderDataPerDrawHandle;
@@ -691,7 +686,7 @@ namespace MoYu
         //outColorHandle = mColorPyramidOutput.colorHandle;
         ////=================================================================================
 
-        /*
+        /**/
         //=================================================================================
         // indirect opaque draw
         IndirectDrawPass::DrawInputParameters  mDrawIntputParams;
@@ -708,7 +703,7 @@ namespace MoYu
         }
         mIndirectOpaqueDrawPass->update(graph, mDrawIntputParams, mDrawOutputParams);
         //=================================================================================
-        */
+        
 
         ///*
         ////=================================================================================
@@ -761,8 +756,6 @@ namespace MoYu
         mDrawTransOutputParams.renderTargetDepthHandle = mGBufferOutput.depthHandle;
         mIndirectTransparentDrawPass->update(graph, mDrawTransIntputParams, mDrawTransOutputParams);
         //=================================================================================
-
-
 
         ////=================================================================================
         ////RHI::RgResourceHandle outputRTColorHandle = mDrawOutputParams.renderTargetColorHandle;

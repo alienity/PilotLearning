@@ -16,6 +16,7 @@
 #define _MASKMAP
 #define SHADOW_LOW
 #define UNITY_NO_DXT5nm
+// #define SHADER_STAGE_COMPUTE
 
 #include "../../Material/Material.hlsl"
 #include "../../Lighting/Lighting.hlsl"

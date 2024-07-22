@@ -31,6 +31,8 @@ namespace MoYu
     public:
         ~IndirectGBufferPass() { destroy(); }
 
+        void prepareMatBuffer(std::shared_ptr<RenderResource> render_resource);
+
         void initialize(const DrawPassInitInfo& init_info);
         void update(RHI::RenderGraph& graph, DrawInputParameters& passInput, GBufferOutput& passOutput);
         void destroy() override final;
@@ -45,6 +47,8 @@ namespace MoYu
         RHI::RgTextureDesc depthDesc;   // float
 
     private:
+        std::shared_ptr<RHI::D3D12Texture> pGBufferDepth;
+
         Shader drawGBufferVS;
         Shader drawGBufferPS;
         std::shared_ptr<RHI::D3D12RootSignature> pDrawGBufferSignature;

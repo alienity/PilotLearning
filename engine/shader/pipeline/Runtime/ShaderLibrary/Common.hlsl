@@ -836,8 +836,7 @@ PositionInputs GetPositionInput(float2 positionSS, float2 invScreenSize, float d
 // depth must be the depth from the raw depth buffer. This allow to handle all kind of depth automatically with the inverse view projection matrix.
 // For information. In Unity Depth is always in range 0..1 (even on OpenGL) but can be reversed.
 PositionInputs GetPositionInput(float2 positionSS, float2 invScreenSize, float deviceDepth,
-    float4x4 invViewProjMatrix, float4x4 viewMatrix,
-    uint2 tileCoord)
+    float4x4 invViewProjMatrix, float4x4 viewMatrix, uint2 tileCoord)
 {
     PositionInputs posInput = GetPositionInput(positionSS, invScreenSize, tileCoord);
     posInput.positionWS = ComputeWorldSpacePosition(posInput.positionNDC, deviceDepth, invViewProjMatrix);
