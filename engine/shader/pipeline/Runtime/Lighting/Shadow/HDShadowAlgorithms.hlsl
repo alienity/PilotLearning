@@ -184,28 +184,44 @@ float EvalShadow_PunctualDepth(HDShadowData sd, SamplerComparisonState samp, flo
 
 int EvalShadow_GetSplitIndex(HDShadowContext shadowContext, int index, float3 positionWS)
 {
-    HDShadowData shadowData = shadowContext.shadowDatas[index];
-    float3 positionVS = mul(shadowData.viewMatrix, float4(positionWS, 1)).xyz;
-    float2 maxDistance = float2(abs(positionVS.x), abs(positionVS.y));
-
-    float2 shadowBoudns = shadowData.shadowBounds.xy;    
-    uint cascadeNumber = shadowData.cascadeNumber;
-    uint currentLevel = shadowData.cascadeLevel.x;
-    int4 shadowSizePower = shadowData.shadowSizePower;
-
-    int cascadeLevel = -1;
-    for (int i = currentLevel; i < cascadeNumber; i++)
+    int shadowDataIndex = -1;
+    for (int cascadeIdx = 0; cascadeIdx < 4; cascadeIdx++)
     {
-        int sizePowerOffset = shadowSizePower[i] - shadowSizePower[currentLevel];
-        int powerScale = pow(2, sizePowerOffset);
-        float2 newShadowBoudns = shadowBoudns * powerScale;
-        if (all(maxDistance < newShadowBoudns.xy))
+        HDShadowData sd = shadowContext.shadowDatas[index + cascadeIdx];
+        if(cascadeIdx >= sd.cascadeNumber)
+            break;
+        const float4 hpositionWS =  mul(sd.viewProjMatrix, float4(positionWS, 1));
+        const float3 hpositionNDC = hpositionWS.xyz / hpositionWS.w;
+        if(all(abs(hpositionNDC.xy)<0.98f))
         {
-            cascadeLevel = i - currentLevel;
+            shadowDataIndex = cascadeIdx;
             break;
         }
     }
-    return cascadeLevel;
+    return shadowDataIndex;
+    
+    // HDShadowData shadowData = shadowContext.shadowDatas[index];
+    // float3 positionVS = mul(shadowData.viewMatrix, float4(positionWS, 1)).xyz;
+    // float2 maxDistance = float2(abs(positionVS.x), abs(positionVS.y));
+    //
+    // float2 shadowBoudns = shadowData.shadowBounds.xy;    
+    // uint cascadeNumber = shadowData.cascadeNumber;
+    // uint currentLevel = shadowData.cascadeLevel.x;
+    // int4 shadowSizePower = shadowData.shadowSizePower;
+    //
+    // int cascadeLevel = -1;
+    // for (int i = currentLevel; i < cascadeNumber; i++)
+    // {
+    //     int sizePowerOffset = shadowSizePower[i] - shadowSizePower[currentLevel];
+    //     int powerScale = pow(2, sizePowerOffset);
+    //     float2 newShadowBoudns = shadowBoudns * powerScale;
+    //     if (all(maxDistance < newShadowBoudns.xy))
+    //     {
+    //         cascadeLevel = i - currentLevel;
+    //         break;
+    //     }
+    // }
+    // return cascadeLevel;
 }
 
 float EvalShadow_CascadedDepth_Dither_SplitIndex(inout HDShadowContext shadowContext, SamplerComparisonState samp, float2 positionSS, float3 positionWS, float3 normalWS, int index, float3 L, int shadowSplitIndex)
@@ -243,7 +259,7 @@ float EvalShadow_CascadedDepth_Dither_SplitIndex(inout HDShadowContext shadowCon
         positionWS += normalBias;
         float3 posTC = EvalShadow_GetTexcoordsAtlas(sd, _CascadeShadowAtlasSize.zw, positionWS, false);
         Texture2D<float4> tex = ResourceDescriptorHeap[sd.shadowmapIndex];
-        shadow = DIRECTIONAL_FILTER_ALGORITHM(sd, positionSS, float3(posTC.x, 1-posTC.y, posTC.z), tex, samp, FIXED_UNIFORM_BIAS);
+        shadow = DIRECTIONAL_FILTER_ALGORITHM(sd, positionSS, float3(posTC.x, 1.0f - posTC.y, posTC.z), tex, samp, FIXED_UNIFORM_BIAS);
     }
 
     return shadow;

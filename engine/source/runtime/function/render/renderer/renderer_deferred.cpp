@@ -686,7 +686,7 @@ namespace MoYu
         //outColorHandle = mColorPyramidOutput.colorHandle;
         ////=================================================================================
 
-        /**/
+        /*
         //=================================================================================
         // indirect opaque draw
         IndirectDrawPass::DrawInputParameters  mDrawIntputParams;
@@ -703,7 +703,7 @@ namespace MoYu
         }
         mIndirectOpaqueDrawPass->update(graph, mDrawIntputParams, mDrawOutputParams);
         //=================================================================================
-        
+        */
 
         ///*
         ////=================================================================================
@@ -741,6 +741,7 @@ namespace MoYu
         //mVolumeCloudPass->update(graph, mVCIntputParams, mVCOutputParams);
         ////=================================================================================
 
+
         //=================================================================================
         // indirect transparent draw
         IndirectDrawTransparentPass::DrawInputParameters  mDrawTransIntputParams;
@@ -756,6 +757,7 @@ namespace MoYu
         mDrawTransOutputParams.renderTargetDepthHandle = mGBufferOutput.depthHandle;
         mIndirectTransparentDrawPass->update(graph, mDrawTransIntputParams, mDrawTransOutputParams);
         //=================================================================================
+
 
         ////=================================================================================
         ////RHI::RgResourceHandle outputRTColorHandle = mDrawOutputParams.renderTargetColorHandle;
