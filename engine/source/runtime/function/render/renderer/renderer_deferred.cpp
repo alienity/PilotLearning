@@ -132,6 +132,17 @@ namespace MoYu
             mTerrainCullPass->setCommonInfo(renderPassCommonInfo);
             mTerrainCullPass->initialize(drawPassInit);
         }
+        // DepthPrePass
+        {
+            DepthPrePass::DrawPassInitInfo drawPassInit;
+            drawPassInit.depthTexDesc = depthTexDesc;
+            drawPassInit.m_ShaderCompiler = pCompiler;
+            drawPassInit.m_ShaderRootPath = g_runtime_global_context.m_config_manager->getShaderFolder();
+
+            mDepthPrePass = std::make_shared<DepthPrePass>();
+            mDepthPrePass->setCommonInfo(renderPassCommonInfo);
+            mDepthPrePass->initialize(drawPassInit);
+        }
         // GBuffer pass
         {
             IndirectGBufferPass::DrawPassInitInfo drawPassInit;
@@ -375,6 +386,7 @@ namespace MoYu
         mSkyBoxPass->prepareMeshData(render_resource);
         mTerrainCullPass->prepareMeshData(render_resource);
         mIndirectTerrainGBufferPass->prepareMatBuffer(render_resource);
+        mDepthPrePass->prepareMatBuffer(render_resource);
         mIndirectGBufferPass->prepareMatBuffer(render_resource);
         mDepthPyramidPass->prepareMeshData(render_resource);
         mColorPyramidPass->prepareMeshData(render_resource);
@@ -399,6 +411,7 @@ namespace MoYu
         mTerrainCullPass             = nullptr;
         mIndirectShadowPass          = nullptr;
         mIndirectTerrainShadowPass   = nullptr;
+        mDepthPrePass                = nullptr;
         mIndirectGBufferPass         = nullptr;
         mIndirectTerrainGBufferPass  = nullptr;
         mDepthPyramidPass            = nullptr;
@@ -511,6 +524,19 @@ namespace MoYu
         //=================================================================================
 
         //=================================================================================
+        // depth prepass
+        DepthPrePass::DrawInputParameters mDepthPrePassInput;
+        DepthPrePass::DrawOutput mDepthPrepassOutput;
+
+        mDepthPrePassInput.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
+        mDepthPrePassInput.renderDataPerDrawHandle = indirectCullOutput.renderDataPerDrawHandle;
+        mDepthPrePassInput.propertiesPerMaterialHandle = indirectCullOutput.propertiesPerMaterialHandle;
+        mDepthPrePassInput.opaqueDrawHandle = indirectCullOutput.opaqueDrawHandle.indirectSortBufferHandle;
+
+        mDepthPrePass->update(graph, mDepthPrePassInput, mDepthPrepassOutput);
+        //=================================================================================
+
+        //=================================================================================
         // indirect gbuffer
         IndirectGBufferPass::DrawInputParameters mGBufferIntput;
         GBufferOutput mGBufferOutput;
@@ -519,6 +545,8 @@ namespace MoYu
         mGBufferIntput.renderDataPerDrawHandle = indirectCullOutput.renderDataPerDrawHandle;
         mGBufferIntput.propertiesPerMaterialHandle = indirectCullOutput.propertiesPerMaterialHandle;
         mGBufferIntput.opaqueDrawHandle = indirectCullOutput.opaqueDrawHandle.indirectSortBufferHandle;
+        mGBufferOutput.depthHandle = mDepthPrepassOutput.depthBufferHandle;
+
         mIndirectGBufferPass->update(graph, mGBufferIntput, mGBufferOutput);
         //=================================================================================
         

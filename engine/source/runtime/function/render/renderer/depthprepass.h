@@ -7,13 +7,11 @@
 
 namespace MoYu
 {
-    // https://therealmjp.github.io/posts/bindless-texturing-for-deferred-rendering-and-decals/
-    class IndirectGBufferPass : public RenderPass
+    class DepthPrePass : public RenderPass
 	{
     public:
         struct DrawPassInitInfo : public RenderPassInitInfo
         {
-            RHI::RgTextureDesc colorTexDesc;
             RHI::RgTextureDesc depthTexDesc;
 
             ShaderCompiler*       m_ShaderCompiler;
@@ -28,30 +26,29 @@ namespace MoYu
             RHI::RgResourceHandle opaqueDrawHandle;
         };
 
+        struct DrawOutput : public PassOutput
+        {
+            RHI::RgResourceHandle depthBufferHandle;
+        };
+
     public:
-        ~IndirectGBufferPass() { destroy(); }
+        ~DepthPrePass() { destroy(); }
 
         void prepareMatBuffer(std::shared_ptr<RenderResource> render_resource);
 
         void initialize(const DrawPassInitInfo& init_info);
-        void update(RHI::RenderGraph& graph, DrawInputParameters& passInput, GBufferOutput& passOutput);
+        void update(RHI::RenderGraph& graph, DrawInputParameters& passInput, DrawOutput& passOutput);
         void destroy() override final;
 
-        bool initializeRenderTarget(RHI::RenderGraph& graph, GBufferOutput* drawPassOutput);
-
-        RHI::RgTextureDesc gbufferDesc; // float4
-        RHI::RgTextureDesc gbuffer0Desc; // float4
-        RHI::RgTextureDesc gbuffer1Desc; // float4
-        RHI::RgTextureDesc gbuffer2Desc; // float4
-        RHI::RgTextureDesc gbuffer3Desc; // float4
         RHI::RgTextureDesc depthDesc;   // float
 
     private:
-        Shader drawGBufferVS;
-        Shader drawGBufferPS;
-        std::shared_ptr<RHI::D3D12RootSignature> pDrawGBufferSignature;
-        std::shared_ptr<RHI::D3D12PipelineState> pDrawGBufferPSO;
-        std::shared_ptr<RHI::D3D12CommandSignature> pGBufferCommandSignature;
+        std::shared_ptr<RHI::D3D12Texture> pDepthBuffer;
+
+        Shader drawDepthVS;
+        std::shared_ptr<RHI::D3D12RootSignature> pDrawDepthSignature;
+        std::shared_ptr<RHI::D3D12PipelineState> pDrawDepthPSO;
+        std::shared_ptr<RHI::D3D12CommandSignature> pDepthCommandSignature;
 	};
 }
 
