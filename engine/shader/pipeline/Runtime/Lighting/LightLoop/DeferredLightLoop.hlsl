@@ -99,7 +99,7 @@ void SHADE_OPAQUE_ENTRY(uint3 dispatchThreadId : SV_DispatchThreadID, uint2 grou
     
     float depth = LoadCameraDepth(frameUniform, float2(pixelCoord.x, pixelCoord.y));
     
-    PositionInputs posInput = GetPositionInput(float2(pixelCoord.x, (screenSize.y - 1) - pixelCoord.y), screenSize.zw, depth,
+    PositionInputs posInput = GetPositionInput(float2(pixelCoord.x, (screenSize.y) - pixelCoord.y), screenSize.zw, depth,
         UNITY_MATRIX_I_VP(frameUniform), UNITY_MATRIX_V(frameUniform));
 
     // For indirect case: we can still overlap inside a tile with the sky/background, reject it
@@ -126,7 +126,7 @@ void SHADE_OPAQUE_ENTRY(uint3 dispatchThreadId : SV_DispatchThreadID, uint2 grou
     Texture2D<GBufferType2> inGBuffer2 = ResourceDescriptorHeap[inGBuffer2Index];
     Texture2D<GBufferType3> inGBuffer3 = ResourceDescriptorHeap[inGBuffer3Index];
     DecodeFromGBuffer(inGBuffer0, inGBuffer1, inGBuffer2, inGBuffer3,
-        float2(posInput.positionSS.x, (screenSize.y - 1) - posInput.positionSS.y), featureFlags, bsdfData, builtinData);
+        float2(posInput.positionSS.x, (screenSize.y) - posInput.positionSS.y), featureFlags, bsdfData, builtinData);
 
 
     PreLightData preLightData = GetPreLightData(frameUniform, samplerStruct, V, posInput, bsdfData);

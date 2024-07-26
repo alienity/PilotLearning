@@ -71,6 +71,7 @@ namespace MoYu
             RHIDepthStencilState DepthStencilState;
             DepthStencilState.DepthEnable = true;
             DepthStencilState.DepthFunc   = RHI_COMPARISON_FUNC::GreaterEqual;
+            DepthStencilState.DepthWrite = false;
 
             RHIRenderTargetState RenderTargetState;
             RenderTargetState.RTFormats[0] = gbuffer0Desc.Format;
@@ -108,7 +109,6 @@ namespace MoYu
             PipelineStateStreamDesc psoDesc = {sizeof(PsoStream), &psoStream};
             pDrawGBufferPSO = std::make_shared<RHI::D3D12PipelineState>(m_Device, L"IndirectGBuffer", psoDesc);
         }
-
 
 	}
 
