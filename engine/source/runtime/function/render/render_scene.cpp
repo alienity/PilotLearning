@@ -235,7 +235,7 @@ namespace MoYu
             cachedMeshRenderer.internalMeshRenderer.prev_model_matrix         = model_matrix;
             cachedMeshRenderer.internalMeshRenderer.prev_model_matrix_inverse = model_matrix_inverse;
 
-            _mesh_renderers.push_back(cachedMeshRenderer);
+            _mesh_renderers.push_back(std::move(cachedMeshRenderer));
         }
         else
         {

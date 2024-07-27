@@ -251,6 +251,7 @@ float ADD_IDX(GetSurfaceData)(
     SAMPLER(sampler_MaskMap) = samplerStruct.SLinearClampSampler;
     surfaceData.perceptualSmoothness = SAMPLE_UVMAPPING_TEXTURE2D(ADD_IDX(_MaskMap), sampler_MaskMap, ADD_IDX(layerTexCoord.base)).a;
     surfaceData.perceptualSmoothness = lerp(ADD_IDX(matProperties._SmoothnessRemapMin), ADD_IDX(matProperties._SmoothnessRemapMax), surfaceData.perceptualSmoothness);
+    surfaceData.perceptualSmoothness = min(0.999f, surfaceData.perceptualSmoothness);
 #else
     surfaceData.perceptualSmoothness = ADD_IDX(matProperties._Smoothness);
 #endif
@@ -264,15 +265,15 @@ float ADD_IDX(GetSurfaceData)(
 #endif
 
     // MaskMap is RGBA: Metallic, Ambient Occlusion (Optional), detail Mask (Optional), Smoothness
-// #ifdef _MASKMAP_IDX
-//     surfaceData.metallic = SAMPLE_UVMAPPING_TEXTURE2D(ADD_IDX(_MaskMap), sampler_MaskMap, ADD_IDX(layerTexCoord.base)).r;
-//     surfaceData.metallic = lerp(ADD_IDX(matProperties._MetallicRemapMin), ADD_IDX(matProperties._MetallicRemapMax), surfaceData.metallic);
-//     surfaceData.ambientOcclusion = SAMPLE_UVMAPPING_TEXTURE2D(ADD_IDX(_MaskMap), sampler_MaskMap, ADD_IDX(layerTexCoord.base)).g;
-//     surfaceData.ambientOcclusion = lerp(ADD_IDX(matProperties._AORemapMin), ADD_IDX(matProperties._AORemapMax), surfaceData.ambientOcclusion);
-// #else
+#ifdef _MASKMAP_IDX
+    surfaceData.metallic = SAMPLE_UVMAPPING_TEXTURE2D(ADD_IDX(_MaskMap), sampler_MaskMap, ADD_IDX(layerTexCoord.base)).r;
+    surfaceData.metallic = lerp(ADD_IDX(matProperties._MetallicRemapMin), ADD_IDX(matProperties._MetallicRemapMax), surfaceData.metallic);
+    surfaceData.ambientOcclusion = SAMPLE_UVMAPPING_TEXTURE2D(ADD_IDX(_MaskMap), sampler_MaskMap, ADD_IDX(layerTexCoord.base)).g;
+    surfaceData.ambientOcclusion = lerp(ADD_IDX(matProperties._AORemapMin), ADD_IDX(matProperties._AORemapMax), surfaceData.ambientOcclusion);
+#else
     surfaceData.metallic = ADD_IDX(matProperties._Metallic);
     surfaceData.ambientOcclusion = 1.0;
-// #endif
+#endif
 
     surfaceData.diffusionProfileHash = asuint(ADD_IDX(matProperties._DiffusionProfileHash));
     surfaceData.subsurfaceMask = ADD_IDX(matProperties._SubsurfaceMask);

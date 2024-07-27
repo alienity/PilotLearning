@@ -181,9 +181,9 @@ void GetSurfaceAndBuiltinData(
     // and UV1 is corrupt when we use surface gradient. In case UV1 aren't required we set them to 0, so we ensure there is no garbage.
     // When using lightmaps, the uv1 is always valid but we don't update _UVMappingMask.y to 1
     // So when we are using them, we just need to keep the UVs as is.
-#if defined(SURFACE_GRADIENT)
-    input.texCoord1 = (matProperties._UVMappingMask.y + matProperties._UVDetailsMappingMask.y) > 0 ? input.texCoord1 : 0;
-#endif
+// #if defined(SURFACE_GRADIENT)
+//     input.texCoord1 = (matProperties._UVMappingMask.y + matProperties._UVDetailsMappingMask.y) > 0 ? input.texCoord1 : 0;
+// #endif
 
 // Don't dither if displaced tessellation (we're fading out the displacement instead to match the next LOD)
 #ifdef LOD_FADE_CROSSFADE // enable dithering LOD transition if user select CrossFade transition in LOD group

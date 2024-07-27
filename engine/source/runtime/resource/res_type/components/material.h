@@ -11,7 +11,7 @@ namespace MoYu
     {
         std::string _ShaderName{ "" };
         MaterialImage _BaseColorMap{ DefaultMaterialImageWhite }; // white
-        MaterialImage _MaskMap{ DefaultMaterialImageBlack }; // MaskMap is RGBA: Metallic, Ambient Occlusion (Optional, float) detail Mask (Optional, float) Smoothness
+        MaterialImage _MaskMap{ DefaultMaterialImageWhite }; // MaskMap is RGBA: Metallic, Ambient Occlusion (Optional, float) detail Mask (Optional, float) Smoothness
         MaterialImage _NormalMap{ DefaultMaterialImageBump }; // bump. Tangent space normal map
         MaterialImage _NormalMapOS{ DefaultMaterialImageWhite }; // white. Object space normal map - no good default value    
         MaterialImage _BentNormalMap{ DefaultMaterialImageBump }; // bump. Tangent space normal map

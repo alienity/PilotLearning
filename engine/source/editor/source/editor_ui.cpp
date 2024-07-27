@@ -193,7 +193,7 @@ namespace MoYu
         };
         m_editor_ui_creator["Color"] = [this](const std::string& name, bool& is_dirty, void* value_ptr) -> void {
             Color* color_ptr = static_cast<Color*>(value_ptr);
-            float  col[4]   = {color_ptr->r, color_ptr->g, color_ptr->g, color_ptr->a};
+            float  col[4]   = {color_ptr->r, color_ptr->g, color_ptr->b, color_ptr->a};
 
             is_dirty |= ImGui::ColorEdit4("Color", col);
 
@@ -488,112 +488,119 @@ namespace MoYu
         m_editor_ui_creator["StandardLightMaterial"] = [this, &asset_folder](const std::string& name, bool& is_dirty, void* value_ptr) -> void {
             bool isDirty = false;
 
+            auto BlendModeFunc = [=](float& InBlendMode, bool& IsDirty) {
+                const char* blendModeItems[] = { "Opaque", "Transparent" };
+                int curItemIndex = (int)InBlendMode;
+                if (ImGui::Combo("combo", &curItemIndex, blendModeItems, IM_ARRAYSIZE(blendModeItems))) IsDirty = true;
+                InBlendMode = curItemIndex;
+            };
+
+            auto DoubleSliderFunc = [=](std::string TileName, float& InValue0, float& InValue1, float InMin, float InMax, bool& IsDirty) {
+                float tmpRemapMinMax[2] = { InValue0 , InValue1 };
+                if (ImGui::SliderFloat2(TileName.c_str(), tmpRemapMinMax, InMin, InMax))
+                {
+                    InValue0 = tmpRemapMinMax[0];
+                    InValue1 = glm::min(glm::max(tmpRemapMinMax[0] + 0.01f, tmpRemapMinMax[1]), InMax);
+                    IsDirty = true;
+                }
+            };
+
             StandardLightMaterial* mat_res_ptr = static_cast<StandardLightMaterial*>(value_ptr);
 
-            {
-                const char* blendModeItems[] = { "Opaque", "Transparent" };
-                int curItemIndex = (int)mat_res_ptr->_BlendMode;
-                if (ImGui::Combo("combo", &curItemIndex, blendModeItems, IM_ARRAYSIZE(blendModeItems))) isDirty = true;
-                mat_res_ptr->_BlendMode = curItemIndex;
-                //if (ImGui::Combo("_BlendMode", &mat_res_ptr->_BlendMode, 0.02f, 0.0f, 1.0f)) isDirty = true;
-            }
+            BlendModeFunc(mat_res_ptr->_BlendMode, isDirty);
 
             if (ImGui::ColorEdit4("_BaseColor", &mat_res_ptr->_BaseColor.x)) isDirty = true;
-            if (ImGui::DragFloat("_Metallic", &mat_res_ptr->_Metallic, 0.02f, 0.0f, 1.0f)) isDirty = true;
-            if (ImGui::DragFloat("_Smoothness", &mat_res_ptr->_Smoothness, 0.02f, 0.0f, 1.0f)) isDirty = true;
-            if (ImGui::DragFloat("_MetallicRemapMin", &mat_res_ptr->_MetallicRemapMin, 0.02f, 0.0f, 1.0f)) isDirty = true;
-            if (ImGui::DragFloat("_MetallicRemapMax", &mat_res_ptr->_MetallicRemapMax, 0.02f, 0.0f, 1.0f)) isDirty = true;
-            if (ImGui::DragFloat("_SmoothnessRemapMin", &mat_res_ptr->_SmoothnessRemapMin, 0.02f, 0.0f, 1.0f)) isDirty = true;
-            if (ImGui::DragFloat("_SmoothnessRemapMax", &mat_res_ptr->_SmoothnessRemapMax, 0.02f, 0.0f, 1.0f)) isDirty = true;
-            if (ImGui::DragFloat("_AlphaRemapMin", &mat_res_ptr->_AlphaRemapMin, 0.02f, 0.0f, 1.0f)) isDirty = true;
-            if (ImGui::DragFloat("_AlphaRemapMax", &mat_res_ptr->_AlphaRemapMax, 0.02f, 0.0f, 1.0f)) isDirty = true;
-            if (ImGui::DragFloat("_AORemapMin", &mat_res_ptr->_AORemapMin, 0.02f, 0.0f, 1.0f)) isDirty = true;
-            if (ImGui::DragFloat("_AORemapMax", &mat_res_ptr->_AORemapMax, 0.02f, 0.0f, 1.0f)) isDirty = true;
+            //if (ImGui::DragFloat("_Metallic", &mat_res_ptr->_Metallic, 0.02f, 0.0f, 1.0f)) isDirty = true;
+            //if (ImGui::DragFloat("_Smoothness", &mat_res_ptr->_Smoothness, 0.02f, 0.0f, 1.0f)) isDirty = true;
+
+            DoubleSliderFunc("_MetallicRemapMinMax", mat_res_ptr->_MetallicRemapMin, mat_res_ptr->_MetallicRemapMax, 0.0f, 1.0f, isDirty);
+            DoubleSliderFunc("_SmoothnessRemapMinMax", mat_res_ptr->_SmoothnessRemapMin, mat_res_ptr->_SmoothnessRemapMax, 0.0f, 1.0f, isDirty);
+            DoubleSliderFunc("_AlphaRemapMinMax", mat_res_ptr->_AlphaRemapMin, mat_res_ptr->_AlphaRemapMax, 0.0f, 1.0f, isDirty);
+            DoubleSliderFunc("_AORemapMinMax", mat_res_ptr->_AORemapMin, mat_res_ptr->_AORemapMax, 0.0f, 1.0f, isDirty);
+
             if (ImGui::DragFloat("_NormalScale", &mat_res_ptr->_NormalScale, 0.02f, 0.0f, 8.0f)) isDirty = true;
-            if (ImGui::DragFloat("_HeightAmplitude", &mat_res_ptr->_HeightAmplitude, 0.02f, 0.0f, 1.0f)) isDirty = true;
-            if (ImGui::DragFloat("_HeightCenter", &mat_res_ptr->_HeightCenter, 0.02f, 0.0f, 1.0f)) isDirty = true;
-            if (ImGui::DragInt("_HeightMapParametrization", &mat_res_ptr->_HeightMapParametrization, 1, 0, 1)) isDirty = true;
-            if (ImGui::DragFloat("_HeightOffset", &mat_res_ptr->_HeightOffset, 0.02f, 0.0f, 1.0f)) isDirty = true;
-            if (ImGui::DragFloat("_HeightMin", &mat_res_ptr->_HeightMin, 0.02f, -10.0f, 1.0f)) isDirty = true;
-            if (ImGui::DragFloat("_HeightMax", &mat_res_ptr->_HeightMax, 0.02f, -1.0f, 10.0f)) isDirty = true;
-            if (ImGui::DragFloat("_HeightTessAmplitude", &mat_res_ptr->_HeightTessAmplitude, 0.02f, 0.0f, 1.0f)) isDirty = true;
-            if (ImGui::DragFloat("_HeightTessCenter", &mat_res_ptr->_HeightTessCenter, 0.02f, 0.0f, 1.0f)) isDirty = true;
-            if (ImGui::DragFloat("_HeightPoMAmplitude", &mat_res_ptr->_HeightPoMAmplitude, 0.02f, 0.0f, 1.0f)) isDirty = true;
-            if (ImGui::DragFloat("_DetailAlbedoScale", &mat_res_ptr->_DetailAlbedoScale, 0.02f, 0.0f, 1.0f)) isDirty = true;
-            if (ImGui::DragFloat("_DetailNormalScale", &mat_res_ptr->_DetailNormalScale, 0.02f, 0.0f, 1.0f)) isDirty = true;
-            if (ImGui::DragFloat("_DetailSmoothnessScale", &mat_res_ptr->_DetailSmoothnessScale, 0.02f, 0.0f, 1.0f)) isDirty = true;
-            if (ImGui::DragFloat("_Anisotropy", &mat_res_ptr->_Anisotropy, 0.02f, 0.0f, 1.0f)) isDirty = true;
-            if (ImGui::DragFloat("_DiffusionProfileHash", &mat_res_ptr->_DiffusionProfileHash, 0.02f, 0.0f, 1.0f)) isDirty = true;
-            if (ImGui::DragFloat("_SubsurfaceMask", &mat_res_ptr->_SubsurfaceMask, 0.02f, 0.0f, 1.0f)) isDirty = true;
-            if (ImGui::DragFloat("_TransmissionMask", &mat_res_ptr->_TransmissionMask, 0.02f, 0.0f, 1.0f)) isDirty = true;
-            if (ImGui::DragFloat("_Thickness", &mat_res_ptr->_Thickness, 0.02f, 0.0f, 1.0f)) isDirty = true;
-            if (ImGui::DragFloat4("_ThicknessRemap", &mat_res_ptr->_ThicknessRemap.x, 0.02f, 0.0f, 1.0f)) isDirty = true;
-            if (ImGui::DragFloat4("_IridescenceThicknessRemap", &mat_res_ptr->_IridescenceThicknessRemap.x, 0.02f, 0.0f, 1.0f)) isDirty = true;
-            if (ImGui::DragFloat("_IridescenceThickness", &mat_res_ptr->_IridescenceThickness, 0.02f, 0.0f, 1.0f)) isDirty = true;
-            if (ImGui::DragFloat("_IridescenceMask", &mat_res_ptr->_IridescenceMask, 0.02f, 0.0f, 1.0f)) isDirty = true;
-            if (ImGui::DragFloat("_CoatMask", &mat_res_ptr->_CoatMask, 0.02f, 0.0f, 1.0f)) isDirty = true;
-            if (ImGui::DragFloat("_EnergyConservingSpecularColor", &mat_res_ptr->_EnergyConservingSpecularColor, 0.02f, 0.0f, 1.0f)) isDirty = true;
-            if (ImGui::DragInt("_SpecularOcclusionMode", &mat_res_ptr->_SpecularOcclusionMode, 1, 0, 2)) isDirty = true;
-            if (ImGui::ColorEdit3("_EmissiveColor", &mat_res_ptr->_EmissiveColor.x)) isDirty = true;
-            if (ImGui::DragFloat("_AlbedoAffectEmissive", &mat_res_ptr->_AlbedoAffectEmissive, 0.02f, 0.0f, 1.0f)) isDirty = true;
-            if (ImGui::DragInt("_EmissiveIntensityUnit", &mat_res_ptr->_EmissiveIntensityUnit, 0.02f, 0.0f, 1.0f)) isDirty = true;
-            if (ImGui::DragInt("_UseEmissiveIntensity", &mat_res_ptr->_UseEmissiveIntensity, 0.02f, 0.0f, 1.0f)) isDirty = true;
-            if (ImGui::DragFloat("_EmissiveIntensity", &mat_res_ptr->_EmissiveIntensity, 0.02f, 0.0f, 1.0f)) isDirty = true;
-            if (ImGui::DragFloat("_EmissiveExposureWeight", &mat_res_ptr->_EmissiveExposureWeight, 0.02f, 0.0f, 1.0f)) isDirty = true;
-            if (ImGui::DragFloat("_UseShadowThreshold", &mat_res_ptr->_UseShadowThreshold, 0.02f, 0.0f, 1.0f)) isDirty = true;
-            if (ImGui::DragFloat("_AlphaCutoffEnable", &mat_res_ptr->_AlphaCutoffEnable, 0.02f, 0.0f, 1.0f)) isDirty = true;
-            if (ImGui::DragFloat("_AlphaCutoff", &mat_res_ptr->_AlphaCutoff, 0.02f, 0.0f, 1.0f)) isDirty = true;
-            if (ImGui::DragFloat("_AlphaCutoffShadow", &mat_res_ptr->_AlphaCutoffShadow, 0.02f, 0.0f, 1.0f)) isDirty = true;
-            if (ImGui::DragFloat("_AlphaCutoffPrepass", &mat_res_ptr->_AlphaCutoffPrepass, 0.02f, 0.0f, 1.0f)) isDirty = true;
-            if (ImGui::DragFloat("_AlphaCutoffPostpass", &mat_res_ptr->_AlphaCutoffPostpass, 0.02f, 0.0f, 1.0f)) isDirty = true;
-            if (ImGui::DragFloat("_TransparentDepthPrepassEnable", &mat_res_ptr->_TransparentDepthPrepassEnable, 0.02f, 0.0f, 1.0f)) isDirty = true;
-            if (ImGui::DragFloat("_TransparentBackfaceEnable", &mat_res_ptr->_TransparentBackfaceEnable, 0.02f, 0.0f, 1.0f)) isDirty = true;
-            if (ImGui::DragFloat("_TransparentDepthPostpassEnable", &mat_res_ptr->_TransparentDepthPostpassEnable, 0.02f, 0.0f, 1.0f)) isDirty = true;
-            if (ImGui::DragFloat("_TransparentSortPriority", &mat_res_ptr->_TransparentSortPriority, 0.02f, 0.0f, 1.0f)) isDirty = true;
-            if (ImGui::DragInt("_RefractionModel", &mat_res_ptr->_RefractionModel, 1, 0, 3)) isDirty = true;
-            if (ImGui::DragFloat("_Ior", &mat_res_ptr->_Ior, 0.02f, 0.0f, 1.0f)) isDirty = true;
-            if (ImGui::ColorEdit3("_TransmittanceColor", &mat_res_ptr->_TransmittanceColor.x)) isDirty = true;
-            if (ImGui::DragFloat("_ATDistance", &mat_res_ptr->_ATDistance, 0.02f, 0.0f, 1.0f)) isDirty = true;
-            if (ImGui::DragFloat("_TransparentWritingMotionVec", &mat_res_ptr->_TransparentWritingMotionVec, 0.02f, 0.0f, 1.0f)) isDirty = true;
-            if (ImGui::DragFloat("_SurfaceType", &mat_res_ptr->_SurfaceType, 0.02f, 0.0f, 1.0f)) isDirty = true;
-            if (ImGui::DragFloat("_SrcBlend", &mat_res_ptr->_SrcBlend, 0.02f, 0.0f, 1.0f)) isDirty = true;
-            if (ImGui::DragFloat("_DstBlend", &mat_res_ptr->_DstBlend, 0.02f, 0.0f, 1.0f)) isDirty = true;
-            if (ImGui::DragFloat("_AlphaSrcBlend", &mat_res_ptr->_AlphaSrcBlend, 0.02f, 0.0f, 1.0f)) isDirty = true;
-            if (ImGui::DragFloat("_AlphaDstBlend", &mat_res_ptr->_AlphaDstBlend, 0.02f, 0.0f, 1.0f)) isDirty = true;
-            if (ImGui::DragFloat("_EnableFogOnTransparent", &mat_res_ptr->_EnableFogOnTransparent, 0.02f, 0.0f, 1.0f)) isDirty = true;
-            if (ImGui::DragFloat("_DoubleSidedEnable", &mat_res_ptr->_DoubleSidedEnable, 0.02f, 0.0f, 1.0f)) isDirty = true;
-            if (ImGui::DragFloat("_DoubleSidedNormalMode", &mat_res_ptr->_DoubleSidedNormalMode, 0.02f, 0.0f, 1.0f)) isDirty = true;
-            if (ImGui::DragFloat4("_DoubleSidedConstants", &mat_res_ptr->_DoubleSidedConstants.x, 0.02f, -1.0f, 1.0f)) isDirty = true;
-            if (ImGui::DragFloat("_DoubleSidedGIMode", &mat_res_ptr->_DoubleSidedGIMode, 0.02f, 0.0f, 1.0f)) isDirty = true;
-            if (ImGui::DragFloat("_UVBase", &mat_res_ptr->_UVBase, 0.02f, 0.0f, 1.0f)) isDirty = true;
-            if (ImGui::DragFloat("_ObjectSpaceUVMapping", &mat_res_ptr->_ObjectSpaceUVMapping, 0.02f, 0.0f, 1.0f)) isDirty = true;
-            if (ImGui::DragFloat("_TexWorldScale", &mat_res_ptr->_TexWorldScale, 0.02f, 0.0f, 1.0f)) isDirty = true;
-            if (ImGui::ColorEdit4("_UVMappingMask", &mat_res_ptr->_UVMappingMask.x)) isDirty = true;
-            if (ImGui::DragFloat("_NormalMapSpace", &mat_res_ptr->_NormalMapSpace, 0.02f, 0.0f, 1.0f)) isDirty = true;
-            if (ImGui::DragInt("_MaterialID", &mat_res_ptr->_MaterialID, 1, 0, 5)) isDirty = true;
-            if (ImGui::DragFloat("_TransmissionEnable", &mat_res_ptr->_TransmissionEnable, 0.02f, 0.0f, 1.0f)) isDirty = true;
-            if (ImGui::DragFloat("_PPDMinSamples", &mat_res_ptr->_PPDMinSamples, 0.02f, 0.0f, 1.0f)) isDirty = true;
-            if (ImGui::DragFloat("_PPDMaxSamples", &mat_res_ptr->_PPDMaxSamples, 0.02f, 0.0f, 1.0f)) isDirty = true;
-            if (ImGui::DragFloat("_PPDLodThreshold", &mat_res_ptr->_PPDLodThreshold, 0.02f, 0.0f, 1.0f)) isDirty = true;
-            if (ImGui::DragFloat("_PPDPrimitiveLength", &mat_res_ptr->_PPDPrimitiveLength, 0.02f, 0.0f, 1.0f)) isDirty = true;
-            if (ImGui::DragFloat("_PPDPrimitiveWidth", &mat_res_ptr->_PPDPrimitiveWidth, 0.02f, 0.0f, 1.0f)) isDirty = true;
-            if (ImGui::DragFloat4("_InvPrimScale", &mat_res_ptr->_InvPrimScale.x, 0.02f, 0.0f, 1.0f)) isDirty = true;
-            if (ImGui::DragFloat4("_UVDetailsMappingMask", &mat_res_ptr->_UVDetailsMappingMask.x, 0.02f, 0.0f, 1.0f)) isDirty = true;
-            if (ImGui::DragFloat("_UVDetail", &mat_res_ptr->_UVDetail, 0.02f, 0.0f, 1.0f)) isDirty = true;
-            if (ImGui::DragFloat("_LinkDetailsWithBase", &mat_res_ptr->_LinkDetailsWithBase, 0.02f, 0.0f, 1.0f)) isDirty = true;
-            if (ImGui::DragFloat("_EmissiveColorMode", &mat_res_ptr->_EmissiveColorMode, 0.02f, 0.0f, 1.0f)) isDirty = true;
-            if (ImGui::DragFloat("_UVEmissive", &mat_res_ptr->_UVEmissive, 0.02f, 0.0f, 1.0f)) isDirty = true;
+            //if (ImGui::DragFloat("_HeightAmplitude", &mat_res_ptr->_HeightAmplitude, 0.02f, 0.0f, 1.0f)) isDirty = true;
+            //if (ImGui::DragFloat("_HeightCenter", &mat_res_ptr->_HeightCenter, 0.02f, 0.0f, 1.0f)) isDirty = true;
+            //if (ImGui::DragInt("_HeightMapParametrization", &mat_res_ptr->_HeightMapParametrization, 1, 0, 1)) isDirty = true;
+            //if (ImGui::DragFloat("_HeightOffset", &mat_res_ptr->_HeightOffset, 0.02f, 0.0f, 1.0f)) isDirty = true;
+            //DoubleSliderFunc("_HeightMinMax", mat_res_ptr->_HeightMin, mat_res_ptr->_HeightMax, -10.0f, 10.0f, isDirty);
+            //if (ImGui::DragFloat("_HeightTessCenter", &mat_res_ptr->_HeightTessCenter, 0.02f, 0.0f, 1.0f)) isDirty = true;
+            //if (ImGui::DragFloat("_HeightPoMAmplitude", &mat_res_ptr->_HeightPoMAmplitude, 0.02f, 0.0f, 1.0f)) isDirty = true;
+            //if (ImGui::DragFloat("_DetailAlbedoScale", &mat_res_ptr->_DetailAlbedoScale, 0.02f, 0.0f, 1.0f)) isDirty = true;
+            //if (ImGui::DragFloat("_DetailNormalScale", &mat_res_ptr->_DetailNormalScale, 0.02f, 0.0f, 1.0f)) isDirty = true;
+            //if (ImGui::DragFloat("_DetailSmoothnessScale", &mat_res_ptr->_DetailSmoothnessScale, 0.02f, 0.0f, 1.0f)) isDirty = true;
+            //if (ImGui::DragFloat("_Anisotropy", &mat_res_ptr->_Anisotropy, 0.02f, 0.0f, 1.0f)) isDirty = true;
+            //if (ImGui::DragFloat("_DiffusionProfileHash", &mat_res_ptr->_DiffusionProfileHash, 0.02f, 0.0f, 1.0f)) isDirty = true;
+            //if (ImGui::DragFloat("_SubsurfaceMask", &mat_res_ptr->_SubsurfaceMask, 0.02f, 0.0f, 1.0f)) isDirty = true;
+            //if (ImGui::DragFloat("_TransmissionMask", &mat_res_ptr->_TransmissionMask, 0.02f, 0.0f, 1.0f)) isDirty = true;
+            //if (ImGui::DragFloat("_Thickness", &mat_res_ptr->_Thickness, 0.02f, 0.0f, 1.0f)) isDirty = true;
+            //if (ImGui::DragFloat4("_ThicknessRemap", &mat_res_ptr->_ThicknessRemap.x, 0.02f, 0.0f, 1.0f)) isDirty = true;
+            //if (ImGui::DragFloat4("_IridescenceThicknessRemap", &mat_res_ptr->_IridescenceThicknessRemap.x, 0.02f, 0.0f, 1.0f)) isDirty = true;
+            //if (ImGui::DragFloat("_IridescenceThickness", &mat_res_ptr->_IridescenceThickness, 0.02f, 0.0f, 1.0f)) isDirty = true;
+            //if (ImGui::DragFloat("_IridescenceMask", &mat_res_ptr->_IridescenceMask, 0.02f, 0.0f, 1.0f)) isDirty = true;
+            //if (ImGui::DragFloat("_CoatMask", &mat_res_ptr->_CoatMask, 0.02f, 0.0f, 1.0f)) isDirty = true;
+            //if (ImGui::DragFloat("_EnergyConservingSpecularColor", &mat_res_ptr->_EnergyConservingSpecularColor, 0.02f, 0.0f, 1.0f)) isDirty = true;
+            //if (ImGui::DragInt("_SpecularOcclusionMode", &mat_res_ptr->_SpecularOcclusionMode, 1, 0, 2)) isDirty = true;
+            //if (ImGui::ColorEdit3("_EmissiveColor", &mat_res_ptr->_EmissiveColor.x)) isDirty = true;
+            //if (ImGui::DragFloat("_AlbedoAffectEmissive", &mat_res_ptr->_AlbedoAffectEmissive, 0.02f, 0.0f, 1.0f)) isDirty = true;
+            //if (ImGui::DragInt("_EmissiveIntensityUnit", &mat_res_ptr->_EmissiveIntensityUnit, 0.02f, 0.0f, 1.0f)) isDirty = true;
+            //if (ImGui::DragInt("_UseEmissiveIntensity", &mat_res_ptr->_UseEmissiveIntensity, 0.02f, 0.0f, 1.0f)) isDirty = true;
+            //if (ImGui::DragFloat("_EmissiveIntensity", &mat_res_ptr->_EmissiveIntensity, 0.02f, 0.0f, 1.0f)) isDirty = true;
+            //if (ImGui::DragFloat("_EmissiveExposureWeight", &mat_res_ptr->_EmissiveExposureWeight, 0.02f, 0.0f, 1.0f)) isDirty = true;
+            //if (ImGui::DragFloat("_UseShadowThreshold", &mat_res_ptr->_UseShadowThreshold, 0.02f, 0.0f, 1.0f)) isDirty = true;
+            //if (ImGui::DragFloat("_AlphaCutoffEnable", &mat_res_ptr->_AlphaCutoffEnable, 0.02f, 0.0f, 1.0f)) isDirty = true;
+            //if (ImGui::DragFloat("_AlphaCutoff", &mat_res_ptr->_AlphaCutoff, 0.02f, 0.0f, 1.0f)) isDirty = true;
+            //if (ImGui::DragFloat("_AlphaCutoffShadow", &mat_res_ptr->_AlphaCutoffShadow, 0.02f, 0.0f, 1.0f)) isDirty = true;
+            //if (ImGui::DragFloat("_AlphaCutoffPrepass", &mat_res_ptr->_AlphaCutoffPrepass, 0.02f, 0.0f, 1.0f)) isDirty = true;
+            //if (ImGui::DragFloat("_AlphaCutoffPostpass", &mat_res_ptr->_AlphaCutoffPostpass, 0.02f, 0.0f, 1.0f)) isDirty = true;
+            //if (ImGui::DragFloat("_TransparentDepthPrepassEnable", &mat_res_ptr->_TransparentDepthPrepassEnable, 0.02f, 0.0f, 1.0f)) isDirty = true;
+            //if (ImGui::DragFloat("_TransparentBackfaceEnable", &mat_res_ptr->_TransparentBackfaceEnable, 0.02f, 0.0f, 1.0f)) isDirty = true;
+            //if (ImGui::DragFloat("_TransparentDepthPostpassEnable", &mat_res_ptr->_TransparentDepthPostpassEnable, 0.02f, 0.0f, 1.0f)) isDirty = true;
+            //if (ImGui::DragFloat("_TransparentSortPriority", &mat_res_ptr->_TransparentSortPriority, 0.02f, 0.0f, 1.0f)) isDirty = true;
+            //if (ImGui::DragInt("_RefractionModel", &mat_res_ptr->_RefractionModel, 1, 0, 3)) isDirty = true;
+            //if (ImGui::DragFloat("_Ior", &mat_res_ptr->_Ior, 0.02f, 0.0f, 1.0f)) isDirty = true;
+            //if (ImGui::ColorEdit3("_TransmittanceColor", &mat_res_ptr->_TransmittanceColor.x)) isDirty = true;
+            //if (ImGui::DragFloat("_ATDistance", &mat_res_ptr->_ATDistance, 0.02f, 0.0f, 1.0f)) isDirty = true;
+            //if (ImGui::DragFloat("_TransparentWritingMotionVec", &mat_res_ptr->_TransparentWritingMotionVec, 0.02f, 0.0f, 1.0f)) isDirty = true;
+            //if (ImGui::DragFloat("_SurfaceType", &mat_res_ptr->_SurfaceType, 0.02f, 0.0f, 1.0f)) isDirty = true;
+            //if (ImGui::DragFloat("_SrcBlend", &mat_res_ptr->_SrcBlend, 0.02f, 0.0f, 1.0f)) isDirty = true;
+            //if (ImGui::DragFloat("_DstBlend", &mat_res_ptr->_DstBlend, 0.02f, 0.0f, 1.0f)) isDirty = true;
+            //if (ImGui::DragFloat("_AlphaSrcBlend", &mat_res_ptr->_AlphaSrcBlend, 0.02f, 0.0f, 1.0f)) isDirty = true;
+            //if (ImGui::DragFloat("_AlphaDstBlend", &mat_res_ptr->_AlphaDstBlend, 0.02f, 0.0f, 1.0f)) isDirty = true;
+            //if (ImGui::DragFloat("_EnableFogOnTransparent", &mat_res_ptr->_EnableFogOnTransparent, 0.02f, 0.0f, 1.0f)) isDirty = true;
+            //if (ImGui::DragFloat("_DoubleSidedEnable", &mat_res_ptr->_DoubleSidedEnable, 0.02f, 0.0f, 1.0f)) isDirty = true;
+            //if (ImGui::DragFloat("_DoubleSidedNormalMode", &mat_res_ptr->_DoubleSidedNormalMode, 0.02f, 0.0f, 1.0f)) isDirty = true;
+            //if (ImGui::DragFloat4("_DoubleSidedConstants", &mat_res_ptr->_DoubleSidedConstants.x, 0.02f, -1.0f, 1.0f)) isDirty = true;
+            //if (ImGui::DragFloat("_DoubleSidedGIMode", &mat_res_ptr->_DoubleSidedGIMode, 0.02f, 0.0f, 1.0f)) isDirty = true;
+            //if (ImGui::DragFloat("_UVBase", &mat_res_ptr->_UVBase, 0.02f, 0.0f, 1.0f)) isDirty = true;
+            //if (ImGui::DragFloat("_ObjectSpaceUVMapping", &mat_res_ptr->_ObjectSpaceUVMapping, 0.02f, 0.0f, 1.0f)) isDirty = true;
+            //if (ImGui::DragFloat("_TexWorldScale", &mat_res_ptr->_TexWorldScale, 0.02f, 0.0f, 1.0f)) isDirty = true;
+            //if (ImGui::ColorEdit4("_UVMappingMask", &mat_res_ptr->_UVMappingMask.x)) isDirty = true;
+            //if (ImGui::DragFloat("_NormalMapSpace", &mat_res_ptr->_NormalMapSpace, 0.02f, 0.0f, 1.0f)) isDirty = true;
+            //if (ImGui::DragInt("_MaterialID", &mat_res_ptr->_MaterialID, 1, 0, 5)) isDirty = true;
+            //if (ImGui::DragFloat("_TransmissionEnable", &mat_res_ptr->_TransmissionEnable, 0.02f, 0.0f, 1.0f)) isDirty = true;
+            //if (ImGui::DragFloat("_PPDMinSamples", &mat_res_ptr->_PPDMinSamples, 0.02f, 0.0f, 1.0f)) isDirty = true;
+            //if (ImGui::DragFloat("_PPDMaxSamples", &mat_res_ptr->_PPDMaxSamples, 0.02f, 0.0f, 1.0f)) isDirty = true;
+            //if (ImGui::DragFloat("_PPDLodThreshold", &mat_res_ptr->_PPDLodThreshold, 0.02f, 0.0f, 1.0f)) isDirty = true;
+            //if (ImGui::DragFloat("_PPDPrimitiveLength", &mat_res_ptr->_PPDPrimitiveLength, 0.02f, 0.0f, 1.0f)) isDirty = true;
+            //if (ImGui::DragFloat("_PPDPrimitiveWidth", &mat_res_ptr->_PPDPrimitiveWidth, 0.02f, 0.0f, 1.0f)) isDirty = true;
+            //if (ImGui::DragFloat4("_InvPrimScale", &mat_res_ptr->_InvPrimScale.x, 0.02f, 0.0f, 1.0f)) isDirty = true;
+            //if (ImGui::DragFloat4("_UVDetailsMappingMask", &mat_res_ptr->_UVDetailsMappingMask.x, 0.02f, 0.0f, 1.0f)) isDirty = true;
+            //if (ImGui::DragFloat("_UVDetail", &mat_res_ptr->_UVDetail, 0.02f, 0.0f, 1.0f)) isDirty = true;
+            //if (ImGui::DragFloat("_LinkDetailsWithBase", &mat_res_ptr->_LinkDetailsWithBase, 0.02f, 0.0f, 1.0f)) isDirty = true;
+            //if (ImGui::DragFloat("_EmissiveColorMode", &mat_res_ptr->_EmissiveColorMode, 0.02f, 0.0f, 1.0f)) isDirty = true;
+            //if (ImGui::DragFloat("_UVEmissive", &mat_res_ptr->_UVEmissive, 0.02f, 0.0f, 1.0f)) isDirty = true;
 
             m_editor_ui_creator["MaterialImage"]("_BaseColorMap", isDirty, &mat_res_ptr->_BaseColorMap);
             m_editor_ui_creator["MaterialImage"]("_MaskMap", isDirty, &mat_res_ptr->_MaskMap);
             m_editor_ui_creator["MaterialImage"]("_NormalMap", isDirty, &mat_res_ptr->_NormalMap);
-            m_editor_ui_creator["MaterialImage"]("_NormalMapOS", isDirty, &mat_res_ptr->_NormalMapOS);
-            m_editor_ui_creator["MaterialImage"]("_BentNormalMap", isDirty, &mat_res_ptr->_BentNormalMap);
-            m_editor_ui_creator["MaterialImage"]("_BentNormalMapOS", isDirty, &mat_res_ptr->_BentNormalMapOS);
+            //m_editor_ui_creator["MaterialImage"]("_NormalMapOS", isDirty, &mat_res_ptr->_NormalMapOS);
+            //m_editor_ui_creator["MaterialImage"]("_BentNormalMap", isDirty, &mat_res_ptr->_BentNormalMap);
+            //m_editor_ui_creator["MaterialImage"]("_BentNormalMapOS", isDirty, &mat_res_ptr->_BentNormalMapOS);
             m_editor_ui_creator["MaterialImage"]("_HeightMap", isDirty, &mat_res_ptr->_HeightMap);
             m_editor_ui_creator["MaterialImage"]("_DetailMap", isDirty, &mat_res_ptr->_DetailMap);
-            m_editor_ui_creator["MaterialImage"]("_TangentMap", isDirty, &mat_res_ptr->_TangentMap);
-            m_editor_ui_creator["MaterialImage"]("_TangentMapOS", isDirty, &mat_res_ptr->_TangentMapOS);
+            //m_editor_ui_creator["MaterialImage"]("_TangentMap", isDirty, &mat_res_ptr->_TangentMap);
+            //m_editor_ui_creator["MaterialImage"]("_TangentMapOS", isDirty, &mat_res_ptr->_TangentMapOS);
             m_editor_ui_creator["MaterialImage"]("_AnisotropyMap", isDirty, &mat_res_ptr->_AnisotropyMap);
             m_editor_ui_creator["MaterialImage"]("_SubsurfaceMaskMap", isDirty, &mat_res_ptr->_SubsurfaceMaskMap);
             m_editor_ui_creator["MaterialImage"]("_TransmissionMaskMap", isDirty, &mat_res_ptr->_TransmissionMaskMap);
@@ -618,6 +625,8 @@ namespace MoYu
             m_editor_ui_creator["SceneImage"]("m_Image", isDirty, &material_image_ptr->m_image);
 
             if (ImGui::DragFloat2("m_tilling", (float*)&material_image_ptr->m_tilling, 0.1f, 0.0001f))
+                isDirty = true;
+            if (ImGui::DragFloat2("m_offset", (float*)&material_image_ptr->m_offset, 0.1f, 0.0f))
                 isDirty = true;
 
             ImGui::PopID();

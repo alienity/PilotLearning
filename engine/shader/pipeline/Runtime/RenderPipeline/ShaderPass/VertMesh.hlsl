@@ -92,7 +92,8 @@ VaryingsMeshType VertMesh(FrameUniforms frameUniform, RenderDataPerDraw renderDa
     output.texCoord0 = input.uv0;
 #endif
 #if defined(VARYINGS_NEED_TEXCOORD1) || defined(VARYINGS_DS_NEED_TEXCOORD1)
-    output.texCoord1 = input.uv1;
+    // output.texCoord1 = input.uv1; // 我们这里直接用uv0了
+    output.texCoord1 = input.uv0;
 #endif
 #if defined(VARYINGS_NEED_TEXCOORD2) || defined(VARYINGS_DS_NEED_TEXCOORD2)
     output.texCoord2 = input.uv2;

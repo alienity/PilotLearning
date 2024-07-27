@@ -235,6 +235,9 @@ namespace MoYu
 
         //=======================Properties====================
         glm::float4 _BaseColor{ 1, 1, 1, 1 };
+        glm::float4 _BaseColorMap_ST{ 1, 1, 1, 1 };
+        glm::float4 _BaseColorMap_TexelSize{ 1, 1, 1, 1 };
+        glm::float4 _BaseColorMap_MipInfo{ 1, 1, 1, 1 };
         float _Metallic{ 0 };
         float _Smoothness{ 0.5f };
         float _MetallicRemapMin{ 0.0f };
@@ -259,6 +262,7 @@ namespace MoYu
         float _HeightTessCenter{ 0.5f }; // In texture space
         // These parameters are for pixel displacement
         float _HeightPoMAmplitude{ 2.0f }; // Height Amplitude. In centimeters
+        glm::float4 _DetailMap_ST{ 1, 1, 1, 1 };
         float _DetailAlbedoScale{ 1.0f };
         float _DetailNormalScale{ 1.0f };
         float _DetailSmoothnessScale{ 1.0f };
@@ -687,11 +691,12 @@ namespace MoYu
     {
         SceneImage m_image {};
         glm::float2 m_tilling {1.0f, 1.0f};
+        glm::float2 m_offset{ 0.0f, 0.0f };
     };
 
     inline bool operator==(const MaterialImage& lhs, const MaterialImage& rhs)
     {
-        return lhs.m_tilling == rhs.m_tilling && lhs.m_image == rhs.m_image;
+        return lhs.m_tilling == rhs.m_tilling && lhs.m_offset == rhs.m_offset && lhs.m_image == rhs.m_image;
     }
     
     extern SceneImage DefaultSceneImageWhite;
@@ -714,7 +719,7 @@ namespace MoYu
     {
         //=======================Texture=======================
         MaterialImage _BaseColorMap{ DefaultMaterialImageWhite }; // white
-        MaterialImage _MaskMap{ DefaultMaterialImageBlack }; // MaskMap is RGBA: Metallic, Ambient Occlusion (Optional), detail Mask (Optional), Smoothness
+        MaterialImage _MaskMap{ DefaultMaterialImageWhite }; // MaskMap is RGBA: Metallic, Ambient Occlusion (Optional), detail Mask (Optional), Smoothness
         MaterialImage _NormalMap{ DefaultMaterialImageBump }; // bump. Tangent space normal map
         MaterialImage _NormalMapOS{ DefaultMaterialImageBump }; // white. Object space normal map - no good default value    
         MaterialImage _BentNormalMap{ DefaultMaterialImageBump }; // bump. Tangent space normal map

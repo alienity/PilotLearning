@@ -84,29 +84,33 @@ namespace MoYu
 
     void IndirectCullPass::prepareMeshData(std::shared_ptr<RenderResource> render_resource)
     {
-        std::vector<CachedMeshRenderer>& _mesh_renderers = m_render_scene->m_mesh_renderers;
+        prepareRenderDataPerDraw();
+        prepareMaterialProperties();
+        prepareShadowCommandBuffer();
+    }
 
-        HLSL::PropertiesPerMaterial* pPropertiesPerMaterial = pUploadPropertiesPerMaterialBuffer->GetCpuVirtualAddress<HLSL::PropertiesPerMaterial>();
-
+    void IndirectCullPass::prepareRenderDataPerDraw()
+    {
         HLSL::RenderDataPerDraw* pUploadRenderDataPerDraw = pUploadRenderDataPerDrawBuffer->GetCpuVirtualAddress<HLSL::RenderDataPerDraw>();
-        
-        uint32_t numMeshes = _mesh_renderers.size();
+
+        std::vector<CachedMeshRenderer>& mesh_renderers = m_render_scene->m_mesh_renderers;
+
+        uint32_t numMeshes = mesh_renderers.size();
         ASSERT(numMeshes < HLSL::MeshLimit);
         for (size_t i = 0; i < numMeshes; i++)
         {
-            InternalMeshRenderer& temp_mesh_renderer = _mesh_renderers[i].internalMeshRenderer;
+            InternalMeshRenderer& temp_mesh_renderer = mesh_renderers[i].internalMeshRenderer;
 
             InternalMesh& temp_ref_mesh = temp_mesh_renderer.ref_mesh;
-            InternalMaterial& temp_ref_material = temp_mesh_renderer.ref_material;
 
             //------------------------------------------------------
 
             D3D12_DRAW_INDEXED_ARGUMENTS curDrawIndexedArguments = {};
-            curDrawIndexedArguments.IndexCountPerInstance        = temp_ref_mesh.index_buffer.index_count; // temp_node.ref_mesh->mesh_index_count;
-            curDrawIndexedArguments.InstanceCount                = 1;
-            curDrawIndexedArguments.StartIndexLocation           = 0;
-            curDrawIndexedArguments.BaseVertexLocation           = 0;
-            curDrawIndexedArguments.StartInstanceLocation        = 0;
+            curDrawIndexedArguments.IndexCountPerInstance = temp_ref_mesh.index_buffer.index_count; // temp_node.ref_mesh->mesh_index_count;
+            curDrawIndexedArguments.InstanceCount = 1;
+            curDrawIndexedArguments.StartIndexLocation = 0;
+            curDrawIndexedArguments.BaseVertexLocation = 0;
+            curDrawIndexedArguments.StartInstanceLocation = 0;
 
             glm::float3 boundingBoxCenter = temp_ref_mesh.axis_aligned_box.getCenter(); // temp_node.bounding_box.center;
             glm::float3 boundingBoxExtents = temp_ref_mesh.axis_aligned_box.getHalfExtent();//temp_node.bounding_box.extent;
@@ -131,6 +135,22 @@ namespace MoYu
             curRenderDataPerDraw.boundingBoxExtents = glm::float4(boundingBoxExtents, 0);
 
             pUploadRenderDataPerDraw[i] = curRenderDataPerDraw;
+        }
+    }
+
+    void IndirectCullPass::prepareMaterialProperties()
+    {
+        std::vector<CachedMeshRenderer>& mesh_renderers = m_render_scene->m_mesh_renderers;
+
+        HLSL::PropertiesPerMaterial* pPropertiesPerMaterial = pUploadPropertiesPerMaterialBuffer->GetCpuVirtualAddress<HLSL::PropertiesPerMaterial>();
+
+        uint32_t numMeshes = mesh_renderers.size();
+        ASSERT(numMeshes < HLSL::MeshLimit);
+        for (size_t i = 0; i < numMeshes; i++)
+        {
+            InternalMeshRenderer& temp_mesh_renderer = mesh_renderers[i].internalMeshRenderer;
+
+            InternalMaterial& temp_ref_material = temp_mesh_renderer.ref_material;
 
             //------------------------------------------------------
 
@@ -159,6 +179,9 @@ namespace MoYu
             curPropertiesPerMaterial._TransmittanceColorMapIndex = m_InteralMat._TransmittanceColorMap->GetDefaultSRV()->GetIndex();
 
             curPropertiesPerMaterial._BaseColor = m_InteralMat._BaseColor;
+            curPropertiesPerMaterial._BaseColorMap_ST = m_InteralMat._BaseColorMap_ST;
+            curPropertiesPerMaterial._BaseColorMap_TexelSize = m_InteralMat._BaseColorMap_TexelSize;
+            curPropertiesPerMaterial._BaseColorMap_MipInfo = m_InteralMat._BaseColorMap_MipInfo;
             curPropertiesPerMaterial._Metallic = m_InteralMat._Metallic;
             curPropertiesPerMaterial._Smoothness = m_InteralMat._Smoothness;
             curPropertiesPerMaterial._MetallicRemapMin = m_InteralMat._MetallicRemapMin;
@@ -179,6 +202,7 @@ namespace MoYu
             curPropertiesPerMaterial._HeightTessAmplitude = m_InteralMat._HeightTessAmplitude;
             curPropertiesPerMaterial._HeightTessCenter = m_InteralMat._HeightTessCenter;
             curPropertiesPerMaterial._HeightPoMAmplitude = m_InteralMat._HeightPoMAmplitude;
+            curPropertiesPerMaterial._DetailMap_ST = m_InteralMat._DetailMap_ST;
             curPropertiesPerMaterial._DetailAlbedoScale = m_InteralMat._DetailAlbedoScale;
             curPropertiesPerMaterial._DetailNormalScale = m_InteralMat._DetailNormalScale;
             curPropertiesPerMaterial._DetailSmoothnessScale = m_InteralMat._DetailSmoothnessScale;
@@ -247,17 +271,9 @@ namespace MoYu
 
             pPropertiesPerMaterial[i] = curPropertiesPerMaterial;
         }
-
-        prepareBuffer();
-        prepareRenderTexture();
     }
 
-    void IndirectCullPass::prepareRenderTexture()
-    {
-        
-    }
-
-    void IndirectCullPass::prepareBuffer()
+    void IndirectCullPass::prepareShadowCommandBuffer()
     {
         if (m_render_scene->m_directional_light.m_identifier != UndefCommonIdentifier)
         {

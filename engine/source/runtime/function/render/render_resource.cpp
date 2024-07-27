@@ -453,11 +453,44 @@ namespace MoYu
 
         this->startUploadBatch();
 
+
         InternalStandardLightMaterial& now_material = internal_material.m_intenral_light_mat;
+        {
+#define UpdateInternalMaterialMapCheck(MapName) if (!(m_mat_data.MapName.m_image == m_cached_mat_data.MapName.m_image) || !has_initialized) { now_material.MapName = SceneImageToTexture(m_mat_data.MapName.m_image); }
+
+            UpdateInternalMaterialMapCheck(_BaseColorMap)
+            UpdateInternalMaterialMapCheck(_MaskMap)
+            UpdateInternalMaterialMapCheck(_NormalMap)
+            UpdateInternalMaterialMapCheck(_NormalMapOS)
+            UpdateInternalMaterialMapCheck(_BentNormalMap)
+            UpdateInternalMaterialMapCheck(_BentNormalMapOS)
+            UpdateInternalMaterialMapCheck(_HeightMap)
+            UpdateInternalMaterialMapCheck(_DetailMap)
+            UpdateInternalMaterialMapCheck(_TangentMap)
+            UpdateInternalMaterialMapCheck(_TangentMapOS)
+            UpdateInternalMaterialMapCheck(_AnisotropyMap)
+            UpdateInternalMaterialMapCheck(_SubsurfaceMaskMap)
+            UpdateInternalMaterialMapCheck(_TransmissionMaskMap)
+            UpdateInternalMaterialMapCheck(_ThicknessMap)
+            UpdateInternalMaterialMapCheck(_IridescenceThicknessMap)
+            UpdateInternalMaterialMapCheck(_IridescenceMaskMap)
+            UpdateInternalMaterialMapCheck(_CoatMaskMap)
+            UpdateInternalMaterialMapCheck(_EmissiveColorMap)
+            UpdateInternalMaterialMapCheck(_TransmittanceColorMap)
+
+#undef UpdateInternalMaterialMapCheck
+        }
         {
 #define UpdateInternalMaterialAssign(Name) now_material.Name = m_mat_data.Name;
 
             UpdateInternalMaterialAssign(_BaseColor)
+            now_material._BaseColorMap_ST = glm::float4(m_mat_data._BaseColorMap.m_tilling, m_mat_data._BaseColorMap.m_offset);
+            now_material._BaseColorMap_TexelSize = glm::float4(
+                now_material._BaseColorMap->GetWidth(), 
+                now_material._BaseColorMap->GetHeight(), 
+                1.0f / now_material._BaseColorMap->GetWidth(),
+                1.0f / now_material._BaseColorMap->GetHeight());
+            now_material._BaseColorMap_MipInfo = glm::float4(1, 1, 1, 1);
             UpdateInternalMaterialAssign(_Metallic)
             UpdateInternalMaterialAssign(_Smoothness)
             UpdateInternalMaterialAssign(_MetallicRemapMin)
@@ -478,6 +511,7 @@ namespace MoYu
             UpdateInternalMaterialAssign(_HeightTessAmplitude)
             UpdateInternalMaterialAssign(_HeightTessCenter)
             UpdateInternalMaterialAssign(_HeightPoMAmplitude)
+            now_material._DetailMap_ST = glm::float4(m_mat_data._DetailMap.m_tilling, m_mat_data._DetailMap.m_offset);
             UpdateInternalMaterialAssign(_DetailAlbedoScale)
             UpdateInternalMaterialAssign(_DetailNormalScale)
             UpdateInternalMaterialAssign(_DetailSmoothnessScale)
@@ -545,31 +579,6 @@ namespace MoYu
             UpdateInternalMaterialAssign(_UVEmissive)
 
 #undef UpdateInternalMaterialAssign
-        }
-        {
-#define UpdateInternalMaterialMapCheck(MapName) if (!(m_mat_data.MapName.m_image == m_cached_mat_data.MapName.m_image) || !has_initialized) { now_material.MapName = SceneImageToTexture(m_mat_data.MapName.m_image); }
-
-            UpdateInternalMaterialMapCheck(_BaseColorMap)
-            UpdateInternalMaterialMapCheck(_MaskMap)
-            UpdateInternalMaterialMapCheck(_NormalMap)
-            UpdateInternalMaterialMapCheck(_NormalMapOS)
-            UpdateInternalMaterialMapCheck(_BentNormalMap)
-            UpdateInternalMaterialMapCheck(_BentNormalMapOS)
-            UpdateInternalMaterialMapCheck(_HeightMap)
-            UpdateInternalMaterialMapCheck(_DetailMap)
-            UpdateInternalMaterialMapCheck(_TangentMap)
-            UpdateInternalMaterialMapCheck(_TangentMapOS)
-            UpdateInternalMaterialMapCheck(_AnisotropyMap)
-            UpdateInternalMaterialMapCheck(_SubsurfaceMaskMap)
-            UpdateInternalMaterialMapCheck(_TransmissionMaskMap)
-            UpdateInternalMaterialMapCheck(_ThicknessMap)
-            UpdateInternalMaterialMapCheck(_IridescenceThicknessMap)
-            UpdateInternalMaterialMapCheck(_IridescenceMaskMap)
-            UpdateInternalMaterialMapCheck(_CoatMaskMap)
-            UpdateInternalMaterialMapCheck(_EmissiveColorMap)
-            UpdateInternalMaterialMapCheck(_TransmittanceColorMap)
-
-#undef UpdateInternalMaterialMapCheck
         }
 
         this->endUploadBatch();

@@ -179,6 +179,7 @@ float4 EvaluateLight_Directional(LightLoopContext lightLoopContext, PositionInpu
                                  DirectionalLightData light)
 {
     float4 color = float4(light.color, 1.0);
+    color.rgb *= light.lightDimmer;
 
     float3 L = -light.forward;
 
@@ -271,6 +272,8 @@ float4 EvaluateLight_Punctual(LightLoopContext lightLoopContext, PositionInputs 
     LightData light, float3 L, float4 distances)
 {
     float4 color = float4(light.color, 1.0);
+
+    color.rgb *= light.lightDimmer;
 
     color.a *= PunctualLightAttenuation(distances, light.rangeAttenuationScale, light.rangeAttenuationBias,
                                         light.angleScale, light.angleOffset);

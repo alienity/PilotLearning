@@ -94,8 +94,9 @@ namespace MoYu
         void destroy() override final;
 
     private:
-        void prepareBuffer();
-        void prepareRenderTexture();
+        void prepareRenderDataPerDraw();
+        void prepareMaterialProperties();
+        void prepareShadowCommandBuffer();
 
         void bitonicSort(RHI::D3D12ComputeContext*      context,
                          RHI::D3D12Buffer*              keyIndexList,

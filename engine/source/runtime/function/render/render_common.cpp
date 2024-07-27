@@ -11,13 +11,13 @@ namespace MoYu
     SceneImage DefaultSceneImageBlue { true, false, 1, "asset/texture/default/blue.tga"};
     SceneImage DefaultSceneImageBump { false, false, 1, "asset/texture/default/bump.tga" };
 
-    MaterialImage DefaultMaterialImageWhite{ DefaultSceneImageWhite, glm::float2(1,1) };
-    MaterialImage DefaultMaterialImageBlack{ DefaultSceneImageBlack, glm::float2(1,1) };
-    MaterialImage DefaultMaterialImageGrey{ DefaultSceneImageGrey, glm::float2(1,1) };
-    MaterialImage DefaultMaterialImageRed{ DefaultSceneImageRed, glm::float2(1,1) };
-    MaterialImage DefaultMaterialImageGreen{ DefaultSceneImageGreen, glm::float2(1,1) };
-    MaterialImage DefaultMaterialImageBlue{ DefaultSceneImageBlue, glm::float2(1,1) };
-    MaterialImage DefaultMaterialImageBump{ DefaultSceneImageBump, glm::float2(1,1) };
+    MaterialImage DefaultMaterialImageWhite{ DefaultSceneImageWhite, glm::float2(1,1), glm::float2(0,0) };
+    MaterialImage DefaultMaterialImageBlack{ DefaultSceneImageBlack, glm::float2(1,1), glm::float2(0,0) };
+    MaterialImage DefaultMaterialImageGrey{ DefaultSceneImageGrey, glm::float2(1,1), glm::float2(0,0) };
+    MaterialImage DefaultMaterialImageRed{ DefaultSceneImageRed, glm::float2(1,1), glm::float2(0,0) };
+    MaterialImage DefaultMaterialImageGreen{ DefaultSceneImageGreen, glm::float2(1,1), glm::float2(0,0) };
+    MaterialImage DefaultMaterialImageBlue{ DefaultSceneImageBlue, glm::float2(1,1), glm::float2(0,0) };
+    MaterialImage DefaultMaterialImageBump{ DefaultSceneImageBump, glm::float2(1,1), glm::float2(0,0) };
 
     SceneCommonIdentifier _UndefCommonIdentifier {K_Invalid_Object_Id, K_Invalid_Component_Id};
 
