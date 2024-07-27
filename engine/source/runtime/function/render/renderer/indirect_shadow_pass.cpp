@@ -128,7 +128,7 @@ namespace MoYu
             HLSL::HDShadowData _shadowDara;
             _shadowDara.shadowmapIndex = p_LightShadowmap->GetDefaultSRV()->GetIndex();
             _shadowDara.worldTexelSize = 2.0f / projMatrix[0][0] / viewportSize.x * glm::sqrt(2.0f);
-            _shadowDara.normalBias = 0.75f;
+            _shadowDara.normalBias = 0.95f;
             _shadowDara.cascadeNumber = 1;
             _shadowDara.cascadeLevel = glm::int4(0, -1, -1, -1);
             _shadowDara.shdowCenterOffset = glm::float4(0, 0, 0, 0);
@@ -261,7 +261,7 @@ namespace MoYu
                 HLSL::HDShadowData _shadowDara;
                 _shadowDara.shadowmapIndex = clightShadowmap->GetDefaultSRV()->GetIndex();
                 _shadowDara.worldTexelSize = 2.0f / projMatrix[0][0] / shadowmapSize.x * glm::sqrt(2.0f);
-                _shadowDara.normalBias = 0.75f;
+                _shadowDara.normalBias = 0.95f;
                 _shadowDara.cascadeNumber = cascadeNumber;
                 _shadowDara.cascadeLevel = glm::int4(i, -1, -1, -1);
                 _shadowDara.shdowCenterOffset = shadowCenterOffset;

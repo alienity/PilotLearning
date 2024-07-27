@@ -486,10 +486,10 @@ namespace MoYu
             UpdateInternalMaterialAssign(_BaseColor)
             now_material._BaseColorMap_ST = glm::float4(m_mat_data._BaseColorMap.m_tilling, m_mat_data._BaseColorMap.m_offset);
             now_material._BaseColorMap_TexelSize = glm::float4(
-                now_material._BaseColorMap->GetWidth(), 
-                now_material._BaseColorMap->GetHeight(), 
                 1.0f / now_material._BaseColorMap->GetWidth(),
-                1.0f / now_material._BaseColorMap->GetHeight());
+                1.0f / now_material._BaseColorMap->GetHeight(),
+                now_material._BaseColorMap->GetWidth(),
+                now_material._BaseColorMap->GetHeight());
             now_material._BaseColorMap_MipInfo = glm::float4(1, 1, 1, 1);
             UpdateInternalMaterialAssign(_Metallic)
             UpdateInternalMaterialAssign(_Smoothness)
