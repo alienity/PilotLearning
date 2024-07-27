@@ -111,7 +111,7 @@ float3 ADD_IDX(GetNormalTS)(
 #ifdef _NORMALMAP_IDX
     #ifdef _NORMALMAP_TANGENT_SPACE_IDX
         TEXTURE2D(_NormalMap) = ResourceDescriptorHeap[matProperties._NormalMapIndex];
-        SAMPLER(sampler_NormalMap) = samplerStruct.SLinearClampSampler;
+        SAMPLER(sampler_NormalMap) = samplerStruct.SLinearRepeatSampler;
         normalTS = SAMPLE_UVMAPPING_NORMALMAP(ADD_IDX(_NormalMap), sampler_NormalMap, ADD_IDX(layerTexCoord.base), ADD_IDX(matProperties._NormalScale));
     #else // Object space
         // We forbid scale in case of object space as it make no sense
@@ -220,7 +220,7 @@ float ADD_IDX(GetSurfaceData)(
 #endif
 
     TEXTURE2D(_BaseColorMap) = ResourceDescriptorHeap[matProperties._BaseColorMapIndex];
-    SAMPLER(sampler_BaseColorMap) = samplerStruct.SLinearClampSampler;
+    SAMPLER(sampler_BaseColorMap) = samplerStruct.SLinearRepeatSampler;
     float4 color = SAMPLE_UVMAPPING_TEXTURE2D(ADD_IDX(_BaseColorMap), ADD_ZERO_IDX(sampler_BaseColorMap), ADD_IDX(layerTexCoord.base)).rgba * ADD_IDX(matProperties._BaseColor).rgba;
     surfaceData.baseColor = color.rgb;
     float alpha = color.a;
@@ -248,7 +248,7 @@ float ADD_IDX(GetSurfaceData)(
 
 #if defined(_MASKMAP_IDX)
     TEXTURE2D(_MaskMap) = ResourceDescriptorHeap[matProperties._MaskMapIndex];
-    SAMPLER(sampler_MaskMap) = samplerStruct.SLinearClampSampler;
+    SAMPLER(sampler_MaskMap) = samplerStruct.SLinearRepeatSampler;
     surfaceData.perceptualSmoothness = SAMPLE_UVMAPPING_TEXTURE2D(ADD_IDX(_MaskMap), sampler_MaskMap, ADD_IDX(layerTexCoord.base)).a;
     surfaceData.perceptualSmoothness = lerp(ADD_IDX(matProperties._SmoothnessRemapMin), ADD_IDX(matProperties._SmoothnessRemapMax), surfaceData.perceptualSmoothness);
     surfaceData.perceptualSmoothness = min(0.999f, surfaceData.perceptualSmoothness);
