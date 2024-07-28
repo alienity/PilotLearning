@@ -151,10 +151,11 @@ struct BaseUniform
 
 struct AOUniform
 {
+    float4 _AmbientOcclusionParam;
     float aoSamplingQualityAndEdgeDistance; // <0: no AO, 0: bilinear, !0: bilateral edge distance
     float aoBentNormals; // 0: no AO bent normal, >0.0 AO bent normals
+    float _SpecularOcclusionBlend;
     float aoReserved0;
-    float aoReserved1;
 };
 
 struct TAAUniform

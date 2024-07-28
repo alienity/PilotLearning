@@ -398,7 +398,7 @@ namespace MoYu
         mAtmosphericScatteringPass->prepareMetaData(render_resource);
         mVolumeCloudPass->prepareMetaData(render_resource);
 
-        mGTAOPass->updateConstantBuffer(render_resource);
+        mGTAOPass->prepareMatBuffer(render_resource);
 
         mIndirectCullPass->inflatePerframeBuffer(render_resource);
     }
@@ -645,16 +645,16 @@ namespace MoYu
         //mAOPass->update(graph, mAOIntput, mAOOutput);
         ////=================================================================================
         //*/
-        ////=================================================================================
-        //// ambient occlusion
-        //GTAOPass::DrawInputParameters  mGTAOIntput;
-        //GTAOPass::DrawOutputParameters mGTAOOutput;
+        //=================================================================================
+        // ambient occlusion
+        GTAOPass::DrawInputParameters  mGTAOIntput;
+        GTAOPass::DrawOutputParameters mGTAOOutput;
 
-        //mGTAOIntput.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
-        //mGTAOIntput.packedNormalHandle    = mGBufferOutput.gbuffer1Handle;
-        //mGTAOIntput.depthHandle          = mGBufferOutput.depthHandle;
-        //mGTAOPass->update(graph, mGTAOIntput, mGTAOOutput);
-        ////=================================================================================
+        mGTAOIntput.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
+        mGTAOIntput.packedNormalHandle   = mGBufferOutput.gbuffer1Handle;
+        mGTAOIntput.depthHandle          = mGBufferOutput.depthHandle;
+        mGTAOPass->update(graph, mGTAOIntput, mGTAOOutput);
+        //=================================================================================
 
         ////=================================================================================
         //// ssr
@@ -679,10 +679,14 @@ namespace MoYu
         mLightLoopIntput.gbuffer2Handle = mGBufferOutput.gbuffer2Handle;
         mLightLoopIntput.gbuffer3Handle = mGBufferOutput.gbuffer3Handle;
         mLightLoopIntput.gbufferDepthHandle = mGBufferOutput.depthHandle;
+        mLightLoopIntput.mAOHandle = mGTAOOutput.outputAOHandle;
         mLightLoopIntput.directionLightShadowmapHandle = directionalShadowmapHandles;
         mLightLoopIntput.spotShadowmapHandles = spotShadowmapHandle;
         mIndirectLightLoopPass->update(graph, mLightLoopIntput, mLightLoopOutput);
         //=================================================================================
+
+
+
 
         ////=================================================================================
         //// subsurface scattering pass

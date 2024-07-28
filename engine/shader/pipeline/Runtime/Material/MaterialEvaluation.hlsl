@@ -49,66 +49,68 @@ struct AmbientOcclusionFactor
     float3 directSpecularOcclusion;
 };
 
-// // Get screen space ambient occlusion only:
-// float GetScreenSpaceDiffuseOcclusion(float2 positionSS)
-// {
-//     #if (SHADERPASS == SHADERPASS_RAYTRACING_INDIRECT) || (SHADERPASS == SHADERPASS_RAYTRACING_FORWARD)
-//         // When we are in raytracing mode, we do not want to take the screen space computed AO texture
-//         float indirectAmbientOcclusion = 1.0;
-//     #else
-//         // Note: When we ImageLoad outside of texture size, the value returned by Load is 0 (Note: On Metal maybe it clamp to value of texture which is also fine)
-//         // We use this property to have a neutral value for AO that doesn't consume a sampler and work also with compute shader (i.e use ImageLoad)
-//         // We store inverse AO so neutral is black. So either we sample inside or outside the texture it return 0 in case of neutral
-//         // Ambient occlusion use for indirect lighting (reflection probe, baked diffuse lighting)
-//         #ifndef _SURFACE_TYPE_TRANSPARENT
-//         float indirectAmbientOcclusion = 1.0 - LOAD_TEXTURE2D_X(_AmbientOcclusionTexture, positionSS).x;
-//         #else
-//         float indirectAmbientOcclusion = 1.0;
-//         #endif
-//     #endif
-//
-//     return indirectAmbientOcclusion;
-// }
+// Get screen space ambient occlusion only:
+float GetScreenSpaceDiffuseOcclusion(Texture2D<float> ambientOcclusionTexture, float2 positionSS)
+{
+    // Note: When we ImageLoad outside of texture size, the value returned by Load is 0 (Note: On Metal maybe it clamp to value of texture which is also fine)
+    // We use this property to have a neutral value for AO that doesn't consume a sampler and work also with compute shader (i.e use ImageLoad)
+    // We store inverse AO so neutral is black. So either we sample inside or outside the texture it return 0 in case of neutral
+    // Ambient occlusion use for indirect lighting (reflection probe, baked diffuse lighting)
+    #ifndef _SURFACE_TYPE_TRANSPARENT
+    float indirectAmbientOcclusion = /*1.0 - */LOAD_TEXTURE2D(ambientOcclusionTexture, positionSS).x;
+    #else
+    float indirectAmbientOcclusion = 1.0;
+    #endif
 
-// float3 GetScreenSpaceAmbientOcclusion(float2 positionSS)
-// {
-//     float indirectAmbientOcclusion = GetScreenSpaceDiffuseOcclusion(positionSS);
-//     return lerp(_AmbientOcclusionParam.rgb, float3(1.0, 1.0, 1.0), indirectAmbientOcclusion);
-// }
+    return indirectAmbientOcclusion;
+}
 
-// void GetScreenSpaceAmbientOcclusion(float2 positionSS, float NdotV, float perceptualRoughness, float ambientOcclusionFromData, float specularOcclusionFromData, out AmbientOcclusionFactor aoFactor)
-// {
-//     float indirectAmbientOcclusion = GetScreenSpaceDiffuseOcclusion(positionSS);
-//     float directAmbientOcclusion = lerp(1.0, indirectAmbientOcclusion, _AmbientOcclusionParam.w);
-//
-//     float roughness = PerceptualRoughnessToRoughness(perceptualRoughness);
-//     float indirectSpecularOcclusion = GetSpecularOcclusionFromAmbientOcclusion(ClampNdotV(NdotV), indirectAmbientOcclusion, roughness);
-//     float directSpecularOcclusion = lerp(1.0, indirectSpecularOcclusion, _AmbientOcclusionParam.w);
-//
-//     aoFactor.indirectSpecularOcclusion = lerp(_AmbientOcclusionParam.rgb, float3(1.0, 1.0, 1.0), min(specularOcclusionFromData, indirectSpecularOcclusion));
-//     aoFactor.indirectAmbientOcclusion = lerp(_AmbientOcclusionParam.rgb, float3(1.0, 1.0, 1.0), min(ambientOcclusionFromData, indirectAmbientOcclusion));
-//     aoFactor.directSpecularOcclusion = lerp(_AmbientOcclusionParam.rgb, float3(1.0, 1.0, 1.0), directSpecularOcclusion);
-//     aoFactor.directAmbientOcclusion = lerp(_AmbientOcclusionParam.rgb, float3(1.0, 1.0, 1.0), directAmbientOcclusion);
-// }
+float3 GetScreenSpaceAmbientOcclusion(FrameUniforms frameUniform, float2 positionSS)
+{
+    Texture2D<float> _AmbientOcclusionTexture = ResourceDescriptorHeap[frameUniform.baseUniform._AmbientOcclusionTextureIndex];
+    
+    float indirectAmbientOcclusion = GetScreenSpaceDiffuseOcclusion(_AmbientOcclusionTexture, positionSS);
+    return lerp(frameUniform.aoUniform._AmbientOcclusionParam.rgb, float3(1.0, 1.0, 1.0), indirectAmbientOcclusion);
+}
 
-// // Use GTAOMultiBounce approximation for ambient occlusion (allow to get a tint from the diffuseColor)
-// void GetScreenSpaceAmbientOcclusionMultibounce(float2 positionSS, float NdotV, float perceptualRoughness, float ambientOcclusionFromData, float specularOcclusionFromData, float3 diffuseColor, float3 fresnel0, out AmbientOcclusionFactor aoFactor)
-// {
-//     float indirectAmbientOcclusion = GetScreenSpaceDiffuseOcclusion(positionSS);
-//     float directAmbientOcclusion = lerp(1.0, indirectAmbientOcclusion, _AmbientOcclusionParam.w);
-//
-//     float roughness = PerceptualRoughnessToRoughness(perceptualRoughness);
-//     // This specular occlusion formulation make sense only with SSAO. When we use Raytracing AO we support different range (local, medium, sky). When using medium or
-//     // sky occlusion, the result on specular occlusion can be a disaster (all is black). Thus we use _SpecularOcclusionBlend when using RTAO to disable this trick.
-//     float indirectSpecularOcclusion = lerp(1.0, GetSpecularOcclusionFromAmbientOcclusion(ClampNdotV(NdotV), indirectAmbientOcclusion, roughness), _SpecularOcclusionBlend);
-//     float directSpecularOcclusion = lerp(1.0, indirectSpecularOcclusion, _AmbientOcclusionParam.w);
-//
-//     aoFactor.indirectSpecularOcclusion = GTAOMultiBounce(min(specularOcclusionFromData, indirectSpecularOcclusion), fresnel0);
-//     aoFactor.indirectAmbientOcclusion = GTAOMultiBounce(min(ambientOcclusionFromData, indirectAmbientOcclusion), diffuseColor);
-//     // Note: when affecting direct lighting we don't used the fake bounce.
-//     aoFactor.directSpecularOcclusion = directSpecularOcclusion.xxx;
-//     aoFactor.directAmbientOcclusion = directAmbientOcclusion.xxx;
-// }
+void GetScreenSpaceAmbientOcclusion(FrameUniforms frameUniform, float2 positionSS, float NdotV, float perceptualRoughness, float ambientOcclusionFromData, float specularOcclusionFromData, out AmbientOcclusionFactor aoFactor)
+{
+    Texture2D<float> _AmbientOcclusionTexture = ResourceDescriptorHeap[frameUniform.baseUniform._AmbientOcclusionTextureIndex];
+    
+    float indirectAmbientOcclusion = GetScreenSpaceDiffuseOcclusion(_AmbientOcclusionTexture, positionSS);
+    float directAmbientOcclusion = lerp(1.0, indirectAmbientOcclusion, frameUniform.aoUniform._AmbientOcclusionParam.w);
+
+    float roughness = PerceptualRoughnessToRoughness(perceptualRoughness);
+    float indirectSpecularOcclusion = GetSpecularOcclusionFromAmbientOcclusion(ClampNdotV(NdotV), indirectAmbientOcclusion, roughness);
+    float directSpecularOcclusion = lerp(1.0, indirectSpecularOcclusion, frameUniform.aoUniform._AmbientOcclusionParam.w);
+
+    aoFactor.indirectSpecularOcclusion = lerp(frameUniform.aoUniform._AmbientOcclusionParam.rgb, float3(1.0, 1.0, 1.0), min(specularOcclusionFromData, indirectSpecularOcclusion));
+    aoFactor.indirectAmbientOcclusion = lerp(frameUniform.aoUniform._AmbientOcclusionParam.rgb, float3(1.0, 1.0, 1.0), min(ambientOcclusionFromData, indirectAmbientOcclusion));
+    aoFactor.directSpecularOcclusion = lerp(frameUniform.aoUniform._AmbientOcclusionParam.rgb, float3(1.0, 1.0, 1.0), directSpecularOcclusion);
+    aoFactor.directAmbientOcclusion = lerp(frameUniform.aoUniform._AmbientOcclusionParam.rgb, float3(1.0, 1.0, 1.0), directAmbientOcclusion);
+}
+
+// Use GTAOMultiBounce approximation for ambient occlusion (allow to get a tint from the diffuseColor)
+void GetScreenSpaceAmbientOcclusionMultibounce(FrameUniforms frameUniform, float2 positionSS, float NdotV, float perceptualRoughness, float ambientOcclusionFromData, float specularOcclusionFromData, float3 diffuseColor, float3 fresnel0, out AmbientOcclusionFactor aoFactor)
+{
+
+    Texture2D<float> _AmbientOcclusionTexture = ResourceDescriptorHeap[frameUniform.baseUniform._AmbientOcclusionTextureIndex];
+    
+    float indirectAmbientOcclusion = GetScreenSpaceDiffuseOcclusion(_AmbientOcclusionTexture, positionSS);
+    float directAmbientOcclusion = lerp(1.0, indirectAmbientOcclusion, frameUniform.aoUniform._AmbientOcclusionParam.w);
+
+    float roughness = PerceptualRoughnessToRoughness(perceptualRoughness);
+    // This specular occlusion formulation make sense only with SSAO. When we use Raytracing AO we support different range (local, medium, sky). When using medium or
+    // sky occlusion, the result on specular occlusion can be a disaster (all is black). Thus we use _SpecularOcclusionBlend when using RTAO to disable this trick.
+    float indirectSpecularOcclusion = lerp(1.0, GetSpecularOcclusionFromAmbientOcclusion(ClampNdotV(NdotV), indirectAmbientOcclusion, roughness), frameUniform.aoUniform._SpecularOcclusionBlend);
+    float directSpecularOcclusion = lerp(1.0, indirectSpecularOcclusion, frameUniform.aoUniform._AmbientOcclusionParam.w);
+
+    aoFactor.indirectSpecularOcclusion = GTAOMultiBounce(min(specularOcclusionFromData, indirectSpecularOcclusion), fresnel0);
+    aoFactor.indirectAmbientOcclusion = GTAOMultiBounce(min(ambientOcclusionFromData, indirectAmbientOcclusion), diffuseColor);
+    // Note: when affecting direct lighting we don't used the fake bounce.
+    aoFactor.directSpecularOcclusion = directSpecularOcclusion.xxx;
+    aoFactor.directAmbientOcclusion = directAmbientOcclusion.xxx;
+}
 
 void ApplyAmbientOcclusionFactor(AmbientOcclusionFactor aoFactor, inout BuiltinData builtinData, inout AggregateLighting lighting)
 {

@@ -119,7 +119,7 @@ void LightLoop(
 
     // Also Apply indiret diffuse (GI)
     // PostEvaluateBSDF will perform any operation wanted by the material and sum everything into diffuseLighting and specularLighting
-    PostEvaluateBSDF(context, V, posInput, preLightData, bsdfData, builtinData, aggregateLighting, lightLoopOutput);
+    PostEvaluateBSDF(frameUniform, context, V, posInput, preLightData, bsdfData, builtinData, aggregateLighting, lightLoopOutput);
     
 }
 

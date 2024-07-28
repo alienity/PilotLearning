@@ -94,8 +94,7 @@ namespace RHI
             }
 
 			RHISurfaceCreateFlags textureFlags = RHISurfaceCreateFlagNone;
-            CD3DX12_CLEAR_VALUE pClearValue;
-            //CD3DX12_CLEAR_VALUE clearValue = CD3DX12_CLEAR_VALUE();
+            CD3DX12_CLEAR_VALUE pClearValue = CD3DX12_CLEAR_VALUE();
 
             if (Desc.AllowRenderTarget)
             {

@@ -90,7 +90,7 @@ struct BSDFData
 // Choose between Lambert diffuse and Disney diffuse (enable only one of them)
 #define USE_DIFFUSE_LAMBERT_BRDF
 
-#define LIT_USE_GGX_ENERGY_COMPENSATION
+// #define LIT_USE_GGX_ENERGY_COMPENSATION
 
 //// Enable reference mode for IBL and area lights
 //// Both reference define below can be define only if LightLoop is present, else we get a compile error
@@ -639,22 +639,6 @@ void EncodeIntoGBuffer( FrameUniforms frameUniform
     float coatMask = HasFlag(surfaceData.materialFeatures, MATERIALFEATUREFLAGS_LIT_CLEAR_COAT) ? surfaceData.coatMask : 0.0;
     // Note: no need to store MATERIALFEATUREFLAGS_LIT_STANDARD, always present
     outGBuffer2.a  = PackFloatInt8bit(coatMask, materialFeatureId, 8);
-
-#ifdef DEBUG_DISPLAY
-    if (_DebugLightingMode >= DEBUGLIGHTINGMODE_DIFFUSE_LIGHTING && _DebugLightingMode <= DEBUGLIGHTINGMODE_EMISSIVE_LIGHTING)
-    {
-        // With deferred, Emissive is store in builtinData.bakeDiffuseLighting. If we ask for emissive lighting only
-        // then remove bakeDiffuseLighting part.
-        if (_DebugLightingMode == DEBUGLIGHTINGMODE_EMISSIVE_LIGHTING)
-        {
-            builtinData.bakeDiffuseLighting = float3(0.0, 0.0, 0.0);
-        }
-        else
-        {
-            builtinData.emissiveColor = float3(0.0, 0.0, 0.0);
-        }
-    }
-#endif
 
     // Random TAG which we expect will never match provided emissive or lightmap value
     #define AO_IN_GBUFFER3_TAG float3((1 << 11), 1, (1 << 10))
@@ -1972,20 +1956,24 @@ IndirectLighting EvaluateBSDF_ScreenspaceRefraction(LightLoopContext lightLoopCo
 // PostEvaluateBSDF
 // ----------------------------------------------------------------------------
 
-void PostEvaluateBSDF(  LightLoopContext lightLoopContext,
+void PostEvaluateBSDF(  FrameUniforms frameUniform, LightLoopContext lightLoopContext,
                         float3 V, PositionInputs posInput,
                         PreLightData preLightData, BSDFData bsdfData, BuiltinData builtinData, AggregateLighting lighting,
                         out LightLoopOutput lightLoopOutput)
 {
+    float4 screenSize = frameUniform.baseUniform._ScreenSize;
+    
     AmbientOcclusionFactor aoFactor;
-//     // Use GTAOMultiBounce approximation for ambient occlusion (allow to get a tint from the baseColor)
-// #if 0
-//     GetScreenSpaceAmbientOcclusion(posInput.positionSS, preLightData.NdotV, bsdfData.perceptualRoughness, bsdfData.ambientOcclusion, bsdfData.specularOcclusion, aoFactor);
-// #else
-//     GetScreenSpaceAmbientOcclusionMultibounce(posInput.positionSS, preLightData.NdotV, bsdfData.perceptualRoughness, bsdfData.ambientOcclusion, bsdfData.specularOcclusion, bsdfData.diffuseColor, bsdfData.fresnel0, aoFactor);
-// #endif
+    // Use GTAOMultiBounce approximation for ambient occlusion (allow to get a tint from the baseColor)
+#if 0
+    GetScreenSpaceAmbientOcclusion(frameUniform, float2(posInput.positionSS.x, screenSize.y - posInput.positionSS.y),
+        preLightData.NdotV, bsdfData.perceptualRoughness, bsdfData.ambientOcclusion, bsdfData.specularOcclusion, aoFactor);
+#else
+    GetScreenSpaceAmbientOcclusionMultibounce(frameUniform, float2(posInput.positionSS.x, screenSize.y - posInput.positionSS.y),
+        preLightData.NdotV, bsdfData.perceptualRoughness, bsdfData.ambientOcclusion, bsdfData.specularOcclusion, bsdfData.diffuseColor, bsdfData.fresnel0, aoFactor);
+#endif
 
-    // ApplyAmbientOcclusionFactor(aoFactor, builtinData, lighting);
+    ApplyAmbientOcclusionFactor(aoFactor, builtinData, lighting);
 
     // Subsurface scattering mode
     float3 modifiedDiffuseColor = GetModifiedDiffuseColorForSSS(bsdfData);
@@ -2006,8 +1994,8 @@ void PostEvaluateBSDF(  LightLoopContext lightLoopContext,
 #endif
 
     lightLoopOutput.specularLighting = lighting.direct.specular + lighting.indirect.specularReflected;
-    // // Rescale the GGX to account for the multiple scattering.
-    // lightLoopOutput.specularLighting *= 1.0f + bsdfData.fresnel0 * preLightData.energyCompensation;
+    // Rescale the GGX to account for the multiple scattering.
+    lightLoopOutput.specularLighting *= 1.0f + bsdfData.fresnel0 * preLightData.energyCompensation;
 }
 
 #endif // #ifdef HAS_LIGHTLOOP

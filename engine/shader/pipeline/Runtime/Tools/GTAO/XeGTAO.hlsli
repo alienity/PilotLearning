@@ -734,16 +734,17 @@ void XeGTAO_AddSample( AOTermType ssaoValue, lpfloat edgeValue, inout AOTermType
     sumWeight += weight;
 }
 
-void XeGTAO_Output( uint2 pixCoord, RWTexture2D<uint> outputTexture, AOTermType outputValue, const uniform bool finalApply )
+void XeGTAO_Output(uint2 pixCoord, RWTexture2D<float> outputTexture, AOTermType outputValue, const uniform bool finalApply)
 {
-#ifdef XE_GTAO_COMPUTE_BENT_NORMALS
-    lpfloat     visibility = outputValue.w * ((finalApply)?((lpfloat)XE_GTAO_OCCLUSION_TERM_SCALE):(1));
-    lpfloat3    bentNormal = normalize(outputValue.xyz);
-    outputTexture[pixCoord.xy] = XeGTAO_EncodeVisibilityBentNormal( visibility, bentNormal );
-#else
+// #ifdef XE_GTAO_COMPUTE_BENT_NORMALS
+//     lpfloat     visibility = outputValue.w * ((finalApply)?((lpfloat)XE_GTAO_OCCLUSION_TERM_SCALE):(1));
+//     lpfloat3    bentNormal = normalize(outputValue.xyz);
+//     outputTexture[pixCoord.xy] = XeGTAO_EncodeVisibilityBentNormal( visibility, bentNormal );
+// #else
     outputValue *=  (finalApply)?((lpfloat)XE_GTAO_OCCLUSION_TERM_SCALE):(1);
-    outputTexture[pixCoord.xy] = uint(outputValue * 255.0 + 0.5);
-#endif
+    //outputTexture[pixCoord.xy] = uint(outputValue * 255.0 + 0.5);
+    outputTexture[pixCoord.xy] = outputValue;
+// #endif
 }
 
 void XeGTAO_DecodeGatherPartial( const uint4 packedValue, out AOTermType outDecoded[4] )
@@ -756,7 +757,7 @@ void XeGTAO_DecodeGatherPartial( const uint4 packedValue, out AOTermType outDeco
 #endif
 }
 
-void XeGTAO_Denoise( const uint2 pixCoordBase, const GTAOConstants consts, Texture2D<uint> sourceAOTerm, Texture2D<lpfloat> sourceEdges, SamplerState texSampler, RWTexture2D<uint> outputTexture, const uniform bool finalApply )
+void XeGTAO_Denoise(const uint2 pixCoordBase, const GTAOConstants consts, Texture2D<uint> sourceAOTerm, Texture2D<lpfloat> sourceEdges, SamplerState texSampler, RWTexture2D<float> outputTexture, const uniform bool finalApply)
 {
     const lpfloat blurAmount = (finalApply)?((lpfloat)consts.DenoiseBlurBeta):((lpfloat)consts.DenoiseBlurBeta/(lpfloat)5.0);
     const lpfloat diagWeight = 0.85 * 0.5;

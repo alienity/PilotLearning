@@ -18,13 +18,13 @@ namespace MoYu
         std::filesystem::path m_ShaderRootPath = init_info.m_ShaderRootPath;
 
         DepthPrefilterCS = m_ShaderCompiler->CompileShader(
-            RHI_SHADER_TYPE::Compute, m_ShaderRootPath / "hlsl/vaGTAOPrefilter.hlsl", ShaderCompileOptions(L"CSPrefilterDepths16x16"));
+            RHI_SHADER_TYPE::Compute, m_ShaderRootPath / "pipeline/Runtime/Tools/GTAO/vaGTAOPrefilter.hlsl", ShaderCompileOptions(L"CSPrefilterDepths16x16"));
 
         GTAOCS = m_ShaderCompiler->CompileShader(
-            RHI_SHADER_TYPE::Compute, m_ShaderRootPath / "hlsl/vaGTAOMain.hlsl", ShaderCompileOptions(L"CSGTAOHigh"));
+            RHI_SHADER_TYPE::Compute, m_ShaderRootPath / "pipeline/Runtime/Tools/GTAO/vaGTAOMain.hlsl", ShaderCompileOptions(L"CSGTAOHigh"));
 
         DenoiseCS = m_ShaderCompiler->CompileShader(
-            RHI_SHADER_TYPE::Compute, m_ShaderRootPath / "hlsl/vaGTAODenoise.hlsl", ShaderCompileOptions(L"CSDenoisePass"));
+            RHI_SHADER_TYPE::Compute, m_ShaderRootPath / "pipeline/Runtime/Tools/GTAO/vaGTAODenoise.hlsl", ShaderCompileOptions(L"CSDenoisePass"));
 
         {
             RHI::RootSignatureDesc rootSigDesc =
@@ -121,12 +121,38 @@ namespace MoYu
                                                       D3D12_RESOURCE_STATE_GENERIC_READ);
         }
 
-
-
     }
 
-    void GTAOPass::updateConstantBuffer(std::shared_ptr<RenderResource> render_resource)
+    void GTAOPass::prepareMatBuffer(std::shared_ptr<RenderResource> render_resource)
     {
+        // GTAO UniformBuffer
+        float aoClearColor[4] = { 1,1,1,1 };
+
+        RHI::RHIRenderSurfaceBaseDesc rtDesc{};
+        rtDesc.width = colorTexDesc.Width;
+        rtDesc.height = colorTexDesc.Height;
+        rtDesc.depthOrArray = 1;
+        rtDesc.samples = 1;
+        rtDesc.mipCount = 1;
+        rtDesc.flags = RHI::RHISurfaceCreateRandomWrite;
+        rtDesc.dim = RHI::RHITextureDimension::RHITexDim2D;
+        rtDesc.graphicsFormat = DXGI_FORMAT_R32_FLOAT;
+        rtDesc.colorSurface = true;
+        rtDesc.backBuffer = false;
+        pGTAORenderTexture = render_resource->CreateTransientTexture(rtDesc, L"GTAOTexture", D3D12_RESOURCE_STATE_COMMON);
+
+        HLSL::FrameUniforms* _frameUniforms = &render_resource->m_FrameUniforms;
+
+        _frameUniforms->baseUniform._AmbientOcclusionTextureIndex = pGTAORenderTexture->GetDefaultSRV()->GetIndex();
+
+        HLSL::AOUniform aoUniform{};
+        aoUniform._AmbientOcclusionParam = glm::float4(0, 0, 0, 1);
+        aoUniform._SpecularOcclusionBlend = 1;
+
+        _frameUniforms->aoUniform = aoUniform;
+
+
+        // GTAO Parameters
         int viewportWidth = m_render_camera->m_pixelWidth;
         int viewportHeight = m_render_camera->m_pixelHeight;
         glm::float4x4 proj = m_render_camera->getUnJitterPersProjMatrix();
@@ -150,10 +176,12 @@ namespace MoYu
     {
         bool needClearRenderTarget = initializeRenderTarget(graph, &passOutput);
 
+        RHI::RgResourceHandle finalAOHandle = graph.Import<RHI::D3D12Texture>(pGTAORenderTexture.get());
+
         RHI::RgResourceHandle perframeBufferHandle = passInput.perframeBufferHandle;
         RHI::RgResourceHandle packedNormalHandle = passInput.packedNormalHandle;
         RHI::RgResourceHandle depthHandle  = passInput.depthHandle;
-        RHI::RgResourceHandle finalAOHandle  = passOutput.outputAOHandle;
+        //RHI::RgResourceHandle finalAOHandle  = passOutput.outputAOHandle;
 
         RHI::RgResourceHandle workingViewDepthHandle = passOutput.workingViewDepthHandle;
         RHI::RgResourceHandle workingEdgeHandle = passOutput.workingEdgeHandle;
@@ -313,18 +341,15 @@ namespace MoYu
     bool GTAOPass::initializeRenderTarget(RHI::RenderGraph& graph, DrawOutputParameters* drawPassOutput)
     {
         bool needClearRenderTarget = false;
-        if (!drawPassOutput->outputAOHandle.IsValid())
-        {
-            needClearRenderTarget = true;
-
-            RHI::RgTextureDesc _targetAODesc = colorTexDesc;
-
-            _targetAODesc.Name = "FinalGTAO";
-            _targetAODesc.SetFormat(DXGI_FORMAT_R32_UINT);
-            _targetAODesc.SetAllowUnorderedAccess(true);
-            
-            drawPassOutput->outputAOHandle = graph.Create<RHI::D3D12Texture>(_targetAODesc);
-        }
+        //if (!drawPassOutput->outputAOHandle.IsValid())
+        //{
+        //    needClearRenderTarget = true;
+        //    RHI::RgTextureDesc _targetAODesc = colorTexDesc;
+        //    _targetAODesc.Name = "FinalGTAO";
+        //    _targetAODesc.SetFormat(DXGI_FORMAT_R32_UINT);
+        //    _targetAODesc.SetAllowUnorderedAccess(true);
+        //    drawPassOutput->outputAOHandle = graph.Create<RHI::D3D12Texture>(_targetAODesc);
+        //}
         if (!drawPassOutput->workingViewDepthHandle.IsValid())
         {
             RHI::RgTextureDesc _viewDepthPyramidDesc = depthTexDesc;

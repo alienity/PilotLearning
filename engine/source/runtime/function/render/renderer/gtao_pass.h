@@ -55,7 +55,7 @@ namespace MoYu
         ~GTAOPass() { destroy(); }
 
         void initialize(const AOInitInfo& init_info);
-        void updateConstantBuffer(std::shared_ptr<RenderResource> render_resource);
+        void prepareMatBuffer(std::shared_ptr<RenderResource> render_resource);
         void update(RHI::RenderGraph& graph, DrawInputParameters& passInput, DrawOutputParameters& passOutput);
         void destroy() override final;
 
@@ -74,6 +74,8 @@ namespace MoYu
         int frameCounter = 0;
 
         std::shared_ptr<RHI::D3D12Buffer> pGTAOConstants;
+
+        std::shared_ptr<RHI::D3D12Texture> pGTAORenderTexture;
 
     private:
         Shader DepthPrefilterCS;

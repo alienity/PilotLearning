@@ -29,6 +29,8 @@ namespace MoYu
             RHI::RgResourceHandle gbuffer3Handle;
             RHI::RgResourceHandle gbufferDepthHandle;
 
+            RHI::RgResourceHandle mAOHandle;
+
             std::vector<RHI::RgResourceHandle> directionLightShadowmapHandle;
             std::vector<RHI::RgResourceHandle> spotShadowmapHandles;
         };

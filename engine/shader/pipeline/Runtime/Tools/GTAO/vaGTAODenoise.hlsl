@@ -14,7 +14,7 @@
 // Version history: see XeGTAO.h
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#include "CommonMath.hlsli"
+#include "../../ShaderLibrary/Common.hlsl"
 #include "vaNoise.hlsl"
 #include "XeGTAO.hlsli"
 
@@ -36,7 +36,7 @@ void CSDenoisePass( const uint2 dispatchThreadID : SV_DispatchThreadID )
     ConstantBuffer<GTAOConstants> g_GTAOConsts = ResourceDescriptorHeap[gitao_consts_index];
     Texture2D<uint>    g_srcWorkingAOTerm  = ResourceDescriptorHeap[g_srcWorkingAOTerm_index];
     Texture2D<lpfloat> g_srcWorkingEdges   = ResourceDescriptorHeap[g_srcWorkingEdges_index];
-    RWTexture2D<uint>  g_outFinalAOTerm    = ResourceDescriptorHeap[g_outFinalAOTerm_index];
+    RWTexture2D<float>  g_outFinalAOTerm    = ResourceDescriptorHeap[g_outFinalAOTerm_index];
 
     const uint2 pixCoordBase = dispatchThreadID * uint2( 2, 1 );    // we're computing 2 horizontal pixels at a time (performance optimization)
     // g_samplerPointClamp is a sampler with D3D12_FILTER_MIN_MAG_MIP_POINT filter and D3D12_TEXTURE_ADDRESS_MODE_CLAMP addressing mode

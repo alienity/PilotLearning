@@ -14,7 +14,7 @@
 // Version history: see XeGTAO.h
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#include "CommonMath.hlsli"
+#include "../../ShaderLibrary/Common.hlsl"
 #include "vaNoise.hlsl"
 #include "XeGTAO.hlsli"
 

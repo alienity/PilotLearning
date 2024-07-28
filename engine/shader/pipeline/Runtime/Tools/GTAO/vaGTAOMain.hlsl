@@ -14,7 +14,8 @@
 // Version history: see XeGTAO.h
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#include "InputTypes.hlsli"
+#include "../../ShaderLibrary/Common.hlsl"
+#include "../../ShaderLibrary/ShaderVariables.hlsl"
 #include "vaNoise.hlsl"
 #include "XeGTAO.hlsli"
 
@@ -84,7 +85,9 @@ void CSGTAOHigh( const uint2 pixCoord : SV_DispatchThreadID )
     RWTexture2D<uint>        g_outWorkingAOTerm  = ResourceDescriptorHeap[g_outWorkingAOTerm_index];
     RWTexture2D<unorm float> g_outWorkingEdges   = ResourceDescriptorHeap[g_outWorkingEdges_index];
 
-    lpfloat3 viewspaceNormal = LoadNormal(pixCoord, g_srcNormalmap, g_PerframeBuffer.cameraUniform.curFrameUniform.viewFromWorldMatrix);
+    float4x4 viewFromWorldMatrix = g_PerframeBuffer.cameraUniform._CurFrameUniform.viewFromWorldMatrix;
+    
+    lpfloat3 viewspaceNormal = LoadNormal(pixCoord, g_srcNormalmap, viewFromWorldMatrix);
 
     // g_samplerPointClamp is a sampler with D3D12_FILTER_MIN_MAG_MIP_POINT filter and D3D12_TEXTURE_ADDRESS_MODE_CLAMP addressing mode
     XeGTAO_MainPass( pixCoord, 3, 3, SpatioTemporalNoise(pixCoord, g_GTAOConsts.NoiseIndex), viewspaceNormal, 
