@@ -16,6 +16,7 @@
 
 #include "../../ShaderLibrary/Common.hlsl"
 #include "../../ShaderLibrary/ShaderVariables.hlsl"
+#include "../../Material/NormalBuffer.hlsl"
 #include "vaNoise.hlsl"
 #include "XeGTAO.hlsli"
 
@@ -33,7 +34,7 @@ cbuffer GTAOConstantBuffer : register( b0 )
 SamplerState g_samplerPointClamp : register(s10);
 
 // Engine-specific normal map loader
-lpfloat3 LoadNormal( int2 pos, Texture2D<float3> g_srcNormalmap, float4x4 viewMatrix )
+lpfloat3 LoadNormal( int2 pos, Texture2D<float4> g_srcNormalmap, float4x4 viewMatrix )
 {
 #if 0
     // special decoding for external normals stored in 11_11_10 unorm - modify appropriately to support your own encoding 
@@ -42,8 +43,13 @@ lpfloat3 LoadNormal( int2 pos, Texture2D<float3> g_srcNormalmap, float4x4 viewMa
     float3 normal = normalize(unpackedOutput * 2.0.xxx - 1.0.xxx);
 #else 
     // example of a different encoding
-    float3 encodedNormal = g_srcNormalmap.Load(int3(pos, 0)).xyz;
-    float3 normal = normalize(encodedNormal * 2.0.xxx - 1.0.xxx);
+    float4 encodedNormal = g_srcNormalmap.Load(int3(pos, 0));
+    NormalData normalData;
+    DecodeFromNormalBuffer(encodedNormal, normalData);
+    float3 normal = normalData.normalWS;
+    
+    // float3 encodedNormal = g_srcNormalmap.Load(int3(pos, 0)).xyz;
+    // float3 normal = normalize(encodedNormal * 2.0.xxx - 1.0.xxx);
 #endif
 
 #if 1 // compute worldspace to viewspace here if your engine stores normals in worldspace; if generating normals from depth here, they're already in viewspace
@@ -81,7 +87,7 @@ void CSGTAOHigh( const uint2 pixCoord : SV_DispatchThreadID )
     ConstantBuffer<FrameUniforms> g_PerframeBuffer = ResourceDescriptorHeap[perfram_consts_index];
     ConstantBuffer<GTAOConstants> g_GTAOConsts = ResourceDescriptorHeap[gitao_consts_index];
     Texture2D<lpfloat>       g_srcWorkingDepth   = ResourceDescriptorHeap[srcWorkingDepth_index];
-    Texture2D<float3>        g_srcNormalmap      = ResourceDescriptorHeap[srcNormalmap_index];
+    Texture2D<float4>        g_srcNormalmap      = ResourceDescriptorHeap[srcNormalmap_index];
     RWTexture2D<uint>        g_outWorkingAOTerm  = ResourceDescriptorHeap[g_outWorkingAOTerm_index];
     RWTexture2D<unorm float> g_outWorkingEdges   = ResourceDescriptorHeap[g_outWorkingEdges_index];
 
