@@ -12,7 +12,7 @@
 //
 
 #include "ToneMappingUtility.hlsli"
-#include "PixelPacking.hlsli"
+#include "../Common/PixelPacking.hlsli"
 
 //StructuredBuffer<float> Exposure : register( t0 );
 //Texture2D<float3> Bloom : register( t1 );

@@ -21,7 +21,7 @@ namespace MoYu
         std::filesystem::path m_ShaderRootPath = init_info.m_ShaderRootPath;
 
         GenerateHistogramCS = m_ShaderCompiler->CompileShader(RHI_SHADER_TYPE::Compute,
-                                                              m_ShaderRootPath / "hlsl/GenerateHistogramCS.hlsl",
+                                                              m_ShaderRootPath / "pipeline/Runtime/Tools/Luma/GenerateHistogramCS.hlsl",
                                                               ShaderCompileOptions(L"main"));
 
         {
@@ -49,7 +49,7 @@ namespace MoYu
         }
 
         AdaptExposureCS = m_ShaderCompiler->CompileShader(
-            RHI_SHADER_TYPE::Compute, m_ShaderRootPath / "hlsl/AdaptExposureCS.hlsl", ShaderCompileOptions(L"main"));
+            RHI_SHADER_TYPE::Compute, m_ShaderRootPath / "pipeline/Runtime/Tools/Luma/AdaptExposureCS.hlsl", ShaderCompileOptions(L"main"));
 
         {
             RHI::RootSignatureDesc rootSigDesc = RHI::RootSignatureDesc()

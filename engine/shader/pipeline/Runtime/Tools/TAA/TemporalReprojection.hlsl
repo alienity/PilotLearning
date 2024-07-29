@@ -1,7 +1,5 @@
-﻿#include "d3d12.hlsli"
-#include "Shader.hlsli"
-#include "CommonMath.hlsli"
-#include "InputTypes.hlsli"
+﻿#include "../../ShaderLibrary/Common.hlsl"
+#include "../../ShaderLibrary/ShaderVariables.hlsl"
 
 #define ZCMP_GT(a, b) (a < b)
 
@@ -230,7 +228,7 @@ void CSMain( uint3 DTid : SV_DispatchThreadID )
 
     TAAUniform taaUniform = mFrameUniforms.taaUniform;
 
-    float4x4 projectionMatrix = mFrameUniforms.cameraUniform.curFrameUniform.clipFromViewMatrix;
+    float4x4 projectionMatrix = mFrameUniforms.cameraUniform._CurFrameUniform.clipFromViewMatrix;
 
     float4 jitterUV = taaUniform.jitterUV;
     float feedbackMin = taaUniform.feedbackMin;
@@ -241,10 +239,9 @@ void CSMain( uint3 DTid : SV_DispatchThreadID )
     float2 texel_size = 1.0f / float2(width, height);
 
     float2 uv = ss_txc - jitterUV.xy;
-	float _time = mFrameUniforms.baseUniform.time;
-	float sin_time = sin(_time);
+	float sin_time = mFrameUniforms.baseUniform._SinTime.w; // sin(t/8), sin(t/4), sin(t/2), sin(t)
 
-        //--- 3x3 nearest (good)
+    //--- 3x3 nearest (good)
     float3 c_frag = find_closest_fragment_3x3(depthBuffer, texel_size, uv);
     float2 ss_vel = motionVectorBuffer.Sample(defaultSampler, c_frag.xy).xy;
     float vs_dist = depth_resolve_linear(c_frag.z, projectionMatrix._m22, projectionMatrix._m23);

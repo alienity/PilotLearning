@@ -14,7 +14,7 @@
 #ifndef __TONE_MAPPING_UTILITY_HLSLI__
 #define __TONE_MAPPING_UTILITY_HLSLI__
 
-#include "ShaderUtility.hlsli"
+#include "../Common/ShaderUtility.hlsli"
 
 //
 // Reinhard

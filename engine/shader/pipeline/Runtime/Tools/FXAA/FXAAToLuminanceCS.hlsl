@@ -1,9 +1,4 @@
-﻿#include "CommonMath.hlsli"
-#include "Shader.hlsli"
-#include "InputTypes.hlsli"
-#include "d3d12.hlsli"
-
-// Convert rgb to luminance
+﻿// Convert rgb to luminance
 // with rgb in linear space with sRGB primaries and D65 white point
 float Luminance(float3 linearRgb) { return dot(linearRgb, float3(0.2126729, 0.7151522, 0.0721750)); }
 

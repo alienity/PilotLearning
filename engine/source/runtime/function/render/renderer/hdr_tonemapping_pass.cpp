@@ -20,7 +20,8 @@ namespace MoYu
         ShaderCompiler*       m_ShaderCompiler = init_info.m_ShaderCompiler;
         std::filesystem::path m_ShaderRootPath = init_info.m_ShaderRootPath;
 
-        ToneMapCS = m_ShaderCompiler->CompileShader(RHI_SHADER_TYPE::Compute, m_ShaderRootPath / "hlsl/ToneMapCS.hlsl", ShaderCompileOptions(L"main"));
+        ToneMapCS = m_ShaderCompiler->CompileShader(RHI_SHADER_TYPE::Compute, 
+            m_ShaderRootPath / "pipeline/Runtime/Tools/ToneMapping/ToneMapCS.hlsl", ShaderCompileOptions(L"main"));
         
         {
             RHI::RootSignatureDesc rootSigDesc =

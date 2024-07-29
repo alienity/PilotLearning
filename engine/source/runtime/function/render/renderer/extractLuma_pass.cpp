@@ -42,7 +42,7 @@ namespace MoYu
         std::filesystem::path m_ShaderRootPath = init_info.m_ShaderRootPath;
 
         ExtractLumaCS = m_ShaderCompiler->CompileShader(
-            RHI_SHADER_TYPE::Compute, m_ShaderRootPath / "hlsl/ExtractLumaCS.hlsl", ShaderCompileOptions(L"main"));
+            RHI_SHADER_TYPE::Compute, m_ShaderRootPath / "pipeline/Runtime/Tools/Luma/ExtractLumaCS.hlsl", ShaderCompileOptions(L"main"));
 
         {
             RHI::RootSignatureDesc rootSigDesc =

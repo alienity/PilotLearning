@@ -16,7 +16,7 @@
 // where the exposure would range from 2^-4 up to 2^4.
 
 //#include "PostEffectsRS.hlsli"
-#include "ShaderUtility.hlsli"
+#include "../Common/ShaderUtility.hlsli"
 
 //ByteAddressBuffer Histogram : register(t0);
 //RWStructuredBuffer<float> Exposure : register(u0);

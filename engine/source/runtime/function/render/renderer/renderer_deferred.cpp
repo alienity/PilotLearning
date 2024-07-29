@@ -807,21 +807,19 @@ namespace MoYu
         //=================================================================================
 
 
-        ////=================================================================================
-        //// postprocess rendertarget
-        //PostprocessPasses::PostprocessInputParameters mPostprocessIntputParams;
-        //PostprocessPasses::PostprocessOutputParameters mPostprocessOutputParams;
+        //=================================================================================
+        // postprocess rendertarget
+        PostprocessPasses::PostprocessInputParameters mPostprocessIntputParams;
+        PostprocessPasses::PostprocessOutputParameters mPostprocessOutputParams;
 
-        //mPostprocessIntputParams.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
-        //mPostprocessIntputParams.motionVectorHandle = outColorHandle;
-        //mPostprocessIntputParams.inputSceneColorHandle = mDrawTransOutputParams.renderTargetColorHandle;
-        //mPostprocessIntputParams.inputSceneDepthHandle = mDrawTransOutputParams.renderTargetDepthHandle;
-        //mPostprocessPasses->update(graph, mPostprocessIntputParams, mPostprocessOutputParams);
+        mPostprocessIntputParams.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
+        mPostprocessIntputParams.motionVectorHandle = outColorHandle;
+        mPostprocessIntputParams.inputSceneColorHandle = mDrawTransOutputParams.renderTargetColorHandle;
+        mPostprocessIntputParams.inputSceneDepthHandle = mDrawTransOutputParams.renderTargetDepthHandle;
+        mPostprocessPasses->update(graph, mPostprocessIntputParams, mPostprocessOutputParams);
 
-        ////outputRTColorHandle = mPostprocessOutputParams.outputColorHandle;
-        ////=================================================================================
-
-
+        outColorHandle = mPostprocessOutputParams.outputColorHandle;
+        //=================================================================================
 
 
         //=================================================================================
@@ -829,11 +827,6 @@ namespace MoYu
         DisplayPass::DisplayInputParameters mDisplayIntputParams;
         DisplayPass::DisplayOutputParameters mDisplayOutputParams;
 
-        //mDisplayIntputParams.inputRTColorHandle = mSSROutput.ssrOutHandle;
-        //mDisplayIntputParams.inputRTColorHandle   = mPostprocessOutputParams.outputColorHandle;
-        //mDisplayIntputParams.inputRTColorHandle   = mTerrainGBufferOutput.albedoHandle;
-        //mDisplayIntputParams.inputRTColorHandle      = mAOOutput.outputAOHandle;
-        //mDisplayIntputParams.inputRTColorHandle = mGBufferOutput.gbuffer0Handle;
         //mDisplayIntputParams.inputRTColorHandle = mTerrainShadowmapOutputParams.directionalShadowmapHandles[3];
         mDisplayIntputParams.inputRTColorHandle = outColorHandle;
         mDisplayOutputParams.renderTargetColorHandle = renderTargetColorHandle;

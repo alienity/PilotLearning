@@ -1,7 +1,4 @@
-﻿#include "CommonMath.hlsli"
-#include "Shader.hlsli"
-#include "InputTypes.hlsli"
-#include "d3d12.hlsli"
+﻿
 
 cbuffer Constants : register(b0)
 {

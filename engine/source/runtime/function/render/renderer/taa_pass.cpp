@@ -19,7 +19,7 @@ namespace MoYu
         {
             TemporalReprojectionCS =
                 m_ShaderCompiler->CompileShader(RHI_SHADER_TYPE::Compute,
-                                                m_ShaderRootPath / "hlsl/TemporalReprojection.hlsl",
+                                                m_ShaderRootPath / "pipeline/Runtime/Tools/TAA/TemporalReprojection.hlsl",
                                                 ShaderCompileOptions(L"CSMain"));
 
             RHI::RootSignatureDesc rootSigDesc =

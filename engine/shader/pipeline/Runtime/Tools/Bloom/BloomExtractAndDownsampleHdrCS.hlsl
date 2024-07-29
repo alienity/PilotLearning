@@ -12,7 +12,7 @@
 //
 // The CS for extracting bright pixels and downsampling them to an unblurred bloom buffer.
 
-#include "ShaderUtility.hlsli"
+#include "../Common/ShaderUtility.hlsli"
 //#include "PostEffectsRS.hlsli"
 
 //SamplerState BiLinearClamp : register( s0 );

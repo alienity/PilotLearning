@@ -1,9 +1,6 @@
 #include "runtime/function/render/renderer/fxaa_pass.h"
-
 #include "runtime/resource/config_manager/config_manager.h"
-
 #include "runtime/function/render/rhi/rhi_core.h"
-
 #include <cassert>
 
 namespace MoYu
@@ -18,9 +15,12 @@ namespace MoYu
         ShaderCompiler*       m_ShaderCompiler = init_info.m_ShaderCompiler;
         std::filesystem::path m_ShaderRootPath = init_info.m_ShaderRootPath;
 
-        FXAAToLuminanceCS = m_ShaderCompiler->CompileShader(RHI_SHADER_TYPE::Compute, m_ShaderRootPath / "hlsl/FXAAToLuminanceCS.hlsl", ShaderCompileOptions(L"CSMain"));
-        FXAALuminanceCS = m_ShaderCompiler->CompileShader(RHI_SHADER_TYPE::Compute, m_ShaderRootPath / "hlsl/FXAALuminanceCS.hlsl", ShaderCompileOptions(L"CSMain"));
-        FXAAGreenCS = m_ShaderCompiler->CompileShader(RHI_SHADER_TYPE::Compute, m_ShaderRootPath / "hlsl/FXAAGreenCS.hlsl", ShaderCompileOptions(L"CSMain"));
+        FXAAToLuminanceCS = m_ShaderCompiler->CompileShader(RHI_SHADER_TYPE::Compute, 
+            m_ShaderRootPath / "pipeline/Runtime/Tools/FXAA/FXAAToLuminanceCS.hlsl", ShaderCompileOptions(L"CSMain"));
+        FXAALuminanceCS = m_ShaderCompiler->CompileShader(RHI_SHADER_TYPE::Compute, 
+            m_ShaderRootPath / "pipeline/Runtime/Tools/FXAA/FXAALuminanceCS.hlsl", ShaderCompileOptions(L"CSMain"));
+        FXAAGreenCS = m_ShaderCompiler->CompileShader(RHI_SHADER_TYPE::Compute, 
+            m_ShaderRootPath / "pipeline/Runtime/Tools/FXAA/FXAAGreenCS.hlsl", ShaderCompileOptions(L"CSMain"));
 
         {
             RHI::RootSignatureDesc rootSigDesc = RHI::RootSignatureDesc()

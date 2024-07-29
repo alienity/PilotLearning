@@ -52,12 +52,16 @@ namespace MoYu
 		ShaderCompiler*       m_ShaderCompiler = init_info.m_ShaderCompiler;
         std::filesystem::path m_ShaderRootPath = init_info.m_ShaderRootPath;
 
-        BloomExtractAndDownsampleHdrCS = 
-			m_ShaderCompiler->CompileShader(RHI_SHADER_TYPE::Compute, m_ShaderRootPath / "hlsl/BloomExtractAndDownsampleHdrCS.hlsl", ShaderCompileOptions(L"main"));
-        DownsampleBloom4CS = m_ShaderCompiler->CompileShader(RHI_SHADER_TYPE::Compute, m_ShaderRootPath / "hlsl/DownsampleBloomAllCS.hlsl", ShaderCompileOptions(L"main"));
-        DownsampleBloom2CS = m_ShaderCompiler->CompileShader(RHI_SHADER_TYPE::Compute, m_ShaderRootPath / "hlsl/DownsampleBloomCS.hlsl", ShaderCompileOptions(L"main"));
-        BlurCS = m_ShaderCompiler->CompileShader(RHI_SHADER_TYPE::Compute, m_ShaderRootPath / "hlsl/BlurCS.hlsl", ShaderCompileOptions(L"main"));
-        UpsampleAndBlurCS = m_ShaderCompiler->CompileShader(RHI_SHADER_TYPE::Compute, m_ShaderRootPath / "hlsl/UpsampleAndBlurCS.hlsl", ShaderCompileOptions(L"main"));
+        BloomExtractAndDownsampleHdrCS = m_ShaderCompiler->CompileShader(RHI_SHADER_TYPE::Compute, 
+            m_ShaderRootPath / "pipeline/Runtime/Tools/Bloom/BloomExtractAndDownsampleHdrCS.hlsl", ShaderCompileOptions(L"main"));
+        DownsampleBloom4CS = m_ShaderCompiler->CompileShader(RHI_SHADER_TYPE::Compute, 
+            m_ShaderRootPath / "pipeline/Runtime/Tools/Bloom/DownsampleBloomAllCS.hlsl", ShaderCompileOptions(L"main"));
+        DownsampleBloom2CS = m_ShaderCompiler->CompileShader(RHI_SHADER_TYPE::Compute, 
+            m_ShaderRootPath / "pipeline/Runtime/Tools/Bloom/DownsampleBloomCS.hlsl", ShaderCompileOptions(L"main"));
+        BlurCS = m_ShaderCompiler->CompileShader(RHI_SHADER_TYPE::Compute, 
+            m_ShaderRootPath / "pipeline/Runtime/Tools/Bloom/BlurCS.hlsl", ShaderCompileOptions(L"main"));
+        UpsampleAndBlurCS = m_ShaderCompiler->CompileShader(RHI_SHADER_TYPE::Compute, 
+            m_ShaderRootPath / "pipeline/Runtime/Tools/Bloom/UpsampleAndBlurCS.hlsl", ShaderCompileOptions(L"main"));
 
         {
             RHI::RootSignatureDesc rootSigDesc =
