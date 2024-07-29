@@ -1,16 +1,10 @@
-﻿#include "d3d12.hlsli"
-#include "Shader.hlsli"
-#include "CommonMath.hlsli"
-#include "InputTypes.hlsli"
 #include "ATDefinitions.hlsli"
 #include "ATFunctions.hlsli"
 
 cbuffer Constants : register(b0)
 {
     int atmosphereUniformCBVIndex;
-	int transmittance2DSRVIndex;
-	int deltaIrradiance2DUAVIndex;
-	int irradiance2DUAVIndex;
+	int transmittance2DUAVIndex;
 };
 
 SamplerState sampler_LinearClamp : register(s10);
@@ -19,13 +13,11 @@ SamplerState sampler_PointClamp : register(s12);
 SamplerState sampler_PointRepeat : register(s13);
 
 [numthreads(8, 8, 1)]
-void CSMain(uint2 dispatchThreadID : SV_DispatchThreadID, uint2 groupThreadID : SV_GroupThreadID)
+void CSMain(uint3 dispatchThreadID : SV_DispatchThreadID)
 {
 	ConstantBuffer<AtmosphereUniformCB> atmosphereUniformCB = ResourceDescriptorHeap[atmosphereUniformCBVIndex];
 	AtmosphereUniform atmosphereUniform = atmosphereUniformCB.atmosphereUniform;
-	Texture2D<float3> transmittanceTexture = ResourceDescriptorHeap[transmittance2DSRVIndex];
-	RWTexture2D<float3> deltaIrradianceTexture = ResourceDescriptorHeap[deltaIrradiance2DUAVIndex];
-	RWTexture2D<float3> irradianceTexture = ResourceDescriptorHeap[irradiance2DUAVIndex];
+	RWTexture2D<float3> transmittanceTexture = ResourceDescriptorHeap[transmittance2DUAVIndex];
 
 	AtmosphereParameters atmosphereParameters;
 	AtmosphereConstants atmosphereConstants;
@@ -35,8 +27,7 @@ void CSMain(uint2 dispatchThreadID : SV_DispatchThreadID, uint2 groupThreadID : 
 
 	float2 coord = dispatchThreadID.xy + 0.5f.xx;
 
-    deltaIrradianceTexture[dispatchThreadID.xy] =
-		ComputeDirectIrradianceTexture(atmosphereParameters, atmosphereConstants, atmosphereSampler, transmittanceTexture, coord);
-	
-	irradianceTexture[dispatchThreadID.xy] = 0.0f.xxx;
+    transmittanceTexture[dispatchThreadID.xy] = 
+		ComputeTransmittanceToTopAtmosphereBoundaryTexture(atmosphereParameters, atmosphereConstants, coord);
+		
 }

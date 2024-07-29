@@ -1,6 +1,7 @@
 ﻿#ifndef ATMOSPHERIC_SCATTERING_FUNCTION_INCLUDE
 #define ATMOSPHERIC_SCATTERING_FUNCTION_INCLUDE
 
+#include "../../ShaderLibrary/Common.hlsl"
 #include "ATDefinitions.hlsli"
 
 Number ClampCosine(Number mu) {
@@ -602,7 +603,7 @@ RadianceDensitySpectrum ComputeScatteringDensity(
 			Angle phi = (Number(m) + 0.5) * dphi;
 			float3 omega_i =
 				float3(cos(phi) * sin_theta, sin(phi) * sin_theta, cos_theta);
-			SolidAngle domega_i = (dtheta / rad) * (dphi / rad) * sin(theta) * sr;
+			SolidAngle_ domega_i = (dtheta / rad) * (dphi / rad) * sin(theta) * sr;
 
 			// The radiance L_i arriving from direction omega_i after n-1 bounces is
 			// the sum of a term given by the precomputed scattering texture for the
@@ -798,7 +799,7 @@ IrradianceSpectrum ComputeIndirectIrradiance(
 			Angle phi = (Number(i) + 0.5) * dphi;
 			float3 omega =
 				float3(cos(phi) * sin(theta), sin(phi) * sin(theta), cos(theta));
-			SolidAngle domega = (dtheta / rad) * (dphi / rad) * sin(theta) * sr;
+			SolidAngle_ domega = (dtheta / rad) * (dphi / rad) * sin(theta) * sr;
 
 			Number nu = dot(omega, omega_s);
 			result += GetScattering(atmosphere, atmoscons, atmossampler, single_rayleigh_scattering_texture,

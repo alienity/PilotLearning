@@ -1,19 +1,16 @@
-﻿#include "d3d12.hlsli"
-#include "Shader.hlsli"
-#include "CommonMath.hlsli"
-#include "InputTypes.hlsli"
-#include "ATDefinitions.hlsli"
+﻿#include "ATDefinitions.hlsli"
 #include "ATFunctions.hlsli"
 
 cbuffer Constants : register(b0)
 {
     int atmosphereUniformIndex;
+	int transmittance2DSRVIndex;
 	int singleRayleighScattering3DSRVIndex;
 	int singleMieScattering3DSRVIndex;
 	int multipleScattering3DSRVIndex;
-	int deltaIrradiance2DUAVIndex;
-	int irradiance2DUAVIndex;
-	
+	int irradiance2DSRVIndex;
+	int scatteringDensityUAVIndex;
+
 	int scattering_order;
 };
 
@@ -27,11 +24,12 @@ void CSMain(uint3 dispatchThreadID : SV_DispatchThreadID, uint3 groupThreadID : 
 {
 	ConstantBuffer<AtmosphereUniformCB> atmosphereUniformCB = ResourceDescriptorHeap[atmosphereUniformIndex];
 	AtmosphereUniform atmosphereUniform = atmosphereUniformCB.atmosphereUniform;
+	Texture2D<float3> transmittanceTexture = ResourceDescriptorHeap[transmittance2DSRVIndex];
 	Texture3D<float3> singleRayleighScattering3DSRV = ResourceDescriptorHeap[singleRayleighScattering3DSRVIndex];
 	Texture3D<float3> singleMieScattering3DSRV = ResourceDescriptorHeap[singleMieScattering3DSRVIndex];
 	Texture3D<float3> multipleScattering3DSRV = ResourceDescriptorHeap[multipleScattering3DSRVIndex];
-	RWTexture2D<float3> deltaIrradiance2DUAV = ResourceDescriptorHeap[deltaIrradiance2DUAVIndex];
-	RWTexture2D<float3> irradiance2DUAV = ResourceDescriptorHeap[irradiance2DUAVIndex];
+	Texture2D<float3> irradiance2DSRV = ResourceDescriptorHeap[irradiance2DSRVIndex];
+	RWTexture3D<float3> scatteringDensityUAV = ResourceDescriptorHeap[scatteringDensityUAVIndex];
 
 	AtmosphereParameters atmosphereParameters;
 	AtmosphereConstants atmosphereConstants;
@@ -41,13 +39,12 @@ void CSMain(uint3 dispatchThreadID : SV_DispatchThreadID, uint3 groupThreadID : 
 
 	int layer = dispatchThreadID.z;
 
-	float3 delta_irradiance = ComputeIndirectIrradianceTexture(
-		atmosphereParameters, atmosphereConstants, atmosphereSampler, singleRayleighScattering3DSRV,
+    float3 scattering_density = ComputeScatteringDensityTexture(
+		atmosphereParameters, atmosphereConstants, atmosphereSampler,
+		transmittanceTexture, singleRayleighScattering3DSRV,
 		singleMieScattering3DSRV, multipleScattering3DSRV,
-		float2(dispatchThreadID.xy + 0.5.xx), scattering_order);
+		irradiance2DSRV, float3(dispatchThreadID.xy + 0.5.xx, layer + 0.5),
+		scattering_order);
 
-    deltaIrradiance2DUAV[dispatchThreadID.xy] = delta_irradiance;
-	
-    float3 irradiance = irradiance2DUAV[dispatchThreadID.xy];
-    irradiance2DUAV[dispatchThreadID.xy] = irradiance + delta_irradiance;
+    scatteringDensityUAV[dispatchThreadID.xyz] = scattering_density;
 }

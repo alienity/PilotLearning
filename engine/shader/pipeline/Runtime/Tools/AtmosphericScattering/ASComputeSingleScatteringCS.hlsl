@@ -1,8 +1,4 @@
-﻿#include "d3d12.hlsli"
-#include "Shader.hlsli"
-#include "CommonMath.hlsli"
-#include "InputTypes.hlsli"
-#include "ATDefinitions.hlsli"
+﻿#include "ATDefinitions.hlsli"
 #include "ATFunctions.hlsli"
 
 cbuffer Constants : register(b0)

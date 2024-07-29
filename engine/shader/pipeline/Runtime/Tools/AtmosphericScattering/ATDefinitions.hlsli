@@ -4,7 +4,7 @@
 #define Length float
 #define Wavelength float
 #define Angle float
-#define SolidAngle float
+#define SolidAngle_ float
 #define Power float
 #define LuminousPower float
 
@@ -68,7 +68,7 @@
 static const Length m = 1.0;
 static const Wavelength nm = 1.0;
 static const Angle rad = 1.0;
-static const SolidAngle sr = 1.0;
+static const SolidAngle_ sr = 1.0;
 static const Power watt = 1.0;
 static const LuminousPower lm = 1.0;
 

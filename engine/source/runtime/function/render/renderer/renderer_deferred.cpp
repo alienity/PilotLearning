@@ -15,17 +15,18 @@ namespace MoYu
 {
     DeferredRenderer::DeferredRenderer(RendererInitParams& renderInitParams) :
         Renderer(renderInitParams)
-    {}
+    {
+    }
 
     void DeferredRenderer::Initialize()
     {
         RHI::D3D12Texture* pBackBufferResource = pSwapChain->GetCurrentBackBufferResource();
-        
+
         CD3DX12_RESOURCE_DESC backDesc = pBackBufferResource->GetDesc();
 
-        backBufferWidth   = backDesc.Width;
-        backBufferHeight  = backDesc.Height;
-        backBufferFormat  = backDesc.Format;
+        backBufferWidth = backDesc.Width;
+        backBufferHeight = backDesc.Height;
+        backBufferFormat = backDesc.Format;
         depthBufferFormat = DXGI_FORMAT_D32_FLOAT;
 
         pipleineColorFormat = DXGI_FORMAT_R32G32B32A32_FLOAT;
@@ -34,7 +35,7 @@ namespace MoYu
         SetViewPort(0, 0, backBufferWidth, backBufferHeight);
 
         std::shared_ptr<ConfigManager> config_manager = g_runtime_global_context.m_config_manager;
-        const std::filesystem::path&   shaderRootPath = config_manager->getShaderFolder();
+        const std::filesystem::path& shaderRootPath = config_manager->getShaderFolder();
 
         // initialize global objects
         Shaders::Compile(pCompiler, shaderRootPath);
@@ -48,8 +49,8 @@ namespace MoYu
 
     void DeferredRenderer::InitGlobalBuffer()
     {
-        const FLOAT         renderTargetClearColor[4] = {0, 0, 0, 0};
-        CD3DX12_CLEAR_VALUE renderTargetClearValue    = CD3DX12_CLEAR_VALUE(backBufferFormat, renderTargetClearColor);
+        constexpr FLOAT renderTargetClearColor[4] = {0, 0, 0, 0};
+        auto renderTargetClearValue = CD3DX12_CLEAR_VALUE(backBufferFormat, renderTargetClearColor);
 
         p_RenderTargetTex = RHI::D3D12Texture::Create2D(pDevice->GetLinkedDevice(),
                                                         viewport.width,
@@ -81,23 +82,27 @@ namespace MoYu
 
     void DeferredRenderer::InitPass()
     {
-        RenderPassCommonInfo renderPassCommonInfo = {&renderGraphAllocator, &renderGraphRegistry, pDevice, pWindowSystem};
+        RenderPassCommonInfo renderPassCommonInfo = {
+            &renderGraphAllocator, &renderGraphRegistry, pDevice, pWindowSystem
+        };
 
-        int sampleCount = EngineConfig::g_AntialiasingMode == EngineConfig::MSAA ? EngineConfig::g_MASSConfig.m_MSAASampleCount : 1;
+        int sampleCount = EngineConfig::g_AntialiasingMode == EngineConfig::MSAA
+                              ? EngineConfig::g_MASSConfig.m_MSAASampleCount
+                              : 1;
 
         // Prepare common resources
         RHI::RgTextureDesc colorTexDesc = RHI::RgTextureDesc("ColorBuffer")
-                                              .SetFormat(pipleineColorFormat)
-                                              .SetExtent(viewport.width, viewport.height)
-                                              .SetAllowRenderTarget()
-                                              .SetSampleCount(sampleCount)
-                                              .SetClearValue(RHI::RgClearValue(0, 0, 0, 0));
+                                          .SetFormat(pipleineColorFormat)
+                                          .SetExtent(viewport.width, viewport.height)
+                                          .SetAllowRenderTarget()
+                                          .SetSampleCount(sampleCount)
+                                          .SetClearValue(RHI::RgClearValue(0, 0, 0, 0));
         RHI::RgTextureDesc depthTexDesc = RHI::RgTextureDesc("DepthBuffer")
-                                              .SetFormat(pipleineDepthFormat)
-                                              .SetExtent(viewport.width, viewport.height)
-                                              .SetAllowDepthStencil()
-                                              .SetSampleCount(sampleCount)
-                                              .SetClearValue(RHI::RgClearValue(0.0f, 0xff));
+                                          .SetFormat(pipleineDepthFormat)
+                                          .SetExtent(viewport.width, viewport.height)
+                                          .SetAllowDepthStencil()
+                                          .SetSampleCount(sampleCount)
+                                          .SetClearValue(RHI::RgClearValue(0.0f, 0xff));
 
         // Tool pass
         {
@@ -111,9 +116,9 @@ namespace MoYu
 
         // Cull pass
         {
-            MoYu::IndirectCullPass::IndirectCullInitInfo indirectCullInit;
-            indirectCullInit.albedoTexDesc    = colorTexDesc;
-            indirectCullInit.depthTexDesc     = depthTexDesc;
+            IndirectCullPass::IndirectCullInitInfo indirectCullInit;
+            indirectCullInit.albedoTexDesc = colorTexDesc;
+            indirectCullInit.depthTexDesc = depthTexDesc;
             indirectCullInit.m_ShaderCompiler = pCompiler;
             indirectCullInit.m_ShaderRootPath = g_runtime_global_context.m_config_manager->getShaderFolder();
 
@@ -124,7 +129,7 @@ namespace MoYu
         // Terrain Cull pass
         {
             TerrainCullInitInfo drawPassInit;
-            drawPassInit.colorTexDesc     = colorTexDesc;
+            drawPassInit.colorTexDesc = colorTexDesc;
             drawPassInit.m_ShaderCompiler = pCompiler;
             drawPassInit.m_ShaderRootPath = g_runtime_global_context.m_config_manager->getShaderFolder();
 
@@ -165,7 +170,7 @@ namespace MoYu
             drawPassInit.metallic_Roughness_Reflectance_AO_Desc = mIndirectGBufferPass->gbuffer0Desc;
             drawPassInit.clearCoat_ClearCoatRoughness_AnisotropyDesc = mIndirectGBufferPass->gbuffer0Desc;
             drawPassInit.depthDesc = mIndirectGBufferPass->depthDesc;
-            
+
             drawPassInit.m_ShaderCompiler = pCompiler;
             drawPassInit.m_ShaderRootPath = g_runtime_global_context.m_config_manager->getShaderFolder();
 
@@ -177,7 +182,7 @@ namespace MoYu
         {
             DepthPyramidPass::DrawPassInitInfo depthDrawPassInit;
             depthDrawPassInit.albedoTexDesc = mIndirectGBufferPass->gbuffer0Desc;
-            depthDrawPassInit.depthTexDesc  = mIndirectGBufferPass->depthDesc;
+            depthDrawPassInit.depthTexDesc = mIndirectGBufferPass->depthDesc;
 
             depthDrawPassInit.m_ShaderCompiler = pCompiler;
             depthDrawPassInit.m_ShaderRootPath = g_runtime_global_context.m_config_manager->getShaderFolder();
@@ -190,7 +195,7 @@ namespace MoYu
         {
             ColorPyramidPass::DrawPassInitInfo colorPyramidPassInit;
             colorPyramidPassInit.albedoTexDesc = mIndirectGBufferPass->gbuffer0Desc;
-            
+
             colorPyramidPassInit.m_ShaderCompiler = pCompiler;
             colorPyramidPassInit.m_ShaderRootPath = g_runtime_global_context.m_config_manager->getShaderFolder();
 
@@ -213,7 +218,7 @@ namespace MoYu
         // LightLoop pass
         {
             IndirectLightLoopPass::DrawPassInitInfo drawPassInit;
-            drawPassInit.colorTexDesc     = colorTexDesc;
+            drawPassInit.colorTexDesc = colorTexDesc;
             drawPassInit.m_ShaderCompiler = pCompiler;
             drawPassInit.m_ShaderRootPath = g_runtime_global_context.m_config_manager->getShaderFolder();
 
@@ -268,7 +273,7 @@ namespace MoYu
         // VolumeCloud pass
         {
             VolumeCloudPass::PassInitInfo drawPassInit;
-            drawPassInit.colorTexDesc     = colorTexDesc;
+            drawPassInit.colorTexDesc = colorTexDesc;
             drawPassInit.m_ShaderCompiler = pCompiler;
             drawPassInit.m_ShaderRootPath = g_runtime_global_context.m_config_manager->getShaderFolder();
 
@@ -304,41 +309,41 @@ namespace MoYu
 
             mIndirectTerrainShadowPass = std::make_shared<IndirectTerrainShadowPass>();
             mIndirectTerrainShadowPass->setCommonInfo(renderPassCommonInfo);
-            mIndirectTerrainShadowPass->initialize(terrainShadowPassInit); 
+            mIndirectTerrainShadowPass->initialize(terrainShadowPassInit);
         }
         // ao pass
         {
             AOPass::AOInitInfo aoPassInit;
-            aoPassInit.colorTexDesc       = colorTexDesc;
-            aoPassInit.m_ShaderCompiler   = pCompiler;
-            aoPassInit.m_ShaderRootPath   = g_runtime_global_context.m_config_manager->getShaderFolder();
+            aoPassInit.colorTexDesc = colorTexDesc;
+            aoPassInit.m_ShaderCompiler = pCompiler;
+            aoPassInit.m_ShaderRootPath = g_runtime_global_context.m_config_manager->getShaderFolder();
 
             mAOPass = std::make_shared<AOPass>();
             mAOPass->setCommonInfo(renderPassCommonInfo);
-            mAOPass->initialize(aoPassInit); 
+            mAOPass->initialize(aoPassInit);
         }
         // gtao pass
         {
             GTAOPass::AOInitInfo aoPassInit;
-            aoPassInit.colorTexDesc     = colorTexDesc;
-            aoPassInit.depthTexDesc     = depthTexDesc;
+            aoPassInit.colorTexDesc = colorTexDesc;
+            aoPassInit.depthTexDesc = depthTexDesc;
             aoPassInit.m_ShaderCompiler = pCompiler;
             aoPassInit.m_ShaderRootPath = g_runtime_global_context.m_config_manager->getShaderFolder();
 
             mGTAOPass = std::make_shared<GTAOPass>();
             mGTAOPass->setCommonInfo(renderPassCommonInfo);
-            mGTAOPass->initialize(aoPassInit); 
+            mGTAOPass->initialize(aoPassInit);
         }
         // ssr pass
         {
             SSRPass::SSRInitInfo ssrPassInit;
-            ssrPassInit.m_ColorTexDesc   = colorTexDesc;
+            ssrPassInit.m_ColorTexDesc = colorTexDesc;
             ssrPassInit.m_ShaderCompiler = pCompiler;
             ssrPassInit.m_ShaderRootPath = g_runtime_global_context.m_config_manager->getShaderFolder();
 
             mSSRPass = std::make_shared<SSRPass>();
             mSSRPass->setCommonInfo(renderPassCommonInfo);
-            mSSRPass->initialize(ssrPassInit); 
+            mSSRPass->initialize(ssrPassInit);
         }
         // postprocess pass
         {
@@ -363,7 +368,8 @@ namespace MoYu
     void DeferredRenderer::InitializeUIRenderBackend(WindowUI* window_ui)
     {
         RenderPassCommonInfo renderPassCommonInfo = {
-            &renderGraphAllocator, &renderGraphRegistry, pDevice, pWindowSystem};
+            &renderGraphAllocator, &renderGraphRegistry, pDevice, pWindowSystem
+        };
 
         mUIPass = std::make_shared<UIPass>();
         mUIPass->setCommonInfo(renderPassCommonInfo);
@@ -377,7 +383,7 @@ namespace MoYu
     void DeferredRenderer::PreparePassData(std::shared_ptr<RenderResource> render_resource)
     {
         render_resource->ReleaseTransientResources();
-        
+
         render_resource->updateFrameUniforms(RenderPass::m_render_scene, RenderPass::m_render_camera);
 
         mIndirectCullPass->prepareMeshData(render_resource);
@@ -405,30 +411,30 @@ namespace MoYu
 
     DeferredRenderer::~DeferredRenderer()
     {
-        mToolPass                    = nullptr;
-        mUIPass                      = nullptr;
-        mIndirectCullPass            = nullptr;
-        mTerrainCullPass             = nullptr;
-        mIndirectShadowPass          = nullptr;
-        mIndirectTerrainShadowPass   = nullptr;
-        mDepthPrePass                = nullptr;
-        mIndirectGBufferPass         = nullptr;
-        mIndirectTerrainGBufferPass  = nullptr;
-        mDepthPyramidPass            = nullptr;
-        mColorPyramidPass            = nullptr;
-        mIndirectLightLoopPass       = nullptr;
-        mSubsurfaceScatteringPass    = nullptr;
-        mIndirectOpaqueDrawPass      = nullptr;
-        mAOPass                      = nullptr;
-        mGTAOPass                    = nullptr;
-        mSSRPass                     = nullptr;
-        mVolumeLightPass             = nullptr;
-        mSkyBoxPass                  = nullptr;
-        mAtmosphericScatteringPass   = nullptr;
-        mVolumeCloudPass             = nullptr;
+        mToolPass = nullptr;
+        mUIPass = nullptr;
+        mIndirectCullPass = nullptr;
+        mTerrainCullPass = nullptr;
+        mIndirectShadowPass = nullptr;
+        mIndirectTerrainShadowPass = nullptr;
+        mDepthPrePass = nullptr;
+        mIndirectGBufferPass = nullptr;
+        mIndirectTerrainGBufferPass = nullptr;
+        mDepthPyramidPass = nullptr;
+        mColorPyramidPass = nullptr;
+        mIndirectLightLoopPass = nullptr;
+        mSubsurfaceScatteringPass = nullptr;
+        mIndirectOpaqueDrawPass = nullptr;
+        mAOPass = nullptr;
+        mGTAOPass = nullptr;
+        mSSRPass = nullptr;
+        mVolumeLightPass = nullptr;
+        mSkyBoxPass = nullptr;
+        mAtmosphericScatteringPass = nullptr;
+        mVolumeCloudPass = nullptr;
         mIndirectTransparentDrawPass = nullptr;
-        mPostprocessPasses           = nullptr;
-        mDisplayPass                 = nullptr;
+        mPostprocessPasses = nullptr;
+        mDisplayPass = nullptr;
 
         // Release global objects
         RootSignatures::Release();
@@ -447,7 +453,7 @@ namespace MoYu
         RHI::RgResourceHandle backBufColorHandle = graph.Import(pBackBufferResource);
         // game view output
         RHI::RgResourceHandle renderTargetColorHandle = graph.Import(p_RenderTargetTex.get());
-        
+
         // last frame color buffer
         RHI::RgResourceHandle curFrameColorRTHandle = graph.Import(GetCurrentFrameColorPyramid().get());
         // current frame color buffer
@@ -459,7 +465,7 @@ namespace MoYu
         IndirectCullPass::IndirectCullOutput indirectCullOutput;
         mIndirectCullPass->update(graph, indirectCullOutput);
         //=================================================================================
-        
+
         //=================================================================================
         // Terrain剪裁Pass
         RHI::RgResourceHandle lastFrameMinDepthPyramidHandle =
@@ -468,7 +474,7 @@ namespace MoYu
         IndirectTerrainCullPass::TerrainCullInput terrainCullInput;
         IndirectTerrainCullPass::TerrainCullOutput terrainCullOutput;
         terrainCullInput.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
-        
+
         mTerrainCullPass->update(graph, terrainCullInput, terrainCullOutput);
         //=================================================================================
         /*
@@ -484,7 +490,7 @@ namespace MoYu
         */
         //=================================================================================
         // indirect draw shadow
-        IndirectShadowPass::ShadowInputParameters  mShadowmapIntputParams;
+        IndirectShadowPass::ShadowInputParameters mShadowmapIntputParams;
         IndirectShadowPass::ShadowOutputParameters mShadowmapOutputParams;
 
         mShadowmapIntputParams.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
@@ -492,26 +498,28 @@ namespace MoYu
         mShadowmapIntputParams.propertiesPerMaterialHandle = indirectCullOutput.propertiesPerMaterialHandle;
         for (size_t i = 0; i < indirectCullOutput.directionShadowmapHandles.size(); i++)
         {
-            mShadowmapIntputParams.dirIndirectSortBufferHandles.push_back(indirectCullOutput.directionShadowmapHandles[i].indirectSortBufferHandle);
+            mShadowmapIntputParams.dirIndirectSortBufferHandles.push_back(
+                indirectCullOutput.directionShadowmapHandles[i].indirectSortBufferHandle);
         }
         for (size_t i = 0; i < indirectCullOutput.spotShadowmapHandles.size(); i++)
         {
-            mShadowmapIntputParams.spotsIndirectSortBufferHandles.push_back(indirectCullOutput.spotShadowmapHandles[i].indirectSortBufferHandle);
+            mShadowmapIntputParams.spotsIndirectSortBufferHandles.push_back(
+                indirectCullOutput.spotShadowmapHandles[i].indirectSortBufferHandle);
         }
         mIndirectShadowPass->update(graph, mShadowmapIntputParams, mShadowmapOutputParams);
         //=================================================================================
-        
+
         //=================================================================================
         // indirect terrain draw shadow
-        IndirectTerrainShadowPass::ShadowInputParameters  mTerrainShadowmapIntputParams;
+        IndirectTerrainShadowPass::ShadowInputParameters mTerrainShadowmapIntputParams;
         IndirectTerrainShadowPass::ShadowOutputParameters mTerrainShadowmapOutputParams;
 
         mTerrainShadowmapIntputParams.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
         mTerrainShadowmapIntputParams.terrainHeightmapHandle = terrainCullOutput.terrainHeightmapHandle;
-        mTerrainShadowmapIntputParams.transformBufferHandle  = terrainCullOutput.transformBufferHandle;
+        mTerrainShadowmapIntputParams.transformBufferHandle = terrainCullOutput.transformBufferHandle;
         mTerrainShadowmapIntputParams.dirCommandSigHandle.assign(terrainCullOutput.dirVisCommandSigHandles.begin(),
                                                                  terrainCullOutput.dirVisCommandSigHandles.end());
-        
+
         mTerrainShadowmapOutputParams.directionalShadowmapHandles = mShadowmapOutputParams.directionalShadowmapHandles;
 
         mIndirectTerrainShadowPass->update(graph, mTerrainShadowmapIntputParams, mTerrainShadowmapOutputParams);
@@ -519,7 +527,8 @@ namespace MoYu
 
         //=================================================================================
         // shadowmap output
-        std::vector<RHI::RgResourceHandle> directionalShadowmapHandles = mShadowmapOutputParams.directionalShadowmapHandles;
+        std::vector<RHI::RgResourceHandle> directionalShadowmapHandles = mShadowmapOutputParams.
+            directionalShadowmapHandles;
         std::vector<RHI::RgResourceHandle> spotShadowmapHandle = mShadowmapOutputParams.spotShadowmapHandle;
         //=================================================================================
 
@@ -540,7 +549,7 @@ namespace MoYu
         // indirect gbuffer
         IndirectGBufferPass::DrawInputParameters mGBufferIntput;
         GBufferOutput mGBufferOutput;
-        
+
         mGBufferIntput.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
         mGBufferIntput.renderDataPerDrawHandle = indirectCullOutput.renderDataPerDrawHandle;
         mGBufferIntput.propertiesPerMaterialHandle = indirectCullOutput.propertiesPerMaterialHandle;
@@ -549,14 +558,14 @@ namespace MoYu
 
         mIndirectGBufferPass->update(graph, mGBufferIntput, mGBufferOutput);
         //=================================================================================
-        
+
         //=================================================================================
         // indirect terrain gbuffer
         IndirectTerrainGBufferPass::DrawInputParameters mTerrainGBufferIntput;
         mTerrainGBufferIntput.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
         mTerrainGBufferIntput.terrainHeightmapHandle = terrainCullOutput.terrainHeightmapHandle;
         mTerrainGBufferIntput.terrainNormalmapHandle = terrainCullOutput.terrainNormalmapHandle;
-        mTerrainGBufferIntput.transformBufferHandle   = terrainCullOutput.transformBufferHandle;
+        mTerrainGBufferIntput.transformBufferHandle = terrainCullOutput.transformBufferHandle;
         mTerrainGBufferIntput.terrainCommandSigHandle = terrainCullOutput.mainCamVisCommandSigHandle;
 
         mIndirectTerrainGBufferPass->update(graph, mTerrainGBufferIntput, mGBufferOutput);
@@ -566,7 +575,7 @@ namespace MoYu
         // depth pyramid
         DepthPyramidPass::DrawInputParameters mDepthPyramidInput;
         DepthPyramidPass::DrawOutputParameters mDepthPyramidOutput;
-        mDepthPyramidInput.depthHandle          = mGBufferOutput.depthHandle;
+        mDepthPyramidInput.depthHandle = mGBufferOutput.depthHandle;
         mDepthPyramidInput.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
 
         mDepthPyramidPass->update(graph, mDepthPyramidInput, mDepthPyramidOutput);
@@ -647,12 +656,12 @@ namespace MoYu
         //*/
         //=================================================================================
         // ambient occlusion
-        GTAOPass::DrawInputParameters  mGTAOIntput;
+        GTAOPass::DrawInputParameters mGTAOIntput;
         GTAOPass::DrawOutputParameters mGTAOOutput;
 
         mGTAOIntput.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
-        mGTAOIntput.packedNormalHandle   = mGBufferOutput.gbuffer1Handle;
-        mGTAOIntput.depthHandle          = mGBufferOutput.depthHandle;
+        mGTAOIntput.packedNormalHandle = mGBufferOutput.gbuffer1Handle;
+        mGTAOIntput.depthHandle = mGBufferOutput.depthHandle;
         mGTAOPass->update(graph, mGTAOIntput, mGTAOOutput);
         //=================================================================================
 
@@ -686,8 +695,6 @@ namespace MoYu
         //=================================================================================
 
 
-
-
         ////=================================================================================
         //// subsurface scattering pass
         //SubsurfaceScatteringPass::DrawInputParameters mSubsurfaceScatteringInput;
@@ -702,21 +709,23 @@ namespace MoYu
 
         //mSubsurfaceScatteringPass->update(graph, mSubsurfaceScatteringInput, mSubsurfaceScatteringOutput);
 
-        //RHI::RgResourceHandle outColorHandle = mSubsurfaceScatteringOutput.cameraFilteringTexHandle;
-        ////=================================================================================
+        //=================================================================================
 
-        ////=================================================================================
-        //// color pyramid
-        //ColorPyramidPass::DrawInputParameters  mColorPyramidInput;
-        //ColorPyramidPass::DrawOutputParameters mColorPyramidOutput;
-        //mColorPyramidInput.colorHandle          = outColorHandle;
-        //mColorPyramidInput.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
-        //mColorPyramidOutput.colorPyramidHandle  = curFrameColorRTHandle;
-        //mColorPyramidPass->update(graph, mColorPyramidInput, mColorPyramidOutput);
+        RHI::RgResourceHandle outColorHandle = mLightLoopOutput.specularLightinghandle;
+        RHI::RgResourceHandle outDepthHandle = mGBufferOutput.depthHandle;
 
-        //// 因为color pyramid必须在绘制transparent对象之前
-        //outColorHandle = mColorPyramidOutput.colorHandle;
-        ////=================================================================================
+        //=================================================================================
+        // color pyramid
+        ColorPyramidPass::DrawInputParameters mColorPyramidInput;
+        ColorPyramidPass::DrawOutputParameters mColorPyramidOutput;
+        mColorPyramidInput.colorHandle = outColorHandle;
+        mColorPyramidInput.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
+        mColorPyramidOutput.colorPyramidHandle = curFrameColorRTHandle;
+        mColorPyramidPass->update(graph, mColorPyramidInput, mColorPyramidOutput);
+
+        // 因为color pyramid必须在绘制transparent对象之前
+        outColorHandle = mColorPyramidOutput.colorHandle;
+        //=================================================================================
 
         /*
         //=================================================================================
@@ -751,16 +760,19 @@ namespace MoYu
         //mSkyBoxPass->update(graph, mSkyboxIntputParams, mSkyboxOutputParams);
         ////=================================================================================
         //*/
-        ////=================================================================================
-        //// AtmosphericScattering draw
-        //AtmosphericScatteringPass::DrawInputParameters mASIntputParams;
-        //AtmosphericScatteringPass::DrawOutputParameters mASOutputParams;
+        //=================================================================================
+        // AtmosphericScattering draw
+        AtmosphericScatteringPass::DrawInputParameters mASIntputParams;
+        AtmosphericScatteringPass::DrawOutputParameters mASOutputParams;
 
-        //mASIntputParams.perframeBufferHandle    = indirectCullOutput.perframeBufferHandle;
-        //mASOutputParams.renderTargetColorHandle = outColorHandle;
-        //mASOutputParams.renderTargetDepthHandle = mGBufferOutput.depthHandle;
-        //mAtmosphericScatteringPass->update(graph, mASIntputParams, mASOutputParams);
-        ////=================================================================================
+        mASIntputParams.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
+        mASOutputParams.renderTargetColorHandle = outColorHandle;
+        mASOutputParams.renderTargetDepthHandle = outDepthHandle;
+        mAtmosphericScatteringPass->update(graph, mASIntputParams, mASOutputParams);
+
+        outColorHandle = mASOutputParams.renderTargetColorHandle;
+        outDepthHandle = mASOutputParams.renderTargetDepthHandle;
+        //=================================================================================
 
         ////=================================================================================
         //// VolumeCloud draw
@@ -776,30 +788,32 @@ namespace MoYu
 
         //=================================================================================
         // indirect transparent draw
-        IndirectDrawTransparentPass::DrawInputParameters  mDrawTransIntputParams;
+        IndirectDrawTransparentPass::DrawInputParameters mDrawTransIntputParams;
         IndirectDrawTransparentPass::DrawOutputParameters mDrawTransOutputParams;
 
         mDrawTransIntputParams.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
         mDrawTransIntputParams.renderDataPerDrawHandle = indirectCullOutput.renderDataPerDrawHandle;
         mDrawTransIntputParams.propertiesPerMaterialHandle = indirectCullOutput.propertiesPerMaterialHandle;
-        mDrawTransIntputParams.transparentDrawHandle = indirectCullOutput.transparentDrawHandle.indirectSortBufferHandle;
+        mDrawTransIntputParams.transparentDrawHandle = indirectCullOutput.transparentDrawHandle.
+                                                                          indirectSortBufferHandle;
         mDrawTransIntputParams.directionalShadowmapTexHandles = directionalShadowmapHandles;
         mDrawTransIntputParams.spotShadowmapTexHandles = spotShadowmapHandle;
-        mDrawTransOutputParams.renderTargetColorHandle = mLightLoopOutput.specularLightinghandle;
-        mDrawTransOutputParams.renderTargetDepthHandle = mGBufferOutput.depthHandle;
+        mDrawTransOutputParams.renderTargetColorHandle = outColorHandle;
+        mDrawTransOutputParams.renderTargetDepthHandle = outDepthHandle;
         mIndirectTransparentDrawPass->update(graph, mDrawTransIntputParams, mDrawTransOutputParams);
+
+        outColorHandle = mDrawTransOutputParams.renderTargetColorHandle;
+        outDepthHandle = mDrawTransOutputParams.renderTargetDepthHandle;
         //=================================================================================
 
 
         ////=================================================================================
-        ////RHI::RgResourceHandle outputRTColorHandle = mDrawOutputParams.renderTargetColorHandle;
-
         //// postprocess rendertarget
-        //PostprocessPasses::PostprocessInputParameters  mPostprocessIntputParams;
+        //PostprocessPasses::PostprocessInputParameters mPostprocessIntputParams;
         //PostprocessPasses::PostprocessOutputParameters mPostprocessOutputParams;
 
-        //mPostprocessIntputParams.perframeBufferHandle  = indirectCullOutput.perframeBufferHandle;
-        //mPostprocessIntputParams.motionVectorHandle    = mGBufferOutput.motionVectorHandle;
+        //mPostprocessIntputParams.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
+        //mPostprocessIntputParams.motionVectorHandle = outColorHandle;
         //mPostprocessIntputParams.inputSceneColorHandle = mDrawTransOutputParams.renderTargetColorHandle;
         //mPostprocessIntputParams.inputSceneDepthHandle = mDrawTransOutputParams.renderTargetDepthHandle;
         //mPostprocessPasses->update(graph, mPostprocessIntputParams, mPostprocessOutputParams);
@@ -807,9 +821,12 @@ namespace MoYu
         ////outputRTColorHandle = mPostprocessOutputParams.outputColorHandle;
         ////=================================================================================
 
+
+
+
         //=================================================================================
         // display
-        DisplayPass::DisplayInputParameters  mDisplayIntputParams;
+        DisplayPass::DisplayInputParameters mDisplayIntputParams;
         DisplayPass::DisplayOutputParameters mDisplayOutputParams;
 
         //mDisplayIntputParams.inputRTColorHandle = mSSROutput.ssrOutHandle;
@@ -818,12 +835,12 @@ namespace MoYu
         //mDisplayIntputParams.inputRTColorHandle      = mAOOutput.outputAOHandle;
         //mDisplayIntputParams.inputRTColorHandle = mGBufferOutput.gbuffer0Handle;
         //mDisplayIntputParams.inputRTColorHandle = mTerrainShadowmapOutputParams.directionalShadowmapHandles[3];
-        mDisplayIntputParams.inputRTColorHandle = mDrawTransOutputParams.renderTargetColorHandle;
+        mDisplayIntputParams.inputRTColorHandle = outColorHandle;
         mDisplayOutputParams.renderTargetColorHandle = renderTargetColorHandle;
         //mDisplayOutputParams.renderTargetColorHandle = backBufColorHandle;
         mDisplayPass->update(graph, mDisplayIntputParams, mDisplayOutputParams);
         //=================================================================================
-        
+
         //=================================================================================
         if (mUIPass != nullptr)
         {
@@ -833,7 +850,7 @@ namespace MoYu
             //mUIIntputParams.renderTargetColorHandle = renderTargetColorHandle;
             mUIIntputParams.renderTargetColorHandle = mDisplayOutputParams.renderTargetColorHandle;
             mUIOutputParams.backBufColorHandle = backBufColorHandle;
-            
+
             mUIPass->update(graph, mUIIntputParams, mUIOutputParams);
         }
         //=================================================================================
@@ -843,9 +860,9 @@ namespace MoYu
         {
             // Transfer the state of the backbuffer to Present
             context->TransitionBarrier(pBackBufferResource,
-                                      D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_PRESENT,
-                                      D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES,
-                                      true);
+                                       D3D12_RESOURCE_STATE_PRESENT,
+                                       D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES,
+                                       true);
         }
 
         ////DgmlBuilder Builder("Render Graph");
@@ -857,7 +874,7 @@ namespace MoYu
     {
         {
             // 生成specular LD和DFG，生成diffuse radiance
-            ToolPass::ToolInputParameters  _toolPassInput;
+            ToolPass::ToolInputParameters _toolPassInput;
             ToolPass::ToolOutputParameters _toolPassOutput;
             mToolPass->preUpdate(_toolPassInput, _toolPassOutput);
         }
@@ -865,7 +882,6 @@ namespace MoYu
 
     void DeferredRenderer::PostRender(double deltaTime)
     {
-
     }
 
     std::shared_ptr<RHI::D3D12Texture> DeferredRenderer::GetCurrentFrameColorPyramid()
@@ -877,9 +893,7 @@ namespace MoYu
     std::shared_ptr<RHI::D3D12Texture> DeferredRenderer::GetLastFrameColorPyramid()
     {
         int curIndex = pDevice->GetLinkedDevice()->m_FrameIndex;
-        curIndex     = (curIndex + 1) % 2;
+        curIndex = (curIndex + 1) % 2;
         return p_ColorPyramidRTs[curIndex];
     }
-
 }
-

@@ -50,7 +50,7 @@ namespace MoYu
 
         // Compute the transmittance, and store it in transmittance_texture_.
         mComputeTransmittanceCS = m_ShaderCompiler->CompileShader(RHI_SHADER_TYPE::Compute,
-                                                                  m_ShaderRootPath / "hlsl/ASComputeTransmittanceCS.hlsl",
+                                                                  m_ShaderRootPath / "pipeline/Runtime/Tools/AtmosphericScattering/ASComputeTransmittanceCS.hlsl",
                                                                   ShaderCompileOptions(L"CSMain"));
 
         // Compute the direct irradiance, store it in delta_irradiance_texture and,
@@ -59,7 +59,7 @@ namespace MoYu
         // irradiance_texture_, but only the irradiance from the sky).
         mComputeDirectIrrdianceCS =
             m_ShaderCompiler->CompileShader(RHI_SHADER_TYPE::Compute,
-                                                                  m_ShaderRootPath / "hlsl/ASComputeDirectIrradianceCS.hlsl",
+                                                                  m_ShaderRootPath / "pipeline/Runtime/Tools/AtmosphericScattering/ASComputeDirectIrradianceCS.hlsl",
                                                                   ShaderCompileOptions(L"CSMain"));
 
         // Compute the rayleigh and mie single scattering, store them in
@@ -68,7 +68,7 @@ namespace MoYu
         // optional_single_mie_scattering_texture_.
         mComputeSingleScatteringCS =
             m_ShaderCompiler->CompileShader(RHI_SHADER_TYPE::Compute,
-                                            m_ShaderRootPath / "hlsl/ASComputeSingleScatteringCS.hlsl",
+                                            m_ShaderRootPath / "pipeline/Runtime/Tools/AtmosphericScattering/ASComputeSingleScatteringCS.hlsl",
                                             ShaderCompileOptions(L"CSMain"));
 
         // Compute the 2nd, 3rd and 4th order of scattering, in sequence.
@@ -76,14 +76,14 @@ namespace MoYu
         // delta_scattering_density_texture.
         mComputeScatteringDensityCS =
             m_ShaderCompiler->CompileShader(RHI_SHADER_TYPE::Compute,
-                                            m_ShaderRootPath / "hlsl/ASComputeScatteringDensityCS.hlsl",
+                                            m_ShaderRootPath / "pipeline/Runtime/Tools/AtmosphericScattering/ASComputeScatteringDensityCS.hlsl",
                                             ShaderCompileOptions(L"CSMain"));
 
         // Compute the indirect irradiance, store it in delta_irradiance_texture and
         // accumulate it in irradiance_texture_.
         mComputeIdirectIrradianceCS = 
             m_ShaderCompiler->CompileShader(RHI_SHADER_TYPE::Compute,
-                                            m_ShaderRootPath / "hlsl/ASComputeIdirectIrradianceCS.hlsl",
+                                            m_ShaderRootPath / "pipeline/Runtime/Tools/AtmosphericScattering/ASComputeIdirectIrradianceCS.hlsl",
                                             ShaderCompileOptions(L"CSMain"));
 
         // Compute the multiple scattering, store it in
@@ -91,7 +91,7 @@ namespace MoYu
         // scattering_texture_.
         mComputeMultipleScatteringCS = 
             m_ShaderCompiler->CompileShader(RHI_SHADER_TYPE::Compute,
-                                            m_ShaderRootPath / "hlsl/ASComputeMultipleScatteringCS.hlsl",
+                                            m_ShaderRootPath / "pipeline/Runtime/Tools/AtmosphericScattering/ASComputeMultipleScatteringCS.hlsl",
                                             ShaderCompileOptions(L"CSMain"));
 
 #define CommonRootSigDesc(rootSigName) \
@@ -165,12 +165,12 @@ namespace MoYu
         {
             mAtmosphericSkyProceduralVS =
                 m_ShaderCompiler->CompileShader(RHI_SHADER_TYPE::Vertex,
-                                                m_ShaderRootPath / "hlsl/AtmosphericSkyProcedural.hlsl",
+                                                m_ShaderRootPath / "pipeline/Runtime/Tools/AtmosphericScattering/AtmosphericSkyProcedural.hlsl",
                                                 ShaderCompileOptions(L"VSMain"));
 
             mAtmosphericSkyProceduralPS =
                 m_ShaderCompiler->CompileShader(RHI_SHADER_TYPE::Pixel,
-                                                m_ShaderRootPath / "hlsl/AtmosphericSkyProcedural.hlsl",
+                                                m_ShaderRootPath / "pipeline/Runtime/Tools/AtmosphericScattering/AtmosphericSkyProcedural.hlsl",
                                                 ShaderCompileOptions(L"PSMain"));
 
             RHI::D3D12InputLayout InputLayout = {};
