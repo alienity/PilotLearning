@@ -12,7 +12,8 @@ ${THIRD_PARTY_DIR}/WinPixEventRuntime/bin/x64/WinPixEventRuntime.dll
 ${THIRD_PARTY_DIR}/DirectStorage/native/bin/x64/dstorage.dll
 ${THIRD_PARTY_DIR}/DirectStorage/native/bin/x64/dstoragecore.dll
 ${THIRD_PARTY_DIR}/embree-4.3.3.x64.windows/bin/embree4.dll
-${THIRD_PARTY_DIR}/embree-4.3.3.x64.windows/bin/tbb12.dll)
+${THIRD_PARTY_DIR}/embree-4.3.3.x64.windows/bin/tbb12.dll
+${THIRD_PARTY_DIR}/embree-4.3.3.x64.windows/bin/tbbmalloc.dll)
 
 option(ENABLE_PHYSICS_DEBUG_RENDERER "Enable Physics Debug Renderer" OFF)
 
