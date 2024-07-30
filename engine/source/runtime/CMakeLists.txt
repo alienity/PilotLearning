@@ -59,6 +59,8 @@ target_link_libraries(${TARGET_NAME} PUBLIC d3d12.lib)
 target_link_libraries(${TARGET_NAME} PUBLIC DirectXTex)
 target_link_libraries(${TARGET_NAME} PUBLIC fmt)
 
+include(${THIRD_PARTY_DIR}/embree-4.3.3.x64.windows/lib/cmake/embree-4.3.3/embree-config.cmake)
+
 add_definitions(-DUNICODE -D_UNICODE)
 
 if(ENABLE_PHYSICS_DEBUG_RENDERER)
@@ -127,6 +129,11 @@ target_include_directories(
 target_include_directories(
   ${TARGET_NAME} 
   PUBLIC $<BUILD_INTERFACE:${THIRD_PARTY_DIR}/DirectXTK12-sept2023>
+)
+
+target_include_directories(
+  ${TARGET_NAME} 
+  PUBLIC $<BUILD_INTERFACE:${THIRD_PARTY_DIR}/embree-4.3.3.x64.windows/include>
 )
 
 # ---- Create an installable target ----
