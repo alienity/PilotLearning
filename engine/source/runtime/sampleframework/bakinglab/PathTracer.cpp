@@ -8,12 +8,9 @@
 //
 //=================================================================================================
 
-#include "PCH.h"
-
 #include "PathTracer.h"
-
-#include <Graphics/BRDF.h>
-#include <Graphics/Sampling.h>
+#include "BRDF.h"
+#include "../Graphics/Sampling.h"
 
 // Vertex operators
 inline Vertex operator+(const Vertex& a, const Vertex& b)
@@ -61,7 +58,7 @@ template<typename T> T BarycentricLerp(const T& v0, const T& v1, const T& v2, fl
 // Interpolates triangle vertex values using the barycentric coordinates from a BVH hit result
 template<typename T> T TriangleLerp(const EmbreeRay& ray, const BVHData& bvhData, const std::vector<T>& vertexData)
 {
-    const uint64 triangleIdx = ray.primID;
+    const glm::uint64 triangleIdx = ray.primID;
     const Uint3& triangle = bvhData.Triangles[triangleIdx];
     const T& v0 = vertexData[triangle.x];
     const T& v1 = vertexData[triangle.y];
@@ -90,7 +87,7 @@ static Float3 SampleSun(Float3 sampleDir)
 static bool IsTriangleBackFacing(const EmbreeRay& ray, const BVHData& bvhData)
 {
     // Compute the triangle normal
-    const uint64 triangleIdx = ray.primID;
+    const glm::uint64 triangleIdx = ray.primID;
     const Uint3& triangle = bvhData.Triangles[triangleIdx];
     const Float3& v0 = bvhData.Vertices[triangle.x].Position;
     const Float3& v1 = bvhData.Vertices[triangle.y].Position;
@@ -206,17 +203,17 @@ Float3 SampleSunLight(const Float3& position, const Float3& normal, RTCScene sce
 }
 
 // Generates a full list of sample points for all integration types
-void GenerateIntegrationSamples(IntegrationSamples& samples, uint64 sqrtNumSamples, uint64 tileSizeX, uint64 tileSizeY,
-                                SampleModes sampleMode, uint64 numIntegrationTypes, Random& rng)
+void GenerateIntegrationSamples(IntegrationSamples& samples, glm::uint64 sqrtNumSamples, glm::uint64 tileSizeX, glm::uint64 tileSizeY,
+                                SampleModes sampleMode, glm::uint64 numIntegrationTypes, Random& rng)
 {
-    const uint64 numSamplesPerPixel = sqrtNumSamples * sqrtNumSamples;
-    const uint64 numTilePixels = tileSizeX * tileSizeY;
-    const uint64 numSamplesPerTile = numSamplesPerPixel * numTilePixels;
+    const glm::uint64 numSamplesPerPixel = sqrtNumSamples * sqrtNumSamples;
+    const glm::uint64 numTilePixels = tileSizeX * tileSizeY;
+    const glm::uint64 numSamplesPerTile = numSamplesPerPixel * numTilePixels;
     samples.Init(numTilePixels, numIntegrationTypes, numSamplesPerPixel);
 
-    for(uint64 pixelIdx = 0; pixelIdx < numTilePixels; ++pixelIdx)
+    for(glm::uint64 pixelIdx = 0; pixelIdx < numTilePixels; ++pixelIdx)
     {
-        for(uint64 typeIdx = 0; typeIdx < numIntegrationTypes; ++typeIdx)
+        for(glm::uint64 typeIdx = 0; typeIdx < numIntegrationTypes; ++typeIdx)
         {
             Float2* typeSamples = samples.GetSamplesForType(pixelIdx, typeIdx);
             if(sampleMode == SampleModes::Stratified)
@@ -324,7 +321,7 @@ Float3 PathTrace(const PathTracerParams& params, Random& randomGenerator, float&
             hitSurface.Bitangent = Float3::Normalize(hitSurface.Bitangent);
 
             // Look up the material data
-            const uint64 materialIdx = bvh.MaterialIndices[ray.primID];
+            const glm::uint64 materialIdx = bvh.MaterialIndices[ray.primID];
 
             Float3 albedo = 1.0f;
             if(AppSettings::EnableAlbedoMaps && !indirectDiffuseOnly)

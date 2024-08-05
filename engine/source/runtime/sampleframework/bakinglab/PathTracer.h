@@ -13,6 +13,7 @@
 #include "runtime/core/math/moyu_math2.h"
 #include "../graphics/Textures.h"
 #include "../graphics/Skybox.h"
+#include "BakingLabSettings.h"
 #include "embree4/rtcore.h"
 
 using namespace SampleFramework11;
@@ -41,14 +42,7 @@ struct BVHData
     std::vector<MoYu::MoYuScratchImage> MaterialRoughnessMaps;
     std::vector<MoYu::MoYuScratchImage> MaterialMetallicMaps;
 
-    ~BVHData()
-    {
-        if(Scene != nullptr)
-        {
-            rtcDeleteScene(Scene);
-            Scene = nullptr;
-        }
-    }
+    ~BVHData() {}
 };
 
 // Wrapper for an embree ray
@@ -66,7 +60,7 @@ struct EmbreeRay : public RTCRay
         tfar = farDist;
         geomID = RTC_INVALID_GEOMETRY_ID;
         primID = RTC_INVALID_GEOMETRY_ID;
-        instID = RTC_INVALID_GEOMETRY_ID;
+        instID[0] = RTC_INVALID_GEOMETRY_ID;
         mask = 0xFFFFFFFF;
         time = 0.0f;
     }
@@ -78,16 +72,18 @@ struct EmbreeRay : public RTCRay
 
     glm::float3 Origin() const
     {
-        return glm::float3(org[0], org[1], org[2]);
+        return glm::float3(org_x, org_y, org_z);
     }
 
     glm::float3 Direction() const
     {
-        return glm::float3(dir[0], dir[1], dir[2]);
+        return glm::float3(dir_x, dir_y, dir_z);
     }
-};
 
-assert(sizeof(EmbreeRay) == sizeof(RTCRay));
+    unsigned int primID;           //!< primitive ID
+    unsigned int geomID;           //!< geometry ID
+    unsigned int instID[RTC_MAX_INSTANCE_LEVEL_COUNT];           //!< instance ID
+};
 
 enum class IntegrationTypes
 {
@@ -180,7 +176,7 @@ struct IntegrationSampleSet
 
 // Generates a full list of sample points for all integration types
 void GenerateIntegrationSamples(IntegrationSamples& samples, glm::uint64 sqrtNumSamples, glm::uint64 tileSizeX, glm::uint64 tileSizeY,
-                                SampleModes sampleMode, glm::uint64 numIntegrationTypes, Random& rng);
+                                SampleFramework11::SampleModes sampleMode, glm::uint64 numIntegrationTypes, MoYu::Random& rng);
 
 // Samples the spherical area light using a set of 2D sample points
 glm::float3 SampleAreaLight(const glm::float3& position, const glm::float3& normal, RTCScene scene,
@@ -211,8 +207,8 @@ struct PathTracerParams
     float RayLen = 0.0f;
     const BVHData* SceneBVH = nullptr;
     const IntegrationSampleSet* SampleSet = nullptr;
-    const SkyCache* SkyCache = nullptr;
-    const TextureData<Half4>* EnvMaps = nullptr;
+    // const SkyCache* SkyCache = nullptr;
+    const MoYu::MoYuScratchImage* EnvMaps = nullptr;
 };
 
 // Returns the incoming radiance along the ray specified by "RayDir", computed using unidirectional
