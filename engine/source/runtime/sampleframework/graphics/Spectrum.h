@@ -218,16 +218,16 @@ class CoefficientSpectrum {
         assert(!ret.HasNaNs());
         return ret;
     }
-    friend std::ostream &operator<<(std::ostream &os,
-                                    const CoefficientSpectrum &s) {
-        os << "[";
-        for (int i = 0; i < nSpectrumSamples; ++i) {
-            os << s.c[i];
-            if (i + 1 < nSpectrumSamples) os << ", ";
-        }
-        os << "]";
-        return os;
-    }
+    // friend std::ostream &operator<<(std::ostream &os,
+    //                                 const CoefficientSpectrum &s) {
+    //     os << "[";
+    //     for (int i = 0; i < nSpectrumSamples; ++i) {
+    //         os << s.c[i];
+    //         if (i + 1 < nSpectrumSamples) os << ", ";
+    //     }
+    //     os << "]";
+    //     return os;
+    // }
     CoefficientSpectrum Clamp(float low = 0, float high = MoYu::FloatInfinity) const {
         CoefficientSpectrum ret;
         for (int i = 0; i < nSpectrumSamples; ++i)

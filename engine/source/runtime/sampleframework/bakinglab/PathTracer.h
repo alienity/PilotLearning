@@ -13,10 +13,7 @@
 #include "runtime/core/math/moyu_math2.h"
 #include "../graphics/Textures.h"
 #include "../graphics/Skybox.h"
-
-// Forward declarations
-struct __RTCScene;
-typedef __RTCScene* RTCScene;
+#include "embree4/rtcore.h"
 
 using namespace SampleFramework11;
 
@@ -39,10 +36,10 @@ struct BVHData
     std::vector<glm::int3> Triangles;
     std::vector<Vertex> Vertices;
     std::vector<glm::uint32> MaterialIndices;
-    std::vector<TextureData<glm::uint32>> MaterialDiffuseMaps;
-    std::vector<TextureData<glm::uint32>> MaterialNormalMaps;
-    std::vector<TextureData<glm::uint32>> MaterialRoughnessMaps;
-    std::vector<TextureData<glm::uint32>> MaterialMetallicMaps;
+    std::vector<MoYu::MoYuScratchImage> MaterialDiffuseMaps;
+    std::vector<MoYu::MoYuScratchImage> MaterialNormalMaps;
+    std::vector<MoYu::MoYuScratchImage> MaterialRoughnessMaps;
+    std::vector<MoYu::MoYuScratchImage> MaterialMetallicMaps;
 
     ~BVHData()
     {
@@ -59,12 +56,12 @@ struct EmbreeRay : public RTCRay
 {
     EmbreeRay(const glm::float3& origin, const glm::float3& direction, float nearDist = 0.0f, float farDist = FLT_MAX)
     {
-        org[0] = origin.x;
-        org[1] = origin.y;
-        org[2] = origin.z;
-        dir[0] = direction.x;
-        dir[1] = direction.y;
-        dir[2] = direction.z;
+        org_x = origin.x;
+        org_y = origin.y;
+        org_z = origin.z;
+        dir_x = direction.x;
+        dir_y = direction.y;
+        dir_z = direction.z;
         tnear = nearDist;
         tfar = farDist;
         geomID = RTC_INVALID_GEOMETRY_ID;
@@ -90,7 +87,7 @@ struct EmbreeRay : public RTCRay
     }
 };
 
-StaticAssert_(sizeof(EmbreeRay) == sizeof(RTCRay));
+assert(sizeof(EmbreeRay) == sizeof(RTCRay));
 
 enum class IntegrationTypes
 {
@@ -103,18 +100,18 @@ enum class IntegrationTypes
     NumValues,
 };
 
-static const uint64 NumIntegrationTypes = uint64(IntegrationTypes::NumValues);
+static const glm::uint64 NumIntegrationTypes = glm::uint64(IntegrationTypes::NumValues);
 
 // A list of pseudo-random sample points used for Monte Carlo integration, with enough
 // sample points for a group of adjacent pixels/texels
 struct IntegrationSamples
 {
     std::vector<glm::float2> Samples;
-    uint64 NumPixels = 0;
-    uint64 NumTypes = 0;
-    uint64 NumSamples = 0;
+    glm::uint64 NumPixels = 0;
+    glm::uint64 NumTypes = 0;
+    glm::uint64 NumSamples = 0;
 
-    void Init(uint64 numPixels, uint64 numTypes, uint64 numSamples)
+    void Init(glm::uint64 numPixels, glm::uint64 numTypes, glm::uint64 numSamples)
     {
         NumPixels = numPixels;
         NumSamples = numSamples;
@@ -122,40 +119,40 @@ struct IntegrationSamples
         Samples.resize(numPixels * numTypes * numSamples);
     }
 
-    uint64 ArrayIndex(uint64 pixelIdx, uint64 typeIdx, uint64 sampleIdx) const
+    glm::uint64 ArrayIndex(glm::uint64 pixelIdx, glm::uint64 typeIdx, glm::uint64 sampleIdx) const
     {
-        Assert_(pixelIdx < NumPixels);
-        Assert_(typeIdx < NumTypes);
-        Assert_(sampleIdx < NumSamples);
+        assert(pixelIdx < NumPixels);
+        assert(typeIdx < NumTypes);
+        assert(sampleIdx < NumSamples);
         return pixelIdx * (NumSamples * NumTypes) + typeIdx * NumSamples + sampleIdx;
     }
 
-    glm::float2 GetSample(uint64 pixelIdx, uint64 typeIdx, uint64 sampleIdx) const
+    glm::float2 GetSample(glm::uint64 pixelIdx, glm::uint64 typeIdx, glm::uint64 sampleIdx) const
     {
-        const uint64 idx = ArrayIndex(pixelIdx, typeIdx, sampleIdx);
+        const glm::uint64 idx = ArrayIndex(pixelIdx, typeIdx, sampleIdx);
         return Samples[idx];
     }
 
-    glm::float2* GetSamplesForType(uint64 pixelIdx, uint64 typeIdx)
+    glm::float2* GetSamplesForType(glm::uint64 pixelIdx, glm::uint64 typeIdx)
     {
-        const uint64 startIdx = ArrayIndex(pixelIdx, typeIdx, 0);
+        const glm::uint64 startIdx = ArrayIndex(pixelIdx, typeIdx, 0);
         return &Samples[startIdx];
     }
 
-    const glm::float2* GetSamplesForType(uint64 pixelIdx, uint64 typeIdx) const
+    const glm::float2* GetSamplesForType(glm::uint64 pixelIdx, glm::uint64 typeIdx) const
     {
-        const uint64 startIdx = ArrayIndex(pixelIdx, typeIdx, 0);
+        const glm::uint64 startIdx = ArrayIndex(pixelIdx, typeIdx, 0);
         return &Samples[startIdx];
     }
 
-    void GetSampleSet(uint64 pixelIdx, uint64 sampleIdx, glm::float2* sampleSet) const
+    void GetSampleSet(glm::uint64 pixelIdx, glm::uint64 sampleIdx, glm::float2* sampleSet) const
     {
-        Assert_(pixelIdx < NumPixels);
-        Assert_(sampleIdx < NumSamples);
-        Assert_(sampleSet != nullptr);
-        const uint64 typeStride = NumSamples;
-        uint64 idx = pixelIdx * (NumSamples * NumTypes) + sampleIdx;
-        for(uint64 typeIdx = 0; typeIdx < NumTypes; ++typeIdx)
+        assert(pixelIdx < NumPixels);
+        assert(sampleIdx < NumSamples);
+        assert(sampleSet != nullptr);
+        const glm::uint64 typeStride = NumSamples;
+        glm::uint64 idx = pixelIdx * (NumSamples * NumTypes) + sampleIdx;
+        for(glm::uint64 typeIdx = 0; typeIdx < NumTypes; ++typeIdx)
         {
             sampleSet[typeIdx] = Samples[idx];
             idx += typeStride;
@@ -168,22 +165,22 @@ struct IntegrationSampleSet
 {
     glm::float2 Samples[NumIntegrationTypes];
 
-    void Init(const IntegrationSamples& samples, uint64 pixelIdx, uint64 sampleIdx)
+    void Init(const IntegrationSamples& samples, glm::uint64 pixelIdx, glm::uint64 sampleIdx)
     {
-        Assert_(samples.NumTypes == NumIntegrationTypes);
+        assert(samples.NumTypes == NumIntegrationTypes);
         samples.GetSampleSet(pixelIdx, sampleIdx, Samples);
     }
 
-    glm::float2 Pixel() const { return Samples[uint64(IntegrationTypes::Pixel)]; }
-    glm::float2 Lens() const { return Samples[uint64(IntegrationTypes::Lens)]; }
-    glm::float2 BRDF() const { return Samples[uint64(IntegrationTypes::BRDF)]; }
-    glm::float2 Sun() const { return Samples[uint64(IntegrationTypes::Sun)]; }
-    glm::float2 AreaLight() const { return Samples[uint64(IntegrationTypes::AreaLight)]; }
+    glm::float2 Pixel() const { return Samples[glm::uint64(IntegrationTypes::Pixel)]; }
+    glm::float2 Lens() const { return Samples[glm::uint64(IntegrationTypes::Lens)]; }
+    glm::float2 BRDF() const { return Samples[glm::uint64(IntegrationTypes::BRDF)]; }
+    glm::float2 Sun() const { return Samples[glm::uint64(IntegrationTypes::Sun)]; }
+    glm::float2 AreaLight() const { return Samples[glm::uint64(IntegrationTypes::AreaLight)]; }
 };
 
 // Generates a full list of sample points for all integration types
-void GenerateIntegrationSamples(IntegrationSamples& samples, uint64 sqrtNumSamples, uint64 tileSizeX, uint64 tileSizeY,
-                                SampleModes sampleMode, uint64 numIntegrationTypes, Random& rng);
+void GenerateIntegrationSamples(IntegrationSamples& samples, glm::uint64 sqrtNumSamples, glm::uint64 tileSizeX, glm::uint64 tileSizeY,
+                                SampleModes sampleMode, glm::uint64 numIntegrationTypes, Random& rng);
 
 // Samples the spherical area light using a set of 2D sample points
 glm::float3 SampleAreaLight(const glm::float3& position, const glm::float3& normal, RTCScene scene,
@@ -200,15 +197,15 @@ glm::float3 SampleSunLight(const glm::float3& position, const glm::float3& norma
 struct PathTracerParams
 {
     glm::float3 RayDir;
-    uint32 EnableDirectAreaLight = false;
-    uint8 EnableDirectSun = false;
-    uint8 EnableDiffuse = false;
-    uint8 EnableSpecular = false;
-    uint8 EnableBounceSpecular = false;
-    uint8 ViewIndirectSpecular = false;
-    uint8 ViewIndirectDiffuse = false;
-    int32 MaxPathLength = -1;
-    int32 RussianRouletteDepth = -1;
+    glm::uint32 EnableDirectAreaLight = false;
+    glm::uint8 EnableDirectSun = false;
+    glm::uint8 EnableDiffuse = false;
+    glm::uint8 EnableSpecular = false;
+    glm::uint8 EnableBounceSpecular = false;
+    glm::uint8 ViewIndirectSpecular = false;
+    glm::uint8 ViewIndirectDiffuse = false;
+    glm::int32 MaxPathLength = -1;
+    glm::int32 RussianRouletteDepth = -1;
     float RussianRouletteProbability = 0.5f;
     glm::float3 RayStart;
     float RayLen = 0.0f;
@@ -220,4 +217,4 @@ struct PathTracerParams
 
 // Returns the incoming radiance along the ray specified by "RayDir", computed using unidirectional
 // path tracing
-glm::float3 PathTrace(const PathTracerParams& params, Random& randomGenerator, float& illuminance, bool& hitSky);
+glm::float3 PathTrace(const PathTracerParams& params, MoYu::Random& randomGenerator, float& illuminance, bool& hitSky);

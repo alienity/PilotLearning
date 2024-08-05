@@ -89,6 +89,13 @@ public:
         return *this;
     }
 
+    SH& operator*=(float scale)
+    {
+        for(glm::uint64 i = 0; i < N; ++i)
+            Coefficients[i] *= scale;
+        return *this;
+    }
+
     SH operator*(const SH& other) const
     {
         SH result;
@@ -113,6 +120,14 @@ public:
     }
 
     SH operator*(const T scale) const
+    {
+        SH result;
+        for(glm::uint64 i = 0; i < N; ++i)
+            result.Coefficients[i] = Coefficients[i] * scale;
+        return result;
+    }
+
+    SH operator*(float scale) const
     {
         SH result;
         for(glm::uint64 i = 0; i < N; ++i)

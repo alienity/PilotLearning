@@ -278,8 +278,7 @@ SH9Color ProjectCubemapToSH(MoYu::MoYuScratchImage* cubeMap)
                 const float weight = 4.0f / (sqrt(temp) * temp);
 
                 glm::float3 dir = MapXYSToDirection(x, y, face, width, height);
-                SH9Color tmpColor = ProjectOntoSH9Color(dir, sample);
-                result += tmpColor * weight;
+                result += ProjectOntoSH9Color(dir, sample) * weight;
                 weightSum += weight;
             }
         }

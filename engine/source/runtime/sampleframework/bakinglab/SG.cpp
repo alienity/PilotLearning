@@ -66,7 +66,7 @@ void GenerateUniformSGs(SG* outSGs, glm::uint64 numSGs, SGDistribution distribut
 
     const glm::uint64 sampleCount = 2048;
     glm::float2 samples[sampleCount];
-    GenerateHammersleySamples2D(samples, sampleCount);
+    SampleFramework11::GenerateHammersleySamples2D(samples, sampleCount);
 
     for(glm::uint32 i = 0; i < numSGs; ++i)
         outSGs[i].BasisSqIntegralOverDomain = 0.0f;
@@ -74,7 +74,7 @@ void GenerateUniformSGs(SG* outSGs, glm::uint64 numSGs, SGDistribution distribut
     for(glm::uint64 i = 0; i < sampleCount; ++i)
     {
         glm::float3 dir = distribution == SGDistribution::Hemispherical ? 
-            SampleDirectionHemisphere(samples[i].x, samples[i].y) : SampleDirectionSphere(samples[i].x, samples[i].y);
+            SampleFramework11::SampleDirectionHemisphere(samples[i].x, samples[i].y) : SampleFramework11::SampleDirectionSphere(samples[i].x, samples[i].y);
         for(glm::uint32 j = 0; j < numSGs; ++j)
         {
             float weight = std::exp(outSGs[j].Sharpness * (glm::dot(dir, outSGs[j].Axis) - 1.0f));
@@ -107,9 +107,9 @@ static void SolveNNLS(SGSolveParam& params)
 
     // -- Linearly solve for the rgb channels one at a time
     Eigen::MatrixXf Ar, Ag, Ab;
-    Ar.resize(params.NumSamples, int64(params.NumSGs));
-    Ag.resize(params.NumSamples, int64(params.NumSGs));
-    Ab.resize(params.NumSamples, int64(params.NumSGs));
+    Ar.resize(params.NumSamples, glm::int64(params.NumSGs));
+    Ag.resize(params.NumSamples, glm::int64(params.NumSGs));
+    Ab.resize(params.NumSamples, glm::int64(params.NumSGs));
     Eigen::VectorXf br(params.NumSamples);
     Eigen::VectorXf bg(params.NumSamples);
     Eigen::VectorXf bb(params.NumSamples);
@@ -118,7 +118,7 @@ static void SolveNNLS(SGSolveParam& params)
         // compute difference squared from actual observed data
         for(glm::uint32 j = 0; j < params.NumSGs; ++j)
         {
-            float exponent = exp((glm::float3::Dot(params.XSamples[i], params.OutSGs[j].Axis) - 1.0f) *
+            float exponent = exp((glm::dot(params.XSamples[i], params.OutSGs[j].Axis) - 1.0f) *
                                  params.OutSGs[j].Sharpness);
             Ar(i,j) = exponent;
             Ag(i,j) = exponent;
@@ -223,7 +223,7 @@ static void SolveProjection(SGSolveParam& params)
         ProjectOntoSGs(params.XSamples[i], params.YSamples[i], params.OutSGs, params.NumSGs);
 
     // Weight the samples by the monte carlo factor for uniformly sampling the hemisphere
-    float monteCarloFactor = ((2.0f * Pi) / params.NumSamples);
+    float monteCarloFactor = ((2.0f * MoYu::f::PI) / params.NumSamples);
     for(glm::uint32 i = 0; i < params.NumSGs; ++i)
         params.OutSGs[i].Amplitude *= monteCarloFactor;
 }
@@ -234,7 +234,7 @@ void SGRunningAverage(const glm::float3& dir, const glm::float3& color, SG* outS
 {
 	float sampleWeightScale = 1.0f / (sampleIdx + 1);
 
-    float sampleLobeWeights[MaxSGCount] = { };
+    float sampleLobeWeights[SampleFramework11::MaxSGCount] = { };
     glm::float3 currentEstimate;
 
     for(glm::uint64 lobeIdx = 0; lobeIdx < numSGs; ++lobeIdx)
@@ -266,9 +266,9 @@ void SGRunningAverage(const glm::float3& dir, const glm::float3& color, SG* outS
 
         if(nonNegative)
         {
-            outSGs[lobeIdx].Amplitude.x = Max(outSGs[lobeIdx].Amplitude.x, 0.0f);
-            outSGs[lobeIdx].Amplitude.y = Max(outSGs[lobeIdx].Amplitude.y, 0.0f);
-            outSGs[lobeIdx].Amplitude.z = Max(outSGs[lobeIdx].Amplitude.z, 0.0f);
+            outSGs[lobeIdx].Amplitude.x = MoYu::Max(outSGs[lobeIdx].Amplitude.x, 0.0f);
+            outSGs[lobeIdx].Amplitude.y = MoYu::Max(outSGs[lobeIdx].Amplitude.y, 0.0f);
+            outSGs[lobeIdx].Amplitude.z = MoYu::Max(outSGs[lobeIdx].Amplitude.z, 0.0f);
         }
     }
 }
@@ -278,7 +278,7 @@ static void SolveRunningAverage(SGSolveParam& params, bool nonNegative)
     assert(params.XSamples != nullptr);
     assert(params.YSamples != nullptr);
 
-    float lobeWeights[MaxSGCount] = { };
+    float lobeWeights[SampleFramework11::MaxSGCount] = { };
 
     // Project color samples onto the SGs
     for(glm::uint32 i = 0; i < params.NumSamples; ++i)
@@ -288,17 +288,17 @@ static void SolveRunningAverage(SGSolveParam& params, bool nonNegative)
 // Solve the set of spherical gaussians based on input set of data
 void SolveSGs(SGSolveParam& params)
 {
-    assert(params.NumSGs <= glm::uint64(MaxSGCount));
+    assert(params.NumSGs <= glm::uint64(SampleFramework11::MaxSGCount));
     for(glm::uint64 i = 0; i < params.NumSGs; ++i)
         params.OutSGs[i] = defaultInitialGuess[i];
 
-    if(SolveMode == SolveModes::NNLS)
+    if(SampleFramework11::SolveMode == SampleFramework11::SolveModes::NNLS)
         SolveNNLS(params);
-    else if(AppSettings::SolveMode == SolveModes::SVD)
+    else if(SampleFramework11::SolveMode == SampleFramework11::SolveModes::SVD)
         SolveSVD(params);
-    else if(AppSettings::SolveMode == SolveModes::RunningAverage)
+    else if(SampleFramework11::SolveMode == SampleFramework11::SolveModes::RunningAverage)
         SolveRunningAverage(params, false);
-    else if(AppSettings::SolveMode == SolveModes::RunningAverageNN)
+    else if(SampleFramework11::SolveMode == SampleFramework11::SolveModes::RunningAverageNN)
         SolveRunningAverage(params, true);
     else
         SolveProjection(params);

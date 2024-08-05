@@ -8,7 +8,7 @@
 //=================================================================================================
 
 #pragma once
-
+/*
 #include "runtime/core/math/moyu_math2.h"
 
 // HosekSky forward declares
@@ -117,3 +117,4 @@ protected:
 };
 
 }
+*/

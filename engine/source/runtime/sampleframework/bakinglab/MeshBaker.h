@@ -10,18 +10,12 @@
 
 #pragma once
 
-#include <PCH.h>
-#include <SF11_Math.h>
-#include <InterfacePointers.h>
-#include <Containers.h>
-#include <Graphics/Textures.h>
-#include <Graphics/ShaderCompilation.h>
-#include <Graphics/SH.h>
-#include <Graphics/Skybox.h>
+#include "../Graphics/Textures.h"
+#include "../Graphics/SH.h"
+#include "../Graphics/Skybox.h"
 
 #include "PathTracer.h"
-#include "SharedConstants.h"
-#include "AppSettings.h"
+#include "BakingLabSettings.h"
 
 namespace SampleFramework11
 {

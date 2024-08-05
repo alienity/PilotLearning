@@ -242,25 +242,25 @@ namespace SampleFramework11
         NumValues
     };
 
-    extern SunDirectionTypes SunDirectionTypesSetting;
-    extern SkyModes SkyModesSetting;
-    extern LightUnits LightUnitsSetting;
-    extern ExposureModes ExposureModesSetting;
-    extern FStops FStopsSetting;
-    extern ISORatings ISORatingsSetting;
-    extern ShutterSpeeds ShutterSpeedsSetting;
-    extern ToneMappingModes ToneMappingModesSetting;
-    extern MSAAModes MSAAModesSetting;
-    extern FilterTypes FilterTypesSetting;
-    extern JitterModes JitterModesSetting;
-    extern SGDiffuseModes SGDiffuseModesSetting;
-    extern SGSpecularModes SGSpecularModesSetting;
-    extern SH4DiffuseModes SH4DiffuseModesSetting;
-    extern SHSpecularModes SHSpecularModesSetting;
-    extern SampleModes SampleModesSetting;
-    extern BakeModes BakeModesSetting;
-    extern SolveModes SolveModesSetting;
-    extern BRDF BRDFSetting;
+    extern SunDirectionTypes SunDirectionType;
+    extern SkyModes SkyMode;
+    extern LightUnits LightUnit;
+    extern ExposureModes ExposureMode;
+    extern FStops FStop;
+    extern ISORatings ISORating;
+    extern ShutterSpeeds ShutterSpeed;
+    extern ToneMappingModes ToneMappingMode;
+    extern MSAAModes MSAAMode;
+    extern FilterTypes FilterType;
+    extern JitterModes JitterMode;
+    extern SGDiffuseModes SGDiffuseMode;
+    extern SGSpecularModes SGSpecularMode;
+    extern SH4DiffuseModes SH4DiffuseMode;
+    extern SHSpecularModes SHSpecularMode;
+    extern SampleModes SampleMode;
+    extern BakeModes BakeMode;
+    extern SolveModes SolveMode;
+    extern BRDF BRDfMode;
 
     static const float BaseSunSize = 0.2700f;
     static const glm::int64 MaxSGCount = 12;

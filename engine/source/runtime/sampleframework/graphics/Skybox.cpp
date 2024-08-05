@@ -8,10 +8,8 @@
 //=================================================================================================
 
 #include "Skybox.h"
-
 #include "Textures.h"
-#include "Math.h"
-
+/*
 namespace SampleFramework11
 {
 
@@ -420,3 +418,4 @@ glm::float3 Skybox::SampleSky(const SkyCache& cache, glm::float3 sampleDir)
 }
 
 }
+*/

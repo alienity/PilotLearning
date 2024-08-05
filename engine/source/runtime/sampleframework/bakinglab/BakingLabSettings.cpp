@@ -13,25 +13,25 @@
 namespace SampleFramework11
 {
 
-	SunDirectionTypes SunDirectionTypesSetting = SunDirectionTypes::HorizontalCoordSystem;
-	SkyModes SkyModesSetting = SkyModes::Procedural;
-	LightUnits LightUnitsSetting;
-	ExposureModes ExposureModesSetting;
-	FStops FStopsSetting;
-	ISORatings ISORatingsSetting;
-	ShutterSpeeds ShutterSpeedsSetting;
-	ToneMappingModes ToneMappingModesSetting;
-	MSAAModes MSAAModesSetting;
-	FilterTypes FilterTypesSetting;
-	JitterModes JitterModesSetting;
-	SGDiffuseModes SGDiffuseModesSetting;
-	SGSpecularModes SGSpecularModesSetting;
-	SH4DiffuseModes SH4DiffuseModesSetting;
-	SHSpecularModes SHSpecularModesSetting;
-	SampleModes SampleModesSetting;
-	BakeModes BakeModesSetting;
-	SolveModes SolveModesSetting;
-	BRDF BRDFSetting;
+	SunDirectionTypes SunDirectionType = SunDirectionTypes::HorizontalCoordSystem;
+	SkyModes SkyMode = SkyModes::Procedural;
+	LightUnits LightUnit;
+	ExposureModes ExposureMode;
+	FStops FStop;
+	ISORatings ISORating;
+	ShutterSpeeds ShutterSpeed;
+	ToneMappingModes ToneMappingMode;
+	MSAAModes MSAAMode;
+	FilterTypes FilterType;
+	JitterModes JitterMode;
+	SGDiffuseModes SGDiffuseMode;
+	SGSpecularModes SGSpecularMode;
+	SH4DiffuseModes SH4DiffuseMode;
+	SHSpecularModes SHSpecularMode;
+	SampleModes SampleMode;
+	BakeModes BakeMode;
+	SolveModes SolveMode;
+	BRDF BRDFMode;
 
 
 }
