@@ -314,7 +314,7 @@ namespace MoYu
             return;
 
         float angularVelocity =
-            18.0f / MOYU_MAX(engine_window_size.x, engine_window_size.y); // 18 degrees while moving full screen
+            18.0f / MoYu::Max(engine_window_size.x, engine_window_size.y); // 18 degrees while moving full screen
         Vector2 delta_mouse_move_uv = {(new_mouse_pos_x - last_mouse_pos_x), (new_mouse_pos_y - last_mouse_pos_y)};
 
         Vector3    model_scale;

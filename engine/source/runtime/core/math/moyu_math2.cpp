@@ -673,4 +673,33 @@ namespace MoYu
         return E.i | B.i << 18 | G.i << 9 | R.i & 511;
     }
 
+    // == Random ======================================================================================
+
+    void Random::SetSeed(glm::uint32 seed)
+    {
+        engine.seed(seed);
+    }
+
+    void Random::SeedWithRandomValue()
+    {
+        std::random_device device;
+        engine.seed(device());
+    }
+
+    glm::uint32 Random::RandomUint()
+    {
+        return engine();
+    }
+
+    float Random::RandomFloat()
+    {
+        // return distribution(engine);
+        return (RandomUint() & 0xFFFFFF) / float(1 << 24);
+    }
+
+    glm::float2 Random::RandomFloat2()
+    {
+        return glm::float2(RandomFloat(), RandomFloat());
+    }
+
 } // namespace MoYuMath

@@ -1235,20 +1235,20 @@ namespace RHI
 
     INT D3D12Texture::GetMipLevels(UINT width, UINT height, INT32 numMips, RHISurfaceCreateFlags flags)
     {
-        INT mipLevels = MOYU_MIN(numMips, MAXMIPLEVELS);
+        INT mipLevels = MoYu::Min(numMips, MAXMIPLEVELS);
         if (flags & RHISurfaceCreateMipmap)
         {
             if (flags & RHISurfaceCreateAutoGenMips)
             {
                 mipLevels = D3D12RHIUtils::ComputeNumMips(width, height);
-                mipLevels = MOYU_MIN(mipLevels, MAXMIPLEVELS);
+                mipLevels = MoYu::Min(mipLevels, MAXMIPLEVELS);
             }
             else
             {
                 if (numMips == -1)
                 {
                     mipLevels = D3D12RHIUtils::ComputeNumMips(width, height);
-                    mipLevels = MOYU_MIN(mipLevels, MAXMIPLEVELS);
+                    mipLevels = MoYu::Min(mipLevels, MAXMIPLEVELS);
                 }
                 else
                 {

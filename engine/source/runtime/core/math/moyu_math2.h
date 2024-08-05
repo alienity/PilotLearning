@@ -36,19 +36,6 @@
 #include <glm/ext/matrix_clip_space.hpp>
 #include <glm/gtx/transform.hpp>
 
-#define CMP(x, y) (fabsf(x - y) < FLT_EPSILON * fmaxf(1.0f, fmaxf(fabsf(x), fabsf(y))))
-
-#define MOYU_MIN(x, y) (((x) < (y)) ? (x) : (y))
-#define MOYU_MIN3(x, y, z) MOYU_MIN(MOYU_MIN(x, y), z)
-#define MOYU_MAX(x, y) (((x) > (y)) ? (x) : (y))
-#define MOYU_MAX3(x, y, z) MOYU_MAX(MOYU_MAX(x, y), z)
-#define MOYU_CLAMP(a, min_value, max_value) MOYU_MIN(max_value, MOYU_MAX(a, min_value))
-
-#define MOYU_VALID_INDEX(idx, range) (((idx) >= 0) && ((idx) < (range)))
-#define MOYU_CLAMP_INDEX(idx, range) MOYU_CLAMP(idx, 0, (range)-1)
-
-#define MOYU_SIGN(x) ((((x) > 0.0f) ? 1.0f : 0.0f) + (((x) < 0.0f) ? -1.0f : 0.0f))
-
 #define INLINE __forceinline
 
 namespace MoYu
@@ -119,10 +106,91 @@ namespace MoYu
     {
         return value == 0 ? 0 : 1 << Log2(value);
     }
-}
+
+    template<typename T>
+    INLINE bool Cmp(T x, T y)
+    {
+        return fabsf(x - y) < FLT_EPSILON * fmaxf(1.0f, fmaxf(fabsf(x), fabsf(y)));
+    }
+
+    template<typename T>
+    INLINE T Min(T x, T y)
+    {
+        return ((x) < (y)) ? (x) : (y);
+    }
+
+    template<typename T>
+    INLINE T Min(T x, T y, T z)
+    {
+        return Min(Min(x, y), z);
+    }
+
+    template<typename T>
+    INLINE T Max(T x, T y)
+    {
+        return ((x) > (y)) ? (x) : (y);
+    }
+
+    template<typename T>
+    INLINE T Max(T x, T y, T z)
+    {
+        return Max(Max(x, y), z);
+    }
+
+    template<typename T>
+    INLINE T Clamp(T a, T minVal, T maxVal)
+    {
+        return Min(maxVal, Max(a, minVal));
+    }
+
+    //template<typename T>
+    //INLINE T Clamp(T a, float minVal, float maxVal)
+    //{
+    //    return Min(T(maxVal), Max(a, T(minVal)));
+    //}
+
+    template<typename T>
+    INLINE T Saturate(T a)
+    {
+        return Clamp(a, T(0), T(1));
+    }
+
+    template<typename T>
+    INLINE T Lerp(T x, T y, float alpha)
+    {
+        return x * (1 - alpha) + y * alpha;
+    }
+
+    template<typename T>
+    INLINE T Square(T x)
+    {
+        return x * x;
+    }
+    
+    template<typename T>
+    INLINE void Swap(T& a, T& b)
+    {
+        T tmp = a;
+        a = b;
+        b = tmp;
+    }
+
+    // Convert from spherical coordinates to Cartesian coordinates(x, y, z)
+    // Theta represents how far away from the zenith (north pole/+Y) and phi represents how far
+    // away from the 'right' axis (+X).
+    inline void SphericalToCartesianXYZYUP(float r, float theta, float phi, glm::float3& xyz)
+    {
+        xyz.x = r * std::sinf(theta) * std::cosf(phi);
+        xyz.y = r * std::cosf(theta);
+        xyz.z = r * std::sinf(theta) * std::sinf(phi);
+    }
+} 
 
 namespace MoYu
 {
+    const float FloatMax = std::numeric_limits<float>::max();
+    const float FloatInfinity = std::numeric_limits<float>::infinity();
+
     constexpr const double F_E        = 2.71828182845904523536028747135266250;
     constexpr const double F_LOG2E    = 1.44269504088896340735992468100189214;
     constexpr const double F_LOG10E   = 0.434294481903251827651128918916605082;
@@ -576,5 +644,24 @@ namespace MoYu
     };
 
     using DefaultRNG = RandomNumberGenerator<std::mt19937>;
+
+    // Random number generation
+    class Random
+    {
+
+    public:
+
+        void SetSeed(glm::uint32 seed);
+        void SeedWithRandomValue();
+
+        glm::uint32 RandomUint();
+        float RandomFloat();
+        glm::float2 RandomFloat2();
+
+    private:
+
+        std::mt19937 engine;
+        std::uniform_real_distribution<float> distribution;
+    };
 
 } // namespace MoYu

@@ -194,7 +194,7 @@ namespace MoYu
             return;
 
         float angularVelocity =
-            180.0f / MOYU_MAX(m_engine_window_size.x, m_engine_window_size.y); // 180 degrees while moving full screen
+            180.0f / MoYu::Max(m_engine_window_size.x, m_engine_window_size.y); // 180 degrees while moving full screen
         if (m_mouse_x >= 0.0f && m_mouse_y >= 0.0f)
         {
             if (isCursorInRect(m_engine_window_pos, m_engine_window_size))

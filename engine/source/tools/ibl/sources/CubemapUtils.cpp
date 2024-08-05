@@ -55,10 +55,10 @@ void CubemapUtils::highlight(Image& src) {
     for (size_t y = 0; y < height; ++y) {
         for (size_t x = 0; x < width; ++x) {
             glm::float3& c = *static_cast<glm::float3*>(src.getPixelRef(x, y));
-            if (MOYU_MIN3(c.x, c.y, c.z) < 0.0f) {
+            if (MoYu::Min(c.x, c.y, c.z) < 0.0f) {
                 c = { 0, 0, 1 };
             }
-            else if (MOYU_MAX3(c.x, c.y, c.z) > 64512.0f)
+            else if (MoYu::Max(c.x, c.y, c.z) > 64512.0f)
             { // maximum encodable by 10-bits float (RGB_11_11_10)
                 c = { 1, 0, 0 };
             }
