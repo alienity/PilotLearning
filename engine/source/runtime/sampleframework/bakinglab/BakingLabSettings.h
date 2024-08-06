@@ -266,4 +266,6 @@ namespace SampleFramework11
     static const glm::int64 MaxSGCount = 12;
     static const glm::int64 MaxBasisCount = 12;
 
+    extern bool EnableSun;
+    
 }

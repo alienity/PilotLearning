@@ -41,49 +41,97 @@ struct BVHData
     std::vector<MoYu::MoYuScratchImage> MaterialNormalMaps;
     std::vector<MoYu::MoYuScratchImage> MaterialRoughnessMaps;
     std::vector<MoYu::MoYuScratchImage> MaterialMetallicMaps;
-
-    ~BVHData() {}
 };
 
 // Wrapper for an embree ray
-struct EmbreeRay : public RTCRay
+struct EmbreeRay
 {
-    EmbreeRay(const glm::float3& origin, const glm::float3& direction, float nearDist = 0.0f, float farDist = FLT_MAX)
+    /*! Default construction does nothing. */
+    __forceinline EmbreeRay() {}
+    
+    __forceinline EmbreeRay(
+        const glm::vec3& org,
+        const glm::vec3& dir,
+        float tnear = 0.0f,
+        float tfar = FLT_MAX, 
+        float time = 0.0f, 
+        int mask = -1,
+        unsigned int geomID = RTC_INVALID_GEOMETRY_ID, 
+        unsigned int primID = RTC_INVALID_GEOMETRY_ID)
+    : org(org,tnear), dir(dir,time), tfar(tfar), mask(mask), primID(primID), geomID(geomID)
     {
-        org_x = origin.x;
-        org_y = origin.y;
-        org_z = origin.z;
-        dir_x = direction.x;
-        dir_y = direction.y;
-        dir_z = direction.z;
-        tnear = nearDist;
-        tfar = farDist;
-        geomID = RTC_INVALID_GEOMETRY_ID;
-        primID = RTC_INVALID_GEOMETRY_ID;
         instID[0] = RTC_INVALID_GEOMETRY_ID;
-        mask = 0xFFFFFFFF;
-        time = 0.0f;
+#if defined(RTC_GEOMETRY_INSTANCE_ARRAY)
+        instPrimID[0] = RTC_INVALID_GEOMETRY_ID;
+#endif
     }
+    
+    /*! Tests if we hit something. */
+    __forceinline operator bool() const { return geomID != RTC_INVALID_GEOMETRY_ID; }
 
-    bool Hit() const
-    {
-        return geomID != RTC_INVALID_GEOMETRY_ID;
-    }
+public:
+    glm::vec4 org;       //!< Ray origin + tnear
+    //float tnear;              //!< Start of ray segment
+    glm::vec4 dir;        //!< Ray direction + tfar
+    //float time;               //!< Time of this ray for motion blur.
+    float tfar;               //!< End of ray segment
+    unsigned int mask;        //!< used to mask out objects during traversal
+    unsigned int id;          //!< ray ID
+    unsigned int flags;       //!< ray flags
 
-    glm::float3 Origin() const
-    {
-        return glm::float3(org_x, org_y, org_z);
-    }
-
-    glm::float3 Direction() const
-    {
-        return glm::float3(dir_x, dir_y, dir_z);
-    }
-
+public:
+    glm::vec3 Ng;         //!< Not normalized geometry normal
+    float u;                  //!< Barycentric u coordinate of hit
+    float v;                  //!< Barycentric v coordinate of hit
     unsigned int primID;           //!< primitive ID
     unsigned int geomID;           //!< geometry ID
     unsigned int instID[RTC_MAX_INSTANCE_LEVEL_COUNT];           //!< instance ID
+#if defined(RTC_GEOMETRY_INSTANCE_ARRAY)
+    unsigned int instPrimID[RTC_MAX_INSTANCE_LEVEL_COUNT];           //!< instance primitive ID
+#endif
+
+    __forceinline float &tnear() { return org.w; };
+    __forceinline float &time()  { return dir.w; };
+    __forceinline float const &tnear() const { return org.w; };
+    __forceinline float const &time()  const { return dir.w; };
 };
+
+__forceinline void init_Ray(EmbreeRay &ray,
+                            const glm::vec3& org, 
+                            const glm::vec3& dir, 
+                            float tnear = 0.0f, 
+                            float tfar = FLT_MAX, 
+                            float time = 0.0f, 
+                            int mask = -1,
+                            unsigned int geomID = RTC_INVALID_GEOMETRY_ID, 
+                            unsigned int primID = RTC_INVALID_GEOMETRY_ID)
+{
+    ray = EmbreeRay(org,dir,tnear,tfar,time,mask,geomID,primID);
+}
+
+typedef EmbreeRay Ray1;
+
+__forceinline RTCRayHit* RTCRayHit_(EmbreeRay& ray) {
+    return (RTCRayHit*)&ray;
+}
+
+__forceinline RTCRayHit* RTCRayHit1_(EmbreeRay& ray) {
+    return (RTCRayHit*)&ray;
+}
+
+__forceinline RTCRay* RTCRay_(EmbreeRay& ray) {
+    return (RTCRay*)&ray;
+}
+
+__forceinline RTCHit* RTCHit_(EmbreeRay& ray)
+{
+    RTCHit* hit_ptr = (RTCHit*)&(ray.Ng.x);
+    return hit_ptr;
+}
+
+__forceinline RTCRay* RTCRay1_(EmbreeRay& ray) {
+    return (RTCRay*)&ray;
+}
 
 enum class IntegrationTypes
 {
