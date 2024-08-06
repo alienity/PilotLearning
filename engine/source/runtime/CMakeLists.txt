@@ -136,6 +136,12 @@ target_include_directories(
   PUBLIC $<BUILD_INTERFACE:${THIRD_PARTY_DIR}/embree-4.3.3.x64.windows/include>
 )
 
+target_include_directories(
+  ${TARGET_NAME} 
+  PUBLIC $<BUILD_INTERFACE:${THIRD_PARTY_DIR}/eigen-master>
+)
+
+
 # ---- Create an installable target ----
 # this allows users to install and find the library via `find_package()`.
 

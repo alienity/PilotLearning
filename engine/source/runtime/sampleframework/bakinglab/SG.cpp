@@ -8,12 +8,12 @@
 //
 //=================================================================================================
 
-//#define EIGEN_MPL2_ONLY
-//#include "../Externals/eigen/Eigen/Dense"
-//#include "../Externals/eigen/Eigen/NNLS"
-//
-//#include "../Externals/eigen/unsupported/Eigen/NonLinearOptimization"
-//#include "../Externals/eigen/unsupported/Eigen/NumericalDiff"
+#define EIGEN_MPL2_ONLY
+#include "Eigen/Dense"
+#include "unsupported/Eigen/NNLS"
+
+#include "unsupported/Eigen/NonLinearOptimization"
+#include "unsupported/Eigen/NumericalDiff"
 
 #include "SG.h"
 #include "BakingLabSettings.h"
@@ -164,7 +164,7 @@ static void SolveSVD(SGSolveParam& params)
 		// compute difference squared from actual observed data
 		for(glm::uint32 j = 0; j < params.NumSGs; ++j)
 		{
-			float exponent = std::exp((glm::float3::Dot(params.XSamples[i], params.OutSGs[j].Axis) - 1.0f) *
+			float exponent = std::exp((glm::dot(params.XSamples[i], params.OutSGs[j].Axis) - 1.0f) *
 				                      params.OutSGs[j].Sharpness);
 			Ar(i, j) = exponent;
 			Ag(i, j) = exponent;
