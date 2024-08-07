@@ -73,11 +73,11 @@ static glm::float3 SampleSun(glm::float3 sampleDir)
     glm::float3 res = glm::float3(0.0f);
     if(SampleFramework11::EnableSun)
     {
-        float cosSunAngularRadius = std::cos(DegToRad(SampleFramework11::SunSize));
+        float cosSunAngularRadius = std::cos(MoYu::f::DEG_TO_RAD * SampleFramework11::SunSize);
         glm::float3 sunDir = glm::normalize(SampleFramework11::SunDirection);
         float cosGamma = glm::dot(sunDir, sampleDir);
         if(cosGamma >= cosSunAngularRadius)
-            res = AppSettings::SunLuminance();
+            res = SampleFramework11::SunLuminance();
     }
 
     return res;
@@ -88,13 +88,13 @@ static bool IsTriangleBackFacing(const EmbreeRay& ray, const BVHData& bvhData)
 {
     // Compute the triangle normal
     const glm::uint64 triangleIdx = ray.primID;
-    const Uint3& triangle = bvhData.Triangles[triangleIdx];
+    const glm::uvec3& triangle = bvhData.Triangles[triangleIdx];
     const glm::float3& v0 = bvhData.Vertices[triangle.x].Position;
     const glm::float3& v1 = bvhData.Vertices[triangle.y].Position;
     const glm::float3& v2 = bvhData.Vertices[triangle.z].Position;
 
-    glm::float3 triNml = glm::float3::Normalize(glm::float3::Cross(v2 - v0, v1 - v0));
-    return glm::float3::Dot(triNml, ray.Direction()) <= 0.0f;
+    glm::float3 triNml = glm::normalize(glm::cross(v2 - v0, v1 - v0));
+    return glm::dot(triNml, glm::vec3(ray.dir)) <= 0.0f;
 }
 
 // Returns true the the ray is occluded by a triangle
@@ -114,39 +114,39 @@ static glm::float3 SampleSphericalAreaLight(const glm::float3& position, const g
                                        glm::float3& irradiance, glm::float3& sampleDir)
 {
     const float radius2 = lightRadius * lightRadius;
-    const float invPDF = 2.0f * Pi * radius2;
+    const float invPDF = 2.0f * MoYu::f::PI * radius2;
 
-    glm::float3 result = 0.0f;
-    glm::float3 areaLightIrradiance = 0.0f;
+    glm::float3 result = glm::float3(0.0f);
+    glm::float3 areaLightIrradiance = glm::float3(0.0f);
 
     float r = lightRadius;
     float x = u1;
     float y = u2;
 
     glm::float3 samplePos;
-    samplePos.x = lightPos.x + 2.0f * r * std::cos(2.0f * Pi * y) * std::sqrt(x * (1.0f - x));
-    samplePos.y = lightPos.y + 2.0f * r * std::sin(2.0f * Pi * y) * std::sqrt(x * (1.0f - x));
+    samplePos.x = lightPos.x + 2.0f * r * std::cos(2.0f * MoYu::f::PI * y) * std::sqrt(x * (1.0f - x));
+    samplePos.y = lightPos.y + 2.0f * r * std::sin(2.0f * MoYu::f::PI * y) * std::sqrt(x * (1.0f - x));
     samplePos.z = lightPos.z + r * (1.0f - 2.0f * x);
 
     sampleDir = samplePos - position;
-    float sampleDirLen = glm::float3::Length(sampleDir);
+    float sampleDirLen = glm::length(sampleDir);
     bool visible = false;
     if(sampleDirLen > 0.0f)
     {
         sampleDir /= sampleDirLen;
 
-        visible = (AppSettings::EnableAreaLightShadows == false) || (Occluded(scene, position, sampleDir, 0.1f, sampleDirLen) == false);
+        visible = (SampleFramework11::EnableAreaLightShadows == false) || (Occluded(scene, position, sampleDir, 0.1f, sampleDirLen) == false);
     }
 
-    float areaNDotL = std::abs(glm::float3::Dot(sampleDir, glm::float3::Normalize(samplePos - lightPos)));
-    float sDotN = Saturate(glm::float3::Dot(sampleDir, normal));
+    float areaNDotL = std::abs(glm::dot(sampleDir, glm::normalize(samplePos - lightPos)));
+    float sDotN = MoYu::Saturate(glm::dot(sampleDir, normal));
 
     float invRSqr = 1.0f / (sampleDirLen * sampleDirLen);
 
     float attenuation = areaNDotL * invRSqr;
     if(attenuation && visible)
     {
-        glm::float3 sampleIrradiance = Saturate(glm::float3::Dot(normal, sampleDir)) * lightColor * attenuation;
+        glm::float3 sampleIrradiance = MoYu::Saturate(glm::dot(normal, sampleDir)) * lightColor * attenuation;
         glm::float3 sample = CalcLighting(normal, sampleIrradiance, sampleDir, diffuseAlbedo, position,
                                      cameraPos, roughness, includeSpecular, specAlbedo);
         result = sample * invPDF;
@@ -165,10 +165,10 @@ glm::float3 SampleAreaLight(const glm::float3& position, const glm::float3& norm
                        bool includeSpecular, glm::float3 specAlbedo, float roughness,
                        float u1, float u2, glm::float3& irradiance, glm::float3& sampleDir)
 {
-    glm::float3 lightPos = glm::float3(AppSettings::AreaLightX, AppSettings::AreaLightY, AppSettings::AreaLightZ);
+    glm::float3 lightPos = glm::float3(SampleFramework11::AreaLightX, SampleFramework11::AreaLightY, SampleFramework11::AreaLightZ);
     return SampleSphericalAreaLight(position, normal, scene, diffuseAlbedo, cameraPos, includeSpecular,
-                                    specAlbedo, roughness, u1, u2, AppSettings::AreaLightSize,
-                                    lightPos, AppSettings::AreaLightColor.Value() * FP16Scale, irradiance, sampleDir);
+                                    specAlbedo, roughness, u1, u2, SampleFramework11::AreaLightSize,
+                                    lightPos, SampleFramework11::AreaLightColor, irradiance, sampleDir);
 }
 
 // Checks to see if a ray intersects with the area light
@@ -246,28 +246,28 @@ void GenerateIntegrationSamples(IntegrationSamples& samples, glm::uint64 sqrtNum
 
 // Returns the incoming radiance along the ray specified by params.RayDir, computed using unidirectional
 // path tracing
-glm::float3 PathTrace(const PathTracerParams& params, Random& randomGenerator, float& illuminance, bool& hitSky)
+glm::float3 PathTrace(const PathTracerParams& params, MoYu::Random& randomGenerator, float& illuminance, bool& hitSky)
 {
     // Initialize to the view parameters, must be reset every loop iteration
     EmbreeRay ray(params.RayStart, params.RayDir, 0.0f, params.RayLen);
     illuminance = 0.0f;
     glm::float3 radiance;
     glm::float3 irradiance;
-    glm::float3 throughput = 1.0f;
-    glm::float3 irrThroughput = 1.0f;
+    glm::float3 throughput = glm::float3(1.0f);
+    glm::float3 irrThroughput = glm::float3(1.0f);
 
     // Keep tracing paths until we reach the specified max
-    const int64 maxPathLength = params.MaxPathLength;
-    for(int64 pathLength = 1; pathLength <= maxPathLength || maxPathLength == -1; ++pathLength)
+    const glm::int64 maxPathLength = params.MaxPathLength;
+    for(glm::int64 pathLength = 1; pathLength <= maxPathLength || maxPathLength == -1; ++pathLength)
     {
         const bool indirectSpecOnly = params.ViewIndirectSpecular && pathLength == 1;
         const bool indirectDiffuseOnly = params.ViewIndirectDiffuse && pathLength == 1;
         const bool enableSpecular = (params.EnableBounceSpecular || (pathLength == 1)) && params.EnableSpecular;
         const bool enableDiffuse = params.EnableDiffuse;
-        const bool skipDirect = AppSettings::ShowGroundTruth && (!AppSettings::EnableDirectLighting || indirectDiffuseOnly) && (pathLength == 1);
+        const bool skipDirect = SampleFramework11::ShowGroundTruth && (!SampleFramework11::EnableDirectLighting || indirectDiffuseOnly) && (pathLength == 1);
 
         // See if we should randomly terminate this path using Russian Roullete
-        const int32 rouletteDepth = params.RussianRouletteDepth;
+        const glm::int32 rouletteDepth = params.RussianRouletteDepth;
         if(pathLength >= rouletteDepth && rouletteDepth != -1)
         {
             float continueProbability = std::min<float>(params.RussianRouletteProbability, ComputeLuminance(throughput));
@@ -281,22 +281,22 @@ glm::float3 PathTrace(const PathTracerParams& params, Random& randomGenerator, f
         bool continueTracing = false;
 
         // Check for intersection with the scene
-        rtcIntersect(params.SceneBVH->Scene, ray);
+        rtcIntersect1(params.SceneBVH->Scene, RTCRayHit_(ray));
         float sceneDistance = ray.Hit() ? ray.tfar : FLT_MAX;
 
-        glm::float3 rayOrigin = ray.Origin();
-        glm::float3 rayDir = ray.Direction();
+        glm::float3 rayOrigin = glm::float3(ray.org);
+        glm::float3 rayDir = glm::float3(ray.dir);
 
         // Check for intersection with the area light for primary rays
         float lightDistance = FLT_MAX;
-        if(params.EnableDirectAreaLight && AppSettings::EnableAreaLight && pathLength == 1)
+        if(params.EnableDirectAreaLight && SampleFramework11::EnableAreaLight && pathLength == 1)
             lightDistance = AreaLightIntersection(rayOrigin, rayDir, ray.tnear, ray.tfar);
 
         if(lightDistance < sceneDistance)
         {
             // We hit the area light: just return the uniform radiance of the light source
-            radiance = AppSettings::AreaLightColor.Value() * throughput * FP16Scale;
-            irradiance = 0.0f;
+            radiance = SampleFramework11::AreaLightColor * throughput;
+            irradiance = glm::float3(0.0f);
         }
         else if(sceneDistance < FLT_MAX)
         {
@@ -316,26 +316,26 @@ glm::float3 PathTrace(const PathTracerParams& params, Random& randomGenerator, f
             // Interpolate the vertex data
             Vertex hitSurface = TriangleLerp(ray, bvh, bvh.Vertices);
 
-            hitSurface.Normal = glm::float3::Normalize(hitSurface.Normal);
-            hitSurface.Tangent = glm::float3::Normalize(hitSurface.Tangent);
-            hitSurface.Bitangent = glm::float3::Normalize(hitSurface.Bitangent);
+            hitSurface.Normal = glm::normalize(hitSurface.Normal);
+            hitSurface.Tangent = glm::normalize(hitSurface.Tangent);
+            hitSurface.Bitangent = glm::normalize(hitSurface.Bitangent);
 
             // Look up the material data
             const glm::uint64 materialIdx = bvh.MaterialIndices[ray.primID];
 
-            glm::float3 albedo = 1.0f;
-            if(AppSettings::EnableAlbedoMaps && !indirectDiffuseOnly)
+            glm::float3 albedo = glm::float3(1.0f);
+            if(SampleFramework11::EnableAlbedoMaps && !indirectDiffuseOnly)
                 albedo = SampleTexture2D(hitSurface.TexCoord, bvh.MaterialDiffuseMaps[materialIdx]);
 
-            Float3x3 tangentToWorld;
-            tangentToWorld.SetXBasis(hitSurface.Tangent);
-            tangentToWorld.SetYBasis(hitSurface.Bitangent);
-            tangentToWorld.SetZBasis(hitSurface.Normal);
+            glm::float3x3 tangentToWorld;
+            tangentToWorld[0] = (hitSurface.Tangent);
+            tangentToWorld[1] = (hitSurface.Bitangent);
+            tangentToWorld[2] = (hitSurface.Normal);
 
             // Normal mapping
             glm::float3 normal = hitSurface.Normal;
             const auto& normalMap = bvh.MaterialNormalMaps[materialIdx];
-            if(AppSettings::EnableNormalMaps && normalMap.Texels.size() > 0)
+            if(SampleFramework11::EnableNormalMaps && normalMap.Texels.size() > 0)
             {
                 normal = glm::float3(SampleTexture2D(hitSurface.TexCoord, normalMap));
                 normal = normal * 2.0f - 1.0f;
