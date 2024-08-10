@@ -17,6 +17,7 @@
 #include "PathTracer.h"
 #include "BakingLabSettings.h"
 
+/*
 namespace SampleFramework11
 {
     class Model;
@@ -159,3 +160,4 @@ private:
 
     int64 lastTileNum = INT64_MAX;
 };
+*/

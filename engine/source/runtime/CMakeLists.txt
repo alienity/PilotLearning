@@ -57,6 +57,7 @@ target_link_libraries(${TARGET_NAME} PUBLIC DirectStorage)
 target_link_libraries(${TARGET_NAME} PUBLIC DirectXTK12)
 target_link_libraries(${TARGET_NAME} PUBLIC d3d12.lib)
 target_link_libraries(${TARGET_NAME} PUBLIC DirectXTex)
+target_link_libraries(${TARGET_NAME} PUBLIC DirectXMath)
 target_link_libraries(${TARGET_NAME} PUBLIC fmt)
 
 include(${THIRD_PARTY_DIR}/embree-4.3.3.x64.windows/lib/cmake/embree-4.3.3/embree-config.cmake)
@@ -124,6 +125,11 @@ target_include_directories(
 target_include_directories(
   ${TARGET_NAME} 
   PUBLIC $<BUILD_INTERFACE:${THIRD_PARTY_DIR}/DirectXTex/DirectXTex>
+)
+
+target_include_directories(
+  ${TARGET_NAME} 
+  PUBLIC $<BUILD_INTERFACE:${THIRD_PARTY_DIR}/DirectXMath-feb2024>
 )
 
 target_include_directories(

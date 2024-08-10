@@ -8,7 +8,7 @@
 //=================================================================================================
 
 #include "SH.h"
-
+/*
 namespace SampleFramework11
 {
 
@@ -289,3 +289,4 @@ SH9Color ProjectCubemapToSH(MoYu::MoYuScratchImage* cubeMap)
 }
 
 }
+*/

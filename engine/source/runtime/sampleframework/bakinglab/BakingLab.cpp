@@ -8,6 +8,7 @@
 //
 //=================================================================================================
 
+/*
 #include <PCH.h>
 
 #include <InterfacePointers.h>
@@ -1138,3 +1139,4 @@ int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmd
     BakingLab app;
     app.Run();
 }
+*/

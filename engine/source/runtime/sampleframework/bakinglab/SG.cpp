@@ -11,7 +11,7 @@
 #define EIGEN_MPL2_ONLY
 #include "Eigen/Dense"
 #include "unsupported/Eigen/NNLS"
-
+/*
 #include "unsupported/Eigen/NonLinearOptimization"
 #include "unsupported/Eigen/NumericalDiff"
 
@@ -303,3 +303,4 @@ void SolveSGs(SGSolveParam& params)
     else
         SolveProjection(params);
 }
+*/

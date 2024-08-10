@@ -24,6 +24,10 @@
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE 1
 #endif
 
+#ifndef GLM_ENABLE_EXPERIMENTAL
+#define GLM_ENABLE_EXPERIMENTAL 1
+#endif
+
 #include <glm/fwd.hpp>
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
@@ -119,6 +123,11 @@ namespace MoYu
         return ((x) < (y)) ? (x) : (y);
     }
 
+    template<>
+    inline glm::float2 Min(glm::float2 x, glm::float2 y) {
+        return glm::float2(Min(x.r, y.r), Min(x.g, y.g));
+    }
+
     template<typename T>
     INLINE T Min(T x, T y, T z)
     {
@@ -131,16 +140,21 @@ namespace MoYu
         return ((x) > (y)) ? (x) : (y);
     }
 
+    template<>
+    inline glm::float2 Max(glm::float2 x, glm::float2 y) {
+        return glm::float2(Max(x.r, y.r), Max(x.g, y.g));
+    }
+
     template<typename T>
     INLINE T Max(T x, T y, T z)
     {
         return Max(Max(x, y), z);
     }
 
-    template<typename T>
-    INLINE T Clamp(T a, T minVal, T maxVal)
+    template<typename T, typename M>
+    INLINE T Clamp(T a, M minVal, M maxVal)
     {
-        return Min(maxVal, Max(a, minVal));
+        return Min(maxVal, Max(T(a), T(minVal)));
     }
 
     //template<typename T>
@@ -162,7 +176,7 @@ namespace MoYu
     }
 
     template<typename T>
-    INLINE T Square(T x)
+    INLINE T Square2(T x)
     {
         return x * x;
     }
@@ -175,15 +189,58 @@ namespace MoYu
         b = tmp;
     }
 
+    // linear -> sRGB conversion
+    INLINE glm::float3 LinearTosRGB(glm::float3 color)
+    {
+        glm::float3 x = color * 12.92f;
+        glm::float3 y = 1.055f * glm::pow(color, glm::float3(1.0f / 2.4f)) - 0.055f;
+
+        glm::float3 clr = color;
+        clr.x = color.x < 0.0031308f ? x.x : y.x;
+        clr.y = color.y < 0.0031308f ? x.y : y.y;
+        clr.z = color.z < 0.0031308f ? x.z : y.z;
+
+        return clr;
+    }
+
+    INLINE glm::float3 SRGBToLinear(glm::float3 color)
+    {
+        glm::float3 x = color / 12.92f;
+        glm::float3 y = glm::pow((color + 0.055f) / 1.055f, glm::float3(2.4f));
+
+        glm::float3 clr = color;
+        clr.x = color.x <= 0.04045f ? x.x : y.x;
+        clr.y = color.y <= 0.04045f ? x.y : y.y;
+        clr.z = color.z <= 0.04045f ? x.z : y.z;
+
+        return clr;
+    }
+    
+    INLINE float DegToRad(float deg)
+    {
+        return deg * (1.0f / 180.0f) * 3.14159265359f;
+    }
+
+    INLINE float RadToDeg(float rad)
+    {
+        return rad * (1.0f / 3.14159265359f) * 180.0f;
+    }
+    
+    INLINE float ComputeLuminance(glm::float3 color)
+    {
+        return glm::dot(color, glm::float3(0.2126f, 0.7152f, 0.0722f));
+    }
+
     // Convert from spherical coordinates to Cartesian coordinates(x, y, z)
     // Theta represents how far away from the zenith (north pole/+Y) and phi represents how far
     // away from the 'right' axis (+X).
-    inline void SphericalToCartesianXYZYUP(float r, float theta, float phi, glm::float3& xyz)
+    INLINE void SphericalToCartesianXYZYUP(float r, float theta, float phi, glm::float3& xyz)
     {
         xyz.x = r * std::sinf(theta) * std::cosf(phi);
         xyz.y = r * std::cosf(theta);
         xyz.z = r * std::sinf(theta) * std::sinf(phi);
     }
+
 } 
 
 namespace MoYu
@@ -663,5 +720,28 @@ namespace MoYu
         std::mt19937 engine;
         std::uniform_real_distribution<float> distribution;
     };
+
+
+    template<typename T>
+    INLINE void Shuffle(std::vector<T>& values, Random& randomGenerator)
+    {
+        const uint64_t count = values.size();
+        for (uint64_t i = 0; i < count; ++i)
+        {
+            uint64_t other = i + (randomGenerator.RandomUint() % (count - i));
+            Swap(values[i], values[other]);
+        }
+    }
+
+    template<typename T>
+    INLINE void Shuffle(T* values, uint64_t count, Random& randomGenerator)
+    {
+        for (uint64_t i = 0; i < count; ++i)
+        {
+            uint64_t other = i + (randomGenerator.RandomUint() % (count - i));
+            Swap(values[i], values[other]);
+        }
+    }
+
 
 } // namespace MoYu

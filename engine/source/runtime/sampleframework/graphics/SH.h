@@ -11,7 +11,7 @@
 
 #include "runtime/core/math/moyu_math2.h"
 #include "Textures.h"
-
+/*
 namespace SampleFramework11
 {
 
@@ -244,3 +244,4 @@ H6Color ConvertToH6(const SH9Color& sh);
 SH9Color ProjectCubemapToSH(MoYu::MoYuScratchImage* cubeMap);
 
 }
+*/

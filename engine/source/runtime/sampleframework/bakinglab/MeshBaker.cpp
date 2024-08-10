@@ -8,101 +8,94 @@
 //
 //=================================================================================================
 
-#include "PCH.h"
-
 #include "MeshBaker.h"
 
-#include <Graphics/Model.h>
-#include <Utility.h>
-#include <Graphics/GraphicsTypes.h>
-#include <Graphics/SH.h>
-#include <Timer.h>
-#include <App.h>
-#include <Graphics/Skybox.h>
-#include <Graphics/Camera.h>
-#include <Graphics/Textures.h>
-#include <Graphics/BRDF.h>
-#include <Graphics/Sampling.h>
+#include "../Graphics/SH.h"
+#include "../Graphics/Skybox.h"
+#include "../Graphics/Textures.h"
+#include "../Graphics/Sampling.h"
+#include "BRDF.h" 
 
-#include "AppSettings.h"
+#include "BakingLabSettings.h"
 #include "SG.h"
 #include "PathTracer.h"
 
+/*
 // Suppress vs2013: "new behavior: elements of array 'array' will be default initialized"
 #pragma warning(disable : 4351)
 
-static const uint64 TileSize = 16;
-static const uint64 BakeGroupSizeX = 8;
-static const uint64 BakeGroupSizeY = 8;
-static const uint64 BakeGroupSize = BakeGroupSizeX * BakeGroupSizeY;
+static const glm::uint64 TileSize = 16;
+static const glm::uint64 BakeGroupSizeX = 8;
+static const glm::uint64 BakeGroupSizeY = 8;
+static const glm::uint64 BakeGroupSize = BakeGroupSizeX * BakeGroupSizeY;
 
 // Info about a gutter texel
 struct GutterTexel
 {
-    Uint2 TexelPos;
-    Uint2 NeighborPos;
+    glm::uvec2 TexelPos;
+    glm::uvec2 NeighborPos;
 };
 
 // Returns the final monte-carlo weighting factor using the PDF of a cosine-weighted hemisphere
-static float CosineWeightedMonteCarloFactor(uint64 numSamples)
+static float CosineWeightedMonteCarloFactor(glm::uint64 numSamples)
 {
-    // Integrating cosine factor about the hemisphere gives you Pi, and the PDF
-    // of a cosine-weighted hemisphere function is 1 / Pi.
+    // Integrating cosine factor about the hemisphere gives you MoYu::f::PI, and the PDF
+    // of a cosine-weighted hemisphere function is 1 / MoYu::f::PI.
     // So the final monte-carlo weighting factor is 1 / NumSamples
     return (1.0f / numSamples);
 }
 
-static float HemisphereMonteCarloFactor(uint64 numSamples)
+static float HemisphereMonteCarloFactor(glm::uint64 numSamples)
 {
-    // The area of a unit hemisphere is 2 * Pi, so the PDF is 1 / (2 * Pi)
-    return ((2.0f * Pi) / numSamples);
+    // The area of a unit hemisphere is 2 * MoYu::f::PI, so the PDF is 1 / (2 * MoYu::f::PI)
+    return ((2.0f * MoYu::f::PI) / numSamples);
 }
 
-static float SphereMonteCarloFactor(uint64 numSamples)
+static float SphereMonteCarloFactor(glm::uint64 numSamples)
 {
-    // The area of a unit hemisphere is 2 * Pi, so the PDF is 1 / (2 * Pi)
-    return ((4.0f * Pi) / numSamples);
+    // The area of a unit hemisphere is 2 * MoYu::f::PI, so the PDF is 1 / (2 * MoYu::f::PI)
+    return ((4.0f * MoYu::f::PI) / numSamples);
 }
 
 // == Baking ======================================================================================
 
-// Bakes irradiance / Pi as 3 floats per texel
+// Bakes irradiance / MoYu::f::PI as 3 floats per texel
 struct DiffuseBaker
 {
-    static const uint64 BasisCount = 1;
+    static const glm::uint64 BasisCount = 1;
 
-    uint64 NumSamples = 0;
-    Float3 ResultSum;
+    glm::uint64 NumSamples = 0;
+    glm::float3 ResultSum;
 
-    void Init(uint64 numSamples, Float4 prevResult[BasisCount])
+    void Init(glm::uint64 numSamples, glm::float4 prevResult[BasisCount])
     {
         NumSamples = numSamples;
-        ResultSum = 0.0f;
+        ResultSum = glm::float3(0.0f);
     }
 
-    Float3 SampleDirection(Float2 samplePoint)
+    glm::float3 SampleDirection(glm::float2 samplePoint)
     {
         return SampleCosineHemisphere(samplePoint.x, samplePoint.y);
     }
 
-    void AddSample(Float3 sampleDirTS, uint64 sampleIdx, Float3 sample, Float3 sampleDirWS, Float3 normal)
+    void AddSample(glm::float3 sampleDirTS, glm::uint64 sampleIdx, glm::float3 sample, glm::float3 sampleDirWS, glm::float3 normal)
     {
         ResultSum += sample;
     }
 
-    void FinalResult(Float4 bakeOutput[BasisCount])
+    void FinalResult(glm::float4 bakeOutput[BasisCount])
     {
-        float3 finalResult = ResultSum * CosineWeightedMonteCarloFactor(NumSamples);
-        bakeOutput[0] = Float4(Float3::Clamp(finalResult, 0.0f, FP16Max), 1.0f);
+        glm::float3 finalResult = ResultSum * CosineWeightedMonteCarloFactor(NumSamples);
+        bakeOutput[0] = glm::float4(MoYu::Clamp(finalResult, 0.0f, FLT_MAX), 1.0f);
     }
 
-    void ProgressiveResult(Float4 bakeOutput[BasisCount], uint64 passIdx)
+    void ProgressiveResult(glm::float4 bakeOutput[BasisCount], glm::uint64 passIdx)
     {
         const float lerpFactor = passIdx / (passIdx + 1.0f);
-        Float3 newSample = ResultSum * CosineWeightedMonteCarloFactor(1);
-        Float3 currValue = bakeOutput[0].To3D();
-        currValue = Lerp<Float3>(newSample, currValue, lerpFactor);
-        bakeOutput[0] = Float4(Float3::Clamp(currValue, 0.0f, FP16Max), 1.0f);
+        glm::float3 newSample = ResultSum * CosineWeightedMonteCarloFactor(1);
+        glm::float3 currValue = bakeOutput[0];
+        currValue = MoYu::Lerp<glm::float3>(newSample, currValue, lerpFactor);
+        bakeOutput[0] = glm::float4(MoYu::Clamp(currValue, 0.0f, FLT_MAX), 1.0f);
     }
 };
 
@@ -117,55 +110,55 @@ struct DiffuseBaker
 // Reference: https://static.docs.arm.com/100837/0308/enlighten_3-08_sdk_documentation__100837_0308_00_en.pdf
 struct DirectionalBaker
 {
-    static const uint64 BasisCount = 2;
+    static const glm::uint64 BasisCount = 2;
 
-    uint64 NumSamples = 0;
-    Float3 ResultSum;
-    Float3 DirectionSum;
+    glm::uint64 NumSamples = 0;
+    glm::float3 ResultSum;
+    glm::float3 DirectionSum;
     float DirectionWeightSum;
-    Float3 NormalSum;
+    glm::float3 NormalSum;
 
-    void Init(uint64 numSamples, Float4 prevResult[BasisCount])
+    void Init(glm::uint64 numSamples, glm::float4 prevResult[BasisCount])
     {
         NumSamples = numSamples;
 
-        ResultSum = 0.0;
-        DirectionSum = 0.0;
+        ResultSum = glm::float3(0.0f);
+        DirectionSum = glm::float3(0.0f);
         DirectionWeightSum = 0.0;
-        NormalSum = 0.0;
+        NormalSum = glm::float3(0.0f);
     }
 
-    Float3 SampleDirection(Float2 samplePoint)
+    glm::float3 SampleDirection(glm::float2 samplePoint)
     {
         return SampleDirectionHemisphere(samplePoint.x, samplePoint.y);
     }
 
-    void AddSample(Float3 sampleDirTS, uint64 sampleIdx, Float3 sample, Float3 sampleDirWS, Float3 normal)
+    void AddSample(glm::float3 sampleDirTS, glm::uint64 sampleIdx, glm::float3 sample, glm::float3 sampleDirWS, glm::float3 normal)
     {
-        normal = Float3::Normalize(normal);
+        normal = glm::normalize(normal);
 
-        const Float3 sampleDir = Float3::Normalize(sampleDirWS);
+        const glm::float3 sampleDir = glm::normalize(sampleDirWS);
 
         ResultSum += sample;
-        DirectionSum += sampleDir * ComputeLuminance(sample);
-        DirectionWeightSum += ComputeLuminance(sample);
+        DirectionSum += sampleDir * MoYu::ComputeLuminance(sample);
+        DirectionWeightSum += MoYu::ComputeLuminance(sample);
         NormalSum += normal;
     }
 
-    void FinalResult(Float4 bakeOutput[BasisCount])
+    void FinalResult(glm::float4 bakeOutput[BasisCount])
     {
-        Float3 finalColorResult = ResultSum * CosineWeightedMonteCarloFactor(NumSamples);
+        glm::float3 finalColorResult = ResultSum * CosineWeightedMonteCarloFactor(NumSamples);
 
-        Float3 finalDirection = Float3::Normalize(DirectionSum / std::max(DirectionWeightSum, 0.0001f));
+        glm::float3 finalDirection = glm::normalize(DirectionSum / std::max(DirectionWeightSum, 0.0001f));
 
-        Float3 averageNormal = Float3::Normalize(NormalSum * CosineWeightedMonteCarloFactor(NumSamples));
-        Float4 tau = Float4(averageNormal, 1.0f) * 0.5f;
+        glm::float3 averageNormal = glm::normalize(NormalSum * CosineWeightedMonteCarloFactor(NumSamples));
+        glm::float4 tau = glm::float4(averageNormal, 1.0f) * 0.5f;
 
-        bakeOutput[0] = Float4(Float3::Clamp(finalColorResult, 0.0f, FP16Max), 1.0f);
-        bakeOutput[1] = Float4(finalDirection * 0.5f + 0.5, std::max(Float4::Dot(tau, Float4(finalDirection, 1.0f)), 0.0001f));
+        bakeOutput[0] = glm::float4(MoYu::Clamp(finalColorResult, 0.0f, FLT_MAX), 1.0f);
+        bakeOutput[1] = glm::float4(finalDirection * 0.5f + 0.5f, std::max(glm::dot(tau, glm::float4(finalDirection, 1.0f)), 0.0001f));
     }
 
-    void ProgressiveResult(Float4 bakeOutput[BasisCount], uint64 passIdx)
+    void ProgressiveResult(glm::float4 bakeOutput[BasisCount], glm::uint64 passIdx)
     {
     }
 };
@@ -178,36 +171,36 @@ struct DirectionalBaker
 // Reference: https://static.docs.arm.com/100837/0308/enlighten_3-08_sdk_documentation__100837_0308_00_en.pdf
 struct DirectionalRGBBaker
 {
-    static const uint64 BasisCount = 4;
+    static const glm::uint64 BasisCount = 4;
 
-    uint64 NumSamples = 0;
-    Float3 ResultSum;
-    Float3 DirectionSum[3];
-    Float3 DirectionWeightSum;
-    Float3 NormalSum;
+    glm::uint64 NumSamples = 0;
+    glm::float3 ResultSum;
+    glm::float3 DirectionSum[3];
+    glm::float3 DirectionWeightSum;
+    glm::float3 NormalSum;
 
-    void Init(uint64 numSamples, Float4 prevResult[BasisCount])
+    void Init(glm::uint64 numSamples, glm::float4 prevResult[BasisCount])
     {
         NumSamples = numSamples;
 
-        ResultSum = 0.0;
-        DirectionSum[0] = 0.0;
-        DirectionSum[1] = 0.0;
-        DirectionSum[2] = 0.0;
-        DirectionWeightSum = 0.0;
-        NormalSum = 0.0;
+        ResultSum = glm::float3(0.0f);
+        DirectionSum[0] = glm::float3(0.0f);
+        DirectionSum[1] = glm::float3(0.0f);
+        DirectionSum[2] = glm::float3(0.0f);
+        DirectionWeightSum = glm::float3(0.0f);
+        NormalSum = glm::float3(0.0f);
     }
 
-    Float3 SampleDirection(Float2 samplePoint)
+    glm::float3 SampleDirection(glm::float2 samplePoint)
     {
         return SampleDirectionHemisphere(samplePoint.x, samplePoint.y);
     }
 
-    void AddSample(Float3 sampleDirTS, uint64 sampleIdx, Float3 sample, Float3 sampleDirWS, Float3 normal)
+    void AddSample(glm::float3 sampleDirTS, glm::uint64 sampleIdx, glm::float3 sample, glm::float3 sampleDirWS, glm::float3 normal)
     {
-        normal = Float3::Normalize(normal);
+        normal = glm::normalize(normal);
 
-        const Float3 sampleDir = Float3::Normalize(sampleDirWS);
+        const glm::float3 sampleDir = glm::normalize(sampleDirWS);
 
         ResultSum += sample;
         DirectionSum[0] += sampleDir * sample.x;
@@ -217,24 +210,24 @@ struct DirectionalRGBBaker
         NormalSum += normal;
     }
 
-    void FinalResult(Float4 bakeOutput[BasisCount])
+    void FinalResult(glm::float4 bakeOutput[BasisCount])
     {
-        Float3 finalColorResult = ResultSum * CosineWeightedMonteCarloFactor(NumSamples);
+        glm::float3 finalColorResult = ResultSum * CosineWeightedMonteCarloFactor(NumSamples);
 
-        Float3 finalDirectionR = Float3::Normalize(DirectionSum[0] / std::max(DirectionWeightSum.x, 0.0001f));
-        Float3 finalDirectionG = Float3::Normalize(DirectionSum[1] / std::max(DirectionWeightSum.y, 0.0001f));
-        Float3 finalDirectionB = Float3::Normalize(DirectionSum[2] / std::max(DirectionWeightSum.z, 0.0001f));
+        glm::float3 finalDirectionR = glm::normalize(DirectionSum[0] / std::max(DirectionWeightSum.x, 0.0001f));
+        glm::float3 finalDirectionG = glm::normalize(DirectionSum[1] / std::max(DirectionWeightSum.y, 0.0001f));
+        glm::float3 finalDirectionB = glm::normalize(DirectionSum[2] / std::max(DirectionWeightSum.z, 0.0001f));
 
-        Float3 averageNormal = Float3::Normalize(NormalSum * CosineWeightedMonteCarloFactor(NumSamples));
-        Float4 tau = Float4(averageNormal, 1.0f) * 0.5f;
+        glm::float3 averageNormal = glm::normalize(NormalSum * CosineWeightedMonteCarloFactor(NumSamples));
+        glm::float4 tau = glm::float4(averageNormal, 1.0f) * 0.5f;
 
-        bakeOutput[0] = Float4(Float3::Clamp(finalColorResult, 0.0f, FP16Max), 1.0f);
-        bakeOutput[1] = Float4(finalDirectionR * 0.5f + 0.5, std::max(Float4::Dot(tau, Float4(finalDirectionR, 1.0f)), 0.0001f));
-        bakeOutput[2] = Float4(finalDirectionG * 0.5f + 0.5, std::max(Float4::Dot(tau, Float4(finalDirectionG, 1.0f)), 0.0001f));
-        bakeOutput[3] = Float4(finalDirectionB * 0.5f + 0.5, std::max(Float4::Dot(tau, Float4(finalDirectionB, 1.0f)), 0.0001f));
+        bakeOutput[0] = glm::float4(MoYu::Clamp(finalColorResult, 0.0f, FLT_MAX), 1.0f);
+        bakeOutput[1] = glm::float4(finalDirectionR * 0.5f + 0.5f, std::max(glm::dot(tau, glm::float4(finalDirectionR, 1.0f)), 0.0001f));
+        bakeOutput[2] = glm::float4(finalDirectionG * 0.5f + 0.5f, std::max(glm::dot(tau, glm::float4(finalDirectionG, 1.0f)), 0.0001f));
+        bakeOutput[3] = glm::float4(finalDirectionB * 0.5f + 0.5f, std::max(glm::dot(tau, glm::float4(finalDirectionB, 1.0f)), 0.0001f));
     }
 
-    void ProgressiveResult(Float4 bakeOutput[BasisCount], uint64 passIdx)
+    void ProgressiveResult(glm::float4 bakeOutput[BasisCount], glm::uint64 passIdx)
     {
     }
 };
@@ -242,52 +235,52 @@ struct DirectionalRGBBaker
 // Bakes irradiance projected onto the Half-Life 2 basis, with 9 floats per texel
 struct HL2Baker
 {
-    static const uint64 BasisCount = 3;
+    static const glm::uint64 BasisCount = 3;
 
-    uint64 NumSamples = 0;
-    Float3 ResultSum[3];
+    glm::uint64 NumSamples = 0;
+    glm::float3 ResultSum[3];
 
-    void Init(uint64 numSamples, Float4 prevResult[BasisCount])
+    void Init(glm::uint64 numSamples, glm::float4 prevResult[BasisCount])
     {
         NumSamples = numSamples;
-        ResultSum[0] = ResultSum[1] = ResultSum[2] = 0.0f;
+        ResultSum[0] = ResultSum[1] = ResultSum[2] = glm::float3(0.0f);
     }
 
-    Float3 SampleDirection(Float2 samplePoint)
+    glm::float3 SampleDirection(glm::float2 samplePoint)
     {
         return SampleDirectionHemisphere(samplePoint.x, samplePoint.y);
     }
 
-    void AddSample(Float3 sampleDirTS, uint64 sampleIdx, Float3 sample, Float3 sampleDirWS, Float3 normal)
+    void AddSample(glm::float3 sampleDirTS, glm::uint64 sampleIdx, glm::float3 sample, glm::float3 sampleDirWS, glm::float3 normal)
     {
-        static const Float3 BasisDirs[BasisCount] =
+        static const glm::float3 BasisDirs[BasisCount] =
         {
-            Float3(-1.0f / std::sqrt(6.0f), -1.0f / std::sqrt(2.0f), 1.0f / std::sqrt(3.0f)),
-            Float3(-1.0f / std::sqrt(6.0f), 1.0f / std::sqrt(2.0f), 1.0f / std::sqrt(3.0f)),
-            Float3(std::sqrt(2.0f / 3.0f), 0.0f, 1.0f / std::sqrt(3.0f)),
+            glm::float3(-1.0f / std::sqrt(6.0f), -1.0f / std::sqrt(2.0f), 1.0f / std::sqrt(3.0f)),
+            glm::float3(-1.0f / std::sqrt(6.0f), 1.0f / std::sqrt(2.0f), 1.0f / std::sqrt(3.0f)),
+            glm::float3(std::sqrt(2.0f / 3.0f), 0.0f, 1.0f / std::sqrt(3.0f)),
         };
-        for(uint64 i = 0; i < BasisCount; ++i)
-            ResultSum[i] += sample * Float3::Dot(sampleDirTS, BasisDirs[i]);
+        for(glm::uint64 i = 0; i < BasisCount; ++i)
+            ResultSum[i] += sample * glm::dot(sampleDirTS, BasisDirs[i]);
     }
 
-    void FinalResult(Float4 bakeOutput[BasisCount])
+    void FinalResult(glm::float4 bakeOutput[BasisCount])
     {
-        for(uint64 i = 0; i < BasisCount; ++i)
+        for(glm::uint64 i = 0; i < BasisCount; ++i)
         {
-            Float3 result = ResultSum[i] * HemisphereMonteCarloFactor(NumSamples);
-            bakeOutput[i] = Float4(Float3::Clamp(result, -FP16Max, FP16Max), 1.0f);
+            glm::float3 result = ResultSum[i] * HemisphereMonteCarloFactor(NumSamples);
+            bakeOutput[i] = glm::float4(MoYu::Clamp(result, -FLT_MAX, FLT_MAX), 1.0f);
         }
     }
 
-    void ProgressiveResult(Float4 bakeOutput[BasisCount], uint64 passIdx)
+    void ProgressiveResult(glm::float4 bakeOutput[BasisCount], glm::uint64 passIdx)
     {
         const float lerpFactor = passIdx / (passIdx + 1.0f);
-        for(uint64 i = 0; i < BasisCount; ++i)
+        for(glm::uint64 i = 0; i < BasisCount; ++i)
         {
-            Float3 newSample = ResultSum[i] * HemisphereMonteCarloFactor(1);
-            Float3 currValue = bakeOutput[i].To3D();
-            currValue = Lerp<Float3>(newSample, currValue, lerpFactor);
-            bakeOutput[i] = Float4(Float3::Clamp(currValue, -FP16Max, FP16Max), 1.0f);
+            glm::float3 newSample = ResultSum[i] * HemisphereMonteCarloFactor(1);
+            glm::float3 currValue = bakeOutput[i];
+            currValue = MoYu::Lerp<glm::float3>(newSample, currValue, lerpFactor);
+            bakeOutput[i] = glm::float4(MoYu::Clamp(currValue, -FLT_MAX, FLT_MAX), 1.0f);
         }
     }
 };
@@ -295,44 +288,44 @@ struct HL2Baker
 // Bakes radiance projected onto L1 SH, with 12 floats per texel
 struct SH4Baker
 {
-    static const uint64 BasisCount = 4;
+    static const glm::uint64 BasisCount = 4;
 
-    uint64 NumSamples = 0;
+    glm::uint64 NumSamples = 0;
     SH4Color ResultSum;
 
-    void Init(uint64 numSamples, Float4 prevResult[BasisCount])
+    void Init(glm::uint64 numSamples, glm::float4 prevResult[BasisCount])
     {
         NumSamples = numSamples;
         ResultSum = SH4Color();
     }
 
-    Float3 SampleDirection(Float2 samplePoint)
+    glm::float3 SampleDirection(glm::float2 samplePoint)
     {
         return SampleDirectionHemisphere(samplePoint.x, samplePoint.y);
     }
 
-    void AddSample(Float3 sampleDirTS, uint64 sampleIdx, Float3 sample, Float3 sampleDirWS, Float3 normal)
+    void AddSample(glm::float3 sampleDirTS, glm::uint64 sampleIdx, glm::float3 sample, glm::float3 sampleDirWS, glm::float3 normal)
     {
-        const Float3 sampleDir = AppSettings::WorldSpaceBake ? sampleDirWS : sampleDirTS;
+        const glm::float3 sampleDir = SampleFramework11::WorldSpaceBake ? sampleDirWS : sampleDirTS;
         ResultSum += ProjectOntoSH4Color(sampleDir, sample);
     }
 
-    void FinalResult(Float4 bakeOutput[BasisCount])
+    void FinalResult(glm::float4 bakeOutput[BasisCount])
     {
         SH4Color result = ResultSum * HemisphereMonteCarloFactor(NumSamples);
-        for(uint64 i = 0; i < BasisCount; ++i)
-            bakeOutput[i] = Float4(Float3::Clamp(result.Coefficients[i], -FP16Max, FP16Max), 1.0f);
+        for(glm::uint64 i = 0; i < BasisCount; ++i)
+            bakeOutput[i] = glm::float4(MoYu::Clamp(result.Coefficients[i], -FLT_MAX, FLT_MAX), 1.0f);
     }
 
-    void ProgressiveResult(Float4 bakeOutput[BasisCount], uint64 passIdx)
+    void ProgressiveResult(glm::float4 bakeOutput[BasisCount], glm::uint64 passIdx)
     {
         const float lerpFactor = passIdx / (passIdx + 1.0f);
-        for(uint64 i = 0; i < BasisCount; ++i)
+        for(glm::uint64 i = 0; i < BasisCount; ++i)
         {
-            Float3 newSample = ResultSum.Coefficients[i] * HemisphereMonteCarloFactor(1);
-            Float3 currValue = bakeOutput[i].To3D();
-            currValue = Lerp<Float3>(newSample, currValue, lerpFactor);
-            bakeOutput[i] = Float4(Float3::Clamp(currValue, -FP16Max, FP16Max), 1.0f);
+            glm::float3 newSample = ResultSum.Coefficients[i] * HemisphereMonteCarloFactor(1);
+            glm::float3 currValue = bakeOutput[i];
+            currValue = MoYu::Lerp<glm::float3>(newSample, currValue, lerpFactor);
+            bakeOutput[i] = glm::float4(MoYu::Clamp(currValue, -FLT_MAX, FLT_MAX), 1.0f);
         }
     }
 };
@@ -340,44 +333,44 @@ struct SH4Baker
 // Bakes radiance projected onto L2 SH, with 27 floats per texel
 struct SH9Baker
 {
-    static const uint64 BasisCount = 9;
+    static const glm::uint64 BasisCount = 9;
 
-    uint64 NumSamples = 0;
+    glm::uint64 NumSamples = 0;
     SH9Color ResultSum;
 
-    void Init(uint64 numSamples, Float4 prevResult[BasisCount])
+    void Init(glm::uint64 numSamples, glm::float4 prevResult[BasisCount])
     {
         NumSamples = numSamples;
         ResultSum = SH9Color();
     }
 
-    Float3 SampleDirection(Float2 samplePoint)
+    glm::float3 SampleDirection(glm::float2 samplePoint)
     {
         return SampleDirectionHemisphere(samplePoint.x, samplePoint.y);
     }
 
-    void AddSample(Float3 sampleDirTS, uint64 sampleIdx, Float3 sample, Float3 sampleDirWS, Float3 normal)
+    void AddSample(glm::float3 sampleDirTS, glm::uint64 sampleIdx, glm::float3 sample, glm::float3 sampleDirWS, glm::float3 normal)
     {
-        const Float3 sampleDir = AppSettings::WorldSpaceBake ? sampleDirWS : sampleDirTS;
+        const glm::float3 sampleDir = SampleFramework11::WorldSpaceBake ? sampleDirWS : sampleDirTS;
         ResultSum += ProjectOntoSH9Color(sampleDir, sample);
     }
 
-    void FinalResult(Float4 bakeOutput[BasisCount])
+    void FinalResult(glm::float4 bakeOutput[BasisCount])
     {
         SH9Color result = ResultSum * HemisphereMonteCarloFactor(NumSamples);
-        for(uint64 i = 0; i < BasisCount; ++i)
-            bakeOutput[i] = Float4(Float3::Clamp(result.Coefficients[i], -FP16Max, FP16Max), 1.0f);
+        for(glm::uint64 i = 0; i < BasisCount; ++i)
+            bakeOutput[i] = glm::float4(MoYu::Clamp(result.Coefficients[i], -FLT_MAX, FLT_MAX), 1.0f);
     }
 
-    void ProgressiveResult(Float4 bakeOutput[BasisCount], uint64 passIdx)
+    void ProgressiveResult(glm::float4 bakeOutput[BasisCount], glm::uint64 passIdx)
     {
         const float lerpFactor = passIdx / (passIdx + 1.0f);
-        for(uint64 i = 0; i < BasisCount; ++i)
+        for(glm::uint64 i = 0; i < BasisCount; ++i)
         {
-            Float3 newSample = ResultSum.Coefficients[i] * HemisphereMonteCarloFactor(1);
-            Float3 currValue = bakeOutput[i].To3D();
-            currValue = Lerp<Float3>(newSample, currValue, lerpFactor);
-            bakeOutput[i] = Float4(Float3::Clamp(currValue, -FP16Max, FP16Max), 1.0f);
+            glm::float3 newSample = ResultSum.Coefficients[i] * HemisphereMonteCarloFactor(1);
+            glm::float3 currValue = bakeOutput[i];
+            currValue = MoYu::Lerp<glm::float3>(newSample, currValue, lerpFactor);
+            bakeOutput[i] = glm::float4(MoYu::Clamp(currValue, -FLT_MAX, FLT_MAX), 1.0f);
         }
     }
 };
@@ -385,49 +378,49 @@ struct SH9Baker
 // Bakes irradiance projected onto L1 H-basis, with 12 floats per texel
 struct H4Baker
 {
-    static const uint64 BasisCount = 4;
+    static const glm::uint64 BasisCount = 4;
 
-    uint64 NumSamples = 0;
+    glm::uint64 NumSamples = 0;
     SH9Color ResultSum;
 
-    void Init(uint64 numSamples, Float4 prevResult[BasisCount])
+    void Init(glm::uint64 numSamples, glm::float4 prevResult[BasisCount])
     {
         NumSamples = numSamples;
         ResultSum = SH9Color();
     }
 
-    Float3 SampleDirection(Float2 samplePoint)
+    glm::float3 SampleDirection(glm::float2 samplePoint)
     {
         return SampleDirectionHemisphere(samplePoint.x, samplePoint.y);
     }
 
-    void AddSample(Float3 sampleDirTS, uint64 sampleIdx, Float3 sample, Float3 sampleDirWS, Float3 normal)
+    void AddSample(glm::float3 sampleDirTS, glm::uint64 sampleIdx, glm::float3 sample, glm::float3 sampleDirWS, glm::float3 normal)
     {
         ResultSum += ProjectOntoSH9Color(sampleDirTS, sample);
     }
 
-    void FinalResult(Float4 bakeOutput[BasisCount])
+    void FinalResult(glm::float4 bakeOutput[BasisCount])
     {
         SH9Color shResult = ResultSum;
         shResult.ConvolveWithCosineKernel();
         H4Color result = ConvertToH4(shResult) * HemisphereMonteCarloFactor(NumSamples);
-        for(uint64 i = 0; i < BasisCount; ++i)
-            bakeOutput[i] = Float4(Float3::Clamp(result.Coefficients[i], -FP16Max, FP16Max), 1.0f);
+        for(glm::uint64 i = 0; i < BasisCount; ++i)
+            bakeOutput[i] = glm::float4(MoYu::Clamp(result.Coefficients[i], -FLT_MAX, FLT_MAX), 1.0f);
     }
 
-    void ProgressiveResult(Float4 bakeOutput[BasisCount], uint64 passIdx)
+    void ProgressiveResult(glm::float4 bakeOutput[BasisCount], glm::uint64 passIdx)
     {
         SH9Color shResult = ResultSum;
         shResult.ConvolveWithCosineKernel();
         H4Color result = ConvertToH4(shResult) * HemisphereMonteCarloFactor(1);
 
         const float lerpFactor = passIdx / (passIdx + 1.0f);
-        for(uint64 i = 0; i < BasisCount; ++i)
+        for(glm::uint64 i = 0; i < BasisCount; ++i)
         {
-            Float3 newSample = result.Coefficients[i];
-            Float3 currValue = bakeOutput[i].To3D();
-            currValue = Lerp<Float3>(newSample, currValue, lerpFactor);
-            bakeOutput[i] = Float4(Float3::Clamp(currValue, -FP16Max, FP16Max), 1.0f);
+            glm::float3 newSample = result.Coefficients[i];
+            glm::float3 currValue = bakeOutput[i];
+            currValue = MoYu::Lerp<glm::float3>(newSample, currValue, lerpFactor);
+            bakeOutput[i] = glm::float4(MoYu::Clamp(currValue, -FLT_MAX, FLT_MAX), 1.0f);
         }
     }
 };
@@ -435,142 +428,142 @@ struct H4Baker
 // Bakes irradiance projected onto L2 H-basis, with 18 floats per texel
 struct H6Baker
 {
-    static const uint64 BasisCount = 6;
+    static const glm::uint64 BasisCount = 6;
 
-    uint64 NumSamples = 0;
+    glm::uint64 NumSamples = 0;
     SH9Color ResultSum;
 
-    void Init(uint64 numSamples, Float4 prevResult[BasisCount])
+    void Init(glm::uint64 numSamples, glm::float4 prevResult[BasisCount])
     {
         NumSamples = numSamples;
         ResultSum = SH9Color();
     }
 
-    Float3 SampleDirection(Float2 samplePoint)
+    glm::float3 SampleDirection(glm::float2 samplePoint)
     {
         return SampleDirectionHemisphere(samplePoint.x, samplePoint.y);
     }
 
-    void AddSample(Float3 sampleDirTS, uint64 sampleIdx, Float3 sample, Float3 sampleDirWS, Float3 normal)
+    void AddSample(glm::float3 sampleDirTS, glm::uint64 sampleIdx, glm::float3 sample, glm::float3 sampleDirWS, glm::float3 normal)
     {
         ResultSum += ProjectOntoSH9Color(sampleDirTS, sample);
     }
 
-    void FinalResult(Float4 bakeOutput[BasisCount])
+    void FinalResult(glm::float4 bakeOutput[BasisCount])
     {
         SH9Color shResult = ResultSum;
         shResult.ConvolveWithCosineKernel();
         H6Color result = ConvertToH6(shResult) * HemisphereMonteCarloFactor(NumSamples);
-        for(uint64 i = 0; i < BasisCount; ++i)
-            bakeOutput[i] = Float4(Float3::Clamp(result.Coefficients[i], -FP16Max, FP16Max), 1.0f);
+        for(glm::uint64 i = 0; i < BasisCount; ++i)
+            bakeOutput[i] = glm::float4(MoYu::Clamp(result.Coefficients[i], -FLT_MAX, FLT_MAX), 1.0f);
     }
 
-    void ProgressiveResult(Float4 bakeOutput[BasisCount], uint64 passIdx)
+    void ProgressiveResult(glm::float4 bakeOutput[BasisCount], glm::uint64 passIdx)
     {
         SH9Color shResult = ResultSum;
         shResult.ConvolveWithCosineKernel();
         H6Color result = ConvertToH6(shResult) * HemisphereMonteCarloFactor(1);
 
         const float lerpFactor = passIdx / (passIdx + 1.0f);
-        for(uint64 i = 0; i < BasisCount; ++i)
+        for(glm::uint64 i = 0; i < BasisCount; ++i)
         {
-            Float3 newSample = result.Coefficients[i];
-            Float3 currValue = bakeOutput[i].To3D();
-            currValue = Lerp<Float3>(newSample, currValue, lerpFactor);
-            bakeOutput[i] = Float4(Float3::Clamp(currValue, -FP16Max, FP16Max), 1.0f);
+            glm::float3 newSample = result.Coefficients[i];
+            glm::float3 currValue = bakeOutput[i];
+            currValue = MoYu::Lerp<glm::float3>(newSample, currValue, lerpFactor);
+            bakeOutput[i] = glm::float4(MoYu::Clamp(currValue, -FLT_MAX, FLT_MAX), 1.0f);
         }
     }
 };
 
 // Bakes radiance into a set of SG lobes, which is computed using a solve or by
 // using an ad-hoc projection. Bakes into SGCount * 3 floats.
-template<uint64 SGCount> struct SGBaker
+template<glm::uint64 SGCount> struct SGBaker
 {
-    static const uint64 BasisCount = SGCount;
+    static const glm::uint64 BasisCount = SGCount;
 
-    uint64 NumSamples = 0;
-    uint64 CurrSampleIdx = 0;
-    FixedArray<Float3> SampleDirs;
-    FixedArray<Float3> Samples;
+    glm::uint64 NumSamples = 0;
+    glm::uint64 CurrSampleIdx = 0;
+    std::vector<glm::float3> SampleDirs;
+    std::vector<glm::float3> Samples;
     SG ProjectedResult[SGCount];
     float RunningAverageWeights[SGCount] = { };
 
-    void Init(uint64 numSamples, Float4 prevResult[BasisCount])
+    void Init(glm::uint64 numSamples, glm::float4 prevResult[BasisCount])
     {
         CurrSampleIdx = 0;
         NumSamples = numSamples;
 
-        if(NumSamples != SampleDirs.Size())
-            SampleDirs.Init(NumSamples);
-        if(NumSamples != Samples.Size())
-            Samples.Init(NumSamples);
+        if(NumSamples != SampleDirs.size())
+            SampleDirs.resize(NumSamples);
+        if(NumSamples != Samples.size())
+            Samples.resize(NumSamples);
 
         const SG* initialGuess = InitialGuess();
-        for(uint64 i = 0; i < SGCount; ++i)
+        for(glm::uint64 i = 0; i < SGCount; ++i)
             ProjectedResult[i] = initialGuess[i];
 
-        if(AppSettings::SolveMode == SolveModes::RunningAverage || AppSettings::SolveMode == SolveModes::RunningAverageNN)
+        if(SampleFramework11::SolveMode == SolveModes::RunningAverage || SampleFramework11::SolveMode == SolveModes::RunningAverageNN)
         {
-            for(uint64 i = 0; i < SGCount; ++i)
+            for(glm::uint64 i = 0; i < SGCount; ++i)
             {
-                ProjectedResult[i].Amplitude = prevResult[i].To3D();
+                ProjectedResult[i].Amplitude = prevResult[i];
                 RunningAverageWeights[i] = prevResult[i].w;
             }
         }
     }
 
-    Float3 SampleDirection(Float2 samplePoint)
+    glm::float3 SampleDirection(glm::float2 samplePoint)
     {
         return SampleDirectionHemisphere(samplePoint.x, samplePoint.y);
     }
 
-    void AddSample(Float3 sampleDirTS, uint64 sampleIdx, Float3 sample, Float3 sampleDirWS, Float3 normal)
+    void AddSample(glm::float3 sampleDirTS, glm::uint64 sampleIdx, glm::float3 sample, glm::float3 sampleDirWS, glm::float3 normal)
     {
-        const Float3 sampleDir = AppSettings::WorldSpaceBake ? sampleDirWS : sampleDirTS;
+        const glm::float3 sampleDir = SampleFramework11::WorldSpaceBake ? sampleDirWS : sampleDirTS;
         SampleDirs[CurrSampleIdx] = sampleDir;
         Samples[CurrSampleIdx] = sample;
         ++CurrSampleIdx;
 
-        if(AppSettings::SolveMode == SolveModes::RunningAverage)
+        if(SampleFramework11::SolveMode == SolveModes::RunningAverage)
             SGRunningAverage(sampleDir, sample, ProjectedResult, SGCount, (float)sampleIdx, RunningAverageWeights, false);
-        else if(AppSettings::SolveMode == SolveModes::RunningAverageNN)
+        else if(SampleFramework11::SolveMode == SolveModes::RunningAverageNN)
             SGRunningAverage(sampleDir, sample, ProjectedResult, SGCount, (float)sampleIdx, RunningAverageWeights, true);
         else
             ProjectOntoSGs(sampleDir, sample, ProjectedResult, SGCount);
     }
 
-    void FinalResult(Float4 bakeOutput[BasisCount])
+    void FinalResult(glm::float4 bakeOutput[BasisCount])
     {
         SG sgLobes[SGCount];
 
         SGSolveParam params;
         params.NumSGs = SGCount;
         params.OutSGs = sgLobes;
-        params.XSamples = SampleDirs.Data();
-        params.YSamples = Samples.Data();
+        params.XSamples = SampleDirs.data();
+        params.YSamples = Samples.data();
         params.NumSamples = NumSamples;
         SolveSGs(params);
 
-        for(uint64 i = 0; i < SGCount; ++i)
-            bakeOutput[i] = Float4(Float3::Clamp(sgLobes[i].Amplitude, 0.0f, FP16Max), 1.0f);
+        for(glm::uint64 i = 0; i < SGCount; ++i)
+            bakeOutput[i] = glm::float4(MoYu::Clamp(sgLobes[i].Amplitude, 0.0f, FLT_MAX), 1.0f);
     }
 
-    void ProgressiveResult(Float4 bakeOutput[BasisCount], uint64 passIdx)
+    void ProgressiveResult(glm::float4 bakeOutput[BasisCount], glm::uint64 passIdx)
     {
-        if(AppSettings::SolveMode == SolveModes::RunningAverage || AppSettings::SolveMode == SolveModes::RunningAverageNN)
+        if(SampleFramework11::SolveMode == SolveModes::RunningAverage || SampleFramework11::SolveMode == SolveModes::RunningAverageNN)
         {
-            for(uint64 i = 0; i < SGCount; ++i)
-                bakeOutput[i] = Float4(Float3::Clamp(ProjectedResult[i].Amplitude, -FP16Max, FP16Max), RunningAverageWeights[i]);
+            for(glm::uint64 i = 0; i < SGCount; ++i)
+                bakeOutput[i] = glm::float4(MoYu::Clamp(ProjectedResult[i].Amplitude, -FLT_MAX, FLT_MAX), RunningAverageWeights[i]);
         }
         else
         {
             const float lerpFactor = passIdx / (passIdx + 1.0f);
-            for(uint64 i = 0; i < SGCount; ++i)
+            for(glm::uint64 i = 0; i < SGCount; ++i)
             {
-                Float3 newSample = ProjectedResult[i].Amplitude * HemisphereMonteCarloFactor(1);
-                Float3 currValue = bakeOutput[i].To3D();
-                currValue = Lerp<Float3>(newSample, currValue, lerpFactor);
-                bakeOutput[i] = Float4(Float3::Clamp(currValue, -FP16Max, FP16Max), 1.0f);
+                glm::float3 newSample = ProjectedResult[i].Amplitude * HemisphereMonteCarloFactor(1);
+                glm::float3 currValue = bakeOutput[i];
+                currValue = MoYu::Lerp<glm::float3>(newSample, currValue, lerpFactor);
+                bakeOutput[i] = glm::float4(MoYu::Clamp(currValue, -FLT_MAX, FLT_MAX), 1.0f);
             }
         }
     }
@@ -584,26 +577,26 @@ typedef SGBaker<12> SG12Baker;
 // Data used by the baking threads
 struct BakeThreadContext
 {
-    uint64 BakeTag = uint64(-1);
+    glm::uint64 BakeTag = glm::uint64(-1);
     SkyCache SkyCache;
     const BVHData* SceneBVH = nullptr;
     const TextureData<Half4>* EnvMaps = nullptr;
     const std::vector<BakePoint>* BakePoints = nullptr;
-    uint64 CurrNumBatches = 0;
-    uint64 CurrLightMapSize = 0;
+    glm::uint64 CurrNumBatches = 0;
+    glm::uint64 CurrLightMapSize = 0;
     BakeModes CurrBakeMode = BakeModes::Diffuse;
     SolveModes CurrSolveMode = SolveModes::NNLS;
     Random RandomGenerator;
     SampleModes CurrSampleMode = SampleModes::Random;
-    uint64 CurrNumSamples = 0;
+    glm::uint64 CurrNumSamples = 0;
     const std::vector<IntegrationSamples>* Samples;
-    FixedArray<Float4>* BakeOutput = nullptr;
+    FixedArray<glm::float4>* BakeOutput = nullptr;
     volatile int64* CurrBatch = nullptr;
 
-    void Init(FixedArray<Float4>* bakeOutput, const std::vector<IntegrationSamples>* samples,
-              volatile int64* currBatch, const MeshBaker* meshBaker, uint64 newTag)
+    void Init(FixedArray<glm::float4>* bakeOutput, const std::vector<IntegrationSamples>* samples,
+              volatile int64* currBatch, const MeshBaker* meshBaker, glm::uint64 newTag)
     {
-        if(BakeTag == uint64(-1))
+        if(BakeTag == glm::uint64(-1))
             RandomGenerator.SeedWithRandomValue();
 
         BakeTag = newTag;
@@ -632,7 +625,7 @@ template<typename TBaker> static bool BakeDriver(BakeThreadContext& context, TBa
     if(context.CurrNumBatches == 0)
         return false;
 
-    const uint64 batchIdx = InterlockedIncrement64(context.CurrBatch) - 1;
+    const glm::uint64 batchIdx = InterlockedIncrement64(context.CurrBatch) - 1;
     if(batchIdx >= context.CurrNumBatches)
         return false;
 
@@ -641,24 +634,24 @@ template<typename TBaker> static bool BakeDriver(BakeThreadContext& context, TBa
     const bool progressiveintegration = AppSettings::SupportsProgressiveIntegration(context.CurrBakeMode, context.CurrSolveMode);
 
     // Figure out which 8x8 group we're working on
-    const uint64 numGroupsX = (context.CurrLightMapSize + (BakeGroupSizeX - 1)) / BakeGroupSizeX;
-    const uint64 numGroupsY = (context.CurrLightMapSize + (BakeGroupSizeY - 1)) / BakeGroupSizeY;
-    const uint64 numBakeGroups = numGroupsX * numGroupsY;
+    const glm::uint64 numGroupsX = (context.CurrLightMapSize + (BakeGroupSizeX - 1)) / BakeGroupSizeX;
+    const glm::uint64 numGroupsY = (context.CurrLightMapSize + (BakeGroupSizeY - 1)) / BakeGroupSizeY;
+    const glm::uint64 numBakeGroups = numGroupsX * numGroupsY;
 
-    const uint64 groupIdx = batchIdx % numBakeGroups;
-    const uint64 groupIdxX = groupIdx % numGroupsX;
-    const uint64 groupIdxY = groupIdx / numGroupsX;
+    const glm::uint64 grouMoYu::f::PIdx = batchIdx % numBakeGroups;
+    const glm::uint64 grouMoYu::f::PIdxX = grouMoYu::f::PIdx % numGroupsX;
+    const glm::uint64 grouMoYu::f::PIdxY = grouMoYu::f::PIdx / numGroupsX;
 
-    const uint64 sqrtNumSamples = context.CurrNumSamples;
-    const uint64 numSamplesPerTexel = sqrtNumSamples * sqrtNumSamples;
+    const glm::uint64 sqrtNumSamples = context.CurrNumSamples;
+    const glm::uint64 numSamplesPerTexel = sqrtNumSamples * sqrtNumSamples;
 
     Random& random = context.RandomGenerator;
 
     const bool addAreaLight = AppSettings::EnableAreaLight && AppSettings::BakeDirectAreaLight;
 
     // Get the set of integration samples to use, which is tiled across threads
-    const uint64 numThreads = context.Samples->size();
-    const IntegrationSamples& integrationSamples = (*context.Samples)[groupIdx % numThreads];
+    const glm::uint64 numThreads = context.Samples->size();
+    const IntegrationSamples& integrationSamples = (*context.Samples)[grouMoYu::f::PIdx % numThreads];
 
     PathTracerParams params;
     params.EnableDirectAreaLight = false;
@@ -676,19 +669,19 @@ template<typename TBaker> static bool BakeDriver(BakeThreadContext& context, TBa
 
     if(progressiveintegration)
     {
-        const uint64 sampleIdx = batchIdx / numBakeGroups;
+        const glm::uint64 sampleIdx = batchIdx / numBakeGroups;
 
         // Loop over all texels in the 8x8 group, and compute 1 sample for each
-        for(uint64 groupTexelIdxX = 0; groupTexelIdxX < BakeGroupSizeX; ++groupTexelIdxX)
+        for(glm::uint64 groupTexelIdxX = 0; groupTexelIdxX < BakeGroupSizeX; ++groupTexelIdxX)
         {
-            for(uint64 groupTexelIdxY = 0; groupTexelIdxY < BakeGroupSizeY; ++groupTexelIdxY)
+            for(glm::uint64 groupTexelIdxY = 0; groupTexelIdxY < BakeGroupSizeY; ++groupTexelIdxY)
             {
-                const uint64 groupTexelIdx = groupTexelIdxY * BakeGroupSizeX + groupTexelIdxX;
+                const glm::uint64 groupTexelIdx = groupTexelIdxY * BakeGroupSizeX + groupTexelIdxX;
 
                 // Compute the absolute indices of the texel we're going to work on
-                const uint64 texelIdxX = groupIdxX * BakeGroupSizeX + groupTexelIdxX;
-                const uint64 texelIdxY = groupIdxY * BakeGroupSizeY + groupTexelIdxY;
-                const uint64 texelIdx = texelIdxY * context.CurrLightMapSize + texelIdxX;
+                const glm::uint64 texelIdxX = grouMoYu::f::PIdxX * BakeGroupSizeX + groupTexelIdxX;
+                const glm::uint64 texelIdxY = grouMoYu::f::PIdxY * BakeGroupSizeY + groupTexelIdxY;
+                const glm::uint64 texelIdx = texelIdxY * context.CurrLightMapSize + texelIdxX;
                 if(texelIdxX >= context.CurrLightMapSize || texelIdxY >= context.CurrLightMapSize)
                     continue;
 
@@ -698,40 +691,40 @@ template<typename TBaker> static bool BakeDriver(BakeThreadContext& context, TBa
                 if(bakePoint.Coverage == 0 || bakePoint.Coverage == 0xFFFFFFFF)
                     continue;
 
-                Float4 texelResults[TBaker::BasisCount];
+                glm::float4 texelResults[TBaker::BasisCount];
                 if(sampleIdx > 0)
                 {
-                    for(uint64 basisIdx = 0; basisIdx < TBaker::BasisCount; ++basisIdx)
+                    for(glm::uint64 basisIdx = 0; basisIdx < TBaker::BasisCount; ++basisIdx)
                         texelResults[basisIdx] = context.BakeOutput[basisIdx][texelIdx];
                 }
 
-                // The baker only accumulates one sample per pixel in progressive rendering.
+                // The baker only accumulates one sample per MoYu::f::PIxel in progressive rendering.
                 baker.Init(1, texelResults);
 
                 IntegrationSampleSet sampleSet;
                 sampleSet.Init(integrationSamples, groupTexelIdx, sampleIdx);
 
-                Float3x3 tangentFrame;
+                glm::float3x3 tangentFrame;
                 tangentFrame.SetXBasis(bakePoint.Tangent);
                 tangentFrame.SetYBasis(bakePoint.Bitangent);
                 tangentFrame.SetZBasis(bakePoint.Normal);
 
                 // Create a random ray direction in tangent space, then convert to world space
-                Float3 rayStart = bakePoint.Position;
-                Float3 rayDirTS = baker.SampleDirection(sampleSet.Pixel());
-                Float3 rayDirWS = Float3::Transform(rayDirTS, tangentFrame);
-                rayDirWS = Float3::Normalize(rayDirWS);
+                glm::float3 rayStart = bakePoint.Position;
+                glm::float3 rayDirTS = baker.SampleDirection(sampleSet.MoYu::f::PIxel());
+                glm::float3 rayDirWS = glm::float3::Transform(rayDirTS, tangentFrame);
+                rayDirWS = glm::normalize(rayDirWS);
 
-                Float3 sampleResult = 0.0f;
+                glm::float3 sampleResult = 0.0f;
 
-                Float2 directAreaLightSample = sampleSet.Lens();
+                glm::float2 directAreaLightSample = sampleSet.Lens();
                 if(addAreaLight && directAreaLightSample.x >= 0.5f)
                 {
-                    Float3 areaLightIrradiance;
+                    glm::float3 areaLightIrradiance;
                     sampleResult = SampleAreaLight(bakePoint.Position, bakePoint.Normal, context.SceneBVH->Scene,
                                                    1.0f, 0.0f, false, 0.0f, 1.0f, sampleSet.Lens().x,
                                                    sampleSet.Lens().y, areaLightIrradiance, rayDirWS);
-                    rayDirTS = Float3::Transform(rayDirWS, Float3x3::Transpose(tangentFrame));
+                    rayDirTS = glm::float3::Transform(rayDirWS, glm::float3x3::Transpose(tangentFrame));
                 }
                 else
                 {
@@ -746,7 +739,7 @@ template<typename TBaker> static bool BakeDriver(BakeThreadContext& context, TBa
 
                     if(AppSettings::BakeDirectSunLight)
                     {
-                        Float3 sunLightIrradiance;
+                        glm::float3 sunLightIrradiance;
                         sampleResult += SampleSunLight(bakePoint.Position, bakePoint.Normal, context.SceneBVH->Scene,
                             1.0f, 0.0f, false, 0.0f, 1.0f, sampleSet.Lens().x,
                             sampleSet.Lens().y, sunLightIrradiance);
@@ -764,24 +757,24 @@ template<typename TBaker> static bool BakeDriver(BakeThreadContext& context, TBa
 
                 baker.ProgressiveResult(texelResults, sampleIdx);
 
-                for(uint64 basisIdx = 0; basisIdx < TBaker::BasisCount; ++basisIdx)
+                for(glm::uint64 basisIdx = 0; basisIdx < TBaker::BasisCount; ++basisIdx)
                     context.BakeOutput[basisIdx][texelIdx] = texelResults[basisIdx];
             }
         }
     }
     else
     {
-        Float4 texelResults[TBaker::BasisCount];
+        glm::float4 texelResults[TBaker::BasisCount];
         baker.Init(numSamplesPerTexel, texelResults);
 
         // Figure out the texel within the group that we're working on (we do 64 passes per group, each one a different texel)
-        const uint64 groupTexelIdx =  batchIdx / numBakeGroups;
-        const uint64 groupTexelIdxX = groupTexelIdx % BakeGroupSizeX;
-        const uint64 groupTexelIdxY = groupTexelIdx / BakeGroupSizeX;
+        const glm::uint64 groupTexelIdx =  batchIdx / numBakeGroups;
+        const glm::uint64 groupTexelIdxX = groupTexelIdx % BakeGroupSizeX;
+        const glm::uint64 groupTexelIdxY = groupTexelIdx / BakeGroupSizeX;
 
-        const uint64 texelIdxX = groupIdxX * BakeGroupSizeX + groupTexelIdxX;
-        const uint64 texelIdxY = groupIdxY * BakeGroupSizeY + groupTexelIdxY;
-        const uint64 texelIdx = texelIdxY * context.CurrLightMapSize + texelIdxX;
+        const glm::uint64 texelIdxX = grouMoYu::f::PIdxX * BakeGroupSizeX + groupTexelIdxX;
+        const glm::uint64 texelIdxY = grouMoYu::f::PIdxY * BakeGroupSizeY + groupTexelIdxY;
+        const glm::uint64 texelIdx = texelIdxY * context.CurrLightMapSize + texelIdxX;
         if(texelIdxX >= context.CurrLightMapSize || texelIdxY >= context.CurrLightMapSize)
             return true;
 
@@ -791,32 +784,32 @@ template<typename TBaker> static bool BakeDriver(BakeThreadContext& context, TBa
         if(bakePoint.Coverage == 0 || bakePoint.Coverage == 0xFFFFFFFF)
             return true;
 
-        Float3x3 tangentFrame;
+        glm::float3x3 tangentFrame;
         tangentFrame.SetXBasis(bakePoint.Tangent);
         tangentFrame.SetYBasis(bakePoint.Bitangent);
         tangentFrame.SetZBasis(bakePoint.Normal);
 
-        for(uint64 sampleIdx = 0; sampleIdx < numSamplesPerTexel; ++sampleIdx)
+        for(glm::uint64 sampleIdx = 0; sampleIdx < numSamplesPerTexel; ++sampleIdx)
         {
             IntegrationSampleSet sampleSet;
             sampleSet.Init(integrationSamples, groupTexelIdx, sampleIdx);
 
             // Create a random ray direction in tangent space, then convert to world space
-            Float3 rayStart = bakePoint.Position;
-            Float3 rayDirTS = baker.SampleDirection(sampleSet.Pixel());
-            Float3 rayDirWS = Float3::Transform(rayDirTS, tangentFrame);
-            rayDirWS = Float3::Normalize(rayDirWS);
+            glm::float3 rayStart = bakePoint.Position;
+            glm::float3 rayDirTS = baker.SampleDirection(sampleSet.MoYu::f::PIxel());
+            glm::float3 rayDirWS = glm::float3::Transform(rayDirTS, tangentFrame);
+            rayDirWS = glm::normalize(rayDirWS);
 
-            Float3 sampleResult;
+            glm::float3 sampleResult;
 
-            Float2 directAreaLightSample = sampleSet.Lens();
+            glm::float2 directAreaLightSample = sampleSet.Lens();
             if(addAreaLight && directAreaLightSample.x >= 0.5f)
             {
-                Float3 areaLightIrradiance;
+                glm::float3 areaLightIrradiance;
                 sampleResult += SampleAreaLight(bakePoint.Position, bakePoint.Normal, context.SceneBVH->Scene,
                                                 1.0f, 0.0f, false, 0.0f, 1.0f, sampleSet.Lens().x,
                                                 sampleSet.Lens().y, areaLightIrradiance, rayDirWS);
-                rayDirTS = Float3::Transform(rayDirWS, Float3x3::Transpose(tangentFrame));
+                rayDirTS = glm::float3::Transform(rayDirWS, glm::float3x3::Transpose(tangentFrame));
             }
             else
             {
@@ -831,7 +824,7 @@ template<typename TBaker> static bool BakeDriver(BakeThreadContext& context, TBa
 
                 if(AppSettings::BakeDirectSunLight)
                 {
-                    Float3 sunLightIrradiance;
+                    glm::float3 sunLightIrradiance;
                     sampleResult += SampleSunLight(bakePoint.Position, bakePoint.Normal, context.SceneBVH->Scene,
                         1.0f, 0.0f, false, 0.0f, 1.0f, sampleSet.Lens().x,
                         sampleSet.Lens().y, sunLightIrradiance);
@@ -849,21 +842,21 @@ template<typename TBaker> static bool BakeDriver(BakeThreadContext& context, TBa
         }
 
         baker.FinalResult(texelResults);
-        for(uint64 basisIdx = 0; basisIdx < TBaker::BasisCount; ++basisIdx)
+        for(glm::uint64 basisIdx = 0; basisIdx < TBaker::BasisCount; ++basisIdx)
             context.BakeOutput[basisIdx][texelIdx] = texelResults[basisIdx];
 
         // Temporarily fill in the rest of the texels in the group
-        for(uint64 i = groupTexelIdx; i < BakeGroupSize; ++i)
+        for(glm::uint64 i = groupTexelIdx; i < BakeGroupSize; ++i)
         {
-            const uint64 offsetX = i % BakeGroupSizeX;
-            const uint64 offsetY = i / BakeGroupSizeX;
-            const uint64 neighborX = groupIdxX * BakeGroupSizeX + offsetX;
-            const uint64 neighborY = groupIdxY * BakeGroupSizeY + offsetY;
+            const glm::uint64 offsetX = i % BakeGroupSizeX;
+            const glm::uint64 offsetY = i / BakeGroupSizeX;
+            const glm::uint64 neighborX = grouMoYu::f::PIdxX * BakeGroupSizeX + offsetX;
+            const glm::uint64 neighborY = grouMoYu::f::PIdxY * BakeGroupSizeY + offsetY;
             if(neighborX >= context.CurrLightMapSize || neighborY >= context.CurrLightMapSize)
                 continue;
 
-            uint64 neighborTexelIdx = neighborY * context.CurrLightMapSize + neighborX;
-            for(uint64 basisIdx = 0; basisIdx < TBaker::BasisCount; ++basisIdx)
+            glm::uint64 neighborTexelIdx = neighborY * context.CurrLightMapSize + neighborX;
+            for(glm::uint64 basisIdx = 0; basisIdx < TBaker::BasisCount; ++basisIdx)
                 context.BakeOutput[basisIdx][neighborTexelIdx] = texelResults[basisIdx];
         }
     }
@@ -874,7 +867,7 @@ template<typename TBaker> static bool BakeDriver(BakeThreadContext& context, TBa
 // Data passed to the bake thread entry point
 struct BakeThreadData
 {
-    FixedArray<Float4>* BakeOutput = nullptr;
+    FixedArray<glm::float4>* BakeOutput = nullptr;
     const std::vector<IntegrationSamples>* Samples = nullptr;
     volatile int64* CurrBatch = nullptr;
     const MeshBaker* Baker = nullptr;
@@ -891,7 +884,7 @@ template<typename TBaker> uint32 __stdcall BakeThread(void* data)
 
     while(meshBaker->killBakeThreads == false)
     {
-        const uint64 currTag = meshBaker->bakeTag;
+        const glm::uint64 currTag = meshBaker->bakeTag;
         if(context.BakeTag != currTag)
             context.Init(threadData->BakeOutput, threadData->Samples,
                          threadData->CurrBatch, threadData->Baker, currTag);
@@ -918,7 +911,7 @@ static void BuildBVH(const Model& model, BVHData& bvhData, ID3D11Device* d3dDevi
     // Count the total number of vertices and triangles
     uint32 totalNumVertices = 0;
     uint32 totalNumTriangles = 0;
-    for(uint64 i = 0; i < model.Meshes().size(); ++i)
+    for(glm::uint64 i = 0; i < model.Meshes().size(); ++i)
     {
         const Mesh& mesh = model.Meshes()[i];
         Assert_(mesh.VertexStride() == sizeof(Vertex));
@@ -929,13 +922,13 @@ static void BuildBVH(const Model& model, BVHData& bvhData, ID3D11Device* d3dDevi
     bvhData.Triangles.resize(totalNumTriangles);
     bvhData.Vertices.resize(totalNumVertices);
     bvhData.MaterialIndices.resize(totalNumTriangles);
-    std::vector<Float4> vertices(totalNumVertices);
+    std::vector<glm::float4> vertices(totalNumVertices);
 
     uint32 vtxOffset = 0;
     uint32 triOffset = 0;
 
     // Add the data for each mesh
-    for(uint64 meshIdx = 0; meshIdx < model.Meshes().size(); ++meshIdx)
+    for(glm::uint64 meshIdx = 0; meshIdx < model.Meshes().size(); ++meshIdx)
     {
         const Mesh& mesh = model.Meshes()[meshIdx];
         const Vertex* vertexData = reinterpret_cast<const Vertex*>(mesh.Vertices());
@@ -947,7 +940,7 @@ static void BuildBVH(const Model& model, BVHData& bvhData, ID3D11Device* d3dDevi
 
         // Prepare the triangles
         const uint32 numTriangles = numIndices / 3;
-        for(uint64 partIdx = 0; partIdx < mesh.MeshParts().size(); ++partIdx)
+        for(glm::uint64 partIdx = 0; partIdx < mesh.MeshParts().size(); ++partIdx)
         {
             const MeshPart& meshPart = mesh.MeshParts()[partIdx];
             const uint32 startTriangle = meshPart.IndexStart / 3;
@@ -966,8 +959,8 @@ static void BuildBVH(const Model& model, BVHData& bvhData, ID3D11Device* d3dDevi
         // Prepare the vertices
         for(uint32 i = 0; i < numVertices; ++i)
         {
-            const Float3& position = vertexData[i].Position;
-            vertices[i + vtxOffset] = Float4(position, 0.0f);
+            const glm::float3& position = vertexData[i].Position;
+            vertices[i + vtxOffset] = glm::float4(position, 0.0f);
             bvhData.Vertices[i + vtxOffset] = vertexData[i];
         }
 
@@ -977,8 +970,8 @@ static void BuildBVH(const Model& model, BVHData& bvhData, ID3D11Device* d3dDevi
 
     uint32 geoID = rtcNewTriangleMesh(bvhData.Scene, RTC_GEOMETRY_STATIC, totalNumTriangles, totalNumVertices);
 
-    Float4* meshVerts = reinterpret_cast<Float4*>(rtcMapBuffer(bvhData.Scene, geoID, RTC_VERTEX_BUFFER));
-    memcpy(meshVerts, vertices.data(), totalNumVertices * sizeof(Float4));
+    glm::float4* meshVerts = reinterpret_cast<glm::float4*>(rtcMapBuffer(bvhData.Scene, geoID, RTC_VERTEX_BUFFER));
+    memcpy(meshVerts, vertices.data(), totalNumVertices * sizeof(glm::float4));
     rtcUnmapBuffer(bvhData.Scene, geoID, RTC_VERTEX_BUFFER);
 
     Uint3* meshTriangles = reinterpret_cast<Uint3*>(rtcMapBuffer(bvhData.Scene, geoID, RTC_INDEX_BUFFER));
@@ -993,13 +986,13 @@ static void BuildBVH(const Model& model, BVHData& bvhData, ID3D11Device* d3dDevi
         throw Exception(L"Failed to build embree scene!");
 
     // Load the material texture data
-    const uint64 numMaterials = model.Materials().size();
+    const glm::uint64 numMaterials = model.Materials().size();
     bvhData.MaterialDiffuseMaps.resize(numMaterials);
     bvhData.MaterialNormalMaps.resize(numMaterials);
     bvhData.MaterialRoughnessMaps.resize(numMaterials);
     bvhData.MaterialMetallicMaps.resize(numMaterials);
 
-    for(uint64 i = 0; i < numMaterials; ++i)
+    for(glm::uint64 i = 0; i < numMaterials; ++i)
     {
         const MeshMaterial& material = model.Materials()[i];
         GetTextureData(d3dDevice, material.DiffuseMap, bvhData.MaterialDiffuseMaps[i]);
@@ -1014,7 +1007,7 @@ static void ExtractBakePoints(const BakeInputData& bakeInput, std::vector<BakePo
                               std::vector<GutterTexel>& gutterTexels)
 {
     const uint32 LightMapSize = AppSettings::LightMapResolution;
-    const uint64 NumTexels = LightMapSize * LightMapSize;
+    const glm::uint64 NumTexels = LightMapSize * LightMapSize;
 
     bakePoints.clear();
     bakePoints.resize(NumTexels);
@@ -1040,24 +1033,24 @@ static void ExtractBakePoints(const BakeInputData& bakeInput, std::vector<BakePo
 
     RenderTarget2D targets[NumTargets];
     RenderTarget2D msaaTargets[NumTargets];
-    for(uint64 i = 0; i < NumTargets; ++i)
+    for(glm::uint64 i = 0; i < NumTargets; ++i)
     {
         targets[i].Initialize(bakeInput.Device, LightMapSize, LightMapSize, RTFormats[i]);
         msaaTargets[i].Initialize(bakeInput.Device, LightMapSize, LightMapSize, RTFormats[i], 1, 8, 0);
     }
 
     ID3D11RenderTargetView* rtViews[NumTargets];
-    for(uint64 i = 0; i < NumTargets; ++i)
+    for(glm::uint64 i = 0; i < NumTargets; ++i)
         rtViews[i] = msaaTargets[i].RTView;
 
     context->OMSetRenderTargets(NumTargets, rtViews, nullptr);
 
     float clearColor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
-    for(uint64 i = 0; i < NumTargets; ++i)
+    for(glm::uint64 i = 0; i < NumTargets; ++i)
         context->ClearRenderTargetView(rtViews[i], clearColor);
 
-    VertexShaderPtr vs = CompileVSFromFile(device, L"LightMapRasterization.hlsl");
-    PixelShaderPtr ps = CompilePSFromFile(device, L"LightMapRasterization.hlsl");
+    VertexShaderPtr vs = ComMoYu::f::PIleVSFromFile(device, L"LightMapRasterization.hlsl");
+    MoYu::f::PIxelShaderPtr ps = ComMoYu::f::PIlePSFromFile(device, L"LightMapRasterization.hlsl");
 
     context->VSSetShader(vs, nullptr, 0);
     context->GSSetShader(nullptr, nullptr, 0);
@@ -1095,7 +1088,7 @@ static void ExtractBakePoints(const BakeInputData& bakeInput, std::vector<BakePo
 
     const Model& model = *bakeInput.SceneModel;
     const std::vector<Mesh>& meshes = model.Meshes();
-    for(uint64 meshIdx = 0; meshIdx < meshes.size(); ++meshIdx)
+    for(glm::uint64 meshIdx = 0; meshIdx < meshes.size(); ++meshIdx)
     {
         const Mesh& mesh = meshes[meshIdx];
 
@@ -1121,12 +1114,12 @@ static void ExtractBakePoints(const BakeInputData& bakeInput, std::vector<BakePo
     }
 
     // Resolve the targets
-    VertexShaderPtr resolveVS = CompileVSFromFile(device, L"LightMapRasterization.hlsl", "ResolveVS");
-    PixelShaderPtr resolvePS = CompilePSFromFile(device, L"LightMapRasterization.hlsl", "ResolvePS");
+    VertexShaderPtr resolveVS = ComMoYu::f::PIleVSFromFile(device, L"LightMapRasterization.hlsl", "ResolveVS");
+    MoYu::f::PIxelShaderPtr resolvePS = ComMoYu::f::PIlePSFromFile(device, L"LightMapRasterization.hlsl", "ResolvePS");
     context->VSSetShader(resolveVS, nullptr, 0);
     context->PSSetShader(resolvePS, nullptr, 0);
 
-    for(uint64 i = 0; i < NumTargets; ++i)
+    for(glm::uint64 i = 0; i < NumTargets; ++i)
         rtViews[i] = targets[i].RTView;
     context->OMSetRenderTargets(NumTargets, rtViews, nullptr);
 
@@ -1140,7 +1133,7 @@ static void ExtractBakePoints(const BakeInputData& bakeInput, std::vector<BakePo
     context->IASetVertexBuffers(0, 1, vertexBuffers, vertexStrides, offsets);
 
     ID3D11ShaderResourceView* srViews[NumTargets];
-    for(uint64 i = 0; i < NumTargets; ++i)
+    for(glm::uint64 i = 0; i < NumTargets; ++i)
         srViews[i] = msaaTargets[i].SRView;
     context->PSSetShaderResources(0, NumTargets, srViews);
 
@@ -1150,7 +1143,7 @@ static void ExtractBakePoints(const BakeInputData& bakeInput, std::vector<BakePo
     context->GSSetShader(nullptr, nullptr, 0);
     context->PSSetShader(nullptr, nullptr, 0);
 
-    for(uint64 i = 0; i < NumTargets; ++i)
+    for(glm::uint64 i = 0; i < NumTargets; ++i)
     {
         rtViews[i] = nullptr;
         srViews[i] = nullptr;
@@ -1161,25 +1154,25 @@ static void ExtractBakePoints(const BakeInputData& bakeInput, std::vector<BakePo
 
     // Read back the results, and extract the sample points
     StagingTexture2D stagingTextures[NumTargets];
-    uint32 pitches[5] = { 0 };
+    uint32 MoYu::f::PItches[5] = { 0 };
     const uint8* textureData[5] = { nullptr };
-    for(uint64 i = 0; i < NumTargets; ++i)
+    for(glm::uint64 i = 0; i < NumTargets; ++i)
     {
         stagingTextures[i].Initialize(device, LightMapSize, LightMapSize, RTFormats[i]);
         context->CopyResource(stagingTextures[i].Texture, targets[i].Texture);
-        textureData[i] = reinterpret_cast<uint8*>(stagingTextures[i].Map(context, 0, pitches[i]));
+        textureData[i] = reinterpret_cast<uint8*>(stagingTextures[i].Map(context, 0, MoYu::f::PItches[i]));
     }
 
     for(uint32 y = 0; y < LightMapSize; ++y)
     {
-        const Float4* positions = reinterpret_cast<const Float4*>(textureData[0] + y * pitches[0]);
-        const Float4* normals = reinterpret_cast<const Float4*>(textureData[1] + y * pitches[1]);
-        const Float4* tangents = reinterpret_cast<const Float4*>(textureData[2] + y * pitches[2]);
-        const Float4* bitangents = reinterpret_cast<const Float4*>(textureData[3] + y * pitches[3]);
-        const uint32* coverage = reinterpret_cast<const uint32*>(textureData[4] + y * pitches[4]);
+        const glm::float4* positions = reinterpret_cast<const glm::float4*>(textureData[0] + y * MoYu::f::PItches[0]);
+        const glm::float4* normals = reinterpret_cast<const glm::float4*>(textureData[1] + y * MoYu::f::PItches[1]);
+        const glm::float4* tangents = reinterpret_cast<const glm::float4*>(textureData[2] + y * MoYu::f::PItches[2]);
+        const glm::float4* bitangents = reinterpret_cast<const glm::float4*>(textureData[3] + y * MoYu::f::PItches[3]);
+        const uint32* coverage = reinterpret_cast<const uint32*>(textureData[4] + y * MoYu::f::PItches[4]);
         for(uint32 x = 0; x < LightMapSize; ++x)
         {
-            const uint64 pointIdx = y * LightMapSize + x;
+            const glm::uint64 pointIdx = y * LightMapSize + x;
             BakePoint& bakePoint = bakePoints[pointIdx];
 
             if(coverage[x] != 0)
@@ -1189,16 +1182,16 @@ static void ExtractBakePoints(const BakeInputData& bakeInput, std::vector<BakePo
                 bakePoint.Normal = normals[x].To3D();
                 bakePoint.Tangent = tangents[x].To3D();
                 bakePoint.Bitangent = bitangents[x].To3D();
-                bakePoint.Size = Float2(positions[x].w, normals[x].w);
+                bakePoint.Size = glm::float2(positions[x].w, normals[x].w);
                 bakePoint.Coverage = coverage[x];
-                bakePoint.TexelPos = Uint2(x, y);
+                bakePoint.TexelPos = glm::uint2(x, y);
                 bakePoints.push_back(bakePoint);
             }
             else
             {
                 // Check if this is a gutter texel that needs to replicate its value from a neighbor
                 GutterTexel gutterTexel;
-                gutterTexel.TexelPos = Uint2(x, y);
+                gutterTexel.TexelPos = glm::uint2(x, y);
                 int32 currDist = 0;
                 bool foundNeighbor = false;
 
@@ -1222,11 +1215,11 @@ static void ExtractBakePoints(const BakeInputData& bakeInput, std::vector<BakePo
                         if(foundNeighbor && dist >= currDist)
                             continue;
 
-                        int32 offset = neighborY * pitches[4] + neighborX * sizeof(uint32);
+                        int32 offset = neighborY * MoYu::f::PItches[4] + neighborX * sizeof(uint32);
                         const uint32 neighborCoverage = *reinterpret_cast<const uint32*>(textureData[4] + offset);
                         if(neighborCoverage != 0)
                         {
-                            gutterTexel.NeighborPos = Uint2(neighborX, neighborY);
+                            gutterTexel.NeighborPos = glm::uint2(neighborX, neighborY);
                             foundNeighbor = true;
                             currDist = dist;
                         }
@@ -1244,7 +1237,7 @@ static void ExtractBakePoints(const BakeInputData& bakeInput, std::vector<BakePo
         }
     }
 
-    for(uint64 i = 0; i < NumTargets; ++i)
+    for(glm::uint64 i = 0; i < NumTargets; ++i)
         stagingTextures[i].Unmap(context, 0);
 
 
@@ -1257,20 +1250,20 @@ static void ExtractBakePoints(const BakeInputData& bakeInput, std::vector<BakePo
 // Data uses by the ground truth render thread
 struct RenderThreadContext
 {
-    uint64 RenderTag = uint64(-1);
+    glm::uint64 RenderTag = glm::uint64(-1);
     SkyCache SkyCache;
     const BVHData* SceneBVH = nullptr;
     const TextureData<Half4>* EnvMaps = nullptr;
     uint32 OutputWidth;
     uint32 OutputHeight;
-    Float3 CameraPos;
+    glm::float3 CameraPos;
     Quaternion CameraOrientation;
-    Float4x4 Proj;
-    Float4x4 ViewProjInv;
-    uint64 CurrNumTiles;
+    glm::float4x4 Proj;
+    glm::float4x4 ViewProjInv;
+    glm::uint64 CurrNumTiles;
     Random RandomGenerator;
     SampleModes CurrSampleMode = SampleModes::Random;
-    uint64 CurrNumSamples = 0;
+    glm::uint64 CurrNumSamples = 0;
     const std::vector<IntegrationSamples>* Samples;
     FixedArray<Half4>* RenderBuffer = nullptr;
     FixedArray<float>* RenderWeightBuffer = nullptr;
@@ -1278,9 +1271,9 @@ struct RenderThreadContext
 
     void Init(FixedArray<Half4>* renderBuffer, FixedArray<float>* renderWeightBuffer,
               const std::vector<IntegrationSamples>* samples,
-              volatile int64* currTile, const MeshBaker* meshBaker, uint64 newTag)
+              volatile int64* currTile, const MeshBaker* meshBaker, glm::uint64 newTag)
     {
-        if(RenderTag == uint64(-1))
+        if(RenderTag == glm::uint64(-1))
             RandomGenerator.SeedWithRandomValue();
 
         RenderTag = newTag;
@@ -1304,38 +1297,38 @@ struct RenderThreadContext
 };
 
 // Runs a single iteration of the ground truth render thread. This function will compute
-// a single radiance for every pixel within a tile, and blend with with the previous result.
+// a single radiance for every MoYu::f::PIxel within a tile, and blend with with the previous result.
 static bool RenderDriver(RenderThreadContext& context)
 {
     if(context.CurrNumTiles == 0)
         return false;
 
-    const uint64 tileIdx = InterlockedIncrement64(context.CurrTile) - 1;
-    const uint64 passIdx = tileIdx / context.CurrNumTiles;
-    const uint64 passTileIdx = tileIdx % context.CurrNumTiles;
+    const glm::uint64 tileIdx = InterlockedIncrement64(context.CurrTile) - 1;
+    const glm::uint64 passIdx = tileIdx / context.CurrNumTiles;
+    const glm::uint64 passTileIdx = tileIdx % context.CurrNumTiles;
 
-    const uint64 sqrtNumSamples = context.CurrNumSamples;
-    const uint64 numSamplesPerPixel = sqrtNumSamples * sqrtNumSamples;
-    if(passIdx >= numSamplesPerPixel)
+    const glm::uint64 sqrtNumSamples = context.CurrNumSamples;
+    const glm::uint64 numSamplesPerMoYu::f::PIxel = sqrtNumSamples * sqrtNumSamples;
+    if(passIdx >= numSamplesPerMoYu::f::PIxel)
         return false;
 
-    const uint64 numPixelsPerTile = TileSize * TileSize;
+    const glm::uint64 numMoYu::f::PIxelsPerTile = TileSize * TileSize;
 
-    const Float4x4 viewProjInv = context.ViewProjInv;
-    const uint64 screenWidth = context.OutputWidth;
-    const uint64 screenHeight = context.OutputHeight;
-    const uint64 numTilesX = (screenWidth + (TileSize - 1)) / TileSize;
-    const uint64 numTilesY = (screenHeight + (TileSize - 1)) / TileSize;
-    const uint64 tileX = passTileIdx % numTilesX;
-    const uint64 tileY = passTileIdx / numTilesX;
-    const uint64 startX = tileX * TileSize;
-    const uint64 startY = tileY * TileSize;
-    const uint64 endX = std::min(startX + TileSize, screenWidth);
-    const uint64 endY = std::min(startY + TileSize, screenHeight);
+    const glm::float4x4 viewProjInv = context.ViewProjInv;
+    const glm::uint64 screenWidth = context.OutputWidth;
+    const glm::uint64 screenHeight = context.OutputHeight;
+    const glm::uint64 numTilesX = (screenWidth + (TileSize - 1)) / TileSize;
+    const glm::uint64 numTilesY = (screenHeight + (TileSize - 1)) / TileSize;
+    const glm::uint64 tileX = passTileIdx % numTilesX;
+    const glm::uint64 tileY = passTileIdx / numTilesX;
+    const glm::uint64 startX = tileX * TileSize;
+    const glm::uint64 startY = tileY * TileSize;
+    const glm::uint64 endX = std::min(startX + TileSize, screenWidth);
+    const glm::uint64 endY = std::min(startY + TileSize, screenHeight);
 
-    const Float3x3 cameraRot = context.CameraOrientation.ToFloat3x3();
-    const Float3 cameraX = cameraRot.Right();
-    const Float3 cameraY = cameraRot.Up();
+    const glm::float3x3 cameraRot = context.CameraOrientation.Toglm::float3x3();
+    const glm::float3 cameraX = cameraRot.Right();
+    const glm::float3 cameraY = cameraRot.Up();
 
     const float focusDistance = AppSettings::FocusDistance;
     const float apertureSize = AppSettings::ApertureWidth;
@@ -1343,52 +1336,52 @@ static bool RenderDriver(RenderThreadContext& context)
     const float numSides = float(AppSettings::NumBlades);
     const float polyAmt = AppSettings::BokehPolygonAmount;
 
-    const uint64 passIdxX = passIdx % sqrtNumSamples;
-    const uint64 passIdxY = passIdx / sqrtNumSamples;
+    const glm::uint64 passIdxX = passIdx % sqrtNumSamples;
+    const glm::uint64 passIdxY = passIdx / sqrtNumSamples;
 
     const bool32 enableDOF = AppSettings::EnableDOF;
 
-    const uint64 numThreads = context.Samples->size();
+    const glm::uint64 numThreads = context.Samples->size();
     const IntegrationSamples& samples = (*context.Samples)[passTileIdx % numThreads];
 
     const int32 pathLength = AppSettings::EnableIndirectLighting ? AppSettings::MaxRenderPathLength : 2;
 
-    uint64 tilePixelIdx = 0;
-    for(uint64 y = startY; y < endY; ++y)
+    glm::uint64 tileMoYu::f::PIxelIdx = 0;
+    for(glm::uint64 y = startY; y < endY; ++y)
     {
-        for(uint64 x = startX; x < endX; ++x)
+        for(glm::uint64 x = startX; x < endX; ++x)
         {
-            const uint64 pixelIdx = (y * screenWidth + x);
+            const glm::uint64 MoYu::f::PIxelIdx = (y * screenWidth + x);
             IntegrationSampleSet sampleSet;
-            sampleSet.Init(samples, tilePixelIdx, passIdx);
+            sampleSet.Init(samples, tileMoYu::f::PIxelIdx, passIdx);
 
-            Float2 pixelSample = sampleSet.Pixel();
+            glm::float2 MoYu::f::PIxelSample = sampleSet.MoYu::f::PIxel();
 
-            Float3 rayStart;
-            Float3 rayDir;
+            glm::float3 rayStart;
+            glm::float3 rayDir;
             if(enableDOF)
             {
-                // Pick a random point on the lens to use for sampling. Use a mapping from unit square
+                // MoYu::f::PIck a random point on the lens to use for sampling. Use a mapMoYu::f::PIng from unit square
                 // to disc/polygon. We negate the position to make the sampling match the gather
                 // pattern used in the real-time shader.
-                Float2 lensSample = sampleSet.Lens();
-                const Float2 lensPos = SquareToConcentricDiskMapping(lensSample.x, lensSample.y, numSides, polyAmt) * apertureSize * -1.0f;
+                glm::float2 lensSample = sampleSet.Lens();
+                const glm::float2 lensPos = SquareToConcentricDiskMapMoYu::f::PIng(lensSample.x, lensSample.y, numSides, polyAmt) * apertureSize * -1.0f;
 
                 // Set up a ray going from the sensor through the lens.
                 rayStart = context.CameraPos + lensPos.x * cameraX + lensPos.y * cameraY;
-                float ncdX = (x + pixelSample.x) / (screenWidth / 2.0f) - 1.0f;
-                float ncdY = ((y + pixelSample.y) / (screenHeight / 2.0f) - 1.0f) * -1.0f;
-                float ncdZ = Float3::Transform(Float3(0.0f, 0.0f, focusDistance), context.Proj).z;
-                Float3 focusPoint = Float3::Transform(Float3(ncdX, ncdY, ncdZ), viewProjInv);
-                rayDir = Float3::Normalize(focusPoint - rayStart);
+                float ncdX = (x + MoYu::f::PIxelSample.x) / (screenWidth / 2.0f) - 1.0f;
+                float ncdY = ((y + MoYu::f::PIxelSample.y) / (screenHeight / 2.0f) - 1.0f) * -1.0f;
+                float ncdZ = glm::float3::Transform(glm::float3(0.0f, 0.0f, focusDistance), context.Proj).z;
+                glm::float3 focusPoint = glm::float3::Transform(glm::float3(ncdX, ncdY, ncdZ), viewProjInv);
+                rayDir = glm::normalize(focusPoint - rayStart);
             }
             else
             {
-                float ncdX = (x + pixelSample.x) / (screenWidth / 2.0f) - 1.0f;
-                float ncdY = ((y + pixelSample.y) / (screenHeight / 2.0f) - 1.0f) * -1.0f;
-                rayStart = Float3::Transform(Float3(ncdX, ncdY, 0.0f), viewProjInv);
-                Float3 rayEnd = Float3::Transform(Float3(ncdX, ncdY, 1.0f), viewProjInv);
-                rayDir = Float3::Normalize(rayEnd - rayStart);
+                float ncdX = (x + MoYu::f::PIxelSample.x) / (screenWidth / 2.0f) - 1.0f;
+                float ncdY = ((y + MoYu::f::PIxelSample.y) / (screenHeight / 2.0f) - 1.0f) * -1.0f;
+                rayStart = glm::float3::Transform(glm::float3(ncdX, ncdY, 0.0f), viewProjInv);
+                glm::float3 rayEnd = glm::float3::Transform(glm::float3(ncdX, ncdY, 1.0f), viewProjInv);
+                rayDir = glm::normalize(rayEnd - rayStart);
             }
 
             float illuminance = 0.0f;
@@ -1411,19 +1404,19 @@ static bool RenderDriver(RenderThreadContext& context)
             params.MaxPathLength = pathLength;
             params.RussianRouletteDepth = AppSettings::RenderRussianRouletteDepth;
             params.RussianRouletteProbability = AppSettings::RenderRussianRouletteProbability;
-            Float3 radiance = PathTrace(params, context.RandomGenerator, illuminance, hitSky);
+            glm::float3 radiance = PathTrace(params, context.RandomGenerator, illuminance, hitSky);
 
             FixedArray<Half4>& renderBuffer = *context.RenderBuffer;
             FixedArray<float>& renderWeightBuffer = *context.RenderWeightBuffer;
-            Float4 oldValue = renderBuffer[pixelIdx].ToFloat4();
+            glm::float4 oldValue = renderBuffer[MoYu::f::PIxelIdx].Toglm::float4();
 
-            float oldWeight = passIdx > 0 ? renderWeightBuffer[pixelIdx] : 0.0f;
-            Float4 newValue = (oldValue * oldWeight) + Float4(radiance, illuminance);
+            float oldWeight = passIdx > 0 ? renderWeightBuffer[MoYu::f::PIxelIdx] : 0.0f;
+            glm::float4 newValue = (oldValue * oldWeight) + glm::float4(radiance, illuminance);
             float newWeight = oldWeight + 1.0f;
-            renderBuffer[pixelIdx] = Float4::Clamp(newValue / newWeight, 0.0f, FP16Max);
-            renderWeightBuffer[pixelIdx] = newWeight;
+            renderBuffer[MoYu::f::PIxelIdx] = glm::float4::Clamp(newValue / newWeight, 0.0f, FLT_MAX);
+            renderWeightBuffer[MoYu::f::PIxelIdx] = newWeight;
 
-            ++tilePixelIdx;
+            ++tileMoYu::f::PIxelIdx;
         }
     }
 
@@ -1450,7 +1443,7 @@ static uint32 __stdcall RenderThread(void* data)
 
     while(meshBaker->killRenderThreads == false)
     {
-        const uint64 currTag = meshBaker->renderTag;
+        const glm::uint64 currTag = meshBaker->renderTag;
         if(context.RenderTag != currTag)
             context.Init(threadData->RenderBuffer, threadData->RenderWeightBuffer, threadData->Samples,
                          threadData->CurrTile, threadData->Baker, currTag);
@@ -1464,11 +1457,11 @@ static uint32 __stdcall RenderThread(void* data)
 
 // == MeshBaker ===================================================================================
 
-static uint64 GetNumThreads()
+static glm::uint64 GetNumThreads()
 {
     SYSTEM_INFO sysInfo;
     GetSystemInfo(&sysInfo);
-    return std::max<uint64>(1, sysInfo.dwNumberOfProcessors - 1);
+    return std::max<glm::uint64>(1, sysInfo.dwNumberOfProcessors - 1);
 }
 
 MeshBaker::MeshBaker()
@@ -1483,7 +1476,7 @@ MeshBaker::~MeshBaker()
 void MeshBaker::Initialize(const BakeInputData& inputData)
 {
     input = inputData;
-    for(uint64 i = 0; i < AppSettings::NumCubeMaps; ++i)
+    for(glm::uint64 i = 0; i < AppSettings::NumCubeMaps; ++i)
         GetTextureData(input.Device, input.EnvMaps[i], input.EnvMapData[i]);
 
      // Init embree
@@ -1507,7 +1500,7 @@ void MeshBaker::Initialize(const BakeInputData& inputData)
     renderSamples.resize(numThreads);
     bakeSamples.resize(numThreads);
 
-    for(uint64 i = 0; i < numThreads; ++i)
+    for(glm::uint64 i = 0; i < numThreads; ++i)
     {
         GenerateIntegrationSamples(renderSamples[i], numRenderSamples, TileSize, TileSize,
                                    renderSampleMode, NumIntegrationTypes, rng);
@@ -1573,16 +1566,16 @@ MeshBakerStatus MeshBaker::Update(const Camera& camera, uint32 screenWidth, uint
             bakePointBuffer.Initialize(input.Device, sizeof(BakePoint), uint32(bakePoints.size()),
                                        false, false, false, bakePoints.data());
 
-            const uint64 basisCount = AppSettings::BasisCount(bakeMode);
-            const uint64 numTexels = lightMapSize * lightMapSize;
-            for(uint64 i = 0; i < AppSettings::MaxBasisCount; ++i)
+            const glm::uint64 basisCount = AppSettings::BasisCount(bakeMode);
+            const glm::uint64 numTexels = lightMapSize * lightMapSize;
+            for(glm::uint64 i = 0; i < AppSettings::MaxBasisCount; ++i)
                 bakeResults[i].Shutdown();
 
-            for(uint64 i = 0; i < basisCount; ++i)
+            for(glm::uint64 i = 0; i < basisCount; ++i)
                 bakeResults[i].Init(numTexels);
 
-            const uint64 numGroupsX = (lightMapSize + (BakeGroupSizeX - 1)) / BakeGroupSizeX;
-            const uint64 numGroupsY = (lightMapSize + (BakeGroupSizeY - 1)) / BakeGroupSizeY;
+            const glm::uint64 numGroupsX = (lightMapSize + (BakeGroupSizeX - 1)) / BakeGroupSizeX;
+            const glm::uint64 numGroupsY = (lightMapSize + (BakeGroupSizeY - 1)) / BakeGroupSizeY;
             if(AppSettings::SupportsProgressiveIntegration(bakeMode, solveMode))
                 currNumBakeBatches = numGroupsX * numGroupsY * AppSettings::NumBakeSamples * AppSettings::NumBakeSamples;
             else
@@ -1594,14 +1587,14 @@ MeshBakerStatus MeshBaker::Update(const Camera& camera, uint32 screenWidth, uint
             InterlockedIncrement64(&bakeTag);
             currBakeBatch = 0;
 
-            const uint64 sgCount = AppSettings::SGCount(currBakeMode);
+            const glm::uint64 sgCount = AppSettings::SGCount(currBakeMode);
             SGDistribution distribution = AppSettings::WorldSpaceBake ? SGDistribution::Spherical : SGDistribution::Hemispherical;
             if(sgCount > 0)
                 InitializeSGSolver(sgCount, distribution);
 
             const SG* initalGuess = InitialGuess();
             sgSharpness = initalGuess[0].Sharpness;
-            for(uint64  i = 0; i < sgCount; ++i)
+            for(glm::uint64  i = 0; i < sgCount; ++i)
                 sgDirections[i] = initalGuess[i].Axis;
 
             D3D11_TEXTURE2D_DESC texDesc;
@@ -1638,7 +1631,7 @@ MeshBakerStatus MeshBaker::Update(const Camera& camera, uint32 screenWidth, uint
             stagingDesc.BindFlags = 0;
             stagingDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
             stagingDesc.ArraySize = 1;
-            for(uint64 i = 0; i < NumStagingTextures; ++i)
+            for(glm::uint64 i = 0; i < NumStagingTextures; ++i)
                 DXCall(input.Device->CreateTexture2D(&stagingDesc, nullptr, &bakeStagingTextures[i]));
         }
 
@@ -1650,12 +1643,12 @@ MeshBakerStatus MeshBaker::Update(const Camera& camera, uint32 screenWidth, uint
             KillBakeThreads();
             KillRenderThreads();
 
-            for(uint64 i = 0; i < numThreads; ++i)
+            for(glm::uint64 i = 0; i < numThreads; ++i)
                 GenerateIntegrationSamples(bakeSamples[i], numBakeSamples, BakeGroupSize, 1,
                                            bakeSampleMode, NumIntegrationTypes, rng);
 
-            const uint64 numGroupsX = (lightMapSize + (BakeGroupSizeX - 1)) / BakeGroupSizeX;
-            const uint64 numGroupsY = (lightMapSize + (BakeGroupSizeY - 1)) / BakeGroupSizeY;
+            const glm::uint64 numGroupsX = (lightMapSize + (BakeGroupSizeX - 1)) / BakeGroupSizeX;
+            const glm::uint64 numGroupsY = (lightMapSize + (BakeGroupSizeY - 1)) / BakeGroupSizeY;
             if(AppSettings::SupportsProgressiveIntegration(bakeMode, solveMode))
                 currNumBakeBatches = numGroupsX * numGroupsY * AppSettings::NumBakeSamples * AppSettings::NumBakeSamples;
             else
@@ -1697,22 +1690,22 @@ MeshBakerStatus MeshBaker::Update(const Camera& camera, uint32 screenWidth, uint
             stagingDesc.Usage = D3D11_USAGE_STAGING;
             stagingDesc.BindFlags = 0;
             stagingDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-            for(uint64 i = 0; i < NumStagingTextures; ++i)
+            for(glm::uint64 i = 0; i < NumStagingTextures; ++i)
                 DXCall(input.Device->CreateTexture2D(&stagingDesc, nullptr, &renderStagingTextures[i]));
 
-            uint64 numTilesX = (screenWidth + (TileSize - 1)) / TileSize;
-            uint64 numTilesY = (screenHeight + (TileSize - 1)) / TileSize;
-            uint64 numTiles = numTilesX * numTilesY;
+            glm::uint64 numTilesX = (screenWidth + (TileSize - 1)) / TileSize;
+            glm::uint64 numTilesY = (screenHeight + (TileSize - 1)) / TileSize;
+            glm::uint64 numTiles = numTilesX * numTilesY;
             currNumTiles = numTiles;
 
-            currViewProjInv = Float4x4::Invert(camera.ViewProjectionMatrix());
+            currViewProjInv = glm::float4x4::Invert(camera.ViewProjectionMatrix());
 
             InterlockedIncrement64(&renderTag);
             currTile = 0;
 
-            const uint64 numPixels = numTiles * TileSize * TileSize;
-            renderBuffer.Init(numPixels);
-            renderWeightBuffer.Init(numPixels);
+            const glm::uint64 numMoYu::f::PIxels = numTiles * TileSize * TileSize;
+            renderBuffer.Init(numMoYu::f::PIxels);
+            renderWeightBuffer.Init(numMoYu::f::PIxels);
             renderWeightBuffer.Fill(0.0f);
 
         }
@@ -1725,7 +1718,7 @@ MeshBakerStatus MeshBaker::Update(const Camera& camera, uint32 screenWidth, uint
             KillBakeThreads();
             KillRenderThreads();
 
-            for(uint64 i = 0; i < numThreads; ++i)
+            for(glm::uint64 i = 0; i < numThreads; ++i)
                 GenerateIntegrationSamples(renderSamples[i], numRenderSamples, TileSize, TileSize,
                                            renderSampleMode, NumIntegrationTypes, rng);
 
@@ -1779,7 +1772,7 @@ MeshBakerStatus MeshBaker::Update(const Camera& camera, uint32 screenWidth, uint
         currCameraPos = camera.Position();
         currCameraOrientation = camera.Orientation();
         currProj = camera.ProjectionMatrix();
-        currViewProjInv = Float4x4::Invert(camera.ViewProjectionMatrix());
+        currViewProjInv = glm::float4x4::Invert(camera.ViewProjectionMatrix());
 
         InterlockedIncrement64(&renderTag);
         currTile = 0;
@@ -1788,7 +1781,7 @@ MeshBakerStatus MeshBaker::Update(const Camera& camera, uint32 screenWidth, uint
     if(AppSettings::EnableNormalMaps.Changed() || AppSettings::EnableDirectLighting.Changed()
         || AppSettings::EnableIndirectLighting.Changed() || AppSettings::RoughnessScale.Changed()
         || AppSettings::EnableIndirectDiffuse.Changed() || AppSettings::EnableIndirectSpecular.Changed()
-        || AppSettings::NormalMapIntensity.Changed() || AppSettings::NumRenderSamples.Changed()
+        || AppSettings::NormalMaMoYu::f::PIntensity.Changed() || AppSettings::NumRenderSamples.Changed()
         || AppSettings::RenderSampleMode.Changed() || AppSettings::FocalLength.Changed()
         || AppSettings::FilmSize.Changed() || AppSettings::EnableDOF.Changed()
         || AppSettings::FocalLength.Changed() || AppSettings::NumBlades.Changed()
@@ -1809,14 +1802,14 @@ MeshBakerStatus MeshBaker::Update(const Camera& camera, uint32 screenWidth, uint
     status.BakePoints = bakePointBuffer.SRView;
     status.NumBakePoints = bakePointBuffer.NumElements;
 
-    const uint64 sgCount = AppSettings::SGCount(currBakeMode);
-    for(uint64 i = 0; i < sgCount; ++i)
+    const glm::uint64 sgCount = AppSettings::SGCount(currBakeMode);
+    for(glm::uint64 i = 0; i < sgCount; ++i)
         status.SGDirections[i] = sgDirections[i];
     status.SGSharpness = sgCount > 0 ? sgSharpness : 0.0f;
 
     if(showGroundTruth)
     {
-        const uint64 numPasses = AppSettings::NumRenderSamples * AppSettings::NumRenderSamples;
+        const glm::uint64 numPasses = AppSettings::NumRenderSamples * AppSettings::NumRenderSamples;
         status.GroundTruthProgress = Saturate(currTile / float(numPasses * currNumTiles));
         status.BakeProgress = 1.0f;
         if(lastTileNum < currTile)
@@ -1832,10 +1825,10 @@ MeshBakerStatus MeshBaker::Update(const Camera& camera, uint32 screenWidth, uint
         {
             uint8* dst = reinterpret_cast<uint8*>(mapped.pData);
             const Half4* src = renderBuffer.Data();
-            for(uint64 y = 0; y < screenHeight; ++y)
+            for(glm::uint64 y = 0; y < screenHeight; ++y)
             {
                 memcpy(dst, src, sizeof(Half4) * screenWidth);
-                dst += mapped.RowPitch;
+                dst += mapped.RowMoYu::f::PItch;
                 src += screenWidth;
             }
 
@@ -1847,12 +1840,12 @@ MeshBakerStatus MeshBaker::Update(const Camera& camera, uint32 screenWidth, uint
     else
     {
         const uint32 LightMapSize = AppSettings::LightMapResolution;
-        const uint64 numPasses = AppSettings::NumBakeSamples * AppSettings::NumBakeSamples;
+        const glm::uint64 numPasses = AppSettings::NumBakeSamples * AppSettings::NumBakeSamples;
         status.BakeProgress = Saturate(currBakeBatch / (currNumBakeBatches - 1.0f));
         status.GroundTruthProgress = 1.0f;
         lastTileNum = INT64_MAX;
 
-        const uint64 basisCount = AppSettings::BasisCount(currBakeMode);
+        const glm::uint64 basisCount = AppSettings::BasisCount(currBakeMode);
         bakeStagingTextureIdx = (bakeStagingTextureIdx + 1) % NumStagingTextures;
         bakeTextureUpdateIdx = (bakeTextureUpdateIdx + 1) % basisCount;
         ID3D11Texture2D* stagingTexture = bakeStagingTextures[bakeStagingTextureIdx];
@@ -1862,22 +1855,22 @@ MeshBakerStatus MeshBaker::Update(const Camera& camera, uint32 screenWidth, uint
         if(SUCCEEDED(deviceContext->Map(stagingTexture, 0, D3D11_MAP_WRITE, 0, &mapped)))
         {
             Half4* dst = reinterpret_cast<Half4*>(mapped.pData);
-            const Float4* src = bakeResults[bakeTextureUpdateIdx].Data();
-            for(uint64 y = 0; y < LightMapSize; ++y)
+            const glm::float4* src = bakeResults[bakeTextureUpdateIdx].Data();
+            for(glm::uint64 y = 0; y < LightMapSize; ++y)
             {
-                for(uint64 x = 0; x < LightMapSize; ++x)
+                for(glm::uint64 x = 0; x < LightMapSize; ++x)
                     dst[x] = Half4(src[x]);
 
-                dst += mapped.RowPitch / sizeof(Half4);
+                dst += mapped.RowMoYu::f::PItch / sizeof(Half4);
                 src += LightMapSize;
             }
 
-            const uint64 numGutterTexels = gutterTexels.size();
-            for(uint64 i = 0; i < numGutterTexels; ++i)
+            const glm::uint64 numGutterTexels = gutterTexels.size();
+            for(glm::uint64 i = 0; i < numGutterTexels; ++i)
             {
                 const GutterTexel& gutterTexel = gutterTexels[i];
-                const uint64 srcIdx = gutterTexel.NeighborPos.y * LightMapSize + gutterTexel.NeighborPos.x;
-                uint8* gutterDst = reinterpret_cast<uint8*>(mapped.pData) + gutterTexel.TexelPos.y * mapped.RowPitch;
+                const glm::uint64 srcIdx = gutterTexel.NeighborPos.y * LightMapSize + gutterTexel.NeighborPos.x;
+                uint8* gutterDst = reinterpret_cast<uint8*>(mapped.pData) + gutterTexel.TexelPos.y * mapped.RowMoYu::f::PItch;
                 gutterDst += gutterTexel.TexelPos.x * sizeof(Half4);
                 const Half4& gutterSrc = bakeResults[bakeTextureUpdateIdx][srcIdx];
                 *reinterpret_cast<Half4*>(gutterDst) = gutterSrc;
@@ -1901,7 +1894,7 @@ void MeshBaker::KillBakeThreads()
 
     Assert_(killBakeThreads == false);
     killBakeThreads = true;
-    for(uint64 i = 0; i < bakeThreads.size(); ++i)
+    for(glm::uint64 i = 0; i < bakeThreads.size(); ++i)
     {
         WaitForSingleObject(bakeThreads[i], INFINITE);
         CloseHandle(bakeThreads[i]);
@@ -1948,7 +1941,7 @@ void MeshBaker::StartBakeThreads()
 
     bakeThreads.resize(numThreads);
     bakeThreadData.resize(numThreads);
-    for(uint64 i = 0; i < numThreads; ++i)
+    for(glm::uint64 i = 0; i < numThreads; ++i)
     {
         BakeThreadData* threadData = &bakeThreadData[i];
         threadData->BakeOutput = bakeResults;
@@ -1973,7 +1966,7 @@ void MeshBaker::KillRenderThreads()
 
     Assert_(killRenderThreads == false);
     killRenderThreads = true;
-    for(uint64 i = 0; i < renderThreads.size(); ++i)
+    for(glm::uint64 i = 0; i < renderThreads.size(); ++i)
     {
         WaitForSingleObject(renderThreads[i], INFINITE);
         CloseHandle(renderThreads[i]);
@@ -1996,7 +1989,7 @@ void MeshBaker::StartRenderThreads()
 
     renderThreads.resize(numThreads);
     renderThreadData.resize(numThreads);
-    for(uint64 i = 0; i < numThreads; ++i)
+    for(glm::uint64 i = 0; i < numThreads; ++i)
     {
         RenderThreadData* threadData = &renderThreadData[i];
         threadData->RenderBuffer = &renderBuffer;
@@ -2014,3 +2007,4 @@ void MeshBaker::StartRenderThreads()
 
     renderThreadsSuspended = false;
 }
+*/

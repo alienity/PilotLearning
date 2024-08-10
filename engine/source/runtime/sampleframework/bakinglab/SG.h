@@ -11,7 +11,7 @@
 #pragma once
 
 #include "runtime/core/math/moyu_math2.h"
-
+/*
 // SphericalGaussian(dir) := Amplitude * exp(Sharpness * (dot(Axis, Direction) - 1.0f))
 struct SG
 {
@@ -115,3 +115,4 @@ void SolveSGs(SGSolveParam& params);
 void ProjectOntoSGs(const glm::float3& dir, const glm::float3& color, SG* outSGs, glm::uint64 numSGs);
 
 void SGRunningAverage(const glm::float3& dir, const glm::float3& color, SG* outSGs, glm::uint64 numSGs, float sampleIdx, float* lobeWeights, bool nonNegative);
+*/

@@ -8,9 +8,9 @@ namespace MoYu
 {
     enum MipGenerateMode
     {
-        Average,
-        Max,
-        Min
+        AverageType,
+        MaxType,
+        MinType
     };
 
     class MipGeneratePass : public RenderPass
@@ -29,7 +29,7 @@ namespace MoYu
             DrawInputParameters()
             {
                 texHandle.Invalidate();
-                mipGenMode = MipGenerateMode::Average;
+                mipGenMode = MipGenerateMode::AverageType;
             }
 
             RHI::RgResourceHandle texHandle;

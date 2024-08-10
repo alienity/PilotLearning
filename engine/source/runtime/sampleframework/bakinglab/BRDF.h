@@ -15,10 +15,10 @@ namespace SampleFramework11
 // Calculates the Fresnel factor using Schlick's approximation
 inline glm::float3 Fresnel(glm::float3 specAlbedo, glm::float3 h, glm::float3 l)
 {
-    glm::float3 fresnel = specAlbedo + (glm::float3(1.0f) - specAlbedo) * std::pow((1.0f - MoYu::Saturate(glm::float3::Dot(l, h))), 5.0f);
+    glm::float3 fresnel = specAlbedo + (glm::float3(1.0f) - specAlbedo) * std::pow((1.0f - MoYu::Saturate(glm::dot(l, h))), 5.0f);
 
     // Fade out spec entirely when lower than 0.1% albedo
-    fresnel *= MoYu::Saturate(glm::dot(specAlbedo, 333.0f));
+    fresnel *= MoYu::Saturate(glm::dot(specAlbedo, glm::float3(333.0f)));
 
     return fresnel;
 }
@@ -26,10 +26,10 @@ inline glm::float3 Fresnel(glm::float3 specAlbedo, glm::float3 h, glm::float3 l)
 // Calculates the Fresnel factor using Schlick's approximation
 inline glm::float3 Fresnel(glm::float3 specAlbedo, glm::float3 fresnelAlbedo, glm::float3 h, glm::float3 l)
 {
-    glm::float3 fresnel = specAlbedo + (fresnelAlbedo - specAlbedo) * std::pow((1.0f - MoYu::Saturate(glm::float3::Dot(l, h))), 5.0f);
+    glm::float3 fresnel = specAlbedo + (fresnelAlbedo - specAlbedo) * std::pow((1.0f - MoYu::Saturate(glm::dot(l, h))), 5.0f);
 
     // Fade out spec entirely when lower than 0.1% albedo
-    fresnel *= MoYu::Saturate(glm::float3::Dot(specAlbedo, 333.0f));
+    fresnel *= MoYu::Saturate(glm::dot(specAlbedo, glm::float3(333.0f)));
 
     return fresnel;
 }
@@ -46,15 +46,15 @@ inline float GGX_V1(float m2, float nDotX)
 // l is the direction to the light source, and specAlbedo is the RGB specular albedo
 inline float GGX_Specular(float m, const glm::float3& n, const glm::float3& h, const glm::float3& v, const glm::float3& l)
 {
-    float nDotH = MoYu::Saturate(glm::float3::Dot(n, h));
-    float nDotL = MoYu::Saturate(glm::float3::Dot(n, l));
-    float nDotV = MoYu::Saturate(glm::float3::Dot(n, v));
+    float nDotH = MoYu::Saturate(glm::dot(n, h));
+    float nDotL = MoYu::Saturate(glm::dot(n, l));
+    float nDotV = MoYu::Saturate(glm::dot(n, v));
 
     float nDotH2 = nDotH * nDotH;
     float m2 = m * m;
 
     // Calculate the distribution term
-    float d = m2 / (Pi * Square(nDotH * nDotH * (m2 - 1) + 1));
+    float d = m2 / (MoYu::f::PI * MoYu::Square2(nDotH * nDotH * (m2 - 1) + 1));
 
     // Calculate the matching visibility term
     float v1i = GGX_V1(m2, nDotL);
@@ -69,12 +69,12 @@ inline glm::float3 CalcLighting(const glm::float3& normal, const glm::float3& li
                     const glm::float3& lightDir, const glm::float3& diffuseAlbedo, const glm::float3& position,
                     const glm::float3& cameraPos, float roughness, bool includeSpecular, glm::float3 specAlbedo)
 {
-    glm::float3 lighting = diffuseAlbedo * InvPi;
+    glm::float3 lighting = diffuseAlbedo * MoYu::f::ONE_OVER_PI;
 
-    if(includeSpecular && glm::float3::Dot(normal, lightDir) > 0.0f)
+    if(includeSpecular && glm::dot(normal, lightDir) > 0.0f)
     {
-        glm::float3 view = glm::float3::Normalize(cameraPos - position);
-        glm::float3 h = glm::float3::Normalize(view + lightDir);
+        glm::float3 view = glm::normalize(cameraPos - position);
+        glm::float3 h = glm::normalize(view + lightDir);
 
         glm::float3 fresnel = Fresnel(specAlbedo, h, lightDir);
 

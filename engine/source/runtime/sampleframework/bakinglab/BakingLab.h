@@ -10,24 +10,11 @@
 
 #pragma once
 
-#include <PCH.h>
-
-#include <App.h>
-#include <InterfacePointers.h>
-#include <Input.h>
-#include <Graphics/Camera.h>
-#include <Graphics/Model.h>
-#include <Graphics/SpriteFont.h>
-#include <Graphics/SpriteRenderer.h>
-#include <Graphics/Skybox.h>
-#include <Graphics/GraphicsTypes.h>
-
-#include "PostProcessor.h"
-#include "MeshRenderer.h"
 #include "MeshBaker.h"
 
 using namespace SampleFramework11;
 
+/*
 class BakingLab : public App
 {
 
@@ -106,3 +93,4 @@ public:
 
     BakingLab();
 };
+*/

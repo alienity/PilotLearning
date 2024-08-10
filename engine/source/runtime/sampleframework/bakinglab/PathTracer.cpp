@@ -9,9 +9,10 @@
 //=================================================================================================
 
 #include "PathTracer.h"
+#include "DirectXCollision.h"
 #include "BRDF.h"
 #include "../Graphics/Sampling.h"
-
+/*
 // Vertex operators
 inline Vertex operator+(const Vertex& a, const Vertex& b)
 {
@@ -56,7 +57,7 @@ template<typename T> T BarycentricLerp(const T& v0, const T& v1, const T& v2, fl
 }
 
 // Interpolates triangle vertex values using the barycentric coordinates from a BVH hit result
-template<typename T> T TriangleLerp(const EmbreeRay& ray, const BVHData& bvhData, const std::vector<T>& vertexData)
+template<typename T> T TriangleLerp(const Ray& ray, const BVHData& bvhData, const std::vector<T>& vertexData)
 {
     const glm::uint64 triangleIdx = ray.primID;
     const glm::uvec3& triangle = bvhData.Triangles[triangleIdx];
@@ -84,7 +85,7 @@ static glm::float3 SampleSun(glm::float3 sampleDir)
 }
 
 // Checks if a hit triangle is back-facing
-static bool IsTriangleBackFacing(const EmbreeRay& ray, const BVHData& bvhData)
+static bool IsTriangleBackFacing(const Ray& ray, const BVHData& bvhData)
 {
     // Compute the triangle normal
     const glm::uint64 triangleIdx = ray.primID;
@@ -100,8 +101,8 @@ static bool IsTriangleBackFacing(const EmbreeRay& ray, const BVHData& bvhData)
 // Returns true the the ray is occluded by a triangle
 static bool Occluded(RTCScene scene, const glm::float3& position, const glm::float3& direction, float nearDist, float farDist)
 {
-    EmbreeRay ray(position, direction, nearDist, farDist);
-    rtcOccluded(scene, ray);
+    Ray ray(position, direction, nearDist, farDist);
+    rtcOccluded1(scene, RTCRay_(ray));
     return ray.Hit();
 }
 
@@ -174,13 +175,16 @@ glm::float3 SampleAreaLight(const glm::float3& position, const glm::float3& norm
 // Checks to see if a ray intersects with the area light
 static float AreaLightIntersection(const glm::float3& rayStart, const glm::float3& rayDir, float tStart, float tEnd)
 {
-
+    
     DirectX::BoundingSphere areaLightSphere;
-    areaLightSphere.Center = XMFLOAT3(AppSettings::AreaLightX, AppSettings::AreaLightY, AppSettings::AreaLightZ);
-    areaLightSphere.Radius = AppSettings::AreaLightSize;
+    areaLightSphere.Center = DirectX::XMFLOAT3(SampleFramework11::AreaLightX, SampleFramework11::AreaLightY, SampleFramework11::AreaLightZ);
+    areaLightSphere.Radius = SampleFramework11::AreaLightSize;
 
+    DirectX::XMFLOAT3 tmpRayStart = DirectX::XMFLOAT3(rayStart.x, rayStart.y, rayStart.z);
+    DirectX::XMFLOAT3 tmpRayDir = DirectX::XMFLOAT3(rayDir.x, rayDir.y, rayDir.z);
+    
     float intersectDist = FLT_MAX;
-    bool intersects = areaLightSphere.Intersects(rayStart.ToSIMD(), rayDir.ToSIMD(), intersectDist);
+    bool intersects = areaLightSphere.Intersects(XMLoadFloat3(&tmpRayStart), XMLoadFloat3(&tmpRayDir), intersectDist);
     intersects = intersects && (intersectDist >= tStart && intersectDist <= tEnd);
     return intersects ? intersectDist : FLT_MAX;
 }
@@ -194,9 +198,9 @@ glm::float3 SampleSunLight(const glm::float3& position, const glm::float3& norma
 {
     // Treat the sun as a spherical area light that's very far away from the surface
     const float sunDistance = 1000.0f;
-    const float radius = std::tan(DegToRad(AppSettings::SunSize)) * sunDistance;
-    glm::float3 sunLuminance = AppSettings::SunLuminance();
-    glm::float3 sunPos = position + AppSettings::SunDirection.Value() * sunDistance;
+    const float radius = std::tan(MoYu::DegToRad(SampleFramework11::SunSize)) * sunDistance;
+    glm::float3 sunLuminance = SampleFramework11::SunLuminance();
+    glm::float3 sunPos = position + SampleFramework11::SunDirection * sunDistance;
     glm::float3 sampleDir;
     return SampleSphericalAreaLight(position, normal, scene, diffuseAlbedo, cameraPos, includeSpecular,
                                     specAlbedo, roughness, u1, u2, radius, sunPos, sunLuminance, irradiance, sampleDir);
@@ -204,7 +208,7 @@ glm::float3 SampleSunLight(const glm::float3& position, const glm::float3& norma
 
 // Generates a full list of sample points for all integration types
 void GenerateIntegrationSamples(IntegrationSamples& samples, glm::uint64 sqrtNumSamples, glm::uint64 tileSizeX, glm::uint64 tileSizeY,
-                                SampleModes sampleMode, glm::uint64 numIntegrationTypes, Random& rng)
+                                SampleModes sampleMode, glm::uint64 numIntegrationTypes, MoYu::Random& rng)
 {
     const glm::uint64 numSamplesPerPixel = sqrtNumSamples * sqrtNumSamples;
     const glm::uint64 numTilePixels = tileSizeX * tileSizeY;
@@ -215,7 +219,7 @@ void GenerateIntegrationSamples(IntegrationSamples& samples, glm::uint64 sqrtNum
     {
         for(glm::uint64 typeIdx = 0; typeIdx < numIntegrationTypes; ++typeIdx)
         {
-            Float2* typeSamples = samples.GetSamplesForType(pixelIdx, typeIdx);
+            glm::float2* typeSamples = samples.GetSamplesForType(pixelIdx, typeIdx);
             if(sampleMode == SampleModes::Stratified)
             {
                 GenerateStratifiedSamples2D(typeSamples, sqrtNumSamples, sqrtNumSamples, rng);
@@ -249,7 +253,7 @@ void GenerateIntegrationSamples(IntegrationSamples& samples, glm::uint64 sqrtNum
 glm::float3 PathTrace(const PathTracerParams& params, MoYu::Random& randomGenerator, float& illuminance, bool& hitSky)
 {
     // Initialize to the view parameters, must be reset every loop iteration
-    EmbreeRay ray(params.RayStart, params.RayDir, 0.0f, params.RayLen);
+    Ray ray(params.RayStart, params.RayDir, 0.0f, params.RayLen);
     illuminance = 0.0f;
     glm::float3 radiance;
     glm::float3 irradiance;
@@ -270,7 +274,7 @@ glm::float3 PathTrace(const PathTracerParams& params, MoYu::Random& randomGenera
         const glm::int32 rouletteDepth = params.RussianRouletteDepth;
         if(pathLength >= rouletteDepth && rouletteDepth != -1)
         {
-            float continueProbability = std::min<float>(params.RussianRouletteProbability, ComputeLuminance(throughput));
+            float continueProbability = std::min<float>(params.RussianRouletteProbability, MoYu::ComputeLuminance(throughput));
             if(randomGenerator.RandomFloat() > continueProbability)
                 break;
             throughput /= continueProbability;
@@ -282,8 +286,11 @@ glm::float3 PathTrace(const PathTracerParams& params, MoYu::Random& randomGenera
 
         // Check for intersection with the scene
         rtcIntersect1(params.SceneBVH->Scene, RTCRayHit_(ray));
-        float sceneDistance = ray.Hit() ? ray.tfar : FLT_MAX;
 
+        float sceneDistance = FLT_MAX;
+        if (ray.geomID == RTC_INVALID_GEOMETRY_ID)
+            sceneDistance = ray.tfar;
+        
         glm::float3 rayOrigin = glm::float3(ray.org);
         glm::float3 rayDir = glm::float3(ray.dir);
 
@@ -339,24 +346,24 @@ glm::float3 PathTrace(const PathTracerParams& params, MoYu::Random& randomGenera
             {
                 normal = glm::float3(SampleTexture2D(hitSurface.TexCoord, normalMap));
                 normal = normal * 2.0f - 1.0f;
-                normal.z = std::sqrt(1.0f - Saturate(normal.x * normal.x + normal.y * normal.y));
-                normal = Lerp(glm::float3(0.0f, 0.0f, 1.0f), normal, AppSettings::NormalMapIntensity);
-                normal = glm::float3::Normalize(glm::float3::Transform(normal, tangentToWorld));
+                normal.z = std::sqrt(1.0f - MoYu::Saturate(normal.x * normal.x + normal.y * normal.y));
+                normal = MoYu::Lerp(glm::float3(0.0f, 0.0f, 1.0f), normal, SampleFramework11::NormalMapIntensity);
+                normal = glm::normalize(tangentToWorld * normal);
             }
 
-            tangentToWorld.SetZBasis(normal);
+            tangentToWorld[2] = normal;
 
             float sqrtRoughness = glm::float3(SampleTexture2D(hitSurface.TexCoord, bvh.MaterialRoughnessMaps[materialIdx])).x;
             float metallic =  glm::float3(SampleTexture2D(hitSurface.TexCoord, bvh.MaterialMetallicMaps[materialIdx])).x;
-            metallic = Saturate(metallic + AppSettings::MetallicOffset);
+            metallic = MoYu::Saturate(metallic + SampleFramework11::MetallicOffset);
 
-            glm::float3 diffuseAlbedo = Lerp(albedo, glm::float3(0.0f), metallic) * AppSettings::DiffuseAlbedoScale;
-            glm::float3 specAlbedo = Lerp(glm::float3(0.03f), albedo, metallic);
-            sqrtRoughness *= AppSettings::RoughnessScale;
-            if(AppSettings::RoughnessOverride >= 0.01f)
-                sqrtRoughness = AppSettings::RoughnessOverride;
+            glm::float3 diffuseAlbedo = MoYu::Lerp(albedo, glm::float3(0.0f), metallic) * SampleFramework11::DiffuseAlbedoScale;
+            glm::float3 specAlbedo = MoYu::Lerp(glm::float3(0.03f), albedo, metallic);
+            sqrtRoughness *= SampleFramework11::RoughnessScale;
+            if(SampleFramework11::RoughnessOverride >= 0.01f)
+                sqrtRoughness = SampleFramework11::RoughnessOverride;
 
-            sqrtRoughness = Saturate(sqrtRoughness);
+            sqrtRoughness = MoYu::Saturate(sqrtRoughness);
             float roughness = sqrtRoughness * sqrtRoughness;
 
             diffuseAlbedo *= enableDiffuse ? 1.0f : 0.0f;
@@ -366,29 +373,29 @@ glm::float3 PathTrace(const PathTracerParams& params, MoYu::Random& randomGenera
                 // Compute direct lighting from the sun
                 glm::float3 directLighting;
                 glm::float3 directIrradiance;
-                if((AppSettings::EnableDirectLighting || pathLength > 1) && AppSettings::EnableSun)
+                if((SampleFramework11::EnableDirectLighting || pathLength > 1) && SampleFramework11::EnableSun)
                 {
-                    Float2 sunSample = params.SampleSet->Sun();
+                    glm::float2 sunSample = params.SampleSet->Sun();
                     if(pathLength > 1)
                         sunSample = randomGenerator.RandomFloat2();
                     glm::float3 sunDirectLighting = SampleSunLight(hitSurface.Position, normal, bvh.Scene, diffuseAlbedo,
                                                      rayOrigin, enableSpecular, specAlbedo, roughness,
                                                      sunSample.x, sunSample.y, directIrradiance);
-                    if(!skipDirect || AppSettings::BakeDirectSunLight)
+                    if(!skipDirect || SampleFramework11::BakeDirectSunLight)
                         directLighting += sunDirectLighting;
                 }
 
                 // Compute direct lighting from the area light
-                if(AppSettings::EnableAreaLight)
+                if(SampleFramework11::EnableAreaLight)
                 {
-                    Float2 areaLightSample = params.SampleSet->AreaLight();
+                    glm::float2 areaLightSample = params.SampleSet->AreaLight();
                     if(pathLength > 1)
                         areaLightSample = randomGenerator.RandomFloat2();
                     glm::float3 areaLightSampleDir;
                     glm::float3 areaLightDirectLighting = SampleAreaLight(hitSurface.Position, normal, bvh.Scene, diffuseAlbedo,
                                                      rayOrigin, enableSpecular, specAlbedo, roughness,
                                                      areaLightSample.x, areaLightSample.y, directIrradiance, areaLightSampleDir);
-                    if(!skipDirect || AppSettings::BakeDirectAreaLight)
+                    if(!skipDirect || SampleFramework11::BakeDirectAreaLight)
                         directLighting += areaLightDirectLighting;
                 }
 
@@ -397,14 +404,14 @@ glm::float3 PathTrace(const PathTracerParams& params, MoYu::Random& randomGenera
             }
 
             // Pick a new path, using MIS to sample both our diffuse and specular BRDF's
-            if(AppSettings::EnableIndirectLighting || params.ViewIndirectSpecular)
+            if(SampleFramework11::EnableIndirectLighting || params.ViewIndirectSpecular)
             {
-                const bool enableDiffuseSampling = metallic < 1.0f && AppSettings::EnableIndirectDiffuse && enableDiffuse && indirectSpecOnly == false;
-                const bool enableSpecularSampling = enableSpecular && AppSettings::EnableIndirectSpecular && !indirectDiffuseOnly;
+                const bool enableDiffuseSampling = metallic < 1.0f && SampleFramework11::EnableIndirectDiffuse && enableDiffuse && indirectSpecOnly == false;
+                const bool enableSpecularSampling = enableSpecular && SampleFramework11::EnableIndirectSpecular && !indirectDiffuseOnly;
                 if(enableDiffuseSampling || enableSpecularSampling)
                 {
                     // Randomly select if we should sample our diffuse BRDF, or our specular BRDF
-                    Float2 brdfSample = params.SampleSet->BRDF();
+                    glm::float2 brdfSample = params.SampleSet->BRDF();
                     if(pathLength > 1)
                         brdfSample = randomGenerator.RandomFloat2();
 
@@ -415,7 +422,7 @@ glm::float3 PathTrace(const PathTracerParams& params, MoYu::Random& randomGenera
                         selector = 1.0f;
 
                     glm::float3 sampleDir;
-                    glm::float3 v = glm::float3::Normalize(rayOrigin - hitSurface.Position);
+                    glm::float3 v = glm::normalize(rayOrigin - hitSurface.Position);
 
                     if(selector < 0.5f)
                     {
@@ -423,7 +430,7 @@ glm::float3 PathTrace(const PathTracerParams& params, MoYu::Random& randomGenera
                         if(enableSpecularSampling)
                             brdfSample.x *= 2.0f;
                         sampleDir = SampleCosineHemisphere(brdfSample.x, brdfSample.y);
-                        sampleDir = glm::float3::Normalize(glm::float3::Transform(sampleDir, tangentToWorld));
+                        sampleDir = glm::normalize(tangentToWorld * sampleDir);
                     }
                     else
                     {
@@ -433,21 +440,21 @@ glm::float3 PathTrace(const PathTracerParams& params, MoYu::Random& randomGenera
                         sampleDir = SampleDirectionGGX(v, normal, roughness, tangentToWorld, brdfSample.x, brdfSample.y);
                     }
 
-                    glm::float3 h = glm::float3::Normalize(v + sampleDir);
-                    float nDotL = Saturate(glm::float3::Dot(sampleDir, normal));
+                    glm::float3 h = glm::normalize(v + sampleDir);
+                    float nDotL = MoYu::Saturate(glm::dot(sampleDir, normal));
 
-                    float diffusePDF = enableDiffuseSampling ? nDotL * InvPi : 0.0f;
+                    float diffusePDF = enableDiffuseSampling ? nDotL * MoYu::f::ONE_OVER_PI : 0.0f;
                     float specularPDF = enableSpecularSampling ? GGX_PDF(normal, h, v, roughness) : 0.0f;
                     float pdf = diffusePDF + specularPDF;
                     if(enableDiffuseSampling && enableSpecularSampling)
                         pdf *= 0.5f;
 
-                    if(nDotL > 0.0f && pdf > 0.0f && glm::float3::Dot(sampleDir, hitSurface.Normal) > 0.0f)
+                    if(nDotL > 0.0f && pdf > 0.0f && glm::dot(sampleDir, hitSurface.Normal) > 0.0f)
                     {
                         // Compute both BRDF's
-                        glm::float3 brdf = 0.0f;
+                        glm::float3 brdf = glm::float3(0.0f);
                         if(enableDiffuseSampling)
-                            brdf += ((AppSettings::ShowGroundTruth && params.ViewIndirectDiffuse && pathLength == 1) ? glm::float3(1, 1, 1) : diffuseAlbedo) * InvPi;
+                            brdf += ((SampleFramework11::ShowGroundTruth && params.ViewIndirectDiffuse && pathLength == 1) ? glm::float3(1, 1, 1) : diffuseAlbedo) * MoYu::f::ONE_OVER_PI;
 
                         if(enableSpecularSampling)
                         {
@@ -459,7 +466,7 @@ glm::float3 PathTrace(const PathTracerParams& params, MoYu::Random& randomGenera
                         irrThroughput *= nDotL / pdf;
 
                         // Generate the ray for the new path
-                        ray = EmbreeRay(hitSurface.Position, sampleDir, 0.001f, FLT_MAX);
+                        ray = Ray(hitSurface.Position, sampleDir, 0.001f, FLT_MAX);
 
                         continueTracing = true;
                     }
@@ -470,7 +477,7 @@ glm::float3 PathTrace(const PathTracerParams& params, MoYu::Random& randomGenera
             // We hit the sky, so we'll sample the sky radiance and then bail out
             hitSky = true;
 
-            if (AppSettings::SkyMode == SkyModes::Procedural)
+            if (SampleFramework11::SkyMode == SkyModes::Procedural)
             {
                 glm::float3 skyRadiance = Skybox::SampleSky(*params.SkyCache, rayDir);
                 if (pathLength == 1 && params.EnableDirectSun)
@@ -478,17 +485,17 @@ glm::float3 PathTrace(const PathTracerParams& params, MoYu::Random& randomGenera
                 radiance += skyRadiance * throughput;
                 irradiance += skyRadiance * irrThroughput;
             }
-            else if (AppSettings::SkyMode == SkyModes::Simple)
+            else if (SampleFramework11::SkyMode == SkyModes::Simple)
             {
-                glm::float3 skyRadiance = AppSettings::SkyColor.Value() * FP16Scale;
+                glm::float3 skyRadiance = SampleFramework11::SkyColor;
                 if (pathLength == 1 && params.EnableDirectSun)
                     skyRadiance += SampleSun(rayDir);
                 radiance += skyRadiance * throughput;
                 irradiance += skyRadiance * irrThroughput;
             }
-            else if (AppSettings::SkyMode >= AppSettings::CubeMapStart)
+            else if (SampleFramework11::SkyMode >= SampleFramework11::CubeMapStart)
             {
-                glm::float3 cubeMapRadiance = SampleCubemap(rayDir, params.EnvMaps[AppSettings::SkyMode - AppSettings::CubeMapStart]);
+                glm::float3 cubeMapRadiance = SampleCubemap(rayDir, params.EnvMaps[SampleFramework11::SkyMode - SampleFramework11::CubeMapStart]);
                 radiance += cubeMapRadiance * throughput;
                 irradiance += cubeMapRadiance * irrThroughput;
             }
@@ -498,6 +505,7 @@ glm::float3 PathTrace(const PathTracerParams& params, MoYu::Random& randomGenera
             break;
     }
 
-    illuminance = ComputeLuminance(irradiance);
+    illuminance = MoYu::ComputeLuminance(irradiance);
     return radiance;
 }
+*/

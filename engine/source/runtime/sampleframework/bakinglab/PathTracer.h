@@ -15,7 +15,7 @@
 #include "../graphics/Skybox.h"
 #include "BakingLabSettings.h"
 #include "embree4/rtcore.h"
-
+/*
 using namespace SampleFramework11;
 
 // Single vertex in the mesh vertex buffer
@@ -44,12 +44,11 @@ struct BVHData
 };
 
 // Wrapper for an embree ray
-struct EmbreeRay
+struct Ray
 {
-    /*! Default construction does nothing. */
-    __forceinline EmbreeRay() {}
+    __forceinline Ray() {}
     
-    __forceinline EmbreeRay(
+    __forceinline Ray(
         const glm::vec3& org,
         const glm::vec3& dir,
         float tnear = 0.0f,
@@ -66,7 +65,6 @@ struct EmbreeRay
 #endif
     }
     
-    /*! Tests if we hit something. */
     __forceinline operator bool() const { return geomID != RTC_INVALID_GEOMETRY_ID; }
 
 public:
@@ -96,7 +94,7 @@ public:
     __forceinline float const &time()  const { return dir.w; };
 };
 
-__forceinline void init_Ray(EmbreeRay &ray,
+__forceinline void init_Ray(Ray &ray,
                             const glm::vec3& org, 
                             const glm::vec3& dir, 
                             float tnear = 0.0f, 
@@ -106,30 +104,30 @@ __forceinline void init_Ray(EmbreeRay &ray,
                             unsigned int geomID = RTC_INVALID_GEOMETRY_ID, 
                             unsigned int primID = RTC_INVALID_GEOMETRY_ID)
 {
-    ray = EmbreeRay(org,dir,tnear,tfar,time,mask,geomID,primID);
+    ray = Ray(org,dir,tnear,tfar,time,mask,geomID,primID);
 }
 
-typedef EmbreeRay Ray1;
+typedef Ray Ray1;
 
-__forceinline RTCRayHit* RTCRayHit_(EmbreeRay& ray) {
+__forceinline RTCRayHit* RTCRayHit_(Ray& ray) {
     return (RTCRayHit*)&ray;
 }
 
-__forceinline RTCRayHit* RTCRayHit1_(EmbreeRay& ray) {
+__forceinline RTCRayHit* RTCRayHit1_(Ray& ray) {
     return (RTCRayHit*)&ray;
 }
 
-__forceinline RTCRay* RTCRay_(EmbreeRay& ray) {
+__forceinline RTCRay* RTCRay_(Ray& ray) {
     return (RTCRay*)&ray;
 }
 
-__forceinline RTCHit* RTCHit_(EmbreeRay& ray)
+__forceinline RTCHit* RTCHit_(Ray& ray)
 {
     RTCHit* hit_ptr = (RTCHit*)&(ray.Ng.x);
     return hit_ptr;
 }
 
-__forceinline RTCRay* RTCRay1_(EmbreeRay& ray) {
+__forceinline RTCRay* RTCRay1_(Ray& ray) {
     return (RTCRay*)&ray;
 }
 
@@ -262,3 +260,4 @@ struct PathTracerParams
 // Returns the incoming radiance along the ray specified by "RayDir", computed using unidirectional
 // path tracing
 glm::float3 PathTrace(const PathTracerParams& params, MoYu::Random& randomGenerator, float& illuminance, bool& hitSky);
+*/

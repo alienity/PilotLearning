@@ -346,5 +346,8 @@ namespace SampleFramework11
     extern bool ViewIndirectDiffuse;
     extern bool ViewIndirectSpecular;
     extern float RoughnessOverride;
+
+    glm::float3 SunLuminance();
+    glm::float3 SunIlluminance();
     
 }

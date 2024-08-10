@@ -151,7 +151,7 @@ inline float GGX_PDF(const glm::float3& n, const glm::float3& h, const glm::floa
     float nDotH = MoYu::Saturate(glm::dot(n, h));
     float hDotV = MoYu::Saturate(glm::dot(h, v));
     float m2 = roughness * roughness;
-    float d = m2 / (MoYu::f::PI * MoYu::Square(nDotH * nDotH * (m2 - 1) + 1));
+    float d = m2 / (MoYu::f::PI * MoYu::Square2(nDotH * nDotH * (m2 - 1) + 1));
     float pM = d * nDotH;
     return pM / (4 * hDotV);
 }

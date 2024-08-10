@@ -82,15 +82,15 @@ namespace MoYu
             MipGenInBuffer _MipGenInBuffer = {_SrcMipLevel, _NumMipLevels, _Mip1TexelSize, _SrcIndex, _OutMip1Index, _OutMip2Index, _OutMip3Index, _OutMip4Index};
 
             pContext->SetRootSignature(RootSignatures::pGenerateMipsLinearSignature.get());
-            if (_MipGenMode == MipGenerateMode::Average)
+            if (_MipGenMode == MipGenerateMode::AverageType)
             {
                 pContext->SetPipelineState(PipelineStates::pGenerateMipsLinearPSO.get());
             }
-            else if (_MipGenMode == MipGenerateMode::Max)
+            else if (_MipGenMode == MipGenerateMode::MaxType)
             {
                 pContext->SetPipelineState(PipelineStates::pGenerateMaxMipsLinearPSO.get());
             }
-            else if (_MipGenMode == MipGenerateMode::Min)
+            else if (_MipGenMode == MipGenerateMode::MinType)
             {
                 pContext->SetPipelineState(PipelineStates::pGenerateMinMipsLinearPSO.get());
             }
