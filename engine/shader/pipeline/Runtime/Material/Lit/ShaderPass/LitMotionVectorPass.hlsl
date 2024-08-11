@@ -4,6 +4,7 @@
 
 // TODO: Caution - For now the tesselation doesn't displace along the normal with motion vector shader as the previous previous position
 // conflict with the normal in the semantic. This need to be fix! Also no per pixel displacement is possible either.
+#define _PIXEL_DISPLACEMENT
 
 // Attributes
 #define REQUIRE_TANGENT_TO_WORLD defined(_PIXEL_DISPLACEMENT)
@@ -28,7 +29,7 @@
 
 #if defined(_VERTEX_DISPLACEMENT) || REQUIRE_TANGENT_TO_WORLD || defined(_ALPHATEST_ON) || defined(_TESSELLATION_DISPLACEMENT)
     #define ATTRIBUTES_NEED_TEXCOORD0
-    #define ATTRIBUTES_NEED_TEXCOORD1
+    // #define ATTRIBUTES_NEED_TEXCOORD1
     #if defined(_REQUIRE_UV2) || defined(_REQUIRE_UV3)
         #define ATTRIBUTES_NEED_TEXCOORD2
     #endif
@@ -48,7 +49,7 @@
 
 #if REQUIRE_TANGENT_TO_WORLD || defined(_ALPHATEST_ON)
     #define VARYINGS_NEED_TEXCOORD0
-    #define VARYINGS_NEED_TEXCOORD1
+    // #define VARYINGS_NEED_TEXCOORD1
     #ifdef ATTRIBUTES_NEED_TEXCOORD2
     #define VARYINGS_NEED_TEXCOORD2
     #endif

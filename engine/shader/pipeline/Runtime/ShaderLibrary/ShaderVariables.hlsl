@@ -459,7 +459,7 @@ float4 UnpackVTFeedbackWithAlpha(float4 feedbackWithAlpha)
 #define UNITY_MATRIX_I_P(frameUniforms)           (frameUniforms.cameraUniform._CurFrameUniform.viewFromClipMatrix )
 #define UNITY_MATRIX_VP(frameUniforms)            (frameUniforms.cameraUniform._CurFrameUniform.clipFromWorldMatrix)
 #define UNITY_MATRIX_I_VP(frameUniforms)          (frameUniforms.cameraUniform._CurFrameUniform.worldFromClipMatrix)
-#define UNITY_MATRIX_UNJITTERED_VP(frameUniforms) ((frameUniforms.cameraUniform._CurFrameUniform.unJitterProjectionMatrix * frameUniforms.cameraUniform._CurFrameUniform.viewFromWorldMatrix)
+#define UNITY_MATRIX_UNJITTERED_VP(frameUniforms) (mul(frameUniforms.cameraUniform._CurFrameUniform.unJitterProjectionMatrix, frameUniforms.cameraUniform._CurFrameUniform.viewFromWorldMatrix))
 #define UNITY_MATRIX_PREV_VP(frameUniforms)       (frameUniforms.cameraUniform._PrevFrameUniform.clipFromWorldMatrix)
 #define UNITY_MATRIX_PREV_I_VP(frameUniforms)     (frameUniforms.cameraUniform._PrevFrameUniform.worldFromClipMatrix)
 

@@ -178,6 +178,17 @@ namespace MoYu
             mIndirectTerrainGBufferPass->setCommonInfo(renderPassCommonInfo);
             mIndirectTerrainGBufferPass->initialize(drawPassInit);
         }
+        // Object Motion Vectors pass
+        {
+            IndirectMotionVectorPass::DrawPassInitInfo drawPassInit;
+            drawPassInit.colorTexDesc = mIndirectGBufferPass->gbuffer0Desc;
+            drawPassInit.m_ShaderCompiler = pCompiler;
+            drawPassInit.m_ShaderRootPath = g_runtime_global_context.m_config_manager->getShaderFolder();
+
+            mIndirectMotionVectorPass = std::make_shared<IndirectMotionVectorPass>();
+            mIndirectMotionVectorPass->setCommonInfo(renderPassCommonInfo);
+            mIndirectMotionVectorPass->initialize(drawPassInit);
+        }
         // Depth Pyramid
         {
             DepthPyramidPass::DrawPassInitInfo depthDrawPassInit;
@@ -392,6 +403,7 @@ namespace MoYu
         mSkyBoxPass->prepareMeshData(render_resource);
         mTerrainCullPass->prepareMeshData(render_resource);
         mIndirectTerrainGBufferPass->prepareMatBuffer(render_resource);
+        mIndirectMotionVectorPass->prepareMatBuffer(render_resource);
         mDepthPrePass->prepareMatBuffer(render_resource);
         mIndirectGBufferPass->prepareMatBuffer(render_resource);
         mDepthPyramidPass->prepareMeshData(render_resource);
@@ -420,6 +432,7 @@ namespace MoYu
         mDepthPrePass = nullptr;
         mIndirectGBufferPass = nullptr;
         mIndirectTerrainGBufferPass = nullptr;
+        mIndirectMotionVectorPass = nullptr;
         mDepthPyramidPass = nullptr;
         mColorPyramidPass = nullptr;
         mIndirectLightLoopPass = nullptr;
@@ -569,6 +582,19 @@ namespace MoYu
         mTerrainGBufferIntput.terrainCommandSigHandle = terrainCullOutput.mainCamVisCommandSigHandle;
 
         mIndirectTerrainGBufferPass->update(graph, mTerrainGBufferIntput, mGBufferOutput);
+        //=================================================================================
+
+        //=================================================================================
+        // indirect terrain gbuffer
+        IndirectMotionVectorPass::DrawInputParameters mMotionVectorIntput;
+        IndirectMotionVectorPass::DrawOutputParameters mMotionVectorOutput;
+        mMotionVectorIntput.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
+        mMotionVectorIntput.renderDataPerDrawHandle = indirectCullOutput.renderDataPerDrawHandle;
+        mMotionVectorIntput.propertiesPerMaterialHandle = indirectCullOutput.propertiesPerMaterialHandle;
+        mMotionVectorIntput.opaqueDrawHandle = indirectCullOutput.opaqueDrawHandle.indirectSortBufferHandle;
+        mMotionVectorIntput.depthBufferHandle = mGBufferOutput.depthHandle;
+
+        mIndirectMotionVectorPass->update(graph, mMotionVectorIntput, mMotionVectorOutput);
         //=================================================================================
 
         //=================================================================================

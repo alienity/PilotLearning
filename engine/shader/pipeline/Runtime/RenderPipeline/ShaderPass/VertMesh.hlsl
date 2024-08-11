@@ -1,10 +1,16 @@
 struct VaryingsToPS
 {
     VaryingsMeshToPS vmesh;
+#ifdef VARYINGS_NEED_PASS
+    VaryingsPassToPS vpass;
+#endif
 };
 
 struct PackedVaryingsToPS
 {
+#ifdef VARYINGS_NEED_PASS
+    PackedVaryingsPassToPS vpass;
+#endif
     PackedVaryingsMeshToPS vmesh;
 };
 
@@ -12,6 +18,10 @@ PackedVaryingsToPS PackVaryingsToPS(VaryingsToPS input)
 {
     PackedVaryingsToPS output;
     output.vmesh = PackVaryingsMeshToPS(input.vmesh);
+#ifdef VARYINGS_NEED_PASS
+    output.vpass = PackVaryingsPassToPS(input.vpass);
+#endif
+
     return output;
 }
 

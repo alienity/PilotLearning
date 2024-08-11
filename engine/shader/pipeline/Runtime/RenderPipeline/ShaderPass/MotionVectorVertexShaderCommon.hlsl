@@ -50,24 +50,25 @@ VaryingsPassToPS UnpackVaryingsPassToPS(PackedVaryingsPassToPS input)
 #define VARYINGS_NEED_PASS
 #include "../../RenderPipeline/ShaderPass/VertMesh.hlsl"
 
-void MotionVectorPositionZBias(VaryingsToPS input)
+void MotionVectorPositionZBias(FrameUniforms frameUniform,VaryingsToPS input)
 {
 #if UNITY_REVERSED_Z
-    input.vmesh.positionCS.z -= unity_MotionVectorsParams.z * input.vmesh.positionCS.w;
+    input.vmesh.positionCS.z -= frameUniform.cameraUniform.unity_MotionVectorsParams.z * input.vmesh.positionCS.w;
 #else
     input.vmesh.positionCS.z += unity_MotionVectorsParams.z * input.vmesh.positionCS.w;
 #endif
 }
 
-PackedVaryingsType MotionVectorVS(VaryingsType varyingsType, AttributesMesh inputMesh, AttributesPass inputPass)
+PackedVaryingsType MotionVectorVS(FrameUniforms frameUniform, RenderDataPerDraw renderData,
+    VaryingsType varyingsType, AttributesMesh inputMesh, AttributesPass inputPass)
 {
-    MotionVectorPositionZBias(varyingsType);
+    MotionVectorPositionZBias(frameUniform, varyingsType);
 
     // Use unjiterred matrix for motion vector
-    varyingsType.vpass.positionCS = mul(UNITY_MATRIX_UNJITTERED_VP, float4(varyingsType.vmesh.positionRWS, 1.0));
+    varyingsType.vpass.positionCS = mul(UNITY_MATRIX_UNJITTERED_VP(frameUniform), float4(varyingsType.vmesh.positionRWS, 1.0));
 
     // Note: unity_MotionVectorsParams.y is 0 is forceNoMotion is enabled
-    bool forceNoMotion = unity_MotionVectorsParams.y == 0.0;
+    bool forceNoMotion = frameUniform.cameraUniform.unity_MotionVectorsParams.y == 0.0;
 
     if (forceNoMotion)
     {
@@ -79,7 +80,7 @@ PackedVaryingsType MotionVectorVS(VaryingsType varyingsType, AttributesMesh inpu
         float3 effectivePositionOS = (float3)0.0f;
         float3 previousPositionRWS = (float3)0.0f;
 
-        bool hasDeformation = unity_MotionVectorsParams.x > 0.0; // Skin or morph target
+        bool hasDeformation = frameUniform.cameraUniform.unity_MotionVectorsParams.x > 0.0; // Skin or morph target
         effectivePositionOS = (hasDeformation ? inputPass.previousPositionOS : inputMesh.positionOS);
 
         // See _TransparentCameraOnlyMotionVectors in HDCamera.cs
@@ -167,11 +168,11 @@ PackedVaryingsType MotionVectorVS(VaryingsType varyingsType, AttributesMesh inpu
             effectivePositionOS -= inputPass.precomputedVelocity;
 #endif
 
-            previousPositionRWS = TransformPreviousObjectToWorld(effectivePositionOS);
+            previousPositionRWS = TransformPreviousObjectToWorld(renderData, effectivePositionOS);
 #endif // HAVE_MESH_MODIFICATION
 
 #ifdef ATTRIBUTES_NEED_NORMAL
-            float3 normalWS = TransformPreviousObjectToWorldNormal(inputMesh.normalOS);
+            float3 normalWS = TransformPreviousObjectToWorldNormal(renderData, inputMesh.normalOS);
 #else
             float3 normalWS = float3(0.0, 0.0, 0.0);
 #endif
@@ -181,7 +182,7 @@ PackedVaryingsType MotionVectorVS(VaryingsType varyingsType, AttributesMesh inpu
         // Final computation from previousPositionRWS (if not already done)
         if (!previousPositionCSComputed)
         {
-            varyingsType.vpass.previousPositionCS = mul(UNITY_MATRIX_PREV_VP, float4(previousPositionRWS, 1.0));
+            varyingsType.vpass.previousPositionCS = mul(UNITY_MATRIX_PREV_VP(frameUniform), float4(previousPositionRWS, 1.0));
         }
     }
 

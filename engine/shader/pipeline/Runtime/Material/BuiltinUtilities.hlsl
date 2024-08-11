@@ -4,7 +4,7 @@
 #include "../Material/BuiltinGIUtilities.hlsl"
 
 // Calculate motion vector in Clip space [-1..1]
-float2 CalculateMotionVector(float4 positionCS, float4 previousPositionCS)
+float2 CalculateMotionVector(float4 positionCS, float4 previousPositionCS, float4 screenSize)
 {
     // This test on define is required to remove warning of divide by 0 when initializing empty struct
     // TODO: Add forward opaque MRT case...
@@ -16,12 +16,12 @@ float2 CalculateMotionVector(float4 positionCS, float4 previousPositionCS)
     float2 motionVec = (positionCS.xy - previousPositionCS.xy);
 
 #ifdef KILL_MICRO_MOVEMENT
-    motionVec.x = abs(motionVec.x) < MICRO_MOVEMENT_THRESHOLD.x ? 0 : motionVec.x;
-    motionVec.y = abs(motionVec.y) < MICRO_MOVEMENT_THRESHOLD.y ? 0 : motionVec.y;
+    motionVec.x = abs(motionVec.x) < MICRO_MOVEMENT_THRESHOLD(screenSize).x ? 0 : motionVec.x;
+    motionVec.y = abs(motionVec.y) < MICRO_MOVEMENT_THRESHOLD(screenSize).y ? 0 : motionVec.y;
 #endif
 
     // Note: we clamp here between -2 and 2 because that's the maximum a vector from positions in clipspace can reach. (e.g. 1-(-1) = 2 /(-1)-1 = -2)
-    motionVec = clamp(motionVec.xy, -2.0f + MICRO_MOVEMENT_THRESHOLD, 2.0f - MICRO_MOVEMENT_THRESHOLD);
+    motionVec = clamp(motionVec.xy, -2.0f + MICRO_MOVEMENT_THRESHOLD(screenSize), 2.0f - MICRO_MOVEMENT_THRESHOLD(screenSize));
 
 #if UNITY_UV_STARTS_AT_TOP
     motionVec.y = -motionVec.y;

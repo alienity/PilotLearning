@@ -37,7 +37,7 @@ namespace MoYu
         // rotation around x, y axis
         delta = glm::float2(MoYu::degreesToRadians(delta.x), MoYu::degreesToRadians(delta.y));
 
-        // ZXY´ÓÓÒÍù×ó³ËµÃĞı×ª¾ØÕó£¬¾ÍÊÇintrinsicµÄ£¬¶ÔÓ¦µÄ·Ö±ğÊÇ´ÓÓÒÍù×ó Roll - Pitch - Yaw
+        // ZXYä»å³å¾€å·¦ä¹˜å¾—æ—‹è½¬çŸ©é˜µï¼Œå°±æ˜¯intrinsicçš„ï¼Œå¯¹åº”çš„åˆ†åˆ«æ˜¯ä»å³å¾€å·¦ Roll - Pitch - Yaw
 
         float _alpha, _beta, _gamma;
         glm::extractEulerAngleZXY(glm::toMat4(m_rotation), _gamma, _beta, _alpha);

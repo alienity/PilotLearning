@@ -4,12 +4,17 @@
 
 #include "../../../Runtime/RenderPipeline/ShaderPass/MotionVectorVertexShaderCommon.hlsl"
 
-PackedVaryingsType Vert(AttributesMesh inputMesh,
-                        AttributesPass inputPass)
+PackedVaryingsType Vert(AttributesMesh inputMesh/*, AttributesPass inputPass*/)
 {
+    AttributesPass inputPass = (AttributesPass)0;
+    inputPass.previousPositionOS = inputMesh.positionOS;
+    
     VaryingsType varyingsType;
-    varyingsType.vmesh = VertMesh(inputMesh);
-    return MotionVectorVS(varyingsType, inputMesh, inputPass);
+
+    RenderDataPerDraw renderData = GetRenderDataPerDraw();
+    FrameUniforms frameUniform = GetFrameUniforms();
+    varyingsType.vmesh = VertMesh(frameUniform, renderData, inputMesh);
+    return MotionVectorVS(frameUniform, renderData, varyingsType, inputMesh, inputPass);
 }
 
 #define SV_TARGET_NORMAL SV_Target1
@@ -33,13 +38,21 @@ void Frag(  PackedVaryingsToPS packedInput
             #endif
         )
 {
-    FragInputs input = UnpackVaryingsToFragInputs(packedInput);
 
+    RenderDataPerDraw renderData = GetRenderDataPerDraw();
+    PropertiesPerMaterial matProperties = GetPropertiesPerMaterial(GetLightPropertyBufferIndexOffset(renderData));
+    FrameUniforms frameUniform = GetFrameUniforms();
+    SamplerStruct samplerStruct = GetSamplerStruct();
+
+    float4 _ScreenSize = frameUniform.baseUniform._ScreenSize;
+    
+    FragInputs input = UnpackVaryingsToFragInputs(packedInput);
+    
     // input.positionSS is SV_Position
     PositionInputs posInput = GetPositionInput(input.positionSS.xy, _ScreenSize.zw, input.positionSS.z, input.positionSS.w, input.positionRWS);
 
 #ifdef VARYINGS_NEED_POSITION_WS
-    float3 V = GetWorldSpaceNormalizeViewDir(input.positionRWS);
+    float3 V = GetWorldSpaceNormalizeViewDir(frameUniform, input.positionRWS);
 #else
     // Unused
     float3 V = float3(1.0, 1.0, 1.0); // Avoid the division by 0
@@ -47,7 +60,7 @@ void Frag(  PackedVaryingsToPS packedInput
 
     SurfaceData surfaceData;
     BuiltinData builtinData;
-    GetSurfaceAndBuiltinData(input, V, posInput, surfaceData, builtinData);
+    GetSurfaceAndBuiltinData(frameUniform, renderData, matProperties, samplerStruct, input, V, posInput, surfaceData, builtinData);
 
     VaryingsPassToPS inputPass = UnpackVaryingsPassToPS(packedInput.vpass);
 #ifdef _DEPTHOFFSET_ON
@@ -56,7 +69,7 @@ void Frag(  PackedVaryingsToPS packedInput
 #endif
 
     // TODO: How to allow overriden motion vector from GetSurfaceAndBuiltinData ?
-    float2 motionVector = CalculateMotionVector(inputPass.positionCS, inputPass.previousPositionCS);
+    float2 motionVector = CalculateMotionVector(inputPass.positionCS, inputPass.previousPositionCS, _ScreenSize);
 
     // Convert from Clip space (-1..1) to NDC 0..1 space.
     // Note it doesn't mean we don't have negative value, we store negative or positive offset in NDC space.
@@ -64,7 +77,7 @@ void Frag(  PackedVaryingsToPS packedInput
     EncodeMotionVector(motionVector * 0.5, outMotionVector);
 
     // Note: unity_MotionVectorsParams.y is 0 is forceNoMotion is enabled
-    bool forceNoMotion = unity_MotionVectorsParams.y == 0.0;
+    bool forceNoMotion = frameUniform.cameraUniform.unity_MotionVectorsParams.y == 0.0;
 
     // Setting the motionVector to a value more than 2 set as a flag for "force no motion". This is valid because, given that the velocities are in NDC,
     // a value of >1 can never happen naturally, unless explicitely set.

@@ -107,6 +107,10 @@ struct CameraUniform
     float _CameraNear;
     float _CameraFar; // camera *culling* far-plane distance, always positive (projection far is at +inf)
     float2 _Padding0;
+    //X : Use last frame positions (right now skinned meshes are the only objects that use this
+    //Y : Force No Motion
+    //Z : Z bias value
+    float4 unity_MotionVectorsParams;
 };
 
 struct BaseUniform
