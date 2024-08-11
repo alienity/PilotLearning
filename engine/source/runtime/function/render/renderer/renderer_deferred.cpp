@@ -189,6 +189,17 @@ namespace MoYu
             mIndirectMotionVectorPass->setCommonInfo(renderPassCommonInfo);
             mIndirectMotionVectorPass->initialize(drawPassInit);
         }
+        // Camera Motion Vectors pass
+        {
+            CameraMotionVectorPass::DrawPassInitInfo drawPassInit;
+            drawPassInit.colorTexDesc = mIndirectGBufferPass->gbuffer0Desc;
+            drawPassInit.m_ShaderCompiler = pCompiler;
+            drawPassInit.m_ShaderRootPath = g_runtime_global_context.m_config_manager->getShaderFolder();
+
+            mCameraMotionVectorPass = std::make_shared<CameraMotionVectorPass>();
+            mCameraMotionVectorPass->setCommonInfo(renderPassCommonInfo);
+            mCameraMotionVectorPass->initialize(drawPassInit);
+        }
         // Depth Pyramid
         {
             DepthPyramidPass::DrawPassInitInfo depthDrawPassInit;
@@ -404,6 +415,7 @@ namespace MoYu
         mTerrainCullPass->prepareMeshData(render_resource);
         mIndirectTerrainGBufferPass->prepareMatBuffer(render_resource);
         mIndirectMotionVectorPass->prepareMatBuffer(render_resource);
+        mCameraMotionVectorPass->prepareMatBuffer(render_resource);
         mDepthPrePass->prepareMatBuffer(render_resource);
         mIndirectGBufferPass->prepareMatBuffer(render_resource);
         mDepthPyramidPass->prepareMeshData(render_resource);
@@ -433,6 +445,7 @@ namespace MoYu
         mIndirectGBufferPass = nullptr;
         mIndirectTerrainGBufferPass = nullptr;
         mIndirectMotionVectorPass = nullptr;
+        mCameraMotionVectorPass = nullptr;
         mDepthPyramidPass = nullptr;
         mColorPyramidPass = nullptr;
         mIndirectLightLoopPass = nullptr;
@@ -606,6 +619,18 @@ namespace MoYu
 
         mDepthPyramidPass->update(graph, mDepthPyramidInput, mDepthPyramidOutput);
         //=================================================================================
+
+        //=================================================================================
+        // camera motion vector
+        CameraMotionVectorPass::DrawInputParameters mCameraMotionVectorIntput;
+        CameraMotionVectorPass::DrawOutputParameters mCameraMotionVectorOutput;
+        mCameraMotionVectorIntput.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
+        mCameraMotionVectorIntput.depthBufferHandle = mGBufferOutput.depthHandle;
+        mCameraMotionVectorOutput.motionVectorHandle = mMotionVectorOutput.motionVectorHandle;
+
+        mCameraMotionVectorPass->update(graph, mCameraMotionVectorIntput, mCameraMotionVectorOutput);
+        //=================================================================================
+
         /*
         //=================================================================================
         // Terrain使用当前帧depth剪裁Pass

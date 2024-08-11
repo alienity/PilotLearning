@@ -173,6 +173,7 @@ namespace MoYu
 
         passOutput.depthBufferHandle = depthBufferHandle;
         passOutput.motionVectorHandle = motionVectorHandle;
+
     }
 
     void IndirectMotionVectorPass::destroy()

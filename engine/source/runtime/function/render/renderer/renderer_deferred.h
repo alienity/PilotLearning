@@ -23,6 +23,7 @@
 #include "runtime/function/render/renderer/indirect_display_pass.h"
 #include "runtime/function/render/renderer/indirect_gbuffer_pass.h"
 #include "runtime/function/render/renderer/object_motion_vector_pass.h"
+#include "runtime/function/render/renderer/camera_motion_vector_pass.h"
 #include "runtime/function/render/renderer/indirect_depth_pyramid_pass.h"
 #include "runtime/function/render/renderer/color_pyramid_pass.h"
 #include "runtime/function/render/renderer/indirect_terrain_gbuffer_pass.h"
@@ -75,6 +76,7 @@ namespace MoYu
         std::shared_ptr<IndirectGBufferPass>         mIndirectGBufferPass;
         std::shared_ptr<IndirectTerrainGBufferPass>  mIndirectTerrainGBufferPass;
         std::shared_ptr<IndirectMotionVectorPass>    mIndirectMotionVectorPass;
+        std::shared_ptr<CameraMotionVectorPass>      mCameraMotionVectorPass;
         std::shared_ptr<IndirectLightLoopPass>       mIndirectLightLoopPass;
         std::shared_ptr<SubsurfaceScatteringPass>    mSubsurfaceScatteringPass;
         std::shared_ptr<IndirectDrawPass>            mIndirectOpaqueDrawPass;
