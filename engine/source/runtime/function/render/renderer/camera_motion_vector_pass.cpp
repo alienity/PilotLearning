@@ -17,9 +17,9 @@ namespace MoYu
         std::filesystem::path m_ShaderRootPath = init_info.m_ShaderRootPath;
 
         cameraMotionVectorVS = m_ShaderCompiler->CompileShader(RHI_SHADER_TYPE::Vertex, 
-            m_ShaderRootPath / "pipeline/Runtime/RenderPipeline/RenderPass/CameraMotionVectorsShader.hlsl", ShaderCompileOptions(L"Vert"));
+            m_ShaderRootPath / "pipeline/Runtime/Material/Lit/CameraMotionVectorsShader.hlsl", ShaderCompileOptions(L"Vert"));
         cameraMotionVectorPS = m_ShaderCompiler->CompileShader(RHI_SHADER_TYPE::Pixel, 
-            m_ShaderRootPath / "pipeline/Runtime/RenderPipeline/RenderPass/CameraMotionVectorsShader.hlsl", ShaderCompileOptions(L"Frag"));
+            m_ShaderRootPath / "pipeline/Runtime/Material/Lit/CameraMotionVectorsShader.hlsl", ShaderCompileOptions(L"Frag"));
 
         {
             RHI::RootSignatureDesc rootSigDesc =

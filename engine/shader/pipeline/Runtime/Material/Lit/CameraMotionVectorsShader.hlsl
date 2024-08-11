@@ -1,11 +1,11 @@
 
-#include "../../../ShaderLibrary/Common.hlsl"
-#include "../../../ShaderLibrary/ShaderVariables.hlsl"
-#include "../../../RenderPipeline/ShaderPass/FragInputs.hlsl"
-#include "../../../RenderPipeline/ShaderPass/VaryingMesh.hlsl"
-#include "../../../RenderPipeline/ShaderPass/VertMesh.hlsl"
-#include "../../../Material/Lit/LitBuiltinData.hlsl"
-#include "../../../Material/Builtin/BuiltinData.hlsl"
+#include "../../ShaderLibrary/Common.hlsl"
+#include "../../ShaderLibrary/ShaderVariables.hlsl"
+// #include "../../RenderPipeline/ShaderPass/FragInputs.hlsl"
+// #include "../../RenderPipeline/ShaderPass/VaryingMesh.hlsl"
+// #include "../../RenderPipeline/ShaderPass/VertMesh.hlsl"
+// #include "../../Material/Lit/LitBuiltinData.hlsl"
+#include "../../Material/Builtin/BuiltinData.hlsl"
 
 cbuffer RootConstants : register(b0, space0)
 {
