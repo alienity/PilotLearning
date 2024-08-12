@@ -170,6 +170,22 @@ struct TAAUniform
     float feedbackMax;
     float motionScale;
     float __Reserved0;
+    
+    float _HistorySharpening;
+    float _AntiFlickerIntensity;
+    float _SpeedRejectionIntensity;
+    float _ContrastForMaxAntiFlicker;
+    
+    float _BaseBlendFactor;
+    float _CentralWeight;
+    uint _ExcludeTAABit;
+    float _HistoryContrastBlendLerp;
+    
+    float2 _RTHandleScaleForTAAHistory;
+    float2 _RTHandleScaleForTAA;
+    
+    float4 _TaaFrameInfo;
+    float4 _TaaJitterStrength;
 };
 
 struct IBLUniform

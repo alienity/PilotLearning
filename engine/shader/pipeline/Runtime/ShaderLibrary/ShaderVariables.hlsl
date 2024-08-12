@@ -146,73 +146,54 @@ TEXTURE2D(_PrevExposureTexture);
 */
 // Note: To sample camera depth in HDRP we provide these utils functions because the way we store the depth mips can change
 // Currently it's an atlas and it's layout can be found at ComputePackedMipChainInfo in HDUtils.cs
-float LoadCameraDepth(FrameUniforms frameUniforms, uint2 pixelCoords)
+float LoadCameraDepth(Texture2D<float> cameraDepthTex, uint2 pixelCoords)
 {
-    int cameraDepthTextureIndex = frameUniforms.baseUniform._CameraDepthTextureIndex;
-    Texture2D<float> _CameraDepthTexture = ResourceDescriptorHeap[cameraDepthTextureIndex];
-    return LOAD_TEXTURE2D_LOD(_CameraDepthTexture, pixelCoords, 0).r;
+    return LOAD_TEXTURE2D_LOD(cameraDepthTex, pixelCoords, 0).r;
 }
 
-//FrameUniforms frameUniforms, SamplerStruct samplerStructs
-float SampleCameraDepth(FrameUniforms frameUniforms, float2 uv)
+float SampleCameraDepth(Texture2D<float> cameraDepthTex, float4 screenSize, float2 uv)
 {
-    float4 _ScreenSize = frameUniforms.baseUniform._ScreenSize;
-    return LoadCameraDepth(frameUniforms, uint2(uv * _ScreenSize.xy));
+    return LoadCameraDepth(cameraDepthTex, uint2(uv * screenSize.xy));
 }
 
-float3 LoadCameraColor(FrameUniforms frameUniforms, uint2 pixelCoords, uint lod)
+float3 LoadCameraColor(Texture2D<float4> ColorPyramidTex, uint2 pixelCoords, uint lod)
 {
-    int colorPyramidTextureIndex = frameUniforms.baseUniform._ColorPyramidTextureIndex;
-    Texture2D<float4> _ColorPyramidTexture = ResourceDescriptorHeap[colorPyramidTextureIndex];
-    return LOAD_TEXTURE2D_LOD(_ColorPyramidTexture, pixelCoords, lod).rgb;
+    return LOAD_TEXTURE2D_LOD(ColorPyramidTex, pixelCoords, lod).rgb;
 }
 
-float3 SampleCameraColor(FrameUniforms frameUniforms, SamplerStruct samplerStructs, float2 uv, float lod)
+float3 LoadCameraColor(Texture2D<float4> ColorPyramidTex, uint2 pixelCoords)
 {
-    int colorPyramidTextureIndex = frameUniforms.baseUniform._ColorPyramidTextureIndex;
-    SamplerState _TrilinearClampSampler = samplerStructs.STrilinearClampSampler;
-    float4 _RTHandleScaleHistory = frameUniforms.baseUniform._RTHandleScaleHistory;
-    Texture2D<float4> _ColorPyramidTexture = ResourceDescriptorHeap[colorPyramidTextureIndex];
-    return SAMPLE_TEXTURE2D_LOD(_ColorPyramidTexture, _TrilinearClampSampler, uv * _RTHandleScaleHistory.xy, lod).rgb;
+    return LoadCameraColor(ColorPyramidTex, pixelCoords, 0);
 }
 
-float3 LoadCameraColor(FrameUniforms frameUniforms, uint2 pixelCoords)
+float3 SampleCameraColor(Texture2D<float4> ColorPyramidTex, SamplerState TrilinearClampSampler, float4 RTHandleScaleHistory, float2 uv, float lod)
 {
-    return LoadCameraColor(frameUniforms, pixelCoords, 0);
+    return SAMPLE_TEXTURE2D_LOD(ColorPyramidTex, TrilinearClampSampler, uv * RTHandleScaleHistory.xy, lod).rgb;
 }
 
-float3 SampleCameraColor(FrameUniforms frameUniforms, SamplerStruct samplerStructs, float2 uv)
+float3 SampleCameraColor(Texture2D<float4> ColorPyramidTex, SamplerState TrilinearClampSampler, float4 RTHandleScaleHistory, float2 uv)
 {
-    return SampleCameraColor(frameUniforms, samplerStructs, uv, 0);
+    return SampleCameraColor(ColorPyramidTex, TrilinearClampSampler, RTHandleScaleHistory, uv, 0);
 }
 
-float4 SampleCustomColor(FrameUniforms frameUniforms, SamplerStruct samplerStructs, float2 uv)
+float4 SampleCustomColor(Texture2D<float4> CustomColorTex, SamplerState TrilinearClampSampler, float2 Scale, float2 uv)
 {
-    int customColorTextureIndex = frameUniforms.baseUniform._CustomColorTextureIndex;
-    Texture2D<float4> _CustomColorTexture = ResourceDescriptorHeap[customColorTextureIndex];
-    SamplerState _TrilinearClampSampler = samplerStructs.STrilinearClampSampler;
-    float4 _RTHandleScale = frameUniforms.baseUniform._RTHandleScale;
-    return SAMPLE_TEXTURE2D_LOD(_CustomColorTexture, _TrilinearClampSampler, uv * _RTHandleScale.xy, 0);
+    return SAMPLE_TEXTURE2D_LOD(CustomColorTex, TrilinearClampSampler, uv * Scale.xy, 0);
 }
 
-float4 LoadCustomColor(FrameUniforms frameUniforms, uint2 pixelCoords)
+float4 LoadCustomColor(Texture2D<float4> CustomColorTex, uint2 pixelCoords)
 {
-    int customColorTextureIndex = frameUniforms.baseUniform._CustomColorTextureIndex;
-    Texture2D<float4> _CustomColorTexture = ResourceDescriptorHeap[customColorTextureIndex];
-    return LOAD_TEXTURE2D_LOD(_CustomColorTexture, pixelCoords, 0);
+    return LOAD_TEXTURE2D_LOD(CustomColorTex, pixelCoords, 0);
 }
 
-float LoadCustomDepth(FrameUniforms frameUniforms, uint2 pixelCoords)
+float LoadCustomDepth(Texture2D<float> CustomDepthTex, uint2 pixelCoords)
 {
-    int customDepthTextureIndex = frameUniforms.baseUniform._CustomDepthTextureIndex;
-    Texture2D<float4> _CustomDepthTexture = ResourceDescriptorHeap[customDepthTextureIndex];
-    return LOAD_TEXTURE2D_LOD(_CustomDepthTexture, pixelCoords, 0).r;
+    return LOAD_TEXTURE2D_LOD(CustomDepthTex, pixelCoords, 0).r;
 }
 
-float SampleCustomDepth(FrameUniforms frameUniforms, float2 uv)
+float SampleCustomDepth(Texture2D<float> CustomDepthTex, float4 ScreenSize, float2 uv)
 {
-    float4 _ScreenSize = frameUniforms.baseUniform._ScreenSize;
-    return LoadCustomDepth(frameUniforms, uint2(uv * _ScreenSize.xy));
+    return LoadCustomDepth(CustomDepthTex, uint2(uv * ScreenSize.xy));
 }
 
 bool IsSky(float deviceDepth)
@@ -220,15 +201,15 @@ bool IsSky(float deviceDepth)
     return deviceDepth == UNITY_RAW_FAR_CLIP_VALUE; // We assume the sky is the part of the depth buffer that haven't been written.
 }
 
-bool IsSky(FrameUniforms frameUniforms, uint2 pixelCoord)
+bool IsSky(Texture2D<float> cameraDepthTex, uint2 pixelCoord)
 {
-    float deviceDepth = LoadCameraDepth(frameUniforms, pixelCoord);
+    float deviceDepth = LoadCameraDepth(cameraDepthTex, pixelCoord);
     return IsSky(deviceDepth);
 }
 
-bool IsSky(FrameUniforms frameUniforms, float4 _ScreenSize, float2 uv)
+bool IsSky(Texture2D<float> cameraDepthTex, float4 ScreenSize, float2 uv)
 {
-    return IsSky(frameUniforms , uint2(uv * _ScreenSize.xy));
+    return IsSky(cameraDepthTex , uint2(uv * ScreenSize.xy));
 }
 
 float4x4 OptimizeProjectionMatrix(float4x4 M)
@@ -304,75 +285,52 @@ float2 ClampAndScaleUV(float2 UV, float2 texelSize, float numberOfTexels, float2
     return min(UV, maxCoord) * scale;
 }
 
-float2 ClampAndScaleUV(FrameUniforms frameUniforms, float2 UV, float2 texelSize, float numberOfTexels)
-{
-    float4 _RTHandleScale = frameUniforms.baseUniform._RTHandleScale;
-    return ClampAndScaleUV(UV, texelSize, numberOfTexels, _RTHandleScale.xy);
-}
-
 // This is assuming half a texel offset in the clamp.
-float2 ClampAndScaleUVForBilinear(FrameUniforms frameUniforms, float2 UV, float2 texelSize)
+float2 ClampAndScaleUVForBilinear(float2 UV, float2 texelSize, float2 scale)
 {
-    return ClampAndScaleUV(frameUniforms, UV, texelSize, 0.5f);
-}
-
-// This is assuming full screen buffer and half a texel offset for the clamping.
-float2 ClampAndScaleUVForBilinear(FrameUniforms frameUniforms, float2 UV)
-{
-    float4 _ScreenSize = frameUniforms.baseUniform._ScreenSize;
-    return ClampAndScaleUV(frameUniforms, UV, _ScreenSize.zw, 0.5f);
+    return ClampAndScaleUV(UV, texelSize, 0.5f, scale);
 }
 
 // This is assuming an upsampled texture used in post processing, with original screen size and a half a texel offset for the clamping.
-float2 ClampAndScaleUVForBilinearPostProcessTexture(FrameUniforms frameUniforms, float2 UV)
+float2 ClampAndScaleUVForBilinearPostProcessTexture(float4 PostProcessScreenSize, float4 RTHandlePostProcessScale, float2 UV)
 {
-    float4 _PostProcessScreenSize = frameUniforms.baseUniform._PostProcessScreenSize;
-    float4 _RTHandlePostProcessScale = frameUniforms.baseUniform._RTHandlePostProcessScale;
-    return ClampAndScaleUV(UV, _PostProcessScreenSize.zw, 0.5f, _RTHandlePostProcessScale.xy);
+    return ClampAndScaleUV(UV, PostProcessScreenSize.zw, 0.5f, RTHandlePostProcessScale.xy);
 }
 
 // This is assuming an upsampled texture used in post processing, with original screen size and a half a texel offset for the clamping.
-float2 ClampAndScaleUVForBilinearPostProcessTexture(FrameUniforms frameUniforms, float2 UV, float2 texelSize)
+float2 ClampAndScaleUVForBilinearPostProcessTexture(float4 RTHandlePostProcessScale, float2 UV, float2 texelSize)
 {
-    float4 _RTHandlePostProcessScale = frameUniforms.baseUniform._RTHandlePostProcessScale;
-    return ClampAndScaleUV(UV, texelSize, 0.5f, _RTHandlePostProcessScale.xy);
+    return ClampAndScaleUV(UV, texelSize, 0.5f, RTHandlePostProcessScale.xy);
 }
 
 // This is assuming an upsampled texture used in post processing, with original screen size and numberOfTexels offset for the clamping.
-float2 ClampAndScaleUVPostProcessTexture(FrameUniforms frameUniforms, float2 UV, float2 texelSize, float numberOfTexels)
+float2 ClampAndScaleUVPostProcessTexture(float4 RTHandlePostProcessScale, float2 UV, float2 texelSize, float numberOfTexels)
 {
-    float4 _RTHandlePostProcessScale = frameUniforms.baseUniform._RTHandlePostProcessScale;
-    return ClampAndScaleUV(UV, texelSize, numberOfTexels, _RTHandlePostProcessScale.xy);
+    return ClampAndScaleUV(UV, texelSize, numberOfTexels, RTHandlePostProcessScale.xy);
 }
 
-float2 ClampAndScaleUVForPoint(FrameUniforms frameUniforms, float2 UV)
+float2 ClampAndScaleUVForPoint(float4 RTHandleScale, float2 UV)
 {
-    float4 _RTHandleScale = frameUniforms.baseUniform._RTHandleScale;
-    return min(UV, 1.0f) * _RTHandleScale.xy;
+    return min(UV, 1.0f) * RTHandleScale.xy;
 }
 
-float2 ClampAndScaleUVPostProcessTextureForPoint(FrameUniforms frameUniforms, float2 UV)
+float2 ClampAndScaleUVPostProcessTextureForPoint(float4 RTHandlePostProcessScale, float2 UV)
 {
-    float4 _RTHandlePostProcessScale = frameUniforms.baseUniform._RTHandlePostProcessScale;
-    return min(UV, 1.0f) * _RTHandlePostProcessScale.xy;
+    return min(UV, 1.0f) * RTHandlePostProcessScale.xy;
 }
 
 // IMPORTANT: This is expecting the corner not the center.
-float2 FromOutputPosSSToPreupsampleUV(FrameUniforms frameUniforms, int2 posSS)
+float2 FromOutputPosSSToPreupsampleUV(float4 PostProcessScreenSize, int2 posSS)
 {
-    float4 _PostProcessScreenSize = frameUniforms.baseUniform._PostProcessScreenSize;
-    return (posSS + 0.5f) * _PostProcessScreenSize.zw;
+    return (posSS + 0.5f) * PostProcessScreenSize.zw;
 }
 
 // IMPORTANT: This is expecting the corner not the center.
-float2 FromOutputPosSSToPreupsamplePosSS(FrameUniforms frameUniforms, float2 posSS)
+float2 FromOutputPosSSToPreupsamplePosSS(float4 PostProcessScreenSize, float4 ScreenSize, float2 posSS)
 {
-    float2 uv = FromOutputPosSSToPreupsampleUV(frameUniforms, posSS);
-    float4 _ScreenSize = frameUniforms.baseUniform._ScreenSize;
-    return floor(uv * _ScreenSize.xy);
+    float2 uv = FromOutputPosSSToPreupsampleUV(PostProcessScreenSize, posSS);
+    return floor(uv * ScreenSize.xy);
 }
-
-
 
 uint Get1DAddressFromPixelCoord(uint2 pixCoord, uint2 screenSize, uint eye)
 {

@@ -96,8 +96,9 @@ void SHADE_OPAQUE_ENTRY(uint3 dispatchThreadId : SV_DispatchThreadID, uint2 grou
     
     // This need to stay in sync with deferred.shader
     float4 screenSize = frameUniform.baseUniform._ScreenSize;
-    
-    float depth = LoadCameraDepth(frameUniform, float2(pixelCoord.x, pixelCoord.y));
+
+    Texture2D<float> cameraDepthTexture = ResourceDescriptorHeap[frameUniform.baseUniform._CameraDepthTextureIndex];
+    float depth = LoadCameraDepth(cameraDepthTexture, float2(pixelCoord.x, pixelCoord.y));
     
     PositionInputs posInput = GetPositionInput(float2(pixelCoord.x, (screenSize.y) - pixelCoord.y), screenSize.zw, depth,
         UNITY_MATRIX_I_VP(frameUniform), UNITY_MATRIX_V(frameUniform));
