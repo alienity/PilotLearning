@@ -137,6 +137,9 @@ namespace MoYu
         taaUniform._ExcludeTAABit = 0;
         taaUniform._HistoryContrastBlendLerp = historyContrastLerp;
 
+        taaUniform._RTHandleScaleForTAAHistory = glm::float4(1, 1, 1, 1);
+        taaUniform._RTHandleScaleForTAA = glm::float4(1, 1, 1, 1);
+
         taaUniform._TaaFrameInfo = glm::float4(EngineConfig::g_TAAConfig.taaSharpenStrength, 0, taaFrameIndex, taaEnabled);
         taaUniform._TaaJitterStrength = taaJitter;
 
@@ -246,7 +249,8 @@ namespace MoYu
 
     void TAAPass::destroy()
     {
-        
+
+
     }
 
 }

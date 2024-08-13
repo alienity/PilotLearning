@@ -171,7 +171,7 @@ void CSMain( uint3 DTid : SV_DispatchThreadID )
 
     float2 inputTexcoord = (DTid.xy + float2(0.5f, 0.5f)) * _InputSize.zw;
     int2 inputPositionCS = DTid.xy;
-    
+
     float4 _RTHandleScale = frameUniform.baseUniform._RTHandleScale;
     
     float _HistorySharpening = frameUniform.taaUniform._HistorySharpening;
@@ -192,7 +192,9 @@ void CSMain( uint3 DTid : SV_DispatchThreadID )
     
     float4 _TaaHistorySize = frameUniform.taaUniform._TaaHistorySize;
 
-    float4 _TaaFilterWeights[2] = frameUniform.taaUniform._TaaFilterWeights;
+    float4 _TaaFilterWeights[2];
+    _TaaFilterWeights[0] = frameUniform.taaUniform._TaaFilterWeights[0];
+    _TaaFilterWeights[1] = frameUniform.taaUniform._TaaFilterWeights[1];
 
     float _TAAUFilterRcpSigma2 = frameUniform.taaUniform._TAAUFilterRcpSigma2;
     float _TAAUScale = frameUniform.taaUniform._TAAUScale;
