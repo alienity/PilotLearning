@@ -625,7 +625,7 @@ namespace MoYu
         CameraMotionVectorPass::DrawInputParameters mCameraMotionVectorIntput;
         CameraMotionVectorPass::DrawOutputParameters mCameraMotionVectorOutput;
         mCameraMotionVectorIntput.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
-        mCameraMotionVectorIntput.depthBufferHandle = mGBufferOutput.depthHandle;
+        mCameraMotionVectorIntput.depthPyramidHandle = mDepthPyramidOutput.maxDepthPtyramidHandle;
         mCameraMotionVectorOutput.motionVectorHandle = mMotionVectorOutput.motionVectorHandle;
 
         mCameraMotionVectorPass->update(graph, mCameraMotionVectorIntput, mCameraMotionVectorOutput);

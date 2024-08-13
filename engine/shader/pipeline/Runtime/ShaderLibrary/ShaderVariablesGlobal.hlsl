@@ -164,13 +164,6 @@ struct AOUniform
 
 struct TAAUniform
 {
-    float4 projectionExtents;  // xy = frustum extents at distance 1, zw = jitter at distance 1
-    float4 jitterUV;
-    float feedbackMin;
-    float feedbackMax;
-    float motionScale;
-    float __Reserved0;
-    
     float _HistorySharpening;
     float _AntiFlickerIntensity;
     float _SpeedRejectionIntensity;
@@ -180,12 +173,23 @@ struct TAAUniform
     float _CentralWeight;
     uint _ExcludeTAABit;
     float _HistoryContrastBlendLerp;
-    
+
     float2 _RTHandleScaleForTAAHistory;
     float2 _RTHandleScaleForTAA;
     
     float4 _TaaFrameInfo;
     float4 _TaaJitterStrength;
+    
+    float4 _InputSize;    
+    float4 _TaaHistorySize;
+
+    float _TAAUFilterRcpSigma2;
+    float _TAAUScale;
+    float _TAAUBoxConfidenceThresh;
+    float _TAAURenderScale;
+    
+    float4 _TaaFilterWeights[2];
+    float4 _NeighbourOffsets[4];
 };
 
 struct IBLUniform

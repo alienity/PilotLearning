@@ -10,6 +10,7 @@
 cbuffer RootConstants : register(b0, space0)
 {
     uint frameUniformIndex;
+    uint depthPyramidIndex;
 };
 
 struct Attributes
@@ -41,9 +42,8 @@ void Frag(Varyings input, out float4 outColor : SV_Target0)
 
     float4 screenSize = frameUniform.baseUniform._ScreenSize;
 
-    int cameraDepthTextureIndex = frameUniform.baseUniform._CameraDepthTextureIndex;
-    Texture2D<float> _CameraDepthTexture = ResourceDescriptorHeap[cameraDepthTextureIndex];
-    float depth = LoadCameraDepth(_CameraDepthTexture, input.positionCS.xy);
+    Texture2D<float> depthPyramidRT = ResourceDescriptorHeap[depthPyramidIndex];
+    float depth = LoadCameraDepth(depthPyramidRT, input.positionCS.xy);
 
     PositionInputs posInput = GetPositionInput(input.positionCS.xy, screenSize.zw, depth,
         UNITY_MATRIX_I_VP(frameUniform), UNITY_MATRIX_V(frameUniform));

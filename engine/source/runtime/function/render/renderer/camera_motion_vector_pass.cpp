@@ -86,14 +86,14 @@ namespace MoYu
     void CameraMotionVectorPass::update(RHI::RenderGraph& graph, DrawInputParameters& passInput, DrawOutputParameters& passOutput)
     {
         RHI::RgResourceHandle perframeBufferHandle = passInput.perframeBufferHandle;
-        RHI::RgResourceHandle depthBufferHandle = passInput.depthBufferHandle;
+        RHI::RgResourceHandle depthPyramidHandle = passInput.depthPyramidHandle;
 
         RHI::RgResourceHandle motionVectorHandle = passOutput.motionVectorHandle;
         
         RHI::RenderPass& drawpass = graph.AddRenderPass("CameraMotionVectorPass");
 
         drawpass.Read(passInput.perframeBufferHandle, false, RHIResourceState::RHI_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
-        drawpass.Read(passInput.depthBufferHandle, false, RHIResourceState::RHI_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+        drawpass.Read(passInput.depthPyramidHandle, false, RHIResourceState::RHI_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
         drawpass.Write(motionVectorHandle, false, RHIResourceState::RHI_RESOURCE_STATE_RENDER_TARGET);
         
         drawpass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
@@ -111,6 +111,7 @@ namespace MoYu
             graphicContext->SetPipelineState(pCameraMotionVectorPSO.get());
 
             graphicContext->SetConstant(0, 0, registry->GetD3D12Buffer(perframeBufferHandle)->GetDefaultCBV()->GetIndex());
+            graphicContext->SetConstant(0, 1, registry->GetD3D12Texture(depthPyramidHandle)->GetDefaultSRV()->GetIndex());
 
             graphicContext->Draw(3);
         });

@@ -26,6 +26,8 @@ namespace MoYu
         float         m_aspect {1.78f};
         glm::float4x4 m_project_matrix {MYMatrix4x4::Identity};
 
+        glm::float4 zBufferParams;
+
         // 需要传入，以计算projectionMatrix
         int       m_pixelWidth {1366};
         int       m_pixelHeight {768};
@@ -61,15 +63,15 @@ namespace MoYu
         glm::float3 right() const { return (m_invRotation * X); }
 
         glm::float4x4 getViewMatrix();
-        glm::float4x4 getPersProjMatrix() const;
-        glm::float4x4 getUnJitterPersProjMatrix() const;
-        glm::float4x4 getLookAtMatrix() const;
+        glm::float4x4 getPersProjMatrix();
+        glm::float4x4 getUnJitterPersProjMatrix();
+        glm::float4x4 getLookAtMatrix();
 
         glm::float4x4 getWorldToCameraMatrix();
         glm::float4x4 getCameraToWorldMatrix();
 
-        glm::float4   getProjectionExtents(float texelOffsetX = 0, float texelOffsetY = 0) const;
-        glm::float4x4 getProjectionMatrix(float texelOffsetX, float texelOffsetY) const;
+        glm::float4   getProjectionExtents(float texelOffsetX = 0, float texelOffsetY = 0);
+        glm::float4x4 getProjectionMatrix(float texelOffsetX, float texelOffsetY);
 
         FrustumJitter* getFrustumJitter();
 

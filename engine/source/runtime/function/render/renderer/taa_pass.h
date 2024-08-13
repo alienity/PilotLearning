@@ -24,7 +24,6 @@ namespace MoYu
         struct TAAInitInfo : public RenderPassInitInfo
         {
             RHI::RgTextureDesc       m_ColorTexDesc;
-            EngineConfig::FXAAConfig m_FXAAConfig;
             ShaderCompiler*          m_ShaderCompiler;
             std::filesystem::path    m_ShaderRootPath;
         };
@@ -61,17 +60,16 @@ namespace MoYu
         void initialize(const TAAInitInfo& init_info);
         void prepareTAAMetaData(std::shared_ptr<RenderResource> render_resource);
         void update(RHI::RenderGraph& graph, DrawInputParameters& passInput, DrawOutputParameters& passOutput);
-        void drawCameraMotionVector(RHI::RenderGraph& graph, DrawInputParameters& passInput, DrawOutputParameters& passOutput);
         void destroy() override final;
 
     private:
-        Shader TemporalReprojectionCS;
-        std::shared_ptr<RHI::D3D12RootSignature> pTemporalReprojectionSignature;
-        std::shared_ptr<RHI::D3D12PipelineState> pTemporalReprojectionPSO;
+        RHI::RgTextureDesc colorDesc;
 
-        RHI::RgTextureDesc reprojectionTexDesc;
-        std::shared_ptr<RHI::D3D12Texture> reprojectionBuffer[2];
-        std::shared_ptr<RHI::D3D12Texture> motionVectorBuffer;
+        Shader TemporalAntiAliasingCS;
+        std::shared_ptr<RHI::D3D12RootSignature> pTemporalAntiAliasingSignature;
+        std::shared_ptr<RHI::D3D12PipelineState> pTemporalAntiAliasingPSO;
+
+        std::shared_ptr<RHI::D3D12Texture> historyTexture[2];
 
         int indexRead;
         int indexWrite;

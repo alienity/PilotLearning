@@ -112,6 +112,24 @@ namespace MoYu
 
         m_project_matrix = MoYu::MYMatrix4x4::createPerspectiveFieldOfView(
             MoYu::f::DEG_TO_RAD * m_fieldOfViewY, m_aspect, m_nearClipPlane, m_farClipPlane);
+
+        // Analyze the projection matrix.
+            // p[2][3] = (reverseZ ? 1 : -1) * (depth_0_1 ? 1 : 2) * (f * n) / (f - n)
+        float n = znear;
+        float f = zfar;
+        float scale = m_project_matrix[3][2] / (f * n) * (f - n);
+        bool depth_0_1 = glm::abs(scale) < 1.5f;
+        bool reverseZ = scale > 0;
+
+        // http://www.humus.name/temp/Linearize%20depth.txt
+        if (reverseZ)
+        {
+            zBufferParams = glm::float4(-1 + f / n, 1, -1 / f + 1 / n, 1 / f);
+        }
+        else
+        {
+            zBufferParams = glm::float4(1 - f / n, f / n, 1 / f - 1 / n, 1 / n);
+        }
     }
 
     glm::float4x4 RenderCamera::getViewMatrix()
@@ -138,7 +156,7 @@ namespace MoYu
         return view_matrix;
     }
 
-    glm::float4x4 RenderCamera::getPersProjMatrix() const
+    glm::float4x4 RenderCamera::getPersProjMatrix()
     {
         //glm::float4x4 proj_mat = MoYu::MYMatrix4x4::createPerspectiveFieldOfView(
         //    MoYu::f::DEG_TO_RAD * m_fieldOfViewY, m_aspect, m_nearClipPlane, m_farClipPlane);
@@ -155,14 +173,14 @@ namespace MoYu
         }
     }
 
-    glm::float4x4 RenderCamera::getUnJitterPersProjMatrix() const
+    glm::float4x4 RenderCamera::getUnJitterPersProjMatrix()
     {
         // glm::float4x4 proj_mat = MoYu::MYMatrix4x4::createPerspectiveFieldOfView(
         //     MoYu::f::DEG_TO_RAD * m_fieldOfViewY, m_aspect, m_nearClipPlane, m_farClipPlane);
         return getProjectionMatrix(0, 0);
     }
 
-    glm::float4x4 RenderCamera::getLookAtMatrix() const
+    glm::float4x4 RenderCamera::getLookAtMatrix()
     {
         return MoYu::MYMatrix4x4::createLookAtMatrix(position(), position() + forward(), up());
     }
@@ -178,7 +196,7 @@ namespace MoYu
         return glm::inverse(worldToCameraMat);
     }
 
-    glm::float4 RenderCamera::getProjectionExtents(float texelOffsetX, float texelOffsetY) const
+    glm::float4 RenderCamera::getProjectionExtents(float texelOffsetX, float texelOffsetY)
     {
         float oneExtentY = glm::tan(0.5f * MoYu::f::DEG_TO_RAD * this->m_fieldOfViewY);
         float oneExtentX = oneExtentY * this->m_aspect;
@@ -193,7 +211,7 @@ namespace MoYu
                            oneJitterY); // xy = frustum extents at distance 1, zw = jitter at distance 1
     }
 
-    glm::float4x4 RenderCamera::getProjectionMatrix(float texelOffsetX, float texelOffsetY) const
+    glm::float4x4 RenderCamera::getProjectionMatrix(float texelOffsetX, float texelOffsetY)
     {
         glm::float4 extents = this->getProjectionExtents(texelOffsetX, texelOffsetY);
 
@@ -203,6 +221,24 @@ namespace MoYu
         float xp = extents.z + extents.x;
         float ym = extents.w - extents.y;
         float yp = extents.w + extents.y;
+
+        // Analyze the projection matrix.
+        // p[2][3] = (reverseZ ? 1 : -1) * (depth_0_1 ? 1 : 2) * (f * n) / (f - n)
+        float n = m_nearClipPlane;
+        float f = m_farClipPlane;
+        float scale = m_project_matrix[3][2] / (f * n) * (f - n);
+        bool depth_0_1 = glm::abs(scale) < 1.5f;
+        bool reverseZ = scale > 0;
+
+        // http://www.humus.name/temp/Linearize%20depth.txt
+        if (reverseZ)
+        {
+            zBufferParams = glm::float4(-1 + f / n, 1, -1 / f + 1 / n, 1 / f);
+        }
+        else
+        {
+            zBufferParams = glm::float4(1 - f / n, f / n, 1 / f - 1 / n, 1 / n);
+        }
 
         return MoYu::MYMatrix4x4::createPerspectiveOffCenter(xm * cn, xp * cn, ym * cn, yp * cn, cn, cf);
     }
