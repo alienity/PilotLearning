@@ -3,11 +3,22 @@
 
 namespace MoYu
 {
+    RenderCamera::RenderCamera(bool orthographic)
+    {
+        this->taaFrameIndex = 0;
+        this->orthographic = orthographic;
+    }
+
+    RenderCamera::~RenderCamera()
+    {
+
+    }
+
     void RenderCamera::updatePerFrame()
     {
         if (EngineConfig::g_AntialiasingMode == EngineConfig::AntialiasingMode::TAA)
         {
-            glm::float4 activeSample = m_frustumJitter.UpdateSample(this);
+            taaFrameIndex += 1;
         }
 
 
@@ -156,28 +167,84 @@ namespace MoYu
         return view_matrix;
     }
 
-    glm::float4x4 RenderCamera::getPersProjMatrix()
+    glm::float4x4 RenderCamera::getProjMatrix(bool unjitter)
     {
-        //glm::float4x4 proj_mat = MoYu::MYMatrix4x4::createPerspectiveFieldOfView(
-        //    MoYu::f::DEG_TO_RAD * m_fieldOfViewY, m_aspect, m_nearClipPlane, m_farClipPlane);
-
-        if (EngineConfig::g_AntialiasingMode == EngineConfig::AntialiasingMode::TAA)
+        if (EngineConfig::g_AntialiasingMode != EngineConfig::AntialiasingMode::TAA || unjitter)
         {
-            glm::float4 activeSample = m_frustumJitter.activeSample;
+            float actualWidth = m_pixelWidth;
+            float actualHeight = m_pixelHeight;
 
-            return getProjectionMatrix(activeSample.x, activeSample.y);
+            if (orthographic)
+            {
+                m_project_matrix = MoYu::MYMatrix4x4::createOrthographic(actualWidth, actualHeight, m_nearClipPlane, m_farClipPlane);
+            }
+            else
+            {
+                m_project_matrix = getProjectionMatrix(0.0f, 0.0f);
+            }
         }
         else
         {
-            return getProjectionMatrix(0, 0);
-        }
-    }
+            // The variance between 0 and the actual halton sequence values reveals noticeable
+            // instability in Unity's shadow maps, so we avoid index 0.
+            float jitterX = HaltonSequence::Get((taaFrameIndex & 1023) + 1, 2) - 0.5f;
+            float jitterY = HaltonSequence::Get((taaFrameIndex & 1023) + 1, 3) - 0.5f;
 
-    glm::float4x4 RenderCamera::getUnJitterPersProjMatrix()
-    {
-        // glm::float4x4 proj_mat = MoYu::MYMatrix4x4::createPerspectiveFieldOfView(
-        //     MoYu::f::DEG_TO_RAD * m_fieldOfViewY, m_aspect, m_nearClipPlane, m_farClipPlane);
-        return getProjectionMatrix(0, 0);
+            if (EngineConfig::g_AntialiasingMode == EngineConfig::AntialiasingMode::TAA)
+            {
+                float taaJitterScale = EngineConfig::g_TAAConfig.taaJitterScale;
+                jitterX *= taaJitterScale;
+                jitterY *= taaJitterScale;
+            }
+
+            float actualWidth = m_pixelWidth;
+            float actualHeight = m_pixelHeight;
+
+            taaJitter = glm::float4(jitterX, jitterY, jitterX / actualWidth, jitterY / actualHeight);
+
+            if (orthographic)
+            {
+                float vertical = actualWidth * 0.5f;
+                float horizontal = actualHeight * 0.5f;
+
+                glm::float4 offset = taaJitter;
+                offset.x *= horizontal / (0.5f * actualWidth);
+                offset.y *= vertical / (0.5f * actualHeight);
+
+                float left = offset.x - horizontal;
+                float right = offset.x + horizontal;
+                float top = offset.y + vertical;
+                float bottom = offset.y - vertical;
+
+                m_project_matrix = MoYu::MYMatrix4x4::createOrthographicOffCenter(left, right, bottom, top, m_nearClipPlane, m_farClipPlane);
+            }
+            else
+            {
+                m_project_matrix = getProjectionMatrix(jitterX, jitterY);
+            }
+        }
+
+        {
+            // Analyze the projection matrix.
+            // p[2][3] = (reverseZ ? 1 : -1) * (depth_0_1 ? 1 : 2) * (f * n) / (f - n)
+            float n = m_nearClipPlane;
+            float f = m_farClipPlane;
+            float scale = m_project_matrix[3][2] / (f * n) * (f - n);
+            bool depth_0_1 = glm::abs(scale) < 1.5f;
+            bool reverseZ = scale > 0;
+
+            // http://www.humus.name/temp/Linearize%20depth.txt
+            if (reverseZ)
+            {
+                zBufferParams = glm::float4(-1 + f / n, 1, -1 / f + 1 / n, 1 / f);
+            }
+            else
+            {
+                zBufferParams = glm::float4(1 - f / n, f / n, 1 / f - 1 / n, 1 / n);
+            }
+        }
+
+        return m_project_matrix;
     }
 
     glm::float4x4 RenderCamera::getLookAtMatrix()
@@ -196,14 +263,14 @@ namespace MoYu
         return glm::inverse(worldToCameraMat);
     }
 
-    glm::float4 RenderCamera::getProjectionExtents(float texelOffsetX, float texelOffsetY)
+    glm::float4 RenderCamera::getProjectionExtents(float jitterX, float jitterY)
     {
         float oneExtentY = glm::tan(0.5f * MoYu::f::DEG_TO_RAD * this->m_fieldOfViewY);
         float oneExtentX = oneExtentY * this->m_aspect;
         float texelSizeX = oneExtentX / (0.5f * this->m_pixelWidth);
         float texelSizeY = oneExtentY / (0.5f * this->m_pixelHeight);
-        float oneJitterX = texelSizeX * texelOffsetX;
-        float oneJitterY = texelSizeY * texelOffsetY;
+        float oneJitterX = texelSizeX * jitterX;
+        float oneJitterY = texelSizeY * jitterY;
 
         return glm::float4(oneExtentX,
                            oneExtentY,
@@ -211,9 +278,9 @@ namespace MoYu
                            oneJitterY); // xy = frustum extents at distance 1, zw = jitter at distance 1
     }
 
-    glm::float4x4 RenderCamera::getProjectionMatrix(float texelOffsetX, float texelOffsetY)
+    glm::float4x4 RenderCamera::getProjectionMatrix(float jitterX, float jitterY)
     {
-        glm::float4 extents = this->getProjectionExtents(texelOffsetX, texelOffsetY);
+        glm::float4 extents = this->getProjectionExtents(jitterX, jitterY);
 
         float cf = this->m_farClipPlane;
         float cn = this->m_nearClipPlane;
@@ -222,30 +289,7 @@ namespace MoYu
         float ym = extents.w - extents.y;
         float yp = extents.w + extents.y;
 
-        // Analyze the projection matrix.
-        // p[2][3] = (reverseZ ? 1 : -1) * (depth_0_1 ? 1 : 2) * (f * n) / (f - n)
-        float n = m_nearClipPlane;
-        float f = m_farClipPlane;
-        float scale = m_project_matrix[3][2] / (f * n) * (f - n);
-        bool depth_0_1 = glm::abs(scale) < 1.5f;
-        bool reverseZ = scale > 0;
-
-        // http://www.humus.name/temp/Linearize%20depth.txt
-        if (reverseZ)
-        {
-            zBufferParams = glm::float4(-1 + f / n, 1, -1 / f + 1 / n, 1 / f);
-        }
-        else
-        {
-            zBufferParams = glm::float4(1 - f / n, f / n, 1 / f - 1 / n, 1 / n);
-        }
-
         return MoYu::MYMatrix4x4::createPerspectiveOffCenter(xm * cn, xp * cn, ym * cn, yp * cn, cn, cf);
-    }
-
-    FrustumJitter* RenderCamera::getFrustumJitter()
-    {
-        return &m_frustumJitter;
     }
 
 } // namespace MoYu

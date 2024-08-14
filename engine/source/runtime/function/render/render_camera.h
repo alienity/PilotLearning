@@ -1,7 +1,7 @@
 #pragma once
 
 #include "runtime/core/math/moyu_math2.h"
-#include "runtime/function/render/jitter_helper.h"
+#include "runtime/function/render/HaltonSequence.h"
 #include <mutex>
 
 namespace MoYu
@@ -15,6 +15,9 @@ namespace MoYu
     class RenderCamera
     {
     public:
+        RenderCamera(bool orthographic = false);
+        ~RenderCamera();
+
         RenderCameraType m_current_camera_type {RenderCameraType::Editor};
 
         glm::float3 m_up_axis {Y};
@@ -27,6 +30,10 @@ namespace MoYu
         glm::float4x4 m_project_matrix {MYMatrix4x4::Identity};
 
         glm::float4 zBufferParams;
+
+        long long taaFrameIndex{ 0 };
+        bool orthographic{ false };
+        glm::float4 taaJitter;
 
         // 需要传入，以计算projectionMatrix
         int       m_pixelWidth {1366};
@@ -63,21 +70,17 @@ namespace MoYu
         glm::float3 right() const { return (m_invRotation * X); }
 
         glm::float4x4 getViewMatrix();
-        glm::float4x4 getPersProjMatrix();
-        glm::float4x4 getUnJitterPersProjMatrix();
+        glm::float4x4 getProjMatrix(bool unjitter = false);
         glm::float4x4 getLookAtMatrix();
 
         glm::float4x4 getWorldToCameraMatrix();
         glm::float4x4 getCameraToWorldMatrix();
 
-        glm::float4   getProjectionExtents(float texelOffsetX = 0, float texelOffsetY = 0);
-        glm::float4x4 getProjectionMatrix(float texelOffsetX, float texelOffsetY);
-
-        FrustumJitter* getFrustumJitter();
-
     protected:
+        glm::float4   getProjectionExtents(float jitterX = 0, float jitterY = 0);
+        glm::float4x4 getProjectionMatrix(float jitterX, float jitterY);
+
         std::mutex m_view_matrix_mutex;
-        FrustumJitter m_frustumJitter;
     };
 
     inline const glm::float3 RenderCamera::X = {1.0f, 0.0f, 0.0f};

@@ -864,7 +864,7 @@ namespace MoYu
         PostprocessPasses::PostprocessOutputParameters mPostprocessOutputParams;
 
         mPostprocessIntputParams.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
-        mPostprocessIntputParams.motionVectorHandle = outColorHandle;
+        mPostprocessIntputParams.motionVectorHandle = mCameraMotionVectorOutput.motionVectorHandle;
         mPostprocessIntputParams.inputSceneColorHandle = mDrawTransOutputParams.renderTargetColorHandle;
         mPostprocessIntputParams.inputSceneDepthHandle = mDrawTransOutputParams.renderTargetDepthHandle;
         mPostprocessPasses->update(graph, mPostprocessIntputParams, mPostprocessOutputParams);

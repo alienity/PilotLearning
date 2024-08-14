@@ -1472,7 +1472,7 @@ namespace MoYu
 
                 glm::float4x4 viewMatrix  = g_editor_global_context.m_scene_manager->getEditorCamera()->getViewMatrix();
                 glm::mat4  _cameraView = viewMatrix;
-                glm::float4x4 projMatrix = g_editor_global_context.m_scene_manager->getEditorCamera()->getPersProjMatrix();
+                glm::float4x4 projMatrix = g_editor_global_context.m_scene_manager->getEditorCamera()->getProjMatrix(true);
                 glm::mat4  _projMatrix    = projMatrix;
                 glm::mat4  _identiyMatrix = MYMatrix4x4::Identity;
 

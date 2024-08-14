@@ -131,28 +131,6 @@ SamplerState s_trilinear_clamp_sampler  : register(s13);
 SamplerState s_trilinear_repeat_sampler : register(s14);
 SamplerComparisonState s_linear_clamp_compare_sampler : register(s15);
 
-
-// struct Attributes
-// {
-//     uint vertexID : SV_VertexID;
-// };
-//
-// struct Varyings
-// {
-//     float4 positionCS : SV_POSITION;
-//     float2 texcoord   : TEXCOORD0;
-// };
-//
-// Varyings Vert(Attributes input)
-// {
-//     Varyings output;
-//     output.positionCS = GetFullScreenTriangleVertexPosition(input.vertexID);
-//     output.texcoord = GetFullScreenTriangleTexCoord(input.vertexID);
-//     return output;
-// }
-
-// void FragTAA(Varyings input, out CTYPE outColor : SV_Target0)
-
 [numthreads( 8, 8, 1 )]
 void CSMain( uint3 DTid : SV_DispatchThreadID )
 {
@@ -208,20 +186,10 @@ void CSMain( uint3 DTid : SV_DispatchThreadID )
 
     float2 uv = inputTexcoord;
 
-#ifdef TAA_UPSAMPLE
-    float2 outputPixInInput = input.texcoord * _InputSize.xy - _TaaJitterStrength.xy;
-
-    uv = _InputSize.zw * (0.5f + floor(outputPixInInput));
-#endif
-
     // --------------- Get closest motion vector ---------------
 
     int2 samplePos = inputPositionCS.xy;
-
-#ifdef TAA_UPSAMPLE
-    samplePos = outputPixInInput;
-#endif
-
+    
     bool excludeTAABit = false;
 #if DIRECT_STENCIL_SAMPLE
     uint stencil = GetStencilValue(LOAD_TEXTURE2D_X(_StencilTexture, inputPositionCS.xy));
@@ -262,11 +230,6 @@ void CSMain( uint3 DTid : SV_DispatchThreadID )
 
         // --------------- Filter central sample ---------------
         float4 filterParams = 0;
-#ifdef TAA_UPSAMPLE
-        filterParams.x = _TAAUFilterRcpSigma2;
-        filterParams.y = _TAAUScale;
-        filterParams.zw = outputPixInInput - (floor(outputPixInInput) + 0.5f);
-#endif
 
 #if CENTRAL_FILTERING == BLACKMAN_HARRIS
         CTYPE filteredColor = FilterCentralColor(samples, _CentralWeight, _TaaFilterWeights);
@@ -327,9 +290,6 @@ void CSMain( uint3 DTid : SV_DispatchThreadID )
         blendFactor = ModifyBlendWithMotionVectorRejection(_InputVelocityMagnitudeHistory, lengthMV, prevUV, blendFactor, _SpeedRejectionIntensity, _RTHandleScaleForTAAHistory);
 #endif
 
-#ifdef TAA_UPSAMPLE
-        blendFactor *= GetUpsampleConfidence(filterParams.zw, _TAAUBoxConfidenceThresh, _TAAUFilterRcpSigma2, _TAAUScale);
-#endif
         blendFactor = clamp(blendFactor, 0.03f, 0.98f);
 
         CTYPE finalColor;
@@ -356,28 +316,4 @@ void CSMain( uint3 DTid : SV_DispatchThreadID )
 #endif
     // -------------------------------------------------------------
 }
-
-// void FragCopyHistory(Varyings input, out CTYPE outColor : SV_Target0)
-// {
-//     ConstantBuffer<FrameUniforms> frameUniform = ResourceDescriptorHeap[frameUniformIndex];
-//     Texture2D<float4> _InputTexture = ResourceDescriptorHeap[inputTextureIndex];
-//     
-//     float4 _TaaJitterStrength = frameUniform.taaUniform._TaaJitterStrength;
-//     float2 _RTHandleScaleForTAA = frameUniform.taaUniform._RTHandleScaleForTAA;
-//
-//     float4 _InputSize = frameUniform.taaUniform._InputSize;
-//     
-//     float2 jitter = _TaaJitterStrength.zw;
-//     float2 uv = input.texcoord;
-//
-// #ifdef TAA_UPSAMPLE
-//     float2 outputPixInInput = input.texcoord * _InputSize.xy - _TaaJitterStrength.xy;
-//
-//     uv = _InputSize.zw * (0.5f + floor(outputPixInInput));
-// #endif
-//     CTYPE color = Fetch4(_InputTexture, s_linear_clamp_sampler, uv, 0.0, _RTHandleScaleForTAA, _InputSize).CTYPE_SWIZZLE;
-//
-//     outColor = color;
-// }
-
 

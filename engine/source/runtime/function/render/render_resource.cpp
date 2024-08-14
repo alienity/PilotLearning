@@ -145,7 +145,7 @@ namespace MoYu
     void RenderResource::updateFrameUniforms(RenderScene* render_scene, RenderCamera* camera)
     {
         glm::float4x4 view_matrix     = camera->getViewMatrix();
-        glm::float4x4 proj_matrix     = camera->getPersProjMatrix();
+        glm::float4x4 proj_matrix     = camera->getProjMatrix();
         glm::float3   camera_position = camera->position();
         
         float _cn = camera->m_nearClipPlane;
@@ -158,7 +158,7 @@ namespace MoYu
         double _pt = g_SystemTime.GetPrevTimeSecs();
         double _dt = g_SystemTime.GetDeltaTimeSecs();
 
-        glm::float4x4 unjitter_proj_matrix = camera->getUnJitterPersProjMatrix();
+        glm::float4x4 unjitter_proj_matrix = camera->getProjMatrix(true);
         
         // FrameUniforms
         HLSL::FrameUniforms* _frameUniforms = &m_FrameUniforms;

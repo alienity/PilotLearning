@@ -1,7 +1,6 @@
 #include "runtime/function/render/renderer/taa_pass.h"
 #include "runtime/resource/config_manager/config_manager.h"
 #include "runtime/function/render/rhi/rhi_core.h"
-#include "runtime/function/render/jitter_helper.h"
 #include "runtime/function/render/renderer/pass_helper.h"
 
 #include <cassert>
@@ -103,12 +102,7 @@ namespace MoYu
         indexRead = (taaFrameIndex + 1) % 2;
         indexWrite = taaFrameIndex;
 
-        MoYu::FrustumJitter* m_frustumJitter = m_render_camera->getFrustumJitter();
-
-        float jitterX = m_frustumJitter->activeSample.x;
-        float jitterY = m_frustumJitter->activeSample.y;
-
-        glm::float4 taaJitter = glm::float4(jitterX, jitterY, jitterX / colorDesc.Width, jitterY / colorDesc.Height);
+        glm::float4 taaJitter = m_render_camera->taaJitter;
 
         // The anti flicker becomes much more aggressive on higher values
         float temporalContrastForMaxAntiFlicker = 
@@ -223,7 +217,7 @@ namespace MoYu
             struct RootIndexBuffer
             {
                 UINT perFrameBufferIndex;
-                UINT motionVectorBufferIndex;
+                UINT cameraMotionVectorsTextureIndex;
                 UINT mainColorBufferIndex;
                 UINT depthBufferIndex;
                 UINT historyReadIndex;
@@ -249,6 +243,7 @@ namespace MoYu
 
     void TAAPass::destroy()
     {
+
 
 
     }
