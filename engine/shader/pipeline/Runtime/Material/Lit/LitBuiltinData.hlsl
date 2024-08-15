@@ -6,7 +6,7 @@ void GetBuiltinData(
     float3 bentNormalWS, float depthOffset, float3 emissiveColor, out BuiltinData builtinData)
 {
     // For back lighting we use the oposite vertex normal
-    InitBuiltinData(posInput, alpha, bentNormalWS, -input.tangentToWorld[2], input.texCoord1, input.texCoord2, builtinData);
+    InitBuiltinData(frameUniform, posInput, alpha, bentNormalWS, -input.tangentToWorld[2], input.texCoord1, input.texCoord2, builtinData);
 
     builtinData.emissiveColor = emissiveColor;
 

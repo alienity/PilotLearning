@@ -40,9 +40,18 @@ float2 CalculateMotionVector(float4 positionCS, float4 previousPositionCS, float
 // 3. PostInitBuiltinData - Handle debug mode + allow the current lighting model to update the data with ModifyBakedDiffuseLighting
 
 // This method initialize BuiltinData usual values and after update of builtinData by the caller must be follow by PostInitBuiltinData
-void InitBuiltinData(PositionInputs posInput, float alpha, float3 normalWS, float3 backNormalWS, float4 texCoord1, float4 texCoord2,
+void InitBuiltinData(FrameUniforms frameUniform, PositionInputs posInput, float alpha, float3 normalWS, float3 backNormalWS, float4 texCoord1, float4 texCoord2,
                         out BuiltinData builtinData)
 {
+    SHCoefficient inSH;
+    inSH.unity_SHAr = frameUniform.iblUniform.iblSH[0];
+    inSH.unity_SHAg = frameUniform.iblUniform.iblSH[1];
+    inSH.unity_SHAb = frameUniform.iblUniform.iblSH[2];
+    inSH.unity_SHBr = frameUniform.iblUniform.iblSH[3];
+    inSH.unity_SHBg = frameUniform.iblUniform.iblSH[4];
+    inSH.unity_SHBb = frameUniform.iblUniform.iblSH[5];
+    inSH.unity_SHC =  frameUniform.iblUniform.iblSH[6];
+    
     ZERO_BUILTIN_INITIALIZE(builtinData);
 
     builtinData.opacity = alpha;
@@ -53,8 +62,8 @@ void InitBuiltinData(PositionInputs posInput, float alpha, float3 normalWS, floa
     // Sample lightmap/lightprobe/volume proxy
     builtinData.bakeDiffuseLighting = 0.0;
     builtinData.backBakeDiffuseLighting = 0.0;
-    // SampleBakedGI(  posInput, normalWS, backNormalWS, builtinData.renderingLayers, texCoord1.xy, texCoord2.xy,
-    //                 builtinData.bakeDiffuseLighting, builtinData.backBakeDiffuseLighting);
+    SampleBakedGI(  posInput, normalWS, backNormalWS, builtinData.renderingLayers, texCoord1.xy, texCoord2.xy, inSH,
+                    builtinData.bakeDiffuseLighting, builtinData.backBakeDiffuseLighting);
 
 #ifdef SHADOWS_SHADOWMASK
     float4 shadowMask = SampleShadowMask(posInput.positionWS, texCoord1.xy);
@@ -112,17 +121,17 @@ void PostInitBuiltinData(
 
 #ifdef MODIFY_BAKED_DIFFUSE_LIGHTING
 
-    // ModifyBakedDiffuseLighting(frameUniform, renderData, matProperties, samplerStruct, V, posInput, surfaceData, builtinData);
+    ModifyBakedDiffuseLighting(frameUniform, renderData, matProperties, samplerStruct, V, posInput, surfaceData, builtinData);
 
 #endif
 
     // Apply control from the indirect lighting volume settings - This is apply here so we don't affect emissive
     // color in case of lit deferred for example and avoid material to have to deal with it
     // This is applied only on bakeDiffuseLighting as ModifyBakedDiffuseLighting combine both bakeDiffuseLighting and backBakeDiffuseLighting
-    // float multiplier = GetIndirectDiffuseMultiplier(builtinData.renderingLayers);
-    // builtinData.bakeDiffuseLighting *= multiplier;
+    float multiplier = GetIndirectDiffuseMultiplier(frameUniform, builtinData.renderingLayers);
+    builtinData.bakeDiffuseLighting *= multiplier;
 
-    // ApplyDebugToBuiltinData(builtinData);
+    ApplyDebugToBuiltinData(builtinData);
 }
 
 #endif //__BUILTINUTILITIES_HLSL__

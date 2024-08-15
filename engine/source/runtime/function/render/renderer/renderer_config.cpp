@@ -11,6 +11,8 @@ namespace EngineConfig
 
     TAAConfig g_TAAConfig = TAAConfig();
 
+    GIConfig g_GIConfig = GIConfig();
+
     HDRConfig g_HDRConfig = HDRConfig();
 
     const float kInitialMinLog = -12.0f;

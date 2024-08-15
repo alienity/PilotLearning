@@ -368,6 +368,8 @@ namespace MoYu
 
             for (size_t i = 0; i < 7; i++)
             {
+                memcpy(EngineConfig::g_SHConfig._GSH, _SH, sizeof(glm::float4) * 7);
+
                 MoYu::LogSystem::Instance()->log(MoYu::LogSystem::LogLevel::Info,
                                                  "_sh[{0:d}] = float3({1:f}, {2:f}, {3:f}, {4:f})",
                                                  i,

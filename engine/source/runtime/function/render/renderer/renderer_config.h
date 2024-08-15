@@ -71,6 +71,21 @@ namespace EngineConfig
 
     extern TAAConfig g_TAAConfig;
 
+    enum IndirectDiffuseMode
+    {
+        Off,
+        ScreenSpace,
+        Voxel,
+        Mixed
+    };
+
+    struct GIConfig
+    {
+        IndirectDiffuseMode indirectDiffuseMode = ScreenSpace;
+    };
+
+    extern GIConfig g_GIConfig;
+
     struct HDRConfig
     {
         bool  m_EnableHDR              = true;

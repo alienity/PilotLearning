@@ -5,34 +5,45 @@
 #include "../Lighting/ScreenSpaceLighting/ScreenSpaceGlobalIllumination.hlsl"
 #include "../Lighting/ScreenSpaceLighting/ScreenSpaceReflection.hlsl"
 
+struct SHCoefficient
+{
+    float4 unity_SHAr;
+    float4 unity_SHAg;
+    float4 unity_SHAb;
+    float4 unity_SHBr;
+    float4 unity_SHBg;
+    float4 unity_SHBb;
+    float4 unity_SHC;
+};
+
 // // We need to define this before including ProbeVolume.hlsl as that file expects this function to be defined.
 // // AmbientProbe Data is fetch directly from a compute buffer to remain on GPU and is preconvolved with clamped cosinus
 // float3 EvaluateAmbientProbe(float3 normalWS)
 // {
 //     return SampleSH9(_AmbientProbeData, normalWS);
 // }
-//
-// float3 EvaluateLightProbe(float3 normalWS)
-// {
-//     float4 SHCoefficients[7];
-//     SHCoefficients[0] = unity_SHAr;
-//     SHCoefficients[1] = unity_SHAg;
-//     SHCoefficients[2] = unity_SHAb;
-//     SHCoefficients[3] = unity_SHBr;
-//     SHCoefficients[4] = unity_SHBg;
-//     SHCoefficients[5] = unity_SHBb;
-//     SHCoefficients[6] = unity_SHC;
-//
-//     return SampleSH9(SHCoefficients, normalWS);
-// }
 
-void EvaluateLightProbeBuiltin(float3 positionRWS, float3 normalWS, float3 backNormalWS, inout float3 bakeDiffuseLighting, inout float3 backBakeDiffuseLighting)
+float3 EvaluateLightProbe(float3 normalWS, in SHCoefficient inSH)
 {
-//     if (unity_ProbeVolumeParams.x == 0.0)
-//     {
-//         bakeDiffuseLighting += EvaluateLightProbe(normalWS);
-//         backBakeDiffuseLighting += EvaluateLightProbe(backNormalWS);
-//     }
+    float4 SHCoefficients[7];
+    SHCoefficients[0] = inSH.unity_SHAr;
+    SHCoefficients[1] = inSH.unity_SHAg;
+    SHCoefficients[2] = inSH.unity_SHAb;
+    SHCoefficients[3] = inSH.unity_SHBr;
+    SHCoefficients[4] = inSH.unity_SHBg;
+    SHCoefficients[5] = inSH.unity_SHBb;
+    SHCoefficients[6] = inSH.unity_SHC;
+
+    return SampleSH9(SHCoefficients, normalWS);
+}
+
+void EvaluateLightProbeBuiltin(float3 positionRWS, float3 normalWS, float3 backNormalWS, in SHCoefficient inSH, inout float3 bakeDiffuseLighting, inout float3 backBakeDiffuseLighting)
+{
+    // if (unity_ProbeVolumeParams.x == 0.0)
+    {
+        bakeDiffuseLighting += EvaluateLightProbe(normalWS, inSH);
+        backBakeDiffuseLighting += EvaluateLightProbe(backNormalWS, inSH);
+    }
 //     else
 //     {
 //         // Note: Probe volume here refer to LPPV not APV
@@ -54,6 +65,7 @@ void SampleBakedGI(
     float2 uvStaticLightmap,
     float2 uvDynamicLightmap,
     bool needToIncludeAPV,
+    in SHCoefficient inSH,
     out float3 bakeDiffuseLighting,
     out float3 backBakeDiffuseLighting)
 {
@@ -66,22 +78,14 @@ void SampleBakedGI(
     // The check need to be here to work with both regular shader and shader graph
     // Note: With Probe volume the code is skip in the lightloop if any of those effects is enabled
     // We prevent to read GI only if we are not raytrace pass that are used to fill the RTGI/Mixed buffer need to be executed normaly
-// #if !defined(_SURFACE_TYPE_TRANSPARENT) && (SHADERPASS != SHADERPASS_RAYTRACING_INDIRECT) && (SHADERPASS != SHADERPASS_RAYTRACING_GBUFFER)
-//     if (_IndirectDiffuseMode != INDIRECTDIFFUSEMODE_OFF
-// #if (SHADERPASS == SHADERPASS_GBUFER)
-//         && _IndirectDiffuseMode != INDIRECTDIFFUSEMODE_MIXED && _ReflectionsMode != REFLECTIONSMODE_MIXED
-// #endif
-//         )
-//         return;
-// #endif
+#if !defined(_SURFACE_TYPE_TRANSPARENT) && (SHADERPASS != SHADERPASS_RAYTRACING_INDIRECT) && (SHADERPASS != SHADERPASS_RAYTRACING_GBUFFER)
+    // if (_IndirectDiffuseMode != INDIRECTDIFFUSEMODE_OFF)
+    //     return;
+#endif
 
     float3 positionRWS = posInputs.positionWS;
 
-    EvaluateLightProbeBuiltin(positionRWS, normalWS, backNormalWS, bakeDiffuseLighting, backBakeDiffuseLighting);
-
-//     // We only want to apply the ray tracing ambient probe dimmer on the ambient probe
-//     // and legacy light probes (and obviously only in the ray tracing shaders).
-// #endif
+    EvaluateLightProbeBuiltin(positionRWS, normalWS, backNormalWS, inSH, bakeDiffuseLighting, backBakeDiffuseLighting);
 }
 
 void SampleBakedGI(
@@ -90,15 +94,16 @@ void SampleBakedGI(
     float3 backNormalWS,
     uint renderingLayers,
     float2 uvStaticLightmap,
-    float2 uvDynamicLightmap,   
+    float2 uvDynamicLightmap,
+    in SHCoefficient inSH,
     out float3 bakeDiffuseLighting,
     out float3 backBakeDiffuseLighting)
 {
     bool needToIncludeAPV = false;
-    SampleBakedGI(posInputs, normalWS, backNormalWS, renderingLayers, uvStaticLightmap, uvDynamicLightmap, needToIncludeAPV, bakeDiffuseLighting, backBakeDiffuseLighting);
+    SampleBakedGI(posInputs, normalWS, backNormalWS, renderingLayers, uvStaticLightmap, uvDynamicLightmap, needToIncludeAPV, inSH, bakeDiffuseLighting, backBakeDiffuseLighting);
 }
 
-float3 SampleBakedGI(float3 positionRWS, float3 normalWS, float2 uvStaticLightmap, float2 uvDynamicLightmap, bool needToIncludeAPV = false)
+float3 SampleBakedGI(float3 positionRWS, float3 normalWS, float2 uvStaticLightmap, float2 uvDynamicLightmap, in SHCoefficient inSH, bool needToIncludeAPV = false)
 {
     // Need PositionInputs for indexing probe volume clusters, but they are not availbile from the current SampleBakedGI() function signature.
     // Reconstruct.
@@ -110,7 +115,7 @@ float3 SampleBakedGI(float3 positionRWS, float3 normalWS, float2 uvStaticLightma
     const float3 backNormalWSUnused = 0.0;
     float3 bakeDiffuseLighting;
     float3 backBakeDiffuseLightingUnused;
-    SampleBakedGI(posInputs, normalWS, backNormalWSUnused, renderingLayers, uvStaticLightmap, uvDynamicLightmap, needToIncludeAPV, bakeDiffuseLighting, backBakeDiffuseLightingUnused);
+    SampleBakedGI(posInputs, normalWS, backNormalWSUnused, renderingLayers, uvStaticLightmap, uvDynamicLightmap,needToIncludeAPV,  inSH, bakeDiffuseLighting, backBakeDiffuseLightingUnused);
 
     return bakeDiffuseLighting;
 }

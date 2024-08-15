@@ -216,10 +216,10 @@ namespace MoYu
         _baseUniform.refractionLodOffset = 0;
         _baseUniform.baseReserved0 = 0;
 
-        _baseUniform._IndirectDiffuseLightingMultiplier = 1;
-        _baseUniform._IndirectDiffuseLightingLayers = 0;
+        _baseUniform._IndirectDiffuseLightingMultiplier = 0.3f;
+        _baseUniform._IndirectDiffuseLightingLayers = 255;
         _baseUniform._ReflectionLightingMultiplier = 1;
-        _baseUniform._ReflectionLightingLayers = 0;
+        _baseUniform._ReflectionLightingLayers = 255;
 
         _frameUniforms->baseUniform = _baseUniform;
 
