@@ -376,7 +376,7 @@ CTYPE GetFilteredHistory(TEXTURE2D(HistoryTexture), SAMPLER(PointClampSampler),
     CTYPE history = 0;
 
 #if (HISTORY_SAMPLING_METHOD == BILINEAR || defined(FORCE_BILINEAR_HISTORY))
-    history = HistoryBilinear(HistoryTexture, UV, rtHandleScale);
+    history = HistoryBilinear(HistoryTexture, PointClampSampler, UV, rtHandleScale, screenSize);
 #elif HISTORY_SAMPLING_METHOD == BICUBIC_5TAP
     history = HistoryBicubic5Tap(HistoryTexture, PointClampSampler, UV, sharpening, historyBufferInfo, rtHandleScale, screenSize);
 #endif
@@ -470,6 +470,8 @@ void MinMaxNeighbourhood(inout NeighbourhoodSamples samples)
 void VarianceNeighbourhood(inout NeighbourhoodSamples samples, float historyLuma, float colorLuma,
     float2 antiFlickerParams, float motionVecLenInPixels, float downsampleFactor, out float aggressiveClampedHistoryLuma)
 {
+    aggressiveClampedHistoryLuma = 0;
+    
     CTYPE moment1 = 0;
     CTYPE moment2 = 0;
 
