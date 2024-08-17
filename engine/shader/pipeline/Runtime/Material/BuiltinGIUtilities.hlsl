@@ -16,12 +16,12 @@ struct SHCoefficient
     float4 unity_SHC;
 };
 
-// // We need to define this before including ProbeVolume.hlsl as that file expects this function to be defined.
-// // AmbientProbe Data is fetch directly from a compute buffer to remain on GPU and is preconvolved with clamped cosinus
-// float3 EvaluateAmbientProbe(float3 normalWS)
-// {
-//     return SampleSH9(_AmbientProbeData, normalWS);
-// }
+// We need to define this before including ProbeVolume.hlsl as that file expects this function to be defined.
+// AmbientProbe Data is fetch directly from a compute buffer to remain on GPU and is preconvolved with clamped cosinus
+float3 EvaluateAmbientProbe(float4 _AmbientProbeData[7], float3 normalWS)
+{
+    return SampleSH9(_AmbientProbeData, normalWS);
+}
 
 float3 EvaluateLightProbe(float3 normalWS, in SHCoefficient inSH)
 {
@@ -79,8 +79,8 @@ void SampleBakedGI(
     // Note: With Probe volume the code is skip in the lightloop if any of those effects is enabled
     // We prevent to read GI only if we are not raytrace pass that are used to fill the RTGI/Mixed buffer need to be executed normaly
 #if !defined(_SURFACE_TYPE_TRANSPARENT) && (SHADERPASS != SHADERPASS_RAYTRACING_INDIRECT) && (SHADERPASS != SHADERPASS_RAYTRACING_GBUFFER)
-    // if (_IndirectDiffuseMode != INDIRECTDIFFUSEMODE_OFF)
-    //     return;
+    if (_IndirectDiffuseMode != INDIRECTDIFFUSEMODE_OFF)
+        return;
 #endif
 
     float3 positionRWS = posInputs.positionWS;

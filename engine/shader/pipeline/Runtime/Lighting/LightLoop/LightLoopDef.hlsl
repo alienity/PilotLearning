@@ -124,9 +124,11 @@ bool IsEnvIndexTexture2D(int index) { return index < 0; }
 // EnvIndex can also be use to fetch in another array of struct (to  atlas information etc...).
 // Cubemap      : texCoord = direction vector
 // Texture2D    : texCoord = projectedPositionWS - lightData.capturePosition
-float4 SampleEnv(LightLoopContext lightLoopContext, int index, float3 texCoord, float lod, float rangeCompressionFactorCompensation, float2 positionNDC, int sliceIdx = 0)
+float4 SampleEnv(LightLoopContext lightLoopContext, int index, SamplerStruct samplerStruct, float3 texCoord, float lod, float rangeCompressionFactorCompensation, float2 positionNDC, int sliceIdx = 0)
 {
-    return float4(1,1,1,1);
+    TextureCube<float4> _SkyTexture = ResourceDescriptorHeap[index];
+    SamplerState STrilinearClampSampler = samplerStruct.STrilinearClampSampler;
+    return SAMPLE_TEXTURECUBE_LOD(_SkyTexture, STrilinearClampSampler, texCoord, lod);
     
 //     // 31 bit index, 1 bit cache type
 //     uint cacheType = IsEnvIndexCubemap(index) ? ENVCACHETYPE_CUBEMAP : ENVCACHETYPE_TEXTURE2D;

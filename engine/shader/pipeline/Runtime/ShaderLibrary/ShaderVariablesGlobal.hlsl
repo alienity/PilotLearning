@@ -37,6 +37,9 @@
 
 #define RENDERING_MAX_ENV_LIGHT_COUNT (16)
 
+#define _EnableSSRefraction 0
+#define _EnvLightSkyEnabled 0
+
 struct RenderDataPerDraw
 {
     float4x4 objectToWorldMatrix;
@@ -136,7 +139,7 @@ struct BaseUniform
     float lodBias; // load bias to apply to user materials
     float refractionLodOffset;
     float baseReserved0;
-    
+
     float _IndirectDiffuseLightingMultiplier;
     uint _IndirectDiffuseLightingLayers;
     float _ReflectionLightingMultiplier;
@@ -212,14 +215,19 @@ struct SSRUniform
     float4 RayCastSize;
     float4 JitterSizeAndOffset;
     float4 NoiseSize;
+
     float  SmoothnessRange;
     float  BRDFBias;
     float  TResponseMin;
     float  TResponseMax;
+
     float  EdgeFactor;
     float  Thickness;
     int    NumSteps;
     int    MaxMipMap;
+
+    uint _IndirectDiffuseTextureIndex;
+    uint3 _Padding0;
 };
 
 struct VolumeCloudStruct

@@ -118,7 +118,7 @@ void IntegrateBSDF_AreaRef(float3 V, float3 positionWS,
 // ----------------------------------------------------------------------------
 
 // Ref: Moving Frostbite to PBR (Appendix A)
-float3 IntegrateLambertIBLRef(LightLoopContext lightLoopContext,
+float3 IntegrateLambertIBLRef(LightLoopContext lightLoopContext, SamplerStruct sampleStruct,
                               float3 V, EnvLightData lightData, BSDFData bsdfData,
                               uint sampleCount = 4096)
 {
@@ -136,7 +136,7 @@ float3 IntegrateLambertIBLRef(LightLoopContext lightLoopContext,
 
         if (NdotL > 0.0)
         {
-            float4 val = SampleEnv(lightLoopContext, lightData.envIndex, L, 0, lightData.rangeCompressionFactorCompensation, 0.5);
+            float4 val = SampleEnv(lightLoopContext, lightData.envIndex, sampleStruct, L, 0, lightData.rangeCompressionFactorCompensation, 0.5);
 
             // We don't multiply by 'bsdfData.diffuseColor' here. It's done only once in PostEvaluateBSDF().
             acc += LambertNoPI() * weightOverPdf * val.rgb;
@@ -146,7 +146,7 @@ float3 IntegrateLambertIBLRef(LightLoopContext lightLoopContext,
     return acc / sampleCount;
 }
 
-float3 IntegrateDisneyDiffuseIBLRef(LightLoopContext lightLoopContext,
+float3 IntegrateDisneyDiffuseIBLRef(LightLoopContext lightLoopContext, SamplerStruct sampleStruct,
                                     float3 V, PreLightData preLightData, EnvLightData lightData, BSDFData bsdfData,
                                     uint sampleCount = 4096)
 {
@@ -171,7 +171,7 @@ float3 IntegrateDisneyDiffuseIBLRef(LightLoopContext lightLoopContext,
             // in weightOverPdf of ImportanceSampleLambert call.
             float disneyDiffuse = DisneyDiffuse(NdotV, NdotL, LdotV, bsdfData.perceptualRoughness);
 
-            float4 val = SampleEnv(lightLoopContext, lightData.envIndex, L, 0, lightData.rangeCompressionFactorCompensation, 0.5);
+            float4 val = SampleEnv(lightLoopContext, lightData.envIndex, sampleStruct, L, 0, lightData.rangeCompressionFactorCompensation, 0.5);
             // We don't multiply by 'bsdfData.diffuseColor' here. It's done only once in PostEvaluateBSDF().
             acc += disneyDiffuse * weightOverPdf * val.rgb;
         }
@@ -181,7 +181,7 @@ float3 IntegrateDisneyDiffuseIBLRef(LightLoopContext lightLoopContext,
 }
 
 // Ref: Moving Frostbite to PBR (Appendix A)
-float3 IntegrateSpecularGGXIBLRef(LightLoopContext lightLoopContext,
+float3 IntegrateSpecularGGXIBLRef(LightLoopContext lightLoopContext, SamplerStruct sampleStruct,
                                   float3 V, PreLightData preLightData, EnvLightData lightData, BSDFData bsdfData,
                                   uint sampleCount = 2048)
 {
@@ -224,7 +224,7 @@ float3 IntegrateSpecularGGXIBLRef(LightLoopContext lightLoopContext,
             // Fresnel component is apply here as describe in ImportanceSampleGGX function
             float3 FweightOverPdf = F_Schlick(bsdfData.fresnel0, VdotH) * weightOverPdf;
 
-            float4 val = SampleEnv(lightLoopContext, lightData.envIndex, L, 0, lightData.rangeCompressionFactorCompensation, 0.5);
+            float4 val = SampleEnv(lightLoopContext, lightData.envIndex, sampleStruct, L, 0, lightData.rangeCompressionFactorCompensation, 0.5);
 
             acc += FweightOverPdf * val.rgb;
         }

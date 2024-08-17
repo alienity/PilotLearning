@@ -108,7 +108,9 @@ struct EnvLightData
     float4 L2_1; // First 4 coeffs of L2 {-2, -1, 0, 1}
     float L2_2; // Last L2 coeff {2}
     int normalizeWithAPV; // Whether the probe is normalized by probe volume content.
-    float2 padding;
+    float padding;
+
+    int LDHeapIndex;
 };
 
 // Generated from UnityEngine.Rendering.HighDefinition.LightData

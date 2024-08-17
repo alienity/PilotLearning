@@ -21,27 +21,38 @@ namespace MoYu
         HLSL::FrameUniforms* _frameUniforms = &render_resource->m_FrameUniforms;
 
         // Light Uniform
-        HLSL::LightDataUniform _lightDataUniform;
+        HLSL::LightDataUniform& _lightDataUniform = _frameUniforms->lightDataUniform;
 
         // EnvLight
         {
-            HLSL::EnvLightData m_EnvLightData{};
+            HLSL::EnvLightData& m_EnvLightData = _lightDataUniform.envData;
             m_EnvLightData.lightLayers = 0xFFFFFFFF;
-            m_EnvLightData.influenceShapeType = ENVSHAPETYPE_SKY;
-            m_EnvLightData.influenceForward = glm::float4(0.0, 0.0, -1.0, 0);
-            m_EnvLightData.influenceUp = glm::float4(0.0, 1.0, 0.0, 0);
-            m_EnvLightData.influenceRight = glm::float4(1.0, 0.0, 0.0, 0);
-            m_EnvLightData.influencePositionRWS = glm::float4(0.0, 0.0, 0.0, 0);
-            m_EnvLightData.weight = 1.0f;
-            m_EnvLightData.multiplier = 0.0f;
-            m_EnvLightData.roughReflections = 1.0f;
-            m_EnvLightData.distanceBasedRoughness = 0.0f;
+
+            m_EnvLightData.influenceShapeType = ENVSHAPETYPE_NONE;
+
+            m_EnvLightData.proxyExtents = glm::float4(200.0f, 200.0f, 200.0f, 200.0f);
+
+            m_EnvLightData.minProjectionDistance = 0.1f;
+
             m_EnvLightData.proxyForward = glm::float4(0.0, 0.0, -1.0, 0);
             m_EnvLightData.proxyUp = glm::float4(0.0, 1.0, 0.0, 0);
             m_EnvLightData.proxyRight = glm::float4(1.0, 0.0, 0.0, 0);
-            m_EnvLightData.minProjectionDistance = 65504.0f;
 
-            _lightDataUniform.envData = m_EnvLightData;
+            m_EnvLightData.proxyPositionRWS = glm::float4(0.0, 0.0, 0.0, 0);
+
+            m_EnvLightData.influenceForward = glm::float4(0.0, 0.0, -1.0, 0);
+            m_EnvLightData.influenceUp = glm::float4(0.0, 1.0, 0.0, 0);
+            m_EnvLightData.influenceRight = glm::float4(1.0, 0.0, 0.0, 0);
+            m_EnvLightData.influenceExtents = glm::float4(200.0f, 200.0f, 200.0f, 200.0f);
+
+            m_EnvLightData.influencePositionRWS = glm::float4(0.0, 0.0, 0.0, 0);
+
+            m_EnvLightData.weight = 0.1f;
+            m_EnvLightData.multiplier = 1.0f;
+            m_EnvLightData.roughReflections = 1.0f;
+            m_EnvLightData.distanceBasedRoughness = 1.0f;
+
+            m_EnvLightData.envIndex = RenderPass::m_render_scene->m_ibl_map.m_ld->GetDefaultSRV()->GetIndex();
         }
         
         int puntualLightCount = 0;
@@ -285,7 +296,6 @@ namespace MoYu
             m_DirectionalShadowmap.m_shadowmap_size = shadowmapSize;
             m_DirectionalShadowmap.m_casccade = cascadeNumber;
         }
-        _frameUniforms->lightDataUniform = _lightDataUniform;
     }
     
     void IndirectShadowPass::update(RHI::RenderGraph& graph, ShadowInputParameters& passInput, ShadowOutputParameters& passOutput)

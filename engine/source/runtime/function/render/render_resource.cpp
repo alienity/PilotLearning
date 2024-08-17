@@ -127,10 +127,10 @@ namespace MoYu
             auto radians_tex = createTex(_radians_map, L"ibl_radians");
             m_render_scene->m_ibl_map.m_radians = radians_tex;
 
-            auto preIntegratedFGD_GGXDisneyDiffuse = createTex(_ld_map/*_PreIntegratedFGD_GGXDisneyDiffuse*/, L"PreIntegratedFGD_GGXDisneyDiffuse");
+            auto preIntegratedFGD_GGXDisneyDiffuse = createTex(_dfg_map/*_PreIntegratedFGD_GGXDisneyDiffuse*/, L"PreIntegratedFGD_GGXDisneyDiffuse");
             m_render_scene->m_ibl_map._PreIntegratedFGD_GGXDisneyDiffuseIndex = preIntegratedFGD_GGXDisneyDiffuse;
 
-            auto PreIntegratedFGD_CharlieAndFabric = createTex(_ld_map/*_PreIntegratedFGD_CharlieAndFabric*/, L"PreIntegratedFGD_CharlieAndFabric");
+            auto PreIntegratedFGD_CharlieAndFabric = createTex(_dfg_map/*_PreIntegratedFGD_CharlieAndFabric*/, L"PreIntegratedFGD_CharlieAndFabric");
             m_render_scene->m_ibl_map._PreIntegratedFGD_CharlieAndFabricIndex = PreIntegratedFGD_CharlieAndFabric;
             
             // create blue noise
@@ -258,6 +258,7 @@ namespace MoYu
         _iblUniform.dfg_lut_srv_index    = render_scene->m_ibl_map.m_dfg->GetDefaultSRV()->GetIndex();
         _iblUniform.ld_lut_srv_index     = render_scene->m_ibl_map.m_ld->GetDefaultSRV()->GetIndex();
         _iblUniform.radians_srv_index    = render_scene->m_ibl_map.m_radians->GetDefaultSRV()->GetIndex();
+
         _iblUniform._PreIntegratedFGD_GGXDisneyDiffuseIndex = render_scene->m_ibl_map._PreIntegratedFGD_GGXDisneyDiffuseIndex->GetDefaultSRV()->GetIndex();
         _iblUniform._PreIntegratedFGD_CharlieAndFabricIndex = render_scene->m_ibl_map._PreIntegratedFGD_CharlieAndFabricIndex->GetDefaultSRV()->GetIndex();
         
