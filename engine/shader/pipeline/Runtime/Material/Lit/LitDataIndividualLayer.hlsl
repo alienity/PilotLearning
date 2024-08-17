@@ -206,17 +206,25 @@ float ADD_IDX(GetSurfaceData)(
 {
     float3 detailNormalTS = float3(0.0, 0.0, 0.0);
     float detailMask = 0.0;
+
+#if defined(_MASKMAP_IDX)
+    TEXTURE2D(_MaskMap) = ResourceDescriptorHeap[matProperties._MaskMapIndex];
+    SAMPLER(sampler_MaskMap) = samplerStruct.SLinearRepeatSampler;
+#endif
+    
 #ifdef _DETAIL_MAP_IDX
+    TEXTURE2D(_DetailMap) = ResourceDescriptorHeap[matProperties._DetailMapIndex];
+    SAMPLER(sampler_DetailMap) = samplerStruct.SLinearRepeatSampler;
     detailMask = 1.0;
     #ifdef _MASKMAP_IDX
-        detailMask = SAMPLE_UVMAPPING_TEXTURE2D(ADD_IDX(_MaskMap), SAMPLER_MASKMAP_IDX, ADD_IDX(layerTexCoord.base)).b;
+        detailMask = SAMPLE_UVMAPPING_TEXTURE2D(ADD_IDX(_MaskMap), ADD_ZERO_IDX(sampler_MaskMap), ADD_IDX(layerTexCoord.base)).b;
     #endif
-    float2 detailAlbedoAndSmoothness = SAMPLE_UVMAPPING_TEXTURE2D(ADD_IDX(_DetailMap), SAMPLER_DETAILMAP_IDX, ADD_IDX(layerTexCoord.details)).rb;
+    float2 detailAlbedoAndSmoothness = SAMPLE_UVMAPPING_TEXTURE2D(ADD_IDX(_DetailMap), sampler_DetailMap, ADD_IDX(layerTexCoord.details)).rb;
     float detailAlbedo = detailAlbedoAndSmoothness.r * 2.0 - 1.0;
     float detailSmoothness = detailAlbedoAndSmoothness.g * 2.0 - 1.0;
     // Resample the detail map but this time for the normal map. This call should be optimize by the compiler
     // We split both call due to trilinear mapping
-    detailNormalTS = SAMPLE_UVMAPPING_NORMALMAP_AG(ADD_IDX(_DetailMap), SAMPLER_DETAILMAP_IDX, ADD_IDX(layerTexCoord.details), ADD_IDX(_DetailNormalScale));
+    detailNormalTS = SAMPLE_UVMAPPING_NORMALMAP_AG(ADD_IDX(_DetailMap), sampler_DetailMap, ADD_IDX(layerTexCoord.details), ADD_IDX(matProperties._DetailNormalScale));
 #endif
 
     TEXTURE2D(_BaseColorMap) = ResourceDescriptorHeap[matProperties._BaseColorMapIndex];
@@ -231,7 +239,7 @@ float ADD_IDX(GetSurfaceData)(
     // The scale control the speed of the gradient. We simply remap detailAlbedo from [0..1] to [-1..1] then perform a lerp to black or white
     // with a factor based on speed.
     // For base color we interpolate in sRGB space (approximate here as square) as it get a nicer perceptual gradient
-    float albedoDetailSpeed = saturate(abs(detailAlbedo) * ADD_IDX(_DetailAlbedoScale));
+    float albedoDetailSpeed = saturate(abs(detailAlbedo) * ADD_IDX(matProperties._DetailAlbedoScale));
     float3 baseColorOverlay = lerp(sqrt(surfaceData.baseColor), (detailAlbedo < 0.0) ? float3(0.0, 0.0, 0.0) : float3(1.0, 1.0, 1.0), albedoDetailSpeed * albedoDetailSpeed);
     baseColorOverlay *= baseColorOverlay;
     // Lerp with details mask
@@ -247,8 +255,6 @@ float ADD_IDX(GetSurfaceData)(
     bentNormalTS = ADD_IDX(GetBentNormalTS)(frameUniform, renderData, matProperties, samplerStruct, input, layerTexCoord, normalTS, detailNormalTS, detailMask);
 
 #if defined(_MASKMAP_IDX)
-    TEXTURE2D(_MaskMap) = ResourceDescriptorHeap[matProperties._MaskMapIndex];
-    SAMPLER(sampler_MaskMap) = samplerStruct.SLinearRepeatSampler;
     surfaceData.perceptualSmoothness = SAMPLE_UVMAPPING_TEXTURE2D(ADD_IDX(_MaskMap), sampler_MaskMap, ADD_IDX(layerTexCoord.base)).a;
     surfaceData.perceptualSmoothness = lerp(ADD_IDX(matProperties._SmoothnessRemapMin), ADD_IDX(matProperties._SmoothnessRemapMax), surfaceData.perceptualSmoothness);
     surfaceData.perceptualSmoothness = min(0.999f, surfaceData.perceptualSmoothness);
@@ -258,7 +264,7 @@ float ADD_IDX(GetSurfaceData)(
 
 #ifdef _DETAIL_MAP_IDX
     // See comment for baseColorOverlay
-    float smoothnessDetailSpeed = saturate(abs(detailSmoothness) * ADD_IDX(_DetailSmoothnessScale));
+    float smoothnessDetailSpeed = saturate(abs(detailSmoothness) * ADD_IDX(matProperties._DetailSmoothnessScale));
     float smoothnessOverlay = lerp(surfaceData.perceptualSmoothness, (detailSmoothness < 0.0) ? 0.0 : 1.0, smoothnessDetailSpeed);
     // Lerp with details mask
     surfaceData.perceptualSmoothness = lerp(surfaceData.perceptualSmoothness, saturate(smoothnessOverlay), detailMask);
