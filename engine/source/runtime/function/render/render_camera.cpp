@@ -16,7 +16,7 @@ namespace MoYu
 
     void RenderCamera::updatePerFrame()
     {
-        if (EngineConfig::g_AntialiasingMode == EngineConfig::AntialiasingMode::TAA)
+        if (EngineConfig::g_AntialiasingMode == EngineConfig::AntialiasingMode::TAAMode)
         {
             taaFrameIndex += 1;
         }
@@ -169,7 +169,7 @@ namespace MoYu
 
     glm::float4x4 RenderCamera::getProjMatrix(bool unjitter)
     {
-        if (EngineConfig::g_AntialiasingMode != EngineConfig::AntialiasingMode::TAA || unjitter)
+        if (EngineConfig::g_AntialiasingMode != EngineConfig::AntialiasingMode::TAAMode || unjitter)
         {
             float actualWidth = m_pixelWidth;
             float actualHeight = m_pixelHeight;
@@ -190,7 +190,7 @@ namespace MoYu
             float jitterX = HaltonSequence::Get((taaFrameIndex & 1023) + 1, 2) - 0.5f;
             float jitterY = HaltonSequence::Get((taaFrameIndex & 1023) + 1, 3) - 0.5f;
 
-            if (EngineConfig::g_AntialiasingMode == EngineConfig::AntialiasingMode::TAA)
+            if (EngineConfig::g_AntialiasingMode == EngineConfig::AntialiasingMode::TAAMode)
             {
                 float taaJitterScale = EngineConfig::g_TAAConfig.taaJitterScale;
                 jitterX *= taaJitterScale;

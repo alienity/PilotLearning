@@ -230,6 +230,25 @@ struct SSRUniform
     uint3 _Padding0;
 };
 
+struct SSGIStruct
+{
+    // Ray marching constants
+    int _RayMarchingSteps;
+    float _RayMarchingThicknessScale;
+    float _RayMarchingThicknessBias;
+    int _RayMarchingReflectsSky;
+
+    int _RayMarchingFallbackHierarchy;
+    int _IndirectDiffuseProbeFallbackFlag;
+    int _IndirectDiffuseProbeFallbackBias;
+    int _SsrStencilBit;
+
+    int _IndirectDiffuseFrameIndex;
+    int _ObjectMotionStencilBit;
+    float _RayMarchingLowResPercentageInv;
+    int _SSGIUnused0;
+};
+
 struct VolumeCloudStruct
 {
     float4x4 cloud_shadow_view_matrix;
@@ -241,87 +260,6 @@ struct VolumeCloudStruct
     float3 sunlight_direction;
     float sun_to_earth_distance;
 };
-
-// struct DirectionalLightShadowmap
-// {
-//     uint shadowmap_srv_index; // shadowmap srv in descriptorheap index    
-//     uint cascadeCount; // how many cascade level, default 4
-//     uint2 shadowmap_size; // shadowmap size
-//     uint4 shadow_bounds; // shadow bounds for each cascade level
-//     float4x4 light_view_matrix; // direction light view matrix
-//     float4x4 light_proj_matrix[4];
-//     float4x4 light_proj_view[4];
-// };
-//
-// struct DirectionalLightStruct
-// {
-//     float4 lightColorIntensity; // directional light rgb - color, a - intensity
-//     float3 lightPosition; // directional light position
-//     float lightRadius; // sun radius
-//     float3 lightDirection; // directional light direction
-//     uint shadowType; // 1 use shadowmap
-//     float2 lightFarAttenuationParams; // a, a/far (a=1/pct-of-far)
-//     float2 _padding_0;
-//     
-//     DirectionalLightShadowmap directionalLightShadowmap;
-// };
-//
-// struct PointLightShadowmap
-// {
-//     uint shadowmap_srv_index; // shadowmap srv in descriptorheap index
-//     uint2 shadowmap_size;
-//     float _padding_shadowmap;
-//     float4x4 light_proj_view[6];
-// };
-//
-// struct PointLightStruct
-// {
-//     float3 lightPosition;
-//     float lightRadius;
-//     float4 lightIntensity; // point light rgb - color, a - intensity
-//     uint shadowType;
-//     float falloff; // default 1.0f
-//     uint2 _padding_0;
-//
-//     PointLightShadowmap pointLightShadowmap;
-// };
-//
-// struct PointLightUniform
-// {
-//     uint pointLightCounts;
-//     float3 _padding_0;
-//     PointLightStruct pointLightStructs[RENDERING_MAX_POINT_LIGHT_COUNT];
-// };
-//
-// struct SpotLightShadowmap
-// {
-//     uint shadowmap_srv_index; // shadowmap srv in descriptorheap index
-//     uint2 shadowmap_size;
-//     float _padding_0;
-//     float4x4 light_proj_view;
-// };
-//
-// struct SpotLightStruct
-// {
-//     float3 lightPosition;
-//     float lightRadius;
-//     float4 lightIntensity; // spot light rgb - color, a - intensity
-//     float3 lightDirection;
-//     float inner_radians;
-//     float outer_radians;
-//     uint shadowType;
-//     float falloff; // default 1.0f
-//     float _padding_0;
-//
-//     SpotLightShadowmap spotLightShadowmap;
-// };
-//
-// struct SpotLightUniform
-// {
-//     uint spotLightCounts;
-//     float3 _padding_0;
-//     SpotLightStruct spotLightStructs[RENDERING_MAX_SPOT_LIGHT_COUNT];
-// };
 
 struct LightDataUniform
 {
@@ -421,6 +359,7 @@ struct FrameUniforms
     TAAUniform taaUniform;
     IBLUniform iblUniform;
     SSRUniform ssrUniform;
+    SSGIStruct ssgiUniform;
     VolumeCloudStruct volumeCloudUniform;
     LightDataUniform lightDataUniform;
     VolumeLightUniform volumeLightUniform;

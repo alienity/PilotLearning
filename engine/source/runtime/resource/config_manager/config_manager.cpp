@@ -1,4 +1,5 @@
 #include "runtime/resource/config_manager/config_manager.h"
+#include "runtime/function/render/renderer/renderer_config.h"
 
 //#include "runtime/engine.h"
 
@@ -64,6 +65,7 @@ namespace MoYu
 #endif
             }
         }
+        EngineConfig::InitEngineConfig();
     }
 
     const std::filesystem::path& ConfigManager::getRootFolder() const { return m_root_folder; }

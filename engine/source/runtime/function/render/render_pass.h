@@ -12,10 +12,12 @@ namespace MoYu
 {
     class RenderScene;
     class RenderCamera;
+    class RenderResource;
 
     class RenderPass : public RenderPassBase
     {
     public:
+        static RenderResource* m_render_resource;
         static RenderScene* m_render_scene;
         static RenderCamera* m_render_camera;
 

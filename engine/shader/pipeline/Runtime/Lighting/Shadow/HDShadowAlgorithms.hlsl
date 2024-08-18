@@ -106,10 +106,14 @@ float3 EvalShadow_GetTexcoordsAtlas(HDShadowData sd, float2 atlasSizeRcp, float3
     // Avoid (0 / 0 = NaN).
     posNDC = (perspProj && posCS.w != 0) ? (posCS.xyz / posCS.w) : posCS.xyz;
 
+    //***************************************************************
+    // TODO: check y reverse
+    posNDC.y = -posNDC.y;
+    //***************************************************************
+
     // calc TCs
     float3 posTC = float3(saturate(posNDC.xy * 0.5 + 0.5), posNDC.z);
-    posTC.xy = posTC.xy * sd.shadowMapSize.xy * atlasSizeRcp;
-
+    posTC.xy = posTC.xy * sd.shadowMapSize.xy * atlasSizeRcp + sd.atlasOffset.xy;
     return posTC;
 }
 
@@ -166,14 +170,14 @@ bool EvalShadow_PositionTC(HDShadowData sd, float2 texelSize, float3 positionWS,
 float EvalShadow_PunctualDepth(HDShadowData sd, SamplerComparisonState samp, float2 positionSS, float3 positionWS, float3 normalWS, float3 L, float L_dist, bool perspective)
 {
     Texture2D<float4> tex = ResourceDescriptorHeap[sd.shadowmapIndex];
-    float2 texelSize = sd.shadowMapSize.zw;
+    float2 texelSize = sd.shadowAtlasSize.zw;
     float3 normalBias = EvalShadow_NormalBiasProj(sd.worldTexelSize, sd.normalBias, normalWS, perspective ? L_dist : 1.0f);
     float3 posTC;
 
     float shadowVal = 1.0f;
     if(EvalShadow_PositionTC(sd, texelSize, positionWS, normalBias, perspective, posTC))
     {
-        shadowVal = PUNCTUAL_FILTER_ALGORITHM(sd, positionSS, float3(posTC.x, 1-posTC.y, posTC.z), tex, samp, FIXED_UNIFORM_BIAS);
+        shadowVal = PUNCTUAL_FILTER_ALGORITHM(sd, positionSS, float3(posTC.x, posTC.y, posTC.z), tex, samp, FIXED_UNIFORM_BIAS);
     }
     return shadowVal;
 }
@@ -184,7 +188,7 @@ float EvalShadow_PunctualDepth(HDShadowData sd, SamplerComparisonState samp, flo
 
 int EvalShadow_GetSplitIndex(HDShadowContext shadowContext, int index, float3 positionWS)
 {
-    int shadowDataIndex = -1;
+    int shadowCascadeIndex = -1;
     for (int cascadeIdx = 0; cascadeIdx < 4; cascadeIdx++)
     {
         HDShadowData sd = shadowContext.shadowDatas[index + cascadeIdx];
@@ -194,11 +198,11 @@ int EvalShadow_GetSplitIndex(HDShadowContext shadowContext, int index, float3 po
         const float3 hpositionNDC = hpositionWS.xyz / hpositionWS.w;
         if(all(abs(hpositionNDC.xy)<0.98f))
         {
-            shadowDataIndex = cascadeIdx;
+            shadowCascadeIndex = cascadeIdx;
             break;
         }
     }
-    return shadowDataIndex;
+    return shadowCascadeIndex;
     
     // HDShadowData shadowData = shadowContext.shadowDatas[index];
     // float3 positionVS = mul(shadowData.viewMatrix, float4(positionWS, 1)).xyz;
@@ -254,12 +258,13 @@ float EvalShadow_CascadedDepth_Dither_SplitIndex(inout HDShadowContext shadowCon
             normalBias *= biasModifier;
         }
 
-        float4 _CascadeShadowAtlasSize = sd.shadowMapSize;
+        // float4 _CascadeAtlasOffset = sd.atlasOffset;
+        float4 _CascadeShadowAtlasSize = sd.shadowAtlasSize;
 
         positionWS += normalBias;
         float3 posTC = EvalShadow_GetTexcoordsAtlas(sd, _CascadeShadowAtlasSize.zw, positionWS, false);
-        Texture2D<float4> tex = ResourceDescriptorHeap[sd.shadowmapIndex];
-        shadow = DIRECTIONAL_FILTER_ALGORITHM(sd, positionSS, float3(posTC.x, 1.0f - posTC.y, posTC.z), tex, samp, FIXED_UNIFORM_BIAS);
+        Texture2D<float4> cascadeShadowMap = ResourceDescriptorHeap[sd.shadowmapIndex];
+        shadow = DIRECTIONAL_FILTER_ALGORITHM(sd, positionSS, float3(posTC.x, posTC.y, posTC.z), cascadeShadowMap, samp, FIXED_UNIFORM_BIAS);
     }
 
     return shadow;

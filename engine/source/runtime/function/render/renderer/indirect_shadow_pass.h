@@ -26,7 +26,7 @@ namespace MoYu
 
         struct ShadowOutputParameters : public PassOutput
         {
-            std::vector<RHI::RgResourceHandle> directionalShadowmapHandles;
+            RHI::RgResourceHandle directionalCascadeShadowmapHandle;
             std::vector<RHI::RgResourceHandle> spotShadowmapHandle;
         };
 
@@ -41,7 +41,7 @@ namespace MoYu
                     ShadowOutputParameters&     passOutput);
         void destroy() override final;
     
-    private:
+    public:
         DirectionShadowmapStruct m_DirectionalShadowmap;
         std::vector<SpotShadowmapStruct> m_SpotShadowmaps;
 	};

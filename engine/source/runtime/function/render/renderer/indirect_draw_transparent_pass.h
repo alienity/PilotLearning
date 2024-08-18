@@ -27,7 +27,7 @@ namespace MoYu
             RHI::RgResourceHandle transparentDrawHandle;
 
             // shadowmap input
-            std::vector<RHI::RgResourceHandle> directionalShadowmapTexHandles;
+            RHI::RgResourceHandle directionalCascadeShadowmapHandle;
             std::vector<RHI::RgResourceHandle> spotShadowmapTexHandles;
         };
 

@@ -7,6 +7,7 @@
 
 MoYu::RenderScene* MoYu::RenderPass::m_render_scene;
 MoYu::RenderCamera* MoYu::RenderPass::m_render_camera;
+MoYu::RenderResource* MoYu::RenderPass::m_render_resource;
 
 namespace MoYu
 {

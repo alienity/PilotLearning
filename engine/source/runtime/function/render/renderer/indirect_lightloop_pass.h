@@ -31,7 +31,7 @@ namespace MoYu
 
             RHI::RgResourceHandle mAOHandle;
 
-            std::vector<RHI::RgResourceHandle> directionLightShadowmapHandle;
+            RHI::RgResourceHandle directionalCascadeShadowmapHandle;
             std::vector<RHI::RgResourceHandle> spotShadowmapHandles;
         };
 

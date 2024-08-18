@@ -86,7 +86,7 @@ namespace MoYu
             &renderGraphAllocator, &renderGraphRegistry, pDevice, pWindowSystem
         };
 
-        int sampleCount = EngineConfig::g_AntialiasingMode == EngineConfig::MSAA
+        int sampleCount = EngineConfig::g_AntialiasingMode == EngineConfig::AntialiasingMode::MSAAMode
                               ? EngineConfig::g_MASSConfig.m_MSAASampleCount
                               : 1;
 
@@ -410,7 +410,7 @@ namespace MoYu
 
         mIndirectCullPass->prepareMeshData(render_resource);
         mIndirectShadowPass->prepareShadowmaps(render_resource);
-        mIndirectTerrainShadowPass->prepareShadowmaps(render_resource);
+        mIndirectTerrainShadowPass->prepareShadowmaps(render_resource, mIndirectShadowPass->m_DirectionalShadowmap, mIndirectShadowPass->m_SpotShadowmaps);
         mSkyBoxPass->prepareMeshData(render_resource);
         mTerrainCullPass->prepareMeshData(render_resource);
         mIndirectTerrainGBufferPass->prepareMatBuffer(render_resource);
@@ -467,6 +467,7 @@ namespace MoYu
         CommandSignatures::Release();
         PipelineStates::Release();
     }
+
 
     void DeferredRenderer::OnRender(RHI::D3D12CommandContext* context)
     {
@@ -546,15 +547,14 @@ namespace MoYu
         mTerrainShadowmapIntputParams.dirCommandSigHandle.assign(terrainCullOutput.dirVisCommandSigHandles.begin(),
                                                                  terrainCullOutput.dirVisCommandSigHandles.end());
 
-        mTerrainShadowmapOutputParams.directionalShadowmapHandles = mShadowmapOutputParams.directionalShadowmapHandles;
+        mTerrainShadowmapOutputParams.directionalCascadeShadowmapHandle = mShadowmapOutputParams.directionalCascadeShadowmapHandle;
 
         mIndirectTerrainShadowPass->update(graph, mTerrainShadowmapIntputParams, mTerrainShadowmapOutputParams);
         //=================================================================================
 
         //=================================================================================
         // shadowmap output
-        std::vector<RHI::RgResourceHandle> directionalShadowmapHandles = mShadowmapOutputParams.
-            directionalShadowmapHandles;
+        RHI::RgResourceHandle directionalCascadeShadowmapHandle = mShadowmapOutputParams.directionalCascadeShadowmapHandle;
         std::vector<RHI::RgResourceHandle> spotShadowmapHandle = mShadowmapOutputParams.spotShadowmapHandle;
         //=================================================================================
 
@@ -740,7 +740,7 @@ namespace MoYu
         mLightLoopIntput.gbuffer3Handle = mGBufferOutput.gbuffer3Handle;
         mLightLoopIntput.gbufferDepthHandle = mGBufferOutput.depthHandle;
         mLightLoopIntput.mAOHandle = mGTAOOutput.outputAOHandle;
-        mLightLoopIntput.directionLightShadowmapHandle = directionalShadowmapHandles;
+        mLightLoopIntput.directionalCascadeShadowmapHandle = directionalCascadeShadowmapHandle;
         mLightLoopIntput.spotShadowmapHandles = spotShadowmapHandle;
         mIndirectLightLoopPass->update(graph, mLightLoopIntput, mLightLoopOutput);
         //=================================================================================
@@ -847,7 +847,7 @@ namespace MoYu
         mDrawTransIntputParams.propertiesPerMaterialHandle = indirectCullOutput.propertiesPerMaterialHandle;
         mDrawTransIntputParams.transparentDrawHandle = indirectCullOutput.transparentDrawHandle.
                                                                           indirectSortBufferHandle;
-        mDrawTransIntputParams.directionalShadowmapTexHandles = directionalShadowmapHandles;
+        mDrawTransIntputParams.directionalCascadeShadowmapHandle = directionalCascadeShadowmapHandle;
         mDrawTransIntputParams.spotShadowmapTexHandles = spotShadowmapHandle;
         mDrawTransOutputParams.renderTargetColorHandle = outColorHandle;
         mDrawTransOutputParams.renderTargetDepthHandle = outDepthHandle;

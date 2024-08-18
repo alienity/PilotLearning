@@ -70,10 +70,14 @@ namespace MoYu
         }
     }
 
-    void IndirectTerrainShadowPass::prepareShadowmaps(std::shared_ptr<RenderResource> render_resource)
+    void IndirectTerrainShadowPass::prepareShadowmaps(
+        std::shared_ptr<RenderResource> render_resource, 
+        DirectionShadowmapStruct directionalShadowmap,
+        std::vector<SpotShadowmapStruct> spotShadowmaps)
     {
-        m_shadowmap_size = m_render_scene->m_directional_light.m_shadowmap_size;
-        m_casccade = m_render_scene->m_directional_light.m_cascade;
+        m_DirectionalShadowmap = directionalShadowmap;
+        m_SpotShadowmaps = spotShadowmaps;
+
     }
 
     void IndirectTerrainShadowPass::update(RHI::RenderGraph& graph, ShadowInputParameters& passInput, ShadowOutputParameters& passOutput)
@@ -83,10 +87,8 @@ namespace MoYu
         RHI::RgResourceHandle transformBufferHandle  = passInput.transformBufferHandle;
         std::vector<RHI::RgResourceHandle> dirCommandSigHandle = std::vector<RHI::RgResourceHandle>(passInput.dirCommandSigHandle);
 
-        std::vector<RHI::RgResourceHandle> directionalShadowmapHandles = std::vector<RHI::RgResourceHandle>(passOutput.directionalShadowmapHandles);
+        RHI::RgResourceHandle directionalCascadeShadowmapHandle = passOutput.directionalCascadeShadowmapHandle;
 
-        //RHI::RgResourceHandle directionalShadowmapHandle = passOutput.directionalShadowmapHandles;
-        
         InternalTerrainRenderer& internalTerrainRenderer = m_render_scene->m_terrain_renderers[0].internalTerrainRenderer;
         uint32_t clipTransCount = internalTerrainRenderer.ref_terrain.terrain_clipmap.instance_buffer.clip_transform_counts;
 
@@ -99,70 +101,75 @@ namespace MoYu
         {
             shadowpass.Read(dirCommandSigHandle[i], false, RHIResourceState::RHI_RESOURCE_STATE_INDIRECT_ARGUMENT, RHIResourceState::RHI_RESOURCE_STATE_INDIRECT_ARGUMENT);
         }
-        for (int i = 0; i < passOutput.directionalShadowmapHandles.size(); i++)
-        {
-            shadowpass.Write(passOutput.directionalShadowmapHandles[i], false, RHIResourceState::RHI_RESOURCE_STATE_DEPTH_WRITE);
-        }
+        shadowpass.Write(passOutput.directionalCascadeShadowmapHandle, false, RHIResourceState::RHI_RESOURCE_STATE_DEPTH_WRITE);
 
         shadowpass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
 
             RHI::D3D12GraphicsContext* graphicContext = context->GetGraphicsContext();
-
-            //#define RegGetBufCounter(h) registry->GetD3D12Buffer(h)->GetCounterBuffer().get()
             
-            //if (m_DirectionalShadowmap.m_identifier != UndefCommonIdentifier)
-            for (int i = 0; i < directionalShadowmapHandles.size(); i++)
+            if (m_DirectionalShadowmap.m_identifier != UndefCommonIdentifier)
             {
-                RHI::D3D12Texture* pShadowmapStencilTex = registry->GetD3D12Texture(directionalShadowmapHandles[i]);
+                glm::float2 atlas_size = m_DirectionalShadowmap.m_atlas_size;
+                glm::float2 shadowmap_size = m_DirectionalShadowmap.m_shadowmap_size;
 
-                RHI::D3D12DepthStencilView* shadowmapStencilView = pShadowmapStencilTex->GetDefaultDSV().get();
+                int shadowMapSubCount = glm::ceil(glm::log2((float)m_DirectionalShadowmap.m_casccade));
+                glm::int2 subAtlasWdith = glm::int2(atlas_size.x / shadowMapSubCount, atlas_size.y / shadowMapSubCount);
 
-                graphicContext->SetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-
-                //graphicContext->ClearRenderTarget(nullptr, shadowmapStencilView);
-                graphicContext->SetRenderTarget(nullptr, shadowmapStencilView);
-
-                graphicContext->SetRootSignature(pIndirectTerrainShadowmapSignature.get());
-                graphicContext->SetPipelineState(pIndirectTerrainShadowmapPSO.get());
-
-                glm::float2 shadowmap_size = m_shadowmap_size;
-                
-                //RHIViewport _viewport = {};
-                //_viewport.MinDepth = 0.0f;
-                //_viewport.MaxDepth = 1.0f;
-                //_viewport.Width    = 0.5 * shadowmap_size.x;
-                //_viewport.Height   = 0.5 * shadowmap_size.y;
-                //_viewport.TopLeftX = 0.5 * shadowmap_size.x * ((i & 0x1) != 0 ? 1 : 0);
-                //_viewport.TopLeftY = 0.5 * shadowmap_size.y * ((i & 0x2) != 0 ? 1 : 0);
-
-                graphicContext->SetViewport(RHIViewport{ 0.0f, 0.0f, (float)shadowmap_size.x, (float)shadowmap_size.y, 0.0f, 1.0f });
-                graphicContext->SetScissorRect(RHIRect{ 0, 0, (int)shadowmap_size.x, (int)shadowmap_size.y });
-                //graphicContext->SetViewport(RHIViewport {_viewport.TopLeftX, _viewport.TopLeftY, (float)_viewport.Width, (float)_viewport.Height, _viewport.MinDepth, _viewport.MaxDepth});
-                //graphicContext->SetScissorRect(RHIRect {0, 0, (int)shadowmap_size.x, (int)shadowmap_size.y});
-
-                struct RootIndexBuffer
+                for (int i = 0; i < m_DirectionalShadowmap.m_casccade; i++)
                 {
-                    uint32_t cascadeLevel;
-                    uint32_t transformBufferIndex;
-                    uint32_t perFrameBufferIndex;
-                    uint32_t terrainHeightmapIndex;
-                };
+                    int atlasOffsetX = i % shadowMapSubCount * subAtlasWdith.x;
+                    int atlasOffsetY = i / shadowMapSubCount * subAtlasWdith.y;
 
-                RootIndexBuffer rootIndexBuffer = RootIndexBuffer{ (uint32_t)i,
-                                                                    RegGetBufDefSRVIdx(transformBufferHandle),
-                                                                    RegGetBufDefCBVIdx(perframeBufferHandle),
-                                                                    RegGetTexDefSRVIdx(terrainHeightmapHandle) };
+                    RHI::D3D12Texture* pCascadeShadowmapStencil = registry->GetD3D12Texture(directionalCascadeShadowmapHandle);
 
-                graphicContext->SetConstantArray(0, 1, sizeof(RootIndexBuffer) / sizeof(UINT), &rootIndexBuffer);
+                    RHI::D3D12DepthStencilView* shadowmapStencilView = pCascadeShadowmapStencil->GetDefaultDSV().get();
+
+                    graphicContext->SetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+                    //graphicContext->ClearRenderTarget(nullptr, shadowmapStencilView);
+                    graphicContext->SetRenderTarget(nullptr, shadowmapStencilView);
+
+                    graphicContext->SetRootSignature(pIndirectTerrainShadowmapSignature.get());
+                    graphicContext->SetPipelineState(pIndirectTerrainShadowmapPSO.get());
+
+                    RHIViewport _viewport = {};
+                    _viewport.MinDepth = 0.0f;
+                    _viewport.MaxDepth = 1.0f;
+                    _viewport.Width = subAtlasWdith.x;
+                    _viewport.Height = subAtlasWdith.y;
+                    _viewport.TopLeftX = atlasOffsetX;
+                    _viewport.TopLeftY = atlasOffsetY;
+
+                    //graphicContext->SetViewport(RHIViewport{ 0.0f, 0.0f, (float)shadowmap_size.x, (float)shadowmap_size.y, 0.0f, 1.0f });
+                    //graphicContext->SetScissorRect(RHIRect{ 0, 0, (int)shadowmap_size.x, (int)shadowmap_size.y });
+                    graphicContext->SetViewport(RHIViewport {_viewport.TopLeftX, _viewport.TopLeftY, (float)_viewport.Width, (float)_viewport.Height, _viewport.MinDepth, _viewport.MaxDepth});
+                    graphicContext->SetScissorRect(RHIRect {0, 0, (int)shadowmap_size.x, (int)shadowmap_size.y});
+
+                    struct RootIndexBuffer
+                    {
+                        uint32_t cascadeLevel;
+                        uint32_t transformBufferIndex;
+                        uint32_t perFrameBufferIndex;
+                        uint32_t terrainHeightmapIndex;
+                    };
+
+                    RootIndexBuffer rootIndexBuffer = RootIndexBuffer{ (uint32_t)i,
+                                                                        RegGetBufDefSRVIdx(transformBufferHandle),
+                                                                        RegGetBufDefCBVIdx(perframeBufferHandle),
+                                                                        RegGetTexDefSRVIdx(terrainHeightmapHandle) };
+
+                    graphicContext->SetConstantArray(0, 1, sizeof(RootIndexBuffer) / sizeof(UINT), &rootIndexBuffer);
             
-                auto pDrawCallCommandSigBuffer = registry->GetD3D12Buffer(dirCommandSigHandle[i]);
+                    auto pDrawCallCommandSigBuffer = registry->GetD3D12Buffer(dirCommandSigHandle[i]);
                      
-                graphicContext->ExecuteIndirect(pIndirectTerrainShadowmapCommandSignature.get(),
-                                                pDrawCallCommandSigBuffer,
-                                                0,
-                                                clipTransCount,
-                                                pDrawCallCommandSigBuffer->GetCounterBuffer().get(),
-                                                0);
+                    graphicContext->ExecuteIndirect(pIndirectTerrainShadowmapCommandSignature.get(),
+                                                    pDrawCallCommandSigBuffer,
+                                                    0,
+                                                    clipTransCount,
+                                                    pDrawCallCommandSigBuffer->GetCounterBuffer().get(),
+                                                    0);
+                }
+
             }
              
         });

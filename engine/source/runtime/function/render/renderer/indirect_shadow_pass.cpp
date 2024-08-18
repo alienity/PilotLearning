@@ -136,6 +136,8 @@ namespace MoYu
             float df = m_render_scene->m_spot_light_list[i].m_shadow_far_plane;
             glm::float3 m_translationDelta = m_render_scene->m_spot_light_list[i].m_position_delation;
 
+            glm::float2 atlasSize = shadowmap_size;
+
             HLSL::HDShadowData _shadowDara;
             _shadowDara.shadowmapIndex = p_LightShadowmap->GetDefaultSRV()->GetIndex();
             _shadowDara.worldTexelSize = 2.0f / projMatrix[0][0] / viewportSize.x * glm::sqrt(2.0f);
@@ -149,8 +151,9 @@ namespace MoYu
             _shadowDara.viewProjMatrix = viewProjMatrix;
             _shadowDara.zBufferParam = glm::float4((df - dn) / dn, 1.0f, (df - dn) / (dn * df), 1.0f / df);
             _shadowDara.shadowBounds = glm::float4(shadowBounds.x, shadowBounds.y, 0, 0);
-            _shadowDara.shadowMapSize = glm::float4(viewportSize.x, viewportSize.y, 1.0f / viewportSize.x, 1.0f / viewportSize.y);
+            _shadowDara.shadowAtlasSize = glm::float4(atlasSize.x, atlasSize.y, 1.0f / atlasSize.x, 1.0f / atlasSize.y);
             _shadowDara.atlasOffset = glm::float4(0, 0, 0, 0);
+            _shadowDara.shadowMapSize = glm::float4(viewportSize.x, viewportSize.y, 1.0f / viewportSize.x, 1.0f / viewportSize.y);
             //_shadowDara.cacheTranslationDelta = glm::float4(m_translationDelta, 0);
             _shadowDara.cacheTranslationDelta = glm::float4(0, 0, 0, 0);
             _shadowDara.shadowToWorld = glm::inverse(viewProjMatrix);
@@ -240,28 +243,27 @@ namespace MoYu
             glm::int4 shadowSizePower = m_render_scene->m_directional_light.shadowPowerScale;
 
             int cascadeNumber = 4;
+            int shadowMapSubCount = glm::ceil(glm::log2((float)cascadeNumber));
+
+            glm::int2 atlasSize = shadowmapSize * shadowMapSubCount;
+
+            RHI::RHIRenderSurfaceBaseDesc rtDesc{};
+            rtDesc.width = atlasSize.x;
+            rtDesc.height = atlasSize.y;
+            rtDesc.depthOrArray = 1;
+            rtDesc.samples = 1;
+            rtDesc.mipCount = 1;
+            rtDesc.flags = RHI::RHISurfaceCreateShadowmap;
+            rtDesc.dim = RHI::RHITextureDimension::RHITexDim2DArray;
+            rtDesc.graphicsFormat = DXGI_FORMAT_D32_FLOAT;
+            rtDesc.clearValue = CD3DX12_CLEAR_VALUE(DXGI_FORMAT_D32_FLOAT, 0, 1);
+            rtDesc.colorSurface = true;
+            rtDesc.backBuffer = false;
+            std::shared_ptr<RHI::D3D12Texture> clightCascadeShadowMap =
+                render_resource->CreateTransientTexture(rtDesc, L"DirectionCascadeShadowMap", D3D12_RESOURCE_STATE_COMMON);
 
             for (int i = 0; i < cascadeNumber; i++)
             {
-                std::wstring wcname = fmt::format(L"DirectionShadowmapCascade_{}", i);
-
-                RHI::RHIRenderSurfaceBaseDesc rtDesc{};
-                rtDesc.width = shadowmapSize.x;
-                rtDesc.height = shadowmapSize.y;
-                rtDesc.depthOrArray = 1;
-                rtDesc.samples = 1;
-                rtDesc.mipCount = 1;
-                rtDesc.flags = RHI::RHISurfaceCreateShadowmap;
-                rtDesc.dim = RHI::RHITextureDimension::RHITexDim2D;
-                rtDesc.graphicsFormat = DXGI_FORMAT_D32_FLOAT;
-                rtDesc.clearValue = CD3DX12_CLEAR_VALUE(DXGI_FORMAT_D32_FLOAT, 0, 1);
-                rtDesc.colorSurface = true;
-                rtDesc.backBuffer = false;
-                std::shared_ptr<RHI::D3D12Texture> clightShadowmap = 
-                    render_resource->CreateTransientTexture(rtDesc, wcname, D3D12_RESOURCE_STATE_COMMON);
-
-                m_DirectionalShadowmap.p_LightShadowmaps.push_back(clightShadowmap);
-
                 glm::float4x4 viewMatrix = m_render_scene->m_directional_light.m_shadow_view_mat[i];
                 glm::float4x4 projMatrix = m_render_scene->m_directional_light.m_shadow_proj_mats[i];
                 glm::float4x4 viewProjMatrix = m_render_scene->m_directional_light.m_shadow_view_proj_mats[i];
@@ -269,8 +271,11 @@ namespace MoYu
                 glm::uint sizePower = (glm::uint)shadowSizePower[i];
                 float powerScale = glm::pow(2, sizePower);
 
+                int viewportX = i % shadowMapSubCount * shadowmapSize.x;
+                int viewportY = i / shadowMapSubCount * shadowmapSize.y;
+
                 HLSL::HDShadowData _shadowDara;
-                _shadowDara.shadowmapIndex = clightShadowmap->GetDefaultSRV()->GetIndex();
+                _shadowDara.shadowmapIndex = clightCascadeShadowMap->GetDefaultSRV()->GetIndex();
                 _shadowDara.worldTexelSize = 2.0f / projMatrix[0][0] / shadowmapSize.x * glm::sqrt(2.0f);
                 _shadowDara.normalBias = 0.95f;
                 _shadowDara.cascadeNumber = cascadeNumber;
@@ -282,8 +287,14 @@ namespace MoYu
                 _shadowDara.viewProjMatrix = viewProjMatrix;
                 _shadowDara.zBufferParam = glm::float4((df - dn) / dn, 1.0f, (df - dn) / (dn * df), 1.0f / df);
                 _shadowDara.shadowBounds = glm::float4(shadowBounds.x * powerScale, shadowBounds.y * powerScale, 0, 0);
+
+                _shadowDara.shadowAtlasSize = glm::float4(atlasSize.x, atlasSize.y, 1.0f / atlasSize.x, 1.0f / atlasSize.y);
+                // Compute the scale and offset (between 0 and 1) for the atlas coordinates
+                float rWidth = 1.0f / atlasSize.x;
+                float rHeight = 1.0f / atlasSize.y;
+                _shadowDara.atlasOffset = glm::float4(rWidth * viewportX, rHeight * viewportY, 0, 0);
+
                 _shadowDara.shadowMapSize = glm::float4(shadowmapSize.x, shadowmapSize.y, 1.0f / shadowmapSize.x, 1.0f / shadowmapSize.y);
-                _shadowDara.atlasOffset = glm::float4(0, 0, 0, 0);
                 //_shadowDara.cacheTranslationDelta = glm::float4(m_translationDelta, 0);
                 _shadowDara.cacheTranslationDelta = glm::float4(0, 0, 0, 0);
                 _shadowDara.shadowToWorld = glm::inverse(viewProjMatrix);
@@ -292,7 +303,9 @@ namespace MoYu
                 shadowDataCount += 1;
             }
 
+            m_DirectionalShadowmap.p_LightCascadeShadowmap = clightCascadeShadowMap;
             m_DirectionalShadowmap.m_identifier = m_render_scene->m_directional_light.m_identifier;
+            m_DirectionalShadowmap.m_atlas_size = atlasSize;
             m_DirectionalShadowmap.m_shadowmap_size = shadowmapSize;
             m_DirectionalShadowmap.m_casccade = cascadeNumber;
         }
@@ -329,14 +342,9 @@ namespace MoYu
                             RHIResourceState::RHI_RESOURCE_STATE_INDIRECT_ARGUMENT);
         }
 
-        std::vector<RHI::RgResourceHandle> directionalShadowmapHandles;
-        for (int i = 0; i < m_DirectionalShadowmap.p_LightShadowmaps.size(); i++)
-        {
-            RHI::RgResourceHandle directionalShadowmapHandle = graph.Import<RHI::D3D12Texture>(m_DirectionalShadowmap.p_LightShadowmaps[i].get());
-            shadowpass.Write(directionalShadowmapHandle, false, RHIResourceState::RHI_RESOURCE_STATE_DEPTH_WRITE);
-            directionalShadowmapHandles.push_back(directionalShadowmapHandle);
-            passOutput.directionalShadowmapHandles.push_back(directionalShadowmapHandle);
-        }
+        RHI::RgResourceHandle directionalCascadeShadowmapHandle = graph.Import<RHI::D3D12Texture>(m_DirectionalShadowmap.p_LightCascadeShadowmap.get());
+        shadowpass.Write(directionalCascadeShadowmapHandle, false, RHIResourceState::RHI_RESOURCE_STATE_DEPTH_WRITE);
+        passOutput.directionalCascadeShadowmapHandle = directionalCascadeShadowmapHandle;
 
         for (size_t i = 0; i < m_SpotShadowmaps.size(); i++)
         {
@@ -355,17 +363,26 @@ namespace MoYu
             
             if (m_DirectionalShadowmap.m_identifier != UndefCommonIdentifier)
             {
+                glm::float2 atlas_size = m_DirectionalShadowmap.m_atlas_size;
                 glm::float2 shadowmap_size = m_DirectionalShadowmap.m_shadowmap_size;
 
-                for (int i = 0; i < directionalShadowmapHandles.size(); i++)
-                {
-                    RHI::D3D12Texture* pShadowmapStencilTex = registry->GetD3D12Texture(directionalShadowmapHandles[i]);
+                int shadowMapSubCount = glm::ceil(glm::log2((float)m_DirectionalShadowmap.m_casccade));
+                glm::int2 subAtlasWdith = glm::int2(atlas_size.x / shadowMapSubCount, atlas_size.y / shadowMapSubCount);
 
-                    RHI::D3D12DepthStencilView* shadowmapStencilView = pShadowmapStencilTex->GetDefaultDSV().get();
+                for (int i = 0; i < m_DirectionalShadowmap.m_casccade; i++)
+                {
+                    int atlasOffsetX = i % shadowMapSubCount * subAtlasWdith.x;
+                    int atlasOffsetY = i / shadowMapSubCount * subAtlasWdith.y;
+
+                    RHI::D3D12Texture* pCascadeShadowmapStencil = registry->GetD3D12Texture(directionalCascadeShadowmapHandle);
+                    RHI::D3D12DepthStencilView* shadowmapStencilView = pCascadeShadowmapStencil->GetDefaultDSV().get();
 
                     graphicContext->SetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-
-                    graphicContext->ClearRenderTarget(nullptr, shadowmapStencilView);
+                     
+                    if (i == 0)
+                    {
+                        graphicContext->ClearRenderTarget(nullptr, shadowmapStencilView);
+                    }
                     graphicContext->SetRenderTarget(nullptr, shadowmapStencilView);
 
                     graphicContext->SetRootSignature(RootSignatures::pIndirectDrawDirectionShadowmap.get());
@@ -375,18 +392,18 @@ namespace MoYu
                     graphicContext->SetBufferSRV(2, registry->GetD3D12Buffer(renderDataPerDrawHandle));
                     graphicContext->SetBufferSRV(3, registry->GetD3D12Buffer(propertiesPerMaterialHandle));
 
-                    //RHIViewport _viewport = {};
-                    //_viewport.MinDepth = 0.0f;
-                    //_viewport.MaxDepth = 1.0f;
-                    //_viewport.Width = 0.5 * shadowmap_size.x;
-                    //_viewport.Height = 0.5 * shadowmap_size.y;
-                    //_viewport.TopLeftX = 0.5 * shadowmap_size.x * ((i & 0x1) != 0 ? 1 : 0);
-                    //_viewport.TopLeftY = 0.5 * shadowmap_size.y * ((i & 0x2) != 0 ? 1 : 0);
+                    RHIViewport _viewport = {};
+                    _viewport.MinDepth = 0.0f;
+                    _viewport.MaxDepth = 1.0f;
+                    _viewport.Width = subAtlasWdith.x;
+                    _viewport.Height = subAtlasWdith.y;
+                    _viewport.TopLeftX = atlasOffsetX;
+                    _viewport.TopLeftY = atlasOffsetY;
 
-                    graphicContext->SetViewport(RHIViewport {0.0f, 0.0f, (float)shadowmap_size.x, (float)shadowmap_size.y, 0.0f, 1.0f});
-                    graphicContext->SetScissorRect(RHIRect {0, 0, (int)shadowmap_size.x, (int)shadowmap_size.y});
-                    //graphicContext->SetViewport(RHIViewport{ _viewport.TopLeftX, _viewport.TopLeftY, (float)_viewport.Width, (float)_viewport.Height, _viewport.MinDepth, _viewport.MaxDepth });
-                    //graphicContext->SetScissorRect(RHIRect{ 0, 0, (int)shadowmap_size.x, (int)shadowmap_size.y });
+                    //graphicContext->SetViewport(RHIViewport {0.0f, 0.0f, (float)shadowmap_size.x, (float)shadowmap_size.y, 0.0f, 1.0f});
+                    //graphicContext->SetScissorRect(RHIRect {0, 0, (int)shadowmap_size.x, (int)shadowmap_size.y});
+                    graphicContext->SetViewport(RHIViewport{ _viewport.TopLeftX, _viewport.TopLeftY, (float)_viewport.Width, (float)_viewport.Height, _viewport.MinDepth, _viewport.MaxDepth });
+                    graphicContext->SetScissorRect(RHIRect{ 0, 0, (int)shadowmap_size.x, (int)shadowmap_size.y });
 
                     graphicContext->SetConstant(0, 1, i);
 

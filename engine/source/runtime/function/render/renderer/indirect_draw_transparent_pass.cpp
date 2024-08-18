@@ -82,7 +82,7 @@ namespace MoYu
             BlendState.RenderTargets[0] = BlendDesc0;
 
             RHISampleState SampleState;
-            SampleState.Count = EngineConfig::g_AntialiasingMode == EngineConfig::MSAA ? EngineConfig::g_MASSConfig.m_MSAASampleCount : 1;
+            SampleState.Count = EngineConfig::g_AntialiasingMode == EngineConfig::AntialiasingMode::MSAAMode ? EngineConfig::g_MASSConfig.m_MSAASampleCount : 1;
 
             struct PsoStream
             {
@@ -126,10 +126,7 @@ namespace MoYu
 
         RHI::RenderPass& drawpass = graph.AddRenderPass("IndirectDrawTransparentPass");
 
-        for (int i = 0; i < passInput.directionalShadowmapTexHandles.size(); i++)
-        {
-            drawpass.Read(passInput.directionalShadowmapTexHandles[i], false, RHIResourceState::RHI_RESOURCE_STATE_ALL_SHADER_RESOURCE);
-        }
+        drawpass.Read(passInput.directionalCascadeShadowmapHandle, false, RHIResourceState::RHI_RESOURCE_STATE_ALL_SHADER_RESOURCE);
         for (int i = 0; i < passInput.spotShadowmapTexHandles.size(); i++)
         {
             drawpass.Read(passInput.spotShadowmapTexHandles[i], false, RHIResourceState::RHI_RESOURCE_STATE_ALL_SHADER_RESOURCE);

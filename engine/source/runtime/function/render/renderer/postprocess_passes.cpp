@@ -160,7 +160,7 @@ namespace MoYu
         RHI::RgResourceHandle outputTargetHandle = inputSceneColorHandle;
 
         // resolve rendertarget
-        if (EngineConfig::g_AntialiasingMode == EngineConfig::MSAA)
+        if (EngineConfig::g_AntialiasingMode == EngineConfig::AntialiasingMode::MSAAMode)
         {
             MSAAResolvePass::DrawInputParameters  mMSAAResolveIntputParams;
             MSAAResolvePass::DrawOutputParameters mMSAAResolveOutputParams;
@@ -172,7 +172,7 @@ namespace MoYu
 
             outputTargetHandle = mMSAAResolveOutputParams.resolveTargetColorHandle;
         }
-        else if (EngineConfig::g_AntialiasingMode == EngineConfig::FXAA)
+        else if (EngineConfig::g_AntialiasingMode == EngineConfig::AntialiasingMode::FXAAMode)
         {
             FXAAPass::DrawInputParameters  mFXAAIntputParams;
             FXAAPass::DrawOutputParameters mFXAAOutputParams;
@@ -185,7 +185,7 @@ namespace MoYu
 
             outputTargetHandle = mFXAAOutputParams.outputColorHandle;
         }
-        else if (EngineConfig::g_AntialiasingMode == EngineConfig::TAA)
+        else if (EngineConfig::g_AntialiasingMode == EngineConfig::AntialiasingMode::TAAMode)
         {
             TAAPass::DrawInputParameters  mTAAIntput;
             TAAPass::DrawOutputParameters mTAAOutput;

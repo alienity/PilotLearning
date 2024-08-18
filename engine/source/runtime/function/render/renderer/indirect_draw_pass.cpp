@@ -68,7 +68,7 @@ namespace MoYu
             RenderTargetState.DSFormat         = DXGI_FORMAT_D32_FLOAT; // DXGI_FORMAT_D32_FLOAT;
 
             RHISampleState SampleState;
-            SampleState.Count = EngineConfig::g_AntialiasingMode == EngineConfig::MSAA ? EngineConfig::g_MASSConfig.m_MSAASampleCount : 1;
+            SampleState.Count = EngineConfig::g_AntialiasingMode == EngineConfig::AntialiasingMode::MSAAMode ? EngineConfig::g_MASSConfig.m_MSAASampleCount : 1;
 
             struct PsoStream
             {

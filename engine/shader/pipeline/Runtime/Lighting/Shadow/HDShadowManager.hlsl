@@ -35,6 +35,7 @@ struct HDShadowData
     float4x4 viewProjMatrix;
     float4 zBufferParam; // float4((f - n) / n, 1.0f, (f - n) / (n * f), 1.0f / f);
     float4 shadowBounds; // float4(width, height, 0, 0)
+    float4 shadowAtlasSize; // float4(m_Atlas.width, m_Atlas.height, 1.0f / m_Atlas.width, 1.0f / m_Atlas.height)
     float4 shadowMapSize; // float4(viewport.width, viewport.height, 1.0f / viewport.width, 1.0f / viewport.height);
     float4 atlasOffset; // offset in shadowmapatlas
     float4 cacheTranslationDelta; // cameraPos - m_CachedViewPositions[index];

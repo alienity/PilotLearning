@@ -28,14 +28,16 @@ namespace MoYu
 
         struct ShadowOutputParameters : public PassOutput
         {
-            std::vector<RHI::RgResourceHandle> directionalShadowmapHandles;
+            RHI::RgResourceHandle directionalCascadeShadowmapHandle;
             //RHI::RgResourceHandle directionalShadowmapHandle = RHI::_DefaultRgResourceHandle;
         };
 
     public:
         ~IndirectTerrainShadowPass() { destroy(); }
 
-        void prepareShadowmaps(std::shared_ptr<RenderResource> render_resource);
+        void prepareShadowmaps(std::shared_ptr<RenderResource> render_resource, 
+            DirectionShadowmapStruct directionalShadowmap, 
+            std::vector<SpotShadowmapStruct> spotShadowmaps);
 
         void initialize(const ShadowPassInitInfo& init_info);
         void update(RHI::RenderGraph&         graph,
@@ -43,9 +45,9 @@ namespace MoYu
                     ShadowOutputParameters&     passOutput);
         void destroy() override final;
 
-    private:
-        glm::float2 m_shadowmap_size;
-        int m_casccade;
+    public:
+        DirectionShadowmapStruct m_DirectionalShadowmap;
+        std::vector<SpotShadowmapStruct> m_SpotShadowmaps;
 
         Shader indirectTerrainShadowmapVS;
         std::shared_ptr<RHI::D3D12RootSignature> pIndirectTerrainShadowmapSignature;

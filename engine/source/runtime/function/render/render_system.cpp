@@ -101,6 +101,7 @@ namespace MoYu
         // set pass data
         RenderPass::m_render_scene = m_render_scene.get();
         RenderPass::m_render_camera = m_render_camera.get();
+        RenderPass::m_render_resource = m_render_resource.get();
 
         // initialize renderer
         m_renderer_manager->InitRenderer();
