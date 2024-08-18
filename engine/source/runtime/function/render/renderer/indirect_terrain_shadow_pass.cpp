@@ -143,7 +143,7 @@ namespace MoYu
                     //graphicContext->SetViewport(RHIViewport{ 0.0f, 0.0f, (float)shadowmap_size.x, (float)shadowmap_size.y, 0.0f, 1.0f });
                     //graphicContext->SetScissorRect(RHIRect{ 0, 0, (int)shadowmap_size.x, (int)shadowmap_size.y });
                     graphicContext->SetViewport(RHIViewport {_viewport.TopLeftX, _viewport.TopLeftY, (float)_viewport.Width, (float)_viewport.Height, _viewport.MinDepth, _viewport.MaxDepth});
-                    graphicContext->SetScissorRect(RHIRect {0, 0, (int)shadowmap_size.x, (int)shadowmap_size.y});
+                    graphicContext->SetScissorRect(RHIRect {0, 0, (int)atlas_size.x, (int)atlas_size.y});
 
                     struct RootIndexBuffer
                     {
