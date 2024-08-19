@@ -24,7 +24,7 @@
 // ApplyBlendMode function
 //-----------------------------------------------------------------------------
 
-float4 ApplyBlendMode(PropertiesPerMaterial matProperties, float3 diffuseLighting, float3 specularLighting, float opacity)
+float4 ApplyBlendMode(float _BlendMode, float3 diffuseLighting, float3 specularLighting, float opacity)
 {
 
 #ifndef _SURFACE_TYPE_TRANSPARENT
@@ -43,7 +43,7 @@ float4 ApplyBlendMode(PropertiesPerMaterial matProperties, float3 diffuseLightin
 
     // In the case of alpha blend mode the code should be float4(diffuseLighting + (specularLighting / max(opacity, 0.01)), opacity)
     // However this have precision issue when reaching 0, so we change the blend mode and apply src * src_a inside the shader instead
-    if (matProperties._BlendMode == BLENDMODE_ALPHA || matProperties._BlendMode == BLENDMODE_ADDITIVE)
+    if (_BlendMode == BLENDMODE_ALPHA || _BlendMode == BLENDMODE_ADDITIVE)
         return float4(diffuseLighting * opacity + specularLighting * (opacity), opacity);
     else
         return float4(diffuseLighting + specularLighting * (opacity), opacity);
@@ -51,9 +51,9 @@ float4 ApplyBlendMode(PropertiesPerMaterial matProperties, float3 diffuseLightin
 #endif
 }
 
-float4 ApplyBlendMode(PropertiesPerMaterial matProperties, float3 color, float opacity)
+float4 ApplyBlendMode(float _BlendMode, float3 color, float opacity)
 {
-    return ApplyBlendMode(matProperties, color, float3(0.0, 0.0, 0.0), opacity);
+    return ApplyBlendMode(_BlendMode, color, float3(0.0, 0.0, 0.0), opacity);
 }
 
 //-----------------------------------------------------------------------------

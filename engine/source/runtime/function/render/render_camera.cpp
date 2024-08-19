@@ -204,8 +204,8 @@ namespace MoYu
 
             if (orthographic)
             {
-                float vertical = actualWidth * 0.5f;
-                float horizontal = actualHeight * 0.5f;
+                float vertical = actualHeight * 0.5f;
+                float horizontal = actualWidth * 0.5f;
 
                 glm::float4 offset = taaJitter;
                 offset.x *= horizontal / (0.5f * actualWidth);

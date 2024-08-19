@@ -356,6 +356,17 @@ namespace MoYu
             mGTAOPass->setCommonInfo(renderPassCommonInfo);
             mGTAOPass->initialize(aoPassInit);
         }
+        // ssgi pass
+        {
+            SSGIPass::SSGIInitInfo ssgiPassInit;
+            ssgiPassInit.m_ColorTexDesc = colorTexDesc;
+            ssgiPassInit.m_ShaderCompiler = pCompiler;
+            ssgiPassInit.m_ShaderRootPath = g_runtime_global_context.m_config_manager->getShaderFolder();
+
+            mSSGIPass = std::make_shared<SSGIPass>();
+            mSSGIPass->setCommonInfo(renderPassCommonInfo);
+            mSSGIPass->initialize(ssgiPassInit);
+        }
         // ssr pass
         {
             SSRPass::SSRInitInfo ssrPassInit;
@@ -421,6 +432,7 @@ namespace MoYu
         mDepthPyramidPass->prepareMeshData(render_resource);
         mColorPyramidPass->prepareMeshData(render_resource);
         mSubsurfaceScatteringPass->prepareMetaData(render_resource);
+        mSSGIPass->prepareMetaData(render_resource);
         mSSRPass->prepareMetaData(render_resource);
         mVolumeLightPass->prepareMeshData(render_resource);
         mPostprocessPasses->PreparePassData(render_resource);
@@ -453,6 +465,7 @@ namespace MoYu
         mIndirectOpaqueDrawPass = nullptr;
         mAOPass = nullptr;
         mGTAOPass = nullptr;
+        mSSGIPass = nullptr;
         mSSRPass = nullptr;
         mVolumeLightPass = nullptr;
         mSkyBoxPass = nullptr;
@@ -777,6 +790,7 @@ namespace MoYu
         // 因为color pyramid必须在绘制transparent对象之前
         outColorHandle = mColorPyramidOutput.colorHandle;
         //=================================================================================
+
 
         /*
         //=================================================================================

@@ -17,6 +17,7 @@
 #include "runtime/function/render/renderer/volume_cloud_pass.h"
 #include "runtime/function/render/renderer/indirect_draw_transparent_pass.h"
 #include "runtime/function/render/renderer/ssr_pass.h"
+#include "runtime/function/render/renderer/ssgi_pass.h"
 #include "runtime/function/render/renderer/ao_pass.h"
 #include "runtime/function/render/renderer/gtao_pass.h"
 #include "runtime/function/render/renderer/postprocess_passes.h"
@@ -89,6 +90,7 @@ namespace MoYu
         std::shared_ptr<AOPass>                      mAOPass;
         std::shared_ptr<GTAOPass>                    mGTAOPass;
         std::shared_ptr<VolumeLightPass>             mVolumeLightPass;
+        std::shared_ptr<SSGIPass>                    mSSGIPass;
         std::shared_ptr<SSRPass>                     mSSRPass;
         std::shared_ptr<PostprocessPasses>           mPostprocessPasses;
         std::shared_ptr<DisplayPass>                 mDisplayPass;

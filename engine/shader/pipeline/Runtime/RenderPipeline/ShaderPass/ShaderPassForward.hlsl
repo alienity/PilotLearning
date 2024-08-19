@@ -114,7 +114,7 @@ void Frag(PackedVaryingsToPS packedInput
         }
         ENCODE_INTO_SSSBUFFER(surfaceData, posInput.positionSS, outSSSBuffer);
 #else
-        outColor = ApplyBlendMode(matProperties, diffuseLighting, specularLighting, builtinData.opacity);
+        outColor = ApplyBlendMode(matProperties._BlendMode, diffuseLighting, specularLighting, builtinData.opacity);
         outColor = EvaluateAtmosphericScattering(posInput, V, outColor);
 #endif
 
