@@ -60,7 +60,7 @@ bool RayMarch(FrameUniforms frameUniform, Texture2D<float> _DepthTexture,
         }
 
         int  mipLevel  = 0;
-        int2 mipOffset = _DepthPyramidMipLevelOffsets[mipLevel];
+        // int2 mipOffset = _DepthPyramidMipLevelOffsets[mipLevel];
         int  iterCount = 0;
         bool hit       = false;
         bool miss      = false;
@@ -81,7 +81,8 @@ bool RayMarch(FrameUniforms frameUniform, Texture2D<float> _DepthTexture,
             // 2 walls in front of the ray, and a floor and a base below it.
             float4 bounds;
 
-            bounds.z  = LOAD_TEXTURE2D(_DepthTexture, mipOffset + mipCoord).r;
+            // bounds.z  = LOAD_TEXTURE2D(_DepthTexture, mipOffset + mipCoord).r;
+            bounds.z  = LOAD_TEXTURE2D(_DepthTexture, mipCoord, mipLevel).r;
             bounds.xy = (mipCoord + rayStep) << mipLevel;
 
             // We define the depth of the base as the depth value as:
@@ -130,7 +131,7 @@ bool RayMarch(FrameUniforms frameUniform, Texture2D<float> _DepthTexture,
             // the maximum value of depth, and not the min-max.
             mipLevel += (hitFloor || belowFloor || rayTowardsEye) ? -1 : 1;
             mipLevel  = clamp(mipLevel, 0, 6);
-            mipOffset = _DepthPyramidMipLevelOffsets[mipLevel];
+            // mipOffset = _DepthPyramidMipLevelOffsets[mipLevel];
             // mipLevel = 0;
 
             iterCount++;
