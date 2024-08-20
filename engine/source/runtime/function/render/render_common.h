@@ -618,6 +618,10 @@ namespace MoYu
     struct BlueNoiseConfigs
     {
         std::shared_ptr<RHI::D3D12Texture> m_bluenoise_64x64_uni;
+        std::shared_ptr<RHI::D3D12Texture> m_owenScrambled256Tex;
+        std::shared_ptr<RHI::D3D12Texture> m_scramblingTile8SPP;
+        std::shared_ptr<RHI::D3D12Texture> m_rankingTile8SPP;
+        std::shared_ptr<RHI::D3D12Texture> m_scramblingTex;
     };
 
     //========================================================================

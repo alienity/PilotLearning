@@ -16,6 +16,12 @@ namespace MoYu
 
         colorTexDesc = init_info.m_ColorTexDesc;
 
+        indirectDiffuseHitPointDesc = RHI::RgTextureDesc("IndirectDiffuseHitPointTexture")
+            .SetType(RHI::RgTextureType::Texture2D)
+            .SetFormat(DXGI_FORMAT::DXGI_FORMAT_R32G32B32A32_FLOAT)
+            .SetExtent(colorTexDesc.Width, colorTexDesc.Height)
+            .SetAllowUnorderedAccess(true);
+
         ShaderCompiler*       m_ShaderCompiler = init_info.m_ShaderCompiler;
         std::filesystem::path m_ShaderRootPath = init_info.m_ShaderRootPath;
 
@@ -77,70 +83,104 @@ namespace MoYu
 
     void SSGIPass::prepareMetaData(std::shared_ptr<RenderResource> render_resource)
     {
-        /*
-        m_bluenoise = m_render_scene->m_bluenoise_map.m_bluenoise_64x64_uni;
+        m_owenScrambled256Tex = m_render_scene->m_bluenoise_map.m_owenScrambled256Tex;
+        m_scramblingTile8SPP = m_render_scene->m_bluenoise_map.m_scramblingTile8SPP;
+        m_rankingTile8SPP = m_render_scene->m_bluenoise_map.m_rankingTile8SPP;
+        m_scramblingTex = m_render_scene->m_bluenoise_map.m_scramblingTex;
 
-        HLSL::FrameUniforms* _frameUniforms = &(render_resource->m_FrameUniforms);
+        //===================================================================================
 
-        glm::float2 costMapSize = glm::float2(colorTexDesc.Width, colorTexDesc.Height);
-        glm::float2 raycastSize = glm::float2(colorTexDesc.Width, colorTexDesc.Height);
-        glm::float2 resolveSize = glm::float2(colorTexDesc.Width, colorTexDesc.Height);
-
-        glm::float2 jitterSample = GenerateRandomOffset();
-
-        std::shared_ptr<RHI::D3D12Texture> pBlueNoiseUniMap = m_render_scene->m_bluenoise_map.m_bluenoise_64x64_uni;
-        float noiseWidth = pBlueNoiseUniMap->GetWidth();
-        float noiseHeight = pBlueNoiseUniMap->GetHeight();
-
-        const int kMaxLods = 8;
-        int lodCount = glm::log2((float)glm::min(colorTexDesc.Width, colorTexDesc.Height));
-        lodCount = glm::min(lodCount, kMaxLods);
-
-        HLSL::SSRUniform ssrUniform = {};
-
-        ssrUniform.ScreenSize = glm::float4(colorTexDesc.Width, colorTexDesc.Height, 1.0f / colorTexDesc.Width, 1.0f / colorTexDesc.Height);
-        ssrUniform.RayCastSize = glm::float4(raycastSize.x, raycastSize.y, 1.0f / raycastSize.x, 1.0f / raycastSize.y);
-        ssrUniform.ResolveSize = glm::float4(resolveSize.x, resolveSize.y, 1.0f / resolveSize.x, 1.0f / resolveSize.y);
-        ssrUniform.JitterSizeAndOffset = glm::float4((float)colorTexDesc.Width / (float)noiseWidth,
-                                                     (float)colorTexDesc.Height / (float)noiseHeight,
-                                                     jitterSample.x,
-                                                     jitterSample.y);
-        ssrUniform.NoiseSize       = glm::float4(noiseWidth, noiseHeight, 1.0f / noiseWidth, 1.0f / noiseHeight);
-        ssrUniform.SmoothnessRange = 1.0f;
-        ssrUniform.BRDFBias        = 0.7f;
-        ssrUniform.TResponseMin    = 0.85f;
-        ssrUniform.TResponseMax    = 0.99f;//1.0f;
-        ssrUniform.EdgeFactor      = 0.25f;
-        ssrUniform.Thickness       = 0.01f;
-        ssrUniform.NumSteps        = 60;
-        ssrUniform.MaxMipMap       = lodCount;
-
-        // SSR Uniform
-        _frameUniforms->ssrUniform = ssrUniform;
-
-
-        if (p_temporalResults[0] == nullptr)
+        if (pSSGIConsBuffer == nullptr)
         {
-            for (int i = 0; i < 2; i++)
-            {
-                p_temporalResults[i] =
-                    RHI::D3D12Texture::Create2D(m_Device->GetLinkedDevice(),
-                                                colorTexDesc.Width,
-                                                colorTexDesc.Height,
-                                                1,
-                                                colorTexDesc.Format,
-                                                RHI::RHISurfaceCreateRandomWrite,
-                                                1,
-                                                fmt::format(L"SSRTemporalResult_{}", i),
-                                                D3D12_RESOURCE_STATE_COMMON,
-                                                std::nullopt);
-            }
+            pSSGIConsBuffer = RHI::D3D12Buffer::Create(m_Device->GetLinkedDevice(),
+                RHI::RHIBufferTargetNone,
+                1,
+                MoYu::AlignUp(sizeof(ScreenSpaceGIStruct), 256),
+                L"SSGICB",
+                RHI::RHIBufferModeDynamic,
+                D3D12_RESOURCE_STATE_GENERIC_READ);
         }
-        */
+
+        float n = RenderPass::m_render_camera->m_nearClipPlane;
+        float f = RenderPass::m_render_camera->m_farClipPlane;
+        float thicknessScale = 1.0f / (1.0f + 0.01f);
+        float thicknessBias = -n / (f - n) * (0.01f * thicknessScale);
+
+        mSSGIStruct._RayMarchingSteps = EngineConfig::g_SSGIConfig.SSGIRaySteps;
+        mSSGIStruct._RayMarchingThicknessScale = thicknessScale;
+        mSSGIStruct._RayMarchingThicknessBias = thicknessBias;
+        mSSGIStruct._RayMarchingReflectsSky = 0;
+
+        mSSGIStruct._RayMarchingFallbackHierarchy = 0;
+        mSSGIStruct._IndirectDiffuseProbeFallbackFlag = 0;
+        mSSGIStruct._IndirectDiffuseProbeFallbackBias = 0;
+        mSSGIStruct._SsrStencilBit = 0;
+
+        mSSGIStruct._IndirectDiffuseFrameIndex = m_Device->GetLinkedDevice()->m_FrameIndex;;
+        mSSGIStruct._ObjectMotionStencilBit = (int)EngineConfig::StencilUsage::Clear;
+        mSSGIStruct._RayMarchingLowResPercentageInv = 1.0f;
+
+        mSSGIStruct._ColorPyramidUvScaleAndLimitPrevFrame = glm::float4(colorTexDesc.Width, colorTexDesc.Height, colorTexDesc.Width, colorTexDesc.Height);
+
+        memcpy(pSSGIConsBuffer->GetCpuVirtualAddress<ScreenSpaceGIStruct>(), &mSSGIStruct, sizeof(mSSGIStruct));
     }
 
     void SSGIPass::update(RHI::RenderGraph& graph, DrawInputParameters& passInput, DrawOutputParameters& passOutput)
     {
+        
+        RHI::RgResourceHandle mSSGIConsBufferHandle = graph.Import<RHI::D3D12Buffer>(pSSGIConsBuffer.get());
+
+        RHI::RgResourceHandle owenScrambledTextureHandle = graph.Import<RHI::D3D12Texture>(m_owenScrambled256Tex.get());
+        RHI::RgResourceHandle scramblingTileXSPPHandle = graph.Import<RHI::D3D12Texture>(m_scramblingTile8SPP.get());
+        RHI::RgResourceHandle rankingTileXSPPHandle = graph.Import<RHI::D3D12Texture>(m_rankingTile8SPP.get());
+        
+        RHI::RgResourceHandle indirectDiffuseHitPointTexhandle = graph.Create<RHI::D3D12Texture>(indirectDiffuseHitPointDesc);
+
+        RHI::RgResourceHandle perframeBufferHandle = passInput.perframeBufferHandle;
+        RHI::RgResourceHandle depthPyramidHandle = passInput.depthPyramidHandle;
+        RHI::RgResourceHandle normalBufferHandle = passInput.normalBufferHandle;
+        
+        RHI::RenderPass& ssTraceGIPass = graph.AddRenderPass("SSTraceGIPass");
+
+        ssTraceGIPass.Read(perframeBufferHandle, false, RHIResourceState::RHI_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
+        ssTraceGIPass.Read(depthPyramidHandle, false, RHIResourceState::RHI_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+        ssTraceGIPass.Read(normalBufferHandle, false, RHIResourceState::RHI_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+        ssTraceGIPass.Read(mSSGIConsBufferHandle, false, RHIResourceState::RHI_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
+        ssTraceGIPass.Write(indirectDiffuseHitPointTexhandle, false, RHIResourceState::RHI_RESOURCE_STATE_UNORDERED_ACCESS);
+
+        ssTraceGIPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
+            RHI::D3D12ComputeContext* pContext = context->GetComputeContext();
+
+            pContext->SetRootSignature(pSSTraceGISignature.get());
+            pContext->SetPipelineState(pSSTraceGIPSO.get());
+
+            struct RootIndexBuffer
+            {
+                uint32_t frameUniformIndex;
+                uint32_t depthPyramidTextureIndex;
+                uint32_t normalBufferIndex;
+                uint32_t screenSpaceTraceGIStructIndex;
+                uint32_t indirectDiffuseHitPointTextureRWIndex;
+                uint32_t _OwenScrambledTextureIndex;
+                uint32_t _ScramblingTileXSPPIndex;
+                uint32_t _RankingTileXSPPIndex;
+            };
+
+            RootIndexBuffer rootIndexBuffer = RootIndexBuffer{ RegGetBufDefCBVIdx(perframeBufferHandle),
+                                                               RegGetTexDefSRVIdx(depthPyramidHandle),
+                                                               RegGetTexDefSRVIdx(normalBufferHandle),
+                                                               RegGetBufDefCBVIdx(mSSGIConsBufferHandle),
+                                                               RegGetTexDefUAVIdx(indirectDiffuseHitPointTexhandle),
+                                                               RegGetTexDefSRVIdx(owenScrambledTextureHandle),
+                                                               RegGetTexDefSRVIdx(scramblingTileXSPPHandle),
+                                                               RegGetTexDefSRVIdx(rankingTileXSPPHandle) };
+
+            pContext->SetConstantArray(0, sizeof(RootIndexBuffer) / sizeof(UINT), &rootIndexBuffer);
+
+            pContext->Dispatch2D(indirectDiffuseHitPointDesc.Width, indirectDiffuseHitPointDesc.Height, 8, 8);
+        });
+        
+
         /*
         RHI::RgResourceHandle perframeBufferHandle = passInput.perframeBufferHandle;
         RHI::RgResourceHandle worldNormalHandle    = passInput.worldNormalHandle;

@@ -124,7 +124,11 @@
         "m_normal_map": "asset/texture/terrain/NormalMap.png"
     },
     "m_bluenoises": {
-        "m_bluenoise_map": "asset/texture/global/output_64x64_uni.bmp"
+        "m_bluenoise_map": "asset/texture/global/output_64x64_uni.bmp",
+        "m_owenScrambled256Tex": "asset/texture/CoherentNoise/OwenScrambledNoise256.png",
+        "m_scramblingTile8SPP": "asset/texture/CoherentNoise/ScramblingTile8SPP.png",
+        "m_rankingTile8SPP": "asset/texture/CoherentNoise/RankingTile8SPP.png",
+        "m_scramblingTex": "asset/texture/CoherentNoise/ScrambleNoise.png"
     },
 	"m_volume_clouds": {
         "m_weather2d": "asset/texture/VolumetricClouds/weather.dds",

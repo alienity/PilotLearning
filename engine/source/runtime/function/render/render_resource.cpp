@@ -97,6 +97,11 @@ namespace MoYu
         // load bluenoise texture
         std::shared_ptr<MoYu::MoYuScratchImage> _bluenoise_map = loadImage(level_resource_desc.m_bluenoises.m_bluenoise_map);
 
+        std::shared_ptr<MoYu::MoYuScratchImage> _owenScrambled256Tex = loadImage(level_resource_desc.m_bluenoises.m_owenScrambled256Tex);
+        std::shared_ptr<MoYu::MoYuScratchImage> _scramblingTile8SPP = loadImage(level_resource_desc.m_bluenoises.m_scramblingTile8SPP);
+        std::shared_ptr<MoYu::MoYuScratchImage> _rankingTile8SPP = loadImage(level_resource_desc.m_bluenoises.m_rankingTile8SPP);
+        std::shared_ptr<MoYu::MoYuScratchImage> _scramblingTex = loadImage(level_resource_desc.m_bluenoises.m_scramblingTex);
+
         startUploadBatch();
         {
             // create irradiance cubemap
@@ -134,8 +139,11 @@ namespace MoYu
             m_render_scene->m_ibl_map._PreIntegratedFGD_CharlieAndFabricIndex = PreIntegratedFGD_CharlieAndFabric;
             
             // create blue noise
-            auto bluenoise_tex = createTex(_bluenoise_map, L"blue_noise");
-            m_render_scene->m_bluenoise_map.m_bluenoise_64x64_uni = bluenoise_tex;
+            m_render_scene->m_bluenoise_map.m_bluenoise_64x64_uni = createTex(_bluenoise_map, L"blue_noise");
+            m_render_scene->m_bluenoise_map.m_owenScrambled256Tex = createTex(_bluenoise_map, L"owenScrambled256Tex");
+            m_render_scene->m_bluenoise_map.m_scramblingTile8SPP = createTex(_bluenoise_map, L"scramblingTile8SPP");
+            m_render_scene->m_bluenoise_map.m_rankingTile8SPP = createTex(_bluenoise_map, L"rankingTile8SPP");
+            m_render_scene->m_bluenoise_map.m_scramblingTex = createTex(_bluenoise_map, L"scramblingTex");
         }
         endUploadBatch();
 

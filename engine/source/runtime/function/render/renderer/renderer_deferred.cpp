@@ -638,7 +638,7 @@ namespace MoYu
         CameraMotionVectorPass::DrawInputParameters mCameraMotionVectorIntput;
         CameraMotionVectorPass::DrawOutputParameters mCameraMotionVectorOutput;
         mCameraMotionVectorIntput.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
-        mCameraMotionVectorIntput.depthPyramidHandle = mDepthPyramidOutput.maxDepthPtyramidHandle;
+        mCameraMotionVectorIntput.depthPyramidHandle = mDepthPyramidOutput.averageDepthPyramidHandle;
         mCameraMotionVectorOutput.motionVectorHandle = mMotionVectorOutput.motionVectorHandle;
 
         mCameraMotionVectorPass->update(graph, mCameraMotionVectorIntput, mCameraMotionVectorOutput);
@@ -725,8 +725,20 @@ namespace MoYu
 
         mGTAOIntput.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
         mGTAOIntput.packedNormalHandle = mGBufferOutput.gbuffer1Handle;
-        mGTAOIntput.depthHandle = mGBufferOutput.depthHandle;
+        mGTAOIntput.depthHandle = mDepthPyramidOutput.averageDepthPyramidHandle;
         mGTAOPass->update(graph, mGTAOIntput, mGTAOOutput);
+        //=================================================================================
+
+// mSSGIPass
+        //=================================================================================
+        // screenspace global illumination
+        SSGIPass::DrawInputParameters mSSGIIntput;
+        SSGIPass::DrawOutputParameters mSSGIOutput;
+
+        mSSGIIntput.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
+        mSSGIIntput.depthPyramidHandle = mDepthPyramidOutput.averageDepthPyramidHandle;
+        mSSGIIntput.normalBufferHandle = mGBufferOutput.gbuffer1Handle;
+        mSSGIPass->update(graph, mSSGIIntput, mSSGIOutput);
         //=================================================================================
 
         ////=================================================================================

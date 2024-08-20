@@ -19,10 +19,8 @@ namespace MoYu
         struct DrawInputParameters : public PassInput
         {
             RHI::RgResourceHandle perframeBufferHandle;
-            RHI::RgResourceHandle worldNormalHandle;
-            RHI::RgResourceHandle mrraMapHandle;
-            RHI::RgResourceHandle maxDepthPtyramidHandle;
-            RHI::RgResourceHandle lastFrameColorHandle;
+            RHI::RgResourceHandle depthPyramidHandle;
+            RHI::RgResourceHandle normalBufferHandle;
         };
 
         struct DrawOutputParameters : public PassOutput
@@ -41,8 +39,40 @@ namespace MoYu
         std::shared_ptr<RHI::D3D12Texture> getCurTemporalResult();
         std::shared_ptr<RHI::D3D12Texture> getPrevTemporalResult();
 
+    protected:
+        struct ScreenSpaceGIStruct
+        {
+            // Ray marching constants
+            int _RayMarchingSteps;
+            float _RayMarchingThicknessScale;
+            float _RayMarchingThicknessBias;
+            int _RayMarchingReflectsSky;
+
+            int _RayMarchingFallbackHierarchy;
+            int _IndirectDiffuseProbeFallbackFlag;
+            int _IndirectDiffuseProbeFallbackBias;
+            int _SsrStencilBit;
+
+            int _IndirectDiffuseFrameIndex;
+            int _ObjectMotionStencilBit;
+            float _RayMarchingLowResPercentageInv;
+            int _SSGIUnused0;
+
+            glm::float4 _ColorPyramidUvScaleAndLimitPrevFrame;
+        };
+
+        ScreenSpaceGIStruct mSSGIStruct;
+
+        std::shared_ptr<RHI::D3D12Buffer> pSSGIConsBuffer;
+
     private:
         int passIndex;
+
+        std::shared_ptr<RHI::D3D12Texture> m_bluenoise;
+        std::shared_ptr<RHI::D3D12Texture> m_owenScrambled256Tex;
+        std::shared_ptr<RHI::D3D12Texture> m_scramblingTile8SPP;
+        std::shared_ptr<RHI::D3D12Texture> m_rankingTile8SPP;
+        std::shared_ptr<RHI::D3D12Texture> m_scramblingTex;
 
         Shader SSTraceGICS;
         std::shared_ptr<RHI::D3D12RootSignature> pSSTraceGISignature;
@@ -53,6 +83,7 @@ namespace MoYu
         std::shared_ptr<RHI::D3D12PipelineState> pSSReporjectGIPSO;
 
         RHI::RgTextureDesc colorTexDesc;
+        RHI::RgTextureDesc indirectDiffuseHitPointDesc;
 	};
 }
 

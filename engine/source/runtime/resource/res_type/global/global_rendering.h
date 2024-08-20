@@ -61,8 +61,13 @@ namespace MoYu
     struct BlueNoiseTexs
     {
         std::string m_bluenoise_map;
+        std::string m_owenScrambled256Tex;
+        std::string m_scramblingTile8SPP;
+        std::string m_rankingTile8SPP;
+        std::string m_scramblingTex;
     };
-    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(BlueNoiseTexs, m_bluenoise_map)
+    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(BlueNoiseTexs, m_bluenoise_map, 
+        m_owenScrambled256Tex, m_scramblingTile8SPP, m_rankingTile8SPP, m_scramblingTex)
 
     struct VolumeCloudTexs
     {
