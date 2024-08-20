@@ -21,8 +21,10 @@ namespace MoYu
         std::filesystem::path m_ShaderRootPath = init_info.m_ShaderRootPath;
 
         // Compute the transmittance, and store it in transmittance_texture_.
-        mVolumeCloudCS = m_ShaderCompiler->CompileShader(RHI_SHADER_TYPE::Compute, m_ShaderRootPath / "hlsl/VolumetricCloudCS.hlsl", ShaderCompileOptions(L"CSMain"));
-        mVolumeShadowCS = m_ShaderCompiler->CompileShader(RHI_SHADER_TYPE::Compute, m_ShaderRootPath / "hlsl/VolumetricCloudShadowCS.hlsl", ShaderCompileOptions(L"CSMain"));
+        mVolumeCloudCS = m_ShaderCompiler->CompileShader(RHI_SHADER_TYPE::Compute, 
+            m_ShaderRootPath / "pipeline/Runtime/Tools/Cloud/VolumetricCloudCS.hlsl", ShaderCompileOptions(L"CSMain"));
+        mVolumeShadowCS = m_ShaderCompiler->CompileShader(RHI_SHADER_TYPE::Compute, 
+            m_ShaderRootPath / "pipeline/Runtime/Tools/Cloud/VolumetricCloudShadowCS.hlsl", ShaderCompileOptions(L"CSMain"));
 
         {
             RHI::RootSignatureDesc rootSigDesc =

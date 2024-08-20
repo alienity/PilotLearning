@@ -840,16 +840,18 @@ namespace MoYu
         outDepthHandle = mASOutputParams.renderTargetDepthHandle;
         //=================================================================================
 
-        ////=================================================================================
-        //// VolumeCloud draw
-        //VolumeCloudPass::DrawInputParameters  mVCIntputParams;
-        //VolumeCloudPass::DrawOutputParameters mVCOutputParams;
+        //=================================================================================
+        // VolumeCloud draw
+        VolumeCloudPass::DrawInputParameters  mVCIntputParams;
+        VolumeCloudPass::DrawOutputParameters mVCOutputParams;
 
-        //mVCIntputParams.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
-        //mVCIntputParams.renderTargetColorHandle = mASOutputParams.renderTargetColorHandle;
-        //mVCIntputParams.renderTargetDepthHandle  = mASOutputParams.renderTargetDepthHandle;
-        //mVolumeCloudPass->update(graph, mVCIntputParams, mVCOutputParams);
-        ////=================================================================================
+        mVCIntputParams.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
+        mVCIntputParams.renderTargetColorHandle = mASOutputParams.renderTargetColorHandle;
+        mVCIntputParams.renderTargetDepthHandle  = mASOutputParams.renderTargetDepthHandle;
+        mVolumeCloudPass->update(graph, mVCIntputParams, mVCOutputParams);
+
+        outColorHandle = mVCOutputParams.outColorHandle;
+        //=================================================================================
 
 
         //=================================================================================
