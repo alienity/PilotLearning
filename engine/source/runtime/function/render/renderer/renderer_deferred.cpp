@@ -508,9 +508,9 @@ namespace MoYu
 
         //=================================================================================
         // Terrain¼ô²ÃPass
-        RHI::RgResourceHandle lastFrameMinDepthPyramidHandle =
-            graph.Import(mDepthPyramidPass->GetLastFrameMinDepthPyramid().get());
-
+        RHI::RgResourceHandle lastFrameMinDepthPyramidHandle = 
+            graph.Import(mDepthPyramidPass->GetDepthPyramid(DepthMipGenerateMode::MinType, true).get());
+        
         IndirectTerrainCullPass::TerrainCullInput terrainCullInput;
         IndirectTerrainCullPass::TerrainCullOutput terrainCullOutput;
         terrainCullInput.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
@@ -757,6 +757,7 @@ namespace MoYu
         mLightLoopIntput.spotShadowmapHandles = spotShadowmapHandle;
         mIndirectLightLoopPass->update(graph, mLightLoopIntput, mLightLoopOutput);
         //=================================================================================
+
 
 
         ////=================================================================================

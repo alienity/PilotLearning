@@ -22,6 +22,20 @@ namespace MoYu
     {
         for (int i = 0; i < 2; i++)
         {
+            if (mDepthPyramid[i].pAverageDpethPyramid == nullptr)
+            {
+                mDepthPyramid[i].pAverageDpethPyramid =
+                    RHI::D3D12Texture::Create2D(m_Device->GetLinkedDevice(),
+                        depthTexDesc.Width,
+                        depthTexDesc.Height,
+                        8,
+                        DXGI_FORMAT_R32_FLOAT,
+                        RHI::RHISurfaceCreateRandomWrite | RHI::RHISurfaceCreateMipmap,
+                        1,
+                        L"AverageDepthPyramid",
+                        D3D12_RESOURCE_STATE_COMMON,
+                        std::nullopt);
+            }
             if (mDepthPyramid[i].pMinDpethPyramid == nullptr)
             {
                 mDepthPyramid[i].pMinDpethPyramid =
@@ -57,13 +71,12 @@ namespace MoYu
 
     void DepthPyramidPass::update(RHI::RenderGraph& graph, DrawInputParameters& passInput, DrawOutputParameters& passOutput)
     {
-        //if (!isDepthMinMaxHeightReady)
         {
-            //isDepthMinMaxHeightReady = true;
+            std::shared_ptr<RHI::D3D12Texture> pAverageDpethPyramid = GetDepthPyramid(DepthMipGenerateMode::AverageType, true);
+            std::shared_ptr<RHI::D3D12Texture> pMinDpethPyramid = GetDepthPyramid(DepthMipGenerateMode::MinType, true);
+            std::shared_ptr<RHI::D3D12Texture> pMaxDpethPyramid = GetDepthPyramid(DepthMipGenerateMode::MaxType, true);
 
-            std::shared_ptr<RHI::D3D12Texture> pMinDpethPyramid = GetCurrentFrameMinDepthPyramid();
-            std::shared_ptr<RHI::D3D12Texture> pMaxDpethPyramid = GetCurrentFrameMaxDepthPyramid();
-
+            RHI::RgResourceHandle averageDepthPyramidHandle = GImport(graph, pAverageDpethPyramid.get());
             RHI::RgResourceHandle minDepthPyramidHandle = GImport(graph, pMinDpethPyramid.get());
             RHI::RgResourceHandle maxDepthPyramidHandle = GImport(graph, pMaxDpethPyramid.get());
 
@@ -71,13 +84,14 @@ namespace MoYu
 
             std::string_view passName;
             if (passIndex == 0)
-                passName = std::string_view("GenerateMinMaxDepthPyramidPass_0");
+                passName = std::string_view("GenerateDepthPyramidPass_0");
             else
-                passName = std::string_view("GenerateMinMaxDepthPyramidPass_1");
+                passName = std::string_view("GenerateDepthPyramidPass_1");
 
             RHI::RenderPass& genHeightMapMipMapPass = graph.AddRenderPass(passName);
 
             genHeightMapMipMapPass.Read(depthHandle, true);
+            genHeightMapMipMapPass.Write(averageDepthPyramidHandle, true);
             genHeightMapMipMapPass.Write(minDepthPyramidHandle, true);
             genHeightMapMipMapPass.Write(maxDepthPyramidHandle, true);
 
@@ -86,14 +100,18 @@ namespace MoYu
 
                 {
                     pContext->TransitionBarrier(RegGetTex(depthHandle), D3D12_RESOURCE_STATE_COPY_SOURCE);
+                    pContext->TransitionBarrier(RegGetTex(averageDepthPyramidHandle), D3D12_RESOURCE_STATE_COPY_DEST, 0);
                     pContext->TransitionBarrier(RegGetTex(minDepthPyramidHandle), D3D12_RESOURCE_STATE_COPY_DEST, 0);
                     pContext->TransitionBarrier(RegGetTex(maxDepthPyramidHandle), D3D12_RESOURCE_STATE_COPY_DEST, 0);
                     pContext->FlushResourceBarriers();
 
                     const CD3DX12_TEXTURE_COPY_LOCATION src(RegGetTex(depthHandle)->GetResource(), 0);
 
-                    const CD3DX12_TEXTURE_COPY_LOCATION dst(RegGetTex(minDepthPyramidHandle)->GetResource(), 0);
-                    context->GetGraphicsCommandList()->CopyTextureRegion(&dst, 0, 0, 0, &src, nullptr);
+                    const CD3DX12_TEXTURE_COPY_LOCATION dst_avg(RegGetTex(averageDepthPyramidHandle)->GetResource(), 0);
+                    context->GetGraphicsCommandList()->CopyTextureRegion(&dst_avg, 0, 0, 0, &src, nullptr);
+
+                    const CD3DX12_TEXTURE_COPY_LOCATION dst_min(RegGetTex(minDepthPyramidHandle)->GetResource(), 0);
+                    context->GetGraphicsCommandList()->CopyTextureRegion(&dst_min, 0, 0, 0, &src, nullptr);
 
                     const CD3DX12_TEXTURE_COPY_LOCATION dst_max(RegGetTex(maxDepthPyramidHandle)->GetResource(), 0);
                     context->GetGraphicsCommandList()->CopyTextureRegion(&dst_max, 0, 0, 0, &src, nullptr);
@@ -102,11 +120,19 @@ namespace MoYu
                 }
 
                 //--------------------------------------------------
+                // 生成AverageDepthPyramid
+                //--------------------------------------------------
+                {
+                    RHI::D3D12Texture* _SrcTexture = RegGetTex(averageDepthPyramidHandle);
+                    generateMipmapForDepthPyramid(pContext, _SrcTexture, DepthMipGenerateMode::AverageType);
+                }
+
+                //--------------------------------------------------
                 // 生成MinDepthPyramid
                 //--------------------------------------------------
                 {
                     RHI::D3D12Texture* _SrcTexture = RegGetTex(minDepthPyramidHandle);
-                    generateMipmapForDepthPyramid(pContext, _SrcTexture, true);
+                    generateMipmapForDepthPyramid(pContext, _SrcTexture, DepthMipGenerateMode::MinType);
                 }
 
                 //--------------------------------------------------
@@ -114,10 +140,11 @@ namespace MoYu
                 //--------------------------------------------------
                 {
                     RHI::D3D12Texture* _SrcTexture = RegGetTex(maxDepthPyramidHandle);
-                    generateMipmapForDepthPyramid(pContext, _SrcTexture, false);
+                    generateMipmapForDepthPyramid(pContext, _SrcTexture, DepthMipGenerateMode::MaxType);
                 }
             });
 
+            passOutput.averageDepthPyramidHandle = averageDepthPyramidHandle;
             passOutput.minDepthPtyramidHandle = minDepthPyramidHandle;
             passOutput.maxDepthPtyramidHandle = maxDepthPyramidHandle;
         }
@@ -138,17 +165,17 @@ namespace MoYu
         return needClearRenderTarget;
     }
 
-    void DepthPyramidPass::generateMipmapForDepthPyramid(RHI::D3D12ComputeContext* context, RHI::D3D12Texture* srcTexture, bool genMin)
+    void DepthPyramidPass::generateMipmapForDepthPyramid(RHI::D3D12ComputeContext* context, RHI::D3D12Texture* srcTexture, DepthMipGenerateMode mode)
     {
         int numSubresource = srcTexture->GetNumSubresources();
         int iterCount = glm::ceil(numSubresource / 4.0f);
         for (int i = 0; i < iterCount; i++)
         {
-            generateMipmapForDepthPyramid(context, srcTexture, 4 * i, genMin);
+            generateMipmapForDepthPyramid(context, srcTexture, 4 * i, mode);
         }
     }
 
-    void DepthPyramidPass::generateMipmapForDepthPyramid(RHI::D3D12ComputeContext* pContext, RHI::D3D12Texture* srcTexture, int srcIndex, bool genMin)
+    void DepthPyramidPass::generateMipmapForDepthPyramid(RHI::D3D12ComputeContext* pContext, RHI::D3D12Texture* srcTexture, int srcIndex, DepthMipGenerateMode mode)
     {
         int numSubresource = srcTexture->GetNumSubresources();
         int outMipCount = glm::max(0, glm::min(numSubresource - 1 - srcIndex, 4));
@@ -185,13 +212,18 @@ namespace MoYu
         }
 
         pContext->SetRootSignature(RootSignatures::pGenerateMipsLinearSignature.get());
-        if (genMin)
+
+        if (mode == DepthMipGenerateMode::MinType)
         {
             pContext->SetPipelineState(PipelineStates::pGenerateMinMipsLinearPSO.get());
         }
-        else
+        else if (mode == DepthMipGenerateMode::MaxType)
         {
             pContext->SetPipelineState(PipelineStates::pGenerateMaxMipsLinearPSO.get());
+        }
+        else if (mode == DepthMipGenerateMode::AverageType)
+        {
+            pContext->SetPipelineState(PipelineStates::pGenerateMipsLinearPSO.get());
         }
 
         pContext->SetConstantArray(0, sizeof(MipGenInBuffer) / sizeof(int), &maxMipGenBuffer);
@@ -199,30 +231,31 @@ namespace MoYu
         pContext->Dispatch2D(_width, _height, 8, 8);
     }
 
-    std::shared_ptr<RHI::D3D12Texture> DepthPyramidPass::GetLastFrameMinDepthPyramid()
+    std::shared_ptr<RHI::D3D12Texture> DepthPyramidPass::GetDepthPyramid(DepthMipGenerateMode mode, bool lastFrame)
     {
         int curIndex = m_Device->GetLinkedDevice()->m_FrameIndex;
-        curIndex = (curIndex + 1) % 2;
-        return mDepthPyramid[curIndex].pMinDpethPyramid;
-    }
 
-    std::shared_ptr<RHI::D3D12Texture> DepthPyramidPass::GetLastFrameMaxDepthPyramid()
-    {
-        int curIndex = m_Device->GetLinkedDevice()->m_FrameIndex;
-        curIndex = (curIndex + 1) % 2;
-        return mDepthPyramid[curIndex].pMaxDpethPyramid;
-    }
+        std::shared_ptr<RHI::D3D12Texture> depthRT = nullptr;
 
-    std::shared_ptr<RHI::D3D12Texture> DepthPyramidPass::GetCurrentFrameMinDepthPyramid()
-    {
-        int curIndex = m_Device->GetLinkedDevice()->m_FrameIndex;
-        return mDepthPyramid[curIndex].pMinDpethPyramid;
-    }
+        if (lastFrame)
+        {
+            curIndex = (curIndex + 1) % 2;
+        }
+        switch (mode)
+        {
+        case MoYu::AverageType:
+            depthRT = mDepthPyramid[curIndex].pAverageDpethPyramid;
+            break;
+        case MoYu::MaxType:
+            depthRT = mDepthPyramid[curIndex].pMaxDpethPyramid;
+            break;
+        case MoYu::MinType:
+            depthRT = mDepthPyramid[curIndex].pMinDpethPyramid;
+            break;
+        default:
+            break;
+        }
 
-    std::shared_ptr<RHI::D3D12Texture> DepthPyramidPass::GetCurrentFrameMaxDepthPyramid()
-    {
-        int curIndex = m_Device->GetLinkedDevice()->m_FrameIndex;
-        return mDepthPyramid[curIndex].pMaxDpethPyramid;
+        return depthRT;
     }
-
 }

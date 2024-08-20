@@ -7,6 +7,13 @@
 
 namespace MoYu
 {
+    enum DepthMipGenerateMode
+    {
+        AverageType,
+        MaxType,
+        MinType
+    };
+
     class DepthPyramidPass : public RenderPass
 	{
     public:
@@ -27,6 +34,7 @@ namespace MoYu
 
         struct DrawOutputParameters : public PassOutput
         {
+            RHI::RgResourceHandle averageDepthPyramidHandle;
             RHI::RgResourceHandle minDepthPtyramidHandle;
             RHI::RgResourceHandle maxDepthPtyramidHandle;
         };
@@ -40,14 +48,10 @@ namespace MoYu
         void destroy() override final;
 
         bool initializeRenderTarget(RHI::RenderGraph& graph, DrawOutputParameters* drawPassOutput);
-        void generateMipmapForDepthPyramid(RHI::D3D12ComputeContext* context, RHI::D3D12Texture* srcTexture, bool genMin);
-        void generateMipmapForDepthPyramid(RHI::D3D12ComputeContext* context, RHI::D3D12Texture* srcTexture, int srcIndex, bool genMin);
+        void generateMipmapForDepthPyramid(RHI::D3D12ComputeContext* context, RHI::D3D12Texture* srcTexture, DepthMipGenerateMode mode = DepthMipGenerateMode::AverageType);
+        void generateMipmapForDepthPyramid(RHI::D3D12ComputeContext* context, RHI::D3D12Texture* srcTexture, int srcIndex, DepthMipGenerateMode mode = DepthMipGenerateMode::AverageType);
 
-        std::shared_ptr<RHI::D3D12Texture> GetLastFrameMinDepthPyramid();
-        std::shared_ptr<RHI::D3D12Texture> GetLastFrameMaxDepthPyramid();
-
-        std::shared_ptr<RHI::D3D12Texture> GetCurrentFrameMinDepthPyramid();
-        std::shared_ptr<RHI::D3D12Texture> GetCurrentFrameMaxDepthPyramid();
+        std::shared_ptr<RHI::D3D12Texture> GetDepthPyramid(DepthMipGenerateMode mode = DepthMipGenerateMode::AverageType, bool lastFrame = false);
 
     private:
         int passIndex;
@@ -57,25 +61,13 @@ namespace MoYu
         {
             std::shared_ptr<RHI::D3D12Texture> pMinDpethPyramid;
             std::shared_ptr<RHI::D3D12Texture> pMaxDpethPyramid;
+            std::shared_ptr<RHI::D3D12Texture> pAverageDpethPyramid;
         };
         DepthPyramidStruct mDepthPyramid[2];
-
-        //bool isDepthMinMaxHeightReady;
 
         RHI::RgTextureDesc albedoTexDesc;
         RHI::RgTextureDesc depthTexDesc;
 
-        Shader indirecTerrainPatchNodesGenCS;
-        std::shared_ptr<RHI::D3D12RootSignature> pIndirecTerrainPatchNodesGenSignature;
-        std::shared_ptr<RHI::D3D12PipelineState> pIndirecTerrainPatchNodesGenPSO;
-
-        Shader patchNodeVisToMainCamIndexGenCS;
-        std::shared_ptr<RHI::D3D12RootSignature> pPatchNodeVisToMainCamIndexGenSignature;
-        std::shared_ptr<RHI::D3D12PipelineState> pPatchNodeVisToMainCamIndexGenPSO;
-
-        Shader patchNodeVisToDirCascadeIndexGenCS;
-        std::shared_ptr<RHI::D3D12RootSignature> pPatchNodeVisToDirCascadeIndexGenSignature;
-        std::shared_ptr<RHI::D3D12PipelineState> pPatchNodeVisToDirCascadeIndexGenPSO;
 	};
 }
 

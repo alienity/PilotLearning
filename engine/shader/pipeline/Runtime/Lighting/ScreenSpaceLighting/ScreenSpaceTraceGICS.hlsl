@@ -22,7 +22,7 @@
 
 #define SSGI_CLAMP_VALUE 7.0f
 
-struct ScreenSpaceTraceGIStruct
+struct ScreenSpaceGIStruct
 {
     // Ray marching constants
     int _RayMarchingSteps;
@@ -39,6 +39,8 @@ struct ScreenSpaceTraceGIStruct
     int _ObjectMotionStencilBit;
     float _RayMarchingLowResPercentageInv;
     int _SSGIUnused0;
+
+    float4 _ColorPyramidUvScaleAndLimitPrevFrame;
 };
 
 cbuffer RootConstants : register(b0, space0)
@@ -70,7 +72,7 @@ void TRACE_GLOBAL_ILLUMINATION(uint3 dispatchThreadId : SV_DispatchThreadID, uin
     ConstantBuffer<FrameUniforms> frameUniform = ResourceDescriptorHeap[frameUniformIndex];
     float4 _ScreenSize = frameUniform.baseUniform._ScreenSize;
     
-    ConstantBuffer<ScreenSpaceTraceGIStruct> _ScreenSpaceTraceGIStruct = ResourceDescriptorHeap[screenSpaceTraceGIStructIndex];
+    ConstantBuffer<ScreenSpaceGIStruct> _ScreenSpaceTraceGIStruct = ResourceDescriptorHeap[screenSpaceTraceGIStructIndex];
     int _IndirectDiffuseFrameIndex = _ScreenSpaceTraceGIStruct._IndirectDiffuseFrameIndex;
     bool _RayMarchingReflectsSky = _ScreenSpaceTraceGIStruct._RayMarchingReflectsSky;
     int _RayMarchingSteps = _ScreenSpaceTraceGIStruct._RayMarchingSteps;
@@ -82,7 +84,7 @@ void TRACE_GLOBAL_ILLUMINATION(uint3 dispatchThreadId : SV_DispatchThreadID, uin
     uint2 inputCoord = dispatchThreadId.xy;
     
     // Read the depth value as early as possible
-    float deviceDepth = LOAD_TEXTURE2D(_DepthPyramidTexture, inputCoord, 0).x;
+    float deviceDepth = LOAD_TEXTURE2D(_DepthPyramidTexture, inputCoord).x;
 
     // Initialize the hitpoint texture to a miss
     _IndirectDiffuseHitPointTextureRW[currentCoord.xy] = float2(99.0, 0.0);

@@ -21,7 +21,7 @@
 
 #define SSGI_CLAMP_VALUE 7.0f
 
-struct ScreenSpaceReprojectGIStruct
+struct ScreenSpaceGIStruct
 {
     // Ray marching constants
     int _RayMarchingSteps;
@@ -83,7 +83,7 @@ void REPROJECT_GLOBAL_ILLUMINATION(uint3 dispatchThreadId : SV_DispatchThreadID,
     ConstantBuffer<FrameUniforms> frameUniform = ResourceDescriptorHeap[frameUniformIndex];
     float4 _ScreenSize = frameUniform.baseUniform._ScreenSize;
     
-    ConstantBuffer<ScreenSpaceReprojectGIStruct> _ScreenSpaceReprojectGIStruct = ResourceDescriptorHeap[screenSpaceReprojectGIStructIndex];
+    ConstantBuffer<ScreenSpaceGIStruct> _ScreenSpaceReprojectGIStruct = ResourceDescriptorHeap[screenSpaceReprojectGIStructIndex];
     int _IndirectDiffuseFrameIndex = _ScreenSpaceReprojectGIStruct._IndirectDiffuseFrameIndex;
     // float _RayMarchingLowResPercentageInv = _ScreenSpaceReprojectGIStruct._RayMarchingLowResPercentageInv;
     float4 _ColorPyramidUvScaleAndLimitPrevFrame = _ScreenSpaceReprojectGIStruct._ColorPyramidUvScaleAndLimitPrevFrame;
@@ -93,9 +93,9 @@ void REPROJECT_GLOBAL_ILLUMINATION(uint3 dispatchThreadId : SV_DispatchThreadID,
     uint2 currentCoord = dispatchThreadId.xy;
 
     // Read the depth and compute the position
-    float deviceDepth = LOAD_TEXTURE2D(_DepthPyramidTexture, inputCoord).x;
-    PositionInputs posInput = GetPositionInput(inputCoord, _ScreenSize.zw, deviceDepth,
-        UNITY_MATRIX_I_VP(frameUniform), GetWorldToViewMatrix(frameUniform));
+    // float deviceDepth = LOAD_TEXTURE2D(_DepthPyramidTexture, inputCoord).x;
+    // PositionInputs posInput = GetPositionInput(inputCoord, _ScreenSize.zw, deviceDepth,
+    //     UNITY_MATRIX_I_VP(frameUniform), GetWorldToViewMatrix(frameUniform));
 
     // Read the pixel normal
     NormalData normalData;
@@ -108,14 +108,14 @@ void REPROJECT_GLOBAL_ILLUMINATION(uint3 dispatchThreadId : SV_DispatchThreadID,
     newSample.y = GetBNDSequenceSample(_OwenScrambledTexture, _ScramblingTileXSPP, _RankingTileXSPP,
         currentCoord.xy, _IndirectDiffuseFrameIndex, 1);
 
-    // Importance sample with a cosine lobe (direction that will be used for ray casting)
-    float3 sampleDir = SampleHemisphereCosine(newSample.x, newSample.y, normalData.normalWS);
+    // // Importance sample with a cosine lobe (direction that will be used for ray casting)
+    // float3 sampleDir = SampleHemisphereCosine(newSample.x, newSample.y, normalData.normalWS);
 
     // Read the hit point ndc position to fetch
     float2 hitPositionNDC = LOAD_TEXTURE2D(_IndirectDiffuseHitPointTexture, dispatchThreadId.xy).xy;
 
     // Grab the depth of the hit point
-    float hitPointDepth = LOAD_TEXTURE2D(_DepthPyramidTexture, hitPositionNDC * _ScreenSize.xy, 0).x;
+    float hitPointDepth = LOAD_TEXTURE2D(_DepthPyramidTexture, hitPositionNDC * _ScreenSize.xy).x;
 
     // Flag that tracks if this ray lead to a valid result
     bool invalid = false;
@@ -169,5 +169,5 @@ void REPROJECT_GLOBAL_ILLUMINATION(uint3 dispatchThreadId : SV_DispatchThreadID,
     color = HsvToRgb(color);
 
     // Write the output to the target pixel
-    _IndirectDiffuseTextureRW[currentCoord] = color;
+    _IndirectDiffuseTextureRW[currentCoord] = float4(color, 0);
 }

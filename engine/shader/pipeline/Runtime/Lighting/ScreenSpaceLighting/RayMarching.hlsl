@@ -82,7 +82,7 @@ bool RayMarch(FrameUniforms frameUniform, Texture2D<float> _DepthTexture,
             float4 bounds;
 
             // bounds.z  = LOAD_TEXTURE2D(_DepthTexture, mipOffset + mipCoord).r;
-            bounds.z  = LOAD_TEXTURE2D(_DepthTexture, mipCoord, mipLevel).r;
+            bounds.z  = LOAD_TEXTURE2D_LOD(_DepthTexture, mipCoord, mipLevel).r;
             bounds.xy = (mipCoord + rayStep) << mipLevel;
 
             // We define the depth of the base as the depth value as:
