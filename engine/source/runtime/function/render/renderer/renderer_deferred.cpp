@@ -508,8 +508,8 @@ namespace MoYu
 
         //=================================================================================
         // Terrain¼ô²ÃPass
-        RHI::RgResourceHandle lastFrameMinDepthPyramidHandle = 
-            graph.Import(mDepthPyramidPass->GetDepthPyramid(DepthMipGenerateMode::MinType, true).get());
+        RHI::RgResourceHandle lastFrameMinDepthPyramidHandle = graph.Import(mDepthPyramidPass->GetDepthPyramid(DepthMipGenerateMode::MinType, true).get());
+        RHI::RgResourceHandle lastFrameDepthPyramidHandle = graph.Import(mDepthPyramidPass->GetDepthPyramid(DepthMipGenerateMode::AverageType, true).get());
         
         IndirectTerrainCullPass::TerrainCullInput terrainCullInput;
         IndirectTerrainCullPass::TerrainCullOutput terrainCullOutput;
@@ -729,15 +729,17 @@ namespace MoYu
         mGTAOPass->update(graph, mGTAOIntput, mGTAOOutput);
         //=================================================================================
 
-// mSSGIPass
         //=================================================================================
         // screenspace global illumination
         SSGIPass::DrawInputParameters mSSGIIntput;
         SSGIPass::DrawOutputParameters mSSGIOutput;
 
         mSSGIIntput.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
+        mSSGIIntput.colorPyramidHandle = lastFrameColorRTHandle;
         mSSGIIntput.depthPyramidHandle = mDepthPyramidOutput.averageDepthPyramidHandle;
+        mSSGIIntput.lastDepthPyramidHandle = lastFrameDepthPyramidHandle;
         mSSGIIntput.normalBufferHandle = mGBufferOutput.gbuffer1Handle;
+        mSSGIIntput.cameraMotionVectorHandle = mCameraMotionVectorOutput.motionVectorHandle;
         mSSGIPass->update(graph, mSSGIIntput, mSSGIOutput);
         //=================================================================================
 

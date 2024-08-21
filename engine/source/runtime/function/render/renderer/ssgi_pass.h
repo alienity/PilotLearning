@@ -19,8 +19,11 @@ namespace MoYu
         struct DrawInputParameters : public PassInput
         {
             RHI::RgResourceHandle perframeBufferHandle;
+            RHI::RgResourceHandle colorPyramidHandle;
             RHI::RgResourceHandle depthPyramidHandle;
+            RHI::RgResourceHandle lastDepthPyramidHandle;
             RHI::RgResourceHandle normalBufferHandle;
+            RHI::RgResourceHandle cameraMotionVectorHandle;
         };
 
         struct DrawOutputParameters : public PassOutput
@@ -73,6 +76,8 @@ namespace MoYu
         std::shared_ptr<RHI::D3D12Texture> m_scramblingTile8SPP;
         std::shared_ptr<RHI::D3D12Texture> m_rankingTile8SPP;
         std::shared_ptr<RHI::D3D12Texture> m_scramblingTex;
+
+        std::shared_ptr<RHI::D3D12Texture> pIndirectDiffuseTexture;
 
         Shader SSTraceGICS;
         std::shared_ptr<RHI::D3D12RootSignature> pSSTraceGISignature;

@@ -47,16 +47,11 @@ cbuffer RootConstants : register(b0, space0)
     uint frameUniformIndex;
     uint colorPyramidTextureIndex;
     uint depthPyramidTextureIndex;
-    uint normalBufferIndex;
-    uint screenSpaceReprojectGIStructIndex;
+    uint screenSpaceTraceGIStructIndex;
     uint _IndirectDiffuseHitPointTextureIndex;
     uint _CameraMotionVectorsTextureIndex;
     uint _HistoryDepthTextureIndex;
     uint _IndirectDiffuseTextureRWIndex;
-
-    uint _OwenScrambledTextureIndex;
-    uint _ScramblingTileXSPPIndex;
-    uint _RankingTileXSPPIndex;
 };
 
 SamplerState s_point_clamp_sampler      : register(s10);
@@ -70,46 +65,19 @@ void REPROJECT_GLOBAL_ILLUMINATION(uint3 dispatchThreadId : SV_DispatchThreadID,
 {
     Texture2D<float4> _ColorPyramidTexture = ResourceDescriptorHeap[colorPyramidTextureIndex];
     Texture2D<float> _DepthPyramidTexture = ResourceDescriptorHeap[depthPyramidTextureIndex];
-    Texture2D<float4> _NormalBufferTexture = ResourceDescriptorHeap[normalBufferIndex];
-    Texture2D<float4> _IndirectDiffuseHitPointTexture = ResourceDescriptorHeap[_IndirectDiffuseHitPointTextureIndex];
+    Texture2D<float2> _IndirectDiffuseHitPointTexture = ResourceDescriptorHeap[_IndirectDiffuseHitPointTextureIndex];
     Texture2D<float4> _CameraMotionVectorsTexture = ResourceDescriptorHeap[_CameraMotionVectorsTextureIndex];
     Texture2D<float> _HistoryDepthTexture = ResourceDescriptorHeap[_HistoryDepthTextureIndex];
     RWTexture2D<float4> _IndirectDiffuseTextureRW = ResourceDescriptorHeap[_IndirectDiffuseTextureRWIndex];
 
-    Texture2D<float> _OwenScrambledTexture = ResourceDescriptorHeap[_OwenScrambledTextureIndex];
-    Texture2D<float> _ScramblingTileXSPP = ResourceDescriptorHeap[_ScramblingTileXSPPIndex];
-    Texture2D<float> _RankingTileXSPP = ResourceDescriptorHeap[_RankingTileXSPPIndex];
-
     ConstantBuffer<FrameUniforms> frameUniform = ResourceDescriptorHeap[frameUniformIndex];
     float4 _ScreenSize = frameUniform.baseUniform._ScreenSize;
     
-    ConstantBuffer<ScreenSpaceGIStruct> _ScreenSpaceReprojectGIStruct = ResourceDescriptorHeap[screenSpaceReprojectGIStructIndex];
-    int _IndirectDiffuseFrameIndex = _ScreenSpaceReprojectGIStruct._IndirectDiffuseFrameIndex;
-    // float _RayMarchingLowResPercentageInv = _ScreenSpaceReprojectGIStruct._RayMarchingLowResPercentageInv;
+    ConstantBuffer<ScreenSpaceGIStruct> _ScreenSpaceReprojectGIStruct = ResourceDescriptorHeap[screenSpaceTraceGIStructIndex];
     float4 _ColorPyramidUvScaleAndLimitPrevFrame = _ScreenSpaceReprojectGIStruct._ColorPyramidUvScaleAndLimitPrevFrame;
     
     // Compute the pixel position to process
-    uint2 inputCoord = dispatchThreadId.xy;
     uint2 currentCoord = dispatchThreadId.xy;
-
-    // Read the depth and compute the position
-    // float deviceDepth = LOAD_TEXTURE2D(_DepthPyramidTexture, inputCoord).x;
-    // PositionInputs posInput = GetPositionInput(inputCoord, _ScreenSize.zw, deviceDepth,
-    //     UNITY_MATRIX_I_VP(frameUniform), GetWorldToViewMatrix(frameUniform));
-
-    // Read the pixel normal
-    NormalData normalData;
-    DecodeFromNormalBuffer(_NormalBufferTexture, inputCoord.xy, normalData);
-
-    // Generete a new direction to follow
-    float2 newSample;
-    newSample.x = GetBNDSequenceSample(_OwenScrambledTexture, _ScramblingTileXSPP, _RankingTileXSPP,
-        currentCoord.xy, _IndirectDiffuseFrameIndex, 0);
-    newSample.y = GetBNDSequenceSample(_OwenScrambledTexture, _ScramblingTileXSPP, _RankingTileXSPP,
-        currentCoord.xy, _IndirectDiffuseFrameIndex, 1);
-
-    // // Importance sample with a cosine lobe (direction that will be used for ray casting)
-    // float3 sampleDir = SampleHemisphereCosine(newSample.x, newSample.y, normalData.normalWS);
 
     // Read the hit point ndc position to fetch
     float2 hitPositionNDC = LOAD_TEXTURE2D(_IndirectDiffuseHitPointTexture, dispatchThreadId.xy).xy;

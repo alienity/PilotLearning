@@ -140,10 +140,10 @@ namespace MoYu
             
             // create blue noise
             m_render_scene->m_bluenoise_map.m_bluenoise_64x64_uni = createTex(_bluenoise_map, L"blue_noise");
-            m_render_scene->m_bluenoise_map.m_owenScrambled256Tex = createTex(_bluenoise_map, L"owenScrambled256Tex");
-            m_render_scene->m_bluenoise_map.m_scramblingTile8SPP = createTex(_bluenoise_map, L"scramblingTile8SPP");
-            m_render_scene->m_bluenoise_map.m_rankingTile8SPP = createTex(_bluenoise_map, L"rankingTile8SPP");
-            m_render_scene->m_bluenoise_map.m_scramblingTex = createTex(_bluenoise_map, L"scramblingTex");
+            m_render_scene->m_bluenoise_map.m_owenScrambled256Tex = createTex(_owenScrambled256Tex, L"owenScrambled256Tex");
+            m_render_scene->m_bluenoise_map.m_scramblingTile8SPP = createTex(_scramblingTile8SPP, L"scramblingTile8SPP");
+            m_render_scene->m_bluenoise_map.m_rankingTile8SPP = createTex(_rankingTile8SPP, L"rankingTile8SPP");
+            m_render_scene->m_bluenoise_map.m_scramblingTex = createTex(_scramblingTex, L"scramblingTex");
         }
         endUploadBatch();
 
