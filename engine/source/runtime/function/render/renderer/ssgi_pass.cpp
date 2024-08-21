@@ -118,6 +118,8 @@ namespace MoYu
                 D3D12_RESOURCE_STATE_GENERIC_READ);
         }
 
+        int frameIndex = m_Device->GetLinkedDevice()->m_FrameIndex;
+
         float n = RenderPass::m_render_camera->m_nearClipPlane;
         float f = RenderPass::m_render_camera->m_farClipPlane;
         float thicknessScale = 1.0f / (1.0f + 0.01f);
@@ -133,7 +135,7 @@ namespace MoYu
         mSSGIStruct._IndirectDiffuseProbeFallbackBias = 0;
         mSSGIStruct._SsrStencilBit = 0;
 
-        mSSGIStruct._IndirectDiffuseFrameIndex = m_Device->GetLinkedDevice()->m_FrameIndex;;
+        mSSGIStruct._IndirectDiffuseFrameIndex = frameIndex % 16;
         mSSGIStruct._ObjectMotionStencilBit = (int)EngineConfig::StencilUsage::Clear;
         mSSGIStruct._RayMarchingLowResPercentageInv = 1.0f;
 
