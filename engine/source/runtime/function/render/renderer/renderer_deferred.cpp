@@ -638,7 +638,7 @@ namespace MoYu
         CameraMotionVectorPass::DrawInputParameters mCameraMotionVectorIntput;
         CameraMotionVectorPass::DrawOutputParameters mCameraMotionVectorOutput;
         mCameraMotionVectorIntput.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
-        mCameraMotionVectorIntput.depthPyramidHandle = mDepthPyramidOutput.averageDepthPyramidHandle;
+        mCameraMotionVectorIntput.depthPyramidHandle = mDepthPyramidOutput.minDepthPtyramidHandle;
         mCameraMotionVectorOutput.motionVectorHandle = mMotionVectorOutput.motionVectorHandle;
 
         mCameraMotionVectorPass->update(graph, mCameraMotionVectorIntput, mCameraMotionVectorOutput);
@@ -725,7 +725,7 @@ namespace MoYu
 
         mGTAOIntput.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
         mGTAOIntput.packedNormalHandle = mGBufferOutput.gbuffer1Handle;
-        mGTAOIntput.depthHandle = mDepthPyramidOutput.averageDepthPyramidHandle;
+        mGTAOIntput.depthHandle = mDepthPyramidOutput.minDepthPtyramidHandle;
         mGTAOPass->update(graph, mGTAOIntput, mGTAOOutput);
         //=================================================================================
 
@@ -736,7 +736,7 @@ namespace MoYu
 
         mSSGIIntput.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
         mSSGIIntput.colorPyramidHandle = lastFrameColorRTHandle;
-        mSSGIIntput.depthPyramidHandle = mDepthPyramidOutput.averageDepthPyramidHandle;
+        mSSGIIntput.depthPyramidHandle = mDepthPyramidOutput.minDepthPtyramidHandle;
         mSSGIIntput.lastDepthPyramidHandle = lastFrameDepthPyramidHandle;
         mSSGIIntput.normalBufferHandle = mGBufferOutput.gbuffer1Handle;
         mSSGIIntput.cameraMotionVectorHandle = mCameraMotionVectorOutput.motionVectorHandle;
@@ -910,7 +910,8 @@ namespace MoYu
         DisplayPass::DisplayOutputParameters mDisplayOutputParams;
 
         //mDisplayIntputParams.inputRTColorHandle = mTerrainShadowmapOutputParams.directionalShadowmapHandles[3];
-        mDisplayIntputParams.inputRTColorHandle = outColorHandle;
+        mDisplayIntputParams.inputRTColorHandle = mSSGIOutput.ssrOutHandle;
+        //mDisplayIntputParams.inputRTColorHandle = outColorHandle;
         mDisplayOutputParams.renderTargetColorHandle = renderTargetColorHandle;
         //mDisplayOutputParams.renderTargetColorHandle = backBufColorHandle;
         mDisplayPass->update(graph, mDisplayIntputParams, mDisplayOutputParams);

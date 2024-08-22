@@ -121,8 +121,9 @@ void TRACE_GLOBAL_ILLUMINATION(uint3 dispatchThreadId : SV_DispatchThreadID, uin
     deviceDepth = ComputeNormalizedDeviceCoordinatesWithZ(posInput.positionWS, UNITY_MATRIX_VP(frameUniform)).z;
 
     // Ray March along our ray
+
     float3 rayPos;
-    bool hit = RayMarch(frameUniform, _DepthPyramidTexture,
+    bool hit = RayMarch(_DepthPyramidTexture, _ScreenSize, UNITY_MATRIX_VP(frameUniform), 
         _RayMarchingReflectsSky, _RayMarchingSteps, _RayMarchingThicknessScale, _RayMarchingThicknessBias,
         posInput.positionWS, sampleDir, normalData.normalWS, posInput.positionSS, deviceDepth, killRay, rayPos);
 

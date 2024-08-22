@@ -34,7 +34,7 @@ namespace MoYu
 
         struct DrawOutputParameters : public PassOutput
         {
-            RHI::RgResourceHandle averageDepthPyramidHandle;
+            //RHI::RgResourceHandle averageDepthPyramidHandle;
             RHI::RgResourceHandle minDepthPtyramidHandle;
             RHI::RgResourceHandle maxDepthPtyramidHandle;
         };

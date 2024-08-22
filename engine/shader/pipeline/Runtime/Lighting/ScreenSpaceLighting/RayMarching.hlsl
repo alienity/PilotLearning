@@ -2,15 +2,13 @@
 #define RAY_TRACE_EPS 0.00024414
 
 // TODO: It is not really possible to share all of this with SSR for couple reason, but it probably possible share a part of it
-bool RayMarch(FrameUniforms frameUniform, Texture2D<float> _DepthTexture,
-    bool _RayMarchingReflectsSky, int _RayMarchingSteps, float _RayMarchingThicknessScale, float _RayMarchingThicknessBias,
+bool RayMarch(Texture2D<float> maxDepthPyramid, float4 screenSize, float4x4 matrixVP, 
+    bool rayMarchingReflectsSky, int rayMarchingSteps, float rayMarchingThicknessScale, float rayMarchingThicknessBias,
     float3 positionWS, float3 sampleDir, float3 normalWS, float2 positionSS, float deviceDepth, bool killRay, out float3 rayPos)
 {
     // Initialize ray pos to invalid value
     rayPos = float3(-1.0, -1.0, -1.0);
 
-    float4 _ScreenSize = frameUniform.baseUniform._ScreenSize;
-    
     // Due to a warning on Vulkan and Metal if returning early, this is the only way we found to avoid it.
     bool status = false;
 
@@ -18,9 +16,13 @@ bool RayMarch(FrameUniforms frameUniform, Texture2D<float> _DepthTexture,
     float3 rayOrigin = float3(positionSS + 0.5, deviceDepth);
 
     float3 reflPosWS  = positionWS + sampleDir;
-    float3 reflPosNDC = ComputeNormalizedDeviceCoordinatesWithZ(reflPosWS, UNITY_MATRIX_VP(frameUniform)); // Jittered
-    float3 reflPosSS  = float3(reflPosNDC.xy * _ScreenSize.xy, reflPosNDC.z);
+    float3 reflPosNDC = ComputeNormalizedDeviceCoordinatesWithZ(reflPosWS, matrixVP); // Jittered
+    float3 reflPosSS  = float3(reflPosNDC.xy * screenSize.xy, reflPosNDC.z);
     float3 rayDir     = reflPosSS - rayOrigin;
+
+    // screen space y-flip
+    rayDir.y = -rayDir.y;
+    
     float3 rcpRayDir  = rcp(rayDir);
     int2   rayStep    = int2(rcpRayDir.x >= 0 ? 1 : 0,
                              rcpRayDir.y >= 0 ? 1 : 0);
@@ -41,10 +43,10 @@ bool RayMarch(FrameUniforms frameUniform, Texture2D<float> _DepthTexture,
             const float halfTexel = 0.5;
 
             float3 bounds;
-            bounds.x = (rcpRayDir.x >= 0) ? _ScreenSize.x - halfTexel : halfTexel;
-            bounds.y = (rcpRayDir.y >= 0) ? _ScreenSize.y - halfTexel : halfTexel;
+            bounds.x = (rcpRayDir.x >= 0) ? screenSize.x - halfTexel : halfTexel;
+            bounds.y = (rcpRayDir.y >= 0) ? screenSize.y - halfTexel : halfTexel;
             // If we do not want to intersect the skybox, it is more efficient to not trace too far.
-            float maxDepth = (_RayMarchingReflectsSky != 0) ? -0.00000024 : 0.00000024; // 2^-22
+            float maxDepth = (rayMarchingReflectsSky != 0) ? -0.00000024 : 0.00000024; // 2^-22
             bounds.z = (rcpRayDir.z >= 0) ? 1 : maxDepth;
 
             float3 dist = bounds * rcpRayDir - (rayOrigin * rcpRayDir);
@@ -66,7 +68,7 @@ bool RayMarch(FrameUniforms frameUniform, Texture2D<float> _DepthTexture,
         bool miss      = false;
         bool belowMip0 = false; // This value is set prior to entering the cell
 
-        while (!(hit || miss) && (t <= tMax) && (iterCount < _RayMarchingSteps))
+        while (!(hit || miss) && (t <= tMax) && (iterCount < rayMarchingSteps))
         {
             rayPos = rayOrigin + t * rayDir;
 
@@ -82,7 +84,7 @@ bool RayMarch(FrameUniforms frameUniform, Texture2D<float> _DepthTexture,
             float4 bounds;
 
             // bounds.z  = LOAD_TEXTURE2D(_DepthTexture, mipOffset + mipCoord).r;
-            bounds.z  = LOAD_TEXTURE2D_LOD(_DepthTexture, mipCoord, mipLevel).r;
+            bounds.z  = LOAD_TEXTURE2D_LOD(maxDepthPyramid, mipCoord, mipLevel).r;
             bounds.xy = (mipCoord + rayStep) << mipLevel;
 
             // We define the depth of the base as the depth value as:
@@ -91,7 +93,7 @@ bool RayMarch(FrameUniforms frameUniform, Texture2D<float> _DepthTexture,
             // b = ((f - n) * d - n * thickness) / ((f - n) * (1 + thickness))
             // b = d / (1 + thickness) - n / (f - n) * (thickness / (1 + thickness))
             // b = d * k_s + k_b
-            bounds.w = bounds.z * _RayMarchingThicknessScale + _RayMarchingThicknessBias;
+            bounds.w = bounds.z * rayMarchingThicknessScale + rayMarchingThicknessBias;
 
             float4 dist      = bounds * rcpRayDir.xyzz - (rayOrigin.xyzz * rcpRayDir.xyzz);
             float  distWall  = min(dist.x, dist.y);
@@ -138,7 +140,7 @@ bool RayMarch(FrameUniforms frameUniform, Texture2D<float> _DepthTexture,
         }
 
         // Treat intersections with the sky as misses.
-        miss = miss || ((_RayMarchingReflectsSky == 0) && (rayPos.z == 0));
+        miss = miss || ((rayMarchingReflectsSky == 0) && (rayPos.z == 0));
         status = hit && !miss;
     }
     return status;
