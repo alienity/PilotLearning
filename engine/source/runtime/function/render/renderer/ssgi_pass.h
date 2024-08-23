@@ -39,9 +39,6 @@ namespace MoYu
         void update(RHI::RenderGraph& graph, DrawInputParameters& passInput, DrawOutputParameters& passOutput);
         void destroy() override final;
 
-        std::shared_ptr<RHI::D3D12Texture> getCurTemporalResult();
-        std::shared_ptr<RHI::D3D12Texture> getPrevTemporalResult();
-
     protected:
         struct ScreenSpaceGIStruct
         {

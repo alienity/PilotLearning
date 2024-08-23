@@ -1,4 +1,4 @@
-#include "runtime/function/render/renderer/ssgi_pass.h"
+#include "runtime/function/render/renderer/temporalFilter_pass.h"
 #include "runtime/resource/config_manager/config_manager.h"
 #include "runtime/function/render/rhi/rhi_core.h"
 #include "runtime/function/render/jitter_helper.h"
@@ -10,143 +10,133 @@
 namespace MoYu
 {
 
-	void SSGIPass::initialize(const SSGIInitInfo& init_info)
+	void TemporalFilterPass::initialize(const TemporalFilterInitInfo& init_info)
 	{
-        passIndex = 0;
-
         colorTexDesc = init_info.m_ColorTexDesc;
-
-        indirectDiffuseHitPointDesc = RHI::RgTextureDesc("IndirectDiffuseHitPointTexture")
-            .SetType(RHI::RgTextureType::Texture2D)
-            .SetFormat(DXGI_FORMAT::DXGI_FORMAT_R32G32_FLOAT)
-            .SetExtent(colorTexDesc.Width, colorTexDesc.Height)
-            .SetAllowUnorderedAccess(true);
 
         ShaderCompiler*       m_ShaderCompiler = init_info.m_ShaderCompiler;
         std::filesystem::path m_ShaderRootPath = init_info.m_ShaderRootPath;
 
         {
-            SSTraceGICS = m_ShaderCompiler->CompileShader(
-                RHI_SHADER_TYPE::Compute, m_ShaderRootPath / "pipeline/Runtime/Lighting/ScreenSpaceLighting/ScreenSpaceTraceGICS.hlsl",
-                ShaderCompileOptions(L"TRACE_GLOBAL_ILLUMINATION"));
-
-            RHI::RootSignatureDesc rootSigDesc =
-                RHI::RootSignatureDesc()
-                    .Add32BitConstants<0, 0>(16)
-                    .AddStaticSampler<10, 0>(D3D12_FILTER::D3D12_FILTER_MIN_MAG_MIP_POINT, D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_CLAMP, 1)
-                    .AddStaticSampler<11, 0>(D3D12_FILTER::D3D12_FILTER_MIN_MAG_MIP_LINEAR, D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_CLAMP, 1)
-                    .AllowResourceDescriptorHeapIndexing()
-                    .AllowSampleDescriptorHeapIndexing();
-
-            pSSTraceGISignature = std::make_shared<RHI::D3D12RootSignature>(m_Device, rootSigDesc);
-
-            struct PsoStream
-            {
-                PipelineStateStreamRootSignature RootSignature;
-                PipelineStateStreamCS            CS;
-            } psoStream;
-            psoStream.RootSignature         = PipelineStateStreamRootSignature(pSSTraceGISignature.get());
-            psoStream.CS                    = &SSTraceGICS;
-            PipelineStateStreamDesc psoDesc = {sizeof(PsoStream), &psoStream};
-
-            pSSTraceGIPSO = std::make_shared<RHI::D3D12PipelineState>(m_Device, L"ScreenSpaceTraceGIPSO", psoDesc);
-            
-        }
-
-        {
-            SSReporjectGICS = m_ShaderCompiler->CompileShader(
-                RHI_SHADER_TYPE::Compute, m_ShaderRootPath / "pipeline/Runtime/Lighting/ScreenSpaceLighting/ScreenSpaceReprojectGICS.hlsl",
-                ShaderCompileOptions(L"REPROJECT_GLOBAL_ILLUMINATION"));
+            ShaderCompileOptions mShaderCompileOptions(L"ValidateHistory");
+            mShaderCompileOptions.SetDefine(L"VALIDATEHISTORY", L"1");
+            mValidateHistory.m_Kernal =
+                m_ShaderCompiler->CompileShader(
+                    RHI_SHADER_TYPE::Compute, m_ShaderRootPath / "pipeline/Runtime/Runtime/Tools/Denoising/TemporalFilterCS.hlsl",
+                    mShaderCompileOptions);
 
             RHI::RootSignatureDesc rootSigDesc =
                 RHI::RootSignatureDesc()
                 .Add32BitConstants<0, 0>(16)
                 .AddStaticSampler<10, 0>(D3D12_FILTER::D3D12_FILTER_MIN_MAG_MIP_POINT, D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_CLAMP, 1)
-                .AddStaticSampler<11, 0>(D3D12_FILTER::D3D12_FILTER_MIN_MAG_MIP_LINEAR, D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_CLAMP, 1)
                 .AllowResourceDescriptorHeapIndexing()
                 .AllowSampleDescriptorHeapIndexing();
-
-            pSSReporjectGISignature = std::make_shared<RHI::D3D12RootSignature>(m_Device, rootSigDesc);
+            mValidateHistory.pKernalSignature = std::make_shared<RHI::D3D12RootSignature>(m_Device, rootSigDesc);
 
             struct PsoStream
             {
                 PipelineStateStreamRootSignature RootSignature;
                 PipelineStateStreamCS            CS;
             } psoStream;
-            psoStream.RootSignature         = PipelineStateStreamRootSignature(pSSReporjectGISignature.get());
-            psoStream.CS                    = &SSReporjectGICS;
-            PipelineStateStreamDesc psoDesc = {sizeof(PsoStream), &psoStream};
+            psoStream.RootSignature = PipelineStateStreamRootSignature(mValidateHistory.pKernalSignature.get());
+            psoStream.CS = &mValidateHistory.m_Kernal;
+            PipelineStateStreamDesc psoDesc = { sizeof(PsoStream), &psoStream };
 
-            pSSReporjectGIPSO = std::make_shared<RHI::D3D12PipelineState>(m_Device, L"ScreenSpaceReprojectGIPSO", psoDesc);
+            mValidateHistory.pKernalPSO = std::make_shared<RHI::D3D12PipelineState>(m_Device, L"ValidateHistoryPSO", psoDesc);
+        }
+        {
+            ShaderCompileOptions mShaderCompileOptions(L"TEMPORAL_ACCUMULATION");
+            mShaderCompileOptions.SetDefine(L"TEMPORALACCUMULATIONSINGLE", L"1");
+            mShaderCompileOptions.SetDefine(L"SINGLE_CHANNEL", L"0");
+            mValidateHistory.m_Kernal =
+                m_ShaderCompiler->CompileShader(
+                    RHI_SHADER_TYPE::Compute, m_ShaderRootPath / "pipeline/Runtime/Runtime/Tools/Denoising/TemporalFilterCS.hlsl",
+                    mShaderCompileOptions);
+
+            RHI::RootSignatureDesc rootSigDesc =
+                RHI::RootSignatureDesc()
+                .Add32BitConstants<0, 0>(16)
+                .AddStaticSampler<10, 0>(D3D12_FILTER::D3D12_FILTER_MIN_MAG_MIP_POINT, D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_CLAMP, 1)
+                .AllowResourceDescriptorHeapIndexing()
+                .AllowSampleDescriptorHeapIndexing();
+            mValidateHistory.pKernalSignature = std::make_shared<RHI::D3D12RootSignature>(m_Device, rootSigDesc);
+
+            struct PsoStream
+            {
+                PipelineStateStreamRootSignature RootSignature;
+                PipelineStateStreamCS            CS;
+            } psoStream;
+            psoStream.RootSignature = PipelineStateStreamRootSignature(mValidateHistory.pKernalSignature.get());
+            psoStream.CS = &mValidateHistory.m_Kernal;
+            PipelineStateStreamDesc psoDesc = { sizeof(PsoStream), &psoStream };
+
+            mValidateHistory.pKernalPSO = std::make_shared<RHI::D3D12PipelineState>(m_Device, L"TemporalAccumulationColorPSO", psoDesc);
+        }
+        {
+            ShaderCompileOptions mShaderCompileOptions(L"TEMPORAL_ACCUMULATION");
+            mShaderCompileOptions.SetDefine(L"TEMPORALACCUMULATIONSINGLE", L"1");
+            mShaderCompileOptions.SetDefine(L"SINGLE_CHANNEL", L"1");
+            mValidateHistory.m_Kernal =
+                m_ShaderCompiler->CompileShader(
+                    RHI_SHADER_TYPE::Compute, m_ShaderRootPath / "pipeline/Runtime/Runtime/Tools/Denoising/TemporalFilterCS.hlsl",
+                    mShaderCompileOptions);
+
+            RHI::RootSignatureDesc rootSigDesc =
+                RHI::RootSignatureDesc()
+                .Add32BitConstants<0, 0>(16)
+                .AddStaticSampler<10, 0>(D3D12_FILTER::D3D12_FILTER_MIN_MAG_MIP_POINT, D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_CLAMP, 1)
+                .AllowResourceDescriptorHeapIndexing()
+                .AllowSampleDescriptorHeapIndexing();
+            mValidateHistory.pKernalSignature = std::make_shared<RHI::D3D12RootSignature>(m_Device, rootSigDesc);
+
+            struct PsoStream
+            {
+                PipelineStateStreamRootSignature RootSignature;
+                PipelineStateStreamCS            CS;
+            } psoStream;
+            psoStream.RootSignature = PipelineStateStreamRootSignature(mValidateHistory.pKernalSignature.get());
+            psoStream.CS = &mValidateHistory.m_Kernal;
+            PipelineStateStreamDesc psoDesc = { sizeof(PsoStream), &psoStream };
+
+            mValidateHistory.pKernalPSO = std::make_shared<RHI::D3D12PipelineState>(m_Device, L"TemporalAccumulationSinglePSO", psoDesc);
+        }
+        {
+            ShaderCompileOptions mShaderCompileOptions(L"COPYHISTORY");
+            mShaderCompileOptions.SetDefine(L"COPYHISTORY", L"1");
+            mValidateHistory.m_Kernal =
+                m_ShaderCompiler->CompileShader(
+                    RHI_SHADER_TYPE::Compute, m_ShaderRootPath / "pipeline/Runtime/Runtime/Tools/Denoising/TemporalFilterCS.hlsl",
+                    mShaderCompileOptions);
+
+            RHI::RootSignatureDesc rootSigDesc =
+                RHI::RootSignatureDesc()
+                .Add32BitConstants<0, 0>(16)
+                .AddStaticSampler<10, 0>(D3D12_FILTER::D3D12_FILTER_MIN_MAG_MIP_POINT, D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_CLAMP, 1)
+                .AllowResourceDescriptorHeapIndexing()
+                .AllowSampleDescriptorHeapIndexing();
+            mValidateHistory.pKernalSignature = std::make_shared<RHI::D3D12RootSignature>(m_Device, rootSigDesc);
+
+            struct PsoStream
+            {
+                PipelineStateStreamRootSignature RootSignature;
+                PipelineStateStreamCS            CS;
+            } psoStream;
+            psoStream.RootSignature = PipelineStateStreamRootSignature(mValidateHistory.pKernalSignature.get());
+            psoStream.CS = &mValidateHistory.m_Kernal;
+            PipelineStateStreamDesc psoDesc = { sizeof(PsoStream), &psoStream };
+
+            mValidateHistory.pKernalPSO = std::make_shared<RHI::D3D12PipelineState>(m_Device, L"CopyHistoryPSO", psoDesc);
         }
     }
 
-    void SSGIPass::prepareMetaData(std::shared_ptr<RenderResource> render_resource)
+    void TemporalFilterPass::prepareMetaData(std::shared_ptr<RenderResource> render_resource)
     {
-        m_owenScrambled256Tex = m_render_scene->m_bluenoise_map.m_owenScrambled256Tex;
-        m_scramblingTile8SPP = m_render_scene->m_bluenoise_map.m_scramblingTile8SPP;
-        m_rankingTile8SPP = m_render_scene->m_bluenoise_map.m_rankingTile8SPP;
-        m_scramblingTex = m_render_scene->m_bluenoise_map.m_scramblingTex;
-
-        //===================================================================================
-
-        if (pIndirectDiffuseTexture == nullptr)
-        {
-            pIndirectDiffuseTexture =
-                RHI::D3D12Texture::Create2D(m_Device->GetLinkedDevice(),
-                    colorTexDesc.Width,
-                    colorTexDesc.Height,
-                    8,
-                    DXGI_FORMAT_R32G32B32A32_FLOAT,
-                    RHI::RHISurfaceCreateRandomWrite,
-                    1,
-                    L"SSIndirectDiffuseTexture",
-                    D3D12_RESOURCE_STATE_COMMON,
-                    std::nullopt);
-        }
-
-        //===================================================================================
-
-        if (pSSGIConsBuffer == nullptr)
-        {
-            pSSGIConsBuffer = RHI::D3D12Buffer::Create(m_Device->GetLinkedDevice(),
-                RHI::RHIBufferTargetNone,
-                1,
-                MoYu::AlignUp(sizeof(ScreenSpaceGIStruct), 256),
-                L"SSGICB",
-                RHI::RHIBufferModeDynamic,
-                D3D12_RESOURCE_STATE_GENERIC_READ);
-        }
-
-        int frameIndex = m_Device->GetLinkedDevice()->m_FrameIndex;
-
-        float n = RenderPass::m_render_camera->m_nearClipPlane;
-        float f = RenderPass::m_render_camera->m_farClipPlane;
-        float thicknessScale = 1.0f / (1.0f + 0.01f);
-        float thicknessBias = -n / (f - n) * (0.01f * thicknessScale);
-
-        mSSGIStruct._RayMarchingSteps = EngineConfig::g_SSGIConfig.SSGIRaySteps;
-        mSSGIStruct._RayMarchingThicknessScale = thicknessScale;
-        mSSGIStruct._RayMarchingThicknessBias = thicknessBias;
-        mSSGIStruct._RayMarchingReflectsSky = 0;
-
-        mSSGIStruct._RayMarchingFallbackHierarchy = 0;
-        mSSGIStruct._IndirectDiffuseProbeFallbackFlag = 0;
-        mSSGIStruct._IndirectDiffuseProbeFallbackBias = 0;
-        mSSGIStruct._SsrStencilBit = 0;
-
-        mSSGIStruct._IndirectDiffuseFrameIndex = frameIndex % 16;
-        mSSGIStruct._ObjectMotionStencilBit = (int)EngineConfig::StencilUsage::Clear;
-        mSSGIStruct._RayMarchingLowResPercentageInv = 1.0f;
-
-        mSSGIStruct._ColorPyramidUvScaleAndLimitPrevFrame = glm::float4(1, 1, colorTexDesc.Width, colorTexDesc.Height);
-
-        memcpy(pSSGIConsBuffer->GetCpuVirtualAddress<ScreenSpaceGIStruct>(), &mSSGIStruct, sizeof(mSSGIStruct));
+        
     }
 
-    void SSGIPass::update(RHI::RenderGraph& graph, DrawInputParameters& passInput, DrawOutputParameters& passOutput)
+    void TemporalFilterPass::update(RHI::RenderGraph& graph, DrawInputParameters& passInput, DrawOutputParameters& passOutput)
     {
-
+        /*
         RHI::RgResourceHandle mSSGIConsBufferHandle = graph.Import<RHI::D3D12Buffer>(pSSGIConsBuffer.get());
         RHI::RgResourceHandle mIndirectDiffuseHandle = graph.Import<RHI::D3D12Texture>(pIndirectDiffuseTexture.get());
 
@@ -260,16 +250,16 @@ namespace MoYu
                                                                RegGetTexDefSRVIdx(lastDepthPyramidHandle),
                                                                RegGetTexDefUAVIdx(mIndirectDiffuseHandle) };
 
-
             pContext->SetConstantArray(0, sizeof(RootIndexBuffer) / sizeof(UINT), &rootIndexBuffer);
 
             pContext->Dispatch2D(colorTexDesc.Width, colorTexDesc.Height, 8, 8);
         });
 
         passOutput.ssrOutHandle = mIndirectDiffuseHandle;
+        */
     }
 
-    void SSGIPass::destroy()
+    void TemporalFilterPass::destroy()
     {
 
 

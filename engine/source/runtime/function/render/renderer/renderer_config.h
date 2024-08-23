@@ -171,7 +171,7 @@ namespace EngineConfig
 
     struct SSGIConfig
     {
-        int SSGIRaySteps = 128; // Screen space global illumination step count for the ray marching.
+        int SSGIRaySteps = 64; // Screen space global illumination step count for the ray marching.
         bool SSGIDenoise = true; // Flag that enables the first denoising pass.
         float SSGIDenoiserRadius = 0.5f; // Flag that defines the radius of the first denoiser.
         bool SSGISecondDenoise = true; // Flag that enables the second denoising pass.
