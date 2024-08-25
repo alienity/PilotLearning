@@ -41,14 +41,10 @@ struct TemporalFilterStruct
     float4 _HistorySizeAndScale;
     // Contains resolution multiplier in x, inverse in y, unused on zw
     float4 _DenoiserResolutionMultiplierVals;
-    // This value tells us which channels hold the value
-    float4 _DenoisingHistoryMask;
     // Value that tells us if the current history should be discarded based on scene-level data
     int _EnableExposureControl;
-    // In the case of an array signal, this tells us which slice of the array we should be fetching
-    int _DenoisingHistorySlice;
 
-    int2 _Unused0;
+    int3 _Unused0;
 };
 
 SamplerState s_linear_clamp_sampler : register(s10);
@@ -199,7 +195,7 @@ void TEMPORAL_ACCUMULATION(uint3 dispatchThreadId : SV_DispatchThreadID, uint2 g
     int _EnableExposureControl = temporalFilterStruct._EnableExposureControl;
     float4 _HistorySizeAndScale = temporalFilterStruct._HistorySizeAndScale;
     float4 _DenoiserResolutionMultiplierVals = temporalFilterStruct._DenoiserResolutionMultiplierVals;
-    int _OccluderMotionRejection = temporalFilterStruct._EnableExposureControl;
+    int _OccluderMotionRejection = temporalFilterStruct._OccluderMotionRejection;
     int _ReceiverMotionRejection = temporalFilterStruct._ReceiverMotionRejection;
     float _HistoryValidity = temporalFilterStruct._HistoryValidity;
     

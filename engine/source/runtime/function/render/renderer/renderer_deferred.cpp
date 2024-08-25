@@ -104,6 +104,18 @@ namespace MoYu
                                           .SetSampleCount(sampleCount)
                                           .SetClearValue(RHI::RgClearValue(0.0f, 0xff));
 
+        // Temporal Filter
+        {
+            MoYu::TemporalFilter::TemporalFilterInitInfo initInfo;
+            initInfo.m_Device = pDevice;
+            initInfo.m_ColorTexDesc = colorTexDesc;
+            initInfo.m_ShaderCompiler = pCompiler;
+            initInfo.m_ShaderRootPath = g_runtime_global_context.m_config_manager->getShaderFolder();
+
+            mTemporalFilter = std::make_shared<TemporalFilter>();
+            mTemporalFilter->Init(initInfo);
+        }
+
         // Tool pass
         {
             ToolPass::ToolPassInitInfo toolInitInfo;
@@ -447,6 +459,7 @@ namespace MoYu
 
     DeferredRenderer::~DeferredRenderer()
     {
+        mTemporalFilter = nullptr;
         mToolPass = nullptr;
         mUIPass = nullptr;
         mIndirectCullPass = nullptr;

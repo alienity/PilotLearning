@@ -31,6 +31,7 @@
 #include "runtime/function/render/renderer/indirect_lightloop_pass.h"
 #include "runtime/function/render/renderer/subsurface_scattering_pass.h"
 #include "runtime/function/render/renderer/volume_light_pass.h"
+#include "runtime/function/render/renderer/temporalFilter.h"
 
 namespace MoYu
 {
@@ -66,6 +67,7 @@ namespace MoYu
         DXGI_FORMAT pipleineColorFormat;
         DXGI_FORMAT pipleineDepthFormat;
 
+        std::shared_ptr<TemporalFilter> mTemporalFilter;
         std::shared_ptr<ToolPass> mToolPass;
 
         std::shared_ptr<UIPass>                      mUIPass;

@@ -202,7 +202,38 @@ namespace MoYu
         if (!drawPassOutput->gbuffer1Handle.IsValid())
         {
             needClearRenderTarget = true;
-            drawPassOutput->gbuffer1Handle = graph.Create<RHI::D3D12Texture>(gbuffer1Desc);
+            //drawPassOutput->gbuffer1Handle = graph.Create<RHI::D3D12Texture>(gbuffer1Desc);
+
+            if (pNormalBuffer[0] == nullptr || pNormalBuffer[1] == nullptr)
+            {
+                for (int i = 0; i < 2; i++)
+                {
+                    CD3DX12_CLEAR_VALUE pClearValue = 
+                        CD3DX12_CLEAR_VALUE(gbuffer1Desc.Format, gbuffer1Desc.ClearValue.Color);
+                    RHI::RHIRenderSurfaceBaseDesc textureDesc = {
+                                        gbuffer1Desc.Width,
+                                        gbuffer1Desc.Height,
+                                        gbuffer1Desc.DepthOrArraySize,
+                                        gbuffer1Desc.SampleCount,
+                                        gbuffer1Desc.MipLevels,
+                                        RHI::RHISurfaceCreateRenderTarget,
+                                        RHI::RHITexDim2D,
+                                        gbuffer1Desc.Format,
+                                        pClearValue,
+                                        true,
+                                        false };
+
+                    std::wstring textureName = fmt::format(L"GBuffer1_{}", i);
+
+                    pNormalBuffer[i] = RHI::D3D12Texture::Create(
+                        m_Device->GetLinkedDevice(), textureDesc, textureName, D3D12_RESOURCE_STATE_COMMON);
+                }
+            }
+            for (int i = 0; i < 2; i++)
+            {
+                pNormalBufferHandle[i] = graph.Import<RHI::D3D12Texture>(pNormalBuffer[i].get());
+            }
+            drawPassOutput->gbuffer1Handle = pNormalBufferHandle[0];
         }
         if (!drawPassOutput->gbuffer2Handle.IsValid())
         {
@@ -216,6 +247,20 @@ namespace MoYu
         }
 
         return needClearRenderTarget;
+    }
+
+    RHI::RgResourceHandle IndirectGBufferPass::getCurFrameNormalHandle()
+    {
+        int curIndex = m_Device->GetLinkedDevice()->m_FrameIndex;
+        int arrIndex = curIndex % 2;
+        return pNormalBufferHandle[arrIndex];
+    }
+
+    RHI::RgResourceHandle IndirectGBufferPass::getLastFrameNormalHandle()
+    {
+        int curIndex = m_Device->GetLinkedDevice()->m_FrameIndex;
+        int arrIndex = (curIndex + 1) % 2;
+        return pNormalBufferHandle[arrIndex];
     }
 
 }

@@ -72,6 +72,8 @@ namespace MoYu
             gbuffer2Handle.Invalidate();
             gbuffer3Handle.Invalidate();
             depthHandle.Invalidate();
+
+            historyNormalBufferHandle.Invalidate();
         }
 
         RHI::RgResourceHandle gbuffer0Handle;
@@ -79,6 +81,8 @@ namespace MoYu
         RHI::RgResourceHandle gbuffer2Handle;
         RHI::RgResourceHandle gbuffer3Handle;
         RHI::RgResourceHandle depthHandle;
+
+        RHI::RgResourceHandle historyNormalBufferHandle;
     };
 
     enum StencilUsage

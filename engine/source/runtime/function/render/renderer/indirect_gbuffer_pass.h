@@ -39,6 +39,9 @@ namespace MoYu
 
         bool initializeRenderTarget(RHI::RenderGraph& graph, GBufferOutput* drawPassOutput);
 
+        RHI::RgResourceHandle getCurFrameNormalHandle();
+        RHI::RgResourceHandle getLastFrameNormalHandle();
+
         RHI::RgTextureDesc gbufferDesc; // float4
         RHI::RgTextureDesc gbuffer0Desc; // float4
         RHI::RgTextureDesc gbuffer1Desc; // float4
@@ -47,6 +50,10 @@ namespace MoYu
         RHI::RgTextureDesc depthDesc;   // float
 
     private:
+        std::shared_ptr<RHI::D3D12Texture> pNormalBuffer[2]; // gbuffer1
+        RHI::RgResourceHandle pNormalBufferHandle[2];
+
+
         Shader drawGBufferVS;
         Shader drawGBufferPS;
         std::shared_ptr<RHI::D3D12RootSignature> pDrawGBufferSignature;
