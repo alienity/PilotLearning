@@ -53,6 +53,8 @@ namespace MoYu
 
         std::shared_ptr<RHI::D3D12Texture> GetDepthPyramid(DepthMipGenerateMode mode = DepthMipGenerateMode::AverageType, bool lastFrame = false);
 
+        RHI::RgResourceHandle GetDepthPyramidHandle(RHI::RenderGraph& graph, DepthMipGenerateMode mode = DepthMipGenerateMode::AverageType, bool lastFrame = false);
+
     private:
         int passIndex;
 
@@ -64,6 +66,14 @@ namespace MoYu
             std::shared_ptr<RHI::D3D12Texture> pAverageDpethPyramid;
         };
         DepthPyramidStruct mDepthPyramid[2];
+
+        struct DepthPyramidHandleStruct
+        {
+            RHI::RgResourceHandle pMinDpethPyramidHandle;
+            RHI::RgResourceHandle pMaxDpethPyramidHandle;
+            RHI::RgResourceHandle pAverageDpethPyramidHandle;
+        };
+        DepthPyramidHandleStruct mDepthPyramidHandle[2];
 
         RHI::RgTextureDesc albedoTexDesc;
         RHI::RgTextureDesc depthTexDesc;

@@ -429,6 +429,8 @@ namespace MoYu
     {
         render_resource->ReleaseTransientResources();
 
+        mTemporalFilter->PrepareUniforms(RenderPass::m_render_scene, RenderPass::m_render_camera);
+
         render_resource->updateFrameUniforms(RenderPass::m_render_scene, RenderPass::m_render_camera);
 
         mIndirectCullPass->prepareMeshData(render_resource);
@@ -521,9 +523,8 @@ namespace MoYu
 
         //=================================================================================
         // Terrain¼ô²ÃPass
-        RHI::RgResourceHandle lastFrameMinDepthPyramidHandle = graph.Import(mDepthPyramidPass->GetDepthPyramid(DepthMipGenerateMode::MinType, true).get());
-        RHI::RgResourceHandle lastFrameDepthPyramidHandle = graph.Import(mDepthPyramidPass->GetDepthPyramid(DepthMipGenerateMode::AverageType, true).get());
-        
+        RHI::RgResourceHandle lastFrameMinDepthPyramidHandle = mDepthPyramidPass->GetDepthPyramidHandle(graph, DepthMipGenerateMode::MinType, true);
+
         IndirectTerrainCullPass::TerrainCullInput terrainCullInput;
         IndirectTerrainCullPass::TerrainCullOutput terrainCullOutput;
         terrainCullInput.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
@@ -743,17 +744,31 @@ namespace MoYu
         //=================================================================================
 
         //=================================================================================
+        // HistoryValidityPass
+        TemporalFilter::HistoryValidityPassData mHistoryValidityPassData;
+        mHistoryValidityPassData.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
+        mHistoryValidityPassData.cameraMotionVectorHandle = mCameraMotionVectorOutput.motionVectorHandle;
+        mHistoryValidityPassData.depthTextureHandle = mDepthPyramidOutput.minDepthPtyramidHandle;
+        mHistoryValidityPassData.historyDepthTextureHandle = lastFrameMinDepthPyramidHandle;
+        mHistoryValidityPassData.normalBufferHandle = mGBufferOutput.gbuffer1Handle;
+        mHistoryValidityPassData.historyNormalTextureHandle = mIndirectGBufferPass->getLastFrameNormalHandle();
+
+         mTemporalFilter->HistoryValidity(graph, mHistoryValidityPassData);
+        //=================================================================================
+
+        //=================================================================================
         // screenspace global illumination
         SSGIPass::DrawInputParameters mSSGIIntput;
         SSGIPass::DrawOutputParameters mSSGIOutput;
 
+        mSSGIIntput.validationBufferHandle = mHistoryValidityPassData.validationBufferHandle;
         mSSGIIntput.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
         mSSGIIntput.colorPyramidHandle = lastFrameColorRTHandle;
         mSSGIIntput.depthPyramidHandle = mDepthPyramidOutput.minDepthPtyramidHandle;
-        mSSGIIntput.lastDepthPyramidHandle = lastFrameDepthPyramidHandle;
+        mSSGIIntput.lastDepthPyramidHandle = lastFrameMinDepthPyramidHandle;
         mSSGIIntput.normalBufferHandle = mGBufferOutput.gbuffer1Handle;
         mSSGIIntput.cameraMotionVectorHandle = mCameraMotionVectorOutput.motionVectorHandle;
-        mSSGIPass->update(graph, mSSGIIntput, mSSGIOutput);
+        mSSGIPass->update(graph, mSSGIIntput, mSSGIOutput, mTemporalFilter);
         //=================================================================================
 
         ////=================================================================================

@@ -64,13 +64,13 @@ namespace MoYu
             //int validateHistoryKernel;
 
             // Other parameters
-            RHI::RgResourceHandle perFrameUniformBuffer;
-            RHI::RgResourceHandle cameraMotionVectorTexture;
-            RHI::RgResourceHandle depthTexture;
-            RHI::RgResourceHandle historyDepthTexture;
-            RHI::RgResourceHandle normalBuffer;
-            RHI::RgResourceHandle historyNormalTexture;
-            //RHI::RgResourceHandle validationBuffer;
+            RHI::RgResourceHandle perframeBufferHandle;
+            RHI::RgResourceHandle cameraMotionVectorHandle;
+            RHI::RgResourceHandle depthTextureHandle;
+            RHI::RgResourceHandle historyDepthTextureHandle;
+            RHI::RgResourceHandle normalBufferHandle;
+            RHI::RgResourceHandle historyNormalTextureHandle;
+            RHI::RgResourceHandle validationBufferHandle;
         };
 
         struct TemporalFilterPassData
@@ -84,13 +84,12 @@ namespace MoYu
             //float historyResolutionMultiplier;
 
             RHI::RgResourceHandle perFrameBufferHandle;
-            RHI::RgResourceHandle temporalFilterStructHandle;
             RHI::RgResourceHandle validationBufferHandle; // Validation buffer that tells us if the history should be ignored for a given pixel.
             RHI::RgResourceHandle cameraMotionVectorHandle; // Velocity buffer for history rejection
             RHI::RgResourceHandle depthTextureHandle; // Depth buffer of the current frame
             RHI::RgResourceHandle historyBufferHandle; // This buffer holds the previously accumulated signal
             RHI::RgResourceHandle denoiseInputTextureHandle; // Noisy Input Buffer from the current frame
-            //RHI::RgResourceHandle accumulationOutputTextureRWHandle; // Generic output buffer for our kernels
+            RHI::RgResourceHandle accumulationOutputTextureRWHandle; // Generic output buffer for our kernels
         };
 
         struct TemporalFilterStruct
@@ -117,8 +116,8 @@ namespace MoYu
 
         void PrepareUniforms(RenderScene* render_scene, RenderCamera* camera);
 
-        RHI::RgResourceHandle HistoryValidity(RHI::RenderGraph& graph, HistoryValidityPassData passData);
-        RHI::RgResourceHandle Denoise(RHI::RenderGraph& graph, TemporalFilterPassData passData);
+        void HistoryValidity(RHI::RenderGraph& graph, HistoryValidityPassData& passData);
+        void Denoise(RHI::RenderGraph& graph, TemporalFilterPassData& passData);
 
         TemporalFilterStruct mTemporalFilterStructData;
         std::shared_ptr<RHI::D3D12Buffer> mTemporalFilterStructBuffer;

@@ -179,7 +179,7 @@ cbuffer RootConstants : register(b0, space0)
 };
 
 [numthreads(TEMPORAL_FILTER_TILE_SIZE, TEMPORAL_FILTER_TILE_SIZE, 1)]
-void TEMPORAL_ACCUMULATION(uint3 dispatchThreadId : SV_DispatchThreadID, uint2 groupThreadId : SV_GroupThreadID, uint2 groupId : SV_GroupID)
+void TemporalAccumulation(uint3 dispatchThreadId : SV_DispatchThreadID, uint2 groupThreadId : SV_GroupThreadID, uint2 groupId : SV_GroupID)
 {
     ConstantBuffer<FrameUniforms> frameUniforms = ResourceDescriptorHeap[perFrameBufferIndex];
     ConstantBuffer<TemporalFilterStruct> temporalFilterStruct = ResourceDescriptorHeap[temporalFilterStructIndex];
@@ -260,8 +260,7 @@ void TEMPORAL_ACCUMULATION(uint3 dispatchThreadId : SV_DispatchThreadID, uint2 g
     float accumulationFactor = 0.0;
 
     // Evaluate our validation mask
-    float validationMask = (_ReceiverMotionRejection ? (LOAD_TEXTURE2D(_CameraMotionVectorsTexture, sourceCoord).x) :
-        (LOAD_TEXTURE2D(_ValidationBuffer, sourceCoord).x & (~HISTORYREJECTIONFLAGS_MOTION))) != 0 ? 0.0f : 1.0f;
+    float validationMask = (_ReceiverMotionRejection ? (LOAD_TEXTURE2D(_CameraMotionVectorsTexture, sourceCoord).x) : (LOAD_TEXTURE2D(_ValidationBuffer, sourceCoord).x & (~HISTORYREJECTIONFLAGS_MOTION))) != 0 ? 0.0f : 1.0f;
 
     // Combine the validation mask with the history validity
     bool historyInvalid = ((float)validationMask * _HistoryValidity) < 1.0f;
@@ -311,7 +310,7 @@ void CopyHistory(uint3 dispatchThreadId : SV_DispatchThreadID)
     ConstantBuffer<FrameUniforms> frameUniforms = ResourceDescriptorHeap[perFrameBufferIndex];
     ConstantBuffer<TemporalFilterStruct> temporalFilterStruct = ResourceDescriptorHeap[temporalFilterStructIndex];
     Texture2D<float4> _DenoiseInputTexture = ResourceDescriptorHeap[denoiseInputTextureIndex];
-    Texture2D<float4> _DenoiseOutputTextureRW = ResourceDescriptorHeap[denoiseOutputTextureRWIndex];
+    RWTexture2D<float4> _DenoiseOutputTextureRW = ResourceDescriptorHeap[denoiseOutputTextureRWIndex];
 
     float4 _ScreenSize = frameUniforms.baseUniform._ScreenSize;
 

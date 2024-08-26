@@ -14,12 +14,8 @@ namespace MoYu
     {
         ShaderSignaturePSO outSSPSO;
 
-        ShaderCompileOptions mShaderCompileOptions(L"ValidateHistory");
-        mShaderCompileOptions.SetDefine(L"VALIDATEHISTORY", L"1");
-        outSSPSO.m_Kernal =
-            InShaderCompiler->CompileShader(
-                RHI_SHADER_TYPE::Compute, InShaderRootPath / "pipeline/Runtime/Tools/Denoising/TemporalFilterCS.hlsl",
-                mShaderCompileOptions);
+        outSSPSO.m_Kernal = InShaderCompiler->CompileShader(
+            RHI_SHADER_TYPE::Compute, InShaderRootPath / "pipeline/Runtime/Tools/Denoising/TemporalFilterCS.hlsl", InSCO);
 
         RHI::RootSignatureDesc rootSigDesc =
             RHI::RootSignatureDesc()
@@ -59,21 +55,21 @@ namespace MoYu
         }
         if (mTemporalAccumulationSingle.pKernalPSO == nullptr)
         {
-            ShaderCompileOptions mShaderCompileOptions(L"TEMPORAL_ACCUMULATION");
+            ShaderCompileOptions mShaderCompileOptions(L"TemporalAccumulation");
             mShaderCompileOptions.SetDefine(L"TEMPORALACCUMULATIONSINGLE", L"1");
-            mShaderCompileOptions.SetDefine(L"SINGLE_CHANNEL", L"0");
-            mTemporalAccumulationSingle = CreateSpecificPSO(m_ShaderCompiler, m_ShaderRootPath, m_Device, mShaderCompileOptions, L"TemporalAccumulationColorPSO");
+            mShaderCompileOptions.SetDefine(L"SINGLE_CHANNEL", L"1");
+            mTemporalAccumulationSingle = CreateSpecificPSO(m_ShaderCompiler, m_ShaderRootPath, m_Device, mShaderCompileOptions, L"TemporalAccumulationSinglePSO");
         }
         if (mTemporalAccumulationColor.pKernalPSO == nullptr)
         {
-            ShaderCompileOptions mShaderCompileOptions(L"TEMPORAL_ACCUMULATION");
+            ShaderCompileOptions mShaderCompileOptions(L"TemporalAccumulation");
             mShaderCompileOptions.SetDefine(L"TEMPORALACCUMULATIONSINGLE", L"1");
-            mShaderCompileOptions.SetDefine(L"SINGLE_CHANNEL", L"1");
+            mShaderCompileOptions.SetDefine(L"SINGLE_CHANNEL", L"0");
             mTemporalAccumulationColor = CreateSpecificPSO(m_ShaderCompiler, m_ShaderRootPath, m_Device, mShaderCompileOptions, L"TemporalAccumulationColorPSO");
         }
         if (mCopyHistory.pKernalPSO == nullptr)
         {
-            ShaderCompileOptions mShaderCompileOptions(L"COPYHISTORY");
+            ShaderCompileOptions mShaderCompileOptions(L"CopyHistory");
             mShaderCompileOptions.SetDefine(L"COPYHISTORY", L"1");
             mCopyHistory = CreateSpecificPSO(m_ShaderCompiler, m_ShaderRootPath, m_Device, mShaderCompileOptions, L"CopyHistoryPSO");
         }
@@ -96,26 +92,32 @@ namespace MoYu
         mTemporalFilterStructData._PixelSpreadAngleTangent =
             glm::tan(glm::radians(camera->m_fieldOfViewY * 0.5f)) * 2.0f / glm::min(camera->m_pixelWidth, camera->m_pixelHeight);
         mTemporalFilterStructData._HistoryValidity = 1;
-        mTemporalFilterStructData._ReceiverMotionRejection = 1;
+        mTemporalFilterStructData._ReceiverMotionRejection = 0;
         mTemporalFilterStructData._OccluderMotionRejection = 1;
         mTemporalFilterStructData._HistorySizeAndScale = glm::float4(camera->m_pixelWidth, camera->m_pixelHeight, 1, 1);
         mTemporalFilterStructData._DenoiserResolutionMultiplierVals = glm::float4(1, 1, 1, 1);
         mTemporalFilterStructData._EnableExposureControl = 0;
 
         memcpy(mTemporalFilterStructBuffer->GetCpuVirtualAddress(), &mTemporalFilterStructData, sizeof(mTemporalFilterStructData));
+
+        mTemporalFilterStructHandle.Invalidate();
     }
 
-    RHI::RgResourceHandle TemporalFilter::HistoryValidity(RHI::RenderGraph& graph, HistoryValidityPassData passData)
+    void TemporalFilter::HistoryValidity(RHI::RenderGraph& graph, HistoryValidityPassData& passData)
     {
-        RHI::RgResourceHandle perFrameUniformHandle = passData.perFrameUniformBuffer;
-        RHI::RgResourceHandle cameraMotionVectorHandle = passData.cameraMotionVectorTexture;
-        RHI::RgResourceHandle depthTextureHandle = passData.depthTexture;
-        RHI::RgResourceHandle historyDepthTextureHandle = passData.historyDepthTexture;
-        RHI::RgResourceHandle normalBufferHandle = passData.normalBuffer;
-        RHI::RgResourceHandle historyNormalTextureHandle = passData.historyNormalTexture;
+        RHI::RgResourceHandle perFrameUniformHandle = passData.perframeBufferHandle;
+        RHI::RgResourceHandle cameraMotionVectorHandle = passData.cameraMotionVectorHandle;
+        RHI::RgResourceHandle depthTextureHandle = passData.depthTextureHandle;
+        RHI::RgResourceHandle historyDepthTextureHandle = passData.historyDepthTextureHandle;
+        RHI::RgResourceHandle normalBufferHandle = passData.normalBufferHandle;
+        RHI::RgResourceHandle historyNormalTextureHandle = passData.historyNormalTextureHandle;
         
-        RHI::RgTextureDesc validationTexDesc = colorTexDesc;
-        validationTexDesc.Name = "ValidationBuffer";
+        RHI::RgTextureDesc validationTexDesc = RHI::RgTextureDesc("ValidationBuffer");
+        validationTexDesc.SetType(RHI::RgTextureType::Texture2D);
+        validationTexDesc.SetExtent(colorTexDesc.Width, colorTexDesc.Height);
+        validationTexDesc.SetFormat(DXGI_FORMAT::DXGI_FORMAT_R32_UINT);
+        validationTexDesc.SetAllowUnorderedAccess(true);
+
         RHI::RgResourceHandle validationBufferHandle = graph.Create<RHI::D3D12Texture>(validationTexDesc);
 
         if (!mTemporalFilterStructHandle.IsValid())
@@ -126,7 +128,7 @@ namespace MoYu
         RHI::RenderPass& validatePass = graph.AddRenderPass("History Validity Evaluation");
 
         validatePass.Read(perFrameUniformHandle, false, RHIResourceState::RHI_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
-        validatePass.Read(mTemporalFilterStructHandle, false, RHIResourceState::RHI_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+        validatePass.Read(mTemporalFilterStructHandle, false, RHIResourceState::RHI_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
         validatePass.Read(cameraMotionVectorHandle, false, RHIResourceState::RHI_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
         validatePass.Read(depthTextureHandle, false, RHIResourceState::RHI_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
         validatePass.Read(historyDepthTextureHandle, false, RHIResourceState::RHI_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
@@ -169,22 +171,18 @@ namespace MoYu
 
         });
 
-        return validationBufferHandle;
+        passData.validationBufferHandle = validationBufferHandle;
     }
 
-    RHI::RgResourceHandle TemporalFilter::Denoise(RHI::RenderGraph& graph, TemporalFilterPassData passData)
+    void TemporalFilter::Denoise(RHI::RenderGraph& graph, TemporalFilterPassData& passData)
     {
         RHI::RgResourceHandle perFrameBufferHandle = passData.perFrameBufferHandle;
-        RHI::RgResourceHandle temporalFilterStructHandle = passData.temporalFilterStructHandle;
         RHI::RgResourceHandle validationBufferHandle = passData.validationBufferHandle;
         RHI::RgResourceHandle cameraMotionVectorHandle = passData.cameraMotionVectorHandle;
         RHI::RgResourceHandle depthTextureHandle = passData.depthTextureHandle;
         RHI::RgResourceHandle historyBufferHandle = passData.historyBufferHandle;
         RHI::RgResourceHandle denoiseInputTextureHandle = passData.denoiseInputTextureHandle;
-
-        RHI::RgTextureDesc denoisedTexDesc = colorTexDesc;
-        denoisedTexDesc.Name = "DenoisedTexture (Color)";
-        RHI::RgResourceHandle denoisedTexHandle = graph.Create<RHI::D3D12Texture>(denoisedTexDesc);
+        RHI::RgResourceHandle accumulationOutputTextureRWHandle = passData.accumulationOutputTextureRWHandle;
 
         if (!mTemporalFilterStructHandle.IsValid())
         {
@@ -194,12 +192,13 @@ namespace MoYu
         RHI::RenderPass& temporalDenoisePass = graph.AddRenderPass("TemporalDenoiser(Color)");
 
         temporalDenoisePass.Read(perFrameBufferHandle, false, RHIResourceState::RHI_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
-        temporalDenoisePass.Read(mTemporalFilterStructHandle, false, RHIResourceState::RHI_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+        temporalDenoisePass.Read(mTemporalFilterStructHandle, false, RHIResourceState::RHI_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
+        temporalDenoisePass.Read(validationBufferHandle, false, RHIResourceState::RHI_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
         temporalDenoisePass.Read(cameraMotionVectorHandle, false, RHIResourceState::RHI_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
         temporalDenoisePass.Read(depthTextureHandle, false, RHIResourceState::RHI_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
         temporalDenoisePass.Read(historyBufferHandle, false, RHIResourceState::RHI_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
         temporalDenoisePass.Read(denoiseInputTextureHandle, false, RHIResourceState::RHI_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-        temporalDenoisePass.Write(denoisedTexHandle, false, RHIResourceState::RHI_RESOURCE_STATE_UNORDERED_ACCESS);
+        temporalDenoisePass.Write(accumulationOutputTextureRWHandle, false, RHIResourceState::RHI_RESOURCE_STATE_UNORDERED_ACCESS);
 
         temporalDenoisePass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
 
@@ -222,11 +221,12 @@ namespace MoYu
 
             RootIndexBuffer rootIndexBuffer = RootIndexBuffer{ RegGetBufDefCBVIdx(perFrameBufferHandle),
                                                                RegGetBufDefCBVIdx(mTemporalFilterStructHandle),
+                                                               RegGetTexDefSRVIdx(validationBufferHandle),
                                                                RegGetTexDefSRVIdx(cameraMotionVectorHandle),
                                                                RegGetTexDefSRVIdx(depthTextureHandle),
                                                                RegGetTexDefSRVIdx(historyBufferHandle),
                                                                RegGetTexDefSRVIdx(denoiseInputTextureHandle),
-                                                               RegGetTexDefUAVIdx(denoisedTexHandle) };
+                                                               RegGetTexDefUAVIdx(accumulationOutputTextureRWHandle) };
 
 
             pContext->SetConstantArray(0, sizeof(RootIndexBuffer) / sizeof(UINT), &rootIndexBuffer);
@@ -235,7 +235,7 @@ namespace MoYu
 
         });
 
-        return validationBufferHandle;
+        passData.accumulationOutputTextureRWHandle = accumulationOutputTextureRWHandle;
     }
 
 }

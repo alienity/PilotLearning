@@ -233,7 +233,7 @@ namespace MoYu
             {
                 pNormalBufferHandle[i] = graph.Import<RHI::D3D12Texture>(pNormalBuffer[i].get());
             }
-            drawPassOutput->gbuffer1Handle = pNormalBufferHandle[0];
+            drawPassOutput->gbuffer1Handle = getCurFrameNormalHandle();
         }
         if (!drawPassOutput->gbuffer2Handle.IsValid())
         {

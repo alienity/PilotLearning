@@ -6,6 +6,8 @@
 
 namespace MoYu
 {
+    class TemporalFilter;
+
     class SSGIPass : public RenderPass
 	{
     public:
@@ -24,6 +26,7 @@ namespace MoYu
             RHI::RgResourceHandle lastDepthPyramidHandle;
             RHI::RgResourceHandle normalBufferHandle;
             RHI::RgResourceHandle cameraMotionVectorHandle;
+            RHI::RgResourceHandle validationBufferHandle;
         };
 
         struct DrawOutputParameters : public PassOutput
@@ -36,8 +39,13 @@ namespace MoYu
 
         void initialize(const SSGIInitInfo& init_info);
         void prepareMetaData(std::shared_ptr<RenderResource> render_resource);
-        void update(RHI::RenderGraph& graph, DrawInputParameters& passInput, DrawOutputParameters& passOutput);
+        void update(RHI::RenderGraph& graph, DrawInputParameters& passInput, DrawOutputParameters& passOutput, 
+            std::shared_ptr<TemporalFilter> mTemporalFilter = nullptr);
         void destroy() override final;
+
+        std::shared_ptr<RHI::D3D12Texture> GetSSGI(bool lastFrame = false);
+        RHI::RgResourceHandle GetSSGIHandle(RHI::RenderGraph& graph, bool lastFrame = false);
+
 
     protected:
         struct ScreenSpaceGIStruct
@@ -62,19 +70,17 @@ namespace MoYu
         };
 
         ScreenSpaceGIStruct mSSGIStruct;
-
         std::shared_ptr<RHI::D3D12Buffer> pSSGIConsBuffer;
 
     private:
-        int passIndex;
+        std::shared_ptr<RHI::D3D12Texture> pIndirectDiffuseTexture[2];
+        RHI::RgResourceHandle pIndirectDiffuseTextureHandle[2];
 
         std::shared_ptr<RHI::D3D12Texture> m_bluenoise;
         std::shared_ptr<RHI::D3D12Texture> m_owenScrambled256Tex;
         std::shared_ptr<RHI::D3D12Texture> m_scramblingTile8SPP;
         std::shared_ptr<RHI::D3D12Texture> m_rankingTile8SPP;
         std::shared_ptr<RHI::D3D12Texture> m_scramblingTex;
-
-        std::shared_ptr<RHI::D3D12Texture> pIndirectDiffuseTexture;
 
         Shader SSTraceGICS;
         std::shared_ptr<RHI::D3D12RootSignature> pSSTraceGISignature;
@@ -86,6 +92,7 @@ namespace MoYu
 
         RHI::RgTextureDesc colorTexDesc;
         RHI::RgTextureDesc indirectDiffuseHitPointDesc;
+        RHI::RgTextureDesc indirectDiffuseDesc;
 	};
 }
 

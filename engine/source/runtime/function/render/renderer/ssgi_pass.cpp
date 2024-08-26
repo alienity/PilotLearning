@@ -4,6 +4,7 @@
 #include "runtime/function/render/jitter_helper.h"
 #include "runtime/function/render/render_helper.h"
 #include "runtime/function/render/renderer/pass_helper.h"
+#include "runtime/function/render/renderer/temporalFilter.h"
 
 #include <cassert>
 
@@ -12,13 +13,17 @@ namespace MoYu
 
 	void SSGIPass::initialize(const SSGIInitInfo& init_info)
 	{
-        passIndex = 0;
-
         colorTexDesc = init_info.m_ColorTexDesc;
 
         indirectDiffuseHitPointDesc = RHI::RgTextureDesc("IndirectDiffuseHitPointTexture")
             .SetType(RHI::RgTextureType::Texture2D)
             .SetFormat(DXGI_FORMAT::DXGI_FORMAT_R32G32_FLOAT)
+            .SetExtent(colorTexDesc.Width, colorTexDesc.Height)
+            .SetAllowUnorderedAccess(true);
+
+        indirectDiffuseDesc = RHI::RgTextureDesc("IndirectDiffuseTexture")
+            .SetType(RHI::RgTextureType::Texture2D)
+            .SetFormat(colorTexDesc.Format)
             .SetExtent(colorTexDesc.Width, colorTexDesc.Height)
             .SetAllowUnorderedAccess(true);
 
@@ -90,19 +95,23 @@ namespace MoYu
 
         //===================================================================================
 
-        if (pIndirectDiffuseTexture == nullptr)
+        for (int i = 0; i < 2; i++)
         {
-            pIndirectDiffuseTexture =
-                RHI::D3D12Texture::Create2D(m_Device->GetLinkedDevice(),
-                    colorTexDesc.Width,
-                    colorTexDesc.Height,
-                    8,
-                    DXGI_FORMAT_R32G32B32A32_FLOAT,
-                    RHI::RHISurfaceCreateRandomWrite,
-                    1,
-                    L"SSIndirectDiffuseTexture",
-                    D3D12_RESOURCE_STATE_COMMON,
-                    std::nullopt);
+            if (pIndirectDiffuseTexture[i] == nullptr)
+            {
+                pIndirectDiffuseTexture[i] =
+                    RHI::D3D12Texture::Create2D(m_Device->GetLinkedDevice(),
+                        colorTexDesc.Width,
+                        colorTexDesc.Height,
+                        8,
+                        DXGI_FORMAT_R32G32B32A32_FLOAT,
+                        RHI::RHISurfaceCreateRandomWrite,
+                        1,
+                        L"SSIndirectDiffuseTexture",
+                        D3D12_RESOURCE_STATE_COMMON,
+                        std::nullopt);
+            }
+            pIndirectDiffuseTextureHandle[i].Invalidate();
         }
 
         //===================================================================================
@@ -144,17 +153,20 @@ namespace MoYu
         memcpy(pSSGIConsBuffer->GetCpuVirtualAddress<ScreenSpaceGIStruct>(), &mSSGIStruct, sizeof(mSSGIStruct));
     }
 
-    void SSGIPass::update(RHI::RenderGraph& graph, DrawInputParameters& passInput, DrawOutputParameters& passOutput)
+    void SSGIPass::update(RHI::RenderGraph& graph, DrawInputParameters& passInput, DrawOutputParameters& passOutput, std::shared_ptr<TemporalFilter> mTemporalFilter)
     {
+        //RHI::RgResourceHandle mIndirectDiffuseHandle = GetSSGIHandle(graph);
+
 
         RHI::RgResourceHandle mSSGIConsBufferHandle = graph.Import<RHI::D3D12Buffer>(pSSGIConsBuffer.get());
-        RHI::RgResourceHandle mIndirectDiffuseHandle = graph.Import<RHI::D3D12Texture>(pIndirectDiffuseTexture.get());
 
         RHI::RgResourceHandle owenScrambledTextureHandle = graph.Import<RHI::D3D12Texture>(m_owenScrambled256Tex.get());
         RHI::RgResourceHandle scramblingTileXSPPHandle = graph.Import<RHI::D3D12Texture>(m_scramblingTile8SPP.get());
         RHI::RgResourceHandle rankingTileXSPPHandle = graph.Import<RHI::D3D12Texture>(m_rankingTile8SPP.get());
         
         RHI::RgResourceHandle indirectDiffuseHitPointTexHandle = graph.Create<RHI::D3D12Texture>(indirectDiffuseHitPointDesc);
+
+        RHI::RgResourceHandle validationBufferHandle = passInput.validationBufferHandle;
 
         RHI::RgResourceHandle perframeBufferHandle = passInput.perframeBufferHandle;
         RHI::RgResourceHandle colorPyramidHandle = passInput.colorPyramidHandle;
@@ -222,6 +234,8 @@ namespace MoYu
         });
         
 
+        RHI::RgResourceHandle mIndirectDiffuseHandle = graph.Create<RHI::D3D12Texture>(indirectDiffuseDesc);
+
         RHI::RenderPass& ssReprojectGIPass = graph.AddRenderPass("SSReprojectGIPass");
 
         ssReprojectGIPass.Read(perframeBufferHandle, false, RHIResourceState::RHI_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
@@ -266,14 +280,52 @@ namespace MoYu
             pContext->Dispatch2D(colorTexDesc.Width, colorTexDesc.Height, 8, 8);
         });
 
-        passOutput.ssrOutHandle = mIndirectDiffuseHandle;
+
+        {
+            TemporalFilter::TemporalFilterPassData mTemporalFilterPassData;
+            mTemporalFilterPassData.perFrameBufferHandle = perframeBufferHandle;
+            mTemporalFilterPassData.validationBufferHandle = validationBufferHandle;
+            mTemporalFilterPassData.cameraMotionVectorHandle = cameraMotionVectorHandle;
+            mTemporalFilterPassData.depthTextureHandle = depthPyramidHandle;
+            mTemporalFilterPassData.historyBufferHandle = GetSSGIHandle(graph, true);
+            mTemporalFilterPassData.denoiseInputTextureHandle = mIndirectDiffuseHandle;
+            mTemporalFilterPassData.accumulationOutputTextureRWHandle = GetSSGIHandle(graph, false);
+
+            mTemporalFilter->Denoise(graph, mTemporalFilterPassData);
+
+            passOutput.ssrOutHandle = mTemporalFilterPassData.accumulationOutputTextureRWHandle;
+        }
     }
 
     void SSGIPass::destroy()
     {
 
 
+    }
 
+    std::shared_ptr<RHI::D3D12Texture> SSGIPass::GetSSGI(bool lastFrame)
+    {
+        int curFrameIndex = m_Device->GetLinkedDevice()->m_FrameIndex;
+        if (lastFrame)
+        {
+            curFrameIndex = curFrameIndex + 1;
+        }
+        return pIndirectDiffuseTexture[curFrameIndex % 2];
+    }
+
+    RHI::RgResourceHandle SSGIPass::GetSSGIHandle(RHI::RenderGraph& graph, bool lastFrame)
+    {
+        int curFrameIndex = m_Device->GetLinkedDevice()->m_FrameIndex;
+        if (lastFrame)
+        {
+            curFrameIndex = curFrameIndex + 1;
+        }
+        int curIndex = curFrameIndex % 2;
+        if (!pIndirectDiffuseTextureHandle[curIndex].IsValid())
+        {
+            pIndirectDiffuseTextureHandle[curIndex] = graph.Import<RHI::D3D12Texture>(pIndirectDiffuseTexture[curIndex].get());
+        }
+        return pIndirectDiffuseTextureHandle[curIndex];
     }
 
 }
