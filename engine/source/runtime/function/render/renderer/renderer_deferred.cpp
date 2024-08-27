@@ -116,6 +116,18 @@ namespace MoYu
             mTemporalFilter->Init(initInfo);
         }
 
+        // Diffuse Filter
+        {
+            MoYu::DiffuseFilter::DiffuseFilterInitInfo initInfo;
+            initInfo.m_Device = pDevice;
+            initInfo.m_ColorTexDesc = colorTexDesc;
+            initInfo.m_ShaderCompiler = pCompiler;
+            initInfo.m_ShaderRootPath = g_runtime_global_context.m_config_manager->getShaderFolder();
+
+            mDiffuseFilter = std::make_shared<DiffuseFilter>();
+            mDiffuseFilter->Init(initInfo);
+        }
+
         // Tool pass
         {
             ToolPass::ToolPassInitInfo toolInitInfo;
@@ -430,6 +442,7 @@ namespace MoYu
         render_resource->ReleaseTransientResources();
 
         mTemporalFilter->PrepareUniforms(RenderPass::m_render_scene, RenderPass::m_render_camera);
+        mDiffuseFilter->PrepareUniforms(RenderPass::m_render_scene, RenderPass::m_render_camera);
 
         render_resource->updateFrameUniforms(RenderPass::m_render_scene, RenderPass::m_render_camera);
 
@@ -462,6 +475,7 @@ namespace MoYu
     DeferredRenderer::~DeferredRenderer()
     {
         mTemporalFilter = nullptr;
+        mDiffuseFilter = nullptr;
         mToolPass = nullptr;
         mUIPass = nullptr;
         mIndirectCullPass = nullptr;

@@ -18,26 +18,6 @@ namespace MoYu
         HRCombinedNoMotion = HRDepth | HRReprojection | HRPreviousDepth | HRPosition | HRNormal
     };
 
-    struct TemporalFilterParameters
-    {
-        bool singleChannel;
-        float historyValidity;
-        bool occluderMotionRejection;
-        bool receiverMotionRejection;
-        bool exposureControl;
-        float resolutionMultiplier;
-        float historyResolutionMultiplier;
-    };
-
-    struct ShaderSignaturePSO
-    {
-        Shader m_Kernal;
-        std::shared_ptr<RHI::D3D12RootSignature> pKernalSignature;
-        std::shared_ptr<RHI::D3D12PipelineState> pKernalPSO;
-
-        std::shared_ptr<RHI::D3D12Buffer> pKernalUniformBuffer;
-    };
-
     class TemporalFilter
     {
     public:
@@ -51,18 +31,6 @@ namespace MoYu
 
         struct HistoryValidityPassData
         {
-            //// Camera parameters
-            //int texWidth;
-            //int texHeight;
-            //int viewCount;
-            //glm::float4 historySizeAndScale;
-            //// Denoising parameters
-            //float historyValidity;
-            //float pixelSpreadTangent;
-
-            //// Kernels
-            //int validateHistoryKernel;
-
             // Other parameters
             RHI::RgResourceHandle perframeBufferHandle;
             RHI::RgResourceHandle cameraMotionVectorHandle;
@@ -75,14 +43,6 @@ namespace MoYu
 
         struct TemporalFilterPassData
         {
-            //bool singleChannel;
-            //float historyValidity;
-            //bool occluderMotionRejection;
-            //bool receiverMotionRejection;
-            //bool exposureControl;
-            //float resolutionMultiplier;
-            //float historyResolutionMultiplier;
-
             RHI::RgResourceHandle perFrameBufferHandle;
             RHI::RgResourceHandle validationBufferHandle; // Validation buffer that tells us if the history should be ignored for a given pixel.
             RHI::RgResourceHandle cameraMotionVectorHandle; // Velocity buffer for history rejection
@@ -110,6 +70,13 @@ namespace MoYu
             int _EnableExposureControl;
 
             glm::int3 _Unused0;
+        };
+
+        struct ShaderSignaturePSO
+        {
+            Shader m_Kernal;
+            std::shared_ptr<RHI::D3D12RootSignature> pKernalSignature;
+            std::shared_ptr<RHI::D3D12PipelineState> pKernalPSO;
         };
 
         void Init(TemporalFilterInitInfo InitInfo);

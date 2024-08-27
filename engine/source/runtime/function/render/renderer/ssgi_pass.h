@@ -7,6 +7,7 @@
 namespace MoYu
 {
     class TemporalFilter;
+    class DiffuseFilter;
 
     class SSGIPass : public RenderPass
 	{
@@ -40,7 +41,7 @@ namespace MoYu
         void initialize(const SSGIInitInfo& init_info);
         void prepareMetaData(std::shared_ptr<RenderResource> render_resource);
         void update(RHI::RenderGraph& graph, DrawInputParameters& passInput, DrawOutputParameters& passOutput, 
-            std::shared_ptr<TemporalFilter> mTemporalFilter = nullptr);
+            std::shared_ptr<TemporalFilter> mTemporalFilter = nullptr, std::shared_ptr<DiffuseFilter> mDiffuseFilter = nullptr);
         void destroy() override final;
 
         std::shared_ptr<RHI::D3D12Texture> GetSSGI(bool lastFrame = false);

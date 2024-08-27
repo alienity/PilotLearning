@@ -5,6 +5,7 @@
 #include "runtime/function/render/render_helper.h"
 #include "runtime/function/render/renderer/pass_helper.h"
 #include "runtime/function/render/renderer/temporalFilter.h"
+#include "runtime/function/render/renderer/diffuseFilter.h"
 
 #include <cassert>
 
@@ -153,7 +154,8 @@ namespace MoYu
         memcpy(pSSGIConsBuffer->GetCpuVirtualAddress<ScreenSpaceGIStruct>(), &mSSGIStruct, sizeof(mSSGIStruct));
     }
 
-    void SSGIPass::update(RHI::RenderGraph& graph, DrawInputParameters& passInput, DrawOutputParameters& passOutput, std::shared_ptr<TemporalFilter> mTemporalFilter)
+    void SSGIPass::update(RHI::RenderGraph& graph, DrawInputParameters& passInput, DrawOutputParameters& passOutput, 
+        std::shared_ptr<TemporalFilter> mTemporalFilter, std::shared_ptr<DiffuseFilter> mDiffuseFilter)
     {
         //RHI::RgResourceHandle mIndirectDiffuseHandle = GetSSGIHandle(graph);
 
@@ -280,7 +282,6 @@ namespace MoYu
             pContext->Dispatch2D(colorTexDesc.Width, colorTexDesc.Height, 8, 8);
         });
 
-
         {
             TemporalFilter::TemporalFilterPassData mTemporalFilterPassData;
             mTemporalFilterPassData.perFrameBufferHandle = perframeBufferHandle;
@@ -299,6 +300,8 @@ namespace MoYu
 
     void SSGIPass::destroy()
     {
+
+
 
 
     }

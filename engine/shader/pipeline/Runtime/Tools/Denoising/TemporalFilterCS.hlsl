@@ -254,7 +254,8 @@ void TemporalAccumulation(uint3 dispatchThreadId : SV_DispatchThreadID, uint2 gr
     #endif
 
     // Get the velocity of the current sample
-    float movingIntersection = _OccluderMotionRejection ? LOAD_TEXTURE2D(_CameraMotionVectorsTexture, currentCoord).r > MINIMAL_MOTION_DISTANCE : 0.0f;
+    float2 curMV = LOAD_TEXTURE2D(_CameraMotionVectorsTexture, currentCoord).rg;
+    float movingIntersection = _OccluderMotionRejection ? max(abs(curMV.x), abs(curMV.y)) > MINIMAL_MOTION_DISTANCE : 0.0f;
 
     // Accumulation factor that tells us how much we need to keep the history data
     float accumulationFactor = 0.0;

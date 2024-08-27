@@ -1,8 +1,9 @@
-#include "Packages/com.unity.render-pipelines.high-definition/Runtime/RenderPipeline/HDStencilUsage.cs.hlsl"
+// #include "Packages/com.unity.render-pipelines.high-definition/Runtime/RenderPipeline/HDStencilUsage.cs.hlsl"
 
-// Depth buffer of the current frame
-TEXTURE2D_X(_DepthTexture);
-TEXTURE2D_X_UINT2(_StencilTexture);
+
+// // Depth buffer of the current frame
+// TEXTURE2D_X(_DepthTexture);
+// TEXTURE2D_X_UINT2(_StencilTexture);
 
 // ----------------------------------------------------------------------------
 // Denoising Kernel
@@ -37,34 +38,40 @@ struct BilateralData
     #endif
 };
 
-BilateralData TapBilateralData(uint2 coordSS)
+BilateralData TapBilateralData(FrameUniforms frameUniform, Texture2D<float> InDepthTexture, Texture2D<float4> InNormalBufferTexture, uint2 coordSS)
 {
     BilateralData key;
     PositionInputs posInput;
 
+    float4 _ZBufferParams = frameUniform.cameraUniform._ZBufferParams;
+
     if (DEPTH_WEIGHT > 0.0 || PLANE_WEIGHT > 0.0)
     {
-        posInput.deviceDepth = LOAD_TEXTURE2D_X(_DepthTexture, coordSS).r;
+        posInput.deviceDepth = LOAD_TEXTURE2D(InDepthTexture, coordSS).r;
         key.z01 = Linear01Depth(posInput.deviceDepth, _ZBufferParams);
         key.zNF = LinearEyeDepth(posInput.deviceDepth, _ZBufferParams);
     }
 
     // We need to define if this pixel is unlit
     #if defined(BILATERLAL_UNLIT)
-    uint stencilValue = GetStencilValue(LOAD_TEXTURE2D_X(_StencilTexture, coordSS));
-    key.isUnlit = (stencilValue & STENCILUSAGE_IS_UNLIT) != 0;
+    // uint stencilValue = GetStencilValue(LOAD_TEXTURE2D(_StencilTexture, coordSS));
+    // key.isUnlit = (stencilValue & STENCILUSAGE_IS_UNLIT) != 0;
+    key.isUnlit = 0;
     #endif
+
+    float4 _ScreenSize = frameUniform.baseUniform._ScreenSize;
 
     if (PLANE_WEIGHT > 0.0)
     {
-        posInput = GetPositionInput(coordSS, _ScreenSize.zw, posInput.deviceDepth, UNITY_MATRIX_I_VP, UNITY_MATRIX_V);
+        posInput = GetPositionInput(coordSS, _ScreenSize.zw, posInput.deviceDepth,
+            UNITY_MATRIX_I_VP(frameUniform), UNITY_MATRIX_V(frameUniform));
         key.position = posInput.positionWS;
     }
 
     if ((NORMAL_WEIGHT > 0.0) || (PLANE_WEIGHT > 0.0))
     {
         NormalData normalData;
-        const float4 normalBuffer = LOAD_TEXTURE2D_X(_NormalBufferTexture, coordSS);
+        const float4 normalBuffer = LOAD_TEXTURE2D(InNormalBufferTexture, coordSS);
         DecodeFromNormalBuffer(normalBuffer, normalData);
         key.normal = normalData.normalWS;
     #ifdef BILATERAL_ROUGHNESS

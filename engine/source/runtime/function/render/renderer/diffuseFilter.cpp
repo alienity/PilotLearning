@@ -1,4 +1,4 @@
-#include "runtime/function/render/renderer/temporalFilter.h"
+#include "runtime/function/render/renderer/diffuseFilter.h"
 #include "runtime/resource/config_manager/config_manager.h"
 #include "runtime/function/render/rhi/rhi_core.h"
 #include "runtime/function/render/render_helper.h"
@@ -8,14 +8,14 @@
 
 namespace MoYu
 {
-    TemporalFilter::ShaderSignaturePSO CreateSpecificPSO(
+    DiffuseFilter::ShaderSignaturePSO CreateSpecificPSO(
         ShaderCompiler* InShaderCompiler, std::filesystem::path InShaderRootPath, 
         RHI::D3D12Device* InDevice, ShaderCompileOptions InSCO, std::wstring InName)
     {
-        TemporalFilter::ShaderSignaturePSO outSSPSO;
+        DiffuseFilter::ShaderSignaturePSO outSSPSO;
 
         outSSPSO.m_Kernal = InShaderCompiler->CompileShader(
-            RHI_SHADER_TYPE::Compute, InShaderRootPath / "pipeline/Runtime/Tools/Denoising/TemporalFilterCS.hlsl", InSCO);
+            RHI_SHADER_TYPE::Compute, InShaderRootPath / "pipeline/Runtime/Tools/Denoising/DiffuseDenoiserCS.hlsl", InSCO);
 
         RHI::RootSignatureDesc rootSigDesc =
             RHI::RootSignatureDesc()
@@ -39,7 +39,7 @@ namespace MoYu
         return outSSPSO;
     }
     
-    void TemporalFilter::Init(TemporalFilterInitInfo InitInfo)
+    void DiffuseFilter::Init(DiffuseFilterInitInfo InitInfo)
 	{
         colorTexDesc = InitInfo.m_ColorTexDesc;
 
@@ -47,65 +47,50 @@ namespace MoYu
         std::filesystem::path m_ShaderRootPath = InitInfo.m_ShaderRootPath;
 
         m_Device = InitInfo.m_Device;
-        if (mValidateHistory.pKernalPSO == nullptr)
+        if (mGeneratePointDistribution.pKernalPSO == nullptr)
         {
-            ShaderCompileOptions mShaderCompileOptions(L"ValidateHistory");
-            mShaderCompileOptions.SetDefine(L"VALIDATEHISTORY", L"1");
-            mValidateHistory = CreateSpecificPSO(m_ShaderCompiler, m_ShaderRootPath, m_Device, mShaderCompileOptions, L"ValidateHistoryPSO");
+            ShaderCompileOptions mShaderCompileOptions(L"GeneratePointDistribution");
+            mShaderCompileOptions.SetDefine(L"GENERATE_POINT_DISTRIBUTION", L"1");
+            mGeneratePointDistribution = CreateSpecificPSO(m_ShaderCompiler, m_ShaderRootPath, m_Device, mShaderCompileOptions, L"GeneratePointDistributionPSO");
         }
-        if (mTemporalAccumulationSingle.pKernalPSO == nullptr)
+        if (mBilateralFilter.pKernalPSO == nullptr)
         {
-            ShaderCompileOptions mShaderCompileOptions(L"TemporalAccumulation");
-            mShaderCompileOptions.SetDefine(L"TEMPORALACCUMULATIONSINGLE", L"1");
-            mShaderCompileOptions.SetDefine(L"SINGLE_CHANNEL", L"1");
-            mTemporalAccumulationSingle = CreateSpecificPSO(m_ShaderCompiler, m_ShaderRootPath, m_Device, mShaderCompileOptions, L"TemporalAccumulationSinglePSO");
-        }
-        if (mTemporalAccumulationColor.pKernalPSO == nullptr)
-        {
-            ShaderCompileOptions mShaderCompileOptions(L"TemporalAccumulation");
-            mShaderCompileOptions.SetDefine(L"TEMPORALACCUMULATIONSINGLE", L"1");
+            ShaderCompileOptions mShaderCompileOptions(L"BilateralFilter");
+            mShaderCompileOptions.SetDefine(L"BILATERAL_FILTER", L"1");
             mShaderCompileOptions.SetDefine(L"SINGLE_CHANNEL", L"0");
-            mTemporalAccumulationColor = CreateSpecificPSO(m_ShaderCompiler, m_ShaderRootPath, m_Device, mShaderCompileOptions, L"TemporalAccumulationColorPSO");
-        }
-        if (mCopyHistory.pKernalPSO == nullptr)
-        {
-            ShaderCompileOptions mShaderCompileOptions(L"CopyHistory");
-            mShaderCompileOptions.SetDefine(L"COPYHISTORY", L"1");
-            mCopyHistory = CreateSpecificPSO(m_ShaderCompiler, m_ShaderRootPath, m_Device, mShaderCompileOptions, L"CopyHistoryPSO");
+            mBilateralFilter = CreateSpecificPSO(m_ShaderCompiler, m_ShaderRootPath, m_Device, mShaderCompileOptions, L"BilateralFilterPSO");
         }
     }
 
-    void TemporalFilter::PrepareUniforms(RenderScene* render_scene, RenderCamera* camera)
+    void DiffuseFilter::PrepareUniforms(RenderScene* render_scene, RenderCamera* camera)
     {
-        if (mTemporalFilterStructBuffer == nullptr)
+        if (mBilateralFilterParameterBuffer == nullptr)
         {
-            mTemporalFilterStructBuffer =
+            mBilateralFilterParameterBuffer =
                 RHI::D3D12Buffer::Create(m_Device->GetLinkedDevice(),
                     RHI::RHIBufferTargetNone,
                     1,
-                    MoYu::AlignUp(sizeof(TemporalFilterStruct), 256),
-                    L"TemporalFilterStruct",
+                    MoYu::AlignUp(sizeof(BilateralFilterParameter), 256),
+                    L"BilateralFilterParameter",
                     RHI::RHIBufferModeDynamic,
                     D3D12_RESOURCE_STATE_GENERIC_READ);
         }
 
-
-        mTemporalFilterStructData._PixelSpreadAngleTangent =
+        mBilateralFilterParameter._DenoiserResolutionMultiplierVals = glm::float4(1, 1, 1, 1);
+        mBilateralFilterParameter._DenoiserFilterRadius = 0.5f;
+        mBilateralFilterParameter._PixelSpreadAngleTangent = 
             glm::tan(glm::radians(camera->m_fieldOfViewY * 0.5f)) * 2.0f / glm::min(camera->m_pixelWidth, camera->m_pixelHeight);
-        mTemporalFilterStructData._HistoryValidity = 1;
-        mTemporalFilterStructData._ReceiverMotionRejection = 0;
-        mTemporalFilterStructData._OccluderMotionRejection = 0;
-        mTemporalFilterStructData._HistorySizeAndScale = glm::float4(camera->m_pixelWidth, camera->m_pixelHeight, 1, 1);
-        mTemporalFilterStructData._DenoiserResolutionMultiplierVals = glm::float4(1, 1, 1, 1);
-        mTemporalFilterStructData._EnableExposureControl = 0;
+        mBilateralFilterParameter._JitterFramePeriod = m_Device->GetLinkedDevice()->m_FrameIndex % 4;
+        mBilateralFilterParameter._HalfResolutionFilter = 0;
 
-        memcpy(mTemporalFilterStructBuffer->GetCpuVirtualAddress(), &mTemporalFilterStructData, sizeof(mTemporalFilterStructData));
+        memcpy(mBilateralFilterParameterBuffer->GetCpuVirtualAddress(), &mBilateralFilterParameter, sizeof(mBilateralFilterParameter));
 
-        mTemporalFilterStructHandle.Invalidate();
+        mBilateralFilterParameterBufferHandle.Invalidate();
     }
 
-    void TemporalFilter::HistoryValidity(RHI::RenderGraph& graph, HistoryValidityPassData& passData)
+    void DiffuseFilter::GeneratePointDistribution(RHI::RenderGraph& graph, GeneratePointDistributionData& passData)
     {
+        /*
         RHI::RgResourceHandle perFrameUniformHandle = passData.perframeBufferHandle;
         RHI::RgResourceHandle cameraMotionVectorHandle = passData.cameraMotionVectorHandle;
         RHI::RgResourceHandle depthTextureHandle = passData.depthTextureHandle;
@@ -173,10 +158,12 @@ namespace MoYu
         });
 
         passData.validationBufferHandle = validationBufferHandle;
+        */
     }
 
-    void TemporalFilter::Denoise(RHI::RenderGraph& graph, TemporalFilterPassData& passData)
+    void DiffuseFilter::BilateralFilter(RHI::RenderGraph& graph, BilateralFilterData& passData)
     {
+        /*
         RHI::RgResourceHandle perFrameBufferHandle = passData.perFrameBufferHandle;
         RHI::RgResourceHandle validationBufferHandle = passData.validationBufferHandle;
         RHI::RgResourceHandle cameraMotionVectorHandle = passData.cameraMotionVectorHandle;
@@ -237,6 +224,7 @@ namespace MoYu
         });
 
         passData.accumulationOutputTextureRWHandle = accumulationOutputTextureRWHandle;
+        */
     }
 
 

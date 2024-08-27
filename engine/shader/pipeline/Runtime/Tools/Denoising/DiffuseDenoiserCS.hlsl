@@ -1,70 +1,82 @@
-#pragma kernel GeneratePointDistribution
-
-#pragma kernel BilateralFilterSingle        BILATERAL_FILTER=BilateralFilterSingle     SINGLE_CHANNEL
-#pragma kernel BilateralFilterColor         BILATERAL_FILTER=BilateralFilterColor
-
-#pragma kernel GatherSingle                 GATHER_FILTER=GatherSingle     SINGLE_CHANNEL
-#pragma kernel GatherColor                  GATHER_FILTER=GatherColor
-
-#pragma only_renderers d3d11 playstation xboxone xboxseries vulkan metal switch
-
 // We need the stencil flag of this.
 #define BILATERLAL_UNLIT
 
 // #pragma enable_d3d11_debug_symbols
 
 // Common includes
-#include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Common.hlsl"
-#include "Packages/com.unity.render-pipelines.core/ShaderLibrary/CommonLighting.hlsl"
-#include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Sampling/Sampling.hlsl"
-#include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Color.hlsl"
+#include "../../ShaderLibrary/Common.hlsl"
+#include "../../ShaderLibrary/CommonLighting.hlsl"
+#include "../../ShaderLibrary/Sampling/Sampling.hlsl"
+#include "../../ShaderLibrary/Color.hlsl"
 
 // HDRP includes
-#include "Packages/com.unity.render-pipelines.high-definition/Runtime/ShaderLibrary/ShaderVariables.hlsl"
-#include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/NormalBuffer.hlsl"
-#include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/Builtin/BuiltinData.hlsl"
-#include "Packages/com.unity.render-pipelines.high-definition/Runtime/ShaderLibrary/ShaderVariablesGlobal.cs.hlsl"
+#include "../../ShaderLibrary/ShaderVariables.hlsl"
+#include "../../Material/NormalBuffer.hlsl"
+#include "../../Material/Builtin/BuiltinData.hlsl"
+#include "../../Tools/Denoising/DenoisingUtils.hlsl"
 
 // Ray Tracing includes
-#include "Packages/com.unity.render-pipelines.high-definition/Runtime/RenderPipeline/Raytracing/Shaders/RaytracingSampling.hlsl"
-#include "Packages/com.unity.render-pipelines.high-definition/Runtime/RenderPipeline/Raytracing/Shaders/ShaderVariablesRaytracing.hlsl"
-#include "Packages/com.unity.render-pipelines.high-definition/Runtime/RenderPipeline/Raytracing/Shaders/Denoising/BilateralFilter.hlsl"
-#include "Packages/com.unity.render-pipelines.high-definition/Runtime/RenderPipeline/Raytracing/Shaders/Denoising/DenoisingUtils.hlsl"
-#include "Packages/com.unity.render-pipelines.high-definition/Runtime/Lighting/ScreenSpaceLighting/BilateralUpsample.hlsl"
+#include "../../RenderPipeline/Raytracing/Shaders/RaytracingSampling.hlsl"
+#include "../../Tools/Denoising/BilateralFilter.hlsl"
+#include "../../Lighting/ScreenSpaceLighting/BilateralUpsample.hlsl"
 
 // Tile size of this compute shaders
 #define DIFFUSE_DENOISER_TILE_SIZE 8
 
-// Noisy Input Buffer
-TEXTURE2D_X(_DenoiseInputTexture);
-// Buffer used for point sampling
-RWStructuredBuffer<float2> _PointDistributionRW;
-StructuredBuffer<float2> _PointDistribution;
-// Filtered Output buffer (depends on the singel or color variant of the denoiser)
-#if SINGLE_CHANNEL
-RW_TEXTURE2D_X(float, _DenoiseOutputTextureRW);
-#else
-RW_TEXTURE2D_X(float4, _DenoiseOutputTextureRW);
-#endif
-
-// Radius of the filter (world space)
-float4 _DenoiserResolutionMultiplierVals;
-float _DenoiserFilterRadius;
-float _PixelSpreadAngleTangent;
-int _JitterFramePeriod;
-
 #define PIXEL_RADIUS_TOLERANCE_THRESHOLD 2
 
-// Flag used to do a half resolution filter
-int _HalfResolutionFilter;
+// #define GENERATEPOINTDISTRIBUTION
+
+#ifdef GENERATE_POINT_DISTRIBUTION
+
+cbuffer RootConstants : register(b0, space0)
+{
+    uint OwenScrambledTextureIndex;
+    uint PointDistributionRWIndex;
+}
 
 [numthreads(64, 1, 1)]
 void GeneratePointDistribution(uint3 dispatchThreadId : SV_DispatchThreadID)
 {
-    _PointDistributionRW[dispatchThreadId.x] = SampleDiskCubic(GetLDSequenceSampleFloat(dispatchThreadId.x, 0), GetLDSequenceSampleFloat(dispatchThreadId.x, 1));
+    Texture2D<float> _OwenScrambledTexture = ResourceDescriptorHeap[OwenScrambledTextureIndex];
+    RWStructuredBuffer<float2> _PointDistributionRW = ResourceDescriptorHeap[PointDistributionRWIndex];
+    
+    _PointDistributionRW[dispatchThreadId.x] = SampleDiskCubic(
+        GetLDSequenceSampleFloat(_OwenScrambledTexture, dispatchThreadId.x, 0),
+        GetLDSequenceSampleFloat(_OwenScrambledTexture, dispatchThreadId.x, 1));
 }
 
-float ComputeMaxDenoisingRadius(float3 positionRWS)
+#endif
+
+// #define BILATERAL_FILTER
+
+
+struct BilateralFilterStruct
+{
+    // Radius of the filter (world space)
+    float4 _DenoiserResolutionMultiplierVals;
+    float _DenoiserFilterRadius;
+    float _PixelSpreadAngleTangent;
+    int _JitterFramePeriod;
+    // Flag used to do a half resolution filter
+    int _HalfResolutionFilter;
+};
+
+#ifdef BILATERAL_FILTER
+
+cbuffer RootConstants : register(b0, space0)
+{
+    uint perFrameBufferIndex;
+    uint bilateralFilterStructIndex;
+    uint depthTextureIndex;
+    uint normalTextureIndex;
+    uint OwenScrambledTextureIndex;
+    uint pointDistributionIndex;
+    uint denoiseInputTextureIndex;
+    uint denoiseOutputTextureRWIndex;
+}
+
+float ComputeMaxDenoisingRadius(float denoiserFilterRadius, float3 positionRWS)
 {
     // Compute the distance to the pixel
     float distanceToPoint = length(positionRWS);
@@ -72,28 +84,41 @@ float ComputeMaxDenoisingRadius(float3 positionRWS)
     // The world space radius for sample picking goes from distance/10.0 to distance/50.0 linearly until reaching 500.0 meters away from the camera
     // and it is always 20.0f (or two pixels if subpixel.
     // TODO: @Anis, I have a bunch of idea how to make this better and less empirical but it's for any other day
-    return distanceToPoint * _DenoiserFilterRadius / lerp(5.0, 50.0, saturate(distanceToPoint / 500.0));
+    return distanceToPoint * denoiserFilterRadius / lerp(5.0, 50.0, saturate(distanceToPoint / 500.0));
 }
 
 [numthreads(DIFFUSE_DENOISER_TILE_SIZE, DIFFUSE_DENOISER_TILE_SIZE, 1)]
-void BILATERAL_FILTER(uint3 dispatchThreadId : SV_DispatchThreadID, uint2 groupThreadId : SV_GroupThreadID, uint2 groupId : SV_GroupID)
+void BilateralFilter(uint3 dispatchThreadId : SV_DispatchThreadID, uint2 groupThreadId : SV_GroupThreadID, uint2 groupId : SV_GroupID)
 {
-    UNITY_XR_ASSIGN_VIEW_INDEX(dispatchThreadId.z);
+    ConstantBuffer<FrameUniforms> frameUniforms = ResourceDescriptorHeap[perFrameBufferIndex];
+    ConstantBuffer<BilateralFilterStruct> temporalFilterStruct = ResourceDescriptorHeap[bilateralFilterStructIndex];
+    Texture2D<float> depthTexture = ResourceDescriptorHeap[depthTextureIndex];
+    Texture2D<float4> normalTexture = ResourceDescriptorHeap[normalTextureIndex];
+    StructuredBuffer<float2> _PointDistribution = ResourceDescriptorHeap[pointDistributionIndex];
+    Texture2D<float4> _DenoiseInputTexture = ResourceDescriptorHeap[denoiseInputTextureIndex];
+    RWTexture2D<float4> _DenoiseOutputTextureRW = ResourceDescriptorHeap[denoiseOutputTextureRWIndex];
 
+    float4 _DenoiserResolutionMultiplierVals = temporalFilterStruct._DenoiserResolutionMultiplierVals;
+    float _DenoiserFilterRadius = temporalFilterStruct._DenoiserFilterRadius;
+    float _PixelSpreadAngleTangent = temporalFilterStruct._PixelSpreadAngleTangent;
+    int _JitterFramePeriod = temporalFilterStruct._JitterFramePeriod;
+    
+    int _HalfResolutionFilter = temporalFilterStruct._HalfResolutionFilter;
+    
     // Fetch the current pixel coordinate
     uint2 currentCoord = groupId * DIFFUSE_DENOISER_TILE_SIZE + groupThreadId;
     uint2 sourceCoord = (uint2)(currentCoord * _DenoiserResolutionMultiplierVals.y);
 
     // Read the central position
-    const BilateralData center = TapBilateralData(sourceCoord);
+    const BilateralData center = TapBilateralData(frameUniforms, depthTexture, normalTexture, sourceCoord);
 
     // If this is a background pixel, we are done
     if (center.z01 == 1.0 || center.isUnlit)
     {
         #if SINGLE_CHANNEL
-        _DenoiseOutputTextureRW[COORD_TEXTURE2D_X(currentCoord)] = 0.0;
+        _DenoiseOutputTextureRW[currentCoord] = 0.0;
         #else
-        _DenoiseOutputTextureRW[COORD_TEXTURE2D_X(currentCoord)] = float4(0.0, 0.0, 0.0, 1.0);
+        _DenoiseOutputTextureRW[currentCoord] = float4(0.0, 0.0, 0.0, 1.0);
         #endif
         return;
     }
@@ -111,7 +136,8 @@ void BILATERAL_FILTER(uint3 dispatchThreadId : SV_DispatchThreadID, uint2 groupT
     #endif
 
     // Compute the radius of the filter. This is evaluated as the max between a fixed radius value and an approximation of the footprint of the pixel
-    const float denoisingRadius = ComputeMaxReprojectionWorldRadius(center.position, center.normal, _PixelSpreadAngleTangent, ComputeMaxDenoisingRadius(center.position), PIXEL_RADIUS_TOLERANCE_THRESHOLD);
+    const float denoisingRadius = ComputeMaxReprojectionWorldRadius(frameUniforms, center.position, center.normal,
+        _PixelSpreadAngleTangent, ComputeMaxDenoisingRadius(_DenoiserFilterRadius, center.position), PIXEL_RADIUS_TOLERANCE_THRESHOLD);
 
     // Compute the sigma value
     const float sigma = 0.9 * denoisingRadius;
@@ -134,7 +160,7 @@ void BILATERAL_FILTER(uint3 dispatchThreadId : SV_DispatchThreadID, uint2 groupT
 
         // Convert the point to hemogenous clip space
         float3 wsPos = center.position + localToWorld[0] * newSample.x + localToWorld[1] * newSample.y;
-        float4 hClip = TransformWorldToHClip(wsPos);
+        float4 hClip = TransformWorldToHClip(frameUniforms, wsPos);
         hClip.xyz /= hClip.w;
 
         // Is the target pixel in the screen?
@@ -147,13 +173,15 @@ void BILATERAL_FILTER(uint3 dispatchThreadId : SV_DispatchThreadID, uint2 groupT
         nDC.y = 1.0 - nDC.y;
     #endif
 
+        float4 _ScreenSize = frameUniforms.baseUniform._ScreenSize;
+        
         // Tap the data for this pixel
         // Not all pixels can be fetched (only the 2x2 representative)
         uint2 tapCoord = (nDC * _ScreenSize.xy);
         uint2 lowResTapCoord = (tapCoord) * _DenoiserResolutionMultiplierVals.x;
 
         // Fetch the corresponding data
-        const BilateralData tapData = TapBilateralData(tapCoord);
+        const BilateralData tapData = TapBilateralData(frameUniforms, depthTexture, normalTexture, tapCoord);
 
         // If the tapped pixel is a background pixel or too far from the center pixel
         if (tapData.z01 == UNITY_RAW_FAR_CLIP_VALUE || tapData.isUnlit || abs(tapData.zNF - hClip.w) > 0.1)
@@ -167,9 +195,9 @@ void BILATERAL_FILTER(uint3 dispatchThreadId : SV_DispatchThreadID, uint2 groupT
 
         // Accumulate the new sample
     #if SINGLE_CHANNEL
-        colorSum += LOAD_TEXTURE2D_X(_DenoiseInputTexture, lowResTapCoord).x * w;
+        colorSum += LOAD_TEXTURE2D(_DenoiseInputTexture, lowResTapCoord).x * w;
     #else
-        colorSum += LOAD_TEXTURE2D_X(_DenoiseInputTexture, lowResTapCoord).xyz * w;
+        colorSum += LOAD_TEXTURE2D(_DenoiseInputTexture, lowResTapCoord).xyz * w;
     #endif
         wSum += w;
     }
@@ -178,19 +206,34 @@ void BILATERAL_FILTER(uint3 dispatchThreadId : SV_DispatchThreadID, uint2 groupT
     if (wSum == 0.0)
     {
         #if SINGLE_CHANNEL
-        colorSum += LOAD_TEXTURE2D_X(_DenoiseInputTexture, currentCoord).x;
+        colorSum += LOAD_TEXTURE2D(_DenoiseInputTexture, currentCoord).x;
         #else
-        colorSum += LOAD_TEXTURE2D_X(_DenoiseInputTexture, currentCoord).xyz;
+        colorSum += LOAD_TEXTURE2D(_DenoiseInputTexture, currentCoord).xyz;
         #endif
         wSum += 1.0;
     }
 
     // Normalize the result
     #if SINGLE_CHANNEL
-    _DenoiseOutputTextureRW[COORD_TEXTURE2D_X(currentCoord)] = colorSum / wSum;
+    _DenoiseOutputTextureRW[currentCoord] = colorSum / wSum;
     #else
-    _DenoiseOutputTextureRW[COORD_TEXTURE2D_X(currentCoord)] = float4(colorSum / wSum, 1.0);
+    _DenoiseOutputTextureRW[currentCoord] = float4(colorSum / wSum, 1.0);
     #endif
+}
+
+#endif
+
+// #define GATHER_FILTER
+
+#ifdef GATHER_FILTER
+
+cbuffer RootConstants : register(b0, space0)
+{
+    uint perFrameBufferIndex;
+    uint gatherFilterStructIndex;
+    uint depthTextureIndex;
+    uint denoiseInputTextureIndex;
+    uint denoiseOutputTextureRWIndex;
 }
 
 #define GATHER_REGION_SIZE DIFFUSE_DENOISER_TILE_SIZE
@@ -199,17 +242,19 @@ groupshared uint gs_cacheLighting[GATHER_REGION_SIZE_2];
 groupshared float gs_cacheLuminance[GATHER_REGION_SIZE_2];
 groupshared float gs_cacheDepth[GATHER_REGION_SIZE_2];
 
-void FillGatherDataLDS(uint groupIndex, uint2 pixelCoord)
+void FillGatherDataLDS(
+    Texture2D<float4> denoiseInputTexture, Texture2D<float> depthTexture,
+    float4 denoiserResolutionMultiplierVals, float4 screenSize, uint groupIndex, uint2 pixelCoord)
 {
-    int2 sampleCoord = int2(clamp(pixelCoord.x, 0, _ScreenSize.x - 1), clamp(pixelCoord.y, 0, _ScreenSize.y - 1));
+    int2 sampleCoord = int2(clamp(pixelCoord.x, 0, screenSize.x - 1), clamp(pixelCoord.y, 0, screenSize.y - 1));
     #ifdef SINGLE_CHANNEL
     gs_cacheLuminance[groupIndex] = LOAD_TEXTURE2D_X(_DenoiseInputTexture, sampleCoord).x;
     #else
-    float3 lighting = LOAD_TEXTURE2D_X(_DenoiseInputTexture, sampleCoord).xyz;
+    float3 lighting = LOAD_TEXTURE2D(denoiseInputTexture, sampleCoord).xyz;
     gs_cacheLighting[groupIndex] = PackToR11G11B10f(lighting);
     #endif
 
-    float depthValue = LOAD_TEXTURE2D_X(_DepthTexture, sampleCoord * _DenoiserResolutionMultiplierVals.y).x;
+    float depthValue = LOAD_TEXTURE2D(depthTexture, sampleCoord * denoiserResolutionMultiplierVals.y).x;
     gs_cacheDepth[groupIndex] = depthValue;
 }
 
@@ -221,12 +266,22 @@ uint OffsetToLDSAdress(uint2 groupThreadId, int2 offset)
 }
 
 [numthreads(DIFFUSE_DENOISER_TILE_SIZE, DIFFUSE_DENOISER_TILE_SIZE, 1)]
-void GATHER_FILTER(uint3 centerCoord : SV_DispatchThreadID, int groupIndex : SV_GroupIndex, uint2 groupThreadId : SV_GroupThreadID, uint2 groupId : SV_GroupID)
+void GatherFilter(uint3 centerCoord : SV_DispatchThreadID, int groupIndex : SV_GroupIndex, uint2 groupThreadId : SV_GroupThreadID, uint2 groupId : SV_GroupID)
 {
-    UNITY_XR_ASSIGN_VIEW_INDEX(centerCoord.z);
+    ConstantBuffer<FrameUniforms> frameUniforms = ResourceDescriptorHeap[perFrameBufferIndex];
+    ConstantBuffer<BilateralFilterStruct> gatherFilterStruct = ResourceDescriptorHeap[gatherFilterStructIndex];
+    Texture2D<float> depthTexture = ResourceDescriptorHeap[depthTextureIndex];
+    Texture2D<float4> denoiseInputTexture = ResourceDescriptorHeap[denoiseInputTextureIndex];
+    
+    RWTexture2D<float4> _DenoiseOutputTextureRW = ResourceDescriptorHeap[denoiseOutputTextureRWIndex];
 
+    float4 _DenoiserResolutionMultiplierVals = gatherFilterStruct._DenoiserResolutionMultiplierVals;
+    float _DenoiserFilterRadius = gatherFilterStruct._DenoiserFilterRadius;
+    float _PixelSpreadAngleTangent = gatherFilterStruct._PixelSpreadAngleTangent;
+    int _JitterFramePeriod = gatherFilterStruct._JitterFramePeriod;
+    
     // Fill color and lighting to the LDS
-    FillGatherDataLDS(groupIndex, centerCoord.xy);
+    FillGatherDataLDS(denoiseInputTexture, depthTexture, _DenoiserResolutionMultiplierVals, groupIndex, centerCoord.xy);
 
     // Make sure all values are loaded in LDS by now.
     GroupMemoryBarrierWithGroupSync();
@@ -250,6 +305,13 @@ void GATHER_FILTER(uint3 centerCoord : SV_DispatchThreadID, int groupIndex : SV_
     float value = BilUpSingle_Uniform(targetDepth, lowDepths, float4(gs_cacheLuminance[ldsIdx0], gs_cacheLuminance[ldsIdx1], gs_cacheLuminance[ldsIdx2], gs_cacheLuminance[ldsIdx3]));
     _DenoiseOutputTextureRW[COORD_TEXTURE2D_X(centerCoord.xy)] = value;
     #else
-    _DenoiseOutputTextureRW[COORD_TEXTURE2D_X(centerCoord.xy)] = float4(BilUpColor3_Uniform(targetDepth, lowDepths, UnpackFromR11G11B10f(gs_cacheLighting[ldsIdx0]), UnpackFromR11G11B10f(gs_cacheLighting[ldsIdx1]), UnpackFromR11G11B10f(gs_cacheLighting[ldsIdx2]), UnpackFromR11G11B10f(gs_cacheLighting[ldsIdx3])), 1.0);
+    _DenoiseOutputTextureRW[centerCoord.xy] = float4(
+        BilUpColor3_Uniform(targetDepth, lowDepths,
+        UnpackFromR11G11B10f(gs_cacheLighting[ldsIdx0]),
+        UnpackFromR11G11B10f(gs_cacheLighting[ldsIdx1]),
+        UnpackFromR11G11B10f(gs_cacheLighting[ldsIdx2]),
+        UnpackFromR11G11B10f(gs_cacheLighting[ldsIdx3])), 1.0);
     #endif
 }
+
+#endif
