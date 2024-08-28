@@ -195,6 +195,7 @@ namespace MoYu
         _cameraUniform._Resolution = glm::float4(_cw, _ch, 1.0f / _cw, 1.0f / _ch);
         _cameraUniform._LogicalViewportScale = glm::float2(1.0f, 1.0f);
         _cameraUniform._LogicalViewportOffset = glm::float2(0.0f, 0.0f);
+        _cameraUniform._ZBufferParams = CalculateZBufferParams(_cn, _cf);
         _cameraUniform._CameraNear = _cn;
         _cameraUniform._CameraFar = _cf;
         _cameraUniform.unity_MotionVectorsParams = glm::float4(0, 1, 0, 1);

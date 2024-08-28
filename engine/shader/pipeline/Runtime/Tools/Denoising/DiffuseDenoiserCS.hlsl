@@ -170,7 +170,7 @@ void BilateralFilter(uint3 dispatchThreadId : SV_DispatchThreadID, uint2 groupTh
         // Convert it to screen sample space
         float2 nDC = hClip.xy * 0.5 + 0.5;
     #if UNITY_UV_STARTS_AT_TOP
-        nDC.y = 1.0 - nDC.y;
+        // nDC.y = 1.0 - nDC.y;
     #endif
 
         float4 _ScreenSize = frameUniforms.baseUniform._ScreenSize;
