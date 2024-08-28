@@ -32,10 +32,10 @@ namespace MoYu
         struct BilateralFilterData
         {
             RHI::RgResourceHandle perFrameBufferHandle;
-            RHI::RgResourceHandle depthStencilBuffer;
-            RHI::RgResourceHandle normalBuffer;
-            RHI::RgResourceHandle noisyBuffer;
-            RHI::RgResourceHandle outputBuffer;
+            RHI::RgResourceHandle depthBufferHandle;
+            RHI::RgResourceHandle normalBufferHandle;
+            RHI::RgResourceHandle noisyBufferHandle;
+            RHI::RgResourceHandle outputBufferHandle;
         };
 
         struct BilateralFilterParameter
@@ -55,13 +55,19 @@ namespace MoYu
         void PrepareUniforms(RenderScene* render_scene, RenderCamera* camera);
 
         void GeneratePointDistribution(RHI::RenderGraph& graph, GeneratePointDistributionData& passData);
-        void BilateralFilter(RHI::RenderGraph& graph, BilateralFilterData& passData);
+        void BilateralFilter(RHI::RenderGraph& graph, BilateralFilterData& passData, GeneratePointDistributionData& distributeData);
+
+        void Denoise(RHI::RenderGraph& graph, BilateralFilterData& passData);
+
+        bool m_DenoiserInitialized = false;
+        int m_PointDistributionSize = 16 * 4;
 
         BilateralFilterParameter mBilateralFilterParameter;
         std::shared_ptr<RHI::D3D12Buffer> mBilateralFilterParameterBuffer;
-        RHI::RgResourceHandle mBilateralFilterParameterBufferHandle;
 
-        std::shared_ptr<RHI::D3D12Texture> pointDistributionTexture;
+        std::shared_ptr<RHI::D3D12Buffer> pointDistributionStructureBuffer;
+
+        std::shared_ptr<RHI::D3D12Texture> owenScrambled256Tex;
 
         ShaderSignaturePSO mGeneratePointDistribution;
         ShaderSignaturePSO mBilateralFilter;

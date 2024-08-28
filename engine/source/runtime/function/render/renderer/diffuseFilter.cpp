@@ -85,146 +85,137 @@ namespace MoYu
 
         memcpy(mBilateralFilterParameterBuffer->GetCpuVirtualAddress(), &mBilateralFilterParameter, sizeof(mBilateralFilterParameter));
 
-        mBilateralFilterParameterBufferHandle.Invalidate();
+        if (pointDistributionStructureBuffer == nullptr)
+        {
+            pointDistributionStructureBuffer =
+                RHI::D3D12Buffer::Create(m_Device->GetLinkedDevice(),
+                    RHI::RHIBufferTargetNone,
+                    m_PointDistributionSize,
+                    MoYu::AlignUp(sizeof(glm::float2), 256),
+                    L"PointDistributionStructure",
+                    RHI::RHIBufferModeImmutable,
+                    D3D12_RESOURCE_STATE_GENERIC_READ);
+        }
+
+        owenScrambled256Tex = render_scene->m_bluenoise_map.m_owenScrambled256Tex;
     }
 
     void DiffuseFilter::GeneratePointDistribution(RHI::RenderGraph& graph, GeneratePointDistributionData& passData)
     {
-        /*
-        RHI::RgResourceHandle perFrameUniformHandle = passData.perframeBufferHandle;
-        RHI::RgResourceHandle cameraMotionVectorHandle = passData.cameraMotionVectorHandle;
-        RHI::RgResourceHandle depthTextureHandle = passData.depthTextureHandle;
-        RHI::RgResourceHandle historyDepthTextureHandle = passData.historyDepthTextureHandle;
-        RHI::RgResourceHandle normalBufferHandle = passData.normalBufferHandle;
-        RHI::RgResourceHandle historyNormalTextureHandle = passData.historyNormalTextureHandle;
+        RHI::RgResourceHandle pointDistributionRWHandle = graph.Import<RHI::D3D12Buffer>(pointDistributionStructureBuffer.get());
         
-        RHI::RgTextureDesc validationTexDesc = RHI::RgTextureDesc("ValidationBuffer");
-        validationTexDesc.SetType(RHI::RgTextureType::Texture2D);
-        validationTexDesc.SetExtent(colorTexDesc.Width, colorTexDesc.Height);
-        validationTexDesc.SetFormat(DXGI_FORMAT::DXGI_FORMAT_R32_UINT);
-        validationTexDesc.SetAllowUnorderedAccess(true);
-
-        RHI::RgResourceHandle validationBufferHandle = graph.Create<RHI::D3D12Texture>(validationTexDesc);
-
-        if (!mTemporalFilterStructHandle.IsValid())
+        if (m_DenoiserInitialized)
         {
-            mTemporalFilterStructHandle = graph.Import<RHI::D3D12Buffer>(mTemporalFilterStructBuffer.get());
+            m_DenoiserInitialized = true;
+
+            RHI::RenderPass& generatePointDistributionPass = graph.AddRenderPass("GeneratePointDistribution");
+
+            generatePointDistributionPass.Write(pointDistributionRWHandle, false, RHIResourceState::RHI_RESOURCE_STATE_UNORDERED_ACCESS);
+
+            generatePointDistributionPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
+            
+                RHI::D3D12ComputeContext* pContext = context->GetComputeContext();
+
+                pContext->SetRootSignature(mGeneratePointDistribution.pKernalSignature.get());
+                pContext->SetPipelineState(mGeneratePointDistribution.pKernalPSO.get());
+
+                struct RootIndexBuffer
+                {
+                    uint32_t pointDistributionRWIndex;
+                };
+
+                RootIndexBuffer rootIndexBuffer = RootIndexBuffer{ RegGetTexDefUAVIdx(pointDistributionRWHandle) };
+
+                pContext->SetConstantArray(0, sizeof(RootIndexBuffer) / sizeof(uint32_t), &rootIndexBuffer);
+
+                pContext->Dispatch2D(colorTexDesc.Width, colorTexDesc.Height, 8, 8);
+
+            });
         }
 
-        RHI::RenderPass& validatePass = graph.AddRenderPass("History Validity Evaluation");
-
-        validatePass.Read(perFrameUniformHandle, false, RHIResourceState::RHI_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
-        validatePass.Read(mTemporalFilterStructHandle, false, RHIResourceState::RHI_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
-        validatePass.Read(cameraMotionVectorHandle, false, RHIResourceState::RHI_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-        validatePass.Read(depthTextureHandle, false, RHIResourceState::RHI_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-        validatePass.Read(historyDepthTextureHandle, false, RHIResourceState::RHI_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-        validatePass.Read(normalBufferHandle, false, RHIResourceState::RHI_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-        validatePass.Read(historyNormalTextureHandle, false, RHIResourceState::RHI_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-        validatePass.Write(validationBufferHandle, false, RHIResourceState::RHI_RESOURCE_STATE_UNORDERED_ACCESS);
-
-        validatePass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
-            
-            RHI::D3D12ComputeContext* pContext = context->GetComputeContext();
-
-            pContext->SetRootSignature(mValidateHistory.pKernalSignature.get());
-            pContext->SetPipelineState(mValidateHistory.pKernalPSO.get());
-
-            struct RootIndexBuffer
-            {
-                uint32_t perFrameBufferIndex;
-                uint32_t temporalFilterStructIndex;
-                uint32_t cameraMotionVectorIndex; // Velocity buffer for history rejection
-                uint32_t minDepthBufferIndex; // Depth buffer of the current frame
-                uint32_t historyDepthTextureIndex; // Depth buffer of the previous frame
-                uint32_t normalBufferIndex; // // Normal buffer of the current frame
-                uint32_t historyNormalTextureIndex; // Normal buffer of the previous frame
-                uint32_t validationBufferRWIndex; // Buffer that stores the result of the validation pass of the history
-            };
-
-            RootIndexBuffer rootIndexBuffer = RootIndexBuffer{ RegGetBufDefCBVIdx(perFrameUniformHandle),
-                                                               RegGetBufDefCBVIdx(mTemporalFilterStructHandle),
-                                                               RegGetTexDefSRVIdx(cameraMotionVectorHandle),
-                                                               RegGetTexDefSRVIdx(depthTextureHandle),
-                                                               RegGetTexDefSRVIdx(historyDepthTextureHandle),
-                                                               RegGetTexDefSRVIdx(normalBufferHandle),
-                                                               RegGetTexDefSRVIdx(historyNormalTextureHandle),
-                                                               RegGetTexDefUAVIdx(validationBufferHandle) };
-
-
-            pContext->SetConstantArray(0, sizeof(RootIndexBuffer) / sizeof(UINT), &rootIndexBuffer);
-
-            pContext->Dispatch2D(colorTexDesc.Width, colorTexDesc.Height, 8, 8);
-
-        });
-
-        passData.validationBufferHandle = validationBufferHandle;
-        */
+        passData.pointDistributionRWHandle = pointDistributionRWHandle;
     }
 
-    void DiffuseFilter::BilateralFilter(RHI::RenderGraph& graph, BilateralFilterData& passData)
+    void DiffuseFilter::BilateralFilter(RHI::RenderGraph& graph, BilateralFilterData& passData, GeneratePointDistributionData& distributeData)
     {
-        /*
-        RHI::RgResourceHandle perFrameBufferHandle = passData.perFrameBufferHandle;
-        RHI::RgResourceHandle validationBufferHandle = passData.validationBufferHandle;
-        RHI::RgResourceHandle cameraMotionVectorHandle = passData.cameraMotionVectorHandle;
-        RHI::RgResourceHandle depthTextureHandle = passData.depthTextureHandle;
-        RHI::RgResourceHandle historyBufferHandle = passData.historyBufferHandle;
-        RHI::RgResourceHandle denoiseInputTextureHandle = passData.denoiseInputTextureHandle;
-        RHI::RgResourceHandle accumulationOutputTextureRWHandle = passData.accumulationOutputTextureRWHandle;
+        RHI::RgResourceHandle mBilateralFilterParameterHandle = graph.Import<RHI::D3D12Buffer>(mBilateralFilterParameterBuffer.get());
+        RHI::RgResourceHandle owenScrambled256TexHandle = graph.Import<RHI::D3D12Texture>(owenScrambled256Tex.get());
 
-        if (!mTemporalFilterStructHandle.IsValid())
-        {
-            mTemporalFilterStructHandle = graph.Import<RHI::D3D12Buffer>(mTemporalFilterStructBuffer.get());
-        }
+        RHI::RgResourceHandle pointDistributionHandle = distributeData.pointDistributionRWHandle;
 
-        RHI::RenderPass& temporalDenoisePass = graph.AddRenderPass("TemporalDenoiser(Color)");
+        RHI::RgResourceHandle perframeBufferHandle = passData.perFrameBufferHandle;
+        RHI::RgResourceHandle depthTextureHandle = passData.depthBufferHandle;
+        RHI::RgResourceHandle normalBufferHandle = passData.normalBufferHandle;
+        RHI::RgResourceHandle noisyBufferHandle = passData.noisyBufferHandle;
+        RHI::RgResourceHandle outputBufferHandle = passData.outputBufferHandle;
 
-        temporalDenoisePass.Read(perFrameBufferHandle, false, RHIResourceState::RHI_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
-        temporalDenoisePass.Read(mTemporalFilterStructHandle, false, RHIResourceState::RHI_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
-        temporalDenoisePass.Read(validationBufferHandle, false, RHIResourceState::RHI_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-        temporalDenoisePass.Read(cameraMotionVectorHandle, false, RHIResourceState::RHI_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-        temporalDenoisePass.Read(depthTextureHandle, false, RHIResourceState::RHI_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-        temporalDenoisePass.Read(historyBufferHandle, false, RHIResourceState::RHI_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-        temporalDenoisePass.Read(denoiseInputTextureHandle, false, RHIResourceState::RHI_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
-        temporalDenoisePass.Write(accumulationOutputTextureRWHandle, false, RHIResourceState::RHI_RESOURCE_STATE_UNORDERED_ACCESS);
+        RHI::RenderPass& bilateralFilterPass = graph.AddRenderPass("BilateralFilter");
 
-        temporalDenoisePass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
+        bilateralFilterPass.Read(perframeBufferHandle, false, RHIResourceState::RHI_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
+        bilateralFilterPass.Read(mBilateralFilterParameterHandle, false, RHIResourceState::RHI_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
+        bilateralFilterPass.Read(pointDistributionHandle, false, RHIResourceState::RHI_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+        bilateralFilterPass.Read(depthTextureHandle, false, RHIResourceState::RHI_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+        bilateralFilterPass.Read(normalBufferHandle, false, RHIResourceState::RHI_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+        bilateralFilterPass.Read(owenScrambled256TexHandle, false, RHIResourceState::RHI_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+        bilateralFilterPass.Read(noisyBufferHandle, false, RHIResourceState::RHI_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+        bilateralFilterPass.Write(outputBufferHandle, false, RHIResourceState::RHI_RESOURCE_STATE_UNORDERED_ACCESS);
+
+        bilateralFilterPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
+
+            auto CreateHandleIndexFunc = [&registry](RHI::RgResourceHandle InHandle) {
+                RHI::D3D12Texture* TempTex = registry->GetD3D12Texture(InHandle);
+                D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc{};
+                srvDesc.Format = DXGI_FORMAT::DXGI_FORMAT_R8G8B8A8_UNORM;
+                srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+                srvDesc.ViewDimension = D3D12_SRV_DIMENSION::D3D12_SRV_DIMENSION_TEXTURE2D;
+                srvDesc.Texture2D.MostDetailedMip = 0;
+                srvDesc.Texture2D.MipLevels = 1;
+                srvDesc.Texture2D.PlaneSlice = 0;
+                srvDesc.Texture2D.ResourceMinLODClamp = 0.0f;
+                std::shared_ptr<RHI::D3D12ShaderResourceView> InTexSRV = TempTex->CreateSRV(srvDesc);
+                UINT InTexSRVIndex = InTexSRV->GetIndex();
+                return InTexSRVIndex;
+            };
 
             RHI::D3D12ComputeContext* pContext = context->GetComputeContext();
 
-            pContext->SetRootSignature(mTemporalAccumulationColor.pKernalSignature.get());
-            pContext->SetPipelineState(mTemporalAccumulationColor.pKernalPSO.get());
+            pContext->SetRootSignature(mBilateralFilter.pKernalSignature.get());
+            pContext->SetPipelineState(mBilateralFilter.pKernalPSO.get());
 
             struct RootIndexBuffer
             {
                 uint32_t perFrameBufferIndex;
-                uint32_t temporalFilterStructIndex;
-                uint32_t validationBufferIndex; // Validation buffer that tells us if the history should be ignored for a given pixel.
-                uint32_t cameraMotionVectorIndex; // Velocity buffer for history rejection
-                uint32_t minDepthBufferIndex; // Depth buffer of the current frame
-                uint32_t historyBufferIndex; // This buffer holds the previously accumulated signal
-                uint32_t denoiseInputTextureIndex; // Noisy Input Buffer from the current frame
-                uint32_t accumulationOutputTextureRWIndex; // Generic output buffer for our kernels
+                uint32_t bilateralFilterStructIndex;
+                uint32_t depthTextureIndex;
+                uint32_t normalTextureIndex;
+                uint32_t OwenScrambledTextureIndex;
+                uint32_t pointDistributionIndex;
+                uint32_t denoiseInputTextureIndex;
+                uint32_t denoiseOutputTextureRWIndex;
             };
 
-            RootIndexBuffer rootIndexBuffer = RootIndexBuffer{ RegGetBufDefCBVIdx(perFrameBufferHandle),
-                                                               RegGetBufDefCBVIdx(mTemporalFilterStructHandle),
-                                                               RegGetTexDefSRVIdx(validationBufferHandle),
-                                                               RegGetTexDefSRVIdx(cameraMotionVectorHandle),
+            RootIndexBuffer rootIndexBuffer = RootIndexBuffer{ RegGetBufDefCBVIdx(perframeBufferHandle),
+                                                               RegGetBufDefCBVIdx(mBilateralFilterParameterHandle),
                                                                RegGetTexDefSRVIdx(depthTextureHandle),
-                                                               RegGetTexDefSRVIdx(historyBufferHandle),
-                                                               RegGetTexDefSRVIdx(denoiseInputTextureHandle),
-                                                               RegGetTexDefUAVIdx(accumulationOutputTextureRWHandle) };
+                                                               RegGetTexDefSRVIdx(normalBufferHandle),
+                                                               CreateHandleIndexFunc(owenScrambled256TexHandle),
+                                                               RegGetBufDefSRVIdx(pointDistributionHandle),
+                                                               RegGetTexDefSRVIdx(noisyBufferHandle),
+                                                               RegGetTexDefUAVIdx(outputBufferHandle) };
 
-
-            pContext->SetConstantArray(0, sizeof(RootIndexBuffer) / sizeof(UINT), &rootIndexBuffer);
+            pContext->SetConstantArray(0, sizeof(RootIndexBuffer) / sizeof(uint32_t), &rootIndexBuffer);
 
             pContext->Dispatch2D(colorTexDesc.Width, colorTexDesc.Height, 8, 8);
 
         });
 
-        passData.accumulationOutputTextureRWHandle = accumulationOutputTextureRWHandle;
-        */
+    }
+
+    void DiffuseFilter::Denoise(RHI::RenderGraph& graph, BilateralFilterData& passData)
+    {
+        GeneratePointDistributionData pointDistributionData;
+        GeneratePointDistribution(graph, pointDistributionData);
+        BilateralFilter(graph, passData, pointDistributionData);
     }
 
 

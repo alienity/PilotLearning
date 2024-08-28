@@ -28,6 +28,9 @@ namespace MoYu
             .SetExtent(colorTexDesc.Width, colorTexDesc.Height)
             .SetAllowUnorderedAccess(true);
 
+        diffuseDenoiseDiffuseDesc = indirectDiffuseDesc;
+        diffuseDenoiseDiffuseDesc.Name = "DiffuseDenoisedDiffuseTexture";
+
         ShaderCompiler*       m_ShaderCompiler = init_info.m_ShaderCompiler;
         std::filesystem::path m_ShaderRootPath = init_info.m_ShaderRootPath;
 
@@ -282,6 +285,8 @@ namespace MoYu
             pContext->Dispatch2D(colorTexDesc.Width, colorTexDesc.Height, 8, 8);
         });
 
+        RHI::RgResourceHandle denoisedOutHandle = mIndirectDiffuseHandle;
+
         {
             TemporalFilter::TemporalFilterPassData mTemporalFilterPassData;
             mTemporalFilterPassData.perFrameBufferHandle = perframeBufferHandle;
@@ -294,8 +299,25 @@ namespace MoYu
 
             mTemporalFilter->Denoise(graph, mTemporalFilterPassData);
 
-            passOutput.ssrOutHandle = mTemporalFilterPassData.accumulationOutputTextureRWHandle;
+            denoisedOutHandle = mTemporalFilterPassData.accumulationOutputTextureRWHandle;
         }
+
+        {
+            RHI::RgResourceHandle mDiffuseDenoisedDiffuseHandle = graph.Create<RHI::D3D12Texture>(diffuseDenoiseDiffuseDesc);
+
+            DiffuseFilter::BilateralFilterData mBilateralFilterData;
+            mBilateralFilterData.perFrameBufferHandle = perframeBufferHandle;
+            mBilateralFilterData.depthBufferHandle = depthPyramidHandle;
+            mBilateralFilterData.normalBufferHandle = normalBufferHandle;
+            mBilateralFilterData.noisyBufferHandle = denoisedOutHandle;
+            mBilateralFilterData.outputBufferHandle = mDiffuseDenoisedDiffuseHandle;
+
+            mDiffuseFilter->Denoise(graph, mBilateralFilterData);
+
+            denoisedOutHandle = mBilateralFilterData.outputBufferHandle;
+        }
+
+        passOutput.ssrOutHandle = denoisedOutHandle;
     }
 
     void SSGIPass::destroy()

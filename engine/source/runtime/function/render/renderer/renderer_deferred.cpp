@@ -767,7 +767,7 @@ namespace MoYu
         mHistoryValidityPassData.normalBufferHandle = mGBufferOutput.gbuffer1Handle;
         mHistoryValidityPassData.historyNormalTextureHandle = mIndirectGBufferPass->getLastFrameNormalHandle();
 
-         mTemporalFilter->HistoryValidity(graph, mHistoryValidityPassData);
+        mTemporalFilter->HistoryValidity(graph, mHistoryValidityPassData);
         //=================================================================================
 
         //=================================================================================
@@ -782,7 +782,7 @@ namespace MoYu
         mSSGIIntput.lastDepthPyramidHandle = lastFrameMinDepthPyramidHandle;
         mSSGIIntput.normalBufferHandle = mGBufferOutput.gbuffer1Handle;
         mSSGIIntput.cameraMotionVectorHandle = mCameraMotionVectorOutput.motionVectorHandle;
-        mSSGIPass->update(graph, mSSGIIntput, mSSGIOutput, mTemporalFilter);
+        mSSGIPass->update(graph, mSSGIIntput, mSSGIOutput, mTemporalFilter, mDiffuseFilter);
         //=================================================================================
 
         ////=================================================================================

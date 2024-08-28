@@ -94,6 +94,7 @@ namespace MoYu
         RHI::RgTextureDesc colorTexDesc;
         RHI::RgTextureDesc indirectDiffuseHitPointDesc;
         RHI::RgTextureDesc indirectDiffuseDesc;
+        RHI::RgTextureDesc diffuseDenoiseDiffuseDesc;
 	};
 }
 
