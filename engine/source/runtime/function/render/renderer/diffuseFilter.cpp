@@ -43,6 +43,11 @@ namespace MoYu
 	{
         colorTexDesc = InitInfo.m_ColorTexDesc;
 
+        pointDistributionDesc = RHI::RgBufferDesc("PointDistributionStructureBuffer");
+        pointDistributionDesc.SetSize(m_PointDistributionSize, sizeof(glm::float2));
+        pointDistributionDesc.SetRHIBufferMode(RHI::RHIBufferMode::RHIBufferModeImmutable);
+        pointDistributionDesc.AllowUnorderedAccess();
+
         ShaderCompiler*       m_ShaderCompiler = InitInfo.m_ShaderCompiler;
         std::filesystem::path m_ShaderRootPath = InitInfo.m_ShaderRootPath;
 
@@ -89,7 +94,7 @@ namespace MoYu
         {
             pointDistributionStructureBuffer =
                 RHI::D3D12Buffer::Create(m_Device->GetLinkedDevice(),
-                    RHI::RHIBufferTargetNone,
+                    RHI::RHIBufferTargetStructured | RHI::RHIBufferRandomReadWrite,
                     m_PointDistributionSize,
                     MoYu::AlignUp(sizeof(glm::float2), 256),
                     L"PointDistributionStructure",
@@ -100,16 +105,36 @@ namespace MoYu
         owenScrambled256Tex = render_scene->m_bluenoise_map.m_owenScrambled256Tex;
     }
 
+    uint32_t CreateHandleIndexFunc(RHI::RenderGraphRegistry* registry, RHI::RgResourceHandle InHandle)
+    {
+        RHI::D3D12Texture* TempTex = registry->GetD3D12Texture(InHandle);
+        D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc{};
+        srvDesc.Format = DXGI_FORMAT::DXGI_FORMAT_R8G8B8A8_UNORM;
+        srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+        srvDesc.ViewDimension = D3D12_SRV_DIMENSION::D3D12_SRV_DIMENSION_TEXTURE2D;
+        srvDesc.Texture2D.MostDetailedMip = 0;
+        srvDesc.Texture2D.MipLevels = 1;
+        srvDesc.Texture2D.PlaneSlice = 0;
+        srvDesc.Texture2D.ResourceMinLODClamp = 0.0f;
+        std::shared_ptr<RHI::D3D12ShaderResourceView> InTexSRV = TempTex->CreateSRV(srvDesc);
+        uint32_t InTexSRVIndex = InTexSRV->GetIndex();
+        return InTexSRVIndex;
+    };
+
     void DiffuseFilter::GeneratePointDistribution(RHI::RenderGraph& graph, GeneratePointDistributionData& passData)
     {
         RHI::RgResourceHandle pointDistributionRWHandle = graph.Import<RHI::D3D12Buffer>(pointDistributionStructureBuffer.get());
-        
-        if (m_DenoiserInitialized)
+        RHI::RgResourceHandle owenScrambled256TexHandle = graph.Import<RHI::D3D12Texture>(owenScrambled256Tex.get());
+
+        //RHI::RgResourceHandle pointDistributionRWHandle = graph.Create<RHI::D3D12Buffer>(pointDistributionDesc);
+
+        if (!m_DenoiserInitialized)
         {
             m_DenoiserInitialized = true;
 
             RHI::RenderPass& generatePointDistributionPass = graph.AddRenderPass("GeneratePointDistribution");
 
+            generatePointDistributionPass.Read(owenScrambled256TexHandle, false, RHIResourceState::RHI_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
             generatePointDistributionPass.Write(pointDistributionRWHandle, false, RHIResourceState::RHI_RESOURCE_STATE_UNORDERED_ACCESS);
 
             generatePointDistributionPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
@@ -121,27 +146,30 @@ namespace MoYu
 
                 struct RootIndexBuffer
                 {
+                    uint32_t OwenScrambledTextureIndex;
                     uint32_t pointDistributionRWIndex;
                 };
 
-                RootIndexBuffer rootIndexBuffer = RootIndexBuffer{ RegGetTexDefUAVIdx(pointDistributionRWHandle) };
+                RootIndexBuffer rootIndexBuffer = RootIndexBuffer{ CreateHandleIndexFunc(registry, owenScrambled256TexHandle),
+                                                                   RegGetBufDefUAVIdx(pointDistributionRWHandle) };
 
                 pContext->SetConstantArray(0, sizeof(RootIndexBuffer) / sizeof(uint32_t), &rootIndexBuffer);
 
-                pContext->Dispatch2D(colorTexDesc.Width, colorTexDesc.Height, 8, 8);
+                pContext->Dispatch(1, 1, 1);
 
             });
         }
 
         passData.pointDistributionRWHandle = pointDistributionRWHandle;
+        passData.owenScrambled256TexHandle = owenScrambled256TexHandle;
     }
 
     void DiffuseFilter::BilateralFilter(RHI::RenderGraph& graph, BilateralFilterData& passData, GeneratePointDistributionData& distributeData)
     {
         RHI::RgResourceHandle mBilateralFilterParameterHandle = graph.Import<RHI::D3D12Buffer>(mBilateralFilterParameterBuffer.get());
-        RHI::RgResourceHandle owenScrambled256TexHandle = graph.Import<RHI::D3D12Texture>(owenScrambled256Tex.get());
 
         RHI::RgResourceHandle pointDistributionHandle = distributeData.pointDistributionRWHandle;
+        RHI::RgResourceHandle owenScrambled256TexHandle = distributeData.owenScrambled256TexHandle;
 
         RHI::RgResourceHandle perframeBufferHandle = passData.perFrameBufferHandle;
         RHI::RgResourceHandle depthTextureHandle = passData.depthBufferHandle;
@@ -162,20 +190,7 @@ namespace MoYu
 
         bilateralFilterPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
 
-            auto CreateHandleIndexFunc = [&registry](RHI::RgResourceHandle InHandle) {
-                RHI::D3D12Texture* TempTex = registry->GetD3D12Texture(InHandle);
-                D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc{};
-                srvDesc.Format = DXGI_FORMAT::DXGI_FORMAT_R8G8B8A8_UNORM;
-                srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-                srvDesc.ViewDimension = D3D12_SRV_DIMENSION::D3D12_SRV_DIMENSION_TEXTURE2D;
-                srvDesc.Texture2D.MostDetailedMip = 0;
-                srvDesc.Texture2D.MipLevels = 1;
-                srvDesc.Texture2D.PlaneSlice = 0;
-                srvDesc.Texture2D.ResourceMinLODClamp = 0.0f;
-                std::shared_ptr<RHI::D3D12ShaderResourceView> InTexSRV = TempTex->CreateSRV(srvDesc);
-                UINT InTexSRVIndex = InTexSRV->GetIndex();
-                return InTexSRVIndex;
-            };
+            
 
             RHI::D3D12ComputeContext* pContext = context->GetComputeContext();
 
@@ -198,7 +213,7 @@ namespace MoYu
                                                                RegGetBufDefCBVIdx(mBilateralFilterParameterHandle),
                                                                RegGetTexDefSRVIdx(depthTextureHandle),
                                                                RegGetTexDefSRVIdx(normalBufferHandle),
-                                                               CreateHandleIndexFunc(owenScrambled256TexHandle),
+                                                               CreateHandleIndexFunc(registry, owenScrambled256TexHandle),
                                                                RegGetBufDefSRVIdx(pointDistributionHandle),
                                                                RegGetTexDefSRVIdx(noisyBufferHandle),
                                                                RegGetTexDefUAVIdx(outputBufferHandle) };

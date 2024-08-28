@@ -27,11 +27,13 @@ namespace MoYu
         struct GeneratePointDistributionData
         {
             RHI::RgResourceHandle pointDistributionRWHandle;
+            RHI::RgResourceHandle owenScrambled256TexHandle;
         };
 
         struct BilateralFilterData
         {
             RHI::RgResourceHandle perFrameBufferHandle;
+            RHI::RgResourceHandle owenScrambled256TexHandle;
             RHI::RgResourceHandle depthBufferHandle;
             RHI::RgResourceHandle normalBufferHandle;
             RHI::RgResourceHandle noisyBufferHandle;
@@ -73,6 +75,7 @@ namespace MoYu
         ShaderSignaturePSO mBilateralFilter;
 
         RHI::RgTextureDesc colorTexDesc;
+        RHI::RgBufferDesc pointDistributionDesc;
         RHI::D3D12Device* m_Device;
     };
 
