@@ -224,6 +224,7 @@ namespace MoYu
 
         });
 
+        passData.outputBufferHandle = outputBufferHandle;
     }
 
     void DiffuseFilter::Denoise(RHI::RenderGraph& graph, BilateralFilterData& passData)

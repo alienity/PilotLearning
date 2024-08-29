@@ -11,6 +11,8 @@
 #define INDIRECTDIFFUSEMODE_SCREEN_SPACE (1)
 #define INDIRECTDIFFUSEMODE_VOXEL (2)
 
+#ifndef _IndirectDiffuseMode
 #define _IndirectDiffuseMode INDIRECTDIFFUSEMODE_OFF
+#endif
 
 #endif

@@ -31,6 +31,8 @@
 #define SHADOW_LOW
 #define UNITY_NO_DXT5nm
 
+#define _IndirectDiffuseMode INDIRECTDIFFUSEMODE_SCREEN_SPACE
+
 #include "../../Material/Material.hlsl"
 #include "../../Lighting/Lighting.hlsl"
 

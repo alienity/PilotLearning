@@ -225,28 +225,12 @@ struct SSRUniform
     float  Thickness;
     int    NumSteps;
     int    MaxMipMap;
-
-    uint _IndirectDiffuseTextureIndex;
-    uint3 _Padding0;
 };
 
 struct SSGIStruct
 {
-    // Ray marching constants
-    int _RayMarchingSteps;
-    float _RayMarchingThicknessScale;
-    float _RayMarchingThicknessBias;
-    int _RayMarchingReflectsSky;
-
-    int _RayMarchingFallbackHierarchy;
-    int _IndirectDiffuseProbeFallbackFlag;
-    int _IndirectDiffuseProbeFallbackBias;
-    int _SsrStencilBit;
-
-    int _IndirectDiffuseFrameIndex;
-    int _ObjectMotionStencilBit;
-    float _RayMarchingLowResPercentageInv;
-    int _SSGIUnused0;
+    uint _IndirectDiffuseTextureIndex;
+    uint3 _Padding0;
 };
 
 struct VolumeCloudStruct

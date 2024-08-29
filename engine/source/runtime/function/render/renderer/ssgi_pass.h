@@ -32,7 +32,7 @@ namespace MoYu
 
         struct DrawOutputParameters : public PassOutput
         {
-            RHI::RgResourceHandle ssrOutHandle;
+            RHI::RgResourceHandle ssgiOutHandle;
         };
 
     public:
@@ -76,6 +76,8 @@ namespace MoYu
     private:
         std::shared_ptr<RHI::D3D12Texture> pIndirectDiffuseTexture[2];
         RHI::RgResourceHandle pIndirectDiffuseTextureHandle[2];
+
+        std::shared_ptr<RHI::D3D12Texture> pFinalDiffuseTexture;
 
         std::shared_ptr<RHI::D3D12Texture> m_bluenoise;
         std::shared_ptr<RHI::D3D12Texture> m_owenScrambled256Tex;

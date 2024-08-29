@@ -67,6 +67,7 @@ namespace MoYu
         drawpass.Read(passInput.gbuffer2Handle, false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
         drawpass.Read(passInput.gbuffer3Handle, false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
         drawpass.Read(passInput.gbufferDepthHandle, false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+        drawpass.Read(passInput.ssgiHandle, false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
         drawpass.Read(passInput.mAOHandle, false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 
         drawpass.Read(passInput.directionalCascadeShadowmapHandle, false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);

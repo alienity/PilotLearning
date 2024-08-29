@@ -18,6 +18,8 @@
 #define UNITY_NO_DXT5nm
 #define SHADER_STAGE_COMPUTE
 
+#define _IndirectDiffuseMode INDIRECTDIFFUSEMODE_SCREEN_SPACE
+
 #include "../../Material/Material.hlsl"
 #include "../../Lighting/Lighting.hlsl"
 

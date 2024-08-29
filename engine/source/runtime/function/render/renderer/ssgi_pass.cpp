@@ -119,6 +119,31 @@ namespace MoYu
         }
 
         //===================================================================================
+        
+        if (pFinalDiffuseTexture == nullptr)
+        {
+            pFinalDiffuseTexture = 
+                RHI::D3D12Texture::Create2D(m_Device->GetLinkedDevice(),
+                    colorTexDesc.Width,
+                    colorTexDesc.Height,
+                    8,
+                    DXGI_FORMAT_R32G32B32A32_FLOAT,
+                    RHI::RHISurfaceCreateRandomWrite,
+                    1,
+                    L"FinalDenoisedDiffuseTexture",
+                    D3D12_RESOURCE_STATE_COMMON,
+                    std::nullopt);
+        }
+
+        //===================================================================================
+
+        // FrameUniforms
+        HLSL::FrameUniforms* _frameUniforms = &(render_resource->m_FrameUniforms);
+
+        HLSL::SSGIStruct* pSSGIUniform = &_frameUniforms->ssgiUniform;
+        pSSGIUniform->_IndirectDiffuseTextureIndex = pFinalDiffuseTexture->GetDefaultSRV()->GetIndex();
+
+        //===================================================================================
 
         if (pSSGIConsBuffer == nullptr)
         {
@@ -130,6 +155,8 @@ namespace MoYu
                 RHI::RHIBufferModeDynamic,
                 D3D12_RESOURCE_STATE_GENERIC_READ);
         }
+
+        //===================================================================================
 
         int frameIndex = m_Device->GetLinkedDevice()->m_FrameIndex;
 
@@ -303,7 +330,9 @@ namespace MoYu
         }
 
         {
-            RHI::RgResourceHandle mDiffuseDenoisedDiffuseHandle = graph.Create<RHI::D3D12Texture>(diffuseDenoiseDiffuseDesc);
+            //RHI::RgResourceHandle mDiffuseDenoisedDiffuseHandle = graph.Create<RHI::D3D12Texture>(diffuseDenoiseDiffuseDesc);
+            RHI::RgResourceHandle mDiffuseDenoisedDiffuseHandle = 
+                graph.Import<RHI::D3D12Texture>(pFinalDiffuseTexture.get());
 
             DiffuseFilter::BilateralFilterData mBilateralFilterData;
             mBilateralFilterData.perFrameBufferHandle = perframeBufferHandle;
@@ -317,7 +346,7 @@ namespace MoYu
             denoisedOutHandle = mBilateralFilterData.outputBufferHandle;
         }
 
-        passOutput.ssrOutHandle = denoisedOutHandle;
+        passOutput.ssgiOutHandle = denoisedOutHandle;
     }
 
     void SSGIPass::destroy()

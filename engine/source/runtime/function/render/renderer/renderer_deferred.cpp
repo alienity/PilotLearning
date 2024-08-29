@@ -807,6 +807,7 @@ namespace MoYu
         mLightLoopIntput.gbuffer1Handle = mGBufferOutput.gbuffer1Handle;
         mLightLoopIntput.gbuffer2Handle = mGBufferOutput.gbuffer2Handle;
         mLightLoopIntput.gbuffer3Handle = mGBufferOutput.gbuffer3Handle;
+        mLightLoopIntput.ssgiHandle = mSSGIOutput.ssgiOutHandle;
         mLightLoopIntput.gbufferDepthHandle = mGBufferOutput.depthHandle;
         mLightLoopIntput.mAOHandle = mGTAOOutput.outputAOHandle;
         mLightLoopIntput.directionalCascadeShadowmapHandle = directionalCascadeShadowmapHandle;
@@ -952,8 +953,8 @@ namespace MoYu
         DisplayPass::DisplayOutputParameters mDisplayOutputParams;
 
         //mDisplayIntputParams.inputRTColorHandle = mTerrainShadowmapOutputParams.directionalShadowmapHandles[3];
-        mDisplayIntputParams.inputRTColorHandle = mSSGIOutput.ssrOutHandle;
-        //mDisplayIntputParams.inputRTColorHandle = outColorHandle;
+        //mDisplayIntputParams.inputRTColorHandle = mSSGIOutput.ssrOutHandle;
+        mDisplayIntputParams.inputRTColorHandle = outColorHandle;
         mDisplayOutputParams.renderTargetColorHandle = renderTargetColorHandle;
         //mDisplayOutputParams.renderTargetColorHandle = backBufColorHandle;
         mDisplayPass->update(graph, mDisplayIntputParams, mDisplayOutputParams);

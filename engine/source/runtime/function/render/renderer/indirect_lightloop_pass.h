@@ -29,6 +29,8 @@ namespace MoYu
             RHI::RgResourceHandle gbuffer3Handle;
             RHI::RgResourceHandle gbufferDepthHandle;
 
+            RHI::RgResourceHandle ssgiHandle;
+
             RHI::RgResourceHandle mAOHandle;
 
             RHI::RgResourceHandle directionalCascadeShadowmapHandle;
