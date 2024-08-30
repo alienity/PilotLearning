@@ -228,7 +228,9 @@ void LightLoop(
             if (_IndirectDiffuseMode != INDIRECTDIFFUSEMODE_OFF)
             {
                 Texture2D<float4> _IndirectDiffuseTexture = ResourceDescriptorHeap[frameUniform.ssgiUniform._IndirectDiffuseTextureIndex];
-                tempBuiltinData.bakeDiffuseLighting = LOAD_TEXTURE2D(_IndirectDiffuseTexture, posInput.positionSS).xyz * GetInverseCurrentExposureMultiplier(frameUniform);
+                float4 screenSize = frameUniform.baseUniform._ScreenSize;
+                uint2 texcoord = uint2(posInput.positionSS.x, screenSize.y - 1 - posInput.positionSS.y);
+                tempBuiltinData.bakeDiffuseLighting = LOAD_TEXTURE2D(_IndirectDiffuseTexture, texcoord).xyz * GetInverseCurrentExposureMultiplier(frameUniform);
             }
 #endif
 

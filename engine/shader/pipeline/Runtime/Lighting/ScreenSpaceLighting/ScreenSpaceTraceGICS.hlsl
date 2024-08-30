@@ -58,6 +58,11 @@ cbuffer RootConstants : register(b0, space0)
 
 #include "../../Lighting/ScreenSpaceLighting/RayMarching.hlsl"
 
+uint2 GetLowResCoord(float rayMarchingLowResPercentageInv, float4 screenSize, uint2 inputCoord)
+{
+    return min((uint2)round((float2)(inputCoord + 0.5f) * rayMarchingLowResPercentageInv), (int2)screenSize.xy - 1u);
+}
+
 [numthreads(INDIRECT_DIFFUSE_TILE_SIZE, INDIRECT_DIFFUSE_TILE_SIZE, 1)]
 void TRACE_GLOBAL_ILLUMINATION(uint3 dispatchThreadId : SV_DispatchThreadID, uint2 groupThreadId : SV_GroupThreadID, uint2 groupId : SV_GroupID)
 {
@@ -79,9 +84,16 @@ void TRACE_GLOBAL_ILLUMINATION(uint3 dispatchThreadId : SV_DispatchThreadID, uin
     float _RayMarchingThicknessScale = _ScreenSpaceTraceGIStruct._RayMarchingThicknessScale;
     float _RayMarchingThicknessBias = _ScreenSpaceTraceGIStruct._RayMarchingThicknessBias;
     
+    float _RayMarchingLowResPercentageInv = _ScreenSpaceTraceGIStruct._RayMarchingLowResPercentageInv;
+    
     // Compute the pixel position to process
     uint2 currentCoord = dispatchThreadId.xy;
     uint2 inputCoord = dispatchThreadId.xy;
+
+#if HALF_RES
+    // Compute the full resolution pixel for the inputs that do not have a pyramid
+    inputCoord = GetLowResCoord(_RayMarchingLowResPercentageInv, _ScreenSize, inputCoord);
+#endif
     
     // Read the depth value as early as possible
     float deviceDepth = LOAD_TEXTURE2D(_DepthPyramidTexture, inputCoord).x;
