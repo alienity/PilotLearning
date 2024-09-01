@@ -64,7 +64,7 @@ BilateralData TapBilateralData(FrameUniforms frameUniform, Texture2D<float> InDe
     if (PLANE_WEIGHT > 0.0)
     {
         posInput = GetPositionInput(coordSS, _ScreenSize.zw, posInput.deviceDepth,
-            UNITY_MATRIX_I_VP(frameUniform), UNITY_MATRIX_V(frameUniform));
+            UNITY_MATRIX_I_VP(frameUniform.cameraUniform), UNITY_MATRIX_V(frameUniform.cameraUniform));
         key.position = posInput.positionWS;
     }
 

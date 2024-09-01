@@ -78,7 +78,7 @@ void CSMain(uint3 DispatchThreadID : SV_DispatchThreadID) {
     clipBoundingBox.Extents = float4(clipLocalExtents.x, halfExtentY, clipLocalExtents.z, 0);
 
     float4x4 localToWorldMatrix = mFrameUniforms.terrainUniform.local2WorldMatrix;
-    float4x4 clipFromWorldMatrix = mFrameUniforms.cameraUniform._CurFrameUniform.clipFromWorldMatrix;
+    float4x4 clipFromWorldMatrix = UNITY_MATRIX_VP(mFrameUniforms.cameraUniform);
     float4x4 clipFromLocalMat = mul(clipFromWorldMatrix, localToWorldMatrix);
 
     Frustum frustum = ExtractPlanesDX(clipFromLocalMat);

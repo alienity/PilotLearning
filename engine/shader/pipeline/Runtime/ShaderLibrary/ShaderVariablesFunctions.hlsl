@@ -23,7 +23,7 @@ float3 GetObjectAbsolutePositionWS(RenderDataPerDraw renderDataPerDraw)
 
 float3 GetPrimaryCameraPosition(FrameUniforms frameUniform)
 {
-    return frameUniform.cameraUniform._CurFrameUniform._WorldSpaceCameraPos;
+    return frameUniform.cameraUniform._WorldSpaceCameraPos;
 }
 
 // Could be e.g. the position of a primary camera or a shadow-casting light.
@@ -32,7 +32,7 @@ float3 GetCurrentViewPosition(FrameUniforms frameUniform)
     // This is a generic solution.
     // However, using '_WorldSpaceCameraPos' is better for cache locality,
     // and in case we enable camera-relative rendering, we can statically set the position is 0.
-    return UNITY_MATRIX_I_V(frameUniform)._14_24_34;
+    return UNITY_MATRIX_I_V(frameUniform.cameraUniform)._14_24_34;
 }
 
 // Returns the forward (central) direction of the current view in the world space.
@@ -55,7 +55,7 @@ bool IsPerspectiveProjection(FrameUniforms frameUniform)
     // This is a generic solution.
     // However, using 'unity_OrthoParams' is better for cache locality.
     // TODO: set 'unity_OrthoParams' during the shadow pass.
-    return UNITY_MATRIX_P(frameUniform)[3][3] == 0;
+    return UNITY_MATRIX_P(frameUniform.cameraUniform)[3][3] == 0;
 }
 
 // Computes the world space view direction (pointing towards the viewer).
@@ -83,10 +83,10 @@ float3 GetWorldSpaceNormalizeViewDir(FrameUniforms frameUniform, float3 position
 // making the view space coordinate system left-handed.
 void GetLeftHandedViewSpaceMatrices(FrameUniforms frameUniform, out float4x4 viewMatrix, out float4x4 projMatrix)
 {
-    viewMatrix = UNITY_MATRIX_V(frameUniform);
+    viewMatrix = UNITY_MATRIX_V(frameUniform.cameraUniform);
     viewMatrix._31_32_33_34 = -viewMatrix._31_32_33_34;
 
-    projMatrix = UNITY_MATRIX_P(frameUniform);
+    projMatrix = UNITY_MATRIX_P(frameUniform.cameraUniform);
     projMatrix._13_23_33_43 = -projMatrix._13_23_33_43;
 }
 
@@ -209,7 +209,7 @@ uint2 ComputeFadeMaskSeed(FrameUniforms frameUniform, float3 V, uint2 positionSS
         pv *= frameUniform.baseUniform._ScreenSize.xy;
         // The camera only sees a small portion of the sphere, limited by hFoV and vFoV.
         // Therefore, we must rescale again (before quantization), roughly, by 1/tan(FoV/2).
-        pv *= UNITY_MATRIX_P(frameUniform)._m00_m11;
+        pv *= UNITY_MATRIX_P(frameUniform.cameraUniform)._m00_m11;
         // Truncate and quantize.
         fadeMaskSeed = asuint((int2)pv);
     }

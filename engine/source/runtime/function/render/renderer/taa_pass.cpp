@@ -97,11 +97,12 @@ namespace MoYu
 
     void TAAPass::prepareTAAMetaData(std::shared_ptr<RenderResource> render_resource)
     {
-        uint32_t taaFrameIndex = m_Device->GetLinkedDevice()->m_FrameIndex;
+        uint32_t frameIndex = m_Device->GetLinkedDevice()->m_FrameIndex;
 
-        indexRead = (taaFrameIndex + 1) % 2;
-        indexWrite = taaFrameIndex;
+        indexRead = (frameIndex + 1) % 2;
+        indexWrite = (frameIndex + 0) % 2;
 
+        uint32_t taaFrameIndex = m_render_camera->taaFrameIndex;
         glm::float4 taaJitter = m_render_camera->taaJitter;
 
         // The anti flicker becomes much more aggressive on higher values

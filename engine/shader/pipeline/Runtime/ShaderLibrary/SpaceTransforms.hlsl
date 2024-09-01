@@ -24,24 +24,24 @@ float4x4 GetPrevWorldToObjectMatrix(RenderDataPerDraw renderDataPerDraw)
 
 float4x4 GetWorldToViewMatrix(FrameUniforms frameUniform)
 {
-    return UNITY_MATRIX_V(frameUniform);
+    return UNITY_MATRIX_V(frameUniform.cameraUniform);
 }
 
 float4x4 GetViewToWorldMatrix(FrameUniforms frameUniform)
 {
-    return UNITY_MATRIX_I_V(frameUniform);
+    return UNITY_MATRIX_I_V(frameUniform.cameraUniform);
 }
 
 // Transform to homogenous clip space
 float4x4 GetWorldToHClipMatrix(FrameUniforms frameUniform)
 {
-    return UNITY_MATRIX_VP(frameUniform);
+    return UNITY_MATRIX_VP(frameUniform.cameraUniform);
 }
 
 // Transform to homogenous clip space
 float4x4 GetViewToHClipMatrix(FrameUniforms frameUniform)
 {
-    return UNITY_MATRIX_P(frameUniform);
+    return UNITY_MATRIX_P(frameUniform.cameraUniform);
 }
 
 // This function always return the absolute position in WS

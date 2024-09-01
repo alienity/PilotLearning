@@ -171,40 +171,37 @@ namespace MoYu
         // FrameUniforms
         HLSL::FrameUniforms* _frameUniforms = &m_FrameUniforms;
 
-        // Camera Uniform
-        HLSL::CameraDataBuffer _frameCameraData;
-        _frameCameraData.viewFromWorldMatrix  = view_matrix;
-        _frameCameraData.worldFromViewMatrix  = glm::inverse(_frameCameraData.viewFromWorldMatrix);
-        _frameCameraData.clipFromViewMatrix   = proj_matrix;
-        _frameCameraData.viewFromClipMatrix   = glm::inverse(_frameCameraData.clipFromViewMatrix);
-        _frameCameraData.clipFromWorldMatrix  = proj_matrix * view_matrix;
-        _frameCameraData.worldFromClipMatrix  = glm::inverse(_frameCameraData.clipFromWorldMatrix);
-        _frameCameraData.clipTransform        = glm::float4(1, 1, 1, 1);
-        _frameCameraData._WorldSpaceCameraPos = camera_position;
-        // update camera taa parameters
-        _frameCameraData.unJitterProjectionMatrix = unjitter_proj_matrix;
-        _frameCameraData.unJitterProjectionMatrixInv = glm::inverse(unjitter_proj_matrix);
+        HLSL::CameraUniform& _cameraUniform = _frameUniforms->cameraUniform;
 
-        _frameCameraData._ZBufferParams = CalculateZBufferParams(_cn, _cf);
+        _cameraUniform._PrevViewProjMatrix = _frameUniforms->cameraUniform._NonJitteredViewProjMatrix;
+        _cameraUniform._InvPrevViewProjMatrix = glm::inverse(_cameraUniform._PrevViewProjMatrix);
 
-        HLSL::CameraDataBuffer _prevFrameCameraData = _frameUniforms->cameraUniform._CurFrameUniform;
+        _cameraUniform._NonJitteredProjMatrix = unjitter_proj_matrix;
+        _cameraUniform._NonJitteredViewProjMatrix = unjitter_proj_matrix * view_matrix;
+        _cameraUniform._InvNonJitteredProjMatrix = glm::inverse(_cameraUniform._NonJitteredProjMatrix);
+        _cameraUniform._InvNonJitteredViewProjMatrix = glm::inverse(_cameraUniform._NonJitteredViewProjMatrix);
 
-        HLSL::CameraUniform _cameraUniform;
-        _cameraUniform._PrevFrameUniform = _prevFrameCameraData;
-        _cameraUniform._CurFrameUniform = _frameCameraData;
+        _cameraUniform._ViewProjMatrix = proj_matrix * view_matrix;
+        _cameraUniform._ViewMatrix = view_matrix;
+        _cameraUniform._ProjMatrix = proj_matrix;
+        _cameraUniform._InvViewProjMatrix = glm::inverse(_cameraUniform._ViewProjMatrix);
+        _cameraUniform._InvViewMatrix = glm::inverse(_cameraUniform._ViewMatrix);
+        _cameraUniform._InvProjMatrix = glm::inverse(_cameraUniform._ProjMatrix);
+
+        _cameraUniform._ScreenSize = glm::float4(_cw, _ch, 1.0f / _cw, 1.0f / _ch);
+
+        _cameraUniform._WorldSpaceCameraPos = camera_position;
+        
         _cameraUniform._Resolution = glm::float4(_cw, _ch, 1.0f / _cw, 1.0f / _ch);
-        _cameraUniform._LogicalViewportScale = glm::float2(1.0f, 1.0f);
-        _cameraUniform._LogicalViewportOffset = glm::float2(0.0f, 0.0f);
+
         _cameraUniform._ZBufferParams = CalculateZBufferParams(_cn, _cf);
         _cameraUniform._CameraNear = _cn;
         _cameraUniform._CameraFar = _cf;
         _cameraUniform.unity_MotionVectorsParams = glm::float4(0, 1, 0, 1);
-
-        _frameUniforms->cameraUniform = _cameraUniform;
-
+        
 
         // Base Uniform
-        HLSL::BaseUniform _baseUniform;
+        HLSL::BaseUniform& _baseUniform = _frameUniforms->baseUniform;
         _baseUniform._ScreenSize = glm::float4(_cw, _ch, 1.0f / _cw, 1.0f / _ch);
         _baseUniform._PostProcessScreenSize = glm::float4(_cw, _ch, 1.0f / _cw, 1.0f / _ch);
         _baseUniform._RTHandleScale = glm::float4(1.0f);
@@ -225,16 +222,14 @@ namespace MoYu
         _baseUniform.refractionLodOffset = 0;
         _baseUniform.baseReserved0 = 0;
 
-        _baseUniform._IndirectDiffuseLightingMultiplier = 0.3f;
+        _baseUniform._IndirectDiffuseLightingMultiplier = 1.0f;
         _baseUniform._IndirectDiffuseLightingLayers = 255;
         _baseUniform._ReflectionLightingMultiplier = 1;
         _baseUniform._ReflectionLightingLayers = 255;
 
-        _frameUniforms->baseUniform = _baseUniform;
-
 
         // terrain Uniform
-        HLSL::TerrainUniform _terrainUniform;
+        HLSL::TerrainUniform& _terrainUniform = _frameUniforms->terrainUniform;
         _terrainUniform.terrainSize = 1024;
         _terrainUniform.terrainMaxHeight = 1024;
         if (render_scene->m_terrain_renderers.size() != 0)
@@ -250,18 +245,14 @@ namespace MoYu
         _terrainUniform.world2LocalMatrix = glm::inverse(_terrainUniform.local2WorldMatrix);
         _terrainUniform.prevWorld2LocalMatrix = glm::inverse(_terrainUniform.prevLocal2WorldMatrix);
 
-        _frameUniforms->terrainUniform = _terrainUniform;
-
 
         // mesh Uniform
-        HLSL::MeshUniform _meshUniform;
+        HLSL::MeshUniform& _meshUniform = _frameUniforms->meshUniform;
         _meshUniform.totalMeshCount = render_scene->m_mesh_renderers.size();
 
-        _frameUniforms->meshUniform = _meshUniform;
-        
 
         // IBL Uniform
-        HLSL::IBLUniform _iblUniform;
+        HLSL::IBLUniform& _iblUniform = _frameUniforms->iblUniform;
         //_iblUniform.iblSH
         _iblUniform.iblRoughnessOneLevel = 4;
         _iblUniform.dfg_lut_srv_index    = render_scene->m_ibl_map.m_dfg->GetDefaultSRV()->GetIndex();
@@ -277,20 +268,15 @@ namespace MoYu
             //_iblUniform.iblSH[i] = GLMUtil::fromVec4(render_scene->m_ibl_map.m_SH[i]);
         }
 
-        _frameUniforms->iblUniform = _iblUniform;
-
 
         // Sun Uniform
-        HLSL::VolumeCloudStruct volumeCloudUniform{};
+        HLSL::VolumeCloudStruct& volumeCloudUniform = _frameUniforms->volumeCloudUniform;
         volumeCloudUniform.sunlight_direction = render_scene->m_directional_light.m_direction;
-        _frameUniforms->volumeCloudUniform = volumeCloudUniform;
 
         // Exposure Uniform
-        HLSL::ExposureUniform exposureUniform{};
+        HLSL::ExposureUniform& exposureUniform = _frameUniforms->exposureUniform;
         exposureUniform._ProbeExposureScale = 1.0f;
-        _frameUniforms->exposureUniform = exposureUniform;
-
-
+        
     }
 
     void RenderResource::updateLightUniforms(RenderScene* render_scene)

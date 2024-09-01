@@ -95,6 +95,8 @@ void SHADE_OPAQUE_ENTRY(uint3 dispatchThreadId : SV_DispatchThreadID, uint2 grou
 
     FrameUniforms frameUniform = GetFrameUniforms();
     SamplerStruct samplerStruct = GetSamplerStruct();
+
+    CameraUniform cameraUniform = frameUniform.cameraUniform;
     
     // This need to stay in sync with deferred.shader
     float4 screenSize = frameUniform.baseUniform._ScreenSize;
@@ -103,7 +105,7 @@ void SHADE_OPAQUE_ENTRY(uint3 dispatchThreadId : SV_DispatchThreadID, uint2 grou
     float depth = LoadCameraDepth(cameraDepthTexture, float2(pixelCoord.x, pixelCoord.y));
     
     PositionInputs posInput = GetPositionInput(float2(pixelCoord.x, (screenSize.y) - pixelCoord.y), screenSize.zw, depth,
-        UNITY_MATRIX_I_VP(frameUniform), UNITY_MATRIX_V(frameUniform));
+        UNITY_MATRIX_I_VP(cameraUniform), UNITY_MATRIX_V(cameraUniform));
 
     // For indirect case: we can still overlap inside a tile with the sky/background, reject it
     // Can't rely on stencil as we are in compute shader

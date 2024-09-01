@@ -91,7 +91,7 @@ void CSGTAOHigh( const uint2 pixCoord : SV_DispatchThreadID )
     RWTexture2D<uint>        g_outWorkingAOTerm  = ResourceDescriptorHeap[g_outWorkingAOTerm_index];
     RWTexture2D<unorm float> g_outWorkingEdges   = ResourceDescriptorHeap[g_outWorkingEdges_index];
 
-    float4x4 viewFromWorldMatrix = g_PerframeBuffer.cameraUniform._CurFrameUniform.viewFromWorldMatrix;
+    float4x4 viewFromWorldMatrix = UNITY_MATRIX_V(g_PerframeBuffer.cameraUniform);
     
     lpfloat3 viewspaceNormal = LoadNormal(pixCoord, g_srcNormalmap, viewFromWorldMatrix);
 

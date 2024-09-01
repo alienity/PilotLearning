@@ -57,19 +57,26 @@ struct RenderDataPerDraw
     float4 boundingBoxExtents; // BoundingBox 16
 };
 
-struct CameraDataBuffer
+struct CameraUniform
 {
-    float4x4 viewFromWorldMatrix; // clip    view <- world    : view matrix
-    float4x4 worldFromViewMatrix; // clip    view -> world    : model matrix
-    float4x4 clipFromViewMatrix;  // clip <- view    world    : projection matrix
-    float4x4 viewFromClipMatrix;  // clip -> view    world    : inverse projection matrix
-    float4x4 unJitterProjectionMatrix; // Unjitter projection matrix
-    float4x4 unJitterProjectionMatrixInv; // Unjitter projection matrix inverse
-    float4x4 clipFromWorldMatrix; // clip <- view <- world
-    float4x4 worldFromClipMatrix; // clip -> view -> world
-    float4  clipTransform;       // [sx, sy, tx, ty] only used by VERTEX_DOMAIN_DEVICE
+    float4x4 _PrevViewProjMatrix;
+    float4x4 _InvPrevViewProjMatrix;
+    float4x4 _ViewProjMatrix;
+    float4x4 _NonJitteredProjMatrix;
+    float4x4 _NonJitteredViewProjMatrix;
+    float4x4 _InvNonJitteredProjMatrix;
+    float4x4 _InvNonJitteredViewProjMatrix;
+    float4x4 _ViewMatrix;
+    float4x4 _ProjMatrix;
+    float4x4 _InvViewProjMatrix;
+    float4x4 _InvViewMatrix;
+    float4x4 _InvProjMatrix;
+    float4   _ScreenSize;       // {w, h, 1/w, 1/h}
+    // float4   _FrustumPlanes[6]; // {(a, b, c) = N, d = -dot(N, P)} [L, R, T, B, N, F]
+    
     float3  _WorldSpaceCameraPos;      // camera world position
     uint    jitterIndex;         // jitter index
+    
     // x = 1 or -1 (-1 if projection is flipped)
     // y = near plane
     // z = far plane
@@ -96,20 +103,13 @@ struct CameraDataBuffer
     // z = unused
     // w = 1.0 if camera is ortho, 0.0 if perspective
     float4 unity_OrthoParams;
-};
-
-struct CameraUniform
-{
-    CameraDataBuffer _CurFrameUniform;
-    CameraDataBuffer _PrevFrameUniform;
+    
     float4 _Resolution; // physical viewport width, height, 1/width, 1/height
-    float2 _LogicalViewportScale; // scale-factor to go from physical to logical viewport
-    float2 _LogicalViewportOffset; // offset to go from physical to logical viewport
-    // camera position in view space (when camera_at_origin is enabled), i.e. it's (0,0,0).
-    float4 _ZBufferParams;
+
     float _CameraNear;
     float _CameraFar; // camera *culling* far-plane distance, always positive (projection far is at +inf)
     float2 _Padding0;
+    
     //X : Use last frame positions (right now skinned meshes are the only objects that use this
     //Y : Force No Motion
     //Z : Z bias value

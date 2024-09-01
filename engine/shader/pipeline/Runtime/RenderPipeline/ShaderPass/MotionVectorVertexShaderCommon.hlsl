@@ -65,7 +65,7 @@ PackedVaryingsType MotionVectorVS(FrameUniforms frameUniform, RenderDataPerDraw 
     MotionVectorPositionZBias(frameUniform, varyingsType);
 
     // Use unjiterred matrix for motion vector
-    varyingsType.vpass.positionCS = mul(UNITY_MATRIX_UNJITTERED_VP(frameUniform), float4(varyingsType.vmesh.positionRWS, 1.0));
+    varyingsType.vpass.positionCS = mul(UNITY_MATRIX_UNJITTERED_VP(frameUniform.cameraUniform), float4(varyingsType.vmesh.positionRWS, 1.0));
 
     // Note: unity_MotionVectorsParams.y is 0 is forceNoMotion is enabled
     bool forceNoMotion = frameUniform.cameraUniform.unity_MotionVectorsParams.y == 0.0;
@@ -182,7 +182,7 @@ PackedVaryingsType MotionVectorVS(FrameUniforms frameUniform, RenderDataPerDraw 
         // Final computation from previousPositionRWS (if not already done)
         if (!previousPositionCSComputed)
         {
-            varyingsType.vpass.previousPositionCS = mul(UNITY_MATRIX_PREV_VP(frameUniform), float4(previousPositionRWS, 1.0));
+            varyingsType.vpass.previousPositionCS = mul(UNITY_MATRIX_PREV_VP(frameUniform.cameraUniform), float4(previousPositionRWS, 1.0));
         }
     }
 

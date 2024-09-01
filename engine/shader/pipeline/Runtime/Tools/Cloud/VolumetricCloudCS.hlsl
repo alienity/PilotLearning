@@ -328,9 +328,9 @@ void CSMain( uint3 Gid : SV_GroupID, uint3 GTid : SV_GroupThreadID, uint3 DTid :
     float4 baseColor = sceneColorTex.SampleLevel(simpleSampler, texCoord, 0);
     float4 cloudsColor = float4(0.0, 0.0, 0.0, 0.0f);
     
-    float4x4 InvProj = frameUniform.cameraUniform._CurFrameUniform.unJitterProjectionMatrixInv;
-    float4x4 InvView = frameUniform.cameraUniform._CurFrameUniform.worldFromViewMatrix;
-    float3 cameraPos = frameUniform.cameraUniform._CurFrameUniform._WorldSpaceCameraPos;
+    float4x4 InvProj = UNITY_MATRIX_I_UNJITTERED_P(frameUniform.cameraUniform);
+    float4x4 InvView = UNITY_MATRIX_I_V(frameUniform.cameraUniform);
+    float3 cameraPos = GetCameraPositionWS(frameUniform);
     
     float depth = sceneDepthTex.SampleLevel(simpleSampler, texCoord, 0).r;
     float3 worldPos = ReconstructWorldPosFromDepth(texCoord, depth, InvProj, InvView);

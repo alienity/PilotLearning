@@ -231,7 +231,7 @@ float4x4 OptimizeProjectionMatrix(float4x4 M)
 
 float3 GetCameraPositionWS(FrameUniforms frameUniforms)
 {
-    return frameUniforms.cameraUniform._CurFrameUniform._WorldSpaceCameraPos;
+    return frameUniforms.cameraUniform._WorldSpaceCameraPos;
 }
 
 float4x4 ApplyCameraTranslationToMatrix(float4x4 modelMatrix)
@@ -411,15 +411,23 @@ float4 UnpackVTFeedbackWithAlpha(float4 feedbackWithAlpha)
 }
 
 // Define View/Projection matrix macro
-#define UNITY_MATRIX_V(frameUniforms)             (frameUniforms.cameraUniform._CurFrameUniform.viewFromWorldMatrix)
-#define UNITY_MATRIX_I_V(frameUniforms)           (frameUniforms.cameraUniform._CurFrameUniform.worldFromViewMatrix)
-#define UNITY_MATRIX_P(frameUniforms)             (frameUniforms.cameraUniform._CurFrameUniform.clipFromViewMatrix)
-#define UNITY_MATRIX_I_P(frameUniforms)           (frameUniforms.cameraUniform._CurFrameUniform.viewFromClipMatrix )
-#define UNITY_MATRIX_VP(frameUniforms)            (frameUniforms.cameraUniform._CurFrameUniform.clipFromWorldMatrix)
-#define UNITY_MATRIX_I_VP(frameUniforms)          (frameUniforms.cameraUniform._CurFrameUniform.worldFromClipMatrix)
-#define UNITY_MATRIX_UNJITTERED_VP(frameUniforms) (mul(frameUniforms.cameraUniform._CurFrameUniform.unJitterProjectionMatrix, frameUniforms.cameraUniform._CurFrameUniform.viewFromWorldMatrix))
-#define UNITY_MATRIX_PREV_VP(frameUniforms)       (frameUniforms.cameraUniform._PrevFrameUniform.clipFromWorldMatrix)
-#define UNITY_MATRIX_PREV_I_VP(frameUniforms)     (frameUniforms.cameraUniform._PrevFrameUniform.worldFromClipMatrix)
+#define UNITY_MATRIX_V(cameraUniform)               (cameraUniform._ViewMatrix)
+#define UNITY_MATRIX_I_V(cameraUniform)             (cameraUniform._InvViewMatrix)
+#define UNITY_MATRIX_P(cameraUniform)               (cameraUniform._ProjMatrix)
+#define UNITY_MATRIX_I_P(cameraUniform)             (cameraUniform._InvProjMatrix)
+#define UNITY_MATRIX_VP(cameraUniform)              (cameraUniform._ViewProjMatrix)
+#define UNITY_MATRIX_I_VP(cameraUniform)            (cameraUniform._InvViewProjMatrix)
+#define UNITY_MATRIX_UNJITTERED_P(cameraUniform)    (cameraUniform._NonJitteredProjMatrix)
+#define UNITY_MATRIX_UNJITTERED_VP(cameraUniform)   (cameraUniform._NonJitteredViewProjMatrix)
+#define UNITY_MATRIX_I_UNJITTERED_P(cameraUniform)  (cameraUniform._InvNonJitteredProjMatrix)
+#define UNITY_MATRIX_I_UNJITTERED_VP(cameraUniform) (cameraUniform._InvNonJitteredViewProjMatrix)
+#define UNITY_MATRIX_PREV_VP(cameraUniform)         (cameraUniform._PrevViewProjMatrix)
+#define UNITY_MATRIX_PREV_I_VP(cameraUniform)       (cameraUniform._InvPrevViewProjMatrix)
+
+#define UNITY_MATRIX_MV(cameraUniform, renderDataPerDraw) mul(UNITY_MATRIX_V(cameraUniform), UNITY_MATRIX_M(renderDataPerDraw))
+#define UNITY_MATRIX_T_MV(cameraUniform, renderDataPerDraw) transpose(UNITY_MATRIX_MV(cameraUniform, renderDataPerDraw))
+#define UNITY_MATRIX_IT_MV(cameraUniform, renderDataPerDraw) transpose(mul(UNITY_MATRIX_I_M(renderDataPerDraw), UNITY_MATRIX_I_V(cameraUniform)))
+#define UNITY_MATRIX_MVPs(cameraUniform, renderDataPerDraw) mul(UNITY_MATRIX_VP(cameraUniform), UNITY_MATRIX_M(renderDataPerDraw))
 
 #include "../ShaderLibrary/ShaderVariablesFunctions.hlsl"
 

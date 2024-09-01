@@ -16,11 +16,9 @@ namespace MoYu
 
     void RenderCamera::updatePerFrame()
     {
-        if (EngineConfig::g_AntialiasingMode == EngineConfig::AntialiasingMode::TAAMode)
-        {
-            taaFrameIndex += 1;
-        }
-
+        const int kMaxSampleCount = 8;
+        if (++taaFrameIndex >= kMaxSampleCount)
+            taaFrameIndex = 0;
 
     }
 

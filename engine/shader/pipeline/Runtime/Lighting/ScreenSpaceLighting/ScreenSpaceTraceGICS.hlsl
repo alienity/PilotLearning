@@ -122,7 +122,7 @@ void TRACE_GLOBAL_ILLUMINATION(uint3 dispatchThreadId : SV_DispatchThreadID, uin
     bool killRay = deviceDepth == UNITY_RAW_FAR_CLIP_VALUE;
     // Convert this to a world space position (camera relative)
     PositionInputs posInput = GetPositionInput(inputCoord, _ScreenSize.zw, deviceDepth,
-        UNITY_MATRIX_I_VP(frameUniform), GetWorldToViewMatrix(frameUniform), 0);
+        UNITY_MATRIX_I_VP(frameUniform.cameraUniform), UNITY_MATRIX_V(frameUniform.cameraUniform), 0);
 
     // Compute the view direction (world space)
     float3 viewWS = GetWorldSpaceNormalizeViewDir(frameUniform, posInput.positionWS);
@@ -130,12 +130,12 @@ void TRACE_GLOBAL_ILLUMINATION(uint3 dispatchThreadId : SV_DispatchThreadID, uin
     // Apply normal bias with the magnitude dependent on the distance from the camera.
     // Unfortunately, we only have access to the shading normal, which is less than ideal...
     posInput.positionWS  = camPosWS + (posInput.positionWS - camPosWS) * (1 - 0.001 * rcp(max(dot(normalData.normalWS, viewWS), FLT_EPS)));
-    deviceDepth = ComputeNormalizedDeviceCoordinatesWithZ(posInput.positionWS, UNITY_MATRIX_VP(frameUniform)).z;
+    deviceDepth = ComputeNormalizedDeviceCoordinatesWithZ(posInput.positionWS, UNITY_MATRIX_VP(frameUniform.cameraUniform)).z;
 
     // Ray March along our ray
 
     float3 rayPos;
-    bool hit = RayMarch(_DepthPyramidTexture, _ScreenSize, UNITY_MATRIX_VP(frameUniform), 
+    bool hit = RayMarch(_DepthPyramidTexture, _ScreenSize, UNITY_MATRIX_VP(frameUniform.cameraUniform), 
         _RayMarchingReflectsSky, _RayMarchingSteps, _RayMarchingThicknessScale, _RayMarchingThicknessBias,
         posInput.positionWS, sampleDir, normalData.normalWS, posInput.positionSS, deviceDepth, killRay, rayPos);
 

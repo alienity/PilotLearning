@@ -42,8 +42,10 @@ VSOutput VSMain(uint VertID : SV_VertexID)
 {
     ConstantBuffer<FrameUniforms> mPerFrameUniforms = ResourceDescriptorHeap[perFrameBufferIndex];
 	
-    float4x4 ProjInverse = mPerFrameUniforms.cameraUniform._CurFrameUniform.viewFromClipMatrix;
-    float3x3 ViewInverse = (float3x3) mPerFrameUniforms.cameraUniform._CurFrameUniform.worldFromViewMatrix;
+    // float4x4 ProjInverse = mPerFrameUniforms.cameraUniform._CurFrameUniform.viewFromClipMatrix;
+    // float3x3 ViewInverse = (float3x3) mPerFrameUniforms.cameraUniform._CurFrameUniform.worldFromViewMatrix;
+	float4x4 ProjInverse = UNITY_MATRIX_I_P(mPerFrameUniforms.cameraUniform); //._InvProjMatrix;
+	float3x3 ViewInverse = (float3x3) UNITY_MATRIX_I_V(mPerFrameUniforms.cameraUniform); //._InvViewMatrix;
 
     float2 ScreenUV = float2(uint2(VertID, VertID << 1) & 2);
     float4 ProjectedPos = float4(lerp(float2(-1, 1), float2(1, -1), ScreenUV), 0, 1);
@@ -72,7 +74,7 @@ float4 PSMain(VSOutput vsOutput) : SV_Target0
 	InitAtmosphereSampler(sampler_LinearClamp, sampler_LinearRepeat, sampler_PointClamp, sampler_PointRepeat, atmosphereSampler);
 
     float3 sunDirection = -mPerFrameUniforms.lightDataUniform.directionalLightData.forward;
-    float3 cameraPosWS = mPerFrameUniforms.cameraUniform._CurFrameUniform._WorldSpaceCameraPos;
+    float3 cameraPosWS = GetCameraPositionWS(mPerFrameUniforms);
 
     float3 cameraPos = cameraPosWS / 1000.0f;
 	float3 earthCenter = float3(0, -atmosphereParameters.bottom_radius, 0);

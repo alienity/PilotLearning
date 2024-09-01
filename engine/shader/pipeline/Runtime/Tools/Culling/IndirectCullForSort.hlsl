@@ -33,12 +33,12 @@ void CSMain(uint GroupIndex : SV_GroupIndex, uint3 GroupID : SV_GroupID) {
 
         aabb.Transform(renderData.objectToWorldMatrix);
 
-        Frustum frustum = ExtractPlanesDX(mFrameUniforms.cameraUniform._CurFrameUniform.clipFromWorldMatrix);
+        Frustum frustum = ExtractPlanesDX(UNITY_MATRIX_VP(mFrameUniforms.cameraUniform));
 
         bool visible = FrustumContainsBoundingBox(frustum, aabb) != CONTAINMENT_DISJOINT;
         if (visible)
         {
-            float3 cameraPos  = mFrameUniforms.cameraUniform._CurFrameUniform._WorldSpaceCameraPos;
+            float3 cameraPos  = GetCameraPositionWS(mFrameUniforms);
             float3 aabbCenter = aabb.Center.xyz;
 
             float meshDistance = distance(cameraPos, aabbCenter);

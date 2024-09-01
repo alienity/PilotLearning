@@ -71,6 +71,9 @@ namespace MoYu
     private:
         RHI::RgTextureDesc colorTexDesc;
 
+        RHI::RgTextureDesc postColorTarget0Desc;
+        RHI::RgTextureDesc postColorTarget1Desc;
+
         std::shared_ptr<RHI::D3D12Texture> m_LumaBuffer;
         std::shared_ptr<RHI::D3D12Texture> m_TemporalMinBound;
         std::shared_ptr<RHI::D3D12Texture> m_TemporalMaxBound;

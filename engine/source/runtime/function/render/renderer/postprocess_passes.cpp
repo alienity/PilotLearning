@@ -11,6 +11,12 @@ namespace MoYu
         colorTexDesc = init_info.colorTexDesc;
         colorTexDesc.SetAllowRenderTarget(false);
 
+        postColorTarget0Desc = colorTexDesc;
+        postColorTarget0Desc.Name = "PostColorTarget0";
+
+        postColorTarget1Desc = colorTexDesc;
+        postColorTarget0Desc.Name = "PostColorTarget1";
+
         RenderPassCommonInfo renderPassCommonInfo = {m_RenderGraphAllocator, m_RenderGraphRegistry, m_Device, m_WindowSystem};
 
         // MSAA
@@ -149,8 +155,8 @@ namespace MoYu
         RHI::RgResourceHandle inputSceneColorHandle = passInput.inputSceneColorHandle;
         RHI::RgResourceHandle inputSceneDepthHandle = passInput.inputSceneDepthHandle;
 
-        RHI::RgResourceHandle postTargetColorHandle0 = graph.Create<RHI::D3D12Texture>(colorTexDesc);
-        RHI::RgResourceHandle postTargetColorHandle1 = graph.Create<RHI::D3D12Texture>(colorTexDesc);
+        RHI::RgResourceHandle postTargetColorHandle0 = graph.Create<RHI::D3D12Texture>(postColorTarget0Desc);
+        RHI::RgResourceHandle postTargetColorHandle1 = graph.Create<RHI::D3D12Texture>(postColorTarget1Desc);
 
         //initializeResolveTarget(graph, drawPassOutput);
 

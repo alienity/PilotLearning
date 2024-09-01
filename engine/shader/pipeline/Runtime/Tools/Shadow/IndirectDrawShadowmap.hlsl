@@ -51,7 +51,7 @@ VertexOutput VSMain(VertexInput input)
     HDShadowData shadowData = g_FramUniforms.lightDataUniform.shadowDatas[lightData.shadowDataIndex];
     float4x4 view_proj_mat = shadowData.viewProjMatrix;
     #else
-    float4x4 view_proj_mat = g_FramUniforms.cameraUniform._CurFrameUniform.clipFromWorldMatrix;
+    float4x4 view_proj_mat = UNITY_MATRIX_VP(g_FramUniforms.cameraUniform);
     #endif
 
     output.positionWS = mul(meshData.objectToWorldMatrix, float4(input.position, 1.0f)).xyz;

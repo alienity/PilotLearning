@@ -39,6 +39,7 @@ Varyings Vert(Attributes input)
 void Frag(Varyings input, out float4 outColor : SV_Target0)
 {
     FrameUniforms frameUniform = GetFrameUniforms();
+    CameraUniform cameraUniform = frameUniform.cameraUniform;
 
     float4 screenSize = frameUniform.baseUniform._ScreenSize;
 
@@ -46,13 +47,13 @@ void Frag(Varyings input, out float4 outColor : SV_Target0)
     float depth = LoadCameraDepth(depthPyramidRT, input.positionCS.xy);
 
     PositionInputs posInput = GetPositionInput(input.positionCS.xy, screenSize.zw, depth,
-        UNITY_MATRIX_I_VP(frameUniform), UNITY_MATRIX_V(frameUniform));
+        UNITY_MATRIX_I_VP(cameraUniform), UNITY_MATRIX_V(cameraUniform));
 
     float4 worldPos = float4(posInput.positionWS, 1.0);
     float4 prevPos = worldPos;
 
-    float4 prevClipPos = mul(UNITY_MATRIX_PREV_VP(frameUniform), prevPos);
-    float4 curClipPos = mul(UNITY_MATRIX_UNJITTERED_VP(frameUniform), worldPos);
+    float4 prevClipPos = mul(UNITY_MATRIX_PREV_VP(cameraUniform), prevPos);
+    float4 curClipPos = mul(UNITY_MATRIX_UNJITTERED_VP(cameraUniform), worldPos);
 
     float2 previousPositionCS = prevClipPos.xy / prevClipPos.w;
     float2 positionCS = curClipPos.xy / curClipPos.w;

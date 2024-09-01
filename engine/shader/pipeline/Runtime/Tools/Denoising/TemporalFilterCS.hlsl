@@ -91,7 +91,7 @@ void ValidateHistory(uint3 dispatchThreadId : SV_DispatchThreadID, uint2 groupTh
     // Get the posinputs of the current version of the pixel
     float depth = LOAD_TEXTURE2D(_DepthTexture, centerCoord).r;
     PositionInputs posInputs = GetPositionInput(centerCoord, _ScreenSize.zw, depth,
-        UNITY_MATRIX_I_VP(frameUniforms), GetWorldToViewMatrix(frameUniforms));
+        UNITY_MATRIX_I_VP(frameUniforms.cameraUniform), GetWorldToViewMatrix(frameUniforms));
 
     // Initialize the history validation result
     uint historyRejectionResult = 0;
@@ -132,7 +132,7 @@ void ValidateHistory(uint3 dispatchThreadId : SV_DispatchThreadID, uint2 groupTh
     DecodeFromNormalBuffer(_NormalBufferTexture, centerCoord, normalData);
 
     // Compute the world space position (from previous frame)
-    float3 historyPositionWS = ComputeWorldSpacePosition(historyUVUnscaled, historyDepth, UNITY_MATRIX_PREV_I_VP(frameUniforms));
+    float3 historyPositionWS = ComputeWorldSpacePosition(historyUVUnscaled, historyDepth, UNITY_MATRIX_PREV_I_VP(frameUniforms.cameraUniform));
 
     // Compute the max reprojection distance. This is evaluated as the max between a fixed radius value and an approximation of the footprint of the pixel.
     float maxRadius = ComputeMaxReprojectionWorldRadius(frameUniforms, posInputs.positionWS, normalData.normalWS, _PixelSpreadAngleTangent);
@@ -213,7 +213,7 @@ void TemporalAccumulation(uint3 dispatchThreadId : SV_DispatchThreadID, uint2 gr
 
     // Fetch the position of the current pixel
     PositionInputs posInputs = GetPositionInput(sourceCoord, _ScreenSize.zw, depth,
-        UNITY_MATRIX_I_VP(frameUniforms), GetWorldToViewMatrix(frameUniforms));
+        UNITY_MATRIX_I_VP(frameUniforms.cameraUniform), GetWorldToViewMatrix(frameUniforms));
 
     // Compute the velocity information for this pixel
     float2 velocity = float2(0.0, 0.0);
