@@ -95,7 +95,7 @@ namespace EngineConfig
         float taaHistorySharpening = 0.35f; // Strength of the sharpening of the history sampled for TAA.
         float taaAntiFlicker = 0.5f; // Drive the anti-flicker mechanism. With high values flickering might be reduced, but it can lead to more ghosting or disocclusion artifacts.
         float taaMotionVectorRejection = 0.0f;// Higher this value, more likely history will be rejected when current and reprojected history motion vector differ by a substantial amount. High values can decrease ghosting but will also reintroduce aliasing on the aforementioned cases.
-        float taaBaseBlendFactor = 0.875f; // Determines how much the history buffer is blended together with current frame result. Higher values means more history contribution.
+        float taaBaseBlendFactor = 0.45f; // Determines how much the history buffer is blended together with current frame result. Higher values means more history contribution.
 
         float taaJitterScale =  1.0f; // Scale to apply to the jittering applied when TAA is enabled.
     };
