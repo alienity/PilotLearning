@@ -155,9 +155,29 @@ namespace EngineConfig
     };
     extern ToneMappingConfig g_ToneMappingConfig;
 
+    enum ScreenSpaceReflectionAlgorithm
+    {
+        /// <summary>Legacy SSR approximation.</summary>
+        Approximation,
+        /// <summary>Screen Space Reflection, Physically Based with Accumulation through multiple frame.</summary>
+        PBRAccumulation
+    };
+
     struct SSRConfig
     {
-        int SSRMaxRaySteps = 64; // Maximum number of rays for Screen Space Reflection for each quality level.
+        bool reflectSky = false; // When enabled, SSR handles sky reflection for opaque objects (not supported for SSR on transparent).
+        ScreenSpaceReflectionAlgorithm usedAlgorithm = Approximation; // Screen Space Reflections Algorithm used.
+        float screenFadeDistance = 0.1f; // Controls the typical thickness of objects the reflection rays may pass behind.
+        int rayMaxIterations = 64; // Sets the maximum number of steps HDRP uses for raytracing. Affects both correctness and performance.
+        float depthBufferThickness = 0.01f; // Controls the distance at which HDRP fades out SSR near the edge of the screen.
+        float accumulationFactor = 0.75f; // Controls the amount of accumulation (0 no accumulation, 1 just accumulate)
+        float biasFactor = 0.5f; // For PBR: Controls the bias of accumulation (0 no bias, 1 bias ssr)
+        bool enableWorldSpeedRejection = false; // When enabled, world space speed from Motion vector is used to reject samples.
+        float speedRejectionParam = 0.5f; // Controls the likelihood history will be rejected based on the previous frame motion vectors of both the surface and the hit object in world space.
+        float speedRejectionScalerFactor = 0.2f; // Controls the upper range of speed. The faster the objects or camera are moving, the higher this number should be.
+        bool speedSmoothReject = false; // When enabled, history can be partially rejected for moving objects which gives a smoother transition. When disabled, history is either kept or totally rejected.
+        bool speedSurfaceOnly = true; // When enabled, speed rejection used world space motion of the reflecting surface.
+        bool speedTargetOnly = true; // When enabled, speed rejection used world space motion of the hit surface by the SSR.
     };
 
     extern SSRConfig g_SSRConfig;

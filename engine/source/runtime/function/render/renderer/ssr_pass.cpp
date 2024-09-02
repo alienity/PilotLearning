@@ -156,43 +156,63 @@ namespace MoYu
     {
         m_bluenoise = m_render_scene->m_bluenoise_map.m_bluenoise_64x64_uni;
 
+        int curFrameIndex = m_Device->GetLinkedDevice()->m_FrameIndex;
+
         HLSL::FrameUniforms* _frameUniforms = &(render_resource->m_FrameUniforms);
 
-        glm::float2 costMapSize = glm::float2(colorTexDesc.Width, colorTexDesc.Height);
-        glm::float2 raycastSize = glm::float2(colorTexDesc.Width, colorTexDesc.Height);
-        glm::float2 resolveSize = glm::float2(colorTexDesc.Width, colorTexDesc.Height);
-
-        glm::float2 jitterSample = GenerateRandomOffset();
-
-        std::shared_ptr<RHI::D3D12Texture> pBlueNoiseUniMap = m_render_scene->m_bluenoise_map.m_bluenoise_64x64_uni;
-        float noiseWidth = pBlueNoiseUniMap->GetWidth();
-        float noiseHeight = pBlueNoiseUniMap->GetHeight();
+        //std::shared_ptr<RHI::D3D12Texture> pBlueNoiseUniMap = m_render_scene->m_bluenoise_map.m_bluenoise_64x64_uni;
 
         const int kMaxLods = 8;
         int lodCount = glm::log2((float)glm::min(colorTexDesc.Width, colorTexDesc.Height));
         lodCount = glm::min(lodCount, kMaxLods);
 
-        HLSL::SSRUniform ssrUniform = {};
+        float n = m_render_camera->m_nearClipPlane;
+        float f = m_render_camera->m_farClipPlane;
+        float thickness = EngineConfig::g_SSRConfig.depthBufferThickness;
 
-        ssrUniform.ScreenSize = glm::float4(colorTexDesc.Width, colorTexDesc.Height, 1.0f / colorTexDesc.Width, 1.0f / colorTexDesc.Height);
-        ssrUniform.RayCastSize = glm::float4(raycastSize.x, raycastSize.y, 1.0f / raycastSize.x, 1.0f / raycastSize.y);
-        ssrUniform.ResolveSize = glm::float4(resolveSize.x, resolveSize.y, 1.0f / resolveSize.x, 1.0f / resolveSize.y);
-        ssrUniform.JitterSizeAndOffset = glm::float4((float)colorTexDesc.Width / (float)noiseWidth,
-                                                     (float)colorTexDesc.Height / (float)noiseHeight,
-                                                     jitterSample.x,
-                                                     jitterSample.y);
-        ssrUniform.NoiseSize       = glm::float4(noiseWidth, noiseHeight, 1.0f / noiseWidth, 1.0f / noiseHeight);
-        ssrUniform.SmoothnessRange = 1.0f;
-        ssrUniform.BRDFBias        = 0.7f;
-        ssrUniform.TResponseMin    = 0.85f;
-        ssrUniform.TResponseMax    = 0.99f;//1.0f;
-        ssrUniform.EdgeFactor      = 0.25f;
-        ssrUniform.Thickness       = 0.01f;
-        ssrUniform.NumSteps        = 60;
-        ssrUniform.MaxMipMap       = lodCount;
+        float smoothnessFadeStart = 0.5f;
+        float minSmoothness = 0.4f;
+        int colorPyramidHistoryMipCount = lodCount;
+        int mipLevelCount = lodCount;
 
-        // SSR Uniform
-        _frameUniforms->ssrUniform = ssrUniform;
+        HLSL::SSRUniform sb = {};
+
+        sb._SsrThicknessScale = 1.0f / (1.0f + thickness);
+        sb._SsrThicknessBias = -n / (f - n) * (thickness * sb._SsrThicknessScale);
+        sb._SsrIterLimit = EngineConfig::g_SSRConfig.rayMaxIterations;
+        // We disable sky reflection for transparent in case of a scenario where a transparent object seeing the sky through it is visible in the reflection.
+        // As it has no depth it will appear extremely distorted (depth at infinity). This scenario happen frequently when you have transparent objects above water.
+        // Note that the sky is still visible, it just takes its value from reflection probe/skybox rather than on screen.
+        sb._SsrReflectsSky = EngineConfig::g_SSRConfig.reflectSky;
+        sb._SsrStencilBit = (int)MoYu::StencilUsage::TraceReflectionRay;;
+        float roughnessFadeStart = 1 - smoothnessFadeStart;
+        sb._SsrRoughnessFadeEnd = 1 - minSmoothness;
+        float roughnessFadeLength = sb._SsrRoughnessFadeEnd - roughnessFadeStart;
+        sb._SsrRoughnessFadeEndTimesRcpLength = (roughnessFadeLength != 0) ? (sb._SsrRoughnessFadeEnd * (1.0f / roughnessFadeLength)) : 1;
+        sb._SsrRoughnessFadeRcpLength = (roughnessFadeLength != 0) ? (1.0f / roughnessFadeLength) : 0;
+        sb._SsrEdgeFadeRcpLength = glm::min(1.0f / EngineConfig::g_SSRConfig.screenFadeDistance, std::numeric_limits<float>::max());
+        sb._SsrColorPyramidMaxMip = colorPyramidHistoryMipCount - 1;
+        sb._SsrDepthPyramidMaxMip = mipLevelCount - 1;
+        if (curFrameIndex <= 3)
+        {
+            sb._SsrAccumulationAmount = 1.0f;
+        }
+        else
+        {
+            sb._SsrAccumulationAmount = glm::pow(2, glm::lerp(0.0f, -7.0f, EngineConfig::g_SSRConfig.accumulationFactor));
+        }
+        if (EngineConfig::g_SSRConfig.enableWorldSpeedRejection && !EngineConfig::g_SSRConfig.speedSmoothReject)
+        {
+            sb._SsrPBRSpeedRejection = glm::clamp(1.0f - EngineConfig::g_SSRConfig.speedRejectionParam, 0.0f, 1.0f);
+        }
+        else
+        {
+            sb._SsrPBRSpeedRejection = glm::clamp(EngineConfig::g_SSRConfig.speedRejectionParam, 0.0f, 1.0f);
+        }
+        sb._SsrPBRBias = EngineConfig::g_SSRConfig.biasFactor;
+        sb._SsrPRBSpeedRejectionScalerFactor = glm::pow(EngineConfig::g_SSRConfig.speedRejectionScalerFactor * 0.1f, 2.0f);
+
+        _frameUniforms->ssrUniform = sb;
 
 
         if (p_temporalResults[0] == nullptr)

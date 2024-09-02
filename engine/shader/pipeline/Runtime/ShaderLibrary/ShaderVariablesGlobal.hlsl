@@ -133,13 +133,14 @@ struct BaseUniform
     float4 _DeltaTime; // dt, 1/dt, smoothdt, 1/smoothdt
     float4 _TimeParameters; // t, sin(t), cos(t)
     float4 _LastTimeParameters;
-    
+
     float4 temporalNoise; // noise [0,1] when TAA is used, 0 otherwise
+
     float needsAlphaChannel;
     float lodBias; // load bias to apply to user materials
     float refractionLodOffset;
-    float baseReserved0;
-
+    int _FrameCount;
+    
     float _IndirectDiffuseLightingMultiplier;
     uint _IndirectDiffuseLightingLayers;
     float _ReflectionLightingMultiplier;
@@ -210,21 +211,41 @@ struct IBLUniform
 
 struct SSRUniform
 {
-    float4 ScreenSize;
-    float4 ResolveSize;
-    float4 RayCastSize;
-    float4 JitterSizeAndOffset;
-    float4 NoiseSize;
+    float _SsrThicknessScale;
+    float _SsrThicknessBias;
+    int _SsrStencilBit;
+    int _SsrIterLimit;
+    
+    float _SsrRoughnessFadeEnd;
+    float _SsrRoughnessFadeRcpLength;
+    float _SsrRoughnessFadeEndTimesRcpLength;
+    float _SsrEdgeFadeRcpLength;
 
-    float  SmoothnessRange;
-    float  BRDFBias;
-    float  TResponseMin;
-    float  TResponseMax;
+    int _SsrDepthPyramidMaxMip;
+    int _SsrColorPyramidMaxMip;
+    int _SsrReflectsSky;
+    float _SsrAccumulationAmount;
+    
+    float _SsrPBRSpeedRejection;
+    float _SsrPBRBias;
+    float _SsrPRBSpeedRejectionScalerFactor;
+    float _SsrPBRPad0;
+    
+    //float4 ScreenSize;
+    //float4 ResolveSize;
+    //float4 RayCastSize;
+    //float4 JitterSizeAndOffset;
+    //float4 NoiseSize;
 
-    float  EdgeFactor;
-    float  Thickness;
-    int    NumSteps;
-    int    MaxMipMap;
+    //float  SmoothnessRange;
+    //float  BRDFBias;
+    //float  TResponseMin;
+    //float  TResponseMax;
+
+    //float  EdgeFactor;
+    //float  Thickness;
+    //int    NumSteps;
+    //int    MaxMipMap;
 };
 
 struct SSGIStruct

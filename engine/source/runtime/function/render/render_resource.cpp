@@ -166,6 +166,8 @@ namespace MoYu
         double _pt = g_SystemTime.GetPrevTimeSecs();
         double _dt = g_SystemTime.GetDeltaTimeSecs();
 
+        int frameIndex = m_Device->GetLinkedDevice()->m_FrameIndex;
+
         glm::float4x4 unjitter_proj_matrix = camera->getProjMatrix(true);
         
         // FrameUniforms
@@ -220,7 +222,8 @@ namespace MoYu
         _baseUniform.needsAlphaChannel = 1;
         _baseUniform.lodBias = 0;
         _baseUniform.refractionLodOffset = 0;
-        _baseUniform.baseReserved0 = 0;
+
+        _baseUniform._FrameCount = frameIndex;
 
         _baseUniform._IndirectDiffuseLightingMultiplier = 1.0f;
         _baseUniform._IndirectDiffuseLightingLayers = 255;
