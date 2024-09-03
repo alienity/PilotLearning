@@ -70,8 +70,6 @@ struct SSRStruct
     float _SsrPBRPad0;
 };
 
-#define SSR_TRACE
-
 SamplerState s_point_clamp_sampler      : register(s10);
 SamplerState s_linear_clamp_sampler     : register(s11);
 SamplerState s_linear_repeat_sampler    : register(s12);
@@ -142,12 +140,10 @@ float PerceptualRoughnessFade(float perceptualRoughness, float fadeRcpLength, fl
 #ifdef SSR_TRACE
 void GetHitInfos(
     FrameUniforms frameUniform, float4 _RTHandleScale, int _FrameCount, float _SsrPBRBias, float4 _ScreenSize,
-    Texture2D<float4> _SsrHitPointTexture, Texture2D<float4> normalBufferTexture, Texture2D<float> _CameraDepthTexture, Texture2D<float> _OwenScrambledTexture, Texture2D<float> _ScramblingTileXSPP, Texture2D<float> _RankingTileXSPP,
-    uint2 positionSS, out float2 hitPositionNDC, out float srcPerceptualRoughness, out float3 positionWS, out float weight, out float3 N, out float3 L, out float3 V, out float NdotL, out float NdotH, out float VdotH, out float NdotV)
+    Texture2D<float4> normalBufferTexture, Texture2D<float> _CameraDepthTexture, Texture2D<float> _OwenScrambledTexture, Texture2D<float> _ScramblingTileXSPP, Texture2D<float> _RankingTileXSPP,
+    uint2 positionSS, out float srcPerceptualRoughness, out float3 positionWS, out float weight, out float3 N, out float3 L, out float3 V, out float NdotL, out float NdotH, out float VdotH, out float NdotV)
 {
     float2 uv = float2(positionSS) * _RTHandleScale.xy;
-
-    hitPositionNDC = _SsrHitPointTexture[positionSS].xy;
 
     float2 Xi;
     Xi.x = GetBNDSequenceSample(_OwenScrambledTexture, _ScramblingTileXSPP, _RankingTileXSPP, positionSS, _FrameCount, 0);
@@ -246,10 +242,12 @@ float2 GetWorldSpacePoint(
 }
 
 float3 GetHitColor(
-    FrameUniforms frameUniform, Texture2D<float> _CameraDepthTexture, Texture2D<float4> _SsrHitPointTexture,
+    Texture2D<float4> _CameraMotionVectorsTexture, Texture2D<float4> _ColorPyramidTexture, 
+    float4 _ScreenSize, float4 _RTHandleScale, float4 _ColorPyramidUvScaleAndLimitPrevFrame,
+    float _SsrRoughnessFadeRcpLength, float _SsrRoughnessFadeEndTimesRcpLength, float _SsrEdgeFadeRcpLength,
     float2 hitPositionNDC, float perceptualRoughness, out float opacity, int mipLevel = 0)
 {
-    float2 prevFrameNDC = GetHitNDC(hitPositionNDC);
+    float2 prevFrameNDC = GetHitNDC(_CameraMotionVectorsTexture, _ScreenSize, _RTHandleScale, hitPositionNDC);
     float2 prevFrameUV = prevFrameNDC * _ColorPyramidUvScaleAndLimitPrevFrame.xy;
 
     float tmpCoef = PerceptualRoughnessFade(perceptualRoughness, _SsrRoughnessFadeRcpLength, _SsrRoughnessFadeEndTimesRcpLength);
@@ -257,18 +255,24 @@ float3 GetHitColor(
     return SAMPLE_TEXTURE2D_LOD(_ColorPyramidTexture, s_trilinear_clamp_sampler, prevFrameUV, mipLevel).rgb;
 }
 
-float2 GetSampleInfo(uint2 positionSS, out float3 color, out float weight, out float opacity)
+float2 GetSampleInfo(
+    FrameUniforms frameUniform, Texture2D<float4> _SsrHitPointTexture, Texture2D<float> _CameraDepthTexture,
+    Texture2D<float4> _CameraMotionVectorsTexture, Texture2D<float4> _ColorPyramidTexture, Texture2D<float4> _NormalTexture,
+    float4 _ScreenSize, float4 _ColorPyramidUvScaleAndLimitPrevFrame, float _SsrRoughnessFadeRcpLength,
+    float _SsrRoughnessFadeEndTimesRcpLength, float _SsrEdgeFadeRcpLength,
+    float4 _RTHandleScale, uint2 positionSS, out float3 color, out float weight, out float opacity)
 {
     float3 positionSrcWS;
     float3 positionDstWS;
-    float2 hitData = GetWorldSpacePoint(positionSS, positionSrcWS, positionDstWS);
+    float2 hitData = GetWorldSpacePoint(frameUniform, _CameraDepthTexture,
+        _SsrHitPointTexture, _RTHandleScale, positionSS, positionSrcWS, positionDstWS);
 
-    float3 V = GetWorldSpaceNormalizeViewDir(positionSrcWS);
+    float3 V = GetWorldSpaceNormalizeViewDir(frameUniform, positionSrcWS);
     float3 L = normalize(positionDstWS - positionSrcWS);
     float3 H = normalize(V + L);
 
     NormalData normalData;
-    DecodeFromNormalBuffer(positionSS, normalData);
+    DecodeFromNormalBuffer(_NormalTexture, positionSS, normalData);
 
     float roughness = PerceptualRoughnessToRoughness(normalData.perceptualRoughness);
 
@@ -276,19 +280,22 @@ float2 GetSampleInfo(uint2 positionSS, out float3 color, out float weight, out f
 
     weight = GetSSRSampleWeight(V, L, roughness);
 
-    color = GetHitColor(hitData.xy, normalData.perceptualRoughness, opacity, 0);
+    color = GetHitColor(_CameraMotionVectorsTexture, _ColorPyramidTexture, _ScreenSize, _RTHandleScale,
+        _ColorPyramidUvScaleAndLimitPrevFrame, _SsrRoughnessFadeRcpLength, _SsrRoughnessFadeEndTimesRcpLength,
+        _SsrEdgeFadeRcpLength, hitData.xy, normalData.perceptualRoughness, opacity, 0);
 
     return hitData;
 }
 
-void GetNormalAndPerceptualRoughness(uint2 positionSS, out float3 normalWS, out float perceptualRoughness)
+void GetNormalAndPerceptualRoughness(Texture2D<float4> _NormalTexture, uint2 positionSS, out float3 normalWS, out float perceptualRoughness)
 {
     // Load normal and perceptualRoughness.
     NormalData normalData;
-    DecodeFromNormalBuffer(positionSS, normalData);
+    DecodeFromNormalBuffer(_NormalTexture, positionSS, normalData);
     normalWS = normalData.normalWS;
-    float4 packedCoatMask = _SsrClearCoatMaskTexture[positionSS];
-    perceptualRoughness = HasClearCoatMask(packedCoatMask) ? CLEAR_COAT_SSR_PERCEPTUAL_ROUGHNESS : normalData.perceptualRoughness;
+    // float4 packedCoatMask = _SsrClearCoatMaskTexture[positionSS];
+    // perceptualRoughness = HasClearCoatMask(packedCoatMask) ? CLEAR_COAT_SSR_PERCEPTUAL_ROUGHNESS : normalData.perceptualRoughness;
+    perceptualRoughness = normalData.perceptualRoughness;
 }
 
 void WriteDebugInfo(uint2 positionSS, float4 value)
@@ -310,16 +317,14 @@ cbuffer RootConstants : register(b0, space0)
 {
     uint frameUniformIndex;
     uint ssrStructBufferIndex;
-    uint cameraMotionVectorsTextureIndex;
     uint normalBufferIndex;
     uint depthTextureIndex;
+    uint cameraMotionVectorsTextureIndex;
     uint SsrHitPointTextureIndex;
     
     uint OwenScrambledTextureIndex;
     uint ScramblingTileXSPPIndex;
     uint RankingTileXSPPIndex;
-
-    uint 
 };
 
 [numthreads(8, 8, 1)]
@@ -329,16 +334,18 @@ void ScreenSpaceReflectionsTracing(uint3 groupId          : SV_GroupID,
     ConstantBuffer<FrameUniforms> frameUniform = ResourceDescriptorHeap[frameUniformIndex];
     ConstantBuffer<SSRStruct> ssrStruct = ResourceDescriptorHeap[ssrStructBufferIndex];
     Texture2D<float4> normalTexture = ResourceDescriptorHeap[normalBufferIndex];
-    Texture2D<float4> depthTexture = ResourceDescriptorHeap[depthTextureIndex];
-
-    Texture2D<float4> _SsrHitPointTexture = ResourceDescriptorHeap[SsrHitPointTextureIndex];
+    Texture2D<float> depthTexture = ResourceDescriptorHeap[depthTextureIndex];
+    Texture2D<float4> cameraMotionVectorsTexture = ResourceDescriptorHeap[cameraMotionVectorsTextureIndex];
+    
+    RWTexture2D<float2> _SsrHitPointTexture = ResourceDescriptorHeap[SsrHitPointTextureIndex];
+    
     Texture2D<float> _OwenScrambledTexture = ResourceDescriptorHeap[OwenScrambledTextureIndex];
     Texture2D<float> _ScramblingTileXSPP = ResourceDescriptorHeap[ScramblingTileXSPPIndex];
     Texture2D<float> _RankingTileXSPP = ResourceDescriptorHeap[RankingTileXSPPIndex];
     
     CameraUniform cameraUniform = frameUniform.cameraUniform;
 
-    float _ScreenSize = frameUniform.baseUniform._ScreenSize;
+    float4 _ScreenSize = frameUniform.baseUniform._ScreenSize;
     int _FrameCount = frameUniform.baseUniform._FrameCount;
 
 
@@ -361,6 +368,8 @@ void ScreenSpaceReflectionsTracing(uint3 groupId          : SV_GroupID,
     float _SsrPBRBias = ssrStruct._SsrPBRBias;
     float _SsrPRBSpeedRejectionScalerFactor = ssrStruct._SsrPRBSpeedRejectionScalerFactor;
     float _SsrPBRPad0 = ssrStruct._SsrPBRPad0;
+
+    float4 _RTHandleScale = float4(1,1,1,1);
     
     uint2 positionSS = dispatchThreadId.xy;
 
@@ -410,12 +419,11 @@ void ScreenSpaceReflectionsTracing(uint3 groupId          : SV_GroupID,
     float NdotL, NdotH, VdotH, NdotV;
     float3 R, V, N;
     float3 positionWS;
-    float2 hitPositionNDC;
     float perceptualRoughness;
     GetHitInfos(
-        frameUniform, float4(1, 1, 1, 1), _FrameCount, _SsrPBRBias, _ScreenSize,
-        _SsrHitPointTexture, normalTexture, depthTexture, _OwenScrambledTexture, _ScramblingTileXSPP, _RankingTileXSPP, 
-        positionSS, hitPositionNDC, perceptualRoughness, positionWS, weight, N, R, V, NdotL, NdotH, VdotH, NdotV);
+        frameUniform, _RTHandleScale, _FrameCount, _SsrPBRBias, _ScreenSize,
+        normalTexture, depthTexture, _OwenScrambledTexture, _ScramblingTileXSPP, _RankingTileXSPP, 
+        positionSS, perceptualRoughness, positionWS, weight, N, R, V, NdotL, NdotH, VdotH, NdotV);
 
     if (NdotL < 0.001f || weight < 0.001f)
     {

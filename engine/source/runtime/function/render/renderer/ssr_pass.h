@@ -56,9 +56,9 @@ namespace MoYu
     private:
         int passIndex;
 
-        Shader SSRRaycastCS;
-        std::shared_ptr<RHI::D3D12RootSignature> pSSRRaycastSignature;
-        std::shared_ptr<RHI::D3D12PipelineState> pSSRRaycastPSO;
+        Shader SSRTraceCS;
+        std::shared_ptr<RHI::D3D12RootSignature> pSSRTraceSignature;
+        std::shared_ptr<RHI::D3D12PipelineState> pSSRTracePSO;
 
         Shader SSRResolveCS;
         std::shared_ptr<RHI::D3D12RootSignature> pSSRResolveSignature;

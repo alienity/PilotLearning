@@ -21,11 +21,11 @@ namespace MoYu
 
         raycastResultDesc =
             RHI::RgTextureDesc("RaycastResultMap")
-                .SetFormat(DXGI_FORMAT::DXGI_FORMAT_R32G32B32A32_FLOAT)
+                .SetFormat(DXGI_FORMAT::DXGI_FORMAT_R32G32_FLOAT)
                 .SetExtent(colorTexDesc.Width, colorTexDesc.Height)
                 .SetSampleCount(colorTexDesc.SampleCount)
                 .SetAllowUnorderedAccess(true)
-                .SetClearValue(RHI::RgClearValue(0.0f, 0.0f, 0.0f, 0.0f, DXGI_FORMAT::DXGI_FORMAT_R32G32B32A32_FLOAT));
+                .SetClearValue(RHI::RgClearValue(0.0f, 0.0f, 0.0f, 0.0f, DXGI_FORMAT::DXGI_FORMAT_R32G32_FLOAT));
 
         raycastMaskDesc =
             RHI::RgTextureDesc("RaycastMaskMap")
@@ -47,41 +47,40 @@ namespace MoYu
         std::filesystem::path m_ShaderRootPath = init_info.m_ShaderRootPath;
 
         {
-            SSRRaycastCS =
-                m_ShaderCompiler->CompileShader(RHI_SHADER_TYPE::Compute,
-                                                m_ShaderRootPath / "hlsl/SSRRaycastCS.hlsl",
-                                                ShaderCompileOptions(L"CSRaycast"));
+            ShaderCompileOptions shaderCompileOpt = ShaderCompileOptions(L"ScreenSpaceReflectionsTracing");
+            shaderCompileOpt.SetDefine(L"SSR_TRACE", L"1");
+
+            SSRTraceCS = m_ShaderCompiler->CompileShader(
+                RHI_SHADER_TYPE::Compute, m_ShaderRootPath / "pipeline/Runtime/Lighting/ScreenSpaceLighting/ScreenSpaceReflectionsCS.hlsl",
+                shaderCompileOpt);
 
             RHI::RootSignatureDesc rootSigDesc =
                 RHI::RootSignatureDesc()
-                    .Add32BitConstants<0, 0>(12)
-                    .AddStaticSampler<10, 0>(D3D12_FILTER::D3D12_FILTER_ANISOTROPIC,
-                                             D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_WRAP,
-                                             8)
-                    .AddStaticSampler<11, 0>(D3D12_FILTER::D3D12_FILTER_MIN_MAG_MIP_LINEAR,
-                                             D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_BORDER,
-                                             8,
-                                             D3D12_COMPARISON_FUNC_LESS_EQUAL,
-                                             D3D12_STATIC_BORDER_COLOR_OPAQUE_BLACK)
+                    .Add32BitConstants<0, 0>(16)
+                    .AddStaticSampler<10, 0>(D3D12_FILTER::D3D12_FILTER_MIN_MAG_MIP_POINT, D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_CLAMP, 4)
+                    .AddStaticSampler<11, 0>(D3D12_FILTER::D3D12_FILTER_MIN_MAG_POINT_MIP_LINEAR, D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_CLAMP, 4)
+                    .AddStaticSampler<12, 0>(D3D12_FILTER::D3D12_FILTER_MIN_MAG_POINT_MIP_LINEAR, D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_WRAP, 4)
+                    .AddStaticSampler<13, 0>(D3D12_FILTER::D3D12_FILTER_MIN_MAG_MIP_LINEAR, D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_CLAMP, 4)
+                    .AddStaticSampler<14, 0>(D3D12_FILTER::D3D12_FILTER_MIN_MAG_MIP_LINEAR, D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_CLAMP, 4)
                     .AllowInputLayout()
                     .AllowResourceDescriptorHeapIndexing()
                     .AllowSampleDescriptorHeapIndexing();
 
-            pSSRRaycastSignature = std::make_shared<RHI::D3D12RootSignature>(m_Device, rootSigDesc);
+            pSSRTraceSignature = std::make_shared<RHI::D3D12RootSignature>(m_Device, rootSigDesc);
 
             struct PsoStream
             {
                 PipelineStateStreamRootSignature RootSignature;
                 PipelineStateStreamCS            CS;
             } psoStream;
-            psoStream.RootSignature         = PipelineStateStreamRootSignature(pSSRRaycastSignature.get());
-            psoStream.CS                    = &SSRRaycastCS;
+            psoStream.RootSignature         = PipelineStateStreamRootSignature(pSSRTraceSignature.get());
+            psoStream.CS                    = &SSRTraceCS;
             PipelineStateStreamDesc psoDesc = {sizeof(PsoStream), &psoStream};
 
-            pSSRRaycastPSO = std::make_shared<RHI::D3D12PipelineState>(m_Device, L"SSRRaycastPSO", psoDesc);
+            pSSRTracePSO = std::make_shared<RHI::D3D12PipelineState>(m_Device, L"SSRRaycastPSO", psoDesc);
             
         }
-
+         
         {
             SSRResolveCS = m_ShaderCompiler->CompileShader(RHI_SHADER_TYPE::Compute,
                                                            m_ShaderRootPath / "hlsl/SSRResolveCS.hlsl",
@@ -236,6 +235,7 @@ namespace MoYu
 
     void SSRPass::update(RHI::RenderGraph& graph, DrawInputParameters& passInput, DrawOutputParameters& passOutput)
     {
+        /*
         RHI::RgResourceHandle perframeBufferHandle = passInput.perframeBufferHandle;
         RHI::RgResourceHandle worldNormalHandle    = passInput.worldNormalHandle;
         RHI::RgResourceHandle mrraMapHandle        = passInput.mrraMapHandle;
@@ -416,6 +416,7 @@ namespace MoYu
         passOutput.ssrOutHandle = curTemporalResult;
 
         passIndex = (passIndex + 1) % 2;
+        */
     }
 
     void SSRPass::destroy()
