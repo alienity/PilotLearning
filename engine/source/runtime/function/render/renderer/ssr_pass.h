@@ -60,13 +60,13 @@ namespace MoYu
         std::shared_ptr<RHI::D3D12RootSignature> pSSRTraceSignature;
         std::shared_ptr<RHI::D3D12PipelineState> pSSRTracePSO;
 
-        Shader SSRResolveCS;
-        std::shared_ptr<RHI::D3D12RootSignature> pSSRResolveSignature;
-        std::shared_ptr<RHI::D3D12PipelineState> pSSRResolvePSO;
+        Shader SSRReprojectCS;
+        std::shared_ptr<RHI::D3D12RootSignature> pSSRReprojectSignature;
+        std::shared_ptr<RHI::D3D12PipelineState> pSSRReprojectPSO;
 
-        Shader SSRTemporalCS;
-        std::shared_ptr<RHI::D3D12RootSignature> pSSRTemporalSignature;
-        std::shared_ptr<RHI::D3D12PipelineState> pSSRTemporalPSO;
+        Shader SSRAccumulateCS;
+        std::shared_ptr<RHI::D3D12RootSignature> pSSRAccumulateSignature;
+        std::shared_ptr<RHI::D3D12PipelineState> pSSRAccumulatePSO;
 
         RHI::RgTextureDesc colorTexDesc;
         RHI::RgTextureDesc raycastResultDesc;

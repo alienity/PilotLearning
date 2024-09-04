@@ -230,6 +230,8 @@ namespace MoYu
         _baseUniform._ReflectionLightingMultiplier = 1;
         _baseUniform._ReflectionLightingLayers = 255;
 
+        _baseUniform._ColorPyramidUvScaleAndLimitPrevFrame = MoYu::ComputeViewportScaleAndLimit(glm::int2(_cw, _ch), glm::int2(_cw, _ch));
+
 
         // terrain Uniform
         HLSL::TerrainUniform& _terrainUniform = _frameUniforms->terrainUniform;

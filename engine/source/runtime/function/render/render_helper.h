@@ -75,6 +75,31 @@ namespace MoYu
 
     //glm::mat4 CalculateDirectionalLightCamera(RenderScene& scene, RenderCamera& camera);
 
+    inline static float ComputeViewportScale(int viewportSize, int bufferSize)
+    {
+        float rcpBufferSize = 1.0f / bufferSize;
+
+        // Scale by (vp_dim / buf_dim).
+        return viewportSize * rcpBufferSize;
+    };
+
+    inline static float ComputeViewportLimit(int viewportSize, int bufferSize)
+    {
+        float rcpBufferSize = 1.0f / bufferSize;
+
+        // Clamp to (vp_dim - 0.5) / buf_dim.
+        return (viewportSize - 0.5f) * rcpBufferSize;
+    };
+
+    inline static glm::float4 ComputeViewportScaleAndLimit(glm::int2 viewportSize, glm::int2 bufferSize)
+    {
+        return glm::float4(
+            ComputeViewportScale(viewportSize.x, bufferSize.x),  // Scale(x)
+            ComputeViewportScale(viewportSize.y, bufferSize.y),  // Scale(y)
+            ComputeViewportLimit(viewportSize.x, bufferSize.x),  // Limit(x)
+            ComputeViewportLimit(viewportSize.y, bufferSize.y)); // Limit(y)
+    };
+
     namespace ibl
     {
         /*

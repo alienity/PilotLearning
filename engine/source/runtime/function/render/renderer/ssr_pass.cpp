@@ -82,71 +82,75 @@ namespace MoYu
         }
          
         {
-            SSRResolveCS = m_ShaderCompiler->CompileShader(RHI_SHADER_TYPE::Compute,
-                                                           m_ShaderRootPath / "hlsl/SSRResolveCS.hlsl",
-                                                           ShaderCompileOptions(L"CSResolve"));
+            ShaderCompileOptions shaderCompileOpt = ShaderCompileOptions(L"ScreenSpaceReflectionsReprojection");
+            shaderCompileOpt.SetDefine(L"SSR_REPROJECT", L"1");
+
+            SSRReprojectCS = m_ShaderCompiler->CompileShader(
+                RHI_SHADER_TYPE::Compute, m_ShaderRootPath / "pipeline/Runtime/Lighting/ScreenSpaceLighting/ScreenSpaceReflectionsCS.hlsl",
+                shaderCompileOpt);
 
             RHI::RootSignatureDesc rootSigDesc =
                 RHI::RootSignatureDesc()
-                    .Add32BitConstants<0, 0>(12)
-                    .AddStaticSampler<10, 0>(D3D12_FILTER::D3D12_FILTER_ANISOTROPIC,
-                                             D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_WRAP,
-                                             8)
-                    .AddStaticSampler<11, 0>(D3D12_FILTER::D3D12_FILTER_MIN_MAG_MIP_LINEAR,
-                                             D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_BORDER,
-                                             8,
-                                             D3D12_COMPARISON_FUNC_LESS_EQUAL,
-                                             D3D12_STATIC_BORDER_COLOR_OPAQUE_BLACK)
-                    .AllowInputLayout()
-                    .AllowResourceDescriptorHeapIndexing()
-                    .AllowSampleDescriptorHeapIndexing();
+                .Add32BitConstants<0, 0>(16)
+                .AddStaticSampler<10, 0>(D3D12_FILTER::D3D12_FILTER_MIN_MAG_MIP_POINT, D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_CLAMP, 4)
+                .AddStaticSampler<11, 0>(D3D12_FILTER::D3D12_FILTER_MIN_MAG_POINT_MIP_LINEAR, D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_CLAMP, 4)
+                .AddStaticSampler<12, 0>(D3D12_FILTER::D3D12_FILTER_MIN_MAG_POINT_MIP_LINEAR, D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_WRAP, 4)
+                .AddStaticSampler<13, 0>(D3D12_FILTER::D3D12_FILTER_MIN_MAG_MIP_LINEAR, D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_CLAMP, 4)
+                .AddStaticSampler<14, 0>(D3D12_FILTER::D3D12_FILTER_MIN_MAG_MIP_LINEAR, D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_CLAMP, 4)
+                .AllowInputLayout()
+                .AllowResourceDescriptorHeapIndexing()
+                .AllowSampleDescriptorHeapIndexing();
 
-            pSSRResolveSignature = std::make_shared<RHI::D3D12RootSignature>(m_Device, rootSigDesc);
+            pSSRReprojectSignature = std::make_shared<RHI::D3D12RootSignature>(m_Device, rootSigDesc);
 
             struct PsoStream
             {
                 PipelineStateStreamRootSignature RootSignature;
                 PipelineStateStreamCS            CS;
             } psoStream;
-            psoStream.RootSignature         = PipelineStateStreamRootSignature(pSSRResolveSignature.get());
-            psoStream.CS                    = &SSRResolveCS;
-            PipelineStateStreamDesc psoDesc = {sizeof(PsoStream), &psoStream};
+            psoStream.RootSignature = PipelineStateStreamRootSignature(pSSRReprojectSignature.get());
+            psoStream.CS = &SSRReprojectCS;
+            PipelineStateStreamDesc psoDesc = { sizeof(PsoStream), &psoStream };
 
-            pSSRResolvePSO = std::make_shared<RHI::D3D12PipelineState>(m_Device, L"SSRResolvePSO", psoDesc);
+            pSSRReprojectPSO = std::make_shared<RHI::D3D12PipelineState>(m_Device, L"SSRReprojectPSO", psoDesc);
         }
 
         {
-            SSRTemporalCS = m_ShaderCompiler->CompileShader(RHI_SHADER_TYPE::Compute,
-                                                           m_ShaderRootPath / "hlsl/SSRTemporalCS.hlsl",
-                                                           ShaderCompileOptions(L"CSTemporal"));
+            ShaderCompileOptions shaderCompileOpt = ShaderCompileOptions(L"MAIN_ACC");
+            shaderCompileOpt.SetDefine(L"SSR_ACCUMULATE", L"1");
+            shaderCompileOpt.SetDefine(L"WORLD_SPEED_REJECTION", L"1");
+            shaderCompileOpt.SetDefine(L"SSR_SMOOTH_SPEED_REJECTION", L"1");
+            shaderCompileOpt.SetDefine(L"USE_SPEED_SURFACE", L"1");
+            shaderCompileOpt.SetDefine(L"USE_SPEED_TARGET", L"1");
+
+            SSRAccumulateCS = m_ShaderCompiler->CompileShader(
+                RHI_SHADER_TYPE::Compute, m_ShaderRootPath / "pipeline/Runtime/Lighting/ScreenSpaceLighting/ScreenSpaceReflectionsCS.hlsl",
+                shaderCompileOpt);
 
             RHI::RootSignatureDesc rootSigDesc =
                 RHI::RootSignatureDesc()
-                    .Add32BitConstants<0, 0>(12)
-                    .AddStaticSampler<10, 0>(D3D12_FILTER::D3D12_FILTER_ANISOTROPIC,
-                                             D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_WRAP,
-                                             8)
-                    .AddStaticSampler<11, 0>(D3D12_FILTER::D3D12_FILTER_MIN_MAG_MIP_LINEAR,
-                                             D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_BORDER,
-                                             8,
-                                             D3D12_COMPARISON_FUNC_LESS_EQUAL,
-                                             D3D12_STATIC_BORDER_COLOR_OPAQUE_BLACK)
-                    .AllowInputLayout()
-                    .AllowResourceDescriptorHeapIndexing()
-                    .AllowSampleDescriptorHeapIndexing();
+                .Add32BitConstants<0, 0>(16)
+                .AddStaticSampler<10, 0>(D3D12_FILTER::D3D12_FILTER_MIN_MAG_MIP_POINT, D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_CLAMP, 4)
+                .AddStaticSampler<11, 0>(D3D12_FILTER::D3D12_FILTER_MIN_MAG_POINT_MIP_LINEAR, D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_CLAMP, 4)
+                .AddStaticSampler<12, 0>(D3D12_FILTER::D3D12_FILTER_MIN_MAG_POINT_MIP_LINEAR, D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_WRAP, 4)
+                .AddStaticSampler<13, 0>(D3D12_FILTER::D3D12_FILTER_MIN_MAG_MIP_LINEAR, D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_CLAMP, 4)
+                .AddStaticSampler<14, 0>(D3D12_FILTER::D3D12_FILTER_MIN_MAG_MIP_LINEAR, D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_CLAMP, 4)
+                .AllowInputLayout()
+                .AllowResourceDescriptorHeapIndexing()
+                .AllowSampleDescriptorHeapIndexing();
 
-            pSSRTemporalSignature = std::make_shared<RHI::D3D12RootSignature>(m_Device, rootSigDesc);
+            pSSRAccumulateSignature = std::make_shared<RHI::D3D12RootSignature>(m_Device, rootSigDesc);
 
             struct PsoStream
             {
                 PipelineStateStreamRootSignature RootSignature;
                 PipelineStateStreamCS            CS;
             } psoStream;
-            psoStream.RootSignature         = PipelineStateStreamRootSignature(pSSRTemporalSignature.get());
-            psoStream.CS                    = &SSRTemporalCS;
-            PipelineStateStreamDesc psoDesc = {sizeof(PsoStream), &psoStream};
+            psoStream.RootSignature = PipelineStateStreamRootSignature(pSSRAccumulateSignature.get());
+            psoStream.CS = &SSRAccumulateCS;
+            PipelineStateStreamDesc psoDesc = { sizeof(PsoStream), &psoStream };
 
-            pSSRTemporalPSO = std::make_shared<RHI::D3D12PipelineState>(m_Device, L"SSRTemporalPSO", psoDesc);
+            pSSRAccumulatePSO = std::make_shared<RHI::D3D12PipelineState>(m_Device, L"SSRAccumulatePSO", psoDesc);
         }
 
     }

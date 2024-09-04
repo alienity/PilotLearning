@@ -126,6 +126,8 @@ struct BaseUniform
     float4 _RTHandlePostProcessScaleHistory;
     float4 _DynamicResolutionFullscreenScale;
 
+    float4 _ColorPyramidUvScaleAndLimitPrevFrame;
+
     // Time (t = time since current level load) values from Unity
     float4 _Time; // (t/20, t, t*2, t*3)
     float4 _SinTime; // sin(t/8), sin(t/4), sin(t/2), sin(t)
