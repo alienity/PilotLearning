@@ -69,12 +69,13 @@ namespace MoYu
         std::shared_ptr<RHI::D3D12PipelineState> pSSRAccumulatePSO;
 
         RHI::RgTextureDesc colorTexDesc;
-        RHI::RgTextureDesc raycastResultDesc;
-        RHI::RgTextureDesc raycastMaskDesc;
-        RHI::RgTextureDesc resolveResultDesc;
+        RHI::RgTextureDesc SSRHitPointTextureDesc;
+        //RHI::RgTextureDesc SSRAccumTextureDesc;
+        //RHI::RgTextureDesc SSRLightingTextureDesc;
 
         std::shared_ptr<RHI::D3D12Texture> m_bluenoise;
-        std::shared_ptr<RHI::D3D12Texture> p_temporalResults[2];
+        std::shared_ptr<RHI::D3D12Texture> pSSRAccumTexture[2];
+        std::shared_ptr<RHI::D3D12Texture> pSSRLightingTexture;
 	};
 }
 

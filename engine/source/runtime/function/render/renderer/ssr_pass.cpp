@@ -19,29 +19,13 @@ namespace MoYu
 
         colorTexDesc = init_info.m_ColorTexDesc;
 
-        raycastResultDesc =
-            RHI::RgTextureDesc("RaycastResultMap")
+        SSRHitPointTextureDesc =
+            RHI::RgTextureDesc("SSRHitPointTexture")
                 .SetFormat(DXGI_FORMAT::DXGI_FORMAT_R32G32_FLOAT)
                 .SetExtent(colorTexDesc.Width, colorTexDesc.Height)
                 .SetSampleCount(colorTexDesc.SampleCount)
                 .SetAllowUnorderedAccess(true)
                 .SetClearValue(RHI::RgClearValue(0.0f, 0.0f, 0.0f, 0.0f, DXGI_FORMAT::DXGI_FORMAT_R32G32_FLOAT));
-
-        raycastMaskDesc =
-            RHI::RgTextureDesc("RaycastMaskMap")
-                .SetFormat(DXGI_FORMAT::DXGI_FORMAT_R32_FLOAT)
-                .SetExtent(colorTexDesc.Width, colorTexDesc.Height)
-                .SetSampleCount(colorTexDesc.SampleCount)
-                .SetAllowUnorderedAccess(true)
-                .SetClearValue(RHI::RgClearValue(0.0f, 0.0f, 0.0f, 0.0f, DXGI_FORMAT::DXGI_FORMAT_R32_FLOAT));
-
-        resolveResultDesc =
-            RHI::RgTextureDesc("ResolveMap")
-                .SetFormat(DXGI_FORMAT::DXGI_FORMAT_R32G32B32A32_FLOAT)
-                .SetExtent(colorTexDesc.Width, colorTexDesc.Height)
-                .SetSampleCount(colorTexDesc.SampleCount)
-                .SetAllowUnorderedAccess(true)
-                .SetClearValue(RHI::RgClearValue(0.0f, 0.0f, 0.0f, 0.0f, DXGI_FORMAT::DXGI_FORMAT_R32G32B32A32_FLOAT));
 
         ShaderCompiler*       m_ShaderCompiler = init_info.m_ShaderCompiler;
         std::filesystem::path m_ShaderRootPath = init_info.m_ShaderRootPath;
@@ -218,11 +202,11 @@ namespace MoYu
         _frameUniforms->ssrUniform = sb;
 
 
-        if (p_temporalResults[0] == nullptr)
+        if (pSSRAccumTexture[0] == nullptr)
         {
             for (int i = 0; i < 2; i++)
             {
-                p_temporalResults[i] =
+                pSSRAccumTexture[i] =
                     RHI::D3D12Texture::Create2D(m_Device->GetLinkedDevice(),
                                                 colorTexDesc.Width,
                                                 colorTexDesc.Height,
@@ -230,15 +214,31 @@ namespace MoYu
                                                 colorTexDesc.Format,
                                                 RHI::RHISurfaceCreateRandomWrite,
                                                 1,
-                                                fmt::format(L"SSRTemporalResult_{}", i),
+                                                fmt::format(L"SSRAccumTexture_{}", i),
                                                 D3D12_RESOURCE_STATE_COMMON,
                                                 std::nullopt);
             }
+        }
+        if (pSSRLightingTexture == nullptr)
+        {
+            pSSRLightingTexture = 
+                RHI::D3D12Texture::Create2D(m_Device->GetLinkedDevice(),
+                                            colorTexDesc.Width,
+                                            colorTexDesc.Height,
+                                            1,
+                                            colorTexDesc.Format,
+                                            RHI::RHISurfaceCreateRandomWrite,
+                                            1,
+                                            fmt::format(L"SSRLightingTexture"),
+                                            D3D12_RESOURCE_STATE_COMMON,
+                                            std::nullopt);
         }
     }
 
     void SSRPass::update(RHI::RenderGraph& graph, DrawInputParameters& passInput, DrawOutputParameters& passOutput)
     {
+
+
         /*
         RHI::RgResourceHandle perframeBufferHandle = passInput.perframeBufferHandle;
         RHI::RgResourceHandle worldNormalHandle    = passInput.worldNormalHandle;

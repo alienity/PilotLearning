@@ -606,10 +606,6 @@ cbuffer RootConstants : register(b0, space0)
     uint cameraMotionVectorsTextureIndex;
     uint SsrHitPointTextureIndex;
     uint SsrAccumTextureIndex;
-    
-    uint OwenScrambledTextureIndex;
-    uint ScramblingTileXSPPIndex;
-    uint RankingTileXSPPIndex;
 };
 
 
@@ -781,10 +777,6 @@ cbuffer RootConstants : register(b0, space0)
     uint SsrAccumPrevTextureIndex;
     uint SsrAccumTextureRWIndex;
     uint SsrLightingTextureRWIndex;
-    
-    uint OwenScrambledTextureIndex;
-    uint ScramblingTileXSPPIndex;
-    uint RankingTileXSPPIndex;
 };
 
 [numthreads(8, 8, 1)]
