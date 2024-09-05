@@ -236,29 +236,14 @@ namespace MoYu
                 uint32_t _RankingTileXSPPIndex;
             };
 
-            auto CreateHandleIndexFunc = [&registry](RHI::RgResourceHandle InHandle) {
-                RHI::D3D12Texture* TempTex = registry->GetD3D12Texture(InHandle);
-                D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc{};
-                srvDesc.Format = DXGI_FORMAT::DXGI_FORMAT_R8G8B8A8_UNORM;
-                srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-                srvDesc.ViewDimension = D3D12_SRV_DIMENSION::D3D12_SRV_DIMENSION_TEXTURE2D;
-                srvDesc.Texture2D.MostDetailedMip = 0;
-                srvDesc.Texture2D.MipLevels = 1;
-                srvDesc.Texture2D.PlaneSlice = 0;
-                srvDesc.Texture2D.ResourceMinLODClamp = 0.0f;
-                std::shared_ptr<RHI::D3D12ShaderResourceView> InTexSRV = TempTex->CreateSRV(srvDesc);
-                UINT InTexSRVIndex = InTexSRV->GetIndex();
-                return InTexSRVIndex;
-            };
-
             RootIndexBuffer rootIndexBuffer = RootIndexBuffer{ RegGetBufDefCBVIdx(perframeBufferHandle),
                                                                RegGetTexDefSRVIdx(depthPyramidHandle),
                                                                RegGetTexDefSRVIdx(normalBufferHandle),
                                                                RegGetBufDefCBVIdx(mSSGIConsBufferHandle),
                                                                RegGetTexDefUAVIdx(indirectDiffuseHitPointTexHandle),
-                                                               CreateHandleIndexFunc(owenScrambledTextureHandle),
-                                                               CreateHandleIndexFunc(scramblingTileXSPPHandle),
-                                                               CreateHandleIndexFunc(rankingTileXSPPHandle) };
+                                                               CreateHandleIndexFunc(registry, owenScrambledTextureHandle),
+                                                               CreateHandleIndexFunc(registry, scramblingTileXSPPHandle),
+                                                               CreateHandleIndexFunc(registry, rankingTileXSPPHandle) };
 
             pContext->SetConstantArray(0, sizeof(RootIndexBuffer) / sizeof(UINT), &rootIndexBuffer);
 

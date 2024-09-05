@@ -211,43 +211,10 @@ struct IBLUniform
     uint _Padding0;
 };
 
-struct SSRUniform
+struct SSRStruct
 {
-    float _SsrThicknessScale;
-    float _SsrThicknessBias;
-    int _SsrStencilBit;
-    int _SsrIterLimit;
-    
-    float _SsrRoughnessFadeEnd;
-    float _SsrRoughnessFadeRcpLength;
-    float _SsrRoughnessFadeEndTimesRcpLength;
-    float _SsrEdgeFadeRcpLength;
-
-    int _SsrDepthPyramidMaxMip;
-    int _SsrColorPyramidMaxMip;
-    int _SsrReflectsSky;
-    float _SsrAccumulationAmount;
-    
-    float _SsrPBRSpeedRejection;
-    float _SsrPBRBias;
-    float _SsrPRBSpeedRejectionScalerFactor;
-    float _SsrPBRPad0;
-    
-    //float4 ScreenSize;
-    //float4 ResolveSize;
-    //float4 RayCastSize;
-    //float4 JitterSizeAndOffset;
-    //float4 NoiseSize;
-
-    //float  SmoothnessRange;
-    //float  BRDFBias;
-    //float  TResponseMin;
-    //float  TResponseMax;
-
-    //float  EdgeFactor;
-    //float  Thickness;
-    //int    NumSteps;
-    //int    MaxMipMap;
+    uint _SSRLightingTextureIndex;
+    uint3 _Padding0;
 };
 
 struct SSGIStruct
@@ -365,7 +332,7 @@ struct FrameUniforms
     AOUniform aoUniform;
     TAAUniform taaUniform;
     IBLUniform iblUniform;
-    SSRUniform ssrUniform;
+    SSRStruct ssrUniform;
     SSGIStruct ssgiUniform;
     VolumeCloudStruct volumeCloudUniform;
     LightDataUniform lightDataUniform;

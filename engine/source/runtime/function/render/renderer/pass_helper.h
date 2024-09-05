@@ -116,5 +116,21 @@ namespace MoYu
         HDRPReservedBits = 255 & ~(UserBit0 | UserBit1),
     };
 
+    inline uint32_t CreateHandleIndexFunc(RHI::RenderGraphRegistry* registry, RHI::RgResourceHandle InHandle)
+    {
+        RHI::D3D12Texture* TempTex = registry->GetD3D12Texture(InHandle);
+        D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc{};
+        srvDesc.Format = DXGI_FORMAT::DXGI_FORMAT_R8G8B8A8_UNORM;
+        srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+        srvDesc.ViewDimension = D3D12_SRV_DIMENSION::D3D12_SRV_DIMENSION_TEXTURE2D;
+        srvDesc.Texture2D.MostDetailedMip = 0;
+        srvDesc.Texture2D.MipLevels = 1;
+        srvDesc.Texture2D.PlaneSlice = 0;
+        srvDesc.Texture2D.ResourceMinLODClamp = 0.0f;
+        std::shared_ptr<RHI::D3D12ShaderResourceView> InTexSRV = TempTex->CreateSRV(srvDesc);
+        uint32_t InTexSRVIndex = InTexSRV->GetIndex();
+        return InTexSRVIndex;
+    };
+
 }
 

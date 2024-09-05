@@ -5,13 +5,30 @@
 #include "runtime/function/render/render_helper.h"
 #include "runtime/function/render/renderer/pass_helper.h"
 
-#include <cassert>
-
 namespace MoYu
 {
-#define MAX_MIN_Z_LEVELS 7
-#define KERNEL_SIZE 16
+    struct SSRConsBuffer
+    {
+        float _SsrThicknessScale;
+        float _SsrThicknessBias;
+        int _SsrStencilBit;
+        int _SsrIterLimit;
 
+        float _SsrRoughnessFadeEnd;
+        float _SsrRoughnessFadeRcpLength;
+        float _SsrRoughnessFadeEndTimesRcpLength;
+        float _SsrEdgeFadeRcpLength;
+
+        int _SsrDepthPyramidMaxMip;
+        int _SsrColorPyramidMaxMip;
+        int _SsrReflectsSky;
+        float _SsrAccumulationAmount;
+
+        float _SsrPBRSpeedRejection;
+        float _SsrPBRBias;
+        float _SsrPRBSpeedRejectionScalerFactor;
+        float _SsrPBRPad0;
+    };
 
 	void SSRPass::initialize(const SSRInitInfo& init_info)
 	{
@@ -141,13 +158,11 @@ namespace MoYu
 
     void SSRPass::prepareMetaData(std::shared_ptr<RenderResource> render_resource)
     {
-        m_bluenoise = m_render_scene->m_bluenoise_map.m_bluenoise_64x64_uni;
+        m_owenScrambled256Tex = m_render_scene->m_bluenoise_map.m_owenScrambled256Tex;
+        m_scramblingTile8SPP = m_render_scene->m_bluenoise_map.m_scramblingTile8SPP;
+        m_rankingTile8SPP = m_render_scene->m_bluenoise_map.m_rankingTile8SPP;
 
         int curFrameIndex = m_Device->GetLinkedDevice()->m_FrameIndex;
-
-        HLSL::FrameUniforms* _frameUniforms = &(render_resource->m_FrameUniforms);
-
-        //std::shared_ptr<RHI::D3D12Texture> pBlueNoiseUniMap = m_render_scene->m_bluenoise_map.m_bluenoise_64x64_uni;
 
         const int kMaxLods = 8;
         int lodCount = glm::log2((float)glm::min(colorTexDesc.Width, colorTexDesc.Height));
@@ -162,8 +177,8 @@ namespace MoYu
         int colorPyramidHistoryMipCount = lodCount;
         int mipLevelCount = lodCount;
 
-        HLSL::SSRUniform sb = {};
 
+        SSRConsBuffer sb = {};
         sb._SsrThicknessScale = 1.0f / (1.0f + thickness);
         sb._SsrThicknessBias = -n / (f - n) * (thickness * sb._SsrThicknessScale);
         sb._SsrIterLimit = EngineConfig::g_SSRConfig.rayMaxIterations;
@@ -199,8 +214,17 @@ namespace MoYu
         sb._SsrPBRBias = EngineConfig::g_SSRConfig.biasFactor;
         sb._SsrPRBSpeedRejectionScalerFactor = glm::pow(EngineConfig::g_SSRConfig.speedRejectionScalerFactor * 0.1f, 2.0f);
 
-        _frameUniforms->ssrUniform = sb;
-
+        if (pSSRConstBuffer == nullptr)
+        {
+            pSSRConstBuffer =
+                RHI::D3D12Buffer::Create(m_Device->GetLinkedDevice(),
+                RHI::RHIBufferTargetNone,
+                1,
+                MoYu::AlignUp(sizeof(SSRConsBuffer), 256),
+                L"SSRCB",
+                RHI::RHIBufferModeDynamic,
+                D3D12_RESOURCE_STATE_GENERIC_READ);
+        }
 
         if (pSSRAccumTexture[0] == nullptr)
         {
@@ -233,10 +257,73 @@ namespace MoYu
                                             D3D12_RESOURCE_STATE_COMMON,
                                             std::nullopt);
         }
+
+        HLSL::FrameUniforms* _frameUniforms = &(render_resource->m_FrameUniforms);
+
+        HLSL::SSRStruct* _ssrStruct = &_frameUniforms->ssrUniform;
+        
+        _ssrStruct->_SSRLightingTextureIndex = pSSRLightingTexture->GetDefaultSRV()->GetIndex();
     }
 
     void SSRPass::update(RHI::RenderGraph& graph, DrawInputParameters& passInput, DrawOutputParameters& passOutput)
     {
+        RHI::RgResourceHandle perframeBufferHandle = passInput.perframeBufferHandle;
+        RHI::RgResourceHandle worldNormalHandle = passInput.worldNormalHandle;
+        RHI::RgResourceHandle depthTextureHandle = passInput.depthTextureHandle;
+        RHI::RgResourceHandle motionVectorHandle = passInput.motionVectorHandle;
+
+        RHI::RgResourceHandle SSRConstBufferHandle = graph.Import<RHI::D3D12Buffer>(pSSRConstBuffer.get());
+
+        RHI::RgResourceHandle owenScrambledTextureHandle = graph.Import<RHI::D3D12Texture>(m_owenScrambled256Tex.get());
+        RHI::RgResourceHandle scramblingTileXSPPHandle = graph.Import<RHI::D3D12Texture>(m_scramblingTile8SPP.get());
+        RHI::RgResourceHandle rankingTileXSPPHandle = graph.Import<RHI::D3D12Texture>(m_rankingTile8SPP.get());
+
+        RHI::RgResourceHandle SSRHitPointTextureHandle = graph.Create<RHI::D3D12Texture>(SSRHitPointTextureDesc);
+
+        RHI::RenderPass& ssrTracePass = graph.AddRenderPass("ScreenSpaceReflectionsTracingPass");
+
+        ssrTracePass.Read(perframeBufferHandle);
+        ssrTracePass.Read(SSRConstBufferHandle);
+        ssrTracePass.Read(worldNormalHandle);
+        ssrTracePass.Read(depthTextureHandle);
+        ssrTracePass.Read(owenScrambledTextureHandle);
+        ssrTracePass.Read(scramblingTileXSPPHandle);
+        ssrTracePass.Read(rankingTileXSPPHandle);
+        ssrTracePass.Write(SSRHitPointTextureHandle);
+
+        ssrTracePass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
+            RHI::D3D12ComputeContext* pContext = context->GetComputeContext();
+
+            pContext->SetRootSignature(pSSRTraceSignature.get());
+            pContext->SetPipelineState(pSSRTracePSO.get());
+
+            struct RootIndexBuffer
+            {
+                uint32_t frameUniformIndex;
+                uint32_t ssrStructBufferIndex;
+                uint32_t normalBufferIndex;
+                uint32_t depthTextureIndex;
+                uint32_t SsrHitPointTextureIndex;
+                uint32_t OwenScrambledTextureIndex;
+                uint32_t ScramblingTileXSPPIndex;
+                uint32_t RankingTileXSPPIndex;
+            };
+
+            RootIndexBuffer rootIndexBuffer = RootIndexBuffer{
+                RegGetBufDefCBVIdx(perframeBufferHandle),
+                RegGetBufDefCBVIdx(SSRConstBufferHandle),
+                RegGetTexDefSRVIdx(worldNormalHandle),
+                RegGetTexDefSRVIdx(depthTextureHandle),
+                RegGetTexDefUAVIdx(SSRHitPointTextureHandle),
+                CreateHandleIndexFunc(registry, owenScrambledTextureHandle),
+                CreateHandleIndexFunc(registry, scramblingTileXSPPHandle),
+                CreateHandleIndexFunc(registry, rankingTileXSPPHandle)};
+
+            pContext->SetConstantArray(0, sizeof(RootIndexBuffer) / sizeof(UINT), &rootIndexBuffer);
+
+            pContext->Dispatch2D(SSRHitPointTextureDesc.Width, SSRHitPointTextureDesc.Height, 8, 8);
+        });
+
 
 
         /*
@@ -430,15 +517,14 @@ namespace MoYu
 
     }
 
-    std::shared_ptr<RHI::D3D12Texture> SSRPass::getCurTemporalResult()
+    std::shared_ptr<RHI::D3D12Texture> SSRPass::getSsrAccum(bool needPrev)
     {
-        return p_temporalResults[passIndex];
-    }
-
-    std::shared_ptr<RHI::D3D12Texture> SSRPass::getPrevTemporalResult()
-    {
-        int prevIndex = (passIndex + 1) % 2;
-        return p_temporalResults[prevIndex];
+        int frameIndex = m_Device->GetLinkedDevice()->m_FrameIndex;
+        if (needPrev)
+        {
+            frameIndex = (frameIndex + 1) % 2;
+        }
+        return pSSRAccumTexture[frameIndex];
     }
 
 }

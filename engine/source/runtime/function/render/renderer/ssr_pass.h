@@ -32,9 +32,8 @@ namespace MoYu
         {
             RHI::RgResourceHandle perframeBufferHandle;
             RHI::RgResourceHandle worldNormalHandle;
-            RHI::RgResourceHandle mrraMapHandle;
-            RHI::RgResourceHandle maxDepthPtyramidHandle;
-            RHI::RgResourceHandle lastFrameColorHandle;
+            RHI::RgResourceHandle depthTextureHandle;
+            RHI::RgResourceHandle motionVectorHandle;
         };
 
         struct DrawOutputParameters : public PassOutput
@@ -50,8 +49,7 @@ namespace MoYu
         void update(RHI::RenderGraph& graph, DrawInputParameters& passInput, DrawOutputParameters& passOutput);
         void destroy() override final;
 
-        std::shared_ptr<RHI::D3D12Texture> getCurTemporalResult();
-        std::shared_ptr<RHI::D3D12Texture> getPrevTemporalResult();
+        std::shared_ptr<RHI::D3D12Texture> getSsrAccum(bool needPrev = false);
 
     private:
         int passIndex;
@@ -73,7 +71,12 @@ namespace MoYu
         //RHI::RgTextureDesc SSRAccumTextureDesc;
         //RHI::RgTextureDesc SSRLightingTextureDesc;
 
-        std::shared_ptr<RHI::D3D12Texture> m_bluenoise;
+        std::shared_ptr<RHI::D3D12Texture> m_owenScrambled256Tex;
+        std::shared_ptr<RHI::D3D12Texture> m_scramblingTile8SPP;
+        std::shared_ptr<RHI::D3D12Texture> m_rankingTile8SPP;
+
+        std::shared_ptr<RHI::D3D12Buffer> pSSRConstBuffer;;
+
         std::shared_ptr<RHI::D3D12Texture> pSSRAccumTexture[2];
         std::shared_ptr<RHI::D3D12Texture> pSSRLightingTexture;
 	};

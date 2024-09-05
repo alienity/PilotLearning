@@ -785,17 +785,16 @@ namespace MoYu
         mSSGIPass->update(graph, mSSGIIntput, mSSGIOutput, mTemporalFilter, mDiffuseFilter);
         //=================================================================================
 
-        ////=================================================================================
-        //// ssr
-        //SSRPass::DrawInputParameters mSSRInput;
-        //SSRPass::DrawOutputParameters mSSROutput;
-        //mSSRInput.perframeBufferHandle   = indirectCullOutput.perframeBufferHandle;
-        //mSSRInput.worldNormalHandle      = mGBufferOutput.worldNormalHandle;
-        //mSSRInput.mrraMapHandle          = mGBufferOutput.metallic_Roughness_Reflectance_AO_Handle;
-        //mSSRInput.maxDepthPtyramidHandle = mDepthPyramidOutput.maxDepthPtyramidHandle;
-        //mSSRInput.lastFrameColorHandle   = lastFrameColorRTHandle;
-        //mSSRPass->update(graph, mSSRInput, mSSROutput);
-        ////=================================================================================
+        //=================================================================================
+        // ssr
+        SSRPass::DrawInputParameters mSSRInput;
+        SSRPass::DrawOutputParameters mSSROutput;
+        mSSRInput.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
+        mSSRInput.worldNormalHandle = mGBufferOutput.gbuffer1Handle;
+        mSSRInput.depthTextureHandle = mDepthPyramidOutput.minDepthPtyramidHandle;
+        mSSRInput.motionVectorHandle = mDepthPyramidOutput.maxDepthPtyramidHandle;
+        mSSRPass->update(graph, mSSRInput, mSSROutput);
+        //=================================================================================
 
         //=================================================================================
         // light loop pass

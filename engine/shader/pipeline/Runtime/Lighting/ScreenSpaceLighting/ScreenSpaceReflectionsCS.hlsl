@@ -57,7 +57,7 @@
 // - Trigger ray from position recover from new depth buffer and raymarch with opaque depth pyramid
 // So we need a seperate texture for the mip chain and for the depth source when doing the transprent reflection
 
-struct SSRStruct
+struct SSRConsBuffer
 {
     float _SsrThicknessScale;
     float _SsrThicknessBias;
@@ -335,7 +335,7 @@ void ScreenSpaceReflectionsTracing(uint3 groupId          : SV_GroupID,
                                    uint3 dispatchThreadId : SV_DispatchThreadID)
 {
     ConstantBuffer<FrameUniforms> frameUniform = ResourceDescriptorHeap[frameUniformIndex];
-    ConstantBuffer<SSRStruct> ssrStruct = ResourceDescriptorHeap[ssrStructBufferIndex];
+    ConstantBuffer<SSRConsBuffer> ssrStruct = ResourceDescriptorHeap[ssrStructBufferIndex];
     Texture2D<float4> normalTexture = ResourceDescriptorHeap[normalBufferIndex];
     Texture2D<float> depthTexture = ResourceDescriptorHeap[depthTextureIndex];
     
@@ -613,7 +613,7 @@ cbuffer RootConstants : register(b0, space0)
 void ScreenSpaceReflectionsReprojection(uint3 dispatchThreadId : SV_DispatchThreadID)
 {
     ConstantBuffer<FrameUniforms> frameUniform = ResourceDescriptorHeap[frameUniformIndex];
-    ConstantBuffer<SSRStruct> ssrStruct = ResourceDescriptorHeap[ssrStructBufferIndex];
+    ConstantBuffer<SSRConsBuffer> ssrStruct = ResourceDescriptorHeap[ssrStructBufferIndex];
     Texture2D<float4> colorPyramidTexture = ResourceDescriptorHeap[colorPyramidTextureIndex];
     Texture2D<float4> normalTexture = ResourceDescriptorHeap[normalBufferIndex];
     Texture2D<float> _CameraDepthTexture = ResourceDescriptorHeap[depthTextureIndex];
@@ -783,7 +783,7 @@ cbuffer RootConstants : register(b0, space0)
 void MAIN_ACC(uint3 dispatchThreadId : SV_DispatchThreadID)
 {
     ConstantBuffer<FrameUniforms> frameUniform = ResourceDescriptorHeap[frameUniformIndex];
-    ConstantBuffer<SSRStruct> ssrStruct = ResourceDescriptorHeap[ssrStructBufferIndex];
+    ConstantBuffer<SSRConsBuffer> ssrStruct = ResourceDescriptorHeap[ssrStructBufferIndex];
     Texture2D<float4> normalTexture = ResourceDescriptorHeap[normalBufferIndex];
     Texture2D<float> _DepthTexture = ResourceDescriptorHeap[depthTextureIndex];
     Texture2D<float4> _CameraMotionVectorsTexture = ResourceDescriptorHeap[cameraMotionVectorsTextureIndex];
