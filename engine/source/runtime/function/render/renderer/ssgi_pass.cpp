@@ -189,7 +189,7 @@ namespace MoYu
     {
         //RHI::RgResourceHandle mIndirectDiffuseHandle = GetSSGIHandle(graph);
 
-
+        /*
         RHI::RgResourceHandle mSSGIConsBufferHandle = graph.Import<RHI::D3D12Buffer>(pSSGIConsBuffer.get());
 
         RHI::RgResourceHandle owenScrambledTextureHandle = graph.Import<RHI::D3D12Texture>(m_owenScrambled256Tex.get());
@@ -332,6 +332,8 @@ namespace MoYu
         }
 
         passOutput.ssgiOutHandle = denoisedOutHandle;
+        */
+        passOutput.ssgiOutHandle = graph.Create<RHI::D3D12Texture>(indirectDiffuseDesc);;
     }
 
     void SSGIPass::destroy()

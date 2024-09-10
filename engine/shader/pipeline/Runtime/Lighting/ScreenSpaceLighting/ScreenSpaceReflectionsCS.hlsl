@@ -452,7 +452,7 @@ void ScreenSpaceReflectionsTracing(uint3 groupId          : SV_GroupID,
     // and sample the color pyramid during the lighting pass.
     killRay = killRay || (reflPosSS.z <= 0);
     killRay = killRay || (dot(N, V) <= 0);
-    killRay = killRay || (perceptualRoughness > _SsrRoughnessFadeEnd);
+    // killRay = killRay || (perceptualRoughness > _SsrRoughnessFadeEnd);
 #ifndef SSR_TRACE_TOWARDS_EYE
     killRay = killRay || rayTowardsEye;
 #endif
@@ -590,6 +590,10 @@ void ScreenSpaceReflectionsTracing(uint3 groupId          : SV_GroupID,
         float2 hitPositionNDC = floor(rayPos.xy) * _ScreenSize.zw + (0.5 * _ScreenSize.zw); // Should we precompute the half-texel bias? We seem to use it a lot.
         _SsrHitPointTexture[positionSS] = hitPositionNDC.xy;
     }
+    else
+    {
+        _SsrHitPointTexture[positionSS] = float2(0, 0);
+    }
 
     // If we do not hit anything, 'rayPos.xy' provides an indication where we stopped the search.
     WriteDebugInfo(positionSS, float4(rayPos.xy, iterCount, hit ? 1 : 0));
@@ -649,6 +653,7 @@ void ScreenSpaceReflectionsReprojection(uint3 dispatchThreadId : SV_DispatchThre
     if (max(hitPositionNDC.x, hitPositionNDC.y) == 0)
     {
         // Miss.
+        _SSRAccumTexture[positionSS0] = float4(0, 0, 0, 0);
         return;
     }
     
