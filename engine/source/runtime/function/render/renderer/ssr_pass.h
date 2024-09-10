@@ -32,6 +32,7 @@ namespace MoYu
         {
             RHI::RgResourceHandle perframeBufferHandle;
             RHI::RgResourceHandle worldNormalHandle;
+            RHI::RgResourceHandle colorPyramidHandle;
             RHI::RgResourceHandle depthTextureHandle;
             RHI::RgResourceHandle motionVectorHandle;
         };
@@ -68,6 +69,7 @@ namespace MoYu
 
         RHI::RgTextureDesc colorTexDesc;
         RHI::RgTextureDesc SSRHitPointTextureDesc;
+        RHI::RgTextureDesc DebugHitPointTextureDesc;
         //RHI::RgTextureDesc SSRAccumTextureDesc;
         //RHI::RgTextureDesc SSRLightingTextureDesc;
 
@@ -75,7 +77,7 @@ namespace MoYu
         std::shared_ptr<RHI::D3D12Texture> m_scramblingTile8SPP;
         std::shared_ptr<RHI::D3D12Texture> m_rankingTile8SPP;
 
-        std::shared_ptr<RHI::D3D12Buffer> pSSRConstBuffer;;
+        std::shared_ptr<RHI::D3D12Buffer> pSSRConstBuffer;
 
         std::shared_ptr<RHI::D3D12Texture> pSSRAccumTexture[2];
         std::shared_ptr<RHI::D3D12Texture> pSSRLightingTexture;

@@ -44,6 +44,14 @@ namespace MoYu
                 .SetAllowUnorderedAccess(true)
                 .SetClearValue(RHI::RgClearValue(0.0f, 0.0f, 0.0f, 0.0f, DXGI_FORMAT::DXGI_FORMAT_R32G32_FLOAT));
 
+        DebugHitPointTextureDesc =
+            RHI::RgTextureDesc("DebugHitPointTexture")
+                .SetFormat(DXGI_FORMAT::DXGI_FORMAT_R32G32B32A32_FLOAT)
+                .SetExtent(colorTexDesc.Width, colorTexDesc.Height)
+                .SetSampleCount(colorTexDesc.SampleCount)
+                .SetAllowUnorderedAccess(true)
+                .SetClearValue(RHI::RgClearValue(0.0f, 0.0f, 0.0f, 0.0f, DXGI_FORMAT::DXGI_FORMAT_R32G32B32A32_FLOAT));
+
         ShaderCompiler*       m_ShaderCompiler = init_info.m_ShaderCompiler;
         std::filesystem::path m_ShaderRootPath = init_info.m_ShaderRootPath;
 
@@ -172,11 +180,10 @@ namespace MoYu
         float f = m_render_camera->m_farClipPlane;
         float thickness = EngineConfig::g_SSRConfig.depthBufferThickness;
 
-        float smoothnessFadeStart = 0.5f;
-        float minSmoothness = 0.4f;
+        float smoothnessFadeStart = EngineConfig::g_SSRConfig.smoothnessFadeStart;
+        float minSmoothness = EngineConfig::g_SSRConfig.minSmoothness;
         int colorPyramidHistoryMipCount = lodCount;
         int mipLevelCount = lodCount;
-
 
         SSRConsBuffer sb = {};
         sb._SsrThicknessScale = 1.0f / (1.0f + thickness);
@@ -185,8 +192,8 @@ namespace MoYu
         // We disable sky reflection for transparent in case of a scenario where a transparent object seeing the sky through it is visible in the reflection.
         // As it has no depth it will appear extremely distorted (depth at infinity). This scenario happen frequently when you have transparent objects above water.
         // Note that the sky is still visible, it just takes its value from reflection probe/skybox rather than on screen.
-        sb._SsrReflectsSky = EngineConfig::g_SSRConfig.reflectSky;
-        sb._SsrStencilBit = (int)MoYu::StencilUsage::TraceReflectionRay;;
+        sb._SsrReflectsSky = EngineConfig::g_SSRConfig.reflectSky ? 1 : 0;
+        sb._SsrStencilBit = (int)MoYu::StencilUsage::TraceReflectionRay;
         float roughnessFadeStart = 1 - smoothnessFadeStart;
         sb._SsrRoughnessFadeEnd = 1 - minSmoothness;
         float roughnessFadeLength = sb._SsrRoughnessFadeEnd - roughnessFadeStart;
@@ -225,6 +232,7 @@ namespace MoYu
                 RHI::RHIBufferModeDynamic,
                 D3D12_RESOURCE_STATE_GENERIC_READ);
         }
+        memcpy(pSSRConstBuffer->GetCpuVirtualAddress<SSRConsBuffer>(), &sb, sizeof(sb));
 
         if (pSSRAccumTexture[0] == nullptr)
         {
@@ -268,6 +276,7 @@ namespace MoYu
     void SSRPass::update(RHI::RenderGraph& graph, DrawInputParameters& passInput, DrawOutputParameters& passOutput)
     {
         RHI::RgResourceHandle perframeBufferHandle = passInput.perframeBufferHandle;
+        RHI::RgResourceHandle colorPyramidHandle = passInput.colorPyramidHandle;
         RHI::RgResourceHandle worldNormalHandle = passInput.worldNormalHandle;
         RHI::RgResourceHandle depthTextureHandle = passInput.depthTextureHandle;
         RHI::RgResourceHandle motionVectorHandle = passInput.motionVectorHandle;
@@ -277,6 +286,10 @@ namespace MoYu
         RHI::RgResourceHandle owenScrambledTextureHandle = graph.Import<RHI::D3D12Texture>(m_owenScrambled256Tex.get());
         RHI::RgResourceHandle scramblingTileXSPPHandle = graph.Import<RHI::D3D12Texture>(m_scramblingTile8SPP.get());
         RHI::RgResourceHandle rankingTileXSPPHandle = graph.Import<RHI::D3D12Texture>(m_rankingTile8SPP.get());
+
+        RHI::RgResourceHandle ssrAccumHandle = graph.Import<RHI::D3D12Texture>(getSsrAccum().get());
+        RHI::RgResourceHandle ssrPrevAccumHandle = graph.Import<RHI::D3D12Texture>(getSsrAccum(true).get());
+        RHI::RgResourceHandle ssrLightingTextureHandle = graph.Import<RHI::D3D12Texture>(pSSRLightingTexture.get());
 
         RHI::RgResourceHandle SSRHitPointTextureHandle = graph.Create<RHI::D3D12Texture>(SSRHitPointTextureDesc);
 
@@ -319,200 +332,107 @@ namespace MoYu
                 CreateHandleIndexFunc(registry, scramblingTileXSPPHandle),
                 CreateHandleIndexFunc(registry, rankingTileXSPPHandle)};
 
-            pContext->SetConstantArray(0, sizeof(RootIndexBuffer) / sizeof(UINT), &rootIndexBuffer);
+            pContext->SetConstantArray(0, sizeof(RootIndexBuffer) / sizeof(uint32_t), &rootIndexBuffer);
 
             pContext->Dispatch2D(SSRHitPointTextureDesc.Width, SSRHitPointTextureDesc.Height, 8, 8);
         });
 
+        RHI::RenderPass& ssrReprojectPass = graph.AddRenderPass("ScreenSpaceReflectionsReprojectionPass");
 
+        ssrReprojectPass.Read(perframeBufferHandle);
+        ssrReprojectPass.Read(SSRConstBufferHandle);
+        ssrReprojectPass.Read(colorPyramidHandle);
+        ssrReprojectPass.Read(worldNormalHandle);
+        ssrReprojectPass.Read(depthTextureHandle);
+        ssrReprojectPass.Read(motionVectorHandle);
+        ssrReprojectPass.Read(SSRHitPointTextureHandle);
+        ssrReprojectPass.Write(ssrAccumHandle);
 
-        /*
-        RHI::RgResourceHandle perframeBufferHandle = passInput.perframeBufferHandle;
-        RHI::RgResourceHandle worldNormalHandle    = passInput.worldNormalHandle;
-        RHI::RgResourceHandle mrraMapHandle        = passInput.mrraMapHandle;
-        RHI::RgResourceHandle maxDepthPtyramidHandle = passInput.maxDepthPtyramidHandle;
-        RHI::RgResourceHandle lastFrameColorHandle   = passInput.lastFrameColorHandle;
-
-        RHI::RgResourceHandle blueNoiseHandle = GImport(graph, m_bluenoise.get());
-
-        RHI::RgResourceHandle curTemporalResult = GImport(graph, getCurTemporalResult().get());
-        RHI::RgResourceHandle prevTemporalResult = GImport(graph, getPrevTemporalResult().get());
-
-        RHI::RgResourceHandle raycastResultHandle = graph.Create<RHI::D3D12Texture>(raycastResultDesc);
-        RHI::RgResourceHandle raycastMaskHandle   = graph.Create<RHI::D3D12Texture>(raycastMaskDesc);
-
-        RHI::RenderPass& raycastPass = graph.AddRenderPass("SSRRaycastPass");
-
-        raycastPass.Read(perframeBufferHandle, true);
-        raycastPass.Read(worldNormalHandle, true);
-        raycastPass.Read(mrraMapHandle, true);
-        raycastPass.Read(maxDepthPtyramidHandle, true);
-        raycastPass.Read(blueNoiseHandle, true);
-        raycastPass.Write(raycastResultHandle, true);
-        raycastPass.Write(raycastMaskHandle, true);
-
-        raycastPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
+        ssrReprojectPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
             RHI::D3D12ComputeContext* pContext = context->GetComputeContext();
 
-            pContext->TransitionBarrier(RegGetBuf(perframeBufferHandle), D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
-            pContext->TransitionBarrier(RegGetTex(worldNormalHandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-            pContext->TransitionBarrier(RegGetTex(mrraMapHandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-            pContext->TransitionBarrier(RegGetTex(maxDepthPtyramidHandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-            pContext->TransitionBarrier(RegGetTex(blueNoiseHandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-            pContext->TransitionBarrier(RegGetTex(raycastResultHandle), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-            pContext->TransitionBarrier(RegGetTex(raycastMaskHandle), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-            pContext->FlushResourceBarriers();
-
-            pContext->SetRootSignature(pSSRRaycastSignature.get());
-            pContext->SetPipelineState(pSSRRaycastPSO.get());
+            pContext->SetRootSignature(pSSRReprojectSignature.get());
+            pContext->SetPipelineState(pSSRReprojectPSO.get());
 
             struct RootIndexBuffer
             {
-                UINT perFrameBufferIndex;
-                UINT worldNormalIndex;
-                UINT metallicRoughnessReflectanceAOIndex;
-                UINT maxDepthBufferIndex;
-                UINT blueNoiseIndex;
-                UINT RaycastResultIndex;
-                UINT MaskResultIndex;
+                uint32_t frameUniformIndex;
+                uint32_t ssrStructBufferIndex;
+                uint32_t colorPyramidTextureIndex;
+                uint32_t normalBufferIndex;
+                uint32_t depthTextureIndex;
+                uint32_t cameraMotionVectorsTextureIndex;
+                uint32_t SsrHitPointTextureIndex;
+                uint32_t SsrAccumTextureIndex;
             };
 
-            D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc {};
-            srvDesc.Format                        = DXGI_FORMAT::DXGI_FORMAT_R8G8B8A8_UNORM;
-            srvDesc.Shader4ComponentMapping       = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-            srvDesc.ViewDimension                 = D3D12_SRV_DIMENSION::D3D12_SRV_DIMENSION_TEXTURE2D;
-            srvDesc.Texture2D.MostDetailedMip     = 0;
-            srvDesc.Texture2D.MipLevels           = 1;
-            srvDesc.Texture2D.PlaneSlice          = 0;
-            srvDesc.Texture2D.ResourceMinLODClamp = 0.0f;
-            std::shared_ptr<RHI::D3D12ShaderResourceView> blueNoiseSRV = m_bluenoise->CreateSRV(srvDesc);
-            UINT blueNoiseSRVIndex = blueNoiseSRV->GetIndex();
+            RootIndexBuffer rootIndexBuffer = RootIndexBuffer{
+                RegGetBufDefCBVIdx(perframeBufferHandle),
+                RegGetBufDefCBVIdx(SSRConstBufferHandle),
+                RegGetTexDefSRVIdx(colorPyramidHandle),
+                RegGetTexDefSRVIdx(worldNormalHandle),
+                RegGetTexDefSRVIdx(depthTextureHandle),
+                RegGetTexDefSRVIdx(motionVectorHandle),
+                RegGetTexDefSRVIdx(SSRHitPointTextureHandle),
+                RegGetTexDefUAVIdx(ssrAccumHandle)};
 
+            pContext->SetConstantArray(0, sizeof(RootIndexBuffer) / sizeof(uint32_t), &rootIndexBuffer);
 
-            RootIndexBuffer rootIndexBuffer = RootIndexBuffer {RegGetBufDefCBVIdx(perframeBufferHandle),
-                                                               RegGetTexDefSRVIdx(worldNormalHandle),
-                                                               RegGetTexDefSRVIdx(mrraMapHandle),
-                                                               RegGetTexDefSRVIdx(maxDepthPtyramidHandle),
-                                                               blueNoiseSRVIndex,
-                                                               RegGetTexDefUAVIdx(raycastResultHandle),
-                                                               RegGetTexDefUAVIdx(raycastMaskHandle)};
-
-            pContext->SetConstantArray(0, sizeof(RootIndexBuffer) / sizeof(UINT), &rootIndexBuffer);
-
-            pContext->Dispatch2D(raycastResultDesc.Width, raycastResultDesc.Height, KERNEL_SIZE, KERNEL_SIZE);
+            pContext->Dispatch2D(colorTexDesc.Width, colorTexDesc.Height, 8, 8);
         });
 
-        //------------------------------------------------------------------------------------------------------
+        RHI::RenderPass& ssrAccumPass = graph.AddRenderPass("ScreenSpaceAccumulationPass");
 
-        RHI::RgResourceHandle resolveHandle = graph.Create<RHI::D3D12Texture>(resolveResultDesc);
+        ssrAccumPass.Read(perframeBufferHandle);
+        ssrAccumPass.Read(SSRConstBufferHandle);
+        ssrAccumPass.Read(worldNormalHandle);
+        ssrAccumPass.Read(depthTextureHandle);
+        ssrAccumPass.Read(motionVectorHandle);
+        ssrAccumPass.Read(SSRHitPointTextureHandle);
+        ssrAccumPass.Read(ssrPrevAccumHandle);
+        ssrAccumPass.Write(ssrAccumHandle);
+        ssrAccumPass.Write(ssrLightingTextureHandle);
 
-        RHI::RenderPass& resolvePass = graph.AddRenderPass("SSRResolvePass");
-
-        resolvePass.Read(perframeBufferHandle, true);
-        resolvePass.Read(worldNormalHandle, true);
-        resolvePass.Read(mrraMapHandle, true);
-        resolvePass.Read(maxDepthPtyramidHandle, true);
-        resolvePass.Read(lastFrameColorHandle, true);
-        resolvePass.Read(raycastResultHandle, true);
-        resolvePass.Read(raycastMaskHandle, true);
-        resolvePass.Write(resolveHandle, true);
-
-        resolvePass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
+        ssrAccumPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
             RHI::D3D12ComputeContext* pContext = context->GetComputeContext();
 
-            pContext->TransitionBarrier(RegGetBuf(perframeBufferHandle), D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
-            pContext->TransitionBarrier(RegGetTex(worldNormalHandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-            pContext->TransitionBarrier(RegGetTex(mrraMapHandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-            pContext->TransitionBarrier(RegGetTex(maxDepthPtyramidHandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-            pContext->TransitionBarrier(RegGetTex(lastFrameColorHandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-            pContext->TransitionBarrier(RegGetTex(raycastResultHandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-            pContext->TransitionBarrier(RegGetTex(raycastMaskHandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-            pContext->TransitionBarrier(RegGetTex(resolveHandle), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-            pContext->FlushResourceBarriers();
-
-            pContext->SetRootSignature(pSSRResolveSignature.get());
-            pContext->SetPipelineState(pSSRResolvePSO.get());
+            pContext->SetRootSignature(pSSRAccumulateSignature.get());
+            pContext->SetPipelineState(pSSRAccumulatePSO.get());
 
             struct RootIndexBuffer
             {
-                UINT perFrameBufferIndex;
-                UINT worldNormalIndex;
-                UINT metallicRoughnessReflectanceAOIndex;
-                UINT maxDepthBufferIndex;
-                UINT ScreenInputIndex;
-                UINT RaycastInputIndex;
-                UINT MaskInputIndex;
-                UINT ResolveResultIndex;
+                uint32_t frameUniformIndex;
+                uint32_t ssrStructBufferIndex;
+                uint32_t normalBufferIndex;
+                uint32_t depthTextureIndex;
+                uint32_t cameraMotionVectorsTextureIndex;
+                uint32_t SsrHitPointTextureIndex;
+                uint32_t SsrAccumPrevTextureIndex;
+                uint32_t SsrAccumTextureRWIndex;
+                uint32_t SsrLightingTextureRWIndex;
             };
 
-            RootIndexBuffer rootIndexBuffer = RootIndexBuffer {RegGetBufDefCBVIdx(perframeBufferHandle),
-                                                               RegGetTexDefSRVIdx(worldNormalHandle),
-                                                               RegGetTexDefSRVIdx(mrraMapHandle),
-                                                               RegGetTexDefSRVIdx(maxDepthPtyramidHandle),
-                                                               RegGetTexDefSRVIdx(lastFrameColorHandle),
-                                                               RegGetTexDefSRVIdx(raycastResultHandle),
-                                                               RegGetTexDefSRVIdx(raycastMaskHandle),
-                                                               RegGetTexDefUAVIdx(resolveHandle)};
-
-            pContext->SetConstantArray(0, sizeof(RootIndexBuffer) / sizeof(UINT), &rootIndexBuffer);
-
-            pContext->Dispatch2D(resolveResultDesc.Width, resolveResultDesc.Height, KERNEL_SIZE, KERNEL_SIZE);
-        });
-
-        RHI::RenderPass& temporalPass = graph.AddRenderPass("SSRTemporalPass");
-
-        temporalPass.Read(perframeBufferHandle, true);
-        temporalPass.Read(resolveHandle, true);
-        temporalPass.Read(raycastResultHandle, true);
-        temporalPass.Read(maxDepthPtyramidHandle, true);
-        temporalPass.Read(prevTemporalResult, true);
-        temporalPass.Write(curTemporalResult, true);
-
-        temporalPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
-            RHI::D3D12ComputeContext* pContext = context->GetComputeContext();
-
-            pContext->TransitionBarrier(RegGetBuf(perframeBufferHandle), D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
-            pContext->TransitionBarrier(RegGetTex(resolveHandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-            pContext->TransitionBarrier(RegGetTex(raycastResultHandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-            pContext->TransitionBarrier(RegGetTex(maxDepthPtyramidHandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-            pContext->TransitionBarrier(RegGetTex(prevTemporalResult), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-            pContext->TransitionBarrier(RegGetTex(curTemporalResult), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-            pContext->FlushResourceBarriers();
-
-            pContext->SetRootSignature(pSSRTemporalSignature.get());
-            pContext->SetPipelineState(pSSRTemporalPSO.get());
-
-            struct RootIndexBuffer
-            {
-                UINT perFrameBufferIndex;
-                UINT screenInputIndex;
-                UINT raycastInputIndex;
-                UINT maxDepthBufferIndex;
-                UINT previousTemporalInputIndex;
-                UINT temporalResultIndex;
+            RootIndexBuffer rootIndexBuffer = RootIndexBuffer{
+                RegGetBufDefCBVIdx(perframeBufferHandle),
+                RegGetBufDefCBVIdx(SSRConstBufferHandle),
+                RegGetTexDefSRVIdx(worldNormalHandle),
+                RegGetTexDefSRVIdx(depthTextureHandle),
+                RegGetTexDefSRVIdx(motionVectorHandle),
+                RegGetTexDefSRVIdx(SSRHitPointTextureHandle),
+                RegGetTexDefSRVIdx(ssrPrevAccumHandle),
+                RegGetTexDefUAVIdx(ssrAccumHandle),
+                RegGetTexDefUAVIdx(ssrLightingTextureHandle)
             };
 
-            RootIndexBuffer rootIndexBuffer = RootIndexBuffer {RegGetBufDefCBVIdx(perframeBufferHandle),
-                                                               RegGetTexDefSRVIdx(resolveHandle),
-                                                               RegGetTexDefSRVIdx(raycastResultHandle),
-                                                               RegGetTexDefSRVIdx(maxDepthPtyramidHandle),
-                                                               RegGetTexDefSRVIdx(prevTemporalResult),
-                                                               RegGetTexDefUAVIdx(curTemporalResult)};
+            pContext->SetConstantArray(0, sizeof(RootIndexBuffer) / sizeof(uint32_t), &rootIndexBuffer);
 
-            pContext->SetConstantArray(0, sizeof(RootIndexBuffer) / sizeof(UINT), &rootIndexBuffer);
-
-            pContext->Dispatch2D(resolveResultDesc.Width, resolveResultDesc.Height, KERNEL_SIZE, KERNEL_SIZE);
+            pContext->Dispatch2D(colorTexDesc.Width, colorTexDesc.Height, 8, 8);
         });
 
-        passOutput.ssrOutHandle = curTemporalResult;
-
-        passIndex = (passIndex + 1) % 2;
-        */
     }
 
     void SSRPass::destroy()
     {
-
 
 
     }

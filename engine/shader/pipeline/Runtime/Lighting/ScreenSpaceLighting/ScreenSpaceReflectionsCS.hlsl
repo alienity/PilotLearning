@@ -1,4 +1,5 @@
 
+#define SSR_APPROX
 // Tweak parameters.
 // #define DEBUG
 #define SSR_TRACE_BEHIND_OBJECTS
@@ -490,7 +491,7 @@ void ScreenSpaceReflectionsTracing(uint3 groupId          : SV_GroupID,
         t = min(dist.x, dist.y);
     }
 
-    float3 rayPos;
+    float3 rayPos = 0.0f;
 
     int  mipLevel  = 0;
     int  iterCount = 0;
@@ -614,7 +615,7 @@ void ScreenSpaceReflectionsReprojection(uint3 dispatchThreadId : SV_DispatchThre
 {
     ConstantBuffer<FrameUniforms> frameUniform = ResourceDescriptorHeap[frameUniformIndex];
     ConstantBuffer<SSRConsBuffer> ssrStruct = ResourceDescriptorHeap[ssrStructBufferIndex];
-    Texture2D<float4> colorPyramidTexture = ResourceDescriptorHeap[colorPyramidTextureIndex];
+    Texture2D<float4> _ColorPyramidTexture = ResourceDescriptorHeap[colorPyramidTextureIndex];
     Texture2D<float4> normalTexture = ResourceDescriptorHeap[normalBufferIndex];
     Texture2D<float> _CameraDepthTexture = ResourceDescriptorHeap[depthTextureIndex];
     Texture2D<float4> _CameraMotionVectorsTexture = ResourceDescriptorHeap[cameraMotionVectorsTextureIndex];
@@ -680,7 +681,7 @@ void ScreenSpaceReflectionsReprojection(uint3 dispatchThreadId : SV_DispatchThre
 
 #ifdef SSR_APPROX
     // Note that the color pyramid uses it's own viewport scale, since it lives on the camera.
-    float3 color    = SAMPLE_TEXTURE2D_X_LOD(_ColorPyramidTexture, s_trilinear_clamp_sampler, prevFrameUV, mipLevel).rgb;
+    float3 color    = SAMPLE_TEXTURE2D_LOD(_ColorPyramidTexture, s_trilinear_clamp_sampler, prevFrameUV, mipLevel).rgb;
 
     // Disable SSR for negative, infinite and NaN history values.
     uint3 intCol   = asuint(color);
@@ -689,7 +690,7 @@ void ScreenSpaceReflectionsReprojection(uint3 dispatchThreadId : SV_DispatchThre
     color   = isPosFin ? color   : 0;
     opacity = isPosFin ? opacity : 0;
 
-    _SSRAccumTexture[COORD_TEXTURE2D_X(positionSS0)] = float4(color, 1.0f) * opacity;
+    _SSRAccumTexture[positionSS0] = float4(color, 1.0f) * opacity;
 #else
     float3 color = 0.0f;
 
@@ -712,7 +713,7 @@ void ScreenSpaceReflectionsReprojection(uint3 dispatchThreadId : SV_DispatchThre
             float opacity;
             float weight;
             float2 hitData = GetSampleInfo(
-                frameUniform, _SsrHitPointTexture, _CameraDepthTexture, _CameraMotionVectorsTexture, colorPyramidTexture,
+                frameUniform, _SsrHitPointTexture, _CameraDepthTexture, _CameraMotionVectorsTexture, _ColorPyramidTexture,
                 normalTexture, _ScreenSize, _ColorPyramidUvScaleAndLimitPrevFrame, _SsrRoughnessFadeRcpLength,
                 _SsrRoughnessFadeEndTimesRcpLength, _SsrEdgeFadeRcpLength, _RTHandleScale, positionSS, color, weight, opacity);
             if (max(hitData.x, hitData.y) != 0.0f && opacity > 0.0f)

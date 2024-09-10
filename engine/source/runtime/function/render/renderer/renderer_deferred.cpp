@@ -791,8 +791,9 @@ namespace MoYu
         SSRPass::DrawOutputParameters mSSROutput;
         mSSRInput.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
         mSSRInput.worldNormalHandle = mGBufferOutput.gbuffer1Handle;
+        mSSRInput.colorPyramidHandle = lastFrameColorRTHandle;
         mSSRInput.depthTextureHandle = mDepthPyramidOutput.minDepthPtyramidHandle;
-        mSSRInput.motionVectorHandle = mDepthPyramidOutput.maxDepthPtyramidHandle;
+        mSSRInput.motionVectorHandle = mCameraMotionVectorOutput.motionVectorHandle;
         mSSRPass->update(graph, mSSRInput, mSSROutput);
         //=================================================================================
 

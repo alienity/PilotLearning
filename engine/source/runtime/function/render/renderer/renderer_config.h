@@ -178,6 +178,10 @@ namespace EngineConfig
         bool speedSmoothReject = false; // When enabled, history can be partially rejected for moving objects which gives a smoother transition. When disabled, history is either kept or totally rejected.
         bool speedSurfaceOnly = true; // When enabled, speed rejection used world space motion of the reflecting surface.
         bool speedTargetOnly = true; // When enabled, speed rejection used world space motion of the hit surface by the SSR.
+
+        float smoothnessFadeStart = 0.9f;// Controls the smoothness value at which the smoothness-controlled fade out starts.
+        float minSmoothness = 0.9f; // Controls the smoothness value at which HDRP activates SSR and the smoothness-controlled fade out stops.
+
     };
 
     extern SSRConfig g_SSRConfig;
