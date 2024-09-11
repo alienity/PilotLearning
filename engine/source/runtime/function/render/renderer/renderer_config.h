@@ -166,7 +166,7 @@ namespace EngineConfig
     struct SSRConfig
     {
         bool reflectSky = false; // When enabled, SSR handles sky reflection for opaque objects (not supported for SSR on transparent).
-        ScreenSpaceReflectionAlgorithm usedAlgorithm = Approximation; // Screen Space Reflections Algorithm used.
+        ScreenSpaceReflectionAlgorithm usedAlgorithm = PBRAccumulation; // Screen Space Reflections Algorithm used.
         float screenFadeDistance = 0.1f; // Controls the typical thickness of objects the reflection rays may pass behind.
         int rayMaxIterations = 64; // Sets the maximum number of steps HDRP uses for raytracing. Affects both correctness and performance.
         float depthBufferThickness = 0.01f; // Controls the distance at which HDRP fades out SSR near the edge of the screen.
@@ -180,7 +180,7 @@ namespace EngineConfig
         bool speedTargetOnly = true; // When enabled, speed rejection used world space motion of the hit surface by the SSR.
 
         float smoothnessFadeStart = 0.9f;// Controls the smoothness value at which the smoothness-controlled fade out starts.
-        float minSmoothness = 0.9f; // Controls the smoothness value at which HDRP activates SSR and the smoothness-controlled fade out stops.
+        float minSmoothness = 0.01f; // Controls the smoothness value at which HDRP activates SSR and the smoothness-controlled fade out stops.
 
     };
 

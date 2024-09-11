@@ -302,11 +302,14 @@ namespace MoYu
         ssrTracePass.Read(owenScrambledTextureHandle);
         ssrTracePass.Read(scramblingTileXSPPHandle);
         ssrTracePass.Read(rankingTileXSPPHandle);
-        ssrTracePass.Write(SSRHitPointTextureHandle);
+        ssrTracePass.Write(SSRHitPointTextureHandle, true);
 
         ssrTracePass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
             RHI::D3D12ComputeContext* pContext = context->GetComputeContext();
 
+            pContext->TransitionBarrier(RegGetTex(SSRHitPointTextureHandle), D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES, true);
+            pContext->ClearUAV(RegGetTex(SSRHitPointTextureHandle));
+            
             pContext->SetRootSignature(pSSRTraceSignature.get());
             pContext->SetPipelineState(pSSRTracePSO.get());
 
@@ -346,11 +349,14 @@ namespace MoYu
         ssrReprojectPass.Read(depthTextureHandle);
         ssrReprojectPass.Read(motionVectorHandle);
         ssrReprojectPass.Read(SSRHitPointTextureHandle);
-        ssrReprojectPass.Write(ssrAccumHandle);
+        ssrReprojectPass.Write(ssrAccumHandle, true);
 
         ssrReprojectPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
             RHI::D3D12ComputeContext* pContext = context->GetComputeContext();
 
+            pContext->TransitionBarrier(RegGetTex(ssrAccumHandle), D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES, true);
+            pContext->ClearUAV(RegGetTex(ssrAccumHandle));
+            
             pContext->SetRootSignature(pSSRReprojectSignature.get());
             pContext->SetPipelineState(pSSRReprojectPSO.get());
 
@@ -429,10 +435,14 @@ namespace MoYu
             pContext->Dispatch2D(colorTexDesc.Width, colorTexDesc.Height, 8, 8);
         });
 
+        passOutput.ssrOutHandle = ssrLightingTextureHandle;
     }
 
     void SSRPass::destroy()
     {
+
+
+
 
 
     }

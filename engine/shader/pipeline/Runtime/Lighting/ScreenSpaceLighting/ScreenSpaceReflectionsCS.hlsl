@@ -1,5 +1,4 @@
 
-#define SSR_APPROX
 // Tweak parameters.
 // #define DEBUG
 #define SSR_TRACE_BEHIND_OBJECTS
@@ -174,7 +173,9 @@ void GetHitInfos(
 
     float  deviceDepth = LOAD_TEXTURE2D(_CameraDepthTexture, positionSS).r;
 
-    float2 positionNDC = positionSS * _ScreenSize.zw + (0.5 * _ScreenSize.zw);
+    // https://github.com/gpuweb/gpuweb/issues/416
+    float2 positionNDC = float2(positionSS.x, _ScreenSize.y - positionSS.y) * _ScreenSize.zw + (0.5 * _ScreenSize.zw);
+    
     positionWS = ComputeWorldSpacePosition(positionNDC, deviceDepth, UNITY_MATRIX_I_VP(frameUniform.cameraUniform));
     V = GetWorldSpaceNormalizeViewDir(frameUniform, positionWS);
 
@@ -225,7 +226,7 @@ float3 GetWorldSpacePosition(FrameUniforms frameUniform, Texture2D<float> _Camer
     float  deviceDepth = LOAD_TEXTURE2D(_CameraDepthTexture, positionSS).r;
 #endif
 
-    float2 positionNDC = positionSS *_ScreenSize.zw + (0.5 * _ScreenSize.zw);
+    float2 positionNDC = float2(positionSS.x, _ScreenSize.y - positionSS.y) * _ScreenSize.zw + (0.5 * _ScreenSize.zw);
 
     return ComputeWorldSpacePosition(positionNDC, deviceDepth, UNITY_MATRIX_I_VP(frameUniform.cameraUniform));
 }
@@ -239,7 +240,7 @@ float2 GetWorldSpacePoint(
     positionSrcWS = GetWorldSpacePosition(frameUniform, _CameraDepthTexture, positionSS);
 
     float2 hitData = _SsrHitPointTexture[positionSS].xy;
-    uint2 positionDstSS = (hitData.xy - (0.5 * _ScreenSize.zw)) / _ScreenSize.zw;
+    uint2 positionDstSS = (float2(hitData.x, _ScreenSize.y - hitData.y) - (0.5 * _ScreenSize.zw)) / _ScreenSize.zw;
 
     positionDstWS = GetWorldSpacePosition(frameUniform, _CameraDepthTexture, positionDstSS);
 
@@ -337,8 +338,8 @@ void ScreenSpaceReflectionsTracing(uint3 groupId          : SV_GroupID,
 {
     ConstantBuffer<FrameUniforms> frameUniform = ResourceDescriptorHeap[frameUniformIndex];
     ConstantBuffer<SSRConsBuffer> ssrStruct = ResourceDescriptorHeap[ssrStructBufferIndex];
-    Texture2D<float4> normalTexture = ResourceDescriptorHeap[normalBufferIndex];
-    Texture2D<float> depthTexture = ResourceDescriptorHeap[depthTextureIndex];
+    Texture2D<float4> _NormalTexture = ResourceDescriptorHeap[normalBufferIndex];
+    Texture2D<float> _DepthTexture = ResourceDescriptorHeap[depthTextureIndex];
     
     RWTexture2D<float2> _SsrHitPointTexture = ResourceDescriptorHeap[SsrHitPointTextureIndex];
     
@@ -387,9 +388,9 @@ void ScreenSpaceReflectionsTracing(uint3 groupId          : SV_GroupID,
     // }
 
     NormalData normalData;
-    DecodeFromNormalBuffer(normalTexture, positionSS, normalData);
+    DecodeFromNormalBuffer(_NormalTexture, positionSS, normalData);
 
-    float deviceDepth = LOAD_TEXTURE2D(depthTexture, positionSS).r;
+    float deviceDepth = LOAD_TEXTURE2D(_DepthTexture, positionSS).r;
 
 #ifdef SSR_APPROX
     float2 positionNDC = positionSS * _ScreenSize.zw + (0.5 * _ScreenSize.zw); // Should we precompute the half-texel bias? We seem to use it a lot.
@@ -409,7 +410,7 @@ void ScreenSpaceReflectionsTracing(uint3 groupId          : SV_GroupID,
     float perceptualRoughness;
     GetHitInfos(
         frameUniform, _FrameCount, _SsrPBRBias, _ScreenSize,
-        normalTexture, depthTexture, _OwenScrambledTexture, _ScramblingTileXSPP, _RankingTileXSPP, 
+        _NormalTexture, _DepthTexture, _OwenScrambledTexture, _ScramblingTileXSPP, _RankingTileXSPP, 
         positionSS, perceptualRoughness, positionWS, weight, N, R, V, NdotL, NdotH, VdotH, NdotV);
 
     if (NdotL < 0.001f || weight < 0.001f)
@@ -437,7 +438,8 @@ void ScreenSpaceReflectionsTracing(uint3 groupId          : SV_GroupID,
 
     float3 reflPosWS  = positionWS + R;
     float3 reflPosNDC = ComputeNormalizedDeviceCoordinatesWithZ(reflPosWS, UNITY_MATRIX_VP(cameraUniform)); // Jittered
-    float3 reflPosSS  = float3(reflPosNDC.xy * _ScreenSize.xy, reflPosNDC.z);
+
+    float3 reflPosSS  = float3(float2(reflPosNDC.x, 1.0f - reflPosNDC.y) * _ScreenSize.xy, reflPosNDC.z);
     float3 rayDir     = reflPosSS - rayOrigin;
     float3 rcpRayDir  = rcp(rayDir);
     int2   rayStep    = int2(rcpRayDir.x >= 0 ? 1 : 0,
@@ -452,7 +454,7 @@ void ScreenSpaceReflectionsTracing(uint3 groupId          : SV_GroupID,
     // and sample the color pyramid during the lighting pass.
     killRay = killRay || (reflPosSS.z <= 0);
     killRay = killRay || (dot(N, V) <= 0);
-    // killRay = killRay || (perceptualRoughness > _SsrRoughnessFadeEnd);
+    killRay = killRay || (perceptualRoughness > _SsrRoughnessFadeEnd);
 #ifndef SSR_TRACE_TOWARDS_EYE
     killRay = killRay || rayTowardsEye;
 #endif
@@ -516,7 +518,7 @@ void ScreenSpaceReflectionsTracing(uint3 groupId          : SV_GroupID,
         float4 bounds;
 
         bounds.xy = (mipCoord + rayStep) << mipLevel;
-        bounds.z  = LOAD_TEXTURE2D_LOD(depthTexture, mipCoord, mipLevel).r;
+        bounds.z  = LOAD_TEXTURE2D_LOD(_DepthTexture, mipCoord, mipLevel).r;
 
         // We define the depth of the base as the depth value as:
         // b = DeviceDepth((1 + thickness) * LinearDepth(d))
@@ -587,12 +589,8 @@ void ScreenSpaceReflectionsTracing(uint3 groupId          : SV_GroupID,
         // Note that we are using 'rayPos' from the penultimate iteration, rather than
         // recompute it using the last value of 't', which would result in an overshoot.
         // It also needs to be precisely at the center of the pixel to avoid artifacts.
-        float2 hitPositionNDC = floor(rayPos.xy) * _ScreenSize.zw + (0.5 * _ScreenSize.zw); // Should we precompute the half-texel bias? We seem to use it a lot.
+        float2 hitPositionNDC = floor(float2(rayPos.x, _ScreenSize.y - rayPos.y)) * _ScreenSize.zw + (0.5 * _ScreenSize.zw); // Should we precompute the half-texel bias? We seem to use it a lot.
         _SsrHitPointTexture[positionSS] = hitPositionNDC.xy;
-    }
-    else
-    {
-        _SsrHitPointTexture[positionSS] = float2(0, 0);
     }
 
     // If we do not hit anything, 'rayPos.xy' provides an indication where we stopped the search.
@@ -620,7 +618,7 @@ void ScreenSpaceReflectionsReprojection(uint3 dispatchThreadId : SV_DispatchThre
     ConstantBuffer<FrameUniforms> frameUniform = ResourceDescriptorHeap[frameUniformIndex];
     ConstantBuffer<SSRConsBuffer> ssrStruct = ResourceDescriptorHeap[ssrStructBufferIndex];
     Texture2D<float4> _ColorPyramidTexture = ResourceDescriptorHeap[colorPyramidTextureIndex];
-    Texture2D<float4> normalTexture = ResourceDescriptorHeap[normalBufferIndex];
+    Texture2D<float4> _NormalTexture = ResourceDescriptorHeap[normalBufferIndex];
     Texture2D<float> _CameraDepthTexture = ResourceDescriptorHeap[depthTextureIndex];
     Texture2D<float4> _CameraMotionVectorsTexture = ResourceDescriptorHeap[cameraMotionVectorsTextureIndex];
     Texture2D<float2> _SsrHitPointTexture = ResourceDescriptorHeap[SsrHitPointTextureIndex];
@@ -642,7 +640,7 @@ void ScreenSpaceReflectionsReprojection(uint3 dispatchThreadId : SV_DispatchThre
 
     float3 N;
     float perceptualRoughness;
-    GetNormalAndPerceptualRoughness(normalTexture, positionSS0, N, perceptualRoughness);
+    GetNormalAndPerceptualRoughness(_NormalTexture, positionSS0, N, perceptualRoughness);
 
     // Compute the actual roughness
     float roughness = PerceptualRoughnessToRoughness(perceptualRoughness);
@@ -653,13 +651,12 @@ void ScreenSpaceReflectionsReprojection(uint3 dispatchThreadId : SV_DispatchThre
     if (max(hitPositionNDC.x, hitPositionNDC.y) == 0)
     {
         // Miss.
-        _SSRAccumTexture[positionSS0] = float4(0, 0, 0, 0);
         return;
     }
     
     float  depthOrigin = LOAD_TEXTURE2D(_CameraDepthTexture, positionSS0.xy).r;
 
-    PositionInputs posInputOrigin = GetPositionInput(positionSS0.xy, _ScreenSize.zw, depthOrigin,
+    PositionInputs posInputOrigin = GetPositionInput(float2(positionSS0.x, _ScreenSize.y - positionSS0.y), _ScreenSize.zw, depthOrigin,
         UNITY_MATRIX_I_VP(frameUniform.cameraUniform), UNITY_MATRIX_V(frameUniform.cameraUniform), uint2(8, 8));
     float3 originWS = posInputOrigin.positionWS + _WorldSpaceCameraPos;
 
@@ -719,7 +716,7 @@ void ScreenSpaceReflectionsReprojection(uint3 dispatchThreadId : SV_DispatchThre
             float weight;
             float2 hitData = GetSampleInfo(
                 frameUniform, _SsrHitPointTexture, _CameraDepthTexture, _CameraMotionVectorsTexture, _ColorPyramidTexture,
-                normalTexture, _ScreenSize, _ColorPyramidUvScaleAndLimitPrevFrame, _SsrRoughnessFadeRcpLength,
+                _NormalTexture, _ScreenSize, _ColorPyramidUvScaleAndLimitPrevFrame, _SsrRoughnessFadeRcpLength,
                 _SsrRoughnessFadeEndTimesRcpLength, _SsrEdgeFadeRcpLength, _RTHandleScale, positionSS, color, weight, opacity);
             if (max(hitData.x, hitData.y) != 0.0f && opacity > 0.0f)
             {
@@ -728,7 +725,7 @@ void ScreenSpaceReflectionsReprojection(uint3 dispatchThreadId : SV_DispatchThre
                 uint3 intCol   = asuint(color);
                 bool  isPosFin = Max3(intCol.r, intCol.g, intCol.b) < 0x7F800000;
 
-                float2 prevFrameUV = hitData * _ColorPyramidUvScaleAndLimitPrevFrame.xy;
+                // float2 prevFrameUV = hitData * _ColorPyramidUvScaleAndLimitPrevFrame.xy;
 
                 color   = isPosFin ? color : 0;
 
@@ -840,7 +837,7 @@ void MAIN_ACC(uint3 dispatchThreadId : SV_DispatchThreadID)
         min(hitPositionNDC.xy, 1.0f - 0.5f * _ScreenSize.zw) * _RTHandleScale.xy, 0), motionVectorNDC);
 
     float2 motionVectorCenterNDC;
-    float2 positionNDC = positionSS * _ScreenSize.zw + (0.5 * _ScreenSize.zw);
+    float2 positionNDC = float2(positionSS.x, _ScreenSize.y - positionSS.y) * _ScreenSize.zw + (0.5 * _ScreenSize.zw);
     DecodeMotionVector(SAMPLE_TEXTURE2D_LOD(_CameraMotionVectorsTexture, s_linear_clamp_sampler,
         min(positionNDC, 1.0f - 0.5f * _ScreenSize.zw) * _RTHandleScale.xy, 0), motionVectorCenterNDC);
 
