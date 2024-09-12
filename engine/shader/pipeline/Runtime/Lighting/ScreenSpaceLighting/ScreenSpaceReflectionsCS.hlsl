@@ -189,6 +189,8 @@ void GetHitInfos(
         L,
         weight);
 
+    L = reflect(-V, N);
+    
     NdotV = dot(normalData.normalWS, V);
     NdotL = dot(normalData.normalWS, L);
     float3 H = normalize(V + L);
@@ -211,7 +213,7 @@ float2 GetHitNDC(Texture2D<float4> _CameraMotionVectorsTexture, float4 _ScreenSi
     // This would require keeping the depth buffer from the previous frame.
     float2 motionVectorNDC;
     DecodeMotionVector(SAMPLE_TEXTURE2D_LOD(_CameraMotionVectorsTexture, s_linear_clamp_sampler,
-        min(positionNDC, 1.0f - 0.5f * _ScreenSize.zw) * _RTHandleScale.xy, 0), motionVectorNDC);
+        min(float2(positionNDC.x, 1-positionNDC.y), 1.0f - 0.5f * _ScreenSize.zw) * _RTHandleScale.xy, 0), motionVectorNDC);
     float2 prevFrameNDC = positionNDC - motionVectorNDC;
     return prevFrameNDC;
 }
@@ -258,7 +260,7 @@ float3 GetHitColor(
 
     float tmpCoef = PerceptualRoughnessFade(perceptualRoughness, _SsrRoughnessFadeRcpLength, _SsrRoughnessFadeEndTimesRcpLength);
     opacity = EdgeOfScreenFade(prevFrameNDC, _SsrEdgeFadeRcpLength) * tmpCoef;
-    return SAMPLE_TEXTURE2D_LOD(_ColorPyramidTexture, s_trilinear_clamp_sampler, prevFrameUV, mipLevel).rgb;
+    return SAMPLE_TEXTURE2D_LOD(_ColorPyramidTexture, s_trilinear_clamp_sampler, float2(prevFrameUV.x, 1.0f-prevFrameUV.y), mipLevel).rgb;
 }
 
 float2 GetSampleInfo(
@@ -663,7 +665,7 @@ void ScreenSpaceReflectionsReprojection(uint3 dispatchThreadId : SV_DispatchThre
     // TODO: this texture is sparse (mostly black). Can we avoid reading every texel? How about using Hi-S?
     float2 motionVectorNDC;
     DecodeMotionVector(SAMPLE_TEXTURE2D_LOD(_CameraMotionVectorsTexture, s_linear_clamp_sampler,
-        min(hitPositionNDC, 1.0f - 0.5f * _ScreenSize.zw) * _RTHandleScale.xy, 0), motionVectorNDC);
+        min(float2(hitPositionNDC.x, 1.0f - hitPositionNDC.y), 1.0f - 0.5f * _ScreenSize.zw) * _RTHandleScale.xy, 0), motionVectorNDC);
     float2 prevFrameNDC = hitPositionNDC - motionVectorNDC;
     float2 prevFrameUV = prevFrameNDC * _ColorPyramidUvScaleAndLimitPrevFrame.xy;
 
@@ -683,7 +685,7 @@ void ScreenSpaceReflectionsReprojection(uint3 dispatchThreadId : SV_DispatchThre
 
 #ifdef SSR_APPROX
     // Note that the color pyramid uses it's own viewport scale, since it lives on the camera.
-    float3 color    = SAMPLE_TEXTURE2D_LOD(_ColorPyramidTexture, s_trilinear_clamp_sampler, prevFrameUV, mipLevel).rgb;
+    float3 color    = SAMPLE_TEXTURE2D_LOD(_ColorPyramidTexture, s_trilinear_clamp_sampler, float2(prevFrameUV.x, 1.0f-prevFrameUV.y), mipLevel).rgb;
 
     // Disable SSR for negative, infinite and NaN history values.
     uint3 intCol   = asuint(color);
@@ -834,12 +836,12 @@ void MAIN_ACC(uint3 dispatchThreadId : SV_DispatchThreadID)
 
     float2 motionVectorNDC;
     DecodeMotionVector(SAMPLE_TEXTURE2D_LOD(_CameraMotionVectorsTexture, s_linear_clamp_sampler,
-        min(hitPositionNDC.xy, 1.0f - 0.5f * _ScreenSize.zw) * _RTHandleScale.xy, 0), motionVectorNDC);
+        min(float2(hitPositionNDC.x, 1.0f-hitPositionNDC.y), 1.0f - 0.5f * _ScreenSize.zw) * _RTHandleScale.xy, 0), motionVectorNDC);
 
     float2 motionVectorCenterNDC;
     float2 positionNDC = float2(positionSS.x, _ScreenSize.y - positionSS.y) * _ScreenSize.zw + (0.5 * _ScreenSize.zw);
     DecodeMotionVector(SAMPLE_TEXTURE2D_LOD(_CameraMotionVectorsTexture, s_linear_clamp_sampler,
-        min(positionNDC, 1.0f - 0.5f * _ScreenSize.zw) * _RTHandleScale.xy, 0), motionVectorCenterNDC);
+        min(float2(positionNDC.x, 1.0f-positionNDC.y), 1.0f - 0.5f * _ScreenSize.zw) * _RTHandleScale.xy, 0), motionVectorCenterNDC);
 
 #ifdef WORLD_SPEED_REJECTION
 #ifdef DEPTH_SOURCE_NOT_FROM_MIP_CHAIN

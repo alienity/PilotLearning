@@ -169,7 +169,7 @@ namespace EngineConfig
         ScreenSpaceReflectionAlgorithm usedAlgorithm = PBRAccumulation; // Screen Space Reflections Algorithm used.
         float screenFadeDistance = 0.1f; // Controls the typical thickness of objects the reflection rays may pass behind.
         int rayMaxIterations = 64; // Sets the maximum number of steps HDRP uses for raytracing. Affects both correctness and performance.
-        float depthBufferThickness = 0.01f; // Controls the distance at which HDRP fades out SSR near the edge of the screen.
+        float depthBufferThickness = 0.1f; // Controls the distance at which HDRP fades out SSR near the edge of the screen.
         float accumulationFactor = 0.75f; // Controls the amount of accumulation (0 no accumulation, 1 just accumulate)
         float biasFactor = 0.5f; // For PBR: Controls the bias of accumulation (0 no bias, 1 bias ssr)
         bool enableWorldSpeedRejection = false; // When enabled, world space speed from Motion vector is used to reject samples.
