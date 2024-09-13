@@ -174,7 +174,8 @@ void GetHitInfos(
     float  deviceDepth = LOAD_TEXTURE2D(_CameraDepthTexture, positionSS).r;
 
     // https://github.com/gpuweb/gpuweb/issues/416
-    float2 positionNDC = float2(positionSS.x, _ScreenSize.y - positionSS.y) * _ScreenSize.zw + (0.5 * _ScreenSize.zw);
+    float2 positionNDC = positionSS.xy * _ScreenSize.zw + (0.5 * _ScreenSize.zw);
+    positionNDC.y = 1 - positionNDC.y;
     
     positionWS = ComputeWorldSpacePosition(positionNDC, deviceDepth, UNITY_MATRIX_I_VP(frameUniform.cameraUniform));
     V = GetWorldSpaceNormalizeViewDir(frameUniform, positionWS);
@@ -182,15 +183,14 @@ void GetHitInfos(
     N = normalData.normalWS;
 
 #ifdef SAMPLES_VNDF
-    SampleGGX_VNDF(roughness,
+    SampleGGX_VNDF(
+        roughness,
         localToWorld,
         V,
         Xi,
         L,
         weight);
 
-    L = reflect(-V, N);
-    
     NdotV = dot(normalData.normalWS, V);
     NdotL = dot(normalData.normalWS, L);
     float3 H = normalize(V + L);
@@ -228,7 +228,8 @@ float3 GetWorldSpacePosition(FrameUniforms frameUniform, Texture2D<float> _Camer
     float  deviceDepth = LOAD_TEXTURE2D(_CameraDepthTexture, positionSS).r;
 #endif
 
-    float2 positionNDC = float2(positionSS.x, _ScreenSize.y - positionSS.y) * _ScreenSize.zw + (0.5 * _ScreenSize.zw);
+    float2 positionNDC = positionSS.xy * _ScreenSize.zw + (0.5 * _ScreenSize.zw);
+    positionNDC.y = 1 - positionNDC.y;
 
     return ComputeWorldSpacePosition(positionNDC, deviceDepth, UNITY_MATRIX_I_VP(frameUniform.cameraUniform));
 }
@@ -242,7 +243,7 @@ float2 GetWorldSpacePoint(
     positionSrcWS = GetWorldSpacePosition(frameUniform, _CameraDepthTexture, positionSS);
 
     float2 hitData = _SsrHitPointTexture[positionSS].xy;
-    uint2 positionDstSS = (float2(hitData.x, _ScreenSize.y - hitData.y) - (0.5 * _ScreenSize.zw)) / _ScreenSize.zw;
+    uint2 positionDstSS = (float2(hitData.x, 1.0f - hitData.y) - (0.5 * _ScreenSize.zw)) / _ScreenSize.zw;
 
     positionDstWS = GetWorldSpacePosition(frameUniform, _CameraDepthTexture, positionDstSS);
 
@@ -591,7 +592,8 @@ void ScreenSpaceReflectionsTracing(uint3 groupId          : SV_GroupID,
         // Note that we are using 'rayPos' from the penultimate iteration, rather than
         // recompute it using the last value of 't', which would result in an overshoot.
         // It also needs to be precisely at the center of the pixel to avoid artifacts.
-        float2 hitPositionNDC = floor(float2(rayPos.x, _ScreenSize.y - rayPos.y)) * _ScreenSize.zw + (0.5 * _ScreenSize.zw); // Should we precompute the half-texel bias? We seem to use it a lot.
+        float2 hitPositionNDC = floor(rayPos.xy) * _ScreenSize.zw + (0.5 * _ScreenSize.zw); // Should we precompute the half-texel bias? We seem to use it a lot.
+        hitPositionNDC.y = 1 - hitPositionNDC.y;
         _SsrHitPointTexture[positionSS] = hitPositionNDC.xy;
     }
 
@@ -823,7 +825,7 @@ void MAIN_ACC(uint3 dispatchThreadId : SV_DispatchThreadID)
     float2 hitPositionNDC = LOAD_TEXTURE2D(_SsrHitPointTexture, positionSS).xy;
 
     // Approximate the footprint based on the hit normal
-    float2 hitSS = (hitPositionNDC.xy - (0.5 * _ColorPyramidUvScaleAndLimitPrevFrame.zw)) / _ColorPyramidUvScaleAndLimitPrevFrame.zw;
+    float2 hitSS = (float2(hitPositionNDC.x, 1.0f-hitPositionNDC.y) - (0.5 * _ColorPyramidUvScaleAndLimitPrevFrame.zw)) / _ColorPyramidUvScaleAndLimitPrevFrame.zw;
 
     NormalData hitNormalData;
     DecodeFromNormalBuffer(normalTexture, hitSS, hitNormalData);
@@ -839,7 +841,8 @@ void MAIN_ACC(uint3 dispatchThreadId : SV_DispatchThreadID)
         min(float2(hitPositionNDC.x, 1.0f-hitPositionNDC.y), 1.0f - 0.5f * _ScreenSize.zw) * _RTHandleScale.xy, 0), motionVectorNDC);
 
     float2 motionVectorCenterNDC;
-    float2 positionNDC = float2(positionSS.x, _ScreenSize.y - positionSS.y) * _ScreenSize.zw + (0.5 * _ScreenSize.zw);
+    float2 positionNDC = positionSS.xy * _ScreenSize.zw + (0.5 * _ScreenSize.zw);
+    positionNDC.y = 1.0f - positionNDC.y;
     DecodeMotionVector(SAMPLE_TEXTURE2D_LOD(_CameraMotionVectorsTexture, s_linear_clamp_sampler,
         min(float2(positionNDC.x, 1.0f-positionNDC.y), 1.0f - 0.5f * _ScreenSize.zw) * _RTHandleScale.xy, 0), motionVectorCenterNDC);
 
