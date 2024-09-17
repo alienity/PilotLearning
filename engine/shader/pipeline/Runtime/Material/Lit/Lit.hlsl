@@ -1659,7 +1659,8 @@ DirectLighting EvaluateBSDF_Area(LightLoopContext lightLoopContext,
 // EvaluateBSDF_SSLighting for screen space lighting
 // ----------------------------------------------------------------------------
 
-IndirectLighting EvaluateBSDF_ScreenSpaceReflection(PositionInputs posInput,
+IndirectLighting EvaluateBSDF_ScreenSpaceReflection(FrameUniforms frameUniform,
+                                                    PositionInputs posInput,
                                                     // Note: We use inout here with PreLightData to track an extra reflectionHierarchyWeight for the coat, but it should be avoided otherwise
                                                     inout PreLightData preLightData,
                                                     BSDFData       bsdfData,
@@ -1668,11 +1669,13 @@ IndirectLighting EvaluateBSDF_ScreenSpaceReflection(PositionInputs posInput,
     IndirectLighting lighting;
     ZERO_INITIALIZE(IndirectLighting, lighting);
 
-    // // TODO: this texture is sparse (mostly black). Can we avoid reading every texel? How about using Hi-S?
-    // float4 ssrLighting = LOAD_TEXTURE2D(_SsrLightingTexture, posInput.positionSS);
-    // InversePreExposeSsrLighting(ssrLighting);
-
-    float4 ssrLighting = float4(0, 0, 0, 0);
+    float4 _ScreenSize = frameUniform.baseUniform._ScreenSize;
+    
+    Texture2D<float4> _SsrLightingTexture = ResourceDescriptorHeap[frameUniform.ssrUniform._SSRLightingTextureIndex];;
+    
+    // TODO: this texture is sparse (mostly black). Can we avoid reading every texel? How about using Hi-S?
+    float4 ssrLighting = LOAD_TEXTURE2D(_SsrLightingTexture, float2(posInput.positionSS.x, _ScreenSize.y - posInput.positionSS.y));
+    InversePreExposeSsrLighting(frameUniform, ssrLighting);
 
     // // Apply the weight on the ssr contribution (if required)
     // ApplyScreenSpaceReflectionWeight(ssrLighting);

@@ -808,6 +808,7 @@ namespace MoYu
         mLightLoopIntput.gbuffer2Handle = mGBufferOutput.gbuffer2Handle;
         mLightLoopIntput.gbuffer3Handle = mGBufferOutput.gbuffer3Handle;
         mLightLoopIntput.ssgiHandle = mSSGIOutput.ssgiOutHandle;
+        mLightLoopIntput.ssrHandle = mSSROutput.ssrOutHandle;
         mLightLoopIntput.gbufferDepthHandle = mGBufferOutput.depthHandle;
         mLightLoopIntput.mAOHandle = mGTAOOutput.outputAOHandle;
         mLightLoopIntput.directionalCascadeShadowmapHandle = directionalCascadeShadowmapHandle;
@@ -919,8 +920,7 @@ namespace MoYu
         mDrawTransIntputParams.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
         mDrawTransIntputParams.renderDataPerDrawHandle = indirectCullOutput.renderDataPerDrawHandle;
         mDrawTransIntputParams.propertiesPerMaterialHandle = indirectCullOutput.propertiesPerMaterialHandle;
-        mDrawTransIntputParams.transparentDrawHandle = indirectCullOutput.transparentDrawHandle.
-                                                                          indirectSortBufferHandle;
+        mDrawTransIntputParams.transparentDrawHandle = indirectCullOutput.transparentDrawHandle.indirectSortBufferHandle;
         mDrawTransIntputParams.directionalCascadeShadowmapHandle = directionalCascadeShadowmapHandle;
         mDrawTransIntputParams.spotShadowmapTexHandles = spotShadowmapHandle;
         mDrawTransOutputParams.renderTargetColorHandle = outColorHandle;
@@ -946,16 +946,15 @@ namespace MoYu
         outColorHandle = mPostprocessOutputParams.outputColorHandle;
         //=================================================================================
 
-
         //=================================================================================
         // display
         DisplayPass::DisplayInputParameters mDisplayIntputParams;
         DisplayPass::DisplayOutputParameters mDisplayOutputParams;
 
         //mDisplayIntputParams.inputRTColorHandle = mTerrainShadowmapOutputParams.directionalShadowmapHandles[3];
-        //mDisplayIntputParams.inputRTColorHandle = mSSGIOutput.ssrOutHandle;
-        mDisplayIntputParams.inputRTColorHandle = mSSROutput.ssrOutHandle;
-        //mDisplayIntputParams.inputRTColorHandle = outColorHandle;
+        //mDisplayIntputParams.inputRTColorHandle = mSSGIOutput.ssgiOutHandle;
+        //mDisplayIntputParams.inputRTColorHandle = mSSROutput.ssrOutHandle;
+        mDisplayIntputParams.inputRTColorHandle = outColorHandle;
         mDisplayOutputParams.renderTargetColorHandle = renderTargetColorHandle;
         //mDisplayOutputParams.renderTargetColorHandle = backBufColorHandle;
         mDisplayPass->update(graph, mDisplayIntputParams, mDisplayOutputParams);

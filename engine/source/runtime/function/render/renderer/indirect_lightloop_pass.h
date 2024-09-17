@@ -30,6 +30,7 @@ namespace MoYu
             RHI::RgResourceHandle gbufferDepthHandle;
 
             RHI::RgResourceHandle ssgiHandle;
+            RHI::RgResourceHandle ssrHandle;
 
             RHI::RgResourceHandle mAOHandle;
 

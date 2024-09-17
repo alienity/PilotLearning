@@ -4,7 +4,7 @@
 #ifndef LIGHTLOOP_HLSL
 #define LIGHTLOOP_HLSL
 
-#define _DISABLE_SSR
+// #define _DISABLE_SSR
 #define _DISABLE_SSR_TRANSPARENT
 
 #define LIGHTLOOP_DISABLE_TILE_AND_CLUSTER
@@ -120,8 +120,7 @@ void LightLoop(
         // Apply SSR.
     #if (defined(_SURFACE_TYPE_TRANSPARENT) && !defined(_DISABLE_SSR_TRANSPARENT)) || (!defined(_SURFACE_TYPE_TRANSPARENT) && !defined(_DISABLE_SSR))
         {
-            IndirectLighting indirect = EvaluateBSDF_ScreenSpaceReflection(posInput, preLightData, bsdfData,
-                                                                           reflectionHierarchyWeight);
+            IndirectLighting indirect = EvaluateBSDF_ScreenSpaceReflection(frameUniform, posInput, preLightData, bsdfData, reflectionHierarchyWeight);
             AccumulateIndirectLighting(indirect, aggregateLighting);
         }
     #endif

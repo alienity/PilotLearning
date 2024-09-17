@@ -441,12 +441,12 @@ float4 SampleEnvWithDistanceBaseRoughness(LightLoopContext lightLoopContext, Sam
     return SampleEnv(lightLoopContext, lightData.envIndex, sampleStruct, R, PerceptualRoughnessToMipmapLevel(perceptualRoughness) * lightData.roughReflections, lightData.rangeCompressionFactorCompensation, posInput.positionNDC, sliceIdx);
 }
 
-void InversePreExposeSsrLighting(inout float4 ssrLighting)
+void InversePreExposeSsrLighting(FrameUniforms frameUniforms, inout float4 ssrLighting)
 {
-    // // Raytrace reflection use the current frame exposure - TODO: currently the buffer don't use pre-exposure.
-    // // Screen space reflection reuse color buffer from previous frame
-    // float exposureMultiplier = _EnableRayTracedReflections ? 1.0 : GetInversePreviousExposureMultiplier();
-    // ssrLighting.rgb *= exposureMultiplier;
+    // Raytrace reflection use the current frame exposure - TODO: currently the buffer don't use pre-exposure.
+    // Screen space reflection reuse color buffer from previous frame
+    float exposureMultiplier = GetInversePreviousExposureMultiplier(frameUniforms);
+    ssrLighting.rgb *= exposureMultiplier;
 }
 
 void ApplyScreenSpaceReflectionWeight(inout float4 ssrLighting)

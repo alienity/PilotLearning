@@ -127,10 +127,10 @@ namespace MoYu
         {
             ShaderCompileOptions shaderCompileOpt = ShaderCompileOptions(L"MAIN_ACC");
             shaderCompileOpt.SetDefine(L"SSR_ACCUMULATE", L"1");
-            shaderCompileOpt.SetDefine(L"WORLD_SPEED_REJECTION", L"1");
-            shaderCompileOpt.SetDefine(L"SSR_SMOOTH_SPEED_REJECTION", L"1");
-            shaderCompileOpt.SetDefine(L"USE_SPEED_SURFACE", L"1");
-            shaderCompileOpt.SetDefine(L"USE_SPEED_TARGET", L"1");
+            shaderCompileOpt.SetDefine(L"WORLD_SPEED_REJECTION", EngineConfig::g_SSRConfig.enableWorldSpeedRejection ? L"1" : L"0");
+            shaderCompileOpt.SetDefine(L"SSR_SMOOTH_SPEED_REJECTION", EngineConfig::g_SSRConfig.speedSmoothReject ? L"1" : L"0");
+            shaderCompileOpt.SetDefine(L"USE_SPEED_SURFACE", EngineConfig::g_SSRConfig.speedSurfaceOnly ? L"1" : L"0");
+            shaderCompileOpt.SetDefine(L"USE_SPEED_TARGET", EngineConfig::g_SSRConfig.speedTargetOnly ? L"1" : L"0");
 
             SSRAccumulateCS = m_ShaderCompiler->CompileShader(
                 RHI_SHADER_TYPE::Compute, m_ShaderRootPath / "pipeline/Runtime/Lighting/ScreenSpaceLighting/ScreenSpaceReflectionsCS.hlsl",
