@@ -44,6 +44,14 @@ namespace MoYu
             static BasicMesh ToBasicMesh(float width = 1.0f);
         };
 
+        struct TerrainPlane : BasicMesh
+        {
+            TerrainPlane(int gridCount, float meshSize);
+
+            static TerrainPlane ToBasicMesh(int meshGridCount = 16, float meshSize = 8);
+        };
+
+
     } // namespace Geometry
 
     /*

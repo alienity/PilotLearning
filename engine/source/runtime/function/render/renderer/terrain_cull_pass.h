@@ -5,6 +5,7 @@
 #include "runtime/resource/config_manager/config_manager.h"
 #include "runtime/function/render/rhi/rendergraph/RenderGraphCommon.h"
 #include "runtime/function/render/rhi/hlsl_data_types.h"
+#include "runtime/function/render/terrain/terrain_assert.h"
 
 namespace MoYu
 {
@@ -119,31 +120,32 @@ namespace MoYu
 
         RHI::RgBufferDesc grabDispatchArgsBufferDesc;
 
-        // terrain heightmap min max heightmap
-        std::shared_ptr<RHI::D3D12Texture> terrainMinHeightMap;
-        std::shared_ptr<RHI::D3D12Texture> terrainMaxHeightMap;
+        bool iMinMaxHeightReady;
 
-        bool isTerrainMinMaxHeightReady;
-
-        // 5中clipmap的meshtype
-        std::shared_ptr<RHI::D3D12Buffer> clipmapBaseCommandSigBuffer;
-        // terrain的clipmap的transform
-        std::shared_ptr<RHI::D3D12Buffer> clipmapTransformBuffer;
-        // tile count buffer
-        std::shared_ptr<RHI::D3D12Buffer> clipmapMeshCountBuffer;
+        std::shared_ptr<RHI::D3D12Texture> pMinMaxHeightMap; // RG32
+        std::shared_ptr<RHI::D3D12Texture> pQuadTreeMap; // R16
 
         // 相机视锥内的clipmap
         std::shared_ptr<RHI::D3D12Buffer> camVisableClipmapBuffer;
         // 方向光的多级clipmap
         TerrainDirShadowmapCommandBuffer dirVisableClipmapBuffers;
 
-        Shader mainCamVisClipmapCS;
-        std::shared_ptr<RHI::D3D12RootSignature> pMainCamVisClipmapSignature;
-        std::shared_ptr<RHI::D3D12PipelineState> pMainCamVisClipmapGenPSO;
+        Shader TraverseQuadTreeCS;
+        std::shared_ptr<RHI::D3D12RootSignature> pTraverseQuadTreeSignature;
+        std::shared_ptr<RHI::D3D12PipelineState> pTraverseQuadTreePSO;
 
-        Shader dirVisClipmapCS;
-        std::shared_ptr<RHI::D3D12RootSignature> pDirVisClipmapSignature;
-        std::shared_ptr<RHI::D3D12PipelineState> pDirVisClipmapGenPSO;
+        Shader BuildLodMapCS;
+        std::shared_ptr<RHI::D3D12RootSignature> pBuildLodMapSignature;
+        std::shared_ptr<RHI::D3D12PipelineState> pBuildLodMapPSO;
+
+
+        //Shader mainCamVisClipmapCS;
+        //std::shared_ptr<RHI::D3D12RootSignature> pMainCamVisClipmapSignature;
+        //std::shared_ptr<RHI::D3D12PipelineState> pMainCamVisClipmapGenPSO;
+
+        //Shader dirVisClipmapCS;
+        //std::shared_ptr<RHI::D3D12RootSignature> pDirVisClipmapSignature;
+        //std::shared_ptr<RHI::D3D12PipelineState> pDirVisClipmapGenPSO;
 	};
 }
 

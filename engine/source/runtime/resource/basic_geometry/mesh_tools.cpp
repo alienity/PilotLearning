@@ -294,6 +294,110 @@ namespace MoYu
             return _mesh;
         }
 
+        TerrainPlane::TerrainPlane(int meshGridCount, float meshSize)
+        {
+            float meshGridSize = meshSize / meshGridCount;
+
+            for (int i = 0; i <= meshGridCount; i++)
+            {
+                for (int j = 0; j <= meshGridCount; j++)
+                {
+                    Vertex _t;
+                    _t.position = glm::float3(j * meshGridSize, 0, i * meshGridSize);
+                    _t.normal = glm::float3(0, 1, 0);
+                    _t.tangent = glm::float4(1, 0, 0, 1);
+                    _t.uv0 = glm::float2(float(j) / meshGridCount, float(i) / meshGridCount);
+                    vertices.push_back(_t);
+
+                    if (i != meshGridCount && j != meshGridCount)
+                    {
+                        int t00 = i * meshGridCount + j;
+                        int t10 = (i + 1) * meshGridCount + j;
+                        int t01 = i * meshGridCount + (j + 1);
+                        int t11 = (i + 1) * meshGridCount + (j + 1);
+
+                        indices.push_back(t00);
+                        indices.push_back(t10);
+                        indices.push_back(t11);
+
+                        indices.push_back(t00);
+                        indices.push_back(t11);
+                        indices.push_back(t01);
+                    }
+                }
+            }
+        }
+
+        TerrainPlane TerrainPlane::ToBasicMesh(int gridCount, float meshSize)
+        {
+            TerrainPlane _mesh = TerrainPlane(gridCount, meshSize);
+
+            {
+                SMikkTSpaceInterface iface{};
+                iface.m_getNumFaces = [](const SMikkTSpaceContext* pContext) -> int {
+                    BasicMesh* working_mesh = static_cast<BasicMesh*>(pContext->m_pUserData);
+                    float f_size = (float)working_mesh->indices.size() / 3.f;
+                    int   i_size = (int)working_mesh->indices.size() / 3;
+                    assert((f_size - (float)i_size) == 0.f);
+                    return i_size;
+                    };
+                iface.m_getNumVerticesOfFace = [](const SMikkTSpaceContext* pContext, const int iFace) -> int {
+                    return 3;
+                    };
+                iface.m_getNormal =
+                    [](const SMikkTSpaceContext* pContext, float fvNormOut[], const int iFace, const int iVert) {
+                    BasicMesh* working_mesh = static_cast<BasicMesh*>(pContext->m_pUserData);
+                    int indices_index = iFace * 3 + iVert;
+                    int index = working_mesh->indices[indices_index];
+                    auto vertex = working_mesh->vertices[index];
+                    fvNormOut[0] = vertex.normal.x;
+                    fvNormOut[1] = vertex.normal.y;
+                    fvNormOut[2] = vertex.normal.z;
+                    };
+                iface.m_getPosition =
+                    [](const SMikkTSpaceContext* pContext, float fvPosOut[], const int iFace, const int iVert) {
+                    BasicMesh* working_mesh = static_cast<BasicMesh*>(pContext->m_pUserData);
+                    int indices_index = iFace * 3 + iVert;
+                    int index = working_mesh->indices[indices_index];
+                    auto vertex = working_mesh->vertices[index];
+                    fvPosOut[0] = vertex.position.x;
+                    fvPosOut[1] = vertex.position.y;
+                    fvPosOut[2] = vertex.position.z;
+                    };
+                iface.m_getTexCoord =
+                    [](const SMikkTSpaceContext* pContext, float fvTexcOut[], const int iFace, const int iVert) {
+                    BasicMesh* working_mesh = static_cast<BasicMesh*>(pContext->m_pUserData);
+                    int indices_index = iFace * 3 + iVert;
+                    int index = working_mesh->indices[indices_index];
+                    auto vertex = working_mesh->vertices[index];
+                    fvTexcOut[0] = vertex.uv0.x;
+                    fvTexcOut[1] = vertex.uv0.y;
+                    };
+                iface.m_setTSpaceBasic = [](const SMikkTSpaceContext* pContext,
+                    const float               fvTangent[],
+                    const float               fSign,
+                    const int                 iFace,
+                    const int                 iVert) {
+                        BasicMesh* working_mesh = static_cast<BasicMesh*>(pContext->m_pUserData);
+                        int indices_index = iFace * 3 + iVert;
+                        int index = working_mesh->indices[indices_index];
+                        auto* vertex = &working_mesh->vertices[index];
+                        vertex->tangent.x = fvTangent[0];
+                        vertex->tangent.y = fvTangent[1];
+                        vertex->tangent.z = fvTangent[2];
+                        vertex->tangent.w = fSign;
+                    };
+
+                SMikkTSpaceContext context{};
+                context.m_pInterface = &iface;
+                context.m_pUserData = &_mesh;
+
+                genTangSpaceDefault(&context);
+            }
+
+            return _mesh;
+        }
+
     }
 
     /*
