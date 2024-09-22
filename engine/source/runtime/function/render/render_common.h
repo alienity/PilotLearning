@@ -415,14 +415,21 @@ namespace MoYu
 
     struct InternalTerrain
     {
-        glm::int2 terrain_size;
-        int terrain_max_height;
+        glm::int3 terrain_size{ glm::int3(10240, 2048, 10240) };
 
-        int mesh_size;
-        int mesh_lods;
+        int max_node_id = 34124; //5x5+10x10+20x20+40x40+80x80+160x160 - 1
+        int max_terrain_lod = 5; // 最大的lod等级
+        int max_lod_node_count = 5; // 每级lod上拥有的node数
 
-        InternalScratchClipmap terrain_scratch_clipmap;
-        InternalClipmap terrain_clipmap;
+        int patch_mesh_grid_count = 16; // PatchMesh由16x16网格组成
+        int patch_mesh_size = 8; // PatchMesh边长8米
+        int patch_count_per_node = 8; // Node拆成8x8个Patch
+
+        float patch_mesh_grid_size = 0.5f; // patch_mesh_size / patch_mesh_grid_count
+        int sector_count_terrain = 160; // terrain_size.x / (patch_mesh_size * patch_count_per_node);
+
+        InternalScratchMesh patch_scratch_mesh;
+        InternalMesh patch_mesh;
 
         std::shared_ptr<MoYu::MoYuScratchImage> terrain_heightmap_scratch;
         std::shared_ptr<MoYu::MoYuScratchImage> terrain_normalmap_scratch;
@@ -677,8 +684,15 @@ namespace MoYu
 
     struct SceneTerrainMesh
     {
-        glm::int2  terrain_size {glm::int2(1024, 1024)};
-        int        terrian_max_height {1024};
+        glm::int3 terrain_size { glm::int3(10240, 2048, 10240) };
+
+        int max_terrain_lod = 5; // 最大的lod等级
+        int max_lod_node_count = 5; // 每级lod上拥有的node数
+
+        int patch_mesh_grid_count = 16; // PatchMesh由16x16网格组成
+        int patch_mesh_size = 8; // PatchMesh边长8米
+        int patch_count_per_node = 8; // Node拆成8x8个Patch
+
         SceneImage m_terrain_height_map {};
         SceneImage m_terrain_normal_map {};
     };
@@ -686,7 +700,11 @@ namespace MoYu
     inline bool operator==(const SceneTerrainMesh& lhs, const SceneTerrainMesh& rhs)
     {
         return lhs.terrain_size == rhs.terrain_size && 
-               lhs.terrian_max_height == rhs.terrian_max_height &&
+               lhs.max_terrain_lod == rhs.max_terrain_lod &&
+               lhs.max_lod_node_count == rhs.max_lod_node_count &&
+               lhs.patch_mesh_grid_count == rhs.patch_mesh_grid_count &&
+               lhs.patch_mesh_size == rhs.patch_mesh_size &&
+               lhs.patch_count_per_node == rhs.patch_count_per_node &&
                lhs.m_terrain_height_map == rhs.m_terrain_height_map &&
                lhs.m_terrain_normal_map == rhs.m_terrain_normal_map;
     }

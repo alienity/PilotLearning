@@ -32,21 +32,21 @@ namespace MoYu
 
         struct TriangleMesh : BasicMesh
         {
-            TriangleMesh(float width);
+            TriangleMesh(float width = 1.0f);
 
             static BasicMesh ToBasicMesh(float width = 1.0f);
         };
 
         struct SquareMesh : BasicMesh
         {
-            SquareMesh(float width);
+            SquareMesh(float width = 1.0f);
 
             static BasicMesh ToBasicMesh(float width = 1.0f);
         };
 
         struct TerrainPlane : BasicMesh
         {
-            TerrainPlane(int gridCount, float meshSize);
+            TerrainPlane(int gridCount = 16, float meshSize = 8);
 
             static TerrainPlane ToBasicMesh(int meshGridCount = 16, float meshSize = 8);
         };

@@ -1,6 +1,6 @@
 #pragma once
 #include "runtime/function/render/render_common.h"
-#include "runtime/function/render/terrain/terrain_3d.h"
+#include "runtime/resource/basic_geometry/mesh_tools.h"
 #include <vector>
 
 namespace MoYu
@@ -15,11 +15,6 @@ namespace MoYu
 
         void InitTerrainRenderer(SceneTerrainRenderer* sceneTerrainRenderer, SceneTerrainRenderer* cachedSceneTerrainRenderer, 
             InternalTerrain* internalTerrain, InternalTerrainMaterial* internalTerrainMaterial, RenderResource* renderResource);
-
-        // update terrain clipmap mesh data
-        void UpdateInternalTerrainClipmap(InternalTerrain* internalTerrain,
-                                          glm::float3      cameraPos,
-                                          RenderResource*  renderResource);
 
         bool updateInternalTerrainRenderer(RenderResource*          renderResource,
                                            SceneTerrainRenderer     scene_terrain_renderer,
@@ -37,28 +32,23 @@ namespace MoYu
     private:
         void InitTerrainBasicInfo(SceneTerrainRenderer* sceneTerrainRenderer, InternalTerrain* internalTerrain);
 
-        void InitTerrainHeightAndNormalMap(SceneTerrainRenderer* sceneTerrainRenderer,
-                                           SceneTerrainRenderer* cachedSceneTerrainRenderer,
-                                           InternalTerrain*      internalTerrain,
-                                           RenderResource*       renderResource);
-        void InitInternalTerrainClipmap(InternalTerrain* internalTerrain, RenderResource* renderResource);
-        void InitTerrainBaseTextures(SceneTerrainRenderer*    sceneTerrainRenderer,
-                                     SceneTerrainRenderer*    cachedSceneTerrainRenderer,
-                                     InternalTerrainMaterial* internalTerrainMaterial,
-                                     RenderResource*          renderResource);
+        void InitTerrainPatchMesh(SceneTerrainRenderer* sceneTerrainRenderer, InternalTerrain* internalTerrain, RenderResource* renderResource);
 
-        uint32_t GetClipCount();
-        void UpdateClipBuffer(HLSL::ClipmapTransform* clipmapIdxInstance);
-        void UpdateClipPatchScratchMesh(InternalScratchMesh* internalScratchMesh, GeoClipPatch geoPatch);
-        void UpdateClipPatchMesh(RenderResource* renderResource, InternalMesh* internalMesh, InternalScratchMesh* internalScratchMesh);
+        void InitTerrainHeightAndNormalMap(SceneTerrainRenderer* sceneTerrainRenderer, 
+            SceneTerrainRenderer* cachedSceneTerrainRenderer, InternalTerrain* internalTerrain, RenderResource* renderResource);
+
+        void InitTerrainBaseTextures(SceneTerrainRenderer* sceneTerrainRenderer, 
+            SceneTerrainRenderer* cachedSceneTerrainRenderer, InternalTerrainMaterial* internalTerrainMaterial, RenderResource* renderResource);
 
     private:
         glm::float2 last_cam_xz;
 
         bool mIsHeightmapInit;
         bool mIsNaterialInit;
+        bool mIsPatchMeshInit;
 
-        std::shared_ptr<Terrain3D> mTerrain3D;
+        MoYu::Geometry::TerrainPlane terrainPatch;
+
         InternalTerrainBaseTexture mInternalBaseTextures[2];
 
         std::shared_ptr<MoYu::MoYuScratchImage> terrain_heightmap_scratch;
@@ -66,6 +56,24 @@ namespace MoYu
 
         std::shared_ptr<RHI::D3D12Texture> terrain_heightmap;
         std::shared_ptr<RHI::D3D12Texture> terrain_normalmap;
+    };
+
+    /*
+     * 对于WorldLodParams
+     * - nodeSize为Node的边长(米)
+     * - patchExtent等于nodeSize/16
+     * - nodeCount等于WorldSize/nodeSize
+     * - sectorCountPerNode等于2^lod
+     */
+    struct TerrainConsBuffer
+    {
+        glm::float3 CameraPositionWS; // 相机世界空间坐标
+        int BoundsHeightRedundance; //包围盒在高度方向留出冗余空间，应对MinMaxHeightTexture的精度不足
+        glm::float3 WorldSize; //世界大小
+        float Padding0;
+        glm::float4 NodeEvaluationC; //节点评价系数。x为距离系数
+        glm::float4 WorldLodParams[6]; // (nodeSize,patchExtent,nodeCount,sectorCountPerNode)
+        glm::uint NodeIDOffsetOfLOD[6];
     };
 
 

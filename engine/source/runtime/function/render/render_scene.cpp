@@ -420,14 +420,4 @@ namespace MoYu
         }
     }
 
-    void RenderScene::updateTerrainClipmap(glm::float3 cameraPos, RenderResource* m_render_resource)
-    {
-        if (!m_terrain_renderers.empty())
-        {
-            InternalTerrain* internalTerrain = &m_terrain_renderers[0].internalTerrainRenderer.ref_terrain;
-
-            m_terrain_render_helper->UpdateInternalTerrainClipmap(internalTerrain, cameraPos, m_render_resource);
-        }
-    }
-
 }

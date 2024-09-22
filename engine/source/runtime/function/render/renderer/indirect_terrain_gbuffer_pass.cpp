@@ -9,6 +9,7 @@ namespace MoYu
 
     void IndirectTerrainGBufferPass::prepareMatBuffer(std::shared_ptr<RenderResource> render_resource)
     {
+        /*
         if (pMatTextureIndexBuffer == nullptr)
         {
             pMatTextureIndexBuffer = RHI::D3D12Buffer::Create(m_Device->GetLinkedDevice(),
@@ -49,10 +50,12 @@ namespace MoYu
                 (&pMaterialTillingBuffer[i])->normalTilling = terrainBaseTextures->normal_tilling;
             }
         }
+        */
     }
 
 	void IndirectTerrainGBufferPass::initialize(const DrawPassInitInfo& init_info)
 	{
+        /*
         albedoDesc                                  = init_info.albedoDesc;
         depthDesc                                   = init_info.depthDesc;
         worldNormalDesc                             = init_info.worldNormalDesc;
@@ -146,7 +149,7 @@ namespace MoYu
             PipelineStateStreamDesc psoDesc = {sizeof(PsoStream), &psoStream};
             pIndirectTerrainGBufferPSO = std::make_shared<RHI::D3D12PipelineState>(m_Device, L"IndirectTerrainGBuffer", psoDesc);
         }
-
+        */
 	}
 
     void IndirectTerrainGBufferPass::update(RHI::RenderGraph& graph, DrawInputParameters& passInput, GBufferOutput& passOutput)

@@ -24,13 +24,12 @@ namespace HLSL
 #include "../shader/pipeline/Runtime/Lighting/LightDefinition.hlsl"
 #include "../shader/pipeline/Runtime/Lighting/Shadow/HDShadowManager.hlsl"
 #include "../shader/pipeline/Runtime/ShaderLibrary/ShaderVariablesGlobal.hlsl"
+#include "../shader/pipeline/Runtime/Tools/Terrain/TerrainCommonInput.hlsl"
 #include "../shader/pipeline/Runtime/Material/Lit/LitProperties.hlsl"
 
     static constexpr size_t MaterialLimit = 2048;
     static constexpr size_t LightLimit    = 32;
     static constexpr size_t MeshLimit     = 2048;
-
-    static constexpr uint32_t GeoClipMeshType = 5;
 
     static const uint32_t m_point_light_shadow_map_dimension       = 2048;
     static const uint32_t m_directional_light_shadow_map_dimension = 4096;
@@ -55,43 +54,5 @@ namespace HLSL
     const std::uint64_t totalCommandBufferSizeInBytes = MeshLimit * sizeof(CommandSignatureParams);
 
     const std::uint64_t totalIndexCommandBufferInBytes = MeshLimit * sizeof(BitonicSortCommandSigParams);
-
-    /*
-    struct ClipmapTransform
-    {
-        glm::float4x4 transform;
-        int mesh_type;
-    };
-
-    struct ClipmapMeshCount
-    {
-        int tile_count;
-        int filler_count;
-        int trim_count;
-        int seam_count;
-        int cross_cunt;
-        int total_count;
-    };
-
-    struct ClipMeshCommandSigParams
-    {
-        D3D12_VERTEX_BUFFER_VIEW     VertexBuffer;
-        D3D12_INDEX_BUFFER_VIEW      IndexBuffer;
-        D3D12_DRAW_INDEXED_ARGUMENTS DrawIndexedArguments;
-        glm::int3                    _Padding_0;
-        glm::float4x2                ClipBoundingBox;
-    };
-
-    struct ToDrawCommandSignatureParams
-    {
-        uint32_t                     ClipIndex;
-        D3D12_VERTEX_BUFFER_VIEW     VertexBuffer;
-        D3D12_INDEX_BUFFER_VIEW      IndexBuffer;
-        D3D12_DRAW_INDEXED_ARGUMENTS DrawIndexedArguments;
-    };
-    */
-
-    // 512 * 512
-    #define MaxTerrainNodeCount 262144
 
 } // namespace HLSL

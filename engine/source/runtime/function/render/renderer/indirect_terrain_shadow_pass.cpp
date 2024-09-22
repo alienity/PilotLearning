@@ -8,6 +8,7 @@ namespace MoYu
 
     void IndirectTerrainShadowPass::initialize(const ShadowPassInitInfo& init_info)
     {
+        /*
         ShaderCompiler*       m_ShaderCompiler = init_info.m_ShaderCompiler;
         std::filesystem::path m_ShaderRootPath = init_info.m_ShaderRootPath;
 
@@ -68,6 +69,7 @@ namespace MoYu
             pIndirectTerrainShadowmapPSO =
                 std::make_shared<RHI::D3D12PipelineState>(m_Device, L"IndirectTerrainDrawShadowmap", psoDesc);
         }
+        */
     }
 
     void IndirectTerrainShadowPass::prepareShadowmaps(
@@ -82,6 +84,7 @@ namespace MoYu
 
     void IndirectTerrainShadowPass::update(RHI::RenderGraph& graph, ShadowInputParameters& passInput, ShadowOutputParameters& passOutput)
     {
+        /*
         RHI::RgResourceHandle perframeBufferHandle   = passInput.perframeBufferHandle;
         RHI::RgResourceHandle terrainHeightmapHandle = passInput.terrainHeightmapHandle;
         RHI::RgResourceHandle transformBufferHandle  = passInput.transformBufferHandle;
@@ -173,6 +176,7 @@ namespace MoYu
             }
              
         });
+        */
     }
 
     void IndirectTerrainShadowPass::destroy() {}

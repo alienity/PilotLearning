@@ -5,7 +5,6 @@
 #include "runtime/resource/config_manager/config_manager.h"
 #include "runtime/function/render/rhi/rendergraph/RenderGraphCommon.h"
 #include "runtime/function/render/rhi/hlsl_data_types.h"
-#include "runtime/function/render/terrain/terrain_assert.h"
 
 namespace MoYu
 {
@@ -122,13 +121,27 @@ namespace MoYu
 
         bool iMinMaxHeightReady;
 
-        std::shared_ptr<RHI::D3D12Texture> pMinMaxHeightMap; // RG32
+        /*
+         * 对于WorldLodParams
+         * - nodeSize为Node的边长(米)
+         * - patchExtent等于nodeSize/16
+         * - nodeCount等于WorldSize/nodeSize
+         * - sectorCountPerNode等于2^lod
+         */
+        glm::float4 worldLODParams[MAX_TERRAIN_LOD + 1];
+        int nodeIDOffsetLOD[MAX_TERRAIN_LOD + 1];
+
+        std::shared_ptr<RHI::D3D12Texture> pMinHeightMap; // RG32
+        std::shared_ptr<RHI::D3D12Texture> pMaxHeightMap; // RG32
         std::shared_ptr<RHI::D3D12Texture> pQuadTreeMap; // R16
 
-        // 相机视锥内的clipmap
-        std::shared_ptr<RHI::D3D12Buffer> camVisableClipmapBuffer;
-        // 方向光的多级clipmap
-        TerrainDirShadowmapCommandBuffer dirVisableClipmapBuffers;
+        //// 相机视锥内的clipmap
+        //std::shared_ptr<RHI::D3D12Buffer> camVisableClipmapBuffer;
+        //// 方向光的多级clipmap
+        //TerrainDirShadowmapCommandBuffer dirVisableClipmapBuffers;
+
+        // 纯地形绘制常量
+        std::shared_ptr<RHI::D3D12Buffer> mTerrainConsBuffer;
 
         Shader TraverseQuadTreeCS;
         std::shared_ptr<RHI::D3D12RootSignature> pTraverseQuadTreeSignature;
@@ -138,6 +151,9 @@ namespace MoYu
         std::shared_ptr<RHI::D3D12RootSignature> pBuildLodMapSignature;
         std::shared_ptr<RHI::D3D12PipelineState> pBuildLodMapPSO;
 
+        Shader BuildPatchesCS;
+        std::shared_ptr<RHI::D3D12RootSignature> pBuildPatchesSignature;
+        std::shared_ptr<RHI::D3D12PipelineState> pBuildPatchesPSO;
 
         //Shader mainCamVisClipmapCS;
         //std::shared_ptr<RHI::D3D12RootSignature> pMainCamVisClipmapSignature;

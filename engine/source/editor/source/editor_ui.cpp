@@ -726,8 +726,7 @@ namespace MoYu
 
                 SceneTerrainMesh* terrain_mesh_ptr = static_cast<SceneTerrainMesh*>(value_ptr);
 
-                m_editor_ui_creator["glm::int2"]("TerrainSize", isDirty, &terrain_mesh_ptr->terrain_size);
-                m_editor_ui_creator["int"]("TerrainMaxHeight", isDirty, &terrain_mesh_ptr->terrian_max_height);
+                m_editor_ui_creator["glm::int3"]("TerrainSize", isDirty, &terrain_mesh_ptr->terrain_size);
                 m_editor_ui_creator["SceneImage"]("TerrainHeightMap", isDirty, &terrain_mesh_ptr->m_terrain_height_map);
                 m_editor_ui_creator["SceneImage"]("TerrainNormalMap", isDirty, &terrain_mesh_ptr->m_terrain_normal_map);
 

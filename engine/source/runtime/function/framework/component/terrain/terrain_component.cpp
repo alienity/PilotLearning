@@ -17,9 +17,9 @@
 
 namespace MoYu
 {
-    SceneImage _defaultTerrainHeightmap {false, false, 1, "asset/texture/terrain/HeightMap.png"};
-    SceneImage _defaultTerrainNormalmap {false, false, 1, "asset/texture/terrain/NormalMap.png"};
-    TerrainComponentRes _defaultTerrainComponentRes {glm::int2(1024, 1024), 1024, _defaultTerrainHeightmap, _defaultTerrainNormalmap};
+    SceneImage _defaultTerrainHeightmap {false, false, 1, "asset/texture/terrain/TerrainHeightMap.png"};
+    SceneImage _defaultTerrainNormalmap {false, false, 1, "asset/texture/terrain/TerrainNormalMap.png"};
+    TerrainComponentRes _defaultTerrainComponentRes { glm::int3(10240, 2048, 10240), 5, 5, 16, 8, 8, _defaultTerrainHeightmap, _defaultTerrainNormalmap };
 
     void TerrainComponent::postLoadResource(std::weak_ptr<GObject> object, const std::string json_data)
     {
@@ -36,9 +36,8 @@ namespace MoYu
         m_terrain_res = res;
 
         m_terrain.terrain_size = res.terrain_size;
-        m_terrain.terrian_max_height = res.terrain_max_height;
-        m_terrain.m_terrain_height_map = res.m_heightmap_file;
-        m_terrain.m_terrain_normal_map = res.m_normalmap_file;
+        m_terrain.m_terrain_height_map = res.m_heightmap_file.m_image_file == "" ? _defaultTerrainHeightmap : res.m_heightmap_file;
+        m_terrain.m_terrain_normal_map = res.m_normalmap_file.m_image_file == "" ? _defaultTerrainNormalmap : res.m_normalmap_file;
 
         for (int i = 0; i < res.m_terrainMaterial.m_terrain_base_textures.size(); i++)
         {
@@ -54,10 +53,14 @@ namespace MoYu
     void TerrainComponent::save(ComponentDefinitionRes& out_component_res)
     {
         TerrainComponentRes terrain_res {};
-        (&terrain_res)->terrain_size       = m_terrain.terrain_size;
-        (&terrain_res)->terrain_max_height = m_terrain.terrian_max_height;
-        (&terrain_res)->m_heightmap_file   = m_terrain.m_terrain_height_map;
-        (&terrain_res)->m_normalmap_file   = m_terrain.m_terrain_normal_map;
+        (&terrain_res)->terrain_size = m_terrain.terrain_size;
+        (&terrain_res)->max_terrain_lod = m_terrain.max_terrain_lod;
+        (&terrain_res)->max_lod_node_count = m_terrain.max_lod_node_count;
+        (&terrain_res)->patch_mesh_grid_count = m_terrain.patch_mesh_grid_count;
+        (&terrain_res)->patch_mesh_size = m_terrain.patch_mesh_size;
+        (&terrain_res)->patch_count_per_node = m_terrain.patch_count_per_node;
+        (&terrain_res)->m_heightmap_file = m_terrain.m_terrain_height_map;
+        (&terrain_res)->m_normalmap_file = m_terrain.m_terrain_normal_map;
 
         TerrainMaterialRes res {};
         for (int i = 0; i < 2; i++)
@@ -83,8 +86,12 @@ namespace MoYu
     {
         m_terrain_res = _defaultTerrainComponentRes;
 
-        m_terrain  = SceneTerrainMesh {_defaultTerrainComponentRes.terrain_size,
-                                      _defaultTerrainComponentRes.terrain_max_height,
+        m_terrain  = SceneTerrainMesh{_defaultTerrainComponentRes.terrain_size,
+                                      _defaultTerrainComponentRes.max_terrain_lod,
+                                      _defaultTerrainComponentRes.max_lod_node_count,
+                                      _defaultTerrainComponentRes.patch_mesh_grid_count,
+                                      _defaultTerrainComponentRes.patch_mesh_size,
+                                      _defaultTerrainComponentRes.patch_count_per_node,
                                       _defaultTerrainComponentRes.m_heightmap_file,
                                       _defaultTerrainComponentRes.m_normalmap_file};
         m_material = {};

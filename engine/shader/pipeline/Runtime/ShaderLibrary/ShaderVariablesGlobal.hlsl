@@ -345,23 +345,7 @@ struct FrameUniforms
 // Terrain
 // =======================================
 
-struct ClipmapTransform
-{
-    float4x4 transform;
-    int mesh_type;
-};
-
-struct ClipmapMeshCount
-{
-    uint tile_count;
-    uint filler_count;
-    uint trim_count;
-    uint cross_cunt;
-    uint seam_count;
-    uint total_count;
-};
-
-struct ClipMeshCommandSigParams
+struct PatchMeshCommandSigParams
 {
     float4 vertexBufferView; // D3D12_VERTEX_BUFFER_VIEW 16
     float4 indexBufferView; // D3D12_INDEX_BUFFER_VIEW 16
@@ -373,20 +357,9 @@ struct ClipMeshCommandSigParams
 
 struct ToDrawCommandSignatureParams
 {
-    uint clipIndex; // ClipIndex 4
     D3D12_VERTEX_BUFFER_VIEW vertexBufferView; // D3D12_VERTEX_BUFFER_VIEW 16
     D3D12_INDEX_BUFFER_VIEW indexBufferView; // D3D12_INDEX_BUFFER_VIEW 16
     D3D12_DRAW_INDEXED_ARGUMENTS drawIndexedArguments; // D3D12_DRAW_INDEXED_ARGUMENTS 20
-};
-
-struct TerrainPatchNode
-{
-    float2 patchMinPos; // node的左下角顶点
-    float maxHeight; // 当前node最大高度
-    float minHeight; // 当前node最小高度
-    float nodeWidth; // patchnode的宽度
-    int mipLevel; // 当前node的mip等级
-    uint neighbor; // 更高一级mip作为邻居的标识
 };
 
 // =======================================
@@ -487,7 +460,7 @@ BoundingBox GetRendererBounds(RenderDataPerDraw renderDataPerDraw)
 
 //==============================ClipMeshCommandSigParams=================================
 
-BoundingBox GetRendererBounds(ClipMeshCommandSigParams clipMeshCommandSigParams)
+BoundingBox GetRendererBounds(PatchMeshCommandSigParams clipMeshCommandSigParams)
 {
     BoundingBox boundingBox = (BoundingBox) 0;
     boundingBox.Center = clipMeshCommandSigParams.clipBoundingBoxCenter;

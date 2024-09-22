@@ -119,9 +119,6 @@ namespace MoYu
         // prepare pipeline's render passes data
         m_renderer_manager->PreparePassData(m_render_resource);
 
-        // update terrain mesh data;
-        m_render_scene->updateTerrainClipmap(m_render_camera->position(), m_render_resource.get());
-
         // finish static resource uploading
         m_render_resource->commitUploadBatch();
 
