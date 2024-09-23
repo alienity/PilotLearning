@@ -117,8 +117,8 @@ namespace MoYu
         void generateMipmapForTerrainHeightmap(RHI::D3D12ComputeContext* context, RHI::D3D12Texture* srcTexture, bool genMin);
         void generateMipmapForTerrainHeightmap(RHI::D3D12ComputeContext* context, RHI::D3D12Texture* srcTexture, int srcIndex, bool genMin);
 
-        RHI::RgBufferDesc grabDispatchArgsBufferDesc;
-
+        RHI::RgBufferDesc traverseDispatchArgsBufferDesc;
+        
         bool iMinMaxHeightReady;
 
         /*
@@ -135,6 +135,12 @@ namespace MoYu
         std::shared_ptr<RHI::D3D12Texture> pMaxHeightMap; // RG32
         std::shared_ptr<RHI::D3D12Texture> pQuadTreeMap; // R16
 
+        std::shared_ptr<RHI::D3D12Texture> pLodMap; // R8
+
+        std::shared_ptr<RHI::D3D12Buffer> TempNodeList[2]; // uint2, 代表当前LOD下Node的二维索引
+        std::shared_ptr<RHI::D3D12Buffer> FinalNodeList; // uint3, 其中z表示Node的LOD，xy代表二维索引
+        std::shared_ptr<RHI::D3D12Buffer> NodeDescriptors; // uint, branch
+
         //// 相机视锥内的clipmap
         //std::shared_ptr<RHI::D3D12Buffer> camVisableClipmapBuffer;
         //// 方向光的多级clipmap
@@ -142,6 +148,10 @@ namespace MoYu
 
         // 纯地形绘制常量
         std::shared_ptr<RHI::D3D12Buffer> mTerrainConsBuffer;
+        
+        Shader InitQuadTreeCS;
+        std::shared_ptr<RHI::D3D12RootSignature> pInitQuadTreeSignature;
+        std::shared_ptr<RHI::D3D12PipelineState> pInitQuadTreePSO;
 
         Shader TraverseQuadTreeCS;
         std::shared_ptr<RHI::D3D12RootSignature> pTraverseQuadTreeSignature;

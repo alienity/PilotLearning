@@ -36,11 +36,6 @@
 #define PATCH_MESH_GRID_SIZE 0.5
 #define SECTOR_COUNT_WORLD 160
 
-struct NodeDescriptor
-{
-    uint branch;
-};
-
 struct TerrainRenderPatch
 {
     float2 position;

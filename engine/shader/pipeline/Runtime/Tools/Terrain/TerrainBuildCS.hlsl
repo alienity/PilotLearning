@@ -2,6 +2,8 @@
 
 #include "./TerrainCommonInput.hlsl"
 
+// https://github.com/wlgys8/GPUDrivenTerrainLearn
+
 /*
 * 对于WorldLodParams
 - nodeSize为Node的边长(米)
@@ -20,11 +22,11 @@ struct ConsBuffer
     uint NodeIDOffsetOfLOD[6];
 };
 
-SamplerState s_point_clamp_sampler      : register(s10);
-SamplerState s_linear_clamp_sampler     : register(s11);
-SamplerState s_linear_repeat_sampler    : register(s12);
-SamplerState s_trilinear_clamp_sampler  : register(s13);
-SamplerState s_trilinear_repeat_sampler : register(s14);
+// SamplerState s_point_clamp_sampler      : register(s10);
+// SamplerState s_linear_clamp_sampler     : register(s11);
+// SamplerState s_linear_repeat_sampler    : register(s12);
+// SamplerState s_trilinear_clamp_sampler  : register(s13);
+// SamplerState s_trilinear_repeat_sampler : register(s14);
 
 float GetNodeSize(ConsBuffer inConsBuffer, uint lod)
 {
@@ -86,7 +88,30 @@ uint GetNodeId(ConsBuffer inConsBuffer, uint2 nodeLoc, uint mip)
     return GetNodeId(inConsBuffer, uint3(nodeLoc, mip));
 }
 
-#ifdef TRAVERSE_QUAD_TREE
+#ifdef INIT_QUAD_TREE
+
+cbuffer RootConstants : register(b0, space0)
+{
+    uint appendNodeListBufferIndex;
+};
+
+[numthreads(1,1,1)]
+void InitQuadTree (uint3 id : SV_DispatchThreadID)
+{
+    AppendStructuredBuffer<uint2> AppendNodeList = ResourceDescriptorHeap[appendNodeListBufferIndex];
+
+    const int PassLOD = 0;
+    for(int i = 0; i < MAX_LOD_NODE_COUNT; i++)
+    {
+        for(int j = 0; j < MAX_LOD_NODE_COUNT; j++)
+        {
+            int2 nodeLoc = int2(i, j);
+            AppendNodeList.Append(nodeLoc);
+        }
+    }
+}
+
+#elif TRAVERSE_QUAD_TREE
 
 cbuffer RootConstants : register(b0, space0)
 {
@@ -112,11 +137,11 @@ void TraverseQuadTree (uint3 id : SV_DispatchThreadID)
     ConsumeStructuredBuffer<uint2> ConsumeNodeList = ResourceDescriptorHeap[consumeNodeListBufferIndex];
     AppendStructuredBuffer<uint2> AppendNodeList = ResourceDescriptorHeap[appendNodeListBufferIndex];
     AppendStructuredBuffer<uint3> AppendFinalNodeList = ResourceDescriptorHeap[appendFinalNodeListBufferIndex];
-    RWStructuredBuffer<NodeDescriptor> NodeDescriptors = ResourceDescriptorHeap[nodeDescriptorsBufferIndex];
+    RWStructuredBuffer<uint> NodeDescriptors = ResourceDescriptorHeap[nodeDescriptorsBufferIndex];
 
     uint2 nodeLoc = ConsumeNodeList.Consume();
     uint nodeId = GetNodeId(InConsBuffer, nodeLoc, PassLOD);
-    NodeDescriptor desc = NodeDescriptors[nodeId];
+    uint branch;
     if(PassLOD > 0 && EvaluateNode(InConsBuffer, MinHeightTexture, MaxHeightTexture, nodeLoc, PassLOD))
     {
         //divide
@@ -124,14 +149,14 @@ void TraverseQuadTree (uint3 id : SV_DispatchThreadID)
         AppendNodeList.Append(nodeLoc * 2 + uint2(1,0));
         AppendNodeList.Append(nodeLoc * 2 + uint2(0,1));
         AppendNodeList.Append(nodeLoc * 2 + uint2(1,1));
-        desc.branch = 1;
+        branch = 1;
     }
     else
     {
         AppendFinalNodeList.Append(uint3(nodeLoc, PassLOD));
-        desc.branch = 0;
+        branch = 0;
     }
-    NodeDescriptors[nodeId] = desc;
+    NodeDescriptors[nodeId] = branch;
 }
 
 #elif defined(BUILD_LODMAP)
@@ -147,7 +172,7 @@ cbuffer RootConstants : register(b0, space0)
 void BuildLodMap(uint3 id : SV_DispatchThreadID)
 {
     ConstantBuffer<ConsBuffer> InConsBuffer = ResourceDescriptorHeap[consBufferIndex];
-    StructuredBuffer<NodeDescriptor> NodeDescriptors = ResourceDescriptorHeap[nodeDescriptorsBufferIndex];
+    StructuredBuffer<uint> NodeDescriptors = ResourceDescriptorHeap[nodeDescriptorsBufferIndex];
     RWTexture2D<float4> LodMap = ResourceDescriptorHeap[lodMapIndex];
     
     uint2 sectorLoc = id.xy;
@@ -157,8 +182,8 @@ void BuildLodMap(uint3 id : SV_DispatchThreadID)
         uint sectorCount = GetSectorCountPerNode(InConsBuffer, lod);
         uint2 nodeLoc = sectorLoc / sectorCount;
         uint nodeId = GetNodeId(InConsBuffer, nodeLoc, lod);
-        NodeDescriptor desc = NodeDescriptors[nodeId];
-        if(desc.branch == 0)
+        uint branch = NodeDescriptors[nodeId];
+        if(branch == 0)
         {
             LodMap[sectorLoc] = lod * 1.0 / MAX_TERRAIN_LOD;
             return;
