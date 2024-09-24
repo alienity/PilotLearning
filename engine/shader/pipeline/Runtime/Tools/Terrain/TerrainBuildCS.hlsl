@@ -13,10 +13,12 @@
  */
 struct ConsBuffer
 {
+    float3 TerrainOffsetWS; // Terrain在世界空间的位置偏移
+    float Padding0;
     float3 CameraPositionWS; // 相机世界空间坐标
     int BoundsHeightRedundance; //包围盒在高度方向留出冗余空间，应对MinMaxHeightTexture的精度不足
     float3 WorldSize; //世界大小
-    float Padding0;
+    float Padding1;
     float4 NodeEvaluationC; //节点评价系数。x为距离系数
     float4 WorldLodParams[6]; // (nodeSize,patchExtent,nodeCount,sectorCountPerNode)
     uint NodeIDOffsetOfLOD[6];
@@ -68,10 +70,11 @@ float3 GetNodePositionWS(ConsBuffer inConsBuffer, Texture2D<float> minHeightText
 bool EvaluateNode(ConsBuffer inConsBuffer, Texture2D<float> minHeightTexture, Texture2D<float> maxHeightTexture, uint2 nodeLoc, uint lod)
 {
     float3 positionWS = GetNodePositionWS(inConsBuffer, minHeightTexture, maxHeightTexture, nodeLoc, lod);
+    positionWS += inConsBuffer.TerrainOffsetWS;
     float dis = distance(inConsBuffer.CameraPositionWS, positionWS);
     float nodeSize = GetNodeSize(inConsBuffer, lod);
     float f = dis / (nodeSize * inConsBuffer.NodeEvaluationC.x);
-    if( f < 1)
+    if( f <= 1.0f)
     {
         return true;
     }
@@ -301,10 +304,9 @@ cbuffer RootConstants : register(b0, space0)
     uint consBufferIndex;
     uint minHeightmapIndex;
     uint maxHeightmapIndex;
-    uint finalNodeListBufferIndex;
-    uint patchConsumeListBufferIndex;
-    uint culledPatchListBufferIndex;
     uint lodMapIndex;
+    uint finalNodeListBufferIndex;
+    uint culledPatchListBufferIndex;
 };
 
 [numthreads(8,8,1)]
@@ -316,7 +318,6 @@ void BuildPatches(uint3 id : SV_DispatchThreadID, uint3 groupId:SV_GroupID, uint
     Texture2D<float> MaxHeightTexture = ResourceDescriptorHeap[maxHeightmapIndex];
     
     StructuredBuffer<uint3> FinalNodeList = ResourceDescriptorHeap[finalNodeListBufferIndex];
-    ConsumeStructuredBuffer<TerrainRenderPatch> PatchConsumeList = ResourceDescriptorHeap[patchConsumeListBufferIndex];
     AppendStructuredBuffer<TerrainRenderPatch> CulledPatchList = ResourceDescriptorHeap[culledPatchListBufferIndex];
 
     Texture2D<float4> LodMap = ResourceDescriptorHeap[lodMapIndex];

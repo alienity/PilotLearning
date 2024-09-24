@@ -135,11 +135,13 @@ namespace MoYu
         std::shared_ptr<RHI::D3D12Texture> pMaxHeightMap; // RG32
         std::shared_ptr<RHI::D3D12Texture> pQuadTreeMap; // R16
 
-        std::shared_ptr<RHI::D3D12Texture> pLodMap; // R8
+        std::shared_ptr<RHI::D3D12Texture> pLodMap; // R8, 160x160
 
         std::shared_ptr<RHI::D3D12Buffer> TempNodeList[2]; // uint2, 代表当前LOD下Node的二维索引
         std::shared_ptr<RHI::D3D12Buffer> FinalNodeList; // uint3, 其中z表示Node的LOD，xy代表二维索引
         std::shared_ptr<RHI::D3D12Buffer> NodeDescriptors; // uint, branch
+
+        std::shared_ptr<RHI::D3D12Buffer> CulledPatchListBuffer;
 
         //// 相机视锥内的clipmap
         //std::shared_ptr<RHI::D3D12Buffer> camVisableClipmapBuffer;

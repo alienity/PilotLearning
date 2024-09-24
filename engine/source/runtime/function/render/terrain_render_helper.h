@@ -67,10 +67,12 @@ namespace MoYu
      */
     struct TerrainConsBuffer
     {
+        glm::float3 TerrainOffsetWS; // Terrain在世界空间的偏移
+        float Padding0;
         glm::float3 CameraPositionWS; // 相机世界空间坐标
         int BoundsHeightRedundance; //包围盒在高度方向留出冗余空间，应对MinMaxHeightTexture的精度不足
         glm::float3 WorldSize; //世界大小
-        float Padding0;
+        float Padding1;
         glm::float4 NodeEvaluationC; //节点评价系数。x为距离系数
         glm::float4 WorldLodParams[6]; // (nodeSize,patchExtent,nodeCount,sectorCountPerNode)
         glm::uint NodeIDOffsetOfLOD[6];
