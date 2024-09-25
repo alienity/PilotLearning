@@ -69,6 +69,7 @@ namespace MoYu
     {
         glm::float3 TerrainOffsetWS; // Terrain在世界空间的偏移
         float Padding0;
+        glm::float4x4 CameraViewProj;
         glm::float3 CameraPositionWS; // 相机世界空间坐标
         int BoundsHeightRedundance; //包围盒在高度方向留出冗余空间，应对MinMaxHeightTexture的精度不足
         glm::float3 WorldSize; //世界大小

@@ -118,6 +118,7 @@ namespace MoYu
         void generateMipmapForTerrainHeightmap(RHI::D3D12ComputeContext* context, RHI::D3D12Texture* srcTexture, int srcIndex, bool genMin);
 
         RHI::RgBufferDesc traverseDispatchArgsBufferDesc;
+        RHI::RgBufferDesc buildPatchArgsBufferDesc;
         
         bool iMinMaxHeightReady;
 

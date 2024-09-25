@@ -1,6 +1,7 @@
 
 
 #include "./TerrainCommonInput.hlsl"
+#include "../../ShaderLibrary/Common.hlsl"
 
 // https://github.com/wlgys8/GPUDrivenTerrainLearn
 
@@ -15,6 +16,7 @@ struct ConsBuffer
 {
     float3 TerrainOffsetWS; // Terrain在世界空间的位置偏移
     float Padding0;
+    float4x4 CameraViewProj;
     float3 CameraPositionWS; // 相机世界空间坐标
     int BoundsHeightRedundance; //包围盒在高度方向留出冗余空间，应对MinMaxHeightTexture的精度不足
     float3 WorldSize; //世界大小
@@ -215,8 +217,8 @@ TerrainPatchBounds GetPatchBounds(ConsBuffer inConsBuffer, TerrainRenderPatch pa
     return bounds;
 }
 
-TerrainRenderPatch CreatePatch(ConsBuffer inConsBuffer,
-    Texture2D<float> minHeightTexture, Texture2D<float> maxHeightTexture, uint3 nodeLoc, uint2 patchOffset)
+TerrainRenderPatch CreatePatch(
+    ConsBuffer inConsBuffer, Texture2D<float> minHeightTexture, Texture2D<float> maxHeightTexture, uint3 nodeLoc, uint2 patchOffset)
 {
     uint lod = nodeLoc.z;
     float nodeMeterSize = GetNodeSize(inConsBuffer, lod);
@@ -261,38 +263,44 @@ void SetLodTrans(inout TerrainRenderPatch patch, ConsBuffer inConsBuffer, Textur
     if(patchOffset.x == 0)
     {
         //左边缘
-        lodTrans.x = GetLod(inConsBuffer, LodMap, sectorBounds.xy + int2(-1,0)) - lod;
+        lodTrans.x = GetLod(inConsBuffer, LodMap, sectorBounds.xy + int2(-1, 0)) - lod;
     }
 
     if(patchOffset.y == 0)
     {
         //下边缘
-        lodTrans.y = GetLod(inConsBuffer, LodMap, sectorBounds.xy + int2(0,-1)) - lod;
+        lodTrans.y = GetLod(inConsBuffer, LodMap, sectorBounds.xy + int2(0, -1)) - lod;
     }
 
     if(patchOffset.x == 7)
     {
         //右边缘
-        lodTrans.z = GetLod(inConsBuffer, LodMap, sectorBounds.zw + int2(1,0)) - lod;
+        lodTrans.z = GetLod(inConsBuffer, LodMap, sectorBounds.zw + int2(1, 0)) - lod;
     }
 
     if(patchOffset.y == 7)
     {
         //上边缘
-        lodTrans.w = GetLod(inConsBuffer, LodMap, sectorBounds.zw + int2(0,1)) - lod;
+        lodTrans.w = GetLod(inConsBuffer, LodMap, sectorBounds.zw + int2(0, 1)) - lod;
     }
-    patch.lodTrans = (uint4)max(0,lodTrans);
+    patch.lodTrans = (uint4)max(0, lodTrans);
 }
 
-bool Cull(TerrainPatchBounds bounds)
+bool Cull(ConsBuffer inConsBuffer, TerrainPatchBounds bounds)
 {
 #if ENABLE_FRUS_CULL
-    if(FrustumCull(_CameraFrustumPlanes,bounds)){
+    Frustum frustum = ExtractPlanesDX(inConsBuffer.CameraViewProj);
+    BoundingBox clipBoundingBox;
+    clipBoundingBox.Center = float4((bounds.maxPosition + bounds.minPosition) * 0.5f, 0);
+    clipBoundingBox.Extents = float4((bounds.maxPosition - bounds.minPosition) * 0.5f, 0);
+    if(FrustumContainsBoundingBox(frustum, clipBoundingBox) != CONTAINMENT_DISJOINT)
+    {
         return true;
     }
 #endif
 #if ENABLE_HIZ_CULL
-    if(HizOcclusionCull(bounds)){
+    if(HizOcclusionCull(bounds))
+    {
         return true;
     }
 #endif
@@ -329,7 +337,7 @@ void BuildPatches(uint3 id : SV_DispatchThreadID, uint3 groupId:SV_GroupID, uint
 
     //裁剪
     TerrainPatchBounds bounds = GetPatchBounds(InConsBuffer, patch);
-    if(Cull(bounds))
+    if(Cull(InConsBuffer, bounds))
     {
         return;
     }
