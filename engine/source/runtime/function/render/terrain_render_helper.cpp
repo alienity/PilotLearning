@@ -18,45 +18,45 @@ namespace MoYu
 
 	}
 
-    void TerrainRenderHelper::InitTerrainRenderer(SceneTerrainRenderer*    sceneTerrainRenderer,
-                                                  SceneTerrainRenderer*    cachedSceneTerrainRenderer,
-                                                  InternalTerrain*         internalTerrain,
-                                                  InternalTerrainMaterial* internalTerrainMaterial,
-                                                  RenderResource*          renderResource)
+    void TerrainRenderHelper::InitTerrainRenderer(
+        SceneTerrainRenderer& sceneTerrainRenderer,
+        SceneTerrainRenderer& cachedSceneTerrainRenderer,
+        InternalTerrainRenderer& internalTerrainRenderer,
+        RenderResource* renderResource)
 	{
         last_cam_xz = glm::float2(0, 0);
 
-        InitTerrainBasicInfo(sceneTerrainRenderer, internalTerrain);
-        InitTerrainPatchMesh(sceneTerrainRenderer, internalTerrain, renderResource);
-        InitTerrainHeightAndNormalMap(sceneTerrainRenderer, cachedSceneTerrainRenderer, internalTerrain, renderResource);
-        InitTerrainBaseTextures(sceneTerrainRenderer, cachedSceneTerrainRenderer, internalTerrainMaterial, renderResource);
+        InitTerrainBasicInfo(sceneTerrainRenderer, internalTerrainRenderer.ref_terrain);
+        InitTerrainPatchMesh(sceneTerrainRenderer, internalTerrainRenderer.ref_terrain, renderResource);
+        InitTerrainHeightAndNormalMap(sceneTerrainRenderer, cachedSceneTerrainRenderer, internalTerrainRenderer.ref_terrain, renderResource);
+        InitTerrainBaseTextures(sceneTerrainRenderer, cachedSceneTerrainRenderer, internalTerrainRenderer.ref_material, renderResource);
 	}
 
-    void TerrainRenderHelper::InitTerrainBasicInfo(SceneTerrainRenderer* sceneTerrainRenderer, InternalTerrain* internalTerrain)
+    void TerrainRenderHelper::InitTerrainBasicInfo(SceneTerrainRenderer& sceneTerrainRenderer, InternalTerrain& internalTerrain)
     {
-        internalTerrain->terrain_size = sceneTerrainRenderer->m_scene_terrain_mesh.terrain_size;
-        internalTerrain->max_terrain_lod = sceneTerrainRenderer->m_scene_terrain_mesh.max_terrain_lod;
-        internalTerrain->max_lod_node_count = sceneTerrainRenderer->m_scene_terrain_mesh.max_lod_node_count;
-        internalTerrain->patch_mesh_grid_count = sceneTerrainRenderer->m_scene_terrain_mesh.patch_mesh_grid_count;
-        internalTerrain->patch_mesh_size = sceneTerrainRenderer->m_scene_terrain_mesh.patch_mesh_size;
-        internalTerrain->patch_count_per_node = sceneTerrainRenderer->m_scene_terrain_mesh.patch_count_per_node;
+        internalTerrain.terrain_size = sceneTerrainRenderer.m_scene_terrain_mesh.terrain_size;
+        internalTerrain.max_terrain_lod = sceneTerrainRenderer.m_scene_terrain_mesh.max_terrain_lod;
+        internalTerrain.max_lod_node_count = sceneTerrainRenderer.m_scene_terrain_mesh.max_lod_node_count;
+        internalTerrain.patch_mesh_grid_count = sceneTerrainRenderer.m_scene_terrain_mesh.patch_mesh_grid_count;
+        internalTerrain.patch_mesh_size = sceneTerrainRenderer.m_scene_terrain_mesh.patch_mesh_size;
+        internalTerrain.patch_count_per_node = sceneTerrainRenderer.m_scene_terrain_mesh.patch_count_per_node;
 
-        int max_lod_node_count = internalTerrain->max_lod_node_count;
-        int max_terrain_lod = internalTerrain->max_terrain_lod;
+        int max_lod_node_count = internalTerrain.max_lod_node_count;
+        int max_terrain_lod = internalTerrain.max_terrain_lod;
         int lod_scale = 2 * 2;
 
-        int patch_mesh_grid_count = internalTerrain->patch_mesh_grid_count;
-        int patch_mesh_size = internalTerrain->patch_mesh_size;
-        int patch_count_per_node = internalTerrain->patch_count_per_node;
+        int patch_mesh_grid_count = internalTerrain.patch_mesh_grid_count;
+        int patch_mesh_size = internalTerrain.patch_mesh_size;
+        int patch_count_per_node = internalTerrain.patch_count_per_node;
 
-        int terrain_width = internalTerrain->terrain_size.x;
+        int terrain_width = internalTerrain.terrain_size.x;
 
-        internalTerrain->max_node_id = max_lod_node_count * max_lod_node_count * (1 - glm::pow(lod_scale, max_terrain_lod + 1)) / (1 - lod_scale) - 1;
-        internalTerrain->patch_mesh_grid_size = patch_mesh_size / patch_mesh_grid_count;
-        internalTerrain->sector_count_terrain = terrain_width / (patch_mesh_size * patch_count_per_node);;
+        internalTerrain.max_node_id = max_lod_node_count * max_lod_node_count * (1 - glm::pow(lod_scale, max_terrain_lod + 1)) / (1 - lod_scale) - 1;
+        internalTerrain.patch_mesh_grid_size = patch_mesh_size / patch_mesh_grid_count;
+        internalTerrain.sector_count_terrain = terrain_width / (patch_mesh_size * patch_count_per_node);;
     }
 
-    void TerrainRenderHelper::InitTerrainPatchMesh(SceneTerrainRenderer* sceneTerrainRenderer, InternalTerrain* internalTerrain, RenderResource* renderResource)
+    void TerrainRenderHelper::InitTerrainPatchMesh(SceneTerrainRenderer& sceneTerrainRenderer, InternalTerrain& internalTerrain, RenderResource* renderResource)
     {
         if (mIsPatchMeshInit)
         {
@@ -67,7 +67,7 @@ namespace MoYu
         terrainPatch = MoYu::Geometry::TerrainPlane::ToBasicMesh();
 
         {
-            InternalScratchMesh* patch_scratch_mesh = &internalTerrain->patch_scratch_mesh;
+            InternalScratchMesh* patch_scratch_mesh = &internalTerrain.patch_scratch_mesh;
 
             InternalScratchVertexBuffer* scratch_vertex_buffer = &patch_scratch_mesh->scratch_vertex_buffer;
             std::uint32_t vertex_buffer_size = terrainPatch.vertices.size() * sizeof(D3D12MeshVertexStandard);
@@ -96,8 +96,8 @@ namespace MoYu
         //************************************************************************
 
         {
-            InternalScratchMesh* patch_scratch_mesh = &internalTerrain->patch_scratch_mesh;
-            InternalMesh* patch_mesh = &internalTerrain->patch_mesh;
+            InternalScratchMesh* patch_scratch_mesh = &internalTerrain.patch_scratch_mesh;
+            InternalMesh* patch_mesh = &internalTerrain.patch_mesh;
 
             uint32_t vertex_buffer_stride = sizeof(D3D12MeshVertexPosition);
             uint32_t vertex_buffer_size = patch_scratch_mesh->scratch_vertex_buffer.vertex_buffer->GetBufferSize();
@@ -137,28 +137,28 @@ namespace MoYu
 
     }
 
-    void TerrainRenderHelper::InitTerrainHeightAndNormalMap(SceneTerrainRenderer* sceneTerrainRenderer,
-                                                            SceneTerrainRenderer* cachedSceneTerrainRenderer,
-                                                            InternalTerrain*      internalTerrain,
+    void TerrainRenderHelper::InitTerrainHeightAndNormalMap(SceneTerrainRenderer& sceneTerrainRenderer,
+                                                            SceneTerrainRenderer& cachedSceneTerrainRenderer,
+                                                            InternalTerrain&      internalTerrain,
                                                             RenderResource*       renderResource)
     {
-        bool isHeightmapSame = cachedSceneTerrainRenderer->m_scene_terrain_mesh == sceneTerrainRenderer->m_scene_terrain_mesh;
+        bool isHeightmapSame = cachedSceneTerrainRenderer.m_scene_terrain_mesh == sceneTerrainRenderer.m_scene_terrain_mesh;
         if (!isHeightmapSame || !mIsHeightmapInit)
         {
-            bool isHeightmapSame = cachedSceneTerrainRenderer->m_scene_terrain_mesh.m_terrain_height_map ==
-                                   sceneTerrainRenderer->m_scene_terrain_mesh.m_terrain_height_map;
-            bool isNormalmapSame = cachedSceneTerrainRenderer->m_scene_terrain_mesh.m_terrain_normal_map ==
-                                   sceneTerrainRenderer->m_scene_terrain_mesh.m_terrain_normal_map;
+            bool isHeightmapSame = cachedSceneTerrainRenderer.m_scene_terrain_mesh.m_terrain_height_map ==
+                                   sceneTerrainRenderer.m_scene_terrain_mesh.m_terrain_height_map;
+            bool isNormalmapSame = cachedSceneTerrainRenderer.m_scene_terrain_mesh.m_terrain_normal_map ==
+                                   sceneTerrainRenderer.m_scene_terrain_mesh.m_terrain_normal_map;
 
             if (!isHeightmapSame || !mIsHeightmapInit)
             {
                 terrain_heightmap_scratch = renderResource->loadImage(
-                    sceneTerrainRenderer->m_scene_terrain_mesh.m_terrain_height_map.m_image_file);
+                    sceneTerrainRenderer.m_scene_terrain_mesh.m_terrain_height_map.m_image_file);
             }
             if (isNormalmapSame || !mIsHeightmapInit)
             {
                 terrain_normalmap_scratch = renderResource->loadImage(
-                    sceneTerrainRenderer->m_scene_terrain_mesh.m_terrain_normal_map.m_image_file);
+                    sceneTerrainRenderer.m_scene_terrain_mesh.m_terrain_normal_map.m_image_file);
             }
 
             if (!isHeightmapSame || !isNormalmapSame || !mIsHeightmapInit)
@@ -166,7 +166,7 @@ namespace MoYu
                 renderResource->startUploadBatch();
                 if (!isHeightmapSame || !mIsHeightmapInit)
                 {
-                    SceneImage terrainSceneImage = sceneTerrainRenderer->m_scene_terrain_mesh.m_terrain_height_map;
+                    SceneImage terrainSceneImage = sceneTerrainRenderer.m_scene_terrain_mesh.m_terrain_height_map;
                     terrain_heightmap = renderResource->createTex2D(terrain_heightmap_scratch,
                                                                      DXGI_FORMAT::DXGI_FORMAT_R8G8B8A8_UNORM,
                                                                      terrainSceneImage.m_is_srgb,
@@ -175,7 +175,7 @@ namespace MoYu
                 }
                 if (!isNormalmapSame || !mIsHeightmapInit)
                 {
-                    SceneImage terrainSceneImage = sceneTerrainRenderer->m_scene_terrain_mesh.m_terrain_normal_map;
+                    SceneImage terrainSceneImage = sceneTerrainRenderer.m_scene_terrain_mesh.m_terrain_normal_map;
                     terrain_normalmap = renderResource->createTex2D(terrain_normalmap_scratch,
                                                                      DXGI_FORMAT::DXGI_FORMAT_R8G8B8A8_UNORM,
                                                                      terrainSceneImage.m_is_srgb,
@@ -185,103 +185,48 @@ namespace MoYu
                 renderResource->endUploadBatch();
             }
 
-            cachedSceneTerrainRenderer->m_scene_terrain_mesh = sceneTerrainRenderer->m_scene_terrain_mesh;
+            cachedSceneTerrainRenderer.m_scene_terrain_mesh = sceneTerrainRenderer.m_scene_terrain_mesh;
 
             mIsHeightmapInit = true;
         }
 
-        internalTerrain->terrain_heightmap_scratch = terrain_heightmap_scratch;
-        internalTerrain->terrain_normalmap_scratch = terrain_normalmap_scratch;
+        internalTerrain.terrain_heightmap_scratch = terrain_heightmap_scratch;
+        internalTerrain.terrain_normalmap_scratch = terrain_normalmap_scratch;
 
-        internalTerrain->terrain_heightmap = terrain_heightmap;
-        internalTerrain->terrain_normalmap = terrain_normalmap;
+        internalTerrain.terrain_heightmap = terrain_heightmap;
+        internalTerrain.terrain_normalmap = terrain_normalmap;
 
     }
 
-    void TerrainRenderHelper::InitTerrainBaseTextures(SceneTerrainRenderer*    sceneTerrainRenderer,
-                                                      SceneTerrainRenderer*    cachedSceneTerrainRenderer,
-                                                      InternalTerrainMaterial* internalTerrainMaterial,
-                                                      RenderResource*          renderResource)
+    void TerrainRenderHelper::InitTerrainBaseTextures(
+        SceneTerrainRenderer& sceneTerrainRenderer,
+        SceneTerrainRenderer& cachedSceneTerrainRenderer,
+        InternalMaterial& internalTerrainMaterial,
+        RenderResource* renderResource)
     {
-        bool isMaterialSame =
-            cachedSceneTerrainRenderer->m_terrain_material == sceneTerrainRenderer->m_terrain_material;
+        bool isMaterialSame = cachedSceneTerrainRenderer.m_terrain_material == sceneTerrainRenderer.m_terrain_material;
 
         if (!isMaterialSame || !mIsNaterialInit)
         {
-            renderResource->startUploadBatch();
-
-            MoYu::TerrainMaterial& m_terrain_material = sceneTerrainRenderer->m_terrain_material;
-
-            int base_tex_count = sizeof(m_terrain_material.m_base_texs) / sizeof(TerrainBaseTex);
-
-            for (int i = 0; i < base_tex_count; i++)
-            {
-                InternalTerrainBaseTexture& _internalBaseTex = mInternalBaseTextures[i];
-
-                TerrainBaseTex baseTex = m_terrain_material.m_base_texs[i];
-
-                bool isSame = cachedSceneTerrainRenderer->m_terrain_material.m_base_texs[i].m_albedo_file ==
-                              sceneTerrainRenderer->m_terrain_material.m_base_texs[i].m_albedo_file;
-                if (!isSame || !mIsNaterialInit)
-                {
-                    auto _tex = renderResource->SceneImageToTexture(baseTex.m_albedo_file.m_image);
-                    _internalBaseTex.albedo = _tex == nullptr ? renderResource->_Default2TexMap[BaseColor] : _tex;
-                }
-                _internalBaseTex.albedo_tilling = baseTex.m_albedo_file.m_tilling;
-
-                isSame = cachedSceneTerrainRenderer->m_terrain_material.m_base_texs[i].m_ao_roughness_metallic_file ==
-                         sceneTerrainRenderer->m_terrain_material.m_base_texs[i].m_ao_roughness_metallic_file;
-                if (!isSame || !mIsNaterialInit)
-                {
-                    auto _tex = renderResource->SceneImageToTexture(baseTex.m_ao_roughness_metallic_file.m_image);
-                    _internalBaseTex.ao_roughness_metallic =
-                        _tex == nullptr ? renderResource->_Default2TexMap[Black] : _tex;
-                }
-                _internalBaseTex.ao_roughness_metallic_tilling = baseTex.m_ao_roughness_metallic_file.m_tilling;
-
-                isSame = cachedSceneTerrainRenderer->m_terrain_material.m_base_texs[i].m_displacement_file ==
-                         sceneTerrainRenderer->m_terrain_material.m_base_texs[i].m_displacement_file;
-                if (!isSame || !mIsNaterialInit)
-                {
-                    auto _tex = renderResource->SceneImageToTexture(baseTex.m_displacement_file.m_image);
-                    _internalBaseTex.displacement = _tex == nullptr ? renderResource->_Default2TexMap[BaseColor] : _tex;
-                }
-                _internalBaseTex.displacement_tilling = baseTex.m_displacement_file.m_tilling;
-
-                isSame = cachedSceneTerrainRenderer->m_terrain_material.m_base_texs[i].m_normal_file ==
-                         sceneTerrainRenderer->m_terrain_material.m_base_texs[i].m_normal_file;
-                if (!isSame || !mIsNaterialInit)
-                {
-                    auto _tex = renderResource->SceneImageToTexture(baseTex.m_normal_file.m_image);
-                    _internalBaseTex.normal = _tex == nullptr ? renderResource->_Default2TexMap[Green] : _tex;
-                }
-                _internalBaseTex.normal_tilling = baseTex.m_normal_file.m_tilling;
-            }
-
-            renderResource->endUploadBatch();
-
-            cachedSceneTerrainRenderer->m_terrain_material == sceneTerrainRenderer->m_terrain_material;
+            renderResource->updateInternalMaterial(
+                sceneTerrainRenderer.m_terrain_material,
+                cachedSceneTerrainRenderer.m_terrain_material,
+                internalTerrainMaterial, mIsNaterialInit);
 
             mIsNaterialInit = true;
         }
-
-        int base_tex_count =
-            sizeof(cachedSceneTerrainRenderer->m_terrain_material.m_base_texs) / sizeof(TerrainBaseTex);
-        for (int i = 0; i < base_tex_count; i++)
-        {
-            internalTerrainMaterial->terrain_base_textures[i] = mInternalBaseTextures[i];
-        }
     }
 
-    bool TerrainRenderHelper::updateInternalTerrainRenderer(RenderResource*          renderResource,
-                                                            SceneTerrainRenderer     scene_terrain_renderer,
-                                                            SceneTerrainRenderer&    cached_terrain_renderer,
-                                                            InternalTerrainRenderer& internal_terrain_renderer,
-                                                            glm::float4x4            model_matrix,
-                                                            glm::float4x4            model_matrix_inv,
-                                                            glm::float4x4            prev_model_matrix,
-                                                            glm::float4x4            prev_model_matrix_inv,
-                                                            bool                     has_initialized)
+    bool TerrainRenderHelper::updateInternalTerrainRenderer(
+        RenderResource* renderResource,
+        SceneTerrainRenderer& scene_terrain_renderer,
+        SceneTerrainRenderer& cached_terrain_renderer,
+        InternalTerrainRenderer& internal_terrain_renderer,
+        glm::float4x4            model_matrix,
+        glm::float4x4            model_matrix_inv,
+        glm::float4x4            prev_model_matrix,
+        glm::float4x4            prev_model_matrix_inv,
+        bool                     has_initialized)
     {
         internal_terrain_renderer.model_matrix              = model_matrix;
         internal_terrain_renderer.model_matrix_inverse      = model_matrix_inv;
@@ -295,10 +240,9 @@ namespace MoYu
         if (!is_terrain_same || !has_initialized)
         {
             internal_terrain_renderer.m_identifier = scene_terrain_renderer.m_identifier;
-            this->InitTerrainRenderer(&scene_terrain_renderer,
-                                      &cached_terrain_renderer,
-                                      &internal_terrain_renderer.ref_terrain,
-                                      &internal_terrain_renderer.ref_material,
+            this->InitTerrainRenderer(scene_terrain_renderer,
+                                      cached_terrain_renderer,
+                                      internal_terrain_renderer,
                                       renderResource);
         }
 

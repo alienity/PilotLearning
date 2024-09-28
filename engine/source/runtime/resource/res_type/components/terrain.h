@@ -1,27 +1,11 @@
 #pragma once
 #include "runtime/resource/res_type/common_serializer.h"
+#include "runtime/resource/res_type/components/material.h"
+#include "runtime/resource/res_type/components/mesh_renderer.h"
 #include <vector>
 
 namespace MoYu
 {
-    struct TerrainMetrialBaseTexture
-    {
-        MaterialImage m_albedo_texture_file {};
-        MaterialImage m_ao_roughness_metal_file {};
-        MaterialImage m_displacement_file {};
-        MaterialImage m_normal_file {};
-    };
-    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(TerrainMetrialBaseTexture,
-                                                    m_albedo_texture_file,
-                                                    m_ao_roughness_metal_file,
-                                                    m_normal_file,
-                                                    m_displacement_file)
-
-    struct TerrainMaterialRes
-    {
-        std::vector<TerrainMetrialBaseTexture> m_terrain_base_textures;
-    };
-    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(TerrainMaterialRes, m_terrain_base_textures)
 
     struct TerrainComponentRes
     {
@@ -41,7 +25,7 @@ namespace MoYu
         SceneImage m_heightmap_file {};
         SceneImage m_normalmap_file {};
 
-        TerrainMaterialRes m_terrainMaterial {};
+        MaterialComponentRes m_material_res{};
     };
     NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(TerrainComponentRes,
                                                     terrain_size,
@@ -52,6 +36,6 @@ namespace MoYu
                                                     patch_count_per_node,
                                                     m_heightmap_file,
                                                     m_normalmap_file,
-                                                    m_terrainMaterial)
+                                                    m_material_res)
 
 } // namespace MoYu

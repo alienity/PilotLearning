@@ -14,6 +14,7 @@
 #include "runtime/function/render/render_swap_context.h"
 #include "runtime/function/render/render_system.h"
 #include "runtime/function/render/render_common.h"
+#include <function/framework/component/mesh/mesh_renderer_component.h>
 
 namespace MoYu
 {
@@ -35,24 +36,32 @@ namespace MoYu
     {
         m_terrain_res = res;
 
-        m_terrain.terrain_size = res.terrain_size;
-        m_terrain.m_terrain_height_map = res.m_heightmap_file.m_image_file == "" ? _defaultTerrainHeightmap : res.m_heightmap_file;
-        m_terrain.m_terrain_normal_map = res.m_normalmap_file.m_image_file == "" ? _defaultTerrainNormalmap : res.m_normalmap_file;
+        m_terrain.terrain_size = m_terrain_res.terrain_size;
+        m_terrain.m_terrain_height_map = m_terrain_res.m_heightmap_file.m_image_file == "" ? _defaultTerrainHeightmap : m_terrain_res.m_heightmap_file;
+        m_terrain.m_terrain_normal_map = m_terrain_res.m_normalmap_file.m_image_file == "" ? _defaultTerrainNormalmap : m_terrain_res.m_normalmap_file;
 
-        for (int i = 0; i < res.m_terrainMaterial.m_terrain_base_textures.size(); i++)
+        MaterialManager* m_mat_manager_ptr = g_runtime_global_context.m_material_manager.get();
+
+        MaterialRes m_mat_res = m_mat_manager_ptr->loadMaterialRes(m_terrain_res.m_material_res.m_material_file);
+
+        if (m_terrain_res.m_material_res.m_is_material_init)
         {
-            m_material.m_base_texs[i].m_albedo_file = res.m_terrainMaterial.m_terrain_base_textures[i].m_albedo_texture_file;
-            m_material.m_base_texs[i].m_ao_roughness_metallic_file = res.m_terrainMaterial.m_terrain_base_textures[i].m_ao_roughness_metal_file;
-            m_material.m_base_texs[i].m_displacement_file = res.m_terrainMaterial.m_terrain_base_textures[i].m_displacement_file;
-            m_material.m_base_texs[i].m_normal_file = res.m_terrainMaterial.m_terrain_base_textures[i].m_normal_file;
+            std::string m_material_serialized_json = m_terrain_res.m_material_res.m_material_serialized_json_data;
+            MaterialRes mat_res_data = AssetManager::loadJson<MaterialRes>(m_material_serialized_json);
+            m_mat_res = mat_res_data;
         }
+
+        StandardLightMaterial m_mat_data = ToStandardMaterial(m_mat_res);
+
+        m_material.m_shader_name = m_mat_res._ShaderName;
+        m_material.m_mat_data    = m_mat_data;
 
         markDirty();
     }
 
     void TerrainComponent::save(ComponentDefinitionRes& out_component_res)
     {
-        TerrainComponentRes terrain_res {};
+        TerrainComponentRes terrain_res{};
         (&terrain_res)->terrain_size = m_terrain.terrain_size;
         (&terrain_res)->max_terrain_lod = m_terrain.max_terrain_lod;
         (&terrain_res)->max_lod_node_count = m_terrain.max_lod_node_count;
@@ -62,23 +71,17 @@ namespace MoYu
         (&terrain_res)->m_heightmap_file = m_terrain.m_terrain_height_map;
         (&terrain_res)->m_normalmap_file = m_terrain.m_terrain_normal_map;
 
-        TerrainMaterialRes res {};
-        for (int i = 0; i < 2; i++)
-        {
-            TerrainMetrialBaseTexture baseTex {};
+        MaterialComponentRes material_res{};
+        (&material_res)->m_material_file = terrain_res.m_material_res.m_material_file;
+        (&material_res)->m_is_material_init = true;
 
-            baseTex.m_albedo_texture_file     = m_material.m_base_texs[i].m_albedo_file;
-            baseTex.m_ao_roughness_metal_file = m_material.m_base_texs[i].m_ao_roughness_metallic_file;
-            baseTex.m_displacement_file       = m_material.m_base_texs[i].m_displacement_file;
-            baseTex.m_normal_file             = m_material.m_base_texs[i].m_normal_file;
+        MaterialRes mat_res_data = ToMaterialRes(m_material.m_mat_data, m_material.m_shader_name);
+        (&material_res)->m_material_serialized_json_data = AssetManager::saveJson(mat_res_data);
 
-            res.m_terrain_base_textures.push_back(baseTex);
-        }
+        (&terrain_res)->m_material_res = material_res;
 
-        (&terrain_res)->m_terrainMaterial = res;
-
-        out_component_res.m_type_name           = "TerrainComponent";
-        out_component_res.m_component_name      = this->m_component_name;
+        out_component_res.m_type_name = "TerrainComponent";
+        out_component_res.m_component_name = this->m_component_name;
         out_component_res.m_component_json_data = AssetManager::saveJson(terrain_res);
     }
 
@@ -102,7 +105,7 @@ namespace MoYu
                                                TransformComponent* m_transform_component_ptr,
                                                MoYu::GComponentID  terrain_component_id,
                                                SceneTerrainMesh*   m_terrain_mesh_ptr,
-                                               TerrainMaterial*    m_terrain_mat_ptr)
+                                               SceneMaterial*      m_terrain_mat_ptr)
     {
         glm::float4x4 transform_matrix = m_transform_component_ptr->getMatrixWorld();
 

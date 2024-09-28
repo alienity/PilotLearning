@@ -57,11 +57,13 @@ namespace MoYu
             RHI::RgResourceHandle terrainNormalmapHandle;
             RHI::RgResourceHandle maxHeightmapPyramidHandle;
             RHI::RgResourceHandle minHeightmapPyramidHandle;
+            RHI::RgResourceHandle terrainRenderDataHandle;
+            RHI::RgResourceHandle terrainMatPropertyHandle;
 
-            RHI::RgResourceHandle transformBufferHandle;
+            RHI::RgResourceHandle mainCamVisPatchListHandle;
+            std::vector<RHI::RgResourceHandle> dirVisPatchListHandles;
 
-            RHI::RgResourceHandle mainCamVisCommandSigHandle;
-            std::vector<RHI::RgResourceHandle> dirVisCommandSigHandles;
+            RHI::RgResourceHandle mainCamVisCmdSigBufferHandle;
         };
 
         struct DepthCullIndexInput
@@ -144,8 +146,11 @@ namespace MoYu
 
         std::shared_ptr<RHI::D3D12Buffer> CulledPatchListBuffer;
 
-        //// 相机视锥内的clipmap
-        //std::shared_ptr<RHI::D3D12Buffer> camVisableClipmapBuffer;
+        std::shared_ptr<RHI::D3D12Buffer> pTerrainRenderDataBuffer;
+        std::shared_ptr<RHI::D3D12Buffer> pTerrainMatPropertiesBuffer;
+
+        // 相机视锥内的clipmap
+        std::shared_ptr<RHI::D3D12Buffer> camVisablePatchCmdSigBuffer;
         //// 方向光的多级clipmap
         //TerrainDirShadowmapCommandBuffer dirVisableClipmapBuffers;
 

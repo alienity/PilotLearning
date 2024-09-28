@@ -11,6 +11,7 @@
 #include "runtime/function/render/renderer/indirect_shadow_pass.h"
 #include "runtime/function/render/renderer/indirect_terrain_shadow_pass.h"
 #include "runtime/function/render/renderer/depthprepass.h"
+#include "runtime/function/render/renderer/terrainDepthprepass.h"
 #include "runtime/function/render/renderer/indirect_draw_pass.h"
 #include "runtime/function/render/renderer/skybox_pass.h"
 #include "runtime/function/render/renderer/atmospheric_scattering_pass.h"
@@ -78,6 +79,7 @@ namespace MoYu
         std::shared_ptr<IndirectShadowPass>          mIndirectShadowPass;
         std::shared_ptr<IndirectTerrainShadowPass>   mIndirectTerrainShadowPass;
         std::shared_ptr<DepthPrePass>                mDepthPrePass;
+        std::shared_ptr<TerrainDepthPrePass>         mTerrainDepthPrePass;
         std::shared_ptr<IndirectGBufferPass>         mIndirectGBufferPass;
         std::shared_ptr<IndirectTerrainGBufferPass>  mIndirectTerrainGBufferPass;
         std::shared_ptr<IndirectMotionVectorPass>    mIndirectMotionVectorPass;

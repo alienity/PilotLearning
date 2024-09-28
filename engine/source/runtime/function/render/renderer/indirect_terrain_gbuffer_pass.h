@@ -30,8 +30,7 @@ namespace MoYu
             RHI::RgResourceHandle terrainHeightmapHandle;
             RHI::RgResourceHandle terrainNormalmapHandle;
 
-            RHI::RgResourceHandle terrainCommandSigHandle;
-            RHI::RgResourceHandle transformBufferHandle;
+            RHI::RgResourceHandle mainCamVisPatchListHandle;
         };
 
     public:

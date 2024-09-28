@@ -293,6 +293,201 @@ namespace MoYu
                 L"CulledPatchListBuffer");
         }
 
+        if (pTerrainMatPropertiesBuffer == nullptr)
+        {
+            pTerrainMatPropertiesBuffer =
+                RHI::D3D12Buffer::Create(
+                    m_Device->GetLinkedDevice(),
+                    RHI::RHIBufferTargetStructured,
+                    maxNodeCount,
+                    sizeof(HLSL::PropertiesPerMaterial),
+                    L"TerrainMaterialProperty",
+                    RHI::RHIBufferMode::RHIBufferModeDynamic);
+        }
+        if (pTerrainRenderDataBuffer == nullptr)
+        {
+            pTerrainRenderDataBuffer =
+                RHI::D3D12Buffer::Create(
+                    m_Device->GetLinkedDevice(),
+                    RHI::RHIBufferTargetStructured,
+                    maxNodeCount,
+                    sizeof(HLSL::TerrainRenderData),
+                    L"TerrainRenderData", 
+                    RHI::RHIBufferMode::RHIBufferModeDynamic);
+        }
+
+        //--------------------------------------------------------------------------
+
+        if (camVisablePatchCmdSigBuffer == nullptr)
+        {
+            camVisablePatchCmdSigBuffer =
+                RHI::D3D12Buffer::Create(
+                    m_Device->GetLinkedDevice(),
+                    RHI::RHIBufferTargetStructured | RHI::RHIBufferTargetIndirectArgs,
+                    1,
+                    MoYu::AlignUp(sizeof(HLSL::ToDrawCommandSignatureParams), 256),
+                    L"VisiablePatchCommandSignatureBuffer",
+                    RHI::RHIBufferMode::RHIBufferModeDynamic);
+        }
+
+        //--------------------------------------------------------------------------
+        
+        std::vector<CachedTerrainRenderer>& mesh_renderers = m_render_scene->m_terrain_renderers;
+        if (mesh_renderers.size() > 0)
+        {
+            CachedTerrainRenderer& terrainRenderer = mesh_renderers[0];
+            InternalTerrainRenderer& internalTerrainRenderer = terrainRenderer.internalTerrainRenderer;
+            glm::float2 terrainSize = internalTerrainRenderer.ref_terrain.terrain_size;
+
+            InternalMesh& patchMesh = internalTerrainRenderer.ref_terrain.patch_mesh;
+
+            D3D12_VERTEX_BUFFER_VIEW curVertexBufferView = patchMesh.vertex_buffer.vertex_buffer->GetVertexBufferView();
+            D3D12_INDEX_BUFFER_VIEW curIndexBufferView = patchMesh.index_buffer.index_buffer->GetIndexBufferView();
+
+            D3D12_DRAW_INDEXED_ARGUMENTS drawIndexedArgs;
+            drawIndexedArgs.IndexCountPerInstance = patchMesh.index_buffer.index_count;
+            drawIndexedArgs.InstanceCount = 1;
+            drawIndexedArgs.StartIndexLocation = 0;
+            drawIndexedArgs.BaseVertexLocation = 0;
+            drawIndexedArgs.StartInstanceLocation = 0;
+
+            HLSL::ToDrawCommandSignatureParams drawPatchParams;
+            memcpy(&drawPatchParams.vertexBufferView, &curVertexBufferView, sizeof(D3D12_VERTEX_BUFFER_VIEW));
+            memcpy(&drawPatchParams.indexBufferView, &curIndexBufferView, sizeof(D3D12_INDEX_BUFFER_VIEW));
+            memcpy(&drawPatchParams.drawIndexedArguments, &drawIndexedArgs, sizeof(D3D12_DRAW_INDEXED_ARGUMENTS));
+
+            memcpy(camVisablePatchCmdSigBuffer->GetCpuVirtualAddress<HLSL::ToDrawCommandSignatureParams>(), &drawPatchParams, sizeof(HLSL::ToDrawCommandSignatureParams));
+
+
+
+            HLSL::TerrainRenderData terrainRenderData;
+            terrainRenderData.objectToWorldMatrix = internalTerrainRenderer.model_matrix;
+            terrainRenderData.worldToObjectMatrix = internalTerrainRenderer.model_matrix_inverse;
+            terrainRenderData.prevObjectToWorldMatrix = internalTerrainRenderer.prev_model_matrix;
+            terrainRenderData.prevWorldToObjectMatrix = internalTerrainRenderer.prev_model_matrix_inverse;
+            terrainRenderData.terrainSize = glm::float4(terrainSize.x, terrainSize.y, 1.0f / terrainSize.x, 1.0f / terrainSize.y);
+
+            memcpy(pTerrainRenderDataBuffer->GetCpuVirtualAddress<HLSL::TerrainRenderData>(), &terrainRenderData, sizeof(HLSL::TerrainRenderData));
+
+
+
+            InternalStandardLightMaterial& m_InteralMat = terrainRenderer.internalTerrainRenderer.ref_material.m_intenral_light_mat;
+
+            HLSL::PropertiesPerMaterial curPropertiesPerMaterial {};
+            curPropertiesPerMaterial._BaseColorMapIndex = m_InteralMat._BaseColorMap->GetDefaultSRV()->GetIndex();
+            curPropertiesPerMaterial._MaskMapIndex = m_InteralMat._MaskMap->GetDefaultSRV()->GetIndex();
+            curPropertiesPerMaterial._NormalMapIndex = m_InteralMat._NormalMap->GetDefaultSRV()->GetIndex();
+            curPropertiesPerMaterial._NormalMapOSIndex = m_InteralMat._NormalMapOS->GetDefaultSRV()->GetIndex();
+            curPropertiesPerMaterial._BentNormalMapIndex = m_InteralMat._BentNormalMap->GetDefaultSRV()->GetIndex();
+            curPropertiesPerMaterial._BentNormalMapOSIndex = m_InteralMat._BentNormalMapOS->GetDefaultSRV()->GetIndex();
+            curPropertiesPerMaterial._HeightMapIndex = m_InteralMat._HeightMap->GetDefaultSRV()->GetIndex();
+            curPropertiesPerMaterial._DetailMapIndex = m_InteralMat._DetailMap->GetDefaultSRV()->GetIndex();
+            curPropertiesPerMaterial._TangentMapIndex = m_InteralMat._TangentMap->GetDefaultSRV()->GetIndex();
+            curPropertiesPerMaterial._TangentMapOSIndex = m_InteralMat._TangentMapOS->GetDefaultSRV()->GetIndex();
+            curPropertiesPerMaterial._AnisotropyMapIndex = m_InteralMat._AnisotropyMap->GetDefaultSRV()->GetIndex();
+            curPropertiesPerMaterial._SubsurfaceMaskMapIndex = m_InteralMat._SubsurfaceMaskMap->GetDefaultSRV()->GetIndex();
+            curPropertiesPerMaterial._TransmissionMaskMapIndex = m_InteralMat._TransmissionMaskMap->GetDefaultSRV()->GetIndex();
+            curPropertiesPerMaterial._ThicknessMapIndex = m_InteralMat._ThicknessMap->GetDefaultSRV()->GetIndex();
+            curPropertiesPerMaterial._IridescenceThicknessMapIndex = m_InteralMat._IridescenceThicknessMap->GetDefaultSRV()->GetIndex();
+            curPropertiesPerMaterial._IridescenceMaskMapIndex = m_InteralMat._IridescenceMaskMap->GetDefaultSRV()->GetIndex();
+            curPropertiesPerMaterial._CoatMaskMapIndex = m_InteralMat._CoatMaskMap->GetDefaultSRV()->GetIndex();
+            curPropertiesPerMaterial._EmissiveColorMapIndex = m_InteralMat._EmissiveColorMap->GetDefaultSRV()->GetIndex();
+            curPropertiesPerMaterial._TransmittanceColorMapIndex = m_InteralMat._TransmittanceColorMap->GetDefaultSRV()->GetIndex();
+            curPropertiesPerMaterial._BaseColor = m_InteralMat._BaseColor;
+            curPropertiesPerMaterial._BaseColorMap_ST = m_InteralMat._BaseColorMap_ST;
+            curPropertiesPerMaterial._BaseColorMap_TexelSize = m_InteralMat._BaseColorMap_TexelSize;
+            curPropertiesPerMaterial._BaseColorMap_MipInfo = m_InteralMat._BaseColorMap_MipInfo;
+            curPropertiesPerMaterial._Metallic = m_InteralMat._Metallic;
+            curPropertiesPerMaterial._Smoothness = m_InteralMat._Smoothness;
+            curPropertiesPerMaterial._MetallicRemapMin = m_InteralMat._MetallicRemapMin;
+            curPropertiesPerMaterial._MetallicRemapMax = m_InteralMat._MetallicRemapMax;
+            curPropertiesPerMaterial._SmoothnessRemapMin = m_InteralMat._SmoothnessRemapMin;
+            curPropertiesPerMaterial._SmoothnessRemapMax = m_InteralMat._SmoothnessRemapMax;
+            curPropertiesPerMaterial._AlphaRemapMin = m_InteralMat._AlphaRemapMin;
+            curPropertiesPerMaterial._AlphaRemapMax = m_InteralMat._AlphaRemapMax;
+            curPropertiesPerMaterial._AORemapMin = m_InteralMat._AORemapMin;
+            curPropertiesPerMaterial._AORemapMax = m_InteralMat._AORemapMax;
+            curPropertiesPerMaterial._NormalScale = m_InteralMat._NormalScale;
+            curPropertiesPerMaterial._HeightAmplitude = m_InteralMat._HeightAmplitude;
+            curPropertiesPerMaterial._HeightCenter = m_InteralMat._HeightCenter;
+            curPropertiesPerMaterial._HeightMapParametrization = m_InteralMat._HeightMapParametrization;
+            curPropertiesPerMaterial._HeightOffset = m_InteralMat._HeightOffset;
+            curPropertiesPerMaterial._HeightMin = m_InteralMat._HeightMin;
+            curPropertiesPerMaterial._HeightMax = m_InteralMat._HeightMax;
+            curPropertiesPerMaterial._HeightTessAmplitude = m_InteralMat._HeightTessAmplitude;
+            curPropertiesPerMaterial._HeightTessCenter = m_InteralMat._HeightTessCenter;
+            curPropertiesPerMaterial._HeightPoMAmplitude = m_InteralMat._HeightPoMAmplitude;
+            curPropertiesPerMaterial._DetailMap_ST = m_InteralMat._DetailMap_ST;
+            curPropertiesPerMaterial._DetailAlbedoScale = m_InteralMat._DetailAlbedoScale;
+            curPropertiesPerMaterial._DetailNormalScale = m_InteralMat._DetailNormalScale;
+            curPropertiesPerMaterial._DetailSmoothnessScale = m_InteralMat._DetailSmoothnessScale;
+            curPropertiesPerMaterial._Anisotropy = m_InteralMat._Anisotropy;
+            curPropertiesPerMaterial._DiffusionProfileHash = m_InteralMat._DiffusionProfileHash;
+            curPropertiesPerMaterial._SubsurfaceMask = m_InteralMat._SubsurfaceMask;
+            curPropertiesPerMaterial._TransmissionMask = m_InteralMat._TransmissionMask;
+            curPropertiesPerMaterial._Thickness = m_InteralMat._Thickness;
+            curPropertiesPerMaterial._ThicknessRemap = m_InteralMat._ThicknessRemap;
+            curPropertiesPerMaterial._IridescenceThicknessRemap = m_InteralMat._IridescenceThicknessRemap;
+            curPropertiesPerMaterial._IridescenceThickness = m_InteralMat._IridescenceThickness;
+            curPropertiesPerMaterial._IridescenceMask = m_InteralMat._IridescenceMask;
+            curPropertiesPerMaterial._CoatMask = m_InteralMat._CoatMask;
+            curPropertiesPerMaterial._EnergyConservingSpecularColor = m_InteralMat._EnergyConservingSpecularColor;
+            curPropertiesPerMaterial._SpecularOcclusionMode = m_InteralMat._SpecularOcclusionMode;
+            curPropertiesPerMaterial._EmissiveColor = m_InteralMat._EmissiveColor;
+            curPropertiesPerMaterial._AlbedoAffectEmissive = m_InteralMat._AlbedoAffectEmissive;
+            curPropertiesPerMaterial._EmissiveIntensityUnit = m_InteralMat._EmissiveIntensityUnit;
+            curPropertiesPerMaterial._UseEmissiveIntensity = m_InteralMat._UseEmissiveIntensity;
+            curPropertiesPerMaterial._EmissiveIntensity = m_InteralMat._EmissiveIntensity;
+            curPropertiesPerMaterial._EmissiveExposureWeight = m_InteralMat._EmissiveExposureWeight;
+            curPropertiesPerMaterial._UseShadowThreshold = m_InteralMat._UseShadowThreshold;
+            curPropertiesPerMaterial._AlphaCutoffEnable = m_InteralMat._AlphaCutoffEnable;
+            curPropertiesPerMaterial._AlphaCutoff = m_InteralMat._AlphaCutoff;
+            curPropertiesPerMaterial._AlphaCutoffShadow = m_InteralMat._AlphaCutoffShadow;
+            curPropertiesPerMaterial._AlphaCutoffPrepass = m_InteralMat._AlphaCutoffPrepass;
+            curPropertiesPerMaterial._AlphaCutoffPostpass = m_InteralMat._AlphaCutoffPostpass;
+            curPropertiesPerMaterial._TransparentDepthPrepassEnable = m_InteralMat._TransparentDepthPrepassEnable;
+            curPropertiesPerMaterial._TransparentBackfaceEnable = m_InteralMat._TransparentBackfaceEnable;
+            curPropertiesPerMaterial._TransparentDepthPostpassEnable = m_InteralMat._TransparentDepthPostpassEnable;
+            curPropertiesPerMaterial._TransparentSortPriority = m_InteralMat._TransparentSortPriority;
+            curPropertiesPerMaterial._RefractionModel = m_InteralMat._RefractionModel;
+            curPropertiesPerMaterial._Ior = m_InteralMat._Ior;
+            curPropertiesPerMaterial._TransmittanceColor = m_InteralMat._TransmittanceColor;
+            curPropertiesPerMaterial._ATDistance = m_InteralMat._ATDistance;
+            curPropertiesPerMaterial._TransparentWritingMotionVec = m_InteralMat._TransparentWritingMotionVec;
+            curPropertiesPerMaterial._SurfaceType = m_InteralMat._SurfaceType;
+            curPropertiesPerMaterial._BlendMode = m_InteralMat._BlendMode;
+            curPropertiesPerMaterial._SrcBlend = m_InteralMat._SrcBlend;
+            curPropertiesPerMaterial._DstBlend = m_InteralMat._DstBlend;
+            curPropertiesPerMaterial._AlphaSrcBlend = m_InteralMat._AlphaSrcBlend;
+            curPropertiesPerMaterial._AlphaDstBlend = m_InteralMat._AlphaDstBlend;
+            curPropertiesPerMaterial._EnableFogOnTransparent = m_InteralMat._EnableFogOnTransparent;
+            curPropertiesPerMaterial._DoubleSidedEnable = m_InteralMat._DoubleSidedEnable;
+            curPropertiesPerMaterial._DoubleSidedNormalMode = m_InteralMat._DoubleSidedNormalMode;
+            curPropertiesPerMaterial._DoubleSidedConstants = m_InteralMat._DoubleSidedConstants;
+            curPropertiesPerMaterial._DoubleSidedGIMode = m_InteralMat._DoubleSidedGIMode;
+            curPropertiesPerMaterial._UVBase = m_InteralMat._UVBase;
+            curPropertiesPerMaterial._ObjectSpaceUVMapping = m_InteralMat._ObjectSpaceUVMapping;
+            curPropertiesPerMaterial._TexWorldScale = m_InteralMat._TexWorldScale;
+            curPropertiesPerMaterial._UVMappingMask = m_InteralMat._UVMappingMask;
+            curPropertiesPerMaterial._NormalMapSpace = m_InteralMat._NormalMapSpace;
+            curPropertiesPerMaterial._MaterialID = m_InteralMat._MaterialID;
+            curPropertiesPerMaterial._TransmissionEnable = m_InteralMat._TransmissionEnable;
+            curPropertiesPerMaterial._PPDMinSamples = m_InteralMat._PPDMinSamples;
+            curPropertiesPerMaterial._PPDMaxSamples = m_InteralMat._PPDMaxSamples;
+            curPropertiesPerMaterial._PPDLodThreshold = m_InteralMat._PPDLodThreshold;
+            curPropertiesPerMaterial._PPDPrimitiveLength = m_InteralMat._PPDPrimitiveLength;
+            curPropertiesPerMaterial._PPDPrimitiveWidth = m_InteralMat._PPDPrimitiveWidth;
+            curPropertiesPerMaterial._InvPrimScale = m_InteralMat._InvPrimScale;
+            curPropertiesPerMaterial._UVDetailsMappingMask = m_InteralMat._UVDetailsMappingMask;
+            curPropertiesPerMaterial._UVDetail = m_InteralMat._UVDetail;
+            curPropertiesPerMaterial._LinkDetailsWithBase = m_InteralMat._LinkDetailsWithBase;
+            curPropertiesPerMaterial._EmissiveColorMode = m_InteralMat._EmissiveColorMode;
+            curPropertiesPerMaterial._UVEmissive = m_InteralMat._UVEmissive;
+
+            memcpy(pTerrainMatPropertiesBuffer->GetCpuVirtualAddress<HLSL::PropertiesPerMaterial>(), &curPropertiesPerMaterial, sizeof(HLSL::PropertiesPerMaterial));
+        }
+
+
         //--------------------------------------------------------------------------
 
         traverseDispatchArgsBufferDesc =
@@ -308,7 +503,6 @@ namespace MoYu
             .SetRHIBufferTarget(RHI::RHIBufferTarget::RHIBufferTargetIndirectArgs | RHI::RHIBufferTarget::RHIBufferRandomReadWrite | RHI::RHIBufferTarget::RHIBufferTargetRaw);
     }
 
-
     void IndirectTerrainCullPass::update(RHI::RenderGraph& graph, TerrainCullInput& passInput, TerrainCullOutput& passOutput)
     {
         InternalTerrainRenderer& internalTerrainRenderer = m_render_scene->m_terrain_renderers[0].internalTerrainRenderer;
@@ -321,6 +515,9 @@ namespace MoYu
         RHI::RgResourceHandle terrainMinHeightHandle = GImport(graph, pMinHeightMap.get());
         RHI::RgResourceHandle terrainMaxHeightHandle = GImport(graph, pMaxHeightMap.get());
 
+        RHI::RgResourceHandle terrainRenderDataHandle = GImport(graph, pTerrainRenderDataBuffer.get());
+        RHI::RgResourceHandle terrainMatPropertiesHandle = GImport(graph, pTerrainMatPropertiesBuffer.get());
+        
         if (!iMinMaxHeightReady)
         {
             iMinMaxHeightReady = true;
@@ -369,7 +566,7 @@ namespace MoYu
                     generateMipmapForTerrainHeightmap(pContext, _SrcTexture, false);
                 }
 
-                });
+            });
         }
 
         //------------------------------------------------------------------------------------
@@ -482,7 +679,7 @@ namespace MoYu
 
                 index += 1;
             }
-            });
+        });
 
         //------------------------------------------------------------------------------------
 
@@ -518,7 +715,7 @@ namespace MoYu
             pContext->SetConstantArray(0, sizeof(rootIndexBuffer) / sizeof(uint32_t), &rootIndexBuffer);
 
             pContext->Dispatch2D(160, 160, 8, 8);
-            });
+        });
 
         //------------------------------------------------------------------------------------
 
@@ -577,11 +774,42 @@ namespace MoYu
             pContext->SetConstantArray(0, sizeof(rootIndexBuffer) / sizeof(uint32_t), &rootIndexBuffer);
 
             pContext->DispatchIndirect(RegGetBuf(buildPatchArgsHandle), 0);
-            });
+        });
+
+        //------------------------------------------------------------------------------------
+        
+        RHI::RgResourceHandle camPatchCmdSigBufferHandle = GImport(graph, camVisablePatchCmdSigBuffer.get());
+
+        RHI::RenderPass& genTerrainCmdSigPass = graph.AddRenderPass("GenTerrainCmdSigPass");
+
+        genTerrainCmdSigPass.Read(culledPatchListHandle, true);
+        genTerrainCmdSigPass.Write(camPatchCmdSigBufferHandle, true);
+
+        genTerrainCmdSigPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
+            RHI::D3D12ComputeContext* pContext = context->GetComputeContext();
+
+            pContext->TransitionBarrier(RegGetBufCounter(culledPatchListHandle), D3D12_RESOURCE_STATE_COPY_SOURCE);
+            pContext->TransitionBarrier(RegGetBuf(camPatchCmdSigBufferHandle), D3D12_RESOURCE_STATE_COPY_DEST);
+            pContext->FlushResourceBarriers();
+
+            // HLSL::ToDrawCommandSignatureParams
+            int instanceCountOffsetInBuffer = sizeof(D3D12_VERTEX_BUFFER_VIEW) + sizeof(D3D12_INDEX_BUFFER_VIEW) + sizeof(uint32_t);
+
+            pContext->CopyBufferRegion(
+                RegGetBuf(camPatchCmdSigBufferHandle), instanceCountOffsetInBuffer,
+                RegGetBufCounter(culledPatchListHandle), 0, sizeof(uint32_t));
+        });
 
         //------------------------------------------------------------------------------------
 
-
+        passOutput.terrainHeightmapHandle = terrainHeightmapHandle;
+        passOutput.terrainNormalmapHandle = terrainNormalmapHandle;
+        passOutput.minHeightmapPyramidHandle = terrainMinHeightHandle;
+        passOutput.maxHeightmapPyramidHandle = terrainMaxHeightHandle;
+        passOutput.terrainRenderDataHandle = terrainRenderDataHandle;
+        passOutput.terrainMatPropertyHandle = terrainMatPropertiesHandle;
+        passOutput.mainCamVisPatchListHandle = culledPatchListHandle;
+        passOutput.mainCamVisCmdSigBufferHandle = camPatchCmdSigBufferHandle;
 
         /*
         bool needClearRenderTarget = initializeRenderTarget(graph, &passOutput);
@@ -674,7 +902,7 @@ namespace MoYu
             });
         }
         //=================================================================================
-        // �����׼��CommandSigBuffer����
+        //
         //=================================================================================
         RHI::RenderPass& terrainCommandSigPreparePass = graph.AddRenderPass("TerrainClipmapPreparePass");
 
@@ -702,7 +930,7 @@ namespace MoYu
             });
 
         //=================================================================================
-        // ���������clipmap�ڵ�
+        //
         //=================================================================================
         RHI::RenderPass& terrainMainCullingPass = graph.AddRenderPass("TerrainMainCullingPass");
 
@@ -759,7 +987,7 @@ namespace MoYu
         });
 
         //=================================================================================
-        // ��ԴShadow����
+        //
         //=================================================================================
         int dirShadowmapVisiableBufferCount = dirVisableClipmapBuffers.m_VisableClipmapBuffers.size();
         if (dirShadowmapVisiableBufferCount != 0)
@@ -878,7 +1106,7 @@ namespace MoYu
         });
 
         //=================================================================================
-        // ���������
+        //
         //=================================================================================
 
         RHI::RenderPass& terrainMainCullingPass = graph.AddRenderPass("TerrainMainCullingPass");
@@ -924,7 +1152,7 @@ namespace MoYu
         });
 
         //=================================================================================
-        // ��ԴShadow����
+        //
         //=================================================================================
         int dirShadowmapVisiableBufferCount = dirShadowmapCommandBuffers.m_PatchNodeVisiableIndexBuffers.size();
         if (dirShadowmapVisiableBufferCount != 0)
@@ -988,7 +1216,7 @@ namespace MoYu
         }
 
         //=================================================================================
-        // ��Ӱ�������CommandSignature׼��
+        //
         //=================================================================================
 
         if (dirShadowmapVisiableBufferCount != 0)
@@ -1035,7 +1263,7 @@ namespace MoYu
         }
 
         //=================================================================================
-        // ���Pass���
+        //
         //=================================================================================
 
         passOutput.terrainHeightmapHandle    = terrainHeightmapHandle;

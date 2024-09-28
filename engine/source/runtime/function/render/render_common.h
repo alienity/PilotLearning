@@ -400,19 +400,6 @@ namespace MoYu
         InternalMesh clipmap_mesh[5];
     };
 
-    struct InternalTerrainBaseTexture
-    {
-        std::shared_ptr<RHI::D3D12Texture> albedo;
-        std::shared_ptr<RHI::D3D12Texture> ao_roughness_metallic;
-        std::shared_ptr<RHI::D3D12Texture> displacement;
-        std::shared_ptr<RHI::D3D12Texture> normal;
-
-        glm::float2 albedo_tilling;
-        glm::float2 ao_roughness_metallic_tilling;
-        glm::float2 displacement_tilling;
-        glm::float2 normal_tilling;
-    };
-
     struct InternalTerrain
     {
         glm::int3 terrain_size{ glm::int3(10240, 2048, 10240) };
@@ -438,11 +425,6 @@ namespace MoYu
         std::shared_ptr<RHI::D3D12Texture> terrain_normalmap;
     };
 
-    struct InternalTerrainMaterial
-    {
-        InternalTerrainBaseTexture terrain_base_textures[2];
-    };
-
     struct InternalTerrainRenderer
     {
         SceneCommonIdentifier m_identifier;
@@ -453,7 +435,7 @@ namespace MoYu
         glm::float4x4 prev_model_matrix_inverse;
 
         InternalTerrain ref_terrain;
-        InternalTerrainMaterial ref_material;
+        InternalMaterial ref_material;
     };
 
     struct BaseAmbientLight
@@ -976,6 +958,11 @@ namespace MoYu
         StandardLightMaterial m_mat_data;
     };
 
+    inline bool operator==(const SceneMaterial& lhs, const SceneMaterial& rhs)
+    {
+        return lhs.m_shader_name == rhs.m_shader_name && lhs.m_mat_data == rhs.m_mat_data;
+    }
+
     struct SceneMeshRenderer
     {
         static const ComponentType m_component_type {ComponentType::C_MeshRenderer};
@@ -986,34 +973,6 @@ namespace MoYu
         SceneMaterial m_material;
     };
 
-    struct TerrainBaseTex
-    {
-        MaterialImage m_albedo_file {};
-        MaterialImage m_ao_roughness_metallic_file {};
-        MaterialImage m_displacement_file {};
-        MaterialImage m_normal_file {};
-    };
-
-    inline bool operator==(const TerrainBaseTex& lhs, const TerrainBaseTex& rhs)
-    {
-        return
-            lhs.m_albedo_file == rhs.m_albedo_file &&
-            lhs.m_ao_roughness_metallic_file == rhs.m_ao_roughness_metallic_file &&
-            lhs.m_displacement_file == rhs.m_displacement_file &&
-            lhs.m_normal_file == rhs.m_normal_file;
-    }
-
-    struct TerrainMaterial
-    {
-        TerrainBaseTex m_base_texs[2];
-    };
-    inline bool operator==(const TerrainMaterial& lhs, const TerrainMaterial& rhs)
-    {
-        return
-            lhs.m_base_texs[0] == rhs.m_base_texs[0] &&
-            lhs.m_base_texs[1] == rhs.m_base_texs[1];
-    }
-
     struct SceneTerrainRenderer
     {
         static const ComponentType m_component_type {ComponentType::C_Terrain};
@@ -1021,7 +980,7 @@ namespace MoYu
         SceneCommonIdentifier m_identifier;
 
         SceneTerrainMesh m_scene_terrain_mesh;
-        TerrainMaterial  m_terrain_material;
+        SceneMaterial m_terrain_material;
     };
     
     enum LightType

@@ -736,31 +736,6 @@ namespace MoYu
 
             is_dirty |= isDirty;
         };
-        m_editor_ui_creator["TerrainMaterial"] = [this, &asset_folder](const std::string& name, bool& is_dirty, void* value_ptr) -> void {
-            bool isDirty = false;
-
-            if (ImGui::TreeNode(name.c_str()))
-            {
-                ImGui::Indent();
-
-                TerrainMaterial* terrain_material_ptr = static_cast<TerrainMaterial*>(value_ptr);
-
-                int base_tex_length = sizeof(terrain_material_ptr->m_base_texs) / sizeof(TerrainBaseTex);
-
-                for (int i = 0; i < base_tex_length; i++)
-                {
-                    m_editor_ui_creator["MaterialImage"]("Albedo", isDirty, &terrain_material_ptr->m_base_texs[i].m_albedo_file);
-                    m_editor_ui_creator["MaterialImage"]("ARM", isDirty, &terrain_material_ptr->m_base_texs[i].m_ao_roughness_metallic_file);
-                    m_editor_ui_creator["MaterialImage"]("Displacement", isDirty, &terrain_material_ptr->m_base_texs[i].m_displacement_file);
-                    m_editor_ui_creator["MaterialImage"]("Normal", isDirty, &terrain_material_ptr->m_base_texs[i].m_normal_file);
-                }
-
-                ImGui::Unindent();
-                ImGui::TreePop();
-            }
-
-            is_dirty |= isDirty;
-        };
         m_editor_ui_creator["LightComponent"] = [this, &asset_folder](const std::string& name, bool& is_dirty, void* value_ptr) -> void {
             bool isDirty = false;
 

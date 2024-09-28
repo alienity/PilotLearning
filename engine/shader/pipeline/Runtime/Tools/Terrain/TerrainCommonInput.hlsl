@@ -14,6 +14,8 @@
 #define float4 glm::fvec4
 #define float4x4 glm::float4x4
 #define float2x4 glm::float2x4
+#else
+#include "../../ShaderLibrary/Common.hlsl"
 #endif
 
 //最大的LOD级别是5
@@ -49,6 +51,20 @@ struct TerrainPatchBounds
 {
     float3 minPosition;
     float3 maxPosition;
+};
+
+struct TerrainRenderData
+{
+    float4x4 objectToWorldMatrix;
+    float4x4 worldToObjectMatrix;
+    float4x4 prevObjectToWorldMatrix;
+    float4x4 prevWorldToObjectMatrix;
+    float4 terrainSize;
+};
+
+struct TerrainPatchCmdSig
+{
+    
 };
 
 #ifdef _CPP_MACRO_

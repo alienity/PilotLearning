@@ -172,6 +172,17 @@ namespace MoYu
             mDepthPrePass->setCommonInfo(renderPassCommonInfo);
             mDepthPrePass->initialize(drawPassInit);
         }
+        // TerrainDepthPrePass
+        {
+            TerrainDepthPrePass::DrawPassInitInfo drawPassInit;
+            drawPassInit.depthTexDesc = depthTexDesc;
+            drawPassInit.m_ShaderCompiler = pCompiler;
+            drawPassInit.m_ShaderRootPath = g_runtime_global_context.m_config_manager->getShaderFolder();
+
+            mTerrainDepthPrePass = std::make_shared<TerrainDepthPrePass>();
+            mTerrainDepthPrePass->setCommonInfo(renderPassCommonInfo);
+            mTerrainDepthPrePass->initialize(drawPassInit);
+        }
         // GBuffer pass
         {
             IndirectGBufferPass::DrawPassInitInfo drawPassInit;
@@ -455,6 +466,7 @@ namespace MoYu
         mIndirectMotionVectorPass->prepareMatBuffer(render_resource);
         mCameraMotionVectorPass->prepareMatBuffer(render_resource);
         mDepthPrePass->prepareMatBuffer(render_resource);
+        mTerrainDepthPrePass->prepareMatBuffer(render_resource);
         mIndirectGBufferPass->prepareMatBuffer(render_resource);
         mDepthPyramidPass->prepareMeshData(render_resource);
         mColorPyramidPass->prepareMeshData(render_resource);
@@ -483,6 +495,7 @@ namespace MoYu
         mIndirectShadowPass = nullptr;
         mIndirectTerrainShadowPass = nullptr;
         mDepthPrePass = nullptr;
+        mTerrainDepthPrePass = nullptr;
         mIndirectGBufferPass = nullptr;
         mIndirectTerrainGBufferPass = nullptr;
         mIndirectMotionVectorPass = nullptr;
@@ -613,6 +626,25 @@ namespace MoYu
         //=================================================================================
 
         //=================================================================================
+        // terrain depth prepass
+        TerrainDepthPrePass::DrawInputParameters mTerrainDepthPrePassInput;
+        TerrainDepthPrePass::DrawOutput mTerrainDepthPrepassOutput;
+
+        mTerrainDepthPrePassInput.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
+        mTerrainDepthPrePassInput.terrainHeightmapHandle = terrainCullOutput.terrainHeightmapHandle;
+        mTerrainDepthPrePassInput.terrainNormalmapHandle = terrainCullOutput.terrainNormalmapHandle;
+        mTerrainDepthPrePassInput.terrainMatPropertyHandle = terrainCullOutput.terrainMatPropertyHandle;
+        mTerrainDepthPrePassInput.terrainRenderDataHandle = terrainCullOutput.terrainRenderDataHandle;
+        mTerrainDepthPrePassInput.culledPatchListBufferHandle = terrainCullOutput.mainCamVisPatchListHandle;
+        mTerrainDepthPrePassInput.mainCamVisCmdSigHandle = terrainCullOutput.mainCamVisCmdSigBufferHandle;
+
+        mTerrainDepthPrepassOutput.depthBufferHandle = mDepthPrepassOutput.depthBufferHandle;
+
+        mTerrainDepthPrePass->update(graph, mTerrainDepthPrePassInput, mTerrainDepthPrepassOutput);
+
+        //=================================================================================
+
+        //=================================================================================
         // indirect gbuffer
         IndirectGBufferPass::DrawInputParameters mGBufferIntput;
         GBufferOutput mGBufferOutput;
@@ -621,7 +653,7 @@ namespace MoYu
         mGBufferIntput.renderDataPerDrawHandle = indirectCullOutput.renderDataPerDrawHandle;
         mGBufferIntput.propertiesPerMaterialHandle = indirectCullOutput.propertiesPerMaterialHandle;
         mGBufferIntput.opaqueDrawHandle = indirectCullOutput.opaqueDrawHandle.indirectSortBufferHandle;
-        mGBufferOutput.depthHandle = mDepthPrepassOutput.depthBufferHandle;
+        mGBufferOutput.depthHandle = mTerrainDepthPrepassOutput.depthBufferHandle;
 
         mIndirectGBufferPass->update(graph, mGBufferIntput, mGBufferOutput);
         //=================================================================================
@@ -632,8 +664,7 @@ namespace MoYu
         //mTerrainGBufferIntput.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
         //mTerrainGBufferIntput.terrainHeightmapHandle = terrainCullOutput.terrainHeightmapHandle;
         //mTerrainGBufferIntput.terrainNormalmapHandle = terrainCullOutput.terrainNormalmapHandle;
-        //mTerrainGBufferIntput.transformBufferHandle = terrainCullOutput.transformBufferHandle;
-        //mTerrainGBufferIntput.terrainCommandSigHandle = terrainCullOutput.mainCamVisCommandSigHandle;
+        //mTerrainGBufferIntput.mainCamVisPatchListHandle = terrainCullOutput.mainCamVisPatchListHandle;
         //
         //mIndirectTerrainGBufferPass->update(graph, mTerrainGBufferIntput, mGBufferOutput);
         ////=================================================================================
