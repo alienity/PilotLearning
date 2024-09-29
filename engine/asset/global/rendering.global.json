@@ -120,8 +120,8 @@
         "m_positive_z_map": "asset/texture/sky/skybox_specular_Z+.hdr"
     },
     "m_terrain_map": {
-        "m_height_map": "asset/texture/terrain/HeightMap.png",
-        "m_normal_map": "asset/texture/terrain/NormalMap.png"
+        "m_height_map": "asset/texture/terrain/TerrainHeightMap.png",
+        "m_normal_map": "asset/texture/terrain/TerrainNormalMap.png"
     },
     "m_bluenoises": {
         "m_bluenoise_map": "asset/texture/global/output_64x64_uni.bmp",

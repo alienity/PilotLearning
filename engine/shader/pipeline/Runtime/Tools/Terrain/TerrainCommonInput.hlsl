@@ -62,11 +62,6 @@ struct TerrainRenderData
     float4 terrainSize;
 };
 
-struct TerrainPatchCmdSig
-{
-    
-};
-
 #ifdef _CPP_MACRO_
 #undef uint
 #undef uint2

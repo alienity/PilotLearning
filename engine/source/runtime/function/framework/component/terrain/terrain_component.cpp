@@ -42,8 +42,7 @@ namespace MoYu
 
         MaterialManager* m_mat_manager_ptr = g_runtime_global_context.m_material_manager.get();
 
-        MaterialRes m_mat_res = m_mat_manager_ptr->loadMaterialRes(m_terrain_res.m_material_res.m_material_file);
-
+        MaterialRes m_mat_res{};
         if (m_terrain_res.m_material_res.m_is_material_init)
         {
             std::string m_material_serialized_json = m_terrain_res.m_material_res.m_material_serialized_json_data;

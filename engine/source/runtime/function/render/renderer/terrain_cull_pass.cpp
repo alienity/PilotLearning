@@ -248,7 +248,7 @@ namespace MoYu
         TerrainCB.CameraViewProj = cameraViewProj;
         TerrainCB.CameraPositionWS = cameraPosition;
         TerrainCB.BoundsHeightRedundance = 0.1f;
-        TerrainCB.WorldSize = terrainSize;
+        TerrainCB.WorldSize = glm::float3(terrainSize.x, 0.1f, terrainSize.z);
         TerrainCB.NodeEvaluationC = glm::float4(1, 0, 0, 0);
         memcpy(TerrainCB.WorldLodParams, worldLODParams, sizeof(glm::float4) * (MAX_TERRAIN_LOD + 1));
         memcpy(TerrainCB.NodeIDOffsetOfLOD, nodeIDOffsetLOD, sizeof(uint32_t) * (MAX_TERRAIN_LOD + 1));
@@ -343,7 +343,7 @@ namespace MoYu
         {
             CachedTerrainRenderer& terrainRenderer = mesh_renderers[0];
             InternalTerrainRenderer& internalTerrainRenderer = terrainRenderer.internalTerrainRenderer;
-            glm::float2 terrainSize = internalTerrainRenderer.ref_terrain.terrain_size;
+            glm::int3 terrainSize = internalTerrainRenderer.ref_terrain.terrain_size;
 
             InternalMesh& patchMesh = internalTerrainRenderer.ref_terrain.patch_mesh;
 
@@ -371,7 +371,7 @@ namespace MoYu
             terrainRenderData.worldToObjectMatrix = internalTerrainRenderer.model_matrix_inverse;
             terrainRenderData.prevObjectToWorldMatrix = internalTerrainRenderer.prev_model_matrix;
             terrainRenderData.prevWorldToObjectMatrix = internalTerrainRenderer.prev_model_matrix_inverse;
-            terrainRenderData.terrainSize = glm::float4(terrainSize.x, terrainSize.y, 1.0f / terrainSize.x, 1.0f / terrainSize.y);
+            terrainRenderData.terrainSize = glm::float4(terrainSize, 0);
 
             memcpy(pTerrainRenderDataBuffer->GetCpuVirtualAddress<HLSL::TerrainRenderData>(), &terrainRenderData, sizeof(HLSL::TerrainRenderData));
 
@@ -1291,6 +1291,8 @@ namespace MoYu
 
     void IndirectTerrainCullPass::destroy()
     {
+
+
 
     }
 

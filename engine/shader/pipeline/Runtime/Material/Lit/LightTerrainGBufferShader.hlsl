@@ -87,6 +87,18 @@ PropertiesPerMaterial GetTerrainPeroperties()
     return props[0];
 }
 
+Texture2D<float> GetTerrainHeightMap()
+{
+    Texture2D<float> terrainHeightMap = ResourceDescriptorHeap[terrainHeightMapIndex];
+    return terrainHeightMap;
+}
+
+Texture2D<float3> GetTerrainNormalMap()
+{
+    Texture2D<float3> terrainNormalMap = ResourceDescriptorHeap[terrainNormalMapIndex];
+    return terrainNormalMap;
+}
+
 FrameUniforms GetFrameUniforms()
 {
     ConstantBuffer<FrameUniforms> frameUniform = ResourceDescriptorHeap[frameUniformIndex];
@@ -170,8 +182,8 @@ PackedVaryingsType Vert(AttributesMesh inputMesh, uint instanceIndex : SV_Instan
 {
     FrameUniforms frameUniform = GetFrameUniforms();
     
-    Texture2D<float> terrainHeightMap = ResourceDescriptorHeap[terrainHeightMapIndex];
-    Texture2D<float3> terrainNormalMap = ResourceDescriptorHeap[terrainNormalMapIndex];
+    Texture2D<float> terrainHeightMap = GetTerrainHeightMap();
+    Texture2D<float3> terrainNormalMap = GetTerrainNormalMap();
     TerrainRenderPatch patch = GetTerrainRenderPatch(instanceIndex);
     TerrainRenderData terrainRenderData = GetTerrainRenderData();
     
@@ -183,7 +195,7 @@ PackedVaryingsType Vert(AttributesMesh inputMesh, uint instanceIndex : SV_Instan
     FixLODConnectSeam(inVertex, uv, patch);
 #endif
     uint lod = patch.lod;
-    float scale = pow(2,lod);
+    float scale = pow(2, lod);
 
     inVertex.xz *= scale;
     inVertex.xz += patch.position;
