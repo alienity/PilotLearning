@@ -318,16 +318,22 @@ namespace MoYu
 
         //--------------------------------------------------------------------------
 
-        if (camVisablePatchCmdSigBuffer == nullptr)
+        if (camUploadPatchCmdSigBuffer == nullptr || camPatchCmdSigBuffer == nullptr)
         {
-            camVisablePatchCmdSigBuffer =
+            camUploadPatchCmdSigBuffer =
+                RHI::D3D12Buffer::Create(
+                    m_Device->GetLinkedDevice(),
+                    RHI::RHIBufferTargetStructured,
+                    1, MoYu::AlignUp(sizeof(HLSL::ToDrawCommandSignatureParams), 256),
+                    L"UploadPatchCommandSignatureBuffer",
+                    RHI::RHIBufferMode::RHIBufferModeDynamic);
+
+            camPatchCmdSigBuffer = 
                 RHI::D3D12Buffer::Create(
                     m_Device->GetLinkedDevice(),
                     RHI::RHIBufferTargetStructured | RHI::RHIBufferTargetIndirectArgs,
-                    1,
-                    MoYu::AlignUp(sizeof(HLSL::ToDrawCommandSignatureParams), 256),
-                    L"VisiablePatchCommandSignatureBuffer",
-                    RHI::RHIBufferMode::RHIBufferModeDynamic);
+                    1, MoYu::AlignUp(sizeof(HLSL::ToDrawCommandSignatureParams), 256),
+                    L"PatchCommandSignatureBuffer");
         }
 
         //--------------------------------------------------------------------------
@@ -356,7 +362,7 @@ namespace MoYu
             memcpy(&drawPatchParams.indexBufferView, &curIndexBufferView, sizeof(D3D12_INDEX_BUFFER_VIEW));
             memcpy(&drawPatchParams.drawIndexedArguments, &drawIndexedArgs, sizeof(D3D12_DRAW_INDEXED_ARGUMENTS));
 
-            memcpy(camVisablePatchCmdSigBuffer->GetCpuVirtualAddress<HLSL::ToDrawCommandSignatureParams>(), &drawPatchParams, sizeof(HLSL::ToDrawCommandSignatureParams));
+            memcpy(camUploadPatchCmdSigBuffer->GetCpuVirtualAddress<HLSL::ToDrawCommandSignatureParams>(), &drawPatchParams, sizeof(HLSL::ToDrawCommandSignatureParams));
 
 
 
@@ -778,26 +784,31 @@ namespace MoYu
 
         //------------------------------------------------------------------------------------
         
-        RHI::RgResourceHandle camPatchCmdSigBufferHandle = GImport(graph, camVisablePatchCmdSigBuffer.get());
+        RHI::RgResourceHandle camUploadPatchCmdSigBufferHandle = GImport(graph, camUploadPatchCmdSigBuffer.get());
+        RHI::RgResourceHandle camPatchCmdSigBufferHandle = GImport(graph, camPatchCmdSigBuffer.get());
 
         RHI::RenderPass& genTerrainCmdSigPass = graph.AddRenderPass("GenTerrainCmdSigPass");
 
         genTerrainCmdSigPass.Read(culledPatchListHandle, true);
+        genTerrainCmdSigPass.Read(camUploadPatchCmdSigBufferHandle, true);
         genTerrainCmdSigPass.Write(camPatchCmdSigBufferHandle, true);
 
         genTerrainCmdSigPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
             RHI::D3D12ComputeContext* pContext = context->GetComputeContext();
 
             pContext->TransitionBarrier(RegGetBufCounter(culledPatchListHandle), D3D12_RESOURCE_STATE_COPY_SOURCE);
+            pContext->TransitionBarrier(RegGetBuf(camUploadPatchCmdSigBufferHandle), D3D12_RESOURCE_STATE_COPY_SOURCE);
             pContext->TransitionBarrier(RegGetBuf(camPatchCmdSigBufferHandle), D3D12_RESOURCE_STATE_COPY_DEST);
             pContext->FlushResourceBarriers();
+
+            pContext->CopyBufferRegion(
+                RegGetBuf(camPatchCmdSigBufferHandle), 0, RegGetBuf(camUploadPatchCmdSigBufferHandle), 0, sizeof(HLSL::ToDrawCommandSignatureParams));
 
             // HLSL::ToDrawCommandSignatureParams
             int instanceCountOffsetInBuffer = sizeof(D3D12_VERTEX_BUFFER_VIEW) + sizeof(D3D12_INDEX_BUFFER_VIEW) + sizeof(uint32_t);
 
             pContext->CopyBufferRegion(
-                RegGetBuf(camPatchCmdSigBufferHandle), instanceCountOffsetInBuffer,
-                RegGetBufCounter(culledPatchListHandle), 0, sizeof(uint32_t));
+                RegGetBuf(camPatchCmdSigBufferHandle), instanceCountOffsetInBuffer, RegGetBufCounter(culledPatchListHandle), 0, sizeof(uint32_t));
         });
 
         //------------------------------------------------------------------------------------

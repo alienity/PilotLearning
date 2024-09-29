@@ -149,14 +149,17 @@ namespace MoYu
         std::shared_ptr<RHI::D3D12Buffer> pTerrainRenderDataBuffer;
         std::shared_ptr<RHI::D3D12Buffer> pTerrainMatPropertiesBuffer;
 
+        // 纯地形绘制常量
+        std::shared_ptr<RHI::D3D12Buffer> mTerrainConsBuffer;
+
         // 相机视锥内的clipmap
-        std::shared_ptr<RHI::D3D12Buffer> camVisablePatchCmdSigBuffer;
+        std::shared_ptr<RHI::D3D12Buffer> camUploadPatchCmdSigBuffer;
+        std::shared_ptr<RHI::D3D12Buffer> camPatchCmdSigBuffer;
         //// 方向光的多级clipmap
         //TerrainDirShadowmapCommandBuffer dirVisableClipmapBuffers;
 
-        // 纯地形绘制常量
-        std::shared_ptr<RHI::D3D12Buffer> mTerrainConsBuffer;
-        
+
+
         Shader InitQuadTreeCS;
         std::shared_ptr<RHI::D3D12RootSignature> pInitQuadTreeSignature;
         std::shared_ptr<RHI::D3D12PipelineState> pInitQuadTreePSO;

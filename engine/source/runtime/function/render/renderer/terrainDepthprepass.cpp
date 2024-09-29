@@ -112,8 +112,8 @@ namespace MoYu
         RHI::RenderPass& drawpass = graph.AddRenderPass("TerrainDepthPrePass");
 
         drawpass.Read(perframeBufferHandle, false, RHIResourceState::RHI_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
-        drawpass.Read(terrainMatPropertyHandle, false, RHIResourceState::RHI_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
-        drawpass.Read(terrainRenderDataHandle, false, RHIResourceState::RHI_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
+        drawpass.Read(terrainMatPropertyHandle, false, RHIResourceState::RHI_RESOURCE_STATE_ALL_SHADER_RESOURCE);
+        drawpass.Read(terrainRenderDataHandle, false, RHIResourceState::RHI_RESOURCE_STATE_ALL_SHADER_RESOURCE);
         drawpass.Read(terrainHeightmapHandle, false, RHIResourceState::RHI_RESOURCE_STATE_ALL_SHADER_RESOURCE);
         drawpass.Read(terrainNormalmapHandle, false, RHIResourceState::RHI_RESOURCE_STATE_ALL_SHADER_RESOURCE);
         drawpass.Read(patchListBufferHandle, false, RHIResourceState::RHI_RESOURCE_STATE_ALL_SHADER_RESOURCE);
@@ -136,7 +136,6 @@ namespace MoYu
             graphicContext->SetRootSignature(pDrawDepthSignature.get());
             graphicContext->SetPipelineState(pDrawDepthPSO.get());
 
-
             struct RootIndexBuffer
             {
                 uint32_t frameUniformIndex;
@@ -152,20 +151,19 @@ namespace MoYu
                                  RegGetBufDefSRVIdx(patchListBufferHandle),
                                  RegGetTexDefSRVIdx(terrainHeightmapHandle),
                                  RegGetTexDefSRVIdx(terrainNormalmapHandle),
-                                 RegGetBufDefCBVIdx(terrainRenderDataHandle),
-                                 RegGetBufDefCBVIdx(terrainMatPropertyHandle) };
+                                 RegGetBufDefSRVIdx(terrainRenderDataHandle),
+                                 RegGetBufDefSRVIdx(terrainMatPropertyHandle) };
 
             graphicContext->SetConstantArray(0, sizeof(RootIndexBuffer) / sizeof(uint32_t), &rootIndexBuffer);
 
             auto pMainCamVisCmdSigBuffer = registry->GetD3D12Buffer(mainCamVisCmdSigHandle);
-            auto pIndirectCommandBuffer = registry->GetD3D12Buffer(patchListBufferHandle);
-
+            
             graphicContext->ExecuteIndirect(
                 pDepthCommandSignature.get(),
                 pMainCamVisCmdSigBuffer,
                 0,
-                2048,
-                pIndirectCommandBuffer->GetCounterBuffer().get(),
+                1,
+                nullptr,
                 0);
         });
 

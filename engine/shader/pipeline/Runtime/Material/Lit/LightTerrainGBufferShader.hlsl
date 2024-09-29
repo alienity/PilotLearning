@@ -70,8 +70,8 @@ RenderDataPerDraw GetRenderDataPerDraw(TerrainRenderData terrainRenderData)
 
 TerrainRenderData GetTerrainRenderData()
 {
-    ConstantBuffer<TerrainRenderData> terrainRenderDataBuffer = ResourceDescriptorHeap[terrainRenderDataIndex];
-    return terrainRenderDataBuffer;
+    StructuredBuffer<TerrainRenderData> terrainRenderDataBuffer = ResourceDescriptorHeap[terrainRenderDataIndex];
+    return terrainRenderDataBuffer[0];
 }
 
 TerrainRenderPatch GetTerrainRenderPatch(uint instanceIndex)
@@ -83,8 +83,8 @@ TerrainRenderPatch GetTerrainRenderPatch(uint instanceIndex)
 
 PropertiesPerMaterial GetTerrainPeroperties()
 {
-    ConstantBuffer<PropertiesPerMaterial> props = ResourceDescriptorHeap[terrainPropertyDataIndex];
-    return props;
+    StructuredBuffer<PropertiesPerMaterial> props = ResourceDescriptorHeap[terrainPropertyDataIndex];
+    return props[0];
 }
 
 FrameUniforms GetFrameUniforms()
