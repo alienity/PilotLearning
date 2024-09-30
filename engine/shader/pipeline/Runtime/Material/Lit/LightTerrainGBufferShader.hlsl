@@ -76,7 +76,7 @@ TerrainRenderData GetTerrainRenderData()
 
 TerrainRenderPatch GetTerrainRenderPatch(uint instanceIndex)
 {
-    StructuredBuffer<TerrainRenderPatch> terrainRenderPatchBuffer = ResourceDescriptorHeap[terrainRenderDataIndex];
+    StructuredBuffer<TerrainRenderPatch> terrainRenderPatchBuffer = ResourceDescriptorHeap[patchListBufferIndex];
     TerrainRenderPatch renderPatch = terrainRenderPatchBuffer[instanceIndex];
     return renderPatch;
 }
@@ -215,6 +215,7 @@ PackedVaryingsType Vert(AttributesMesh inputMesh, uint instanceIndex : SV_Instan
     ZERO_INITIALIZE(AttributesMesh, pathMesh);
     pathMesh.positionOS = inVertex.xyz;
     pathMesh.uv0 = uv * scale * 8;
+    pathMesh.tangentOS = inputMesh.tangentOS;
     pathMesh.normalOS = normal;
     
     VaryingsType varyingsType;

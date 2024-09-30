@@ -13,12 +13,8 @@ namespace MoYu
     public:
         struct DrawPassInitInfo : public RenderPassInitInfo
         {
-            RHI::RgTextureDesc albedoDesc;
-            RHI::RgTextureDesc depthDesc;
-            RHI::RgTextureDesc worldNormalDesc;                             // float3
-            RHI::RgTextureDesc metallic_Roughness_Reflectance_AO_Desc;      // float4
-            RHI::RgTextureDesc clearCoat_ClearCoatRoughness_AnisotropyDesc; // float3
-            RHI::RgTextureDesc motionVectorDesc;                            // float4
+            RHI::RgTextureDesc colorTexDesc;
+            RHI::RgTextureDesc depthTexDesc;
 
             ShaderCompiler*       m_ShaderCompiler;
             std::filesystem::path m_ShaderRootPath;
@@ -29,8 +25,10 @@ namespace MoYu
             RHI::RgResourceHandle perframeBufferHandle;
             RHI::RgResourceHandle terrainHeightmapHandle;
             RHI::RgResourceHandle terrainNormalmapHandle;
-
-            RHI::RgResourceHandle mainCamVisPatchListHandle;
+            RHI::RgResourceHandle terrainRenderDataHandle;
+            RHI::RgResourceHandle terrainMatPropertyHandle;
+            RHI::RgResourceHandle culledPatchListBufferHandle;
+            RHI::RgResourceHandle mainCamVisCmdSigHandle;
         };
 
     public:
@@ -49,33 +47,8 @@ namespace MoYu
         std::shared_ptr<RHI::D3D12PipelineState> pIndirectTerrainGBufferPSO;
         std::shared_ptr<RHI::D3D12CommandSignature> pIndirectTerrainGBufferCommandSignature;
 
-        struct MaterialIndexStruct
-        {
-            int albedoIndex;
-            int armIndex;
-            int displacementIndex;
-            int normalIndex;
-        };
-
-        struct MaterialTillingStruct
-        {
-            glm::float2 albedoTilling;
-            glm::float2 armTilling;
-            glm::float2 displacementTilling;
-            glm::float2 normalTilling;
-        };
-
-        std::shared_ptr<RHI::D3D12Buffer> pMatTextureIndexBuffer;
-        std::shared_ptr<RHI::D3D12Buffer> pMatTextureTillingBuffer;
-
-        RHI::RgTextureDesc albedoDesc;                                  // float4
-        RHI::RgTextureDesc depthDesc;                                   // float
-        RHI::RgTextureDesc worldNormalDesc;                             // float3
-        RHI::RgTextureDesc worldTangentDesc;                            // float4
-        RHI::RgTextureDesc matNormalDesc;                               // float3
-        RHI::RgTextureDesc motionVectorDesc;                            // float4
-        RHI::RgTextureDesc metallic_Roughness_Reflectance_AO_Desc;      // float4
-        RHI::RgTextureDesc clearCoat_ClearCoatRoughness_AnisotropyDesc; // float3
+        RHI::RgTextureDesc colorTexDesc;
+        RHI::RgTextureDesc depthTexDesc;
 	};
 }
 

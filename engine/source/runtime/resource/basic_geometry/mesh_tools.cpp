@@ -311,10 +311,10 @@ namespace MoYu
 
                     if (i != meshGridCount && j != meshGridCount)
                     {
-                        int t00 = i * meshGridCount + j;
-                        int t10 = (i + 1) * meshGridCount + j;
-                        int t01 = i * meshGridCount + (j + 1);
-                        int t11 = (i + 1) * meshGridCount + (j + 1);
+                        int t00 = i * (meshGridCount + 1) + j;
+                        int t10 = (i + 1) * (meshGridCount + 1) + j;
+                        int t01 = i * (meshGridCount + 1) + (j + 1);
+                        int t11 = (i + 1) * (meshGridCount + 1) + (j + 1);
 
                         indices.push_back(t00);
                         indices.push_back(t10);

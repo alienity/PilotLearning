@@ -221,7 +221,8 @@ namespace MoYu
         glm::float4x4 cameraViewProj = frameUniform.cameraUniform._ViewProjMatrix;
 
         InternalTerrainRenderer& internalTerrainRenderer = m_render_scene->m_terrain_renderers[0].internalTerrainRenderer;
-        glm::float3 terrainSize = internalTerrainRenderer.ref_terrain.terrain_size;;
+        glm::float3 terrainSize = internalTerrainRenderer.ref_terrain.terrain_size;
+        terrainSize.y = 1.0f; // TODO: 
 
         int nodeCount = MAX_LOD_NODE_COUNT;
         for (int lod = MAX_TERRAIN_LOD; lod >= 0; lod--)
@@ -248,7 +249,7 @@ namespace MoYu
         TerrainCB.CameraViewProj = cameraViewProj;
         TerrainCB.CameraPositionWS = cameraPosition;
         TerrainCB.BoundsHeightRedundance = 0.1f;
-        TerrainCB.WorldSize = glm::float3(terrainSize.x, 0.1f, terrainSize.z);
+        TerrainCB.WorldSize = terrainSize;
         TerrainCB.NodeEvaluationC = glm::float4(1, 0, 0, 0);
         memcpy(TerrainCB.WorldLodParams, worldLODParams, sizeof(glm::float4) * (MAX_TERRAIN_LOD + 1));
         memcpy(TerrainCB.NodeIDOffsetOfLOD, nodeIDOffsetLOD, sizeof(uint32_t) * (MAX_TERRAIN_LOD + 1));
@@ -343,7 +344,7 @@ namespace MoYu
         {
             CachedTerrainRenderer& terrainRenderer = mesh_renderers[0];
             InternalTerrainRenderer& internalTerrainRenderer = terrainRenderer.internalTerrainRenderer;
-            glm::int3 terrainSize = internalTerrainRenderer.ref_terrain.terrain_size;
+            //glm::int3 terrainSize = internalTerrainRenderer.ref_terrain.terrain_size;
 
             InternalMesh& patchMesh = internalTerrainRenderer.ref_terrain.patch_mesh;
 
@@ -774,7 +775,7 @@ namespace MoYu
                                                                RegGetTexDefSRVIdx(terrainMinHeightHandle),
                                                                RegGetTexDefSRVIdx(terrainMaxHeightHandle),
                                                                RegGetTexDefSRVIdx(LodMapHandle),
-                                                               RegGetBufDefUAVIdx(FinalNodeListHandle),
+                                                               RegGetBufDefSRVIdx(FinalNodeListHandle),
                                                                RegGetBufDefUAVIdx(culledPatchListHandle) };
 
             pContext->SetConstantArray(0, sizeof(rootIndexBuffer) / sizeof(uint32_t), &rootIndexBuffer);

@@ -73,7 +73,7 @@ namespace MoYu
             std::uint32_t vertex_buffer_size = terrainPatch.vertices.size() * sizeof(D3D12MeshVertexStandard);
             if (scratch_vertex_buffer->vertex_buffer == nullptr)
             {
-                scratch_vertex_buffer->input_element_definition = D3D12MeshVertexPosition::InputElementDefinition;
+                scratch_vertex_buffer->input_element_definition = D3D12MeshVertexStandard::InputElementDefinition;
                 scratch_vertex_buffer->vertex_buffer = std::make_shared<MoYuScratchBuffer>();
                 scratch_vertex_buffer->vertex_buffer->Initialize(vertex_buffer_size);
             }
@@ -99,7 +99,7 @@ namespace MoYu
             InternalScratchMesh* patch_scratch_mesh = &internalTerrain.patch_scratch_mesh;
             InternalMesh* patch_mesh = &internalTerrain.patch_mesh;
 
-            uint32_t vertex_buffer_stride = sizeof(D3D12MeshVertexPosition);
+            uint32_t vertex_buffer_stride = sizeof(D3D12MeshVertexStandard);
             uint32_t vertex_buffer_size = patch_scratch_mesh->scratch_vertex_buffer.vertex_buffer->GetBufferSize();
             if (patch_mesh->vertex_buffer.vertex_buffer == nullptr)
             {

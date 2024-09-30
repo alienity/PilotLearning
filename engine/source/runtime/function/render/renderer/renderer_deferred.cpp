@@ -197,15 +197,9 @@ namespace MoYu
         }
         // Terrain GBuffer pass
         {
-            //mIndirectTerrainGBufferPass
             IndirectTerrainGBufferPass::DrawPassInitInfo drawPassInit;
-            drawPassInit.albedoDesc = mIndirectGBufferPass->gbuffer0Desc;
-            drawPassInit.worldNormalDesc = mIndirectGBufferPass->gbuffer0Desc;
-            drawPassInit.motionVectorDesc = mIndirectGBufferPass->gbuffer0Desc;
-            drawPassInit.metallic_Roughness_Reflectance_AO_Desc = mIndirectGBufferPass->gbuffer0Desc;
-            drawPassInit.clearCoat_ClearCoatRoughness_AnisotropyDesc = mIndirectGBufferPass->gbuffer0Desc;
-            drawPassInit.depthDesc = mIndirectGBufferPass->depthDesc;
-
+            drawPassInit.colorTexDesc = colorTexDesc;
+            drawPassInit.depthTexDesc = depthTexDesc;
             drawPassInit.m_ShaderCompiler = pCompiler;
             drawPassInit.m_ShaderRootPath = g_runtime_global_context.m_config_manager->getShaderFolder();
 
@@ -658,19 +652,22 @@ namespace MoYu
         mIndirectGBufferPass->update(graph, mGBufferIntput, mGBufferOutput);
         //=================================================================================
 
-        ////=================================================================================
-        //// indirect terrain gbuffer
-        //IndirectTerrainGBufferPass::DrawInputParameters mTerrainGBufferIntput;
-        //mTerrainGBufferIntput.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
-        //mTerrainGBufferIntput.terrainHeightmapHandle = terrainCullOutput.terrainHeightmapHandle;
-        //mTerrainGBufferIntput.terrainNormalmapHandle = terrainCullOutput.terrainNormalmapHandle;
-        //mTerrainGBufferIntput.mainCamVisPatchListHandle = terrainCullOutput.mainCamVisPatchListHandle;
-        //
-        //mIndirectTerrainGBufferPass->update(graph, mTerrainGBufferIntput, mGBufferOutput);
-        ////=================================================================================
-
         //=================================================================================
         // indirect terrain gbuffer
+        IndirectTerrainGBufferPass::DrawInputParameters mTerrainGBufferIntput;
+        mTerrainGBufferIntput.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
+        mTerrainGBufferIntput.terrainHeightmapHandle = terrainCullOutput.terrainHeightmapHandle;
+        mTerrainGBufferIntput.terrainNormalmapHandle = terrainCullOutput.terrainNormalmapHandle;
+        mTerrainGBufferIntput.terrainMatPropertyHandle = terrainCullOutput.terrainMatPropertyHandle;
+        mTerrainGBufferIntput.terrainRenderDataHandle = terrainCullOutput.terrainRenderDataHandle;
+        mTerrainGBufferIntput.culledPatchListBufferHandle = terrainCullOutput.mainCamVisPatchListHandle;
+        mTerrainGBufferIntput.mainCamVisCmdSigHandle = terrainCullOutput.mainCamVisCmdSigBufferHandle;
+
+        mIndirectTerrainGBufferPass->update(graph, mTerrainGBufferIntput, mGBufferOutput);
+        //=================================================================================
+
+        //=================================================================================
+        // indirect motion vector
         IndirectMotionVectorPass::DrawInputParameters mMotionVectorIntput;
         IndirectMotionVectorPass::DrawOutputParameters mMotionVectorOutput;
         mMotionVectorIntput.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;

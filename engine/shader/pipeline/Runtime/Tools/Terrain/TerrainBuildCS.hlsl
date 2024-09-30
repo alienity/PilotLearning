@@ -288,16 +288,16 @@ void SetLodTrans(inout TerrainRenderPatch patch, ConsBuffer inConsBuffer, Textur
 
 bool Cull(ConsBuffer inConsBuffer, TerrainPatchBounds bounds)
 {
-// #if ENABLE_FRUS_CULL
-//     Frustum frustum = ExtractPlanesDX(inConsBuffer.CameraViewProj);
-//     BoundingBox clipBoundingBox;
-//     clipBoundingBox.Center = float4((bounds.maxPosition + bounds.minPosition) * 0.5f, 0);
-//     clipBoundingBox.Extents = float4((bounds.maxPosition - bounds.minPosition) * 0.5f, 0);
-//     if(FrustumContainsBoundingBox(frustum, clipBoundingBox) == CONTAINMENT_DISJOINT)
-//     {
-//         return true;
-//     }
-// #endif
+#if ENABLE_FRUS_CULL
+    Frustum frustum = ExtractPlanesDX(inConsBuffer.CameraViewProj);
+    BoundingBox clipBoundingBox;
+    clipBoundingBox.Center = float4((bounds.maxPosition + bounds.minPosition) * 0.5f, 0);
+    clipBoundingBox.Extents = float4((bounds.maxPosition - bounds.minPosition) * 0.5f, 0);
+    if(FrustumContainsBoundingBox(frustum, clipBoundingBox) == CONTAINMENT_DISJOINT)
+    {
+        return true;
+    }
+#endif
 #if ENABLE_HIZ_CULL
     if(HizOcclusionCull(bounds))
     {
@@ -318,7 +318,7 @@ cbuffer RootConstants : register(b0, space0)
 };
 
 [numthreads(8,8,1)]
-void BuildPatches(uint3 id : SV_DispatchThreadID, uint3 groupId:SV_GroupID, uint3 groupThreadId:SV_GroupThreadID)
+void BuildPatches(uint3 id : SV_DispatchThreadID, uint3 groupId: SV_GroupID, uint3 groupThreadId: SV_GroupThreadID)
 {
     ConstantBuffer<ConsBuffer> InConsBuffer = ResourceDescriptorHeap[consBufferIndex];
 
