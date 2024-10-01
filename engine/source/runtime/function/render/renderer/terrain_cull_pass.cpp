@@ -222,8 +222,7 @@ namespace MoYu
 
         InternalTerrainRenderer& internalTerrainRenderer = m_render_scene->m_terrain_renderers[0].internalTerrainRenderer;
         glm::float3 terrainSize = internalTerrainRenderer.ref_terrain.terrain_size;
-        terrainSize.y = 1.0f; // TODO: 
-
+        
         int nodeCount = MAX_LOD_NODE_COUNT;
         for (int lod = MAX_TERRAIN_LOD; lod >= 0; lod--)
         {

@@ -155,6 +155,23 @@ namespace MoYu
 
             is_dirty |= isDirty;
         };
+        m_editor_ui_creator["glm::int3"] = [this](const std::string& name, bool& is_dirty, void* value_ptr) -> void {
+            bool isDirty = false;
+
+            glm::int3* vec_ptr = static_cast<glm::int3*>(value_ptr);
+            int val[3] = { vec_ptr->x, vec_ptr->y, vec_ptr->z };
+
+            std::string label = "##" + name;
+            ImGui::Text("%s", name.c_str());
+            ImGui::SameLine();
+            isDirty = ImGui::DragInt3(label.c_str(), val);
+
+            vec_ptr->x = val[0];
+            vec_ptr->y = val[1];
+            vec_ptr->z = val[2];
+
+            is_dirty |= isDirty;
+        };
         m_editor_ui_creator["glm::float4"] = [this](const std::string& name, bool& is_dirty, void* value_ptr) -> void {
             bool isDirty = false;
             
@@ -708,8 +725,8 @@ namespace MoYu
 
                 TerrainComponent* terrain_ptr = static_cast<TerrainComponent*>(value_ptr);
 
-                m_editor_ui_creator["TerrainMesh"]("m_terrain_mesh", isDirty, &terrain_ptr->m_terrain);
-                m_editor_ui_creator["TerrainMaterial"]("m_terrain_material", isDirty, &terrain_ptr->m_material);
+                m_editor_ui_creator["SceneTerrainMesh"]("m_terrain", isDirty, &terrain_ptr->m_terrain);
+                m_editor_ui_creator["SceneMaterial"]("m_material", isDirty, &terrain_ptr->m_material);
 
                 ImGui::Unindent();
                 ImGui::TreePop();
@@ -717,7 +734,7 @@ namespace MoYu
 
             is_dirty |= isDirty;
         };
-        m_editor_ui_creator["TerrainMesh"] = [this, &asset_folder](const std::string& name, bool& is_dirty, void* value_ptr) -> void {
+        m_editor_ui_creator["SceneTerrainMesh"] = [this, &asset_folder](const std::string& name, bool& is_dirty, void* value_ptr) -> void {
             bool isDirty = false;
 
             if (ImGui::TreeNode(name.c_str()))

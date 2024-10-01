@@ -298,12 +298,14 @@ namespace MoYu
         {
             float meshGridSize = meshSize / meshGridCount;
 
+            float widthoffset = meshSize * 0.5f;
+
             for (int i = 0; i <= meshGridCount; i++)
             {
                 for (int j = 0; j <= meshGridCount; j++)
                 {
                     Vertex _t;
-                    _t.position = glm::float3(j * meshGridSize, 0, i * meshGridSize);
+                    _t.position = glm::float3(j * meshGridSize - widthoffset, 0, i * meshGridSize - widthoffset);
                     _t.normal = glm::float3(0, 1, 0);
                     _t.tangent = glm::float4(1, 0, 0, 1);
                     _t.uv0 = glm::float2(float(j) / meshGridCount, float(i) / meshGridCount);

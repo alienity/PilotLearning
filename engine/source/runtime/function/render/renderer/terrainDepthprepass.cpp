@@ -117,7 +117,7 @@ namespace MoYu
         drawpass.Read(terrainHeightmapHandle, false, RHIResourceState::RHI_RESOURCE_STATE_ALL_SHADER_RESOURCE);
         drawpass.Read(terrainNormalmapHandle, false, RHIResourceState::RHI_RESOURCE_STATE_ALL_SHADER_RESOURCE);
         drawpass.Read(patchListBufferHandle, false, RHIResourceState::RHI_RESOURCE_STATE_ALL_SHADER_RESOURCE);
-        drawpass.Read(mainCamVisCmdSigHandle, false, RHIResourceState::RHI_RESOURCE_STATE_INDIRECT_ARGUMENT);
+        drawpass.Read(mainCamVisCmdSigHandle, false, RHIResourceState::RHI_RESOURCE_STATE_INDIRECT_ARGUMENT, RHIResourceState::RHI_RESOURCE_STATE_INDIRECT_ARGUMENT);
 
         drawpass.Write(depthBufferHandle, false, RHIResourceState::RHI_RESOURCE_STATE_DEPTH_WRITE);
 
@@ -158,18 +158,11 @@ namespace MoYu
 
             auto pMainCamVisCmdSigBuffer = registry->GetD3D12Buffer(mainCamVisCmdSigHandle);
             
-            graphicContext->ExecuteIndirect(
-                pDepthCommandSignature.get(),
-                pMainCamVisCmdSigBuffer,
-                0,
-                1,
-                nullptr,
-                0);
+            graphicContext->ExecuteIndirect(pDepthCommandSignature.get(), pMainCamVisCmdSigBuffer, 0, 1, nullptr, 0);
         });
 
         passOutput.depthBufferHandle = depthBufferHandle;
     }
-
 
     void TerrainDepthPrePass::destroy()
     {

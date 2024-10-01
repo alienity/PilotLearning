@@ -41,14 +41,18 @@ namespace MoYu
         void destroy() override final;
 
     private:
-        Shader indirectTerrainGBufferVS;
-        Shader indirectTerrainGBufferPS;
-        std::shared_ptr<RHI::D3D12RootSignature> pIndirectTerrainGBufferSignature;
-        std::shared_ptr<RHI::D3D12PipelineState> pIndirectTerrainGBufferPSO;
-        std::shared_ptr<RHI::D3D12CommandSignature> pIndirectTerrainGBufferCommandSignature;
+        Shader terrainGBufferVS;
+        Shader terrainGBufferPS;
+        std::shared_ptr<RHI::D3D12RootSignature> pTerrainGBufferSignature;
+        std::shared_ptr<RHI::D3D12PipelineState> pTerrainGBufferPSO;
+        std::shared_ptr<RHI::D3D12CommandSignature> pTerrainGBufferCommandSignature;
 
-        RHI::RgTextureDesc colorTexDesc;
-        RHI::RgTextureDesc depthTexDesc;
+        RHI::RgTextureDesc gbufferDesc; // float4
+        RHI::RgTextureDesc gbuffer0Desc; // float4
+        RHI::RgTextureDesc gbuffer1Desc; // float4
+        RHI::RgTextureDesc gbuffer2Desc; // float4
+        RHI::RgTextureDesc gbuffer3Desc; // float4
+        RHI::RgTextureDesc depthDesc;   // float
 	};
 }
 
