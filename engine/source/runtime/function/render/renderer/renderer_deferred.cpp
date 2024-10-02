@@ -552,17 +552,7 @@ namespace MoYu
 
         mTerrainCullPass->update(graph, terrainCullInput, terrainCullOutput);
         //=================================================================================
-        /*
-        //=================================================================================
-        // Terrain使用上一帧depth剪裁Pass
-        IndirectTerrainCullPass::DepthCullIndexInput _input = {};
-        _input.minDepthPyramidHandle  = lastFrameMinDepthPyramidHandle;
-        _input.perframeBufferHandle   = indirectCullOutput.perframeBufferHandle;
-        IndirectTerrainCullPass::DrawCallCommandBufferHandle _output = {};
 
-        mTerrainCullPass->cullByLastFrameDepth(graph, _input, _output);
-        //=================================================================================
-        */
         //=================================================================================
         // indirect draw shadow
         IndirectShadowPass::ShadowInputParameters mShadowmapIntputParams;
@@ -584,21 +574,22 @@ namespace MoYu
         mIndirectShadowPass->update(graph, mShadowmapIntputParams, mShadowmapOutputParams);
         //=================================================================================
 
-        ////=================================================================================
-        //// indirect terrain draw shadow
-        //IndirectTerrainShadowPass::ShadowInputParameters mTerrainShadowmapIntputParams;
-        //IndirectTerrainShadowPass::ShadowOutputParameters mTerrainShadowmapOutputParams;
+        //=================================================================================
+        // indirect terrain draw shadow
+        IndirectTerrainShadowPass::ShadowInputParameters mTerrainShadowmapIntputParams;
+        IndirectTerrainShadowPass::ShadowOutputParameters mTerrainShadowmapOutputParams;
 
-        //mTerrainShadowmapIntputParams.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
-        //mTerrainShadowmapIntputParams.terrainHeightmapHandle = terrainCullOutput.terrainHeightmapHandle;
-        //mTerrainShadowmapIntputParams.transformBufferHandle = terrainCullOutput.transformBufferHandle;
-        //mTerrainShadowmapIntputParams.dirCommandSigHandle.assign(terrainCullOutput.dirVisCommandSigHandles.begin(),
-        //                                                         terrainCullOutput.dirVisCommandSigHandles.end());
+        mTerrainShadowmapIntputParams.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
+        mTerrainShadowmapIntputParams.terrainHeightmapHandle = terrainCullOutput.terrainHeightmapHandle;
+        mTerrainShadowmapIntputParams.terrainNormalmapHandle = terrainCullOutput.terrainNormalmapHandle;
+        mTerrainShadowmapIntputParams.terrainMatPropertyHandle = terrainCullOutput.terrainMatPropertyHandle;
+        mTerrainShadowmapIntputParams.terrainRenderDataHandle = terrainCullOutput.terrainRenderDataHandle;
+        mTerrainShadowmapIntputParams.culledDirPatchListBufferHandle = terrainCullOutput.dirVisPatchListHandle;
+        mTerrainShadowmapIntputParams.dirVisCmdSigHandle = terrainCullOutput.dirVisCmdSigBufferHandle;
+        mTerrainShadowmapOutputParams.directionalCascadeShadowmapHandle = mShadowmapOutputParams.directionalCascadeShadowmapHandle;
 
-        //mTerrainShadowmapOutputParams.directionalCascadeShadowmapHandle = mShadowmapOutputParams.directionalCascadeShadowmapHandle;
-
-        //mIndirectTerrainShadowPass->update(graph, mTerrainShadowmapIntputParams, mTerrainShadowmapOutputParams);
-        ////=================================================================================
+        mIndirectTerrainShadowPass->update(graph, mTerrainShadowmapIntputParams, mTerrainShadowmapOutputParams);
+        //=================================================================================
 
         //=================================================================================
         // shadowmap output

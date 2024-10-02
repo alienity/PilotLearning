@@ -359,8 +359,6 @@ namespace MoYu
 
             RHI::D3D12GraphicsContext* graphicContext = context->GetGraphicsContext();
 
-            #define RegGetBufCounter(h) registry->GetD3D12Buffer(h)->GetCounterBuffer().get()
-            
             if (m_DirectionalShadowmap.m_identifier != UndefCommonIdentifier)
             {
                 glm::float2 atlas_size = m_DirectionalShadowmap.m_atlas_size;

@@ -21,15 +21,16 @@ namespace MoYu
         {
             RHI::RgResourceHandle perframeBufferHandle;
             RHI::RgResourceHandle terrainHeightmapHandle;
-
-            RHI::RgResourceHandle transformBufferHandle;
-            std::vector<RHI::RgResourceHandle> dirCommandSigHandle;
+            RHI::RgResourceHandle terrainNormalmapHandle;
+            RHI::RgResourceHandle terrainRenderDataHandle;
+            RHI::RgResourceHandle terrainMatPropertyHandle;
+            RHI::RgResourceHandle culledDirPatchListBufferHandle;
+            RHI::RgResourceHandle dirVisCmdSigHandle;
         };
 
         struct ShadowOutputParameters : public PassOutput
         {
             RHI::RgResourceHandle directionalCascadeShadowmapHandle;
-            //RHI::RgResourceHandle directionalShadowmapHandle = RHI::_DefaultRgResourceHandle;
         };
 
     public:

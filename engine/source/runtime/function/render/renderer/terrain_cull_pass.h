@@ -61,9 +61,10 @@ namespace MoYu
             RHI::RgResourceHandle terrainMatPropertyHandle;
 
             RHI::RgResourceHandle mainCamVisPatchListHandle;
-            std::vector<RHI::RgResourceHandle> dirVisPatchListHandles;
-
             RHI::RgResourceHandle mainCamVisCmdSigBufferHandle;
+
+            RHI::RgResourceHandle dirVisPatchListHandle;
+            RHI::RgResourceHandle dirVisCmdSigBufferHandle;
         };
 
         struct DepthCullIndexInput
@@ -145,20 +146,19 @@ namespace MoYu
         std::shared_ptr<RHI::D3D12Buffer> NodeDescriptors; // uint, branch
 
         std::shared_ptr<RHI::D3D12Buffer> CulledPatchListBuffer;
+        std::shared_ptr<RHI::D3D12Buffer> CulledDirPatchListBuffer; // For DirectionalLight
 
         std::shared_ptr<RHI::D3D12Buffer> pTerrainRenderDataBuffer;
         std::shared_ptr<RHI::D3D12Buffer> pTerrainMatPropertiesBuffer;
 
         // 纯地形绘制常量
         std::shared_ptr<RHI::D3D12Buffer> mTerrainConsBuffer;
+        std::shared_ptr<RHI::D3D12Buffer> mTerrainDirConsBuffer; // For DirectionalLight
 
-        // 相机视锥内的clipmap
+        // 相机视锥内的CommandSignature
         std::shared_ptr<RHI::D3D12Buffer> camUploadPatchCmdSigBuffer;
         std::shared_ptr<RHI::D3D12Buffer> camPatchCmdSigBuffer;
-        //// 方向光的多级clipmap
-        //TerrainDirShadowmapCommandBuffer dirVisableClipmapBuffers;
-
-
+        std::shared_ptr<RHI::D3D12Buffer> dirPatchCmdSigBuffer; // For DirectionalLight
 
         Shader InitQuadTreeCS;
         std::shared_ptr<RHI::D3D12RootSignature> pInitQuadTreeSignature;
@@ -176,13 +176,6 @@ namespace MoYu
         std::shared_ptr<RHI::D3D12RootSignature> pBuildPatchesSignature;
         std::shared_ptr<RHI::D3D12PipelineState> pBuildPatchesPSO;
 
-        //Shader mainCamVisClipmapCS;
-        //std::shared_ptr<RHI::D3D12RootSignature> pMainCamVisClipmapSignature;
-        //std::shared_ptr<RHI::D3D12PipelineState> pMainCamVisClipmapGenPSO;
-
-        //Shader dirVisClipmapCS;
-        //std::shared_ptr<RHI::D3D12RootSignature> pDirVisClipmapSignature;
-        //std::shared_ptr<RHI::D3D12PipelineState> pDirVisClipmapGenPSO;
 	};
 }
 
