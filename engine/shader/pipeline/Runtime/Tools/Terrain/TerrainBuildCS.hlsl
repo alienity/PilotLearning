@@ -14,8 +14,7 @@
  */
 struct ConsBuffer
 {
-    float3 TerrainOffsetWS; // Terrain在世界空间的位置偏移
-    float Padding0;
+    float4x4 TerrainModelMatrix;
     float4x4 CameraViewProj;
     float3 CameraPositionWS; // 相机世界空间坐标
     int BoundsHeightRedundance; //包围盒在高度方向留出冗余空间，应对MinMaxHeightTexture的精度不足
@@ -72,7 +71,7 @@ float3 GetNodePositionWS(ConsBuffer inConsBuffer, Texture2D<float> minHeightText
 bool EvaluateNode(ConsBuffer inConsBuffer, Texture2D<float> minHeightTexture, Texture2D<float> maxHeightTexture, uint2 nodeLoc, uint lod)
 {
     float3 positionWS = GetNodePositionWS(inConsBuffer, minHeightTexture, maxHeightTexture, nodeLoc, lod);
-    positionWS += inConsBuffer.TerrainOffsetWS;
+    positionWS = mul(inConsBuffer.TerrainModelMatrix, float4(positionWS, 1.0f)).xyz;
     float dis = distance(inConsBuffer.CameraPositionWS, positionWS);
     float nodeSize = GetNodeSize(inConsBuffer, lod);
     float f = dis / (nodeSize * inConsBuffer.NodeEvaluationC.x);
@@ -290,9 +289,12 @@ bool Cull(ConsBuffer inConsBuffer, TerrainPatchBounds bounds)
 {
 #if ENABLE_FRUS_CULL
     Frustum frustum = ExtractPlanesDX(inConsBuffer.CameraViewProj);
+    float3 bCenter = (bounds.maxPosition + bounds.minPosition) * 0.5f;
+    float3 bExtents = (bounds.maxPosition - bounds.minPosition) * 0.5f;
+    bCenter = mul(inConsBuffer.TerrainModelMatrix, float4(bCenter, 1.0f)).xyz;
     BoundingBox clipBoundingBox;
-    clipBoundingBox.Center = float4((bounds.maxPosition + bounds.minPosition) * 0.5f, 0);
-    clipBoundingBox.Extents = float4((bounds.maxPosition - bounds.minPosition) * 0.5f, 0);
+    clipBoundingBox.Center = float4(bCenter, 0);
+    clipBoundingBox.Extents = float4(bExtents, 0);
     if(FrustumContainsBoundingBox(frustum, clipBoundingBox) == CONTAINMENT_DISJOINT)
     {
         return true;

@@ -29,7 +29,7 @@
                 "z": 0.0
             }
         },
-        "m_z_far": 1000.0,
+        "m_z_far": 10000.0,
         "m_z_near": 0.10000000149011612
     },
     "m_color_grading_map": "asset/texture/lut/color_grading_lut_01.png",

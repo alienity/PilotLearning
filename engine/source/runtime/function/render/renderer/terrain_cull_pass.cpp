@@ -243,8 +243,10 @@ namespace MoYu
 
         int maxNodeCount = nodeIdOffset;
 
+        glm::float4x4 modelMatrix = internalTerrainRenderer.model_matrix;
+
         TerrainConsBuffer TerrainCB;
-        TerrainCB.TerrainOffsetWS = glm::float3(0, 0, 0);
+        TerrainCB.TerrainModelMatrix = modelMatrix;
         TerrainCB.CameraViewProj = cameraViewProj;
         TerrainCB.CameraPositionWS = cameraPosition;
         TerrainCB.BoundsHeightRedundance = 0.1f;
@@ -1364,3 +1366,5 @@ namespace MoYu
     }
 
 }
+
+
