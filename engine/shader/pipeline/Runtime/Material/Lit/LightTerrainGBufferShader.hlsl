@@ -209,6 +209,7 @@ PackedVaryingsType Vert(AttributesMesh inputMesh, uint instanceIndex : SV_Instan
 
     float3 normal = float3(0, 1, 0);
     normal.xz = terrainNormalMap.SampleLevel(s_linear_clamp_sampler, heightUV, 0).xy * 2 - 1;
+    normal.z = -normal.z;
     normal.y = sqrt(max(0, 1 - dot(normal.xz, normal.xz)));
 
     AttributesMesh pathMesh;
