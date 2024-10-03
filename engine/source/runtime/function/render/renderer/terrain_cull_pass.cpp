@@ -216,17 +216,23 @@ namespace MoYu
                     D3D12_RESOURCE_STATE_GENERIC_READ);
         }
 
-        if (mTerrainDirConsBuffer == nullptr)
+        if (mTerrainDirConsBuffers.empty())
         {
-            mTerrainDirConsBuffer =
-                RHI::D3D12Buffer::Create(
-                    m_Device->GetLinkedDevice(),
-                    RHI::RHIBufferTargetNone,
-                    1,
-                    MoYu::AlignUp(sizeof(TerrainConsBuffer), 256),
-                    L"TerrainDirConsBuffer",
-                    RHI::RHIBufferModeDynamic,
-                    D3D12_RESOURCE_STATE_GENERIC_READ);
+            mTerrainDirConsBuffers.resize(4);
+
+            for (int i = 0; i < 4; i++)
+            {
+                std::wstring tname = fmt::format(L"TerrainDirConsBuffer{}", i);
+                mTerrainDirConsBuffers[i] =
+                    RHI::D3D12Buffer::Create(
+                        m_Device->GetLinkedDevice(),
+                        RHI::RHIBufferTargetNone,
+                        1,
+                        MoYu::AlignUp(sizeof(TerrainConsBuffer), 256),
+                        tname,
+                        RHI::RHIBufferModeDynamic,
+                        D3D12_RESOURCE_STATE_GENERIC_READ);
+            }
         }
 
 
@@ -271,18 +277,25 @@ namespace MoYu
 
         memcpy(mTerrainConsBuffer->GetCpuVirtualAddress<TerrainConsBuffer>(), &TerrainCB, sizeof(TerrainConsBuffer));
 
-        glm::float3 dirLightPosWS = frameUniform.lightDataUniform.directionalLightData.positionRWS;
-        int dirShadowIndex = frameUniform.lightDataUniform.directionalLightData.shadowIndex;
-        HLSL::HDShadowData dirShadowData = frameUniform.lightDataUniform.shadowDatas[dirShadowIndex];
-        glm::float4x4 dirShadowViewProjMatrix = dirShadowData.viewProjMatrix;
 
-        TerrainConsBuffer TerrainDirCB;
-        memcpy(&TerrainDirCB, &TerrainCB, sizeof(TerrainConsBuffer));
-        TerrainDirCB.CameraViewProj = dirShadowViewProjMatrix;
-        TerrainDirCB.CameraPositionWS = dirLightPosWS;
 
-        memcpy(mTerrainDirConsBuffer->GetCpuVirtualAddress<TerrainConsBuffer>(), &TerrainDirCB, sizeof(TerrainConsBuffer));
+        mTerrainDirConsBuffers.resize(4);
+        for (int i = 0; i < 4; i++)
+        {
+            glm::float3 dirLightPosWS = frameUniform.lightDataUniform.directionalLightData.positionRWS;
+            int dirShadowIndex = frameUniform.lightDataUniform.directionalLightData.shadowIndex + i;
 
+            HLSL::HDShadowData dirShadowData = frameUniform.lightDataUniform.shadowDatas[dirShadowIndex];
+            glm::float4x4 dirShadowViewProjMatrix = dirShadowData.viewProjMatrix;
+
+            TerrainConsBuffer TerrainDirCB;
+            memcpy(&TerrainDirCB, &TerrainCB, sizeof(TerrainConsBuffer));
+            TerrainDirCB.CameraViewProj = dirShadowViewProjMatrix;
+            TerrainDirCB.CameraPositionWS = dirLightPosWS;
+
+            memcpy(mTerrainDirConsBuffers[i]->GetCpuVirtualAddress<TerrainConsBuffer>(), &TerrainDirCB, sizeof(TerrainConsBuffer));
+        }
+        
         //--------------------------------------------------------------------------
 
         if (TempNodeList[0] == nullptr)
@@ -321,14 +334,19 @@ namespace MoYu
                 L"CulledPatchListBuffer");
         }
 
-        if (CulledDirPatchListBuffer == nullptr)
+        if (CulledDirPatchListBuffers.empty())
         {
-            CulledDirPatchListBuffer = RHI::D3D12Buffer::Create(
-                m_Device->GetLinkedDevice(),
-                RHI::RHIBufferRandomReadWrite | RHI::RHIBufferTargetStructured | RHI::RHIBufferTargetCounter,
-                maxNodeCount,
-                sizeof(HLSL::TerrainRenderPatch),
-                L"CulledDirPatchListBuffer");
+            CulledDirPatchListBuffers.resize(4);
+            for (int i = 0; i < 4; i++)
+            {
+                std::wstring tname = fmt::format(L"CulledDirPatchListBuffer{}", i);
+                CulledDirPatchListBuffers[i] = RHI::D3D12Buffer::Create(
+                    m_Device->GetLinkedDevice(),
+                    RHI::RHIBufferRandomReadWrite | RHI::RHIBufferTargetStructured | RHI::RHIBufferTargetCounter,
+                    maxNodeCount,
+                    sizeof(HLSL::TerrainRenderPatch),
+                    tname);
+            }
         }
 
         if (pTerrainMatPropertiesBuffer == nullptr)
@@ -356,7 +374,7 @@ namespace MoYu
 
         //--------------------------------------------------------------------------
 
-        if (camUploadPatchCmdSigBuffer == nullptr || camPatchCmdSigBuffer == nullptr || dirPatchCmdSigBuffer == nullptr)
+        if (camUploadPatchCmdSigBuffer == nullptr || camPatchCmdSigBuffer == nullptr || dirPatchCmdSigBuffers.empty())
         {
             camUploadPatchCmdSigBuffer =
                 RHI::D3D12Buffer::Create(
@@ -373,12 +391,17 @@ namespace MoYu
                     1, MoYu::AlignUp(sizeof(HLSL::ToDrawCommandSignatureParams), 256),
                     L"PatchCommandSignatureBuffer");
 
-            dirPatchCmdSigBuffer =
-                RHI::D3D12Buffer::Create(
-                    m_Device->GetLinkedDevice(),
-                    RHI::RHIBufferTargetStructured | RHI::RHIBufferTargetIndirectArgs,
-                    1, MoYu::AlignUp(sizeof(HLSL::ToDrawCommandSignatureParams), 256),
-                    L"PatchDirCommandSignatureBuffer");
+            dirPatchCmdSigBuffers.resize(4);
+            for (int i = 0; i < 4; i++)
+            {
+                std::wstring tname = fmt::format(L"PatchDirCommandSignatureBuffer{}", i);
+                dirPatchCmdSigBuffers[i] =
+                    RHI::D3D12Buffer::Create(
+                        m_Device->GetLinkedDevice(),
+                        RHI::RHIBufferTargetStructured | RHI::RHIBufferTargetIndirectArgs,
+                        1, MoYu::AlignUp(sizeof(HLSL::ToDrawCommandSignatureParams), 256),
+                        tname);
+            }
 
         }
 
@@ -856,88 +879,102 @@ namespace MoYu
         
         //------------------------------------------------------------------------------------
 
-        RHI::RgResourceHandle terrainDirConsBufferHandle = GImport(graph, mTerrainDirConsBuffer.get());
-        RHI::RgResourceHandle culledDirPatchListHandle = GImport(graph, CulledDirPatchListBuffer.get());
+        std::vector<RHI::RgResourceHandle> dirConsBufferHandles;
+        std::vector<RHI::RgResourceHandle> dirVisPatchListHandles;
+        std::vector<RHI::RgResourceHandle> dirVisCmdSigBufferHandles;
+        dirConsBufferHandles.resize(4);
+        dirVisPatchListHandles.resize(4);
+        dirVisCmdSigBufferHandles.resize(4);
 
-        RHI::RenderPass& buildDirPatchesPass = graph.AddRenderPass("BuildDirPatchesPass");
+        for (int i = 0; i < 4; i++)
+        {
+            RHI::RgResourceHandle terrainDirConsBufferHandle = GImport(graph, mTerrainDirConsBuffers[i].get());
+            RHI::RgResourceHandle culledDirPatchListHandle = GImport(graph, CulledDirPatchListBuffers[i].get());
 
-        buildDirPatchesPass.Read(terrainDirConsBufferHandle);
-        buildDirPatchesPass.Read(terrainMinHeightHandle);
-        buildDirPatchesPass.Read(terrainMaxHeightHandle);
-        buildDirPatchesPass.Read(LodMapHandle);
-        buildDirPatchesPass.Read(FinalNodeListHandle);
-        buildDirPatchesPass.Write(culledDirPatchListHandle, true);
+            RHI::RenderPass& buildDirPatchesPass = graph.AddRenderPass("BuildDirPatchesPass");
 
-        buildDirPatchesPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
-            RHI::D3D12ComputeContext* pContext = context->GetComputeContext();
+            buildDirPatchesPass.Read(terrainDirConsBufferHandle);
+            buildDirPatchesPass.Read(terrainMinHeightHandle);
+            buildDirPatchesPass.Read(terrainMaxHeightHandle);
+            buildDirPatchesPass.Read(LodMapHandle);
+            buildDirPatchesPass.Read(FinalNodeListHandle);
+            buildDirPatchesPass.Write(culledDirPatchListHandle, true);
 
-            pContext->TransitionBarrier(RegGetBufCounter(FinalNodeListHandle), D3D12_RESOURCE_STATE_COPY_SOURCE);
-            pContext->TransitionBarrier(RegGetBuf(buildPatchArgsHandle), D3D12_RESOURCE_STATE_COPY_DEST);
-            pContext->CopyBufferRegion(RegGetBuf(buildPatchArgsHandle), 0, RegGetBufCounter(FinalNodeListHandle), 0, sizeof(uint32_t));
-            pContext->FillBuffer(RegGetBuf(buildPatchArgsHandle), sizeof(uint32_t), 1, sizeof(uint32_t) * 2);
+            buildDirPatchesPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
+                RHI::D3D12ComputeContext* pContext = context->GetComputeContext();
 
-            pContext->TransitionBarrier(RegGetBufCounter(culledDirPatchListHandle), D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_DEST);
-            pContext->ResetCounter(RegGetBufCounter(culledDirPatchListHandle));
-            pContext->FlushResourceBarriers();
+                pContext->TransitionBarrier(RegGetBufCounter(FinalNodeListHandle), D3D12_RESOURCE_STATE_COPY_SOURCE);
+                pContext->TransitionBarrier(RegGetBuf(buildPatchArgsHandle), D3D12_RESOURCE_STATE_COPY_DEST);
+                pContext->CopyBufferRegion(RegGetBuf(buildPatchArgsHandle), 0, RegGetBufCounter(FinalNodeListHandle), 0, sizeof(uint32_t));
+                pContext->FillBuffer(RegGetBuf(buildPatchArgsHandle), sizeof(uint32_t), 1, sizeof(uint32_t) * 2);
 
-            pContext->TransitionBarrier(RegGetBuf(culledDirPatchListHandle), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-            pContext->TransitionBarrier(RegGetBufCounter(culledDirPatchListHandle), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-            pContext->TransitionBarrier(RegGetBuf(buildPatchArgsHandle), D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT);
-            pContext->FlushResourceBarriers();
+                pContext->TransitionBarrier(RegGetBufCounter(culledDirPatchListHandle), D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_DEST);
+                pContext->ResetCounter(RegGetBufCounter(culledDirPatchListHandle));
+                pContext->FlushResourceBarriers();
 
-            pContext->SetRootSignature(pBuildPatchesSignature.get());
-            pContext->SetPipelineState(pBuildPatchesPSO.get());
+                pContext->TransitionBarrier(RegGetBuf(culledDirPatchListHandle), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+                pContext->TransitionBarrier(RegGetBufCounter(culledDirPatchListHandle), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+                pContext->TransitionBarrier(RegGetBuf(buildPatchArgsHandle), D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT);
+                pContext->FlushResourceBarriers();
 
-            struct RootIndexBuffer
-            {
-                uint32_t consBufferIndex;
-                uint32_t minHeightmapIndex;
-                uint32_t maxHeightmapIndex;
-                uint32_t lodMapIndex;
-                uint32_t finalNodeListBufferIndex;
-                uint32_t culledPatchListBufferIndex;
-            };
+                pContext->SetRootSignature(pBuildPatchesSignature.get());
+                pContext->SetPipelineState(pBuildPatchesPSO.get());
 
-            RootIndexBuffer rootIndexBuffer = RootIndexBuffer{ RegGetBufDefCBVIdx(terrainDirConsBufferHandle),
-                                                               RegGetTexDefSRVIdx(terrainMinHeightHandle),
-                                                               RegGetTexDefSRVIdx(terrainMaxHeightHandle),
-                                                               RegGetTexDefSRVIdx(LodMapHandle),
-                                                               RegGetBufDefSRVIdx(FinalNodeListHandle),
-                                                               RegGetBufDefUAVIdx(culledDirPatchListHandle) };
+                struct RootIndexBuffer
+                {
+                    uint32_t consBufferIndex;
+                    uint32_t minHeightmapIndex;
+                    uint32_t maxHeightmapIndex;
+                    uint32_t lodMapIndex;
+                    uint32_t finalNodeListBufferIndex;
+                    uint32_t culledPatchListBufferIndex;
+                };
 
-            pContext->SetConstantArray(0, sizeof(rootIndexBuffer) / sizeof(uint32_t), &rootIndexBuffer);
+                RootIndexBuffer rootIndexBuffer = RootIndexBuffer{ RegGetBufDefCBVIdx(terrainDirConsBufferHandle),
+                                                                   RegGetTexDefSRVIdx(terrainMinHeightHandle),
+                                                                   RegGetTexDefSRVIdx(terrainMaxHeightHandle),
+                                                                   RegGetTexDefSRVIdx(LodMapHandle),
+                                                                   RegGetBufDefSRVIdx(FinalNodeListHandle),
+                                                                   RegGetBufDefUAVIdx(culledDirPatchListHandle) };
 
-            pContext->DispatchIndirect(RegGetBuf(buildPatchArgsHandle), 0);
-        });
+                pContext->SetConstantArray(0, sizeof(rootIndexBuffer) / sizeof(uint32_t), &rootIndexBuffer);
+
+                pContext->DispatchIndirect(RegGetBuf(buildPatchArgsHandle), 0);
+            });
         
-        //------------------------------------------------------------------------------------
+            //------------------------------------------------------------------------------------
         
-        //RHI::RgResourceHandle camUploadPatchCmdSigBufferHandle = GImport(graph, camUploadPatchCmdSigBuffer.get());
-        RHI::RgResourceHandle dirPatchCmdSigBufferHandle = GImport(graph, dirPatchCmdSigBuffer.get());
+            //RHI::RgResourceHandle camUploadPatchCmdSigBufferHandle = GImport(graph, camUploadPatchCmdSigBuffer.get());
+            RHI::RgResourceHandle dirPatchCmdSigBufferHandle = GImport(graph, dirPatchCmdSigBuffers[i].get());
 
-        RHI::RenderPass& genTerrainDirCmdSigPass = graph.AddRenderPass("GenTerrainDirCmdSigPass");
+            RHI::RenderPass& genTerrainDirCmdSigPass = graph.AddRenderPass("GenTerrainDirCmdSigPass");
 
-        genTerrainDirCmdSigPass.Read(culledDirPatchListHandle, true);
-        genTerrainDirCmdSigPass.Read(camUploadPatchCmdSigBufferHandle, true);
-        genTerrainDirCmdSigPass.Write(dirPatchCmdSigBufferHandle, true);
+            genTerrainDirCmdSigPass.Read(culledDirPatchListHandle, true);
+            genTerrainDirCmdSigPass.Read(camUploadPatchCmdSigBufferHandle, true);
+            genTerrainDirCmdSigPass.Write(dirPatchCmdSigBufferHandle, true);
 
-        genTerrainDirCmdSigPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
-            RHI::D3D12ComputeContext* pContext = context->GetComputeContext();
+            genTerrainDirCmdSigPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
+                RHI::D3D12ComputeContext* pContext = context->GetComputeContext();
 
-            pContext->TransitionBarrier(RegGetBufCounter(culledDirPatchListHandle), D3D12_RESOURCE_STATE_COPY_SOURCE);
-            pContext->TransitionBarrier(RegGetBuf(camUploadPatchCmdSigBufferHandle), D3D12_RESOURCE_STATE_COPY_SOURCE);
-            pContext->TransitionBarrier(RegGetBuf(dirPatchCmdSigBufferHandle), D3D12_RESOURCE_STATE_COPY_DEST);
-            pContext->FlushResourceBarriers();
+                pContext->TransitionBarrier(RegGetBufCounter(culledDirPatchListHandle), D3D12_RESOURCE_STATE_COPY_SOURCE);
+                pContext->TransitionBarrier(RegGetBuf(camUploadPatchCmdSigBufferHandle), D3D12_RESOURCE_STATE_COPY_SOURCE);
+                pContext->TransitionBarrier(RegGetBuf(dirPatchCmdSigBufferHandle), D3D12_RESOURCE_STATE_COPY_DEST);
+                pContext->FlushResourceBarriers();
 
-            pContext->CopyBufferRegion(
-                RegGetBuf(dirPatchCmdSigBufferHandle), 0, RegGetBuf(camUploadPatchCmdSigBufferHandle), 0, sizeof(HLSL::ToDrawCommandSignatureParams));
+                pContext->CopyBufferRegion(
+                    RegGetBuf(dirPatchCmdSigBufferHandle), 0, RegGetBuf(camUploadPatchCmdSigBufferHandle), 0, sizeof(HLSL::ToDrawCommandSignatureParams));
 
-            // HLSL::ToDrawCommandSignatureParams
-            int instanceCountOffsetInBuffer = sizeof(D3D12_VERTEX_BUFFER_VIEW) + sizeof(D3D12_INDEX_BUFFER_VIEW) + sizeof(uint32_t);
+                // HLSL::ToDrawCommandSignatureParams
+                int instanceCountOffsetInBuffer = sizeof(D3D12_VERTEX_BUFFER_VIEW) + sizeof(D3D12_INDEX_BUFFER_VIEW) + sizeof(uint32_t);
 
-            pContext->CopyBufferRegion(
-                RegGetBuf(dirPatchCmdSigBufferHandle), instanceCountOffsetInBuffer, RegGetBufCounter(culledDirPatchListHandle), 0, sizeof(uint32_t));
-        });
+                pContext->CopyBufferRegion(
+                    RegGetBuf(dirPatchCmdSigBufferHandle), instanceCountOffsetInBuffer, RegGetBufCounter(culledDirPatchListHandle), 0, sizeof(uint32_t));
+            });
+
+            dirConsBufferHandles[i] = terrainDirConsBufferHandle;
+            dirVisPatchListHandles[i] = culledDirPatchListHandle;
+            dirVisCmdSigBufferHandles[i] = dirPatchCmdSigBufferHandle;
+        }
         
         //------------------------------------------------------------------------------------
 
@@ -949,8 +986,10 @@ namespace MoYu
         passOutput.terrainMatPropertyHandle = terrainMatPropertiesHandle;
         passOutput.mainCamVisPatchListHandle = culledPatchListHandle;
         passOutput.mainCamVisCmdSigBufferHandle = camPatchCmdSigBufferHandle;
-        passOutput.dirVisPatchListHandle = culledDirPatchListHandle;
-        passOutput.dirVisCmdSigBufferHandle = dirPatchCmdSigBufferHandle;
+
+        passOutput.dirConsBufferHandles = std::move(dirConsBufferHandles);
+        passOutput.dirVisPatchListHandles = std::move(dirVisPatchListHandles);
+        passOutput.dirVisCmdSigBufferHandles = std::move(dirVisCmdSigBufferHandles);
 
         /*
         bool needClearRenderTarget = initializeRenderTarget(graph, &passOutput);

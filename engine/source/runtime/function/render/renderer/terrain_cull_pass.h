@@ -63,8 +63,9 @@ namespace MoYu
             RHI::RgResourceHandle mainCamVisPatchListHandle;
             RHI::RgResourceHandle mainCamVisCmdSigBufferHandle;
 
-            RHI::RgResourceHandle dirVisPatchListHandle;
-            RHI::RgResourceHandle dirVisCmdSigBufferHandle;
+            std::vector<RHI::RgResourceHandle> dirConsBufferHandles;
+            std::vector<RHI::RgResourceHandle> dirVisPatchListHandles;
+            std::vector<RHI::RgResourceHandle> dirVisCmdSigBufferHandles;
         };
 
         struct DepthCullIndexInput
@@ -145,20 +146,19 @@ namespace MoYu
         std::shared_ptr<RHI::D3D12Buffer> FinalNodeList; // uint3, 其中z表示Node的LOD，xy代表二维索引
         std::shared_ptr<RHI::D3D12Buffer> NodeDescriptors; // uint, branch
 
-        std::shared_ptr<RHI::D3D12Buffer> CulledPatchListBuffer;
-        std::shared_ptr<RHI::D3D12Buffer> CulledDirPatchListBuffer; // For DirectionalLight
-
         std::shared_ptr<RHI::D3D12Buffer> pTerrainRenderDataBuffer;
         std::shared_ptr<RHI::D3D12Buffer> pTerrainMatPropertiesBuffer;
 
-        // 纯地形绘制常量
-        std::shared_ptr<RHI::D3D12Buffer> mTerrainConsBuffer;
-        std::shared_ptr<RHI::D3D12Buffer> mTerrainDirConsBuffer; // For DirectionalLight
-
         // 相机视锥内的CommandSignature
         std::shared_ptr<RHI::D3D12Buffer> camUploadPatchCmdSigBuffer;
+
+        std::shared_ptr<RHI::D3D12Buffer> CulledPatchListBuffer;
+        std::shared_ptr<RHI::D3D12Buffer> mTerrainConsBuffer; // 纯地形绘制常量
         std::shared_ptr<RHI::D3D12Buffer> camPatchCmdSigBuffer;
-        std::shared_ptr<RHI::D3D12Buffer> dirPatchCmdSigBuffer; // For DirectionalLight
+
+        std::vector<std::shared_ptr<RHI::D3D12Buffer>> CulledDirPatchListBuffers; // For DirectionalLight
+        std::vector<std::shared_ptr<RHI::D3D12Buffer>> mTerrainDirConsBuffers; // For DirectionalLight
+        std::vector<std::shared_ptr<RHI::D3D12Buffer>> dirPatchCmdSigBuffers; // For DirectionalLight
 
         Shader InitQuadTreeCS;
         std::shared_ptr<RHI::D3D12RootSignature> pInitQuadTreeSignature;

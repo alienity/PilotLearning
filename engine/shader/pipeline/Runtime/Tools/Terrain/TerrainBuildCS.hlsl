@@ -5,53 +5,27 @@
 
 // https://github.com/wlgys8/GPUDrivenTerrainLearn
 
-/*
-* 对于WorldLodParams
-- nodeSize为Node的边长(米)
-- patchExtent等于nodeSize/16
-- nodeCount等于WorldSize/nodeSize
-- sectorCountPerNode等于2^lod
- */
-struct ConsBuffer
-{
-    float4x4 TerrainModelMatrix;
-    float4x4 CameraViewProj;
-    float3 CameraPositionWS; // 相机世界空间坐标
-    int BoundsHeightRedundance; //包围盒在高度方向留出冗余空间，应对MinMaxHeightTexture的精度不足
-    float3 WorldSize; //世界大小
-    float Padding1;
-    float4 NodeEvaluationC; //节点评价系数。x为距离系数
-    float4 WorldLodParams[6]; // (nodeSize,patchExtent,nodeCount,sectorCountPerNode)
-    uint NodeIDOffsetOfLOD[6];
-};
-
-// SamplerState s_point_clamp_sampler      : register(s10);
-// SamplerState s_linear_clamp_sampler     : register(s11);
-// SamplerState s_linear_repeat_sampler    : register(s12);
-// SamplerState s_trilinear_clamp_sampler  : register(s13);
-// SamplerState s_trilinear_repeat_sampler : register(s14);
-
-float GetNodeSize(ConsBuffer inConsBuffer, uint lod)
+float GetNodeSize(TerrainConsData inConsBuffer, uint lod)
 {
     return inConsBuffer.WorldLodParams[lod].x;
 }
 
-float GetNodeCount(ConsBuffer inConsBuffer, uint lod)
+float GetNodeCount(TerrainConsData inConsBuffer, uint lod)
 {
     return inConsBuffer.WorldLodParams[lod].z;
 }
 
-float GetPatchExtent(ConsBuffer inConsBuffer, uint lod)
+float GetPatchExtent(TerrainConsData inConsBuffer, uint lod)
 {
     return inConsBuffer.WorldLodParams[lod].y;
 }
 
-uint GetSectorCountPerNode(ConsBuffer inConsBuffer, uint lod)
+uint GetSectorCountPerNode(TerrainConsData inConsBuffer, uint lod)
 {
     return (uint)inConsBuffer.WorldLodParams[lod].w;
 }
 
-float2 GetNodePositionWS2(ConsBuffer inConsBuffer, uint2 nodeLoc, uint mip)
+float2 GetNodePositionWS2(TerrainConsData inConsBuffer, uint2 nodeLoc, uint mip)
 {
     float nodeMeterSize = GetNodeSize(inConsBuffer, mip);
     float nodeCount = GetNodeCount(inConsBuffer, mip);
@@ -59,7 +33,7 @@ float2 GetNodePositionWS2(ConsBuffer inConsBuffer, uint2 nodeLoc, uint mip)
     return nodePositionWS;
 }
 
-float3 GetNodePositionWS(ConsBuffer inConsBuffer, Texture2D<float> minHeightTexture, Texture2D<float> maxHeightTexture, uint2 nodeLoc, uint lod)
+float3 GetNodePositionWS(TerrainConsData inConsBuffer, Texture2D<float> minHeightTexture, Texture2D<float> maxHeightTexture, uint2 nodeLoc, uint lod)
 {
     float2 nodePositionWS = GetNodePositionWS2(inConsBuffer, nodeLoc, lod);
     float minHeight = minHeightTexture.mips[lod + 3][nodeLoc].x;
@@ -68,7 +42,7 @@ float3 GetNodePositionWS(ConsBuffer inConsBuffer, Texture2D<float> minHeightText
     return float3(nodePositionWS.x, y, nodePositionWS.y);
 }
 
-bool EvaluateNode(ConsBuffer inConsBuffer, Texture2D<float> minHeightTexture, Texture2D<float> maxHeightTexture, uint2 nodeLoc, uint lod)
+bool EvaluateNode(TerrainConsData inConsBuffer, Texture2D<float> minHeightTexture, Texture2D<float> maxHeightTexture, uint2 nodeLoc, uint lod)
 {
     float3 positionWS = GetNodePositionWS(inConsBuffer, minHeightTexture, maxHeightTexture, nodeLoc, lod);
     positionWS = mul(inConsBuffer.TerrainModelMatrix, float4(positionWS, 1.0f)).xyz;
@@ -82,12 +56,12 @@ bool EvaluateNode(ConsBuffer inConsBuffer, Texture2D<float> minHeightTexture, Te
     return false;
 }
 
-uint GetNodeId(ConsBuffer inConsBuffer, uint3 nodeLoc)
+uint GetNodeId(TerrainConsData inConsBuffer, uint3 nodeLoc)
 {
     return inConsBuffer.NodeIDOffsetOfLOD[nodeLoc.z] + nodeLoc.y * GetNodeCount(inConsBuffer, nodeLoc.z) + nodeLoc.x;
 }
 
-uint GetNodeId(ConsBuffer inConsBuffer, uint2 nodeLoc, uint mip)
+uint GetNodeId(TerrainConsData inConsBuffer, uint2 nodeLoc, uint mip)
 {
     return GetNodeId(inConsBuffer, uint3(nodeLoc, mip));
 }
@@ -133,7 +107,7 @@ cbuffer RootConstants : register(b0, space0)
 [numthreads(1,1,1)]
 void TraverseQuadTree (uint3 id : SV_DispatchThreadID)
 {
-    ConstantBuffer<ConsBuffer> InConsBuffer = ResourceDescriptorHeap[consBufferIndex];
+    ConstantBuffer<TerrainConsData> InConsBuffer = ResourceDescriptorHeap[consBufferIndex];
 
     Texture2D<float> MinHeightTexture = ResourceDescriptorHeap[minHeightmapIndex];
     Texture2D<float> MaxHeightTexture = ResourceDescriptorHeap[maxHeightmapIndex];
@@ -175,7 +149,7 @@ cbuffer RootConstants : register(b0, space0)
 [numthreads(8,8,1)]
 void BuildLodMap(uint3 id : SV_DispatchThreadID)
 {
-    ConstantBuffer<ConsBuffer> InConsBuffer = ResourceDescriptorHeap[consBufferIndex];
+    ConstantBuffer<TerrainConsData> InConsBuffer = ResourceDescriptorHeap[consBufferIndex];
     StructuredBuffer<uint> NodeDescriptors = ResourceDescriptorHeap[nodeDescriptorsBufferIndex];
     RWTexture2D<float4> LodMap = ResourceDescriptorHeap[lodMapIndex];
     
@@ -198,7 +172,7 @@ void BuildLodMap(uint3 id : SV_DispatchThreadID)
 
 #elif defined(BUILD_PATCHES)
 
-TerrainPatchBounds GetPatchBounds(ConsBuffer inConsBuffer, TerrainRenderPatch patch)
+TerrainPatchBounds GetPatchBounds(TerrainConsData inConsBuffer, TerrainRenderPatch patch)
 {
     float halfSize = GetPatchExtent(inConsBuffer, patch.lod);
 #if ENABLE_SEAM
@@ -217,7 +191,7 @@ TerrainPatchBounds GetPatchBounds(ConsBuffer inConsBuffer, TerrainRenderPatch pa
 }
 
 TerrainRenderPatch CreatePatch(
-    ConsBuffer inConsBuffer, Texture2D<float> minHeightTexture, Texture2D<float> maxHeightTexture, uint3 nodeLoc, uint2 patchOffset)
+    TerrainConsData inConsBuffer, Texture2D<float> minHeightTexture, Texture2D<float> maxHeightTexture, uint3 nodeLoc, uint2 patchOffset)
 {
     uint lod = nodeLoc.z;
     float nodeMeterSize = GetNodeSize(inConsBuffer, lod);
@@ -238,14 +212,14 @@ TerrainRenderPatch CreatePatch(
 }
 
 //返回一个node节点覆盖的Sector范围
-uint4 GetSectorBounds(ConsBuffer inConsBuffer, uint3 nodeLoc)
+uint4 GetSectorBounds(TerrainConsData inConsBuffer, uint3 nodeLoc)
 {
     uint sectorCountPerNode = GetSectorCountPerNode(inConsBuffer, nodeLoc.z);
     uint2 sectorMin = nodeLoc.xy * sectorCountPerNode;
     return uint4(sectorMin, sectorMin + sectorCountPerNode - 1);
 }
 
-uint GetLod(ConsBuffer inConsBuffer, Texture2D<float4> LodMap, uint2 sectorLoc)
+uint GetLod(TerrainConsData inConsBuffer, Texture2D<float4> LodMap, uint2 sectorLoc)
 {
     if(sectorLoc.x < 0 || sectorLoc.y < 0 || sectorLoc.x >= SECTOR_COUNT_WORLD || sectorLoc.y >= SECTOR_COUNT_WORLD)
     {
@@ -254,7 +228,7 @@ uint GetLod(ConsBuffer inConsBuffer, Texture2D<float4> LodMap, uint2 sectorLoc)
     return round(LodMap[sectorLoc].r * MAX_TERRAIN_LOD);
 }
 
-void SetLodTrans(inout TerrainRenderPatch patch, ConsBuffer inConsBuffer, Texture2D<float4> LodMap, uint3 nodeLoc, uint2 patchOffset)
+void SetLodTrans(inout TerrainRenderPatch patch, TerrainConsData inConsBuffer, Texture2D<float4> LodMap, uint3 nodeLoc, uint2 patchOffset)
 {
     uint lod = nodeLoc.z;
     uint4 sectorBounds = GetSectorBounds(inConsBuffer, nodeLoc);
@@ -285,7 +259,7 @@ void SetLodTrans(inout TerrainRenderPatch patch, ConsBuffer inConsBuffer, Textur
     patch.lodTrans = (uint4)max(0, lodTrans);
 }
 
-bool Cull(ConsBuffer inConsBuffer, TerrainPatchBounds bounds)
+bool Cull(TerrainConsData inConsBuffer, TerrainPatchBounds bounds)
 {
 #if ENABLE_FRUS_CULL
     Frustum frustum = ExtractPlanesDX(inConsBuffer.CameraViewProj);
@@ -322,7 +296,7 @@ cbuffer RootConstants : register(b0, space0)
 [numthreads(8,8,1)]
 void BuildPatches(uint3 id : SV_DispatchThreadID, uint3 groupId: SV_GroupID, uint3 groupThreadId: SV_GroupThreadID)
 {
-    ConstantBuffer<ConsBuffer> InConsBuffer = ResourceDescriptorHeap[consBufferIndex];
+    ConstantBuffer<TerrainConsData> InConsBuffer = ResourceDescriptorHeap[consBufferIndex];
 
     Texture2D<float> MinHeightTexture = ResourceDescriptorHeap[minHeightmapIndex];
     Texture2D<float> MaxHeightTexture = ResourceDescriptorHeap[maxHeightmapIndex];

@@ -454,6 +454,11 @@ namespace MoYu
 
     void IndirectShadowPass::destroy() {}
 
+    DirectionShadowmapStruct IndirectShadowPass::getDirShadowmapStruct()
+    {
+        return m_DirectionalShadowmap;
+    }
+
 }
 
 

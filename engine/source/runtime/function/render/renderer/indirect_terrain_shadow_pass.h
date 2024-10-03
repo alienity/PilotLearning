@@ -24,8 +24,10 @@ namespace MoYu
             RHI::RgResourceHandle terrainNormalmapHandle;
             RHI::RgResourceHandle terrainRenderDataHandle;
             RHI::RgResourceHandle terrainMatPropertyHandle;
-            RHI::RgResourceHandle culledDirPatchListBufferHandle;
-            RHI::RgResourceHandle dirVisCmdSigHandle;
+
+            std::vector<RHI::RgResourceHandle> dirConsBufferHandles;
+            std::vector<RHI::RgResourceHandle> dirVisPatchListHandles;
+            std::vector<RHI::RgResourceHandle> dirVisCmdSigBufferHandles;
         };
 
         struct ShadowOutputParameters : public PassOutput
@@ -36,9 +38,7 @@ namespace MoYu
     public:
         ~IndirectTerrainShadowPass() { destroy(); }
 
-        void prepareShadowmaps(std::shared_ptr<RenderResource> render_resource, 
-            DirectionShadowmapStruct directionalShadowmap, 
-            std::vector<SpotShadowmapStruct> spotShadowmaps);
+        void prepareShadowmaps(std::shared_ptr<RenderResource> render_resource, DirectionShadowmapStruct directionalShadowmap);
 
         void initialize(const ShadowPassInitInfo& init_info);
         void update(RHI::RenderGraph&         graph,
@@ -48,7 +48,6 @@ namespace MoYu
 
     public:
         DirectionShadowmapStruct m_DirectionalShadowmap;
-        std::vector<SpotShadowmapStruct> m_SpotShadowmaps;
 
         Shader indirectTerrainShadowmapVS;
         std::shared_ptr<RHI::D3D12RootSignature> pIndirectTerrainShadowmapSignature;

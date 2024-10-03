@@ -453,7 +453,7 @@ namespace MoYu
 
         mIndirectCullPass->prepareMeshData(render_resource);
         mIndirectShadowPass->prepareShadowmaps(render_resource);
-        mIndirectTerrainShadowPass->prepareShadowmaps(render_resource, mIndirectShadowPass->m_DirectionalShadowmap, mIndirectShadowPass->m_SpotShadowmaps);
+        mIndirectTerrainShadowPass->prepareShadowmaps(render_resource, mIndirectShadowPass->getDirShadowmapStruct());
         mSkyBoxPass->prepareMeshData(render_resource);
         mTerrainCullPass->prepareMeshData(render_resource);
         mIndirectTerrainGBufferPass->prepareMatBuffer(render_resource);
@@ -584,8 +584,10 @@ namespace MoYu
         mTerrainShadowmapIntputParams.terrainNormalmapHandle = terrainCullOutput.terrainNormalmapHandle;
         mTerrainShadowmapIntputParams.terrainMatPropertyHandle = terrainCullOutput.terrainMatPropertyHandle;
         mTerrainShadowmapIntputParams.terrainRenderDataHandle = terrainCullOutput.terrainRenderDataHandle;
-        mTerrainShadowmapIntputParams.culledDirPatchListBufferHandle = terrainCullOutput.dirVisPatchListHandle;
-        mTerrainShadowmapIntputParams.dirVisCmdSigHandle = terrainCullOutput.dirVisCmdSigBufferHandle;
+        mTerrainShadowmapIntputParams.dirConsBufferHandles = terrainCullOutput.dirConsBufferHandles;
+        mTerrainShadowmapIntputParams.dirVisPatchListHandles = terrainCullOutput.dirVisPatchListHandles;
+        mTerrainShadowmapIntputParams.dirVisCmdSigBufferHandles = terrainCullOutput.dirVisCmdSigBufferHandles;
+
         mTerrainShadowmapOutputParams.directionalCascadeShadowmapHandle = mShadowmapOutputParams.directionalCascadeShadowmapHandle;
 
         mIndirectTerrainShadowPass->update(graph, mTerrainShadowmapIntputParams, mTerrainShadowmapOutputParams);

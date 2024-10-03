@@ -62,6 +62,26 @@ struct TerrainRenderData
     float4 terrainSize;
 };
 
+/*
+* 对于WorldLodParams
+- nodeSize为Node的边长(米)
+- patchExtent等于nodeSize/16
+- nodeCount等于WorldSize/nodeSize
+- sectorCountPerNode等于2^lod
+ */
+struct TerrainConsData
+{
+    float4x4 TerrainModelMatrix;
+    float4x4 CameraViewProj;
+    float3 CameraPositionWS; // 相机世界空间坐标
+    int BoundsHeightRedundance; //包围盒在高度方向留出冗余空间，应对MinMaxHeightTexture的精度不足
+    float3 WorldSize; //世界大小
+    float Padding1;
+    float4 NodeEvaluationC; //节点评价系数。x为距离系数
+    float4 WorldLodParams[6]; // (nodeSize,patchExtent,nodeCount,sectorCountPerNode)
+    uint NodeIDOffsetOfLOD[6];
+};
+
 #ifdef _CPP_MACRO_
 #undef uint
 #undef uint2
