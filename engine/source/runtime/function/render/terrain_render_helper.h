@@ -73,24 +73,4 @@ namespace MoYu
         std::shared_ptr<RHI::D3D12Texture> terrain_normalmap;
     };
 
-    /*
-     * 对于WorldLodParams
-     * - nodeSize为Node的边长(米)
-     * - patchExtent等于nodeSize/16
-     * - nodeCount等于WorldSize/nodeSize
-     * - sectorCountPerNode等于2^lod
-     */
-    struct TerrainConsBuffer
-    {
-        glm::float4x4 TerrainModelMatrix;
-        glm::float4x4 CameraViewProj;
-        glm::float3 CameraPositionWS; // 相机世界空间坐标
-        int BoundsHeightRedundance; //包围盒在高度方向留出冗余空间，应对MinMaxHeightTexture的精度不足
-        glm::float3 WorldSize; //世界大小
-        float Padding1;
-        glm::float4 NodeEvaluationC; //节点评价系数。x为距离系数
-        glm::float4 WorldLodParams[6]; // (nodeSize,patchExtent,nodeCount,sectorCountPerNode)
-        glm::uint NodeIDOffsetOfLOD[6];
-    };
-
 } // namespace MoYu

@@ -76,7 +76,8 @@ struct TerrainConsData
     float3 CameraPositionWS; // 相机世界空间坐标
     int BoundsHeightRedundance; //包围盒在高度方向留出冗余空间，应对MinMaxHeightTexture的精度不足
     float3 WorldSize; //世界大小
-    float Padding1;
+    float _HizDepthBias;
+    float4 HizDepthMapSize;
     float4 NodeEvaluationC; //节点评价系数。x为距离系数
     float4 WorldLodParams[6]; // (nodeSize,patchExtent,nodeCount,sectorCountPerNode)
     uint NodeIDOffsetOfLOD[6];

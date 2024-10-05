@@ -154,6 +154,7 @@ namespace MoYu
         {
             TerrainCullInitInfo drawPassInit;
             drawPassInit.colorTexDesc = colorTexDesc;
+            drawPassInit.depthTexDesc = depthTexDesc;
             drawPassInit.m_ShaderCompiler = pCompiler;
             drawPassInit.m_ShaderRootPath = g_runtime_global_context.m_config_manager->getShaderFolder();
 
@@ -549,6 +550,7 @@ namespace MoYu
         IndirectTerrainCullPass::TerrainCullInput terrainCullInput;
         IndirectTerrainCullPass::TerrainCullOutput terrainCullOutput;
         terrainCullInput.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
+        terrainCullInput.hizDepthBufferHandle = lastFrameMinDepthPyramidHandle;
 
         mTerrainCullPass->update(graph, terrainCullInput, terrainCullOutput);
         //=================================================================================

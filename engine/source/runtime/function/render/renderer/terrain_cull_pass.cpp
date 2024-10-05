@@ -16,6 +16,9 @@ namespace MoYu
         ShaderCompiler* m_ShaderCompiler = init_info.m_ShaderCompiler;
         std::filesystem::path m_ShaderRootPath = init_info.m_ShaderRootPath;
 
+        colorTexDesc = init_info.colorTexDesc;
+        depthTexDesc = init_info.depthTexDesc;
+
         //--------------------------------------------------------------------------
         {
             ShaderCompileOptions shaderCompileOpt = ShaderCompileOptions(L"InitQuadTree");
@@ -118,6 +121,7 @@ namespace MoYu
             ShaderCompileOptions shaderCompileOpt = ShaderCompileOptions(L"BuildPatches");
             shaderCompileOpt.SetDefine(L"BUILD_PATCHES", L"1");
             shaderCompileOpt.SetDefine(L"ENABLE_FRUS_CULL", L"1");
+            shaderCompileOpt.SetDefine(L"ENABLE_HIZ_CULL", L"1");
 
             BuildPatchesCS = m_ShaderCompiler->CompileShader(
                 RHI_SHADER_TYPE::Compute, m_ShaderRootPath / "pipeline/Runtime/Tools/Terrain/TerrainBuildCS.hlsl", shaderCompileOpt);
@@ -210,7 +214,7 @@ namespace MoYu
                     m_Device->GetLinkedDevice(),
                     RHI::RHIBufferTargetNone,
                     1,
-                    MoYu::AlignUp(sizeof(TerrainConsBuffer), 256),
+                    MoYu::AlignUp(sizeof(HLSL::TerrainConsData), 256),
                     L"TerrainConsBuffer",
                     RHI::RHIBufferModeDynamic,
                     D3D12_RESOURCE_STATE_GENERIC_READ);
@@ -228,7 +232,7 @@ namespace MoYu
                         m_Device->GetLinkedDevice(),
                         RHI::RHIBufferTargetNone,
                         1,
-                        MoYu::AlignUp(sizeof(TerrainConsBuffer), 256),
+                        MoYu::AlignUp(sizeof(HLSL::TerrainConsData), 256),
                         tname,
                         RHI::RHIBufferModeDynamic,
                         D3D12_RESOURCE_STATE_GENERIC_READ);
@@ -265,17 +269,19 @@ namespace MoYu
 
         glm::float4x4 modelMatrix = internalTerrainRenderer.model_matrix;
 
-        TerrainConsBuffer TerrainCB;
+        HLSL::TerrainConsData TerrainCB;
         TerrainCB.TerrainModelMatrix = modelMatrix;
         TerrainCB.CameraViewProj = cameraViewProj;
         TerrainCB.CameraPositionWS = cameraPosition;
         TerrainCB.BoundsHeightRedundance = 0.1f;
         TerrainCB.WorldSize = terrainSize;
+        TerrainCB._HizDepthBias = 0;
+        TerrainCB.HizDepthMapSize = glm::float4(depthTexDesc.Width, depthTexDesc.Height, 1.0f / depthTexDesc.Width, 1.0f / depthTexDesc.Height);
         TerrainCB.NodeEvaluationC = glm::float4(1, 0, 0, 0);
         memcpy(TerrainCB.WorldLodParams, worldLODParams, sizeof(glm::float4) * (MAX_TERRAIN_LOD + 1));
         memcpy(TerrainCB.NodeIDOffsetOfLOD, nodeIDOffsetLOD, sizeof(uint32_t) * (MAX_TERRAIN_LOD + 1));
 
-        memcpy(mTerrainConsBuffer->GetCpuVirtualAddress<TerrainConsBuffer>(), &TerrainCB, sizeof(TerrainConsBuffer));
+        memcpy(mTerrainConsBuffer->GetCpuVirtualAddress<HLSL::TerrainConsData>(), &TerrainCB, sizeof(HLSL::TerrainConsData));
 
 
 
@@ -288,12 +294,12 @@ namespace MoYu
             HLSL::HDShadowData dirShadowData = frameUniform.lightDataUniform.shadowDatas[dirShadowIndex];
             glm::float4x4 dirShadowViewProjMatrix = dirShadowData.viewProjMatrix;
 
-            TerrainConsBuffer TerrainDirCB;
-            memcpy(&TerrainDirCB, &TerrainCB, sizeof(TerrainConsBuffer));
+            HLSL::TerrainConsData TerrainDirCB;
+            memcpy(&TerrainDirCB, &TerrainCB, sizeof(HLSL::TerrainConsData));
             TerrainDirCB.CameraViewProj = dirShadowViewProjMatrix;
             TerrainDirCB.CameraPositionWS = dirLightPosWS;
 
-            memcpy(mTerrainDirConsBuffers[i]->GetCpuVirtualAddress<TerrainConsBuffer>(), &TerrainDirCB, sizeof(TerrainConsBuffer));
+            memcpy(mTerrainDirConsBuffers[i]->GetCpuVirtualAddress<HLSL::TerrainConsData>(), &TerrainDirCB, sizeof(HLSL::TerrainConsData));
         }
         
         //--------------------------------------------------------------------------
@@ -593,6 +599,8 @@ namespace MoYu
         RHI::RgResourceHandle terrainRenderDataHandle = GImport(graph, pTerrainRenderDataBuffer.get());
         RHI::RgResourceHandle terrainMatPropertiesHandle = GImport(graph, pTerrainMatPropertiesBuffer.get());
         
+        RHI::RgResourceHandle hizDepthBufferHandle = passInput.hizDepthBufferHandle;
+
         if (!iMinMaxHeightReady)
         {
             iMinMaxHeightReady = true;
@@ -804,6 +812,7 @@ namespace MoYu
         buildPatchesPass.Read(terrainMaxHeightHandle);
         buildPatchesPass.Read(LodMapHandle);
         buildPatchesPass.Read(FinalNodeListHandle);
+        buildPatchesPass.Read(hizDepthBufferHandle);
         buildPatchesPass.Write(culledPatchListHandle, true);
 
         buildPatchesPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
@@ -831,6 +840,7 @@ namespace MoYu
                 uint32_t consBufferIndex;
                 uint32_t minHeightmapIndex;
                 uint32_t maxHeightmapIndex;
+                uint32_t hizDepthMapIndex;
                 uint32_t lodMapIndex;
                 uint32_t finalNodeListBufferIndex;
                 uint32_t culledPatchListBufferIndex;
@@ -839,6 +849,7 @@ namespace MoYu
             RootIndexBuffer rootIndexBuffer = RootIndexBuffer{ RegGetBufDefCBVIdx(terrainConsBufferHandle),
                                                                RegGetTexDefSRVIdx(terrainMinHeightHandle),
                                                                RegGetTexDefSRVIdx(terrainMaxHeightHandle),
+                                                               RegGetTexDefSRVIdx(hizDepthBufferHandle),
                                                                RegGetTexDefSRVIdx(LodMapHandle),
                                                                RegGetBufDefSRVIdx(FinalNodeListHandle),
                                                                RegGetBufDefUAVIdx(culledPatchListHandle) };
@@ -898,6 +909,7 @@ namespace MoYu
             buildDirPatchesPass.Read(terrainMaxHeightHandle);
             buildDirPatchesPass.Read(LodMapHandle);
             buildDirPatchesPass.Read(FinalNodeListHandle);
+            buildDirPatchesPass.Read(hizDepthBufferHandle);
             buildDirPatchesPass.Write(culledDirPatchListHandle, true);
 
             buildDirPatchesPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
@@ -925,6 +937,7 @@ namespace MoYu
                     uint32_t consBufferIndex;
                     uint32_t minHeightmapIndex;
                     uint32_t maxHeightmapIndex;
+                    uint32_t hizDepthMapIndex;
                     uint32_t lodMapIndex;
                     uint32_t finalNodeListBufferIndex;
                     uint32_t culledPatchListBufferIndex;
@@ -933,6 +946,7 @@ namespace MoYu
                 RootIndexBuffer rootIndexBuffer = RootIndexBuffer{ RegGetBufDefCBVIdx(terrainDirConsBufferHandle),
                                                                    RegGetTexDefSRVIdx(terrainMinHeightHandle),
                                                                    RegGetTexDefSRVIdx(terrainMaxHeightHandle),
+                                                                   RegGetTexDefSRVIdx(hizDepthBufferHandle),
                                                                    RegGetTexDefSRVIdx(LodMapHandle),
                                                                    RegGetBufDefSRVIdx(FinalNodeListHandle),
                                                                    RegGetBufDefUAVIdx(culledDirPatchListHandle) };
@@ -1460,7 +1474,6 @@ namespace MoYu
 
     void IndirectTerrainCullPass::destroy()
     {
-
 
 
     }

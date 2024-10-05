@@ -259,7 +259,94 @@ void SetLodTrans(inout TerrainRenderPatch patch, TerrainConsData inConsBuffer, T
     patch.lodTrans = (uint4)max(0, lodTrans);
 }
 
-bool Cull(TerrainConsData inConsBuffer, TerrainPatchBounds bounds)
+//将世界坐标转为uv+depth
+float3 TransformWorldToUVD(float3 positionWS, float4x4 _HizCameraMatrixVP)
+{
+    float4 positionHS = mul(_HizCameraMatrixVP, float4(positionWS, 1.0));
+    float3 uvd = positionHS.xyz / positionHS.w;
+    uvd.xy = (uvd.xy + 1) * 0.5;
+    //点可能跑到摄像机背后去，深度会变成负数，需要特殊处理一下
+    if(uvd.z < 0)
+    {
+        uvd.z = 1;
+    }
+    return uvd;
+}
+
+TerrainPatchBounds GetBoundsUVD(TerrainPatchBounds boundsWS, float4x4 _HizCameraMatrixVP)
+{
+    TerrainPatchBounds boundsUVD;
+
+    float3 boundsMin = boundsWS.minPosition;
+    float3 boundsMax = boundsWS.maxPosition;
+
+    float3 p0 = TransformWorldToUVD(boundsMin, _HizCameraMatrixVP);
+    float3 p1 = TransformWorldToUVD(boundsMax, _HizCameraMatrixVP);
+    float3 p2 = TransformWorldToUVD(float3(boundsMin.x,boundsMin.y,boundsMax.z), _HizCameraMatrixVP);
+    float3 p3 = TransformWorldToUVD(float3(boundsMin.x,boundsMax.y,boundsMin.z), _HizCameraMatrixVP);
+    float3 p4 = TransformWorldToUVD(float3(boundsMin.x,boundsMax.y,boundsMax.z), _HizCameraMatrixVP);
+    float3 p5 = TransformWorldToUVD(float3(boundsMax.x,boundsMin.y,boundsMax.z), _HizCameraMatrixVP);
+    float3 p6 = TransformWorldToUVD(float3(boundsMax.x,boundsMax.y,boundsMin.z), _HizCameraMatrixVP);
+    float3 p7 = TransformWorldToUVD(float3(boundsMax.x,boundsMin.y,boundsMin.z), _HizCameraMatrixVP);
+
+    float3 min1 = min(min(p0,p1),min(p2,p3));
+    float3 min2 = min(min(p4,p5),min(p6,p7));
+    boundsUVD.minPosition = min(min1,min2);
+
+    float3 max1 = max(max(p0,p1),max(p2,p3));
+    float3 max2 = max(max(p4,p5),max(p6,p7));
+    boundsUVD.maxPosition = max(max1,max2);
+    
+    return boundsUVD;
+}
+
+uint GetHizMip(TerrainPatchBounds boundsUVD, float4 _HizMapSize)
+{
+    float3 minP = boundsUVD.minPosition;
+    float3 maxP = boundsUVD.maxPosition;
+    float2 size = (maxP.xy - minP.xy) * _HizMapSize.x;
+    uint2 mip2 = ceil(log2(size));
+    uint mip = clamp(max(mip2.x,mip2.y), 1, _HizMapSize.z-1);
+    return mip;
+}
+
+float SampleHiz(float2 uv, float mip, float mipTexSize, Texture2D<float> _HizMap)
+{
+    uint2 coord = floor(uv * mipTexSize);
+    coord = min(coord, round(mipTexSize)-1);
+    return _HizMap.mips[mip][coord].r; 
+}
+
+//Hiz Cull
+bool HizOcclusionCull(
+    TerrainPatchBounds bounds,
+    float4x4 _HizCameraMatrixVP,
+    float3 _HizCameraPositionWS,
+    float4 _HizMapSize,
+    float _HizDepthBias,
+    Texture2D<float> _HizMap)
+{
+    bounds.minPosition -= normalize(bounds.minPosition - _HizCameraPositionWS) * _HizDepthBias;
+    bounds.maxPosition -= normalize(bounds.maxPosition - _HizCameraPositionWS) * _HizDepthBias;
+
+    TerrainPatchBounds boundsUVD = GetBoundsUVD(bounds, _HizCameraMatrixVP);
+
+    uint mip = GetHizMip(boundsUVD, _HizMapSize);
+
+    float3 minP = boundsUVD.minPosition;
+    float3 maxP = boundsUVD.maxPosition;
+
+    float mipTexSize = round(_HizMapSize.x / pow(2, mip));
+    float d1 = SampleHiz(minP.xy, mip, mipTexSize, _HizMap); 
+    float d2 = SampleHiz(maxP.xy, mip, mipTexSize, _HizMap); 
+    float d3 = SampleHiz(float2(minP.x,maxP.y), mip, mipTexSize, _HizMap);
+    float d4 = SampleHiz(float2(maxP.x,minP.y), mip, mipTexSize, _HizMap);
+    
+    float depth = maxP.z;
+    return d1 > depth && d2 > depth && d3 > depth && d4 > depth;
+}
+
+bool Cull(TerrainConsData inConsBuffer, TerrainPatchBounds bounds, Texture2D<float> hizMap)
 {
 #if ENABLE_FRUS_CULL
     Frustum frustum = ExtractPlanesDX(inConsBuffer.CameraViewProj);
@@ -275,7 +362,11 @@ bool Cull(TerrainConsData inConsBuffer, TerrainPatchBounds bounds)
     }
 #endif
 #if ENABLE_HIZ_CULL
-    if(HizOcclusionCull(bounds))
+    float4x4 _HizCameraMatrixVP = inConsBuffer.CameraViewProj;
+    float3 _HizCameraPositionWS = inConsBuffer.CameraPositionWS;
+    float4 _HizMapSize = inConsBuffer.HizDepthMapSize;
+    float _HizDepthBias = inConsBuffer._HizDepthBias;
+    if(HizOcclusionCull(bounds, _HizCameraMatrixVP, _HizCameraPositionWS, _HizMapSize, _HizDepthBias, hizMap))
     {
         return true;
     }
@@ -288,6 +379,7 @@ cbuffer RootConstants : register(b0, space0)
     uint consBufferIndex;
     uint minHeightmapIndex;
     uint maxHeightmapIndex;
+    uint hizDepthMapIndex;
     uint lodMapIndex;
     uint finalNodeListBufferIndex;
     uint culledPatchListBufferIndex;
@@ -301,6 +393,8 @@ void BuildPatches(uint3 id : SV_DispatchThreadID, uint3 groupId: SV_GroupID, uin
     Texture2D<float> MinHeightTexture = ResourceDescriptorHeap[minHeightmapIndex];
     Texture2D<float> MaxHeightTexture = ResourceDescriptorHeap[maxHeightmapIndex];
     
+    Texture2D<float> hizDepthMap = ResourceDescriptorHeap[hizDepthMapIndex];
+    
     StructuredBuffer<uint3> FinalNodeList = ResourceDescriptorHeap[finalNodeListBufferIndex];
     AppendStructuredBuffer<TerrainRenderPatch> CulledPatchList = ResourceDescriptorHeap[culledPatchListBufferIndex];
 
@@ -313,7 +407,7 @@ void BuildPatches(uint3 id : SV_DispatchThreadID, uint3 groupId: SV_GroupID, uin
 
     //裁剪
     TerrainPatchBounds bounds = GetPatchBounds(InConsBuffer, patch);
-    if(Cull(InConsBuffer, bounds))
+    if(Cull(InConsBuffer, bounds, hizDepthMap))
     {
         return;
     }

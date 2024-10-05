@@ -27,6 +27,7 @@ namespace MoYu
     struct TerrainCullInitInfo : public RenderPassInitInfo
     {
         RHI::RgTextureDesc colorTexDesc;
+        RHI::RgTextureDesc depthTexDesc;
 
         ShaderCompiler*       m_ShaderCompiler;
         std::filesystem::path m_ShaderRootPath;
@@ -46,9 +47,11 @@ namespace MoYu
             TerrainCullInput()
             {
                 perframeBufferHandle.Invalidate();
+                hizDepthBufferHandle.Invalidate();
             }
 
             RHI::RgResourceHandle perframeBufferHandle;
+            RHI::RgResourceHandle hizDepthBufferHandle;
         };
 
         struct TerrainCullOutput
@@ -125,6 +128,9 @@ namespace MoYu
         RHI::RgBufferDesc buildPatchArgsBufferDesc;
         
         bool iMinMaxHeightReady;
+
+        RHI::RgTextureDesc colorTexDesc;
+        RHI::RgTextureDesc depthTexDesc;
 
         /*
          * ¶ÔÓÚWorldLodParams
