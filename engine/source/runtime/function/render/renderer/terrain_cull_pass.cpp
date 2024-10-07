@@ -267,6 +267,10 @@ namespace MoYu
 
         int maxNodeCount = nodeIdOffset;
 
+        int depthMipLevel = glm::log2((float)glm::min(depthTexDesc.Width, depthTexDesc.Height));
+        depthMipLevel = glm::min(8, depthMipLevel);
+
+
         glm::float4x4 modelMatrix = internalTerrainRenderer.model_matrix;
 
         HLSL::TerrainConsData TerrainCB;
@@ -276,7 +280,7 @@ namespace MoYu
         TerrainCB.BoundsHeightRedundance = 0.1f;
         TerrainCB.WorldSize = terrainSize;
         TerrainCB._HizDepthBias = 0;
-        TerrainCB.HizDepthMapSize = glm::float4(depthTexDesc.Width, depthTexDesc.Height, 1.0f / depthTexDesc.Width, 1.0f / depthTexDesc.Height);
+        TerrainCB.HizDepthMapSize = glm::float4(depthTexDesc.Width, depthTexDesc.Height, depthMipLevel, 0);
         TerrainCB.NodeEvaluationC = glm::float4(1, 0, 0, 0);
         memcpy(TerrainCB.WorldLodParams, worldLODParams, sizeof(glm::float4) * (MAX_TERRAIN_LOD + 1));
         memcpy(TerrainCB.NodeIDOffsetOfLOD, nodeIDOffsetLOD, sizeof(uint32_t) * (MAX_TERRAIN_LOD + 1));
@@ -284,7 +288,7 @@ namespace MoYu
         memcpy(mTerrainConsBuffer->GetCpuVirtualAddress<HLSL::TerrainConsData>(), &TerrainCB, sizeof(HLSL::TerrainConsData));
 
 
-
+        
         mTerrainDirConsBuffers.resize(4);
         for (int i = 0; i < 4; i++)
         {

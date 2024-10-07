@@ -280,8 +280,8 @@ TerrainPatchBounds GetBoundsUVD(TerrainPatchBounds boundsWS, float4x4 _HizCamera
     float3 boundsMin = boundsWS.minPosition;
     float3 boundsMax = boundsWS.maxPosition;
 
-    float3 p0 = TransformWorldToUVD(boundsMin, _HizCameraMatrixVP);
-    float3 p1 = TransformWorldToUVD(boundsMax, _HizCameraMatrixVP);
+    float3 p0 = TransformWorldToUVD(float3(boundsMin.x,boundsMin.y,boundsMin.z), _HizCameraMatrixVP);
+    float3 p1 = TransformWorldToUVD(float3(boundsMax.x,boundsMax.y,boundsMax.z), _HizCameraMatrixVP);
     float3 p2 = TransformWorldToUVD(float3(boundsMin.x,boundsMin.y,boundsMax.z), _HizCameraMatrixVP);
     float3 p3 = TransformWorldToUVD(float3(boundsMin.x,boundsMax.y,boundsMin.z), _HizCameraMatrixVP);
     float3 p4 = TransformWorldToUVD(float3(boundsMin.x,boundsMax.y,boundsMax.z), _HizCameraMatrixVP);
@@ -304,14 +304,15 @@ uint GetHizMip(TerrainPatchBounds boundsUVD, float4 _HizMapSize)
 {
     float3 minP = boundsUVD.minPosition;
     float3 maxP = boundsUVD.maxPosition;
-    float2 size = (maxP.xy - minP.xy) * _HizMapSize.x;
+    float2 size = (maxP.xy - minP.xy) * _HizMapSize.xy;
     uint2 mip2 = ceil(log2(size));
     uint mip = clamp(max(mip2.x,mip2.y), 1, _HizMapSize.z-1);
     return mip;
 }
 
-float SampleHiz(float2 uv, float mip, float mipTexSize, Texture2D<float> _HizMap)
+float SampleHiz(float2 uv, float mip, float2 mipTexSize, Texture2D<float> _HizMap)
 {
+    uv.y = 1.0f-uv.y;
     uint2 coord = floor(uv * mipTexSize);
     coord = min(coord, round(mipTexSize)-1);
     return _HizMap.mips[mip][coord].r; 
@@ -336,7 +337,7 @@ bool HizOcclusionCull(
     float3 minP = boundsUVD.minPosition;
     float3 maxP = boundsUVD.maxPosition;
 
-    float mipTexSize = round(_HizMapSize.x / pow(2, mip));
+    float2 mipTexSize = round(_HizMapSize.xy / pow(2, mip));
     float d1 = SampleHiz(minP.xy, mip, mipTexSize, _HizMap); 
     float d2 = SampleHiz(maxP.xy, mip, mipTexSize, _HizMap); 
     float d3 = SampleHiz(float2(minP.x,maxP.y), mip, mipTexSize, _HizMap);
@@ -348,25 +349,30 @@ bool HizOcclusionCull(
 
 bool Cull(TerrainConsData inConsBuffer, TerrainPatchBounds bounds, Texture2D<float> hizMap)
 {
-#if ENABLE_FRUS_CULL
-    Frustum frustum = ExtractPlanesDX(inConsBuffer.CameraViewProj);
+#if defined(ENABLE_FRUS_CULL) || defined(ENABLE_HIZ_CULL)
     float3 bCenter = (bounds.maxPosition + bounds.minPosition) * 0.5f;
     float3 bExtents = (bounds.maxPosition - bounds.minPosition) * 0.5f;
     bCenter = mul(inConsBuffer.TerrainModelMatrix, float4(bCenter, 1.0f)).xyz;
+#endif
+#if ENABLE_FRUS_CULL
     BoundingBox clipBoundingBox;
     clipBoundingBox.Center = float4(bCenter, 0);
     clipBoundingBox.Extents = float4(bExtents, 0);
+    Frustum frustum = ExtractPlanesDX(inConsBuffer.CameraViewProj);
     if(FrustumContainsBoundingBox(frustum, clipBoundingBox) == CONTAINMENT_DISJOINT)
     {
         return true;
     }
 #endif
 #if ENABLE_HIZ_CULL
+    TerrainPatchBounds hizBounds;
+    hizBounds.minPosition = bCenter - bExtents;
+    hizBounds.maxPosition = bCenter + bExtents;
     float4x4 _HizCameraMatrixVP = inConsBuffer.CameraViewProj;
     float3 _HizCameraPositionWS = inConsBuffer.CameraPositionWS;
     float4 _HizMapSize = inConsBuffer.HizDepthMapSize;
     float _HizDepthBias = inConsBuffer._HizDepthBias;
-    if(HizOcclusionCull(bounds, _HizCameraMatrixVP, _HizCameraPositionWS, _HizMapSize, _HizDepthBias, hizMap))
+    if(HizOcclusionCull(hizBounds, _HizCameraMatrixVP, _HizCameraPositionWS, _HizMapSize, _HizDepthBias, hizMap))
     {
         return true;
     }
