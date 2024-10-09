@@ -88,7 +88,7 @@ VaryingsMeshType VertMesh(FrameUniforms frameUniform, RenderDataPerDraw renderDa
     output.positionPredisplacementRWS = positionRWS;
 #endif
 
-     output.positionCS = TransformWorldToHClip(frameUniform, positionRWS);
+    output.positionCS = TransformWorldToHClip(frameUniform, positionRWS);
 #ifdef VARYINGS_NEED_TANGENT_TO_WORLD
     output.normalWS = normalWS;
     output.tangentWS = tangentWS;

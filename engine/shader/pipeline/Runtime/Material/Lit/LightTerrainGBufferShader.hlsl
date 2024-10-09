@@ -209,14 +209,15 @@ PackedVaryingsType Vert(AttributesMesh inputMesh, uint instanceIndex : SV_Instan
 
     float3 normal = float3(0, 1, 0);
     normal.xz = terrainNormalMap.SampleLevel(s_linear_clamp_sampler, heightUV, 0).xy * 2 - 1;
-    normal.z = -normal.z;
     normal.y = sqrt(max(0, 1 - dot(normal.xz, normal.xz)));
+
+    float4 tangent = float4(0, 0, -1, -1); // inputMesh.tangentOS;
 
     AttributesMesh pathMesh;
     ZERO_INITIALIZE(AttributesMesh, pathMesh);
     pathMesh.positionOS = inVertex.xyz;
     pathMesh.uv0 = uv * scale * 8;
-    pathMesh.tangentOS = inputMesh.tangentOS;
+    pathMesh.tangentOS = tangent;
     pathMesh.normalOS = normal;
     
     VaryingsType varyingsType;
