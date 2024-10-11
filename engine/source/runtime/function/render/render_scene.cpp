@@ -93,10 +93,12 @@ namespace MoYu
                 float shadow_bounds_width_scale  = shadow_bounds_width << powScale;
                 float shadow_bounds_height_scale = shadow_bounds_height << powScale;
 
+                float shwoow_far_plane_scale = shadow_far_plane * glm::pow(2.0f, powScale);
+
                 glm::float3 m_new_translation = m_translation - direction * m_directional_light.m_shadowOffset[i];
                 
                 glm::float4x4 dirLightViewMat = MYMatrix4x4::createLookAtMatrix(m_new_translation, m_new_translation + direction, MYFloat3::Up);
-                glm::float4x4 dirLightProjMat = MYMatrix4x4::createOrthographic(shadow_bounds_width_scale, shadow_bounds_height_scale, shadow_near_plane, shadow_far_plane);
+                glm::float4x4 dirLightProjMat = MYMatrix4x4::createOrthographic(shadow_bounds_width_scale, shadow_bounds_height_scale, shadow_near_plane, shwoow_far_plane_scale);
                 glm::float4x4 dirLightViewProjMat = dirLightProjMat * dirLightViewMat;
                 
                 m_directional_light.m_shadow_view_mat[i] = dirLightViewMat;

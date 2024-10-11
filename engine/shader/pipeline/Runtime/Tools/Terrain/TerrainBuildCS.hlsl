@@ -347,12 +347,39 @@ bool HizOcclusionCull(
     return d1 > depth && d2 > depth && d3 > depth && d4 > depth;
 }
 
+TerrainPatchBounds TransformToWorld(TerrainPatchBounds bounds, float4x4 terrainModelMatrix)
+{
+    float3 boundsMin = bounds.minPosition;
+    float3 boundsMax = bounds.maxPosition;
+
+    float3 p0 = mul(terrainModelMatrix, float4(boundsMin.x,boundsMin.y,boundsMin.z, 1.0f)).xyz;
+    float3 p1 = mul(terrainModelMatrix, float4(boundsMax.x,boundsMax.y,boundsMax.z, 1.0f)).xyz;
+    float3 p2 = mul(terrainModelMatrix, float4(boundsMin.x,boundsMin.y,boundsMax.z, 1.0f)).xyz;
+    float3 p3 = mul(terrainModelMatrix, float4(boundsMin.x,boundsMax.y,boundsMin.z, 1.0f)).xyz;
+    float3 p4 = mul(terrainModelMatrix, float4(boundsMin.x,boundsMax.y,boundsMax.z, 1.0f)).xyz;
+    float3 p5 = mul(terrainModelMatrix, float4(boundsMax.x,boundsMin.y,boundsMax.z, 1.0f)).xyz;
+    float3 p6 = mul(terrainModelMatrix, float4(boundsMax.x,boundsMax.y,boundsMin.z, 1.0f)).xyz;
+    float3 p7 = mul(terrainModelMatrix, float4(boundsMax.x,boundsMin.y,boundsMin.z, 1.0f)).xyz;
+
+    TerrainPatchBounds boundsUVD;
+    
+    float3 min1 = min(min(p0,p1),min(p2,p3));
+    float3 min2 = min(min(p4,p5),min(p6,p7));
+    boundsUVD.minPosition = min(min1,min2);
+
+    float3 max1 = max(max(p0,p1),max(p2,p3));
+    float3 max2 = max(max(p4,p5),max(p6,p7));
+    boundsUVD.maxPosition = max(max1,max2);
+    
+    return boundsUVD;
+}
+
 bool Cull(TerrainConsData inConsBuffer, TerrainPatchBounds bounds, Texture2D<float> hizMap)
 {
 #if defined(ENABLE_FRUS_CULL) || defined(ENABLE_HIZ_CULL)
-    float3 bCenter = (bounds.maxPosition + bounds.minPosition) * 0.5f;
-    float3 bExtents = (bounds.maxPosition - bounds.minPosition) * 0.5f;
-    bCenter = mul(inConsBuffer.TerrainModelMatrix, float4(bCenter, 1.0f)).xyz;
+    TerrainPatchBounds boundsWS = TransformToWorld(bounds, inConsBuffer.TerrainModelMatrix);
+    float3 bCenter = (boundsWS.maxPosition + boundsWS.minPosition) * 0.5f;
+    float3 bExtents = (boundsWS.maxPosition - boundsWS.minPosition) * 0.5f;
 #endif
 #if ENABLE_FRUS_CULL
     BoundingBox clipBoundingBox;

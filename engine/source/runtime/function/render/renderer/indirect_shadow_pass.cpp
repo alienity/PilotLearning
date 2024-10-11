@@ -274,6 +274,11 @@ namespace MoYu
                 int viewportX = i % shadowMapSubCount * shadowmapSize.x;
                 int viewportY = i / shadowMapSubCount * shadowmapSize.y;
 
+                float showBoundsX = shadowBounds.x * powerScale;
+                float showBoundsY = shadowBounds.y * powerScale;
+
+                float dfScale = df * powerScale;
+
                 HLSL::HDShadowData _shadowDara;
                 _shadowDara.shadowmapIndex = clightCascadeShadowMap->GetDefaultSRV()->GetIndex();
                 _shadowDara.worldTexelSize = 2.0f / projMatrix[0][0] / shadowmapSize.x * glm::sqrt(2.0f);
@@ -285,8 +290,8 @@ namespace MoYu
                 _shadowDara.viewMatrix = viewMatrix;
                 _shadowDara.projMatrix = projMatrix;
                 _shadowDara.viewProjMatrix = viewProjMatrix;
-                _shadowDara.zBufferParam = glm::float4((df - dn) / dn, 1.0f, (df - dn) / (dn * df), 1.0f / df);
-                _shadowDara.shadowBounds = glm::float4(shadowBounds.x * powerScale, shadowBounds.y * powerScale, 0, 0);
+                _shadowDara.zBufferParam = glm::float4((dfScale - dn) / dn, 1.0f, (dfScale - dn) / (dn * dfScale), 1.0f / dfScale);
+                _shadowDara.shadowBounds = glm::float4(showBoundsX, showBoundsY, 0, 0);
 
                 _shadowDara.shadowAtlasSize = glm::float4(atlasSize.x, atlasSize.y, 1.0f / atlasSize.x, 1.0f / atlasSize.y);
                 // Compute the scale and offset (between 0 and 1) for the atlas coordinates

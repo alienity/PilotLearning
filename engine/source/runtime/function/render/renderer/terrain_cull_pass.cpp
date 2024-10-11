@@ -277,7 +277,7 @@ namespace MoYu
         TerrainCB.TerrainModelMatrix = modelMatrix;
         TerrainCB.CameraViewProj = cameraViewProj;
         TerrainCB.CameraPositionWS = cameraPosition;
-        TerrainCB.BoundsHeightRedundance = 0.1f;
+        TerrainCB.BoundsHeightRedundance = 0.5f;
         TerrainCB.WorldSize = terrainSize;
         TerrainCB._HizDepthBias = 0;
         TerrainCB.HizDepthMapSize = glm::float4(depthTexDesc.Width, depthTexDesc.Height, depthMipLevel, 0);
@@ -288,7 +288,6 @@ namespace MoYu
         memcpy(mTerrainConsBuffer->GetCpuVirtualAddress<HLSL::TerrainConsData>(), &TerrainCB, sizeof(HLSL::TerrainConsData));
 
 
-        
         mTerrainDirConsBuffers.resize(4);
         for (int i = 0; i < 4; i++)
         {

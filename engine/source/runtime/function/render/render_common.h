@@ -467,12 +467,12 @@ namespace MoYu
         float cascadeShadowBorder2{ 0.2f };
         float cascadeShadowBorder3{ 0.2f };
 
-        glm::float4 shadowCenterOffset {0, 10, 50, 100};
+        glm::float4 shadowCenterOffset {0, 64, 128, 256};
         glm::int4 shadowPowerScale {0, 1, 2, 3};
         
         bool    m_shadowmap {false};
         int     m_cascade {4};
-        glm::float2 m_shadow_bounds {32, 32}; // cascade level 0
+        glm::float2 m_shadow_bounds {64, 64}; // cascade level 0
         float   m_shadow_near_plane {0.1f};
         float   m_shadow_far_plane {200.0f};
         glm::float2 m_shadowmap_size {1024, 1024};
