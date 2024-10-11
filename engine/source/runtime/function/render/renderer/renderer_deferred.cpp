@@ -737,14 +737,14 @@ namespace MoYu
         */
 
 
-        ////=================================================================================
-        //// VolumeCloud Shadow draw
-        //VolumeCloudPass::ShadowInputParameters  mVCSIntputParams;
-        //VolumeCloudPass::ShadowOutputParameters mVCSOutputParams;
+        //=================================================================================
+        // VolumeCloud Shadow draw
+        VolumeCloudPass::ShadowInputParameters  mVCSIntputParams;
+        VolumeCloudPass::ShadowOutputParameters mVCSOutputParams;
 
-        //mVCSIntputParams.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
-        //mVolumeCloudPass->updateShadow(graph, mVCSIntputParams, mVCSOutputParams);
-        ////=================================================================================
+        mVCSIntputParams.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
+        mVolumeCloudPass->updateShadow(graph, mVCSIntputParams, mVCSOutputParams);
+        //=================================================================================
 
         ////=================================================================================
         //// volume light
@@ -839,8 +839,6 @@ namespace MoYu
         mIndirectLightLoopPass->update(graph, mLightLoopIntput, mLightLoopOutput);
         //=================================================================================
 
-
-
         ////=================================================================================
         //// subsurface scattering pass
         //SubsurfaceScatteringPass::DrawInputParameters mSubsurfaceScatteringInput;
@@ -854,8 +852,7 @@ namespace MoYu
         //mSubsurfaceScatteringInput.volumeLight3DHandle = mVolumeLightOutput.volumeLightHandle;
 
         //mSubsurfaceScatteringPass->update(graph, mSubsurfaceScatteringInput, mSubsurfaceScatteringOutput);
-
-        //=================================================================================
+        ////=================================================================================
 
         RHI::RgResourceHandle outColorHandle = mLightLoopOutput.specularLightinghandle;
         RHI::RgResourceHandle outDepthHandle = mGBufferOutput.depthHandle;
