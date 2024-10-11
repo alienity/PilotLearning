@@ -284,7 +284,7 @@ namespace MoYu
 
         passOutput.outCloudShadowHandle = mVolumeShadowmapHandle;
     }
-      
+    
     void VolumeCloudPass::destroy()
     {
         mCloudConstantsBuffer = nullptr;

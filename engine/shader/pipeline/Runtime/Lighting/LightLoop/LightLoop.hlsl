@@ -51,6 +51,18 @@ void LightLoop(
                 }
             }
         }
+
+        // cloud shadow
+        {
+            Texture2D<float> cloudShadowmap = ResourceDescriptorHeap[frameUniform.volumeCloudUniform.cloud_shadowmap_srv_index];    
+            float2 volumebounds = frameUniform.volumeCloudUniform.cloud_shadowmap_bounds;
+    
+            float2 coords = (posInput.positionWS.xz / volumebounds.xy) + 0.5.xx;
+            float attenuation = cloudShadowmap.SampleLevel(samplerStruct.SLinearClampSampler, coords, 0).r;
+            float cloudShadowValue = 1 - attenuation * 0.5f;
+
+            context.shadowValue *= cloudShadowValue;
+        }
     }
     
     // This struct is define in the material. the Lightloop must not access it
