@@ -247,6 +247,61 @@ namespace EngineConfig
     extern VolumeLightConfig g_VolumeLightConfig;
 
     void InitEngineConfig();
+
+    struct ColorParameter
+    {
+        glm::float4 color;
+        bool hdr = false; // Is this color HDR?
+        bool showAlpha = true; // Should the alpha channel be editable in the editor?
+        bool showEyeDropper = true; // Should the eye dropper be visible in the editor?
+    };
+
+    enum FogColorMode
+    {
+        /// <summary>Fog is a constant color.</summary>
+        ConstantColor,
+        /// <summary>Fog uses the current sky to determine its color.</summary>
+        SkyColor,
+    };
+
+    struct FogConfig
+    {
+        // Enable fog.
+        bool enabled = false;
+
+        // Fog color mode.
+        FogColorMode colorMode = FogColorMode::SkyColor;
+        // Specifies the constant color of the fog.
+        ColorParameter color = ColorParameter{ glm::float4(0.5f, 0.5f, 0.5f, 1.0f), true, false, true };
+        // Specifies the tint of the fog when using Sky Color.
+        ColorParameter tint = ColorParameter{ glm::float4(1.0f, 1.0f, 1.0f, 1.0f), true, false, true };
+        // Sets the maximum fog distance HDRP uses when it shades the skybox or the Far Clipping Plane of the Camera.
+        float maxFogDistance = 5000.0f;
+        // Controls the maximum mip map HDRP uses for mip fog (0 is the lowest mip and 1 is the highest mip).
+        float mipFogMaxMip = 0.5f;
+        // Sets the distance at which HDRP uses the minimum mip image of the blurred sky texture as the fog color.
+        float mipFogNear = 0.0f;
+        // Sets the distance at which HDRP uses the maximum mip image of the blurred sky texture as the fog color.
+        float mipFogFar = 1000.0f;
+
+        // Height Fog
+        // Height fog base height.
+        float baseHeight = 0.0f;
+        // Height fog maximum height.
+        float maximumHeight = 50.0f;
+        // Fog Attenuation Distance
+        float meanFreePath = 400.0f;
+
+        // Optional Volumetric Fog
+        // Enable volumetric fog.
+        bool enableVolumetricFog = false;
+        // Common Fog Parameters (Exponential/Volumetric)
+        // Stores the fog albedo. This defines the color of the fog.
+        ColorParameter albedo = ColorParameter{ glm::float4(1.0f, 1.0f, 1.0f, 1.0f), false, true, true };
+
+
+
+    };
 }
 
 // clang-format off

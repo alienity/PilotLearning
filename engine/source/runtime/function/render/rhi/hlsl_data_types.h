@@ -25,6 +25,7 @@ namespace HLSL
 #include "../shader/pipeline/Runtime/Lighting/Shadow/HDShadowManager.hlsl"
 #include "../shader/pipeline/Runtime/ShaderLibrary/ShaderVariablesGlobal.hlsl"
 #include "../shader/pipeline/Runtime/Tools/Terrain/TerrainCommonInput.hlsl"
+#include "../shader/pipeline/Runtime/Tools/VolumeLighting/VolumetricLightingCommon.hlsl"
 #include "../shader/pipeline/Runtime/Material/Lit/LitProperties.hlsl"
 
     static constexpr size_t MaterialLimit = 2048;
