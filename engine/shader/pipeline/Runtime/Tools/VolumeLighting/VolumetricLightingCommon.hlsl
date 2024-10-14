@@ -29,7 +29,7 @@
 
 struct ShaderVariablesVolumetric
 {
-    float4x4 _VBufferCoordToViewDirWS[2];
+    float4x4 _VBufferCoordToViewDirWS;
     float _VBufferUnitDepthTexelSpacing;
     uint _NumVisibleLocalVolumetricFog;
     float _CornetteShanksConstant;

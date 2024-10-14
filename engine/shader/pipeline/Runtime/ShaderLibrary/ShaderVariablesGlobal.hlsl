@@ -320,6 +320,45 @@ struct ExposureUniform
 };
 
 // =======================================
+// VBuffer
+// =======================================
+
+struct VolumetricLightingUniform
+{
+    int _FogEnabled;
+    int _PBRFogEnabled;
+    int _EnableVolumetricFog;
+    float _MaxFogDistance;
+    float4 _FogColor; // color in rgb
+    float _FogColorMode;
+    float _GlobalMipBias;
+    float _GlobalMipBiasPow2;
+    float _Pad0;
+    float4 _MipFogParameters;
+    float4 _HeightFogBaseScattering;
+    float _HeightFogBaseExtinction;
+    float _HeightFogBaseHeight;
+    float _GlobalFogAnisotropy;
+    int _VolumetricFilteringEnabled;
+    float2 _HeightFogExponents; // { 1/H, H }
+    int _FogDirectionalOnly;
+    float _FogGIDimmer;
+};
+
+struct VBufferUniform
+{
+    float4 _VBufferViewportSize;           // { w, h, 1/w, 1/h }
+    float4 _VBufferLightingViewportScale;  // Necessary us to work with sub-allocation (resource aliasing) in the RTHandle system
+    float4 _VBufferLightingViewportLimit;  // Necessary us to work with sub-allocation (resource aliasing) in the RTHandle system
+    float4 _VBufferDistanceEncodingParams; // See the call site for description
+    float4 _VBufferDistanceDecodingParams; // See the call site for description
+    uint _VBufferSliceCount;
+    float _VBufferRcpSliceCount;
+    float _VBufferRcpInstancedViewCount;  // Used to remap VBuffer coordinates for XR
+    float _VBufferLastSliceDist;          // The distance to the middle of the last slice
+};
+
+// =======================================
 // FraneUniform
 // =======================================
 
@@ -339,6 +378,8 @@ struct FrameUniforms
     VolumeLightUniform volumeLightUniform;
     SSSUniform sssUniform;
     ExposureUniform exposureUniform;
+    VolumetricLightingUniform volumetricLightingUniform;
+    VBufferUniform vBufferUniform;
 };
 
 // =======================================

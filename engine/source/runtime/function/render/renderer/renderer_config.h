@@ -246,8 +246,6 @@ namespace EngineConfig
 
     extern VolumeLightConfig g_VolumeLightConfig;
 
-    void InitEngineConfig();
-
     struct ColorParameter
     {
         glm::float4 color;
@@ -298,10 +296,12 @@ namespace EngineConfig
         // Common Fog Parameters (Exponential/Volumetric)
         // Stores the fog albedo. This defines the color of the fog.
         ColorParameter albedo = ColorParameter{ glm::float4(1.0f, 1.0f, 1.0f, 1.0f), false, true, true };
-
-
-
     };
+
+    extern FogConfig g_FogConfig;
+
+    void InitEngineConfig();
+
 }
 
 // clang-format off

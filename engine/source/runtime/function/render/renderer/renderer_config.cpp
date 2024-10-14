@@ -31,6 +31,8 @@ namespace EngineConfig
 
     VolumeLightConfig g_VolumeLightConfig = VolumeLightConfig();
 
+    FogConfig g_FogConfig = FogConfig();
+
     void InitEngineConfig()
     {
         g_AntialiasingMode = AntialiasingMode::TAAMode;
@@ -47,5 +49,6 @@ namespace EngineConfig
         g_VolumeLightConfig = VolumeLightConfig();
         g_SSGIConfig = SSGIConfig();
         g_VoxelGIConfig = VoxelGIConfig();
+        g_FogConfig = FogConfig();
     }
 }
