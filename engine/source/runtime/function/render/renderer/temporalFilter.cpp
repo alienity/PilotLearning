@@ -91,11 +91,11 @@ namespace MoYu
 
 
         mTemporalFilterStructData._PixelSpreadAngleTangent =
-            glm::tan(glm::radians(camera->m_fieldOfViewY * 0.5f)) * 2.0f / glm::min(camera->m_pixelWidth, camera->m_pixelHeight);
+            glm::tan(glm::radians(camera->fovy() * 0.5f)) * 2.0f / glm::min(camera->getWidth(), camera->getHeight());
         mTemporalFilterStructData._HistoryValidity = 1;
         mTemporalFilterStructData._ReceiverMotionRejection = 0;
         mTemporalFilterStructData._OccluderMotionRejection = 0;
-        mTemporalFilterStructData._HistorySizeAndScale = glm::float4(camera->m_pixelWidth, camera->m_pixelHeight, 1, 1);
+        mTemporalFilterStructData._HistorySizeAndScale = glm::float4(camera->getWidth(), camera->getHeight(), 1, 1);
         mTemporalFilterStructData._DenoiserResolutionMultiplierVals = glm::float4(1, 1, 1, 1);
         mTemporalFilterStructData._EnableExposureControl = 0;
 

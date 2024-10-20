@@ -156,11 +156,11 @@ namespace MoYu
         glm::float4x4 proj_matrix     = camera->getProjMatrix();
         glm::float3   camera_position = camera->position();
         
-        float _cn = camera->m_nearClipPlane;
-        float _cf = camera->m_farClipPlane;
+        float _cn = camera->nearZ();
+        float _cf = camera->farZ();
 
-        int _cw = camera->m_pixelWidth;
-        int _ch = camera->m_pixelHeight;
+        int _cw = camera->getWidth();
+        int _ch = camera->getHeight();
 
         double _t = g_SystemTime.GetTimeSecs();
         double _pt = g_SystemTime.GetPrevTimeSecs();

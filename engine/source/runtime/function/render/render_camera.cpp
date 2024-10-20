@@ -1,12 +1,14 @@
 #include "runtime/function/render/render_camera.h"
 #include "runtime/function/render/renderer/renderer_config.h"
+#include "runtime/function/render/utility/HDUtils.h"
+#include "runtime/function/render/render_swap_context.h"
 
 namespace MoYu
 {
-    RenderCamera::RenderCamera(bool orthographic)
+    RenderCamera::RenderCamera(bool perspective)
     {
-        this->taaFrameIndex = 0;
-        this->orthographic = orthographic;
+        taaFrameIndex = 0;
+        rawCameraData.m_isPerspective = perspective;
     }
 
     RenderCamera::~RenderCamera()
@@ -14,12 +16,70 @@ namespace MoYu
 
     }
 
-    void RenderCamera::updatePerFrame()
+    void RenderCamera::updatePerFrame(const CameraSwapData* pCamSwapData)
     {
         const int kMaxSampleCount = 8;
         if (++taaFrameIndex >= kMaxSampleCount)
             taaFrameIndex = 0;
 
+        if (pCamSwapData == nullptr)
+            return;
+
+        rawCameraData.m_isPerspective = pCamSwapData->m_is_perspective;
+        setMainViewMatrix(pCamSwapData->m_view_matrix, pCamSwapData->m_camera_type);
+        perspectiveProjection(
+            pCamSwapData->m_width, 
+            pCamSwapData->m_height, 
+            pCamSwapData->m_nearZ, 
+            pCamSwapData->m_farZ, 
+            pCamSwapData->m_fov_y);
+
+        mainViewConstants.prevViewMatrix = mainViewConstants.viewMatrix;
+        mainViewConstants.prevViewProjMatrix = mainViewConstants.viewProjMatrix;
+        mainViewConstants.prevInvViewProjMatrix = mainViewConstants.invViewProjMatrix;
+        mainViewConstants.prevViewProjMatrixNoCameraTrans = mainViewConstants.viewProjectionNoCameraTrans;
+
+        mainViewConstants.prevWorldSpaceCameraPos = mainViewConstants.worldSpaceCameraPos;
+
+        glm::float4x4 viewMatrix = getViewMatrix();
+        glm::float4x4 projMatrix = getProjMatrix();
+        glm::float4x4 nonJitterProjMatrix = getProjMatrix(true);
+
+        glm::float4x4 noTransViewMatrix = viewMatrix;
+        noTransViewMatrix[3] = glm::float4(0, 0, 0, 1);
+
+        glm::float4x4 gpuVPNoTrans = nonJitterProjMatrix * noTransViewMatrix;
+
+        mainViewConstants.viewMatrix = viewMatrix;
+        mainViewConstants.invViewMatrix = glm::inverse(mainViewConstants.viewMatrix);
+        mainViewConstants.projMatrix = projMatrix;
+        mainViewConstants.invProjMatrix = glm::inverse(mainViewConstants.projMatrix);
+        mainViewConstants.viewProjMatrix = mainViewConstants.projMatrix * mainViewConstants.viewMatrix;;
+        mainViewConstants.invViewProjMatrix = glm::inverse(mainViewConstants.viewProjMatrix);
+        mainViewConstants.nonJitteredViewProjMatrix = nonJitterProjMatrix * mainViewConstants.viewMatrix;
+        
+        mainViewConstants.worldSpaceCameraPos = position();
+        mainViewConstants.worldSpaceCameraPosViewOffset = glm::float3(0);
+        mainViewConstants.viewProjectionNoCameraTrans = noTransViewMatrix;
+
+        float gpuProjAspect = HDUtils::ProjectionMatrixAspect(mainViewConstants.projMatrix);
+
+        glm::float4 screenSize = 
+            glm::float4(rawCameraData.m_pixelWidth, rawCameraData.m_pixelHeight, 
+                1.0f / rawCameraData.m_pixelWidth, 1.0f / rawCameraData.m_pixelHeight);
+
+        mainViewConstants.pixelCoordToViewDirWS = 
+            ComputePixelCoordToWorldSpaceViewDirectionMatrix(mainViewConstants, screenSize, gpuProjAspect);
+    }
+
+    const RawCameraData& RenderCamera::GetRawCameraData() const
+    {
+        return rawCameraData;
+    }
+
+    const ViewConstants& RenderCamera::GetViewConstants() const
+    {
+        return mainViewConstants;
     }
 
     void RenderCamera::setMainViewMatrix(const glm::float4x4& view_matrix, RenderCameraType type)
@@ -27,18 +87,22 @@ namespace MoYu
         std::lock_guard<std::mutex> lock_guard(m_view_matrix_mutex);
 
         m_current_camera_type = type;
-        m_view_matrix = view_matrix;
+        rawCameraData.m_view_matrix = view_matrix;
 
         glm::float3 s  = glm::float3(view_matrix[0][0], view_matrix[1][0], view_matrix[2][0]);
         glm::float3 u  = glm::float3(view_matrix[0][1], view_matrix[1][1], view_matrix[2][1]);
         glm::float3 f  = glm::float3(-view_matrix[0][2], -view_matrix[1][2], -view_matrix[2][2]);
-        m_position = s * (-view_matrix[3][0]) + u * (-view_matrix[3][1]) + f * view_matrix[3][2];
-        
-        m_rotation = glm::toQuat(view_matrix);
-        m_invRotation = glm::conjugate(m_rotation);
+        //m_position = s * (-view_matrix[3][0]) + u * (-view_matrix[3][1]) + f * view_matrix[3][2];
+        rawCameraData.m_position = -glm::column(view_matrix, 3);
+
+        rawCameraData.m_rotation = glm::toQuat(view_matrix);
+        rawCameraData.m_invRotation = glm::conjugate(rawCameraData.m_rotation);
     }
 
-    void RenderCamera::move(glm::float3 delta) { m_position += delta; }
+    void RenderCamera::move(glm::float3 delta)
+    {
+        rawCameraData.m_position += delta;
+    }
 
      // delta.x -- yaw, delta.y -- pitch
     void RenderCamera::rotate(glm::float2 delta)
@@ -49,7 +113,7 @@ namespace MoYu
         // ZXY从右往左乘得旋转矩阵，就是intrinsic的，对应的分别是从右往左 Roll - Pitch - Yaw
 
         float _alpha, _beta, _gamma;
-        glm::extractEulerAngleZXY(glm::toMat4(m_rotation), _gamma, _beta, _alpha);
+        glm::extractEulerAngleZXY(glm::toMat4(rawCameraData.m_rotation), _gamma, _beta, _alpha);
 
         _alpha += delta.x;
         _beta += delta.y;
@@ -62,8 +126,8 @@ namespace MoYu
         if (_beta < -_pitchLimit)
             _beta = -_pitchLimit;
         
-        m_rotation    = glm::toQuat(glm::eulerAngleZXY(_gamma, _beta, _alpha));
-        m_invRotation = glm::conjugate(m_rotation);
+        rawCameraData.m_rotation    = glm::toQuat(glm::eulerAngleZXY(_gamma, _beta, _alpha));
+        rawCameraData.m_invRotation = glm::conjugate(rawCameraData.m_rotation);
 
         //glm::quat pitch = glm::rotate(glm::quat(), delta.x, X);
         //glm::quat yaw   = glm::rotate(glm::quat(), delta.y, Y);
@@ -77,17 +141,17 @@ namespace MoYu
     void RenderCamera::zoom(float offset)
     {
         // > 0 = zoom in (decrease FOV by <offset> angles)
-        m_fieldOfViewY = glm::clamp(m_fieldOfViewY - offset, MIN_FOVY, MAX_FOVY);
+        rawCameraData.m_fieldOfViewY = glm::clamp(rawCameraData.m_fieldOfViewY - offset, MIN_FOVY, MAX_FOVY);
     }
 
     void RenderCamera::lookAt(const glm::float3& position, const glm::float3& target, const glm::float3& up)
     {
-        m_position = position;
+        rawCameraData.m_position = position;
 
         glm::float4x4 viewMat = MoYu::MYMatrix4x4::createLookAtMatrix(position, target, up);
 
-        m_rotation = glm::toQuat(viewMat);
-        m_invRotation = glm::inverse(m_rotation);
+        rawCameraData.m_rotation = glm::toQuat(viewMat);
+        rawCameraData.m_invRotation = glm::inverse(rawCameraData.m_rotation);
 
         /*
         // model rotation
@@ -112,33 +176,100 @@ namespace MoYu
 
     void RenderCamera::perspectiveProjection(int width, int height, float znear, float zfar, float fovy)
     {
-        m_pixelWidth    = width;
-        m_pixelHeight   = height;
-        m_nearClipPlane = znear;
-        m_farClipPlane  = zfar;
-        m_aspect        = width / (float)height;
-        m_fieldOfViewY  = fovy;
+        rawCameraData.m_pixelWidth    = width;
+        rawCameraData.m_pixelHeight   = height;
+        rawCameraData.m_nearClipPlane = znear;
+        rawCameraData.m_farClipPlane  = zfar;
+        rawCameraData.m_fieldOfViewY  = fovy;
 
-        m_project_matrix = MoYu::MYMatrix4x4::createPerspectiveFieldOfView(
-            MoYu::f::DEG_TO_RAD * m_fieldOfViewY, m_aspect, m_nearClipPlane, m_farClipPlane);
+        float tAspect = width / (float)height;
+
+        rawCameraData.m_project_matrix = MoYu::MYMatrix4x4::createPerspectiveFieldOfView(
+            MoYu::f::DEG_TO_RAD * rawCameraData.m_fieldOfViewY, tAspect, rawCameraData.m_nearClipPlane, rawCameraData.m_farClipPlane);
 
         // Analyze the projection matrix.
             // p[2][3] = (reverseZ ? 1 : -1) * (depth_0_1 ? 1 : 2) * (f * n) / (f - n)
         float n = znear;
         float f = zfar;
-        float scale = m_project_matrix[3][2] / (f * n) * (f - n);
+        float scale = rawCameraData.m_project_matrix[3][2] / (f * n) * (f - n);
         bool depth_0_1 = glm::abs(scale) < 1.5f;
         bool reverseZ = scale > 0;
 
         // http://www.humus.name/temp/Linearize%20depth.txt
         if (reverseZ)
         {
-            zBufferParams = glm::float4(-1 + f / n, 1, -1 / f + 1 / n, 1 / f);
+            rawCameraData.zBufferParams = glm::float4(-1 + f / n, 1, -1 / f + 1 / n, 1 / f);
         }
         else
         {
-            zBufferParams = glm::float4(1 - f / n, f / n, 1 / f - 1 / n, 1 / n);
+            rawCameraData.zBufferParams = glm::float4(1 - f / n, f / n, 1 / f - 1 / n, 1 / n);
         }
+    }
+
+    bool RenderCamera::isPerspective() const
+    {
+        return rawCameraData.m_isPerspective;
+    }
+
+    void RenderCamera::setViewport(int width, int height)
+    {
+        rawCameraData.m_pixelWidth = width;
+        rawCameraData.m_pixelHeight = height;
+    }
+
+    glm::float3 RenderCamera::position() const
+    {
+        return rawCameraData.m_position;
+    }
+
+    glm::quat RenderCamera::rotation() const
+    {
+        return rawCameraData.m_rotation;
+    }
+
+    float RenderCamera::nearZ()
+    {
+        return rawCameraData.m_nearClipPlane;
+    }
+    
+    float RenderCamera::farZ()
+    {
+        return rawCameraData.m_farClipPlane;
+    }
+
+    float RenderCamera::fovy() const
+    {
+        return rawCameraData.m_fieldOfViewY;
+    }
+
+    float RenderCamera::asepct() const
+    {
+        return rawCameraData.m_pixelWidth / (float)rawCameraData.m_pixelHeight;
+    }
+
+    glm::float1 RenderCamera::getWidth()
+    {
+        return rawCameraData.m_pixelWidth;
+    }
+
+    glm::float1 RenderCamera::getHeight()
+    {
+        return rawCameraData.m_pixelHeight;
+    }
+
+    glm::float3 RenderCamera::forward() const
+    { 
+        return (rawCameraData.m_invRotation * (-Z));
+    }
+
+    glm::float3 RenderCamera::up() const
+    {
+        return (rawCameraData.m_invRotation * Y);
+    }
+
+    glm::float3 RenderCamera::right() const
+    {
+        return (rawCameraData.m_invRotation * X);
     }
 
     glm::float4x4 RenderCamera::getViewMatrix()
@@ -157,7 +288,7 @@ namespace MoYu
                 }
                 break;
             case RenderCameraType::Motor:
-                    view_matrix = m_view_matrix;
+                    view_matrix = rawCameraData.m_view_matrix;
                 break;
             default:
                 break;
@@ -169,16 +300,17 @@ namespace MoYu
     {
         if (EngineConfig::g_AntialiasingMode != EngineConfig::AntialiasingMode::TAAMode || unjitter)
         {
-            float actualWidth = m_pixelWidth;
-            float actualHeight = m_pixelHeight;
+            float actualWidth = rawCameraData.m_pixelWidth;
+            float actualHeight = rawCameraData.m_pixelHeight;
 
-            if (orthographic)
+            if (!rawCameraData.m_isPerspective)
             {
-                m_project_matrix = MoYu::MYMatrix4x4::createOrthographic(actualWidth, actualHeight, m_nearClipPlane, m_farClipPlane);
+                rawCameraData.m_project_matrix = 
+                    MoYu::MYMatrix4x4::createOrthographic(actualWidth, actualHeight, rawCameraData.m_nearClipPlane, rawCameraData.m_farClipPlane);
             }
             else
             {
-                m_project_matrix = getProjectionMatrix(0.0f, 0.0f);
+                rawCameraData.m_project_matrix = getProjectionMatrix(0.0f, 0.0f);
             }
         }
         else
@@ -195,12 +327,12 @@ namespace MoYu
                 jitterY *= taaJitterScale;
             }
 
-            float actualWidth = m_pixelWidth;
-            float actualHeight = m_pixelHeight;
+            float actualWidth = rawCameraData.m_pixelWidth;
+            float actualHeight = rawCameraData.m_pixelHeight;
 
             taaJitter = glm::float4(jitterX, jitterY, jitterX / actualWidth, jitterY / actualHeight);
 
-            if (orthographic)
+            if (!rawCameraData.m_isPerspective)
             {
                 float vertical = actualHeight * 0.5f;
                 float horizontal = actualWidth * 0.5f;
@@ -214,35 +346,36 @@ namespace MoYu
                 float top = offset.y + vertical;
                 float bottom = offset.y - vertical;
 
-                m_project_matrix = MoYu::MYMatrix4x4::createOrthographicOffCenter(left, right, bottom, top, m_nearClipPlane, m_farClipPlane);
+                rawCameraData.m_project_matrix = 
+                    MoYu::MYMatrix4x4::createOrthographicOffCenter(left, right, bottom, top, rawCameraData.m_nearClipPlane, rawCameraData.m_farClipPlane);
             }
             else
             {
-                m_project_matrix = getProjectionMatrix(jitterX, jitterY);
+                rawCameraData.m_project_matrix = getProjectionMatrix(jitterX, jitterY);
             }
         }
 
         {
             // Analyze the projection matrix.
             // p[2][3] = (reverseZ ? 1 : -1) * (depth_0_1 ? 1 : 2) * (f * n) / (f - n)
-            float n = m_nearClipPlane;
-            float f = m_farClipPlane;
-            float scale = m_project_matrix[3][2] / (f * n) * (f - n);
+            float n = rawCameraData.m_nearClipPlane;
+            float f = rawCameraData.m_farClipPlane;
+            float scale = rawCameraData.m_project_matrix[3][2] / (f * n) * (f - n);
             bool depth_0_1 = glm::abs(scale) < 1.5f;
             bool reverseZ = scale > 0;
 
             // http://www.humus.name/temp/Linearize%20depth.txt
             if (reverseZ)
             {
-                zBufferParams = glm::float4(-1 + f / n, 1, -1 / f + 1 / n, 1 / f);
+                rawCameraData.zBufferParams = glm::float4(-1 + f / n, 1, -1 / f + 1 / n, 1 / f);
             }
             else
             {
-                zBufferParams = glm::float4(1 - f / n, f / n, 1 / f - 1 / n, 1 / n);
+                rawCameraData.zBufferParams = glm::float4(1 - f / n, f / n, 1 / f - 1 / n, 1 / n);
             }
         }
 
-        return m_project_matrix;
+        return rawCameraData.m_project_matrix;
     }
 
     glm::float4x4 RenderCamera::getLookAtMatrix()
@@ -263,10 +396,11 @@ namespace MoYu
 
     glm::float4 RenderCamera::getProjectionExtents(float jitterX, float jitterY)
     {
-        float oneExtentY = glm::tan(0.5f * MoYu::f::DEG_TO_RAD * this->m_fieldOfViewY);
-        float oneExtentX = oneExtentY * this->m_aspect;
-        float texelSizeX = oneExtentX / (0.5f * this->m_pixelWidth);
-        float texelSizeY = oneExtentY / (0.5f * this->m_pixelHeight);
+        float tAspect = rawCameraData.m_pixelWidth / (float)rawCameraData.m_pixelHeight;
+        float oneExtentY = glm::tan(0.5f * MoYu::f::DEG_TO_RAD * rawCameraData.m_fieldOfViewY);
+        float oneExtentX = oneExtentY * tAspect;
+        float texelSizeX = oneExtentX / (0.5f * rawCameraData.m_pixelWidth);
+        float texelSizeY = oneExtentY / (0.5f * rawCameraData.m_pixelHeight);
         float oneJitterX = texelSizeX * jitterX;
         float oneJitterY = texelSizeY * jitterY;
 
@@ -280,14 +414,71 @@ namespace MoYu
     {
         glm::float4 extents = this->getProjectionExtents(jitterX, jitterY);
 
-        float cf = this->m_farClipPlane;
-        float cn = this->m_nearClipPlane;
+        float cf = rawCameraData.m_farClipPlane;
+        float cn = rawCameraData.m_nearClipPlane;
         float xm = extents.z - extents.x;
         float xp = extents.z + extents.x;
         float ym = extents.w - extents.y;
         float yp = extents.w + extents.y;
 
         return MoYu::MYMatrix4x4::createPerspectiveOffCenter(xm * cn, xp * cn, ym * cn, yp * cn, cn, cf);
+    }
+
+    static glm::float4x4 Scale(glm::float3 vector)
+    {
+        glm::float4x4 result;
+        result[0][0] = vector.x;
+        result[1][0] = 0.0f;
+        result[2][0] = 0.0f;
+        result[3][0] = 0.0f;
+        result[0][1] = 0.0f;
+        result[1][1] = vector.y;
+        result[2][1] = 0.0f;
+        result[3][1] = 0.0f;
+        result[0][2] = 0.0f;
+        result[1][2] = 0.0f;
+        result[2][2] = vector.z;
+        result[3][2] = 0.0f;
+        result[0][3] = 0.0f;
+        result[1][3] = 0.0f;
+        result[2][3] = 0.0f;
+        result[3][3] = 1.0f;
+        return result;
+    }
+
+    glm::float4x4 RenderCamera::ComputePixelCoordToWorldSpaceViewDirectionMatrix(ViewConstants viewConstants, glm::float4 resolution, float aspect)
+    {
+        // Asymmetry is also possible from a user-provided projection, so we must check for it too.
+        // Note however, that in case of physical camera, the lens shift term is the only source of
+        // asymmetry, and this is accounted for in the optimized path below. Additionally, Unity C++ will
+        // automatically disable physical camera when the projection is overridden by user.
+        bool useGenericMatrix = HDUtils::IsProjectionMatrixAsymmetric(viewConstants.projMatrix);
+
+        if (useGenericMatrix)
+        {
+            glm::float4x4 viewSpaceRasterTransform = glm::float4x4(
+                glm::float4(2.0f * resolution.z, 0.0f, 0.0f, 0.0f),
+                glm::float4(0.0f, -2.0f * resolution.w, 0.0f, 0.0f),
+                glm::float4(0.0f, 0.0f, 1.0f, 0.0f),
+                glm::float4(-1.0f, 1.0f, 0.0f, 1.0f));
+
+            //glm::float4x4 transformT = viewConstants.invViewProjMatrix.transpose * Matrix4x4.Scale(new Vector3(-1.0f, -1.0f, -1.0f));
+
+            glm::float4x4 transformT = Scale(glm::float3(-1.0f, -1.0f, -1.0f)) * viewConstants.invViewProjMatrix;
+
+            return transformT * viewSpaceRasterTransform;
+        }
+
+        float verticalFoV = glm::atan(-1.0f / viewConstants.projMatrix[1][1]) * 2.0f;
+        glm::float2 lensShift = glm::float2(0);
+
+        return HDUtils::ComputePixelCoordToWorldSpaceViewDirectionMatrix(
+            verticalFoV, lensShift, resolution, viewConstants.viewMatrix, false, aspect, rawCameraData.m_isPerspective);
+    }
+
+    void RenderCamera::GetPixelCoordToViewDirWS(glm::float4 resolution, float aspect, glm::float4x4& transforms)
+    {
+        transforms = ComputePixelCoordToWorldSpaceViewDirectionMatrix(mainViewConstants, resolution, aspect);
     }
 
 } // namespace MoYu

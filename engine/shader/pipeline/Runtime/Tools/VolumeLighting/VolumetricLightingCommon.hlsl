@@ -95,6 +95,7 @@ struct VolumetricMaterialRenderingData
     float4 obbVertexPositionWS[8];
 };
 
+#ifndef _CPP_MACRO_
 float3 GetScattering(LocalVolumetricFogEngineData value)
 {
     return value.scattering;
@@ -143,6 +144,7 @@ int GetFalloffMode(LocalVolumetricFogEngineData value)
 {
     return value.falloffMode;
 }
+#endif
 
 #ifdef _CPP_MACRO_
 #undef uint

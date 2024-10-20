@@ -153,8 +153,8 @@ namespace MoYu
 
 
         // GTAO Parameters
-        int viewportWidth = m_render_camera->m_pixelWidth;
-        int viewportHeight = m_render_camera->m_pixelHeight;
+        int viewportWidth = m_render_camera->getWidth();
+        int viewportHeight = m_render_camera->getHeight();
         glm::float4x4 proj = m_render_camera->getProjMatrix(true);
         float projMatrix[16] = {0};
         for (int i = 0; i < 4; i++)

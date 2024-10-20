@@ -296,6 +296,30 @@ namespace EngineConfig
         // Common Fog Parameters (Exponential/Volumetric)
         // Stores the fog albedo. This defines the color of the fog.
         ColorParameter albedo = ColorParameter{ glm::float4(1.0f, 1.0f, 1.0f, 1.0f), false, true, true };
+        /// <summary>Multiplier for global illumination (APV or ambient probe).</summary>
+        float globalLightProbeDimmer = float(1.0f);
+        /// <summary>Sets the distance (in meters) from the Camera's Near Clipping Plane to the back of the Camera's volumetric lighting buffer. The lower the distance is, the higher the fog quality is.</summary>
+        float depthExtent = float(64.0f);
+
+        // Advanced parameters
+        /// <summary>Controls the angular distribution of scattered light. 0 is isotropic, 1 is forward scattering, and -1 is backward scattering.</summary>
+        float anisotropy = 0.0f;
+        /// <summary>Controls the distribution of slices along the Camera's focal axis. 0 is exponential distribution and 1 is linear distribution.</summary>
+        float sliceDistributionUniformity = 0.75f;
+
+        // Limit parameters for the fog quality
+        const float minFogScreenResolutionPercentage = (1.0f / 16.0f) * 100;
+        const float optimalFogScreenResolutionPercentage = (1.0f / 8.0f) * 100;
+        const float maxFogScreenResolutionPercentage = 0.5f * 100;
+        const int maxFogSliceCount = 512;
+
+        /// <summary>Stores the resolution of the volumetric buffer (3D texture) along the x-axis and y-axis relative to the resolution of the screen.</summary>
+        float screenResolutionPercentage = optimalFogScreenResolutionPercentage;
+        /// <summary>Number of slices of the volumetric buffer (3D texture) along the camera's focal axis.</summary>
+        int volumeSliceCount = 64;
+
+
+
     };
 
     extern FogConfig g_FogConfig;

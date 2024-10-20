@@ -160,8 +160,8 @@ namespace MoYu
 
         int frameIndex = m_Device->GetLinkedDevice()->m_FrameIndex;
 
-        float n = RenderPass::m_render_camera->m_nearClipPlane;
-        float f = RenderPass::m_render_camera->m_farClipPlane;
+        float n = RenderPass::m_render_camera->nearZ();
+        float f = RenderPass::m_render_camera->farZ();
         float thicknessScale = 1.0f / (1.0f + 0.01f);
         float thicknessBias = -n / (f - n) * (0.01f * thicknessScale);
 

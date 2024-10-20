@@ -85,7 +85,7 @@ namespace MoYu
         mBilateralFilterParameter._DenoiserResolutionMultiplierVals = glm::float4(1, 1, 1, 1);
         mBilateralFilterParameter._DenoiserFilterRadius = 0.5f;
         mBilateralFilterParameter._PixelSpreadAngleTangent = 
-            glm::tan(glm::radians(camera->m_fieldOfViewY * 0.5f)) * 2.0f / glm::min(camera->m_pixelWidth, camera->m_pixelHeight);
+            glm::tan(glm::radians(camera->fovy() * 0.5f)) * 2.0f / glm::min(camera->getWidth(), camera->getHeight());
         mBilateralFilterParameter._JitterFramePeriod = m_Device->GetLinkedDevice()->m_FrameIndex % 4;
         mBilateralFilterParameter._HalfResolutionFilter = 0;
 

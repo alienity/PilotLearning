@@ -82,7 +82,7 @@ namespace MoYu
         
         // setup render camera
         const CameraPose& camera_pose = global_rendering_res.m_camera_config.m_pose;
-        m_render_camera = std::make_shared<RenderCamera>();
+        m_render_camera = std::make_shared<RenderCamera>(true);
         m_render_camera->setViewport(g_WindowConfig.width, g_WindowConfig.height);
         m_render_camera->lookAt(camera_pose.m_position, camera_pose.m_target, camera_pose.m_up);
         m_render_camera->perspectiveProjection(g_WindowConfig.width,
@@ -90,7 +90,6 @@ namespace MoYu
                                                global_rendering_res.m_camera_config.m_z_near,
                                                global_rendering_res.m_camera_config.m_z_far,
                                                global_rendering_res.m_camera_config.m_fovY);
-        m_render_camera->m_isPerspective = true;
 
         // setup render scene
         m_render_scene = std::make_shared<RenderScene>();
@@ -152,7 +151,16 @@ namespace MoYu
         RenderSwapData& swap_data = m_swap_context.getRenderSwapData();
 
         // update common data
-        m_render_camera->updatePerFrame();
+        
+        // process camera swap data
+        CameraSwapData* pCameraSwapData = nullptr;
+        if (swap_data.m_camera_swap_data.has_value())
+        {
+            pCameraSwapData = &(*swap_data.m_camera_swap_data);
+        }
+        m_render_camera->updatePerFrame(pCameraSwapData);
+        swap_data.m_camera_swap_data.reset();
+
 
         // update game object if needed
         if (swap_data.m_game_object_resource_desc.has_value())
@@ -225,21 +233,6 @@ namespace MoYu
                 }
             }
             swap_data.m_game_object_to_delete.reset();
-        }
-
-        // process camera swap data
-        if (swap_data.m_camera_swap_data.has_value())
-        {
-            m_render_camera->m_isPerspective = swap_data.m_camera_swap_data->m_is_perspective;
-            m_render_camera->setMainViewMatrix(swap_data.m_camera_swap_data->m_view_matrix,
-                                               swap_data.m_camera_swap_data->m_camera_type);
-            m_render_camera->perspectiveProjection(swap_data.m_camera_swap_data->m_width,
-                                                   swap_data.m_camera_swap_data->m_height,
-                                                   swap_data.m_camera_swap_data->m_nearZ,
-                                                   swap_data.m_camera_swap_data->m_farZ,
-                                                   swap_data.m_camera_swap_data->m_fov_y);
-
-            swap_data.m_camera_swap_data.reset();
         }
     }
 

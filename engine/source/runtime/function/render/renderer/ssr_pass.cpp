@@ -176,8 +176,8 @@ namespace MoYu
         int lodCount = glm::log2((float)glm::min(colorTexDesc.Width, colorTexDesc.Height));
         lodCount = glm::min(lodCount, kMaxLods);
 
-        float n = m_render_camera->m_nearClipPlane;
-        float f = m_render_camera->m_farClipPlane;
+        float n = m_render_camera->nearZ();
+        float f = m_render_camera->farZ();
         float thickness = EngineConfig::g_SSRConfig.depthBufferThickness;
 
         float smoothnessFadeStart = EngineConfig::g_SSRConfig.smoothnessFadeStart;

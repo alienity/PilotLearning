@@ -66,7 +66,7 @@ namespace MoYu
         // update motion dir
         {
             glm::float3 oldWorld = focalMotionPos;
-            glm::float3 newWorld = camera->forward() * camera->m_nearClipPlane;
+            glm::float3 newWorld = camera->forward() * camera->nearZ();
 
             glm::float4x4 worldToCameraMatrix = camera->getWorldToCameraMatrix();
 

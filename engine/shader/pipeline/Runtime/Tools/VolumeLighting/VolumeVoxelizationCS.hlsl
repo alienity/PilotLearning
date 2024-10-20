@@ -34,7 +34,6 @@ cbuffer RootConstants : register(b0, space0)
     uint _VBufferDensityIndex;  // RGB = sqrt(scattering), A = sqrt(extinction)
 };
 
-
 //--------------------------------------------------------------------------------------------------
 // Implementation
 //--------------------------------------------------------------------------------------------------
@@ -108,7 +107,7 @@ void VolumeVoxelization(uint3 dispatchThreadId : SV_DispatchThreadID,
     float2 centerCoord = voxelCoord + float2(0.5, 0.5);
 
     // Compute a ray direction s.t. ViewSpace(rayDirWS).z = 1.
-    float3 rayDirWS       = mul(-float4(centerCoord, 1, 1), shaderVariablesVolumetric._VBufferCoordToViewDirWS).xyz;
+    float3 rayDirWS       = mul(shaderVariablesVolumetric._VBufferCoordToViewDirWS, -float4(centerCoord, 1, 1)).xyz;
     float3 rightDirWS     = cross(rayDirWS, U);
     float  rcpLenRayDir   = rsqrt(dot(rayDirWS, rayDirWS));
     float  rcpLenRightDir = rsqrt(dot(rightDirWS, rightDirWS));
