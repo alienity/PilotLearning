@@ -6,6 +6,8 @@
 #include "d3d12_descriptor.h"
 #include "d3d12_commandQueue.h"
 
+#include <iostream>
+
 namespace RHI
 {
     // clang-format off
@@ -67,6 +69,7 @@ namespace RHI
         Microsoft::WRL::ComPtr<IDXGIOutput> BestOutput;
         float                               BestIntersectArea = -1;
 
+        /*
         while (SUCCEEDED(Adapter->EnumOutputs(Index, &OutputIterator)))
         {
             // Get the retangle bounds of the app window
@@ -94,6 +97,7 @@ namespace RHI
 
             Index++;
         }
+        
 
         // Having determined the output (display) upon which the app is primarily being
         // rendered, retrieve the HDR capabilities of that display by checking the color space.
@@ -106,6 +110,7 @@ namespace RHI
                 HDRSupport = Desc1.ColorSpace == DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020;
             }
         }
+        */
     }
 
     void D3D12SwapChain::EnsureSwapChainColorSpace(BitDepth BitDepth, bool EnableST2084)

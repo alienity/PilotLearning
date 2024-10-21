@@ -12,6 +12,65 @@ namespace MoYu
 	{
         colorTexDesc = init_info.colorTexDesc;
         depthTexDesc = init_info.depthTexDesc;
+
+        ShaderCompiler* m_ShaderCompiler = init_info.m_ShaderCompiler;
+        std::filesystem::path m_ShaderRootPath = init_info.m_ShaderRootPath;
+
+        SkyBoxVS = m_ShaderCompiler->CompileShader(RHI_SHADER_TYPE::Vertex, m_ShaderRootPath / "pipeline/Runtime/Tools/Skybox/SkyBoxVS.hlsl", ShaderCompileOptions(L"VSMain"));
+        SkyBoxPS = m_ShaderCompiler->CompileShader(RHI_SHADER_TYPE::Vertex, m_ShaderRootPath / "pipeline/Runtime/Tools/Skybox/SkyBoxVS.hlsl", ShaderCompileOptions(L"PSMain"));
+
+        {
+            RHI::RootSignatureDesc rootSigDesc =
+                RHI::RootSignatureDesc()
+                    .Add32BitConstants<0, 0>(2)
+                    .AddConstantBufferView<1, 0>()
+                    .AddStaticSampler<10, 0>(D3D12_FILTER::D3D12_FILTER_ANISOTROPIC, D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_WRAP, 8)
+                    .AllowResourceDescriptorHeapIndexing()
+                    .AllowSampleDescriptorHeapIndexing();
+
+            pSkyBoxRootSignature = std::make_shared<RHI::D3D12RootSignature>(m_Device, rootSigDesc);
+        }
+
+        {
+            RHI::D3D12InputLayout InputLayout = {};
+
+            RHIDepthStencilState DepthStencilState;
+            DepthStencilState.DepthEnable = true;
+            DepthStencilState.DepthWrite = false;
+            DepthStencilState.DepthFunc = RHI_COMPARISON_FUNC::GreaterEqual;
+
+            RHIRenderTargetState RenderTargetState;
+            RenderTargetState.RTFormats[0] = colorTexDesc.Format; // DXGI_FORMAT_R32G32B32A32_FLOAT;
+            RenderTargetState.NumRenderTargets = 1;
+            RenderTargetState.DSFormat = depthTexDesc.Format; // DXGI_FORMAT_D32_FLOAT;
+
+            RHISampleState SampleState;
+            SampleState.Count = EngineConfig::g_AntialiasingMode == EngineConfig::AntialiasingMode::MSAAMode ? EngineConfig::g_MASSConfig.m_MSAASampleCount : 1;
+
+            struct PsoStream
+            {
+                PipelineStateStreamRootSignature     RootSignature;
+                PipelineStateStreamInputLayout       InputLayout;
+                PipelineStateStreamPrimitiveTopology PrimitiveTopologyType;
+                PipelineStateStreamVS                VS;
+                PipelineStateStreamPS                PS;
+                PipelineStateStreamDepthStencilState DepthStencilState;
+                PipelineStateStreamRenderTargetState RenderTargetState;
+                PipelineStateStreamSampleState       SampleState;
+            } psoStream;
+            psoStream.RootSignature = PipelineStateStreamRootSignature(pSkyBoxRootSignature.get());
+            psoStream.InputLayout = &InputLayout;
+            psoStream.PrimitiveTopologyType = RHI_PRIMITIVE_TOPOLOGY::Triangle;
+            psoStream.VS = &SkyBoxVS;
+            psoStream.PS = &SkyBoxPS;
+            psoStream.DepthStencilState = DepthStencilState;
+            psoStream.RenderTargetState = RenderTargetState;
+            psoStream.SampleState = SampleState;
+
+            PipelineStateStreamDesc psoDesc = { sizeof(PsoStream), &psoStream };
+            pSkyBoxPSO = std::make_shared<RHI::D3D12PipelineState>(m_Device, L"SkyBox", psoDesc);
+        }
+
 	}
 
     void SkyBoxPass::prepareMeshData(std::shared_ptr<RenderResource> render_resource)
@@ -63,8 +122,8 @@ namespace MoYu
             }
             graphicContext->SetRenderTarget(renderTargetView, depthStencilView);
 
-            graphicContext->SetRootSignature(RootSignatures::pSkyBoxRootSignature.get());
-            graphicContext->SetPipelineState(PipelineStates::pSkyBoxPSO.get());
+            graphicContext->SetRootSignature(pSkyBoxRootSignature.get());
+            graphicContext->SetPipelineState(pSkyBoxPSO.get());
             graphicContext->SetConstants(0, specularIBLTexIndex, specularIBLTexLevel);
             //graphicContext->SetConstantBuffer(1, pPerframeBuffer->GetGpuVirtualAddress());
             graphicContext->SetConstantBuffer(1, registry->GetD3D12Buffer(perframeBufferHandle)->GetGpuVirtualAddress());

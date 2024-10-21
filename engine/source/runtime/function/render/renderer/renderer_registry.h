@@ -19,11 +19,8 @@ struct Shaders
     struct VS
     {
         inline static Shader ScreenQuadPresentVS;
-        inline static Shader IndirectDrawVS;
-        inline static Shader IndirectDrawVS_BRDF;
         inline static Shader IndirectDrawDirectionShadowmapVS;
         inline static Shader IndirectDrawSpotShadowmapVS;
-        inline static Shader SkyBoxVS;
     };
 
     // Mesh Shaders
@@ -36,10 +33,7 @@ struct Shaders
     struct PS
     {
         inline static Shader PresentSDRPS;
-        inline static Shader IndirectDrawPS;
-        inline static Shader IndirectDrawPS_BRDF;
         inline static Shader IndirectDrawShadowmapPS;
-        inline static Shader SkyBoxPS;
     };
 
 	// Compute Shaders
@@ -78,10 +72,7 @@ struct Shaders
         // VS
         {
             ShaderCompileOptions Options(g_VSEntryPoint);
-            VS::ScreenQuadPresentVS = Compiler->CompileShader(RHI_SHADER_TYPE::Vertex, ShaderPath / "hlsl/ScreenQuadPresentVS.hlsl", Options);
-            VS::IndirectDrawVS = Compiler->CompileShader(RHI_SHADER_TYPE::Vertex, ShaderPath / "hlsl/IndirectDraw.hlsl", Options);
-
-            VS::IndirectDrawVS_BRDF = Compiler->CompileShader(RHI_SHADER_TYPE::Vertex, ShaderPath / "hlsl/IndirectDrawPS.hlsl", Options);
+            VS::ScreenQuadPresentVS = Compiler->CompileShader(RHI_SHADER_TYPE::Vertex, ShaderPath / "pipeline/Runtime/Tools/Present/ScreenQuadPresentVS.hlsl", Options);
 
             ShaderCompileOptions DrawDirectionOptions(g_VSEntryPoint);
             DrawDirectionOptions.SetDefine({L"DIRECTIONSHADOW"}, {L"1"});
@@ -90,19 +81,13 @@ struct Shaders
             ShaderCompileOptions DrawSpotOptions(g_VSEntryPoint);
             DrawSpotOptions.SetDefine({L"SPOTSHADOW"}, {L"1"});
             VS::IndirectDrawSpotShadowmapVS = Compiler->CompileShader(RHI_SHADER_TYPE::Vertex, ShaderPath / "pipeline/Runtime/Tools/Shadow/IndirectDrawShadowmap.hlsl", DrawSpotOptions);
-
-            ShaderCompileOptions DrawSkyBoxOptions(g_VSEntryPoint);
-            VS::SkyBoxVS = Compiler->CompileShader(RHI_SHADER_TYPE::Vertex, ShaderPath / "hlsl/SkyBoxVS.hlsl", DrawSkyBoxOptions);
         }
 
 		// PS
         {
             ShaderCompileOptions Options(g_PSEntryPoint);
-            PS::PresentSDRPS = Compiler->CompileShader(RHI_SHADER_TYPE::Pixel, ShaderPath / "hlsl/PresentSDRPS.hlsl", Options);
-            PS::IndirectDrawPS = Compiler->CompileShader(RHI_SHADER_TYPE::Pixel, ShaderPath / "hlsl/IndirectDraw.hlsl", Options);
-            PS::IndirectDrawPS_BRDF = Compiler->CompileShader(RHI_SHADER_TYPE::Pixel, ShaderPath / "hlsl/IndirectDrawPS.hlsl", Options);
+            PS::PresentSDRPS = Compiler->CompileShader(RHI_SHADER_TYPE::Pixel, ShaderPath / "pipeline/Runtime/Tools/Present/PresentSDRPS.hlsl", Options);
             PS::IndirectDrawShadowmapPS = Compiler->CompileShader(RHI_SHADER_TYPE::Pixel, ShaderPath / "pipeline/Runtime/Tools/Shadow/IndirectDrawShadowmap.hlsl", Options);
-            PS::SkyBoxPS = Compiler->CompileShader(RHI_SHADER_TYPE::Pixel, ShaderPath / "hlsl/SkyBoxPS.hlsl", Options);
         }
 
 		// CS
@@ -135,20 +120,20 @@ struct Shaders
             {
             #define GetCompiledShader(ShaderName) Compiler->CompileShader(RHI_SHADER_TYPE::Compute, ShaderPath / ShaderName, ShaderCompileOptions(L"main"));
 
-                CS::GenerateMipsLinearCS = GetCompiledShader("hlsl/GenerateMipsLinearCS.hlsl")
-                CS::GenerateMipsLinearOddCS = GetCompiledShader("hlsl/GenerateMipsLinearOddCS.hlsl")
-                CS::GenerateMipsLinearOddXCS = GetCompiledShader("hlsl/GenerateMipsLinearOddXCS.hlsl")
-                CS::GenerateMipsLinearOddYCS = GetCompiledShader("hlsl/GenerateMipsLinearOddYCS.hlsl")
+                CS::GenerateMipsLinearCS = GetCompiledShader("pipeline/Runtime/Tools/Mipmaps/GenerateMipsLinearCS.hlsl")
+                CS::GenerateMipsLinearOddCS = GetCompiledShader("pipeline/Runtime/Tools/Mipmaps/GenerateMipsLinearOddCS.hlsl")
+                CS::GenerateMipsLinearOddXCS = GetCompiledShader("pipeline/Runtime/Tools/Mipmaps/GenerateMipsLinearOddXCS.hlsl")
+                CS::GenerateMipsLinearOddYCS = GetCompiledShader("pipeline/Runtime/Tools/Mipmaps/GenerateMipsLinearOddYCS.hlsl")
 
-                CS::GenerateMaxMipsLinearCS = GetCompiledShader("hlsl/GenerateMaxMipsLinearCS.hlsl")
-                CS::GenerateMaxMipsLinearOddCS = GetCompiledShader("hlsl/GenerateMaxMipsLinearOddCS.hlsl")
-                CS::GenerateMaxMipsLinearOddXCS = GetCompiledShader("hlsl/GenerateMaxMipsLinearOddXCS.hlsl")
-                CS::GenerateMaxMipsLinearOddYCS = GetCompiledShader("hlsl/GenerateMaxMipsLinearOddYCS.hlsl")
+                CS::GenerateMaxMipsLinearCS = GetCompiledShader("pipeline/Runtime/Tools/Mipmaps/GenerateMaxMipsLinearCS.hlsl")
+                CS::GenerateMaxMipsLinearOddCS = GetCompiledShader("pipeline/Runtime/Tools/Mipmaps/GenerateMaxMipsLinearOddCS.hlsl")
+                CS::GenerateMaxMipsLinearOddXCS = GetCompiledShader("pipeline/Runtime/Tools/Mipmaps/GenerateMaxMipsLinearOddXCS.hlsl")
+                CS::GenerateMaxMipsLinearOddYCS = GetCompiledShader("pipeline/Runtime/Tools/Mipmaps/GenerateMaxMipsLinearOddYCS.hlsl")
 
-                CS::GenerateMinMipsLinearCS = GetCompiledShader("hlsl/GenerateMinMipsLinearCS.hlsl")
-                CS::GenerateMinMipsLinearOddCS = GetCompiledShader("hlsl/GenerateMinMipsLinearOddCS.hlsl")
-                CS::GenerateMinMipsLinearOddXCS = GetCompiledShader("hlsl/GenerateMinMipsLinearOddXCS.hlsl")
-                CS::GenerateMinMipsLinearOddYCS = GetCompiledShader("hlsl/GenerateMinMipsLinearOddYCS.hlsl")
+                CS::GenerateMinMipsLinearCS = GetCompiledShader("pipeline/Runtime/Tools/Mipmaps/GenerateMinMipsLinearCS.hlsl")
+                CS::GenerateMinMipsLinearOddCS = GetCompiledShader("pipeline/Runtime/Tools/Mipmaps/GenerateMinMipsLinearOddCS.hlsl")
+                CS::GenerateMinMipsLinearOddXCS = GetCompiledShader("pipeline/Runtime/Tools/Mipmaps/GenerateMinMipsLinearOddXCS.hlsl")
+                CS::GenerateMinMipsLinearOddYCS = GetCompiledShader("pipeline/Runtime/Tools/Mipmaps/GenerateMinMipsLinearOddYCS.hlsl")
             }
 
         }
@@ -181,7 +166,6 @@ struct RootSignatures
     inline static std::shared_ptr<RHI::D3D12RootSignature> pIndirectDraw;
     inline static std::shared_ptr<RHI::D3D12RootSignature> pIndirectDrawDirectionShadowmap;
     inline static std::shared_ptr<RHI::D3D12RootSignature> pIndirectDrawSpotShadowmap;
-    inline static std::shared_ptr<RHI::D3D12RootSignature> pSkyBoxRootSignature;
 
     inline static std::shared_ptr<RHI::D3D12RootSignature> pGenerateMipsLinearSignature;
 
@@ -336,18 +320,6 @@ struct RootSignatures
         {
             RHI::RootSignatureDesc rootSigDesc =
                 RHI::RootSignatureDesc()
-                    .Add32BitConstants<0, 0>(2)
-                    .AddConstantBufferView<1, 0>()
-                    .AddStaticSampler<10, 0>(D3D12_FILTER::D3D12_FILTER_ANISOTROPIC, D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_WRAP, 8)
-                    .AllowResourceDescriptorHeapIndexing()
-                    .AllowSampleDescriptorHeapIndexing();
-
-            pSkyBoxRootSignature = std::make_shared<RHI::D3D12RootSignature>(pDevice, rootSigDesc);
-        }
-
-        {
-            RHI::RootSignatureDesc rootSigDesc =
-                RHI::RootSignatureDesc()
                     .Add32BitConstants<0, 0>(12)
                     .AddStaticSampler<10, 0>(D3D12_FILTER::D3D12_FILTER_MIN_MAG_MIP_LINEAR, D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_CLAMP, 8)
                     .AllowInputLayout()
@@ -371,7 +343,6 @@ struct RootSignatures
         pIndirectDraw                   = nullptr;
         pIndirectDrawDirectionShadowmap = nullptr;
         pIndirectDrawSpotShadowmap      = nullptr;
-        pSkyBoxRootSignature            = nullptr;
         pGenerateMipsLinearSignature    = nullptr;
     }
 };
@@ -453,13 +424,8 @@ struct PipelineStates
     inline static std::shared_ptr<RHI::D3D12PipelineState> pIndirectCullDirectionShadowmap;
     inline static std::shared_ptr<RHI::D3D12PipelineState> pIndirectCullSpotShadowmap;
 
-    inline static std::shared_ptr<RHI::D3D12PipelineState> pIndirectDraw;
-    inline static std::shared_ptr<RHI::D3D12PipelineState> pIndirectDraw_BRDF;
-    inline static std::shared_ptr<RHI::D3D12PipelineState> pIndirectDrawTransparent;
     inline static std::shared_ptr<RHI::D3D12PipelineState> pIndirectDrawDirectionShadowmap;
     inline static std::shared_ptr<RHI::D3D12PipelineState> pIndirectDrawSpotShadowmap;
-
-    inline static std::shared_ptr<RHI::D3D12PipelineState> pSkyBoxPSO;
 
     inline static std::shared_ptr<RHI::D3D12PipelineState> pGenerateMipsLinearPSO;
     inline static std::shared_ptr<RHI::D3D12PipelineState> pGenerateMipsLinearOddPSO;
@@ -636,137 +602,6 @@ struct PipelineStates
         }
         {
             RHI::D3D12InputLayout InputLayout = MoYu::D3D12MeshVertexStandard::InputLayout;
-            
-            RHIDepthStencilState DepthStencilState;
-            DepthStencilState.DepthEnable = true;
-            DepthStencilState.DepthFunc   = RHI_COMPARISON_FUNC::GreaterEqual;
-
-            RHIRenderTargetState RenderTargetState;
-            RenderTargetState.RTFormats[0]     = PiplineRtFormat; // DXGI_FORMAT_R32G32B32A32_FLOAT;
-            RenderTargetState.NumRenderTargets = 1;
-            RenderTargetState.DSFormat         = PipelineDsFormat; // DXGI_FORMAT_D32_FLOAT;
-
-            RHISampleState SampleState;
-            SampleState.Count = EngineConfig::g_AntialiasingMode == EngineConfig::AntialiasingMode::MSAAMode ? EngineConfig::g_MASSConfig.m_MSAASampleCount : 1;
-
-            struct PsoStream
-            {
-                PipelineStateStreamRootSignature     RootSignature;
-                PipelineStateStreamInputLayout       InputLayout;
-                PipelineStateStreamPrimitiveTopology PrimitiveTopologyType;
-                PipelineStateStreamRasterizerState   RasterrizerState;
-                PipelineStateStreamVS                VS;
-                PipelineStateStreamPS                PS;
-                PipelineStateStreamDepthStencilState DepthStencilState;
-                PipelineStateStreamRenderTargetState RenderTargetState;
-                PipelineStateStreamSampleState       SampleState;
-            } psoStream;
-            psoStream.RootSignature         = PipelineStateStreamRootSignature(RootSignatures::pIndirectDraw.get());
-            psoStream.InputLayout           = &InputLayout;
-            psoStream.PrimitiveTopologyType = RHI_PRIMITIVE_TOPOLOGY::Triangle;
-            psoStream.RasterrizerState      = RHIRasterizerState();
-            psoStream.VS                    = &Shaders::VS::IndirectDrawVS;
-            psoStream.PS                    = &Shaders::PS::IndirectDrawPS;
-            psoStream.DepthStencilState     = DepthStencilState;
-            psoStream.RenderTargetState     = RenderTargetState;
-            psoStream.SampleState           = SampleState;
-
-            PipelineStateStreamDesc psoDesc = {sizeof(PsoStream), &psoStream};
-            pIndirectDraw = std::make_shared<RHI::D3D12PipelineState>(pDevice, L"IndirectDraw", psoDesc);
-        }
-        {
-            RHI::D3D12InputLayout InputLayout = MoYu::D3D12MeshVertexStandard::InputLayout;
-            
-            RHIDepthStencilState DepthStencilState;
-            DepthStencilState.DepthEnable = true;
-            DepthStencilState.DepthFunc   = RHI_COMPARISON_FUNC::GreaterEqual;
-
-            RHIRenderTargetState RenderTargetState;
-            RenderTargetState.RTFormats[0]     = PiplineRtFormat; // DXGI_FORMAT_R32G32B32A32_FLOAT;
-            RenderTargetState.NumRenderTargets = 1;
-            RenderTargetState.DSFormat         = PipelineDsFormat; // DXGI_FORMAT_D32_FLOAT;
-
-            RHISampleState SampleState;
-            SampleState.Count = EngineConfig::g_AntialiasingMode == EngineConfig::AntialiasingMode::MSAAMode ? EngineConfig::g_MASSConfig.m_MSAASampleCount : 1;
-
-            struct PsoStream
-            {
-                PipelineStateStreamRootSignature     RootSignature;
-                PipelineStateStreamInputLayout       InputLayout;
-                PipelineStateStreamPrimitiveTopology PrimitiveTopologyType;
-                PipelineStateStreamRasterizerState   RasterrizerState;
-                PipelineStateStreamVS                VS;
-                PipelineStateStreamPS                PS;
-                PipelineStateStreamDepthStencilState DepthStencilState;
-                PipelineStateStreamRenderTargetState RenderTargetState;
-                PipelineStateStreamSampleState       SampleState;
-            } psoStream;
-            psoStream.RootSignature         = PipelineStateStreamRootSignature(RootSignatures::pIndirectDraw.get());
-            psoStream.InputLayout           = &InputLayout;
-            psoStream.PrimitiveTopologyType = RHI_PRIMITIVE_TOPOLOGY::Triangle;
-            psoStream.RasterrizerState      = RHIRasterizerState();
-            psoStream.VS                    = &Shaders::VS::IndirectDrawVS_BRDF;
-            psoStream.PS                    = &Shaders::PS::IndirectDrawPS_BRDF;
-            psoStream.DepthStencilState     = DepthStencilState;
-            psoStream.RenderTargetState     = RenderTargetState;
-            psoStream.SampleState           = SampleState;
-
-            PipelineStateStreamDesc psoDesc = {sizeof(PsoStream), &psoStream};
-            pIndirectDraw_BRDF = std::make_shared<RHI::D3D12PipelineState>(pDevice, L"IndirectDraw_BRDF", psoDesc);
-        }
-        {
-            //IndirectDrawTransparent
-            RHI::D3D12InputLayout InputLayout = MoYu::D3D12MeshVertexStandard::InputLayout;
-
-            RHIDepthStencilState DepthStencilState;
-            DepthStencilState.DepthEnable = true;
-            DepthStencilState.DepthWrite  = false;
-            DepthStencilState.DepthFunc   = RHI_COMPARISON_FUNC::GreaterEqual;
-
-            RHIRenderTargetState RenderTargetState;
-            RenderTargetState.RTFormats[0]     = PiplineRtFormat; // DXGI_FORMAT_R32G32B32A32_FLOAT;
-            RenderTargetState.NumRenderTargets = 1;
-            RenderTargetState.DSFormat         = PipelineDsFormat; // DXGI_FORMAT_D32_FLOAT;
-
-            RHIRenderTargetBlendDesc BlendDesc0;
-            BlendDesc0.BlendEnable = true;
-            BlendDesc0.SrcBlendRgb = RHI_FACTOR::SrcAlpha;
-            BlendDesc0.DstBlendRgb = RHI_FACTOR::OneMinusSrcAlpha;
-            BlendDesc0.BlendOpRgb  = RHI_BLEND_OP::Add;
-
-            RHIBlendState BlendState;
-            BlendState.RenderTargets[0] = BlendDesc0;
-
-            RHISampleState SampleState;
-            SampleState.Count = EngineConfig::g_AntialiasingMode == EngineConfig::AntialiasingMode::MSAAMode ? EngineConfig::g_MASSConfig.m_MSAASampleCount : 1;
-
-            struct PsoStream
-            {
-                PipelineStateStreamRootSignature     RootSignature;
-                PipelineStateStreamInputLayout       InputLayout;
-                PipelineStateStreamPrimitiveTopology PrimitiveTopologyType;
-                PipelineStateStreamVS                VS;
-                PipelineStateStreamPS                PS;
-                PipelineStateStreamBlendState        BlendState;
-                PipelineStateStreamDepthStencilState DepthStencilState;
-                PipelineStateStreamRenderTargetState RenderTargetState;
-                PipelineStateStreamSampleState       SampleState;
-            } psoStream;
-            psoStream.RootSignature         = PipelineStateStreamRootSignature(RootSignatures::pIndirectDraw.get());
-            psoStream.InputLayout           = &InputLayout;
-            psoStream.PrimitiveTopologyType = RHI_PRIMITIVE_TOPOLOGY::Triangle;
-            psoStream.VS                    = &Shaders::VS::IndirectDrawVS;
-            psoStream.PS                    = &Shaders::PS::IndirectDrawPS;
-            psoStream.BlendState            = BlendState;
-            psoStream.DepthStencilState     = DepthStencilState;
-            psoStream.RenderTargetState     = RenderTargetState;
-            psoStream.SampleState           = SampleState;
-
-            PipelineStateStreamDesc psoDesc = {sizeof(PsoStream), &psoStream};
-            pIndirectDrawTransparent = std::make_shared<RHI::D3D12PipelineState>(pDevice, L"IndirectDrawTransparent", psoDesc);
-        }
-        {
-            RHI::D3D12InputLayout InputLayout = MoYu::D3D12MeshVertexStandard::InputLayout;
 
             RHIDepthStencilState DepthStencilState;
             DepthStencilState.DepthEnable = true;
@@ -831,45 +666,6 @@ struct PipelineStates
         }
 
         {
-            RHI::D3D12InputLayout InputLayout = {};
-
-            RHIDepthStencilState DepthStencilState;
-            DepthStencilState.DepthEnable = true;
-            DepthStencilState.DepthWrite = false;
-            DepthStencilState.DepthFunc = RHI_COMPARISON_FUNC::GreaterEqual;
-
-            RHIRenderTargetState RenderTargetState;
-            RenderTargetState.RTFormats[0]     = PiplineRtFormat; // DXGI_FORMAT_R32G32B32A32_FLOAT;
-            RenderTargetState.NumRenderTargets = 1;
-            RenderTargetState.DSFormat         = PipelineDsFormat; // DXGI_FORMAT_D32_FLOAT;
-
-            RHISampleState SampleState;
-            SampleState.Count = EngineConfig::g_AntialiasingMode == EngineConfig::AntialiasingMode::MSAAMode ? EngineConfig::g_MASSConfig.m_MSAASampleCount : 1;
-
-            struct PsoStream
-            {
-                PipelineStateStreamRootSignature     RootSignature;
-                PipelineStateStreamInputLayout       InputLayout;
-                PipelineStateStreamPrimitiveTopology PrimitiveTopologyType;
-                PipelineStateStreamVS                VS;
-                PipelineStateStreamPS                PS;
-                PipelineStateStreamDepthStencilState DepthStencilState;
-                PipelineStateStreamRenderTargetState RenderTargetState;
-                PipelineStateStreamSampleState       SampleState;
-            } psoStream;
-            psoStream.RootSignature      = PipelineStateStreamRootSignature(RootSignatures::pSkyBoxRootSignature.get());
-            psoStream.InputLayout        = &InputLayout;
-            psoStream.PrimitiveTopologyType = RHI_PRIMITIVE_TOPOLOGY::Triangle;
-            psoStream.VS                    = &Shaders::VS::SkyBoxVS;
-            psoStream.PS                    = &Shaders::PS::SkyBoxPS;
-            psoStream.DepthStencilState     = DepthStencilState;
-            psoStream.RenderTargetState     = RenderTargetState;
-            psoStream.SampleState           = SampleState;
-
-            PipelineStateStreamDesc psoDesc = {sizeof(PsoStream), &psoStream};
-            pSkyBoxPSO = std::make_shared<RHI::D3D12PipelineState>(pDevice, L"SkyBox", psoDesc);
-        }
-        {
             pGenerateMipsLinearPSO = CreatePSO(RootSignatures::pGenerateMipsLinearSignature.get(), Shaders::CS::GenerateMipsLinearCS, pDevice, L"GenerateMipsLinearPSO");
             pGenerateMipsLinearOddPSO = CreatePSO(RootSignatures::pGenerateMipsLinearSignature.get(), Shaders::CS::GenerateMipsLinearOddCS, pDevice, L"GenerateMipsLinearOddPSO");
             pGenerateMipsLinearOddXPSO = CreatePSO(RootSignatures::pGenerateMipsLinearSignature.get(), Shaders::CS::GenerateMipsLinearOddXCS, pDevice, L"GenerateMipsLinearOddXPSO");
@@ -905,13 +701,8 @@ struct PipelineStates
         pIndirectCullDirectionShadowmap = nullptr;
         pIndirectCullSpotShadowmap      = nullptr;
 
-        pIndirectDraw                   = nullptr;
-        pIndirectDraw_BRDF              = nullptr;
-        pIndirectDrawTransparent        = nullptr;
         pIndirectDrawDirectionShadowmap = nullptr;
         pIndirectDrawSpotShadowmap      = nullptr;
-
-        pSkyBoxPSO = nullptr;
 
         pGenerateMipsLinearPSO = nullptr;
         pGenerateMipsLinearOddPSO = nullptr;

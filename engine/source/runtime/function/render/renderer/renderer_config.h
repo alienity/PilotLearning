@@ -262,6 +262,12 @@ namespace EngineConfig
         SkyColor,
     };
 
+    // Limit parameters for the fog quality
+    const float minFogScreenResolutionPercentage = (1.0f / 16.0f) * 100;
+    const float optimalFogScreenResolutionPercentage = (1.0f / 8.0f) * 100;
+    const float maxFogScreenResolutionPercentage = 0.5f * 100;
+    const int maxFogSliceCount = 512;
+
     struct FogConfig
     {
         // Enable fog.
@@ -306,12 +312,6 @@ namespace EngineConfig
         float anisotropy = 0.0f;
         /// <summary>Controls the distribution of slices along the Camera's focal axis. 0 is exponential distribution and 1 is linear distribution.</summary>
         float sliceDistributionUniformity = 0.75f;
-
-        // Limit parameters for the fog quality
-        const float minFogScreenResolutionPercentage = (1.0f / 16.0f) * 100;
-        const float optimalFogScreenResolutionPercentage = (1.0f / 8.0f) * 100;
-        const float maxFogScreenResolutionPercentage = 0.5f * 100;
-        const int maxFogSliceCount = 512;
 
         /// <summary>Stores the resolution of the volumetric buffer (3D texture) along the x-axis and y-axis relative to the resolution of the screen.</summary>
         float screenResolutionPercentage = optimalFogScreenResolutionPercentage;

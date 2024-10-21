@@ -64,9 +64,6 @@ namespace MoYu
 		const int k_VolumetricMaterialIndirectArgumentByteSize = k_VolumetricMaterialIndirectArgumentCount * sizeof(glm::uint);
 		const int k_VolumetricFogPriorityMaxValue = 1048576; // 2^20 because there are 20 bits in the volumetric fog sort key
 
-		// This size is shared between all cameras to create the volumetric 3D textures
-		glm::ivec3 s_CurrentVolumetricBufferSize;
-
 		// Is the feature globally disabled?
 		bool m_SupportVolumetrics = false;
 

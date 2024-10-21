@@ -1,5 +1,5 @@
-#include "CommonMath.hlsli"
-#include "ColorSpaceUtility.hlsli"
+#include "../../ShaderLibrary/Common.hlsl"
+#include "../Common/ColorSpaceUtility.hlsli"
 
 #define IBL_INTEGRATION_IMPORTANCE_SAMPLING_COUNT 64
 
@@ -18,7 +18,7 @@ float2 hammersley(uint i, float numSamples)
 
 float3 hemisphereImportanceSampleDggx(float2 u, float a) 
 { // pdf = D(a) * cosTheta
-    const float phi = 2.0f * (float) F_PI * u.x;
+    const float phi = 2.0f * (float) PI * u.x;
     // NOTE: (aa-1) == (a-1)(a+1) produces better fp accuracy
     const float cosTheta2 = (1 - u.y) / (1 + (a + 1) * ((a - 1) * u.y));
     const float cosTheta = sqrt(cosTheta2);
@@ -28,7 +28,7 @@ float3 hemisphereImportanceSampleDggx(float2 u, float a)
 
 float3 hemisphereCosSample(float2 u)
 {  // pdf = cosTheta / F_PI;
-    const float phi = 2.0f * (float) F_PI * u.x;
+    const float phi = 2.0f * (float) PI * u.x;
     const float cosTheta2 = 1 - u.y;
     const float cosTheta = sqrt(cosTheta2);
     const float sinTheta = sqrt(1 - cosTheta2);
@@ -37,7 +37,7 @@ float3 hemisphereCosSample(float2 u)
 
 float3 hemisphereUniformSample(float2 u)
 { // pdf = 1.0 / (2.0 * F_PI);
-    const float phi = 2.0f * (float) F_PI * u.x;
+    const float phi = 2.0f * (float) PI * u.x;
     const float cosTheta = 1 - u.y;
     const float sinTheta = sqrt(1 - cosTheta * cosTheta);
     return float3(sinTheta * cos(phi), sinTheta * sin(phi), cosTheta);
@@ -177,7 +177,7 @@ float2 DFV(float NoV, float linearRoughness, uint numSamples)
             *
             */
             float Gv = Visibility(NoV, NoL, linearRoughness) * NoL * (VoH / NoH);
-            float Fc = pow5(1 - VoH);
+            float Fc = Pow5(1 - VoH);
             r.x += Gv * (1 - Fc);
             r.y += Gv * Fc;
         }
@@ -201,7 +201,7 @@ float2 DFV_Multiscatter(float NoV, float linearRoughness, uint numSamples)
         
         if (NoL > 0) {
             const float v = Visibility(NoV, NoL, linearRoughness) * NoL * (VoH / NoH);
-            const float Fc = pow5(1 - VoH);
+            const float Fc = Pow5(1 - VoH);
             /*
              * Assuming f90 = 1
              *   Fc = (1 - V•H)^5

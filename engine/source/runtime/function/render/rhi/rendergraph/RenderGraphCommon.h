@@ -129,7 +129,7 @@ namespace RHI
 	struct RgClearValue
 	{
         RgClearValue() noexcept = default;
-		const RgClearValue(const std::float_t Color[4], DXGI_FORMAT Format = DXGI_FORMAT_UNKNOWN)
+		RgClearValue(const std::float_t Color[4], DXGI_FORMAT Format = DXGI_FORMAT_UNKNOWN)
 		{
 			this->Color[0] = Color[0];
 			this->Color[1] = Color[1];
@@ -137,7 +137,7 @@ namespace RHI
 			this->Color[3] = Color[3];
 			this->ClearFormat = Format;
 		}
-        const RgClearValue(float r, float g, float b, float a, DXGI_FORMAT Format = DXGI_FORMAT_UNKNOWN)
+        RgClearValue(float r, float g, float b, float a, DXGI_FORMAT Format = DXGI_FORMAT_UNKNOWN)
         {
             this->Color[0] = r;
             this->Color[1] = g;
@@ -145,7 +145,7 @@ namespace RHI
             this->Color[3] = a;
             this->ClearFormat = Format;
         }
-        const RgClearValue(std::float_t Depth, std::uint8_t Stencil, DXGI_FORMAT Format = DXGI_FORMAT_UNKNOWN) :
+        RgClearValue(std::float_t Depth, std::uint8_t Stencil, DXGI_FORMAT Format = DXGI_FORMAT_UNKNOWN) :
             DepthStencil {Depth, Stencil}, ClearFormat(Format)
         {}
 

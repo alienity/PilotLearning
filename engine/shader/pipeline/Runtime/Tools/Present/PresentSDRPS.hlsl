@@ -1,4 +1,4 @@
-#include "ShaderUtility.hlsli"
+#include "../Common/ShaderUtility.hlsli"
 
 struct VertexAttributes
 {

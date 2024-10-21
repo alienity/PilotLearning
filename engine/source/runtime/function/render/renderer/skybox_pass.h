@@ -14,6 +14,9 @@ namespace MoYu
         {
             RHI::RgTextureDesc colorTexDesc;
             RHI::RgTextureDesc depthTexDesc;
+
+            ShaderCompiler* m_ShaderCompiler;
+            std::filesystem::path m_ShaderRootPath;
         };
 
         struct DrawInputParameters : public PassInput
@@ -48,9 +51,13 @@ namespace MoYu
         RHI::RgTextureDesc colorTexDesc;
         RHI::RgTextureDesc depthTexDesc;
 
-    private:
         int   specularIBLTexIndex;
         float specularIBLTexLevel;
+
+        Shader SkyBoxVS;
+        Shader SkyBoxPS;
+        std::shared_ptr<RHI::D3D12RootSignature> pSkyBoxRootSignature;
+        std::shared_ptr<RHI::D3D12PipelineState> pSkyBoxPSO;
 	};
 }
 

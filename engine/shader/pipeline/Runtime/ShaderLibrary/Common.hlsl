@@ -460,6 +460,11 @@ float Pow4(float x)
     return (x * x) * (x * x);
 }
 
+float Pow5(float x)
+{
+    return x * x * x * x * x;
+}
+
 TEMPLATE_3_FLT(RangeRemap, min, max, t, return saturate((t - min) / (max - min)))
 
 float4x4 Inverse(float4x4 m)
