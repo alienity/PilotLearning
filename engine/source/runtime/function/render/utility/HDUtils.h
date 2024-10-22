@@ -87,6 +87,39 @@ namespace MoYu
             return tanHalfVertFoV * (2.0f / resolutionY) * planeDepth;
         }
 
+        inline static bool IsQuaternionValid(glm::quat q)
+        {
+            return (q[0] * q[0] + q[1] * q[1] + q[2] * q[2] + q[3] * q[3]) > 1.401298E-45F;
+        }
+
+        inline static float ComputeViewportScale(int viewportSize, int bufferSize)
+        {
+            float rcpBufferSize = 1.0f / bufferSize;
+
+            // Scale by (vp_dim / buf_dim).
+            return viewportSize * rcpBufferSize;
+        }
+
+        inline static float ComputeViewportLimit(int viewportSize, int bufferSize)
+        {
+            float rcpBufferSize = 1.0f / bufferSize;
+
+            // Clamp to (vp_dim - 0.5) / buf_dim.
+            return (viewportSize - 0.5f) * rcpBufferSize;
+        }
+
+        inline static glm::vec4 ComputeViewportScaleAndLimit(glm::ivec2 viewportSize, glm::ivec2 bufferSize)
+        {
+            return glm::vec4(
+                ComputeViewportScale(viewportSize.x, bufferSize.x),  // Scale(x)
+                ComputeViewportScale(viewportSize.y, bufferSize.y),  // Scale(y)
+                ComputeViewportLimit(viewportSize.x, bufferSize.x),  // Limit(x)
+                ComputeViewportLimit(viewportSize.y, bufferSize.y)); // Limit(y)
+        }
+
+
+
+
 	};
 
 

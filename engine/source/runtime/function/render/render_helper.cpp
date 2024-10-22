@@ -1,9 +1,117 @@
 #include "runtime/function/render/render_helper.h"
 #include "runtime/function/render/render_camera.h"
 #include "runtime/function/render/render_scene.h"
+#include "runtime/function/render/utility/HDUtils.h"
 
 namespace MoYu
 {
+    VBufferParameters::VBufferParameters(glm::ivec3 viewportSize, float depthExtent, float camNear,
+        float camFar, float camVFoV, float sliceDistributionUniformity, float voxelSize)
+    {
+        viewportSize = viewportSize;
+        voxelSize = voxelSize;
+
+        // The V-Buffer is sphere-capped, while the camera frustum is not.
+        // We always start from the near plane of the camera.
+
+        float aspectRatio = viewportSize.x / (float)viewportSize.y;
+        float farPlaneHeight = 2.0f * glm::tan(0.5f * camVFoV) * camFar;
+        float farPlaneWidth = farPlaneHeight * aspectRatio;
+        float farPlaneMaxDim = glm::max(farPlaneWidth, farPlaneHeight);
+        float farPlaneDist = glm::sqrt(camFar * camFar + 0.25f * farPlaneMaxDim * farPlaneMaxDim);
+
+        float nearDist = camNear;
+        float farDist = glm::min(nearDist + depthExtent, farPlaneDist);
+
+        float c = 2 - 2 * sliceDistributionUniformity; // remap [0, 1] -> [2, 0]
+        c = glm::max(c, 0.001f);                // Avoid NaNs
+
+        depthEncodingParams = ComputeLogarithmicDepthEncodingParams(nearDist, farDist, c);
+        depthDecodingParams = ComputeLogarithmicDepthDecodingParams(nearDist, farDist, c);
+    }
+
+    glm::vec3 VBufferParameters::ComputeViewportScale(glm::ivec3 bufferSize)
+    {
+        return glm::vec3(
+            HDUtils::ComputeViewportScale(viewportSize.x, bufferSize.x),
+            HDUtils::ComputeViewportScale(viewportSize.y, bufferSize.y),
+            HDUtils::ComputeViewportScale(viewportSize.z, bufferSize.z));
+    }
+
+    glm::vec3 VBufferParameters::ComputeViewportLimit(glm::ivec3 bufferSize)
+    {
+        return glm::vec3(
+            HDUtils::ComputeViewportLimit(viewportSize.x, bufferSize.x),
+            HDUtils::ComputeViewportLimit(viewportSize.y, bufferSize.y),
+            HDUtils::ComputeViewportLimit(viewportSize.z, bufferSize.z));
+    }
+
+    float VBufferParameters::ComputeLastSliceDistance(glm::uint sliceCount)
+    {
+        float d = 1.0f - 0.5f / sliceCount;
+        float ln2 = 0.69314718f;
+
+        // DecodeLogarithmicDepthGeneralized(1 - 0.5 / sliceCount)
+        return depthDecodingParams.x * glm::exp(ln2 * d * depthDecodingParams.y) + depthDecodingParams.z;
+    }
+
+    float VBufferParameters::EncodeLogarithmicDepthGeneralized(float z, glm::vec4 encodingParams)
+    {
+        return encodingParams.x + encodingParams.y * glm::log2(glm::max(0.0f, z - encodingParams.z));
+    }
+
+    float VBufferParameters::DecodeLogarithmicDepthGeneralized(float d, glm::vec4 decodingParams)
+    {
+        return decodingParams.x * glm::pow(2, d * decodingParams.y) + decodingParams.z;
+    }
+
+    int VBufferParameters::ComputeSliceIndexFromDistance(float distance, int maxSliceCount)
+    {
+        // Avoid out of bounds access
+        distance = glm::clamp(distance, 0.0f, ComputeLastSliceDistance((glm::uint)maxSliceCount));
+
+        float vBufferNearPlane = DecodeLogarithmicDepthGeneralized(0, depthDecodingParams);
+
+        // float dt = (distance - vBufferNearPlane) * 2;
+        float dt = distance + vBufferNearPlane;
+        float e1 = EncodeLogarithmicDepthGeneralized(dt, depthEncodingParams);
+        float rcpSliceCount = 1.0f / (float)maxSliceCount;
+
+        float slice = (e1 - rcpSliceCount) / rcpSliceCount;
+
+        return (int)slice;
+    }
+
+    glm::vec4 VBufferParameters::ComputeLogarithmicDepthEncodingParams(float nearPlane, float farPlane, float c)
+    {
+        glm::vec4 depthParams;;
+
+        float n = nearPlane;
+        float f = farPlane;
+
+        depthParams.y = 1.0f / glm::log2(c * (f - n) + 1);
+        depthParams.x = glm::log2(c) * depthParams.y;
+        depthParams.z = n - 1.0f / c; // Same
+        depthParams.w = 0.0f;
+
+        return depthParams;
+    }
+
+    glm::vec4 VBufferParameters::ComputeLogarithmicDepthDecodingParams(float nearPlane, float farPlane, float c)
+    {
+        glm::vec4 depthParams;
+
+        float n = nearPlane;
+        float f = farPlane;
+
+        depthParams.x = 1.0f / c;
+        depthParams.y = glm::log2(c * (f - n) + 1);
+        depthParams.z = n - 1.0f / c; // Same
+        depthParams.w = 0.0f;
+
+        return depthParams;
+    }
+
     ClusterFrustum CreateClusterFrustumFromMatrix(glm::mat4 mat,
                                                   float     x_left,
                                                   float     x_right,

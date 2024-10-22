@@ -2,6 +2,7 @@
 
 #include "runtime/core/math/moyu_math2.h"
 #include "runtime/function/render/HaltonSequence.h"
+#include "runtime/function/render/render_helper.h"
 #include <mutex>
 
 namespace MoYu
@@ -82,6 +83,9 @@ namespace MoYu
         bool      m_isPerspective{ true };
 
         glm::float4 zBufferParams;
+        glm::float4 screenParams;
+
+        VBufferParameters vBufferParams[2];            // Double-buffered; needed even if reprojection is off
 
         glm::float4x4 m_view_matrix{ MYMatrix4x4::Identity };
         glm::float4x4 m_project_matrix{ MYMatrix4x4::Identity };

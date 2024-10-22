@@ -12,7 +12,7 @@ namespace MoYu
 		return (3.0f / (8.0f * MoYu::f::PI)) * (1.0f - g * g) / (2.0f + g * g);
 	}
 
-	void GetHexagonalClosePackedSpheres7(std::vector<glm::float2>& coords)
+	void GetHexagonalClosePackedSpheres7(glm::float2 (&coords)[7])
 	{
 		float r = 0.17054068870105443882f;
 		float d = 2 * r;
@@ -74,7 +74,19 @@ namespace MoYu
 		cb._VBufferHistoryIsValid = m_render_camera->volumetricHistoryIsValid ? 1u : 0u;
 
 		GetHexagonalClosePackedSpheres7(m_xySeq);
+		int sampleIndex = frameIndex % 7;
+		// TODO: should we somehow reorder offsets in Z based on the offset in XY? S.t. the samples more evenly cover the domain.
+		// Currently, we assume that they are completely uncorrelated, but maybe we should correlate them somehow.
+		cb._VBufferSampleOffset = glm::float4(m_xySeq[sampleIndex].x, m_xySeq[sampleIndex].y, m_zSeq[sampleIndex], frameIndex);
 
+		int currIdx = (frameIndex + 0) & 1;
+		int prevIdx = (frameIndex + 1) & 1;
+
+		//var currParams = hdCamera.vBufferParams[currIdx];
+		//var prevParams = hdCamera.vBufferParams[prevIdx];
+
+
+		m_render_camera->volumetricHistoryIsValid = true;
 	}
 
 	void VolumetriLighting::prepareBuffer(std::shared_ptr<RenderResource> render_resource)
