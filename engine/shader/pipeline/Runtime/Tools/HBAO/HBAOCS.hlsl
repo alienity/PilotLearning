@@ -1,5 +1,4 @@
 #include "HBAO.hlsli"
-#include "InputTypes.hlsli"
 
 cbuffer RootConstants : register(b0, space0)
 {

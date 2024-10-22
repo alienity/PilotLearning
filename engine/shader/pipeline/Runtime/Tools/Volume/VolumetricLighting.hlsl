@@ -1,6 +1,5 @@
-#include "d3d12.hlsli"
-#include "CommonMath.hlsli"
-#include "InputTypes.hlsli"
+#include "../../ShaderLibrary/Common.hlsl"
+#include "../../ShaderLibrary/ShaderVariablesGlobal.hlsl"
 
 cbuffer RootConstants : register(b0, space0)
 {
@@ -21,7 +20,7 @@ void getShadowCascade(
     float4x4 viewFromWorldMatrix, float3 worldPosition, uint4 shadow_bounds, uint cascadeCount, 
     out uint cascadeLevel, out float2 shadow_bound_offset) 
 {
-    float2 posInView = mulMat4x4Float3(viewFromWorldMatrix, worldPosition).xy;
+    float2 posInView = mul(viewFromWorldMatrix, float4(worldPosition, 1.0f)).xy;
     float x = max(abs(posInView.x), abs(posInView.y));
     uint4 greaterZ = uint4(step(shadow_bounds * 0.9f * 0.5f, float4(x, x, x, x)));
     cascadeLevel = greaterZ.x + greaterZ.y + greaterZ.z + greaterZ.w;
@@ -79,7 +78,7 @@ float shadowSample_PCF_Low(Texture2D<float> shadowmap,
 
 float cloudShadowSample(const Texture2D<float> cloudShadowmap, const float3 positionWS, const float2 volumebounds)
 {
-    float2 coords = (positionWS.xz / volumebounds.xy) + 0.5.xx;
+    float2 coords = (positionWS.xz / volumebounds.xy) + 0.5f.xx;
     float attenuation = cloudShadowmap.SampleLevel(defaultSampler, coords, 0).r;
     return 1 - attenuation;
 }
@@ -182,12 +181,12 @@ float mieScattering(float cosAngle, float g)
 void rayMarch(FrameUniforms frameUniform, Texture2D<float> shadowmapTex, Texture2D<float> cloudShadowmap, Texture2D<float> depthBuffer,
     RWTexture3D<float4> volumeResult, uint2 dtid, float rayOffset, float3 rayStart, float3 rayTarget, float rayLength)
 {
-    DirectionalLightStruct _directionLight = frameUniform.directionalLight;
+    DirectionalLightData _directionLight = frameUniform.lightDataUniform.directionalLightData;
     VolumeLightUniform _volumeLightUniform = frameUniform.volumeLightUniform;
     DirectionalLightShadowmap _dirShadowmap = _directionLight.directionalLightShadowmap;
 
-    const float3 lightColor = _directionLight.lightColorIntensity.rgb;
-    const float3 lightDir = _directionLight.lightDirection;
+    const float3 lightColor = _directionLight.color.rgb;
+    const float3 lightDir = _directionLight.forward;
     const float mieG = _volumeLightUniform.mieG;
     const float scattering_coef = _volumeLightUniform.scattering_coef;
     const float extinction_coef = _volumeLightUniform.extinction_coef;
@@ -290,10 +289,10 @@ void CSMain( uint3 Gid : SV_GroupID, uint3 GTid : SV_GroupThreadID, uint3 DTid :
     ConstantBuffer<FrameUniforms> g_FrameUniform = ResourceDescriptorHeap[perFrameBufferIndex];
     Texture2D<float3> blueNoiseTex = ResourceDescriptorHeap[blueNoiseIndex];
     Texture2D<float> depthBuffer = ResourceDescriptorHeap[depthBufferIndex];
-    Texture2D<float> dirShadowmap = ResourceDescriptorHeap[g_FrameUniform.directionalLight.directionalLightShadowmap.shadowmap_srv_index];
+    Texture2D<float> dirShadowmap = ResourceDescriptorHeap[g_FrameUniform.lightDataUniform.directionalLightData.shadowIndex];
     Texture2D<float> cloudShadowmap = ResourceDescriptorHeap[g_FrameUniform.volumeCloudUniform.cloud_shadowmap_srv_index];
     RWTexture3D<float4> volume3DResult = ResourceDescriptorHeap[volume3DIndex];
-
+    
     int width, height, depthLength;
     volume3DResult.GetDimensions(width, height, depthLength);
 
@@ -307,11 +306,11 @@ void CSMain( uint3 Gid : SV_GroupID, uint3 GTid : SV_GroupThreadID, uint3 DTid :
     float2 uv = screenPos / float2(width, height);
     float depth = depthBuffer.SampleLevel(depthSampler, uv, mipOffset).r;
 
-    float4x4 clipToViewMatrix = g_FrameUniform.cameraUniform.curFrameUniform.viewFromClipMatrix;
-    float4x4 viewToWorldMatrix = g_FrameUniform.cameraUniform.curFrameUniform.worldFromViewMatrix;
-    float4x4 clipToWorldMatrix = g_FrameUniform.cameraUniform.curFrameUniform.worldFromClipMatrix;
+    float4x4 clipToViewMatrix = g_FrameUniform.cameraUniform._InvProjMatrix;
+    float4x4 viewToWorldMatrix = g_FrameUniform.cameraUniform._InvViewMatrix;
+    float4x4 clipToWorldMatrix = g_FrameUniform.cameraUniform._InvViewProjMatrix;
 
-    float curTime = g_FrameUniform.baseUniform.time;
+    float curTime = g_FrameUniform.baseUniform._Time;
 
     float2 interleavedPos = (fmod(floor(screenPos.xy), 8.0));
     float offset = blueNoiseTex.SampleLevel(defaultSampler, interleavedPos / 8.0 + float2(0.5 / 8.0, 0.5 / 8.0), 0).r;

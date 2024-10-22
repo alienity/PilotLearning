@@ -1,9 +1,8 @@
 #ifndef MOYU_HBAO_INCLUDED
 #define MOYU_HBAO_INCLUDED
 
-#include "CommonMath.hlsli"
-#include "Random.hlsli"
-#include "InputTypes.hlsli"
+#include "../../ShaderLibrary/Common.hlsl"
+#include "../../ShaderLibrary/ShaderVariablesGlobal.hlsl"
 
 #define INTENSITY 1
 #define RADIUS    0.05
@@ -84,12 +83,12 @@ struct HBAOInput
 float CustomHBAO(HBAOInput hbaoInput, float2 uv, uint2 screenSize)
 {
     // Parameters used in coordinate conversion
-    float4x4 projMatInv = hbaoInput.frameUniforms.cameraUniform.curFrameUniform.viewFromClipMatrix;
-    float4x4 projMatrix = hbaoInput.frameUniforms.cameraUniform.curFrameUniform.clipFromViewMatrix;
+    float4x4 projMatInv = hbaoInput.frameUniforms.cameraUniform._InvProjMatrix;
+    float4x4 projMatrix = hbaoInput.frameUniforms.cameraUniform._ProjMatrix;
 
     // float4x4 viewMatInv = hbaoInput.frameUniforms.cameraUniform.curFrameUniform.worldFromViewMatrix;
     
-    float3x3 normalMat = transpose((float3x3)hbaoInput.frameUniforms.cameraUniform.curFrameUniform.worldFromViewMatrix);
+    float3x3 normalMat = transpose((float3x3)hbaoInput.frameUniforms.cameraUniform._InvViewMatrix);
 
     float raw_depth_o = hbaoInput.depthTex.Sample(hbaoInput.defaultSampler, uv).r;
     float4 pos_ss = float4(uv.xy*2-1, raw_depth_o, 1.0f);
@@ -111,7 +110,7 @@ float CustomHBAO(HBAOInput hbaoInput, float2 uv, uint2 screenSize)
     // Divide by NUM_STEPS+1 so that the farthest samples are not fully attenuated
     float StepSizePixels = RadiusPixels / (NUM_STEPS + 1);
 
-    const float Alpha = 2.0 * F_PI / NUM_DIRECTIONS;
+    const float Alpha = 2.0 * PI / NUM_DIRECTIONS;
     float AO = 0.5;
 
     for(int directionIndex = 0; directionIndex < NUM_DIRECTIONS; directionIndex++)

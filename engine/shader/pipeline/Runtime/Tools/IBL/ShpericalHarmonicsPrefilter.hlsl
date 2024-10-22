@@ -1,6 +1,6 @@
 #include "IBLHelper.hlsli"
 #include "SphericalHarmonicsHelper.hlsli"
-#include "CommonMath.hlsli"
+#include "../../ShaderLibrary/Common.hlsl"
 
 cbuffer Constants : register(b0)
 {
@@ -33,12 +33,12 @@ void CSMain(uint3 Gid : SV_GroupID, uint3 GTid : SV_GroupThreadID, uint3 DTid : 
            {
                float2 texXY = float2((x + 0.5f)/(float)width, (y + 0.5f)/(float)height) * 2.0f - 1.0f;
 
-               float3 s = getDirectionForCubemap(f, texXY);
+               float3 s = GetDirectionForCubemap(f, texXY);
 
                // sample a color
                float3 color = m_IBLRadians.Sample(defaultSampler, s).rgb;
                // take solid angle into account
-               color *= solidAngle(width, x, y);
+               color *= SolidAngle(width, x, y);
 
                float SHb[9];
                computeShBasisBand2(SHb, s);

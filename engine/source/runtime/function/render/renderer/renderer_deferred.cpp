@@ -306,6 +306,8 @@ namespace MoYu
             SkyBoxPass::SkyBoxInitInfo drawPassInit;
             drawPassInit.colorTexDesc = colorTexDesc;
             drawPassInit.depthTexDesc = depthTexDesc;
+            drawPassInit.m_ShaderCompiler = pCompiler;
+            drawPassInit.m_ShaderRootPath = g_runtime_global_context.m_config_manager->getShaderFolder();
 
             mSkyBoxPass = std::make_shared<SkyBoxPass>();
             mSkyBoxPass->setCommonInfo(renderPassCommonInfo);

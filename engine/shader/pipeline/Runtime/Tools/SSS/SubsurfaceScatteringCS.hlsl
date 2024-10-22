@@ -25,13 +25,11 @@
 // Included headers
 //--------------------------------------------------------------------------------------------------
 
-#include "d3d12.hlsli"
-#include "CommonMath.hlsli"
-#include "InputTypes.hlsli"
-#include "ShadingParameters.hlsli"
+#include "../../ShaderLibrary/Common.hlsl"
 #include "SubsurfaceScattering.hlsli"
-#include "Fibonacci.hlsl"
+#include "../../ShaderLibrary/Sampling/Fibonacci.hlsl"
 #include "SpaceFillingCurves.hlsl"
+#include "../../ShaderLibrary/ShaderVariablesGlobal.hlsl"
 
 //--------------------------------------------------------------------------------------------------
 // Inputs & outputs
@@ -114,7 +112,7 @@ float4 LoadSample(int2 pixelCoord, int2 cacheOffset, FrameUniforms framUniform, 
         value = LoadSampleFromVideoMemory(pixelCoord, subsurfaceStruct);
     }
 
-    float4 zBufferParams = framUniform.cameraUniform.curFrameUniform.zBufferParams;
+    float4 zBufferParams = framUniform.cameraUniform._ZBufferParams;
     value.a = LinearEyeDepth(value.a, zBufferParams);
     
     return value;
@@ -352,7 +350,7 @@ void SubsurfaceScattering(uint3 groupId          : SV_GroupID,
     float  filterRadius  = frameUniform.sssUniform._WorldScalesAndFilterRadiiAndThicknessRemaps[profileIndex].y; // In millimeters
 
     // Reconstruct the view-space position corresponding to the central sample.
-    float4x4 projMatrixInv = frameUniform.cameraUniform.curFrameUniform.unJitterProjectionMatrixInv;
+    float4x4 projMatrixInv = frameUniform.cameraUniform._InvNonJitteredProjMatrix;
     
     float2 centerPosNDC = positionNDC;
     float2 cornerPosNDC = centerPosNDC + 0.5 * _ScreenSize.zw;
@@ -394,7 +392,7 @@ void SubsurfaceScattering(uint3 groupId          : SV_GroupID,
     return;
 #endif
 
-    float4x4 projMatrix = frameUniform.cameraUniform.curFrameUniform.unJitterProjectionMatrix;
+    float4x4 projMatrix = frameUniform.cameraUniform._NonJitteredProjMatrix;
     
     // TODO: Since we have moved to forward SSS, we don't support anymore a bsdfData.normalWS.
     // Once we include normal+roughness rendering during the prepass, we will have a buffer to bind here and we will be able to reuse this part of the algorithm on demand.
@@ -426,7 +424,7 @@ void SubsurfaceScattering(uint3 groupId          : SV_GroupID,
     float3 totalIrradiance = 0;
     float3 totalWeight     = 0;
 
-    float4 zBufferParams = frameUniform.cameraUniform.curFrameUniform.zBufferParams;
+    float4 zBufferParams = frameUniform.cameraUniform._ZBufferParams;
     float linearDepth = LinearEyeDepth(centerDepth, zBufferParams);
     for (uint i = 0; i < n; i++)
     {

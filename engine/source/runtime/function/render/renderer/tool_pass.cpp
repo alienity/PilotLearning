@@ -18,13 +18,13 @@ namespace MoYu
 
         {
             m_DFGCS = m_ShaderCompiler->CompileShader(
-                RHI_SHADER_TYPE::Compute, m_ShaderRootPath / "hlsl/DFGPrefilter.hlsl", ShaderCompileOptions(L"CSMain"));
+                RHI_SHADER_TYPE::Compute, m_ShaderRootPath / "pipeline/Runtime/Tools/IBL/DFGPrefilter.hlsl", ShaderCompileOptions(L"CSMain"));
             m_LDCS = m_ShaderCompiler->CompileShader(
-                RHI_SHADER_TYPE::Compute, m_ShaderRootPath / "hlsl/LDPrefilter.hlsl", ShaderCompileOptions(L"CSMain"));
+                RHI_SHADER_TYPE::Compute, m_ShaderRootPath / "pipeline/Runtime/Tools/IBL/LDPrefilter.hlsl", ShaderCompileOptions(L"CSMain"));
             m_RadiansCS = m_ShaderCompiler->CompileShader(
-                RHI_SHADER_TYPE::Compute, m_ShaderRootPath / "hlsl/RadiansPrefilter.hlsl", ShaderCompileOptions(L"CSMain"));
+                RHI_SHADER_TYPE::Compute, m_ShaderRootPath / "pipeline/Runtime/Tools/IBL/RadiansPrefilter.hlsl", ShaderCompileOptions(L"CSMain"));
             m_Radians2SHCS = m_ShaderCompiler->CompileShader(
-                RHI_SHADER_TYPE::Compute, m_ShaderRootPath / "hlsl/ShpericalHarmonicsPrefilter.hlsl", ShaderCompileOptions(L"CSMain"));
+                RHI_SHADER_TYPE::Compute, m_ShaderRootPath / "pipeline/Runtime/Tools/IBL/ShpericalHarmonicsPrefilter.hlsl", ShaderCompileOptions(L"CSMain"));
         }
 
         {

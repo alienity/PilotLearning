@@ -25,7 +25,7 @@ void CSMain(uint3 Gid : SV_GroupID, uint3 GTid : SV_GroupThreadID, uint3 DTid : 
     float2 texXY = float2((DTid.x + 0.5f)/(float)width, (DTid.y + 0.5f)/(float)height) * 2.0f - 1.0f;
     uint face = DTid.z;
 
-    float3 direction = getDirectionForCubemap(face, texXY);
+    float3 direction = GetDirectionForCubemap(face, texXY);
     direction = normalize(direction);
 
     float4 ldVal = roughnessFilter(m_IBLSpecular, defaultSampler, 4096, direction, _roughness);

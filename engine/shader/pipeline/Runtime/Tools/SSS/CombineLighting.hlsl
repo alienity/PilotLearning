@@ -2,10 +2,35 @@
 //--------------------------------------------------------------------------------------------------
 // Included headers
 //--------------------------------------------------------------------------------------------------
-#include "d3d12.hlsli"
-#include "CommonMath.hlsli"
-#include "InputTypes.hlsli"
-#include "ShadingParameters.hlsli"
+#include "../../ShaderLibrary/Common.hlsl"
+#include "../../ShaderLibrary/ShaderVariablesGlobal.hlsl"
+
+//--------------------------------------------------------------------------------------------------
+// Functions
+//--------------------------------------------------------------------------------------------------
+
+float4 evaluateVolumeDepth(const FrameUniforms frameUniforms, Texture3D<float4> volumeLight3DTexture, SamplerState defaultSampler, float2 uv, float depth)
+{
+    float4 zBufferParams = frameUniforms.cameraUniform._ZBufferParams;
+    float eyeDepth = LinearEyeDepth(depth, zBufferParams);
+    int raySampleCount = frameUniforms.volumeLightUniform.sampleCount;
+    float step1StepSize = frameUniforms.volumeLightUniform.minStepSize;
+    float step1Distance = step1StepSize * raySampleCount * 0.5f;
+    float rayMaxLength = frameUniforms.volumeLightUniform.maxRayLength;
+    float step2Distance = rayMaxLength - step1Distance;
+    float step2StepSize = step2Distance / (raySampleCount * 0.5f);
+
+    float volumeDepthIndex = 0;
+    if(eyeDepth < step1Distance)
+        volumeDepthIndex = eyeDepth / step1Distance * 0.5f;
+    else
+        volumeDepthIndex = (eyeDepth - step1Distance) / step2Distance + 0.5f;
+
+    volumeDepthIndex = saturate(volumeDepthIndex);
+
+    float4 volumeLightVal = volumeLight3DTexture.Sample(defaultSampler, float3(uv.x, uv.y, volumeDepthIndex)).rgba;
+    return volumeLightVal;
+}
 
 //--------------------------------------------------------------------------------------------------
 // Inputs & outputs

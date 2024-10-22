@@ -5,7 +5,7 @@
 #ifndef DIFFUSIONPROFIL_CS_HLSL
 #define DIFFUSIONPROFIL_CS_HLSL
 
-#include "CommonMath.hlsli"
+#include "../../ShaderLibrary/Common.hlsl"
 
 #define DIFFUSION_PROFILE_COUNT (16)
 #define DIFFUSION_PROFILE_NEUTRAL_ID (0)

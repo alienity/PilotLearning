@@ -12,14 +12,15 @@ namespace MoYu
 
 	void VolumeLightPass::initialize(const PassInitInfo& init_info)
 	{
+        
         colorTexDesc = init_info.colorTexDesc;
 
         ShaderCompiler*       m_ShaderCompiler = init_info.m_ShaderCompiler;
         std::filesystem::path m_ShaderRootPath = init_info.m_ShaderRootPath;
-
+        /*
         {
             mGuassianBlurCS = m_ShaderCompiler->CompileShader(
-                RHI_SHADER_TYPE::Compute, m_ShaderRootPath / "hlsl/GuassianBlur.hlsl", ShaderCompileOptions(L"CSMain"));
+                RHI_SHADER_TYPE::Compute, m_ShaderRootPath / "pipeline/Runtime/Tools/Denoising/GuassianBlur.hlsl", ShaderCompileOptions(L"CSMain"));
 
             RHI::RootSignatureDesc rootSigDesc =
                 RHI::RootSignatureDesc()
@@ -52,7 +53,7 @@ namespace MoYu
 
         {
             mVolumeLightingCS = m_ShaderCompiler->CompileShader(
-                RHI_SHADER_TYPE::Compute, m_ShaderRootPath / "hlsl/VolumetricLighting.hlsl", ShaderCompileOptions(L"CSMain"));
+                RHI_SHADER_TYPE::Compute, m_ShaderRootPath / "pipeline/Runtime/Tools/Volume/VolumetricLighting.hlsl", ShaderCompileOptions(L"CSMain"));
 
             RHI::RootSignatureDesc rootSigDesc =
                 RHI::RootSignatureDesc()
@@ -87,7 +88,7 @@ namespace MoYu
 
             pVolumeLightingPSO = std::make_shared<RHI::D3D12PipelineState>(m_Device, L"VolumeLightingPS", psoDesc);
         }
-
+        */
 	}
 
     void VolumeLightPass::prepareMeshData(std::shared_ptr<RenderResource> render_resource)
@@ -143,6 +144,7 @@ namespace MoYu
 
     void VolumeLightPass::update(RHI::RenderGraph& graph, DrawInputParameters& passInput, DrawOutputParameters& passOutput)
     {
+        /*
         int downScale    = 1 << EngineConfig::g_VolumeLightConfig.mDownScaleMip;
         int volumeWidth  = colorTexDesc.Width / downScale;
         int volumeHeight = colorTexDesc.Height / downScale;
@@ -209,6 +211,7 @@ namespace MoYu
         });
 
         passOutput.volumeLightHandle = volume3DHandle;
+        */
     }
 
 

@@ -1,9 +1,8 @@
 #ifndef MOYU_SSAO_INCLUDED
 #define MOYU_SSAO_INCLUDED
 
-#include "CommonMath.hlsli"
-#include "Random.hlsli"
-#include "InputTypes.hlsli"
+#include "../../ShaderLibrary/Common.hlsl"
+#include "../../ShaderLibrary/ShaderVariablesGlobal.hlsl"
 
 #define INTENSITY 1
 #define SAMPLE_COUNT 8
@@ -54,10 +53,10 @@ struct SSAOInput
 float CustomSSAO(SSAOInput ssaoInput, float2 uv, uint2 screenSize)
 {
     // Parameters used in coordinate conversion
-    float4x4 projMatInv = ssaoInput.frameUniforms.cameraUniform.curFrameUniform.viewFromClipMatrix;
-    float4x4 projMatrix = ssaoInput.frameUniforms.cameraUniform.curFrameUniform.clipFromViewMatrix;
+    float4x4 projMatInv = ssaoInput.frameUniforms.cameraUniform._InvProjMatrix;
+    float4x4 projMatrix = ssaoInput.frameUniforms.cameraUniform._ProjMatrix;
     
-    float3x3 normalMat = transpose((float3x3)ssaoInput.frameUniforms.cameraUniform.curFrameUniform.worldFromViewMatrix);
+    float3x3 normalMat = transpose((float3x3)ssaoInput.frameUniforms.cameraUniform._InvViewMatrix);
 
     float raw_depth_o = ssaoInput.depthTex.Sample(ssaoInput.defaultSampler, uv).r;
     float4 pos_ss = float4(uv.xy*2-1, raw_depth_o, 1.0f);

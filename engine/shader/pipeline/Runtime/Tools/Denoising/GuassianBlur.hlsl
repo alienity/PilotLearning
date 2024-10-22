@@ -1,6 +1,4 @@
-#include "d3d12.hlsli"
-#include "CommonMath.hlsli"
-#include "InputTypes.hlsli"
+#include "../../ShaderLibrary/Common.hlsl"
 
 cbuffer RootConstants : register(b0, space0)
 {

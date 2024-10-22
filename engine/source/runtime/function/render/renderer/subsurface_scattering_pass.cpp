@@ -18,10 +18,10 @@ namespace MoYu
         std::filesystem::path m_ShaderRootPath = init_info.m_ShaderRootPath;
 
         mSubsurfaceScatteringCS = m_ShaderCompiler->CompileShader(
-            RHI_SHADER_TYPE::Compute, m_ShaderRootPath / "hlsl/SubsurfaceScatteringCS.hlsl", ShaderCompileOptions(L"SubsurfaceScattering"));
+            RHI_SHADER_TYPE::Compute, m_ShaderRootPath / "pipeline/Runtime/Tools/SSS/SubsurfaceScatteringCS.hlsl", ShaderCompileOptions(L"SubsurfaceScattering"));
 
         mCombineLightingCS = m_ShaderCompiler->CompileShader(
-            RHI_SHADER_TYPE::Compute, m_ShaderRootPath / "hlsl/CombineLighting.hlsl", ShaderCompileOptions(L"CombineLightingMain"));
+            RHI_SHADER_TYPE::Compute, m_ShaderRootPath / "pipeline/Runtime/Tools/SSS/CombineLighting.hlsl", ShaderCompileOptions(L"CombineLightingMain"));
 
         {
             RHI::RootSignatureDesc rootSigDesc =

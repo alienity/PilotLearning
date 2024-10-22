@@ -17,10 +17,10 @@ namespace MoYu
         std::filesystem::path m_ShaderRootPath = init_info.m_ShaderRootPath;
 
         SSAOCS = m_ShaderCompiler->CompileShader(
-            RHI_SHADER_TYPE::Compute, m_ShaderRootPath / "hlsl/SSAOCS.hlsl", ShaderCompileOptions(L"CSMain"));
+            RHI_SHADER_TYPE::Compute, m_ShaderRootPath / "pipeline/Runtime/Tools/SSAO/SSAOCS.hlsl", ShaderCompileOptions(L"CSMain"));
 
         HBAOCS = m_ShaderCompiler->CompileShader(
-            RHI_SHADER_TYPE::Compute, m_ShaderRootPath / "hlsl/HBAOCS.hlsl", ShaderCompileOptions(L"CSMain"));
+            RHI_SHADER_TYPE::Compute, m_ShaderRootPath / "pipeline/Runtime/Tools/HBAO/HBAOCS.hlsl", ShaderCompileOptions(L"CSMain"));
 
         {
             RHI::RootSignatureDesc rootSigDesc =

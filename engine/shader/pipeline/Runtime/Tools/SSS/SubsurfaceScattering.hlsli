@@ -1,4 +1,4 @@
-#include "Packing.hlsli"
+#include "../../ShaderLibrary/Packing.hlsl"
 #include "DiffusionProfile.hlsli"
 
 // ----------------------------------------------------------------------------

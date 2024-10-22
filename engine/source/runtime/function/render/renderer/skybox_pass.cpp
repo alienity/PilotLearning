@@ -17,7 +17,7 @@ namespace MoYu
         std::filesystem::path m_ShaderRootPath = init_info.m_ShaderRootPath;
 
         SkyBoxVS = m_ShaderCompiler->CompileShader(RHI_SHADER_TYPE::Vertex, m_ShaderRootPath / "pipeline/Runtime/Tools/Skybox/SkyBoxVS.hlsl", ShaderCompileOptions(L"VSMain"));
-        SkyBoxPS = m_ShaderCompiler->CompileShader(RHI_SHADER_TYPE::Vertex, m_ShaderRootPath / "pipeline/Runtime/Tools/Skybox/SkyBoxVS.hlsl", ShaderCompileOptions(L"PSMain"));
+        SkyBoxPS = m_ShaderCompiler->CompileShader(RHI_SHADER_TYPE::Pixel, m_ShaderRootPath / "pipeline/Runtime/Tools/Skybox/SkyBoxPS.hlsl", ShaderCompileOptions(L"PSMain"));
 
         {
             RHI::RootSignatureDesc rootSigDesc =

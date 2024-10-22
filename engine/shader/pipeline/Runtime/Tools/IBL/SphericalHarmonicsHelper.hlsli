@@ -1,5 +1,5 @@
-#include "CommonMath.hlsli"
-#include "ColorSpaceUtility.hlsli"
+#include "../../ShaderLibrary/Common.hlsl"
+#include "../Common/ColorSpaceUtility.hlsli"
 
 
 //*****************************************************************
@@ -236,16 +236,16 @@ void KiBand2(out float ki[9])
 float computeTruncatedCosSh(uint l)
 {
     if (l == 0) {
-        return F_PI;
+        return PI;
     } else if (l == 1) {
-        return 2 * F_PI / 3;
+        return 2 * PI / 3;
     } else if (l & 1u) {
         return 0;
     }
     const uint l_2 = l / 2;
     float A0 = select((l_2 & 1u), 1.0f, -1.0f) / ((l + 2) * int(l - 1));
     float A1 = factorial(l, l_2) / (factorial(l_2) * uint(uint(1) << l));
-    return 2 * F_PI * A0 * A1;
+    return 2 * PI * A0 * A1;
 }
 
 /*
@@ -293,7 +293,7 @@ void preprocessSH(inout float3 SH[9])
     };
 
     for (uint i = 0; i < numCoefs; i++) {
-        SH[i] *= A[i] * F_1_PI;
+        SH[i] *= A[i] * INV_PI;
     }
 }
 
