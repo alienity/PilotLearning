@@ -85,8 +85,6 @@ namespace MoYu
         glm::float4 zBufferParams;
         glm::float4 screenParams;
 
-        VBufferParameters vBufferParams[2];            // Double-buffered; needed even if reprojection is off
-
         glm::float4x4 m_view_matrix{ MYMatrix4x4::Identity };
         glm::float4x4 m_project_matrix{ MYMatrix4x4::Identity };
     };
@@ -126,8 +124,8 @@ namespace MoYu
         // Otherwise, previous frame view constants will be wrong.
         void updatePerFrame(const CameraSwapData* pCamSwapData);
 
-        const RawCameraData& GetRawCameraData() const;
-        const ViewConstants& GetViewConstants() const;
+        RawCameraData& GetRawCameraData();
+        ViewConstants& GetViewConstants();
 
         static const glm::float3 X, Y, Z;
 

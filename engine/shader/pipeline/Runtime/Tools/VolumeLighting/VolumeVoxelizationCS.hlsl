@@ -49,9 +49,9 @@ struct JitteredRay
 };
 
 void FillVolumetricDensityBuffer(
-    RWTexture2D<float4> _VBufferDensity,
-    VolumetricLightingUniform volumetricUniform,
-    VBufferUniform vBufferUniform,
+    inout RWTexture3D<float4> _VBufferDensity,
+    const VolumetricLightingUniform volumetricUniform,
+    const VBufferUniform vBufferUniform,
     uint2 voxelCoord2D, JitteredRay ray)
 {
     float t0 = DecodeLogarithmicDepthGeneralized(0, vBufferUniform._VBufferDistanceDecodingParams);
@@ -98,8 +98,11 @@ void VolumeVoxelization(uint3 dispatchThreadId : SV_DispatchThreadID,
 
     ConstantBuffer<FrameUniforms> mFrameUniforms = ResourceDescriptorHeap[perFrameBufferIndex];
     ConstantBuffer<ShaderVariablesVolumetric> shaderVariablesVolumetric = ResourceDescriptorHeap[shaderVariablesVolumetricIndex];
-    RWTexture2D<float4> _VBufferDensity = ResourceDescriptorHeap[_VBufferDensityIndex];
+    RWTexture3D<float4> _VBufferDensity = ResourceDescriptorHeap[_VBufferDensityIndex];
 
+    float4x4 _VBufferCoordToViewDirWS = shaderVariablesVolumetric._VBufferCoordToViewDirWS;
+    float _VBufferUnitDepthTexelSpacing = shaderVariablesVolumetric._VBufferUnitDepthTexelSpacing;
+    
     float3 F = GetViewForwardDir(mFrameUniforms);
     float3 U = GetViewUpDir(mFrameUniforms);
 
@@ -107,7 +110,7 @@ void VolumeVoxelization(uint3 dispatchThreadId : SV_DispatchThreadID,
     float2 centerCoord = voxelCoord + float2(0.5, 0.5);
 
     // Compute a ray direction s.t. ViewSpace(rayDirWS).z = 1.
-    float3 rayDirWS       = mul(shaderVariablesVolumetric._VBufferCoordToViewDirWS, -float4(centerCoord, 1, 1)).xyz;
+    float3 rayDirWS       = mul(_VBufferCoordToViewDirWS, -float4(centerCoord, 1, 1)).xyz;
     float3 rightDirWS     = cross(rayDirWS, U);
     float  rcpLenRayDir   = rsqrt(dot(rayDirWS, rayDirWS));
     float  rcpLenRightDir = rsqrt(dot(rightDirWS, rightDirWS));
@@ -117,11 +120,11 @@ void VolumeVoxelization(uint3 dispatchThreadId : SV_DispatchThreadID,
     ray.centerDirWS = rayDirWS * rcpLenRayDir; // Normalize
 
     float FdotD = dot(F, ray.centerDirWS);
-    float unitDistFaceSize = shaderVariablesVolumetric._VBufferUnitDepthTexelSpacing * FdotD * rcpLenRayDir;
+    float unitDistFaceSize = _VBufferUnitDepthTexelSpacing * FdotD * rcpLenRayDir;
 
     ray.xDirDerivWS = rightDirWS * (rcpLenRightDir * unitDistFaceSize); // Normalize & rescale
     ray.yDirDerivWS = cross(ray.xDirDerivWS, ray.centerDirWS); // Will have the length of 'unitDistFaceSize' by construction
     ray.jitterDirWS = ray.centerDirWS; // TODO
 
-    FillVolumetricDensityBuffer(_VBufferDensity, mFrameUniforms.volumetricLightingUniform, mFrameUniforms.volumeLightUniform, voxelCoord, ray);
+    FillVolumetricDensityBuffer(_VBufferDensity, mFrameUniforms.volumetricLightingUniform, mFrameUniforms.vBufferUniform, voxelCoord, ray);
 }

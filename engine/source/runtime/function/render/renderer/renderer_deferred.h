@@ -31,7 +31,8 @@
 #include "runtime/function/render/renderer/indirect_terrain_gbuffer_pass.h"
 #include "runtime/function/render/renderer/indirect_lightloop_pass.h"
 #include "runtime/function/render/renderer/subsurface_scattering_pass.h"
-#include "runtime/function/render/renderer/volume_light_pass.h"
+//#include "runtime/function/render/renderer/volume_light_pass.h"
+#include "runtime/function/render/renderer/VolumetricLighting.h"
 #include "runtime/function/render/renderer/temporalFilter.h"
 #include "runtime/function/render/renderer/diffuseFilter.h"
 
@@ -95,7 +96,8 @@ namespace MoYu
         std::shared_ptr<IndirectDrawTransparentPass> mIndirectTransparentDrawPass;
         std::shared_ptr<AOPass>                      mAOPass;
         std::shared_ptr<GTAOPass>                    mGTAOPass;
-        std::shared_ptr<VolumeLightPass>             mVolumeLightPass;
+        //std::shared_ptr<VolumeLightPass>             mVolumeLightPass;
+        std::shared_ptr<VolumetriLighting>           mVolumeLightPass;
         std::shared_ptr<SSGIPass>                    mSSGIPass;
         std::shared_ptr<SSRPass>                     mSSRPass;
         std::shared_ptr<PostprocessPasses>           mPostprocessPasses;

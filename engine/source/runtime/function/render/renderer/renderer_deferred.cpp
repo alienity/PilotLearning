@@ -255,6 +255,7 @@ namespace MoYu
             mColorPyramidPass->setCommonInfo(renderPassCommonInfo);
             mColorPyramidPass->initialize(colorPyramidPassInit);
         }
+        /*
         // VolumeLight Pass
         {
             VolumeLightPass::PassInitInfo passInitInfo;
@@ -266,6 +267,18 @@ namespace MoYu
             mVolumeLightPass = std::make_shared<VolumeLightPass>();
             mVolumeLightPass->setCommonInfo(renderPassCommonInfo);
             mVolumeLightPass->initialize(passInitInfo);
+        }
+        */
+        // New VolumeLight Pass
+        {
+            VolumetriLighting::VolumetriLightingInitInfo dispatchPassInit;
+            dispatchPassInit.colorTexDesc = colorTexDesc;
+            dispatchPassInit.m_ShaderCompiler = pCompiler;
+            dispatchPassInit.m_ShaderRootPath = g_runtime_global_context.m_config_manager->getShaderFolder();
+
+            mVolumeLightPass = std::make_shared<VolumetriLighting>();
+            mVolumeLightPass->setCommonInfo(renderPassCommonInfo);
+            mVolumeLightPass->initialize(dispatchPassInit);
         }
         // LightLoop pass
         {
@@ -470,7 +483,7 @@ namespace MoYu
         mSubsurfaceScatteringPass->prepareMetaData(render_resource);
         mSSGIPass->prepareMetaData(render_resource);
         mSSRPass->prepareMetaData(render_resource);
-        mVolumeLightPass->prepareMeshData(render_resource);
+        mVolumeLightPass->prepareBuffer(render_resource);
         mPostprocessPasses->PreparePassData(render_resource);
 
         mAtmosphericScatteringPass->prepareMetaData(render_resource);
@@ -748,16 +761,14 @@ namespace MoYu
         mVolumeCloudPass->updateShadow(graph, mVCSIntputParams, mVCSOutputParams);
         //=================================================================================
 
-        ////=================================================================================
-        //// volume light
-        //VolumeLightPass::DrawInputParameters mVolumeLightInput;
-        //VolumeLightPass::DrawOutputParameters mVolumeLightOutput;
-        //mVolumeLightInput.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
-        //mVolumeLightInput.maxDepthPtyramidHandle = mDepthPyramidOutput.maxDepthPtyramidHandle;
-        //mVolumeLightInput.volumeCloudShadowHandle = mVCSOutputParams.outCloudShadowHandle;
+        //=================================================================================
+        // volume light
+        VolumetriLighting::ClearPassInputStruct mVolumeLightInput;
+        VolumetriLighting::ClearPassOutputStruct mVolumeLightOutput;
+        mVolumeLightInput.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
 
-        //mVolumeLightPass->update(graph, mVolumeLightInput, mVolumeLightOutput);
-        ////=================================================================================
+        mVolumeLightPass->clearAndHeightFogVoxelizationPass(graph, mVolumeLightInput, mVolumeLightOutput);
+        //=================================================================================
 
         ///*
         ////=================================================================================

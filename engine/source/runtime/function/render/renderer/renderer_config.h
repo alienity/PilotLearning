@@ -310,15 +310,23 @@ namespace EngineConfig
         // Advanced parameters
         /// <summary>Controls the angular distribution of scattered light. 0 is isotropic, 1 is forward scattering, and -1 is backward scattering.</summary>
         float anisotropy = 0.0f;
+
         /// <summary>Controls the distribution of slices along the Camera's focal axis. 0 is exponential distribution and 1 is linear distribution.</summary>
         float sliceDistributionUniformity = 0.75f;
+
+        /// <summary>Controls how much the multiple-scattering will affect the scene. Directly controls the amount of blur depending on the fog density.</summary>
+        float multipleScatteringIntensity = 0.0f;
 
         /// <summary>Stores the resolution of the volumetric buffer (3D texture) along the x-axis and y-axis relative to the resolution of the screen.</summary>
         float screenResolutionPercentage = optimalFogScreenResolutionPercentage;
         /// <summary>Number of slices of the volumetric buffer (3D texture) along the camera's focal axis.</summary>
         int volumeSliceCount = 64;
 
+        /// <summary>Defines the performance to quality ratio of the volumetric fog. A value of 0 being the least resource-intensive and a value of 1 being the highest quality.</summary>
+        float m_VolumetricFogBudget = 0.25f;
 
+        /// <summary>Controls how Unity shares resources between Screen (XY) and Depth (Z) resolutions.</summary>
+        float m_ResolutionDepthRatio = 0.5f;
 
     };
 

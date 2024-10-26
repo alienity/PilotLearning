@@ -17,7 +17,7 @@ namespace MoYu
 
 #define Number float
 #define InverseLength float
-#define Area float
+//#define Area float
 #define Volume float
 #define NumberDensity float
 #define Irradiance float

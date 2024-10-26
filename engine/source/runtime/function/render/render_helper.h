@@ -1,30 +1,12 @@
 #pragma once
 
 #include "runtime/core/math/moyu_math2.h"
+#include "renderer/renderer_config.h"
+#include "rhi/d3d12/d3d12_linkedDevice.h"
 
 namespace MoYu
 {
     class RenderScene;
-    class RenderCamera;
-
-    struct VBufferParameters
-    {
-        glm::ivec3 viewportSize;
-        float voxelSize;
-        glm::vec4 depthEncodingParams;
-        glm::vec4 depthDecodingParams;
-
-        VBufferParameters(glm::ivec3 viewportSize, float depthExtent, float camNear,
-            float camFar, float camVFoV, float sliceDistributionUniformity, float voxelSize);
-        glm::vec3 ComputeViewportScale(glm::ivec3 bufferSize);
-        glm::vec3 ComputeViewportLimit(glm::ivec3 bufferSize);
-        float ComputeLastSliceDistance(glm::uint sliceCount);
-        float EncodeLogarithmicDepthGeneralized(float z, glm::vec4 encodingParams);
-        float DecodeLogarithmicDepthGeneralized(float d, glm::vec4 decodingParams);
-        int ComputeSliceIndexFromDistance(float distance, int maxSliceCount);
-        glm::vec4 ComputeLogarithmicDepthEncodingParams(float nearPlane, float farPlane, float c);
-        glm::vec4 ComputeLogarithmicDepthDecodingParams(float nearPlane, float farPlane, float c);
-    };
 
     // TODO: support cluster lighting
     struct ClusterFrustum

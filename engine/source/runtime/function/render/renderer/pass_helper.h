@@ -132,5 +132,73 @@ namespace MoYu
         return InTexSRVIndex;
     };
 
+    enum class LightVolumeType
+    {
+        Cone,
+        Sphere,
+        Box,
+        Count
+    };
+
+    enum LightCategory
+    {
+        Punctual,
+        Area,
+        Env,
+        Decal,
+        Count
+    };
+
+    enum class LightFeatureFlags
+    {
+        // Light bit mask must match LightDefinitions.s_LightFeatureMaskFlags value
+        Punctual = 1 << 12,
+        Area = 1 << 13,
+        Directional = 1 << 14,
+        Env = 1 << 15,
+        Sky = 1 << 16,
+        SSRefraction = 1 << 17,
+        SSReflection = 1 << 18,
+        // If adding more light be sure to not overflow LightDefinitions.s_LightFeatureMaskFlags
+    };
+
+    struct LightDefinitions
+    {
+        float s_ViewportScaleZ = 1.0f;
+        int s_UseLeftHandCameraSpace = 1;
+
+        int s_TileSizeFptl = 16;
+        int s_TileSizeClustered = 32;
+        int s_TileSizeBigTile = 64;
+
+        // Tile indexing constants for indirect dispatch deferred pass : [2 bits for eye index | 15 bits for tileX | 15 bits for tileY]
+        int s_TileIndexMask = 0x7FFF;
+        int s_TileIndexShiftX = 0;
+        int s_TileIndexShiftY = 15;
+        int s_TileIndexShiftEye = 30;
+
+        // feature variants
+        int s_NumFeatureVariants = 29;
+
+        // Following define the maximum number of bits use in each feature category.
+        glm::uint s_LightFeatureMaskFlags = 0xFFF000;
+        glm::uint s_LightFeatureMaskFlagsOpaque = 0xFFF000 & ~((glm::uint)LightFeatureFlags::SSRefraction); // Opaque don't support screen space refraction
+        glm::uint s_LightFeatureMaskFlagsTransparent = 0xFFF000 & ~((glm::uint)LightFeatureFlags::SSReflection); // Transparent don't support screen space reflection
+        glm::uint s_MaterialFeatureMaskFlags = 0x000FFF;   // don't use all bits just to be safe from signed and/or float conversions :/
+
+        // Screen space shadow flags
+        glm::uint s_RayTracedScreenSpaceShadowFlag = 0x1000;
+        glm::uint s_ScreenSpaceColorShadowFlag = 0x100;
+        glm::uint s_InvalidScreenSpaceShadow = 0xff;
+        glm::uint s_ScreenSpaceShadowIndexMask = 0xff;
+
+        //Contact shadow bit definitions
+        int s_ContactShadowFadeBits = 8;
+        int s_ContactShadowMaskBits = 32 - s_ContactShadowFadeBits;
+        int s_ContactShadowFadeMask = (1 << s_ContactShadowFadeBits) - 1;
+        int s_ContactShadowMaskMask = (1 << s_ContactShadowMaskBits) - 1;
+
+    };
+
 }
 

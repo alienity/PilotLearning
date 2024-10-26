@@ -72,12 +72,12 @@ namespace MoYu
             ComputePixelCoordToWorldSpaceViewDirectionMatrix(mainViewConstants, screenSize, gpuProjAspect);
     }
 
-    const RawCameraData& RenderCamera::GetRawCameraData() const
+    RawCameraData& RenderCamera::GetRawCameraData()
     {
         return rawCameraData;
     }
 
-    const ViewConstants& RenderCamera::GetViewConstants() const
+    ViewConstants& RenderCamera::GetViewConstants()
     {
         return mainViewConstants;
     }

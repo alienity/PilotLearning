@@ -87,6 +87,26 @@ namespace MoYu
             return tanHalfVertFoV * (2.0f / resolutionY) * planeDepth;
         }
 
+        inline static int DivRoundUp(int x, int y)
+        {
+            return (x + y - 1) / y;
+        }
+
+        inline static glm::ivec2 DivRoundUp(glm::ivec2 n, int d)
+        {
+            return glm::ivec2(HDUtils::DivRoundUp(n.x, d), HDUtils::DivRoundUp(n.y, d));
+        }
+
+        inline static glm::ivec2 DivRoundUp(glm::ivec2 n, glm::ivec2 d)
+        {
+            return glm::ivec2(HDUtils::DivRoundUp(n.x, d.x), HDUtils::DivRoundUp(n.y, d.y));
+        }
+
+        inline static glm::ivec3 DivRoundUp(glm::ivec3 n, int d)
+        {
+            return glm::ivec3(HDUtils::DivRoundUp(n.x, d), HDUtils::DivRoundUp(n.y, d), HDUtils::DivRoundUp(n.z, d));
+        }
+
         inline static bool IsQuaternionValid(glm::quat q)
         {
             return (q[0] * q[0] + q[1] * q[1] + q[2] * q[2] + q[3] * q[3]) > 1.401298E-45F;
