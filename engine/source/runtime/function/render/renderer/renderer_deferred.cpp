@@ -10,6 +10,7 @@
 
 #include "runtime/function/render/render_helper.h"
 #include "runtime/function/render/terrain_render_helper.h"
+#include "runtime/function/render/renderer/volume_lighting_helper.h"
 
 namespace MoYu
 {
@@ -43,8 +44,14 @@ namespace MoYu
         CommandSignatures::Compile(pDevice);
         PipelineStates::Compile(pipleineColorFormat, pipleineDepthFormat, backBufferFormat, depthBufferFormat, pDevice);
 
+        InitConstants();
         InitGlobalBuffer();
         InitPass();
+    }
+
+    void DeferredRenderer::InitConstants()
+    {
+        InitializeFogConstants();
     }
 
     void DeferredRenderer::InitGlobalBuffer()

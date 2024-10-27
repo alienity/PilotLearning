@@ -33,7 +33,7 @@ namespace MoYu
 		cb._VBufferCoordToViewDirWS = m_PixelCoordToViewDirWS;
 		cb._VBufferUnitDepthTexelSpacing = HDUtils::ComputZPlaneTexelSpacing(1.0f, vFoV, resolution.y);
 		cb._NumVisibleLocalVolumetricFog = 1; // TODO: update from local data
-		cb._CornetteShanksConstant = CornetteShanksPhasePartConstant(EngineConfig::g_FogConfig.anisotropy);
+		cb._CornetteShanksConstant = CornetteShanksPhasePartConstant(GetFogVolume().anisotropy);
 		cb._VBufferHistoryIsValid = m_render_camera->volumetricHistoryIsValid ? 1u : 0u;
 
 		GetHexagonalClosePackedSpheres7(m_xySeq);
@@ -57,7 +57,7 @@ namespace MoYu
 		cb._NumTileBigTileY = (glm::uint)GetNumTileBigTileY(m_render_camera);
 
 		cb._MaxSliceCount = (glm::uint)maxSliceCount;
-		cb._MaxVolumetricFogDistance = EngineConfig::g_FogConfig.depthExtent;
+		cb._MaxVolumetricFogDistance = GetFogVolume().depthExtent;
 		cb._VolumeCount = 1;
 
 		if (updateVoxelizationFields)
@@ -82,12 +82,12 @@ namespace MoYu
 		}
 
 		m_CurrentVBufferParams = ComputeVolumetricBufferParameters(
-			m_render_camera->getWidth(), 
+			m_render_camera->getWidth(),
 			m_render_camera->getHeight(),
 			m_render_camera->nearZ(),
 			m_render_camera->farZ(),
 			m_render_camera->fovy(),
-			EngineConfig::g_FogConfig);
+			GetFogVolume());
 
 		glm::ivec3 cvp = m_CurrentVBufferParams.viewportSize;
 
@@ -100,18 +100,16 @@ namespace MoYu
 
 		int sliceCount;
 		float screenFraction;
-		ComputeVolumetricFogSliceCountAndScreenFraction(EngineConfig::g_FogConfig, sliceCount, screenFraction);
-
-		fogData.resolution = resolution;
+		ComputeVolumetricFogSliceCountAndScreenFraction(GetFogVolume(), sliceCount, screenFraction);
 
 		HLSL::ShaderVariablesVolumetric m_ShaderVariablesVolumetricCB;
 		updateShaderVariableslVolumetrics(m_ShaderVariablesVolumetricCB, resolution, sliceCount);
 
-		fogData.volumetricCB = m_ShaderVariablesVolumetricCB;
-
-		memcpy(pShaderVariablesVolumetric->GetCpuVirtualAddress<HLSL::ShaderVariablesVolumetric>(), 
+		memcpy(pShaderVariablesVolumetric->GetCpuVirtualAddress<HLSL::ShaderVariablesVolumetric>(),
 			&m_ShaderVariablesVolumetricCB, sizeof(m_ShaderVariablesVolumetricCB));
 
+		fogData.resolution = resolution;
+		fogData.volumetricCB = m_ShaderVariablesVolumetricCB;
 
 		if (mVBufferDensity == nullptr)
 		{
@@ -128,8 +126,16 @@ namespace MoYu
 				D3D12_RESOURCE_STATE_COMMON);
 		}
 
+		HLSL::VolumetricLightingUniform mVolumetricLightingUniform;
+		UpdateVolumetricLightingUniform(mVolumetricLightingUniform);
 
+		HLSL::VBufferUniform mVBufferUniform;
+		UpdateVolumetricLightingUniform(mVBufferUniform);
 
+		HLSL::FrameUniforms* _frameUniforms = &(render_resource->m_FrameUniforms);
+
+		_frameUniforms->volumetricLightingUniform = mVolumetricLightingUniform;
+		_frameUniforms->vBufferUniform = mVBufferUniform;
 	}
 
 	void VolumetriLighting::initialize(const VolumetriLightingInitInfo& init_info)
@@ -171,7 +177,7 @@ namespace MoYu
 
 	void VolumetriLighting::clearAndHeightFogVoxelizationPass(RHI::RenderGraph& graph, ClearPassInputStruct& passInput, ClearPassOutputStruct& passOutput)
 	{
-		if (!EngineConfig::g_FogConfig.enableVolumetricFog)
+		if (!GetFogVolume().enableVolumetricFog)
 		{
 			return;
 		}
@@ -188,48 +194,87 @@ namespace MoYu
 		clearPass.Write(mVBufferDensityHandle, false, RHIResourceState::RHI_RESOURCE_STATE_UNORDERED_ACCESS);
 
 		clearPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
-            RHI::D3D12ComputeContext* pContext = context->GetComputeContext();
+			RHI::D3D12ComputeContext* pContext = context->GetComputeContext();
 
-            pContext->SetRootSignature(pVoxelizationSignature.get());
-            pContext->SetPipelineState(pVoxelizationPSO.get());
+			pContext->SetRootSignature(pVoxelizationSignature.get());
+			pContext->SetPipelineState(pVoxelizationPSO.get());
 
-            struct RootIndexBuffer
-            {
+			struct RootIndexBuffer
+			{
 				uint32_t perFrameBufferIndex;
 				uint32_t shaderVariablesVolumetricIndex;
 				uint32_t _VBufferDensityIndex;  // RGB = sqrt(scattering), A = sqrt(extinction)
-            };
+			};
 
-            RootIndexBuffer rootIndexBuffer = RootIndexBuffer{ RegGetBufDefCBVIdx(perframeBufferHandle),
+			RootIndexBuffer rootIndexBuffer = RootIndexBuffer{ RegGetBufDefCBVIdx(perframeBufferHandle),
 															   RegGetBufDefCBVIdx(mShaderVariablesVolumetricHandle),
-                                                               RegGetTexDefUAVIdx(mVBufferDensityHandle) };
+															   RegGetTexDefUAVIdx(mVBufferDensityHandle) };
 
-            pContext->SetConstantArray(0, sizeof(RootIndexBuffer) / sizeof(UINT), &rootIndexBuffer);
+			pContext->SetConstantArray(0, sizeof(RootIndexBuffer) / sizeof(UINT), &rootIndexBuffer);
 
 			// The shader defines GROUP_SIZE_1D = 8.
 			pContext->Dispatch((fogData.resolution.x + 7) / 8, (fogData.resolution.x + 7) / 8, 1);
-        });
+			});
 
 		passOutput.vbufferDensityHandle = mVBufferDensityHandle;
 	}
 
-	void VolumetriLighting::UpdateShaderVariablesGlobalCBFogParameters(
-		HLSL::VolumetricLightingUniform& inoutVolumetricLightingUniform, HLSL::VBufferUniform inoutVBufferUniform)
+	void VolumetriLighting::UpdateVolumetricLightingUniform(HLSL::VolumetricLightingUniform& inoutVolumetricLightingUniform)
 	{
 		inoutVolumetricLightingUniform._FogEnabled = 1;
 		inoutVolumetricLightingUniform._EnableVolumetricFog = 1;
 
-		EngineConfig::FogConfig& fog = EngineConfig::g_FogConfig;
+		const FogVolume& fog = GetFogVolume();
 
-		glm::vec4 fogColor = (fog.colorMode == EngineConfig::FogColorMode::ConstantColor) ? fog.color.color : fog.tint.color;
+		glm::vec4 fogColor = (fog.colorMode == FogColorMode::ConstantColor) ? fog.color.color : fog.tint.color;
 
-		inoutVolumetricLightingUniform._FogColorMode = fog.colorMode;
+		inoutVolumetricLightingUniform._FogColorMode = (int)fog.colorMode;
 		inoutVolumetricLightingUniform._FogColor = fogColor;
 		inoutVolumetricLightingUniform._MipFogParameters = glm::vec4(fog.mipFogNear, fog.mipFogFar, fog.mipFogMaxMip, 0.0f);
 
+		LocalVolumetricFogArtistParameters param(fog.albedo.color, fog.meanFreePath, fog.anisotropy);
+		HLSL::LocalVolumetricFogEngineData data = param.ConvertToEngineData();
 
+		// When volumetric fog is disabled, we don't want its color to affect the heightfog. So we pass neutral values here.
+		float extinction = VolumeRenderingUtils::ExtinctionFromMeanFreePath(param.meanFreePath);
+		inoutVolumetricLightingUniform._HeightFogBaseScattering = glm::vec4(data.scattering, 1.0f);
+		inoutVolumetricLightingUniform._HeightFogBaseExtinction = extinction;
 
+		float crBaseHeight = fog.baseHeight;
 
+		float layerDepth = glm::max(0.01f, fog.maximumHeight - fog.baseHeight);
+		float H = ScaleHeightFromLayerDepth(layerDepth);
+		inoutVolumetricLightingUniform._HeightFogExponents = glm::vec2(1.0f / H, H);
+		inoutVolumetricLightingUniform._HeightFogBaseHeight = crBaseHeight;
+		inoutVolumetricLightingUniform._GlobalFogAnisotropy = fog.anisotropy;
+		inoutVolumetricLightingUniform._VolumetricFilteringEnabled = ((int)fog.denoisingMode & (int)FogDenoisingMode::Gaussian) != 0 ? 1 : 0;
+		inoutVolumetricLightingUniform._FogDirectionalOnly = fog.directionalLightsOnly ? 1 : 0;
+	}
+
+	void VolumetriLighting::UpdateVolumetricLightingUniform(HLSL::VBufferUniform& inoutVBufferUniform)
+	{
+		const FogVolume& fog = GetFogVolume();
+
+		VBufferParameters& currParams = m_CurrentVBufferParams;
+
+		// The lighting & density buffers are shared by all cameras.
+		// The history & feedback buffers are specific to the camera.
+		// These 2 types of buffers can have different sizes.
+		// Additionally, history buffers can have different sizes, since they are not resized at the same time.
+		glm::ivec3 cvp = currParams.viewportSize;
+
+		// Adjust slices for XR rendering: VBuffer is shared for all single-pass views
+		glm::uint sliceCount = (glm::uint)cvp.z;
+
+		inoutVBufferUniform._VBufferViewportSize = glm::vec4(cvp.x, cvp.y, 1.0f / cvp.x, 1.0f / cvp.y);
+		inoutVBufferUniform._VBufferSliceCount = sliceCount;
+		inoutVBufferUniform._VBufferRcpSliceCount = 1.0f / sliceCount;
+		inoutVBufferUniform._VBufferLightingViewportScale = glm::vec4(currParams.ComputeViewportScale(m_CurrentVolumetricBufferSize), 1.0f);
+		inoutVBufferUniform._VBufferLightingViewportLimit = glm::vec4(currParams.ComputeViewportLimit(m_CurrentVolumetricBufferSize), 1.0f);
+		inoutVBufferUniform._VBufferDistanceEncodingParams = currParams.depthEncodingParams;
+		inoutVBufferUniform._VBufferDistanceDecodingParams = currParams.depthDecodingParams;
+		inoutVBufferUniform._VBufferLastSliceDist = currParams.ComputeLastSliceDistance(sliceCount);
+		inoutVBufferUniform._VBufferRcpInstancedViewCount = 1.0f;
 	}
 
 }

@@ -46,6 +46,7 @@ namespace MoYu
         DeferredRenderer(RendererInitParams& renderInitParams);
 
         virtual void Initialize();
+        void         InitConstants();
         void         InitGlobalBuffer();
         void         InitPass();
         virtual void InitializeUIRenderBackend(WindowUI* window_ui);

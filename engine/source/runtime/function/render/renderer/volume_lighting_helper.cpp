@@ -2,6 +2,66 @@
 
 namespace MoYu
 {
+    //***********************************************************************************
+    // 
+    // Parametes
+    // 
+    //***********************************************************************************
+
+    glm::vec4 m_PackedCoeffs[7];
+    glm::vec2 m_xySeq[7];
+    // This is a sequence of 7 equidistant numbers from 1/14 to 13/14.
+    // Each of them is the centroid of the interval of length 2/14.
+    // They've been rearranged in a sequence of pairs {small, large}, s.t. (small + large) = 1.
+    // That way, the running average position is close to 0.5.
+    // | 6 | 2 | 4 | 1 | 5 | 3 | 7 |
+    // |   |   |   | o |   |   |   |
+    // |   | o |   | x |   |   |   |
+    // |   | x |   | x |   | o |   |
+    // |   | x | o | x |   | x |   |
+    // |   | x | x | x | o | x |   |
+    // | o | x | x | x | x | x |   |
+    // | x | x | x | x | x | x | o |
+    // | x | x | x | x | x | x | x |
+    float m_zSeq[7] = { 7.0f / 14.0f, 3.0f / 14.0f, 11.0f / 14.0f, 5.0f / 14.0f, 9.0f / 14.0f, 1.0f / 14.0f, 13.0f / 14.0f };
+
+    FogVolume m_FogVolume;
+
+    //***********************************************************************************
+    // 
+    // Functions
+    // 
+    //***********************************************************************************
+
+    void InitializeFogConstants()
+    {
+        GetHexagonalClosePackedSpheres7(m_xySeq);
+        
+        m_FogVolume = FogVolume();
+
+    }
+
+    const FogVolume& GetFogVolume()
+    {
+        return m_FogVolume;
+    }
+
+    void GetXYSeq(glm::vec2(&xySeq)[7])
+    {
+        for (int i = 0; i < 7; i++)
+        {
+            xySeq[i] = m_xySeq[i];
+        }
+    }
+
+    void GetZSeq(float(&zSeq)[7])
+    {
+        for (int i = 0; i < 7; i++)
+        {
+            zSeq[i] = m_zSeq[i];
+        }
+    }
+
 
 	HLSL::LocalVolumetricFogEngineData GetNeutralValues()
 	{
@@ -197,17 +257,17 @@ namespace MoYu
         return frameIndex % 14;
     }
 
-    void ComputeVolumetricFogSliceCountAndScreenFraction(EngineConfig::FogConfig fog, int& sliceCount, float& screenFraction)
+    void ComputeVolumetricFogSliceCountAndScreenFraction(const FogVolume& fog, int& sliceCount, float& screenFraction)
     {
         screenFraction = fog.screenResolutionPercentage * 0.01f;
         sliceCount = fog.volumeSliceCount;
     }
 
-    glm::ivec3 ComputeVolumetricViewportSize(int viewportWidth, int viewportHeight, float voxelSize)
+    glm::ivec3 ComputeVolumetricViewportSize(const FogVolume& fog, int viewportWidth, int viewportHeight, float voxelSize)
     {
         int sliceCount;
         float screenFraction;
-        ComputeVolumetricFogSliceCountAndScreenFraction(EngineConfig::g_FogConfig, sliceCount, screenFraction);
+        ComputeVolumetricFogSliceCountAndScreenFraction(fog, sliceCount, screenFraction);
 
         voxelSize = 1.0f / screenFraction; // Does not account for rounding (same function, above)
 
@@ -220,15 +280,88 @@ namespace MoYu
         return glm::ivec3(w, h, d);
     }
 
-    VBufferParameters ComputeVolumetricBufferParameters(float width, float height, float nearZ, float farZ, float fovy, EngineConfig::FogConfig fog)
+    VBufferParameters ComputeVolumetricBufferParameters(float width, float height, float nearZ, float farZ, float fovy, const FogVolume& fog)
     {
         float voxelSize = 0;
-        glm::ivec3 viewportSize = ComputeVolumetricViewportSize(width, height, voxelSize);
+        glm::ivec3 viewportSize = ComputeVolumetricViewportSize(fog, width, height, voxelSize);
 
         VBufferParameters vBufferParams = VBufferParameters(viewportSize, fog.depthExtent, nearZ, farZ, fovy, fog.sliceDistributionUniformity, voxelSize);
 
         return vBufferParams;
     }
 
+    LocalVolumetricFogArtistParameters::LocalVolumetricFogArtistParameters(glm::vec3 color, float _meanFreePath, float _anisotropy)
+    {
+        albedo = color;
+        meanFreePath = _meanFreePath;
+        blendingMode = LocalVolumetricFogBlendingMode::Additive;
+        priority = 0;
+        anisotropy = _anisotropy;
+
+        volumeMask = nullptr;
+        textureScrollingSpeed = glm::vec3(0);
+        textureTiling = glm::vec3(1);
+        textureOffset = textureScrollingSpeed;
+
+        size = glm::vec3(1);
+
+        positiveFade = glm::vec3(1) * 0.1f;
+        negativeFade = glm::vec3(1) * 0.1f;
+        invertFade = false;
+
+        distanceFadeStart = 10000;
+        distanceFadeEnd = 10000;
+
+        falloffMode = LocalVolumetricFogFalloffMode::Linear;
+    }
+
+    void LocalVolumetricFogArtistParameters::Update(float time)
+    {
+        //Update scrolling based on deltaTime
+        if (volumeMask != nullptr)
+        {
+            // Switch from right-handed to left-handed coordinate system.
+            textureOffset = -(textureScrollingSpeed * time);
+        }
+    }
+
+    HLSL::LocalVolumetricFogEngineData LocalVolumetricFogArtistParameters::ConvertToEngineData()
+    {
+        HLSL::LocalVolumetricFogEngineData data;
+
+        data.scattering = VolumeRenderingUtils::ScatteringFromExtinctionAndAlbedo(
+            VolumeRenderingUtils::ExtinctionFromMeanFreePath(meanFreePath), albedo);
+
+        data.blendingMode = (int)blendingMode;
+
+        data.textureScroll = textureOffset;
+        data.textureTiling = textureTiling;
+
+        data.rcpPosFaceFade.x = glm::min(1.0f / positiveFade.x, FLT_MAX);
+        data.rcpPosFaceFade.y = glm::min(1.0f / positiveFade.y, FLT_MAX);
+        data.rcpPosFaceFade.z = glm::min(1.0f / positiveFade.z, FLT_MAX);
+
+        data.rcpNegFaceFade.y = glm::min(1.0f / negativeFade.y, FLT_MAX);
+        data.rcpNegFaceFade.x = glm::min(1.0f / negativeFade.x, FLT_MAX);
+        data.rcpNegFaceFade.z = glm::min(1.0f / negativeFade.z, FLT_MAX);
+
+        data.invertFade = invertFade ? 1 : 0;
+        data.falloffMode = (int)falloffMode;
+
+        float distFadeLen = glm::max(distanceFadeEnd - distanceFadeStart, 0.00001526f);
+
+        data.rcpDistFadeLen = 1.0f / distFadeLen;
+        data.endTimesRcpDistFadeLen = distanceFadeEnd * data.rcpDistFadeLen;
+
+        return data;
+    }
+
+    float ScaleHeightFromLayerDepth(float d)
+    {
+        // Exp[-d / H] = 0.001
+        // -d / H = Log[0.001]
+        // H = d / -Log[0.001]
+        return d * 0.144765f;
+    }
 
 }

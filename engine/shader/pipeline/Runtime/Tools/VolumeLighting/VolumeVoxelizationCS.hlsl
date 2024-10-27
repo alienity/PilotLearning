@@ -59,7 +59,7 @@ void FillVolumetricDensityBuffer(
 
     for (uint slice = 0; slice < vBufferUniform._VBufferSliceCount; slice++)
     {
-        uint3 voxelCoord = uint3(voxelCoord2D, slice + vBufferUniform._VBufferSliceCount);
+        uint3 voxelCoord = uint3(voxelCoord2D, slice);
 
         float e1 = slice * de + de; // (slice + 1) / sliceCount
         float t1 = DecodeLogarithmicDepthGeneralized(e1, vBufferUniform._VBufferDistanceDecodingParams);
@@ -110,7 +110,7 @@ void VolumeVoxelization(uint3 dispatchThreadId : SV_DispatchThreadID,
     float2 centerCoord = voxelCoord + float2(0.5, 0.5);
 
     // Compute a ray direction s.t. ViewSpace(rayDirWS).z = 1.
-    float3 rayDirWS       = mul(_VBufferCoordToViewDirWS, -float4(centerCoord, 1, 1)).xyz;
+    float3 rayDirWS       = mul(-float4(centerCoord, 1, 1), _VBufferCoordToViewDirWS).xyz;
     float3 rightDirWS     = cross(rayDirWS, U);
     float  rcpLenRayDir   = rsqrt(dot(rayDirWS, rayDirWS));
     float  rcpLenRightDir = rsqrt(dot(rightDirWS, rightDirWS));

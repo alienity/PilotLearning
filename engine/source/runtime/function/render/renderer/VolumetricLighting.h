@@ -42,8 +42,8 @@ namespace MoYu
 
 		void clearAndHeightFogVoxelizationPass(RHI::RenderGraph& graph, ClearPassInputStruct& passInput, ClearPassOutputStruct& passOutput);
 
-		void UpdateShaderVariablesGlobalCBFogParameters(
-			HLSL::VolumetricLightingUniform& inoutVolumetricLightingUniform, HLSL::VBufferUniform inoutVBufferUniform);
+		void UpdateVolumetricLightingUniform(HLSL::VolumetricLightingUniform& inoutVolumetricLightingUniform);
+		void UpdateVolumetricLightingUniform(HLSL::VBufferUniform& inoutVBufferUniform);
 
 		glm::vec4 m_PackedCoeffs[7];
 		glm::vec2 m_xySeq[7];
