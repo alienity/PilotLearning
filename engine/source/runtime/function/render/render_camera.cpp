@@ -25,14 +25,22 @@ namespace MoYu
         if (pCamSwapData == nullptr)
             return;
 
-        rawCameraData.m_isPerspective = pCamSwapData->m_is_perspective;
-        setMainViewMatrix(pCamSwapData->m_view_matrix, pCamSwapData->m_camera_type);
-        perspectiveProjection(
+        updateCameraData(
+            pCamSwapData->m_is_perspective, 
+            pCamSwapData->m_view_matrix, 
             pCamSwapData->m_width, 
             pCamSwapData->m_height, 
             pCamSwapData->m_nearZ, 
             pCamSwapData->m_farZ, 
             pCamSwapData->m_fov_y);
+
+    }
+
+    void RenderCamera::updateCameraData(bool isPerspective, glm::float4x4 viewMatrix, int width, int height, float nearZ, float farZ, float fovY)
+    {
+        rawCameraData.m_isPerspective = isPerspective;
+        setMainViewMatrix(viewMatrix, RenderCameraType::Editor);
+        perspectiveProjection(width, height, nearZ, farZ, fovY);
 
         mainViewConstants.prevViewMatrix = mainViewConstants.viewMatrix;
         mainViewConstants.prevViewProjMatrix = mainViewConstants.viewProjMatrix;
@@ -41,7 +49,6 @@ namespace MoYu
 
         mainViewConstants.prevWorldSpaceCameraPos = mainViewConstants.worldSpaceCameraPos;
 
-        glm::float4x4 viewMatrix = getViewMatrix();
         glm::float4x4 projMatrix = getProjMatrix();
         glm::float4x4 nonJitterProjMatrix = getProjMatrix(true);
 

@@ -171,8 +171,6 @@ namespace MoYu
 			pVoxelizationPSO = std::make_shared<RHI::D3D12PipelineState>(m_Device, L"VoxelizationPSO", psoDesc);
 
 		}
-
-
 	}
 
 	void VolumetriLighting::clearAndHeightFogVoxelizationPass(RHI::RenderGraph& graph, ClearPassInputStruct& passInput, ClearPassOutputStruct& passOutput)
@@ -214,7 +212,7 @@ namespace MoYu
 
 			// The shader defines GROUP_SIZE_1D = 8.
 			pContext->Dispatch((fogData.resolution.x + 7) / 8, (fogData.resolution.x + 7) / 8, 1);
-			});
+		});
 
 		passOutput.vbufferDensityHandle = mVBufferDensityHandle;
 	}

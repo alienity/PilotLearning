@@ -12,7 +12,7 @@ namespace MoYu
 		// Get the aspect ratio of a projection matrix
 		inline static float ProjectionMatrixAspect(glm::float4x4 matrix)
 		{
-			return -matrix[1][1] / matrix[0][0];
+			return matrix[1][1] / matrix[0][0];
 		}
 
 		// Determine if a projection matrix is off-center

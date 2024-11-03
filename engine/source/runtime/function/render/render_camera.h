@@ -124,6 +124,8 @@ namespace MoYu
         // Otherwise, previous frame view constants will be wrong.
         void updatePerFrame(const CameraSwapData* pCamSwapData);
 
+        void updateCameraData(bool isPerspective, glm::float4x4 viewMatrix, int width, int height, float nearZ, float farZ, float fovY);
+
         RawCameraData& GetRawCameraData();
         ViewConstants& GetViewConstants();
 
