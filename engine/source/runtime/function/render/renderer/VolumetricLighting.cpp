@@ -126,6 +126,20 @@ namespace MoYu
 				D3D12_RESOURCE_STATE_COMMON);
 		}
 
+		if (mLightingBuffer == nullptr)
+		{
+			mLightingBuffer = RHI::D3D12Texture::Create2D(
+				m_Device->GetLinkedDevice(),
+				m_CurrentVolumetricBufferSize.x,
+				m_CurrentVolumetricBufferSize.y,
+				1,
+				DXGI_FORMAT_R32G32B32A32_FLOAT,
+				RHI::RHISurfaceCreateRandomWrite,
+				1,
+				L"VolumeLightingBuffer",
+				D3D12_RESOURCE_STATE_COMMON);
+		}
+
 		HLSL::VolumetricLightingUniform mVolumetricLightingUniform;
 		UpdateVolumetricLightingUniform(mVolumetricLightingUniform);
 
@@ -146,7 +160,7 @@ namespace MoYu
 		std::filesystem::path m_ShaderRootPath = init_info.m_ShaderRootPath;
 
 		{
-			VoxelizationCS = m_ShaderCompiler->CompileShader(
+			mVoxelizationCS = m_ShaderCompiler->CompileShader(
 				RHI_SHADER_TYPE::Compute, m_ShaderRootPath / "pipeline/Runtime/Tools/VolumeLighting/VolumeVoxelizationCS.hlsl", ShaderCompileOptions(L"VolumeVoxelization"));
 
 			RHI::RootSignatureDesc rootSigDesc =
@@ -165,15 +179,50 @@ namespace MoYu
 				PipelineStateStreamCS            CS;
 			} psoStream;
 			psoStream.RootSignature = PipelineStateStreamRootSignature(pVoxelizationSignature.get());
-			psoStream.CS = &VoxelizationCS;
+			psoStream.CS = &mVoxelizationCS;
 			PipelineStateStreamDesc psoDesc = { sizeof(PsoStream), &psoStream };
 
 			pVoxelizationPSO = std::make_shared<RHI::D3D12PipelineState>(m_Device, L"VoxelizationPSO", psoDesc);
 
 		}
+
+		{
+			mVolumetricLightingCS = m_ShaderCompiler->CompileShader(
+				RHI_SHADER_TYPE::Compute, m_ShaderRootPath / "pipeline/Runtime/Tools/VolumeLighting/VolumetricLightingCS.hlsl", ShaderCompileOptions(L"VolumetricLighting"));
+
+			RHI::RootSignatureDesc rootSigDesc =
+				RHI::RootSignatureDesc()
+				.Add32BitConstants<0, 0>(16)
+				.AddStaticSampler<10, 0>(D3D12_FILTER::D3D12_FILTER_MIN_MAG_MIP_POINT, D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_CLAMP, 8)
+				.AddStaticSampler<11, 0>(D3D12_FILTER::D3D12_FILTER_MIN_MAG_LINEAR_MIP_POINT, D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_CLAMP, 8)
+				.AddStaticSampler<12, 0>(D3D12_FILTER::D3D12_FILTER_MIN_MAG_LINEAR_MIP_POINT, D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_WRAP, 8)
+				.AddStaticSampler<13, 0>(D3D12_FILTER::D3D12_FILTER_MIN_MAG_MIP_LINEAR, D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_CLAMP, 8)
+				.AddStaticSampler<14, 0>(D3D12_FILTER::D3D12_FILTER_MIN_MAG_MIP_LINEAR, D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_WRAP, 8)
+				.AddStaticSampler<15, 0>(D3D12_FILTER::D3D12_FILTER_COMPARISON_ANISOTROPIC,
+					D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
+					8,
+					D3D12_COMPARISON_FUNC::D3D12_COMPARISON_FUNC_GREATER_EQUAL,
+					D3D12_STATIC_BORDER_COLOR_OPAQUE_BLACK)
+				.AllowResourceDescriptorHeapIndexing()
+				.AllowSampleDescriptorHeapIndexing();
+
+			pVolumetricLightingSignature = std::make_shared<RHI::D3D12RootSignature>(m_Device, rootSigDesc);
+
+			struct PsoStream
+			{
+				PipelineStateStreamRootSignature RootSignature;
+				PipelineStateStreamCS            CS;
+			} psoStream;
+			psoStream.RootSignature = PipelineStateStreamRootSignature(pVolumetricLightingSignature.get());
+			psoStream.CS = &mVolumetricLightingCS;
+			PipelineStateStreamDesc psoDesc = { sizeof(PsoStream), &psoStream };
+
+			pVolumetricLightingPSO = std::make_shared<RHI::D3D12PipelineState>(m_Device, L"VolumetricLightingPSO", psoDesc);
+
+		}
 	}
 
-	void VolumetriLighting::clearAndHeightFogVoxelizationPass(RHI::RenderGraph& graph, ClearPassInputStruct& passInput, ClearPassOutputStruct& passOutput)
+	void VolumetriLighting::FogVolumeAndVFXVoxelizationPass(RHI::RenderGraph& graph, ClearPassInputStruct& passInput, ClearPassOutputStruct& passOutput)
 	{
 		if (!GetFogVolume().enableVolumetricFog)
 		{
@@ -215,6 +264,56 @@ namespace MoYu
 		});
 
 		passOutput.vbufferDensityHandle = mVBufferDensityHandle;
+	}
+
+	void VolumetriLighting::VolumetricLightingPass(RHI::RenderGraph& graph, VolumeLightPassInputStruct& passInput, VolumeLightPassOutputStruct& passOutput)
+	{
+		if (!GetFogVolume().enableVolumetricFog)
+		{
+			return;
+		}
+
+		RHI::RgResourceHandle mShaderVariablesVolumetricHandle = graph.Import<RHI::D3D12Buffer>(pShaderVariablesVolumetric.get());
+		RHI::RgResourceHandle mLightBufferHandle = graph.Import<RHI::D3D12Texture>(mLightingBuffer.get());
+		
+		RHI::RgResourceHandle perframeBufferHandle = passInput.perframeBufferHandle;
+		RHI::RgResourceHandle vbufferDensityHandle = passInput.vbufferDensityHandle;
+		RHI::RgResourceHandle depthPyramidHandle = passInput.depthPyramidHandle;
+
+		RHI::RenderPass& volumeLightingPass = graph.AddRenderPass("Volumetric Lighting");
+
+		volumeLightingPass.Read(perframeBufferHandle, false, RHIResourceState::RHI_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
+		volumeLightingPass.Read(vbufferDensityHandle, false, RHIResourceState::RHI_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
+		volumeLightingPass.Read(mShaderVariablesVolumetricHandle, false, RHIResourceState::RHI_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
+		volumeLightingPass.Write(mLightBufferHandle, false, RHIResourceState::RHI_RESOURCE_STATE_UNORDERED_ACCESS);
+
+		volumeLightingPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
+			RHI::D3D12ComputeContext* pContext = context->GetComputeContext();
+
+			pContext->SetRootSignature(pVolumetricLightingSignature.get());
+			pContext->SetPipelineState(pVolumetricLightingPSO.get());
+
+			struct RootIndexBuffer
+			{
+				uint32_t perFrameBufferIndex;
+				uint32_t shaderVariablesVolumetricIndex;
+				uint32_t _VBufferDensityIndex;  // RGB = sqrt(scattering), A = sqrt(extinction)
+				uint32_t _DepthPyramidIndex;;
+				uint32_t _VBufferLightingIndex;
+			};
+
+			RootIndexBuffer rootIndexBuffer = RootIndexBuffer{ RegGetBufDefCBVIdx(perframeBufferHandle),
+															   RegGetBufDefCBVIdx(mShaderVariablesVolumetricHandle),
+															   RegGetTexDefSRVIdx(vbufferDensityHandle),
+															   RegGetTexDefSRVIdx(depthPyramidHandle),
+															   RegGetTexDefUAVIdx(mLightBufferHandle) };
+
+			pContext->SetConstantArray(0, sizeof(RootIndexBuffer) / sizeof(UINT), &rootIndexBuffer);
+
+			// The shader defines GROUP_SIZE_1D = 8.
+			pContext->Dispatch((fogData.resolution.x + 7) / 8, (fogData.resolution.x + 7) / 8, 1);
+		});
+
 	}
 
 	void VolumetriLighting::UpdateVolumetricLightingUniform(HLSL::VolumetricLightingUniform& inoutVolumetricLightingUniform)
@@ -276,4 +375,3 @@ namespace MoYu
 	}
 
 }
-

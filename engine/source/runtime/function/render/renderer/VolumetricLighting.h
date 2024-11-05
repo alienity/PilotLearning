@@ -31,6 +31,17 @@ namespace MoYu
 			RHI::RgResourceHandle vbufferDensityHandle;
 		};
 
+		struct VolumeLightPassInputStruct
+		{
+			RHI::RgResourceHandle perframeBufferHandle;
+			RHI::RgResourceHandle vbufferDensityHandle;
+			RHI::RgResourceHandle depthPyramidHandle;
+		};
+
+		struct VolumeLightPassOutputStruct
+		{
+			RHI::RgResourceHandle vbufferLightingHandle;
+		};
 
 		~VolumetriLighting() { destroy(); }
 
@@ -40,7 +51,8 @@ namespace MoYu
 
 		void initialize(const VolumetriLightingInitInfo& init_info);
 
-		void clearAndHeightFogVoxelizationPass(RHI::RenderGraph& graph, ClearPassInputStruct& passInput, ClearPassOutputStruct& passOutput);
+		void FogVolumeAndVFXVoxelizationPass(RHI::RenderGraph& graph, ClearPassInputStruct& passInput, ClearPassOutputStruct& passOutput);
+		void VolumetricLightingPass(RHI::RenderGraph& graph, VolumeLightPassInputStruct& passInput, VolumeLightPassOutputStruct& passOutput);
 
 		void UpdateVolumetricLightingUniform(HLSL::VolumetricLightingUniform& inoutVolumetricLightingUniform);
 		void UpdateVolumetricLightingUniform(HLSL::VBufferUniform& inoutVBufferUniform);
@@ -54,9 +66,18 @@ namespace MoYu
 		HLSL::VolumetricLightingUniform mVolumetricLightingUniform;
 		HLSL::VBufferUniform mVBufferUniform;
 	private:
-		Shader VoxelizationCS;
+		Shader mVoxelizationCS;
 		std::shared_ptr<RHI::D3D12RootSignature> pVoxelizationSignature;
 		std::shared_ptr<RHI::D3D12PipelineState> pVoxelizationPSO;
+
+		Shader mVolumetricLightingCS;
+		std::shared_ptr<RHI::D3D12RootSignature> pVolumetricLightingSignature;
+		std::shared_ptr<RHI::D3D12PipelineState> pVolumetricLightingPSO;
+
+		Shader mVolumetricLightingFilteringCS;
+		std::shared_ptr<RHI::D3D12RootSignature> pVolumetricLightingFilteringSignature;
+		std::shared_ptr<RHI::D3D12PipelineState> pVolumetricLightingFilteringPSO;
+
 
 		RHI::RgTextureDesc colorTexDesc;
 
@@ -65,6 +86,7 @@ namespace MoYu
 
 		std::shared_ptr<RHI::D3D12Buffer> pShaderVariablesVolumetric;
 		std::shared_ptr<RHI::D3D12Texture> mVBufferDensity;
+		std::shared_ptr<RHI::D3D12Texture> mLightingBuffer;
 
 		std::shared_ptr<RHI::D3D12Texture> volumetricHistoryBuffers[2];
 	};

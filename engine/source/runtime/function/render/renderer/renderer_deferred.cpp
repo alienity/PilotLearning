@@ -770,11 +770,16 @@ namespace MoYu
 
         //=================================================================================
         // volume light
-        VolumetriLighting::ClearPassInputStruct mVolumeLightInput;
-        VolumetriLighting::ClearPassOutputStruct mVolumeLightOutput;
-        mVolumeLightInput.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
+        VolumetriLighting::ClearPassInputStruct mVolumeVoxelInput;
+        VolumetriLighting::ClearPassOutputStruct mVolumeVoxelOutput;
+        mVolumeVoxelInput.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
+        mVolumeLightPass->FogVolumeAndVFXVoxelizationPass(graph, mVolumeVoxelInput, mVolumeVoxelOutput);
 
-        mVolumeLightPass->clearAndHeightFogVoxelizationPass(graph, mVolumeLightInput, mVolumeLightOutput);
+        VolumetriLighting::VolumeLightPassInputStruct mVolumeLightInput;
+        VolumetriLighting::VolumeLightPassOutputStruct mVolumeLightOutput;
+        mVolumeLightInput.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
+        mVolumeLightInput.vbufferDensityHandle = mVolumeVoxelOutput.vbufferDensityHandle;
+        mVolumeLightPass->VolumetricLightingPass(graph, mVolumeLightInput, mVolumeLightOutput);
         //=================================================================================
 
         ///*

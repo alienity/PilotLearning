@@ -258,7 +258,7 @@ namespace MoYu
 
 	glm::uint VolumetricFrameIndex(int frameIndex);
 	void ComputeVolumetricFogSliceCountAndScreenFraction(const FogVolume& fog, int& sliceCount, float& screenFraction);
-	glm::ivec3 ComputeVolumetricViewportSize(const FogVolume& fog, int viewportWidth, int viewportHeight, float voxelSize);
+	glm::ivec3 ComputeVolumetricViewportSize(const FogVolume& fog, int viewportWidth, int viewportHeight, float& voxelSize);
 	VBufferParameters ComputeVolumetricBufferParameters(float width, float height, float nearZ, float farZ, float fovy, const FogVolume& fog);
 
 	float ScaleHeightFromLayerDepth(float d);

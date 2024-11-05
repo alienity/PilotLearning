@@ -263,7 +263,7 @@ namespace MoYu
         sliceCount = fog.volumeSliceCount;
     }
 
-    glm::ivec3 ComputeVolumetricViewportSize(const FogVolume& fog, int viewportWidth, int viewportHeight, float voxelSize)
+    glm::ivec3 ComputeVolumetricViewportSize(const FogVolume& fog, int viewportWidth, int viewportHeight, float& voxelSize)
     {
         int sliceCount;
         float screenFraction;
