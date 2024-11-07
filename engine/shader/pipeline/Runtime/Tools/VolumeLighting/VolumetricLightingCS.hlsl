@@ -44,18 +44,23 @@
 #include "../../ShaderLibrary/Filtering.hlsl"
 #include "../../ShaderLibrary/VolumeRendering.hlsl"
 #include "../../ShaderLibrary/EntityLighting.hlsl"
-#include "../../ShaderLibrary/ShaderVariablesGlobal.hlsl"
-#include "../../ShaderLibrary/ShaderVariables.hlsl"
+
 #include "../../Material/Builtin/BuiltinData.hlsl"
 
+#include "../../ShaderLibrary/ShaderVariables.hlsl"
 #define SHADERPASS SHADERPASS_VOLUMETRIC_LIGHTING
 
 #include "../../Tools/VolumeLighting/VolumetricLightingCommon.hlsl"
+
+#include "../../ShaderLibrary/CommonLighting.hlsl"
+#include "../../ShaderLibrary/VolumeRendering.hlsl"
+#include "../../ShaderLibrary/Sampling/Sampling.hlsl"
+
 #include "../../Lighting/Lighting.hlsl"
 #include "../../Lighting/LightLoop/LightLoopDef.hlsl"
-#include "../../Material/Lit/Lit.hlsl"
-#include "../../Lighting/LightLoop/LightLoop.hlsl"
 #include "../../Lighting/LightEvaluation.hlsl"
+
+#include "../../Material/BuiltinGIUtilities.hlsl"
 
 //--------------------------------------------------------------------------------------------------
 // Inputs & outputs
@@ -252,6 +257,7 @@ VoxelLighting EvaluateVoxelLightingDirectional(FrameUniforms frameUniforms, Samp
             #endif // SHADOW_VIEW_BIAS
 
             // This code works for both surface reflection and thin object transmission.
+            BuiltinData unused;
             SHADOW_TYPE shadow = EvaluateShadow_Directional(context, posInput, light, unused, shadowN);
             lightColor.rgb *= ComputeShadowColor(shadow, light.shadowTint, light.penumbraTint);
 
@@ -488,7 +494,7 @@ VoxelLighting EvaluateVoxelLightingLocal(FrameUniforms frameUniforms, SamplerStr
 
 // Computes the in-scattered radiance along the ray.
 void FillVolumetricLightingBuffer(
-    inout RWTexture2D<float4> _VBufferLighting, Texture3D<float4> _VBufferDensity, SamplerStruct samplerStruct,
+    inout RWTexture3D<float4> _VBufferLighting, Texture3D<float4> _VBufferDensity, SamplerStruct samplerStruct,
     FrameUniforms frameUniforms, VolumetricLightingUniform volumetricLightingUniform, VBufferUniform vBufferUniform,
     LightLoopContext context, uint featureFlags, PositionInputs posInput, int groupIdx, JitteredRay ray, float tStart)
 {
@@ -580,7 +586,7 @@ void FillVolumetricLightingBuffer(
         // Prevent division by 0.
         extinction = max(extinction, FLT_MIN);
 
-        if (featureFlags & LIGHTFEATUREFLAGS_DIRECTIONAL)
+        // if (featureFlags & LIGHTFEATUREFLAGS_DIRECTIONAL)
         {
             VoxelLighting lighting = EvaluateVoxelLightingDirectional(frameUniforms, samplerStruct,
                                                                       context, featureFlags, posInput,
@@ -741,12 +747,12 @@ void VolumetricLighting(uint3 dispatchThreadId : SV_DispatchThreadID,
     ConstantBuffer<ShaderVariablesVolumetric> shaderVariablesVolumetric = ResourceDescriptorHeap[shaderVariablesVolumetricIndex];
     Texture3D<float4> _VBufferDensity = ResourceDescriptorHeap[_VBufferDensityIndex];
     Texture2D<float> _DepthPyramidRT = ResourceDescriptorHeap[_DepthPyramidIndex];
-    RWTexture2D<float4> _VBufferLighting = ResourceDescriptorHeap[_VBufferLightingIndex];
+    RWTexture3D<float4> _VBufferLighting = ResourceDescriptorHeap[_VBufferLightingIndex];
 
     SamplerStruct samplerStruct = GetSamplerStruct();
     
     VolumetricLightingUniform volumetricLightingUniform = mFrameUniforms.volumetricLightingUniform;
-    VBufferUniform volumeLightUniform = mFrameUniforms.volumeLightUniform;
+    VBufferUniform volumeLightUniform = mFrameUniforms.vBufferUniform;
 
     float4 _VBufferViewportSize = volumeLightUniform._VBufferViewportSize;
     
@@ -805,7 +811,7 @@ void VolumetricLighting(uint3 dispatchThreadId : SV_DispatchThreadID,
     uint2 tileCoord = groupOffset * VBUFFER_VOXEL_SIZE / TILE_SIZE_BIG_TILE;
 #else
     // No compile-time optimizations, no scalarization.
-    uint2 tileCoord = pixelCoord / TILE_SIZE_BIG_TILE;
+    uint2 tileCoord = pixelCoord/* / TILE_SIZE_BIG_TILE*/;
 #endif
     // uint  tileIndex = tileCoord.x + _NumTileBigTileX * tileCoord.y;
     // // This clamp is important as _VBufferVoxelSize can have float value which can cause en overflow (Crash on Vulkan and Metal)

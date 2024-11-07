@@ -128,10 +128,11 @@ namespace MoYu
 
 		if (mLightingBuffer == nullptr)
 		{
-			mLightingBuffer = RHI::D3D12Texture::Create2D(
+			mLightingBuffer = RHI::D3D12Texture::Create3D(
 				m_Device->GetLinkedDevice(),
 				m_CurrentVolumetricBufferSize.x,
 				m_CurrentVolumetricBufferSize.y,
+				m_CurrentVolumetricBufferSize.z,
 				1,
 				DXGI_FORMAT_R32G32B32A32_FLOAT,
 				RHI::RHISurfaceCreateRandomWrite,
@@ -222,6 +223,8 @@ namespace MoYu
 		}
 	}
 
+	RHI::RgResourceHandle mShaderVariablesVolumetricHandle;
+
 	void VolumetriLighting::FogVolumeAndVFXVoxelizationPass(RHI::RenderGraph& graph, ClearPassInputStruct& passInput, ClearPassOutputStruct& passOutput)
 	{
 		if (!GetFogVolume().enableVolumetricFog)
@@ -229,7 +232,7 @@ namespace MoYu
 			return;
 		}
 
-		RHI::RgResourceHandle mShaderVariablesVolumetricHandle = graph.Import<RHI::D3D12Buffer>(pShaderVariablesVolumetric.get());
+		mShaderVariablesVolumetricHandle = graph.Import<RHI::D3D12Buffer>(pShaderVariablesVolumetric.get());
 		RHI::RgResourceHandle mVBufferDensityHandle = graph.Import<RHI::D3D12Texture>(mVBufferDensity.get());
 
 		RHI::RgResourceHandle perframeBufferHandle = passInput.perframeBufferHandle;
@@ -273,7 +276,7 @@ namespace MoYu
 			return;
 		}
 
-		RHI::RgResourceHandle mShaderVariablesVolumetricHandle = graph.Import<RHI::D3D12Buffer>(pShaderVariablesVolumetric.get());
+		//RHI::RgResourceHandle mShaderVariablesVolumetricHandle = graph.Import<RHI::D3D12Buffer>(pShaderVariablesVolumetric.get());
 		RHI::RgResourceHandle mLightBufferHandle = graph.Import<RHI::D3D12Texture>(mLightingBuffer.get());
 		
 		RHI::RgResourceHandle perframeBufferHandle = passInput.perframeBufferHandle;
@@ -283,8 +286,9 @@ namespace MoYu
 		RHI::RenderPass& volumeLightingPass = graph.AddRenderPass("Volumetric Lighting");
 
 		volumeLightingPass.Read(perframeBufferHandle, false, RHIResourceState::RHI_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
-		volumeLightingPass.Read(vbufferDensityHandle, false, RHIResourceState::RHI_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
 		volumeLightingPass.Read(mShaderVariablesVolumetricHandle, false, RHIResourceState::RHI_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
+		volumeLightingPass.Read(vbufferDensityHandle, false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+		volumeLightingPass.Read(depthPyramidHandle, false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 		volumeLightingPass.Write(mLightBufferHandle, false, RHIResourceState::RHI_RESOURCE_STATE_UNORDERED_ACCESS);
 
 		volumeLightingPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
@@ -375,3 +379,5 @@ namespace MoYu
 	}
 
 }
+
+

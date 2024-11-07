@@ -779,6 +779,7 @@ namespace MoYu
         VolumetriLighting::VolumeLightPassOutputStruct mVolumeLightOutput;
         mVolumeLightInput.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
         mVolumeLightInput.vbufferDensityHandle = mVolumeVoxelOutput.vbufferDensityHandle;
+        mVolumeLightInput.depthPyramidHandle = mDepthPyramidOutput.minDepthPtyramidHandle;
         mVolumeLightPass->VolumetricLightingPass(graph, mVolumeLightInput, mVolumeLightOutput);
         //=================================================================================
 
