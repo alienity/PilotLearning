@@ -20,6 +20,19 @@ namespace MoYu
 			std::filesystem::path m_ShaderRootPath;
 		};
 
+		struct GenMaxZInputStruct
+		{
+			RHI::RgResourceHandle perframeBufferHandle;
+			RHI::RgResourceHandle depthHandle;
+		};
+
+		struct GenMaxZOutputStruct
+		{
+			RHI::RgResourceHandle maxZ8xBufferHandle;
+			RHI::RgResourceHandle maxZBufferHandle;
+			RHI::RgResourceHandle dilatedMaxZBufferHandle;
+		};
+
 		struct ClearPassInputStruct
 		{
 			RHI::RgResourceHandle perframeBufferHandle;
@@ -29,6 +42,7 @@ namespace MoYu
 		struct ClearPassOutputStruct
 		{
 			RHI::RgResourceHandle vbufferDensityHandle;
+			RHI::RgResourceHandle shaderVariablesVolumetricHandle;
 		};
 
 		struct VolumeLightPassInputStruct
@@ -36,6 +50,8 @@ namespace MoYu
 			RHI::RgResourceHandle perframeBufferHandle;
 			RHI::RgResourceHandle vbufferDensityHandle;
 			RHI::RgResourceHandle depthPyramidHandle;
+			RHI::RgResourceHandle dilatedMaxZBufferHandle;
+			RHI::RgResourceHandle shaderVariablesVolumetricHandle;
 		};
 
 		struct VolumeLightPassOutputStruct
@@ -48,9 +64,9 @@ namespace MoYu
 		void updateShaderVariableslVolumetrics(HLSL::ShaderVariablesVolumetric& cb, glm::vec4 resolution, int maxSliceCount, bool updateVoxelizationFields = false);
 		void prepareBuffer(std::shared_ptr<RenderResource> render_resource);
 
-
 		void initialize(const VolumetriLightingInitInfo& init_info);
 
+		void GenerateMaxZForVolumetricPass(RHI::RenderGraph& graph, GenMaxZInputStruct& passInput, GenMaxZOutputStruct& passOutput);
 		void FogVolumeAndVFXVoxelizationPass(RHI::RenderGraph& graph, ClearPassInputStruct& passInput, ClearPassOutputStruct& passOutput);
 		void VolumetricLightingPass(RHI::RenderGraph& graph, VolumeLightPassInputStruct& passInput, VolumeLightPassOutputStruct& passOutput);
 
@@ -66,6 +82,16 @@ namespace MoYu
 		HLSL::VolumetricLightingUniform mVolumetricLightingUniform;
 		HLSL::VBufferUniform mVBufferUniform;
 	private:
+		Shader mMaxZCS;
+		std::shared_ptr<RHI::D3D12RootSignature> pMaxZSignature;
+		std::shared_ptr<RHI::D3D12PipelineState> pMaxZPSO;
+		Shader mMaxZDownsampleCS;
+		std::shared_ptr<RHI::D3D12RootSignature> pMaxZDownsampleSignature;
+		std::shared_ptr<RHI::D3D12PipelineState> pMaxZDownsamplePSO;
+		Shader mDilateMaxZCS;
+		std::shared_ptr<RHI::D3D12RootSignature> pDilateMaxZSignature;
+		std::shared_ptr<RHI::D3D12PipelineState> pDilateMaxZPSO;
+		
 		Shader mVoxelizationCS;
 		std::shared_ptr<RHI::D3D12RootSignature> pVoxelizationSignature;
 		std::shared_ptr<RHI::D3D12PipelineState> pVoxelizationPSO;
@@ -80,6 +106,7 @@ namespace MoYu
 
 
 		RHI::RgTextureDesc colorTexDesc;
+		RHI::RgTextureDesc maxZMaskTexDesc;
 
 		glm::ivec3 m_CurrentVolumetricBufferSize;
 		VBufferParameters m_CurrentVBufferParams;

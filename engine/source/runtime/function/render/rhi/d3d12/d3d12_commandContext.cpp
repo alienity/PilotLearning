@@ -232,7 +232,7 @@ namespace RHI
     {
         if (Subresource == D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES)
         {
-            CResourceState allTrackedState = m_CommandListHandle.GetAllTrackedResourceState(Resource);
+            const CResourceState& allTrackedState = m_CommandListHandle.GetAllTrackedResourceState(Resource);
             if (allTrackedState.IsUniform())
             {
                 D3D12_RESOURCE_STATES trackedResourceState = allTrackedState.GetSubresourceState(0);

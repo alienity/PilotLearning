@@ -560,13 +560,11 @@ namespace MoYu
 
         /**/
         //=================================================================================
-        // Ó¦¸ÃÔÙ¸øgraphÌí¼ÓÒ»¸ösignalÍ¬²½£¬Ä¿Ç°ÏÈÕâÑù
         IndirectCullPass::IndirectCullOutput indirectCullOutput;
         mIndirectCullPass->update(graph, indirectCullOutput);
         //=================================================================================
 
         //=================================================================================
-        // Terrain¼ô²ÃPass
         RHI::RgResourceHandle lastFrameMinDepthPyramidHandle = mDepthPyramidPass->GetDepthPyramidHandle(graph, DepthMipGenerateMode::MinType, true);
 
         IndirectTerrainCullPass::TerrainCullInput terrainCullInput;
@@ -719,7 +717,6 @@ namespace MoYu
 
         /*
         //=================================================================================
-        // TerrainÊ¹ÓÃµ±Ç°Ö¡depth¼ô²ÃPass
         IndirectTerrainCullPass::DepthCullIndexInput _input2 = {};
         _input2.minDepthPyramidHandle = mDepthPyramidOutput.minDepthPtyramidHandle;
         _input2.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
@@ -780,6 +777,8 @@ namespace MoYu
         mVolumeLightInput.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
         mVolumeLightInput.vbufferDensityHandle = mVolumeVoxelOutput.vbufferDensityHandle;
         mVolumeLightInput.depthPyramidHandle = mDepthPyramidOutput.minDepthPtyramidHandle;
+        mVolumeLightInput.dilatedMaxZBufferHandle = mDepthPyramidOutput.minDepthPtyramidHandle; // TODO: æ”¹æˆVolumePassè‡ªå·±ç”Ÿæˆçš„
+        mVolumeLightInput.shaderVariablesVolumetricHandle = mVolumeVoxelOutput.shaderVariablesVolumetricHandle;
         mVolumeLightPass->VolumetricLightingPass(graph, mVolumeLightInput, mVolumeLightOutput);
         //=================================================================================
 
@@ -891,8 +890,7 @@ namespace MoYu
         mColorPyramidInput.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
         mColorPyramidOutput.colorPyramidHandle = curFrameColorRTHandle;
         mColorPyramidPass->update(graph, mColorPyramidInput, mColorPyramidOutput);
-
-        // ÒòÎªcolor pyramid±ØÐëÔÚ»æÖÆtransparent¶ÔÏóÖ®Ç°
+        
         outColorHandle = mColorPyramidOutput.colorHandle;
         //=================================================================================
 
@@ -1038,7 +1036,6 @@ namespace MoYu
     void DeferredRenderer::PreRender(double deltaTime)
     {
         {
-            // Éú³Éspecular LDºÍDFG£¬Éú³Édiffuse radiance
             ToolPass::ToolInputParameters _toolPassInput;
             ToolPass::ToolOutputParameters _toolPassOutput;
             mToolPass->preUpdate(_toolPassInput, _toolPassOutput);
