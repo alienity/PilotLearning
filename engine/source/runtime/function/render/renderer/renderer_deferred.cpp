@@ -767,6 +767,12 @@ namespace MoYu
 
         //=================================================================================
         // volume light
+        VolumetriLighting::GenMaxZInputStruct mGenMaxZInputStruct;
+        VolumetriLighting::GenMaxZOutputStruct mGenMaxZOutputStruct;
+        mGenMaxZInputStruct.depthHandle = mGBufferOutput.depthHandle;
+        mGenMaxZInputStruct.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
+        mVolumeLightPass->GenerateMaxZForVolumetricPass(graph, mGenMaxZInputStruct, mGenMaxZOutputStruct);
+
         VolumetriLighting::ClearPassInputStruct mVolumeVoxelInput;
         VolumetriLighting::ClearPassOutputStruct mVolumeVoxelOutput;
         mVolumeVoxelInput.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;

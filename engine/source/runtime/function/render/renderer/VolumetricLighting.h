@@ -106,7 +106,10 @@ namespace MoYu
 
 
 		RHI::RgTextureDesc colorTexDesc;
-		RHI::RgTextureDesc maxZMaskTexDesc;
+
+		RHI::RgTextureDesc maxZ8xBufferDesc;
+		RHI::RgTextureDesc maxZBufferDesc;
+		RHI::RgTextureDesc dilatedMaxZBufferDesc;
 
 		glm::ivec3 m_CurrentVolumetricBufferSize;
 		VBufferParameters m_CurrentVBufferParams;

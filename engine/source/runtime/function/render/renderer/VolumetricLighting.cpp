@@ -156,12 +156,20 @@ namespace MoYu
 	{
 		colorTexDesc = init_info.colorTexDesc;
 
+		maxZ8xBufferDesc = RHI::RgTextureDesc("MaxZ mask 8x").
+			SetExtent(colorTexDesc.Width * 0.125f, colorTexDesc.Height * 0.125f).
+			SetFormat(DXGI_FORMAT::DXGI_FORMAT_R32_FLOAT).
+			SetAllowUnorderedAccess();
 
+		maxZBufferDesc = RHI::RgTextureDesc("MaxZ mask").
+			SetExtent(colorTexDesc.Width * 0.125f, colorTexDesc.Height * 0.125f).
+			SetFormat(DXGI_FORMAT::DXGI_FORMAT_R32_FLOAT).
+			SetAllowUnorderedAccess();
 
-		// maxZMaskTexDesc = RHI::RgTextureDesc("MaxZMask").
-		// 	SetExtent(colorTexDesc.Width >> 4, colorTexDesc.Height >> 4).
-		// 	SetFormat(DXGI_FORMAT::DXGI_FORMAT_R32_FLOAT).
-		// 	SetAllowUnorderedAccess();
+		dilatedMaxZBufferDesc = RHI::RgTextureDesc("Dilated MaxZ mask").
+			SetExtent(colorTexDesc.Width / 16.0f, colorTexDesc.Height / 16.0f).
+			SetFormat(DXGI_FORMAT::DXGI_FORMAT_R32_FLOAT).
+			SetAllowUnorderedAccess();
 
 		ShaderCompiler* m_ShaderCompiler = init_info.m_ShaderCompiler;
 		std::filesystem::path m_ShaderRootPath = init_info.m_ShaderRootPath;
@@ -315,52 +323,76 @@ namespace MoYu
 
 	void VolumetriLighting::GenerateMaxZForVolumetricPass(RHI::RenderGraph& graph, GenMaxZInputStruct& passInput, GenMaxZOutputStruct& passOutput)
 	{
-		/*
+		struct GenerateMaxZMaskPassData
+		{
+			glm::ivec2 intermediateMaskSize;
+			glm::ivec2 finalMaskSize;
+			float dilationWidth;
+		};
+		GenerateMaxZMaskPassData passData;
+
+		passData.intermediateMaskSize.x = HDUtils::DivRoundUp(colorTexDesc.Width, 8);
+		passData.intermediateMaskSize.y = HDUtils::DivRoundUp(colorTexDesc.Height, 8);
+
+		passData.finalMaskSize.x = passData.intermediateMaskSize.x / 2;
+		passData.finalMaskSize.y = passData.intermediateMaskSize.y / 2;
+
+		passData.dilationWidth = 1;
+
 		RHI::RgResourceHandle perframeBufferHandle = passInput.perframeBufferHandle;
 		RHI::RgResourceHandle depthHandle = passInput.depthHandle;
 
-		RHI::RgResourceHandle deltaIrradiance2DHandle = graph.Create<RHI::D3D12Texture>(deltaIrradiance2DDesc);
-		RHI::RgResourceHandle deltaRayleighScattering3DHandle = graph.Create<RHI::D3D12Texture>(deltaRayleighScattering3DDesc);
-		RHI::RgResourceHandle deltaMieScattering3DHandle = graph.Create<RHI::D3D12Texture>(deltaMieScattering3DDesc);
-		RHI::RgResourceHandle deltaScatteringDensity3DHandle = graph.Create<RHI::D3D12Texture>(deltaScatteringDensity3DDesc);
+		RHI::RgResourceHandle maxZ8xBufferHandle = graph.Create<RHI::D3D12Texture>(maxZ8xBufferDesc);
+		RHI::RgResourceHandle maxZBufferHandle = graph.Create<RHI::D3D12Texture>(maxZBufferDesc);
+		RHI::RgResourceHandle dilatedMaxZBufferHandle = graph.Create<RHI::D3D12Texture>(dilatedMaxZBufferDesc);
 
 		RHI::RenderPass& genMaxZPass = graph.AddRenderPass("Generate Max Z Mask for Volumetric");
 
 		genMaxZPass.Read(perframeBufferHandle, false, RHIResourceState::RHI_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
-		genMaxZPass.Read(depthHandle, false, RHIResourceState::RHI_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
-		genMaxZPass.Write(vbufferDensityHandle, false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-		genMaxZPass.Write(depthPyramidHandle, false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-		genMaxZPass.Write(mLightBufferHandle, false, RHIResourceState::RHI_RESOURCE_STATE_UNORDERED_ACCESS);
+		genMaxZPass.Read(depthHandle, false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+		genMaxZPass.Write(maxZ8xBufferHandle, true);
+		genMaxZPass.Write(maxZBufferHandle, true);
+		genMaxZPass.Write(dilatedMaxZBufferHandle, true);
 
-		volumeLightingPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
+		genMaxZPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
 			RHI::D3D12ComputeContext* pContext = context->GetComputeContext();
 
-			pContext->SetRootSignature(pVolumetricLightingSignature.get());
-			pContext->SetPipelineState(pVolumetricLightingPSO.get());
+			pContext->TransitionBarrier(RegGetTex(maxZ8xBufferHandle), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+			pContext->FlushResourceBarriers();
+
+			// Downsample 8x8 with max operator
+
+			int maskW = passData.intermediateMaskSize.x;
+			int maskH = passData.intermediateMaskSize.y;
+
+			int dispatchX = maskW;
+			int dispatchY = maskH;
+
+			pContext->SetRootSignature(pMaxZSignature.get());
+			pContext->SetPipelineState(pMaxZPSO.get());
 
 			struct RootIndexBuffer
 			{
 				uint32_t perFrameBufferIndex;
-				uint32_t shaderVariablesVolumetricIndex;
-				uint32_t _VBufferDensityIndex;  // RGB = sqrt(scattering), A = sqrt(extinction)
-				uint32_t _DepthPyramidIndex;
-				uint32_t _MaxZMaskTextureIndex;
-				uint32_t _VBufferLightingIndex;
+				uint32_t _DepthBufferIndex;
+				uint32_t _OutputTextureIndex;
 			};
 
 			RootIndexBuffer rootIndexBuffer = RootIndexBuffer{ RegGetBufDefCBVIdx(perframeBufferHandle),
-															   RegGetBufDefCBVIdx(shaderVariablesVolumetricHandle),
-															   RegGetTexDefSRVIdx(vbufferDensityHandle),
-															   RegGetTexDefSRVIdx(depthPyramidHandle),
-															   RegGetTexDefSRVIdx(dilatedMaxZBufferHandle),
-															   RegGetTexDefUAVIdx(mLightBufferHandle) };
+															   RegGetTexDefSRVIdx(depthHandle),
+															   RegGetTexDefUAVIdx(maxZ8xBufferHandle) };
 
-			pContext->SetConstantArray(0, sizeof(RootIndexBuffer) / sizeof(UINT), &rootIndexBuffer);
+			pContext->Dispatch(dispatchX, dispatchY, 1);
 
-			// The shader defines GROUP_SIZE_1D = 8.
-			pContext->Dispatch((fogData.resolution.x + 7) / 8, (fogData.resolution.x + 7) / 8, 1);
+			// Downsample to 16x16
+
+
+
+
+			// Dilate max Z
+
+
 		});
-		*/
 	}
 	
 	void VolumetriLighting::FogVolumeAndVFXVoxelizationPass(RHI::RenderGraph& graph, ClearPassInputStruct& passInput, ClearPassOutputStruct& passOutput)
