@@ -1,0 +1,40 @@
+load("@fbcode_macros//build_defs:cpp_binary.bzl", "cpp_binary")
+load("@fbcode_macros//build_defs:cpp_library.bzl", "cpp_library")
+# @fb-only: load("//gdb/scripts/tests/common:gdb_unittest.bzl", "gdb_unittest") 
+
+oncall("fbcode_entropy_wardens_folly")
+
+cpp_library(
+    name = "gdb_util",
+    headers = ["GdbUtil.h"],
+    exported_deps = [
+        "//folly:c_portability",
+    ],
+)
+
+cpp_binary(
+    name = "main",
+    srcs = ["main.cpp"],
+    modules = False,
+    deps = [
+        "//folly:network_address",
+        "//folly:range",
+        "//folly:small_vector",
+        "//folly/container:f14_hash",
+        "//folly/json:dynamic",
+        "//folly/support/test:gdb_util",
+    ],
+)
+
+# @lint-ignore-every BUCKFORMAT
+
+# Test all of the printers in the folly gdb extension
+# @fb-only: gdb_unittest(
+    # @fb-only: name = "test", 
+    # @fb-only: binary = "main", 
+    # @fb-only: script = "runtest.gdb", 
+    # @fb-only: skip_modes = [
+        # @fb-only: "dev", 
+        # @fb-only: "opt*", 
+    # @fb-only: ], 
+# @fb-only: ) 

@@ -82,7 +82,7 @@ namespace MoYu
 
         void initialize(const TerrainCullInitInfo& init_info);
         void prepareMeshData(std::shared_ptr<RenderResource> render_resource);
-        void update(RHI::RenderGraph& graph, TerrainCullInput& passInput, TerrainCullOutput& passOutput);
+        void update(RHI::RenderGraph& graph, const TerrainCullInput& passInput, TerrainCullOutput& passOutput);
         
         void destroy() override final;
     private:

@@ -276,7 +276,7 @@ namespace MoYu
         case MoYu::AverageType:
             if (!mDepthPyramidHandle[curIndex].pAverageDpethPyramidHandle.IsValid())
             {
-                std::shared_ptr<RHI::D3D12Texture> depthRT = mDepthPyramid[curIndex].pAverageDpethPyramid;
+                std::shared_ptr<RHI::D3D12Texture>& depthRT = mDepthPyramid[curIndex].pAverageDpethPyramid;
                 mDepthPyramidHandle[curIndex].pAverageDpethPyramidHandle = graph.Import<RHI::D3D12Texture>(depthRT.get());
             }
             depthHandle = mDepthPyramidHandle[curIndex].pAverageDpethPyramidHandle;
@@ -284,7 +284,7 @@ namespace MoYu
         case MoYu::MaxType:
             if (!mDepthPyramidHandle[curIndex].pMaxDpethPyramidHandle.IsValid())
             {
-                std::shared_ptr<RHI::D3D12Texture> depthRT = mDepthPyramid[curIndex].pMaxDpethPyramid;
+                std::shared_ptr<RHI::D3D12Texture>& depthRT = mDepthPyramid[curIndex].pMaxDpethPyramid;
                 mDepthPyramidHandle[curIndex].pMaxDpethPyramidHandle = graph.Import<RHI::D3D12Texture>(depthRT.get());
             }
             depthHandle = mDepthPyramidHandle[curIndex].pMaxDpethPyramidHandle;
@@ -292,7 +292,7 @@ namespace MoYu
         case MoYu::MinType:
             if (!mDepthPyramidHandle[curIndex].pMinDpethPyramidHandle.IsValid())
             {
-                std::shared_ptr<RHI::D3D12Texture> depthRT = mDepthPyramid[curIndex].pMinDpethPyramid;
+                std::shared_ptr<RHI::D3D12Texture>& depthRT = mDepthPyramid[curIndex].pMinDpethPyramid;
                 mDepthPyramidHandle[curIndex].pMinDpethPyramidHandle = graph.Import<RHI::D3D12Texture>(depthRT.get());
             }
             depthHandle = mDepthPyramidHandle[curIndex].pMinDpethPyramidHandle;

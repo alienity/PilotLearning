@@ -316,15 +316,15 @@ namespace MoYu
         }
     }
     
-    void IndirectShadowPass::update(RHI::RenderGraph& graph, ShadowInputParameters& passInput, ShadowOutputParameters& passOutput)
+    void IndirectShadowPass::update(RHI::RenderGraph& graph, const ShadowInputParameters& passInput, ShadowOutputParameters& passOutput)
     {
 
-        RHI::RgResourceHandle renderDataPerDrawHandle = passInput.renderDataPerDrawHandle;
-        RHI::RgResourceHandle propertiesPerMaterialHandle = passInput.propertiesPerMaterialHandle;
-        RHI::RgResourceHandle perframeBufferHandle = passInput.perframeBufferHandle;
+        const RHI::RgResourceHandle&& renderDataPerDrawHandle = std::move(passInput.renderDataPerDrawHandle);
+        const RHI::RgResourceHandle&& propertiesPerMaterialHandle = std::move(passInput.propertiesPerMaterialHandle);
+        const RHI::RgResourceHandle&& perframeBufferHandle = std::move(passInput.perframeBufferHandle);
 
-        std::vector<RHI::RgResourceHandle> dirIndirectSortBufferHandles(passInput.dirIndirectSortBufferHandles);
-        std::vector<RHI::RgResourceHandle> spotsIndirectSortBufferHandles(passInput.spotsIndirectSortBufferHandles);
+        const std::vector<RHI::RgResourceHandle>&& dirIndirectSortBufferHandles = std::move(passInput.dirIndirectSortBufferHandles);
+        const std::vector<RHI::RgResourceHandle>&& spotsIndirectSortBufferHandles = std::move(passInput.spotsIndirectSortBufferHandles);
 
         RHI::RenderPass& shadowpass = graph.AddRenderPass("IndirectShadowPass");
 

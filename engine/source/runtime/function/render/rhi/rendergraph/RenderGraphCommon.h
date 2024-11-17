@@ -102,7 +102,7 @@ namespace RHI
     extern RgResourceHandleExt _DefaultRgResourceHandleExt;
     #define DefaultRgResourceHandleExt _DefaultRgResourceHandleExt
 
-	inline RgResourceHandleExt ToRgResourceHandle(RgResourceHandle& rgHandle, RgResourceState subType, RgResourceState counterType, bool ignoreBarrier)
+	inline RgResourceHandleExt ToRgResourceHandle(const RgResourceHandle& rgHandle, RgResourceState subType, RgResourceState counterType, bool ignoreBarrier)
 	{
         RgResourceHandleExt rgResourceHandle = {};
         rgResourceHandle.rgHandle      = rgHandle;

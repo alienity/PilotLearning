@@ -52,7 +52,7 @@ namespace RHI
 		for (size_t i = 0; i < Graph->Textures.size(); ++i)
 		{
 			auto&		 RgTexture = Graph->Textures[i];
-			RgResourceHandle Handle	   = RgTexture.Handle;
+			RgResourceHandle& Handle	   = RgTexture.Handle;
 			ASSERT(!Handle.IsImported());
 
 			bool TextureDirty = false;

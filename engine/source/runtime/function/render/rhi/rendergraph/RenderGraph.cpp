@@ -8,7 +8,7 @@ namespace RHI
 
     RenderPass::RenderPass(std::string_view Name, RenderGraph* Graph) : Name(Name), ParentGraph(Graph) {}
 
-	RenderPass& RenderPass::Read(RgResourceHandle Resource, bool IgnoreBarrier, RgResourceState subType, RgResourceState counterType)
+	RenderPass& RenderPass::Read(const RgResourceHandle& Resource, bool IgnoreBarrier, RgResourceState subType, RgResourceState counterType)
 	{
 		// Only allow buffers/textures
         ASSERT(Resource.IsValid());
@@ -57,7 +57,7 @@ namespace RHI
         return false;
 	}
 
-	bool RenderPass::ReadsFrom(RgResourceHandle& Resource) const
+	bool RenderPass::ReadsFrom(const RgResourceHandle& Resource) const
 	{
         for (size_t i = 0; i < Reads.size(); i++)
         {

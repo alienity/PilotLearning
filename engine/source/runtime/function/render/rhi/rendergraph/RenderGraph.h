@@ -6,6 +6,7 @@
 
 #include "DgmlBuilder.h"
 #include "RenderGraphRegistry.h"
+#include "runtime/core/base/robin_hood.h"
 #include "runtime/platform/system/system_core.h"
 #include "runtime/platform/system/delegate.h"
 #include "runtime/function/render/rhi/rhi.h"
@@ -16,8 +17,8 @@ namespace RHI
 {
 #define PassIdx uint32_t
 
-    typedef std::unordered_map<PassIdx, std::pair<std::vector<RHI::RgResourceHandleExt>, std::vector<RHI::RgResourceHandleExt>>> InGraphPassIdx2ReadWriteHandle;
-    typedef std::unordered_map<RHI::RgResourceHandle, std::set<PassIdx>> InGraphHandle2ReadPassIdx, InGraphHandle2WritePassIdx;
+    typedef robin_hood::unordered_map<PassIdx, std::pair<std::vector<RHI::RgResourceHandleExt>, std::vector<RHI::RgResourceHandleExt>>> InGraphPassIdx2ReadWriteHandle;
+    typedef robin_hood::unordered_map<RHI::RgResourceHandle, std::set<PassIdx>> InGraphHandle2ReadPassIdx, InGraphHandle2WritePassIdx;
 
     class RenderPass;
     class RgResourceHandle;
@@ -75,7 +76,7 @@ namespace RHI
 
         RenderPass(std::string_view Name, RenderGraph* Graph);
 
-        RenderPass& Read(RgResourceHandle Resource,
+        RenderPass& Read(const RgResourceHandle& Resource,
                          bool             IgnoreBarrier = true,
                          RgResourceState  subType       = RHIResourceState::RHI_RESOURCE_STATE_NONE,
                          RgResourceState  counterType   = RHIResourceState::RHI_RESOURCE_STATE_NONE);
@@ -92,7 +93,7 @@ namespace RHI
 
         [[nodiscard]] bool HasDependency(RgResourceHandle& Resource) const;
         [[nodiscard]] bool WritesTo(RgResourceHandle& Resource) const;
-        [[nodiscard]] bool ReadsFrom(RgResourceHandle& Resource) const;
+        [[nodiscard]] bool ReadsFrom(const RgResourceHandle& Resource) const;
 
         [[nodiscard]] bool HasAnyDependencies() const noexcept;
 

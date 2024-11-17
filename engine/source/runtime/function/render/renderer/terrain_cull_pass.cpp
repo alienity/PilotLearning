@@ -587,7 +587,7 @@ namespace MoYu
             .SetRHIBufferTarget(RHI::RHIBufferTarget::RHIBufferTargetIndirectArgs | RHI::RHIBufferTarget::RHIBufferRandomReadWrite | RHI::RHIBufferTarget::RHIBufferTargetRaw);
     }
 
-    void IndirectTerrainCullPass::update(RHI::RenderGraph& graph, TerrainCullInput& passInput, TerrainCullOutput& passOutput)
+    void IndirectTerrainCullPass::update(RHI::RenderGraph& graph, const TerrainCullInput& passInput, TerrainCullOutput& passOutput)
     {
         InternalTerrainRenderer& internalTerrainRenderer = m_render_scene->m_terrain_renderers[0].internalTerrainRenderer;
         std::shared_ptr<RHI::D3D12Texture> terrainHeightmap = internalTerrainRenderer.ref_terrain.terrain_heightmap;
@@ -602,7 +602,7 @@ namespace MoYu
         RHI::RgResourceHandle terrainRenderDataHandle = GImport(graph, pTerrainRenderDataBuffer.get());
         RHI::RgResourceHandle terrainMatPropertiesHandle = GImport(graph, pTerrainMatPropertiesBuffer.get());
         
-        RHI::RgResourceHandle hizDepthBufferHandle = passInput.hizDepthBufferHandle;
+        const RHI::RgResourceHandle&& hizDepthBufferHandle = std::move(passInput.hizDepthBufferHandle);
 
         if (!iMinMaxHeightReady)
         {

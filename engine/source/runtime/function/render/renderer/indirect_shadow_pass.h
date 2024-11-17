@@ -36,9 +36,7 @@ namespace MoYu
         void prepareShadowmaps(std::shared_ptr<RenderResource> render_resource);
 
         void initialize(const ShadowPassInitInfo& init_info);
-        void update(RHI::RenderGraph&         graph,
-                    ShadowInputParameters&      passInput,
-                    ShadowOutputParameters&     passOutput);
+        void update(RHI::RenderGraph& graph, const ShadowInputParameters& passInput, ShadowOutputParameters& passOutput);
         void destroy() override final;
     
         DirectionShadowmapStruct getDirShadowmapStruct();

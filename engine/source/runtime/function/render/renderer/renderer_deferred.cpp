@@ -572,7 +572,7 @@ namespace MoYu
         terrainCullInput.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
         terrainCullInput.hizDepthBufferHandle = lastFrameMinDepthPyramidHandle;
 
-        mTerrainCullPass->update(graph, terrainCullInput, terrainCullOutput);
+        mTerrainCullPass->update(graph, std::move(terrainCullInput), terrainCullOutput);
         //=================================================================================
 
         //=================================================================================
@@ -593,7 +593,7 @@ namespace MoYu
             mShadowmapIntputParams.spotsIndirectSortBufferHandles.push_back(
                 indirectCullOutput.spotShadowmapHandles[i].indirectSortBufferHandle);
         }
-        mIndirectShadowPass->update(graph, mShadowmapIntputParams, mShadowmapOutputParams);
+        mIndirectShadowPass->update(graph, std::move(mShadowmapIntputParams), mShadowmapOutputParams);
         //=================================================================================
 
         //=================================================================================
@@ -612,7 +612,7 @@ namespace MoYu
 
         mTerrainShadowmapOutputParams.directionalCascadeShadowmapHandle = mShadowmapOutputParams.directionalCascadeShadowmapHandle;
 
-        mIndirectTerrainShadowPass->update(graph, mTerrainShadowmapIntputParams, mTerrainShadowmapOutputParams);
+        mIndirectTerrainShadowPass->update(graph, std::move(mTerrainShadowmapIntputParams), mTerrainShadowmapOutputParams);
         //=================================================================================
 
         //=================================================================================

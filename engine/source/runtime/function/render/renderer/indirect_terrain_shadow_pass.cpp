@@ -93,17 +93,17 @@ namespace MoYu
         m_DirectionalShadowmap = directionalShadowmap;
     }
 
-    void IndirectTerrainShadowPass::update(RHI::RenderGraph& graph, ShadowInputParameters& passInput, ShadowOutputParameters& passOutput)
+    void IndirectTerrainShadowPass::update(RHI::RenderGraph& graph, const ShadowInputParameters& passInput, ShadowOutputParameters& passOutput)
     {
-        RHI::RgResourceHandle perframeBufferHandle = passInput.perframeBufferHandle;
-        RHI::RgResourceHandle terrainHeightmapHandle = passInput.terrainHeightmapHandle;
-        RHI::RgResourceHandle terrainNormalmapHandle = passInput.terrainNormalmapHandle;
-        RHI::RgResourceHandle terrainRenderDataHandle = passInput.terrainRenderDataHandle;
-        RHI::RgResourceHandle terrainMatPropertyHandle = passInput.terrainMatPropertyHandle;
+        const RHI::RgResourceHandle&& perframeBufferHandle = std::move(passInput.perframeBufferHandle);
+        const RHI::RgResourceHandle&& terrainHeightmapHandle = std::move(passInput.terrainHeightmapHandle);
+        const RHI::RgResourceHandle&& terrainNormalmapHandle = std::move(passInput.terrainNormalmapHandle);
+        const RHI::RgResourceHandle&& terrainRenderDataHandle = std::move(passInput.terrainRenderDataHandle);
+        const RHI::RgResourceHandle&& terrainMatPropertyHandle = std::move(passInput.terrainMatPropertyHandle);
         
-        std::vector<RHI::RgResourceHandle> dirConsBufferHandles = std::vector<RHI::RgResourceHandle>(passInput.dirConsBufferHandles);
-        std::vector<RHI::RgResourceHandle> dirVisPatchListHandles = std::vector<RHI::RgResourceHandle>(passInput.dirVisPatchListHandles);
-        std::vector<RHI::RgResourceHandle> dirVisCmdSigBufferHandles = std::vector<RHI::RgResourceHandle>(passInput.dirVisCmdSigBufferHandles);
+        const std::vector<RHI::RgResourceHandle>&& dirConsBufferHandles = std::move(passInput.dirConsBufferHandles);
+        const std::vector<RHI::RgResourceHandle>&& dirVisPatchListHandles = std::move(passInput.dirVisPatchListHandles);
+        const std::vector<RHI::RgResourceHandle>&& dirVisCmdSigBufferHandles = std::move(passInput.dirVisCmdSigBufferHandles);
 
         RHI::RgResourceHandle directionalCascadeShadowmapHandle = passOutput.directionalCascadeShadowmapHandle;
 

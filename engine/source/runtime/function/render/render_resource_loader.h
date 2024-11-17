@@ -19,10 +19,10 @@ namespace MoYu
     class RenderResourceBase
     {
     public:
-        std::unordered_map<std::string, std::shared_ptr<MoYuScratchImage>> _TextureData_Caches;
-        std::unordered_map<std::string, std::shared_ptr<MoYuScratchBuffer>> _BufferData_Caches;
+        robin_hood::unordered_map<std::string, std::shared_ptr<MoYuScratchImage>> _TextureData_Caches;
+        robin_hood::unordered_map<std::string, std::shared_ptr<MoYuScratchBuffer>> _BufferData_Caches;
 
-        std::unordered_map<std::string, RenderMeshData> _MeshData_Caches;
+        robin_hood::unordered_map<std::string, RenderMeshData> _MeshData_Caches;
 
     public:
         RenderResourceBase() = default;
