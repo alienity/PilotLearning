@@ -12,7 +12,7 @@
 cbuffer RootConstants : register(b0, space0)
 {
     uint perFrameBufferIndex;
-    uint _DepthBufferIndex;;
+    uint _DepthBufferIndex;
     uint _OutputTextureIndex;
 };
 

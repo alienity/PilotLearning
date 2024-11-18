@@ -209,7 +209,7 @@ namespace MoYu
 
 			RHI::RootSignatureDesc rootSigDesc =
 				RHI::RootSignatureDesc()
-				.AddConstantBufferView<0, 0>()
+				.Add32BitConstants<0, 0>(16)
 				.AddConstantBufferView<1, 0>()
 				.AddDescriptorTable(RHI::D3D12DescriptorTable(1).AddSRVRange<0, 0>(1, D3D12_DESCRIPTOR_RANGE_FLAG_NONE, 0))
 				.AddDescriptorTable(RHI::D3D12DescriptorTable(1).AddUAVRange<0, 0>(1, D3D12_DESCRIPTOR_RANGE_FLAG_NONE, 0))
@@ -238,7 +238,7 @@ namespace MoYu
 
 			RHI::RootSignatureDesc rootSigDesc =
 				RHI::RootSignatureDesc()
-				.AddConstantBufferView<0, 0>()
+				.Add32BitConstants<0, 0>(16)
 				.AddConstantBufferView<1, 0>()
 				.AddDescriptorTable(RHI::D3D12DescriptorTable(1).AddSRVRange<0, 0>(1, D3D12_DESCRIPTOR_RANGE_FLAG_NONE, 0))
 				.AddDescriptorTable(RHI::D3D12DescriptorTable(1).AddUAVRange<0, 0>(1, D3D12_DESCRIPTOR_RANGE_FLAG_NONE, 0))
@@ -357,10 +357,10 @@ namespace MoYu
 		genMaxZPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
 			RHI::D3D12ComputeContext* pContext = context->GetComputeContext();
 
+			// Downsample 8x8 with max operator
+
 			pContext->TransitionBarrier(RegGetTex(maxZ8xBufferHandle), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 			pContext->FlushResourceBarriers();
-
-			// Downsample 8x8 with max operator
 
 			int maskW = passData.intermediateMaskSize.x;
 			int maskH = passData.intermediateMaskSize.y;
@@ -382,12 +382,38 @@ namespace MoYu
 															   RegGetTexDefSRVIdx(depthHandle),
 															   RegGetTexDefUAVIdx(maxZ8xBufferHandle) };
 
+			pContext->SetConstantArray(0, sizeof(RootIndexBuffer) / sizeof(std::uint32_t), &rootIndexBuffer);
+
 			pContext->Dispatch(dispatchX, dispatchY, 1);
 
 			// Downsample to 16x16
 
+			pContext->TransitionBarrier(RegGetTex(maxZ8xBufferHandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+			pContext->TransitionBarrier(RegGetTex(maxZBufferHandle), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+			pContext->FlushResourceBarriers();
 
+			pContext->SetRootSignature(pMaxZDownsampleSignature.get());
+			pContext->SetPipelineState(pMaxZDownsamplePSO.get());
 
+			struct Root0Constants
+			{
+				glm::float4 _SrcOffsetAndLimit;
+				float _DilationWidth;
+			};
+			Root0Constants root0Const = { glm::float4(maskW, maskH, 0, 0), passData.dilationWidth };
+
+			pContext->SetConstantArray(0, sizeof(root0Const)/sizeof(std::uint32_t), &root0Const);
+			pContext->SetConstantBuffer(1, RegGetBuf(perframeBufferHandle)->GetGpuVirtualAddress());
+			pContext->SetDynamicDescriptor(2, 0, RegGetTex(maxZ8xBufferHandle)->GetDefaultSRV()->GetCpuHandle());
+			pContext->SetDynamicDescriptor(3, 0, RegGetTex(maxZBufferHandle)->GetDefaultUAV()->GetCpuHandle());
+
+			int finalMaskW = glm::ceil(maskW / 2.0f);
+			int finalMaskH = glm::ceil(maskH / 2.0f);
+
+			dispatchX = HDUtils::DivRoundUp(finalMaskW, 8);
+			dispatchY = HDUtils::DivRoundUp(finalMaskH, 8);
+
+			pContext->Dispatch(dispatchX, dispatchY, 1);
 
 			// Dilate max Z
 
