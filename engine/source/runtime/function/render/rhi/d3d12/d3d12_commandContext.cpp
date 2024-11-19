@@ -998,6 +998,8 @@ namespace RHI
     void D3D12ComputeContext::Dispatch(UINT ThreadGroupCountX, UINT ThreadGroupCountY, UINT ThreadGroupCountZ)
     {
         m_CommandListHandle.FlushResourceBarriers();
+        m_pDynamicViewDescriptorHeap->CommitComputeRootDescriptorTables(m_CommandListHandle.GetGraphicsCommandList());
+        m_pDynamicSamplerDescriptorHeap->CommitComputeRootDescriptorTables(m_CommandListHandle.GetGraphicsCommandList());
         m_CommandListHandle->Dispatch(ThreadGroupCountX, ThreadGroupCountY, ThreadGroupCountZ);
     }
 
@@ -1038,8 +1040,8 @@ namespace RHI
                                               UINT64                 CounterOffset)
     {
         FlushResourceBarriers();
-        m_pDynamicViewDescriptorHeap->CommitGraphicsRootDescriptorTables(m_CommandListHandle.GetGraphicsCommandList());
-        m_pDynamicSamplerDescriptorHeap->CommitGraphicsRootDescriptorTables(m_CommandListHandle.GetGraphicsCommandList());
+        m_pDynamicViewDescriptorHeap->CommitComputeRootDescriptorTables(m_CommandListHandle.GetGraphicsCommandList());
+        m_pDynamicSamplerDescriptorHeap->CommitComputeRootDescriptorTables(m_CommandListHandle.GetGraphicsCommandList());
         m_CommandListHandle->ExecuteIndirect(CommandSig->GetApiHandle(),
                                              MaxCommands,
                                              ArgumentBuffer->GetResource(),

@@ -102,11 +102,13 @@ namespace RHI
         D3D12_CPU_DESCRIPTOR_HANDLE pSrcDescriptorRangeStarts[kMaxDescriptorsPerCopy];
         UINT                        pSrcDescriptorRangeSizes[kMaxDescriptorsPerCopy];
 
+        DescriptorHandle DestHandleStartArray[DescriptorHandleCache::kMaxNumDescriptorTables];
+        
         for (uint32_t i = 0; i < StaleParamCount; ++i)
         {
             RootIndex = RootIndices[i];
-            (CmdList->*SetFunc)(RootIndex, DestHandleStart);
-
+            DestHandleStartArray[i] = DestHandleStart;
+            
             DescriptorTableCache& RootDescTable = m_RootDescriptorTable[RootIndex];
 
             D3D12_CPU_DESCRIPTOR_HANDLE* SrcHandles = RootDescTable.TableStart;
@@ -172,6 +174,11 @@ namespace RHI
                                               pSrcDescriptorRangeStarts,
                                               pSrcDescriptorRangeSizes,
                                               Type);
+
+        for (uint32_t i = 0; i < StaleParamCount; ++i)
+        {
+            (CmdList->*SetFunc)(RootIndex, DestHandleStartArray[i]);
+        }
     }
 
     void DynamicDescriptorHeap::CopyAndBindStagedTables(

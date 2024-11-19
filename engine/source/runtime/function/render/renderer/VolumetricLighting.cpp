@@ -209,7 +209,7 @@ namespace MoYu
 
 			RHI::RootSignatureDesc rootSigDesc =
 				RHI::RootSignatureDesc()
-				.Add32BitConstants<0, 0>(16)
+				.Add32BitConstants<0, 0>(5)
 				.AddConstantBufferView<1, 0>()
 				.AddDescriptorTable(RHI::D3D12DescriptorTable(1).AddSRVRange<0, 0>(1, D3D12_DESCRIPTOR_RANGE_FLAG_NONE, 0))
 				.AddDescriptorTable(RHI::D3D12DescriptorTable(1).AddUAVRange<0, 0>(1, D3D12_DESCRIPTOR_RANGE_FLAG_NONE, 0))
@@ -238,7 +238,7 @@ namespace MoYu
 
 			RHI::RootSignatureDesc rootSigDesc =
 				RHI::RootSignatureDesc()
-				.Add32BitConstants<0, 0>(16)
+				.Add32BitConstants<0, 0>(5)
 				.AddConstantBufferView<1, 0>()
 				.AddDescriptorTable(RHI::D3D12DescriptorTable(1).AddSRVRange<0, 0>(1, D3D12_DESCRIPTOR_RANGE_FLAG_NONE, 0))
 				.AddDescriptorTable(RHI::D3D12DescriptorTable(1).AddUAVRange<0, 0>(1, D3D12_DESCRIPTOR_RANGE_FLAG_NONE, 0))
@@ -404,8 +404,8 @@ namespace MoYu
 
 			pContext->SetConstantArray(0, sizeof(root0Const)/sizeof(std::uint32_t), &root0Const);
 			pContext->SetConstantBuffer(1, RegGetBuf(perframeBufferHandle)->GetGpuVirtualAddress());
-			pContext->SetDynamicDescriptor(2, 0, RegGetTex(maxZ8xBufferHandle)->GetDefaultSRV()->GetCpuHandle());
-			pContext->SetDynamicDescriptor(3, 0, RegGetTex(maxZBufferHandle)->GetDefaultUAV()->GetCpuHandle());
+			pContext->SetDynamicDescriptor(2, 0, RegGetTex(maxZ8xBufferHandle)->GetDefaultSRV(1)->GetCpuHandle());
+			pContext->SetDynamicDescriptor(3, 0, RegGetTex(maxZBufferHandle)->GetDefaultUAV(1)->GetCpuHandle());
 
 			int finalMaskW = glm::ceil(maskW / 2.0f);
 			int finalMaskH = glm::ceil(maskH / 2.0f);
@@ -417,7 +417,22 @@ namespace MoYu
 
 			// Dilate max Z
 
+			pContext->TransitionBarrier(RegGetTex(maxZBufferHandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+			pContext->TransitionBarrier(RegGetTex(dilatedMaxZBufferHandle), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+			pContext->FlushResourceBarriers();
 
+			pContext->SetRootSignature(pDilateMaxZSignature.get());
+			pContext->SetPipelineState(pDilateMaxZPSO.get());
+
+			root0Const._SrcOffsetAndLimit.x = finalMaskW;
+			root0Const._SrcOffsetAndLimit.y = finalMaskW;
+
+			pContext->SetConstantArray(0, sizeof(root0Const) / sizeof(std::uint32_t), &root0Const);
+			pContext->SetConstantBuffer(1, RegGetBuf(perframeBufferHandle)->GetGpuVirtualAddress());
+			pContext->SetDynamicDescriptor(2, 0, RegGetTex(maxZBufferHandle)->GetDefaultSRV(1)->GetCpuHandle());
+			pContext->SetDynamicDescriptor(3, 0, RegGetTex(dilatedMaxZBufferHandle)->GetDefaultUAV(1)->GetCpuHandle());
+
+			pContext->Dispatch(dispatchX, dispatchY, 1);
 		});
 	}
 	
