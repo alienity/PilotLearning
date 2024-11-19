@@ -177,7 +177,7 @@ namespace RHI
 
         for (uint32_t i = 0; i < StaleParamCount; ++i)
         {
-            (CmdList->*SetFunc)(RootIndex, DestHandleStartArray[i]);
+            (CmdList->*SetFunc)(RootIndices[i], DestHandleStartArray[i]);
         }
     }
 
