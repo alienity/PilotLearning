@@ -782,8 +782,8 @@ namespace MoYu
         VolumetriLighting::VolumeLightPassOutputStruct mVolumeLightOutput;
         mVolumeLightInput.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
         mVolumeLightInput.vbufferDensityHandle = mVolumeVoxelOutput.vbufferDensityHandle;
-        mVolumeLightInput.depthPyramidHandle = mDepthPyramidOutput.minDepthPtyramidHandle;
-        mVolumeLightInput.dilatedMaxZBufferHandle = mDepthPyramidOutput.minDepthPtyramidHandle; // TODO: 改成VolumePass自己生成的
+        mVolumeLightInput.depthBufferHandle = mGBufferOutput.depthHandle;
+        mVolumeLightInput.dilatedMaxZBufferHandle = mGenMaxZOutputStruct.dilatedMaxZBufferHandle;
         mVolumeLightInput.shaderVariablesVolumetricHandle = mVolumeVoxelOutput.shaderVariablesVolumetricHandle;
         mVolumeLightPass->VolumetricLightingPass(graph, mVolumeLightInput, mVolumeLightOutput);
         //=================================================================================

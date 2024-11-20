@@ -49,7 +49,7 @@ namespace MoYu
 		{
 			RHI::RgResourceHandle perframeBufferHandle;
 			RHI::RgResourceHandle vbufferDensityHandle;
-			RHI::RgResourceHandle depthPyramidHandle;
+			RHI::RgResourceHandle depthBufferHandle;
 			RHI::RgResourceHandle dilatedMaxZBufferHandle;
 			RHI::RgResourceHandle shaderVariablesVolumetricHandle;
 		};

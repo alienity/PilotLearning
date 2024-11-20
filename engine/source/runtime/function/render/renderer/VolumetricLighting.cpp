@@ -118,7 +118,7 @@ namespace MoYu
 				m_CurrentVolumetricBufferSize.y,
 				m_CurrentVolumetricBufferSize.z,
 				1,
-				DXGI_FORMAT_R32G32B32A32_FLOAT,
+				DXGI_FORMAT_R16G16B16A16_FLOAT,
 				RHI::RHISurfaceCreateRandomWrite,
 				1,
 				L"ASScattering3D",
@@ -430,6 +430,10 @@ namespace MoYu
 
 			pContext->Dispatch(dispatchX, dispatchY, 1);
 		});
+
+		passOutput.maxZ8xBufferHandle = maxZ8xBufferHandle;
+		passOutput.maxZBufferHandle = maxZBufferHandle;
+		passOutput.dilatedMaxZBufferHandle = dilatedMaxZBufferHandle;
 	}
 	
 	void VolumetriLighting::FogVolumeAndVFXVoxelizationPass(RHI::RenderGraph& graph, ClearPassInputStruct& passInput, ClearPassOutputStruct& passOutput)
@@ -479,7 +483,7 @@ namespace MoYu
 		
 		RHI::RgResourceHandle perframeBufferHandle = passInput.perframeBufferHandle;
 		RHI::RgResourceHandle vbufferDensityHandle = passInput.vbufferDensityHandle;
-		RHI::RgResourceHandle depthPyramidHandle = passInput.depthPyramidHandle;
+		RHI::RgResourceHandle depthBufferHandle = passInput.depthBufferHandle;
 		RHI::RgResourceHandle shaderVariablesVolumetricHandle = passInput.shaderVariablesVolumetricHandle;
 		RHI::RgResourceHandle dilatedMaxZBufferHandle = passInput.dilatedMaxZBufferHandle;
 
@@ -488,7 +492,8 @@ namespace MoYu
 		volumeLightingPass.Read(perframeBufferHandle, false, RHIResourceState::RHI_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
 		volumeLightingPass.Read(shaderVariablesVolumetricHandle, false, RHIResourceState::RHI_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
 		volumeLightingPass.Read(vbufferDensityHandle, false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-		volumeLightingPass.Read(depthPyramidHandle, false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+		volumeLightingPass.Read(depthBufferHandle, false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+		volumeLightingPass.Read(dilatedMaxZBufferHandle, false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 		volumeLightingPass.Write(mLightBufferHandle, false, RHIResourceState::RHI_RESOURCE_STATE_UNORDERED_ACCESS);
 
 		volumeLightingPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
@@ -502,7 +507,7 @@ namespace MoYu
 				uint32_t perFrameBufferIndex;
 				uint32_t shaderVariablesVolumetricIndex;
 				uint32_t _VBufferDensityIndex;  // RGB = sqrt(scattering), A = sqrt(extinction)
-				uint32_t _DepthPyramidIndex;
+				uint32_t _DepthBufferIndex;
 				uint32_t _MaxZMaskTextureIndex;
 				uint32_t _VBufferLightingIndex;
 			};
@@ -510,7 +515,7 @@ namespace MoYu
 			RootIndexBuffer rootIndexBuffer = RootIndexBuffer{ RegGetBufDefCBVIdx(perframeBufferHandle),
 															   RegGetBufDefCBVIdx(shaderVariablesVolumetricHandle),
 															   RegGetTexDefSRVIdx(vbufferDensityHandle),
-															   RegGetTexDefSRVIdx(depthPyramidHandle),
+															   RegGetTexDefSRVIdx(depthBufferHandle),
 															   RegGetTexDefSRVIdx(dilatedMaxZBufferHandle),
 															   RegGetTexDefUAVIdx(mLightBufferHandle) };
 
