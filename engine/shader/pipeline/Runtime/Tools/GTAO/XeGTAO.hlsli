@@ -747,7 +747,7 @@ void XeGTAO_Output(uint2 pixCoord, RWTexture2D<float> outputTexture, AOTermType 
 // #endif
 }
 
-void XeGTAO_DecodeGatherPartial( const uint4 packedValue, out AOTermType outDecoded[4] )
+void XeGTAO_DecodeGatherPartial( const uint4 packedValue, out AOTermType outDecoded[8] )
 {
     for( int i = 0; i < 4; i++ )
 #ifdef XE_GTAO_COMPUTE_BENT_NORMALS
@@ -775,10 +775,10 @@ void XeGTAO_Denoise(const uint2 pixCoordBase, const GTAOConstants consts, Textur
     lpfloat4 edgesQ1        = sourceEdges.GatherRed( texSampler, gatherCenter, int2( 2, 0 ) );
     lpfloat4 edgesQ2        = sourceEdges.GatherRed( texSampler, gatherCenter, int2( 1, 2 ) );
 
-    AOTermType visQ0[4];    XeGTAO_DecodeGatherPartial( sourceAOTerm.GatherRed( texSampler, gatherCenter, int2( 0, 0 ) ), visQ0 );
-    AOTermType visQ1[4];    XeGTAO_DecodeGatherPartial( sourceAOTerm.GatherRed( texSampler, gatherCenter, int2( 2, 0 ) ), visQ1 );
-    AOTermType visQ2[4];    XeGTAO_DecodeGatherPartial( sourceAOTerm.GatherRed( texSampler, gatherCenter, int2( 0, 2 ) ), visQ2 );
-    AOTermType visQ3[4];    XeGTAO_DecodeGatherPartial( sourceAOTerm.GatherRed( texSampler, gatherCenter, int2( 2, 2 ) ), visQ3 );
+    AOTermType visQ0[8];    XeGTAO_DecodeGatherPartial( sourceAOTerm.GatherRed( texSampler, gatherCenter, int2( 0, 0 ) ), visQ0 );
+    AOTermType visQ1[8];    XeGTAO_DecodeGatherPartial( sourceAOTerm.GatherRed( texSampler, gatherCenter, int2( 2, 0 ) ), visQ1 );
+    AOTermType visQ2[8];    XeGTAO_DecodeGatherPartial( sourceAOTerm.GatherRed( texSampler, gatherCenter, int2( 0, 2 ) ), visQ2 );
+    AOTermType visQ3[8];    XeGTAO_DecodeGatherPartial( sourceAOTerm.GatherRed( texSampler, gatherCenter, int2( 2, 2 ) ), visQ3 );
 
     for( int side = 0; side < 2; side++ )
     {

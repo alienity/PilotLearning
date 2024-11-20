@@ -210,7 +210,6 @@ namespace MoYu
 			RHI::RootSignatureDesc rootSigDesc =
 				RHI::RootSignatureDesc()
 				.Add32BitConstants<0, 0>(5)
-				.AddConstantBufferView<1, 0>()
 				.AddDescriptorTable(RHI::D3D12DescriptorTable(1).AddSRVRange<0, 0>(1, D3D12_DESCRIPTOR_RANGE_FLAG_NONE, 0))
 				.AddDescriptorTable(RHI::D3D12DescriptorTable(1).AddUAVRange<0, 0>(1, D3D12_DESCRIPTOR_RANGE_FLAG_NONE, 0))
 				.AllowResourceDescriptorHeapIndexing()
@@ -239,7 +238,6 @@ namespace MoYu
 			RHI::RootSignatureDesc rootSigDesc =
 				RHI::RootSignatureDesc()
 				.Add32BitConstants<0, 0>(5)
-				.AddConstantBufferView<1, 0>()
 				.AddDescriptorTable(RHI::D3D12DescriptorTable(1).AddSRVRange<0, 0>(1, D3D12_DESCRIPTOR_RANGE_FLAG_NONE, 0))
 				.AddDescriptorTable(RHI::D3D12DescriptorTable(1).AddUAVRange<0, 0>(1, D3D12_DESCRIPTOR_RANGE_FLAG_NONE, 0))
 				.AllowResourceDescriptorHeapIndexing()
@@ -403,9 +401,8 @@ namespace MoYu
 			Root0Constants root0Const = { glm::float4(maskW, maskH, 0, 0), passData.dilationWidth };
 
 			pContext->SetConstantArray(0, sizeof(root0Const)/sizeof(std::uint32_t), &root0Const);
-			pContext->SetConstantBuffer(1, RegGetBuf(perframeBufferHandle)->GetGpuVirtualAddress());
-			pContext->SetDynamicDescriptor(2, 0, RegGetTex(maxZ8xBufferHandle)->GetDefaultSRV(1)->GetCpuHandle());
-			pContext->SetDynamicDescriptor(3, 0, RegGetTex(maxZBufferHandle)->GetDefaultUAV(1)->GetCpuHandle());
+			pContext->SetDynamicDescriptor(1, 0, RegGetTex(maxZ8xBufferHandle)->GetDefaultSRV(1)->GetCpuHandle());
+			pContext->SetDynamicDescriptor(2, 0, RegGetTex(maxZBufferHandle)->GetDefaultUAV(1)->GetCpuHandle());
 
 			int finalMaskW = glm::ceil(maskW / 2.0f);
 			int finalMaskH = glm::ceil(maskH / 2.0f);
@@ -428,9 +425,8 @@ namespace MoYu
 			root0Const._SrcOffsetAndLimit.y = finalMaskW;
 
 			pContext->SetConstantArray(0, sizeof(root0Const) / sizeof(std::uint32_t), &root0Const);
-			pContext->SetConstantBuffer(1, RegGetBuf(perframeBufferHandle)->GetGpuVirtualAddress());
-			pContext->SetDynamicDescriptor(2, 0, RegGetTex(maxZBufferHandle)->GetDefaultSRV(1)->GetCpuHandle());
-			pContext->SetDynamicDescriptor(3, 0, RegGetTex(dilatedMaxZBufferHandle)->GetDefaultUAV(1)->GetCpuHandle());
+			pContext->SetDynamicDescriptor(1, 0, RegGetTex(maxZBufferHandle)->GetDefaultSRV(1)->GetCpuHandle());
+			pContext->SetDynamicDescriptor(2, 0, RegGetTex(dilatedMaxZBufferHandle)->GetDefaultUAV(1)->GetCpuHandle());
 
 			pContext->Dispatch(dispatchX, dispatchY, 1);
 		});

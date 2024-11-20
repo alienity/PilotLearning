@@ -88,7 +88,6 @@ cbuffer ConstantBufferStruct : register(b0, space0)
 #define _SrcLimit _SrcOffsetAndLimit.xy
 #define _DepthMipOffset _SrcOffsetAndLimit.zw
 
-ConstantBuffer<FrameUniforms> perFrameBuffer : register(b1, space0);
 Texture2D<float> _InputTexture : register(t0, space0);
 RWTexture2D<float> _OutputTexture : register(u0, space0);
 
@@ -139,7 +138,6 @@ cbuffer ConstantBufferStruct : register(b0, space0)
 #define _SrcLimit _SrcOffsetAndLimit.xy
 #define _DepthMipOffset _SrcOffsetAndLimit.zw
 
-ConstantBuffer<FrameUniforms> perFrameBuffer : register(b1, space0);
 Texture2D<float> _InputTexture : register(t0, space0);
 RWTexture2D<float> _OutputTexture : register(u0, space0);
 
