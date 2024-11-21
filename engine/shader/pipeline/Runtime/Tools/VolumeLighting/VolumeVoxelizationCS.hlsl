@@ -113,7 +113,7 @@ void VolumeVoxelization(uint3 dispatchThreadId : SV_DispatchThreadID,
     _VBufferDensity.GetDimensions(voxelWidth, voxelHeight, voxelDepth);
     float2 voxelUV = centerCoord / float2(voxelWidth, voxelHeight);
     // float3 rayDirWS = mul(float4(voxelUV * 2 - 1, 0, 0), UNITY_MATRIX_I_VP(mFrameUniforms.cameraUniform)).xyz;
-    float3 rayDirWS = mul(UNITY_MATRIX_I_P(mFrameUniforms.cameraUniform), float4(voxelUV * 2 - 1, 0, 1)).xyz;
+    float3 rayDirWS = mul(UNITY_MATRIX_I_VP(mFrameUniforms.cameraUniform), float4(voxelUV * 2 - 1, 0, 1)).xyz;
     
     // Compute a ray direction s.t. ViewSpace(rayDirWS).z = 1.
     // float3 rayDirWS       = mul(-float4(centerCoord, 1, 1), _VBufferCoordToViewDirWS).xyz; // 目前unity的计算无法参考

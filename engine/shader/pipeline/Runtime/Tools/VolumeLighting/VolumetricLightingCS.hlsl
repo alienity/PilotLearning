@@ -8,10 +8,11 @@
 // #define VL_PRESET_OPTIMAL
 // #define SUPPORT_LOCAL_LIGHTS
 
-
 // Don't want contact shadows
 #define LIGHT_EVALUATION_NO_CONTACT_SHADOWS // To define before LightEvaluation.hlsl
 // #define LIGHT_EVALUATION_NO_HEIGHT_FOG
+
+#define SHADOW_LOW
 
 #ifndef LIGHTLOOP_DISABLE_TILE_AND_CLUSTER
     #define USE_BIG_TILE_LIGHTLIST
@@ -71,7 +72,8 @@ cbuffer RootConstants : register(b0, space0)
     uint perFrameBufferIndex;
     uint shaderVariablesVolumetricIndex;
     uint _VBufferDensityIndex;  // RGB = sqrt(scattering), A = sqrt(extinction)
-    uint _DepthPyramidIndex;;
+    uint _DepthBufferIndex;;
+    uint _MaxZMaskTextureIndex;
     uint _VBufferLightingIndex;
 };
 
@@ -213,9 +215,8 @@ VoxelLighting EvaluateVoxelLightingDirectional(FrameUniforms frameUniforms, Samp
             // context.shadowValue = GetDirectionalShadowAttenuation(context.shadowContext,
             //                         samplerStruct, posInput.positionSS, positionWS, GetNormalForShadowBias(bsdfData), light.shadowIndex, L);
             
-            context.shadowValue = GetDirectionalShadowAttenuation(context.shadowContext, samplerStruct, 
-                                                                  posInput.positionSS, posInput.positionWS, shadowN,
-                                                                  light.shadowIndex, L);
+            context.shadowValue = GetDirectionalShadowAttenuation(context.shadowContext, samplerStruct,
+                                        posInput.positionSS, posInput.positionWS, shadowN, light.shadowIndex, L);
 
             // // Apply the volumetric cloud shadow if relevant
             // if (_VolumetricCloudsShadowOriginToggle.w == 1.0)
@@ -231,23 +232,23 @@ VoxelLighting EvaluateVoxelLightingDirectional(FrameUniforms frameUniforms, Samp
     {
         // DirectionalLightData light = _DirectionalLightDatas[i];
         DirectionalLightData light = frameUniforms.lightDataUniform.directionalLightData;
-
+    
         // Prep the light so that it works with non-volumetrics-aware code.
         light.contactShadowMask  = 0;
         light.shadowDimmer       = light.volumetricShadowDimmer;
-
+    
         float3 L = -light.forward;
-
+    
         // Is it worth evaluating the light?
         float3 color; float attenuation;
         if (light.volumetricLightDimmer > 0)
         {
             float4 lightColor = EvaluateLight_Directional(context, posInput, light);
-
+    
             // The volumetric light dimmer, unlike the regular light dimmer, is not pre-multiplied.
             lightColor.a *= light.volumetricLightDimmer;
             lightColor.rgb *= lightColor.a; // Composite
-
+    
             #if SHADOW_VIEW_BIAS
                 // Our shadows only support normal bias. Volumetrics has no access to the surface normal.
                 // We fake view bias by invoking the normal bias code with the view direction.
@@ -255,12 +256,12 @@ VoxelLighting EvaluateVoxelLightingDirectional(FrameUniforms frameUniforms, Samp
             #else
                 float3 shadowN = 0; // No bias
             #endif // SHADOW_VIEW_BIAS
-
+    
             // This code works for both surface reflection and thin object transmission.
             BuiltinData unused;
             SHADOW_TYPE shadow = EvaluateShadow_Directional(context, posInput, light, unused, shadowN);
             lightColor.rgb *= ComputeShadowColor(shadow, light.shadowTint, light.penumbraTint);
-
+    
             // Important:
             // Ideally, all scattering calculations should use the jittered versions
             // of the sample position and the ray direction. However, correct reprojection
@@ -274,7 +275,7 @@ VoxelLighting EvaluateVoxelLightingDirectional(FrameUniforms frameUniforms, Samp
             // anisotropy-related calculations.
             float cosTheta = dot(L, ray.centerDirWS);
             float phase    = CornetteShanksPhasePartVarying(anisotropy, cosTheta);
-
+    
             // Compute the amount of in-scattered radiance.
             // Note: the 'weight' accounts for transmittance from 't0' to 't'.
             lighting.radianceNoPhase += (weight * lightColor.rgb);
@@ -504,10 +505,8 @@ void FillVolumetricLightingBuffer(
     float _GlobalFogAnisotropy = volumetricLightingUniform._GlobalFogAnisotropy;
     int _PunctualLightCount = frameUniforms.lightDataUniform._PunctualLightCount;
     
-    uint lightCount, lightStart;
-
-    lightCount = _PunctualLightCount;
-    lightStart = 0;
+    uint lightCount = _PunctualLightCount;
+    uint lightStart = 0;
 
     float t0 = max(tStart, DecodeLogarithmicDepthGeneralized(0, _VBufferDistanceDecodingParams));
     float de = _VBufferRcpSliceCount; // Log-encoded distance between slices
@@ -545,7 +544,7 @@ void FillVolumetricLightingBuffer(
         float dt = t1 - t0; // Is geometry-aware
         if(dt <= 0.0)
         {
-            _VBufferLighting[voxelCoord] = 0;
+            _VBufferLighting[voxelCoord] = 1;
 #ifdef ENABLE_REPROJECTION
             _VBufferFeedback[voxelCoord] = 0;
 #endif
@@ -718,7 +717,7 @@ void FillVolumetricLightingBuffer(
     for (; slice < _VBufferSliceCount; slice++)
     {
         uint3 voxelCoord = uint3(posInput.positionSS, slice);
-        _VBufferLighting[voxelCoord] = 0;
+        _VBufferLighting[voxelCoord] = 2;
 #ifdef ENABLE_REPROJECTION
         _VBufferFeedback[voxelCoord] = 0;
 #endif
@@ -746,7 +745,8 @@ void VolumetricLighting(uint3 dispatchThreadId : SV_DispatchThreadID,
     ConstantBuffer<FrameUniforms> mFrameUniforms = ResourceDescriptorHeap[perFrameBufferIndex];
     ConstantBuffer<ShaderVariablesVolumetric> shaderVariablesVolumetric = ResourceDescriptorHeap[shaderVariablesVolumetricIndex];
     Texture3D<float4> _VBufferDensity = ResourceDescriptorHeap[_VBufferDensityIndex];
-    Texture2D<float> _DepthPyramidRT = ResourceDescriptorHeap[_DepthPyramidIndex];
+    Texture2D<float> _DepthBufferRT = ResourceDescriptorHeap[_DepthBufferIndex];
+    Texture2D<float> _MaxZMaskTexture = ResourceDescriptorHeap[_MaxZMaskTextureIndex];
     RWTexture3D<float4> _VBufferLighting = ResourceDescriptorHeap[_VBufferLightingIndex];
 
     SamplerStruct samplerStruct = GetSamplerStruct();
@@ -773,7 +773,7 @@ void VolumetricLighting(uint3 dispatchThreadId : SV_DispatchThreadID,
     uint voxelWidth, voxelHeight, voxelDepth;
     _VBufferDensity.GetDimensions(voxelWidth, voxelHeight, voxelDepth);
     float2 voxelUV = centerCoord / float2(voxelWidth, voxelHeight);
-    float3 rayDirWS = mul(UNITY_MATRIX_I_P(mFrameUniforms.cameraUniform), float4(voxelUV * 2 - 1, 0, 1)).xyz;
+    float3 rayDirWS = mul(UNITY_MATRIX_I_VP(mFrameUniforms.cameraUniform), float4(voxelUV * 2 - 1, 0, 1)).xyz;
     
     // Compute a ray direction s.t. ViewSpace(rayDirWS).z = 1.
     // float3 rayDirWS       = mul(-float4(centerCoord, 1, 1), _VBufferCoordToViewDirWS[unity_StereoEyeIndex]).xyz;
@@ -804,7 +804,7 @@ void VolumetricLighting(uint3 dispatchThreadId : SV_DispatchThreadID,
     // the jittered ray corresponds to. The exact solution can be obtained by intersecting
     // the ray with the screen plane, e.i. (ViewSpace(jitterDirWS).z = 1). That's a little expensive.
     // So, as an approximation, we ignore the curvature of the frustum.
-    uint2 pixelCoord = (uint2)((voxelCoord + 0.5 + sampleOffset) * _VBufferVoxelSize);
+    uint2 pixelCoord = (uint2)((voxelCoord + 0.5 + sampleOffset) * _VBufferVoxelSize); // _VBufferVoxelSize的值默认是8
 
 #ifdef VL_PRESET_OPTIMAL
     // The entire thread group is within the same light tile.
@@ -823,24 +823,31 @@ void VolumetricLighting(uint3 dispatchThreadId : SV_DispatchThreadID,
     ray.geomDist = FLT_INF;
     ray.maxDist = FLT_INF;
 #if USE_DEPTH_BUFFER
-    float deviceDepth = LoadCameraDepth(_DepthPyramidRT, pixelCoord);
-
+    float deviceDepth = LoadCameraDepth(_DepthBufferRT, pixelCoord);
     if (deviceDepth > 0) // Skip the skybox
     {
         // Convert it to distance along the ray. Doesn't work with tilt shift, etc.
         float linearDepth = LinearEyeDepth(deviceDepth, _ZBufferParams);
         ray.geomDist = linearDepth * rcp(dot(ray.jitterDirWS, F));
 
-        // float2 UV = posInput.positionNDC;
+        float2 UV = posInput.positionNDC;
 
         // This should really be using a max sampler here. This is a bit overdilating given that it is already dilated.
         // Better to be safer though.
-        // float4 d = GATHER_RED_TEXTURE2D_X(_MaxZMaskTexture, s_point_clamp_sampler, UV) * rcp(dot(ray.jitterDirWS, F));
-        float4 d = rcp(dot(ray.jitterDirWS, F));
+        float4 d = GATHER_RED_TEXTURE2D(_MaxZMaskTexture, s_point_clamp_sampler, UV) * rcp(dot(ray.jitterDirWS, F));
         ray.maxDist = max(Max3(d.x, d.y, d.z), d.w);
     }
 #endif
 
+    // _VBufferLighting[uint3(posInput.positionSS, 0)] = ray.geomDist;
+    // _VBufferLighting[uint3(posInput.positionSS, 1)] = ray.maxDist;
+    // _VBufferLighting[uint3(posInput.positionSS, 3)] = deviceDepth;
+    // _VBufferLighting[uint3(posInput.positionSS, 4)] = LinearEyeDepth(deviceDepth, _ZBufferParams);
+    // _VBufferLighting[uint3(posInput.positionSS, 5)] = dot(ray.jitterDirWS, F);
+    // _VBufferLighting[uint3(posInput.positionSS, 6)] = float4(ray.jitterDirWS, 1);
+    // _VBufferLighting[uint3(posInput.positionSS, 7)] = float4(F, 1);
+    // return;
+    
     // TODO
     LightLoopContext context;
     context.shadowContext = InitShadowContext(mFrameUniforms);
