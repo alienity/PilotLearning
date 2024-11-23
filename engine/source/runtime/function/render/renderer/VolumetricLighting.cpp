@@ -489,6 +489,11 @@ namespace MoYu
 
 		RHI::RenderPass& volumeLightingPass = graph.AddRenderPass("Volumetric Lighting");
 
+		volumeLightingPass.Read(passInput.directionalCascadeShadowmapHandle, false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+		for (int i = 0; i < passInput.spotShadowmapHandles.size(); i++)
+		{
+			volumeLightingPass.Read(passInput.spotShadowmapHandles[i], false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+		}
 		volumeLightingPass.Read(perframeBufferHandle, false, RHIResourceState::RHI_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
 		volumeLightingPass.Read(shaderVariablesVolumetricHandle, false, RHIResourceState::RHI_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
 		volumeLightingPass.Read(vbufferDensityHandle, false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
@@ -526,6 +531,7 @@ namespace MoYu
 		});
 	}
 
+	
 	void VolumetriLighting::UpdateVolumetricLightingUniform(HLSL::VolumetricLightingUniform& inoutVolumetricLightingUniform)
 	{
 		inoutVolumetricLightingUniform._FogEnabled = 1;
@@ -583,6 +589,7 @@ namespace MoYu
 		inoutVBufferUniform._VBufferLastSliceDist = currParams.ComputeLastSliceDistance(sliceCount);
 		inoutVBufferUniform._VBufferRcpInstancedViewCount = 1.0f;
 	}
+
 
 }
 

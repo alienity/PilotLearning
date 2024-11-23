@@ -12,7 +12,7 @@
 #define LIGHT_EVALUATION_NO_CONTACT_SHADOWS // To define before LightEvaluation.hlsl
 // #define LIGHT_EVALUATION_NO_HEIGHT_FOG
 
-#define SHADOW_LOW
+#define SHADOW_ULTRA_LOW
 
 #ifndef LIGHTLOOP_DISABLE_TILE_AND_CLUSTER
     #define USE_BIG_TILE_LIGHTLIST
@@ -190,7 +190,6 @@ VoxelLighting EvaluateVoxelLightingDirectional(FrameUniforms frameUniforms, Samp
 
     // Evaluate sun shadows.
     // if (_DirectionalShadowIndex >= 0)
-    if (1)
     {
         DirectionalLightData light = frameUniforms.lightDataUniform.directionalLightData;
         // DirectionalLightData light = _DirectionalLightDatas[_DirectionalShadowIndex];
@@ -212,9 +211,6 @@ VoxelLighting EvaluateVoxelLightingDirectional(FrameUniforms frameUniforms, Samp
                 float3 shadowN = 0; // No bias
             #endif // SHADOW_VIEW_BIAS
 
-            // context.shadowValue = GetDirectionalShadowAttenuation(context.shadowContext,
-            //                         samplerStruct, posInput.positionSS, positionWS, GetNormalForShadowBias(bsdfData), light.shadowIndex, L);
-            
             context.shadowValue = GetDirectionalShadowAttenuation(context.shadowContext, samplerStruct,
                                         posInput.positionSS, posInput.positionWS, shadowN, light.shadowIndex, L);
 
@@ -223,10 +219,10 @@ VoxelLighting EvaluateVoxelLightingDirectional(FrameUniforms frameUniforms, Samp
             //     context.shadowValue *= EvaluateVolumetricCloudsShadows(light, posInput.positionWS);
         }
     }
-    else
-    {
-        context.shadowValue = 1;
-    }
+    // else
+    // {
+    //     context.shadowValue = 1;
+    // }
 
     // for (uint i = 0; i < _DirectionalLightCount; ++i)
     {
@@ -717,7 +713,7 @@ void FillVolumetricLightingBuffer(
     for (; slice < _VBufferSliceCount; slice++)
     {
         uint3 voxelCoord = uint3(posInput.positionSS, slice);
-        _VBufferLighting[voxelCoord] = 2;
+        _VBufferLighting[voxelCoord] = 0;
 #ifdef ENABLE_REPROJECTION
         _VBufferFeedback[voxelCoord] = 0;
 #endif

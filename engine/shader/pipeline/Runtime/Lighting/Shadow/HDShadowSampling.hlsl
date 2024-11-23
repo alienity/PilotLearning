@@ -11,7 +11,7 @@
 //  PCF Filtering methods
 // ------------------------------------------------------------------
 
-float SampleShadow_Gather_PCF(float4 shadowAtlasSize, float3 coord, Texture2D tex, SamplerState sPointClampSampler, SamplerComparisonState compSamp, float depthBias)
+float SampleShadow_Gather_PCF(float4 shadowAtlasSize, float3 coord, Texture2D tex, SamplerState pontSamp, SamplerComparisonState compSamp, float depthBias)
 {
 #if SHADOW_USE_DEPTH_BIAS == 1
     // add the depth bias
@@ -20,7 +20,7 @@ float SampleShadow_Gather_PCF(float4 shadowAtlasSize, float3 coord, Texture2D te
 
     float2 f = frac(coord.xy * shadowAtlasSize.zw - 0.5f);
 
-    float4 shadowMapTaps = GATHER_TEXTURE2D(tex, sPointClampSampler, coord.xy);
+    float4 shadowMapTaps = GATHER_TEXTURE2D(tex, pontSamp, coord.xy);
     float4 shadowResults = (coord.z > shadowMapTaps.x);
 
     return lerp(lerp(shadowResults.w, shadowResults.z, f.x),

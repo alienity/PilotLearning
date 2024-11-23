@@ -785,6 +785,8 @@ namespace MoYu
         mVolumeLightInput.depthBufferHandle = mGBufferOutput.depthHandle;
         mVolumeLightInput.dilatedMaxZBufferHandle = mGenMaxZOutputStruct.dilatedMaxZBufferHandle;
         mVolumeLightInput.shaderVariablesVolumetricHandle = mVolumeVoxelOutput.shaderVariablesVolumetricHandle;
+        mVolumeLightInput.directionalCascadeShadowmapHandle = directionalCascadeShadowmapHandle;
+        mVolumeLightInput.spotShadowmapHandles = spotShadowmapHandle;
         mVolumeLightPass->VolumetricLightingPass(graph, mVolumeLightInput, mVolumeLightOutput);
         //=================================================================================
 

@@ -52,6 +52,9 @@ namespace MoYu
 			RHI::RgResourceHandle depthBufferHandle;
 			RHI::RgResourceHandle dilatedMaxZBufferHandle;
 			RHI::RgResourceHandle shaderVariablesVolumetricHandle;
+
+			RHI::RgResourceHandle directionalCascadeShadowmapHandle;
+			std::vector<RHI::RgResourceHandle> spotShadowmapHandles;
 		};
 
 		struct VolumeLightPassOutputStruct

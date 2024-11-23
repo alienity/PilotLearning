@@ -227,6 +227,9 @@ namespace MoYu
             directionalLightData.specularDimmer = 1.0f;
             directionalLightData.shadowDimmer = 1.0f;
 
+            directionalLightData.volumetricLightDimmer = 1.0f;
+            directionalLightData.volumetricShadowDimmer = 1.0f;
+
             _lightDataUniform.directionalLightData = directionalLightData;
 
             HLSL::HDDirectionalShadowData _dirShadowData;
