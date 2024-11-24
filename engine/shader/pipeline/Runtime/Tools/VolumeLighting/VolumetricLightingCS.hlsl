@@ -491,9 +491,10 @@ VoxelLighting EvaluateVoxelLightingLocal(FrameUniforms frameUniforms, SamplerStr
 
 // Computes the in-scattered radiance along the ray.
 void FillVolumetricLightingBuffer(
-    inout RWTexture3D<float4> _VBufferLighting, Texture3D<float4> _VBufferDensity, SamplerStruct samplerStruct,
-    FrameUniforms frameUniforms, VolumetricLightingUniform volumetricLightingUniform, VBufferUniform vBufferUniform,
-    LightLoopContext context, uint featureFlags, PositionInputs posInput, int groupIdx, JitteredRay ray, float tStart)
+    inout RWTexture3D<float4> _VBufferLighting, const Texture3D<float4> _VBufferDensity, const SamplerStruct samplerStruct,
+    const FrameUniforms frameUniforms, const VolumetricLightingUniform volumetricLightingUniform, const VBufferUniform vBufferUniform,
+    const LightLoopContext context, const uint featureFlags, const PositionInputs posInput,
+    const int groupIdx, const JitteredRay ray, const float tStart)
 {
     float4 _VBufferDistanceDecodingParams = vBufferUniform._VBufferDistanceDecodingParams;
     float _VBufferRcpSliceCount = vBufferUniform._VBufferRcpSliceCount;
@@ -835,15 +836,6 @@ void VolumetricLighting(uint3 dispatchThreadId : SV_DispatchThreadID,
     }
 #endif
 
-    // _VBufferLighting[uint3(posInput.positionSS, 0)] = ray.geomDist;
-    // _VBufferLighting[uint3(posInput.positionSS, 1)] = ray.maxDist;
-    // _VBufferLighting[uint3(posInput.positionSS, 3)] = deviceDepth;
-    // _VBufferLighting[uint3(posInput.positionSS, 4)] = LinearEyeDepth(deviceDepth, _ZBufferParams);
-    // _VBufferLighting[uint3(posInput.positionSS, 5)] = dot(ray.jitterDirWS, F);
-    // _VBufferLighting[uint3(posInput.positionSS, 6)] = float4(ray.jitterDirWS, 1);
-    // _VBufferLighting[uint3(posInput.positionSS, 7)] = float4(F, 1);
-    // return;
-    
     // TODO
     LightLoopContext context;
     context.shadowContext = InitShadowContext(mFrameUniforms);

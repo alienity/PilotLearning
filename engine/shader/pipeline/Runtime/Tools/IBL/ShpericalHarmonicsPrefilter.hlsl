@@ -10,7 +10,7 @@ cbuffer Constants : register(b0)
 
 SamplerState defaultSampler : register(s10);
 
-[numthreads(1, 1, 1)]
+[numthreads(8, 8, 1)]
 void CSMain(uint3 Gid : SV_GroupID, uint3 GTid : SV_GroupThreadID, uint3 DTid : SV_DispatchThreadID) {
 
     TextureCube<float4> m_IBLRadians = ResourceDescriptorHeap[_IBLRadiansTexIndex];

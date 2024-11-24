@@ -22,7 +22,7 @@
 
 // normalWS is the vertex normal if available or shading normal use to bias the shadow position
 float GetDirectionalShadowAttenuation(
-    inout HDShadowContext shadowContext, SamplerStruct samplerStruct,
+    HDShadowContext shadowContext, SamplerStruct samplerStruct,
     float2 positionSS, float3 positionWS, float3 normalWS, int shadowDataIndex, float3 L)
 {
 #if SHADOW_AUTO_FLIP_NORMAL

@@ -487,12 +487,15 @@ namespace MoYu
 		RHI::RgResourceHandle shaderVariablesVolumetricHandle = passInput.shaderVariablesVolumetricHandle;
 		RHI::RgResourceHandle dilatedMaxZBufferHandle = passInput.dilatedMaxZBufferHandle;
 
+		const RHI::RgResourceHandle& directionalCascadeShadowmapHandle = passInput.directionalCascadeShadowmapHandle;
+		const std::vector<RHI::RgResourceHandle>& spotShadowmapHandles = passInput.spotShadowmapHandles;
+
 		RHI::RenderPass& volumeLightingPass = graph.AddRenderPass("Volumetric Lighting");
 
-		volumeLightingPass.Read(passInput.directionalCascadeShadowmapHandle, false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-		for (int i = 0; i < passInput.spotShadowmapHandles.size(); i++)
+		volumeLightingPass.Read(directionalCascadeShadowmapHandle, false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+		for (int i = 0; i < spotShadowmapHandles.size(); i++)
 		{
-			volumeLightingPass.Read(passInput.spotShadowmapHandles[i], false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+			volumeLightingPass.Read(spotShadowmapHandles[i], false, RHIResourceState::RHI_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 		}
 		volumeLightingPass.Read(perframeBufferHandle, false, RHIResourceState::RHI_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
 		volumeLightingPass.Read(shaderVariablesVolumetricHandle, false, RHIResourceState::RHI_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);

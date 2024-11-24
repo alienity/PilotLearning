@@ -229,7 +229,7 @@ int EvalShadow_GetSplitIndex(HDShadowContext shadowContext, int index, float3 po
 }
 
 float EvalShadow_CascadedDepth_Dither_SplitIndex(
-    inout HDShadowContext shadowContext, SamplerState pointsamp, SamplerComparisonState samp,
+    HDShadowContext shadowContext, SamplerState pointsamp, SamplerComparisonState samp,
     float2 positionSS, float3 positionWS, float3 normalWS, int index, float3 L, int shadowSplitIndex)
 {
     float shadow = 1.0;
@@ -272,7 +272,7 @@ float EvalShadow_CascadedDepth_Dither_SplitIndex(
     return shadow;
 }
 
-float EvalShadow_CascadedDepth_Dither(inout HDShadowContext shadowContext, SamplerState pointsamp, SamplerComparisonState samp, float2 positionSS, float3 positionWS, float3 normalWS, int index, float3 L)
+float EvalShadow_CascadedDepth_Dither(HDShadowContext shadowContext, SamplerState pointsamp, SamplerComparisonState samp, float2 positionSS, float3 positionWS, float3 normalWS, int index, float3 L)
 {
     int unusedSplitIndex;
     return EvalShadow_CascadedDepth_Dither_SplitIndex(shadowContext, pointsamp, samp, positionSS, positionWS, normalWS, index, L, unusedSplitIndex);

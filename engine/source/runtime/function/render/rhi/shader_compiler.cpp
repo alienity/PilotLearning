@@ -149,11 +149,11 @@ ShaderCompilationResult ShaderCompiler::Compile(const std::filesystem::path&  Pa
         L"-Fd",
         L"-Fh",
         PdbPath.c_str(), // Shader Pdb
-// #ifdef _DEBUG
-//         L"-Od", // Disable optimization
-// #else
+ #ifdef _DEBUG
+         L"-Od", // Disable optimization
+ #else
         L"-O3", // Optimization level 3
-// #endif
+ #endif
         L"-Zss", // Compute shader hash based on source
     };
 
