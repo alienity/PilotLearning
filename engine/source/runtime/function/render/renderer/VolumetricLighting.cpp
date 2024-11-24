@@ -133,7 +133,7 @@ namespace MoYu
 				m_CurrentVolumetricBufferSize.y,
 				m_CurrentVolumetricBufferSize.z,
 				1,
-				DXGI_FORMAT_R32G32B32A32_FLOAT,
+				DXGI_FORMAT_R16G16B16A16_FLOAT,
 				RHI::RHISurfaceCreateRandomWrite,
 				1,
 				L"VolumeLightingBuffer",

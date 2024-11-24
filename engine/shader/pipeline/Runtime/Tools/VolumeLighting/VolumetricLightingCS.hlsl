@@ -540,7 +540,7 @@ void FillVolumetricLightingBuffer(
         float dt = t1 - t0; // Is geometry-aware
         if(dt <= 0.0)
         {
-            _VBufferLighting[voxelCoord] = 1;
+            _VBufferLighting[voxelCoord] = 0;
 #ifdef ENABLE_REPROJECTION
             _VBufferFeedback[voxelCoord] = 0;
 #endif
