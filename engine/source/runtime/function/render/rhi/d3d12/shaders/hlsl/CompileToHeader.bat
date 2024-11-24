@@ -1,7 +1,7 @@
 @echo off
 echo "start compiling ..."
 
-set PATH=..\..\..\..\..\..\..\..\3rdparty\dxc_2023_08_14\bin\x64;
+set PATH=..\..\..\..\..\..\..\..\3rdparty\dxc_2024_07_31\bin\x64;
 
 dxc -Zi -E"main" -Vn"g_pScreenQuadCommonVS" -D"_GAMING_DESKTOP=1" -T"vs_6_6" -Fh"..\CompiledShaders\ScreenQuadCommonVS.h" -Qembed_debug  -nologo ".\ScreenQuadCommonVS.hlsl"
 
