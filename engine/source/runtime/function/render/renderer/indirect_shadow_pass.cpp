@@ -101,6 +101,9 @@ namespace MoYu
             curLightData.shadowDimmer = 1.0f;
             curLightData.penumbraTint = 0;
 
+            curLightData.volumetricLightDimmer = 1.0f;
+            curLightData.volumetricShadowDimmer = 1.0f;
+            
             _lightDataUniform.lightData[puntualLightCount] = curLightData;
             puntualLightCount += 1;
 

@@ -2,32 +2,23 @@
 // Definitions
 //--------------------------------------------------------------------------------------------------
 
-// #pragma enable_d3d11_debug_symbols
-#pragma only_renderers d3d11 playstation xboxone xboxseries vulkan metal switch
-
-#pragma kernel FilterVolumetricLighting
-
-#pragma multi_compile _ NEED_SEPARATE_OUTPUT
-
 //--------------------------------------------------------------------------------------------------
 // Included headers
 //--------------------------------------------------------------------------------------------------
 
-#include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Common.hlsl"
-#include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/Builtin/BuiltinData.hlsl"
-#include "Packages/com.unity.render-pipelines.high-definition/Runtime/ShaderLibrary/ShaderVariables.hlsl"
-#include "Packages/com.unity.render-pipelines.high-definition/Runtime/Lighting/VolumetricLighting/HDRenderPipeline.VolumetricLighting.cs.hlsl"
+#include "../../ShaderLibrary/Common.hlsl"
+#include "../../Material/Builtin/BuiltinData.hlsl"
+#include "../../ShaderLibrary/ShaderVariables.hlsl"
+#include "../../Tools/VolumeLighting/VolumetricLightingCommon.hlsl"
 
 //--------------------------------------------------------------------------------------------------
 // Inputs & outputs
 //--------------------------------------------------------------------------------------------------
 
-#if NEED_SEPARATE_OUTPUT
-TEXTURE3D(_VBufferLighting);
-RW_TEXTURE3D(float4, _VBufferLightingFiltered);
-#else
-RW_TEXTURE3D(float4, _VBufferLighting);
-#endif
+// RW_TEXTURE3D(float4, _VBufferLighting);
+
+ConstantBuffer<FrameUniforms> _PerFrameBuffer : register(b0, space0);
+RWTexture3D<float4> _VBufferLighting : register(u0, space0);
 
 #define GAUSSIAN_SIGMA 1.0
 #define GROUP_SIZE_1D_XY 8
@@ -53,7 +44,7 @@ float4 GetSample(uint index)
     return outVal;
 }
 
-void PrefetchData(uint groupIndex, uint2 groupOrigin, uint sliceIndex)
+void PrefetchData(inout RWTexture3D<float4> _VBufferLighting, float4 _VBufferViewportSize, uint groupIndex, uint2 groupOrigin, uint sliceIndex)
 {
     int2 originXY = groupOrigin - int2(1, 1);
 
@@ -77,13 +68,9 @@ void PrefetchData(uint groupIndex, uint2 groupOrigin, uint sliceIndex)
     }
 }
 
-void WriteOutput(uint3 voxelCoord, float4 value)
+void WriteOutput(inout RWTexture3D<float4> _VBufferLighting, uint3 voxelCoord, float4 value)
 {
-#if NEED_SEPARATE_OUTPUT
-    _VBufferLightingFiltered[voxelCoord] = value;
-#else
     _VBufferLighting[voxelCoord] = value;
-#endif
 }
 
 float Gaussian(float radius, float sigma)
@@ -98,6 +85,9 @@ void FilterVolumetricLighting(uint3 dispatchThreadId : SV_DispatchThreadID,
                                 uint2 groupId          : SV_GroupID,
                                 uint2 groupThreadId    : SV_GroupThreadID)
 {
+    VBufferUniform volumeLightUniform = _PerFrameBuffer.vBufferUniform;
+    float4 _VBufferViewportSize = volumeLightUniform._VBufferViewportSize;
+    
     // Compute the coordinate that this thread needs to process
     uint2 currentCoord  = groupId * GROUP_SIZE_1D_XY + groupThreadId;
     uint currentSlice = dispatchThreadId.z;
@@ -108,7 +98,7 @@ void FilterVolumetricLighting(uint3 dispatchThreadId : SV_DispatchThreadID,
     if (groupIndex < 50)
     {
         // Load 2 values per thread.
-        PrefetchData(groupIndex, groupId * GROUP_SIZE_1D_XY, voxelCoord.z);
+        PrefetchData(_VBufferLighting, _VBufferViewportSize, groupIndex, groupId * GROUP_SIZE_1D_XY, voxelCoord.z);
     }
 
     // Make sure all values are loaded in LDS by now.
@@ -142,5 +132,5 @@ void FilterVolumetricLighting(uint3 dispatchThreadId : SV_DispatchThreadID,
 
     }
 
-    WriteOutput(voxelCoord, value / sumW);
+    WriteOutput(_VBufferLighting, voxelCoord, value / sumW);
 }

@@ -317,7 +317,34 @@ namespace MoYu
 
 			pVolumetricLightingPSO = std::make_shared<RHI::D3D12PipelineState>(m_Device, L"VolumetricLightingPSO", psoDesc);
 		}
+
+		{
+			mVolumetricLightingFilteringCS = m_ShaderCompiler->CompileShader(
+				RHI_SHADER_TYPE::Compute, m_ShaderRootPath / "pipeline/Runtime/Tools/VolumeLighting/VolumetricLightingFilteringCS.hlsl", 
+				ShaderCompileOptions(L"FilterVolumetricLighting"));
+
+			RHI::RootSignatureDesc rootSigDesc =
+				RHI::RootSignatureDesc()
+				.AddConstantBufferView<0, 0>()
+				.AddDescriptorTable(RHI::D3D12DescriptorTable(1).AddUAVRange<0, 0>(1, D3D12_DESCRIPTOR_RANGE_FLAG_NONE, 0))
+				.AllowResourceDescriptorHeapIndexing()
+				.AllowSampleDescriptorHeapIndexing();
+
+			pVolumetricLightingFilteringSignature = std::make_shared<RHI::D3D12RootSignature>(m_Device, rootSigDesc);
+
+			struct PsoStream
+			{
+				PipelineStateStreamRootSignature RootSignature;
+				PipelineStateStreamCS            CS;
+			} psoStream;
+			psoStream.RootSignature = PipelineStateStreamRootSignature(pVolumetricLightingFilteringSignature.get());
+			psoStream.CS = &mVolumetricLightingFilteringCS;
+			PipelineStateStreamDesc psoDesc = { sizeof(PsoStream), &psoStream };
+
+			pVolumetricLightingFilteringPSO = std::make_shared<RHI::D3D12PipelineState>(m_Device, L"VolumetricLightingFilteringPSO", psoDesc);
+		}
 	}
+
 
 	void VolumetriLighting::GenerateMaxZForVolumetricPass(RHI::RenderGraph& graph, GenMaxZInputStruct& passInput, GenMaxZOutputStruct& passOutput)
 	{
@@ -531,10 +558,21 @@ namespace MoYu
 
 			// The shader defines GROUP_SIZE_1D = 8.
 			pContext->Dispatch((fogData.resolution.x + 7) / 8, (fogData.resolution.y + 7) / 8, 1);
+
+
+			// VolumetricLightingFiltering
+			pContext->SetRootSignature(pVolumetricLightingFilteringSignature.get());
+			pContext->SetPipelineState(pVolumetricLightingFilteringPSO.get());
+
+			pContext->SetConstantBuffer(0, RegGetBuf(perframeBufferHandle)->GetGpuVirtualAddress());
+			pContext->SetDynamicDescriptor(1, 0, RegGetTex(mLightBufferHandle)->GetDefaultUAV(1)->GetCpuHandle());
+
+			pContext->Dispatch((fogData.resolution.x + 7) / 8, (fogData.resolution.y + 7) / 8, 1);
 		});
+
+		passOutput.vbufferLightingHandle = mLightBufferHandle;
 	}
 
-	
 	void VolumetriLighting::UpdateVolumetricLightingUniform(HLSL::VolumetricLightingUniform& inoutVolumetricLightingUniform)
 	{
 		inoutVolumetricLightingUniform._FogEnabled = 1;

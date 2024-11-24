@@ -6,7 +6,7 @@
 // #define ENABLE_REPROJECTION
 // #define ENABLE_ANISOTROPY
 // #define VL_PRESET_OPTIMAL
-// #define SUPPORT_LOCAL_LIGHTS
+#define SUPPORT_LOCAL_LIGHTS
 
 // Don't want contact shadows
 #define LIGHT_EVALUATION_NO_CONTACT_SHADOWS // To define before LightEvaluation.hlsl
@@ -282,20 +282,21 @@ VoxelLighting EvaluateVoxelLightingDirectional(FrameUniforms frameUniforms, Samp
     return lighting;
 }
 
-/*
 // Computes the light integral (in-scattered radiance) within the voxel.
 // Multiplication by the scattering coefficient and the phase function is performed outside.
 VoxelLighting EvaluateVoxelLightingLocal(FrameUniforms frameUniforms, SamplerStruct samplerStruct,
-                                         LightLoopContext context, uint groupIdx, uint featureFlags, PositionInputs posInput,
-                                         uint lightCount, uint lightStart, float3 centerWS,
+                                         LightLoopContext context, uint groupIdx, uint featureFlags, PositionInputs posInput, float3 centerWS,
                                          JitteredRay ray, float t0, float t1, float dt, float rndVal, float extinction, float anisotropy)
 {
+    uint lightCount = frameUniforms.lightDataUniform._PunctualLightCount;
+    uint lightStart = 0;
+    
     VoxelLighting lighting;
     ZERO_INITIALIZE(VoxelLighting, lighting);
 
     const float NdotL = 1;
 
-    if (featureFlags & LIGHTFEATUREFLAGS_PUNCTUAL)
+    // if (featureFlags & LIGHTFEATUREFLAGS_PUNCTUAL)
     {
         uint lightOffset = 0; // This is used by two subsequent loops
 
@@ -303,7 +304,8 @@ VoxelLighting EvaluateVoxelLightingLocal(FrameUniforms frameUniforms, SamplerStr
         for (; lightOffset < lightCount; lightOffset++)
         {
             uint lightIndex = FetchIndex(lightStart, lightOffset);
-            LightData light = _LightDatas[lightIndex];
+
+            LightData light = frameUniforms.lightDataUniform.lightData[lightIndex];
 
             if (light.lightType >= GPULIGHTTYPE_PROJECTOR_BOX) { break; }
 
@@ -373,7 +375,8 @@ VoxelLighting EvaluateVoxelLightingLocal(FrameUniforms frameUniforms, SamplerStr
                 float3 shadowN = 0; // No bias
             #endif // SHADOW_VIEW_BIAS
 
-                SHADOW_TYPE shadow = EvaluateShadow_Punctual(context, posInput, light, unused, shadowN, L, distances);
+                BuiltinData unused;
+                SHADOW_TYPE shadow = EvaluateShadow_Punctual(samplerStruct, context, posInput, light, unused, shadowN, L, distances);
                 lightColor.rgb *= ComputeShadowColor(shadow, light.shadowTint, light.penumbraTint);
 
 
@@ -401,6 +404,7 @@ VoxelLighting EvaluateVoxelLightingLocal(FrameUniforms frameUniforms, SamplerStr
             }
         }
 
+        /*
         // This loop only processes box lights.
         for (; lightOffset < lightCount; lightOffset++)
         {
@@ -483,11 +487,12 @@ VoxelLighting EvaluateVoxelLightingLocal(FrameUniforms frameUniforms, SamplerStr
                 lighting.radianceComplete += (weight * lightColor.rgb) * phase;
             }
         }
+        */
+        
     }
 
     return lighting;
 }
-*/
 
 // Computes the in-scattered radiance along the ray.
 void FillVolumetricLightingBuffer(
@@ -500,11 +505,7 @@ void FillVolumetricLightingBuffer(
     float _VBufferRcpSliceCount = vBufferUniform._VBufferRcpSliceCount;
     uint _VBufferSliceCount = vBufferUniform._VBufferSliceCount;
     float _GlobalFogAnisotropy = volumetricLightingUniform._GlobalFogAnisotropy;
-    int _PunctualLightCount = frameUniforms.lightDataUniform._PunctualLightCount;
     
-    uint lightCount = _PunctualLightCount;
-    uint lightStart = 0;
-
     float t0 = max(tStart, DecodeLogarithmicDepthGeneralized(0, _VBufferDistanceDecodingParams));
     float de = _VBufferRcpSliceCount; // Log-encoded distance between slices
 
@@ -595,8 +596,8 @@ void FillVolumetricLightingBuffer(
 
         #ifdef SUPPORT_LOCAL_LIGHTS
         {
-            VoxelLighting lighting = EvaluateVoxelLightingLocal(context, groupIdx, featureFlags, posInput,
-                                                                lightCount, lightStart,
+            VoxelLighting lighting = EvaluateVoxelLightingLocal(frameUniforms, samplerStruct,
+                                                                context, groupIdx, featureFlags, posInput,
                                                                 centerWS, ray, t0, t1, dt, rndVal,
                                                                 extinction, anisotropy);
 
