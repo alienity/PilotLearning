@@ -15,6 +15,7 @@
 
 #include "runtime/function/framework/component/mesh/mesh_renderer_component.h"
 #include "runtime/function/framework/component/terrain/terrain_component.h"
+#include "function/framework/component/volume/volume_renderer_component.h"
 #include "runtime/function/framework/component/transform/transform_component.h"
 #include "runtime/function/framework/component/camera/camera_component.h"
 #include "runtime/function/framework/component/light/light_component.h"
@@ -716,6 +717,26 @@ namespace MoYu
 
             is_dirty |= isDirty;
         };
+        m_editor_ui_creator["LocalVolumetricFogComponent"] = [this, &asset_folder](const std::string& name, bool& is_dirty, void* value_ptr) -> void {
+            bool isDirty = false;
+
+            if (ImGui::TreeNode(name.c_str()))
+            {
+                ImGui::Indent();
+
+                LocalVolumetricFogComponent* volume_renderer_ptr = static_cast<LocalVolumetricFogComponent*>(value_ptr);
+
+                LocalVolumeFogComponentRes& _FosRes = volume_renderer_ptr->getSceneLocalFog();
+
+                //m_editor_ui_creator["SceneMesh"]("m_scene_mesh", isDirty, &_sceneMesh);
+                //m_editor_ui_creator["SceneMaterial"]("m_material", isDirty, &_sceneMaterial);
+
+                ImGui::Unindent();
+                ImGui::TreePop();
+            }
+
+            is_dirty |= isDirty;
+            };
         m_editor_ui_creator["TerrainComponent"] = [this, &asset_folder](const std::string& name, bool& is_dirty, void* value_ptr) -> void {
             bool isDirty = false;
 

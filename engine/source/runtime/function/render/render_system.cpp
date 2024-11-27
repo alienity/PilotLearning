@@ -180,6 +180,11 @@ namespace MoYu
                         MoYu::SceneMeshRenderer meshRenderer = objParts[i].m_mesh_renderer_desc;
                         m_render_scene->updateMeshRenderer(meshRenderer, meshTransform, m_render_resource);
                     }
+                    if (objParts[i].m_component_type & ComponentType::C_VolumetricFogRenderer)
+                    {
+                        SceneVolumeFogRenderer volumeRenderer = objParts[i].m_volume_render_desc;
+                        m_render_scene->updateVolumeRenderer(volumeRenderer, meshTransform, m_render_resource);
+                    }
                     else if (objParts[i].m_component_type & ComponentType::C_Light)
                     {
                         MoYu::SceneLight sceneLight = objParts[i].m_scene_light;
@@ -215,6 +220,11 @@ namespace MoYu
                     {
                         MoYu::SceneMeshRenderer meshRenderer = objParts[i].m_mesh_renderer_desc;
                         m_render_scene->removeMeshRenderer(meshRenderer);
+                    }
+                    else if (objParts[i].m_component_type & ComponentType::C_VolumetricFogRenderer)
+                    {
+                        SceneVolumeFogRenderer volumeRenderer = objParts[i].m_volume_render_desc;
+                        m_render_scene->removeVolumeRenderer(volumeRenderer);
                     }
                     else if (objParts[i].m_component_type & ComponentType::C_Light)
                     {

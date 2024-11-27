@@ -24,6 +24,12 @@ namespace MoYu
         InternalTerrainRenderer internalTerrainRenderer;
     };
 
+    struct CachedVolumeRenderer
+    {
+        SceneVolumeFogRenderer cachedSceneVolumeRenderer;
+        InternalVolumeFogRenderer internalSceneVolumeRenderer;
+    };
+
     class RenderScene
     {
     public:
@@ -47,7 +53,8 @@ namespace MoYu
 
         // render entities
         std::vector<CachedMeshRenderer> m_mesh_renderers;
-
+        // render volumes
+        std::vector<CachedVolumeRenderer> m_volume_renderers;
         // terrain entities
         std::vector<CachedTerrainRenderer> m_terrain_renderers;
 
@@ -57,12 +64,14 @@ namespace MoYu
         // update functions
         void updateLight(SceneLight sceneLight, SceneTransform sceneTransform);
         void updateMeshRenderer(SceneMeshRenderer sceneMeshRenderer, SceneTransform sceneTransform, std::shared_ptr<RenderResource> m_render_resource);
+        void updateVolumeRenderer(SceneVolumeFogRenderer sceneVolumeRenderer, SceneTransform sceneTransform, std::shared_ptr<RenderResource> m_render_resource);
         void updateCamera(SceneCamera sceneCamera, SceneTransform sceneTransform);
         void updateTerrainRenderer(SceneTerrainRenderer sceneTerrainRenderer, SceneTransform sceneTransform, std::shared_ptr<RenderResource> m_render_resource);
 
         // remove component
         void removeLight(SceneLight sceneLight);
         void removeMeshRenderer(SceneMeshRenderer sceneMeshRenderer);
+        void removeVolumeRenderer(SceneVolumeFogRenderer sceneVolumeRenderer);
         void removeCamera(SceneCamera sceneCamera);
         void removeTerrainRenderer(SceneTerrainRenderer sceneTerrainRenderer);
 

@@ -11,6 +11,7 @@
 #include "runtime/function/framework/component/mesh/mesh_renderer_component.h"
 #include "runtime/function/framework/component/camera/camera_component.h"
 #include "runtime/function/framework/component/terrain/terrain_component.h"
+#include "runtime/function/framework/component/volume/volume_renderer_component.h"
 
 namespace MoYu
 {
@@ -155,6 +156,12 @@ namespace MoYu
                 m_component->postLoadResource(weak_from_this(), component_json_data);
                 m_components.push_back(m_component);
             }
+            else if (type_name == "LocalVolumetricFogComponent")
+            {
+                std::shared_ptr<LocalVolumetricFogComponent> m_component = std::make_shared<LocalVolumetricFogComponent>();
+                m_component->postLoadResource(weak_from_this(), component_json_data);
+                m_components.push_back(m_component);
+            }
             else if (type_name == "TerrainComponent")
             {
                 std::shared_ptr<TerrainComponent> m_component = std::make_shared<TerrainComponent>();
@@ -187,7 +194,7 @@ namespace MoYu
 
         out_object_instance_res.m_chilren_id.insert(out_object_instance_res.m_chilren_id.end(), m_chilren_id.begin(), m_chilren_id.end());
 
-        // TODO: Ìí¼Ó±£´æLevel
+        // TODO: ï¿½ï¿½ï¿½Ó±ï¿½ï¿½ï¿½Level
         //out_object_instance_res.m_instanced_components = m_components;
         for (size_t i = 0; i < m_components.size(); i++)
         {

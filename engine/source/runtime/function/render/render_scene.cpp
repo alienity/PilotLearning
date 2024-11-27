@@ -256,6 +256,73 @@ namespace MoYu
         }
     }
 
+    void RenderScene::updateVolumeRenderer(SceneVolumeFogRenderer sceneVolumeRenderer, SceneTransform sceneTransform, std::shared_ptr<RenderResource> m_render_resource)
+    {
+        const glm::float4x4 model_matrix = sceneTransform.m_transform_matrix;
+        const glm::float4x4 model_matrix_inverse = glm::inverse(model_matrix);
+
+        int volume_finded = -1;
+        std::vector<CachedVolumeRenderer>& _volume_renderers = m_volume_renderers;
+        for (int j = 0; j < _volume_renderers.size(); j++)
+        {
+            if (_volume_renderers[j].cachedSceneVolumeRenderer.m_identifier == sceneVolumeRenderer.m_identifier)
+            {
+                volume_finded = j;
+                break;
+            }
+        }
+        if (volume_finded == -1)
+        {
+            CachedVolumeRenderer cachedVolumeRenderer;
+
+            cachedVolumeRenderer.cachedSceneVolumeRenderer = sceneVolumeRenderer;
+
+            InternalVolumetricFog ref_fog{};
+            ref_fog.m_SingleScatteringAlbedo = sceneVolumeRenderer.m_scene_volumetric_fog.m_SingleScatteringAlbedo;
+            ref_fog.m_FogDistance = sceneVolumeRenderer.m_scene_volumetric_fog.m_FogDistance;
+            ref_fog.m_Size = sceneVolumeRenderer.m_scene_volumetric_fog.m_Size;
+            ref_fog.m_PerAxisControl = sceneVolumeRenderer.m_scene_volumetric_fog.m_PerAxisControl;
+            ref_fog.m_BlendDistanceNear = sceneVolumeRenderer.m_scene_volumetric_fog.m_BlendDistanceNear;
+            ref_fog.m_BlendDistanceFar = sceneVolumeRenderer.m_scene_volumetric_fog.m_BlendDistanceFar;
+            ref_fog.m_FalloffMode = sceneVolumeRenderer.m_scene_volumetric_fog.m_FalloffMode;
+            ref_fog.m_InvertBlend = sceneVolumeRenderer.m_scene_volumetric_fog.m_InvertBlend;
+            ref_fog.m_DistanceFadeStart = sceneVolumeRenderer.m_scene_volumetric_fog.m_DistanceFadeStart;
+            ref_fog.m_DistanceFadeEnd = sceneVolumeRenderer.m_scene_volumetric_fog.m_DistanceFadeEnd;
+            ref_fog.m_ScrollSpeed = sceneVolumeRenderer.m_scene_volumetric_fog.m_ScrollSpeed;
+            ref_fog.m_Tilling = sceneVolumeRenderer.m_scene_volumetric_fog.m_Tilling;
+            ref_fog.m_NoiseImage = m_render_resource->SceneImageToTexture(sceneVolumeRenderer.m_scene_volumetric_fog.m_NoiseImage.m_image);
+            
+            cachedVolumeRenderer.internalSceneVolumeRenderer.ref_fog = std::move(ref_fog);
+            
+            cachedVolumeRenderer.internalSceneVolumeRenderer.model_matrix         = model_matrix;
+            cachedVolumeRenderer.internalSceneVolumeRenderer.model_matrix_inverse = model_matrix_inverse;
+            cachedVolumeRenderer.internalSceneVolumeRenderer.prev_model_matrix         = model_matrix;
+            cachedVolumeRenderer.internalSceneVolumeRenderer.prev_model_matrix_inverse = model_matrix_inverse;
+
+            m_volume_renderers.push_back(std::move(cachedVolumeRenderer));
+        }
+        else
+        {
+            CachedVolumeRenderer& cachedVolumeRenderer = m_volume_renderers[volume_finded];
+            
+            glm::mat4x4 prev_model_matrix = cachedVolumeRenderer.internalSceneVolumeRenderer.model_matrix;
+            glm::mat4x4 prev_model_matrix_inverse = cachedVolumeRenderer.internalSceneVolumeRenderer.model_matrix_inverse;
+
+            if (!(cachedVolumeRenderer.cachedSceneVolumeRenderer.m_scene_volumetric_fog.m_NoiseImage == sceneVolumeRenderer.m_scene_volumetric_fog.m_NoiseImage))
+            {
+                cachedVolumeRenderer.internalSceneVolumeRenderer.ref_fog.m_NoiseImage =
+                    m_render_resource->SceneImageToTexture(sceneVolumeRenderer.m_scene_volumetric_fog.m_NoiseImage.m_image);
+            }
+            
+            cachedVolumeRenderer.cachedSceneVolumeRenderer = sceneVolumeRenderer;
+            
+            cachedVolumeRenderer.internalSceneVolumeRenderer.prev_model_matrix = prev_model_matrix;
+            cachedVolumeRenderer.internalSceneVolumeRenderer.prev_model_matrix_inverse = prev_model_matrix_inverse;
+            cachedVolumeRenderer.internalSceneVolumeRenderer.model_matrix         = model_matrix;
+            cachedVolumeRenderer.internalSceneVolumeRenderer.model_matrix_inverse = model_matrix_inverse;
+        }
+    }
+    
     void RenderScene::updateCamera(SceneCamera sceneCamera, SceneTransform sceneTransform)
     {
         //const Matrix4x4 model_matrix = sceneTransform.m_transform_matrix;
@@ -399,6 +466,19 @@ namespace MoYu
             if (_mesh_renderers[j].cachedSceneMeshrenderer.m_identifier == sceneMeshRenderer.m_identifier)
             {
                 _mesh_renderers.erase(_mesh_renderers.begin() + j);
+                break;
+            }
+        }
+    }
+
+    void RenderScene::removeVolumeRenderer(SceneVolumeFogRenderer sceneVolumeRenderer)
+    {
+        std::vector<CachedVolumeRenderer>& _volume_renderers = m_volume_renderers;
+        for (int j = 0; j < _volume_renderers.size(); j++)
+        {
+            if (_volume_renderers[j].cachedSceneVolumeRenderer.m_identifier == sceneVolumeRenderer.m_identifier)
+            {
+                _volume_renderers.erase(_volume_renderers.begin() + j);
                 break;
             }
         }

@@ -10,6 +10,7 @@ namespace MoYu
     SceneImage DefaultSceneImageGreen{ true, false, 1, "asset/texture/default/green.tga"};
     SceneImage DefaultSceneImageBlue { true, false, 1, "asset/texture/default/blue.tga"};
     SceneImage DefaultSceneImageBump { false, false, 1, "asset/texture/default/bump.tga" };
+    SceneImage DefaultFogNoiseImage  { false, false, 1, "texture/DensityVolumeTextures/3d_fractal_noise_sample01.tga" };
 
     MaterialImage DefaultMaterialImageWhite{ DefaultSceneImageWhite, glm::float2(1,1), glm::float2(0,0) };
     MaterialImage DefaultMaterialImageBlack{ DefaultSceneImageBlack, glm::float2(1,1), glm::float2(0,0) };
@@ -18,6 +19,7 @@ namespace MoYu
     MaterialImage DefaultMaterialImageGreen{ DefaultSceneImageGreen, glm::float2(1,1), glm::float2(0,0) };
     MaterialImage DefaultMaterialImageBlue{ DefaultSceneImageBlue, glm::float2(1,1), glm::float2(0,0) };
     MaterialImage DefaultMaterialImageBump{ DefaultSceneImageBump, glm::float2(1,1), glm::float2(0,0) };
+    MaterialImage DefaultMaterialFogNoiseImage{ DefaultFogNoiseImage, glm::float2(1,1), glm::float2(0,0) };
 
     SceneCommonIdentifier _UndefCommonIdentifier {K_Invalid_Object_Id, K_Invalid_Component_Id};
 

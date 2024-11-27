@@ -21,6 +21,7 @@ namespace MoYu
     {
         registerEdtorTickComponent("TransformComponent");
         registerEdtorTickComponent("MeshRendererComponent");
+        registerEdtorTickComponent("LocalVolumetricFogComponent");
         registerEdtorTickComponent("LightComponent");
         registerEdtorTickComponent("TerrainComponent");
     }
