@@ -290,7 +290,10 @@ namespace MoYu
             ref_fog.m_DistanceFadeEnd = sceneVolumeRenderer.m_scene_volumetric_fog.m_DistanceFadeEnd;
             ref_fog.m_ScrollSpeed = sceneVolumeRenderer.m_scene_volumetric_fog.m_ScrollSpeed;
             ref_fog.m_Tilling = sceneVolumeRenderer.m_scene_volumetric_fog.m_Tilling;
+
+            m_render_resource->startUploadBatch();
             ref_fog.m_NoiseImage = m_render_resource->SceneImageToTexture(sceneVolumeRenderer.m_scene_volumetric_fog.m_NoiseImage.m_image);
+            m_render_resource->endUploadBatch();
             
             cachedVolumeRenderer.internalSceneVolumeRenderer.ref_fog = std::move(ref_fog);
             
@@ -310,8 +313,10 @@ namespace MoYu
 
             if (!(cachedVolumeRenderer.cachedSceneVolumeRenderer.m_scene_volumetric_fog.m_NoiseImage == sceneVolumeRenderer.m_scene_volumetric_fog.m_NoiseImage))
             {
+                m_render_resource->startUploadBatch();
                 cachedVolumeRenderer.internalSceneVolumeRenderer.ref_fog.m_NoiseImage =
                     m_render_resource->SceneImageToTexture(sceneVolumeRenderer.m_scene_volumetric_fog.m_NoiseImage.m_image);
+                m_render_resource->endUploadBatch();
             }
             
             cachedVolumeRenderer.cachedSceneVolumeRenderer = sceneVolumeRenderer;

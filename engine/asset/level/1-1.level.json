@@ -116,6 +116,11 @@
                     "m_component_json_data": "{\n    \"m_position\": {\n        \"x\": 0.0,\n        \"y\": 0.0,\n        \"z\": 0.0\n    },\n    \"m_rotation\": {\n        \"w\": 1.0,\n        \"x\": 0.0,\n        \"y\": 0.0,\n        \"z\": 0.0\n    },\n    \"m_scale\": {\n        \"x\": 1.0,\n        \"y\": 1.0,\n        \"z\": 1.0\n    }\n}",
                     "m_component_name": "TransformComponent",
                     "m_type_name": "TransformComponent"
+                },
+                {
+                    "m_component_json_data": "{\n    \"BlendDistanceFar\": {\n        \"x\": 0.4401054084300995,\n        \"y\": 1.907349087559851e-06,\n        \"z\": 0.263664186000824\n    },\n    \"BlendDistanceNear\": {\n        \"x\": 0.5245552062988281,\n        \"y\": 3.1047019958496094,\n        \"z\": 1.3649699687957764\n    },\n    \"DistanceFadeEnd\": 60.0,\n    \"DistanceFadeStart\": 50.0,\n    \"FalloffMode\": 0,\n    \"FogDistance\": 150.0,\n    \"InvertBlend\": false,\n    \"NoiseImage\": {\n        \"m_image\": {\n            \"m_auto_mips\": false,\n            \"m_image_file\": \"asset/texture/DensityVolumeTextures/3d_fractal_noise_sample01.tga\",\n            \"m_is_srgb\": false,\n            \"m_mip_levels\": 1\n        },\n        \"m_tilling\": {\n            \"x\": 1.0,\n            \"y\": 1.0\n        }\n    },\n    \"PerAxisControl\": true,\n    \"ScrollSpeed\": {\n        \"x\": 0.0,\n        \"y\": 0.05000000074505806,\n        \"z\": 0.0\n    },\n    \"SingleScatteringAlbedo\": {\n        \"x\": 1.0,\n        \"y\": 1.0,\n        \"z\": 1.0\n    },\n    \"Size\": {\n        \"x\": 8.0,\n        \"y\": 7.53000020980835,\n        \"z\": 8.0\n    },\n    \"Tilling\": {\n        \"x\": 1.0,\n        \"y\": 1.0,\n        \"z\": 1.0\n    }\n}",
+                    "m_component_name": "LocalVolumetricFogComponent",
+                    "m_type_name": "LocalVolumeFogComponent"
                 }
             ],
             "m_name": "Local Volume Fog Node",

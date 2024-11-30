@@ -10,7 +10,7 @@ namespace MoYu
     SceneImage DefaultSceneImageGreen{ true, false, 1, "asset/texture/default/green.tga"};
     SceneImage DefaultSceneImageBlue { true, false, 1, "asset/texture/default/blue.tga"};
     SceneImage DefaultSceneImageBump { false, false, 1, "asset/texture/default/bump.tga" };
-    SceneImage DefaultFogNoiseImage  { false, false, 1, "texture/DensityVolumeTextures/3d_fractal_noise_sample01.tga" };
+    SceneImage DefaultFogNoiseImage  { false, false, 1, "asset/texture/DensityVolumeTextures/3d_fractal_noise_sample01.tga" };
 
     MaterialImage DefaultMaterialImageWhite{ DefaultSceneImageWhite, glm::float2(1,1), glm::float2(0,0) };
     MaterialImage DefaultMaterialImageBlack{ DefaultSceneImageBlack, glm::float2(1,1), glm::float2(0,0) };

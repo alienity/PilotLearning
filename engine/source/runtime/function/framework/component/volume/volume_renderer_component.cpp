@@ -94,7 +94,7 @@ namespace MoYu
         scene_fog_renderer.m_scene_volumetric_fog.m_NoiseImage = m_scene_fog_ptr->NoiseImage;
         
         GameObjectComponentDesc light_component_desc = {};
-        light_component_desc.m_component_type        = ComponentType::C_Transform | ComponentType::C_VolumetricFogRenderer;
+        light_component_desc.m_component_type        = ComponentType::C_Transform | ComponentType::C_Volume;
         light_component_desc.m_transform_desc        = scene_transform;
         light_component_desc.m_volume_render_desc    = scene_fog_renderer;
 

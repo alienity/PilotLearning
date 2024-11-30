@@ -728,9 +728,17 @@ namespace MoYu
 
                 LocalVolumeFogComponentRes& _FosRes = volume_renderer_ptr->getSceneLocalFog();
 
-                //m_editor_ui_creator["SceneMesh"]("m_scene_mesh", isDirty, &_sceneMesh);
-                //m_editor_ui_creator["SceneMaterial"]("m_material", isDirty, &_sceneMaterial);
-
+                m_editor_ui_creator["Color"]("SingleScatteringAlbedo", isDirty, &_FosRes.SingleScatteringAlbedo);
+                m_editor_ui_creator["float"]("FogDistance", isDirty, &_FosRes.FogDistance);
+                m_editor_ui_creator["float"]("Size", isDirty, &_FosRes.Size);
+                m_editor_ui_creator["glm::float3"]("BlendDistanceNear", isDirty, &_FosRes.BlendDistanceNear);
+                m_editor_ui_creator["glm::float3"]("BlendDistanceFar", isDirty, &_FosRes.BlendDistanceFar);
+                m_editor_ui_creator["float"]("DistanceFadeStart", isDirty, &_FosRes.DistanceFadeStart);
+                m_editor_ui_creator["float"]("DistanceFadeEnd", isDirty, &_FosRes.DistanceFadeEnd);
+                m_editor_ui_creator["MaterialImage"]("NoiseImage", isDirty, &_FosRes.NoiseImage);
+                m_editor_ui_creator["glm::float3"]("ScrollSpeed", isDirty, &_FosRes.ScrollSpeed);
+                m_editor_ui_creator["glm::float3"]("Tilling", isDirty, &_FosRes.Tilling);
+                
                 ImGui::Unindent();
                 ImGui::TreePop();
             }
@@ -1262,6 +1270,20 @@ namespace MoYu
                     }
                 }
                 ImGui::EndMenu();
+            }
+
+            if (ImGui::MenuItem("Local Volume Fog Component"))
+            {
+                if (selected_object->tryGetComponent<LocalVolumetricFogComponent>("LocalVolumetricFogComponent"))
+                {
+                    LOG_INFO("object {} already has Local Volume Fog Component", selected_object->getName());
+                }
+                else
+                {
+                    std::shared_ptr<LocalVolumetricFogComponent> local_volume_fog_component = std::make_shared<LocalVolumetricFogComponent>();
+                    selected_object->tryAddComponent(local_volume_fog_component);
+                    LOG_INFO("Add New Local Volume Fog Component");
+                }
             }
 
             if (ImGui::MenuItem("Terrain Renderer Component"))
