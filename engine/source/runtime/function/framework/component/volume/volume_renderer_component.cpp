@@ -44,7 +44,7 @@ namespace MoYu
         (&local_fog_res)->ScrollSpeed = m_scene_local_fog_res.ScrollSpeed;
         (&local_fog_res)->Tilling = m_scene_local_fog_res.Tilling;
 
-        out_component_res.m_type_name           = "LocalVolumeFogComponent";
+        out_component_res.m_type_name           = "LocalVolumetricFogComponent";
         out_component_res.m_component_name      = this->m_component_name;
         out_component_res.m_component_json_data = AssetManager::saveJson(local_fog_res);
     }
@@ -101,7 +101,6 @@ namespace MoYu
         return light_component_desc;
     }
 
-    
     void LocalVolumetricFogComponent::tick(float delta_time)
     {
         if (m_object.expired() || this->isNone())
