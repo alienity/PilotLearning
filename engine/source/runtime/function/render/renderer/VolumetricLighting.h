@@ -73,9 +73,11 @@ namespace MoYu
 		void FogVolumeAndVFXVoxelizationPass(RHI::RenderGraph& graph, ClearPassInputStruct& passInput, ClearPassOutputStruct& passOutput);
 		void VolumetricLightingPass(RHI::RenderGraph& graph, VolumeLightPassInputStruct& passInput, VolumeLightPassOutputStruct& passOutput);
 
-		void UpdateVolumetricLightingUniform(HLSL::VolumetricLightingUniform& inoutVolumetricLightingUniform);
-		void UpdateVolumetricLightingUniform(HLSL::VBufferUniform& inoutVBufferUniform);
-
+		void UpdateVolumetricLightingUniform(const FogVolume& fog, HLSL::VolumetricLightingUniform& inoutVolumetricLightingUniform);
+		void UpdateVolumetricLightingUniform(const FogVolume& fog, HLSL::VBufferUniform& inoutVBufferUniform);
+		
+		void cullForVolumes(RHI::RenderGraph& graph);
+		
 		glm::vec4 m_PackedCoeffs[7];
 		glm::vec2 m_xySeq[7];
 		float m_zSeq[7] = { 7.0f / 14.0f, 3.0f / 14.0f, 11.0f / 14.0f, 5.0f / 14.0f, 9.0f / 14.0f, 1.0f / 14.0f, 13.0f / 14.0f };
@@ -107,6 +109,10 @@ namespace MoYu
 		std::shared_ptr<RHI::D3D12RootSignature> pVolumetricLightingFilteringSignature;
 		std::shared_ptr<RHI::D3D12PipelineState> pVolumetricLightingFilteringPSO;
 
+		std::shared_ptr<RHI::D3D12Buffer> pUploadVolumesDataBuffer;
+		std::shared_ptr<RHI::D3D12Buffer> pVolumesDataBuffer;
+		
+		std::shared_ptr<RHI::D3D12Buffer> pIndirectFogIndexCommandBuffer;
 
 		RHI::RgTextureDesc colorTexDesc;
 

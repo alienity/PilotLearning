@@ -94,6 +94,34 @@ struct VolumetricMaterialRenderingData
     float4 obbVertexPositionWS[8];
 };
 
+//********************************************
+
+struct LocalVolumetricTransform
+{
+    float4x4 objectToWorldMatrix;
+    float4x4 worldToObjectMatrix;
+    float4x4 prevObjectToWorldMatrix;
+    float4x4 prevWorldToObjectMatrix;
+    float4 volumeSize;
+};
+
+struct LocalVolumetricFogTextures
+{
+    uint noise3DIndex;
+    uint3 _padding0;
+};
+
+struct LocalVolumetricFogDatas
+{
+    LocalVolumetricTransform localTransformData;
+    LocalVolumetricFogEngineData localFogEngineData;
+    LocalVolumetricFogTextures localFogTextures;
+};
+
+#define MAX_VOLUMETRIC_FOG_COUNT 32
+
+//********************************************
+
 #ifndef _CPP_MACRO_
 float3 GetScattering(LocalVolumetricFogEngineData value)
 {

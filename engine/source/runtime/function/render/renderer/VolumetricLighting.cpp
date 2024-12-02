@@ -140,16 +140,59 @@ namespace MoYu
 				D3D12_RESOURCE_STATE_COMMON);
 		}
 
-		HLSL::VolumetricLightingUniform mVolumetricLightingUniform;
-		UpdateVolumetricLightingUniform(mVolumetricLightingUniform);
+		// prepare global variables
+		{
+			const FogVolume& fog = GetFogVolume();
+			
+			HLSL::VolumetricLightingUniform mVolumetricLightingUniform;
+			UpdateVolumetricLightingUniform(fog, mVolumetricLightingUniform);
 
-		HLSL::VBufferUniform mVBufferUniform;
-		UpdateVolumetricLightingUniform(mVBufferUniform);
+			HLSL::VBufferUniform mVBufferUniform;
+			UpdateVolumetricLightingUniform(fog, mVBufferUniform);
 
-		HLSL::FrameUniforms* _frameUniforms = &(render_resource->m_FrameUniforms);
+			HLSL::FrameUniforms* _frameUniforms = &(render_resource->m_FrameUniforms);
 
-		_frameUniforms->volumetricLightingUniform = mVolumetricLightingUniform;
-		_frameUniforms->vBufferUniform = mVBufferUniform;
+			_frameUniforms->volumetricLightingUniform = mVolumetricLightingUniform;
+			_frameUniforms->vBufferUniform = mVBufferUniform;
+		}
+		
+		// prepare volume datas
+		{
+			HLSL::LocalVolumetricFogDatas* pUploadVolumesDatas =
+				pUploadVolumesDataBuffer->GetCpuVirtualAddress<HLSL::LocalVolumetricFogDatas>();
+
+			for (int i = 0; i < m_render_scene->m_volume_renderers.size(); ++i)
+			{
+				InternalVolumeFogRenderer& internalFog = m_render_scene->m_volume_renderers[i].internalSceneVolumeRenderer;
+
+				HLSL::LocalVolumetricFogDatas localVolemFogData {};
+
+				HLSL::LocalVolumetricTransform& localTransformData = localVolemFogData.localTransformData;
+				localTransformData.prevObjectToWorldMatrix = localTransformData.objectToWorldMatrix;
+				localTransformData.prevWorldToObjectMatrix = localTransformData.worldToObjectMatrix;
+				localTransformData.objectToWorldMatrix = internalFog.model_matrix;
+				localTransformData.worldToObjectMatrix = glm::inverse(internalFog.model_matrix);
+				localTransformData.volumeSize = glm::float4(internalFog.ref_fog.m_Size, 0); 
+
+				HLSL::LocalVolumetricFogEngineData& localVolumetricFogData = localVolemFogData.localFogEngineData;
+				localVolumetricFogData.scattering = internalFog.ref_fog.m_SingleScatteringAlbedo;
+				localVolumetricFogData.falloffMode = internalFog.ref_fog.m_FalloffMode;
+				localVolumetricFogData.textureTiling = internalFog.ref_fog.m_Tilling;
+				localVolumetricFogData.invertFade = internalFog.ref_fog.m_InvertBlend ? 1 : 0;
+				localVolumetricFogData.textureScroll = internalFog.ref_fog.m_ScrollSpeed;
+				localVolumetricFogData.rcpDistFadeLen =
+					1.0f / glm::max(internalFog.ref_fog.m_DistanceFadeEnd - internalFog.ref_fog.m_DistanceFadeStart, 0.00001526f);
+				localVolumetricFogData.rcpPosFaceFade = glm::float3(0.1f, 0.1f, 0.1f);
+				localVolumetricFogData.endTimesRcpDistFadeLen = internalFog.ref_fog.m_DistanceFadeEnd * localVolumetricFogData.rcpDistFadeLen;
+				localVolumetricFogData.rcpNegFaceFade = glm::float3(0.1f, 0.1f, 0.1f);
+				localVolumetricFogData.blendingMode = 1;
+
+				HLSL::LocalVolumetricFogTextures& localFogTexturesData = localVolemFogData.localFogTextures;
+				localFogTexturesData.noise3DIndex = internalFog.ref_fog.m_NoiseImage->GetDefaultSRV()->GetIndex();
+				
+				pUploadVolumesDatas[i] = localVolemFogData;
+			}
+		}
 	}
 
 	void VolumetriLighting::initialize(const VolumetriLightingInitInfo& init_info)
@@ -343,6 +386,31 @@ namespace MoYu
 
 			pVolumetricLightingFilteringPSO = std::make_shared<RHI::D3D12PipelineState>(m_Device, L"VolumetricLightingFilteringPSO", psoDesc);
 		}
+
+		// ==================================================
+		{
+			pUploadVolumesDataBuffer = RHI::D3D12Buffer::Create(
+				m_Device->GetLinkedDevice(), 
+				RHI::RHIBufferTargetNone,
+				MAX_VOLUMETRIC_FOG_COUNT,
+				sizeof(HLSL::LocalVolumetricFogDatas),
+				L"UploadVolumesDataBuffer",
+				RHI::RHIBufferModeDynamic,
+				D3D12_RESOURCE_STATE_GENERIC_READ);
+
+			pVolumesDataBuffer = RHI::D3D12Buffer::Create(
+				m_Device->GetLinkedDevice(), 
+				RHI::RHIBufferTargetNone,
+				MAX_VOLUMETRIC_FOG_COUNT,
+				sizeof(HLSL::LocalVolumetricFogDatas),
+				L"VolumesDataBuffer",
+				RHI::RHIBufferModeImmutable,
+				D3D12_RESOURCE_STATE_GENERIC_READ);
+
+			
+		}
+		
+		
 	}
 
 
@@ -573,12 +641,12 @@ namespace MoYu
 		passOutput.vbufferLightingHandle = mLightBufferHandle;
 	}
 
-	void VolumetriLighting::UpdateVolumetricLightingUniform(HLSL::VolumetricLightingUniform& inoutVolumetricLightingUniform)
+	void VolumetriLighting::UpdateVolumetricLightingUniform(const FogVolume& fog, HLSL::VolumetricLightingUniform& inoutVolumetricLightingUniform)
 	{
 		inoutVolumetricLightingUniform._FogEnabled = 1;
 		inoutVolumetricLightingUniform._EnableVolumetricFog = 1;
 
-		const FogVolume& fog = GetFogVolume();
+		// const FogVolume& fog = GetFogVolume();
 
 		glm::vec4 fogColor = (fog.colorMode == FogColorMode::ConstantColor) ? fog.color.color : fog.tint.color;
 
@@ -605,9 +673,9 @@ namespace MoYu
 		inoutVolumetricLightingUniform._FogDirectionalOnly = fog.directionalLightsOnly ? 1 : 0;
 	}
 
-	void VolumetriLighting::UpdateVolumetricLightingUniform(HLSL::VBufferUniform& inoutVBufferUniform)
+	void VolumetriLighting::UpdateVolumetricLightingUniform(const FogVolume& fog, HLSL::VBufferUniform& inoutVBufferUniform)
 	{
-		const FogVolume& fog = GetFogVolume();
+		// const FogVolume& fog = GetFogVolume();
 
 		VBufferParameters& currParams = m_CurrentVBufferParams;
 
@@ -629,6 +697,15 @@ namespace MoYu
 		inoutVBufferUniform._VBufferDistanceDecodingParams = currParams.depthDecodingParams;
 		inoutVBufferUniform._VBufferLastSliceDist = currParams.ComputeLastSliceDistance(sliceCount);
 		inoutVBufferUniform._VBufferRcpInstancedViewCount = 1.0f;
+	}
+
+	void VolumetriLighting::cullForVolumes(RHI::RenderGraph& graph)
+	{
+		//RHI::RenderPass& resetPass = graph.AddRenderPass("ResetVolumeDataPass");
+
+		//resetPass.Write(cullOutput.renderDataPerDrawHandle, true);
+		
+		
 	}
 
 
