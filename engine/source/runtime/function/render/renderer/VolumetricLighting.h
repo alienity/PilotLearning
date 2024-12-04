@@ -57,6 +57,16 @@ namespace MoYu
 			std::vector<RHI::RgResourceHandle> spotShadowmapHandles;
 		};
 
+		struct VolumeCullingPassInputStruct
+		{
+			RHI::RgResourceHandle perframeBufferHandle;
+		};
+		
+		struct VolumeCullingPassOutputStruct
+		{
+
+		};
+
 		struct VolumeLightPassOutputStruct
 		{
 			RHI::RgResourceHandle vbufferLightingHandle;
@@ -76,7 +86,7 @@ namespace MoYu
 		void UpdateVolumetricLightingUniform(const FogVolume& fog, HLSL::VolumetricLightingUniform& inoutVolumetricLightingUniform);
 		void UpdateVolumetricLightingUniform(const FogVolume& fog, HLSL::VBufferUniform& inoutVBufferUniform);
 		
-		void cullForVolumes(RHI::RenderGraph& graph);
+		void cullForVolumes(RHI::RenderGraph& graph, VolumeCullingPassInputStruct& passInput, VolumeCullingPassOutputStruct& passOutput);
 		
 		glm::vec4 m_PackedCoeffs[7];
 		glm::vec2 m_xySeq[7];
@@ -109,6 +119,10 @@ namespace MoYu
 		std::shared_ptr<RHI::D3D12RootSignature> pVolumetricLightingFilteringSignature;
 		std::shared_ptr<RHI::D3D12PipelineState> pVolumetricLightingFilteringPSO;
 
+		Shader mVolumeIndirectCullForSortCS;
+		std::shared_ptr<RHI::D3D12RootSignature> pVolumeIndirectCullForSortSignature;
+		std::shared_ptr<RHI::D3D12PipelineState> pVolumeIndirectCullForSortPSO;
+
 		std::shared_ptr<RHI::D3D12Buffer> pUploadVolumesDataBuffer;
 		std::shared_ptr<RHI::D3D12Buffer> pVolumesDataBuffer;
 		
@@ -128,6 +142,8 @@ namespace MoYu
 		std::shared_ptr<RHI::D3D12Texture> mLightingBuffer;
 
 		std::shared_ptr<RHI::D3D12Texture> volumetricHistoryBuffers[2];
+
+		uint32_t volumeCounts;
 	};
 
 

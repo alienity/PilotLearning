@@ -140,6 +140,40 @@ namespace MoYu
 				D3D12_RESOURCE_STATE_COMMON);
 		}
 
+		if (pIndirectFogIndexCommandBuffer == nullptr)
+		{
+			pIndirectFogIndexCommandBuffer = RHI::D3D12Buffer::Create(
+				m_Device->GetLinkedDevice(),
+				RHI::RHIBufferRandomReadWrite | RHI::RHIBufferTargetStructured | RHI::RHIBufferTargetCounter,
+				MAX_VOLUMETRIC_FOG_COUNT,
+				sizeof(HLSL::BitonicSortCommandSigParams),
+				L"IndirectFogIndexCommandBuffer");
+		}
+
+		if(pUploadVolumesDataBuffer == nullptr)
+		{
+			pUploadVolumesDataBuffer = RHI::D3D12Buffer::Create(
+				m_Device->GetLinkedDevice(),
+				RHI::RHIBufferTargetNone,
+				MAX_VOLUMETRIC_FOG_COUNT,
+				sizeof(HLSL::LocalVolumetricFogDatas),
+				L"UploadVolumesDataBuffer",
+				RHI::RHIBufferModeDynamic,
+				D3D12_RESOURCE_STATE_GENERIC_READ);
+		}
+
+		if (pVolumesDataBuffer == nullptr)
+		{
+			pVolumesDataBuffer = RHI::D3D12Buffer::Create(
+				m_Device->GetLinkedDevice(),
+				RHI::RHIBufferTargetNone,
+				MAX_VOLUMETRIC_FOG_COUNT,
+				sizeof(HLSL::LocalVolumetricFogDatas),
+				L"VolumesDataBuffer",
+				RHI::RHIBufferModeImmutable,
+				D3D12_RESOURCE_STATE_GENERIC_READ);
+		}
+
 		// prepare global variables
 		{
 			const FogVolume& fog = GetFogVolume();
@@ -192,6 +226,8 @@ namespace MoYu
 				
 				pUploadVolumesDatas[i] = localVolemFogData;
 			}
+
+			volumeCounts = m_render_scene->m_volume_renderers.size();
 		}
 	}
 
@@ -387,32 +423,35 @@ namespace MoYu
 			pVolumetricLightingFilteringPSO = std::make_shared<RHI::D3D12PipelineState>(m_Device, L"VolumetricLightingFilteringPSO", psoDesc);
 		}
 
-		// ==================================================
 		{
-			pUploadVolumesDataBuffer = RHI::D3D12Buffer::Create(
-				m_Device->GetLinkedDevice(), 
-				RHI::RHIBufferTargetNone,
-				MAX_VOLUMETRIC_FOG_COUNT,
-				sizeof(HLSL::LocalVolumetricFogDatas),
-				L"UploadVolumesDataBuffer",
-				RHI::RHIBufferModeDynamic,
-				D3D12_RESOURCE_STATE_GENERIC_READ);
+			mVolumeIndirectCullForSortCS = m_ShaderCompiler->CompileShader(
+				RHI_SHADER_TYPE::Compute, m_ShaderRootPath / "pipeline/Runtime/Tools/Culling/VolumeIndirectCullForSort.hlsl",
+				ShaderCompileOptions(L"CSMain"));
 
-			pVolumesDataBuffer = RHI::D3D12Buffer::Create(
-				m_Device->GetLinkedDevice(), 
-				RHI::RHIBufferTargetNone,
-				MAX_VOLUMETRIC_FOG_COUNT,
-				sizeof(HLSL::LocalVolumetricFogDatas),
-				L"VolumesDataBuffer",
-				RHI::RHIBufferModeImmutable,
-				D3D12_RESOURCE_STATE_GENERIC_READ);
+			RHI::RootSignatureDesc rootSigDesc =
+				RHI::RootSignatureDesc()
+				.Add32BitConstants<0, 0>(1)
+				.AddConstantBufferView<1, 0>()
+				.AddDescriptorTable(RHI::D3D12DescriptorTable(1).AddSRVRange<0, 0>(1, D3D12_DESCRIPTOR_RANGE_FLAG_NONE, 0))
+				.AddDescriptorTable(RHI::D3D12DescriptorTable(1).AddUAVRange<0, 0>(1, D3D12_DESCRIPTOR_RANGE_FLAG_NONE, 0))
+				.AllowResourceDescriptorHeapIndexing()
+				.AllowSampleDescriptorHeapIndexing();
 
-			
+			pVolumeIndirectCullForSortSignature = std::make_shared<RHI::D3D12RootSignature>(m_Device, rootSigDesc);
+
+			struct PsoStream
+			{
+				PipelineStateStreamRootSignature RootSignature;
+				PipelineStateStreamCS            CS;
+			} psoStream;
+			psoStream.RootSignature = PipelineStateStreamRootSignature(pVolumeIndirectCullForSortSignature.get());
+			psoStream.CS = &mVolumeIndirectCullForSortCS;
+			PipelineStateStreamDesc psoDesc = { sizeof(PsoStream), &psoStream };
+
+			pVolumeIndirectCullForSortPSO = std::make_shared<RHI::D3D12PipelineState>(m_Device, L"VolumeIndirectCullForSortPSO", psoDesc);
 		}
-		
-		
-	}
 
+	}
 
 	void VolumetriLighting::GenerateMaxZForVolumetricPass(RHI::RenderGraph& graph, GenMaxZInputStruct& passInput, GenMaxZOutputStruct& passOutput)
 	{
@@ -699,13 +738,59 @@ namespace MoYu
 		inoutVBufferUniform._VBufferRcpInstancedViewCount = 1.0f;
 	}
 
-	void VolumetriLighting::cullForVolumes(RHI::RenderGraph& graph)
-	{
-		//RHI::RenderPass& resetPass = graph.AddRenderPass("ResetVolumeDataPass");
 
-		//resetPass.Write(cullOutput.renderDataPerDrawHandle, true);
+	void VolumetriLighting::cullForVolumes(RHI::RenderGraph& graph, VolumeCullingPassInputStruct& passInput, VolumeCullingPassOutputStruct& passOutput)
+	{
+		RHI::RgResourceHandle perframeBufferHandle = passInput.perframeBufferHandle;
+
+		RHI::RgResourceHandle indirectFogIndexBufferHandle = GImport(graph, pIndirectFogIndexCommandBuffer.get());
+		RHI::RgResourceHandle uploadVolumesDataBufferHandle = GImport(graph, pUploadVolumesDataBuffer.get());
+		RHI::RgResourceHandle volumesDataBufferHandle = GImport(graph, pVolumesDataBuffer.get());
+
+		RHI::RenderPass& resetPass = graph.AddRenderPass("ResetVolumeDataPass");
+
+		resetPass.Read(uploadVolumesDataBufferHandle, true);
+		resetPass.Write(volumesDataBufferHandle, true);
+		resetPass.Write(indirectFogIndexBufferHandle, true);
+
+		resetPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
+			RHI::D3D12ComputeContext* pCopyContext = context->GetComputeContext();
+
+			pCopyContext->TransitionBarrier(RegGetBuf(volumesDataBufferHandle), D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_DEST);
+			pCopyContext->TransitionBarrier(RegGetBufCounter(indirectFogIndexBufferHandle), D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_DEST);
+			pCopyContext->ResetCounter(RegGetBufCounter(indirectFogIndexBufferHandle));
+
+			pCopyContext->FlushResourceBarriers();
+
+			pCopyContext->CopyBuffer(RegGetBuf(volumesDataBufferHandle), RegGetBuf(uploadVolumesDataBufferHandle));
+		});
 		
+		RHI::RenderPass& cullingPass = graph.AddRenderPass("VolumesCullingPass");
+
+		cullingPass.Read(perframeBufferHandle, true);
+		cullingPass.Read(volumesDataBufferHandle, true);
 		
+		cullingPass.Write(indirectFogIndexBufferHandle, true);
+
+		cullingPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
+			RHI::D3D12ComputeContext* pContext = context->GetComputeContext();
+
+			pContext->TransitionBarrier(RegGetBuf(perframeBufferHandle), D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
+			pContext->TransitionBarrier(RegGetBuf(volumesDataBufferHandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+			pContext->TransitionBarrier(RegGetBufCounter(indirectFogIndexBufferHandle), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+			pContext->TransitionBarrier(RegGetBuf(indirectFogIndexBufferHandle), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+			pContext->FlushResourceBarriers();
+
+			pContext->SetRootSignature(pVolumeIndirectCullForSortSignature.get());
+			pContext->SetPipelineState(pVolumeIndirectCullForSortPSO.get());
+
+			pContext->SetConstant(0, 0, volumeCounts);
+			pContext->SetConstantBuffer(1, RegGetBuf(perframeBufferHandle)->GetGpuVirtualAddress());
+			pContext->SetDynamicDescriptor(2, 0, RegGetBuf(volumesDataBufferHandle)->GetDefaultSRV(1)->GetCpuHandle());
+			pContext->SetDynamicDescriptor(3, 0, RegGetBuf(indirectFogIndexBufferHandle)->GetDefaultUAV(1)->GetCpuHandle());
+
+			pContext->Dispatch1D(volumeCounts, 128);
+		});
 	}
 
 

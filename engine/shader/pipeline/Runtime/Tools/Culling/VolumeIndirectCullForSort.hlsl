@@ -1,58 +1,39 @@
 ﻿#include "../../ShaderLibrary/Common.hlsl"
 #include "../../ShaderLibrary/ShaderVariables.hlsl"
-#include "../../Material/Lit/LitProperties.hlsl"
+#include "../../Tools/VolumeLighting/VolumetricLightingCommon.hlsl"
 
 cbuffer RootConstants : register(b0, space0)
 {
-    uint perFrameBufferIndex;
-    uint renderDataPerDrawIndex;
-    uint propertiesPerMaterialIndex;
-    uint opaqueSortIndexDisBufferIndex;
-    uint transSortIndexDisBufferIndex;
+    uint volumeCount;
 };
+
+ConstantBuffer<FrameUniforms> frameUniform : register(b1, space0);
+StructuredBuffer<LocalVolumetricFogDatas> localVolumetricDatas : register(t0, space0);
+AppendStructuredBuffer<uint2> volumeSortIndexDisBuffer : register(u0, space0);
 
 [numthreads(128, 1, 1)]
 void CSMain(uint GroupIndex : SV_GroupIndex, uint3 GroupID : SV_GroupID) {
-    // Each thread processes one mesh instance
-    // Compute index and ensure is within bounds
-    ConstantBuffer<FrameUniforms> mFrameUniforms = ResourceDescriptorHeap[perFrameBufferIndex];
-    StructuredBuffer<RenderDataPerDraw> renderDataPerDrawBuffer = ResourceDescriptorHeap[renderDataPerDrawIndex];
-    StructuredBuffer<PropertiesPerMaterial> propertiesPerMaterialBuffer = ResourceDescriptorHeap[propertiesPerMaterialIndex];
-    AppendStructuredBuffer<uint2> opaqueSortIndexDisBuffer = ResourceDescriptorHeap[opaqueSortIndexDisBufferIndex];
-    AppendStructuredBuffer<uint2> transSortIndexDisBuffer = ResourceDescriptorHeap[transSortIndexDisBufferIndex];
-
     uint index = (GroupID.x * 128) + GroupIndex;
-    if (index < mFrameUniforms.meshUniform.totalMeshCount)
+    if (index < volumeCount)
     {
-        RenderDataPerDraw renderData = renderDataPerDrawBuffer[index];
-        // uint lightPropertyBufferIndex = GetLightPropertyBufferIndex(renderData);
-        uint lightPropertyBufferIndexOffset = GetLightPropertyBufferIndexOffset(renderData);
-        BoundingBox aabb = GetRendererBounds(renderData);
+        LocalVolumetricFogDatas renderData = localVolumetricDatas[index];
+
+        BoundingBox aabb = (BoundingBox) 0;
+        aabb.Center = float4(renderData.localTransformData.objectToWorldMatrix._m03_m13_m23, 0);
+        aabb.Extents = renderData.localTransformData.volumeSize;
         
-        PropertiesPerMaterial propertiesPerMaterial = propertiesPerMaterialBuffer[lightPropertyBufferIndexOffset];
+        aabb.Transform(renderData.localTransformData.objectToWorldMatrix);
 
-        aabb.Transform(renderData.objectToWorldMatrix);
-
-        Frustum frustum = ExtractPlanesDX(UNITY_MATRIX_VP(mFrameUniforms.cameraUniform));
+        Frustum frustum = ExtractPlanesDX(UNITY_MATRIX_VP(frameUniform.cameraUniform));
 
         bool visible = FrustumContainsBoundingBox(frustum, aabb) != CONTAINMENT_DISJOINT;
         if (visible)
         {
-            float3 cameraPos  = GetCameraPositionWS(mFrameUniforms);
+            float3 cameraPos  = GetCameraPositionWS(frameUniform);
             float3 aabbCenter = aabb.Center.xyz;
-
             float meshDistance = distance(cameraPos, aabbCenter);
-
             uint2 sortIndexDistance = uint2(index, asuint(meshDistance));
-
-            if (propertiesPerMaterial._BlendMode == 1)
-            {
-                transSortIndexDisBuffer.Append(sortIndexDistance);
-            }
-            else
-            {
-                opaqueSortIndexDisBuffer.Append(sortIndexDistance);
-            }
+            volumeSortIndexDisBuffer.Append(sortIndexDistance);
         }
     }
 }
