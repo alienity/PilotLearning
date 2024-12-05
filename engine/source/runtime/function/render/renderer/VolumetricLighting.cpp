@@ -140,14 +140,14 @@ namespace MoYu
 				D3D12_RESOURCE_STATE_COMMON);
 		}
 
-		if (pIndirectFogIndexCommandBuffer == nullptr)
+		if (pFogIndirectIndexCommandBuffer == nullptr)
 		{
-			pIndirectFogIndexCommandBuffer = RHI::D3D12Buffer::Create(
+			pFogIndirectIndexCommandBuffer = RHI::D3D12Buffer::Create(
 				m_Device->GetLinkedDevice(),
 				RHI::RHIBufferRandomReadWrite | RHI::RHIBufferTargetStructured | RHI::RHIBufferTargetCounter,
 				MAX_VOLUMETRIC_FOG_COUNT,
 				sizeof(HLSL::BitonicSortCommandSigParams),
-				L"IndirectFogIndexCommandBuffer");
+				L"FogIndexBuffer");
 		}
 
 		if(pUploadVolumesDataBuffer == nullptr)
@@ -228,6 +228,10 @@ namespace MoYu
 			}
 
 			volumeCounts = m_render_scene->m_volume_renderers.size();
+		}
+
+		{
+
 		}
 	}
 
@@ -449,6 +453,16 @@ namespace MoYu
 			PipelineStateStreamDesc psoDesc = { sizeof(PsoStream), &psoStream };
 
 			pVolumeIndirectCullForSortPSO = std::make_shared<RHI::D3D12PipelineState>(m_Device, L"VolumeIndirectCullForSortPSO", psoDesc);
+		}
+
+		{
+			sortDispatchArgsBufferDesc = RHI::RgBufferDesc("VolumeSortDispatchArgs")
+				.SetSize(22 * 23 / 2, sizeof(D3D12_DISPATCH_ARGUMENTS))
+				.SetRHIBufferMode(RHI::RHIBufferMode::RHIBufferModeImmutable)
+				.SetRHIBufferTarget(
+					RHI::RHIBufferTarget::RHIBufferTargetIndirectArgs | 
+					RHI::RHIBufferTarget::RHIBufferRandomReadWrite | 
+					RHI::RHIBufferTarget::RHIBufferTargetRaw);
 		}
 
 	}
@@ -743,7 +757,8 @@ namespace MoYu
 	{
 		RHI::RgResourceHandle perframeBufferHandle = passInput.perframeBufferHandle;
 
-		RHI::RgResourceHandle indirectFogIndexBufferHandle = GImport(graph, pIndirectFogIndexCommandBuffer.get());
+		RHI::RgResourceHandle indirectFogIndexBufferHandle = GImport(graph, pFogIndirectIndexCommandBuffer.get());
+		
 		RHI::RgResourceHandle uploadVolumesDataBufferHandle = GImport(graph, pUploadVolumesDataBuffer.get());
 		RHI::RgResourceHandle volumesDataBufferHandle = GImport(graph, pVolumesDataBuffer.get());
 
@@ -791,8 +806,112 @@ namespace MoYu
 
 			pContext->Dispatch1D(volumeCounts, 128);
 		});
+
+		RHI::RgResourceHandle sortDispatchArgsHandle = graph.Create<RHI::D3D12Buffer>(sortDispatchArgsBufferDesc);
+		
+		{
+			RHI::RenderPass& volumeSortPass = graph.AddRenderPass("VolumeBitonicSortPass");
+
+			volumeSortPass.Read(indirectFogIndexBufferHandle, true);
+
+			volumeSortPass.Write(sortDispatchArgsHandle, true);
+			volumeSortPass.Write(indirectFogIndexBufferHandle, true);
+
+			volumeSortPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
+				RHI::D3D12ComputeContext* pAsyncCompute = context->GetComputeContext();
+
+				RHI::D3D12Buffer* bufferPtr = RegGetBuf(indirectFogIndexBufferHandle);
+				RHI::D3D12Buffer* bufferCouterPtr = bufferPtr->GetCounterBuffer().get();
+				RHI::D3D12Buffer* sortDispatchArgsPtr = RegGetBuf(sortDispatchArgsHandle);
+
+				bitonicSort(pAsyncCompute, bufferPtr, bufferCouterPtr, sortDispatchArgsPtr, false, false);
+			});
+		}
+		
+		// 排序后的 indirectFogIndexBufferHandle 中包含的是索引和距离，我需要做的只是执行Instance绘制，参数直接通过index去索引
+
+
+
+
 	}
 
+	void VolumetriLighting::bitonicSort(RHI::D3D12ComputeContext* context,
+		RHI::D3D12Buffer* keyIndexList,
+		RHI::D3D12Buffer* countBuffer,
+		RHI::D3D12Buffer* sortDispatchArgBuffer, // pSortDispatchArgs
+		bool isPartiallyPreSorted,
+		bool sortAscending)
+	{
+		const uint32_t ElementSizeBytes = keyIndexList->GetStride();
+		const uint32_t MaxNumElements = 1024; //keyIndexList->GetSizeInBytes() / ElementSizeBytes;
+		const uint32_t AlignedMaxNumElements = MoYu::AlignPowerOfTwo(MaxNumElements);
+		const uint32_t MaxIterations = MoYu::Log2(std::max(2048u, AlignedMaxNumElements)) - 10;
+
+		ASSERT(ElementSizeBytes == 4 || ElementSizeBytes == 8); // , "Invalid key-index list for bitonic sort"
+
+		context->TransitionBarrier(countBuffer, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+		context->TransitionBarrier(sortDispatchArgBuffer, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+		context->FlushResourceBarriers();
+
+		context->SetRootSignature(RootSignatures::pBitonicSortRootSignature.get());
+		// Generate execute indirect arguments
+		context->SetPipelineState(PipelineStates::pBitonicIndirectArgsPSO.get());
+
+		// This controls two things.  It is a key that will sort to the end, and it is a mask used to
+		// determine whether the current group should sort ascending or descending.
+		//context.SetConstants(3, counterOffset, sortAscending ? 0xffffffff : 0);
+		context->SetConstants(0, MaxIterations);
+		context->SetDescriptorTable(1, countBuffer->GetDefaultSRV()->GetGpuHandle());
+		context->SetDescriptorTable(2, sortDispatchArgBuffer->GetDefaultUAV()->GetGpuHandle());
+		context->SetConstants(3, 0, sortAscending ? 0x7F7FFFFF : 0);
+		context->Dispatch(1, 1, 1);
+
+		// Pre-Sort the buffer up to k = 2048.  This also pads the list with invalid indices
+		// that will drift to the end of the sorted list.
+		context->TransitionBarrier(sortDispatchArgBuffer, D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT);
+		context->TransitionBarrier(keyIndexList, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+		context->InsertUAVBarrier(keyIndexList);
+		context->FlushResourceBarriers();
+
+		//context->SetComputeRootUnorderedAccessView(2, keyIndexList->GetGpuVirtualAddress());
+		context->SetDescriptorTable(2, keyIndexList->GetDefaultRawUAV()->GetGpuHandle());
+
+		if (!isPartiallyPreSorted)
+		{
+			context->FlushResourceBarriers();
+			context->SetPipelineState(ElementSizeBytes == 4 ? PipelineStates::pBitonic32PreSortPSO.get() :
+				PipelineStates::pBitonic64PreSortPSO.get());
+
+			context->DispatchIndirect(sortDispatchArgBuffer, 0);
+			context->InsertUAVBarrier(keyIndexList);
+		}
+
+		uint32_t IndirectArgsOffset = 12;
+
+		// We have already pre-sorted up through k = 2048 when first writing our list, so
+		// we continue sorting with k = 4096.  For unnecessarily large values of k, these
+		// indirect dispatches will be skipped over with thread counts of 0.
+
+		for (uint32_t k = 4096; k <= AlignedMaxNumElements; k *= 2)
+		{
+			context->SetPipelineState(ElementSizeBytes == 4 ? PipelineStates::pBitonic32OuterSortPSO.get() :
+				PipelineStates::pBitonic64OuterSortPSO.get());
+
+			for (uint32_t j = k / 2; j >= 2048; j /= 2)
+			{
+				context->SetConstant(0, j, k);
+				context->DispatchIndirect(sortDispatchArgBuffer, IndirectArgsOffset);
+				context->InsertUAVBarrier(keyIndexList);
+				IndirectArgsOffset += 12;
+			}
+
+			context->SetPipelineState(ElementSizeBytes == 4 ? PipelineStates::pBitonic32InnerSortPSO.get() :
+				PipelineStates::pBitonic64InnerSortPSO.get());
+			context->DispatchIndirect(sortDispatchArgBuffer, IndirectArgsOffset);
+			context->InsertUAVBarrier(keyIndexList);
+			IndirectArgsOffset += 12;
+		}
+	}
 
 }
 

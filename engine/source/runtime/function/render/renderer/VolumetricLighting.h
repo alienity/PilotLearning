@@ -96,6 +96,15 @@ namespace MoYu
 
 		HLSL::VolumetricLightingUniform mVolumetricLightingUniform;
 		HLSL::VBufferUniform mVBufferUniform;
+
+	private:
+		void bitonicSort(RHI::D3D12ComputeContext* context,
+			RHI::D3D12Buffer* keyIndexList,
+			RHI::D3D12Buffer* countBuffer,
+			RHI::D3D12Buffer* sortDispatchArgBuffer,
+			bool isPartiallyPreSorted,
+			bool sortAscending);
+
 	private:
 		Shader mMaxZCS;
 		std::shared_ptr<RHI::D3D12RootSignature> pMaxZSignature;
@@ -126,7 +135,12 @@ namespace MoYu
 		std::shared_ptr<RHI::D3D12Buffer> pUploadVolumesDataBuffer;
 		std::shared_ptr<RHI::D3D12Buffer> pVolumesDataBuffer;
 		
-		std::shared_ptr<RHI::D3D12Buffer> pIndirectFogIndexCommandBuffer;
+		std::shared_ptr<RHI::D3D12Buffer> pFogIndirectIndexCommandBuffer;
+
+		RHI::RgBufferDesc sortDispatchArgsBufferDesc;
+		
+
+
 
 		RHI::RgTextureDesc colorTexDesc;
 
