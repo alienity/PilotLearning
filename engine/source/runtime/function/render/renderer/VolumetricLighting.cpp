@@ -7,6 +7,12 @@
 
 namespace MoYu
 {
+	struct VolumeCommandSignatureParams
+	{
+		uint32_t MeshIndex;
+		D3D12_DRAW_ARGUMENTS DrawArguments;
+	};
+
 	static int GetNumTileBigTileX(RenderCamera* pRenderCamera)
 	{
 		MoYu::LightDefinitions DefaultDefinition;
@@ -148,6 +154,15 @@ namespace MoYu
 				MAX_VOLUMETRIC_FOG_COUNT,
 				sizeof(HLSL::BitonicSortCommandSigParams),
 				L"FogIndexBuffer");
+		}
+
+		if (pFogIndirectSortCommandBuffer == nullptr)
+		{
+			pFogIndirectSortCommandBuffer = RHI::D3D12Buffer::Create(m_Device->GetLinkedDevice(),
+				RHI::RHIBufferRandomReadWrite | RHI::RHIBufferTargetStructured | RHI::RHIBufferTargetCounter,
+				MAX_VOLUMETRIC_FOG_COUNT,
+				sizeof(VolumeCommandSignatureParams),
+				L"FogCommandSignatureBuffer");
 		}
 
 		if(pUploadVolumesDataBuffer == nullptr)
@@ -456,6 +471,33 @@ namespace MoYu
 		}
 
 		{
+			mVolumeIndirectGrabCS = m_ShaderCompiler->CompileShader(
+				RHI_SHADER_TYPE::Compute, m_ShaderRootPath / "pipeline/Runtime/Tools/Culling/VolumeIndirectGrabCS.hlsl",
+				ShaderCompileOptions(L"CSMain"));
+
+			RHI::RootSignatureDesc rootSigDesc = RHI::RootSignatureDesc()
+				.AddShaderResourceView<0, 0>()
+				.AddShaderResourceView<1, 0>()
+				.AddShaderResourceView<2, 0>()
+				.AddUnorderedAccessViewWithCounter<0, 0>()
+				.AllowResourceDescriptorHeapIndexing()
+				.AllowSampleDescriptorHeapIndexing();
+
+			pVolumeIndirectGrabSignature = std::make_shared<RHI::D3D12RootSignature>(m_Device, rootSigDesc);
+
+			struct PsoStream
+			{
+				PipelineStateStreamRootSignature RootSignature;
+				PipelineStateStreamCS            CS;
+			} psoStream;
+			psoStream.RootSignature = PipelineStateStreamRootSignature(pVolumeIndirectGrabSignature.get());
+			psoStream.CS = &mVolumeIndirectGrabCS;
+			PipelineStateStreamDesc psoDesc = { sizeof(PsoStream), &psoStream };
+
+			pVolumeIndirectGrabPSO = std::make_shared<RHI::D3D12PipelineState>(m_Device, L"VolumeIndirectGrabPSO", psoDesc);
+		}
+
+		{
 			sortDispatchArgsBufferDesc = RHI::RgBufferDesc("VolumeSortDispatchArgs")
 				.SetSize(22 * 23 / 2, sizeof(D3D12_DISPATCH_ARGUMENTS))
 				.SetRHIBufferMode(RHI::RHIBufferMode::RHIBufferModeImmutable)
@@ -464,6 +506,96 @@ namespace MoYu
 					RHI::RHIBufferTarget::RHIBufferRandomReadWrite | 
 					RHI::RHIBufferTarget::RHIBufferTargetRaw);
 		}
+		{
+			grabDispatchArgsBufferDesc = RHI::RgBufferDesc("VolumeGrabDispatchArgs")
+				.SetSize(22 * 23 / 2, sizeof(D3D12_DISPATCH_ARGUMENTS))
+				.SetRHIBufferMode(RHI::RHIBufferMode::RHIBufferModeImmutable)
+				.SetRHIBufferTarget(
+					RHI::RHIBufferTarget::RHIBufferTargetIndirectArgs |
+					RHI::RHIBufferTarget::RHIBufferRandomReadWrite |
+					RHI::RHIBufferTarget::RHIBufferTargetRaw);
+		}
+
+		/*
+		{
+			indirectDrawVolumeVS = m_ShaderCompiler->CompileShader(
+				RHI_SHADER_TYPE::Vertex, m_ShaderRootPath / "pipeline/Runtime/Material/Lit/LitForwardShader.hlsl", ShaderCompileOptions(L"Vert"));
+			indirectDrawVolumePS = m_ShaderCompiler->CompileShader(
+				RHI_SHADER_TYPE::Pixel, m_ShaderRootPath / "pipeline/Runtime/Material/Lit/LitForwardShader.hlsl", ShaderCompileOptions(L"Frag"));
+
+			{
+				RHI::RootSignatureDesc rootSigDesc =
+					RHI::RootSignatureDesc()
+					.Add32BitConstants<0, 0>(16)
+					.AddStaticSampler<10, 0>(D3D12_FILTER::D3D12_FILTER_MIN_MAG_MIP_POINT, D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_CLAMP, 8)
+					.AddStaticSampler<11, 0>(D3D12_FILTER::D3D12_FILTER_MIN_MAG_LINEAR_MIP_POINT, D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_CLAMP, 8)
+					.AddStaticSampler<12, 0>(D3D12_FILTER::D3D12_FILTER_MIN_MAG_LINEAR_MIP_POINT, D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_WRAP, 8)
+					.AddStaticSampler<13, 0>(D3D12_FILTER::D3D12_FILTER_MIN_MAG_MIP_LINEAR, D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_CLAMP, 8)
+					.AddStaticSampler<14, 0>(D3D12_FILTER::D3D12_FILTER_MIN_MAG_MIP_LINEAR, D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_WRAP, 8)
+					.AddStaticSampler<15, 0>(D3D12_FILTER::D3D12_FILTER_COMPARISON_ANISOTROPIC,
+						D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
+						8,
+						D3D12_COMPARISON_FUNC::D3D12_COMPARISON_FUNC_GREATER_EQUAL,
+						D3D12_STATIC_BORDER_COLOR_OPAQUE_BLACK)
+					.AllowInputLayout()
+					.AllowResourceDescriptorHeapIndexing()
+					.AllowSampleDescriptorHeapIndexing();
+
+				pIndirectDrawVolumeSignature = std::make_shared<RHI::D3D12RootSignature>(m_Device, rootSigDesc);
+			}
+			{
+				RHI::CommandSignatureDesc Builder(4);
+				Builder.AddConstant(0, 0, 1);
+				Builder.AddDraw();
+
+				pIndirectDrawVolumeCommandSignature = std::make_shared<RHI::D3D12CommandSignature>(
+					m_Device, Builder, pIndirectDrawVolumeSignature->GetApiHandle());
+			}
+		}
+		{
+			RHI::D3D12InputLayout InputLayout = {};
+
+			RHIRasterizerState rasterizerState = RHIRasterizerState();
+			rasterizerState.CullMode = RHI_CULL_MODE::Back;
+
+			RHIDepthStencilState DepthStencilState;
+			DepthStencilState.DepthEnable = true;
+			DepthStencilState.DepthFunc = RHI_COMPARISON_FUNC::GreaterEqual;
+
+			RHIRenderTargetState RenderTargetState;
+			RenderTargetState.RTFormats[0] = DXGI_FORMAT_R32G32B32A32_FLOAT; // DXGI_FORMAT_R32G32B32A32_FLOAT;
+			RenderTargetState.NumRenderTargets = 1;
+			RenderTargetState.DSFormat = DXGI_FORMAT_D32_FLOAT; // DXGI_FORMAT_D32_FLOAT;
+
+			RHISampleState SampleState;
+			SampleState.Count = 1;
+
+			struct PsoStream
+			{
+				PipelineStateStreamRootSignature     RootSignature;
+				PipelineStateStreamInputLayout       InputLayout;
+				PipelineStateStreamPrimitiveTopology PrimitiveTopologyType;
+				PipelineStateStreamRasterizerState   RasterrizerState;
+				PipelineStateStreamVS                VS;
+				PipelineStateStreamPS                PS;
+				PipelineStateStreamDepthStencilState DepthStencilState;
+				PipelineStateStreamRenderTargetState RenderTargetState;
+				PipelineStateStreamSampleState       SampleState;
+			} psoStream;
+			psoStream.RootSignature = PipelineStateStreamRootSignature(pIndirectDrawVolumeSignature.get());
+			psoStream.InputLayout = &InputLayout;
+			psoStream.PrimitiveTopologyType = RHI_PRIMITIVE_TOPOLOGY::Triangle;
+			psoStream.RasterrizerState = rasterizerState;
+			psoStream.VS = &indirectDrawVolumeVS;
+			psoStream.PS = &indirectDrawVolumePS;
+			psoStream.DepthStencilState = DepthStencilState;
+			psoStream.RenderTargetState = RenderTargetState;
+			psoStream.SampleState = SampleState;
+
+			PipelineStateStreamDesc psoDesc = { sizeof(PsoStream), &psoStream };
+			pIndirectDrawVolumePSO = std::make_shared<RHI::D3D12PipelineState>(m_Device, L"IndirectVolumeDraw", psoDesc);
+		}
+		*/
 
 	}
 
@@ -587,7 +719,7 @@ namespace MoYu
 	void VolumetriLighting::FogVolumeAndVFXVoxelizationPass(RHI::RenderGraph& graph, ClearPassInputStruct& passInput, ClearPassOutputStruct& passOutput)
 	{
 		RHI::RgResourceHandle mShaderVariablesVolumetricHandle = graph.Import<RHI::D3D12Buffer>(pShaderVariablesVolumetric.get());
-		RHI::RgResourceHandle mVBufferDensityHandle = graph.Import<RHI::D3D12Texture>(mVBufferDensity.get());
+		RHI::RgResourceHandle mVBufferDensityHandle = passInput.vBufferDensityHandle;
 
 		RHI::RgResourceHandle perframeBufferHandle = passInput.perframeBufferHandle;
 
@@ -758,6 +890,7 @@ namespace MoYu
 		RHI::RgResourceHandle perframeBufferHandle = passInput.perframeBufferHandle;
 
 		RHI::RgResourceHandle indirectFogIndexBufferHandle = GImport(graph, pFogIndirectIndexCommandBuffer.get());
+		RHI::RgResourceHandle indirectFogSortCommandBufferHandle = GImport(graph, pFogIndirectSortCommandBuffer.get());
 		
 		RHI::RgResourceHandle uploadVolumesDataBufferHandle = GImport(graph, pUploadVolumesDataBuffer.get());
 		RHI::RgResourceHandle volumesDataBufferHandle = GImport(graph, pVolumesDataBuffer.get());
@@ -808,6 +941,7 @@ namespace MoYu
 		});
 
 		RHI::RgResourceHandle sortDispatchArgsHandle = graph.Create<RHI::D3D12Buffer>(sortDispatchArgsBufferDesc);
+		RHI::RgResourceHandle grabDispatchArgsHandle = graph.Create<RHI::D3D12Buffer>(grabDispatchArgsBufferDesc);
 		
 		{
 			RHI::RenderPass& volumeSortPass = graph.AddRenderPass("VolumeBitonicSortPass");
@@ -827,12 +961,111 @@ namespace MoYu
 				bitonicSort(pAsyncCompute, bufferPtr, bufferCouterPtr, sortDispatchArgsPtr, false, false);
 			});
 		}
-		
+
+		{
+			RHI::RenderPass& grabVolumePass = graph.AddRenderPass("GrabVolumePass");
+
+			grabVolumePass.Read(indirectFogIndexBufferHandle, true);
+
+			grabVolumePass.Write(indirectFogSortCommandBufferHandle, true);
+
+			grabVolumePass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
+				RHI::D3D12ComputeContext* pCompute = context->GetComputeContext();
+
+				RHI::D3D12Buffer* indirectIndexBufferPtr = RegGetBuf(indirectFogIndexBufferHandle);
+				RHI::D3D12Buffer* indirectSortBufferPtr = RegGetBuf(indirectFogSortCommandBufferHandle);
+				RHI::D3D12Buffer* grabDispatchArgsPtr = RegGetBuf(grabDispatchArgsHandle);
+
+				
+				{
+					pCompute->TransitionBarrier(indirectIndexBufferPtr->GetCounterBuffer().get(), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+					pCompute->TransitionBarrier(indirectSortBufferPtr->GetCounterBuffer().get(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+					pCompute->TransitionBarrier(grabDispatchArgsPtr, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+					//context->InsertUAVBarrier(grabDispatchArgBuffer);
+					pCompute->FlushResourceBarriers();
+
+					pCompute->SetPipelineState(PipelineStates::pIndirectCullArgs.get());
+					pCompute->SetRootSignature(RootSignatures::pIndirectCullArgs.get());
+
+					pCompute->SetBufferSRV(0, indirectIndexBufferPtr->GetCounterBuffer().get());
+					pCompute->SetBufferUAV(1, grabDispatchArgsPtr);
+
+					pCompute->Dispatch(1, 1, 1);
+				}
+				{
+					pCompute->TransitionBarrier(indirectIndexBufferPtr->GetCounterBuffer().get(), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+					pCompute->TransitionBarrier(indirectIndexBufferPtr, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+					pCompute->TransitionBarrier(grabDispatchArgsPtr, D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT);
+					pCompute->TransitionBarrier(indirectSortBufferPtr, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+					//context->InsertUAVBarrier(indirectSortBuffer);
+					pCompute->FlushResourceBarriers();
+
+					pCompute->SetPipelineState(pVolumeIndirectGrabPSO.get());
+					pCompute->SetRootSignature(pVolumeIndirectGrabSignature.get());
+
+					pCompute->SetBufferSRV(1, indirectIndexBufferPtr->GetCounterBuffer().get());
+					pCompute->SetBufferSRV(2, indirectIndexBufferPtr);
+					pCompute->SetDescriptorTable(3, indirectSortBufferPtr->GetDefaultUAV()->GetGpuHandle());
+
+					pCompute->DispatchIndirect(grabDispatchArgsPtr, 0);
+
+					// Transition to indirect argument state
+					pCompute->TransitionBarrier(indirectSortBufferPtr, D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT);
+					pCompute->FlushResourceBarriers();
+				}
+
+			});
+		}
+
+
 		// 排序后的 indirectFogIndexBufferHandle 中包含的是索引和距离，我需要做的只是执行Instance绘制，参数直接通过index去索引
 
+		RHI::RgResourceHandle mVBufferDensityHandle = graph.Import<RHI::D3D12Texture>(mVBufferDensity.get());
 
+		/*
+		{
+			RHI::RenderPass& volumeDrawPass = graph.AddRenderPass("VolumeDrawPass");
 
+			volumeDrawPass.Read(indirectFogIndexBufferHandle, true);
+			volumeDrawPass.Write(mVBufferDensityHandle, true);
 
+			volumeDrawPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
+
+				RHI::D3D12GraphicsContext* graphicContext = context->GetGraphicsContext();
+
+				RHI::D3D12Texture* pRenderTargetColor = registry->GetD3D12Texture(mVBufferDensityHandle);
+				
+				RHI::D3D12RenderTargetView* renderTargetView = pRenderTargetColor->GetDefaultRTV().get();
+				
+				int32_t vWidth = m_CurrentVolumetricBufferSize.x;
+				int32_t vHeight = m_CurrentVolumetricBufferSize.y;
+
+				graphicContext->SetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+				graphicContext->SetViewport(RHIViewport{ 0.0f, 0.0f, (float)vWidth, (float)vHeight, 0.0f, 1.0f });
+				graphicContext->SetScissorRect(RHIRect{ 0, 0, (int)vWidth, (int)vHeight });
+
+				graphicContext->SetRenderTarget(renderTargetView, nullptr);
+				graphicContext->ClearRenderTarget(renderTargetView, nullptr);
+
+				graphicContext->SetRootSignature(pIndirectDrawSignature.get());
+				graphicContext->SetPipelineState(pIndirectDrawPSO.get());
+
+				graphicContext->SetConstant(0, 1, registry->GetD3D12Buffer(renderDataPerDrawHandle)->GetDefaultSRV()->GetIndex());
+				graphicContext->SetConstant(0, 2, registry->GetD3D12Buffer(propertiesPerMaterialHandle)->GetDefaultSRV()->GetIndex());
+				graphicContext->SetConstant(0, 3, registry->GetD3D12Buffer(perframeBufferHandle)->GetDefaultCBV()->GetIndex());
+
+				RHI::D3D12Buffer* pIndirectCommandBuffer = registry->GetD3D12Buffer(opaqueDrawHandle);
+
+				graphicContext->ExecuteIndirect(pIndirectDrawCommandSignature.get(),
+					pIndirectCommandBuffer,
+					0,
+					HLSL::MeshLimit,
+					pIndirectCommandBuffer->GetCounterBuffer().get(),
+					0);
+			});
+		}
+		*/
+		passOutput.vBufferDensityHandle = mVBufferDensityHandle;
 	}
 
 	void VolumetriLighting::bitonicSort(RHI::D3D12ComputeContext* context,

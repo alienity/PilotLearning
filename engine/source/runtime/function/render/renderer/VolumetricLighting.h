@@ -36,7 +36,7 @@ namespace MoYu
 		struct ClearPassInputStruct
 		{
 			RHI::RgResourceHandle perframeBufferHandle;
-
+			RHI::RgResourceHandle vBufferDensityHandle;
 		};
 
 		struct ClearPassOutputStruct
@@ -64,7 +64,7 @@ namespace MoYu
 		
 		struct VolumeCullingPassOutputStruct
 		{
-
+			RHI::RgResourceHandle vBufferDensityHandle;
 		};
 
 		struct VolumeLightPassOutputStruct
@@ -132,12 +132,24 @@ namespace MoYu
 		std::shared_ptr<RHI::D3D12RootSignature> pVolumeIndirectCullForSortSignature;
 		std::shared_ptr<RHI::D3D12PipelineState> pVolumeIndirectCullForSortPSO;
 
+		Shader mVolumeIndirectGrabCS;
+		std::shared_ptr<RHI::D3D12RootSignature> pVolumeIndirectGrabSignature;
+		std::shared_ptr<RHI::D3D12PipelineState> pVolumeIndirectGrabPSO;
+
+		Shader indirectDrawVolumeVS;
+		Shader indirectDrawVolumePS;
+		std::shared_ptr<RHI::D3D12RootSignature> pIndirectDrawVolumeSignature;
+		std::shared_ptr<RHI::D3D12PipelineState> pIndirectDrawVolumePSO;
+		std::shared_ptr<RHI::D3D12CommandSignature> pIndirectDrawVolumeCommandSignature;
+
 		std::shared_ptr<RHI::D3D12Buffer> pUploadVolumesDataBuffer;
 		std::shared_ptr<RHI::D3D12Buffer> pVolumesDataBuffer;
 		
 		std::shared_ptr<RHI::D3D12Buffer> pFogIndirectIndexCommandBuffer;
+		std::shared_ptr<RHI::D3D12Buffer> pFogIndirectSortCommandBuffer;
 
 		RHI::RgBufferDesc sortDispatchArgsBufferDesc;
+		RHI::RgBufferDesc grabDispatchArgsBufferDesc;
 		
 
 
