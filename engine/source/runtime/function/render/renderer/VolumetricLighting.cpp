@@ -516,12 +516,11 @@ namespace MoYu
 					RHI::RHIBufferTarget::RHIBufferTargetRaw);
 		}
 
-		/*
 		{
 			indirectDrawVolumeVS = m_ShaderCompiler->CompileShader(
-				RHI_SHADER_TYPE::Vertex, m_ShaderRootPath / "pipeline/Runtime/Material/Lit/LitForwardShader.hlsl", ShaderCompileOptions(L"Vert"));
+				RHI_SHADER_TYPE::Vertex, m_ShaderRootPath / "pipeline/Runtime/Tools/VolumeLighting/VolumeDefaultShader.hlsl", ShaderCompileOptions(L"Vert"));
 			indirectDrawVolumePS = m_ShaderCompiler->CompileShader(
-				RHI_SHADER_TYPE::Pixel, m_ShaderRootPath / "pipeline/Runtime/Material/Lit/LitForwardShader.hlsl", ShaderCompileOptions(L"Frag"));
+				RHI_SHADER_TYPE::Pixel, m_ShaderRootPath / "pipeline/Runtime/Tools/VolumeLighting/VolumeDefaultShader.hlsl", ShaderCompileOptions(L"Frag"));
 
 			{
 				RHI::RootSignatureDesc rootSigDesc =
@@ -551,51 +550,50 @@ namespace MoYu
 				pIndirectDrawVolumeCommandSignature = std::make_shared<RHI::D3D12CommandSignature>(
 					m_Device, Builder, pIndirectDrawVolumeSignature->GetApiHandle());
 			}
-		}
-		{
-			RHI::D3D12InputLayout InputLayout = {};
-
-			RHIRasterizerState rasterizerState = RHIRasterizerState();
-			rasterizerState.CullMode = RHI_CULL_MODE::Back;
-
-			RHIDepthStencilState DepthStencilState;
-			DepthStencilState.DepthEnable = true;
-			DepthStencilState.DepthFunc = RHI_COMPARISON_FUNC::GreaterEqual;
-
-			RHIRenderTargetState RenderTargetState;
-			RenderTargetState.RTFormats[0] = DXGI_FORMAT_R32G32B32A32_FLOAT; // DXGI_FORMAT_R32G32B32A32_FLOAT;
-			RenderTargetState.NumRenderTargets = 1;
-			RenderTargetState.DSFormat = DXGI_FORMAT_D32_FLOAT; // DXGI_FORMAT_D32_FLOAT;
-
-			RHISampleState SampleState;
-			SampleState.Count = 1;
-
-			struct PsoStream
 			{
-				PipelineStateStreamRootSignature     RootSignature;
-				PipelineStateStreamInputLayout       InputLayout;
-				PipelineStateStreamPrimitiveTopology PrimitiveTopologyType;
-				PipelineStateStreamRasterizerState   RasterrizerState;
-				PipelineStateStreamVS                VS;
-				PipelineStateStreamPS                PS;
-				PipelineStateStreamDepthStencilState DepthStencilState;
-				PipelineStateStreamRenderTargetState RenderTargetState;
-				PipelineStateStreamSampleState       SampleState;
-			} psoStream;
-			psoStream.RootSignature = PipelineStateStreamRootSignature(pIndirectDrawVolumeSignature.get());
-			psoStream.InputLayout = &InputLayout;
-			psoStream.PrimitiveTopologyType = RHI_PRIMITIVE_TOPOLOGY::Triangle;
-			psoStream.RasterrizerState = rasterizerState;
-			psoStream.VS = &indirectDrawVolumeVS;
-			psoStream.PS = &indirectDrawVolumePS;
-			psoStream.DepthStencilState = DepthStencilState;
-			psoStream.RenderTargetState = RenderTargetState;
-			psoStream.SampleState = SampleState;
+				RHI::D3D12InputLayout InputLayout = {};
 
-			PipelineStateStreamDesc psoDesc = { sizeof(PsoStream), &psoStream };
-			pIndirectDrawVolumePSO = std::make_shared<RHI::D3D12PipelineState>(m_Device, L"IndirectVolumeDraw", psoDesc);
+				RHIRasterizerState rasterizerState = RHIRasterizerState();
+				rasterizerState.CullMode = RHI_CULL_MODE::Back;
+
+				RHIDepthStencilState DepthStencilState;
+				DepthStencilState.DepthEnable = true;
+				DepthStencilState.DepthFunc = RHI_COMPARISON_FUNC::GreaterEqual;
+
+				RHIRenderTargetState RenderTargetState;
+				RenderTargetState.RTFormats[0] = DXGI_FORMAT_R32G32B32A32_FLOAT; // DXGI_FORMAT_R32G32B32A32_FLOAT;
+				RenderTargetState.NumRenderTargets = 1;
+				RenderTargetState.DSFormat = DXGI_FORMAT_D32_FLOAT; // DXGI_FORMAT_D32_FLOAT;
+
+				RHISampleState SampleState;
+				SampleState.Count = 1;
+
+				struct PsoStream
+				{
+					PipelineStateStreamRootSignature     RootSignature;
+					PipelineStateStreamInputLayout       InputLayout;
+					PipelineStateStreamPrimitiveTopology PrimitiveTopologyType;
+					PipelineStateStreamRasterizerState   RasterrizerState;
+					PipelineStateStreamVS                VS;
+					PipelineStateStreamPS                PS;
+					PipelineStateStreamDepthStencilState DepthStencilState;
+					PipelineStateStreamRenderTargetState RenderTargetState;
+					PipelineStateStreamSampleState       SampleState;
+				} psoStream;
+				psoStream.RootSignature = PipelineStateStreamRootSignature(pIndirectDrawVolumeSignature.get());
+				psoStream.InputLayout = &InputLayout;
+				psoStream.PrimitiveTopologyType = RHI_PRIMITIVE_TOPOLOGY::Triangle;
+				psoStream.RasterrizerState = rasterizerState;
+				psoStream.VS = &indirectDrawVolumeVS;
+				psoStream.PS = &indirectDrawVolumePS;
+				psoStream.DepthStencilState = DepthStencilState;
+				psoStream.RenderTargetState = RenderTargetState;
+				psoStream.SampleState = SampleState;
+
+				PipelineStateStreamDesc psoDesc = { sizeof(PsoStream), &psoStream };
+				pIndirectDrawVolumePSO = std::make_shared<RHI::D3D12PipelineState>(m_Device, L"IndirectVolumeDraw", psoDesc);
+			}
 		}
-		*/
 
 	}
 
@@ -1022,7 +1020,6 @@ namespace MoYu
 
 		RHI::RgResourceHandle mVBufferDensityHandle = graph.Import<RHI::D3D12Texture>(mVBufferDensity.get());
 
-		/*
 		{
 			RHI::RenderPass& volumeDrawPass = graph.AddRenderPass("VolumeDrawPass");
 
@@ -1047,24 +1044,25 @@ namespace MoYu
 				graphicContext->SetRenderTarget(renderTargetView, nullptr);
 				graphicContext->ClearRenderTarget(renderTargetView, nullptr);
 
-				graphicContext->SetRootSignature(pIndirectDrawSignature.get());
-				graphicContext->SetPipelineState(pIndirectDrawPSO.get());
+				graphicContext->SetRootSignature(pIndirectDrawVolumeSignature.get());
+				graphicContext->SetPipelineState(pIndirectDrawVolumePSO.get());
 
 				graphicContext->SetConstant(0, 1, registry->GetD3D12Buffer(renderDataPerDrawHandle)->GetDefaultSRV()->GetIndex());
 				graphicContext->SetConstant(0, 2, registry->GetD3D12Buffer(propertiesPerMaterialHandle)->GetDefaultSRV()->GetIndex());
 				graphicContext->SetConstant(0, 3, registry->GetD3D12Buffer(perframeBufferHandle)->GetDefaultCBV()->GetIndex());
 
-				RHI::D3D12Buffer* pIndirectCommandBuffer = registry->GetD3D12Buffer(opaqueDrawHandle);
+				RHI::D3D12Buffer* pIndirectCommandBuffer = registry->GetD3D12Buffer(indirectFogIndexBufferHandle);
 
-				graphicContext->ExecuteIndirect(pIndirectDrawCommandSignature.get(),
+				graphicContext->ExecuteIndirect(
+					pIndirectDrawVolumeCommandSignature.get(),
 					pIndirectCommandBuffer,
 					0,
-					HLSL::MeshLimit,
+					MAX_VOLUMETRIC_FOG_COUNT,
 					pIndirectCommandBuffer->GetCounterBuffer().get(),
 					0);
 			});
 		}
-		*/
+
 		passOutput.vBufferDensityHandle = mVBufferDensityHandle;
 	}
 
