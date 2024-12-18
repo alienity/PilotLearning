@@ -264,6 +264,11 @@ namespace MoYu
 					internalFog.ref_fog.m_DistanceFadeEnd * localVolumetricFogData.rcpDistFadeLen;
 				volumeMaterialDataCBuffer._VolumetricMaterialFalloffMode = internalFog.ref_fog.m_FalloffMode;
 
+				HLSL::LocalFogCustomData& localFogCustomData = localVolemFogData.localFogCustomData;
+				localFogCustomData._FogVolumeBlendMode = LOCALVOLUMETRICFOGBLENDINGMODE_ADDITIVE;
+				localFogCustomData._FogVolumeSingleScatteringAlbedo = glm::float4(1,1,1,1);
+				localFogCustomData._FogVolumeFogDistanceProperty = 2;
+				
 				pUploadVolumesDatas[i] = localVolemFogData;
 			}
 

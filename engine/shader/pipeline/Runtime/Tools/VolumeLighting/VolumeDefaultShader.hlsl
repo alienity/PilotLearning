@@ -143,7 +143,20 @@ void Frag(VertexToFragment v2f, out float4 outColor : SV_Target0)
     float4 _VolumetricMaterialObbUp = _VolumeMaterialDataCBuffer._VolumetricMaterialObbUp;
     float4 _VolumetricMaterialObbCenter = _VolumeMaterialDataCBuffer._VolumetricMaterialObbCenter;
     float4 _VolumetricMaterialObbExtents = _VolumeMaterialDataCBuffer._VolumetricMaterialObbExtents;
+    
+    float4 _VolumetricMaterialRcpPosFaceFade = _VolumeMaterialDataCBuffer._VolumetricMaterialRcpPosFaceFade;
+    float4 _VolumetricMaterialRcpNegFaceFade = _VolumeMaterialDataCBuffer._VolumetricMaterialRcpNegFaceFade;
+    float4 _VolumetricMaterialInvertFade = _VolumeMaterialDataCBuffer._VolumetricMaterialInvertFade;
+    float4 _VolumetricMaterialRcpDistFadeLen = _VolumeMaterialDataCBuffer._VolumetricMaterialRcpDistFadeLen;
+    float4 _VolumetricMaterialEndTimesRcpDistFadeLen = _VolumeMaterialDataCBuffer._VolumetricMaterialEndTimesRcpDistFadeLen;
+    float4 _VolumetricMaterialFalloffMode = _VolumeMaterialDataCBuffer._VolumetricMaterialFalloffMode;
 
+    LocalFogCustomData localFogCustomData = _LocalVolumetricFogData.localFogCustomData;
+    float _FogVolumeFogDistanceProperty = localFogCustomData._FogVolumeFogDistanceProperty;
+    float3 _FogVolumeSingleScatteringAlbedo = localFogCustomData._FogVolumeSingleScatteringAlbedo;
+    float4 _FogVolumeBlendMode = localFogCustomData._FogVolumeBlendMode;
+
+    
     float3 _WorldSpaceCameraPos = _PerFrameBuffer.cameraUniform._WorldSpaceCameraPos;
 
     float3 albedo;
@@ -177,8 +190,14 @@ void Frag(VertexToFragment v2f, out float4 outColor : SV_Target0)
     extinction *= ExtinctionFromMeanFreePath(_FogVolumeFogDistanceProperty);
     albedo *= _FogVolumeSingleScatteringAlbedo.rgb;
 
+
+    
     float3 voxelCenterNDC = saturate(voxelCenterCS * 0.5 + 0.5);
     // float fade = ComputeFadeFactor(voxelCenterNDC, sliceDistance);
+
+    bool exponential = uint(_VolumetricMaterialFalloffMode) == LOCALVOLUMETRICFOGFALLOFFMODE_EXPONENTIAL;
+    bool multiplyBlendMode = _FogVolumeBlendMode == LOCALVOLUMETRICFOGBLENDINGMODE_MULTIPLY;
+    
     float fade = ComputeVolumeFadeFactor(
         voxelCenterNDC, sliceDistance,
         _VolumetricMaterialRcpPosFaceFade.xyz,

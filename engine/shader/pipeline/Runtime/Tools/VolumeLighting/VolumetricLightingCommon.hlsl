@@ -111,6 +111,14 @@ struct LocalVolumetricFogTextures
     uint3 _padding0;
 };
 
+struct LocalFogCustomData
+{
+    float4 _FogVolumeSingleScatteringAlbedo;
+    int _FogVolumeBlendMode;
+    float _FogVolumeFogDistanceProperty;
+    float2 _padding1;
+};
+
 struct LocalVolumetricFogDatas
 {
     LocalVolumetricTransform localTransformData;
@@ -118,6 +126,7 @@ struct LocalVolumetricFogDatas
     LocalVolumetricFogTextures localFogTextures;
     VolumetricMaterialRenderingData volumetricRenderData;
     VolumetricMaterialDataCBuffer volumeMaterialDataCBuffer;
+    LocalFogCustomData localFogCustomData;
 };
 
 #define MAX_VOLUMETRIC_FOG_COUNT 32
