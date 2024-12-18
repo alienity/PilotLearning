@@ -417,6 +417,18 @@ float3 TransmittanceColorAtDistanceToAbsorption(float3 transmittanceColor, float
     return -log(transmittanceColor + FLT_EPS) / max(atDistance, FLT_EPS);
 }
 
+float ApplyExponentialFadeFactor(float fade, bool exponential, bool multiplyBlendMode)
+{
+    if (exponential)
+    {
+        if (multiplyBlendMode)
+            fade = 1 - PositivePow(abs(fade - 1), 2.2);
+        else
+            fade = PositivePow(fade, 2.2);
+    }
+    return fade;
+}
+
 float ComputeVolumeFadeFactor(float3 coordNDC, float dist,
                         float3 rcpPosFaceFade, float3 rcpNegFaceFade, bool invertFade,
                         float rcpDistFadeLen, float endTimesRcpDistFadeLen, bool exponentialFalloff)
@@ -433,6 +445,12 @@ float ComputeVolumeFadeFactor(float3 coordNDC, float dist,
     fade = dstF * (invertFade ? (1 - fade) : fade);
 
     return fade;
+}
+
+float ExtinctionFromMeanFreePath(float meanFreePath)
+{
+    // Keep in sync with kMinFogDistance
+    return rcp(max(0.05, meanFreePath));
 }
 
 #endif // UNITY_VOLUME_RENDERING_INCLUDED

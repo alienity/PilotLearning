@@ -365,7 +365,7 @@ namespace MoYu
 
         //// https://en.wikipedia.org/wiki/Euler_angles
         //// https://www.geometrictools.com/Documentation/EulerAngles.pdf
-        //// Tait¨CBryan angles, extrinsic angles, ZYX in order
+        //// Taitï¿½CBryan angles, extrinsic angles, ZYX in order
         //glm::float3 toTaitBryanAngles() const;
         //void    fromTaitBryanAngles(const glm::float3& taitBryanAngles);
 
@@ -377,19 +377,19 @@ namespace MoYu
     {
         // https://www.geometrictools.com/Documentation/EulerAngles.pdf
 
-        // ×¢ÒâÇø·Ö£ºÔÚOpenGLÖĞ¼ÆËãÍ¶Ó°¾ØÕóµÄÊ±ºò£¬Ò»°ã¶¼ÓÃzNearºÍzFar¾ø¶ÔÖµ£¬µ«ÊÇÎÒÃÇÕâÀï»¹ÊÇÊ¹ÓÃÎ»ÓÚÓÒÊÖ×ø±êÖĞµÄÖµ
+        // ×¢ï¿½ï¿½ï¿½ï¿½ï¿½Ö£ï¿½ï¿½ï¿½OpenGLï¿½Ğ¼ï¿½ï¿½ï¿½Í¶Ó°ï¿½ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ï¿½Ò»ï¿½ã¶¼ï¿½ï¿½zNearï¿½ï¿½zFarï¿½ï¿½ï¿½ï¿½Öµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï»¹ï¿½ï¿½Ê¹ï¿½ï¿½Î»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ğµï¿½Öµ
 
-        // Ê¹ÓÃÓÒÊÖ×ø±êÏµ£¬Ïà»ú³¯Ïò-z·½Ïò£¬²Î¿¼ Fundamentals of Computer Graphics
-        // ÆäÖĞ zNearPlane < zFarPlane£¬ÇÒ¶¼ÊÇÕıÖµ
-        // Êä³ö canonical view volume ÊÇxyÇø¼äÊÇ[-1,1]£¬zµÄÇø¼äÊÇ[0,1]
-        // ²Î¿¼ http://www.songho.ca/opengl/gl_projectionmatrix.html
+        // Ê¹ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ïµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½-zï¿½ï¿½ï¿½ò£¬²Î¿ï¿½ Fundamentals of Computer Graphics
+        // ï¿½ï¿½ï¿½ï¿½ zNearPlane < zFarPlaneï¿½ï¿½ï¿½Ò¶ï¿½ï¿½ï¿½ï¿½ï¿½Öµ
+        // ï¿½ï¿½ï¿½ canonical view volume ï¿½ï¿½xyï¿½ï¿½ï¿½ï¿½ï¿½ï¿½[-1,1]ï¿½ï¿½zï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½[0,1]
+        // ï¿½Î¿ï¿½ http://www.songho.ca/opengl/gl_projectionmatrix.html
         glm::float4x4 createPerspectiveFieldOfView(float fovY, float aspectRatio, float zNearPlane, float zFarPlane);
         glm::float4x4 createPerspective(float width, float height, float zNearPlane, float zFarPlane);
         glm::float4x4 createPerspectiveOffCenter(float left, float right, float bottom, float top, float zNearPlane, float zFarPlane);
         glm::float4x4 createOrthographic(float width, float height, float zNearPlane, float zFarPlane);
         glm::float4x4 createOrthographicOffCenter(float left, float right, float bottom, float top, float zNearPlane, float zFarPlane);
 
-        // eyeÊÇÏà»úÎ»ÖÃ£¬gazeÊÇÏà»úÏòÇ°³¯Ïò£¬upÊÇÏà»úÏòÉÏ³¯Ïò
+        // eyeï¿½ï¿½ï¿½ï¿½ï¿½Î»ï¿½Ã£ï¿½gazeï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ç°ï¿½ï¿½ï¿½ï¿½upï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï³ï¿½ï¿½ï¿½
         glm::float4x4 createLookAtMatrix(const glm::float3& eye, const glm::float3& center, const glm::float3& up);
         glm::float4x4 createViewMatrix(const glm::float3& position, const glm::quat& orientation);
         glm::float4x4 createWorldMatrix(const glm::float3& position, const glm::quat& orientation, const glm::float3& scale);
@@ -515,17 +515,30 @@ namespace MoYu
     };
 
     Plane ComputePlane(glm::float3 a, glm::float3 b, glm::float3 c);
+    Plane ComputePlane(glm::float3 position, glm::float3 normal);
 
+    Plane CameraSpacePlane(glm::float4x4 worldToCamera, glm::vec3 positionWS, glm::vec3 normalWS, float sideSign = 1, float clipPlaneOffset = 0);
+    
     struct Frustum
     {
-        Plane Left;   // -x
-        Plane Right;  // +x
-        Plane Bottom; // -y
-        Plane Top;    // +y
-        Plane Near;   // -z
-        Plane Far;    // +z
+        union
+        {
+            struct
+            {
+                Plane Left;   // -x
+                Plane Right;  // +x
+                Plane Bottom; // -y
+                Plane Top;    // +y
+                Plane Near;   // -z
+                Plane Far;    // +z      
+            };
+            Plane planes[6]; // Left, right, bottom, top, near, far
+        };
+        glm::vec3 corners[8]; // Positions of the 8 corners
     };
 
+    glm::vec3 IntersectFrustumPlanes(Plane p0, Plane p1, Plane p2);
+    
     struct BSphere
     {
         glm::float3 center;
@@ -542,7 +555,31 @@ namespace MoYu
 
     // mvp row major storage
     Frustum ExtractPlanesDX(const glm::float4x4 mvp);
+    void UpdateFrustumCorners(Frustum& frustum);
 
+    struct OrientedBBox
+    {
+        // 3 x float4 = 48 bytes.
+        glm::float3 right;
+        float extentX;
+        glm::float3 up;
+        float extentY;
+        glm::float3 center;
+        float extentZ;
+
+        glm::float3 forward() const { return glm::cross(up, right); }
+    };
+
+    OrientedBBox OrientedBBoxFromRTS(glm::float4x4 trs);
+
+    // https://iquilezles.org/www/articles/distfunctions/distfunctions.htm
+    float DistanceToOriginAABB(glm::vec3 point, glm::vec3 aabbSize);
+
+    // Optimized version of https://www.sciencedirect.com/topics/computer-science/oriented-bounding-box
+    float DistanceToOBB(OrientedBBox obb, glm::vec3 point);
+
+    AABB OBBToAABB(glm::float3 right, glm::float3 up, glm::float3 forward, glm::float3 extent, glm::float3 center);
+    
     struct Color
     {
         float r, g, b, a;

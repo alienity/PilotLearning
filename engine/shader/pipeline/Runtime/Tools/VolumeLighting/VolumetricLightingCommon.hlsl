@@ -116,6 +116,8 @@ struct LocalVolumetricFogDatas
     LocalVolumetricTransform localTransformData;
     LocalVolumetricFogEngineData localFogEngineData;
     LocalVolumetricFogTextures localFogTextures;
+    VolumetricMaterialRenderingData volumetricRenderData;
+    VolumetricMaterialDataCBuffer volumeMaterialDataCBuffer;
 };
 
 #define MAX_VOLUMETRIC_FOG_COUNT 32

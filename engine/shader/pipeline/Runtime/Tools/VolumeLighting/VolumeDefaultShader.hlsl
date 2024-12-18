@@ -1,11 +1,17 @@
 
 #include "../../ShaderLibrary/Common.hlsl"
 #include "../../ShaderLibrary/GeometricTools.hlsl"
+#include "../../ShaderLibrary/ShaderVariables.hlsl"
+#include "../../ShaderLibrary/VolumeRendering.hlsl"
 #include "../../Tools/VolumeLighting/VolumetricMaterialUtils.hlsl"
 #include "../../Tools/VolumeLighting/VolumetricLightingCommon.hlsl"
+#include "../../../Runtime/Core/Utilities/GeometryUtils.c.hlsl"
+#include "../../RenderPipeline/ShaderPass/FragInputs.hlsl"
 
 uint _VolumetricFogGlobalIndex;
-StructuredBuffer<VolumetricMaterialRenderingData> _VolumetricMaterialData;
+ConstantBuffer<FrameUniforms> _PerFrameBuffer;
+ConstantBuffer<ShaderVariablesVolumetric> _ShaderVariablesVolumetric;
+StructuredBuffer<LocalVolumetricFogDatas> _VolumetricFogData;
 ByteAddressBuffer _VolumetricGlobalIndirectionBuffer;
 
 // Jittered ray with screen-space derivatives.
@@ -23,14 +29,13 @@ struct VertexToFragment
     float4 positionCS : SV_POSITION;
     float3 viewDirectionWS : TEXCOORD0;
     float3 positionOS : TEXCOORD1;
-    nointerpolation float viewIndex : TEXCOORD2;
     nointerpolation uint depthSlice : SV_RenderTargetArrayIndex;
 };
 
 float3 GetCubeVertexPosition(uint vertexIndex)
 {
     int index = _VolumetricGlobalIndirectionBuffer.Load(_VolumetricFogGlobalIndex << 2);
-    return _VolumetricMaterialData[index].obbVertexPositionWS[vertexIndex].xyz;
+    return _VolumetricFogData[index].volumetricRenderData.obbVertexPositionWS[vertexIndex].xyz;
 }
 
 // VertexCubeSlicing needs GetCubeVertexPosition to be declared before
@@ -41,24 +46,21 @@ VertexToFragment Vert(uint instanceId : INSTANCEID_SEMANTIC, uint vertexId : VER
 {
     VertexToFragment output;
 
+    CameraUniform _CameraUniform = _PerFrameBuffer.cameraUniform;
+    float4 _ZBufferParams = _CameraUniform._ZBufferParams;
+    
     int materialDataIndex = _VolumetricGlobalIndirectionBuffer.Load(_VolumetricFogGlobalIndex << 2);
 
+    LocalVolumetricTransform _LocalTransformData = _VolumetricFogData[materialDataIndex].localTransformData;
+    
+    VolumetricMaterialRenderingData _VolumetricMaterialData =_VolumetricFogData[materialDataIndex].volumetricRenderData;
 
-    uint sliceCount = _VolumetricMaterialData[materialDataIndex].sliceCount;
-    uint viewIndex = instanceId / sliceCount;
-    // In VR sliceCount needs to be the same for each eye to be able to retrieve correctly the view index
-    // Patch the mater data index to read the correct view index dependent data
-    materialDataIndex += viewIndex * _VolumeCount;
-
-    uint sliceStartIndex = _VolumetricMaterialData[materialDataIndex].startSliceIndex;
-
-    #if defined(UNITY_STEREO_INSTANCING_ENABLED)
-        unity_StereoEyeIndex = viewIndex;
-    #endif
-    output.viewIndex = viewIndex;
+    uint sliceCount = _VolumetricMaterialData.sliceCount;
+    
+    uint sliceStartIndex = _VolumetricMaterialData.startSliceIndex;
 
     uint sliceIndex = sliceStartIndex + (instanceId % sliceCount);
-    output.depthSlice = sliceIndex + viewIndex * _VBufferSliceCount;
+    output.depthSlice = sliceIndex;
 
     float sliceDepth = VBufferDistanceToSliceIndex(sliceIndex);
 
@@ -73,15 +75,16 @@ VertexToFragment Vert(uint instanceId : INSTANCEID_SEMANTIC, uint vertexId : VER
 #else
 
     output.positionCS = GetQuadVertexPosition(vertexId);
-    output.positionCS.xy = output.positionCS.xy * _VolumetricMaterialData[materialDataIndex].viewSpaceBounds.zw + _VolumetricMaterialData[materialDataIndex].viewSpaceBounds.xy;
+    output.positionCS.xy = output.positionCS.xy * _VolumetricMaterialData.viewSpaceBounds.zw + _VolumetricMaterialData.viewSpaceBounds.xy;
     output.positionCS.z = EyeDepthToLinear(sliceDepth, _ZBufferParams);
     output.positionCS.w = 1;
 
-    float3 positionWS = ComputeWorldSpacePosition(output.positionCS, _IsObliqueProjectionMatrix ? _CameraInverseViewProjection_NO : UNITY_MATRIX_I_VP);
-    output.viewDirectionWS = GetWorldSpaceViewDir(positionWS);
+    float3 positionWS = ComputeWorldSpacePosition(output.positionCS, UNITY_MATRIX_I_VP(_CameraUniform));
+    output.viewDirectionWS = GetWorldSpaceViewDir(_PerFrameBuffer, positionWS);
 
     // Calculate object space position
-    output.positionOS = mul(UNITY_MATRIX_I_M, float4(positionWS, 1)).xyz;
+    // output.positionOS = mul(UNITY_MATRIX_I_M, float4(positionWS, 1)).xyz;
+    output.positionOS = mul(_LocalTransformData.worldToObjectMatrix, float4(positionWS, 1)).xyz;
 
 #endif // USE_VERTEX_CUBE_SLICING
 
@@ -91,9 +94,11 @@ VertexToFragment Vert(uint instanceId : INSTANCEID_SEMANTIC, uint vertexId : VER
 FragInputs BuildFragInputs(VertexToFragment v2f, float3 voxelPositionOS, float3 voxelClipSpace)
 {
     FragInputs output;
-    ZERO_INITIALIZE(FragInputs, output);
 
-    float3 positionWS = mul(UNITY_MATRIX_M, float4(voxelPositionOS, 1)).xyz;
+    int index = _VolumetricGlobalIndirectionBuffer.Load(_VolumetricFogGlobalIndex << 2);
+    float4x4 modelMatrix = _VolumetricFogData[index].localTransformData.objectToWorldMatrix;
+    
+    float3 positionWS = mul(modelMatrix, float4(voxelPositionOS, 1)).xyz;
     output.positionSS = v2f.positionCS;
     output.positionRWS = output.positionPredisplacementRWS = positionWS;
     output.positionPixel = uint2(v2f.positionCS.xy);
@@ -103,38 +108,56 @@ FragInputs BuildFragInputs(VertexToFragment v2f, float3 voxelPositionOS, float3 
     return output;
 }
 
-float ComputeFadeFactor(float3 coordNDC, float distance)
-{
-    bool exponential = uint(_VolumetricMaterialFalloffMode) == LOCALVOLUMETRICFOGFALLOFFMODE_EXPONENTIAL;
-    bool multiplyBlendMode = _FogVolumeBlendMode == LOCALVOLUMETRICFOGBLENDINGMODE_MULTIPLY;
+// float ComputeFadeFactor(float3 coordNDC, float distance)
+// {
+//     return ComputeVolumeFadeFactor(
+//         coordNDC, distance,
+//         _VolumetricMaterialRcpPosFaceFade.xyz,
+//         _VolumetricMaterialRcpNegFaceFade.xyz,
+//         _VolumetricMaterialInvertFade,
+//         _VolumetricMaterialRcpDistFadeLen,
+//         _VolumetricMaterialEndTimesRcpDistFadeLen,
+//         exponential,
+//         multiplyBlendMode
+//     );
+// }
 
-    return ComputeVolumeFadeFactor(
-        coordNDC, distance,
-        _VolumetricMaterialRcpPosFaceFade.xyz,
-        _VolumetricMaterialRcpNegFaceFade.xyz,
-        _VolumetricMaterialInvertFade,
-        _VolumetricMaterialRcpDistFadeLen,
-        _VolumetricMaterialEndTimesRcpDistFadeLen,
-        exponential,
-        multiplyBlendMode
-    );
+void GetVolumeData(FragInputs fragInputs, float3 V, out float3 scatteringColor, out float density)
+{
+    
+    
+    // SurfaceDescriptionInputs surfaceDescriptionInputs = FragInputsToSurfaceDescriptionInputs(fragInputs, V);
+    // SurfaceDescription surfaceDescription = SurfaceDescriptionFunction(surfaceDescriptionInputs);
+    //
+    // scatteringColor = surfaceDescription.BaseColor;
+    // density = surfaceDescription.Alpha;
 }
 
 void Frag(VertexToFragment v2f, out float4 outColor : SV_Target0)
 {
-    // We don't need the stereo eye index in this shader and ShaderGraph don't have access to this
-    #if defined(UNITY_STEREO_INSTANCING_ENABLED)
-    unity_StereoEyeIndex = v2f.viewIndex;
-    #endif
+    int index = _VolumetricGlobalIndirectionBuffer.Load(_VolumetricFogGlobalIndex << 2);
+    LocalVolumetricFogDatas _LocalVolumetricFogData = _VolumetricFogData[index];
+    VolumetricMaterialDataCBuffer _VolumeMaterialDataCBuffer = _LocalVolumetricFogData.volumeMaterialDataCBuffer;
+
+    float4 _VolumetricMaterialObbRight = _VolumeMaterialDataCBuffer._VolumetricMaterialObbRight;
+    float4 _VolumetricMaterialObbUp = _VolumeMaterialDataCBuffer._VolumetricMaterialObbUp;
+    float4 _VolumetricMaterialObbCenter = _VolumeMaterialDataCBuffer._VolumetricMaterialObbCenter;
+    float4 _VolumetricMaterialObbExtents = _VolumeMaterialDataCBuffer._VolumetricMaterialObbExtents;
+
+    float3 _WorldSpaceCameraPos = _PerFrameBuffer.cameraUniform._WorldSpaceCameraPos;
 
     float3 albedo;
     float extinction;
 
+    VBufferUniform _VBufferUniform = _PerFrameBuffer.vBufferUniform;
+    
+    int _VBufferSliceCount = _VBufferUniform._VBufferSliceCount;
+    
     float sliceDistance = VBufferDistanceToSliceIndex(v2f.depthSlice % _VBufferSliceCount);
 
     // Compute voxel center position and test against volume OBB
     float3 raycenterDirWS = normalize(-v2f.viewDirectionWS); // Normalize
-    float3 rayoriginWS    = GetCurrentViewPosition();
+    float3 rayoriginWS    = GetCurrentViewPosition(_PerFrameBuffer);
     float3 voxelCenterWS = rayoriginWS + sliceDistance * raycenterDirWS;
 
     float3x3 obbFrame = float3x3(_VolumetricMaterialObbRight.xyz, _VolumetricMaterialObbUp.xyz, cross(_VolumetricMaterialObbRight.xyz, _VolumetricMaterialObbUp.xyz));
@@ -155,7 +178,17 @@ void Frag(VertexToFragment v2f, out float4 outColor : SV_Target0)
     albedo *= _FogVolumeSingleScatteringAlbedo.rgb;
 
     float3 voxelCenterNDC = saturate(voxelCenterCS * 0.5 + 0.5);
-    float fade = ComputeFadeFactor(voxelCenterNDC, sliceDistance);
+    // float fade = ComputeFadeFactor(voxelCenterNDC, sliceDistance);
+    float fade = ComputeVolumeFadeFactor(
+        voxelCenterNDC, sliceDistance,
+        _VolumetricMaterialRcpPosFaceFade.xyz,
+        _VolumetricMaterialRcpNegFaceFade.xyz,
+        _VolumetricMaterialInvertFade,
+        _VolumetricMaterialRcpDistFadeLen,
+        _VolumetricMaterialEndTimesRcpDistFadeLen,
+        exponential,
+        multiplyBlendMode
+    );
 
     // When multiplying fog, we need to handle specifically the blend area to avoid creating gaps in the fog
     if (_FogVolumeBlendMode == LOCALVOLUMETRICFOGBLENDINGMODE_MULTIPLY)

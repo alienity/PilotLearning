@@ -347,6 +347,16 @@ namespace MoYu
         return true;
     }
 
+    glm::vec3 IntersectFrustumPlanes(Plane p0, Plane p1, Plane p2)
+    {
+        glm::vec3 n0 = p0.normal;
+        glm::vec3 n1 = p1.normal;
+        glm::vec3 n2 = p2.normal;
+
+        float det = glm::dot(glm::cross(n0, n1), n2);
+        return (glm::cross(n2, n1) * p0.offset + glm::cross(n0, n2) * p1.offset - glm::cross(n0, n1) * p2.offset) * (1.0f / det);
+    }
+    
     PlaneIntersectionFlag TestAABBToPlane(const AABB aabb, const Plane p)
     {
         glm::float3 center  = aabb.getCenter();
@@ -499,6 +509,19 @@ namespace MoYu
         return frustum;
     }
 
+    void UpdateFrustumCorners(Frustum& frustum)
+    {
+        // Compute corners from the planes instead of projection matrix. Otherwise you get the same issue with near and far for oblique projection.
+        frustum.corners[0] = IntersectFrustumPlanes(frustum.planes[0], frustum.planes[3], frustum.planes[4]);
+        frustum.corners[1] = IntersectFrustumPlanes(frustum.planes[1], frustum.planes[3], frustum.planes[4]);
+        frustum.corners[2] = IntersectFrustumPlanes(frustum.planes[0], frustum.planes[2], frustum.planes[4]);
+        frustum.corners[3] = IntersectFrustumPlanes(frustum.planes[1], frustum.planes[2], frustum.planes[4]);
+        frustum.corners[4] = IntersectFrustumPlanes(frustum.planes[0], frustum.planes[3], frustum.planes[5]);
+        frustum.corners[5] = IntersectFrustumPlanes(frustum.planes[1], frustum.planes[3], frustum.planes[5]);
+        frustum.corners[6] = IntersectFrustumPlanes(frustum.planes[0], frustum.planes[2], frustum.planes[5]);
+        frustum.corners[7] = IntersectFrustumPlanes(frustum.planes[1], frustum.planes[2], frustum.planes[5]);
+    }
+
     Plane ComputePlane(glm::float3 a, glm::float3 b, glm::float3 c)
     {
         Plane plane;
@@ -507,6 +530,22 @@ namespace MoYu
         return plane;
     }
 
+    Plane ComputePlane(glm::float3 position, glm::float3 normal)
+    {
+        Plane plane;
+        plane.normal = normal;
+        plane.offset = glm::dot(normal, position);
+        return plane;
+    }
+
+    Plane CameraSpacePlane(glm::float4x4 worldToCamera, glm::vec3 positionWS, glm::vec3 normalWS, float sideSign, float clipPlaneOffset)
+    {
+        glm::vec3 offsetPosWS = positionWS + normalWS * clipPlaneOffset;
+        glm::vec3 posCS = worldToCamera.MultiplyPoint(offsetPosWS);
+        var normalCS = worldToCamera.MultiplyVector(normalWS).normalized * sideSign;
+        return new Vector4(normalCS.x, normalCS.y, normalCS.z, -Vector3.Dot(posCS, normalCS));
+    }
+    
     bool BSphere::Intersects(BSphere other)
     {
         // The distance between the sphere centers is computed and compared
@@ -519,6 +558,52 @@ namespace MoYu
         return dist2 <= r2;
     }
 
+    //------------------------------------------------------------------------------------------
+
+    OrientedBBox OrientedBBoxFromRTS(glm::float4x4 trs)
+    {
+        glm::float3 vecX = glm::column(trs, 0);
+        glm::float3 vecY = glm::column(trs, 1);
+        glm::float3 vecZ = glm::column(trs, 2);
+
+        OrientedBBox obb;
+        
+        obb.center = glm::column(trs, 3);
+        obb.right = vecX * (1.0f / glm::length(vecX));
+        obb.up = vecY * (1.0f / glm::length(vecY));
+
+        obb.extentX = 0.5f * glm::length(vecX);
+        obb.extentY = 0.5f * glm::length(vecY);
+        obb.extentZ = 0.5f * glm::length(vecZ);
+
+        return obb;
+    }
+
+    // https://iquilezles.org/www/articles/distfunctions/distfunctions.htm
+    float DistanceToOriginAABB(glm::vec3 point, glm::vec3 aabbSize)
+    {
+        glm::float3 q = abs(point) - glm::float3(aabbSize);
+        return glm::length(max(q, 0.0f)) + glm::min(glm::max(q.x, glm::max(q.y, q.z)), 0.0f);
+    }
+
+    // Optimized version of https://www.sciencedirect.com/topics/computer-science/oriented-bounding-box
+    float DistanceToOBB(OrientedBBox obb, glm::vec3 point)
+    {
+        glm::float3 offset = point - obb.center;
+        glm::float3 boxForward = normalize(cross(obb.right, obb.up));
+        glm::float3 axisAlignedPoint = glm::float3(dot(offset, normalize(obb.right)), dot(offset, normalize(obb.up)), dot(offset, boxForward));
+
+        return DistanceToOriginAABB(axisAlignedPoint, glm::float3(obb.extentX, obb.extentY, obb.extentZ));
+    }
+
+    AABB OBBToAABB(glm::float3 right, glm::float3 up, glm::float3 forward, glm::float3 extent, glm::float3 center)
+    {
+        glm::float3 aabbExtents = abs(right * extent.x) + abs(up * extent.y) + abs(forward * extent.z);
+        AABB aabb;
+        aabb.update(center, aabbExtents);
+        return aabb;
+    }
+    
     //------------------------------------------------------------------------------------------
 
     const Color Color::White(1.f, 1.f, 1.f, 1.f);

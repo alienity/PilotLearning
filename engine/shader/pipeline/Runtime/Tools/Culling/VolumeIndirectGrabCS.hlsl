@@ -4,12 +4,12 @@
 
 struct CommandSignatureParams
 {
-    uint MeshIndex;
+    uint _VolumetricFogGlobalIndex;
     D3D12_DRAW_ARGUMENTS DrawArguments;
 };
 
 // ConstantBuffer<FrameUniforms> frameUniform : register(b1, space0);
-StructuredBuffer<LocalVolumetricFogDatas> localVolumetricDatas : register(t0, space0);
+// StructuredBuffer<LocalVolumetricFogDatas> localVolumetricDatas : register(t0, space0);
 ByteAddressBuffer g_CounterBuffer : register(t1, space0);
 ByteAddressBuffer g_SortIndexDisBuffer : register(t2, space0);
 AppendStructuredBuffer<CommandSignatureParams> g_DrawCommandBuffer : register(u0, space0);
@@ -22,9 +22,9 @@ void CSMain(uint3 GroupID : SV_GroupID, uint GroupIndex : SV_GroupIndex)
     uint index = (GroupID.x * 8) + GroupIndex;
     if (index < ListCount)
     {
-        uint meshIndex = g_SortIndexDisBuffer.Load(index * 8);
+        uint fogGlobalIndex = g_SortIndexDisBuffer.Load(index * 8);
 
-        LocalVolumetricFogDatas renderData = localVolumetricDatas[meshIndex];
+        // LocalVolumetricFogDatas renderData = localVolumetricDatas[fogGlobalIndex];
 
         D3D12_DRAW_ARGUMENTS drawArgs;
         drawArgs.VertexCountPerInstance = 3;
@@ -33,7 +33,7 @@ void CSMain(uint3 GroupID : SV_GroupID, uint GroupIndex : SV_GroupIndex)
         drawArgs.StartInstanceLocation = 0;
         
         CommandSignatureParams command;
-        command.MeshIndex = meshIndex;
+        command._VolumetricFogGlobalIndex = fogGlobalIndex;
         command.DrawArguments = drawArgs;
 
         g_DrawCommandBuffer.Append(command);

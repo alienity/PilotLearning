@@ -213,7 +213,9 @@ namespace MoYu
 			for (int i = 0; i < m_render_scene->m_volume_renderers.size(); ++i)
 			{
 				InternalVolumeFogRenderer& internalFog = m_render_scene->m_volume_renderers[i].internalSceneVolumeRenderer;
-
+				
+				OrientedBBox bounds = OrientedBBoxFromRTS(internalFog.model_matrix);
+				
 				HLSL::LocalVolumetricFogDatas localVolemFogData {};
 
 				HLSL::LocalVolumetricTransform& localTransformData = localVolemFogData.localTransformData;
@@ -239,6 +241,29 @@ namespace MoYu
 				HLSL::LocalVolumetricFogTextures& localFogTexturesData = localVolemFogData.localFogTextures;
 				localFogTexturesData.noise3DIndex = internalFog.ref_fog.m_NoiseImage->GetDefaultSRV()->GetIndex();
 				
+				HLSL::VolumetricMaterialRenderingData& volumetricFogData = localVolemFogData.volumetricRenderData;
+				volumetricFogData.startSliceIndex = 0;
+				volumetricFogData.sliceCount = 18;
+				volumetricFogData.viewSpaceBounds = glm::float4(-1, -1, 2, 2);
+				for (int i = 0; i < 8; i++)
+				{
+					volumetricFogData.obbVertexPositionWS[i] = glm::float4(0, 0, 0, 0);
+				}
+
+				HLSL::VolumetricMaterialDataCBuffer& volumeMaterialDataCBuffer = localVolemFogData.volumeMaterialDataCBuffer;
+				volumeMaterialDataCBuffer._VolumetricMaterialObbRight = glm::float4(bounds.right, 0);
+				volumeMaterialDataCBuffer._VolumetricMaterialObbUp = glm::float4(bounds.up, 0);
+				volumeMaterialDataCBuffer._VolumetricMaterialObbExtents = glm::float4(bounds.extentX, bounds.extentY, bounds.extentZ, 0);
+				volumeMaterialDataCBuffer._VolumetricMaterialObbCenter = glm::float4(bounds.center, 0);
+				volumeMaterialDataCBuffer._VolumetricMaterialRcpPosFaceFade = glm::float4(0.1f, 0.1f, 0.1f, 0);
+				volumeMaterialDataCBuffer._VolumetricMaterialRcpNegFaceFade = glm::float4(0.1f, 0.1f, 0.1f, 0);
+				volumeMaterialDataCBuffer._VolumetricMaterialInvertFade = internalFog.ref_fog.m_InvertBlend ? 1 : 0;
+				volumeMaterialDataCBuffer._VolumetricMaterialRcpDistFadeLen =
+					1.0f / glm::max(internalFog.ref_fog.m_DistanceFadeEnd - internalFog.ref_fog.m_DistanceFadeStart, 0.00001526f);
+				volumeMaterialDataCBuffer._VolumetricMaterialEndTimesRcpDistFadeLen =
+					internalFog.ref_fog.m_DistanceFadeEnd * localVolumetricFogData.rcpDistFadeLen;
+				volumeMaterialDataCBuffer._VolumetricMaterialFalloffMode = internalFog.ref_fog.m_FalloffMode;
+
 				pUploadVolumesDatas[i] = localVolemFogData;
 			}
 
@@ -1016,7 +1041,7 @@ namespace MoYu
 		}
 
 
-		// ÅÅÐòºóµÄ indirectFogIndexBufferHandle ÖÐ°üº¬µÄÊÇË÷ÒýºÍ¾àÀë£¬ÎÒÐèÒª×öµÄÖ»ÊÇÖ´ÐÐInstance»æÖÆ£¬²ÎÊýÖ±½ÓÍ¨¹ýindexÈ¥Ë÷Òý
+		// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ indirectFogIndexBufferHandle ï¿½Ð°ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í¾ï¿½ï¿½ë£¬ï¿½ï¿½ï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½Ö»ï¿½ï¿½Ö´ï¿½ï¿½Instanceï¿½ï¿½ï¿½Æ£ï¿½ï¿½ï¿½ï¿½ï¿½Ö±ï¿½ï¿½Í¨ï¿½ï¿½indexÈ¥ï¿½ï¿½ï¿½ï¿½
 
 		RHI::RgResourceHandle mVBufferDensityHandle = graph.Import<RHI::D3D12Texture>(mVBufferDensity.get());
 
