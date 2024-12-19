@@ -555,7 +555,10 @@ namespace MoYu
 			{
 				RHI::RootSignatureDesc rootSigDesc =
 					RHI::RootSignatureDesc()
-					.Add32BitConstants<0, 0>(16)
+					.Add32BitConstants<0, 0>(1)
+					.AddConstantBufferView<1, 0>()
+					.AddConstantBufferView<2, 0>()
+					.AddShaderResourceView<3, 0>()
 					.AddStaticSampler<10, 0>(D3D12_FILTER::D3D12_FILTER_MIN_MAG_MIP_POINT, D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_CLAMP, 8)
 					.AddStaticSampler<11, 0>(D3D12_FILTER::D3D12_FILTER_MIN_MAG_LINEAR_MIP_POINT, D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_CLAMP, 8)
 					.AddStaticSampler<12, 0>(D3D12_FILTER::D3D12_FILTER_MIN_MAG_LINEAR_MIP_POINT, D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_WRAP, 8)
@@ -912,11 +915,12 @@ namespace MoYu
 		inoutVBufferUniform._VBufferRcpInstancedViewCount = 1.0f;
 	}
 
-
-	void VolumetriLighting::cullForVolumes(RHI::RenderGraph& graph, VolumeCullingPassInputStruct& passInput, VolumeCullingPassOutputStruct& passOutput)
+	void VolumetriLighting::prepareForVolumes(RHI::RenderGraph& graph, VolumeCullingPassInputStruct& passInput, VolumeCullingPassOutputStruct& passOutput)
 	{
 		RHI::RgResourceHandle perframeBufferHandle = passInput.perframeBufferHandle;
 
+		RHI::RgResourceHandle mShaderVariablesVolumetricHandle = graph.Import<RHI::D3D12Buffer>(pShaderVariablesVolumetric.get());
+		
 		RHI::RgResourceHandle indirectFogIndexBufferHandle = GImport(graph, pFogIndirectIndexCommandBuffer.get());
 		RHI::RgResourceHandle indirectFogSortCommandBufferHandle = GImport(graph, pFogIndirectSortCommandBuffer.get());
 		
@@ -994,7 +998,6 @@ namespace MoYu
 			RHI::RenderPass& grabVolumePass = graph.AddRenderPass("GrabVolumePass");
 
 			grabVolumePass.Read(indirectFogIndexBufferHandle, true);
-
 			grabVolumePass.Write(indirectFogSortCommandBufferHandle, true);
 
 			grabVolumePass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
@@ -1004,7 +1007,6 @@ namespace MoYu
 				RHI::D3D12Buffer* indirectSortBufferPtr = RegGetBuf(indirectFogSortCommandBufferHandle);
 				RHI::D3D12Buffer* grabDispatchArgsPtr = RegGetBuf(grabDispatchArgsHandle);
 
-				
 				{
 					pCompute->TransitionBarrier(indirectIndexBufferPtr->GetCounterBuffer().get(), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 					pCompute->TransitionBarrier(indirectSortBufferPtr->GetCounterBuffer().get(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
@@ -1045,15 +1047,14 @@ namespace MoYu
 			});
 		}
 
-
-		// ������ indirectFogIndexBufferHandle �а������������;��룬����Ҫ����ֻ��ִ��Instance���ƣ�����ֱ��ͨ��indexȥ����
-
 		RHI::RgResourceHandle mVBufferDensityHandle = graph.Import<RHI::D3D12Texture>(mVBufferDensity.get());
 
 		{
 			RHI::RenderPass& volumeDrawPass = graph.AddRenderPass("VolumeDrawPass");
 
-			volumeDrawPass.Read(indirectFogIndexBufferHandle, true);
+			volumeDrawPass.Read(indirectFogSortCommandBufferHandle, true);
+			volumeDrawPass.Read(mShaderVariablesVolumetricHandle, true);
+			volumeDrawPass.Read(volumesDataBufferHandle, true);
 			volumeDrawPass.Write(mVBufferDensityHandle, true);
 
 			volumeDrawPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
@@ -1077,11 +1078,11 @@ namespace MoYu
 				graphicContext->SetRootSignature(pIndirectDrawVolumeSignature.get());
 				graphicContext->SetPipelineState(pIndirectDrawVolumePSO.get());
 
-				graphicContext->SetConstant(0, 1, registry->GetD3D12Buffer(renderDataPerDrawHandle)->GetDefaultSRV()->GetIndex());
-				graphicContext->SetConstant(0, 2, registry->GetD3D12Buffer(propertiesPerMaterialHandle)->GetDefaultSRV()->GetIndex());
-				graphicContext->SetConstant(0, 3, registry->GetD3D12Buffer(perframeBufferHandle)->GetDefaultCBV()->GetIndex());
+				graphicContext->SetConstantBuffer(1, RegGetBuf(perframeBufferHandle)->GetGpuVirtualAddress());
+				graphicContext->SetConstantBuffer(2, RegGetBuf(mShaderVariablesVolumetricHandle)->GetGpuVirtualAddress());
+				graphicContext->SetDynamicDescriptor(3, 0, RegGetBuf(volumesDataBufferHandle)->GetDefaultUAV()->GetCpuHandle());
 
-				RHI::D3D12Buffer* pIndirectCommandBuffer = registry->GetD3D12Buffer(indirectFogIndexBufferHandle);
+				RHI::D3D12Buffer* pIndirectCommandBuffer = registry->GetD3D12Buffer(indirectFogSortCommandBufferHandle);
 
 				graphicContext->ExecuteIndirect(
 					pIndirectDrawVolumeCommandSignature.get(),
@@ -1094,6 +1095,7 @@ namespace MoYu
 		}
 
 		passOutput.vBufferDensityHandle = mVBufferDensityHandle;
+		passOutput.shaderVariablesVolumetricHandle = mShaderVariablesVolumetricHandle;
 	}
 
 	void VolumetriLighting::bitonicSort(RHI::D3D12ComputeContext* context,

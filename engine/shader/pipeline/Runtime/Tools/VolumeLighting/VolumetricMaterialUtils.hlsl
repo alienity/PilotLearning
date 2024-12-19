@@ -1,7 +1,7 @@
 #ifndef VOLUMETRIC_MATERIAL_UTILS
 #define VOLUMETRIC_MATERIAL_UTILS
 
-float VBufferDistanceToSliceIndex(uint sliceIndex)
+float VBufferDistanceToSliceIndex(uint sliceIndex, float _VBufferRcpSliceCount, float4 _VBufferDistanceDecodingParams)
 {
     float de = _VBufferRcpSliceCount; // Log-encoded distance between slices
 

@@ -769,7 +769,7 @@ namespace MoYu
         VolumetriLighting::VolumeCullingPassInputStruct mVolumeCullingInput;
         VolumetriLighting::VolumeCullingPassOutputStruct mVolumeCullingOutput;
         mVolumeCullingInput.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
-        mVolumeLightPass->cullForVolumes(graph, mVolumeCullingInput, mVolumeCullingOutput);
+        mVolumeLightPass->prepareForVolumes(graph, mVolumeCullingInput, mVolumeCullingOutput);
 
         // volume light
         VolumetriLighting::GenMaxZInputStruct mGenMaxZInputStruct;

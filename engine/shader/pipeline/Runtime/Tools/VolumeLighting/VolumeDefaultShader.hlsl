@@ -8,11 +8,15 @@
 #include "../../../Runtime/Core/Utilities/GeometryUtils.c.hlsl"
 #include "../../RenderPipeline/ShaderPass/FragInputs.hlsl"
 
-uint _VolumetricFogGlobalIndex;
-ConstantBuffer<FrameUniforms> _PerFrameBuffer;
-ConstantBuffer<ShaderVariablesVolumetric> _ShaderVariablesVolumetric;
-StructuredBuffer<LocalVolumetricFogDatas> _VolumetricFogData;
-ByteAddressBuffer _VolumetricGlobalIndirectionBuffer;
+cbuffer RootConstants : register(b0, space0)
+{
+    uint _VolumetricFogIndex;
+};
+
+ConstantBuffer<FrameUniforms> _PerFrameBuffer : register(b1, space0);
+ConstantBuffer<ShaderVariablesVolumetric> _ShaderVariablesVolumetric : register(b2, space0);
+StructuredBuffer<LocalVolumetricFogDatas> _VolumetricFogData : register(t0, space0);
+// ByteAddressBuffer _VolumetricGlobalIndirectionBuffer;
 
 // Jittered ray with screen-space derivatives.
 struct JitteredRay
@@ -34,8 +38,8 @@ struct VertexToFragment
 
 float3 GetCubeVertexPosition(uint vertexIndex)
 {
-    int index = _VolumetricGlobalIndirectionBuffer.Load(_VolumetricFogGlobalIndex << 2);
-    return _VolumetricFogData[index].volumetricRenderData.obbVertexPositionWS[vertexIndex].xyz;
+    // int index = _VolumetricGlobalIndirectionBuffer.Load(_VolumetricFogGlobalIndex << 2);
+    return _VolumetricFogData[_VolumetricFogIndex].volumetricRenderData.obbVertexPositionWS[vertexIndex].xyz;
 }
 
 // VertexCubeSlicing needs GetCubeVertexPosition to be declared before
@@ -49,12 +53,16 @@ VertexToFragment Vert(uint instanceId : INSTANCEID_SEMANTIC, uint vertexId : VER
     CameraUniform _CameraUniform = _PerFrameBuffer.cameraUniform;
     float4 _ZBufferParams = _CameraUniform._ZBufferParams;
     
-    int materialDataIndex = _VolumetricGlobalIndirectionBuffer.Load(_VolumetricFogGlobalIndex << 2);
+    // int materialDataIndex = _VolumetricGlobalIndirectionBuffer.Load(_VolumetricFogGlobalIndex << 2);
 
-    LocalVolumetricTransform _LocalTransformData = _VolumetricFogData[materialDataIndex].localTransformData;
+    LocalVolumetricTransform _LocalTransformData = _VolumetricFogData[_VolumetricFogIndex].localTransformData;
     
-    VolumetricMaterialRenderingData _VolumetricMaterialData =_VolumetricFogData[materialDataIndex].volumetricRenderData;
+    VolumetricMaterialRenderingData _VolumetricMaterialData =_VolumetricFogData[_VolumetricFogIndex].volumetricRenderData;
 
+    VBufferUniform _VBufferUniform = _PerFrameBuffer.vBufferUniform;
+    float _VBufferRcpSliceCount = _VBufferUniform._VBufferRcpSliceCount;
+    float4 _VBufferDistanceDecodingParams = _VBufferUniform._VBufferDistanceDecodingParams;
+    
     uint sliceCount = _VolumetricMaterialData.sliceCount;
     
     uint sliceStartIndex = _VolumetricMaterialData.startSliceIndex;
@@ -62,7 +70,7 @@ VertexToFragment Vert(uint instanceId : INSTANCEID_SEMANTIC, uint vertexId : VER
     uint sliceIndex = sliceStartIndex + (instanceId % sliceCount);
     output.depthSlice = sliceIndex;
 
-    float sliceDepth = VBufferDistanceToSliceIndex(sliceIndex);
+    float sliceDepth = VBufferDistanceToSliceIndex(sliceIndex, _VBufferRcpSliceCount, _VBufferDistanceDecodingParams);
 
 #if USE_VERTEX_CUBE_SLICING
 
@@ -95,8 +103,8 @@ FragInputs BuildFragInputs(VertexToFragment v2f, float3 voxelPositionOS, float3 
 {
     FragInputs output;
 
-    int index = _VolumetricGlobalIndirectionBuffer.Load(_VolumetricFogGlobalIndex << 2);
-    float4x4 modelMatrix = _VolumetricFogData[index].localTransformData.objectToWorldMatrix;
+    // int index = _VolumetricGlobalIndirectionBuffer.Load(_VolumetricFogGlobalIndex << 2);
+    float4x4 modelMatrix = _VolumetricFogData[_VolumetricFogIndex].localTransformData.objectToWorldMatrix;
     
     float3 positionWS = mul(modelMatrix, float4(voxelPositionOS, 1)).xyz;
     output.positionSS = v2f.positionCS;
@@ -124,7 +132,8 @@ FragInputs BuildFragInputs(VertexToFragment v2f, float3 voxelPositionOS, float3 
 
 void GetVolumeData(FragInputs fragInputs, float3 V, out float3 scatteringColor, out float density)
 {
-    
+    scatteringColor = float3(1, 1, 1);
+    density = 1.0f;
     
     // SurfaceDescriptionInputs surfaceDescriptionInputs = FragInputsToSurfaceDescriptionInputs(fragInputs, V);
     // SurfaceDescription surfaceDescription = SurfaceDescriptionFunction(surfaceDescriptionInputs);
@@ -135,8 +144,8 @@ void GetVolumeData(FragInputs fragInputs, float3 V, out float3 scatteringColor, 
 
 void Frag(VertexToFragment v2f, out float4 outColor : SV_Target0)
 {
-    int index = _VolumetricGlobalIndirectionBuffer.Load(_VolumetricFogGlobalIndex << 2);
-    LocalVolumetricFogDatas _LocalVolumetricFogData = _VolumetricFogData[index];
+    // int index = _VolumetricGlobalIndirectionBuffer.Load(_VolumetricFogGlobalIndex << 2);
+    LocalVolumetricFogDatas _LocalVolumetricFogData = _VolumetricFogData[_VolumetricFogIndex];
     VolumetricMaterialDataCBuffer _VolumeMaterialDataCBuffer = _LocalVolumetricFogData.volumeMaterialDataCBuffer;
 
     float4 _VolumetricMaterialObbRight = _VolumeMaterialDataCBuffer._VolumetricMaterialObbRight;
@@ -165,8 +174,10 @@ void Frag(VertexToFragment v2f, out float4 outColor : SV_Target0)
     VBufferUniform _VBufferUniform = _PerFrameBuffer.vBufferUniform;
     
     int _VBufferSliceCount = _VBufferUniform._VBufferSliceCount;
+    float _VBufferRcpSliceCount = _VBufferUniform._VBufferRcpSliceCount;
+    float4 _VBufferDistanceDecodingParams = _VBufferUniform._VBufferDistanceDecodingParams;
     
-    float sliceDistance = VBufferDistanceToSliceIndex(v2f.depthSlice % _VBufferSliceCount);
+    float sliceDistance = VBufferDistanceToSliceIndex(v2f.depthSlice % _VBufferSliceCount, _VBufferRcpSliceCount, _VBufferDistanceDecodingParams);
 
     // Compute voxel center position and test against volume OBB
     float3 raycenterDirWS = normalize(-v2f.viewDirectionWS); // Normalize

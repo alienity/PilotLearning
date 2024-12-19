@@ -541,9 +541,12 @@ namespace MoYu
     Plane CameraSpacePlane(glm::float4x4 worldToCamera, glm::vec3 positionWS, glm::vec3 normalWS, float sideSign, float clipPlaneOffset)
     {
         glm::vec3 offsetPosWS = positionWS + normalWS * clipPlaneOffset;
-        glm::vec3 posCS = worldToCamera.MultiplyPoint(offsetPosWS);
-        var normalCS = worldToCamera.MultiplyVector(normalWS).normalized * sideSign;
-        return new Vector4(normalCS.x, normalCS.y, normalCS.z, -Vector3.Dot(posCS, normalCS));
+        glm::vec3 posCS = worldToCamera * glm::float4(offsetPosWS, 1);
+        glm::vec3 normalCS = worldToCamera * glm::float4(normalWS, 0) * sideSign;
+        Plane plane;
+        plane.normal = normalCS;
+        plane.offset = glm::dot(posCS, normalCS);
+        return plane;
     }
     
     bool BSphere::Intersects(BSphere other)

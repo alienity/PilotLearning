@@ -65,6 +65,7 @@ namespace MoYu
 		struct VolumeCullingPassOutputStruct
 		{
 			RHI::RgResourceHandle vBufferDensityHandle;
+			RHI::RgResourceHandle shaderVariablesVolumetricHandle;
 		};
 
 		struct VolumeLightPassOutputStruct
@@ -86,7 +87,7 @@ namespace MoYu
 		void UpdateVolumetricLightingUniform(const FogVolume& fog, HLSL::VolumetricLightingUniform& inoutVolumetricLightingUniform);
 		void UpdateVolumetricLightingUniform(const FogVolume& fog, HLSL::VBufferUniform& inoutVBufferUniform);
 		
-		void cullForVolumes(RHI::RenderGraph& graph, VolumeCullingPassInputStruct& passInput, VolumeCullingPassOutputStruct& passOutput);
+		void prepareForVolumes(RHI::RenderGraph& graph, VolumeCullingPassInputStruct& passInput, VolumeCullingPassOutputStruct& passOutput);
 		
 		glm::vec4 m_PackedCoeffs[7];
 		glm::vec2 m_xySeq[7];
