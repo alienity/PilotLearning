@@ -155,15 +155,15 @@ void Frag(VertexToFragment v2f, out float4 outColor : SV_Target0)
     
     float4 _VolumetricMaterialRcpPosFaceFade = _VolumeMaterialDataCBuffer._VolumetricMaterialRcpPosFaceFade;
     float4 _VolumetricMaterialRcpNegFaceFade = _VolumeMaterialDataCBuffer._VolumetricMaterialRcpNegFaceFade;
-    float4 _VolumetricMaterialInvertFade = _VolumeMaterialDataCBuffer._VolumetricMaterialInvertFade;
-    float4 _VolumetricMaterialRcpDistFadeLen = _VolumeMaterialDataCBuffer._VolumetricMaterialRcpDistFadeLen;
-    float4 _VolumetricMaterialEndTimesRcpDistFadeLen = _VolumeMaterialDataCBuffer._VolumetricMaterialEndTimesRcpDistFadeLen;
-    float4 _VolumetricMaterialFalloffMode = _VolumeMaterialDataCBuffer._VolumetricMaterialFalloffMode;
+    float _VolumetricMaterialInvertFade = _VolumeMaterialDataCBuffer._VolumetricMaterialInvertFade;
+    float _VolumetricMaterialRcpDistFadeLen = _VolumeMaterialDataCBuffer._VolumetricMaterialRcpDistFadeLen;
+    float _VolumetricMaterialEndTimesRcpDistFadeLen = _VolumeMaterialDataCBuffer._VolumetricMaterialEndTimesRcpDistFadeLen;
+    float _VolumetricMaterialFalloffMode = _VolumeMaterialDataCBuffer._VolumetricMaterialFalloffMode;
 
     LocalFogCustomData localFogCustomData = _LocalVolumetricFogData.localFogCustomData;
     float _FogVolumeFogDistanceProperty = localFogCustomData._FogVolumeFogDistanceProperty;
-    float3 _FogVolumeSingleScatteringAlbedo = localFogCustomData._FogVolumeSingleScatteringAlbedo;
-    float4 _FogVolumeBlendMode = localFogCustomData._FogVolumeBlendMode;
+    float3 _FogVolumeSingleScatteringAlbedo = localFogCustomData._FogVolumeSingleScatteringAlbedo.rgb;
+    int _FogVolumeBlendMode = localFogCustomData._FogVolumeBlendMode;
 
     
     float3 _WorldSpaceCameraPos = _PerFrameBuffer.cameraUniform._WorldSpaceCameraPos;

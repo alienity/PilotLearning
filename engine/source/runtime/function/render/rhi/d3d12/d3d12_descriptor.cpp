@@ -509,6 +509,14 @@ namespace RHI
                     }
                 }
                 break;
+            case D3D12_RESOURCE_DIMENSION_TEXTURE3D:
+                {
+                    ViewDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE3D;
+                    ViewDesc.Texture3D.MipSlice = MipSlice;
+                    ViewDesc.Texture3D.FirstWSlice = ArraySlice;
+                    ViewDesc.Texture3D.WSize = -1;
+                }
+                break;
             default:
                 break;
         }

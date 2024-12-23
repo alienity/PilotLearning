@@ -37,6 +37,7 @@ namespace MoYu
 		{
 			RHI::RgResourceHandle perframeBufferHandle;
 			RHI::RgResourceHandle vBufferDensityHandle;
+			RHI::RgResourceHandle shaderVariablesVolumetricHandle;
 		};
 
 		struct ClearPassOutputStruct

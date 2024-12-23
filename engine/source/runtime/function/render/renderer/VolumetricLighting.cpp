@@ -118,6 +118,9 @@ namespace MoYu
 
 		if (mVBufferDensity == nullptr)
 		{
+			constexpr FLOAT renderTargetClearColor[4] = { 0, 0, 0, 0 };
+			auto renderTargetClearValue = CD3DX12_CLEAR_VALUE(DXGI_FORMAT_R16G16B16A16_FLOAT, renderTargetClearColor);
+
 			mVBufferDensity = RHI::D3D12Texture::Create3D(
 				m_Device->GetLinkedDevice(),
 				m_CurrentVolumetricBufferSize.x,
@@ -125,10 +128,11 @@ namespace MoYu
 				m_CurrentVolumetricBufferSize.z,
 				1,
 				DXGI_FORMAT_R16G16B16A16_FLOAT,
-				RHI::RHISurfaceCreateRandomWrite,
+				RHI::RHISurfaceCreateRenderTarget,
 				1,
 				L"ASScattering3D",
-				D3D12_RESOURCE_STATE_COMMON);
+				D3D12_RESOURCE_STATE_COMMON,
+				renderTargetClearValue);
 		}
 
 		if (mLightingBuffer == nullptr)
@@ -556,19 +560,15 @@ namespace MoYu
 				RHI::RootSignatureDesc rootSigDesc =
 					RHI::RootSignatureDesc()
 					.Add32BitConstants<0, 0>(1)
-					.AddConstantBufferView<1, 0>()
-					.AddConstantBufferView<2, 0>()
-					.AddShaderResourceView<3, 0>()
+					//.AddConstantBufferView<1, 0>()
+					//.AddConstantBufferView<2, 0>()
+					.AddDescriptorTable(RHI::D3D12DescriptorTable(1).AddCBVRange<1, 0>(2, D3D12_DESCRIPTOR_RANGE_FLAG_NONE, 0))
+					.AddDescriptorTable(RHI::D3D12DescriptorTable(1).AddSRVRange<0, 0>(1, D3D12_DESCRIPTOR_RANGE_FLAG_NONE, 0))
 					.AddStaticSampler<10, 0>(D3D12_FILTER::D3D12_FILTER_MIN_MAG_MIP_POINT, D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_CLAMP, 8)
 					.AddStaticSampler<11, 0>(D3D12_FILTER::D3D12_FILTER_MIN_MAG_LINEAR_MIP_POINT, D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_CLAMP, 8)
 					.AddStaticSampler<12, 0>(D3D12_FILTER::D3D12_FILTER_MIN_MAG_LINEAR_MIP_POINT, D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_WRAP, 8)
 					.AddStaticSampler<13, 0>(D3D12_FILTER::D3D12_FILTER_MIN_MAG_MIP_LINEAR, D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_CLAMP, 8)
 					.AddStaticSampler<14, 0>(D3D12_FILTER::D3D12_FILTER_MIN_MAG_MIP_LINEAR, D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_WRAP, 8)
-					.AddStaticSampler<15, 0>(D3D12_FILTER::D3D12_FILTER_COMPARISON_ANISOTROPIC,
-						D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
-						8,
-						D3D12_COMPARISON_FUNC::D3D12_COMPARISON_FUNC_GREATER_EQUAL,
-						D3D12_STATIC_BORDER_COLOR_OPAQUE_BLACK)
 					.AllowInputLayout()
 					.AllowResourceDescriptorHeapIndexing()
 					.AllowSampleDescriptorHeapIndexing();
@@ -594,9 +594,8 @@ namespace MoYu
 				DepthStencilState.DepthFunc = RHI_COMPARISON_FUNC::GreaterEqual;
 
 				RHIRenderTargetState RenderTargetState;
-				RenderTargetState.RTFormats[0] = DXGI_FORMAT_R32G32B32A32_FLOAT; // DXGI_FORMAT_R32G32B32A32_FLOAT;
+				RenderTargetState.RTFormats[0] = DXGI_FORMAT_R16G16B16A16_FLOAT; // DXGI_FORMAT_R32G32B32A32_FLOAT;
 				RenderTargetState.NumRenderTargets = 1;
-				RenderTargetState.DSFormat = DXGI_FORMAT_D32_FLOAT; // DXGI_FORMAT_D32_FLOAT;
 
 				RHISampleState SampleState;
 				SampleState.Count = 1;
@@ -749,7 +748,8 @@ namespace MoYu
 	
 	void VolumetriLighting::FogVolumeAndVFXVoxelizationPass(RHI::RenderGraph& graph, ClearPassInputStruct& passInput, ClearPassOutputStruct& passOutput)
 	{
-		RHI::RgResourceHandle mShaderVariablesVolumetricHandle = graph.Import<RHI::D3D12Buffer>(pShaderVariablesVolumetric.get());
+		//RHI::RgResourceHandle mShaderVariablesVolumetricHandle = graph.Import<RHI::D3D12Buffer>(pShaderVariablesVolumetric.get());
+		RHI::RgResourceHandle mShaderVariablesVolumetricHandle = passInput.shaderVariablesVolumetricHandle;
 		RHI::RgResourceHandle mVBufferDensityHandle = passInput.vBufferDensityHandle;
 
 		RHI::RgResourceHandle perframeBufferHandle = passInput.perframeBufferHandle;
@@ -944,7 +944,7 @@ namespace MoYu
 
 			pCopyContext->CopyBuffer(RegGetBuf(volumesDataBufferHandle), RegGetBuf(uploadVolumesDataBufferHandle));
 		});
-		
+
 		RHI::RenderPass& cullingPass = graph.AddRenderPass("VolumesCullingPass");
 
 		cullingPass.Read(perframeBufferHandle, true);
@@ -972,9 +972,7 @@ namespace MoYu
 			pContext->Dispatch1D(volumeCounts, 128);
 		});
 
-		RHI::RgResourceHandle sortDispatchArgsHandle = graph.Create<RHI::D3D12Buffer>(sortDispatchArgsBufferDesc);
-		RHI::RgResourceHandle grabDispatchArgsHandle = graph.Create<RHI::D3D12Buffer>(grabDispatchArgsBufferDesc);
-		
+		RHI::RgResourceHandle sortDispatchArgsHandle = graph.Create<RHI::D3D12Buffer>(sortDispatchArgsBufferDesc);		
 		{
 			RHI::RenderPass& volumeSortPass = graph.AddRenderPass("VolumeBitonicSortPass");
 
@@ -994,6 +992,7 @@ namespace MoYu
 			});
 		}
 
+		RHI::RgResourceHandle grabDispatchArgsHandle = graph.Create<RHI::D3D12Buffer>(grabDispatchArgsBufferDesc);
 		{
 			RHI::RenderPass& grabVolumePass = graph.AddRenderPass("GrabVolumePass");
 
@@ -1048,18 +1047,24 @@ namespace MoYu
 		}
 
 		RHI::RgResourceHandle mVBufferDensityHandle = graph.Import<RHI::D3D12Texture>(mVBufferDensity.get());
-
 		{
 			RHI::RenderPass& volumeDrawPass = graph.AddRenderPass("VolumeDrawPass");
 
 			volumeDrawPass.Read(indirectFogSortCommandBufferHandle, true);
+			volumeDrawPass.Read(perframeBufferHandle, true);
 			volumeDrawPass.Read(mShaderVariablesVolumetricHandle, true);
 			volumeDrawPass.Read(volumesDataBufferHandle, true);
 			volumeDrawPass.Write(mVBufferDensityHandle, true);
 
 			volumeDrawPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
-
 				RHI::D3D12GraphicsContext* graphicContext = context->GetGraphicsContext();
+
+				graphicContext->TransitionBarrier(RegGetBuf(indirectFogSortCommandBufferHandle), D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT);
+				graphicContext->TransitionBarrier(RegGetBuf(perframeBufferHandle), D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
+				graphicContext->TransitionBarrier(RegGetBuf(mShaderVariablesVolumetricHandle), D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
+				graphicContext->TransitionBarrier(RegGetBuf(volumesDataBufferHandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+				graphicContext->TransitionBarrier(RegGetTex(mVBufferDensityHandle), D3D12_RESOURCE_STATE_RENDER_TARGET);
+				graphicContext->FlushResourceBarriers();
 
 				RHI::D3D12Texture* pRenderTargetColor = registry->GetD3D12Texture(mVBufferDensityHandle);
 				
@@ -1078,9 +1083,11 @@ namespace MoYu
 				graphicContext->SetRootSignature(pIndirectDrawVolumeSignature.get());
 				graphicContext->SetPipelineState(pIndirectDrawVolumePSO.get());
 
-				graphicContext->SetConstantBuffer(1, RegGetBuf(perframeBufferHandle)->GetGpuVirtualAddress());
-				graphicContext->SetConstantBuffer(2, RegGetBuf(mShaderVariablesVolumetricHandle)->GetGpuVirtualAddress());
-				graphicContext->SetDynamicDescriptor(3, 0, RegGetBuf(volumesDataBufferHandle)->GetDefaultUAV()->GetCpuHandle());
+				//graphicContext->SetConstantBuffer(1, RegGetBuf(perframeBufferHandle)->GetGpuVirtualAddress());
+				//graphicContext->SetConstantBuffer(2, RegGetBuf(mShaderVariablesVolumetricHandle)->GetGpuVirtualAddress());
+				graphicContext->SetDynamicDescriptor(1, 0, RegGetBuf(perframeBufferHandle)->GetDefaultCBV(1)->GetCpuHandle());
+				graphicContext->SetDynamicDescriptor(1, 1, RegGetBuf(mShaderVariablesVolumetricHandle)->GetDefaultCBV(1)->GetCpuHandle());
+				graphicContext->SetDynamicDescriptor(2, 0, RegGetBuf(volumesDataBufferHandle)->GetDefaultSRV(1)->GetCpuHandle());
 
 				RHI::D3D12Buffer* pIndirectCommandBuffer = registry->GetD3D12Buffer(indirectFogSortCommandBufferHandle);
 
