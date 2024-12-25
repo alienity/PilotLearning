@@ -771,12 +771,12 @@ namespace MoYu
         mVolumeCullingInput.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
         mVolumeLightPass->prepareForVolumes(graph, mVolumeCullingInput, mVolumeCullingOutput);
 
-        //// volume light
-        //VolumetriLighting::GenMaxZInputStruct mGenMaxZInputStruct;
-        //VolumetriLighting::GenMaxZOutputStruct mGenMaxZOutputStruct;
-        //mGenMaxZInputStruct.depthHandle = mGBufferOutput.depthHandle;
-        //mGenMaxZInputStruct.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
-        //mVolumeLightPass->GenerateMaxZForVolumetricPass(graph, mGenMaxZInputStruct, mGenMaxZOutputStruct);
+        // volume light
+        VolumetriLighting::GenMaxZInputStruct mGenMaxZInputStruct;
+        VolumetriLighting::GenMaxZOutputStruct mGenMaxZOutputStruct;
+        mGenMaxZInputStruct.depthHandle = mGBufferOutput.depthHandle;
+        mGenMaxZInputStruct.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
+        mVolumeLightPass->GenerateMaxZForVolumetricPass(graph, mGenMaxZInputStruct, mGenMaxZOutputStruct);
 
         //VolumetriLighting::ClearPassInputStruct mVolumeVoxelInput;
         //VolumetriLighting::ClearPassOutputStruct mVolumeVoxelOutput;
@@ -785,16 +785,16 @@ namespace MoYu
         //mVolumeVoxelInput.shaderVariablesVolumetricHandle = mVolumeCullingOutput.shaderVariablesVolumetricHandle;
         //mVolumeLightPass->FogVolumeAndVFXVoxelizationPass(graph, mVolumeVoxelInput, mVolumeVoxelOutput);
 
-        //VolumetriLighting::VolumeLightPassInputStruct mVolumeLightInput;
-        //VolumetriLighting::VolumeLightPassOutputStruct mVolumeLightOutput;
-        //mVolumeLightInput.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
-        //mVolumeLightInput.vbufferDensityHandle = mVolumeVoxelOutput.vbufferDensityHandle;
-        //mVolumeLightInput.depthBufferHandle = mGBufferOutput.depthHandle;
-        //mVolumeLightInput.dilatedMaxZBufferHandle = mGenMaxZOutputStruct.dilatedMaxZBufferHandle;
-        //mVolumeLightInput.shaderVariablesVolumetricHandle = mVolumeVoxelOutput.shaderVariablesVolumetricHandle;
-        //mVolumeLightInput.directionalCascadeShadowmapHandle = directionalCascadeShadowmapHandle;
-        //mVolumeLightInput.spotShadowmapHandles = spotShadowmapHandle;
-        //mVolumeLightPass->VolumetricLightingPass(graph, mVolumeLightInput, mVolumeLightOutput);
+        VolumetriLighting::VolumeLightPassInputStruct mVolumeLightInput;
+        VolumetriLighting::VolumeLightPassOutputStruct mVolumeLightOutput;
+        mVolumeLightInput.perframeBufferHandle = indirectCullOutput.perframeBufferHandle;
+        mVolumeLightInput.vbufferDensityHandle = mVolumeCullingOutput.vBufferDensityHandle;
+        mVolumeLightInput.depthBufferHandle = mGBufferOutput.depthHandle;
+        mVolumeLightInput.dilatedMaxZBufferHandle = mGenMaxZOutputStruct.dilatedMaxZBufferHandle;
+        mVolumeLightInput.shaderVariablesVolumetricHandle = mVolumeCullingOutput.shaderVariablesVolumetricHandle;
+        mVolumeLightInput.directionalCascadeShadowmapHandle = directionalCascadeShadowmapHandle;
+        mVolumeLightInput.spotShadowmapHandles = spotShadowmapHandle;
+        mVolumeLightPass->VolumetricLightingPass(graph, mVolumeLightInput, mVolumeLightOutput);
         //=================================================================================
 
         ///*

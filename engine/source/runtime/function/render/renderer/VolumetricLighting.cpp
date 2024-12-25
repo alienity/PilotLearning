@@ -586,16 +586,19 @@ namespace MoYu
 			{
 				RHI::D3D12InputLayout InputLayout = {};
 
-				RHIRasterizerState rasterizerState = RHIRasterizerState();
-				rasterizerState.CullMode = RHI_CULL_MODE::Back;
-
 				RHIDepthStencilState DepthStencilState;
-				DepthStencilState.DepthEnable = true;
+				DepthStencilState.DepthEnable = false;
+				DepthStencilState.DepthWrite = false;
 				DepthStencilState.DepthFunc = RHI_COMPARISON_FUNC::GreaterEqual;
 
 				RHIRenderTargetState RenderTargetState;
 				RenderTargetState.RTFormats[0] = DXGI_FORMAT_R16G16B16A16_FLOAT; // DXGI_FORMAT_R32G32B32A32_FLOAT;
 				RenderTargetState.NumRenderTargets = 1;
+				RenderTargetState.DSFormat = DXGI_FORMAT_D32_FLOAT; // DXGI_FORMAT_D32_FLOAT;
+
+
+				RHIRasterizerState rasterizerState = RHIRasterizerState();
+				rasterizerState.CullMode = RHI_CULL_MODE::Back;
 
 				RHISampleState SampleState;
 				SampleState.Count = 1;
@@ -1060,6 +1063,7 @@ namespace MoYu
 				RHI::D3D12GraphicsContext* graphicContext = context->GetGraphicsContext();
 
 				graphicContext->TransitionBarrier(RegGetBuf(indirectFogSortCommandBufferHandle), D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT);
+				graphicContext->TransitionBarrier(RegGetBufCounter(indirectFogSortCommandBufferHandle), D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT);
 				graphicContext->TransitionBarrier(RegGetBuf(perframeBufferHandle), D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
 				graphicContext->TransitionBarrier(RegGetBuf(mShaderVariablesVolumetricHandle), D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
 				graphicContext->TransitionBarrier(RegGetBuf(volumesDataBufferHandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
