@@ -27,7 +27,7 @@ void CSMain(uint3 GroupID : SV_GroupID, uint GroupIndex : SV_GroupIndex)
         // LocalVolumetricFogDatas renderData = localVolumetricDatas[fogGlobalIndex];
 
         D3D12_DRAW_ARGUMENTS drawArgs;
-        drawArgs.VertexCountPerInstance = 3;
+        drawArgs.VertexCountPerInstance = 6; // Quad
         drawArgs.InstanceCount = 18;
         drawArgs.StartVertexLocation = 0;
         drawArgs.StartInstanceLocation = 0;

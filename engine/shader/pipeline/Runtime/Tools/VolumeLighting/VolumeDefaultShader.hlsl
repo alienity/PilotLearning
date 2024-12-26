@@ -46,8 +46,12 @@ float3 GetCubeVertexPosition(uint vertexIndex)
 #define GET_CUBE_VERTEX_POSITION GetCubeVertexPosition
 #include "../../Tools/VolumeLighting/VertexCubeSlicing.hlsl"
 
-VertexToFragment Vert(uint instanceId : INSTANCEID_SEMANTIC, uint vertexId : VERTEXID_SEMANTIC)
+static uint idxarr[6] = {0, 1, 2, 0, 2, 3};
+
+VertexToFragment Vert(uint instanceId : SV_InstanceID, uint fvertexId : SV_VertexID)
 {
+    uint vertexId = idxarr[fvertexId];
+    
     VertexToFragment output;
 
     CameraUniform _CameraUniform = _PerFrameBuffer.cameraUniform;
@@ -132,6 +136,11 @@ FragInputs BuildFragInputs(VertexToFragment v2f, float3 voxelPositionOS, float3 
 
 void GetVolumeData(FragInputs fragInputs, float3 V, out float3 scatteringColor, out float density)
 {
+    // LocalVolumetricFogDatas localVolumetricFogData = _VolumetricFogData[_VolumetricFogIndex];
+    // localVolumetricFogData.localTransformData.
+    
+    
+    
     scatteringColor = float3(1, 1, 1);
     density = 1.0f;
     

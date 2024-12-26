@@ -629,7 +629,6 @@ namespace MoYu
 				pIndirectDrawVolumePSO = std::make_shared<RHI::D3D12PipelineState>(m_Device, L"IndirectVolumeDraw", psoDesc);
 			}
 		}
-
 	}
 
 	void VolumetriLighting::GenerateMaxZForVolumetricPass(RHI::RenderGraph& graph, GenMaxZInputStruct& passInput, GenMaxZOutputStruct& passOutput)
@@ -935,13 +934,17 @@ namespace MoYu
 		resetPass.Read(uploadVolumesDataBufferHandle, true);
 		resetPass.Write(volumesDataBufferHandle, true);
 		resetPass.Write(indirectFogIndexBufferHandle, true);
+		resetPass.Write(indirectFogSortCommandBufferHandle, true);
 
 		resetPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
 			RHI::D3D12ComputeContext* pCopyContext = context->GetComputeContext();
 
 			pCopyContext->TransitionBarrier(RegGetBuf(volumesDataBufferHandle), D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_DEST);
 			pCopyContext->TransitionBarrier(RegGetBufCounter(indirectFogIndexBufferHandle), D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_DEST);
+			pCopyContext->TransitionBarrier(RegGetBufCounter(indirectFogSortCommandBufferHandle), D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_DEST);
+
 			pCopyContext->ResetCounter(RegGetBufCounter(indirectFogIndexBufferHandle));
+			pCopyContext->ResetCounter(RegGetBufCounter(indirectFogSortCommandBufferHandle));
 
 			pCopyContext->FlushResourceBarriers();
 
