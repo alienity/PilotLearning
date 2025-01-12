@@ -7,11 +7,6 @@
 
 namespace MoYu
 {
-	struct VolumeCommandSignatureParams
-	{
-		uint32_t MeshIndex;
-		D3D12_DRAW_ARGUMENTS DrawArguments;
-	};
 
 	static int GetNumTileBigTileX(RenderCamera* pRenderCamera)
 	{
@@ -26,7 +21,7 @@ namespace MoYu
 	}
 
 	void VolumetriLighting::updateShaderVariableslVolumetrics(
-		HLSL::ShaderVariablesVolumetric& cb, glm::vec4 resolution, int maxSliceCount, bool updateVoxelizationFields)
+		HLSL::ShaderVariablesVolumetric& cb, glm::vec4 resolution, int maxSliceCount)
 	{
 		float vFoV = MoYu::f::DEG_TO_RAD * m_render_camera->fovy();
 		float gpuAspect = HDUtils::ProjectionMatrixAspect(m_render_camera->getProjMatrix());
@@ -65,10 +60,8 @@ namespace MoYu
 		cb._MaxVolumetricFogDistance = GetFogVolume().depthExtent;
 		cb._VolumeCount = 1;
 
-		if (updateVoxelizationFields)
-		{
-			// TODO: 
-		}
+		cb._VBufferSliceCount = pvp.z;
+		cb._VBufferRcpSliceCount = 1.0f / cb._VBufferSliceCount;
 
 		m_render_camera->volumetricHistoryIsValid = true;
 	}
@@ -160,15 +153,6 @@ namespace MoYu
 				L"FogIndexBuffer");
 		}
 
-		if (pFogIndirectSortCommandBuffer == nullptr)
-		{
-			pFogIndirectSortCommandBuffer = RHI::D3D12Buffer::Create(m_Device->GetLinkedDevice(),
-				RHI::RHIBufferRandomReadWrite | RHI::RHIBufferTargetStructured | RHI::RHIBufferTargetCounter,
-				MAX_VOLUMETRIC_FOG_COUNT,
-				sizeof(VolumeCommandSignatureParams),
-				L"FogCommandSignatureBuffer");
-		}
-
 		if(pUploadVolumesDataBuffer == nullptr)
 		{
 			pUploadVolumesDataBuffer = RHI::D3D12Buffer::Create(
@@ -245,15 +229,6 @@ namespace MoYu
 				HLSL::LocalVolumetricFogTextures& localFogTexturesData = localVolemFogData.localFogTextures;
 				localFogTexturesData.noise3DIndex = internalFog.ref_fog.m_NoiseImage->GetDefaultSRV()->GetIndex();
 				
-				HLSL::VolumetricMaterialRenderingData& volumetricFogData = localVolemFogData.volumetricRenderData;
-				volumetricFogData.startSliceIndex = 0;
-				volumetricFogData.sliceCount = 18;
-				volumetricFogData.viewSpaceBounds = glm::float4(-1, -1, 2, 2);
-				for (int i = 0; i < 8; i++)
-				{
-					volumetricFogData.obbVertexPositionWS[i] = glm::float4(0, 0, 0, 0);
-				}
-
 				HLSL::VolumetricMaterialDataCBuffer& volumeMaterialDataCBuffer = localVolemFogData.volumeMaterialDataCBuffer;
 				volumeMaterialDataCBuffer._VolumetricMaterialObbRight = glm::float4(bounds.right, 0);
 				volumeMaterialDataCBuffer._VolumetricMaterialObbUp = glm::float4(bounds.up, 0);
@@ -274,6 +249,17 @@ namespace MoYu
 				localFogCustomData._FogVolumeFogDistanceProperty = 2;
 				
 				pUploadVolumesDatas[i] = localVolemFogData;
+			}
+
+			{
+				//HLSL::VolumetricMaterialRenderingData& volumetricFogData = localVolemFogData.volumetricRenderData;
+				//volumetricFogData.startSliceIndex = 0;
+				//volumetricFogData.sliceCount = 18;
+				//volumetricFogData.viewSpaceBounds = glm::float4(-1, -1, 2, 2);
+				//for (int i = 0; i < 8; i++)
+				//{
+				//	volumetricFogData.obbVertexPositionWS[i] = glm::float4(0, 0, 0, 0);
+				//}
 			}
 
 			volumeCounts = m_render_scene->m_volume_renderers.size();
@@ -552,9 +538,9 @@ namespace MoYu
 
 		{
 			indirectDrawVolumeVS = m_ShaderCompiler->CompileShader(
-				RHI_SHADER_TYPE::Vertex, m_ShaderRootPath / "pipeline/Runtime/Tools/VolumeLighting/VolumeDefaultShader.hlsl", ShaderCompileOptions(L"Vert"));
+				RHI_SHADER_TYPE::Vertex, m_ShaderRootPath / "pipeline/Runtime/Tools/VolumeLighting/ShaderPassVoxelize.hlsl", ShaderCompileOptions(L"Vert"));
 			indirectDrawVolumePS = m_ShaderCompiler->CompileShader(
-				RHI_SHADER_TYPE::Pixel, m_ShaderRootPath / "pipeline/Runtime/Tools/VolumeLighting/VolumeDefaultShader.hlsl", ShaderCompileOptions(L"Frag"));
+				RHI_SHADER_TYPE::Pixel, m_ShaderRootPath / "pipeline/Runtime/Tools/VolumeLighting/ShaderPassVoxelize.hlsl", ShaderCompileOptions(L"Frag"));
 
 			{
 				RHI::RootSignatureDesc rootSigDesc =
@@ -563,7 +549,7 @@ namespace MoYu
 					//.AddConstantBufferView<1, 0>()
 					//.AddConstantBufferView<2, 0>()
 					.AddDescriptorTable(RHI::D3D12DescriptorTable(1).AddCBVRange<1, 0>(2, D3D12_DESCRIPTOR_RANGE_FLAG_NONE, 0))
-					.AddDescriptorTable(RHI::D3D12DescriptorTable(1).AddSRVRange<0, 0>(1, D3D12_DESCRIPTOR_RANGE_FLAG_NONE, 0))
+					.AddDescriptorTable(RHI::D3D12DescriptorTable(1).AddSRVRange<0, 0>(2, D3D12_DESCRIPTOR_RANGE_FLAG_NONE, 0))
 					.AddStaticSampler<10, 0>(D3D12_FILTER::D3D12_FILTER_MIN_MAG_MIP_POINT, D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_CLAMP, 8)
 					.AddStaticSampler<11, 0>(D3D12_FILTER::D3D12_FILTER_MIN_MAG_LINEAR_MIP_POINT, D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_CLAMP, 8)
 					.AddStaticSampler<12, 0>(D3D12_FILTER::D3D12_FILTER_MIN_MAG_LINEAR_MIP_POINT, D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_WRAP, 8)
@@ -929,12 +915,15 @@ namespace MoYu
 		RHI::RgResourceHandle uploadVolumesDataBufferHandle = GImport(graph, pUploadVolumesDataBuffer.get());
 		RHI::RgResourceHandle volumesDataBufferHandle = GImport(graph, pVolumesDataBuffer.get());
 
+		RHI::RgResourceHandle volumesRenderDataBufferHandle = GImport(graph, pVolumesRenderDataBuffer.get());
+
 		RHI::RenderPass& resetPass = graph.AddRenderPass("ResetVolumeDataPass");
 
 		resetPass.Read(uploadVolumesDataBufferHandle, true);
 		resetPass.Write(volumesDataBufferHandle, true);
 		resetPass.Write(indirectFogIndexBufferHandle, true);
 		resetPass.Write(indirectFogSortCommandBufferHandle, true);
+		resetPass.Write(volumesRenderDataBufferHandle, true);
 
 		resetPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
 			RHI::D3D12ComputeContext* pCopyContext = context->GetComputeContext();
@@ -942,9 +931,11 @@ namespace MoYu
 			pCopyContext->TransitionBarrier(RegGetBuf(volumesDataBufferHandle), D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_DEST);
 			pCopyContext->TransitionBarrier(RegGetBufCounter(indirectFogIndexBufferHandle), D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_DEST);
 			pCopyContext->TransitionBarrier(RegGetBufCounter(indirectFogSortCommandBufferHandle), D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_DEST);
+			pCopyContext->TransitionBarrier(RegGetBufCounter(volumesRenderDataBufferHandle), D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_DEST);
 
 			pCopyContext->ResetCounter(RegGetBufCounter(indirectFogIndexBufferHandle));
 			pCopyContext->ResetCounter(RegGetBufCounter(indirectFogSortCommandBufferHandle));
+			pCopyContext->ResetCounter(RegGetBufCounter(volumesRenderDataBufferHandle));
 
 			pCopyContext->FlushResourceBarriers();
 
@@ -1111,6 +1102,7 @@ namespace MoYu
 		passOutput.vBufferDensityHandle = mVBufferDensityHandle;
 		passOutput.shaderVariablesVolumetricHandle = mShaderVariablesVolumetricHandle;
 	}
+
 
 	void VolumetriLighting::bitonicSort(RHI::D3D12ComputeContext* context,
 		RHI::D3D12Buffer* keyIndexList,

@@ -455,6 +455,13 @@ namespace RHI
         static D3D12_CONSTANT_BUFFER_VIEW_DESC GetDesc(D3D12Buffer* Buffer, UINT Offset, UINT Size);
     };
 
+    enum BufferResourceType
+    {
+        Buffer,
+        ByteAddressBuffer,
+        StructuredBuffer
+    };
+
     class D3D12ShaderResourceView : public D3D12View<D3D12_SHADER_RESOURCE_VIEW_DESC>
     {
     public:
@@ -477,6 +484,8 @@ namespace RHI
     public:
         static D3D12_SHADER_RESOURCE_VIEW_DESC GetDesc(D3D12ASBuffer* ASBuffer);
         static D3D12_SHADER_RESOURCE_VIEW_DESC GetDesc(D3D12Buffer* Buffer, bool Raw, UINT FirstElement, UINT NumElements);
+        static D3D12_SHADER_RESOURCE_VIEW_DESC GetDesc(D3D12Buffer* Buffer, BufferResourceType ResType, UINT FirstElement, UINT NumElements, DXGI_FORMAT BufferFormat = DXGI_FORMAT_R32_TYPELESS);
+
         static D3D12_SHADER_RESOURCE_VIEW_DESC GetDesc(D3D12Texture* Texture, bool sRGB, INT OptMostDetailedMip, INT OptMipLevels);
     };
 
@@ -499,6 +508,7 @@ namespace RHI
         }
     public:
         static D3D12_UNORDERED_ACCESS_VIEW_DESC GetDesc(D3D12Buffer* Buffer, bool Raw, UINT FirstElement, UINT NumElements, UINT64 CounterOffsetInBytes);
+        static D3D12_UNORDERED_ACCESS_VIEW_DESC GetDesc(D3D12Buffer* Buffer, BufferResourceType ResType, UINT FirstElement, UINT NumElements, UINT64 CounterOffsetInBytes, DXGI_FORMAT BufferFormat = DXGI_FORMAT_R32_TYPELESS);
         static D3D12_UNORDERED_ACCESS_VIEW_DESC GetDesc(D3D12Texture* Texture, INT OptArraySlice = -1, INT OptMipSlice = -1);
         
     private:

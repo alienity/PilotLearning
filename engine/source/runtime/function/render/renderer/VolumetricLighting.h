@@ -76,7 +76,7 @@ namespace MoYu
 
 		~VolumetriLighting() { destroy(); }
 
-		void updateShaderVariableslVolumetrics(HLSL::ShaderVariablesVolumetric& cb, glm::vec4 resolution, int maxSliceCount, bool updateVoxelizationFields = false);
+		void updateShaderVariableslVolumetrics(HLSL::ShaderVariablesVolumetric& cb, glm::vec4 resolution, int maxSliceCount);
 		void prepareBuffer(std::shared_ptr<RenderResource> render_resource);
 
 		void initialize(const VolumetriLightingInitInfo& init_info);
@@ -148,7 +148,11 @@ namespace MoYu
 		std::shared_ptr<RHI::D3D12Buffer> pVolumesDataBuffer;
 		
 		std::shared_ptr<RHI::D3D12Buffer> pFogIndirectIndexCommandBuffer;
-		std::shared_ptr<RHI::D3D12Buffer> pFogIndirectSortCommandBuffer;
+		//std::shared_ptr<RHI::D3D12Buffer> pFogIndirectSortCommandBuffer;
+
+		std::shared_ptr<RHI::D3D12Buffer> pVolumetricGlobalIndirectArgsBuffer;
+		std::shared_ptr<RHI::D3D12Buffer> pVolumetricGlobalIndirectionBuffer;
+		std::shared_ptr<RHI::D3D12Buffer> pVolumetricMaterialDataBuffer;
 
 		RHI::RgBufferDesc sortDispatchArgsBufferDesc;
 		RHI::RgBufferDesc grabDispatchArgsBufferDesc;

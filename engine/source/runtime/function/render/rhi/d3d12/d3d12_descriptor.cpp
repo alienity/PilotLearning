@@ -723,28 +723,50 @@ namespace RHI
     D3D12_SHADER_RESOURCE_VIEW_DESC
     D3D12ShaderResourceView::GetDesc(D3D12Buffer* Buffer, bool Raw, UINT FirstElement, UINT NumElements)
     {
+        BufferResourceType TmpType = Raw ? BufferResourceType::ByteAddressBuffer : BufferResourceType::StructuredBuffer;
+        D3D12_SHADER_RESOURCE_VIEW_DESC ViewDesc = GetDesc(Buffer, TmpType, FirstElement, NumElements, DXGI_FORMAT_R32_TYPELESS);
+        return ViewDesc;
+    }
+
+    D3D12_SHADER_RESOURCE_VIEW_DESC 
+    D3D12ShaderResourceView::GetDesc(D3D12Buffer* Buffer, BufferResourceType ResType, UINT FirstElement, UINT NumElements, DXGI_FORMAT BufferFormat)
+    {
         D3D12_SHADER_RESOURCE_VIEW_DESC ViewDesc = {};
-        if (!Raw)
+        if (ResType == BufferResourceType::StructuredBuffer)
         {
-            ViewDesc.ViewDimension              = D3D12_SRV_DIMENSION_BUFFER;
-            ViewDesc.Format                     = DXGI_FORMAT_UNKNOWN;
-            ViewDesc.Shader4ComponentMapping    = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-            ViewDesc.Buffer.FirstElement        = FirstElement;
-            ViewDesc.Buffer.NumElements         = NumElements;
+            ViewDesc.ViewDimension = D3D12_SRV_DIMENSION_BUFFER;
+            ViewDesc.Format = DXGI_FORMAT_UNKNOWN;
+            ViewDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+            ViewDesc.Buffer.FirstElement = FirstElement;
+            ViewDesc.Buffer.NumElements = NumElements;
             ViewDesc.Buffer.StructureByteStride = Buffer->GetStride();
-            ViewDesc.Buffer.Flags               = D3D12_BUFFER_SRV_FLAG_NONE;
+            ViewDesc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_NONE;
+        }
+        else if (ResType == BufferResourceType::ByteAddressBuffer)
+        {
+            uint32_t m_BufferSize = Buffer->GetSizeInBytes();
+            uint32_t m_BytesPerPixel = 4;
+
+            ViewDesc.ViewDimension = D3D12_SRV_DIMENSION_BUFFER;
+            ViewDesc.Format = DXGI_FORMAT_R32_TYPELESS;
+            ViewDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+            ViewDesc.Buffer.FirstElement = 0;
+            ViewDesc.Buffer.NumElements = (UINT)m_BufferSize / m_BytesPerPixel;
+            ViewDesc.Buffer.StructureByteStride = 0;
+            ViewDesc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_RAW;
         }
         else
         {
             uint32_t m_BufferSize = Buffer->GetSizeInBytes();
+            uint32_t m_BytesPerPixel = D3D12RHIUtils::BytesPerPixel(BufferFormat);
 
-            ViewDesc.ViewDimension              = D3D12_SRV_DIMENSION_BUFFER;
-            ViewDesc.Format                     = DXGI_FORMAT_R32_TYPELESS;
-            ViewDesc.Shader4ComponentMapping    = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-            ViewDesc.Buffer.FirstElement        = 0;
-            ViewDesc.Buffer.NumElements         = (UINT)m_BufferSize / 4;
-            ViewDesc.Buffer.StructureByteStride = 0;
-            ViewDesc.Buffer.Flags               = D3D12_BUFFER_SRV_FLAG_RAW;
+            ViewDesc.ViewDimension = D3D12_SRV_DIMENSION_BUFFER;
+            ViewDesc.Format = BufferFormat;
+            ViewDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+            ViewDesc.Buffer.FirstElement = 0;
+            ViewDesc.Buffer.NumElements = (UINT)m_BufferSize / m_BytesPerPixel;
+            ViewDesc.Buffer.StructureByteStride = m_BytesPerPixel;
+            ViewDesc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_NONE;
         }
         return ViewDesc;
     }
@@ -918,29 +940,50 @@ namespace RHI
     D3D12_UNORDERED_ACCESS_VIEW_DESC
     D3D12UnorderedAccessView::GetDesc(D3D12Buffer* Buffer, bool Raw, UINT FirstElement, UINT NumElements, UINT64 CounterOffsetInBytes)
     {
+        BufferResourceType TmpType = Raw ? BufferResourceType::ByteAddressBuffer : BufferResourceType::StructuredBuffer;
+        D3D12_UNORDERED_ACCESS_VIEW_DESC UAVDesc = GetDesc(Buffer, TmpType, FirstElement, NumElements, CounterOffsetInBytes, DXGI_FORMAT_R32_TYPELESS);
+        return UAVDesc;
+    }
+
+    D3D12_UNORDERED_ACCESS_VIEW_DESC 
+    D3D12UnorderedAccessView::GetDesc(D3D12Buffer* Buffer, BufferResourceType ResType, UINT FirstElement, UINT NumElements, UINT64 CounterOffsetInBytes, DXGI_FORMAT BufferFormat)
+    {
         D3D12_UNORDERED_ACCESS_VIEW_DESC UAVDesc = {};
 
-        if (!Raw)
+        if (ResType == BufferResourceType::StructuredBuffer)
         {
-            UAVDesc.ViewDimension               = D3D12_UAV_DIMENSION_BUFFER;
-            UAVDesc.Format                      = DXGI_FORMAT_UNKNOWN;
-            UAVDesc.Buffer.FirstElement         = FirstElement;
-            UAVDesc.Buffer.NumElements          = NumElements;
-            UAVDesc.Buffer.StructureByteStride  = Buffer->GetStride();
+            UAVDesc.ViewDimension = D3D12_UAV_DIMENSION_BUFFER;
+            UAVDesc.Format = DXGI_FORMAT_UNKNOWN;
+            UAVDesc.Buffer.FirstElement = FirstElement;
+            UAVDesc.Buffer.NumElements = NumElements;
+            UAVDesc.Buffer.StructureByteStride = Buffer->GetStride();
             UAVDesc.Buffer.CounterOffsetInBytes = CounterOffsetInBytes;
-            UAVDesc.Buffer.Flags                = D3D12_BUFFER_UAV_FLAG_NONE;
+            UAVDesc.Buffer.Flags = D3D12_BUFFER_UAV_FLAG_NONE;
+        }
+        else if (ResType == BufferResourceType::ByteAddressBuffer)
+        {
+            uint32_t m_BufferSize = Buffer->GetSizeInBytes();
+
+            UAVDesc.ViewDimension = D3D12_UAV_DIMENSION_BUFFER;
+            UAVDesc.Format = DXGI_FORMAT_R32_TYPELESS;
+            UAVDesc.Buffer.FirstElement = 0;
+            UAVDesc.Buffer.NumElements = (UINT)m_BufferSize / 4;
+            UAVDesc.Buffer.StructureByteStride = 0;
+            UAVDesc.Buffer.CounterOffsetInBytes = 0;
+            UAVDesc.Buffer.Flags = D3D12_BUFFER_UAV_FLAG_RAW;
         }
         else
         {
             uint32_t m_BufferSize = Buffer->GetSizeInBytes();
+            uint32_t m_BytesPerPixel = D3D12RHIUtils::BytesPerPixel(BufferFormat);
 
-            UAVDesc.ViewDimension                    = D3D12_UAV_DIMENSION_BUFFER;
-            UAVDesc.Format                           = DXGI_FORMAT_R32_TYPELESS;
-            UAVDesc.Buffer.FirstElement              = 0;
-            UAVDesc.Buffer.NumElements               = (UINT)m_BufferSize / 4;
-            UAVDesc.Buffer.StructureByteStride       = 0;
-            UAVDesc.Buffer.CounterOffsetInBytes      = 0;
-            UAVDesc.Buffer.Flags                     = D3D12_BUFFER_UAV_FLAG_RAW;
+            UAVDesc.ViewDimension = D3D12_UAV_DIMENSION_BUFFER;
+            UAVDesc.Format = BufferFormat;
+            UAVDesc.Buffer.FirstElement = 0;
+            UAVDesc.Buffer.NumElements = (UINT)m_BufferSize / m_BytesPerPixel;
+            UAVDesc.Buffer.StructureByteStride = m_BytesPerPixel;
+            UAVDesc.Buffer.CounterOffsetInBytes = CounterOffsetInBytes;
+            UAVDesc.Buffer.Flags = D3D12_BUFFER_UAV_FLAG_NONE;
         }
 
         return UAVDesc;

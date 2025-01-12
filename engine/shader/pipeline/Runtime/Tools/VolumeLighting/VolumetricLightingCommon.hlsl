@@ -52,8 +52,8 @@ struct ShaderVariablesVolumetric
     float4x4 _CameraInverseViewProjection_NO;
     uint _VolumeCount;
     uint _IsObliqueProjectionMatrix;
-    uint _Padding1;
-    uint _Padding2;
+    float _VBufferSliceCount;
+    float _VBufferRcpSliceCount;
 };
 
 struct VolumetricMaterialDataCBuffer
@@ -124,9 +124,13 @@ struct LocalVolumetricFogDatas
     LocalVolumetricTransform localTransformData;
     LocalVolumetricFogEngineData localFogEngineData;
     LocalVolumetricFogTextures localFogTextures;
-    VolumetricMaterialRenderingData volumetricRenderData;
     VolumetricMaterialDataCBuffer volumeMaterialDataCBuffer;
     LocalFogCustomData localFogCustomData;
+};
+
+struct LocalVolumetricFogRenderDatas
+{
+    VolumetricMaterialRenderingData volumetricRenderData;
 };
 
 #define MAX_VOLUMETRIC_FOG_COUNT 32
