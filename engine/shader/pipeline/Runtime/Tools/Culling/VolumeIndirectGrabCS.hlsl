@@ -100,9 +100,9 @@ void ComputeCubeVerticesOrder(uint volumeIndex)
     VolumetricMaterialDataCBuffer volumetricMatDataBuffer = localVolumetricData.volumeMaterialDataCBuffer;
 
     OrientedBBox obb;
-    obb.center = volumetricMatDataBuffer._VolumetricMaterialObbCenter;
-    obb.right = volumetricMatDataBuffer._VolumetricMaterialObbRight;
-    obb.up = volumetricMatDataBuffer._VolumetricMaterialObbUp;
+    obb.center = volumetricMatDataBuffer._VolumetricMaterialObbCenter.xyz;
+    obb.right = volumetricMatDataBuffer._VolumetricMaterialObbRight.xyz;
+    obb.up = volumetricMatDataBuffer._VolumetricMaterialObbUp.xyz;
     obb.extentX = volumetricMatDataBuffer._VolumetricMaterialObbExtents.x;
     obb.extentY = volumetricMatDataBuffer._VolumetricMaterialObbExtents.y;
     obb.extentZ = volumetricMatDataBuffer._VolumetricMaterialObbExtents.z;
@@ -163,9 +163,9 @@ void ComputeVolumetricMaterialRenderingParameters(uint3 dispatchThreadID : SV_Di
     float _VBufferRcpSliceCount = _ShaderVariablesVolumetric._VBufferRcpSliceCount;
     
     OrientedBBox obb;
-    obb.center = localVolumeMatData._VolumetricMaterialObbCenter;
-    obb.right = localVolumeMatData._VolumetricMaterialObbRight;
-    obb.up = localVolumeMatData._VolumetricMaterialObbUp;
+    obb.center = localVolumeMatData._VolumetricMaterialObbCenter.xyz;
+    obb.right = localVolumeMatData._VolumetricMaterialObbRight.xyz;
+    obb.up = localVolumeMatData._VolumetricMaterialObbUp.xyz;
     obb.extentX = localVolumeMatData._VolumetricMaterialObbExtents[0];
     obb.extentY = localVolumeMatData._VolumetricMaterialObbExtents[1];
     obb.extentZ = localVolumeMatData._VolumetricMaterialObbExtents[2];

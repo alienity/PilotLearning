@@ -266,6 +266,41 @@ namespace MoYu
 		}
 
 		{
+			if (pVolumetricGlobalIndirectArgsBuffer == nullptr)
+			{
+				pVolumetricGlobalIndirectArgsBuffer = RHI::D3D12Buffer::Create(  
+					m_Device->GetLinkedDevice(),
+					RHI::RHIBufferRandomReadWrite,
+					MAX_VOLUMETRIC_FOG_COUNT,
+					sizeof(D3D12_DRAW_INDEXED_ARGUMENTS),
+					L"VolumetricGlobalIndirectArgsBuffer",
+					RHI::RHIBufferModeImmutable,
+					D3D12_RESOURCE_STATE_GENERIC_READ);
+			}
+
+			if (pVolumetricGlobalIndirectionBuffer == nullptr)
+			{
+				pVolumetricGlobalIndirectionBuffer = RHI::D3D12Buffer::Create(
+					m_Device->GetLinkedDevice(),
+					RHI::RHIBufferRandomReadWrite | RHI::RHIBufferTargetRaw,
+					MAX_VOLUMETRIC_FOG_COUNT,
+					sizeof(int32_t),
+					L"VolumetricGlobalIndirectionBuffer",
+					RHI::RHIBufferModeImmutable,
+					D3D12_RESOURCE_STATE_GENERIC_READ);
+			}
+
+			if (pVolumetricMaterialDataBuffer == nullptr)
+			{
+				pVolumetricMaterialDataBuffer = RHI::D3D12Buffer::Create(
+					m_Device->GetLinkedDevice(),
+					RHI::RHIBufferRandomReadWrite | RHI::RHIBufferTargetStructured,
+					MAX_VOLUMETRIC_FOG_COUNT,
+					sizeof(HLSL::VolumetricMaterialRenderingData),
+					L"VolumetricMaterialData",
+					RHI::RHIBufferModeImmutable,
+					D3D12_RESOURCE_STATE_GENERIC_READ);
+			}
 
 		}
 	}
@@ -493,13 +528,13 @@ namespace MoYu
 		{
 			mVolumeIndirectGrabCS = m_ShaderCompiler->CompileShader(
 				RHI_SHADER_TYPE::Compute, m_ShaderRootPath / "pipeline/Runtime/Tools/Culling/VolumeIndirectGrabCS.hlsl",
-				ShaderCompileOptions(L"CSMain"));
+				ShaderCompileOptions(L"ComputeVolumetricMaterialRenderingParameters"));
 
 			RHI::RootSignatureDesc rootSigDesc = RHI::RootSignatureDesc()
-				.AddShaderResourceView<0, 0>()
-				.AddShaderResourceView<1, 0>()
-				.AddShaderResourceView<2, 0>()
-				.AddUnorderedAccessViewWithCounter<0, 0>()
+				.AddConstantBufferView<1, 0>()
+				.AddConstantBufferView<2, 0>()
+				.AddDescriptorTable(RHI::D3D12DescriptorTable(1).AddSRVRange<0, 0>(3, D3D12_DESCRIPTOR_RANGE_FLAG_NONE, 0))
+				.AddDescriptorTable(RHI::D3D12DescriptorTable(1).AddUAVRange<0, 0>(3, D3D12_DESCRIPTOR_RANGE_FLAG_NONE, 0))
 				.AllowResourceDescriptorHeapIndexing()
 				.AllowSampleDescriptorHeapIndexing();
 
@@ -910,33 +945,29 @@ namespace MoYu
 		RHI::RgResourceHandle mShaderVariablesVolumetricHandle = graph.Import<RHI::D3D12Buffer>(pShaderVariablesVolumetric.get());
 		
 		RHI::RgResourceHandle indirectFogIndexBufferHandle = GImport(graph, pFogIndirectIndexCommandBuffer.get());
-		RHI::RgResourceHandle indirectFogSortCommandBufferHandle = GImport(graph, pFogIndirectSortCommandBuffer.get());
 		
 		RHI::RgResourceHandle uploadVolumesDataBufferHandle = GImport(graph, pUploadVolumesDataBuffer.get());
 		RHI::RgResourceHandle volumesDataBufferHandle = GImport(graph, pVolumesDataBuffer.get());
 
-		RHI::RgResourceHandle volumesRenderDataBufferHandle = GImport(graph, pVolumesRenderDataBuffer.get());
-
+		RHI::RgResourceHandle volumetricGlobalIndirectArgsBufferHandle = GImport(graph, pVolumetricGlobalIndirectArgsBuffer.get());
+		RHI::RgResourceHandle volumetricGlobalIndirectionBufferHandle = GImport(graph, pVolumetricGlobalIndirectionBuffer.get());
+		RHI::RgResourceHandle volumetricMaterialDataBufferHandle = GImport(graph, pVolumetricMaterialDataBuffer.get());
+		
+		
 		RHI::RenderPass& resetPass = graph.AddRenderPass("ResetVolumeDataPass");
 
 		resetPass.Read(uploadVolumesDataBufferHandle, true);
 		resetPass.Write(volumesDataBufferHandle, true);
 		resetPass.Write(indirectFogIndexBufferHandle, true);
-		resetPass.Write(indirectFogSortCommandBufferHandle, true);
-		resetPass.Write(volumesRenderDataBufferHandle, true);
-
+		
 		resetPass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
 			RHI::D3D12ComputeContext* pCopyContext = context->GetComputeContext();
 
 			pCopyContext->TransitionBarrier(RegGetBuf(volumesDataBufferHandle), D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_DEST);
 			pCopyContext->TransitionBarrier(RegGetBufCounter(indirectFogIndexBufferHandle), D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_DEST);
-			pCopyContext->TransitionBarrier(RegGetBufCounter(indirectFogSortCommandBufferHandle), D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_DEST);
-			pCopyContext->TransitionBarrier(RegGetBufCounter(volumesRenderDataBufferHandle), D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_DEST);
-
+			
 			pCopyContext->ResetCounter(RegGetBufCounter(indirectFogIndexBufferHandle));
-			pCopyContext->ResetCounter(RegGetBufCounter(indirectFogSortCommandBufferHandle));
-			pCopyContext->ResetCounter(RegGetBufCounter(volumesRenderDataBufferHandle));
-
+			
 			pCopyContext->FlushResourceBarriers();
 
 			pCopyContext->CopyBuffer(RegGetBuf(volumesDataBufferHandle), RegGetBuf(uploadVolumesDataBufferHandle));
@@ -969,7 +1000,7 @@ namespace MoYu
 			pContext->Dispatch1D(volumeCounts, 128);
 		});
 
-		RHI::RgResourceHandle sortDispatchArgsHandle = graph.Create<RHI::D3D12Buffer>(sortDispatchArgsBufferDesc);		
+		RHI::RgResourceHandle sortDispatchArgsHandle = graph.Create<RHI::D3D12Buffer>(sortDispatchArgsBufferDesc);
 		{
 			RHI::RenderPass& volumeSortPass = graph.AddRenderPass("VolumeBitonicSortPass");
 
@@ -993,57 +1024,75 @@ namespace MoYu
 		{
 			RHI::RenderPass& grabVolumePass = graph.AddRenderPass("GrabVolumePass");
 
+			grabVolumePass.Read(perframeBufferHandle, true);
 			grabVolumePass.Read(indirectFogIndexBufferHandle, true);
-			grabVolumePass.Write(indirectFogSortCommandBufferHandle, true);
+			grabVolumePass.Read(mShaderVariablesVolumetricHandle, true);
+			grabVolumePass.Write(volumetricGlobalIndirectArgsBufferHandle, true);
+			grabVolumePass.Write(volumetricGlobalIndirectionBufferHandle, true);
+			grabVolumePass.Write(volumetricMaterialDataBufferHandle, true);
+			grabVolumePass.Write(grabDispatchArgsHandle, true);
 
 			grabVolumePass.Execute([=](RHI::RenderGraphRegistry* registry, RHI::D3D12CommandContext* context) {
 				RHI::D3D12ComputeContext* pCompute = context->GetComputeContext();
 
-				RHI::D3D12Buffer* indirectIndexBufferPtr = RegGetBuf(indirectFogIndexBufferHandle);
-				RHI::D3D12Buffer* indirectSortBufferPtr = RegGetBuf(indirectFogSortCommandBufferHandle);
-				RHI::D3D12Buffer* grabDispatchArgsPtr = RegGetBuf(grabDispatchArgsHandle);
+				//RHI::D3D12Buffer* indirectIndexBufferPtr = RegGetBuf(indirectFogIndexBufferHandle);
+				//RHI::D3D12Buffer* volumetricGlobalIndirectArgsBufferPtr = RegGetBuf(volumetricGlobalIndirectArgsBufferHandle);
+				//RHI::D3D12Buffer* volumetricGlobalIndirectionBufferPtr = RegGetBuf(volumetricGlobalIndirectionBufferHandle);
+				//RHI::D3D12Buffer* volumetricMaterialDataBufferPtr = RegGetBuf(volumetricMaterialDataBufferHandle);
+
+				//RHI::D3D12Buffer* grabDispatchArgsPtr = RegGetBuf(sortDispatchArgsHandle);
 
 				{
-					pCompute->TransitionBarrier(indirectIndexBufferPtr->GetCounterBuffer().get(), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-					pCompute->TransitionBarrier(indirectSortBufferPtr->GetCounterBuffer().get(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-					pCompute->TransitionBarrier(grabDispatchArgsPtr, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
-					//context->InsertUAVBarrier(grabDispatchArgBuffer);
+					pCompute->TransitionBarrier(RegGetBufCounter(indirectFogIndexBufferHandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+					pCompute->TransitionBarrier(RegGetBuf(volumetricGlobalIndirectArgsBufferHandle), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+					pCompute->TransitionBarrier(RegGetBuf(volumetricGlobalIndirectionBufferHandle), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+					pCompute->TransitionBarrier(RegGetBuf(volumetricMaterialDataBufferHandle), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+					pCompute->TransitionBarrier(RegGetBuf(sortDispatchArgsHandle), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 					pCompute->FlushResourceBarriers();
 
 					pCompute->SetPipelineState(PipelineStates::pIndirectCullArgs.get());
 					pCompute->SetRootSignature(RootSignatures::pIndirectCullArgs.get());
 
-					pCompute->SetBufferSRV(0, indirectIndexBufferPtr->GetCounterBuffer().get());
-					pCompute->SetBufferUAV(1, grabDispatchArgsPtr);
+					pCompute->SetBufferSRV(0, RegGetBufCounter(indirectFogIndexBufferHandle));
+					pCompute->SetBufferUAV(1, RegGetBuf(sortDispatchArgsHandle));
 
 					pCompute->Dispatch(1, 1, 1);
 				}
+
 				{
-					pCompute->TransitionBarrier(indirectIndexBufferPtr->GetCounterBuffer().get(), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-					pCompute->TransitionBarrier(indirectIndexBufferPtr, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-					pCompute->TransitionBarrier(grabDispatchArgsPtr, D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT);
-					pCompute->TransitionBarrier(indirectSortBufferPtr, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+					pCompute->TransitionBarrier(RegGetBufCounter(indirectFogIndexBufferHandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+					pCompute->TransitionBarrier(RegGetBuf(indirectFogIndexBufferHandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+					pCompute->TransitionBarrier(RegGetBuf(sortDispatchArgsHandle), D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT);
+					pCompute->TransitionBarrier(RegGetBuf(mShaderVariablesVolumetricHandle), D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
+					pCompute->TransitionBarrier(RegGetBuf(volumesDataBufferHandle), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+					//pCompute->TransitionBarrier(indirectSortBufferPtr, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 					//context->InsertUAVBarrier(indirectSortBuffer);
 					pCompute->FlushResourceBarriers();
 
 					pCompute->SetPipelineState(pVolumeIndirectGrabPSO.get());
 					pCompute->SetRootSignature(pVolumeIndirectGrabSignature.get());
+					
+					pCompute->SetConstantBuffer(0, RegGetBuf(perframeBufferHandle)->GetGpuVirtualAddress());
+					pCompute->SetConstantBuffer(1, RegGetBuf(mShaderVariablesVolumetricHandle)->GetGpuVirtualAddress());
+					pCompute->SetDynamicDescriptor(2, 0, RegGetBuf(volumesDataBufferHandle)->GetDefaultSRV(1)->GetCpuHandle());
+					pCompute->SetDynamicDescriptor(2, 1, RegGetBufCounter(indirectFogIndexBufferHandle)->GetDefaultSRV(1)->GetCpuHandle());
+					pCompute->SetDynamicDescriptor(2, 2, RegGetBuf(indirectFogIndexBufferHandle)->GetDefaultSRV(1)->GetCpuHandle());
+					pCompute->SetDynamicDescriptor(3, 0, RegGetBuf(volumetricGlobalIndirectArgsBufferHandle)->GetDefaultUAV(1)->GetCpuHandle());
+					pCompute->SetDynamicDescriptor(3, 1, RegGetBuf(volumetricGlobalIndirectionBufferHandle)->GetDefaultUAV(1)->GetCpuHandle());
+					pCompute->SetDynamicDescriptor(3, 2, RegGetBuf(volumetricMaterialDataBufferHandle)->GetDefaultUAV(1)->GetCpuHandle());
 
-					pCompute->SetBufferSRV(1, indirectIndexBufferPtr->GetCounterBuffer().get());
-					pCompute->SetBufferSRV(2, indirectIndexBufferPtr);
-					pCompute->SetDescriptorTable(3, indirectSortBufferPtr->GetDefaultUAV()->GetGpuHandle());
+					pCompute->DispatchIndirect(RegGetBuf(sortDispatchArgsHandle), 0);
 
-					pCompute->DispatchIndirect(grabDispatchArgsPtr, 0);
-
-					// Transition to indirect argument state
-					pCompute->TransitionBarrier(indirectSortBufferPtr, D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT);
-					pCompute->FlushResourceBarriers();
+					//// Transition to indirect argument state
+					//pCompute->TransitionBarrier(indirectSortBufferPtr, D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT);
+					//pCompute->FlushResourceBarriers();
 				}
 
 			});
 		}
 
 		RHI::RgResourceHandle mVBufferDensityHandle = graph.Import<RHI::D3D12Texture>(mVBufferDensity.get());
+		/*
 		{
 			RHI::RenderPass& volumeDrawPass = graph.AddRenderPass("VolumeDrawPass");
 
@@ -1098,7 +1147,7 @@ namespace MoYu
 					0);
 			});
 		}
-
+		*/
 		passOutput.vBufferDensityHandle = mVBufferDensityHandle;
 		passOutput.shaderVariablesVolumetricHandle = mShaderVariablesVolumetricHandle;
 	}

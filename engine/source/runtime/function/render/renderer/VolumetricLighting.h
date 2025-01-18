@@ -156,9 +156,6 @@ namespace MoYu
 
 		RHI::RgBufferDesc sortDispatchArgsBufferDesc;
 		RHI::RgBufferDesc grabDispatchArgsBufferDesc;
-		
-
-
 
 		RHI::RgTextureDesc colorTexDesc;
 
